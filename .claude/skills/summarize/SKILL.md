@@ -2,7 +2,7 @@
 name: summarize
 description: Answer the four end-of-work questions for the current stretch of work. Use when the user asks to summarize, wrap up, hand off, check in, or report status on a task, a goal, or a session, and use it before a handoff or a compaction.
 user-invocable: true
-argument-hint: "[task|goal|session] [--strict]"
+argument-hint: "[task|goal|session] [--strict] [--validation-ledger PATH]"
 ---
 
 # /summarize: the four questions, with the facts derived
@@ -51,8 +51,28 @@ repository, and your half is labelled as assertion.
    tree disagrees the verdict comes back `SUMMARY_DISAGREES` and names the
    contradiction. Fix your claim, not the check.
 
-5. With `--strict`, add `--fail-on-disagreement` and report the non-zero exit
-   as a finding rather than smoothing it over.
+5. With `--strict` the exit code carries the verdict: `1` a stated answer
+   contradicts the tree, `3` work is left, `0` nothing outstanding. Report a
+   non-zero exit as a finding rather than smoothing it over.
+
+## What went out unverified
+
+A run that checked its answers against the sources that decide them leaves a
+validation ledger. Point the summary at it:
+
+```bash
+python scripts/run_session_summary.py --scope session --validation-ledger ~/.flywheel/validation.jsonl
+```
+
+Every check short of a clean release lands under question 3, worst first, and a
+held one also raises a decision under question 4. Held is a different fact from
+unfinished: the answer was checked and it disagreed with the source that
+decides it. Claiming nothing is left while something is held comes back
+`SUMMARY_DISAGREES`.
+
+An entry carries which fields were short and what blocked them. The number an
+answer failed against stays out, so a later attempt cannot read its answer off
+the summary.
 
 ## Writing the answer
 

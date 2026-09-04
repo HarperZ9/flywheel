@@ -23,6 +23,10 @@ Three scopes set the commit window:
 ``task``     the head commit plus the working tree, for one unit of work.
 ``goal``     base..HEAD plus the working tree, for the branch.
 ``session``  the goal window plus receipts written since ``--since``.
+
+A run that checked its own output against the sources that decide it leaves a
+validation ledger, and ``--validation-ledger`` folds that into the third
+answer. What went out held is not finished work, whoever says otherwise.
 """
 from __future__ import annotations
 
@@ -31,6 +35,8 @@ import json
 from pathlib import Path
 import re
 import subprocess
+
+from .summary_validation import HOLD, read_validation, validation_answers
 
 SCHEMA = "harness.session-summary/v1"
 SCOPES = ("task", "goal", "session")
@@ -124,7 +130,7 @@ def _receipts(store_root: Path, since: str) -> list[dict[str, str]]:
 
 
 def collect_evidence(root: Path, *, scope: str, base: str = "", since: str = "",
-                     store_root: str = "") -> dict[str, object]:
+                     store_root: str = "", validation_ledger: str = "") -> dict[str, object]:
     """Everything the repository can say about this window without being told."""
     if scope not in SCOPES:
         raise ValueError(f"unknown scope: {scope}")
@@ -142,7 +148,8 @@ def collect_evidence(root: Path, *, scope: str, base: str = "", since: str = "",
             "commits": commits, "changed_files": sorted(changed),
             "worktree": _worktree(root), "upstream": _upstream(root),
             "markers": _markers(root, window) if window else [],
-            "receipts": _receipts(Path(store_root), since) if (scope == "session" and store_root) else []}
+            "receipts": _receipts(Path(store_root), since) if (scope == "session" and store_root) else [],
+            "validation": read_validation(validation_ledger, since=since) if validation_ledger else []}
 
 
 def derive_answers(evidence: dict) -> dict[str, list[str]]:
@@ -172,7 +179,10 @@ def derive_answers(evidence: dict) -> dict[str, list[str]]:
         decisions.append(f"rebase or merge {upstream['behind']} commit(s) from {upstream['ref']}")
     for marker in evidence["markers"]:
         remaining.append(f"marker added in {marker['path']}: {marker['text']}")
-    return {"intent": intent, "did": did, "remaining": remaining, "decisions": decisions}
+    from_ledger = validation_answers(list(evidence.get("validation") or []))
+    return {"intent": intent, "did": did + from_ledger["did"],
+            "remaining": remaining + from_ledger["remaining"],
+            "decisions": decisions + from_ledger["decisions"]}
 
 
 def _basis(derived: list[str], stated: list[str]) -> str:
@@ -183,29 +193,53 @@ def _basis(derived: list[str], stated: list[str]) -> str:
     return "stated" if stated else "unknown"
 
 
-def find_disagreements(derived: dict[str, list[str]], stated: dict[str, list[str]]) -> list[dict[str, str]]:
-    """Where the narrated answer claims more than the tree supports."""
+def find_disagreements(derived: dict[str, list[str]], stated: dict[str, list[str]],
+                       evidence: dict | None = None) -> list[dict[str, str]]:
+    """Where the narrated answer claims more than the tree supports.
+
+    Every class here is structural. None of them reads the prose of a stated
+    answer, because a keyword in a sentence is not evidence and a summary that
+    graded wording would fail honest writing and pass a careful liar.
+    """
     rows = []
+    facts = evidence or {}
     if stated.get("remaining") == [] and "remaining" in stated and derived["remaining"]:
         rows.append({"question": "remaining", "code": "claimed_finished_with_work_outstanding",
                      "detail": f"{len(derived['remaining'])} derived item(s) remain"})
     if stated.get("decisions") == [] and "decisions" in stated and derived["decisions"]:
         rows.append({"question": "decisions", "code": "claimed_no_decisions_with_blockers",
                      "detail": f"{len(derived['decisions'])} derived decision(s) stand"})
+    held = [row for row in (facts.get("validation") or []) if row.get("release") == HOLD]
+    if held and stated.get("remaining") == []:
+        # Held output is a different fact from unfinished work: the answer was
+        # checked and it disagreed with the source that decides it. Reporting
+        # that under the same code would let it read as one more loose end.
+        rows.append({"question": "remaining", "code": "claimed_finished_with_output_held",
+                     "detail": f"{len(held)} check(s) held: "
+                               + ", ".join(str(row.get("subject") or "no subject") for row in held[:4])})
+    worktree = dict(facts.get("worktree") or {})
+    untouched = (not facts.get("commits")
+                 and not any(worktree.get(key) for key in ("staged", "unstaged", "untracked")))
+    if stated.get("did") and facts and untouched:
+        rows.append({"question": "did", "code": "claimed_work_with_nothing_in_the_tree",
+                     "detail": f"{len(stated['did'])} stated item(s) over an empty window "
+                               f"`{facts.get('window') or 'none'}` and a clean tree"})
     return rows
 
 
 def build_session_summary(root: Path, *, scope: str, base: str = "", since: str = "",
-                          store_root: str = "", statements: dict | None = None) -> dict:
+                          store_root: str = "", validation_ledger: str = "",
+                          statements: dict | None = None) -> dict:
     """The whole record: evidence, four answers, and any contradiction between them."""
-    evidence = collect_evidence(root, scope=scope, base=base, since=since, store_root=store_root)
+    evidence = collect_evidence(root, scope=scope, base=base, since=since,
+                                store_root=store_root, validation_ledger=validation_ledger)
     derived = derive_answers(evidence)
     stated = {key: [str(item) for item in value] for key, value in (statements or {}).items() if key in derived}
     answers = []
     for key, prompt in QUESTIONS:
         answers.append({"key": key, "question": prompt, "basis": _basis(derived[key], stated.get(key, [])),
                         "derived": derived[key], "stated": stated.get(key, [])})
-    disagreements = find_disagreements(derived, stated)
+    disagreements = find_disagreements(derived, stated, evidence)
     return {"schema": SCHEMA, "scope": scope,
             "generated_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             "evidence": evidence, "answers": answers, "disagreements": disagreements,
@@ -213,7 +247,8 @@ def build_session_summary(root: Path, *, scope: str, base: str = "", since: str 
             "does_not_prove": [
                 "A derived answer reports repository state, not whether the work is correct.",
                 "A stated answer is an assertion by whoever ran this command and is not checked.",
-                "An empty disagreement list means no contradiction was tested for, not that none exists."]}
+                "An empty disagreement list means no contradiction was tested for, not that none exists.",
+                "A ledger read here reports what a check decided; it does not re-run the check."]}
 
 
 def render_markdown(summary: dict) -> str:
@@ -230,6 +265,17 @@ def render_markdown(summary: dict) -> str:
             continue
         lines += [f"- {item} (derived)" for item in answer["derived"]]
         lines += [f"- {item} (stated)" for item in answer["stated"]]
+        lines.append("")
+    rows = list(evidence.get("validation") or [])
+    if rows:
+        short = [row for row in rows if row.get("release") != "RELEASE"]
+        lines += ["## Output validation", "",
+                  f"{len(rows)} check(s) recorded, {len(short)} short of a clean release.", ""]
+        for row in short[:10]:
+            named = list(row.get("blocking") or []) or list(row.get("unresolved") or [])
+            lines.append(f"- `{row.get('release')}` {row.get('scope')}/"
+                         f"{row.get('subject') or 'no subject'}: "
+                         + (", ".join(str(item) for item in named[:4]) or "no field named"))
         lines.append("")
     if summary["disagreements"]:
         lines += ["## Disagreements", ""]

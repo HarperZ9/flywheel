@@ -886,11 +886,10 @@ def build_parser() -> argparse.ArgumentParser:
     session_summary = subparsers.add_parser("session-summary", help="emit the four-question run summary with derived evidence")
     _add_common_io(session_summary)
     session_summary.add_argument("--scope", choices=("task", "goal", "session"), default="session")
-    session_summary.add_argument("--base", default="")
-    session_summary.add_argument("--since", default="")
-    session_summary.add_argument("--receipt-store", default="")
-    session_summary.add_argument("--statements", default="")
-    session_summary.add_argument("--fail-on-disagreement", action="store_true")
+    for flag in ("--base", "--since", "--receipt-store", "--statements", "--validation-ledger"):
+        session_summary.add_argument(flag, default="")
+    for flag in ("--fail-on-disagreement", "--strict"):
+        session_summary.add_argument(flag, action="store_true")
 
     agentic = subparsers.add_parser("agentic-tasks", help="emit non-executing agentic task manifest")
     _add_common_io(agentic)
@@ -1247,11 +1246,12 @@ def build_command(args, *, repo_root: Path) -> list[str]:
     if args.command_name == "session-summary":
         command = [py, "scripts/run_session_summary.py", "--scope", args.scope]
         for flag, value in (("--base", args.base), ("--since", args.since),
-                            ("--receipt-store", args.receipt_store), ("--statements", args.statements)):
+                            ("--receipt-store", args.receipt_store), ("--statements", args.statements),
+                            ("--validation-ledger", args.validation_ledger)):
             if value:
                 command += [flag, value]
-        if args.fail_on_disagreement:
-            command.append("--fail-on-disagreement")
+        command += [flag for flag, on in (("--fail-on-disagreement", args.fail_on_disagreement),
+                                          ("--strict", args.strict)) if on]
         _common_outputs(command, args)
         return command
     if args.command_name == "agentic-tasks":

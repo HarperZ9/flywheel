@@ -68,6 +68,16 @@ empty `--remaining ""` claims nothing is left, and the verdict returns
 Fix the claim, not the check. Scopes are `task` (head commit plus working
 tree), `goal` (branch against its base), and `session` (goal plus receipts).
 
+`--validation-ledger <path>` folds the output checks recorded during the run
+into the third answer. Every entry short of a clean release is work that is
+left, worst first, and a held entry raises a decision as well. The ledger
+carries which fields were short, never the value an answer failed against.
+
+`--strict` puts the result on the exit code: `1` a stated answer contradicts
+the tree, `3` work is left, `0` nothing outstanding. Unfinished and wrong are
+separate facts, and a script that merged them would report a run with held
+output as clean.
+
 ## Hygiene
 Never commit secrets, `.env` files, tokens, or private material to this public
 repository. Verify before every commit. Branch before committing to a default
