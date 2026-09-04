@@ -230,6 +230,16 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "recommended_validation_slice": "python -m pytest tests/test_task_set_executability.py tests/test_harness_cli.py -q",
             },
             {
+                "name": "null-floor",
+                "delegates_to": "scripts/run_null_floor.py",
+                "purpose": "Score every oracle checker against candidates that did not do the task, so a pass rate has something that ought to fail it.",
+                "schemas": ["harness.null-floor-report/v1"],
+                "evidence_surface": "per-checker rejection of empty, shape, and fixture-echo submissions with the stage each was thrown out at",
+                "default_artifacts": ["C:/tmp/null_floor.json", "C:/tmp/null_floor.md"],
+                "long_running_risk": "low",
+                "recommended_validation_slice": "python -m pytest tests/test_oracle_null_floor.py tests/test_oracle_documentation_v2.py tests/test_harness_cli.py -q",
+            },
+            {
                 "name": "cross-harness",
                 "delegates_to": "scripts/run_cross_harness_manifest.py",
                 "purpose": "Expand the cross-harness adapter contract into same-task prompt hashes and provider-role planned receipt rows.",
@@ -384,25 +394,9 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
                 "delegates_to": "metadata-only readiness/profile scripts",
                 "purpose": "Emit one metadata-only preflight receipt.",
                 "targets": ["context", "tools", "model-endpoints", "model-release", "gather", "endpoint-auth", "pubscan"],
-                "schemas": [
-                    "harness.context-inventory/v1",
-                    "harness.tool-readiness/v1",
-                    "harness.model-endpoint-profiles/v1",
-                    "harness.model-release-readiness/v1",
-                    "harness.gather-readiness/v1",
-                    "harness.endpoint-auth-status/v1",
-                    "harness.pubscan-resource-profiles/v1",
-                ],
+                "schemas": ["harness.context-inventory/v1", "harness.tool-readiness/v1", "harness.model-endpoint-profiles/v1", "harness.model-release-readiness/v1", "harness.gather-readiness/v1", "harness.endpoint-auth-status/v1", "harness.pubscan-resource-profiles/v1"],
                 "evidence_surface": "metadata-only readiness receipts",
-                "default_artifacts": [
-                    "C:/tmp/context_inventory_20260709.json",
-                    "C:/tmp/tool_readiness_20260709.json",
-                    "C:/tmp/model_endpoint_profiles_20260709.json",
-                    "C:/tmp/model_release_readiness_20260709.json",
-                    "C:/tmp/gather_readiness_20260709.json",
-                    "C:/tmp/harness_endpoint_auth_status_20260709.json",
-                    "C:/tmp/pubscan_resource_profiles_20260709.json",
-                ],
+                "default_artifacts": ["C:/tmp/context_inventory_20260709.json", "C:/tmp/tool_readiness_20260709.json", "C:/tmp/model_endpoint_profiles_20260709.json", "C:/tmp/model_release_readiness_20260709.json", "C:/tmp/gather_readiness_20260709.json", "C:/tmp/harness_endpoint_auth_status_20260709.json", "C:/tmp/pubscan_resource_profiles_20260709.json"],
                 "long_running_risk": "low",
                 "recommended_validation_slice": "python -m pytest tests/test_context_inventory.py tests/test_tool_readiness_receipts.py tests/test_model_endpoint_profiles.py tests/test_model_release_readiness.py tests/test_gather_readiness.py tests/test_receipt_store_sinks.py -q",
             },
@@ -805,6 +799,10 @@ def build_parser() -> argparse.ArgumentParser:
     executability.add_argument("--require-measurable", action="store_true")
     executability.add_argument("--min-measured", type=int, default=0)
 
+    null_floor = subparsers.add_parser("null-floor", help="score the oracle checkers against candidates that did not answer")
+    _add_common_io(null_floor)
+    null_floor.add_argument("--fail-on-breach", action="store_true")
+
     cross = subparsers.add_parser("cross-harness", help="emit non-executing cross-harness manifest")
     _add_common_io(cross)
     cross.add_argument("--task-set", default="C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json")
@@ -1199,6 +1197,12 @@ def build_command(args, *, repo_root: Path) -> list[str]:
             command.append("--require-measurable")
         if args.min_measured:
             command.extend(["--min-measured", str(args.min_measured)])
+        return command
+    if args.command_name == "null-floor":
+        command = [py, "scripts/run_null_floor.py"]
+        if args.fail_on_breach:
+            command.append("--fail-on-breach")
+        _common_outputs(command, args)
         return command
     if args.command_name == "cross-harness":
         command = [

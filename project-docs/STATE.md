@@ -1,6 +1,6 @@
 # STATE — live cursor
 
-> **Canonical overview: [PROJECT.md](PROJECT.md).** This file is the running,
+> **Canonical overview: [PROJECT.md](../PROJECT.md).** This file is the running,
 > append-only work log (newest-first); PROJECT.md is the synthesized, honestly-
 > bounded picture of the whole project. Read PROJECT.md first.
 
@@ -8,7 +8,66 @@
 > Update on every material step. If context is lost: read PROJECT.md, then
 > this. (`ROADMAP.md` is the original program framing, kept for history.)
 
-Last updated: 2026-08-03
+Last updated: 2026-09-03
+
+## 2026-09-03 -- Consolidated bring-forward: 0.3.6 through 0.3.10, and what is in flight
+
+This entry is a reconstruction from the version tags and the `git log`
+between them, written 2026-09-03 to close the gap after the cursor stopped
+at 0.3.5. It is receipt-backed by the tags `v0.3.6`..`v0.3.10` and the
+commits they bound, not a contemporaneous note. The per-release entries
+below (0.3.5 and earlier) are the original append-only log, left untouched.
+
+- **0.3.6 (2026-08-04) -- the desktop app authenticates to its own engine.**
+  The app had been calling the authenticated gateway anonymously; it now
+  presents the gateway bearer token. This closes the honest non-claim left
+  open at Phase 0 (the desktop app did not yet know about the gateway token,
+  so it took 401s). (#40, #41)
+- **0.3.7 (2026-08-04) -- model switching, live eval-run receipts, suite
+  truth.** Model switching across the gateway and the app; signed eval-run
+  receipts rendered live in the app; a provider sign-in panel; suite truth
+  on Windows. (#42, #43, #44, #45)
+- **0.3.8 (2026-08-04) -- the audit layer.** A receipt-chained post-work
+  reviewer. (#46, #47)
+- **0.3.9 (2026-08-17) -- the unified evidence journey spine (Phase 2).**
+  Journey became the desktop home, rendering three lenses over one run.
+  Underneath it, a large custody and admission hardening pass: chat drafts
+  and receipt truth preserved across restarts, gateway execution plans
+  frozen and bound before they run, stale forged-plan approvals invalidated,
+  and `stop` made a terminal server action with its races closed. Phase 2
+  final acceptance is recorded under `project-docs/records/`.
+- **0.3.10 (2026-08-18) -- the desktop installer ships.** A Windows path fix
+  makes the installer correct. This release also moved the internal root
+  docs into `project-docs/` and scrubbed local paths; STATE.md itself moved
+  here in that pass, and the engine reads it from `project-docs/` with a
+  root fallback.
+
+**On main since 0.3.10 (through 2026-09-03), not yet tagged:**
+
+- The verifier-never-raises sweep. `verify()` now names a drift or
+  unverifiable verdict instead of crashing on hostile, wrongly-typed,
+  deeply-nested, non-finite, or non-utf-8 input, across receipts,
+  construction certificates, the bundle manifest, the merkle/world inclusion
+  path, the anchor path, and the Zenodo deposit path. A stranger's verifier
+  returns a verdict on any input a stranger can hand it.
+- External anchoring landed and is confirmed: the Zenodo DOI record and
+  OpenTimestamps/Bitcoin attestations (heads confirmed at named blocks, with
+  redundancy calendars). The anchor self-heals a confirmed proof stranded
+  under a pending record and re-verifies against the block header.
+- Relay is integrated as a submodule (unified CLI, installer, Docker) and is
+  a first-class destination in the desktop app.
+- A sealed offline B0 benchmark foundation.
+- Lane versions are single-sourced from the lane registry, and a broad
+  size-gate pass split oversize Dart and Python modules under the 300-line
+  file gate.
+- The README is drawn as art with the repository mark generated from a spec,
+  and README verification is bound to CI receipts. #72 fixed the STATE.md
+  canon link and archived two superseded docs.
+
+**In flight, not on main (as of 2026-09-03):** `release/0.3.11` (lane
+version parity), and active feature branches for task-set executability, a
+benchmark oracle floor, session summary, and model-boundary receipts. These
+are not shipped; do not cite them as released.
 
 ## 2026-08-04 -- Subscription sign-in (0.3.5)
 

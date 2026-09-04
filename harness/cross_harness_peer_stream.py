@@ -12,17 +12,12 @@ shape check raises MalformedProviderOutput so the attempt records malformed
 instead of an empty answer that reads like a real one.
 """
 from __future__ import annotations
-import math, shutil
+import math
 from typing import Any
 
 from .cross_harness_adapters import MalformedProviderOutput, _clean, _identity
-from .cross_harness_cli_identity import validate_executable_path
+from .cross_harness_cli_identity import resolve_binary, validate_executable_path
 from .cross_harness_types import AvailabilityResult
-
-# Shim scripts on PATH re-enter a wrapper instead of the harness under test.
-# The magic-byte check in validate_executable_path is the real gate; this
-# suffix list keeps a resolver from picking a shim when a binary sits beside it.
-_SHIM_SUFFIXES = (".ps1", ".cmd", ".bat")
 
 # A peer names its tools in its own vocabulary. _audit classifies on the words
 # read/list/grep/glob, command/shell/exec/run, mcp, and write/edit/patch/delete,
@@ -33,13 +28,6 @@ _SHIM_SUFFIXES = (".ps1", ".cmd", ".bat")
 TOOL_WORDS = {"Bash": "shell command", "BashOutput": "shell command output", "KillShell": "shell command",
               "Write": "write file", "Edit": "edit file", "NotebookEdit": "edit notebook",
               "Read": "read file", "Grep": "grep", "Glob": "glob", "TodoWrite": "write todo list"}
-
-
-def resolve_binary(candidates: tuple[str, ...]) -> str:
-    for name in candidates:
-        found = shutil.which(name)
-        if found and not found.lower().endswith(_SHIM_SUFFIXES): return found
-    return ""
 
 
 def result_event(events: list[dict[str, Any]]) -> "dict[str, Any] | None":

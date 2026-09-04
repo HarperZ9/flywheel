@@ -233,6 +233,7 @@ def _docs(context, report, texts, fixture, checked):
     return codes
 from harness.cross_harness_checkers import CHECKERS as _GRADED
 _CHECKERS = {"index_fallback_integrity/v1": _index, "shared_task_artifact/v1": _shared, "paired_friction/v1": _paired, "documentation_maintenance/v1": _docs, **_GRADED}
+from harness.cross_harness_oracles_v2 import register as _register_v2; _register_v2(_CHECKERS)  # noqa: E402  v2 imports back at call time, so it registers here rather than above
 def evaluate_task_oracle(context: OracleContext) -> OracleResult:
     checked = {}
     try:

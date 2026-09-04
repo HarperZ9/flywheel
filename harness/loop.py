@@ -28,6 +28,7 @@ from .chain import StageReceipt, append_stage, chain_to_dicts
 from .search import best_of_n, DEFAULT_TEMPS
 from .eval import ArmConfig
 from .grounding import recheck_grounding
+from .contract_stage import holds, stage_payload, validate_output
 
 
 def _short_hash(text: str) -> str:
@@ -44,6 +45,7 @@ class LoopResult:
     policy: PolicyResult | None = None
     cache_hit: bool = False
     grounding: dict | None = None
+    output: dict | None = None
 
 
 def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
@@ -58,6 +60,13 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
              search: ArmConfig | None = None,
              grounding_recheck: bool = False,
              grounding_workdirs: dict | None = None,
+             output_contract: list[dict] | None = None,
+             output_authorities: dict | None = None,
+             output_extract=None,
+             output_proof=None,
+             output_relations=(),
+             output_verify_proof: bool = False,
+             validation_ledger=None,
              pool: "VerifiedPool | None" = None,
              auto_context: bool = True) -> LoopResult:
     t0 = time.time()
@@ -212,6 +221,22 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
                      payload={"verdicts": grounding["verdicts"],
                               "reasons": grounding["reasons"]})
         accepted = accepted and grounding["verdict"] == "MATCH"
+    output = None
+    if output_contract:
+        # the second closure: a candidate can satisfy its oracle and still
+        # disagree with the source that decides its values, because nothing in
+        # the oracle asked which source governs. Held answers do not accept,
+        # on the same fail-closed rule the grounding recheck uses. A caveat is
+        # not a hold, so a contract author sets the strictness by criticality.
+        output = validate_output(
+            out.text, output_contract, output_authorities or {},
+            subject=task.task_id, ledger=validation_ledger,
+            extract=output_extract, proof=output_proof,
+            relations=output_relations, verify_proof=output_verify_proof)
+        append_stage(chain, "output", _short_hash(out.text),
+                     output["verdict"], output["release"],
+                     payload=stage_payload(output))
+        accepted = accepted and not holds(output)
     envelope.chain = chain_to_dicts(chain)
     if accepted:
         epath = Path(envelopes_dir)
@@ -228,4 +253,5 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
         pool.add_verified(task.task_id, f"envelope:{envelope.content_hash()}")
     return LoopResult(
         envelope=envelope, oracle=orc, witness=wv,
-        accepted=accepted, elapsed_s=time.time() - t0, grounding=grounding)
+        accepted=accepted, elapsed_s=time.time() - t0, grounding=grounding,
+        output=output)

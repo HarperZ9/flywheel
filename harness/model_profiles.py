@@ -4,10 +4,43 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 
 RELEASE_IDENTITY_PROVENANCE = Path(__file__).with_name("ollama-manifest-digest-provenance-v1.json")
+
+_SHA256_DIGEST = re.compile(r"^(?:sha256:)?([0-9a-f]{64})$")
+
+
+def ollama_reference(name: str) -> str:
+    """Apply Ollama's own default-tag rule before two model names are compared.
+
+    Ollama reads an untagged reference as `:latest` and always answers /api/tags
+    with the qualified name, so comparing the two literally never matches and a
+    pulled model reads as absent. The tag lives after the last slash, which keeps
+    a registry host's port from being mistaken for one.
+    """
+    text = name.strip()
+    if not text:
+        return ""
+    return text if ":" in text.rsplit("/", 1)[-1] else f"{text}:latest"
+
+
+def ollama_digest_value(digest: object) -> str:
+    """The digest's value, independent of how the daemon spelled it.
+
+    Ollama has answered with both `sha256:<hex>` and a bare `<hex>` for the same
+    manifest, so a profile recorded under one spelling fails against the other
+    while naming identical bytes. Only that prefix is normalized: anything that
+    is not a sha256 digest comes back unchanged and still fails the comparison.
+    Callers read this out of untrusted JSON, so a value that is not a string is
+    not a digest at all and is reported as absent rather than raising.
+    """
+    if not isinstance(digest, str):
+        return ""
+    match = _SHA256_DIGEST.match(digest.strip().lower())
+    return match.group(1) if match else digest.strip()
 
 MODEL_PROFILES = {
     "14b": {

@@ -143,8 +143,12 @@ def run_gate(out_dir) -> GateReport:
         oracle_stdout_excerpt=res.stdout_excerpt)
     env_path = out_dir / "gate_envelope.json"
     env_path.write_text(env.to_json(), encoding="utf-8")
+    # The name, not the absolute path. The report is a tracked artifact and it
+    # sits in the same directory as the envelope, so an absolute path adds
+    # nothing a reader needs and rewrites the file on every run from a
+    # different checkout. Hashes are what identify the envelope anyway.
     steps.append({"step": "seal", "envelope_hash": env.content_hash(),
-                  "claim_hash": env.claim_hash(), "path": str(env_path)})
+                  "claim_hash": env.claim_hash(), "path": env_path.name})
 
     verdict_of_rewitness = rewitness_envelope(env_path)
     steps.append({"step": "rewitness", "result": verdict_of_rewitness})

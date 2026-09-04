@@ -1,4 +1,13 @@
-# Flywheel
+<p align="center"><img src="docs/art/flywheel-header.svg" alt="Flywheel: run an AI task with any model, keep a record you can recheck offline." width="100%"></p>
+
+**Run an AI task with any model. Keep a record you can recheck offline.**
+
+[![PyPI](https://img.shields.io/pypi/v/flywheel-verify?style=flat-square&labelColor=14041b&color=f8cc43)](https://pypi.org/project/flywheel-verify/)
+[![license](https://img.shields.io/badge/license-FSL--1.1--MIT-8f8095?style=flat-square&labelColor=14041b)](LICENSE)
+[![CI](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml)
+[![downloads](https://img.shields.io/pypi/dm/flywheel-verify?label=downloads&style=flat-square&labelColor=14041b)](https://pypi.org/project/flywheel-verify/)
+![python: 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&labelColor=14041b)
+![deps: none (core)](https://img.shields.io/badge/core%20deps-none-success?style=flat-square&labelColor=14041b)
 
 Flywheel runs an AI task with the local or hosted model and tools you choose. It
 records the run, and optional sealed tool-call receipts can be inspected and
@@ -7,6 +16,8 @@ rechecked offline. The repository also includes a native desktop app.
 Flywheel has two parts. The Python engine routes tasks, checks tool requests,
 runs verification, writes the run ledger, and serves a local gateway. The
 Flutter client provides the native desktop interface.
+
+[Project Telos](https://harperz9.github.io) | [gather](https://github.com/HarperZ9/gather) | [crucible](https://github.com/HarperZ9/crucible) | [index](https://github.com/HarperZ9/index) | [forum](https://github.com/HarperZ9/forum) | [telos](https://github.com/HarperZ9/telos) | [learn](https://github.com/HarperZ9/learn) | [relay](https://github.com/HarperZ9/relay) | [mneme](https://github.com/HarperZ9/mneme)
 
 ## Try it
 
@@ -25,6 +36,32 @@ flywheel up
 This starts the local API gateway on `http://127.0.0.1:8799` and serves a
 browser shell there. The shell is the fallback surface for development and
 CI; the desktop app is the native one.
+
+## How a run works
+
+One task, from the moment you send it to the point where somebody who was not
+there can check it. Every stage writes a receipt, and the last stage needs no
+network and no model.
+
+<p align="center"><img src="docs/art/run-lifecycle.svg" alt="Eight stages: a task is routed to a model, the model asks for a tool, the capability check either allows it or refuses it with the reason returned to the model, the tool runs, a receipt is written, the ledger is sealed, and a later recheck reports match, changed, or unverifiable." width="100%"></p>
+
+The refusal edge is the one worth reading twice. A blocked tool request is not
+an error the run dies on: the reason goes back to the model, which can pick a
+different route. What the ledger keeps is the request, the refusal, and the
+reason, so a reader later can see what was asked for as well as what ran.
+
+## What the capability check decides
+
+Stage four reads a shell command the way a shell reads it, then names what
+the command is able to do. That name settles the decision. Seven commands
+are below with the reason each one lands where it does.
+
+<p align="center"><img src="docs/art/what-runs.svg" alt="Seven shell commands and what the capability check does with each of them. A dangerous word inside quotes is a printed string and runs, while the same word reached through a command substitution is found and blocked. A pipe records both of its capability classes even though one of them names the decision. An environment prefix does not hide the executable behind it. A command that will not parse is escalated to a person rather than admitted. The marked row is the honest gap: an executable the curated map has never seen is admitted, and written down as unknown." width="100%"></p>
+
+A denied word matters only in the executable position, so quoted text
+prints and a substitution gets walked into. The marked row is the gap this
+repository does not paper over: the map of names is curated by hand, and an
+executable it has never seen is admitted, then written down as unknown.
 
 ## Verification record
 
@@ -89,6 +126,8 @@ uplift is claimed.
 
 ## What is in this repo
 
+<p align="center"><img src="docs/schematics/architecture.svg" alt="The browser shell, the command line, curl and MCP clients all reach one gateway on localhost, which routes to a local model or an external check and writes a receipt either way, escalating only what does not pass." width="100%"></p>
+
 This monorepo contains both halves of the platform:
 
 - **`harness/`** is the Python engine. It runs tasks, checks tool requests,
@@ -137,6 +176,8 @@ flywheel lanes --probe    # live MCP handshake per lane
 
 ## Run records and sealed receipts
 
+<p align="center"><img src="docs/schematics/verified-loop.svg" alt="A local model proposes, an external check disposes, and the pair is written to a content-addressed receipt; a pass goes to the proof cache and anything that does not pass escalates." width="100%"></p>
+
 Routed runs keep a ledger containing tool names, arguments, and outputs. When
 sealed tool-call receipts are enabled, they also record:
 
@@ -148,6 +189,58 @@ sealed tool-call receipts are enabled, they also record:
 
 Optional sealed receipts form an ordered hash chain. If one receipt is invalid,
 later entries in that chain become unverifiable.
+
+## Checking an answer before it ships
+
+An assistant that rechecks its own arithmetic gets the same wrong number twice.
+So Flywheel checks a value against the source that decides it, and reports three
+outcomes rather than two: the value agrees and the answer names its source, the
+value disagrees, or nothing could confirm it.
+
+```
+flywheel check-output --contract task.contract.json --answer answer.json --allow-commands
+```
+
+Exit 0 confirmed, exit 1 disagrees, exit 3 unchecked. An unchecked value never
+reads as a confirmed one. The report also says whether the answer may ship:
+`RELEASE`, `RELEASE_WITH_CAVEAT`, or `HOLD` with the fields that blocked it.
+Inside a lane, a held answer does not accept.
+
+Tax was the example. Finance, medicine, and law each ship a pack of field
+templates for the values that go wrong the same way: a dose banded by a formulary
+rather than computed, a deadline counted in calendar days where the rule counts
+court days, an amount carried to two decimals in a currency that has none.
+
+```
+flywheel packs medicine
+```
+
+A pack ships field shapes and arithmetic and no domain data. The authorities
+stay yours to supply.
+
+The answer can arrive as the document it was written in, and the report goes
+back out as one:
+
+```
+flywheel check-output --contract c.json --answer memo.md --report review.pdf
+```
+
+Markdown, LaTeX, and PDF all carry an answer. The report is written to
+whichever of `.txt`, `.md`, `.tex`, `.pdf`, or `.json` the suffix names, and
+the PDF is byte-identical across runs so it can be hashed into a receipt.
+
+`--lean Answer.lean --verify-lean` emits the check as a Lean 4 file and runs
+the kernel on it. What the kernel settles becomes a theorem, what an outside
+authority decided becomes a named axiom, and one `#print axioms` line prints
+everything the result rests on. A kernel that refuses an obligation the report
+passed lands on the exit code.
+
+See [docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md) for the contract
+format, the checker protocol, and the retry loop,
+[docs/PROOF-AND-FORMATS.md](docs/PROOF-AND-FORMATS.md) for the document
+formats and the proof, and
+[docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md) for the packs and the
+failure classes they catch.
 
 ## Lessons from recorded failures
 
@@ -215,6 +308,9 @@ against the release's `SHA256SUMS.txt`.
 - [docs/LESSON-LOOP.md](docs/LESSON-LOOP.md): the organizational learning loop (architecture)
 - [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): the organizational learning loop (full guide and spec)
 - [docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md](docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md): Flywheel against the July 2026 agentic security convergence
+- [docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md): check an answer against the source that decides it
+- [docs/PROOF-AND-FORMATS.md](docs/PROOF-AND-FORMATS.md): Markdown, LaTeX and PDF in and out, and the check as a Lean proof
+- [docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md): the finance, medicine, and law packs, and what each catches
 - [CREDO.md](CREDO.md): the belief
 
 ## Development disclosure
