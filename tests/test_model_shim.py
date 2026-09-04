@@ -13,6 +13,7 @@ refused together and refused absent, at the argparse level.
 """
 from __future__ import annotations
 
+import json
 import socket
 import subprocess
 import sys
@@ -184,3 +185,77 @@ def test_echo_and_ollama_are_mutually_exclusive():
 def test_exactly_one_mode_is_required():
     with pytest.raises(SystemExit):
         model_shim.build_arg_parser().parse_args(["--once"])
+
+
+def _json_response(payload):
+    """A stand-in for what urlopen hands back, mocked at the urllib boundary
+    the same way the completion tests above do it. No network."""
+    body = json.dumps(payload).encode("utf-8")
+
+    class _FakeResp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self):
+            return body
+
+    return _FakeResp()
+
+# --- Ollama's implicit `latest` tag and its bare digest spelling ------------
+# Both details cost the 2026-09-03 head-to-head its two local roles. The gate
+# refused a correctly installed model twice over: once because it compared model
+# names raw against a daemon that always spells the tag out, and once because it
+# compared a bare 64-hex digest to a profile that pins the same digest with a
+# `sha256:` prefix. These pin the resolution so neither returns.
+
+@pytest.mark.parametrize("wanted,name,matches", [
+    ("flywheel-local-coder-14b", "flywheel-local-coder-14b:latest", True),
+    ("flywheel-local-coder-14b", "flywheel-local-coder-14b", True),
+    ("flywheel-local-coder-14b:v2", "flywheel-local-coder-14b:v2", True),
+    # A pinned tag still has to match. Resolving the implicit tag is not
+    # permission to accept whatever tag the daemon happens to be serving.
+    ("flywheel-local-coder-14b:v2", "flywheel-local-coder-14b:latest", False),
+    ("flywheel-local-coder-14b", "flywheel-local-coder-14b:v2", False),
+    # Nor is it a prefix match: a longer name is a different model.
+    ("flywheel-local-coder-14b", "flywheel-local-coder-14b-instruct:latest", False),
+    ("", "flywheel-local-coder-14b:latest", False),
+    ("flywheel-local-coder-14b", "", False),
+])
+def test_an_implicit_latest_tag_names_the_same_model(wanted, name, matches):
+    assert model_ollama.ollama_name_matches(wanted, name) is matches
+
+
+def test_a_digest_compares_by_its_hex_not_its_spelling():
+    hex_only = "7ff88ed3fd95eac7e79cb38a0a5ee3db39b7103a09d5a51d75fcda908522f6d8"
+    prefixed = f"sha256:{hex_only}"
+    assert model_ollama.normalize_ollama_digest(prefixed) == hex_only
+    assert model_ollama.normalize_ollama_digest(hex_only) == hex_only
+    assert model_ollama.normalize_ollama_digest(f"SHA256:{hex_only.upper()}") == hex_only
+    # Blank stays blank, so a missing digest still fails its caller's check
+    # rather than normalizing into something that compares equal to nothing.
+    assert model_ollama.normalize_ollama_digest("  ") == ""
+
+
+def test_the_daemon_digest_fetch_accepts_the_shape_a_daemon_answers_with():
+    hex_only = "a" * 64
+    payload = {"models": [
+        {"name": "some-other-model:latest", "digest": "b" * 64},
+        {"name": "flywheel-local-coder-14b:latest", "digest": hex_only},
+    ]}
+    with mock.patch.object(model_ollama.urllib.request, "urlopen",
+                           return_value=_json_response(payload)):
+        result = model_ollama.fetch_ollama_daemon_digest(
+            "flywheel-local-coder-14b", "http://127.0.0.1:11434", 5.0)
+    assert result == {"status": "FETCHED", "hex": hex_only}
+
+
+def test_a_digest_that_is_not_sha256_hex_is_still_refused():
+    payload = {"models": [{"name": "flywheel-local-coder-14b:latest", "digest": "sha256:nope"}]}
+    with mock.patch.object(model_ollama.urllib.request, "urlopen",
+                           return_value=_json_response(payload)):
+        result = model_ollama.fetch_ollama_daemon_digest(
+            "flywheel-local-coder-14b", "http://127.0.0.1:11434", 5.0)
+    assert result == {"status": "UNAVAILABLE"}

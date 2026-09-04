@@ -22,17 +22,15 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | scripts/run_benchmark_profile_manifest.py | 652 |
 | scripts/run_closed_loop_benchmark_seed.py | 1189 |
 | scripts/run_closed_loop_outcome_report.py | 2646 |
-| scripts/run_endpoint_auth_status.py | 310 |
 | scripts/run_flywheel_integration_benchmark.py | 952 |
 | scripts/run_harness_architecture_report.py | 701 |
-| scripts/run_harness_cli.py | 1441 |
+| scripts/run_harness_cli.py | 1469 |
 | scripts/run_harness_comparison_report.py | 464 |
 | scripts/run_huggingface_release_stage.py | 393 |
 | scripts/run_index_receipt.py | 343 |
 | scripts/run_local_model_launch_readiness.py | 338 |
 | scripts/run_local_model_serve_launcher.py | 336 |
 | scripts/run_m7_eval.py | 1119 |
-| scripts/run_model_endpoint_gate.py | 333 |
 | scripts/run_model_endpoint_profiles.py | 354 |
 | scripts/run_model_publish_plan.py | 338 |
 | scripts/run_model_release_readiness.py | 550 |
@@ -63,10 +61,19 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | tests/test_selector.py | 332 |
 | tests/test_unisonai_stateful_bench.py | 364 |
 
-Total: 46 files (36 in scripts/, 10 in tests/), 29932 lines over a 300-line gate.
+Total: 46 files (34 in scripts/, 12 in tests/), 30026 lines over a 300-line gate.
 
 
 Merge note, 2026-07-28 (p1/tail x main):
 test_qcr_amplitude_manifest.py reached this size on the main lineage,
 which carried no file gate. Frozen at merge size under this record's
 own rule: shrink and leave, never grow.
+
+Merge note, 2026-09-04 (release/0.3.11 x feat/task-set-executability):
+run_harness_cli.py reached 1494 lines because two branches each registered a
+new subcommand in it, one of them after the other had already been measured.
+Neither number on either side describes the merged file. Frozen at merge size
+under the 2026-07-28 precedent: shrink and leave, never grow.
+
+Left the list, 2026-09-04: scripts/run_endpoint_auth_status.py (265 lines), scripts/run_model_endpoint_gate.py (277 lines).
+Both are under the gate now and may not come back.

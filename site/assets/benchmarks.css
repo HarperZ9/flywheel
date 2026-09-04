@@ -92,6 +92,11 @@ section{padding:clamp(1.8rem,4vw,3rem) 0;border-top:1px solid var(--hairline)}
 /* A zero-width strawman bar still needs an edge, otherwise the row reads as
    missing data rather than as a system that scored nothing. */
 .bar .fill.straw{background:var(--unverifiable);min-width:3px}
+/* A refused answer that held a complete envelope anyway. Hatched rather than
+   filled, in unverifiable ink, because no checker ever read it: it is neither
+   a pass nor an absent answer, and a solid segment would claim one of those. */
+.bar .held{position:absolute;top:0;bottom:0;border-radius:3px;opacity:.6;
+  background:repeating-linear-gradient(135deg,var(--unverifiable) 0 2px,transparent 2px 5px)}
 .bar .val{position:absolute;right:.5rem;top:50%;transform:translateY(-50%);
   font-family:var(--mono);font-size:.64rem;color:var(--ink-soft);white-space:nowrap}
 /* The harness label rides inside its own fill, so it is read against the
@@ -126,3 +131,26 @@ pre.cmd{font-family:var(--mono);font-size:.78rem;background:var(--void-2);
 
 footer{padding:2.4rem 0 3.4rem;border-top:1px solid var(--hairline);
   font-family:var(--mono);font-size:.74rem;color:var(--ink-faint)}
+
+/* Head to head. The section carries two tables and a bar group, all of which
+   have to make an absence look like an absence. A missing number takes the
+   unverifiable ink, never the verdict green a measured one gets, so a reader
+   scanning the column can tell "we did not measure this" from "this is zero"
+   without reading the legend. */
+#headtohead h3{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-muted);font-weight:500;margin-top:1.9rem}
+#headtohead .tablewrap{margin-top:.8rem}
+#headtohead table{min-width:38rem}
+td.cell.unmeasured{color:var(--unverifiable)}
+/* The role name is a nowrap mono key, so the cost note under it has to opt
+   back into wrapping or a long reason pushes the table sideways. */
+td.key .why{font-family:var(--display);font-size:.74rem;color:var(--ink-faint);
+  white-space:normal;max-width:14rem;margin-top:.2rem}
+.n{display:block;font-size:.62rem;color:var(--ink-faint);font-weight:400;letter-spacing:0}
+/* A null-item elsewhere on the page marks a claim that drifted, and takes the
+   drift ink. Here it marks a measurement never taken, which is unverifiable
+   and not a discrepancy, so it takes the unverifiable ink instead. */
+#headtohead .null-item{margin-top:1rem;border-left-color:var(--unverifiable)}
+#headtohead ul.caveats{display:grid;gap:.5rem;margin-top:.9rem;list-style:none}
+#headtohead ul.caveats li{font-size:.84rem;line-height:1.55;color:var(--ink-faint);
+  padding-left:.8rem;border-left:2px solid var(--unverifiable);max-width:64ch}

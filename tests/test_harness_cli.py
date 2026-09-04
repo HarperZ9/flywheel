@@ -652,7 +652,7 @@ def test_manifest_lists_front_controller_commands_and_evidence_surfaces():
     assert manifest["schema"] == "harness.executable-manifest/v1"
     assert manifest["entrypoint"] == "harness.cmd"
     names = [row["name"] for row in manifest["commands"]]
-    assert names == ["manifest", "registry", "benchmarks", "forum-route", "mcp-health", "codex-mcp-contract", "package-doctor", "architecture-report", "enterprise-readiness", "tool-contract", "runtime-contract", "benchmark-coverage", "comparison", "execution-matrix", "schematic-drift", "session-summary", "agentic-tasks", "null-floor", "cross-harness", "adapter-runtime", "embodied-realtime", "model-card-claims", "tool-hardening", "classifier-friction", "endpoint-gate", "endpoint-launch-readiness", "serve-launch", "serve-resource", "model-publish", "plan", "seed", "outcome", "query", "readiness"]
+    assert names == ["manifest", "registry", "benchmarks", "forum-route", "mcp-health", "codex-mcp-contract", "package-doctor", "architecture-report", "enterprise-readiness", "tool-contract", "runtime-contract", "benchmark-coverage", "comparison", "execution-matrix", "schematic-drift", "session-summary", "agentic-tasks", "task-set-executability", "null-floor", "cross-harness", "adapter-runtime", "embodied-realtime", "model-card-claims", "tool-hardening", "classifier-friction", "endpoint-gate", "endpoint-launch-readiness", "serve-launch", "serve-resource", "model-publish", "plan", "seed", "outcome", "query", "readiness"]
     readiness = [row for row in manifest["commands"] if row["name"] == "readiness"][0]
     assert "model-endpoints" in readiness["targets"]
     assert "model-release" in readiness["targets"]
