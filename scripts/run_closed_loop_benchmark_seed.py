@@ -953,7 +953,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--artifact-dir", default="")
     parser.add_argument("--workspace-root", default="C:/dev")
     parser.add_argument("--index-root", default="C:/dev/public/index")
-    parser.add_argument("--index-context-root", default="C:/dev/local-model")
+    parser.add_argument("--index-context-root", default="C:/dev/public/flywheel")
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--out", default="")
     parser.add_argument("--run-title", default="closed-loop benchmark seed")
@@ -967,7 +967,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cross-harness-gate-run-id", default="")
     parser.add_argument("--cross-harness-max-gate-age-seconds", type=int, default=900)
     parser.add_argument("--cross-harness-source-commit", default="")
-    parser.add_argument("--cross-harness-source-root", default="C:/dev/local-model")
+    parser.add_argument("--cross-harness-source-root", default="C:/dev/public/flywheel")
     parser.add_argument("--cross-harness-attempt-timeout-seconds", type=int, default=300)
     parser.add_argument("--forum-route-text", action="append", default=[])
     parser.add_argument("--mcp-tool-health-tools", default="index,forum,telos,gather,crucible,aleph,mneme,relay,plexus,pubscan,local-model")
@@ -978,9 +978,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--context-roots",
         default=(
-            "C:/dev/local-model/.scratch;"
-            "C:/dev/local-model/scratch;"
-            "C:/dev/local-model/artifacts;"
+            "C:/dev/public/flywheel/.scratch;"
+            "C:/dev/public/flywheel/scratch;"
+            "C:/dev/public/flywheel/artifacts;"
             "C:/tmp;"
             "C:/Users/Zain/.codex;"
             "C:/Users/Zain/.claude;"
@@ -995,29 +995,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--tool-readiness-tool-root", action="append", default=["aleph=C:/dev/aleph"])
     parser.add_argument("--model-release-models", default="14B,32B")
     parser.add_argument("--model-release-base-root", default="E:/local-model-run")
-    parser.add_argument("--model-release-artifact-roots", default="C:/dev/local-model/artifacts;C:/tmp")
+    parser.add_argument("--model-release-artifact-roots", default="C:/dev/public/flywheel/artifacts;C:/tmp")
     parser.add_argument("--model-release-max-entries", type=int, default=200)
     parser.add_argument("--model-publish-name-prefix", default="Flywheel-Local-Coder")
     parser.add_argument("--model-endpoint-gate-timeout-seconds", type=float, default=30.0)
     parser.add_argument("--gather-readiness-root", default="C:/dev/public/gather")
-    parser.add_argument("--gather-readiness-config-roots", default="C:/dev/local-model/configs")
+    parser.add_argument("--gather-readiness-config-roots", default="C:/dev/public/flywheel/configs")
     parser.add_argument("--gather-readiness-config-pattern", default="gather-*.json")
     parser.add_argument("--gather-readiness-credential-vars", default="GATHER_DISCORD_BOT_TOKEN,DISCORD_TOKEN")
     parser.add_argument("--gather-readiness-max-configs", type=int, default=100)
     parser.add_argument("--benchmark-profile-providers", default="serve,codex,ollama,claude,opencode,dry")
-    parser.add_argument("--benchmark-profile-artifact-roots", default="C:/tmp;C:/dev/local-model/artifacts")
+    parser.add_argument("--benchmark-profile-artifact-roots", default="C:/tmp;C:/dev/public/flywheel/artifacts")
     parser.add_argument("--benchmark-profile-max-artifacts", type=int, default=200)
-    parser.add_argument("--schematic-graph", default="C:/dev/local-model/project-docs/schematics/closed-loop-integration.graph.json")
-    parser.add_argument("--schematic-report", default="C:/dev/local-model/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md")
-    parser.add_argument("--agentic-task-set", default="C:/dev/local-model/benchmarks/agentic-task-set-v1.json")
-    parser.add_argument("--agentic-task-adapter", default="C:/dev/local-model/benchmarks/agentic-task-set-adapter-v1.json")
+    parser.add_argument("--schematic-graph", default="C:/dev/public/flywheel/project-docs/schematics/closed-loop-integration.graph.json")
+    parser.add_argument("--schematic-report", default="C:/dev/public/flywheel/project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md")
+    parser.add_argument("--agentic-task-set", default="C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json")
+    parser.add_argument("--agentic-task-adapter", default="C:/dev/public/flywheel/benchmarks/agentic-task-set-adapter-v1.json")
     parser.add_argument("--agentic-task-provider-roles", default="dry")
-    parser.add_argument("--cross-harness-contract", default="C:/dev/local-model/benchmarks/cross-harness-adapter-contract-v2.json")
+    parser.add_argument("--cross-harness-contract", default="C:/dev/public/flywheel/benchmarks/cross-harness-adapter-contract-v2.json")
     parser.add_argument("--cross-harness-provider-roles", default="codex_harness,flywheel_harness,claude_code,opencode,local_14b,local_32b,dry")
-    parser.add_argument("--embodied-realtime-contract", default="C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json")
+    parser.add_argument("--embodied-realtime-contract", default="C:/dev/public/flywheel/benchmarks/embodied-realtime-multimodal-v1.json")
     parser.add_argument("--embodied-realtime-providers", default="dry")
     parser.add_argument("--embodied-realtime-latency-budgets-ms", default="250,500,1000")
-    parser.add_argument("--model-card-claim-contract", default="C:/dev/local-model/benchmarks/embodied-realtime-multimodal-v1.json")
+    parser.add_argument("--model-card-claim-contract", default="C:/dev/public/flywheel/benchmarks/embodied-realtime-multimodal-v1.json")
     parser.add_argument("--model-card-claim-evidence", default="")
     parser.add_argument("--index-budget", type=int, default=12000)
     parser.add_argument(

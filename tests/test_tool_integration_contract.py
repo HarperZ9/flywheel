@@ -41,7 +41,7 @@ def test_tool_contract_markdown_lists_harness_commands(tmp_path):
         tools=["forum"],
         base_root=tmp_path,
         explicit_roots={"forum": tmp_path / "forum"},
-        package_root=Path("C:/dev/local-model/artifacts/exe"),
+        package_root=Path("C:/dev/public/flywheel/artifacts/exe"),
     )
 
     markdown = render_markdown(contract)

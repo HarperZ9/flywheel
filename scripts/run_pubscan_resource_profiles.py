@@ -464,7 +464,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pubscan-root", default="C:/dev/public/pubscan")
     parser.add_argument(
         "--render-roots",
-        default="C:/dev/public;C:/dev/tools;C:/dev/local-model",
+        default="C:/dev/public;C:/dev/tools;C:/dev/public/flywheel",
         help="semicolon-separated roots to scan for native rendering candidates",
     )
     parser.add_argument(

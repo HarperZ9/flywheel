@@ -1,7 +1,7 @@
 ﻿{
     "schema":  "harness.agentic-task-set-adapter/v1",
     "adapter_id":  "agentic_task_set_adapter_v1",
-    "source_task_set":  "C:/dev/local-model/benchmarks/agentic-task-set-v1.json",
+    "source_task_set":  "C:/dev/public/flywheel/benchmarks/agentic-task-set-v1.json",
     "planned_manifest_schema":  "harness.agentic-task-manifest/v1",
     "planned_scorecard_schema":  "harness.agentic-task-scorecard/v1",
     "purpose":  "Non-executing adapter contract for turning the custom agentic task corpus into benchmark profile, coverage, closed-loop seed, comparison, and outcome artifacts.",

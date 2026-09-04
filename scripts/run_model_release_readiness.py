@@ -506,7 +506,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models", default="14B,32B")
     parser.add_argument("--base-root", default="E:/local-model-run")
-    parser.add_argument("--artifact-roots", default="C:/dev/local-model/artifacts;C:/tmp")
+    parser.add_argument("--artifact-roots", default="C:/dev/public/flywheel/artifacts;C:/tmp")
     parser.add_argument("--endpoint-profile-artifacts", default="")
     parser.add_argument("--endpoint-gate-artifacts", default="")
     parser.add_argument("--model-root", action="append", default=[], help="override a model root as name=path")

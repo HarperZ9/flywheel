@@ -16,7 +16,7 @@ from harness.tasks_lib import materialize_all
 from harness.task import load_task
 from scripts.run_ablation import consensus_select, _infer_param_types
 
-REGISTRY = Path("C:/dev/local-model/tasks/curated/hard_v2.jsonl")
+REGISTRY = Path("C:/dev/public/flywheel/tasks/curated/hard_v2.jsonl")
 SCREEN = Path("E:/local-model-run/difficulty_screen_hard_v2_110.json")
 CONSENSUS_RESULT = Path("E:/local-model-run/selector_consensus_headroom.json")
 TEMPS = [0.0, 0.4, 0.8, 1.1]

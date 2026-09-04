@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.file_backed_store import FileBackedHarnessStore
 
 SCHEMA = "harness.package-ship-doctor/v1"
-DEFAULT_SUMMARY = Path("C:/dev/local-model/artifacts/exe/packages/local-harness-dev-local.package.json")
+DEFAULT_SUMMARY = Path("C:/dev/public/flywheel/artifacts/exe/packages/local-harness-dev-local.package.json")
 REQUIRED_BUNDLE_FILES = [
     "README.md",
     "bin/local-harness.exe",
@@ -368,7 +368,7 @@ def _store_outputs(store_root: Path, doctor: dict[str, Any], markdown: str, run_
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package-summary", default=str(DEFAULT_SUMMARY))
-    parser.add_argument("--repo-root", default="C:/dev/local-model")
+    parser.add_argument("--repo-root", default="C:/dev/public/flywheel")
     parser.add_argument("--store-root", default="C:/tmp/harness_file_store")
     parser.add_argument("--out", default="")
     parser.add_argument("--markdown-out", default="")

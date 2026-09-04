@@ -7,7 +7,7 @@ set -uo pipefail
 
 RUN=/mnt/e/local-model-run
 PY="$HOME/venv-lm/bin/python"
-SRC=/mnt/c/dev/local-model/train/qlora_cpt.py
+SRC=/mnt/c/dev/public/flywheel/train/qlora_cpt.py
 
 # Keep large caches + HF_HOME on /mnt/e (model already downloaded there).
 export HF_HOME="$RUN/hf-cache"

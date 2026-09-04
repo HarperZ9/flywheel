@@ -10,7 +10,7 @@ from typing import Any
 
 
 SCHEMA = "harness.tool-operator-guide/v1"
-DEFAULT_CONTRACT = Path("C:/dev/local-model/artifacts/exe/tool_integration_contract.local.json")
+DEFAULT_CONTRACT = Path("C:/dev/public/flywheel/artifacts/exe/tool_integration_contract.local.json")
 
 
 def _now() -> str:

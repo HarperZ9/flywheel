@@ -232,7 +232,7 @@ def _store_outputs(report: dict[str, Any], *, store_root: str, run_id: str, arti
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gather-root", default="C:/dev/public/gather")
-    parser.add_argument("--config-roots", default="C:/dev/local-model/configs")
+    parser.add_argument("--config-roots", default="C:/dev/public/flywheel/configs")
     parser.add_argument("--config-pattern", default="gather-*.json")
     parser.add_argument("--credential-vars", default="GATHER_DISCORD_BOT_TOKEN,DISCORD_TOKEN")
     parser.add_argument("--max-configs", type=int, default=100)

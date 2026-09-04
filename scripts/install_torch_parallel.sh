@@ -15,7 +15,7 @@ URL="https://download.pytorch.org/whl/cu124/torch-2.6.0%2Bcu124-cp312-cp312-win_
   echo "=== $(date) PARALLEL torch download START ==="
   for attempt in $(seq 1 6); do
     echo "--- parallel attempt $attempt ($(date)) ---"
-    "$PY" "C:/dev/local-model/scripts/download_parallel.py" \
+    "$PY" "C:/dev/public/flywheel/scripts/download_parallel.py" \
         --url "$URL" --out "$WHL_WIN" --parts-dir "$PARTS" --conns 16
     [ "$?" = "0" ] && break
     echo "retrying assembly/parts"; sleep 3
