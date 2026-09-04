@@ -1,6 +1,6 @@
 # STATE — live cursor
 
-> **Canonical overview: [PROJECT.md](PROJECT.md).** This file is the running,
+> **Canonical overview: [PROJECT.md](../PROJECT.md).** This file is the running,
 > append-only work log (newest-first); PROJECT.md is the synthesized, honestly-
 > bounded picture of the whole project. Read PROJECT.md first.
 
