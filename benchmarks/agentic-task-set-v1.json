@@ -150,6 +150,34 @@
           "surfaces": "array of objects, each {surface: string, path: string relative to the workspace root, code_refs: array of strings, each a path relative to the workspace root}"
         }
       },
+      "documentation_maintenance/v2": {
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "surfaces"
+        ],
+        "predicates": [
+          "derive four surfaces with repository-relative paths and code references",
+          "contain every reference below the task workspace",
+          "report the sha256 of every surface file and every code reference, read from the workspace",
+          "scan both artifacts with the public claim rules"
+        ],
+        "failure_codes": [
+          "fixture_surface_set_invalid",
+          "surface_set_mismatch",
+          "surface_path_invalid",
+          "code_refs_mismatch",
+          "surface_digest_missing",
+          "surface_digest_mismatch",
+          "code_ref_digest_mismatch",
+          "claim_language_violation"
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "surfaces": "array of objects, each {surface: string, path: string relative to the workspace root, code_refs: array of strings, each a path relative to the workspace root, content_sha256: 64-character lowercase hex sha256 of the surface file, code_ref_sha256s: array of the same digests, one per code_refs entry and in that order}"
+        }
+      },
       "evidence_bound_reporting/v1": {
         "required_json_fields": [
           "task_id",
