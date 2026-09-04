@@ -124,7 +124,7 @@ def _safe_relative(value: str, label: str) -> Path:
 
 _STANDARD_NAMES = {"prompt.txt", "output.txt", "tool_trace.json", "receipt.json", "metrics.json",
                    "limitations.md", "enforcement.json", "availability.json", "provider-receipt.json",
-                   "oracle.json", "resource.json", "workspace-before.json", "workspace-after.json", "benchmark-context.json"}
+                   "oracle.json", "resource.json", "workspace-before.json", "workspace-after.json", "benchmark-context.json", "rejected-output.txt"}
 _DEVICES = {"con", "prn", "aux", "nul", *(f"com{i}" for i in range(1, 10)),
             *(f"lpt{i}" for i in range(1, 10))}
 

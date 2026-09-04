@@ -93,6 +93,9 @@ class AdapterResult:
     observed_capabilities: list[str]
     policy_violations: list[str]
     model_observation_basis: str = "unknown"
+    # What the provider actually said on an attempt the harness refused to
+    # grade. Empty for a returned attempt, whose text is `output_text`.
+    rejected_output: str = ""
 
 
 class CrossHarnessAdapter(Protocol):

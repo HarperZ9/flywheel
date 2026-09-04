@@ -174,7 +174,7 @@ class DirectCodexAdapter:
         elif final_invalid: state, failure, detail = "malformed", "malformed_jsonl", "final agent message missing or malformed"
         elif process.returncode: state, failure, detail = "internal_error", "process_nonzero", process.stderr
         observed = next((event["model"] for event in reversed(events) if event.get("type") == "turn.completed" and isinstance(event.get("model"), str) and event["model"]), "")
-        return AdapterResult(state, output_text if state == "returned" else "", events, process.elapsed_ms, observed, "unsupported", failure, _clean(detail), {"inner_call_count": 1, **cli_identity_fields(self.cli_version, exe)}, {}, capabilities, violations, "structured_provider_event" if observed else "unknown")
+        return AdapterResult(state, output_text if state == "returned" else "", events, process.elapsed_ms, observed, "unsupported", failure, _clean(detail), {"inner_call_count": 1, **cli_identity_fields(self.cli_version, exe)}, {}, capabilities, violations, "structured_provider_event" if observed else "unknown", "" if state == "returned" else _clean(process.stdout))
 class CodexCliProposer:
     def __init__(self, model_ref: str, *, workspace: Path, artifact_dir: Path, timeout_seconds: float, runner: Callable = _run_process,
                  executable_resolver: Callable = _resolve_codex, clock: Callable = time.monotonic):

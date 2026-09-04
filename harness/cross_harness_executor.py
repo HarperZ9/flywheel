@@ -7,7 +7,7 @@ from harness.cross_harness_artifacts import (bind_attempt_receipt, canonical_sha
     materialize_response_envelope, preflight_artifact_root, recheck_attempt_receipt, remove_readonly_tree,
     snapshot_source_tree, validate_execution_components, write_artifact_index)
 from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle
-from harness.cross_harness_runtime_context import stage_runtime_context
+from harness.cross_harness_rejected_output import record_rejected_output; from harness.cross_harness_runtime_context import stage_runtime_context
 from harness.cross_harness_usage import recheck_inner_usage
 from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, model_observation_pair_error, sanitize_evidence,
     validate_elapsed_ms)
@@ -176,7 +176,7 @@ def execute_cross_harness_manifest(
                         "source_snapshot_sha256": before["sha256"], "input_sha256s": dict(task.get("input_sha256s", {})),
                         "execution_state": "not_started", "oracle_state": "not_run", "receipt_state": "not_emitted",
                         "raw_prompt_sha256": str(task.get("raw_prompt_sha256", "")), "raw_output_sha256": "",
-                        "raw_output_path": "", "tool_trace_path": "", "failure_class": "", "failure_detail": "", "model_observed": "", "model_observation_basis": "unknown",
+                        "raw_output_path": "", "rejected_output_path": "", "rejected_output_sha256": "", "rejected_output_bytes": 0, "rejected_output_arrived_bytes": 0, "rejected_output_truncated": False, "tool_trace_path": "", "failure_class": "", "failure_detail": "", "model_observed": "", "model_observation_basis": "unknown",
                         "metrics": {}, "limitations": ["Actual enforcement is not assumed equivalent across adapters."],
                         "policy_equivalence": "non_equivalent", "availability_evidence": dict(plan["runtime_evidence"]),
                         "planned": True, "admitted": False, "launched": False, "blocked": False})
@@ -226,7 +226,7 @@ def execute_cross_harness_manifest(
                             if result.output_text:
                                 raw = attempt / "output.txt"; raw.write_text(result.output_text, encoding="utf-8", newline=""); files[raw.name] = raw
                                 row.update(raw_output_path=str(raw), raw_output_sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
-                            elapsed_ms = validate_elapsed_ms(result.elapsed_ms)
+                            elapsed_ms = validate_elapsed_ms(result.elapsed_ms); row.update(record_rejected_output(result.rejected_output, attempt, files))
                             observation_error = model_observation_pair_error(result.model_observed, result.model_observation_basis)
                             metadata = sanitize_evidence({"usage": result.usage, "resource": result.resource_observation, "capabilities": result.observed_capabilities,
                                 "violations": result.policy_violations, "tool_trace": result.tool_trace, "model": result.model_observed, "model_observation_basis": result.model_observation_basis, "randomness": result.randomness_control, "failure_detail": result.failure_detail})
