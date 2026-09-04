@@ -165,7 +165,7 @@ def test_the_script_pools_the_scorecards_it_is_given(tmp_path):
                  "--markdown-out", str(tmp_path / "report.md"), "--quiet"]) == 0
     record = json.loads(out.read_text(encoding="utf-8"))
     assert [entry["provider_role"] for entry in record["roles"]] == ["a", "b"]
-    assert record["scorecard_paths"] == [first, second]
+    assert [entry["name"] for entry in record["scorecards"]] == ["one.json", "two.json"]
     assert (tmp_path / "report.md").read_text(encoding="utf-8").startswith("# Graded metric report")
 
 
@@ -185,3 +185,72 @@ def test_partial_cost_coverage_can_be_made_to_fail_rather_than_read_as_a_total(t
     assert main(["--scorecard", path, "--quiet"]) == 0
     assert main(["--scorecard", path, "--require-cost-coverage", "--quiet"]) == 1
     assert "partial cost coverage: a" in capsys.readouterr().err
+
+
+def test_an_ungraded_attempt_says_why_beside_its_rate():
+    """0 readable out of 7 reads as a verdict on the harness. It is not one.
+
+    The 2026-09-04 run had a harness answer a task correctly and close the
+    document with one stray brace. Without this the page would report that as
+    producing nothing readable.
+    """
+    rows = [row("codex_harness", state="pass"),
+            row("codex_harness", state="not_run"),
+            row("codex_harness", state="not_run")]
+    rows[1]["failure_class"] = "_MalformedAttempt"
+    rows[2]["failure_class"] = "timeout"
+    summary = summarize_role("codex_harness", rows)
+    assert summary["scored"] == 1 and summary["readable_rate"] == round(1 / 3, 4)
+    assert summary["unreadable_reasons"] == {
+        "refused at the envelope": 1,
+        "over the time budget": 1}
+
+
+def test_a_role_that_answered_everything_has_nothing_to_explain():
+    summary = summarize_role("a", [row("a"), row("a", state="fail")])
+    assert summary["unreadable_reasons"] == {}
+
+
+def _refused(role, path):
+    entry = row(role, state="not_run")
+    entry.update(failure_class="_MalformedAttempt", raw_output_path=path)
+    return entry
+
+
+def test_a_refused_answer_is_probed_for_whether_it_held_an_answer_at_all():
+    """A preamble in front of a complete answer is not a missing answer."""
+    reads = {"chatty.txt": 'Composing now.\n\n{"artifacts": {"a.md": "x"}}',
+             "silent.txt": "reasoning that never finished"}
+    summary = summarize_role("claude_code",
+                             [_refused("claude_code", "chatty.txt"),
+                              _refused("claude_code", "silent.txt")],
+                             reads.get)
+    assert summary["envelope_recovery"] == {"refused": 2, "held_an_envelope": 1, "unread": 0}
+
+
+def test_without_a_reader_the_question_stays_unmeasured_rather_than_zero():
+    """A report built from a scorecard alone never saw the outputs."""
+    summary = summarize_role("a", [_refused("a", "gone.txt")])
+    assert summary["envelope_recovery"] is None
+    assert summary["unreadable_reasons"] == {"refused at the envelope": 1}
+
+
+def test_the_record_says_a_recovered_envelope_was_still_refused():
+    claim = [item for item in DOES_NOT_PROVE if "still refused" in item]
+    assert claim and "does not say the answer was right" in claim[0]
+
+
+def test_the_published_record_carries_no_path_from_the_machine_that_built_it(tmp_path):
+    """A scratchpad path shipped to docs/ once, carrying a username and a run id.
+
+    The record is a published document. An absolute path on the machine that
+    produced it is unverifiable to every reader and belongs to nobody else.
+    """
+    path = _write(tmp_path, [row("a")])
+    out = tmp_path / "report.json"
+    assert main(["--scorecard", path, "--out", str(out), "--quiet"]) == 0
+    text = out.read_text(encoding="utf-8")
+    assert str(tmp_path) not in text
+    entry = json.loads(text)["scorecards"][0]
+    assert entry["name"] == "scorecard.json" and len(entry["sha256"]) == 64
+    assert entry["repo_path"] is None

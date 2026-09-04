@@ -8,6 +8,7 @@ from harness.cross_harness_artifacts import (bind_attempt_receipt, canonical_sha
     snapshot_source_tree, validate_execution_components, write_artifact_index)
 from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle
 from harness.cross_harness_rejected_output import record_rejected_output; from harness.cross_harness_runtime_context import stage_runtime_context
+from harness.cross_harness_run_seal import seal_run, write_json as _write_json
 from harness.cross_harness_usage import recheck_inner_usage
 from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, model_observation_pair_error, sanitize_evidence,
     validate_elapsed_ms)
@@ -290,11 +291,10 @@ def execute_cross_harness_manifest(
             if row["primary_outcome"] == "completed": clean.append(Path(row["workspace_root"]))
     finally:
         after = snapshot_source_tree(source)
-    if before != after: raise RuntimeError("source_tree_changed")
+    run, state = seal_run(run_root, run_id=run_id, phase=phase, rows=rows,
+                          before=before, after=after, indexed=indexed)
+    # Raised after the documents land, and the workspaces stay: a drifted tree
+    # is a fact about the run rather than a reason to lose what it paid for.
+    if state == "drift": raise RuntimeError("source_tree_changed")
     for workspace in clean: remove_readonly_tree(workspace)
-    run = {"schema": "harness.cross-harness-run-receipt/v1", "run_id": run_id, "phase": phase,
-           "rows": rows, "source_snapshot_before": before, "source_snapshot_after": after}
-    comparison = run_root / "comparison-input.json"; _write_json(comparison, {"schema": "harness.cross-harness-task-scorecard/v1", "rows": rows})
-    run_path = run_root / "run.json"; _write_json(run_path, run); indexed.extend((comparison, run_path))
-    write_artifact_index(run_root, indexed)
     return run

@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from scripts.benchmark_head_to_head import load_record
+from scripts.benchmark_head_to_head import render_markdown as head_to_head
 from scripts.benchmark_shared import CELL, lede, wrap
 
 
@@ -45,7 +47,11 @@ def render_markdown(report: dict[str, Any], doc: dict[str, Any]) -> str:
                    f"{'not scored' if straw is None else f'{straw:.0%}'} |")
     out += ["", f"Overall {acc['headline']['harness_overall']:.0%} against "
             f"{acc['headline']['strawman_overall']:.0%}. This "
-            f"{acc['non_goal']}.", "", "## Against the field", "",
+            f"{acc['non_goal']}.", ""]
+    # The comparison a reader arrives for. It sits above the declared matrix
+    # because a measurement outranks a reading of someone else's documentation.
+    out += head_to_head(load_record())
+    out += ["## Against the field", "",
             "The Flywheel column is checked against this repository every time "
             "the matrix is read. The competitor columns are dated declarations "
             f"from public documentation, read on {doc['declared_on']}, and are "

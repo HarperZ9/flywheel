@@ -23,8 +23,25 @@ from harness.graded_metric_report import (  # noqa: E402
     load_scorecard,
     render_markdown,
 )
+from harness.cross_harness_run_seal import (scorecard_limitations,  # noqa: E402
+                                            scorecard_provenance)
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def read_output(path_text: str) -> str | None:
+    """The text an attempt actually emitted, or None when there is none.
+
+    A scorecard records where an output was written, not the output itself, and
+    a record can outlive the run's artifacts. None means the file was not there
+    to read, which the report keeps apart from the file being there and empty.
+    """
+    if not path_text:
+        return None
+    try:
+        return Path(path_text).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
 
 
 def write_text(path_text: str, text: str) -> str:
@@ -70,8 +87,10 @@ def main(argv: list[str] | None = None) -> int:
     rows: list[dict] = []
     for path in args.scorecard:
         rows.extend(load_scorecard(path))
-    record = build_report(rows)
-    record["scorecard_paths"] = [str(Path(path)) for path in args.scorecard]
+    record = build_report(rows, read_output, scorecard_limitations(args.scorecard))
+    # Named and hashed rather than pathed: this record is published, and the
+    # absolute path of the machine that built it is unverifiable to its readers.
+    record["scorecards"] = scorecard_provenance(args.scorecard, ROOT)
 
     table = render_markdown(record)
     write_text(args.out, json.dumps(record, indent=2, sort_keys=True) + "\n")

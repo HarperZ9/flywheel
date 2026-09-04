@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 REPO = Path(__file__).resolve().parent.parent
 RECORD = REPO / "docs" / "benchmarks" / "report.json"
 
+from scripts.benchmark_head_to_head import load_record, section_html
 from scripts.benchmark_shared import CELL, lede
 
 
@@ -191,6 +192,8 @@ matrix, and the measurements that were not taken, for the Flywheel engine.">
     strawman is a system with no receipts, scored on the same axes.</p>
   {_bars(report)}
 </section>
+
+{section_html(load_record())}
 
 <section id="matrix">
   <h2>Against the field</h2>

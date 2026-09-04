@@ -24,7 +24,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import statistics
-from typing import Any
+from collections.abc import Iterable
+from typing import Any, Callable
+
+from harness.attempt_attribution import attribute, recovery
 
 SCHEMA = "flywheel.graded_metric_report/v1"
 SCORED_STATES = ("pass", "fail")
@@ -54,7 +57,12 @@ DOES_NOT_PROVE = [
     "coverage is not cheaper, it is unmeasured.",
     "Latency is wall clock on one machine and includes local model load time.",
     "A role that never returned a readable result has no quality numbers here, "
-    "which is a fact about this run and not a score of zero.",
+    "which is a fact about this run and not a score of zero. Why an attempt went "
+    "ungraded is reported beside it, because a malformed answer and a missing one "
+    "are different failures.",
+    "An envelope found inside a refused answer was still refused, and no checker "
+    "graded it. That it was there says the harness produced an answer, and it does "
+    "not say the answer was right.",
     "The graded metrics come from in-tree fixtures. They measure a harness "
     "against those tasks and not against a customer workload.",
 ]
@@ -107,8 +115,14 @@ def _scored(row: dict[str, Any]) -> bool:
     return row.get("oracle_state") in SCORED_STATES
 
 
-def summarize_role(role: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Efficiency for one provider role, with every denominator kept."""
+def summarize_role(role: str, rows: list[dict[str, Any]],
+                   read_text: Callable[[str], str | None] | None = None) -> dict[str, Any]:
+    """Efficiency for one provider role, with every denominator kept.
+
+    `read_text` opens the recorded output of an attempt that was refused at
+    the envelope. Without it the refusals are still counted and the question
+    of whether they held an answer stays null, which is what it is.
+    """
     launched = [row for row in rows if row.get("launched")]
     scored = [row for row in rows if _scored(row)]
     passed = sum(1 for row in scored if row.get("oracle_state") == "pass")
@@ -150,6 +164,8 @@ def summarize_role(role: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
         "cost_coverage": _rate(len(costed), len(launched)),
         "cost_usd_per_scored_attempt": cost_per_scored,
         "output_tokens_total": int(sum(tokens)) if tokens else None,
+        "unreadable_reasons": attribute(rows),
+        "envelope_recovery": recovery(rows, read_text) if read_text else None,
         "null_reasons": nulls,
         "models_observed": sorted({str(row.get("model_id") or "") for row in rows} - {""}),
     }
@@ -199,8 +215,13 @@ def summarize_checker(checker_id: str, rows: list[dict[str, Any]]) -> dict[str, 
     }
 
 
-def build_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """One record holding both halves, plus what the run cannot support."""
+def build_report(rows: list[dict[str, Any]], read_text: Callable[[str], str | None] | None = None,
+                 limitations: Iterable[str] = ()) -> dict[str, Any]:
+    """One record holding both halves, plus what the run cannot support.
+
+    `limitations` carries what the rows cannot show, such as a source tree never
+    checked. They append to the standing list, so a caller cannot drop one.
+    """
     roles = sorted({str(row.get("provider_role") or "") for row in rows} - {""})
     by_checker: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
@@ -221,10 +242,11 @@ def build_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "roles": len(roles),
             "graded_checkers": len(by_checker),
         },
-        "roles": [summarize_role(role, [row for row in rows if row.get("provider_role") == role])
+        "roles": [summarize_role(role, [row for row in rows
+                                        if row.get("provider_role") == role], read_text)
                   for role in roles],
         "checkers": [summarize_checker(name, by_checker[name]) for name in sorted(by_checker)],
-        "does_not_prove": list(DOES_NOT_PROVE),
+        "does_not_prove": [*DOES_NOT_PROVE, *limitations],
     }
 
 
