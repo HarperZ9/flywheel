@@ -3,6 +3,11 @@
     flywheel packs                 list the packs
     flywheel packs medicine        what a medical answer has to satisfy
     flywheel packs law --json      the same, for a harness to read
+    flywheel packs water.pack.json a pack declared as a document, not shipped
+
+A path is accepted wherever a name is. The domains that ship here are three and
+the domains this defect reaches are not, so a pack for one of the others is a
+document the operator writes and points at.
 
 The caution prints first in every case. A reader who takes one line from this
 command should take the line that says the pack holds no domain data, because
@@ -39,6 +44,8 @@ def listing() -> str:
     lines.append("")
     lines.append("Every pack ships field shapes and arithmetic and no domain "
                  "data. The authorities are yours to supply.")
+    lines.append("Point this at a declaration document for a domain that does "
+                 "not ship here.")
     return "\n".join(lines)
 
 
@@ -46,7 +53,8 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0],
                                      allow_abbrev=False)
     parser.add_argument("name", nargs="?", default="",
-                        help=f"one of: {', '.join(pack_names())}")
+                        help=f"one of: {', '.join(pack_names())}, or the path "
+                             f"to a pack declaration")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
@@ -56,7 +64,9 @@ def main(argv=None) -> int:
     try:
         text = (json.dumps(as_json(args.name), indent=2) if args.json
                 else pack_report(load_pack(args.name)))
-    except LookupError as exc:
+    except (LookupError, ValueError) as exc:
+        # A declaration that broke a rule prints the rule it broke. Printing a
+        # traceback here would bury the one line the author needs.
         print(str(exc))
         return 2
     print(text)

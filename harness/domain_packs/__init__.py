@@ -23,30 +23,58 @@ load-bearing one.
 
 The last call is the one that earns the package. It answers "what does nothing
 in this system actually check" before an attempt is made, rather than after.
+
+Three domains ship here and the defect reaches many more. A pack for one of the
+others is a document, loaded by the same call:
+
+    pack = load_pack("plant/water-treatment.pack.json")
+
+The module `declared` carries the rules such a document has to satisfy, and the
+one that matters is that it may not carry a value. Read it for why.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 from . import finance, law, medicine, units
+from .declared import SCHEMA, declared_pack, read_pack
 from .pack import Pack, Template, contract_from, field_spec, unsupplied
 
 PACKS: dict[str, Pack] = {p.name: p for p in
                           (finance.PACK, medicine.PACK, law.PACK)}
 
-__all__ = ["PACKS", "Pack", "Template", "contract_from", "field_spec",
-           "load_pack", "pack_names", "pack_report", "unsupplied", "units",
-           "finance", "medicine", "law"]
+__all__ = ["PACKS", "SCHEMA", "Pack", "Template", "contract_from",
+           "declared_pack", "field_spec", "load_pack", "pack_names",
+           "pack_report", "read_pack", "unsupplied", "units", "finance",
+           "medicine", "law"]
 
 
 def pack_names() -> list[str]:
     return sorted(PACKS)
 
 
-def load_pack(name: str) -> Pack:
+def _is_document(name: str) -> bool:
+    if name.endswith(".json"):
+        return True
     try:
+        return Path(name).is_file()
+    except (OSError, ValueError):
+        return False
+
+
+def load_pack(name: str) -> Pack:
+    """A pack by name, or a pack declared in a document at that path.
+
+    A path is accepted anywhere a name is, so a domain this package has never
+    heard of reaches every call site without a registry to mutate first. The
+    shipped names go down with it, so a document cannot take one of them.
+    """
+    if name in PACKS:
         return PACKS[name]
-    except KeyError:
-        raise LookupError(f"no domain pack named {name!r}; "
-                          f"known: {pack_names()}") from None
+    if _is_document(name):
+        return read_pack(name, shipped=PACKS)
+    raise LookupError(f"no domain pack named {name!r}; known: {pack_names()}, "
+                      f"or the path to a {SCHEMA} document")
 
 
 def pack_report(pack: Pack) -> str:

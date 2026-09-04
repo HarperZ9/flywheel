@@ -90,6 +90,34 @@ court calendar. Every authority is still yours to supply, and a critical field
 with nothing behind it comes back unchecked, which holds the answer. Run
 `flywheel packs` to see what each one declares and what it refuses to decide.
 
+Three domains ship, and the defect reaches many more. Water treatment reads a
+dosing table. A grid study reads an ampacity table with a correction applied.
+An emissions report reads a global warming potential that changed between
+assessment reports. For a domain that does not ship here, write the pack as a
+document and point at it:
+
+```bash
+flywheel packs plant/water-treatment.pack.json
+```
+
+```json
+{"schema": "flywheel.domain-pack-declaration/v1",
+ "name": "water-treatment",
+ "describes": "coagulant dose, disinfectant residual, contact time",
+ "caution": "This pack holds no treatment data and decides no limit.",
+ "templates": {
+   "dose": {"authority": "TABLE", "method": "plant-jar-test-table",
+            "catches": "a dose computed from turbidity where the plant tables it"}}}
+```
+
+The path works anywhere a pack name works. A declaration may not carry a value,
+so a `maximum`, a `rate`, a `limit`, or a `table` inside it is refused: that
+would be a pack deciding the thing the authority is supposed to decide. Every
+template has to say what it catches, because one that cannot is a template no
+reviewer can argue with. A declaration may not take a shipped pack's name
+either, or a reader could not tell which one decided their contract.
+`examples/output-validation/water-treatment.pack.json` is a worked one.
+
 ## The answer
 
 Each field carries its value and the source it came from.
