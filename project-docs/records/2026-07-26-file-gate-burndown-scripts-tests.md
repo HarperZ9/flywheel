@@ -25,7 +25,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | scripts/run_endpoint_auth_status.py | 310 |
 | scripts/run_flywheel_integration_benchmark.py | 952 |
 | scripts/run_harness_architecture_report.py | 701 |
-| scripts/run_harness_cli.py | 1527 |
+| scripts/run_harness_cli.py | 1441 |
 | scripts/run_harness_comparison_report.py | 464 |
 | scripts/run_huggingface_release_stage.py | 393 |
 | scripts/run_index_receipt.py | 343 |
