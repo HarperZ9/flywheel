@@ -42,6 +42,7 @@ VERIFIER_ENTRY_POINTS = [
     "merkle",           # the tree a stranger recomputes
     "bundle",           # what a stranger is handed and checks
     "contest",          # how a stranger disagrees on the record
+    "byte_witness_verify",  # the byte witness a stranger rechecks against the bytes
     # The certificate checkers ARE the accept path for the construction
     # families, and none of them were listed. Relative imports inside the
     # package resolved to bare names with no file at harness/ level, so the
