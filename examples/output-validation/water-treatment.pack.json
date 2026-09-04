@@ -1,0 +1,42 @@
+{
+  "schema": "flywheel.domain-pack-declaration/v1",
+  "name": "water-treatment",
+  "describes": "drinking water answers: coagulant dose, disinfectant residual, contact time",
+  "caution": "This pack is not a treatment authority and holds no treatment data. It carries no jar-test results, no residual limits, no CT tables and no plant constants. Every value comes from an authority the operator supplies and can name in a report. What the pack contributes is that a critical field with nothing behind it holds the answer instead of reading as a checked one.",
+  "templates": {
+    "dose": {
+      "authority": "TABLE",
+      "criticality": "critical",
+      "method": "plant-jar-test-table",
+      "describes": "a coagulant dose the plant's own table decides",
+      "catches": "a dose computed from raw water turbidity where the plant tables it against the jar test"
+    },
+    "dose_unit": {
+      "authority": "UNIT",
+      "criticality": "critical",
+      "unit": "mg/L",
+      "describes": "the unit the dose is stated in",
+      "catches": "grams per litre reported where milligrams per litre were meant"
+    },
+    "residual": {
+      "authority": "BOUND",
+      "criticality": "critical",
+      "describes": "whether the disinfectant residual sits inside the permitted band",
+      "catches": "an arithmetically correct residual that is below the floor the permit sets"
+    },
+    "contact_time": {
+      "authority": "RECOMPUTE",
+      "criticality": "critical",
+      "method": "ct-with-baffling-factor",
+      "tolerance": 0.01,
+      "describes": "contact time recomputed by the method the permit names",
+      "catches": "a basin volume used whole where the baffling factor reduces it"
+    },
+    "sample_point": {
+      "authority": "CITED",
+      "criticality": "standard",
+      "describes": "where in the plant the reading was taken",
+      "catches": "a compliant reading taken at a point the permit does not accept"
+    }
+  }
+}
