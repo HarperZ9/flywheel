@@ -32,12 +32,12 @@ archived and read-only; nothing lands there.
   declare one version; `tests/test_version_alignment.py` fails on drift.
 
 ## Gates that must stay green (run before a commit that touches them)
-- `python scripts/check_file_gate.py` — no file over 300 lines; the burn-down only shrinks.
-- `python scripts/check_verifier_stdlib.py` — the accept path imports no third party.
-- `python scripts/check_claim_language.py` — no optimality claim on a public surface.
-- `python scripts/check_public_instructions.py` — published instruction files stand alone.
-- `python -m harness.cli_entry gate` — the disproof gate reaches PASS / rewitness MATCH.
-- `python -m pytest tests/ -q` — the full suite. CI runs a curated slice plus the
+- `python scripts/check_file_gate.py`: no file over 300 lines. The burn-down only shrinks.
+- `python scripts/check_verifier_stdlib.py`: the accept path imports no third party.
+- `python scripts/check_claim_language.py`: no optimality claim on a public surface.
+- `python scripts/check_public_instructions.py`: published instruction files stand alone.
+- `python -m harness.cli_entry gate`: the disproof gate reaches PASS / rewitness MATCH.
+- `python -m pytest tests/ -q`: the full suite. CI runs a curated slice plus the
   whole suite; a slice cannot catch a regression in a file it does not name, so
   the whole-suite job is the real gate.
 - `flutter analyze` and `flutter test` in `desktop/` for client changes; CI
