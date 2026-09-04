@@ -58,6 +58,37 @@ archived and read-only; nothing lands there.
   labelled unchecked. Agreement with no source named is `UNVERIFIABLE`, not a
   pass. Rechecking your own arithmetic is not a check.
 
+## Evidence, insight, and useful work
+A standing rule across planning, research, implementation, testing, review, writing,
+product decisions, demonstrations, and outreach.
+
+Optimize for the real objective, not for looking successful. Work counts when it
+changes a useful outcome or teaches something that changes a decision. Activity,
+polished prose, a large tool catalog, and green checks do not stand in for that
+result.
+
+- Start with the problem: who needs it, which decision or workflow it improves, and
+  why that matters. Add tools only where they help.
+- Separate exploration, validation, and delivery. Never present an exploratory
+  finding as an established result.
+- Insight over counts. A decisive experiment beats many weak demonstrations. Test
+  totals, repository count, and lines of code are not value.
+- Check the checks. Ask how a passing verifier could accept a wrong result. A valid
+  receipt is not semantic truth, model agreement is not independent ground truth,
+  and an enforced restriction is not a disposition. Keep false-success controls.
+- Keep claims bounded. Separate observed, inferred, proposed, and unknown; and
+  built, tested, merged, released, deployed, adopted, and paid for. Preserve
+  negative results and challenge unsupported conclusions, including your own.
+- State the tradeoff: expected benefit, failure modes, capability spillover, misuse
+  exposure, and release boundary.
+- Communicate for the reader. Lead with the problem, result, or decision; put the
+  essential limit beside the claim; numbers explain, not impress.
+- Spend effort where it changes the outcome. Verification matches risk and claim
+  scope.
+
+This does not override authorization, privacy, legal, disclosure, or release
+requirements. Apply it to your own work first.
+
 ## Validating an answer before it reaches a reader
 A model that rechecks its own work re-derives the same wrong number. The case
 this was built from is public: a frontier demo filled out a Form 1040 and took
