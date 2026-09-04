@@ -63,6 +63,9 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
              output_contract: list[dict] | None = None,
              output_authorities: dict | None = None,
              output_extract=None,
+             output_proof=None,
+             output_relations=(),
+             output_verify_proof: bool = False,
              validation_ledger=None,
              pool: "VerifiedPool | None" = None,
              auto_context: bool = True) -> LoopResult:
@@ -228,7 +231,8 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
         output = validate_output(
             out.text, output_contract, output_authorities or {},
             subject=task.task_id, ledger=validation_ledger,
-            extract=output_extract)
+            extract=output_extract, proof=output_proof,
+            relations=output_relations, verify_proof=output_verify_proof)
         append_stage(chain, "output", _short_hash(out.text),
                      output["verdict"], output["release"],
                      payload=stage_payload(output))

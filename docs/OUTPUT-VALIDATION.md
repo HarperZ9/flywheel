@@ -70,6 +70,26 @@ A runnable version of the case above, with the contract, both answers, and the
 checker program, is in
 [examples/output-validation](../examples/output-validation/README.md).
 
+## Documents in, documents out, and a proof
+
+`--answer` also reads the answer out of the document it arrived in: a
+`flywheel-answer` fence in Markdown, a `flywheelanswer` environment in LaTeX,
+or the stream a Flywheel PDF carries. `--report review.pdf` writes the report
+back out in whichever of `.txt`, `.md`, `.tex`, `.pdf`, or `.json` the suffix
+names.
+
+```bash
+flywheel check-output --contract c.json --answer memo.md --report review.pdf
+```
+
+`--lean Answer.lean --verify-lean` emits the same check as a Lean 4 file and
+hands it to the kernel. Deterministic obligations become theorems closed `by
+decide`, every value an outside authority decided enters as a named axiom, and
+`#print axioms confirmed` prints the whole trust surface in one line. The
+report and the file are two readings of one answer built from different code,
+so a kernel that refuses an obligation the report passed is the finding.
+[PROOF-AND-FORMATS.md](PROOF-AND-FORMATS.md) covers all of it.
+
 ## The contract
 
 The contract lists every value a reader will act on and names what decides each

@@ -1,13 +1,32 @@
 {
   "fields": [
-    {"name": "taxable_income", "authority": "CITED", "source": "the return",
-     "describes": "Form 1040 line 15"},
-    {"name": "tax", "authority": "TABLE", "source": "irs-2025-tax-table-single",
-     "describes": "Form 1040 line 16"}
+    {
+      "name": "taxable_income",
+      "authority": "CITED",
+      "source": "the return",
+      "describes": "Form 1040 line 15"
+    },
+    {
+      "name": "tax",
+      "authority": "TABLE",
+      "source": "irs-2025-tax-table-single",
+      "describes": "Form 1040 line 16"
+    }
   ],
   "authorities": {
-    "the return": {"kind": "citation"},
-    "irs-2025-tax-table-single": {"kind": "command",
-                                  "argv": ["python", "tax_table.py"]}
-  }
+    "the return": {
+      "kind": "citation"
+    },
+    "irs-2025-tax-table-single": {
+      "kind": "command",
+      "argv": [
+        "python",
+        "tax_table.py"
+      ]
+    }
+  },
+  "relations": [
+    "0 <= tax",
+    "tax <= taxable_income"
+  ]
 }

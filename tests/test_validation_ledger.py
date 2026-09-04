@@ -11,7 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from harness.contract_stage import answer_from, holds, stage_payload, validate_output
+from harness.contract_stage import (answer_from, holds, stage_payload,
+                                    validate_output)
 from harness.contract_terms import CRITICAL, HOLD, RELEASE, RELEASE_WITH_CAVEAT
 from harness.loop import run_loop
 from harness.oracle import PytestOracle

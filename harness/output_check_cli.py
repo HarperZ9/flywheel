@@ -11,6 +11,18 @@ Usage:
     python scripts/run_output_check.py --contract task.contract.json \\
         --answer answer.json [--allow-commands] [--out report.json] [--json]
 
+The answer may arrive as `.json`, or inside the document it was written in:
+a `flywheel-answer` fence in Markdown, a `flywheelanswer` environment in LaTeX,
+or the attached stream a Flywheel PDF carries. The report goes back out in any
+of `.txt`, `.md`, `.tex`, `.pdf` or `.json` with `--report`, chosen by suffix.
+
+`--lean` writes the check as a Lean 4 file: the contract's arithmetic and its
+method and source mandates as obligations a kernel settles, and every value an
+outside source decided as a named axiom, so `#print axioms confirmed` lists
+what the answer rests on. `--verify-lean` runs `lean` on it. A kernel that
+refuses an obligation the report passed is a disagreement between two readings
+of one answer, and it lands on the exit code.
+
 A contract is one document holding both halves, so a task can ship its own
 checks:
 
@@ -52,15 +64,24 @@ import argparse
 import json
 from pathlib import Path
 
+from .answer_docs import DocumentError, read_answer
 from .authority_registry import build_authorities
 from .contract_feedback import feedback
 from .contract_terms import HOLD
 from .domain_packs import field_spec, load_pack
 from .output_contract import check_answer, new_contract
+from .proof_lean import lean_source
+from .proof_relations import RelationError
+from .proof_run import prove
+from .report_docs import as_text as render
+from .report_docs import write_report
 from .validation_ledger import TASK, record
 from .verdict import Verdict
 
 EXIT = {Verdict.PASS.value: 0, Verdict.FAIL.value: 1, Verdict.UNVERIFIABLE.value: 3}
+# Worst wins. The report and the Lean file are two readings of one answer, and
+# a run is only as sound as the weaker of them.
+SEVERITY = {Verdict.PASS.value: 0, Verdict.UNVERIFIABLE.value: 1, Verdict.FAIL.value: 2}
 
 
 def load(path: Path) -> dict:
@@ -96,23 +117,22 @@ def check(contract_doc: dict, answer: dict, *, base_dir, allow_commands: bool) -
     return report
 
 
-def render(report: dict) -> str:
-    """The report as a person reads it.
-
-    Ordered worst first. A reader who stops after one line should have stopped
-    on the field that decides the run, not on whichever one came first in the
-    contract.
-    """
-    rank = {Verdict.FAIL.value: 0, Verdict.UNVERIFIABLE.value: 1, Verdict.PASS.value: 2}
-    lines = [f"{report['verdict']}  {report['passed']} of {report['checked']} "
-             f"fields confirmed",
-             f"{report['release']}" + (f"  blocked by: {', '.join(report['blocking'])}"
-                                        if report["blocking"] else "")]
-    for row in sorted(report["fields"], key=lambda r: rank[r["verdict"]]):
-        lines.append(f"  {row['verdict']:<13} {row['field']}: {row['reason']}")
-    for item in report["next"]["fields"]:
-        lines.append(f"  next: {item['field']}: {item['do']}")
-    return "\n".join(lines)
+def _proof(parser, args, contract_doc: dict, report: dict, answer: dict) -> dict:
+    """The Lean file, written and then checked if the caller asked for that."""
+    try:
+        source = lean_source(report, answer, specs(contract_doc),
+                             relations=contract_doc.get("relations") or ())
+    except RelationError as exc:
+        # A relation the contract states and this module will not turn into a
+        # claim is an authoring error in the contract, not a finding about the
+        # answer. It exits like the usage error it is.
+        parser.error(f"--contract {args.contract}: {exc}")
+    if args.verify_lean:
+        return prove(source, args.lean, lean=args.lean_bin or None)
+    args.lean.write_text(source, encoding="utf-8")
+    return {"verdict": Verdict.UNVERIFIABLE.value, "checker": "", "axioms": [],
+            "errors": [], "file": str(args.lean),
+            "reason": "written, not checked; pass --verify-lean to run the kernel"}
 
 
 def main(argv=None) -> int:
@@ -131,7 +151,21 @@ def main(argv=None) -> int:
                         help="where relative authority paths resolve from. "
                              "Defaults to the contract's own directory, so a "
                              "task and its checkers travel together.")
-    parser.add_argument("--out", type=Path, default=None)
+    parser.add_argument("--out", type=Path, default=None,
+                        help="write the report as JSON here.")
+    parser.add_argument("--report", type=Path, default=None,
+                        help="write the report in the format this path asks "
+                             "for: .txt, .md, .tex, .pdf or .json. A PDF "
+                             "carries the answer as an attachment, so the page "
+                             "and the values it vouches for travel together.")
+    parser.add_argument("--lean", type=Path, default=None,
+                        help="write the check as a Lean 4 file.")
+    parser.add_argument("--verify-lean", action="store_true",
+                        help="run `lean` on that file. Without it the file is "
+                             "written and not checked, which is unverified "
+                             "rather than confirmed.")
+    parser.add_argument("--lean-bin", default="",
+                        help="which lean to run. Defaults to the one on PATH.")
     parser.add_argument("--ledger", type=Path, default=None,
                         help="append this check to a validation ledger, so the "
                              "goal and session scopes can read it later. "
@@ -149,22 +183,37 @@ def main(argv=None) -> int:
 
     contract_doc = load(args.contract)
     base_dir = args.base_dir or args.contract.resolve().parent
-    report = check(contract_doc, load(args.answer), base_dir=base_dir,
+    try:
+        answer = read_answer(args.answer)
+    except (DocumentError, ValueError) as exc:
+        parser.error(f"--answer {args.answer}: {exc}")
+    report = check(contract_doc, answer, base_dir=base_dir,
                    allow_commands=args.allow_commands)
+    if args.lean or args.verify_lean:
+        report["proof"] = _proof(parser, args, contract_doc, report, answer)
 
     if args.ledger or args.scope or args.subject:
         record(report, scope=args.scope or TASK, subject=args.subject,
                path=args.ledger)
 
-    text = json.dumps(report, indent=2) if args.json else render(report)
-    print(text)
+    print(json.dumps(report, indent=2) if args.json else render(report))
     if args.out:
         args.out.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    if args.report:
+        try:
+            write_report(report, args.report, answer=answer)
+        except ValueError as exc:
+            parser.error(f"--report {args.report}: {exc}")
     if args.strict and report["release"] != "RELEASE":
         # A held or caveated answer is not a clean exit for a caller that
         # cannot carry a caveat. The verdict is unchanged; only the exit is.
         return 1 if report["release"] == HOLD else 3
-    return EXIT[report["verdict"]]
+    verdict = report["verdict"]
+    if args.verify_lean and SEVERITY[report["proof"]["verdict"]] > SEVERITY[verdict]:
+        # The kernel disagreeing with the report is the finding the second
+        # reading exists to produce. It cannot make a run cleaner, only worse.
+        verdict = report["proof"]["verdict"]
+    return EXIT[verdict]
 
 
 if __name__ == "__main__":

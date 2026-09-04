@@ -88,6 +88,15 @@ From a checkout, `python scripts/run_output_check.py` takes the same flags.
 - Read the `release` line as well as the verdict. `HOLD` means a field
   disagreed or a critical field went unchecked, and the answer does not ship.
   `--strict` puts that on the exit code.
+- `--answer` reads Markdown, LaTeX, and Flywheel PDF as well as JSON, from a
+  `flywheel-answer` fence, a `flywheelanswer` environment, or the attached
+  stream. Prose is never mined for values. `--report review.pdf` writes the
+  report back out in the format the suffix names.
+- `--lean Answer.lean --verify-lean` emits the check as a Lean 4 file and runs
+  the kernel on it. Read `#print axioms confirmed`: it names everything the
+  result rests on, and `sorryAx` in that list means an obligation did not
+  close. A kernel that refuses what the report passed takes the exit code with
+  it. Without Lean installed the proof is `UNVERIFIABLE`, never `PASS`.
 - For a financial, medical, or legal answer, name a domain pack and use its
   templates rather than inventing field shapes. `flywheel packs` lists them. A
   pack holds no domain data, so the authorities are still yours to supply.

@@ -163,9 +163,29 @@ flywheel packs medicine
 ```
 
 A pack ships field shapes and arithmetic and no domain data. The authorities
-stay yours to supply. See
-[docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md) for the contract format,
-the checker protocol, and the retry loop, and
+stay yours to supply.
+
+The answer can arrive as the document it was written in, and the report goes
+back out as one:
+
+```
+flywheel check-output --contract c.json --answer memo.md --report review.pdf
+```
+
+Markdown, LaTeX, and PDF all carry an answer. The report is written to
+whichever of `.txt`, `.md`, `.tex`, `.pdf`, or `.json` the suffix names, and
+the PDF is byte-identical across runs so it can be hashed into a receipt.
+
+`--lean Answer.lean --verify-lean` emits the check as a Lean 4 file and runs
+the kernel on it. What the kernel settles becomes a theorem, what an outside
+authority decided becomes a named axiom, and one `#print axioms` line prints
+everything the result rests on. A kernel that refuses an obligation the report
+passed lands on the exit code.
+
+See [docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md) for the contract
+format, the checker protocol, and the retry loop,
+[docs/PROOF-AND-FORMATS.md](docs/PROOF-AND-FORMATS.md) for the document
+formats and the proof, and
 [docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md) for the packs and the
 failure classes they catch.
 
@@ -236,6 +256,7 @@ against the release's `SHA256SUMS.txt`.
 - [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): the organizational learning loop (full guide and spec)
 - [docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md](docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md): Flywheel against the July 2026 agentic security convergence
 - [docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md): check an answer against the source that decides it
+- [docs/PROOF-AND-FORMATS.md](docs/PROOF-AND-FORMATS.md): Markdown, LaTeX and PDF in and out, and the check as a Lean proof
 - [docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md): the finance, medicine, and law packs, and what each catches
 - [CREDO.md](CREDO.md): the belief
 

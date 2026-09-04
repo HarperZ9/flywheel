@@ -135,6 +135,43 @@ answers the narrower question of whether the answer may go to the reader:
 verdict alone would have exited `3`. Use it from a script that cannot carry a
 caveat in its head.
 
+## When the answer lives in a document
+
+`--answer` takes `.md`, `.tex`, and `.pdf` as well as `.json`. It reads a
+fenced block tagged `flywheel-answer`, a `flywheelanswer` environment, or the
+JSON stream a Flywheel PDF carries. Tag the block when you write the document,
+because an untagged memo with several code blocks makes the reader guess.
+
+Prose is never mined. A sentence stating the number is not a field, and asking
+the check to read one would be asking it to guess.
+
+`--report review.pdf` writes the report back into a document. The suffix picks
+the format from `.txt`, `.md`, `.tex`, `.pdf`, and `.json`. The PDF is
+byte-identical across runs and carries the answer it vouches for inside it.
+
+## When you want a proof
+
+```bash
+flywheel check-output --contract c.json --answer a.json \
+  --lean Answer.lean --verify-lean
+```
+
+This emits the check as a Lean 4 file and runs the kernel on it. Deterministic
+obligations become theorems closed `by decide`. Anything an outside authority
+decided becomes a named axiom, because a subprocess's word is not a kernel's.
+The last line of the file prints the axiom list, and that list is what to read:
+
+- named axioms are what the result rests on, and each one is a source you can
+  go and check
+- `sorryAx` means an obligation did not close, and the run is a `FAIL`
+- no axioms at all is the strongest result available
+
+Without `--verify-lean` the file is written and nothing runs it. Without Lean
+installed the proof is `UNVERIFIABLE`, and it is never a `PASS`.
+
+The proof says the answer is internally consistent and names what it rests on.
+It does not say those sources are right. Report it that way.
+
 ## Across a task, a goal, a session
 
 Add `--scope task|goal|session --subject <id>` to append the check to a
