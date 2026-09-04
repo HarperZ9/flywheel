@@ -66,6 +66,17 @@ def lean_version(lean: str) -> str:
     return f"lean {found.group(1)}" if found else "lean"
 
 
+def basename(text: str) -> str:
+    """The file name, whichever separator the path in front of it uses.
+
+    `Path(...).name` reads only the running platform's separator, so a Windows
+    path read on Linux comes back whole and the directory survives into the
+    report. A report outlives the machine that wrote it, so the split is on
+    both separators rather than on the one this process happens to have.
+    """
+    return re.split(r"[\\/]", text)[-1]
+
+
 def diagnostics(output: str) -> list[str]:
     """Lean's errors, one to a line, with the directory taken off the front.
 
@@ -82,7 +93,7 @@ def diagnostics(output: str) -> list[str]:
         raw = output[match.end():end]
         stop = AXIOM_LINE.search(raw)
         body = " ".join(raw[:stop.start() if stop else len(raw)].split())
-        out.append(f"{Path(match.group('file')).name}:{match.group('line')}:"
+        out.append(f"{basename(match.group('file'))}:{match.group('line')}:"
                    f"{match.group('col')}: {body}")
     return out
 

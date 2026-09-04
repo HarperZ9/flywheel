@@ -81,6 +81,16 @@ def test_the_directory_a_proof_was_checked_in_never_reaches_the_report():
     assert "somewhere" not in line
 
 
+def test_a_posix_directory_is_taken_off_as_well_as_a_windows_one():
+    """Which separator a path carries is a fact about the machine that ran
+    Lean, and the report is read somewhere else."""
+    posix = REFUSED.replace(chr(92).join(["C:", "somewhere", "deep", ""]),
+                            "/somewhere/deep/")
+    (line,) = diagnostics(posix)
+    assert line.startswith("Answer.lean:35:80:")
+    assert "somewhere" not in line
+
+
 def test_the_proposition_that_failed_survives_its_own_line_wrapping():
     (line,) = diagnostics(REFUSED)
     assert 'tax_source = "the-table" is false' in line
