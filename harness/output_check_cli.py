@@ -68,7 +68,7 @@ from .answer_docs import DocumentError, read_answer
 from .authority_registry import build_authorities
 from .contract_feedback import feedback
 from .contract_terms import HOLD
-from .domain_packs import field_spec, load_pack
+from .domain_packs import PACKS, field_spec, load_pack
 from .output_contract import check_answer, new_contract
 from .proof_lean import lean_source
 from .proof_relations import RelationError
@@ -88,7 +88,21 @@ def load(path: Path) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def specs(contract_doc: dict) -> list[dict]:
+def pack_ref(name: str, base_dir) -> str:
+    """A pack declared beside the contract resolves beside the contract.
+
+    A shipped pack is a bare name, so this changes nothing for one of those.
+    It only decides what a document-declared pack path means, and the useful
+    reading is relative to the contract that names it rather than to whichever
+    directory the check happened to be run from.
+    """
+    if not base_dir or name in PACKS:
+        return name
+    beside = Path(base_dir) / name
+    return str(beside) if beside.is_file() else name
+
+
+def specs(contract_doc: dict, *, base_dir=None) -> list[dict]:
     """The field specs, with a named pack filling in what the domain decides.
 
     A field entry that names a `use` gets its authority kind, criticality and
@@ -99,7 +113,7 @@ def specs(contract_doc: dict) -> list[dict]:
     name = contract_doc.get("pack", "")
     if not name:
         return raw
-    pack = load_pack(name)
+    pack = load_pack(pack_ref(name, base_dir))
     built = []
     for spec in raw:
         spec = dict(spec)
@@ -109,7 +123,7 @@ def specs(contract_doc: dict) -> list[dict]:
 
 
 def check(contract_doc: dict, answer: dict, *, base_dir, allow_commands: bool) -> dict:
-    contract = new_contract(specs(contract_doc))
+    contract = new_contract(specs(contract_doc, base_dir=base_dir))
     authorities = build_authorities(contract_doc.get("authorities") or {},
                                     allow_commands=allow_commands, base_dir=base_dir)
     report = check_answer(answer, contract, authorities)
@@ -117,10 +131,12 @@ def check(contract_doc: dict, answer: dict, *, base_dir, allow_commands: bool) -
     return report
 
 
-def _proof(parser, args, contract_doc: dict, report: dict, answer: dict) -> dict:
+def _proof(parser, args, contract_doc: dict, report: dict, answer: dict, *,
+           base_dir=None) -> dict:
     """The Lean file, written and then checked if the caller asked for that."""
     try:
-        source = lean_source(report, answer, specs(contract_doc),
+        source = lean_source(report, answer,
+                             specs(contract_doc, base_dir=base_dir),
                              relations=contract_doc.get("relations") or ())
     except RelationError as exc:
         # A relation the contract states and this module will not turn into a
@@ -190,7 +206,8 @@ def main(argv=None) -> int:
     report = check(contract_doc, answer, base_dir=base_dir,
                    allow_commands=args.allow_commands)
     if args.lean or args.verify_lean:
-        report["proof"] = _proof(parser, args, contract_doc, report, answer)
+        report["proof"] = _proof(parser, args, contract_doc, report, answer,
+                                 base_dir=base_dir)
 
     if args.ledger or args.scope or args.subject:
         record(report, scope=args.scope or TASK, subject=args.subject,

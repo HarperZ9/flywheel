@@ -171,3 +171,31 @@ def test_the_packs_command_reads_a_declaration_and_prints_the_refusal(tmp_path):
     assert bad.returncode == 2
     assert "maximum" in bad.stdout
     assert "Traceback" not in bad.stderr
+
+
+def test_a_pack_declared_beside_a_contract_resolves_beside_it(tmp_path):
+    """A contract and the pack it names travel together. Resolving the pack
+    against the process working directory would make the same pair of files
+    check from one directory and fail from another."""
+    plant = tmp_path / "plant"
+    plant.mkdir()
+    (plant / "grid.pack.json").write_text(json.dumps(DOC), encoding="utf-8")
+    (plant / "task.contract.json").write_text(json.dumps({
+        "pack": "grid.pack.json",
+        "fields": [{"use": "ampacity", "name": "ampacity",
+                    "source": "neca:table-310"}],
+        "authorities": {"neca:table-310": {"kind": "citation"}},
+    }), encoding="utf-8")
+    (plant / "answer.json").write_text(json.dumps({
+        "ampacity": {"value": 55, "source": "neca:table-310"}}), encoding="utf-8")
+
+    done = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "run_output_check.py"),
+         "--contract", str(plant / "task.contract.json"),
+         "--answer", str(plant / "answer.json")],
+        capture_output=True, text=True, encoding="utf-8",
+        cwd=str(tmp_path), check=False)
+    # CITED cannot confirm a TABLE field, so this is unchecked rather than
+    # passing. What it proves is that the pack loaded at all.
+    assert done.returncode == 3, done.stdout + done.stderr
+    assert "ampacity" in done.stdout
