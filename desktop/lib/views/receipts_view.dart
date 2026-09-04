@@ -9,6 +9,7 @@ import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/action_witness_panel.dart';
 import '../widgets/fw.dart';
 import '../widgets/packet_recheck_panel.dart';
 import '../widgets/receipt_proof_panel.dart';
@@ -189,6 +190,8 @@ class _ReceiptsViewState extends State<ReceiptsView> {
             ),
           ),
         const SizedBox(height: FwLayout.s5),
+        const ActionWitnessPanel(),
+        const SizedBox(height: FwLayout.s4),
         PacketRecheckPanel(client: widget.client),
         const SizedBox(height: FwLayout.s4),
         ScaffoldPanel(client: widget.client),

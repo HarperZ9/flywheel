@@ -11,6 +11,8 @@
 // `start` is what the first record must point back at, and it defaults to
 // genesis, so a segment lifted out of a longer chain reads as unverifiable
 // rather than quietly matching. A caller holding the earlier head passes it in.
+import 'dart:convert';
+
 import 'byte_witness.dart';
 
 class ByteWitnessChainResult {
@@ -150,4 +152,40 @@ ByteWitnessChainResult verifyByteWitnessChain(
       records.length,
       '${records.length} records link into one chain and every witnessed byte '
       'sequence reproduced');
+}
+
+/// Read a witness log the way it actually arrives: a JSON array, one JSON
+/// object per line, or a whole run result with the chain nested inside it.
+///
+/// Returns null when nothing in the text reads as records. That is a parse
+/// failure and not a verdict about anyone's bytes, so the caller says so in
+/// those words rather than rendering a chain nobody handed it.
+List<dynamic>? readByteWitnessLog(String text) {
+  final trimmed = text.trim();
+  if (trimmed.isEmpty) return null;
+  try {
+    final decoded = jsonDecode(trimmed);
+    if (decoded is List) return decoded;
+    if (decoded is Map) {
+      final nested = decoded['action_witness'];
+      if (nested is Map && nested['records'] is List) {
+        return nested['records'] as List;
+      }
+      if (decoded['records'] is List) return decoded['records'] as List;
+      if (decoded['schema'] == kByteWitnessSchema) return [decoded];
+    }
+    return null;
+  } on FormatException {
+    // Not one document. The engine writes one record per line.
+    final records = <dynamic>[];
+    for (final line in const LineSplitter().convert(trimmed)) {
+      if (line.trim().isEmpty) continue;
+      try {
+        records.add(jsonDecode(line));
+      } on FormatException {
+        return null;
+      }
+    }
+    return records.isEmpty ? null : records;
+  }
 }
