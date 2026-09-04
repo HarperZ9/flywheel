@@ -8,6 +8,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .model_profiles import ollama_digest_value as _digest
+
 
 SCHEMA = "harness.adapter-runtime-matrix/v1"
 DEFAULT_CONTRACT = str(Path(__file__).resolve().parent.parent / "benchmarks" / "cross-harness-adapter-contract-v2.json")
@@ -240,8 +242,8 @@ def _gate_failure(gate: dict[str, Any], profile: dict[str, Any], run_id: str, no
          or gate.get("failure_class") != "", "endpoint_gate_failed"),
         (profile["backend"].lower() == "ollama" and (not isinstance(gate.get("ollama_digest"), str)
          or not gate["ollama_digest"].strip()), "endpoint_gate_ollama_digest_missing"),
-        (profile["backend"].lower() == "ollama" and (gate.get("expected_ollama_digest") != profile["expected_ollama_digest"]
-         or gate.get("ollama_digest") != profile["expected_ollama_digest"]), "endpoint_gate_ollama_digest_mismatch"),
+        (profile["backend"].lower() == "ollama" and (_digest(gate.get("expected_ollama_digest", "")) != _digest(profile["expected_ollama_digest"])
+         or _digest(gate.get("ollama_digest", "")) != _digest(profile["expected_ollama_digest"])), "endpoint_gate_ollama_digest_mismatch"),
     )
     return next((code for failed, code in checks if failed), "")
 
