@@ -1,6 +1,9 @@
 # The byte witness
 
 Status: shipped. Last verified 2026-09-04 against the code cited below.
+Why the primitive underneath is shaped the way it is, including the
+alternatives that were rejected:
+`docs/superpowers/specs/2026-09-04-byte-witness-primitive-design.md`.
 
 Flywheel sells verification into fields where a wrong answer costs something:
 clinical, legal, financial, scientific, engineering. Those fields do not ask

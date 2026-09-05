@@ -5,8 +5,9 @@ Retrospective design note. 2026-09-04.
 Status: shipped. Code at `harness/byte_witness.py` and
 `harness/byte_witness_verify.py`, committed as `d30edf8` (the primitive) and
 `efff7c0` (the chain-not-a-MATCH correctness rule and the tests). Tests at
-`tests/test_byte_witness.py` and `tests/test_byte_witness_verify.py`, 108
-cases green.
+`tests/test_byte_witness.py` and `tests/test_byte_witness_verify.py`, 96 cases
+green (30 and 66, counted by pytest collection on 2026-09-04; the file holds
+54 test functions and parametrization supplies the rest).
 
 This note is written after the fact. It records what the primitive is, the
 decisions that shaped it, and the places where the shipped design differs from
@@ -173,9 +174,15 @@ every link after it. Without an external anchor, no clock here dates the chain.
 These are the primitive's boundaries, and `does_not_prove` states them at
 runtime so a caller reading a verdict reads the limits with it.
 
-## Ownership
+## What was built on top of it after this note
 
-The implementation and both test suites were authored and committed by the
-session carrying this work. This note is a retrospective written alongside it,
-not a claim on the code. The next steps for the primitive, its packaging, and any
-public surface belong to that session.
+This note describes the primitive alone. The work that followed it wraps the
+primitive around the agent loop so every tool call witnesses both sides,
+budgets the chain for transport, re-derives every link on the desktop client
+rather than trusting a gateway verdict, and pins the two canonical encoders
+against each other so a Python change cannot silently break the Dart read.
+That layer, its honest nulls, and what a regulated domain actually gets from
+it are written up in
+`project-docs/architecture/BYTE-WITNESS-2026-09-04.md`. Read this note for why
+the primitive is shaped the way it is; read that one for what it does in the
+product.
