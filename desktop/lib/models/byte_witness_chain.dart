@@ -166,14 +166,7 @@ List<dynamic>? readByteWitnessLog(String text) {
   try {
     final decoded = jsonDecode(trimmed);
     if (decoded is List) return decoded;
-    if (decoded is Map) {
-      final nested = decoded['action_witness'];
-      if (nested is Map && nested['records'] is List) {
-        return nested['records'] as List;
-      }
-      if (decoded['records'] is List) return decoded['records'] as List;
-      if (decoded['schema'] == kByteWitnessSchema) return [decoded];
-    }
+    if (decoded is Map) return byteWitnessRecordsIn(decoded);
     return null;
   } on FormatException {
     // Not one document. The engine writes one record per line.
@@ -199,12 +192,35 @@ List<dynamic>? readByteWitnessLog(String text) {
 String? byteWitnessOmission(String text) {
   try {
     final decoded = jsonDecode(text.trim());
-    if (decoded is! Map) return null;
-    final block = decoded['action_witness'] ?? decoded;
-    if (block is! Map || block['schema'] != kByteWitnessSchema) return null;
-    final note = block['records_omitted'];
-    return note is String && note.isNotEmpty ? note : null;
+    return decoded is Map ? byteWitnessOmissionIn(decoded) : null;
   } on FormatException {
     return null;
   }
+}
+
+/// The witness records a run result carries, or null when it carries none.
+///
+/// This is the live path: the gateway hands back the run's own result map and
+/// the chain is already inside it, so nothing has to be pasted, exported, or
+/// asked for. Takes the same three shapes as [readByteWitnessLog].
+List<dynamic>? byteWitnessRecordsIn(Map result) {
+  final nested = result['action_witness'];
+  if (nested is Map && nested['records'] is List) {
+    return nested['records'] as List;
+  }
+  if (result['records'] is List) return result['records'] as List;
+  if (result['schema'] == kByteWitnessSchema) return [result];
+  return null;
+}
+
+/// Why a run result carries a witness block with no records, or null.
+///
+/// A run whose chain was too large to travel is intact and says so. Calling
+/// that a missing chain would report a transport budget as a problem with the
+/// run, which is the same overreach as calling an unreachable archive fake.
+String? byteWitnessOmissionIn(Map result) {
+  final block = result['action_witness'] ?? result;
+  if (block is! Map || block['schema'] != kByteWitnessSchema) return null;
+  final note = block['records_omitted'];
+  return note is String && note.isNotEmpty ? note : null;
 }
