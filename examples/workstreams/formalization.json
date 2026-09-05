@@ -19,9 +19,20 @@
       "environment": "lean4",
       "depends_on": [
         "closed_lemma",
-        "open_lemma"
+        "open_lemma",
+        "faithful"
       ],
       "statement": "theorem milestone : 2 + 2 = 4 := rfl"
+    },
+    {
+      "id": "faithful",
+      "check": "readback",
+      "environment": "readback/v1",
+      "statement": "{\"formal\": \"theorem milestone : 2 + 2 = 4 := rfl\", \"source\": \"Proposition 3.1 of the paper: the sum of two and two is four in the natural numbers\"}",
+      "readback": {
+        "rendering": "this states that adding the natural number two to itself gives four, and proves it by definitional unfolding",
+        "confirmed": "18d4082c2e55676ce64ee191d09efe959385cdd76c8fe5441d94db36aefd72cc"
+      }
     }
   ]
 }

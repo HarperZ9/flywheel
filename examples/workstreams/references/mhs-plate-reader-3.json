@@ -1,0 +1,22 @@
+{
+  "schema": "flywheel.mhs.reference/v1",
+  "device": "plate-reader-3",
+  "driver": "2.1.0",
+  "calibration_valid_days": 14,
+  "commands": {
+    "absorbance": {
+      "parameters": {
+        "wavelength_nm": {
+          "min": 230,
+          "max": 1000
+        }
+      },
+      "readings": {
+        "absorbance_au": {
+          "min": 0.0,
+          "max": 4.0
+        }
+      }
+    }
+  }
+}

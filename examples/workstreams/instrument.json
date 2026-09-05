@@ -1,20 +1,36 @@
 {
   "goal": "dose_delivered",
   "obligations": [
-    {"id": "driver_limit", "check": "assumed",
-     "environment": "mhs:liquid-handler-2/driver-1.4.0",
-     "statement": "the driver reference file caps dispense flow at 200 uL/s and the run requested 140 uL/s; the cap is enforced at the device, and nothing here re-checks it"},
-    {"id": "calibration", "check": "assumed",
-     "environment": "mhs:plate-reader-3/cal-2026-08-30",
-     "statement": "the calibration on file was recorded before the run and no calibration oracle is wired in this repository"},
-    {"id": "volume", "check": "dimensional", "environment": "flywheel.units/v1",
-     "statement": "{\"value\": 140, \"from\": \"uL\", \"to\": \"mL\", \"expected\": 0.14}"},
-    {"id": "reading", "check": "arithmetic",
-     "environment": "mhs:plate-reader-3/cal-2026-08-30",
-     "depends_on": ["driver_limit", "calibration"],
-     "statement": "{\"value\": 0.42, \"interval\": [0.4, 0.45]}"},
-    {"id": "dose_delivered", "check": "arithmetic", "environment": "flywheel.units/v1",
-     "depends_on": ["volume", "reading"],
-     "statement": "{\"value\": 0.14, \"interval\": [0.135, 0.145]}"}
+    {
+      "id": "dispense",
+      "check": "instrument",
+      "environment": "mhs:liquid-handler-2/driver-1.4.0",
+      "statement": "{\"device\": \"liquid-handler-2\", \"command\": \"dispense\", \"parameters\": {\"flow_rate_ul_s\": 140, \"volume_ul\": 140}, \"readings\": {\"volume_ul\": 139.6}, \"observed_at\": \"2026-09-04T10:12:00Z\", \"calibrated_at\": \"2026-08-30T09:00:00Z\"}"
+    },
+    {
+      "id": "reading",
+      "check": "instrument",
+      "environment": "mhs:plate-reader-3/driver-2.1.0",
+      "depends_on": [
+        "dispense"
+      ],
+      "statement": "{\"device\": \"plate-reader-3\", \"command\": \"absorbance\", \"parameters\": {\"wavelength_nm\": 450}, \"readings\": {\"absorbance_au\": 0.42}, \"observed_at\": \"2026-09-04T10:20:00Z\", \"calibrated_at\": \"2026-08-30T08:00:00Z\"}"
+    },
+    {
+      "id": "volume",
+      "check": "dimensional",
+      "environment": "flywheel.units/v1",
+      "statement": "{\"value\": 140, \"from\": \"uL\", \"to\": \"mL\", \"expected\": 0.14}"
+    },
+    {
+      "id": "dose_delivered",
+      "check": "arithmetic",
+      "environment": "flywheel.units/v1",
+      "depends_on": [
+        "volume",
+        "reading"
+      ],
+      "statement": "{\"value\": 0.14, \"interval\": [0.135, 0.145]}"
+    }
   ]
 }

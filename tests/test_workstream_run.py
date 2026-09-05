@@ -201,7 +201,8 @@ def test_the_lean_checker_refuses_an_admitted_hole_without_a_toolchain():
 
 
 def test_the_default_registry_covers_only_what_this_repository_can_decide():
-    assert sorted(default_checkers()) == ["arithmetic", "dimensional", "lean"]
+    assert sorted(default_checkers()) == [
+        "arithmetic", "dimensional", "instrument", "lean", "readback"]
 
 
 def test_a_mixed_domain_stack_composes_end_to_end():
@@ -229,7 +230,11 @@ def test_a_mixed_domain_stack_composes_end_to_end():
 
 @pytest.mark.parametrize("environment, toolchain, matched, fragment", [
     ("lean4:v4.9.0", "Lean (version 4.9.0, x86_64)", True, "matching the pinned"),
-    ("lean4:v4.9.0+mathlib:2026-08-01", "Lean (version 4.9.0)", True, "4.9.0"),
+    # The version half matches and the library half does not bind, so the whole
+    # string does not. A receipt printing "matching the pinned environment"
+    # while nothing read the library is the failure this row exists to catch.
+    ("lean4:v4.9.0+mathlib:2026-08-01", "Lean (version 4.9.0)", False,
+     "no lake manifest was discoverable"),
     ("lean4:v4.9.0", "Lean (version 4.33.1)", False, "ran on 4.33.1"),
     ("lean4:4.9.0", "Lean (version 4.33.1)", False, "pins lean 4.9.0"),
     ("lean4", "Lean (version 4.33.1)", True, "names no lean version"),

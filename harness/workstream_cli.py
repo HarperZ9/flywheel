@@ -5,6 +5,7 @@
     flywheel workstream settle dose.json        recompose results decided elsewhere
     flywheel workstream run dose.json --json    the receipt, for a harness
     flywheel workstream audit dose.json         what a person still has to read
+    flywheel workstream run run.json --reference driver.json   check a device record
 
 A declaration is a goal and a list of obligations. Each obligation carries the
 exact statement that gets checked, which kind of checker decides it, the pinned
@@ -20,6 +21,13 @@ environment it is decided in, and what it rests on:
 `run` calls the checkers. `settle` calls none and reads a "result" field off each
 obligation instead, which is the path for a stack whose proofs were checked on a
 build farm and are being recomposed here.
+
+Two kinds need something the declaration does not carry on its own. An
+`instrument` obligation is checked against the driver reference files named by
+--reference, which is a flag and never a path read out of the declaration. A
+`readback` obligation is checked against the rendering and the confirmation
+recorded beside it in the document. Without either, those obligations settle
+unverifiable and the receipt says what was missing.
 
 The standing of the goal is derived, never asserted. An obligation resting on
 something refuted, pending, or unverifiable reports blocked, so a green top over
@@ -38,8 +46,10 @@ from pathlib import Path
 
 from .workstream import WorkstreamError, settle
 from .workstream_audit import audit_surface, recorded_audits
+from .workstream_instrument import load_references
+from .workstream_readback import recorded_readbacks
 from .workstream_receipt import workstream_receipt
-from .workstream_run import load_workstream, run_workstream
+from .workstream_run import default_checkers, load_workstream, run_workstream
 
 EXAMPLE = {
     "goal": "label",
@@ -161,6 +171,10 @@ def main(argv=None) -> int:
     parser.add_argument("declaration", nargs="?", default="")
     parser.add_argument("--json", action="store_true",
                         help="emit the receipt instead of the rendering")
+    parser.add_argument("--reference", action="append", default=[], metavar="PATH",
+                        help="a flywheel.mhs.reference/v1 driver file, repeatable; "
+                             "an instrument obligation with no reference for its "
+                             "device settles unverifiable")
     args = parser.parse_args(argv)
     if args.action == "example":
         print(json.dumps(EXAMPLE, indent=2))
@@ -178,7 +192,8 @@ def main(argv=None) -> int:
             if recorded:
                 print("note: results in the declaration are ignored by run; "
                       "use settle to recompose them", file=sys.stderr)
-            receipt = run_workstream(workstream)
+            receipt = run_workstream(workstream, default_checkers(
+                recorded_readbacks(document), load_references(args.reference)))
         else:
             settle(workstream, recorded)  # refuses a malformed result first
             receipt = workstream_receipt(workstream, recorded)
