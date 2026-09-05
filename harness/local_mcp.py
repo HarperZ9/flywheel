@@ -36,6 +36,12 @@ TOOLS = [
                      "properties": {"goal": {"type": "string"}, "root": {"type": "string"},
                                     "allow_write": {"type": "boolean"}, "allow_exec": {"type": "boolean"},
                                     "max_steps": {"type": "integer"}, **_ONLINE}}},
+    {"name": "local-model.status",
+     "description": "Liveness and identity of the local-model lane (name, version, protocol). Network-free, for a fast health probe.",
+     "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "local-model.doctor",
+     "description": "Readiness diagnostic: identity plus the tiers this lane would try and the tools it exposes. Network-free, so it reports no reachability; local_agent_health is the tool that pings a tier.",
+     "inputSchema": {"type": "object", "properties": {}}},
 ]
 
 
@@ -50,6 +56,24 @@ def _backends(args: dict) -> list:
 def _agent(args: dict) -> LocalAgent:
     return LocalAgent(backends=_backends(args), prefer=args.get("backend", "auto"),
                       max_tokens=int(args.get("max_tokens", 512)))
+
+
+def _lane_health(deep: bool) -> dict:
+    """Identity for the lane probe, and for doctor the tiers and tools behind it.
+
+    `ok` here is liveness, not health: it says this server answered, which is
+    the only thing a network-free call can establish. `available_backends()`
+    constructs its two tiers unconditionally, so listing them says what the
+    lane would try and nothing about what is reachable. The reachability field
+    says `unprobed` rather than carrying a verdict nothing measured.
+    """
+    info = {"ok": True, "server": "local-model", "version": __version__,
+            "protocol": PROTOCOL}
+    if deep:
+        info["tiers_configured"] = [type(b).__name__ for b in available_backends()]
+        info["reachability"] = "unprobed; call local_agent_health to ping"
+        info["tools"] = [t["name"] for t in TOOLS]
+    return info
 
 
 def _text(obj) -> dict:
@@ -76,6 +100,8 @@ def _call(params: dict) -> dict:
                           sign_key=tool_receipts.new_session_key())
             return _text({"final": r["final"], "steps": r["steps"],
                           "verified": r["verified"], "checkpoint": r["checkpoint"]})
+        if name in ("local-model.status", "local-model.doctor"):
+            return _text(_lane_health(name == "local-model.doctor"))
         return {"content": [{"type": "text", "text": f"unknown tool {name!r}"}], "isError": True}
     except Exception as e:
         return {"content": [{"type": "text", "text": f"[error] {type(e).__name__}: {e}"}],
