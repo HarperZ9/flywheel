@@ -21,7 +21,7 @@ def test_registry_covers_the_expected_lanes():
     # + accountable-surface (actuation) + canon (continuity)
     assert set(LANES) == {"gather", "crucible", "index", "forum",
                           "learn", "telos", "local-model", "relay", "plexus", "mneme",
-                          "calibrate-pro", "accountable-surface", "canon"}
+                          "calibrate-pro", "accountable-surface", "canon", "bulletin"}
 
 
 def test_install_name_to_command_asymmetry_is_mapped():
@@ -41,10 +41,12 @@ def test_install_name_to_command_asymmetry_is_mapped():
 def test_every_lane_has_an_mcp_command_and_organ():
     for name, lane in LANES.items():
         cmd = resolve_mcp_command(name)
-        assert isinstance(cmd, list) and len(cmd) >= 1
+        # An http lane is not spawned, so it has no argv. Asserting one anyway
+        # would force a fake command into the registry to satisfy the test.
+        assert cmd == [] if lane.kind == "http" else len(cmd) >= 1
         assert lane.organ, f"{name} has no organ assigned"
         assert lane.role, f"{name} has no role assigned"
-        assert lane.kind in ("pip", "npm", "bundled")
+        assert lane.kind in ("pip", "npm", "bundled", "http")
 
 
 def test_unknown_lane_reports_missing_not_crash():

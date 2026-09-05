@@ -105,8 +105,8 @@ def resolve_mcp_command(name: str) -> list[str]:
 def resolve_mcp_launch(name: str) -> LaunchSpec:
     """Return the source/package-aware child launch used only at runtime."""
     lane = LANES[name]
-    if _frozen():
-        return LaunchSpec(tuple(lane.mcp_command()))
+    if lane.kind == "http" or _frozen():
+        return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint())
     source = resolve_source_repo(lane)
     if source and lane.kind == "npm":
         return LaunchSpec(("node", str((source / lane.mcp_args[0]).resolve())))
@@ -182,7 +182,7 @@ def _installed_version(lane: Lane) -> str | None:
 
 
 def lane_status(name: str, *, probe: bool = True, timeout: float = 20.0) -> dict:
-    """Health of one lane. probe=True spawns the MCP server and calls its status tool.
+    """Health of one lane. probe=True reaches the MCP server and calls its status tool.
 
     Returns {name, kind, installed_version, expected_version, status, detail}.
     `probe=False` skips the MCP handshake (filesystem/install check only) and
@@ -193,7 +193,7 @@ def lane_status(name: str, *, probe: bool = True, timeout: float = 20.0) -> dict
         return {"name": name, "status": MISSING, "detail": "unknown lane"}
     installed = _installed_version(lane)
     source = resolve_source_repo(lane)
-    present = installed is not None or source is not None or lane.kind == "bundled"
+    present = installed is not None or source is not None or lane.kind in ("bundled", "http")
     if not present:
         return {"name": name, "kind": lane.kind, "installed_version": None,
                 "expected_version": lane.version, "status": MISSING,
@@ -203,9 +203,9 @@ def lane_status(name: str, *, probe: bool = True, timeout: float = 20.0) -> dict
         return {"name": name, "kind": lane.kind, "installed_version": installed,
                 "expected_version": lane.version, "status": DECLARED,
                 "organ": lane.organ, "role": lane.role,
-                "detail": ((f"source checkout at {lane.source_repo}; "
-                            "not MCP-probed") if source and installed is None else
-                           "install-presence verified; not MCP-probed")}
+                "detail": (lane.endpoint_detail() if lane.kind == "http" else
+                           f"source checkout at {lane.source_repo}; not MCP-probed" if source
+                           and installed is None else "install-presence verified; not MCP-probed")}
     return _probe_lane(name, installed, timeout, present=present)
 
 
@@ -247,7 +247,7 @@ def _probe_lane(name: str, installed: str | None, timeout: float, *,
 
 def lane_roster(*, probe: bool = False, timeout: float = 20.0) -> dict:
     """Health for every lane. probe=False by default (fast, install-only);
-    probe=True spawns each MCP server for a live handshake (slower)."""
+    probe=True reaches each MCP server for a live handshake (slower)."""
     rows = [lane_status(name, probe=probe, timeout=timeout) for name in LANES]
     by = {r["status"]: 0 for r in rows}
     for r in rows:
@@ -258,7 +258,7 @@ def lane_roster(*, probe: bool = False, timeout: float = 20.0) -> dict:
         "by_status": by,
         "all_live": by.get(LIVE, 0) == len(rows),
         "lanes": rows,
-        "note": ("probe=True spawns each lane's MCP server for a live handshake; "
+        "note": ("probe=True reaches each lane's MCP server for a live handshake; "
                  "probe=False checks install presence only.") if probe else
                 "install-presence roster; pass probe=True for a live MCP health check.",
     }
@@ -285,8 +285,8 @@ def install_lane(name: str, *, profile: str = "package") -> dict:
     lane = LANES.get(name)
     if lane is None:
         return {"name": name, "installed": False, "detail": "unknown lane"}
-    if lane.kind == "bundled":
-        return {"name": name, "installed": True, "detail": "bundled lane (no install needed)"}
+    if lane.kind in ("bundled", "http"):
+        return {"name": name, "installed": True, "detail": f"{lane.kind} lane (no install needed)"}
     try:
         if profile == "source":
             repo = resolve_source_repo(lane)

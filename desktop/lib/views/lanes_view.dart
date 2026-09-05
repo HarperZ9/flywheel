@@ -2,8 +2,8 @@
 // presented in its own words with live health.
 //
 // Fast install-presence status comes with the ambient poll; "Probe" runs the
-// real MCP handshake (user-triggered only; each probe spawns the lane's
-// server process).
+// real MCP handshake (user-triggered only; a probe spawns an installed
+// lane's server, or reaches a remote lane over its endpoint).
 
 import 'package:flutter/material.dart';
 
@@ -64,7 +64,7 @@ class LanesView extends StatelessWidget {
         ),
         const SizedBox(height: FwLayout.s3),
         Text(
-          'Each lane is a full product that also runs alone. Probing spawns '
+          'Each lane is a full product that also runs alone. Probing reaches '
           'its MCP server and calls its own status tool; the verdict below '
           'is the tool\'s answer, not an assumption.',
           style: Theme.of(context).textTheme.bodySmall,

@@ -73,7 +73,7 @@ def _cmd_install(argv: list[str]) -> int:
     from harness.lanes import LANES, install_lane, write_registry, read_registry, LANE_REGISTRY_PATH
     lanes_arg, profile = _parse_lane_args(argv)
     if lanes_arg == "all":
-        names = [n for n, l in LANES.items() if l.kind != "bundled"]
+        names = [n for n, l in LANES.items() if l.kind not in ("bundled", "http")]
     else:
         names = [n.strip() for n in lanes_arg.split(",") if n.strip()]
         bad = [n for n in names if n not in LANES]

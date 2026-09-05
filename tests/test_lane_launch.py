@@ -199,6 +199,9 @@ def test_frozen_build_never_launches_sys_executable(monkeypatch):
     monkeypatch.setattr(ln, "_importable", lambda top: True)  # even if importable
     for name in ln.LANES:
         launch = ln.resolve_mcp_launch(name)
+        if not launch.argv:                # an http lane spawns nothing at all
+            assert ln.LANES[name].kind == "http", f"{name} lost its argv"
+            continue
         assert launch.argv[0] != sys.executable, f"{name} would relaunch the gateway"
 
 

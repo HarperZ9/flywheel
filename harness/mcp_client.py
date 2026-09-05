@@ -31,6 +31,8 @@ class LaunchSpec:
     cwd: str | None = None
     env_overrides: tuple[tuple[str, str], ...] = ()
     inherit_env: bool = True
+    url: str = ""                   # set instead of argv for a lane that is already
+    #                                 running behind an endpoint rather than spawned
 
 
 class MCPError(RuntimeError):
@@ -131,13 +133,23 @@ class StdioTransport:
 
 class MCPClient:
     """Drive an MCP server: initialize, list tools, call a tool. Pass `command`
-    to spawn a server over stdio, or inject `transport` (e.g. a fake) for tests."""
+    to spawn a server over stdio, a LaunchSpec carrying a url to reach one over
+    HTTP, or inject `transport` (e.g. a fake) for tests."""
 
     def __init__(self, command: "list | LaunchSpec | None" = None, *, transport=None,
                  timeout: float = 30.0, client_name: str = "flywheel"):
         if transport is None and command is None:
             raise ValueError("MCPClient needs a command or a transport")
-        self._t = transport if transport is not None else StdioTransport(command, timeout=timeout)
+        if transport is None:
+            spec_url = getattr(command, "url", "")
+            # A spec carrying a url, or one with no argv to spawn, is a lane that is
+            # already running behind an endpoint. Lazy import: mcp_http imports MCPError.
+            if spec_url or not getattr(command, "argv", ("stdio",)):
+                from .mcp_http import HttpTransport
+                transport = HttpTransport(spec_url, timeout=timeout)
+            else:
+                transport = StdioTransport(command, timeout=timeout)
+        self._t = transport
         self._id = 0
         self.client_name = client_name
         self.server_info: dict = {}
