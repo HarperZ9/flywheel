@@ -77,6 +77,12 @@ LANES: dict[str, Lane] = {
         "evidence-labeled display calibration: color-target and characterized-panel "
         "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
         "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
+    "canon": Lane(
+        "canon", "canon", "canon", ("mcp",), "pip", "0.0.0",
+        "provider-neutral memory bank + personality container: one envelope, "
+        "deterministic render into a marked region of the instruction files "
+        "(read-only over MCP; reconcile rewrites files, so it stays a library call)",
+        "continuity", source_repo="public/canon", py_module="canon.cli"),
     "accountable-surface": Lane(
         "accountable-surface", "accountable-surface", "accountable-surface-server", (),
         "pip", "0.1.0",
