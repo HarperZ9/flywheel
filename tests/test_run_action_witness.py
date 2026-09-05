@@ -7,11 +7,23 @@ decide for themselves, which is the whole reason the chain exists.
 from __future__ import annotations
 
 import json
+from pathlib import Path
+
+import pytest
 
 from harness.byte_witness import WITNESS_SCHEMA
 from harness.byte_witness_verify import TAMPERED, verify_chain
 from harness.local_tools import ToolExecutor, ToolGate
+from harness import router_agent
 from harness.router_agent import _action_witness
+
+
+DESKTOP_MODELS = (Path(__file__).resolve().parent.parent / "desktop" / "lib"
+                  / "models")
+# The parser on the other side of the wire, and the names it looks for.
+DART_PARSER = DESKTOP_MODELS / "byte_witness_chain.dart"
+DART_SCHEMA = DESKTOP_MODELS / "byte_witness.dart"
+READ_BY_THE_PANEL = ("action_witness", "schema", "records", "records_omitted")
 
 
 def _executor(tmp_path, *, receipts=False):
@@ -82,3 +94,34 @@ def test_the_block_is_the_shape_the_desktop_surface_parses(tmp_path):
 def test_an_executor_without_the_accessor_is_not_an_error(tmp_path):
     # Callers pass their own executors. A missing chain is a missing chain.
     assert _action_witness(object()) is None
+
+
+def test_a_chain_over_budget_is_omitted_whole_and_says_so(tmp_path,
+                                                          monkeypatch):
+    # A shortened list would verify as TAMPERED and accuse the run of what the
+    # budget did. The count and the head still describe the chain.
+    monkeypatch.setattr(router_agent, "WITNESS_RECORD_BUDGET", 100)
+    executor = _executor(tmp_path)
+    executor.execute("list_dir", {})
+    block = _action_witness(executor)
+    assert "records" not in block
+    assert block["count"] == 2
+    assert len(block["head_sha256"]) == 64
+    assert "action-witness.jsonl" in block["records_omitted"]
+
+
+@pytest.mark.skipif(not DART_PARSER.exists(),
+                    reason="the Flutter surface is not checked out")
+def test_the_panel_reads_names_this_block_still_writes(tmp_path, monkeypatch):
+    # Rename one of these here and a perfectly intact run reads as unparseable
+    # on the surface, with nothing failing in between to say so.
+    executor = _executor(tmp_path)
+    executor.execute("list_dir", {})
+    written = set(_action_witness(executor)) | {"action_witness"}
+    monkeypatch.setattr(router_agent, "WITNESS_RECORD_BUDGET", 100)
+    written |= set(_action_witness(executor))
+    assert set(READ_BY_THE_PANEL) <= written
+    parser = DART_PARSER.read_text(encoding="utf-8")
+    missing = [n for n in READ_BY_THE_PANEL if f"'{n}'" not in parser]
+    assert not missing, f"the Dart parser does not read: {', '.join(missing)}"
+    assert WITNESS_SCHEMA in DART_SCHEMA.read_text(encoding="utf-8")

@@ -28,6 +28,12 @@ const _second = '{"context":{"kind":"output","seq":1},"label":"doc/output",'
     '"sha256":"22c72aa82ce77c82e2ca65a711c79eaa4b51c57f85f91489ceeacc7b38594'
     '3ba","start":4}]}';
 
+// A run whose chain was too large to travel. The block is intact and says why.
+const _omitted = '{"action_witness":{"count":2,'
+    '"head_sha256":"5d592e36e826fe6f35d25d3627d5ef28f05556dd3408e75866daa6297'
+    'aa3ce9c","records_omitted":"2 records are 918 bytes, over the 100-byte '
+    'budget a result carries","schema":"flywheel.byte-witness/v1"}}';
+
 Future<void> _paste(WidgetTester tester, String text) async {
   await tester.enterText(find.byType(TextField), text);
   await tester.tap(find.text('Recheck'));
@@ -87,6 +93,20 @@ void main() {
     await _paste(tester, '$_first\n$_second');
     expect(find.text('does not prove'), findsOneWidget);
     expect(find.textContaining('nothing is signed here'), findsOneWidget);
+  });
+
+  testWidgets('an omitted chain is not called unreadable', (tester) async {
+    // The run is intact. Reporting a transport budget as a problem with the
+    // run would be the same overreach as calling an unreachable archive fake.
+    await tester.pumpWidget(_wrap(const ActionWitnessPanel()));
+    await _paste(tester, _omitted);
+    expect(find.textContaining('left its records behind'), findsOneWidget);
+    // Scoped past the TextField, which still holds the pasted source.
+    expect(find.textContaining('recheck. 2 records are 918 bytes'),
+        findsOneWidget);
+    expect(find.textContaining('Nothing in that text reads'), findsNothing);
+    expect(find.text('TAMPERED'), findsNothing);
+    expect(find.text('UNVERIFIABLE'), findsNothing);
   });
 
   testWidgets('clear puts the panel back to claiming nothing', (tester) async {

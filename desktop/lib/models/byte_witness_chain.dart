@@ -189,3 +189,22 @@ List<dynamic>? readByteWitnessLog(String text) {
     return records.isEmpty ? null : records;
   }
 }
+
+/// The reason a run result gives for carrying a witness block with no records
+/// in it, or null when the text is not that.
+///
+/// Read this when [readByteWitnessLog] finds nothing. A run whose chain was
+/// too large to travel is intact and says so, and calling that text unreadable
+/// would report a transport budget as a problem with the run.
+String? byteWitnessOmission(String text) {
+  try {
+    final decoded = jsonDecode(text.trim());
+    if (decoded is! Map) return null;
+    final block = decoded['action_witness'] ?? decoded;
+    if (block is! Map || block['schema'] != kByteWitnessSchema) return null;
+    final note = block['records_omitted'];
+    return note is String && note.isNotEmpty ? note : null;
+  } on FormatException {
+    return null;
+  }
+}

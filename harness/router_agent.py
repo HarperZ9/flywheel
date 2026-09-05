@@ -119,6 +119,13 @@ def _workspace_post(out: dict, root: str, before: dict | None, ledger) -> None:
     out["verified"] = ledger.verify()
 
 
+# How many bytes of witness records a run result will carry. The gateway
+# bounds a run at twelve steps, which is about 12 KB of records, so this never
+# fires there. It is for the callers with no bound, where a long chain would
+# push a result past the transport's own limit and fail a run that was fine.
+WITNESS_RECORD_BUDGET = 64_000
+
+
 def _action_witness(executor) -> "dict | None":
     """The run's byte-witness chain, as it leaves this process.
 
@@ -134,9 +141,22 @@ def _action_witness(executor) -> "dict | None":
         return None
     from .action_witness import does_not_prove
     from .byte_witness import WITNESS_SCHEMA
-    return {"schema": WITNESS_SCHEMA, "count": len(written),
-            "head_sha256": executor.action_witness_head(),
-            "records": written, "does_not_prove": does_not_prove()}
+    from .evidence_json import canonical_bytes
+    block = {"schema": WITNESS_SCHEMA, "count": len(written),
+             "head_sha256": executor.action_witness_head(),
+             "does_not_prove": does_not_prove()}
+    size = len(canonical_bytes(written))
+    if size <= WITNESS_RECORD_BUDGET:
+        block["records"] = written
+    else:
+        # Never a shortened list. A chain missing its middle verifies as
+        # TAMPERED, which would accuse a run of something the budget did.
+        block["records_omitted"] = (
+            f"{len(written)} records are {size} bytes, over the "
+            f"{WITNESS_RECORD_BUDGET}-byte budget a result carries; the count "
+            "and the head above still describe the chain, and the records "
+            "themselves are in the run's action-witness.jsonl")
+    return block
 
 
 def _finalize_run(result, *, endpoint, agent, executor, receipt_dir,

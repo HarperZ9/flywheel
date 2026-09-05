@@ -251,4 +251,39 @@ void main() {
       expect(result.doesNotProve.last, contains('bind the head'));
     });
   });
+
+  group('reading a log', () {
+    test('finds the records nested in a run result', () {
+      final text = jsonEncode({
+        'action_witness': {'records': [_first(), _second()]}
+      });
+      expect(readByteWitnessLog(text), hasLength(2));
+    });
+
+    test('reads one record per line, the way the engine writes them', () {
+      final text = '${jsonEncode(_first())}\n${jsonEncode(_second())}';
+      expect(readByteWitnessLog(text), hasLength(2));
+    });
+
+    test('returns nothing for text that is not records', () {
+      expect(readByteWitnessLog('not json at all'), isNull);
+      expect(readByteWitnessLog('   '), isNull);
+    });
+
+    test('tells an omitted chain apart from unreadable text', () {
+      // Both give readByteWitnessLog nothing. Only one of them is a run that
+      // said, in its own words, why it is carrying no records.
+      final text = jsonEncode({
+        'action_witness': {
+          'schema': kByteWitnessSchema,
+          'count': 2,
+          'records_omitted': 'over the budget a result carries',
+        }
+      });
+      expect(readByteWitnessLog(text), isNull);
+      expect(byteWitnessOmission(text), contains('over the budget'));
+      expect(byteWitnessOmission('not json at all'), isNull);
+      expect(byteWitnessOmission(jsonEncode([_first()])), isNull);
+    });
+  });
 }

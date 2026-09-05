@@ -27,6 +27,7 @@ class ActionWitnessPanel extends StatefulWidget {
 class _ActionWitnessPanelState extends State<ActionWitnessPanel> {
   final _ctrl = TextEditingController();
   ByteWitnessChainResult? _result;
+  String? _omission;
   bool _unreadable = false;
 
   @override
@@ -37,8 +38,10 @@ class _ActionWitnessPanelState extends State<ActionWitnessPanel> {
 
   void _check() {
     final records = readByteWitnessLog(_ctrl.text);
+    final omission = records == null ? byteWitnessOmission(_ctrl.text) : null;
     setState(() {
-      _unreadable = records == null;
+      _omission = omission;
+      _unreadable = records == null && omission == null;
       _result = records == null ? null : verifyByteWitnessChain(records);
     });
   }
@@ -47,6 +50,7 @@ class _ActionWitnessPanelState extends State<ActionWitnessPanel> {
     _ctrl.clear();
     setState(() {
       _result = null;
+      _omission = null;
       _unreadable = false;
     });
   }
@@ -74,7 +78,10 @@ class _ActionWitnessPanelState extends State<ActionWitnessPanel> {
           OutlinedButton(onPressed: _clear, child: const Text('Clear')),
         ]),
         const SizedBox(height: FwLayout.s3),
-        if (_unreadable)
+        if (_omission != null)
+          HonestNull('That run carried a witness chain and left its records '
+              'behind, so there is nothing here to recheck. ${_omission!}')
+        else if (_unreadable)
           const HonestNull(
               'Nothing in that text reads as witness records. That is a '
               'parse failure and not a verdict about anyone\'s bytes.')
