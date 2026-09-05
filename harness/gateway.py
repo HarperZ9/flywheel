@@ -293,6 +293,28 @@ def _relay_mcp_call(tool: str, args: dict) -> dict:
         return {"error": f"relay lane unavailable: {e}"}
 
 
+def _relay_remote_state() -> dict:
+    """Whether a phone could reach this workstation, as relay reports it.
+
+    The phone-facing surface is a separate process from the lane we spawn, so
+    relay owns this answer and we forward it rather than reading relay's own
+    configuration from here. Values never travel: relay reports credential keys
+    as booleans, and this passes through what it sends.
+
+    Three outcomes, kept apart on purpose. The lane is unreachable; the lane
+    answered but this relay build predates the readout, which is not the same
+    as the surface being off; or the state itself.
+    """
+    doctor = _relay_mcp_call("relay.doctor", {})
+    if "error" in doctor:
+        return {"reported": False, "reason": doctor["error"]}
+    remote = doctor.get("remote")
+    if not isinstance(remote, dict):
+        return {"reported": False,
+                "reason": "this relay build does not report the remote surface"}
+    return {"reported": True, **remote}
+
+
 def _projected_world(root: Path) -> dict:
     """The full projected world (world.py: roster + findings + cursor, root-hashed).
     Falls back to the inline v0 receipt catalog if world.py is unavailable."""
@@ -906,6 +928,8 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(_relay_mcp_call("local_agent_runs", {}))
         if p == "/api/relay/sessions":                 # saved relay sessions (follow you)
             return self._json(_relay_mcp_call("local_agent_sessions", {}))
+        if p == "/api/relay/remote":                   # can a phone reach this workstation
+            return self._json(_relay_remote_state())
         if p == "/api/lessons":                       # the organizational learning loop
             from harness.lesson_store import LessonStore
             store = LessonStore.load(Path(self.run_root) / "lessons.jsonl")
