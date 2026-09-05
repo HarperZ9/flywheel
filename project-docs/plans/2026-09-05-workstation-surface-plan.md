@@ -21,10 +21,13 @@ Read from code on 2026-09-05, not from README claims.
 
 **telos** carries the native control.
 
-- `tools/uia.ps1` (154 lines) drives Windows UI Automation with verbs `windows`,
+- `tools/uia.ps1` (166 lines) drives Windows UI Automation with verbs `windows`,
   `tree`, `invoke`, `setvalue`, `focus`. It acts through UIA patterns
   (InvokePattern, ValuePattern, SetFocus), which dispatch into the target
-  process without moving the mouse or keyboard. JSON in, JSON out.
+  process without moving the mouse or keyboard. JSON in, JSON out. It wrote
+  that JSON on the console codepage until 2026-09-05, so any non-ASCII
+  control name came back corrupted and the Node caller threw. Fixed in
+  telos#38.
 - `tools/device.ps1` (59 lines) is the OS primitive: `exec`, `read`, `write`,
   `ls`, with a receipt recording the command and its exit code.
 - `tools/captcha-solve.py` also exists. This design does not call it. See the
@@ -218,12 +221,19 @@ the work stops there.
 
 ## Risks and honest limits
 
+- `tree` caps at 300 elements and the cap bites immediately. Measured
+  2026-09-05: Slack returned 298, Discord 300, ChatGPT 300. Three of four
+  candidate targets are truncated before any search begins, so paging is a
+  prerequisite.
 - `uia.ps1` locates an element by a full descendant scan with substring
-  matching, and `tree` caps at 300 elements. A large application will be slow
-  and ambiguous under that. AutomationId-first lookup and paging are
-  prerequisites before this carries real work.
-- Electron and Qt applications frequently expose a thin or misleading
-  accessibility tree, so rung 1 will miss more often than a Win32 test suggests.
+  matching. AutomationId-first lookup was the proposed fix, and the same
+  measurement shows it half works: Slack carries 50 AutomationIds across 298
+  elements, ChatGPT 16, Discord 2. Name matching stays load-bearing.
+- An earlier version of this section said Electron and Qt trees are usually
+  thin or misleading. That claim is withdrawn. Four Electron applications
+  measured 2026-09-05 on the target workstation: Claude 168 elements with 150
+  named and 68 buttons, Slack 298 with 233 named, Discord 300 with 299 named,
+  ChatGPT 300 with 293 named and 186 buttons. Qt is untested and stays unknown.
 - A cached surface map goes stale when the application updates. It needs a
   version key and a cheap validation probe on load.
 - Rung 3 stays necessary for canvas applications and games. The ladder shrinks
@@ -231,10 +241,25 @@ the work stops there.
 - Demand is unvalidated, exactly as in the sibling plan. Treat the whole thing
   as exploration until someone asks for it.
 
-## Decisions needed
+## Decisions
 
-1. First target application for Phase 1. A stable Win32 tree makes the
-   measurement honest, and a daily-use application makes it useful.
-2. Whether the local transport is a new MCP server or additional tools on an
-   existing lane.
-3. Whether teach-by-demonstration is in scope for the first build or deferred.
+Answered 2026-09-05.
+
+1. **First target: Slack.** The draft asked for a stable Win32 tree. Nine top
+   level windows were open on the workstation this is written for, and none of
+   them was classic Win32: five Chromium applications and four consoles. Slack
+   carries the best AutomationId coverage of the Electron candidates, offers 63
+   buttons and 25 hyperlinks for `invoke`, and runs on Chromium, so `cdp.mjs`
+   supplies a second rung 1 path. Discord is the target to avoid, at 2
+   AutomationIds across 300 elements.
+2. **Local transport: telos through Phase 2, split afterward.** telos already
+   owns `uia.ps1`, `device.ps1`, `cdp.mjs`, and `demo/native-control/`. A
+   separate server would import from telos or copy it, and it cannot move the
+   Phase 2 number that decides whether the premise survives. Splitting later is
+   cheap because the vocabulary is closed by design. The cost of waiting is
+   context hygiene: workstation verbs on telos load wherever telos loads. Split
+   early if that bites before Phase 2.
+3. **Teach by demonstration: deferred to Phase 3.** It needs a recorder, a
+   deterministic replayer, and a drift check that fails loudly. None of that
+   moves the Phase 2 measurement, and building it first spends the effort
+   before the premise is tested.

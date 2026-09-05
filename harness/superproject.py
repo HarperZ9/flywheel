@@ -69,6 +69,14 @@ class Flagship:
     tier: str = "declared"       # 'live' (MCP doctor MATCH) | 'declared' (in repo, not probed)
 
 
+# canon is a live lane (see lanes_registry.py) and is deliberately absent
+# from this roster. Its version is 0.0.0. The roster is worth something
+# because every entry has shipped, so an unreleased entry costs more than
+# the omission does. Revisit when canon takes a non-zero version, and treat
+# it as a coordinated edit: the count 14 is also asserted in
+# tests/test_superproject.py, stated in SUPERPROJECT.md, and rendered as a
+# live site heading with two tests behind it in the portfolio-site repo.
+# Decided 2026-09-05.
 EXTENDED: dict[str, Flagship] = {
     "emet": Flagship("emet", "faithfulness / re-derivability verification (frozen vectors)",
                      "public/emet"),
