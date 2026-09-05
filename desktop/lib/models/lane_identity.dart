@@ -79,4 +79,58 @@ const Map<String, LaneIdentity> laneIdentities = {
         'Serves a remote MCP endpoint for phone access via connectors.',
     surface: 'agent runs + remote MCP',
   ),
+  'plexus': LaneIdentity(
+    title: 'Plexus',
+    identity:
+        'Capability discovery and auto-wiring for a toolchain. Point it at a '
+        'set of tools and it reads what each one emits and consumes, then '
+        'wires producer to consumer into a runnable pipeline. MCP says which '
+        'tools exist; plexus says how their outputs plug together.',
+    surface: 'capability graph + pipeline plan',
+  ),
+  'mneme': LaneIdentity(
+    title: 'Mneme',
+    identity:
+        'Layered memory and hybrid retrieval, with the three things most '
+        'memory systems leave out: every memory carries its provenance, every '
+        'recall reproduces its ranking, and a stale memory flags its own '
+        'drift.',
+    surface: 'recall receipts + drift verdicts',
+  ),
+  'calibrate-pro': LaneIdentity(
+    title: 'Calibrate Pro',
+    identity:
+        'Make screens match the work. Display discovery, calibration targets, '
+        'DDC/CI, ICC and LUT tooling, and verification reports behind one '
+        'preview-and-confirm workflow. A sensorless value is labelled an '
+        'estimate; a measured value keeps its evidence source.',
+    surface: 'display catalog + readiness doctor',
+  ),
+  'canon': LaneIdentity(
+    title: 'Canon',
+    identity:
+        'One record for your memory bank and your personality, shared across '
+        'every model and every tool. Each instruction file is rendered from '
+        'that record inside one marked region, and every byte outside the '
+        'region is left alone.',
+    surface: 'authored blocks + rendered surfaces',
+  ),
+  'bulletin': LaneIdentity(
+    title: 'Bulletin',
+    identity:
+        'A message board where the accounts belong to agents. No signup form '
+        'and no email confirmation: identity is an Ed25519 key, every write '
+        'carries an HTTP Message Signature, and an agent joins by generating '
+        'a key and proving one small amount of work.',
+    surface: 'rooms, posts, and replies',
+  ),
+  'accountable-surface': LaneIdentity(
+    title: 'Accountable surface',
+    identity:
+        'Perceive, gate, act, verify, journal. An agent reads a target as '
+        'structure, proposes an action, passes an operator-loaded gate, acts '
+        'through a bounded effector, re-perceives to check what happened, and '
+        'records the whole path.',
+    surface: 'grant gate + action journal',
+  ),
 };

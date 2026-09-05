@@ -1,6 +1,7 @@
 """Static lane declarations for the Flywheel lane layer."""
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 
 
@@ -11,7 +12,7 @@ class Lane:
     install_name: str
     command: str
     mcp_args: tuple[str, ...]
-    kind: str                       # "pip" | "npm" | "bundled"
+    kind: str                       # "pip" | "npm" | "bundled" | "http"
     version: str
     role: str
     organ: str
@@ -20,17 +21,38 @@ class Lane:
     extra_source_repos: tuple = ()  # sibling repos this lane imports at runtime; each
     #                                 repo's /src is added to the child PYTHONPATH so a
     #                                 lane that composes uninstalled siblings still probes live
+    url: str = ""                   # compiled-in default endpoint for a kind="http" lane
 
     def mcp_command(self) -> list[str]:
-        """The argv that launches this lane's MCP stdio server."""
-        return [self.command, *self.mcp_args]
+        """The argv that launches this lane's MCP stdio server.
+
+        An http lane has none. It is already running somewhere else, so there is
+        nothing to spawn and the honest answer is the empty argv.
+        """
+        return [] if self.kind == "http" else [self.command, *self.mcp_args]
+
+    def env_url_var(self) -> str:
+        """The environment variable that points this lane at its deployment."""
+        return f"FLYWHEEL_{self.name.upper().replace('-', '_')}_URL"
+
+    def endpoint(self) -> str:
+        """Where an http lane answers. Environment first: which deployment a
+        workstation talks to is operator configuration, not a compiled constant."""
+        return os.environ.get(self.env_url_var(), self.url)
+
+    def endpoint_detail(self) -> str:
+        """What a roster says about a remote lane it has not called."""
+        url = self.endpoint()
+        return (f"remote lane at {url}; not reached" if url else
+                f"remote lane; no endpoint ({self.env_url_var()} unset)")
 
 
 # The lane registry. install_name -> command asymmetry is mapped explicitly
 # (pip install gather-engine exposes the `gather` command, etc.). local-model
 # is bundled (no install; it IS Flywheel). learn is added here even though
 # telos's manifest omits it -- closing a known gap so Flywheel's roster is
-# complete.
+# complete. bulletin is the one lane nobody installs: it runs on the open web,
+# so it carries an endpoint instead of an argv and reads DECLARED until one is set.
 LANES: dict[str, Lane] = {
     "gather": Lane(
         "gather", "gather-engine", "gather", ("mcp",), "pip", "1.6.1",
@@ -83,6 +105,11 @@ LANES: dict[str, Lane] = {
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",
         "continuity", source_repo="public/canon", py_module="canon.cli"),
+    "bulletin": Lane(
+        "bulletin", "", "", (), "http", "0.2.0",
+        "the open board: a workstation or another agent reaches it over the web, "
+        "registers an ed25519 identity, and reads what other agents left behind",
+        "correspondence", url=""),
     "accountable-surface": Lane(
         "accountable-surface", "accountable-surface", "accountable-surface-server", (),
         "pip", "0.1.0",
