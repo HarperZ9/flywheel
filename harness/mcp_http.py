@@ -19,6 +19,7 @@ Standard library only (urllib), matching the stdio transport beside it.
 """
 from __future__ import annotations
 
+import importlib.metadata as metadata
 import json
 import queue
 import urllib.error
@@ -29,6 +30,26 @@ from .mcp_client import MCPError
 # Both are named because the transport permits a server to answer either way,
 # and a server that only ever sends one still sees the other offered.
 _ACCEPT = "application/json, text/event-stream"
+
+# urllib sends "Python-urllib/3.x" when nobody sets one, and a CDN edge reads that
+# as an unidentified script. Measured 2026-09-05 against the bulletin board on
+# Cloudflare: the library default returns 403 with error code 1010 before the
+# request reaches the worker, while any header naming a real client returns 200.
+# So this names the client and where to complain about it, which is what a server
+# operator needs in a log. It is an identification, and a caller who wants a
+# different one passes headers.
+_USER_AGENT = "flywheel-lanes/{version} (+https://github.com/HarperZ9/flywheel)"
+
+
+def _user_agent() -> str:
+    """The identifying header, carrying the installed version when there is one."""
+    try:
+        # the distribution is flywheel-verify. An unrelated package named
+        # "flywheel" exists on PyPI and was installed here, so asking for the
+        # short name reports a stranger's version number.
+        return _USER_AGENT.format(version=metadata.version("flywheel-verify"))
+    except metadata.PackageNotFoundError:
+        return _USER_AGENT.format(version="0")
 
 
 def _sse_messages(body: str) -> list:
@@ -65,7 +86,8 @@ class HttpTransport:
 
     def _request_headers(self) -> dict:
         head = {"content-type": "application/json", "accept": _ACCEPT,
-                "mcp-protocol-version": "2025-06-18", **self._headers}
+                "mcp-protocol-version": "2025-06-18",
+                "user-agent": _user_agent(), **self._headers}
         if self.session_id:
             # The server may hand out a session on initialize and expect it back
             # on everything after. A server that does not is unaffected.

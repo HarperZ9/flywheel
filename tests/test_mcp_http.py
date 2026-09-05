@@ -187,3 +187,47 @@ def test_a_spec_with_an_argv_still_spawns_a_child(monkeypatch):
     monkeypatch.setattr(mcp_http.urllib.request, "urlopen", never)
     with pytest.raises((MCPError, OSError)):
         MCPClient(LaunchSpec(("this-command-does-not-exist-9271",))).__enter__()
+
+
+def _header(sent_request: dict, name: str) -> str:
+    """urllib title-cases what it is handed, so read the header case-insensitively."""
+    for key, value in sent_request["headers"].items():
+        if key.lower() == name:
+            return value
+    return ""
+
+
+def test_the_transport_identifies_itself_rather_than_the_library(monkeypatch):
+    # urllib signs its own name when nobody sets one, and an edge reads that as an
+    # unidentified script. Measured 2026-09-05 against the deployed board: the
+    # library default came back 403 with Cloudflare error 1010 before the request
+    # reached the worker, while a header naming a real client came back 200. A
+    # lane that cannot be reached is not a lane, so the header is not cosmetic.
+    sent = _recorder(monkeypatch, _Resp(200, _rpc(1, {"tools": []})))
+    t = HttpTransport("http://board.test/mcp")
+    t.send({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+    agent = _header(sent[0], "user-agent")
+    assert "python-urllib" not in agent.lower(), "the library default is refused at the edge"
+    assert "flywheel" in agent, "the header has to name the client a server operator would log"
+    assert "https://github.com/HarperZ9/flywheel" in agent, "and where to complain about it"
+
+
+def test_the_identification_carries_this_distribution_not_a_stranger(monkeypatch):
+    # The distribution is flywheel-verify. An unrelated package named "flywheel"
+    # is installed in this environment, so asking for the short name reports
+    # someone else's version number in our own outbound header.
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        expected = version("flywheel-verify")
+    except PackageNotFoundError:
+        expected = "0"
+    assert mcp_http._user_agent().startswith(f"flywheel-lanes/{expected} ")
+
+
+def test_a_caller_can_replace_the_identification(monkeypatch):
+    # A workstation reaching a board that wants its own agent string.
+    sent = _recorder(monkeypatch, _Resp(200, _rpc(1, {"tools": []})))
+    t = HttpTransport("http://board.test/mcp", headers={"user-agent": "custom/9"})
+    t.send({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+    assert _header(sent[0], "user-agent") == "custom/9"

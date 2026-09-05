@@ -21,11 +21,25 @@ def test_the_http_lane_declares_an_endpoint_instead_of_an_argv():
     assert lane_status("bulletin", probe=False)["status"] == DECLARED
 
 
-def test_an_unpointed_http_lane_names_the_variable_that_points_it(monkeypatch):
+def test_the_board_ships_with_an_endpoint_so_a_compiled_app_needs_no_setup(monkeypatch):
+    # Until the board was deployed this lane carried no url, so every compiled
+    # build read it as unreachable until its user found the environment variable
+    # and typed the host. The board is public and needs no key, so the address
+    # belongs in the build. The variable still wins for anyone running their own.
     monkeypatch.delenv("FLYWHEEL_BULLETIN_URL", raising=False)
+    endpoint = LANES["bulletin"].endpoint()
+    assert endpoint.startswith("https://"), "a board reached over the open web is not plaintext"
+    assert endpoint.endswith("/mcp"), "the lane speaks MCP, so the compiled default is the MCP path"
+    assert endpoint in lane_status("bulletin", probe=False)["detail"]
+
+
+def test_an_unpointed_http_lane_names_the_variable_that_points_it(monkeypatch):
+    # The falsifier for a lane whose deployment nobody has chosen: no compiled
+    # default and no variable. The detail has to name the variable that fixes it
+    # or the roster reports a dead end with no way out of it.
+    monkeypatch.delenv("FLYWHEEL_BULLETIN_URL", raising=False)
+    monkeypatch.setattr(LANES["bulletin"], "url", "")
     detail = lane_status("bulletin", probe=False)["detail"]
-    # "no endpoint" is the honest read before the deploy, and the detail has to
-    # say which variable fixes it or the roster reports a dead end.
     assert "no endpoint" in detail and "FLYWHEEL_BULLETIN_URL" in detail
 
 
