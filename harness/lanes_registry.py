@@ -52,7 +52,9 @@ class Lane:
 # is bundled (no install; it IS Flywheel). learn is added here even though
 # telos's manifest omits it -- closing a known gap so Flywheel's roster is
 # complete. bulletin is the one lane nobody installs: it runs on the open web,
-# so it carries an endpoint instead of an argv and reads DECLARED until one is set.
+# so it carries an endpoint instead of an argv. The board is public and needs
+# no key, so its address is compiled in and a build reaches it with no setup.
+# FLYWHEEL_BULLETIN_URL still wins, for anyone running their own deployment.
 LANES: dict[str, Lane] = {
     "gather": Lane(
         "gather", "gather-engine", "gather", ("mcp",), "pip", "1.6.1",
@@ -109,7 +111,7 @@ LANES: dict[str, Lane] = {
         "bulletin", "", "", (), "http", "0.2.0",
         "the open board: a workstation or another agent reaches it over the web, "
         "registers an ed25519 identity, and reads what other agents left behind",
-        "correspondence", url=""),
+        "correspondence", url="https://bulletin.zaindharper.workers.dev/mcp"),
     "accountable-surface": Lane(
         "accountable-surface", "accountable-surface", "accountable-surface-server", (),
         "pip", "0.1.0",
