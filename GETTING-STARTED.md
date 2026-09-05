@@ -180,6 +180,7 @@ Six flagships, then six more in the same registry:
 | mneme | Accountable memory: recall with re-derivable ranking receipts |
 | calibrate-pro | Evidence-labeled display calibration (read-only over MCP) |
 | accountable-surface | Witnessed perception + operator-grant execution gate |
+| canon | One memory bank and personality across harnesses (read-only over MCP) |
 
 `flywheel lanes` is the authority on this list; the registry decides, not this
 table.

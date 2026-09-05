@@ -6,9 +6,9 @@ read the receipts. No browser, no terminal.
 
 ## What you get
 
-- **Tools**: the twelve-lane tool roster (gather, crucible, index, forum,
+- **Tools**: the thirteen-lane tool roster (gather, crucible, index, forum,
   learn, telos, local-model, relay, plexus, mneme, calibrate-pro,
-  accountable-surface) with live health. Probing spawns each tool's own MCP
+  accountable-surface, canon) with live health. Probing spawns each tool's own MCP
   server and asks it directly; the verdict shown is the tool's answer.
 - **World**: the projected, root-hashed state. Recomputed on every read:
   tamper any cataloged receipt and the hash moves.

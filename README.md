@@ -150,7 +150,7 @@ serves the development and CI fallback at `/site/index.html`.
 
 ## Included tools
 
-Flywheel can connect to twelve companion tools. Each has a public repository:
+Flywheel can connect to thirteen companion tools. Each has a public repository:
 
 | Tool | Repository | What it does |
 | --- | --- | --- |
@@ -166,6 +166,7 @@ Flywheel can connect to twelve companion tools. Each has a public repository:
 | mneme | [mneme](https://github.com/HarperZ9/mneme) | Store and retrieve memories with source checks. |
 | calibrate-pro | [calibrate-pro](https://github.com/HarperZ9/calibrate-pro) | Check display calibration targets and readiness. |
 | accountable-surface | [accountable-surface](https://github.com/HarperZ9/accountable-surface) | Require approval before actions and keep a tamper-evident record. |
+| canon | [canon](https://github.com/HarperZ9/canon) | Keep one set of instructions and memories across the assistants you use, and see what each one would be given. |
 
 List their configured state or probe their live MCP connections:
 
