@@ -99,6 +99,12 @@ oracle_output_hash, verdict:PASS, budget_spent, model_ref, seed}`. Re-running
 envelope (MATCH / DRIFT / UNVERIFIABLE). This is the operator's reconcile loop
 closed at inference time.
 
+The envelope covers an accepted answer. Underneath it, every action the
+loop takes is witnessed at the byte level and linked into one chain per
+run, so a reviewer can recheck the run itself offline on stdlib alone, not
+only its conclusion. Architecture and honest nulls:
+`project-docs/architecture/BYTE-WITNESS-2026-09-04.md`.
+
 ## Eval protocol (the publishable result)
 
 - **Benchmark:** oracle-backed tasks only — held-out code tasks with hidden

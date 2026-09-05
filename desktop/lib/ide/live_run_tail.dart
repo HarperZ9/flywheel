@@ -1,12 +1,14 @@
-// live_run_tail.dart — the live agent run's event stream, and the loop's
-// terminal action: when the done event says files were edited, the same
-// sign-this-run attestation offered on stored runs is offered here, so a
-// reviewer never has to leave the live surface to take ownership.
+// live_run_tail.dart -- the live agent run's event stream, and the loop's
+// terminal actions: the run's own byte-witness chain rechecked on this device
+// the moment the run finishes, and, when the done event says files were
+// edited, the same sign-this-run attestation offered on stored runs, so a
+// reviewer never has to leave the live surface to check it or take ownership.
 
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/action_witness_line.dart';
 import '../widgets/agent_timeline.dart';
 import '../widgets/sign_run_panel.dart';
 
@@ -45,6 +47,7 @@ class LiveRunTail extends StatelessWidget {
           child: AgentTimeline(events: events),
         ),
       ),
+      if (_done != null) ActionWitnessLine(run: _done!),
       if (_editedFiles)
         TextButton.icon(
           onPressed: () => showModalBottomSheet(
