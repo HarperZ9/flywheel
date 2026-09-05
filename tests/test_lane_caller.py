@@ -7,8 +7,12 @@ import pytest
 
 from harness.lane_caller import (
     LANE_MIN_TIERS,
+    SPLIT_DEFAULT_TIER,
+    TOOL_MIN_TIERS,
+    _tier_allows,
     call_lane_tool,
     list_available_lanes,
+    required_tier,
 )
 
 
@@ -151,3 +155,87 @@ def test_lane_caller_uses_runtime_launch_spec(monkeypatch):
     monkeypatch.setattr(mcp_client, "MCPClient", FakeClient)
     assert call_lane_tool("gather", "gather.run") == {"status": "ok"}
     assert seen == [expected]
+
+
+# --- per-tool tiers -----------------------------------------------------
+#
+# The lane floor cannot say that reading a public board and posting to it are
+# different acts, and bulletin is the lane where that matters: reading is the
+# point of the board, writing publishes under a persistent identity on a host
+# other people read.
+
+
+def test_a_t1_run_may_read_the_open_board():
+    assert required_tier("bulletin", "board_feed") == "T1"
+    assert _tier_allows("T1", required_tier("bulletin", "board_feed"))
+
+
+def test_a_t1_run_may_not_post_to_the_board():
+    # The denial path returns before anything is spawned or dialled, so this
+    # runs the real gate inside call_lane_tool without touching a network.
+    result = call_lane_tool("bulletin", "board_write_post", {},
+                            governance_tier="T1")
+    assert result.get("governance_denied") is True
+    assert "board_write_post" in result["error"]
+    assert "T2" in result["error"]
+
+
+def test_a_t2_run_may_post_to_the_board():
+    assert _tier_allows("T2", required_tier("bulletin", "board_write_post"))
+
+
+def test_a_tool_nobody_listed_is_refused_rather_than_opened():
+    """The fail-closed direction, and why the map lists the reads not the writes.
+
+    A tool added to the board after this map was written is unlisted here.
+    Defaulting it to the lane floor would open it at T1 the day it shipped, and
+    a gate that widens on its own when the far side grows is not a gate.
+    """
+    assert required_tier("bulletin", "board_tool_that_does_not_exist_yet") == "T2"
+
+
+def test_a_lane_with_one_tier_is_untouched_by_the_split():
+    assert required_tier("gather", "anything_at_all") == "T1"
+    assert required_tier("local-model", "anything_at_all") == "T2"
+
+
+def test_the_per_tool_map_only_ever_raises_the_floor():
+    # An entry below its lane floor would be a hole in the lane gate: the lane
+    # says T2, one tool says T1, and the tool wins.
+    ranks = {"T1": 1, "T2": 2, "T3": 3}
+    for lane, tools in TOOL_MIN_TIERS.items():
+        floor = LANE_MIN_TIERS.get(lane, "T1")
+        for tool in tools:
+            assert ranks[required_tier(lane, tool)] >= ranks[floor], f"{lane}.{tool}"
+
+
+def test_every_tier_named_in_either_map_is_a_tier():
+    assert SPLIT_DEFAULT_TIER in ("T1", "T2", "T3")
+    for tier in LANE_MIN_TIERS.values():
+        assert tier in ("T1", "T2", "T3")
+    for tools in TOOL_MIN_TIERS.values():
+        for tier in tools.values():
+            assert tier in ("T1", "T2", "T3")
+
+
+@pytest.mark.parametrize("tool", ["board_write_post", "board_flag_post",
+                                  "board_create_room", "board_update_profile",
+                                  "board_promote"])
+def test_no_board_tool_that_changes_the_board_sits_in_the_open_set(tool):
+    """The control on the map itself.
+
+    These five are the board's write surface. The open set here is hand-written
+    and the board lives in another repository, so nothing mechanical stops one
+    of them being added to it. This is what catches that.
+    """
+    assert TOOL_MIN_TIERS["bulletin"].get(tool) is None
+    assert required_tier("bulletin", tool) == "T2"
+
+
+def test_the_listing_says_when_a_lane_charges_two_tiers():
+    # A client reading min_tier alone would conclude every bulletin tool is
+    # open at T1. The listing carries the split or it misleads.
+    listing = {row["name"]: row for row in list_available_lanes()}
+    assert listing["bulletin"]["unlisted_tool_tier"] == "T2"
+    assert listing["bulletin"]["tool_tiers"]["board_feed"] == "T1"
+    assert "unlisted_tool_tier" not in listing["gather"]

@@ -85,8 +85,9 @@ class _CallableLanesPanelState extends State<CallableLanesPanel> {
         children: [
           const Kicker('callable'),
           const SizedBox(height: FwLayout.s1),
-          Text('${lanes.length} lanes can be called. The tier is what the '
-              'lane demands before it runs.',
+          Text('${lanes.length} lanes can be called. The tier is what a call '
+              'demands before it runs. A lane printing two charges more for '
+              'the tools that change something.',
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
@@ -104,8 +105,8 @@ class _CallableLanesPanelState extends State<CallableLanesPanel> {
                         style: fwMono(t, size: 11.5, color: t.ink)),
                   ),
                   SizedBox(
-                    width: 34,
-                    child: Text(lane.minTier,
+                    width: 46,
+                    child: Text(lane.tierLabel,
                         style: fwMono(t, size: 11, color: t.inkMuted)),
                   ),
                   SizedBox(

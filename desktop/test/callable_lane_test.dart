@@ -62,5 +62,37 @@ void main() {
     expect(lane.minTier, '');
     expect(lane.organ, '');
     expect(lane.description, '');
+    expect(lane.unlistedToolTier, '');
+  });
+
+  // A lane whose tools do not share one tier. Printing the floor alone tells
+  // an operator the whole lane is open at T1 when the tools that publish are
+  // not, which is a card that looks finished and is wrong.
+  test('a lane that charges two tiers prints both', () {
+    final lane = CallableLane.fromJson(const {
+      'name': 'bulletin',
+      'min_tier': 'T1',
+      'unlisted_tool_tier': 'T2',
+      'description': 'the open board',
+      'organ': 'correspondence',
+    });
+    expect(lane.minTier, 'T1');
+    expect(lane.unlistedToolTier, 'T2');
+    expect(lane.tierLabel, 'T1/T2');
+  });
+
+  test('a lane with one tier prints it once', () {
+    expect(
+        CallableLane.fromJson(const {'name': 'gather', 'min_tier': 'T1'})
+            .tierLabel,
+        'T1');
+    // An engine that named the same tier twice is not a split.
+    expect(
+        CallableLane.fromJson(const {
+          'name': 'gather',
+          'min_tier': 'T1',
+          'unlisted_tool_tier': 'T1',
+        }).tierLabel,
+        'T1');
   });
 }
