@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/action_witness_line.dart';
 import '../widgets/agent_timeline.dart';
 import '../widgets/fw.dart';
 import '../widgets/run_evidence_card.dart';
@@ -62,10 +63,17 @@ class AgentRunsList extends StatelessWidget {
 }
 
 /// One stored run: the TAMPERED banner first when the content-address fails,
-/// then the replayed trace, the run's own done data, its evidence, and — for
-/// an intact run that edited files — the sign-this-run attestation. Signing
-/// a TAMPERED record is never offered; that would be the exact dishonesty
-/// the receipt exists to catch.
+/// then the replayed trace, the run's own done data, the byte-witness chain
+/// that run carried rechecked here, its evidence, and — for an intact run
+/// that edited files — the sign-this-run attestation. Signing a TAMPERED
+/// record is never offered; that would be the exact dishonesty the receipt
+/// exists to catch.
+///
+/// The two checks answer different questions. The content-address covers the
+/// whole stored document as one blob. The chain covers the order and the
+/// exact bytes of each action inside it. A stored run that fails the first
+/// carries the banner above everything, which is what says the chain below
+/// cannot be read as reassurance.
 class StoredAgentRun extends StatelessWidget {
   final Map<String, dynamic> doc;
 
@@ -108,6 +116,9 @@ class StoredAgentRun extends StatelessWidget {
         AgentTimeline(events: [
           {...doc, 'type': 'done'}
         ]),
+        // the same recheck a run gets the moment it finishes live, so
+        // reopening a run months later is not a weaker read of it
+        ActionWitnessLine(run: doc),
         const SizedBox(height: FwLayout.s2),
         RunEvidenceCard(run: doc),
         const SizedBox(height: FwLayout.s2),
