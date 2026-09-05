@@ -11,6 +11,10 @@ on:
   pull_request:
     paths: ["desktop/**", ".github/workflows/desktop-ci.yml"]
 
+  # Lets you ask for a build of the current main without pushing to it, and
+  # without a release tag.
+  workflow_dispatch:
+
 permissions:
   contents: read
 
@@ -53,3 +57,33 @@ jobs:
           flutter-version: 3.44.6
           cache: true
       - run: flutter build windows --release
+
+      # A pull request proves the exe compiles. It cannot prove the exe
+      # launches, because nothing here is downloadable and the build is
+      # discarded when the runner goes away. The path that would hand over a
+      # runnable build is desktop-release.yml, and that one refuses to start
+      # without a v* tag on origin. Staging the build folder from main and on
+      # request covers the gap with no tag, no Release, and no write scope.
+      #
+      # Skipped on pull_request on purpose: a fork PR would otherwise publish
+      # an unsigned executable under this repository name, and a compile proof
+      # is the whole job a PR run has to do.
+      - name: Hash the build
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          $dir = Resolve-Path build/windows/x64/runner/Release
+          $lines = Get-ChildItem $dir -Recurse -File | ForEach-Object {
+            $h = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$h  $($_.FullName.Substring($dir.Path.Length + 1))"
+          }
+          $lines | Out-File -Encoding ascii (Join-Path $dir SHA256SUMS.txt)
+          "$($lines.Count) files hashed"
+
+      - name: Stage the unsigned build
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: windows-build-unsigned-${{ github.sha }}
+          path: desktop/build/windows/x64/runner/Release/
+          if-no-files-found: error
+          retention-days: 7
