@@ -37,9 +37,18 @@ def _api_strings(node: ast.AST) -> set:
     for sub in ast.walk(node):
         if isinstance(sub, ast.Compare):
             for side in [sub.left, *sub.comparators]:
-                if isinstance(side, ast.Constant) and isinstance(side.value, str):
-                    if side.value.startswith("/api"):
-                        found.add(side.value)
+                # `p == "/x"` and `p in ("/x", "/y")` are one dispatch. Only the
+                # first was read here, so seven routes served from a tuple were
+                # invisible: absent from the denominator, and unable to appear
+                # in the gap this gate freezes. The number was honest by luck.
+                parts = (side.elts
+                         if isinstance(side, (ast.Tuple, ast.List, ast.Set))
+                         else [side])
+                for part in parts:
+                    if (isinstance(part, ast.Constant)
+                            and isinstance(part.value, str)
+                            and part.value.startswith("/api")):
+                        found.add(part.value)
         if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute):
             if sub.func.attr == "startswith":
                 for arg in sub.args:
@@ -92,6 +101,39 @@ def client_routes() -> set:
     return {f for f in found if f and f != "/api"}
 
 
+def served_families(source: str | None = None) -> set:
+    """Route prefixes the gateway dispatches with `startswith`.
+
+    Kept apart from the exact routes because `live_routes` strips the trailing
+    slash, after which a family and an exact route read alike. The reverse
+    check needs that difference: a client path one level under an exact route
+    is not served by it.
+    """
+    tree = ast.parse(source if source is not None
+                     else GATEWAY.read_text(encoding="utf-8", errors="replace"))
+    out = set()
+    for sub in ast.walk(tree):
+        if (isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute)
+                and sub.func.attr == "startswith"):
+            for arg in sub.args:
+                if (isinstance(arg, ast.Constant) and isinstance(arg.value, str)
+                        and arg.value.startswith("/api/")):
+                    out.add(arg.value)
+    return out
+
+
+def unserved(ui: set, live: set, families: set) -> list:
+    """Client routes with no engine route at or above them: a 404 at runtime.
+
+    The other direction of the same seam, and the one that breaks loudly. It
+    had no owner: `flutter test` mocks the client so it never dials the engine,
+    and the Python tests do not know what the app calls. A mistyped path shipped
+    green from both sides.
+    """
+    return sorted(r for r in ui
+                  if r not in live and not any(r.startswith(f) for f in families))
+
+
 def main() -> int:
     live, dead = live_routes()
     ui = client_routes()
@@ -100,6 +142,7 @@ def main() -> int:
     covered = {r for r in live
                if r in ui or any(u.startswith(r + "/") for u in ui)}
     missing = sorted(live - covered)
+    dangling = unserved(ui, live, served_families())
 
     print(f"engine routes reachable : {len(live)}")
     print(f"dead (never dispatched) : {len(dead)}"
@@ -108,11 +151,19 @@ def main() -> int:
     print(f"not surfaced            : {len(missing)}  (frozen at {BASELINE})")
     pct = 100.0 * len(covered) / len(live) if live else 0.0
     print(f"coverage                : {pct:.1f}%")
+    print(f"client routes unserved  : {len(dangling)}  (must stay 0)")
 
     if "--list" in sys.argv:
         for route in missing:
             print(f"  {route}")
 
+    if dangling:
+        print()
+        print(f"FAIL: {len(dangling)} client route(s) the engine does not "
+              f"serve. Each one 404s the moment a view asks for it.")
+        for route in dangling:
+            print(f"  {route}")
+        return 1
     if len(missing) > BASELINE:
         new = set(missing)
         print(f"\nFAIL: {len(missing) - BASELINE} route(s) lost their native "

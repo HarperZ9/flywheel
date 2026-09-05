@@ -41,6 +41,23 @@ extension GatewayCreative on GatewayClient {
   Future<Map<String, dynamic>> typefaceFace(String eid) =>
       getJson('/api/typeface/face?eid=$eid');
 
+  /// POST /api/typeface/family. One seed, the whole product line of named
+  /// weights, each as its own .ttf. A weight the mint refuses comes back named
+  /// in `refused_instances` rather than quietly missing from the set.
+  Future<Map<String, dynamic>> typefaceFamily(
+      Map<String, dynamic> params, int seed) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/typeface/family'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'params': params,
+        'seed': seed,
+        'family': 'Zentropy Mint $seed',
+      }),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/typeface/variable — the family's weights as ONE variable font
   /// with a wght axis; the response carries the .ttf and a receipt.
   Future<Map<String, dynamic>> typefaceVariable(

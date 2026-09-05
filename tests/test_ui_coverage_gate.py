@@ -94,3 +94,61 @@ def test_the_baseline_matches_the_current_gap():
 
 def test_the_gate_passes_at_its_own_baseline():
     assert G.main() == 0
+
+
+# A handler that dispatches from a tuple. `_api_strings` read only one side of
+# a comparison, so every route served this way was absent from the denominator:
+# it could not be counted, and could not appear in the gap the gate freezes.
+# Seven live routes were invisible that way, and the reported number was honest
+# only because all seven happened to have a surface.
+_TUPLE_FIXTURE = '''
+class _Handler:
+    def _post(self):
+        p = self.path
+        if p in ("/api/relay/status", "/api/relay/result"):
+            return self._relay()
+        if p == "/api/plain":
+            return self._plain()
+'''
+
+
+def test_a_route_served_from_a_tuple_is_live():
+    live, dead = G.live_routes(_TUPLE_FIXTURE)
+    assert "/api/relay/status" in live
+    assert "/api/relay/result" in live
+    # Not a vacuous pass: the ordinary form still works in the same fixture.
+    assert "/api/plain" in live
+    assert not dead
+
+
+def test_the_live_gateway_serves_routes_from_tuples():
+    """The count the gate divides by. If this drops back to the `==` form only,
+    the denominator shrinks and coverage rises without a single new surface."""
+    live, _ = G.live_routes()
+    assert "/api/typeface/family" in live
+    assert "/api/auth/logout" in live
+
+
+def test_a_client_route_the_engine_does_not_serve_is_a_404():
+    """The reverse direction, which nothing else in the repo holds. `flutter
+    test` mocks the client so it never dials the engine, and the Python tests
+    do not know what the app calls, so a mistyped path ships green from both
+    sides and fails at runtime."""
+    dangling = G.unserved({"/api/relay/remot"}, {"/api/relay/remote"}, set())
+    assert dangling == ["/api/relay/remot"]
+
+
+def test_a_client_path_under_a_served_family_is_not_dangling():
+    assert G.unserved({"/api/operations/run"}, set(), {"/api/operations/"}) == []
+
+
+def test_a_client_path_under_an_exact_route_is_dangling():
+    """Why families are read separately. `live_routes` strips the trailing
+    slash, after which an exact route and a prefix family look alike; treating
+    every route as a family would let any path below it pass unchecked."""
+    assert G.unserved({"/api/lanes/deep"}, {"/api/lanes"}, set()) == ["/api/lanes/deep"]
+
+
+def test_the_live_client_calls_nothing_the_engine_refuses_to_serve():
+    live, _ = G.live_routes()
+    assert G.unserved(G.client_routes(), live, G.served_families()) == []
