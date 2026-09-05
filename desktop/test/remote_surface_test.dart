@@ -101,10 +101,16 @@ void main() {
     final s = RemoteSurface.fromJson(const {
       'reported': true,
       'configured': true,
-      'keys_present': {'RELAY_REMOTE_TOKEN': 'sentinel-secret-value'},
+      'keys_present': {
+        'RELAY_REMOTE_TOKEN': 'sentinel-secret-value',
+        'RELAY_TLS_CERT': true,
+      },
     });
     expect(s.keysPresent['RELAY_REMOTE_TOKEN'], isFalse);
-    expect(s.keysPresent.values.every((v) => v is bool), isTrue);
+    // Not blanket-false. A key relay really did report as present still
+    // reads as present, so the coercion cannot hide a configured surface
+    // while appearing to protect it.
+    expect(s.keysPresent['RELAY_TLS_CERT'], isTrue);
     // Every field the card can print, swept for the sentinel. A default
     // toString() would have passed this without reading anything.
     final printable = [
