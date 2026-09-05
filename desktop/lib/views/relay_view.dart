@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
+import '../models/remote_surface.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 import '../widgets/relay_panels.dart';
+import '../widgets/remote_surface_card.dart';
 
 class RelayView extends StatefulWidget {
   final GatewayClient client;
@@ -19,6 +21,7 @@ class RelayView extends StatefulWidget {
 class _RelayViewState extends State<RelayView> {
   List<Map<String, dynamic>> _runs = [];
   List<Map<String, dynamic>> _sessions = [];
+  RemoteSurface _remote = const RemoteSurface();
   bool _loading = true;
   String? _error;
   Timer? _poll;
@@ -45,12 +48,17 @@ class _RelayViewState extends State<RelayView> {
   Future<void> _load() async {
     if (!widget.alive) return;
     try {
-      final runsDoc = await widget.client.relayRuns();
-      final sessDoc = await widget.client.relaySessions();
+      // Independent reads, so they go together rather than in sequence.
+      final docs = await Future.wait([
+        widget.client.relayRuns(),
+        widget.client.relaySessions(),
+        widget.client.relayRemote(),
+      ]);
       if (!mounted) return;
       setState(() {
-        _runs = _listOf(runsDoc['runs']);
-        _sessions = _listOf(sessDoc['sessions']);
+        _runs = _listOf(docs[0]['runs']);
+        _sessions = _listOf(docs[1]['sessions']);
+        _remote = RemoteSurface.fromJson(docs[2]);
         _loading = false;
         _error = null;
       });
@@ -82,6 +90,8 @@ class _RelayViewState extends State<RelayView> {
         HonestNull('Could not reach relay: $_error'),
         const SizedBox(height: FwLayout.s4),
       ],
+      RemoteSurfaceCard(surface: _remote),
+      const SizedBox(height: FwLayout.s6),
       _RunsSection(runs: _runs, client: widget.client),
       const SizedBox(height: FwLayout.s6),
       _sessionsSection(context),

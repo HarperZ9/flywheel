@@ -101,6 +101,10 @@ class GatewayClient {
   /// GET /api/relay/sessions — saved relay sessions (follow you).
   Future<Map<String, dynamic>> relaySessions() => getJson('/api/relay/sessions');
 
+  /// GET /api/relay/remote. Whether a phone could reach this workstation.
+  /// Presence only: credential keys come back as booleans, never values.
+  Future<Map<String, dynamic>> relayRemote() => getJson('/api/relay/remote');
+
   /// POST /api/companion — answer locally, escalate the hard slice.
   Future<CompanionResult> companion(String prompt,
       {String? solutionSig,
