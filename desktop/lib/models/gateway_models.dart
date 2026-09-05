@@ -47,6 +47,12 @@ class Lane {
   bool get isLive => status == 'live';
   bool get isDeclared => status == 'declared';
   bool get isMissing => status == 'missing';
+
+  /// Whether there is an install for this lane to run. A bundled lane ships
+  /// inside the engine and a remote lane runs on somebody else's host, so
+  /// `install_lane` answers "no install needed" for both. Offering the button
+  /// there promises work the gateway will not do.
+  bool get isInstallable => kind == 'pip' || kind == 'npm';
 }
 
 /// The full lane roster (GET /api/lanes).

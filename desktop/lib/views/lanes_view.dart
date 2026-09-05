@@ -177,7 +177,9 @@ class LaneCard extends StatelessWidget {
                     style: fwMono(t, size: 11, color: t.inkFaint)),
               ],
               const Spacer(),
-              if (onInstall != null && lane.installedVersion == null) ...[
+              if (onInstall != null &&
+                  lane.isInstallable &&
+                  lane.installedVersion == null) ...[
                 TextButton(
                     onPressed: () => _install(context),
                     child: const Text('Install')),
