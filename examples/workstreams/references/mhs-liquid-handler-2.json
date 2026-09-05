@@ -1,0 +1,44 @@
+{
+  "schema": "flywheel.mhs.reference/v1",
+  "device": "liquid-handler-2",
+  "driver": "1.4.0",
+  "calibration_valid_days": 30,
+  "commands": {
+    "dispense": {
+      "parameters": {
+        "flow_rate_ul_s": {
+          "min": 1,
+          "max": 200
+        },
+        "volume_ul": {
+          "min": 1,
+          "max": 1000
+        }
+      },
+      "readings": {
+        "volume_ul": {
+          "min": 0,
+          "max": 1000
+        }
+      }
+    },
+    "aspirate": {
+      "parameters": {
+        "flow_rate_ul_s": {
+          "min": 1,
+          "max": 150
+        },
+        "volume_ul": {
+          "min": 1,
+          "max": 1000
+        }
+      },
+      "readings": {
+        "volume_ul": {
+          "min": 0,
+          "max": 1000
+        }
+      }
+    }
+  }
+}

@@ -13,9 +13,25 @@ be edited without editing the standings that produced it.
 from __future__ import annotations
 
 from harness.workstream import (
-    BLOCKED, PENDING, REFUTED, SCHEMA, UNDECIDED, UNVERIFIABLE,
+    BLOCKED, PENDING, REFUTED, SCHEMA, UNDECIDED, UNVERIFIABLE, VERIFIED,
     Workstream, settle,
 )
+
+# What a kind of check still fails to establish once it has passed. Keyed by
+# kind rather than written per receipt, because the limit of a method does not
+# change with the workstream it was used in, and a caveat a caller can phrase is
+# a caveat a caller can soften. Counted over what actually settled by the
+# method, never over what merely declared it: a caveat about a check that did
+# not run reads as though it did.
+_KIND_CAVEATS = {
+    "readback": ("were settled by read-back; a confirmed read-back records that a "
+                 "person compared a rendering against a source, not that the "
+                 "renderer was independent of that source, and not that the "
+                 "comparison was right"),
+    "instrument": ("were checked against a driver reference file; that shows the "
+                   "record is consistent with what the driver permits, not that "
+                   "the device performed the run or that the reading is accurate"),
+}
 
 
 def _does_not_prove(settled: dict[str, dict], reached: tuple[str, ...],
@@ -30,10 +46,17 @@ def _does_not_prove(settled: dict[str, dict], reached: tuple[str, ...],
         lines.append(
             f"the goal is conditional on {len(assumptions)} declared assumption(s), "
             f"carried and not checked: {', '.join(assumptions)}")
+    kinds: dict[str, int] = {}
     counts: dict[str, int] = {}
     for node_id in reached:
         standing = settled[node_id]["standing"]
         counts[standing] = counts.get(standing, 0) + 1
+        if standing == VERIFIED:
+            kind = settled[node_id]["check"]
+            kinds[kind] = kinds.get(kind, 0) + 1
+    for kind in sorted(_KIND_CAVEATS):
+        if kinds.get(kind):
+            lines.append(f"{kinds[kind]} obligation(s) under the goal {_KIND_CAVEATS[kind]}")
     for standing in (PENDING, BLOCKED, UNDECIDED, UNVERIFIABLE, REFUTED):
         if counts.get(standing):
             lines.append(f"{counts[standing]} obligation(s) under the goal are {standing}")

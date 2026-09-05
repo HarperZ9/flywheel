@@ -123,7 +123,8 @@ def test_the_json_form_carries_the_caveat_and_the_identity(tmp_path, capsys):
     assert receipt["schema"] == "flywheel.workstream/v1"
     assert len(receipt["workstream_id"]) == 64
     assert receipt["does_not_prove"]
-    assert receipt["run"]["registered_kinds"] == ["arithmetic", "dimensional", "lean"]
+    assert receipt["run"]["registered_kinds"] == [
+        "arithmetic", "dimensional", "instrument", "lean", "readback"]
 
 
 def test_the_command_is_reachable_from_the_flywheel_entry_point():
@@ -193,9 +194,14 @@ def test_the_audit_json_form_carries_the_pin_a_reader_records(tmp_path, capsys):
     assert surface["does_not_prove"]
 
 
-EXAMPLES = sorted((Path(__file__).resolve().parents[1]
-                   / "examples" / "workstreams").glob("*.json"))
+WORKSTREAMS = Path(__file__).resolve().parents[1] / "examples" / "workstreams"
+EXAMPLES = sorted(WORKSTREAMS.glob("*.json"))
 BY_NAME = {path.stem: path for path in EXAMPLES}
+# Driver reference files sit under references/ rather than beside the
+# declarations, because a reference is an input to a run and not a thing that
+# can be run. Mixing them would put a file with no obligations in every
+# parametrization below.
+REFERENCES = sorted(str(path) for path in (WORKSTREAMS / "references").glob("*.json"))
 
 
 def _lean_obligations(path):
@@ -236,11 +242,25 @@ def test_a_shipped_example_names_the_reading_it_owes(capsys, path):
     assert "obligations to read" in out and "does not prove:" in out
 
 
-def test_the_instrument_example_settles_without_a_proof_assistant(capsys):
+def test_the_instrument_example_needs_the_driver_files_to_settle(capsys):
+    # Without a reference the device claims are unchecked, and the example says
+    # so rather than passing. This is the whole point of the kind: a stack whose
+    # instrument claims are carried is a stack where the device cannot fail.
     code, out, _ = _run(capsys, "run", str(BY_NAME["instrument"]))
+    assert code == 2
+    assert "goal dose_delivered is BLOCKED" in out
+    assert "no driver reference for liquid-handler-2 was supplied" in out
+
+
+def test_the_instrument_example_settles_against_its_references(capsys):
+    flags = [flag for path in REFERENCES for flag in ("--reference", path)]
+    code, out, _ = _run(capsys, "run", str(BY_NAME["instrument"]), *flags)
     assert code == 0
     assert "goal dose_delivered is VERIFIED" in out
-    assert "driver_limit" in out and "calibration" in out
+    assert "checked 4, skipped 0" in out
+    assert "dispense on liquid-handler-2 driver 1.4.0" in out
+    # Narrower than it sounds, and the receipt keeps saying so.
+    assert "not that the device performed the run" in out
 
 
 def test_the_mission_example_delegates_most_of_its_stack(capsys):

@@ -11,13 +11,22 @@ one, and then a skip list. What comes back says which obligations were checked
 and which were skipped for what reason, so a run that looks cheap can be told
 apart from a run that was cheap because it gave up early.
 
-Three checkers ship wired:
+Five checkers ship wired:
 
   lean         the Lean kernel, through harness.lean_oracle, which reports a
                missing toolchain as unverifiable rather than as a pass
   arithmetic   a quantity against a stated interval, with no expression
                evaluation anywhere in the path
   dimensional  a conversion inside one unit family, refusing across families
+  readback     a recorded rendering of a formal statement, compared against its
+               source by a person, in workstream_readback.py
+  instrument   a device record against the reference file its driver ships, in
+               workstream_instrument.py
+
+The last two need something the workstream itself does not carry: the readings
+recorded beside the declaration, and reference files the caller supplies. Both
+settle unverifiable without them rather than passing, so wiring them is what
+turns a carried claim into a checked one and never the reverse.
 
 The other kinds in workstream.CHECKS take a caller-supplied checker. A kind with
 nothing registered settles unverifiable and says so, which is the honest reading
@@ -25,16 +34,23 @@ of "this board has no way to decide that" and is never a pass.
 """
 from __future__ import annotations
 
-import re
-
 from harness.evidence_json import strict_load_json
 from harness.workstream import CHECKS, Obligation, Workstream, WorkstreamError
+from harness.workstream_instrument import instrument_checker
+from harness.workstream_lean import _lean_environment, lean_checker
+from harness.workstream_readback import readback_checker
 from harness.workstream_receipt import workstream_receipt
+
+# Re-exported so a caller wiring one checker does not have to know which module
+# it moved to. The lean environment rule lives with the checker it belongs to.
+__all__ = [
+    "_lean_environment", "arithmetic_checker", "default_checkers",
+    "dimensional_checker", "instrument_checker", "lean_checker",
+    "load_workstream", "readback_checker", "run_workstream",
+]
 
 _TOLERANCE = 1e-9
 _MAX_DOCUMENT = 32_000_000
-_LEAN_PIN = re.compile(r"lean4?[:/]v?(\d+(?:\.\d+)*)")
-_LEAN_RUNNING = re.compile(r"version (\d+(?:\.\d+)*)")
 
 
 def _pair(raw: object) -> tuple[str, str]:
@@ -58,50 +74,6 @@ def _payload(obligation: Obligation, fields: tuple[str, ...]) -> dict:
     if missing:
         raise ValueError(f"the statement is missing {', '.join(missing)}")
     return body
-
-
-def _lean_environment(environment: str, toolchain: str) -> tuple[bool, str]:
-    """Whether the toolchain that answered is the one the obligation pinned.
-
-    The environment string is folded into the workstream identity, so a receipt
-    naming a version the check did not run in is worse than one naming none.
-    A mismatch is not the statement's fault, so it settles unverifiable.
-
-    Only the Lean version is confirmed here. A library revision written into the
-    same string is carried into the identity and is not checked against what was
-    on the path.
-    """
-    pinned = _LEAN_PIN.search(environment or "")
-    if pinned is None:
-        return True, "the environment names no lean version, so nothing pins this result"
-    running = _LEAN_RUNNING.search(toolchain or "")
-    if running is None:
-        return False, (f"the environment pins lean {pinned.group(1)} and the toolchain "
-                       "that answered did not report a version")
-    if running.group(1) != pinned.group(1):
-        return False, (f"the environment pins lean {pinned.group(1)} and the check ran "
-                       f"on {running.group(1)}")
-    return True, f"lean {running.group(1)}, matching the pinned environment"
-
-
-def lean_checker(obligation: Obligation) -> tuple[str, str]:
-    """Ask the Lean kernel. A missing toolchain is declared, never a pass."""
-    from harness.lean_oracle import lean_check
-
-    receipt = lean_check(obligation.statement)
-    passed = receipt.get("passed")
-    output = str(receipt.get("kernel_output", ""))[:400]
-    toolchain = str(receipt.get("toolchain", ""))
-    if passed is None:
-        return "UNVERIFIABLE", output or "no lean toolchain installed"
-    if passed is False and not toolchain:
-        # An admitted hole is refused before the kernel runs, so there is no
-        # toolchain to compare and nothing about the environment to settle.
-        return "FAIL", output or "the kernel refused the statement"
-    matched, note = _lean_environment(obligation.environment, toolchain)
-    if not matched:
-        return "UNVERIFIABLE", note
-    return ("PASS", note) if passed is True else ("FAIL", output or note)
 
 
 def arithmetic_checker(obligation: Obligation) -> tuple[str, str]:
@@ -153,12 +125,21 @@ def dimensional_checker(obligation: Obligation) -> tuple[str, str]:
     return "FAIL", f"expected {expected} {body['to']}, the conversion gives {got}"
 
 
-def default_checkers() -> dict:
-    """The kinds this repository can decide on its own."""
+def default_checkers(readbacks: dict[str, dict] | None = None,
+                     references: dict[str, dict] | None = None) -> dict:
+    """The kinds this repository can decide on its own.
+
+    Called bare, read-back and instrument obligations settle unverifiable and
+    say what they were missing. That is the point of wiring them at all: the
+    difference between a device claim nobody checked and one that was checked
+    has to be visible in the receipt, not in whether the checker was present.
+    """
     return {
         "lean": lean_checker,
         "arithmetic": arithmetic_checker,
         "dimensional": dimensional_checker,
+        "readback": readback_checker(readbacks),
+        "instrument": instrument_checker(references),
     }
 
 

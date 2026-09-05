@@ -46,6 +46,8 @@ CHECKS = {
     "arithmetic": "the quantities were recomputed and agree inside a stated interval",
     "dimensional": "the units reduce and the relation is dimensionally sound",
     "citation": "a named source was read and says what the statement says it says",
+    "readback": "a rendering of the statement, made without its source, was compared "
+                "against that source by a person",
     "schema": "an artifact validates against a named schema",
     "instrument": "a device receipt records the reading and the command that produced it",
     "assumed": "nothing checked this; it is carried as a declared assumption",

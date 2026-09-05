@@ -139,20 +139,36 @@ gave up early.
 | Closed Lean theorem | `lean` | `lean4:v4.9.0+mathlib:2026-08-01` |
 | Open theorem imported by a proof-sketch | `assumed` | the board and revision it was stated on |
 | The three standard axioms | `assumed` | the toolchain that admits them |
-| Instrument reading under an MHS driver | `instrument` | `mhs:<device>/<driver or calibration>` |
-| Driver-enforced safety limit | `assumed` | `mhs:<device>/driver-<version>` |
+| Instrument reading under an MHS driver | `instrument` | `mhs:<device>/driver-<version>` |
+| Driver-enforced safety limit | `instrument` | `mhs:<device>/driver-<version>` |
+| Formal statement against the source it came from | `readback` | `readback/v1` |
 | Unit conversion inside one family | `dimensional` | `flywheel.units/v1` |
 | Quantity against a stated interval | `arithmetic` | the instrument or pack that produced it |
 | Statute or source text | `citation` | the corpus edition |
 
 Three worked declarations ship under `examples/workstreams/`.
-`formalization.json` is a milestone over one closed Lean theorem and one open
-lemma carried as an assumption. `instrument.json` is a delivered dose over a
-conversion, a plate-reader interval, a driver safety limit, and a calibration,
-with the last two carried and disclosed. `mission.json` is a decomposition
-eighteen obligations deep whose lemmas are small facts a bare Lean kernel decides
-on its own, so it runs anywhere Lean is installed. Run any of them with
-`flywheel workstream run examples/workstreams/instrument.json`.
+`formalization.json` is a milestone over one closed Lean theorem, one open lemma
+carried as an assumption, and a read-back of the milestone statement against the
+proposition it was formalized from. `instrument.json` is a delivered dose over a
+conversion, a dispense record, and a plate-reader record, with each of the last
+two checked against the driver reference file that governs it. `mission.json` is
+a decomposition eighteen obligations deep whose lemmas are small facts a bare
+Lean kernel decides on its own, so it runs anywhere Lean is installed.
+
+Driver reference files sit under `examples/workstreams/references/`, apart from
+the declarations, because a reference is an input to a run and not something
+that can be run. Run a declaration with
+
+    flywheel workstream run examples/workstreams/formalization.json
+
+and a declaration carrying device claims by naming the references it is subject
+to, repeating the flag once per device:
+
+    flywheel workstream run examples/workstreams/instrument.json --reference examples/workstreams/references/mhs-liquid-handler-2.json --reference examples/workstreams/references/mhs-plate-reader-3.json
+
+Drop the flags and the same declaration reports `BLOCKED` at exit 2, naming the
+device it found no reference for. That is the intended behaviour, since a device
+claim nothing checked does not settle.
 
 ### The bounded audit surface
 
@@ -223,10 +239,27 @@ that answered reports a different one, the obligation settles `unverifiable`
 with both versions named. A refusal on the wrong toolchain is not evidence about
 the pinned environment either, so the rule applies in both directions.
 
-Only the Lean version is confirmed. A library revision written into the same
-string is carried into the identity and is not checked against what was on the
-path. An environment naming no version passes, and the receipt says on that row
-that nothing pins the result.
+The library revision beside the version now binds by the same rule.
+`lean4:v4.9.0+mathlib:2026-08-01` makes two claims, and the second is the more
+expensive one to get wrong: a formalization stack is decided by its library, and
+two proofs of one statement under different Mathlib revisions are two different
+results. Revisions come from a lake manifest, since the Lean receipt carries no
+field for them. `FLYWHEEL_LEAN_MANIFEST` names one, or a `lake-manifest.json` in
+the working directory is picked up. The path never comes from the declaration,
+because a path read out of a document a stranger wrote is a file-read surface
+wearing the word environment.
+
+Only a `+`-joined environment declares parts. A single segment is a label, which
+is what keeps `prove2me:mission-7` and `cfr:2026-title21` from being read as
+libraries nobody can find a manifest for.
+
+With no manifest reachable, a library-pinned obligation settles `unverifiable`
+and the note names the library that went unbound. In this repository that is the
+common case, because `lean_check` invokes a bare `lean` with no lake project
+around it. The honest reading of such a run is that nothing confirmed which
+Mathlib was on the path, and the receipt now says so rather than printing
+`matching the pinned environment` over a gap. An environment naming no version
+passes, and the receipt says on that row that nothing pins the result.
 
 ## The cost argument, carried with its caveat
 
@@ -256,29 +289,64 @@ one merge queue. Atomizing statements removes the queue. The skip economy in
 
 ## What this does not do
 
-- It does not establish that a statement says what a reader takes it to say.
-  That is the faithfulness problem, and the Prove2Me answer is the sub-agent
-  read-back with a human comparison. Nothing here implements read-back yet. The
-  audit surface bounds who has to read what and records that a reading happened.
-  It does not say the reading was right, and nothing in it compares a statement
-  against the source it was formalized from.
-- It does not verify a library revision, only a Lean version.
-- It does not talk to an instrument. There is no MHS driver client in this
-  repository, so an `instrument` obligation needs a caller-supplied checker, and
-  with none registered it settles `unverifiable` rather than passing.
+- A confirmed read-back does not establish that a formalization is faithful. It
+  records that a person compared a rendering against a source. It does not
+  establish that the renderer was independent of that source, and it does not
+  establish that the comparison was right. The receipt carries that sentence on
+  every run where a read-back settled something.
+- A passing `instrument` obligation does not establish that the device performed
+  the run, that the sample was the right one, or that a reading is accurate. It
+  establishes that the record is consistent with the driver's own reference file.
+  There is no MHS driver client here and no reference file ships from a vendor,
+  so the two references under `examples/` are written by hand.
+- A bound library revision does not establish that the proof was checked against
+  that library. It establishes that a manifest reachable from the run lists the
+  revision the environment names. Running the kernel inside the project that
+  manifest belongs to is what would close the gap, and this repository does not.
 - It does not host anything. There is no board, no submission queue, and no
   shared corpus. This is the composition rule and the runner for a stack that
   someone else assembles.
 - It makes no claim about the FLT run or the Prove2Me missions. Those numbers
   are cited as design input, and nothing here has re-derived them.
 
+### The faithfulness check
+
+Requirement 4 said the audit surface bounds who reads what and stops there. The
+`readback` kind is the reading itself, and it is the one place in this layer
+where a check is about meaning rather than about a proof holding.
+
+A renderer is handed the formal statement without its source and asked to say in
+ordinary words what the statement asserts. A person then compares that rendering
+against the source the statement was formalized from. Withholding the source is
+the design. A renderer that has read the source produces the source's own words
+whether or not the formalization captured them, and the comparison becomes a
+mirror.
+
+Two rules keep the kind from grading itself. Nothing settles on a renderer's
+say-so, so a rendering alone is `undecided` and only a person's recorded
+confirmation passes; the accept path runs no model at all, hashing the three
+texts and comparing. And drift is never a refutation. A confirmation pins the
+formal statement, the source, and the rendering together, and moving any of the
+three returns the obligation to `undecided` rather than failing it. Nobody said
+the statement was wrong. They said nobody has read it in the form it is in now.
+Since `undecided` does not satisfy a parent, an unread read-back blocks the
+stack above it, which is the property worth having.
+
+The rendering lives beside the obligation in the declaration rather than inside
+the statement, because the statement is folded into workstream identity. A
+re-render would otherwise move the identity of everything above it, and an
+identity that moves whenever a model is asked the same question twice is not an
+identity.
+
 ## Next
 
-1. A read-back obligation kind, where the checker is an agent given the formal
-   statement without its source, and the receipt carries both renderings for a
-   human to compare. This is the highest-value item, because faithfulness is the
-   one requirement the layer currently records rather than tests.
-2. An MHS driver checker, so an `instrument` obligation can settle against a
-   reference file rather than being carried.
-3. A library-revision probe, so the rest of the environment string binds the way
-   the Lean version now does.
+1. A renderer wired to a model, and a path for recording a confirmation. Both
+   the rendering and the pin are hand-written into the declaration today, the
+   same way an audit reading is, which is workable for one statement and not for
+   a corpus.
+2. Running the Lean kernel inside a lake project, so a library revision is
+   confirmed against what the check loaded rather than against a manifest that
+   happens to be reachable.
+3. A driver reference published by whoever owns the driver. The two reference
+   files here are written by hand from documented limits, so they demonstrate
+   the shape and carry no authority.
