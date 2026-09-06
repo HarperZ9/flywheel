@@ -28,6 +28,7 @@ from .chain import StageReceipt, append_stage, chain_to_dicts
 from .search import best_of_n, DEFAULT_TEMPS
 from .eval import ArmConfig
 from .grounding import recheck_grounding
+from .oracle_inputs import capture as capture_inputs
 from .contract_stage import holds, stage_payload, validate_output
 
 
@@ -60,6 +61,7 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
              search: ArmConfig | None = None,
              grounding_recheck: bool = False,
              grounding_workdirs: dict | None = None,
+             capture_oracle_inputs: bool = True,
              output_contract: list[dict] | None = None,
              output_authorities: dict | None = None,
              output_extract=None,
@@ -125,6 +127,14 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
             return LoopResult(cached, None, None,
                               cached.verdict == "PASS", time.time() - t0,
                               cache_hit=True)
+
+    # Snapshot the fixtures BEFORE the oracle runs, so this receipt can rebuild
+    # its own environment later without a caller handing one over (the fallback
+    # in grounding.py). Timing is the whole point: after the run the workdir
+    # also holds the candidate and the junit file the canonical hash is read
+    # back from, and a receipt carrying its own answer key grades itself.
+    oracle_inputs = capture_inputs(
+        task.workdir, exclude=(task.candidate_path,)) if capture_oracle_inputs else {}
 
     search_mode = search is not None and search.n_candidates > 1
     if search_mode:
@@ -196,6 +206,8 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
         retrieved=retrieved,
         oracle_stdout_excerpt=orc.stdout_excerpt,
         injected_context=boot_receipt,
+        candidate_path=task.candidate_path,
+        oracle_inputs=oracle_inputs,
         chain=chain_to_dicts(chain))
     wv = WitnessVerdict("MATCH", orc.output_hash, "witness skipped")
     if witness_recheck:

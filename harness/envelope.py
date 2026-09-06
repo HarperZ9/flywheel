@@ -16,6 +16,20 @@ IN_TOTO_STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 PREDICATE_TYPE = "https://flywheel.dev/ProofEnvelope/v1"
 DSSE_PAYLOAD_TYPE = "application/vnd.in-toto+json"
 
+# Fields added after the first receipts were sealed, with the default each held
+# before it existed. A field is dropped from BOTH digest preimages WHILE IT
+# HOLDS ITS DEFAULT, so an envelope written before the field existed hashes
+# exactly as it did then and every signature over it still verifies. An
+# envelope that actually carries the field signs it like any other claim.
+#
+# Excluding them unconditionally would be simpler and wrong. oracle_inputs is
+# the fixture set a re-checker rebuilds the oracle environment from, and an
+# attacker who can rewrite an unsigned fixture set hands the re-checker a test
+# file with the same test ids and weakened assertions. That reproduces the
+# canonical hash against a tampered candidate, which is a false MATCH bought
+# outright. Signing the inputs closes it: change them and the digest moves.
+_DIGEST_OPTIONAL = {"candidate_path": "", "oracle_inputs": {}}
+
 
 @dataclass
 class ProofEnvelope:
@@ -39,9 +53,32 @@ class ProofEnvelope:
     # {source_sha256, start_byte, end_byte, quote_sha256}; verified by
     # re-slicing the source (verify_citations below)
     citations: list[dict] = field(default_factory=list)
+    # Workdir-RELATIVE name the candidate was written as ("solution.py"), so a
+    # re-checker can rebuild the oracle environment from the receipt instead of
+    # being handed one. Never absolute: an absolute path would put a local
+    # filesystem into a published receipt.
+    candidate_path: str = ""
+    # The other half of that environment: workdir-relative path -> file text for
+    # the fixtures the oracle read, captured before the run. Bounded and
+    # text-only (see oracle_inputs.py). Empty means the receipt carries no
+    # environment, which costs a re-checker a confirmation and never grants one.
+    oracle_inputs: dict = field(default_factory=dict)
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2, sort_keys=True)
+
+    def _digest_fields(self) -> dict:
+        """asdict(), minus any post-hoc field still holding its default.
+
+        This is what keeps receipts sealed before 2026-09-06 verifying against
+        their own signatures while newer fields are still covered. See
+        _DIGEST_OPTIONAL.
+        """
+        d = asdict(self)
+        for k, default in _DIGEST_OPTIONAL.items():
+            if d.get(k) == default:
+                d.pop(k, None)
+        return d
 
     def _content_preimage(self) -> str:
         """The SUBJECT preimage: what was checked, not what was concluded.
@@ -52,7 +89,7 @@ class ProofEnvelope:
         the same subject id or they cannot be compared at all. Do not add the
         verdict here; use claim_sha256() for the verdict-bound digest.
         """
-        d = asdict(self)
+        d = self._digest_fields()
         for k in ("oracle_output_hash", "verdict", "oracle_stdout_excerpt"):
             d.pop(k, None)
         return json.dumps(d, sort_keys=True)
@@ -65,7 +102,7 @@ class ProofEnvelope:
         cover and a third party re-derives: flipping a stored FAIL to PASS
         changes it, which the subject digest by design does not.
         """
-        d = asdict(self)
+        d = self._digest_fields()
         d.pop("oracle_stdout_excerpt", None)
         return json.dumps(d, sort_keys=True)
 
