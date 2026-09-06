@@ -31,10 +31,15 @@ TASK_DIR = Path(__file__).parent.parent / "tasks" / "example_pass"
 CORRECT = "def add(a, b):\n    return a + b\n"
 
 
-def _run_ancestor(tmp_path):
-    """Seal ancestor A into the shared envelope store; return (task, env_path)."""
+def _ancestor_task(tmp_path):
     a = load_task(TASK_DIR, workdir=tmp_path / "ws_a")
     a.task_id = "anc_a"
+    return a
+
+
+def _run_ancestor(tmp_path):
+    """Seal ancestor A into the shared envelope store; return (task, env_path)."""
+    a = _ancestor_task(tmp_path)
     r = run_loop(a, StubProposer(CORRECT), PytestOracle(),
                  envelopes_dir=tmp_path / "env")
     assert r.accepted
@@ -50,9 +55,22 @@ def _citing_task(tmp_path, name, source):
 
 
 def _tamper(env_path):
+    """Rewrite the recorded outcome and refile the receipt under its new
+    content hash, returning the new path.
+
+    The rename is what keeps this arm about the re-run. An edit that leaves the
+    filename behind is now refused by the integrity check before any oracle
+    runs (grounding._load_intact), which is a different property and is covered
+    in test_grounding_fresh_env.py. Refiling gives us the stronger adversary,
+    the one that check cannot see.
+    """
     d = json.loads(env_path.read_text(encoding="utf-8"))
     d["oracle_output_hash"] = "0" * len(d["oracle_output_hash"])
     env_path.write_text(json.dumps(d), encoding="utf-8")
+    refiled = env_path.with_name("%s-%s.json" % (
+        env_path.name.rsplit("-", 1)[0], load_envelope(env_path).content_hash()))
+    env_path.rename(refiled)
+    return refiled
 
 
 def test_positive_control_healthy_grounding_conserves_match(tmp_path):
@@ -69,7 +87,7 @@ def test_positive_control_healthy_grounding_conserves_match(tmp_path):
 
 def test_arm1_tampered_ancestor_rewitnesses_to_drift(tmp_path):
     a, path = _run_ancestor(tmp_path)
-    _tamper(path)
+    path = _tamper(path)
     v = witness_envelope(load_envelope(path), workdir=a.workdir,
                          candidate_path=a.candidate_path)
     assert v.verdict == "DRIFT", v.reason
@@ -114,7 +132,15 @@ def test_failclosed_missing_stored_envelope_is_unverifiable(tmp_path):
 
 
 def test_failclosed_no_oracle_environment_is_unverifiable_not_fake_rerun(tmp_path):
-    a, _ = _run_ancestor(tmp_path)
+    """The invariant that survived the 2026-09-06 fallback: an ancestor whose
+    environment cannot be rebuilt is UNVERIFIABLE, never assumed MATCH and
+    never re-run in a wrong workdir to manufacture a DRIFT. Sealing with
+    capture off is what leaves it unrebuildable; the fallback that CAN rebuild
+    one is covered in test_grounding_fresh_env.py."""
+    a = _ancestor_task(tmp_path)
+    assert run_loop(a, StubProposer(CORRECT), PytestOracle(),
+                    envelopes_dir=tmp_path / "env",
+                    capture_oracle_inputs=False).accepted
     b = _citing_task(tmp_path, "dep_b", a.task_id)
     r = run_loop(b, StubProposer(CORRECT), PytestOracle(),
                  envelopes_dir=tmp_path / "env", grounding_recheck=True)  # no workdirs
