@@ -16,10 +16,13 @@ import os
 import shutil
 import subprocess
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+# `spawn_killable` and `_kill_tree` live in `proc_kill.py`. They are
+# re-exported here because six modules imported them from this file
+# before the reasoning behind them outgrew its line budget.
+from .proc_kill import _kill_tree, spawn_killable  # noqa: F401
 from .task import Task
 from .verdict import Verdict, Execution, Attribution, is_dispositive, attribution_for
 
@@ -56,36 +59,6 @@ def run_env(extra: dict | None = None) -> dict:
     if extra:
         env.update(extra)
     return env
-
-
-def _kill_tree(proc: subprocess.Popen) -> None:
-    """Kill a process AND its descendants. proc.kill() alone is insufficient
-    for shell=True on Windows: it terminates cmd.exe while the real workload
-    (pytest running a hostile candidate) survives and holds the output pipes."""
-    if os.name == "nt":
-        subprocess.run(f"taskkill /T /F /PID {proc.pid}", shell=True,
-                       capture_output=True, timeout=15)
-    else:
-        try:
-            os.killpg(os.getpgid(proc.pid), 9)
-        except Exception:
-            proc.kill()
-
-
-def spawn_killable(*args, **kwargs) -> subprocess.Popen:
-    """Popen whose whole descendant tree `_kill_tree` can actually reap.
-
-    On POSIX the child leads a fresh session, so `os.killpg(getpgid(pid))`
-    targets that tree instead of the process group the child would otherwise
-    share with the pytest parent. Without it, a hostile candidate's infinite
-    loop is a grandchild in pytest's own group: the kill either misses it (it
-    survives holding the pipe and the drain wedges) or, worse, signals pytest
-    itself. Windows reaps via `taskkill /T` and needs nothing extra. Every
-    Popen that is later handed to `_kill_tree` must come through here so the
-    kill precondition holds by construction, not by each caller remembering."""
-    if os.name != "nt":
-        kwargs.setdefault("start_new_session", True)
-    return subprocess.Popen(*args, **kwargs)
 
 
 class NonDispositiveVerdict(Exception):

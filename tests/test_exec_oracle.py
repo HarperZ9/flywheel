@@ -89,6 +89,21 @@ def _pid_alive(pid: int) -> bool:
     return state != "Z"
 
 
+def _proc_facts(pid: int) -> str:
+    """State, parent and process group of `pid`, for a failure message.
+
+    A survivor is only interesting for the reason it survived, and the three
+    fields that separate the reasons are all in the same line of /proc.
+    """
+    try:
+        with open(f"/proc/{pid}/stat") as f:
+            fields = f.read().rsplit(")", 1)[1].split()
+    except OSError as exc:
+        return f"unreadable ({type(exc).__name__})"
+    return (f"state={fields[0]} ppid={fields[1]} pgrp={fields[2]} "
+            f"session={fields[3]}")
+
+
 @pytest.mark.skipif(os.name == "nt", reason="POSIX process-tree reaping; "
                      "the Windows path kills via taskkill /T and is covered "
                      "by test_oracle_hostile_candidate.py")
@@ -132,7 +147,14 @@ def test_timeout_kills_the_whole_tree_not_just_the_shell(tmp_path):
             time.sleep(0.1)
         assert not _pid_alive(grandchild_pid), (
             f"grandchild pid {grandchild_pid} survived the oracle timeout: "
-            "shell=True's timeout killed the shell but not the tree it spawned")
+            "shell=True's timeout killed the shell but not the tree it "
+            f"spawned. survivor {_proc_facts(grandchild_pid)}. This assertion "
+            "failed once on a CI runner and could not be reproduced locally, "
+            "so the facts are printed rather than guessed at: a ppid of 1 "
+            "means it was orphaned and the group signal missed it, a pgrp "
+            "that differs from the session leader's pid means it left the "
+            "group `spawn_killable` built, and state R or S means it is "
+            "genuinely running rather than a zombie the probe misread")
     finally:
         if grandchild_pid is not None and _pid_alive(grandchild_pid):
             try:
