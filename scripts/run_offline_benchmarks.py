@@ -69,7 +69,11 @@ def _parity() -> dict[str, Any]:
             "witnessed": s["witnessed"], "absent": s["absent"],
             "uniquely_witnessed": len(s["uniquely_witnessed"]),
             "undetermined": len(s["undetermined"]),
-            "gaps": list(s["gaps"])}
+            "gaps": list(s["gaps"]),
+            # Sealed for the same reason as `peers`. An empty gap list is
+            # bounded by a row set this project wrote, so the count of peer
+            # capabilities no row scores has to be hashed with it.
+            "coverage": s["coverage"]}
 
 
 def _sealable(suite: dict[str, Any]) -> dict[str, Any]:
@@ -134,7 +138,9 @@ def render_table(report: dict[str, Any]) -> str:
     lines.append(f"  {'parity':<24} rows={p['rows']}  witnessed={p['witnessed']}"
                  f"  absent={p['absent']}  gaps={len(p['gaps'])}"
                  f"  peers={len(p['peers'])}"
-                 f"  undetermined={p['undetermined']}")
+                 f"  undetermined={p['undetermined']}"
+                 f"  unscored={p['coverage']['unscored_topics']}"
+                 f"  row_owed={p['coverage']['row_owed']}")
     lines.append(f"  not run: {len(report['not_run'])} suites need a live "
                  "endpoint, each named in the report")
     return "\n".join(lines)

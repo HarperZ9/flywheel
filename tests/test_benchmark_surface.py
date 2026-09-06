@@ -186,6 +186,30 @@ def test_the_sealed_record_carries_the_matrix_denominators():
     assert p["peers"] == [x["key"] for x in doc["peers"]]
     assert p["undetermined"] == len(doc["summary"]["undetermined"])
     assert p["uniquely_witnessed"] == len(doc["summary"]["uniquely_witnessed"])
+    # The gap list is sealed here too and reads empty. What bounds it is the
+    # row set, which this project wrote, so the count of peer capabilities no
+    # row scores is hashed with it or the zero travels alone.
+    assert p["coverage"] == doc["summary"]["coverage"]
+
+
+def test_the_empty_gap_count_reaches_both_surfaces_with_its_own_limit():
+    """`gaps 0` is the most flattering number the matrix produces and the one
+    a reader is least equipped to check, because the row set that bounds it
+    was chosen here. Both surfaces have to print the unscored count beside
+    it, and the split between rows owed and topics left out on purpose, or
+    the zero reads as full coverage of the field."""
+    from harness.parity import parity_matrix
+    c = parity_matrix()["summary"]["coverage"]
+    for text in (HTML.read_text(encoding="utf-8"),
+                 MARKDOWN.read_text(encoding="utf-8")):
+        # The markdown is reflowed to the README width, so a phrase can land
+        # across two lines. Compared on collapsed whitespace, or this test
+        # would only be checking where the wrapper happened to break.
+        text = " ".join(text.split())
+        assert f"{c['unscored_topics']} capability areas" in text
+        assert f"{c['row_owed']} where a row is owed" in text
+        assert f"{c['out_of_frame']} left out on purpose" in text
+        assert "harness/parity_coverage.py" in text
 
 
 def test_the_strawman_is_drawn_next_to_the_harness():

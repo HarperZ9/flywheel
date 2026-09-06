@@ -98,7 +98,7 @@ python scripts/run_offline_benchmarks.py
 | stateful-provider-swap | does state survive a provider swap | checks 10; pass_rate 1.0; passed True |
 | source-mined | do the mined checks still hold against their datasets | cases 26; failed 0; metrics_asserted 170; pass_rate 1.0; passed 26 |
 | paired-replication | did continued pretraining change general code completion | delta_points -0.0305; gains 9; p_exact 0.4049; regressions 14; tasks 164 |
-| receipting-cost | what does it cost to keep the receipt | durability_share 0.831; log_bytes_per_action 788.3; ms_per_witnessed_action 7.64; recheck_us_per_record 25.2; verdict MATCH |
+| receipting-cost | what does it cost to keep the receipt | durability_share 0.9175; log_bytes_per_action 788.3; ms_per_witnessed_action 6.88; recheck_us_per_record 12.5; verdict MATCH |
 
 The strawman, a system with no receipts, scores 1% on the same axes. A
 benchmark that everything passes measures nothing.

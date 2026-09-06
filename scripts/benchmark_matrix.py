@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from scripts.benchmark_shared import CELL, esc, unread_note
+from scripts.benchmark_shared import CELL, coverage_note, esc, unread_note
 
 
 def _row_html(row: dict[str, Any], peers: list[dict[str, Any]],
@@ -43,7 +43,8 @@ def _legend(doc: dict[str, Any], peers: list[dict[str, Any]]) -> str:
             "time the "
             "matrix is read, so a row whose witness disappears reports absent. "
             "The peer columns are dated readings of public documentation and "
-            "public source, and are not measurements.</p>")
+            "public source, and are not measurements.</p>"
+            f'<p class="legend">{esc(coverage_note(s))}</p>')
 
 
 def matrix_html(doc: dict[str, Any]) -> str:

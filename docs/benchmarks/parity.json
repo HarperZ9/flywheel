@@ -1149,6 +1149,12 @@
   "schema": "flywheel.parity/v2",
   "summary": {
     "absent": 0,
+    "coverage": {
+      "out_of_frame": 4,
+      "read_on": "2026-09-06",
+      "row_owed": 9,
+      "unscored_topics": 13
+    },
     "gaps": [],
     "undetermined": [],
     "uniquely_witnessed": [

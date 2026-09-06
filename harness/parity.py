@@ -14,12 +14,19 @@ used to survive a peer cell of "partial", so a capability three products
 part-ship counted as one nobody declares. It also used to survive a cell
 nobody had read, because absence and ignorance shared one value. `None`
 now means not determined, it suppresses the star, and the count on the
-published page fell when that landed."""
+published page fell when that landed.
+
+The row set is a choice this project made, so an empty gap list cannot be
+read on its own: no row means no gap, whatever the peers ship. The capability
+areas found in the peers' own page indexes that no row here scores are named
+in `parity_coverage`, with a disposition and a reason for each, and the counts
+ride along in the summary."""
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
+from .parity_coverage import coverage_summary
 from .parity_peers import PEER_KEYS, PEERS, VALUES, declarations_for
 from .parity_rows import ROWS
 
@@ -106,4 +113,9 @@ def parity_matrix() -> dict:
             "summary": {"witnessed": witnessed,
                         "absent": len(rows) - witnessed,
                         "uniquely_witnessed": unique, "gaps": gaps,
-                        "undetermined": undetermined}}
+                        "undetermined": undetermined,
+                        # An empty gap list is a statement about rows that
+                        # exist. `parity_coverage` names what the peers ship
+                        # that no row scores, so the denominator this project
+                        # chose travels with the result it produces.
+                        "coverage": coverage_summary()}}
