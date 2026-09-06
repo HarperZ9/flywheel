@@ -12,7 +12,7 @@ from typing import Any
 
 from scripts.benchmark_head_to_head import load_record
 from scripts.benchmark_head_to_head import render_markdown as head_to_head
-from scripts.benchmark_shared import CELL, lede, wrap
+from scripts.benchmark_shared import CELL, lede, unread_note, wrap
 
 
 def render_markdown(report: dict[str, Any], doc: dict[str, Any]) -> str:
@@ -76,10 +76,7 @@ def render_markdown(report: dict[str, Any], doc: dict[str, Any]) -> str:
         f"{len(doc['rows'])} rows, {s['witnessed']} witnessed, "
         f"{s['absent']} absent, {len(s['uniquely_witnessed'])} marked `*` "
         f"because all {len(peers)} peers were read on that row and none of "
-        f"them declares it. {len(s['undetermined'])} rows carry at least one "
-        "peer surface nobody here has read; a star is withheld from every one "
-        "of them, so this count moves up as the reading is done and not "
-        "before."), "",
+        f"them declares it. {unread_note(s, len(doc['rows']))}"), "",
             "## What was not measured", ""]
     for entry in report["not_run"]:
         out.append(f"- **{entry['suite']}.** Needs {entry['needs']}. "
@@ -130,9 +127,8 @@ def render_readme_block(report: dict[str, Any], doc: dict[str, Any]) -> str:
              f"{len(doc['rows'])} capabilities, {s['witnessed']} witnessed in "
              "this repository by a check that runs every time the matrix is "
              f"read, and {len(s['uniquely_witnessed'])} that every peer was "
-             f"read on and none declares. {len(s['undetermined'])} more carry "
-             "a peer surface nobody here has read and are not counted. The "
-             "peer columns are dated readings of public documentation and "
+             f"read on and none declares. {unread_note(s, len(doc['rows']))} "
+             "The peer columns are dated readings of public documentation and "
              "public source, not measurements taken here."),
         wrap("Full results, the matrix, and the measurements that were not "
               "taken: [docs/BENCHMARKS.md](docs/BENCHMARKS.md)."),

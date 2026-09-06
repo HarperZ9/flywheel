@@ -163,6 +163,14 @@ def test_a_star_count_never_travels_without_its_denominator():
                  MARKDOWN.read_text(encoding="utf-8")):
         assert f"all {len(peers)} peers were read" in text
         assert f"{len(s['undetermined'])} rows carry at least one peer" in text
+        # The wording changes at zero, to the stronger claim that nothing is
+        # being held back. A surface making that claim while rows are still
+        # unread would be reading its own star count in our favour.
+        withheld = "a star is withheld" in text
+        assert withheld == bool(s["undetermined"]), (
+            "the surface says a star is withheld and no row is unread"
+            if withheld else
+            "rows are unread and the surface does not say a star is withheld")
         for peer in peers:
             assert peer["read_on"] in text, peer["key"]
 

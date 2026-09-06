@@ -22,6 +22,32 @@ CELL = {True: ("yes", "ships"), False: ("no", "no"),
 WIDTH = 79
 
 
+def unread_note(summary: dict[str, Any], rows: int, drawn_as: str = "") -> str:
+    """What the unread rows do to the star count, in the tense that is true.
+
+    While rows are unread the sentence has to say a star is being withheld, so
+    a reader does not take the star count for a finished number. Once the count
+    reaches zero that wording describes an empty set and reads as if reading is
+    still owed, so the claim flips to the stronger one the record supports. It
+    goes back on its own the moment a row or a peer is added.
+
+    Both renderers call this. The page and the text document said it in two
+    hand-written copies, which is how one of them ends up making a claim the
+    other has already stopped making. `drawn_as` is where the page names the
+    cell it prints for an unread peer, and it is dropped at zero because no
+    cell is drawn that way when nothing is unread.
+    """
+    held = len(summary["undetermined"])
+    head = "rows carry at least one peer surface nobody here has read"
+    if held:
+        return (f"{held} {head}{drawn_as}, and a star is withheld from every "
+                "one of them, so the starred count moves up as the reading is "
+                "done and not before.")
+    return (f"0 {head}, so no star is being withheld for want of reading "
+            f"across all {rows}. Adding a row or a peer puts cells back in "
+            "that state until they are read.")
+
+
 def lede(report: dict[str, Any]) -> str:
     """The opening paragraph, with the suite count taken from the record.
 

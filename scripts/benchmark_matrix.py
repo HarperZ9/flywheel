@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from scripts.benchmark_shared import CELL, esc
+from scripts.benchmark_shared import CELL, esc, unread_note
 
 
 def _row_html(row: dict[str, Any], peers: list[dict[str, Any]],
@@ -37,10 +37,10 @@ def _legend(doc: dict[str, Any], peers: list[dict[str, Any]]) -> str:
     return (f'<p class="legend">{len(doc["rows"])} rows, {s["witnessed"]} '
             f'witnessed, {s["absent"]} absent, {len(s["uniquely_witnessed"])} '
             f"marked &lowast; because all {len(peers)} peers were read on that "
-            f"row and none declares it. {len(s['undetermined'])} rows carry at "
-            "least one peer surface nobody here has read, drawn as "
-            "<i>unread</i>, and a star is withheld from every one of them. The "
-            "Flywheel column is checked against this repository every time the "
+            f"row and none declares it. "
+            f"{unread_note(s, len(doc['rows']), ', drawn as <i>unread</i>')} "
+            "The Flywheel column is checked against this repository every "
+            "time the "
             "matrix is read, so a row whose witness disappears reports absent. "
             "The peer columns are dated readings of public documentation and "
             "public source, and are not measurements.</p>")
