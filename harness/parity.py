@@ -6,22 +6,34 @@ whose witness is missing reports ABSENT, so the matrix can fail. Competitor
 cells are dated DECLARATIONS from public docs and configs, never
 measurements; they are labeled as such and carry no verdict weight. The
 summary names both what is uniquely witnessed here and where the field is
-ahead -- the gap list is the point, not the scoreboard."""
+ahead -- the gap list is the point, not the scoreboard.
+
+A row is uniquely witnessed only when EVERY peer cell reads False. Two
+weaker rules were in place before and both inflated the count. The star
+used to survive a peer cell of "partial", so a capability three products
+part-ship counted as one nobody declares. It also used to survive a cell
+nobody had read, because absence and ignorance shared one value. `None`
+now means not determined, it suppresses the star, and the count on the
+published page fell when that landed."""
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
+from .parity_peers import PEER_KEYS, PEERS, VALUES, declarations_for
 from .parity_rows import ROWS
 
 REPO = Path(__file__).resolve().parent.parent
 
-DECLARED_ON = "2026-09-03"
+#: The newest peer read date, derived rather than typed, so the date on the
+#: page cannot outlive the reading it stands for.
+DECLARED_ON = max(p["read_on"] for p in PEERS)
 
 # Re-exported so `parity.ROWS` stays the one name callers and tests reach
 # for. parity_matrix reads it off this module at call time, which is what
 # lets a test swap in a row with a missing witness and watch the audit fail.
-__all__ = ["ROWS", "DECLARED_ON", "parity_matrix"]
+__all__ = ["ROWS", "PEERS", "PEER_KEYS", "VALUES", "DECLARED_ON",
+           "parity_matrix"]
 
 
 def _route_witnessed(ref: str, src: str) -> bool:
@@ -55,34 +67,43 @@ def _check_witness(kind: str, ref: str, gateway_src: str) -> bool:
     return False
 
 
+def _audit_row(row: dict, gateway_src: str) -> dict:
+    checks = [{"kind": k, "ref": ref,
+               "present": _check_witness(k, ref, gateway_src)}
+              for k, ref in row["witnesses"]]
+    ok = all(c["present"] for c in checks)
+    return {"key": row["key"], "desc": row["desc"],
+            "flywheel": "WITNESSED" if ok else "ABSENT",
+            "checks": checks, "competitors": declarations_for(row["key"])}
+
+
 def parity_matrix() -> dict:
     """Audit every row's witnesses against this repo, right now."""
     gateway_src = (REPO / "harness" / "gateway.py").read_text(
         encoding="utf-8", errors="replace")
-    rows = []
-    witnessed = absent = 0
-    unique = []
-    gaps = []
-    for r in ROWS:
-        checks = [{"kind": k, "ref": ref,
-                   "present": _check_witness(k, ref, gateway_src)}
-                  for k, ref in r["witnesses"]]
-        ok = all(c["present"] for c in checks)
-        witnessed += ok
-        absent += not ok
-        competitors = {c: r[c] for c in ("codex", "cursor", "claude-code")}
-        if ok and not any(v is True for v in competitors.values()):
+    rows = [_audit_row(r, gateway_src) for r in ROWS]
+    witnessed = sum(r["flywheel"] == "WITNESSED" for r in rows)
+    unique, gaps, undetermined = [], [], []
+    for r in rows:
+        ok = r["flywheel"] == "WITNESSED"
+        cells = r["competitors"].values()
+        # Every cell literally False. A "partial" is a declaration and an
+        # unread cell is not evidence, so neither one earns the star.
+        if ok and all(v is False for v in cells):
             unique.append(r["key"])
-        if not ok and any(v is True for v in competitors.values()):
+        if not ok and any(v is True for v in cells):
             gaps.append(r["key"])
-        rows.append({"key": r["key"], "desc": r["desc"],
-                     "flywheel": "WITNESSED" if ok else "ABSENT",
-                     "checks": checks, "competitors": competitors})
-    return {"schema": "flywheel.parity/v1",
+        if any(v is None for v in cells):
+            undetermined.append(r["key"])
+    return {"schema": "flywheel.parity/v2",
             "declared_on": DECLARED_ON,
+            "peers": [dict(p) for p in PEERS],
             "note": "flywheel cells are audited against this repo at read "
-                    "time; competitor cells are dated declarations from "
-                    "public docs and configs, not measurements",
+                    "time; peer cells are dated declarations from public "
+                    "docs and source, not measurements, and a null cell "
+                    "means nobody here has read that surface",
             "rows": rows,
-            "summary": {"witnessed": witnessed, "absent": absent,
-                        "uniquely_witnessed": unique, "gaps": gaps}}
+            "summary": {"witnessed": witnessed,
+                        "absent": len(rows) - witnessed,
+                        "uniquely_witnessed": unique, "gaps": gaps,
+                        "undetermined": undetermined}}

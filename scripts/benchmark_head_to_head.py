@@ -25,12 +25,12 @@ question, because a benchmark surface that only shows its wins is an ad.
 
 from __future__ import annotations
 
-import html
 import json
 from pathlib import Path
 from typing import Any
 
 from harness.attempt_attribution import recovery_sentence, summarize
+from scripts.benchmark_shared import esc as _esc
 
 RECORD = Path(__file__).resolve().parent.parent / "docs" / "benchmarks" / "graded-metrics.json"
 
@@ -48,10 +48,6 @@ NOT_RUN = ("No head-to-head run has been recorded yet. The task set, the "
            "adapters, and the graded checkers are in the repository and the "
            "run is one command; until it is run there is no number here, "
            "which is the honest state and not a zero.")
-
-
-def _esc(value: Any) -> str:
-    return html.escape(str(value), quote=True)
 
 
 def _cell(value: Any) -> str:

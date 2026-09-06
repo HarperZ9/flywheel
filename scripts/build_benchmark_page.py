@@ -17,7 +17,6 @@ as named nulls rather than as blanks a reader has to interpret.
 from __future__ import annotations
 
 import argparse
-import html
 import json
 import sys
 from pathlib import Path
@@ -29,11 +28,9 @@ REPO = Path(__file__).resolve().parent.parent
 RECORD = REPO / "docs" / "benchmarks" / "report.json"
 
 from scripts.benchmark_head_to_head import load_record, section_html  # noqa: E402
-from scripts.benchmark_shared import CELL, lede  # noqa: E402
-
-
-def _esc(value: Any) -> str:
-    return html.escape(str(value), quote=True)
+from scripts.benchmark_matrix import matrix_html  # noqa: E402
+from scripts.benchmark_shared import esc as _esc  # noqa: E402
+from scripts.benchmark_shared import lede  # noqa: E402
 
 
 def _pct(value: Any) -> str:
@@ -112,36 +109,6 @@ def _bars(report: dict[str, Any]) -> str:
             f'{head["dimensions"]} dimensions. {_esc(suite["non_goal"])}.</p>')
 
 
-def _matrix(doc: dict[str, Any]) -> str:
-    unique = set(doc["summary"]["uniquely_witnessed"])
-    rows = []
-    for row in doc["rows"]:
-        verdict = row["flywheel"]
-        cls = "yes" if verdict == "WITNESSED" else "absent"
-        mark = " &lowast;" if row["key"] in unique else ""
-        cells = "".join(
-            f'<td class="cell {CELL[row["competitors"][n]][0]}">'
-            f'{CELL[row["competitors"][n]][1]}</td>'
-            for n in ("codex", "cursor", "claude-code"))
-        rows.append(
-            f'<tr><td class="key">{_esc(row["key"])}{mark}</td>'
-            f'<td class="desc">{_esc(row["desc"])}</td>'
-            f'<td class="cell {cls}">{_esc(verdict.lower())}</td>{cells}</tr>')
-    s = doc["summary"]
-    return (
-        '<div class="tablewrap"><table><thead><tr><th>capability</th>'
-        "<th>what it means</th><th>flywheel</th><th>codex</th><th>cursor</th>"
-        f'<th>claude code</th></tr></thead><tbody>{"".join(rows)}</tbody>'
-        "</table></div>"
-        f'<p class="legend">{len(doc["rows"])} rows, {s["witnessed"]} '
-        f'witnessed, {s["absent"]} absent, {len(s["uniquely_witnessed"])} '
-        "marked &lowast; because no listed peer declares them. The Flywheel "
-        "column is checked against this repository every time the matrix is "
-        "read, so a row whose witness disappears reports absent. The "
-        "competitor columns are dated declarations from public documentation, "
-        f'read on {_esc(doc["declared_on"])}, and are not measurements.</p>')
-
-
 def _nulls(report: dict[str, Any]) -> str:
     items = []
     for entry in report["not_run"]:
@@ -200,11 +167,13 @@ matrix, and the measurements that were not taken, for the Flywheel engine.">
 {section_html(load_record())}
 
 <section id="matrix">
-  <h2>Against the field</h2>
+  <h2>Against {len(doc["peers"])} named peers</h2>
   <p class="lede">One row per capability. The Flywheel column is a check
-    against this repository. The other three are dated readings of public
-    documentation and carry no verdict weight.</p>
-  {_matrix(doc)}
+    against this repository. The rest are dated readings of public
+    documentation and public source, they carry no verdict weight, and a
+    surface nobody here has read is drawn as unread rather than left
+    blank.</p>
+  {matrix_html(doc)}
 </section>
 
 <section id="nulls">

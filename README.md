@@ -98,14 +98,16 @@ python scripts/run_offline_benchmarks.py
 | stateful-provider-swap | does state survive a provider swap | checks 10; pass_rate 1.0; passed True |
 | source-mined | do the mined checks still hold against their datasets | cases 26; failed 0; metrics_asserted 170; pass_rate 1.0; passed 26 |
 | paired-replication | did continued pretraining change general code completion | delta_points -0.0305; gains 9; p_exact 0.4049; regressions 14; tasks 164 |
-| receipting-cost | what does it cost to keep the receipt | durability_share 0.86; log_bytes_per_action 788.3; ms_per_witnessed_action 7.99; recheck_us_per_record 18.6; verdict MATCH |
+| receipting-cost | what does it cost to keep the receipt | durability_share 0.8534; log_bytes_per_action 788.3; ms_per_witnessed_action 8.24; recheck_us_per_record 26.9; verdict MATCH |
 
 The strawman, a system with no receipts, scores 0% on the same axes. A
 benchmark that everything passes measures nothing.
 
-Against the field: 37 capabilities, 37 witnessed in this repository by a check
-that runs every time the matrix is read, and 27 that no listed peer declares.
-The competitor columns are dated readings of public documentation, not
+Against 5 named peers (codex, cursor, claude code, hermes, omp): 37
+capabilities, 37 witnessed in this repository by a check that runs every time
+the matrix is read, and 6 that every peer was read on and none declares. 18
+more carry a peer surface nobody here has read and are not counted. The peer
+columns are dated readings of public documentation and public source, not
 measurements taken here.
 
 Full results, the matrix, and the measurements that were not taken:

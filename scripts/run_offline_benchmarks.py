@@ -52,12 +52,23 @@ SCHEMA = "flywheel.offline-benchmarks/v1"
 
 
 def _parity() -> dict[str, Any]:
+    """The matrix counts, sealed.
+
+    `peers` and `undetermined` are here because `uniquely_witnessed` cannot be
+    read without them. That count is "rows every peer was read on and none
+    declares", so it moves when the peer set changes and it is only as good as
+    how much of that set has actually been read. Sealing the number without
+    its denominator and its research debt would let the strongest figure on
+    the page travel alone.
+    """
     from harness.parity import parity_matrix
     doc = parity_matrix()
     s = doc["summary"]
     return {"declared_on": doc["declared_on"], "rows": len(doc["rows"]),
+            "peers": [p["key"] for p in doc["peers"]],
             "witnessed": s["witnessed"], "absent": s["absent"],
             "uniquely_witnessed": len(s["uniquely_witnessed"]),
+            "undetermined": len(s["undetermined"]),
             "gaps": list(s["gaps"])}
 
 
@@ -121,7 +132,9 @@ def render_table(report: dict[str, Any]) -> str:
         lines.append(f"  {suite['name']:<24} {head}")
     p = report["parity"]
     lines.append(f"  {'parity':<24} rows={p['rows']}  witnessed={p['witnessed']}"
-                 f"  absent={p['absent']}  gaps={len(p['gaps'])}")
+                 f"  absent={p['absent']}  gaps={len(p['gaps'])}"
+                 f"  peers={len(p['peers'])}"
+                 f"  undetermined={p['undetermined']}")
     lines.append(f"  not run: {len(report['not_run'])} suites need a live "
                  "endpoint, each named in the report")
     return "\n".join(lines)
