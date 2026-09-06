@@ -96,8 +96,17 @@ class Confinement:
         The limits are named, not only the guarantee. A line that said
         confined and stopped there would let a reader supply the rest from
         the word, and the part they would supply is the part that is false.
+
+        The scratch directory is counted rather than left out. It is
+        writable and it is not under the workspace, so a line naming the
+        workspace alone is short by one path. `writable` in the record has
+        the paths themselves for a reader who wants them.
         """
-        return (f"[sandbox {self.backend}: writes confined to {self.root}, "
+        extra = max(len(self.writable) - 1, 0)
+        where = self.root if not extra else (
+            f"{self.root} + {extra} scratch path"
+            f"{'s' if extra > 1 else ''}")
+        return (f"[sandbox {self.backend}: writes confined to {where}, "
                 f"reads {'confined' if self.reads_confined else 'open'}, "
                 f"processes "
                 f"{'isolated' if self.processes_isolated else 'shared'}, "
@@ -147,24 +156,36 @@ def _policy_path(path) -> str:
     return text
 
 
+#: Character devices a shell needs in order to start at all. Each is a single
+#: file or a file descriptor the process already holds, so none of them is a
+#: directory a run could leave something behind in.
+DEV_WRITES = ('  (literal "/dev/null")',
+              '  (literal "/dev/dtracehelper")',
+              '  (literal "/dev/tty")',
+              '  (regex #"^/dev/fd/[0-9]+$"))')
+
+
 def sbpl_profile(root, work, *, network: bool = False) -> str:
     """The Seatbelt policy confining writes to the workspace.
 
     Reads stay allowed. That is a real limit of this profile and it is why
     `READS_CONFINED["seatbelt"]` is False.
+
+    The temp directory is not writable and must not become writable here. An
+    earlier version allowed `/private/var/folders` so a toolchain would find
+    somewhere to put its scratch files, which on macOS is the parent of every
+    per-user temp directory the system hands out: a run confined to a
+    workspace under that tree could write anywhere else under it, and the
+    `writes confined to {root}` line in the record was false for exactly the
+    hosts the policy was written for. The caller points `TMPDIR` at the
+    scratch directory in `writable` instead, so a toolchain still has one and
+    the summary still matches what the kernel enforces.
     """
     writable = [_policy_path(root), _policy_path(work)]
     lines = ["(version 1)", "(allow default)", "(deny file-write*)",
              "(allow file-write*"]
     lines += [f'  (subpath "{path}")' for path in writable]
-    # A process that cannot write these cannot start most toolchains, and
-    # neither is a way out of the workspace.
-    lines += ['  (subpath "/private/tmp")',
-              '  (subpath "/private/var/folders")',
-              '  (literal "/dev/null")',
-              '  (literal "/dev/dtracehelper")',
-              '  (literal "/dev/tty")',
-              '  (regex #"^/dev/fd/[0-9]+$"))']
+    lines += list(DEV_WRITES)
     if not network:
         lines.append("(deny network*)")
     return "\n".join(lines) + "\n"

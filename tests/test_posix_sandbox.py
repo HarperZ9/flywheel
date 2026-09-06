@@ -1,13 +1,14 @@
-"""Confinement on the two hosts that used to get a refusal.
+"""What the two POSIX backends say they will do, read off the builders.
 
-The builders are pure, so what a Linux host would run and what a macOS policy
-would say are both assertable from a Windows one. That matters more here than
-in most places: the alternative is a backend whose argv nobody reads until it
-is confining something.
+Every builder here is pure, so what a Linux host would run and what a macOS
+policy would say are both assertable from a Windows one. That matters more
+here than in most places: the alternative is a backend whose argv nobody
+reads until it is confining something.
+
+Reading the argv is not watching the kernel obey it. The runs that do that
+live in `test_posix_sandbox_entry.py`, next to the entry point that reaches
+them.
 """
-import os
-from types import SimpleNamespace
-
 import pytest
 
 from harness.posix_sandbox import (BACKENDS, PROCESS_ISOLATED, PROGRAM,
@@ -15,16 +16,6 @@ from harness.posix_sandbox import (BACKENDS, PROCESS_ISOLATED, PROGRAM,
                                    ProfileRefused, backend_for, build,
                                    bwrap_argv, describe, posix_run,
                                    sbpl_profile, seatbelt_argv)
-
-def posix_host(monkeypatch, module):
-    """Make the module believe it is on a POSIX host.
-
-    The name is read off the module's own `os`, not off the interpreter's.
-    Setting `os.name` itself would change which concrete Path class pathlib
-    builds, and the test would fail on a detail the code never touches.
-    """
-    monkeypatch.setattr(
-        module, "os", SimpleNamespace(name="posix", environ=os.environ))
 
 
 def found(*names):
@@ -98,6 +89,27 @@ def test_the_seatbelt_profile_denies_writes_before_it_allows_the_workspace():
     assert "(deny network*)" not in sbpl_profile("/w", "/s", network=True)
 
 
+def test_the_profile_grants_no_directory_the_record_does_not_name():
+    """Every writable subpath is one the summary claims, or a device file.
+
+    This is the shape of the bug it replaces rather than the bug itself. The
+    profile used to allow `/private/var/folders`, the parent of every
+    per-user temp directory macOS hands out, so a run whose record said
+    writes were confined to its workspace could write to any other workspace
+    under that tree. Naming the two offenders would let the next widening
+    through; asserting the whole set is closed does not.
+    """
+    profile = sbpl_profile("/Users/x/repo", "/Users/x/scratch")
+    granted = {line.split('"')[1] for line in profile.splitlines()
+               if line.strip().startswith('(subpath "')}
+    assert granted == {"/Users/x/repo", "/Users/x/scratch"}, (
+        "the policy allows a directory outside the workspace, so the "
+        "`writes confined to {root}` line in the record is not true")
+    # The devices stay: a shell that cannot open /dev/null does not start,
+    # and none of them is a directory anything can be left behind in.
+    assert '(literal "/dev/null")' in profile
+
+
 def test_neither_backend_claims_to_confine_reads():
     """The flag has to match the argv, and the argv confines writes only.
 
@@ -164,6 +176,12 @@ def test_the_record_says_which_guarantees_actually_held():
     assert "reads open" in linux.summary() and "reads open" in mac.summary()
     assert "processes isolated" in linux.summary()
     assert "processes shared" in mac.summary()
+    # The scratch directory is writable and is not under the workspace, so a
+    # line that named the workspace alone would be short by one path.
+    assert "writes confined to /w + 1 scratch path," in linux.summary()
+    one = Confinement(backend="bwrap", program="bwrap", root="/w",
+                      writable=("/w",))
+    assert "writes confined to /w," in one.summary()
 
 
 def test_build_refuses_a_backend_it_has_no_argv_for():
@@ -209,71 +227,3 @@ def test_a_sandbox_that_cannot_start_is_a_failure_and_not_a_bare_run(
                            which=lambda p: str(tmp_path / "no-such-program"))
     assert rc == 126
     assert "failed to start" in out
-
-
-def test_the_shipped_entry_point_refuses_when_this_host_has_no_backend(
-        monkeypatch, tmp_path):
-    # Reached through sandboxed_run, not through the module under test. A
-    # backend nobody calls would pass every test above and confine nothing.
-    from harness import sandboxed_runner
-    posix_host(monkeypatch, sandboxed_runner)
-    with pytest.raises(sandboxed_runner.SandboxUnavailable) as stop:
-        sandboxed_runner.sandboxed_run("echo hi", str(tmp_path))
-    assert "no sandbox backend" in str(stop.value)
-
-
-def test_the_posix_path_labels_its_output_and_redacts_what_it_was_bound(
-        monkeypatch, tmp_path):
-    # Two claims the Windows path already makes, checked on the new one: a
-    # bound value may not come back in the output, and the backend that ran
-    # is named where a reader of the transcript will see it.
-    from harness import posix_sandbox, sandboxed_runner
-    from harness.credential_handles import CredentialBindings
-    plan = Confinement(backend="bwrap", program="bwrap", root=str(tmp_path),
-                       writable=(str(tmp_path),), network=True,
-                       processes_isolated=True)
-    posix_host(monkeypatch, sandboxed_runner)
-    monkeypatch.setattr(posix_sandbox, "posix_run",
-                        lambda *a, **k: (0, "token=s3cret", plan))
-    ok, out = sandboxed_runner.sandboxed_run(
-        "printenv TOKEN", str(tmp_path),
-        bindings=CredentialBindings({"TOKEN": "s3cret"}))
-    assert ok
-    assert "s3cret" not in out
-    assert "[sandbox bwrap:" in out
-    # The parity argument made at the call site: the Windows backend cannot
-    # restrict the network, so this one does not either by default.
-    assert "network allowed" in out
-
-
-@pytest.mark.skipif(backend_for() is None,
-                    reason="this host has no POSIX sandbox backend")
-def test_a_real_confined_run_on_this_host(tmp_path):
-    # The only test here that proves the policy rather than the string. It
-    # runs where a backend exists and skips where none does, which is the
-    # same answer the shipped code gives.
-    work = tmp_path / "scratch"
-    work.mkdir()
-    rc, out, plan = posix_run("echo confined > out.txt && cat out.txt",
-                              tmp_path, work, env={"PATH": os.environ["PATH"]},
-                              network=True)
-    assert rc == 0, out
-    assert "confined" in out
-    assert (tmp_path / "out.txt").read_text().strip() == "confined"
-    assert plan.backend == backend_for()
-
-
-@pytest.mark.skipif(backend_for() is None,
-                    reason="this host has no POSIX sandbox backend")
-def test_a_real_run_cannot_write_outside_the_workspace(tmp_path):
-    # The claim the record makes, tested against the filesystem.
-    work, outside = tmp_path / "scratch", tmp_path / "outside"
-    work.mkdir()
-    outside.mkdir()
-    inside = tmp_path / "repo"
-    inside.mkdir()
-    rc, out, _ = posix_run(f"echo escaped > {outside}/leak.txt",
-                           inside, work, env={"PATH": os.environ["PATH"]},
-                           network=True)
-    assert rc != 0, out
-    assert not (outside / "leak.txt").exists()

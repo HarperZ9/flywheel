@@ -85,12 +85,19 @@ def _posix_sandboxed_run(
     """
     from .posix_sandbox import posix_run
     source = Path(root).resolve()
-    env = _build_posix_env(bindings)
     # Scratch goes to the system temp rather than beside the workspace.
     # The Windows backend needs a sibling for the integrity ACL; these two
     # do not, and a directory appearing next to an operator's repo every
     # time a command runs is a cost with nothing bought by it.
-    work = Path(tempfile.mkdtemp(prefix="fw_sandbox_"))
+    #
+    # Resolved, because the policy is matched against the path the kernel
+    # canonicalises to. macOS hands out `/var/folders/...` and resolves it to
+    # `/private/var/folders/...`, so an unresolved scratch path would be
+    # written into the profile in a spelling nothing ever matches, and the
+    # directory the run was told to use would be the one directory it could
+    # not write to.
+    work = Path(tempfile.mkdtemp(prefix="fw_sandbox_")).resolve()
+    env = _build_posix_env(bindings, work)
     try:
         outcome = posix_run(cmd, source, work, env=env,
                             timeout_seconds=timeout_seconds, network=True)
@@ -107,9 +114,21 @@ def _posix_sandboxed_run(
     return rc == 0, f"[exit {rc}]\n{out}"
 
 
-def _build_posix_env(bindings: CredentialBindings | None) -> dict[str, str]:
+def _build_posix_env(bindings: CredentialBindings | None,
+                     work: Path) -> dict[str, str]:
+    """The child's environment, with its temp directory inside the sandbox.
+
+    The allowlist passes the host's `TMPDIR` through, and the host's is
+    outside everything the policy makes writable. A toolchain that reads it
+    would open a path the kernel refuses, so the value is replaced by the
+    scratch directory the backend binds writable. `TMP` and `TEMP` are set
+    alongside it because plenty of programs read those instead and one
+    unset name is enough to send a temp file somewhere denied.
+    """
     active = bindings if bindings is not None else CredentialBindings({})
-    return active.child_environment(os.environ, platform="posix")
+    env = active.child_environment(os.environ, platform="posix")
+    env.update({name: str(work) for name in ("TMPDIR", "TMP", "TEMP")})
+    return env
 
 
 def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
