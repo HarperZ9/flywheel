@@ -8,7 +8,65 @@
 > Update on every material step. If context is lost: read PROJECT.md, then
 > this. (`ROADMAP.md` is the original program framing, kept for history.)
 
-Last updated: 2026-09-04
+Last updated: 2026-09-06
+
+## 2026-09-06 -- 0.4.0: the harness speaks its peers' protocols, and a run is confined to what it was granted
+
+`v0.4.0` is the first tag since `v0.3.11` (2026-09-04). `git rev-list
+v0.3.11..v0.4.0` counts 49 commits over two days. The minor bump is the
+honest one: three peer protocols, a confinement layer, and two capability
+rows are not patch work.
+
+- **The harness is a client of the protocols its peers speak.** ACP
+  (`harness/acp_client.py`), LSP (`harness/lsp_client.py`), and DAP
+  (`harness/dap_client.py`), each keeping a record of what it asked. The
+  LSP client applies a server's `WorkspaceEdit` or refuses it by name, so
+  an edit the client would not make is never silently dropped. The three
+  hard zeros in the parity matrix are closed.
+- **A run is confined, and the confinement is recorded.** Linux and macOS
+  runs are sandboxed with their limits written down. A missing sandbox is
+  a refusal, never a bare run. An administrator can pin the answer above
+  the environment. A task can take a disposable copy of the workspace, an
+  egress allowlist bounds which hosts a confined run may reach, and
+  credential paths are hidden from the command and withheld from the
+  receipt capture.
+- **Every action is bound to the bytes it moved.** The witness is
+  chain-linked and checkable offline, and the surface rechecks it rather
+  than restating it. A chain whose bytes nobody could produce is not a
+  MATCH.
+- **Grounding reaches back through the record.** An ancestor's oracle
+  environment is rebuilt from its own receipt, and a citation is pinned to
+  the digest of the receipt it read.
+- **The board is reachable from the web.** The client identifies itself
+  and ships its address, a lane can run on the web instead of on this
+  workstation, and the canon lane joined the roster. Board tools that
+  publish are priced above those that do not.
+- **A deleted file recovers instead of blocking the session.** On Windows
+  the desktop client read a failed open's verdict off `GetLastError`, which
+  is a separate trip over the FFI boundary from the open itself; a file
+  deleted moments earlier was observed reporting 0, and the session then
+  refused to recover and reported a draft-store error for something that
+  had nothing to do with the draft store. The verdict now comes from the
+  path, and the code only splits what the path cannot. The reporting defect
+  underneath, where every recovery failure is labelled a local-store
+  failure whatever its cause, is filed and still open.
+- **The parity matrix is published, and no row is absent.** 48 rows, 48
+  witnessed, and no row where a peer declares a capability this repository
+  lacks. The last two rows were a self-hosted runner pool (membership
+  settled by a ticket, labels capped by what that ticket granted, lapsed
+  leases counted separately) and browser control (every act judged before
+  it happens, the session's policy as its first record, performed kept
+  apart from admitted). The bound: 9 rows still carry at least one peer
+  surface nobody here has read, and peer cells are dated declarations from
+  public docs and source rather than measurements.
+
+**What the tag does and does not do.** Pushing `v0.4.0` publishes
+`flywheel-verify` to PyPI over Trusted Publishing, and builds the Windows
+installer as a workflow artifact. It does not publish the installer:
+`windows-publish.yml` is `workflow_call`-only, nothing in the repository
+calls it, and the `publish_token` secret it requires does not exist. The
+installer reaches users only when the candidate artifact is attached to
+the GitHub release by hand.
 
 ## 2026-09-04 -- 0.3.11: the release that ships everything main was already carrying
 
