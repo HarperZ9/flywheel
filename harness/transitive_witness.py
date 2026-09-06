@@ -1,5 +1,5 @@
 """transitive_witness.py — compositional criterion-conservation over a
-dependency DAG. The closure property the current literature does NOT publish.
+dependency DAG. Prior art covers the rule; see Positioning below.
 
 The primitives underneath are per-run: `witness_envelope` re-checks ONE
 envelope, and `validate_chain` checks ONE run's internal links. Neither reaches
@@ -9,12 +9,23 @@ cites the ancestors its verdict is GROUNDED on, a node is MATCH only along a
 fully-MATCH dependency path. A single upstream DRIFT turns
 every DOWNSTREAM-DEPENDENT node UNVERIFIABLE — while nodes that do not depend on
 the drifted one keep their own verdict (localized degradation, not total
-collapse). That path-conserved-MATCH is the novel object.
+collapse). That path-conserved-MATCH is what this module computes.
 
-Positioning (honest, from the 2026-07-06 arXiv sweep): the *substrate* — a
-citation/provenance DAG for agent results — is accepted prior art (PROV-AGENT,
-2508.02866). The *re-witnessing closure* on top of it is not. Adopted from the
-same sweep:
+Positioning, corrected 2026-09-06. This block used to call the re-witnessing
+closure unpublished, sourced to a sweep that read arXiv and nothing else.
+Patents and standards bodies refute it. US 9,996,595 B2 (Palantir, filed 2015,
+granted 2018, in force) claims a derivation-dependency edge marked to show that
+the downstream version "potentially contains invalid data as a result of the
+derivation dependency", which is the gap-not-glut rule. GraphTracer
+(2510.10581, October 2025) perturbs a node, replays the affected portion, and
+separates nodes whose own output is wrong from nodes merely fed corrupted
+upstream data. Reproducible Builds has re-derived artifacts by independent
+rebuild since 2013. So the substrate is prior art (PROV-AGENT, 2508.02866) and
+the closure is too. The open axis is narrower: no system in the June 2026
+survey of this field (2606.04990) gates its own propagation rule with an
+adversarial false-accept corpus, which is what `adversarial_corpus.py` does.
+Full record: project-docs/records/2026-09-06-prior-art-outside-arxiv.md.
+Adopted from the 2026-07-06 sweep:
   - process-level (per-node) re-check, not outcome-only  (Trust-but-Verify survey 2508.16665)
   - paraconsistent glut/gap degradation so one drift doesn't collapse the DAG
     (Sound-and-Complete Neurosymbolic, 2507.09751): GLUT=DRIFT (a contradiction:
@@ -28,12 +39,18 @@ is built: the closure scores 0/7 false-accepts (SOUND) while weakened strawmen a
 caught, so the refutation path provably executes. Still not a "breakthrough" — a
 sound, adversarially-gated kernel — but no longer theatrical.
 
-Scope, so a reader does not assume more reach than this has: nothing in the
-shipped run path calls `verify_frontier`. `loop.py` builds its chain and
-witnesses one envelope; `router.py` names this module as the remediation for an
-UNVERIFIABLE stage without invoking it. The closure is a library a caller
-reaches for, and folding it into a run is open work (PROJECT.md section 6,
-item 2).
+Scope, corrected 2026-09-06. An earlier note here said the closure was a library
+no run reaches for. It is on the critical path: `grounding.recheck_grounding`
+resolves an envelope's cited ancestors transitively, re-witnesses each in its
+own oracle environment, folds `transitive_verdicts`, and `loop.py` gates
+acceptance on the result, so a dependent of a drifted ancestor is never sealed
+into the store (`tests/test_grounding_closure.py`, seven arms including a
+positive control and a localization control). Two things stay true. The fold
+enters through `transitive_verdicts` rather than `verify_frontier`, because the
+bridge has to resolve and re-witness ancestors itself. And `run_loop` takes
+`grounding_recheck=False` by default, since `recheck_grounding` needs a workdir
+per ancestor and fails closed without one, so defaulting it on would make every
+grounded task UNVERIFIABLE (PROJECT.md section 6, item 2).
 """
 from __future__ import annotations
 

@@ -1,0 +1,148 @@
+# Prior art outside arXiv: the closure claim does not survive
+
+Date: 2026-09-06. Question asked: is Flywheel first on the core idea, meaning a
+receipt whose verdict can be re-derived, with an upstream failure degrading the
+results that depend on it.
+
+Answer: no, and the margin is not close. Four independent lines of prior art
+predate the project, one of them by thirteen years and one of them a granted US
+patent that is still in force.
+
+## Why earlier sweeps missed this
+
+`harness/transitive_witness.py` labels its own positioning "honest, from the
+2026-07-06 arXiv sweep". That is the defect. The sweep read arXiv. Provenance
+propagation was worked out in the data-lineage and software-supply-chain
+communities, which publish to standards bodies, project sites, and the patent
+office. An arXiv-only instrument cannot see any of them, so the conclusion it
+produced inherited its blind spot rather than testing it.
+
+Every source below was read live on 2026-09-06.
+
+## What is established
+
+**Independent re-execution and hash comparison, 2013.** The Reproducible Builds
+project dates to DebConf13, and the Tor Project has shipped reproducible builds
+since the same year. The verification shape is the one Flywheel calls
+re-derivation: a third party rebuilds from source and compares the digest, so
+the consumer never has to trust the original builder. Confidence high.
+
+**Downstream invalidity over a derivation edge, filed 2015.** US 9,996,595 B2,
+"Providing full data provenance visualization for versioned datasets", Palantir
+Technologies, inventor Ethan Bond. Filed 2015-08-03, granted 2018-06-12, active
+until 2036-08-10. The independent claim covers an edge "representing a
+derivation dependency" being distinguished "to indicate that the first version
+of the first versioned dataset potentially contains invalid data as a result of
+the derivation dependency". Read that against `transitive_witness`: a node
+grounded on a glut becomes a GAP, which is to say it *potentially* contains
+invalid data rather than definitely. The semantics match. Confidence high.
+
+The claim is drawn to a graphical user interface, which bears on infringement
+and not on novelty. Nothing in Flywheel renders such a view. That is a lawyer's
+question and this record does not answer it. The novelty question is answered:
+the propagation rule was published in 2015.
+
+**End-to-end pipeline verification, in-toto.** in-toto verifies attestations
+against a signed layout across the whole chain of steps, described in its own
+material as a system that does not check individual steps in isolation. The
+"per-run primitives do not compose" premise in the module docstring is weaker
+than it reads. Confidence high on the mechanism, moderate on the year.
+
+**Invalidate and Derive are standard provenance relations.** The June 2026
+survey below lists the field's relation vocabulary as Support, Derive,
+Depend-on, Contradict, Invalidate, Trigger, Update, Use, Generate. Contradict
+and Invalidate are the glut and the gap under other names, and they are
+taxonomy, not a contribution. Confidence high.
+
+**Counterfactual replay separating refuted nodes from downstream ones, October
+2025.** GraphTracer (arXiv 2510.10581) builds Information Dependency Graphs
+where an edge means node j depends on node i's output, re-executes the affected
+portion after perturbing a node, and by its own description distinguishes
+"nodes whose inherent outputs are erroneous from those merely receiving
+corrupted upstream data". That is replay plus the glut and gap separation,
+published eleven months before today. Confidence high.
+
+## What survives, stated narrowly
+
+The June 2026 survey "From Agent Traces to Trust" (arXiv 2606.04990) maps this
+exact field. Read against its taxonomy, no system it surveys stores a verdict
+and later re-verifies it against fresh state, and none propagates a
+verification failure so that only downstream dependents degrade. Its open
+problems include "Provenance-Aware Runtime Safety and Recovery".
+
+So the surviving claim is about purpose and about shipping, and it is small.
+GraphTracer replays to attribute a root cause for an observed failure, working
+backward from a known bad outcome, offline, to generate training data.
+`verify_frontier` re-witnesses to decide whether a stored verdict is still
+valid now, which is a staleness question asked of a chain nobody has reported a
+problem with. Same mechanism, different question.
+
+The harder differentiator is the adversarial gate. `harness/adversarial_corpus.py`
+scores the closure at 0 false accepts over 7 attacks with 2 controls, and a
+discrimination test fails a deliberately weakened closure, so the corpus catches
+something. No system in the survey ships a false-accept corpus against its own
+propagation rule. That is the defensible asset.
+
+That asset is stronger than the roadmap said, and finding out how cost a second
+correction on the same day. `loop.py` does fold the closure, through
+`grounding.recheck_grounding`: it resolves an envelope's cited ancestors out of
+the store, re-witnesses each in its own oracle environment, folds
+`transitive_verdicts`, and gates acceptance fail-closed, so a dependent of a
+drifted ancestor never gets sealed. `tests/test_grounding_closure.py` holds all
+seven arms through `run_loop`, positive control and localization control
+included. The earlier claim that no shipped loop invokes the closure came from
+grepping for `verify_frontier` and `validate_chain` rather than tracing the call
+graph, which is this record's own error repeated at smaller scale on the same
+afternoon.
+
+The limit that is real: `grounding_recheck` defaults to False, because
+`recheck_grounding` needs an oracle environment per ancestor and returns
+UNVERIFIABLE for each one it does not get. Fail-closed plus a missing workdir
+means turning it on by default would fail every grounded task. Recovering that
+environment from the stored envelope is what makes the flag defaultable.
+
+## What this changes
+
+1. The `transitive_witness` docstring says the closure is what "the current
+   literature does NOT publish" and calls path-conserved-MATCH "the novel
+   object". Both are false. Corrected in the same commit as this record.
+2. Public surfaces are clean. `scripts/check_claim_language.py` passes on all
+   22, and the novelty language never reached README, `docs/`, or the package
+   metadata. The overclaim lived in one internal docstring. Nothing published
+   needs a retraction.
+3. Any future priority sweep reads patents and standards bodies alongside
+   arXiv. An arXiv-only sweep is not evidence about priority and should not be
+   cited as though it were.
+4. The same rule turned inward. A claim about what this repo does gets traced
+   through the call graph, not grepped for a function name. PROJECT.md section
+   6 item 2 has now been wrong in both directions inside 24 hours, first saying
+   the closure did not exist and then saying no run invoked it, and both
+   readings came from a name search standing in for a trace. Corrected in this
+   commit, with the arms in `tests/test_grounding_closure.py` cited so the next
+   reader can check the entry against the tests instead of trusting it.
+
+## Competitor movement seen while gathering this
+
+OpenKedge.io (Jun He, Deying Yu) is publishing a stack rather than a paper:
+"Sovereign Assurance Boundary: Certificate-Bound Admission for Agentic
+Infrastructure" (2606.11632) and "Sovereign Execution Broker" (2606.20520,
+submitted 2026-06-18, 19 pages, 6 figures, 10 tables). The broker verifies a
+certificate at the moment of mutation, checks revocation and drift, mints
+short-lived scoped credentials, and logs signed decision records.
+
+Separately, Jakob Salfeld-Nebgen, "Governing Actions, Not Agents" (2606.26298,
+2026-06-24), attests preconditions from independent authoritative sources bound
+to a declared intent, with a proof-of-concept covering software deployment and
+clinical prescribing. It records decisions in a tamper-evident log and does not
+re-execute. Re-execution remains the axis where Flywheel is not crowded.
+
+## Sources
+
+- https://reproducible-builds.org/
+- https://patents.google.com/patent/US9996595B2/en
+- https://slsa.dev/spec/draft/build-provenance
+- https://arxiv.org/html/2606.04990v1
+- https://arxiv.org/html/2510.10581v1
+- https://arxiv.org/abs/2606.20520
+- https://arxiv.org/abs/2606.11632
+- https://arxiv.org/abs/2606.26298
