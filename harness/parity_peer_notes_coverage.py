@@ -13,17 +13,22 @@ Cursor cell rests on a page path and is thinner evidence; where the path name
 does not itself say what the page claims, the cell is PART rather than YES.
 
 hermes and omp publish no index. Their cells are UNREAD on all nine, which
-is not a finding about them. Four of these rows audit ABSENT here, and on
-those rows a peer cell lowered without reading the page would shrink the gap
-list in this project's favour, so a topic missing from an index reads UNREAD
-rather than NO.
+is not a finding about them. A peer cell lowered without reading the page
+would shrink the gap list in this project's favour, so a topic missing from
+an index reads UNREAD rather than NO whatever this project's own verdict on
+the row happens to be.
+
+Four rows audited ABSENT when the notes were written. All four have since
+landed, and the note on each says what the work turned out to differ in
+rather than dropping the gap and leaving the row looking like it was always
+covered.
 """
 from __future__ import annotations
 
 NOTES: dict[str, str] = {
     "scheduled-runs":
-        "All three ship it and this repository does not, which is why the "
-        "row is here reading ABSENT. codex automations.md is titled "
+        "All three ship it and this repository did not, which is why the "
+        "row was written. codex automations.md is titled "
         "Scheduled tasks and describes running tasks on a schedule or from "
         "app events. claude-code carries three pages: routines.md for "
         "routines that run on a schedule or react to GitHub events, "
@@ -31,8 +36,9 @@ NOTES: dict[str, str] = {
         "desktop-scheduled-tasks.md for recurring desktop runs. cursor has "
         "cloud-agent/automations.md and help/ai-features/automations.md, "
         "paths whose names carry the claim without a description behind "
-        "them. Nothing here starts a run without a person, and the witness "
-        "names the module that would.",
+        "them. Witnessed here through scheduler and /api/schedule. What "
+        "differs is that a firing is a record with the trigger on it, so a "
+        "run nobody watched can still be shown to have been due.",
     "lifecycle-hooks":
         "All three declare hooks and so does this repository, so the row is "
         "witnessed and earns no star. codex hooks.md runs scripts or MCP "
@@ -68,9 +74,18 @@ NOTES: dict[str, str] = {
         "self-hosted-environments-testing.md verifies a self-hosted runner "
         "image from CI. codex is UNREAD rather than NO. Its index carries "
         "cloud.md and environments/cloud-environment.md and nothing naming "
-        "a pool of the operator's own machines, and this row audits ABSENT "
-        "here, so a NO read off an index would shrink the gap list in this "
-        "project's favour on evidence that cannot support it.",
+        "a pool of the operator's own machines, and a NO read off an index "
+        "would rest on evidence that cannot carry it. Witnessed here "
+        "through runner_pool and /api/runners. What differs is where "
+        "membership is settled: a machine joins by spending a ticket the "
+        "operator minted, may advertise only the labels that ticket "
+        "granted, and every enrolment, dispatch and lease sits on a chain "
+        "that refuses the next write once an earlier row is edited. None of "
+        "the three pages describes the roster as anything a reader could "
+        "check without asking the party that runs it. What it does not "
+        "claim is attestation: a compromised host holding a real ticket is "
+        "a real member, so the property is control over membership rather "
+        "than knowledge of the hardware.",
     "usage-and-cost-accounting":
         "codex enterprise/chatgpt-work-usage-and-cost.md covers credit "
         "consumption, billing impact and spending controls. cursor exposes "
@@ -82,15 +97,22 @@ NOTES: dict[str, str] = {
         "differs is /api/usage/verify, where the figures are on a receipt "
         "that re-checks rather than a dashboard that has to be believed.",
     "browser-and-computer-control":
-        "All three drive something outside the editor and this repository "
-        "does not. codex has browser.md, computer-use.md and "
+        "All three drive something outside the editor. codex has "
+        "browser.md, computer-use.md and "
         "chrome-extension.md. cursor has agent/tools/browser.md and "
         "cloud-agent/self-hosted/computer-use.md. claude-code "
         "computer-use.md opens apps, clicks, types and reads the screen on "
-        "macOS. The operator's other repositories have computer control; "
-        "the Flywheel column is audited by reading this repository, so a "
-        "capability in a sibling repository is not a capability here and "
-        "the row reports ABSENT.",
+        "macOS. Witnessed here through browser_control and /api/browser. "
+        "The half that differs is that the gate and the record are one "
+        "write: the policy is the session's first row, every attempt lands "
+        "on the chain carrying its verdict, and a refusal is kept, so a "
+        "constrained run and a run that did nothing do not read alike "
+        "afterwards. Three limits are worth stating beside the row. Typing "
+        "into a credential-shaped field is refused before the policy is "
+        "consulted, so no policy can permit it. A non-http scheme never "
+        "resolves. Actuation sits behind a driver seam and none is bundled, "
+        "so with nothing bound the engine decides, records, and reports "
+        "performed as false rather than implying a screen moved.",
     "own-code-vulnerability-scan":
         "All three scan the user's own code, which corrects the coverage "
         "entry that named two. codex security.md finds and remediates "
@@ -99,8 +121,10 @@ NOTES: dict[str, str] = {
         "security-agents.md and bugbot.md. claude-code claude-security.md "
         "scans a codebase and turns findings into patches, with "
         "security-guidance.md reviewing changes as they are written. "
-        "ABSENT here. The credential-exposure-scan row is narrower and "
-        "covers secrets in configuration, not defects in the code.",
+        "Witnessed here through vulnerability_scan and "
+        "/api/scan/vulnerabilities. The credential-exposure-scan row is "
+        "narrower and covers secrets in configuration, not defects in the "
+        "code.",
     "generated-visual-artifacts":
         "codex image-generation.md generates and edits images, with "
         "visualizations and appshots pages alongside it. claude-code "
