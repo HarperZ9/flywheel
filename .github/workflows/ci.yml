@@ -18,6 +18,13 @@ jobs:
         # that said nothing about the code.
         python: ["3.11", "3.13"]
     runs-on: ${{ matrix.os }}
+    # This leg runs in well under a minute when it runs at all. The bound is
+    # here because `--timeout` cannot reach every hang: a test that stops its
+    # own process group leaves pytest unable to run the alarm that would end
+    # it, and one did, for fifteen minutes, until the runner was recycled with
+    # no test named in the log. A job deadline is the only thing outside the
+    # stopped process.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
@@ -135,6 +142,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         shard: [0, 1, 2, 3]
     runs-on: ${{ matrix.os }}
+    # The slowest shard takes under four minutes. Same reason as the slice
+    # above: `--timeout=300` is already on the pytest call and a stopped
+    # process never receives it.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0

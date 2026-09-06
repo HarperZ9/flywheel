@@ -66,6 +66,16 @@ def _kill_tree(proc: subprocess.Popen) -> None:
     rounds of a candidate spawning a child every 2ms left zero survivors under
     a plain SIGKILL on Linux 6.6, so the window is real in the standard and
     was not observable there.
+
+    The lookup is refused when it answers with our own group. A plain `Popen`
+    child inherits the caller's process group, so `getpgid` on it returns the
+    group the harness is sitting in, and SIGSTOP on that group stops the
+    process that issued the kill. A stopped process runs no handler and no
+    alarm, so nothing resumes it and nothing reports it: the run wedges until
+    something outside kills the job. `proc.kill()` is the honest reply. It
+    reaps the process and not its descendants, which is a narrower kill than
+    the caller wanted and the widest one available without a group of our own
+    to address.
     """
     if os.name == "nt":
         subprocess.run(f"taskkill /T /F /PID {proc.pid}", shell=True,
@@ -76,6 +86,9 @@ def _kill_tree(proc: subprocess.Popen) -> None:
         try:
             pgid = os.getpgid(proc.pid)
         except Exception:
+            proc.kill()
+            return
+        if pgid == os.getpgid(0):
             proc.kill()
             return
     try:

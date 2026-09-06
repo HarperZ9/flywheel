@@ -122,19 +122,38 @@ def test_the_group_outlives_its_leader_and_is_still_reachable(tmp_path):
 
 
 @posix_only
-def test_a_process_not_spawned_here_still_gets_killed(tmp_path):
+def test_a_process_not_spawned_here_still_gets_killed(tmp_path, monkeypatch):
     """No stamp means fall back to the lookup, never fall through to nothing.
 
     `_kill_tree` is documented as taking a `spawn_killable` process. A caller
     that forgets is a bug, and the kill still has to happen: silently doing
     nothing would turn a forgotten import into a leaked process tree.
+
+    The second assertion is where the kill must not go. A plain `Popen` child
+    inherits the caller's process group, so the lookup answers with the group
+    pytest is running in, and SIGSTOP on it stops pytest. Nothing resumes a
+    stopped process and no alarm fires inside one, so this ran for fifteen
+    minutes on an Ubuntu runner and ended when the runner was recycled, with
+    no test named in the log.
+
+    `os.killpg` is replaced rather than watched so a build with that bug fails
+    here instead of taking the run down and reporting nothing.
     """
+    issued = []
+    monkeypatch.setattr(os, "killpg", lambda pgid, sig: issued.append((pgid, sig)))
     proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
     assert not hasattr(proc, _PGID_ATTR)
     try:
+        assert os.getpgid(proc.pid) == os.getpgid(0), (
+            "the child is in its own group, so this host does not reproduce "
+            "the case under test and the assertion below proves nothing")
         _kill_tree(proc)
+        assert issued == [], (
+            f"_kill_tree signalled its caller's own process group: {issued}")
         assert _wait_until_gone(proc.pid), "the unstamped process survived"
     finally:
+        if _alive(proc.pid):
+            os.kill(proc.pid, 9)
         proc.wait(timeout=10)
 
 
