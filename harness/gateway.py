@@ -635,6 +635,26 @@ class _Handler(BaseHTTPRequestHandler):
             return None
         return None if n < 0 or n > self.MAX_BODY else n
 
+    def _json_req(self):
+        """Read a JSON request body. Returns (request, fault), one of them None.
+
+        Four POST routes need the same three steps, and a rule written four
+        times is a rule that gets repaired in three places. An unusable
+        Content-Length is a transport fault and never reaches a handler. A body
+        that is not JSON arrives as an empty mapping, which every handler
+        already refuses on its own terms.
+        """
+        from harness.evidence_public import parse_json
+        length = self._content_length()
+        if length is None:
+            return None, ({"schema": "flywheel.evidence-transport-error/v1",
+                "error": {"code": "INVALID_LENGTH",
+                          "message": "request length is invalid"}}, 400)
+        try:
+            return parse_json(self.rfile.read(length)), None
+        except Exception:
+            return {}, None
+
     def _raw(self, body: bytes, content_type: str, code: int = 200):
         """Send an already-encoded body. For the one surface that is not JSON."""
         self.send_response(code)
@@ -880,6 +900,11 @@ class _Handler(BaseHTTPRequestHandler):
         if p.startswith("/api/subagents"):         # the subagent roster and one agent record
             from harness.subagents_route import handle_subagents_get
             body, code = handle_subagents_get(p, qs, run_root=self.run_root)
+            return self._json(body, code)
+        if p == "/api/schedule":                   # schedules, what they owe, chain verdict
+            from harness.schedule_route import handle_schedule_get
+            body, code = handle_schedule_get(p, run_root=self.run_root,
+                                             clock=self.clock)
             return self._json(body, code)
         if p == "/api/skills":                     # installed skills, read off disk
             from harness.skill_route import handle_skills_get
@@ -1343,45 +1368,35 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(body, code)
         from harness.gateway_operation import action_for_path, materialize_agent_attachment, thaw_operation
         if p.startswith("/api/hooks/"):            # define, edit or fire a hook
-            from harness.evidence_public import parse_json
             from harness.hooks_route import handle_hooks_post
-            length = self._content_length()
-            if length is None:
-                return self._json({"schema": "flywheel.evidence-transport-error/v1",
-                    "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
-            try:
-                req = parse_json(self.rfile.read(length))
-            except Exception:
-                req = {}
+            req, fault = self._json_req()
+            if fault:
+                return self._json(*fault)
             body, code = handle_hooks_post(
                 p, req, run_root=self.run_root,
                 owner_ref=self.owner_ref, clock=self.clock)
             return self._json(body, code)
         if p.startswith("/api/subagents/"):        # run a subagent, recorded
-            from harness.evidence_public import parse_json
             from harness.subagents_route import handle_subagents_post
-            length = self._content_length()
-            if length is None:
-                return self._json({"schema": "flywheel.evidence-transport-error/v1",
-                    "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
-            try:
-                req = parse_json(self.rfile.read(length))
-            except Exception:
-                req = {}
+            req, fault = self._json_req()
+            if fault:
+                return self._json(*fault)
             body, code = handle_subagents_post(
                 p, req, run_root=self.run_root, clock=self.clock)
             return self._json(body, code)
+        if p.startswith("/api/schedule/"):         # define a schedule, or tick the clock
+            from harness.schedule_route import handle_schedule_post
+            req, fault = self._json_req()
+            if fault:
+                return self._json(*fault)
+            body, code = handle_schedule_post(
+                p, req, run_root=self.run_root, clock=self.clock)
+            return self._json(body, code)
         if p.startswith("/api/skills/"):           # install or invoke a skill
-            from harness.evidence_public import parse_json
             from harness.skill_route import handle_skills_post
-            length = self._content_length()
-            if length is None:
-                return self._json({"schema": "flywheel.evidence-transport-error/v1",
-                    "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
-            try:
-                req = parse_json(self.rfile.read(length))
-            except Exception:
-                req = {}
+            req, fault = self._json_req()
+            if fault:
+                return self._json(*fault)
             body, code = handle_skills_post(
                 p, req, run_root=self.run_root, clock=self.clock)
             return self._json(body, code)

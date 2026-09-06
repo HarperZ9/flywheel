@@ -1149,13 +1149,18 @@
       "checks": [
         {
           "kind": "module",
-          "present": false,
+          "present": true,
           "ref": "harness/scheduler.py"
         },
         {
           "kind": "route",
-          "present": false,
+          "present": true,
           "ref": "/api/schedule"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_schedule_route.py"
         }
       ],
       "competitors": {
@@ -1166,7 +1171,7 @@
         "omp": null
       },
       "desc": "run a prompt or a workflow on a schedule, or on a repeating trigger, without a person starting it",
-      "flywheel": "ABSENT",
+      "flywheel": "WITNESSED",
       "key": "scheduled-runs"
     },
     {
@@ -1389,7 +1394,7 @@
   ],
   "schema": "flywheel.parity/v2",
   "summary": {
-    "absent": 4,
+    "absent": 3,
     "coverage": {
       "out_of_frame": 4,
       "read_on": "2026-09-06",
@@ -1398,7 +1403,6 @@
       "topics": 13
     },
     "gaps": [
-      "scheduled-runs",
       "self-hosted-runner-pool",
       "browser-and-computer-control",
       "own-code-vulnerability-scan"
@@ -1426,6 +1430,6 @@
       "signed-receipt-external-anchor",
       "formal-proof-oracle"
     ],
-    "witnessed": 44
+    "witnessed": 45
   }
 }

@@ -32,7 +32,7 @@
     }
   ],
   "parity": {
-    "absent": 4,
+    "absent": 3,
     "coverage": {
       "out_of_frame": 4,
       "read_on": "2026-09-06",
@@ -42,7 +42,6 @@
     },
     "declared_on": "2026-09-06",
     "gaps": [
-      "scheduled-runs",
       "self-hosted-runner-pool",
       "browser-and-computer-control",
       "own-code-vulnerability-scan"
@@ -57,10 +56,10 @@
     "rows": 48,
     "undetermined": 9,
     "uniquely_witnessed": 10,
-    "witnessed": 44
+    "witnessed": 45
   },
   "python": "3.12.10",
-  "result_sha256": "e30dbceacf419a7fac356ffdbfe1344b28468d297d2fea07a93049ddd5924889",
+  "result_sha256": "d3aebde50d25566a8380449672adea56f28edf4bbc5fe6c529650b02a681b4bb",
   "schema": "flywheel.offline-benchmarks/v1",
   "suites": [
     {
@@ -117,7 +116,7 @@
       "non_goal": "measures accountability, NOT capability. Pair it with a capability bench",
       "question": "does an unaccountable system score badly here",
       "schema": "accountability/v1",
-      "seconds": 10.338
+      "seconds": 8.573
     },
     {
       "detail": [
@@ -204,7 +203,7 @@
       "name": "governed-agent",
       "question": "does a workflow refuse an action above its tier",
       "schema": "governed-agent-workflow-benchmark/v1",
-      "seconds": 0.017
+      "seconds": 0.007
     },
     {
       "detail": [
@@ -282,7 +281,7 @@
       "name": "agent-recovery",
       "question": "does an injected fault recover without failing quietly",
       "schema": "agent.recovery-benchmark/v1",
-      "seconds": 0.08
+      "seconds": 0.032
     },
     {
       "detail": [
@@ -335,7 +334,7 @@
       "name": "stateful-provider-swap",
       "question": "does state survive a provider swap",
       "schema": "unisonai.stateful-benchmark/v1",
-      "seconds": 0.017
+      "seconds": 0.01
     },
     {
       "detail": [],
@@ -349,7 +348,7 @@
       "name": "source-mined",
       "question": "do the mined checks still hold against their datasets",
       "schema": "source-mined.executable-benchmark/v1",
-      "seconds": 0.04
+      "seconds": 0.018
     },
     {
       "caveats": [
@@ -382,29 +381,29 @@
       "detail": [
         {
           "name": "chain_only",
-          "score": 103.5
+          "score": 48.6
         },
         {
           "name": "buffered",
-          "score": 1441.1
+          "score": 554.3
         },
         {
           "name": "durable",
-          "score": 7131.0
+          "score": 7347.3
         }
       ],
       "headline": {
-        "durability_share": 0.7979,
+        "durability_share": 0.9246,
         "log_bytes_per_action": 788.3,
-        "ms_per_witnessed_action": 7.13,
-        "recheck_us_per_record": 27.3,
+        "ms_per_witnessed_action": 7.35,
+        "recheck_us_per_record": 12.1,
         "verdict": "MATCH"
       },
       "name": "receipting-cost",
       "non_goal": "the record is arithmetic and the durability is a syscall. Most of what a witnessed action costs here is the wait for one fsync, so batching the flush is the lever, and it is paid for in the size of the crash window",
       "question": "what does it cost to keep the receipt",
       "schema": "flywheel.receipting-cost/v1",
-      "seconds": 2.035,
+      "seconds": 1.882,
       "unsealed": [
         "ms_per_witnessed_action",
         "durability_share",

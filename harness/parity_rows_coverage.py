@@ -24,7 +24,8 @@ ROWS = [
      "desc": "run a prompt or a workflow on a schedule, or on a repeating "
              "trigger, without a person starting it",
      "witnesses": [("module", "harness/scheduler.py"),
-                   ("route", "/api/schedule")]},
+                   ("route", "/api/schedule"),
+                   ("test", "tests/test_schedule_route.py")]},
     {"key": "lifecycle-hooks",
      "desc": "operator scripts and tools that fire at named points in a run, "
              "each firing carried on the run's own receipt",
