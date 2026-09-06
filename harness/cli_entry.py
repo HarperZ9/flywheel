@@ -219,7 +219,8 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
         return cmd_relay(argv)
     return 2
 # Commands that live in the package and run without a source checkout.
-_PACKAGED = {"cross-harness-execute": "harness.cross_harness_cli",
+_PACKAGED = {"acp": "harness.acp_cli",
+             "cross-harness-execute": "harness.cross_harness_cli",
              "evidence": "harness.evidence_cli",
              "check-output": "harness.output_check_cli",
              "packs": "harness.packs_cli",
