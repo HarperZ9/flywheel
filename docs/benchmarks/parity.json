@@ -17,7 +17,7 @@
       ],
       "competitors": {
         "claude-code": false,
-        "codex": false,
+        "codex": "partial",
         "cursor": "partial"
       },
       "desc": "one request shape routed to any provider with failover chains",
@@ -363,7 +363,7 @@
         }
       ],
       "competitors": {
-        "claude-code": false,
+        "claude-code": true,
         "codex": false,
         "cursor": true
       },
@@ -385,7 +385,7 @@
         }
       ],
       "competitors": {
-        "claude-code": false,
+        "claude-code": true,
         "codex": false,
         "cursor": true
       },
@@ -424,6 +424,70 @@
       "desc": "a language server client that keeps a re-checkable record of the exchange: every frame chained, every answer stamped with the document version and negotiated encoding it was asked at, and a verify command that re-derives the chain",
       "flywheel": "WITNESSED",
       "key": "lsp-run-record"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/dap_client.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/dap_session.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_dap_client.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": true
+      },
+      "desc": "drive any Debug Adapter Protocol adapter: set breakpoints, run to a stop, and read the stack and the variables at it",
+      "flywheel": "WITNESSED",
+      "key": "dap-debug-session"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/dap_policy.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/dap_witness.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_dap_policy.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_dap_witness.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_dap_cli.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "a debug adapter client under a default-deny grant boundary on the two reverse requests, keeping a re-checkable record of every frame in both directions, each stop in the order it happened, and every request the client refused, with a verify command that re-derives the chain offline",
+      "flywheel": "WITNESSED",
+      "key": "dap-run-record"
     },
     {
       "checks": [
@@ -876,6 +940,7 @@
       "adaptive-routing-scoreboard",
       "native-receipted-linter",
       "lsp-run-record",
+      "dap-run-record",
       "acp-delegation-receipt",
       "agent-boundary-audit",
       "isolation-probe",
@@ -890,6 +955,6 @@
       "private-verified-benchmarks",
       "paired-uplift-measurement"
     ],
-    "witnessed": 35
+    "witnessed": 37
   }
 }

@@ -102,8 +102,8 @@ python scripts/run_offline_benchmarks.py
 The strawman, a system with no receipts, scores 0% on the same axes. A
 benchmark that everything passes measures nothing.
 
-Against the field: 35 capabilities, 35 witnessed in this repository by a check
-that runs every time the matrix is read, and 26 that no listed peer declares.
+Against the field: 37 capabilities, 37 witnessed in this repository by a check
+that runs every time the matrix is read, and 27 that no listed peer declares.
 The competitor columns are dated readings of public documentation, not
 measurements taken here.
 
