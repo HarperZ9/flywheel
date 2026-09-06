@@ -52,6 +52,16 @@ def _text(value: object) -> object:
     return str(value)
 
 
+#: The names the chain owns. A caller's context key of the same name is dropped
+#: rather than written, so these always mean what the chain says they mean. The
+#: set is public because the drop is silent: a witness that wants to carry its
+#: protocol's own sequence number needs a way to check that it did not pick one
+#: of these, and finding out from a record that reads plausibly and says the
+#: wrong thing is finding out too late.
+RESERVED_CONTEXT = frozenset({"schema", "run_id", "action", "kind", "seq",
+                              "encoding"})
+
+
 def _context(run_id: str, action: str, kind: str, seq: int, encoding: str,
              extra: dict | None) -> dict:
     held = {"schema": ACTION_SCHEMA, "run_id": str(run_id), "action": str(action),
@@ -59,7 +69,7 @@ def _context(run_id: str, action: str, kind: str, seq: int, encoding: str,
             "encoding": str(encoding)}
     for key, value in (extra or {}).items():
         name = str(key)
-        if name not in held:  # the action facts are not overwritable by a caller
+        if name not in RESERVED_CONTEXT:  # the action facts are the chain's
             held[name] = _text(value)
     return held
 
