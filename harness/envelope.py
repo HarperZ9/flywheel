@@ -28,7 +28,8 @@ DSSE_PAYLOAD_TYPE = "application/vnd.in-toto+json"
 # file with the same test ids and weakened assertions. That reproduces the
 # canonical hash against a tampered candidate, which is a false MATCH bought
 # outright. Signing the inputs closes it: change them and the digest moves.
-_DIGEST_OPTIONAL = {"candidate_path": "", "oracle_inputs": {}}
+_DIGEST_OPTIONAL = {"candidate_path": "", "oracle_inputs": {},
+                    "withheld_inputs": []}
 
 
 @dataclass
@@ -63,6 +64,11 @@ class ProofEnvelope:
     # text-only (see oracle_inputs.py). Empty means the receipt carries no
     # environment, which costs a re-checker a confirmation and never grants one.
     oracle_inputs: dict = field(default_factory=dict)
+    # Fixtures the capture refused to carry because they looked like
+    # credentials: {"path", "reason"} each, never the matched text. Signed
+    # along with everything else, so stripping the marker to make a partial
+    # capture read as a complete one moves the digest.
+    withheld_inputs: list = field(default_factory=list)
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), indent=2, sort_keys=True)

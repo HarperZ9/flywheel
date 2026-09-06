@@ -133,8 +133,9 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
     # in grounding.py). Timing is the whole point: after the run the workdir
     # also holds the candidate and the junit file the canonical hash is read
     # back from, and a receipt carrying its own answer key grades itself.
-    oracle_inputs = capture_inputs(
-        task.workdir, exclude=(task.candidate_path,)) if capture_oracle_inputs else {}
+    oracle_inputs, withheld_inputs = capture_inputs(
+        task.workdir, exclude=(task.candidate_path,)
+    ) if capture_oracle_inputs else ({}, [])
 
     search_mode = search is not None and search.n_candidates > 1
     if search_mode:
@@ -208,6 +209,7 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
         injected_context=boot_receipt,
         candidate_path=task.candidate_path,
         oracle_inputs=oracle_inputs,
+        withheld_inputs=withheld_inputs,
         chain=chain_to_dicts(chain))
     wv = WitnessVerdict("MATCH", orc.output_hash, "witness skipped")
     if witness_recheck:

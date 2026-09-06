@@ -27,6 +27,12 @@ BASE = dict(task_id="t", candidate="x", oracle="pytest", oracle_cmd="c",
             prompt_hash="p", budget_spent={})
 
 
+def _carried(workdir, **kw):
+    """capture()'s fixture half. What it withholds as credential-bearing is a
+    separate property with its own file, tests/test_receipt_secrets.py."""
+    return capture(workdir, **kw)[0]
+
+
 def _tree(root, files):
     for rel, text in files.items():
         p = root / rel
@@ -39,7 +45,7 @@ def test_capture_takes_the_fixtures_and_leaves_the_candidate(tmp_path):
     _tree(tmp_path, {"solution.py": "def add(a, b): ...",
                      "tests/test_solution.py": "def test_add(): ...",
                      "conftest.py": "import sys"})
-    got = capture(tmp_path, exclude=("solution.py",))
+    got = _carried(tmp_path, exclude=("solution.py",))
     assert set(got) == {"tests/test_solution.py", "conftest.py"}
     assert got["conftest.py"] == "import sys"
 
@@ -49,25 +55,25 @@ def test_capture_skips_what_a_build_produced_not_what_a_task_supplied(tmp_path):
                      "__pycache__/x.pyc": "stale",
                      ".pytest_cache/v/lastfailed": "{}",
                      "node_modules/dep/index.js": "0"})
-    assert set(capture(tmp_path)) == {"tests/test_x.py"}
+    assert set(_carried(tmp_path)) == {"tests/test_x.py"}
 
 
 def test_capture_never_ships_the_answer_key(tmp_path):
     """canonical_hash reads outcomes back out of the junit file. A receipt
     carrying one would arrive in the fresh directory already graded."""
     _tree(tmp_path, {"tests/t.py": "ok", "_oracle_junit.xml": "<testsuites/>"})
-    assert set(capture(tmp_path)) == {"tests/t.py"}
+    assert set(_carried(tmp_path)) == {"tests/t.py"}
 
 
 def test_capture_drops_a_file_over_the_per_file_cap(tmp_path):
     _tree(tmp_path, {"small.py": "ok", "big.py": "#" * (MAX_FILE_BYTES + 1)})
-    assert set(capture(tmp_path)) == {"small.py"}
+    assert set(_carried(tmp_path)) == {"small.py"}
 
 
 def test_capture_stays_under_the_total_cap(tmp_path):
     chunk = "#" * (MAX_FILE_BYTES - 1)
     _tree(tmp_path, {f"f{i:02d}.py": chunk for i in range(40)})
-    got = capture(tmp_path)
+    got = _carried(tmp_path)
     assert sum(len(v.encode()) for v in got.values()) <= MAX_TOTAL_BYTES
     assert 0 < len(got) < 40      # bounded, and not bounded to nothing
 
@@ -75,17 +81,17 @@ def test_capture_stays_under_the_total_cap(tmp_path):
 def test_capture_drops_binary_rather_than_mangling_it(tmp_path):
     (tmp_path / "blob.bin").write_bytes(bytes([0xFF, 0xFE, 0x00, 0x01]))
     (tmp_path / "ok.py").write_text("ok", encoding="utf-8")
-    assert set(capture(tmp_path)) == {"ok.py"}
+    assert set(_carried(tmp_path)) == {"ok.py"}
 
 
 def test_capture_of_a_missing_workdir_is_empty_not_an_error(tmp_path):
-    assert capture(tmp_path / "nope") == {}
+    assert _carried(tmp_path / "nope") == {}
 
 
 def test_capture_is_deterministic(tmp_path):
     _tree(tmp_path, {"a.py": "1", "b/c.py": "2", "d.py": "3"})
-    first = capture(tmp_path)
-    assert json.dumps(first, sort_keys=True) == json.dumps(capture(tmp_path),
+    first = _carried(tmp_path)
+    assert json.dumps(first, sort_keys=True) == json.dumps(_carried(tmp_path),
                                                            sort_keys=True)
 
 
@@ -94,7 +100,7 @@ def test_round_trip_rebuilds_the_tree(tmp_path):
                                    "data/fixture.json": '{"k": 1}'})
     dest = tmp_path / "dest"
     dest.mkdir()
-    assert restore(capture(src), dest) == 2
+    assert restore(_carried(src), dest) == 2
     assert (dest / "tests/test_x.py").read_text() == "def test_x(): pass"
     assert (dest / "data/fixture.json").read_text() == '{"k": 1}'
 
@@ -138,7 +144,8 @@ def test_a_receipt_sealed_before_these_fields_keeps_its_digests():
     every receipt already sealed."""
     env = ProofEnvelope(**BASE)
     old = asdict(env)
-    for k in ("candidate_path", "oracle_inputs", "oracle_stdout_excerpt"):
+    for k in ("candidate_path", "oracle_inputs", "withheld_inputs",
+              "oracle_stdout_excerpt"):
         old.pop(k, None)
     expected = hashlib.sha256(
         json.dumps(old, sort_keys=True).encode()).hexdigest()
