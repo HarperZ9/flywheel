@@ -151,6 +151,40 @@ def test_a_real_run_cannot_write_outside_the_workspace(tmp_path):
     assert not (outside / "leak.txt").exists()
 
 
+@pytest.mark.skipif(usable_backend() is None,
+                    reason="this host has no working POSIX sandbox")
+def test_a_real_run_cannot_read_a_protected_file(tmp_path):
+    """The denylist against a kernel, with a control that it proved anything.
+
+    Both files sit inside the writable workspace, so this also settles the
+    ordering question: a protected path the workspace would otherwise expose
+    stays hidden.
+
+    The backends fail differently and neither outcome is asserted. Seatbelt
+    denies the read and `cat` exits non-zero; bubblewrap mounts an empty file
+    over it and `cat` succeeds with nothing to print. What both have to
+    satisfy is that the bytes never reach the caller.
+    """
+    work = (tmp_path / "scratch")
+    work.mkdir()
+    repo = (tmp_path / "repo")
+    repo.mkdir()
+    repo, work = repo.resolve(), work.resolve()
+    secret, plain = repo / "secret", repo / "plain"
+    secret.write_text("SENTINEL-HIDDEN\n", encoding="utf-8")
+    plain.write_text("SENTINEL-VISIBLE\n", encoding="utf-8")
+    rc, out, plan = posix_run(
+        f"cat {plain.as_posix()}; cat {secret.as_posix()}", repo, work,
+        env={"PATH": os.environ["PATH"]}, network=True,
+        protected=(("file", secret.as_posix()),))
+    # The control. Without it a command that died before running either cat
+    # would satisfy the assertion below and prove nothing at all.
+    assert "SENTINEL-VISIBLE" in out, out
+    assert "SENTINEL-HIDDEN" not in out, out
+    assert plan.record()["protected"] == [secret.as_posix()]
+    assert plan.reads_confined is False, "a denylist is not read confinement"
+
+
 def test_a_run_that_never_started_carries_no_confinement_line(
         monkeypatch, tmp_path):
     """The summary states what the kernel enforced, so a failed exec has none.

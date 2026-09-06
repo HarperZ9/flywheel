@@ -746,9 +746,19 @@
           "ref": "harness/sandbox_probe.py"
         },
         {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/sandbox_protected_paths.py"
+        },
+        {
           "kind": "test",
           "present": true,
           "ref": "tests/test_posix_sandbox.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_sandbox_protected_paths.py"
         },
         {
           "kind": "test",

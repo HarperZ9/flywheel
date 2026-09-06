@@ -20,6 +20,8 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 
+from .sandbox_protected_paths import sbpl_deny_lines
+
 
 class ProfileRefused(ValueError):
     """A path cannot be written into a policy without changing its meaning."""
@@ -60,11 +62,12 @@ DEV_WRITES = ('  (literal "/dev/null")',
 
 
 def sbpl_profile(root, work, *, network: bool = False,
-                 egress_port: int | None = None) -> str:
+                 egress_port: int | None = None, protected=()) -> str:
     """The Seatbelt policy confining writes to the workspace.
 
-    Reads stay allowed. That is a real limit of this profile and it is why
-    `READS_CONFINED["seatbelt"]` is False.
+    Reads stay allowed apart from the `protected` denylist. That is a real
+    limit of this profile and it is why `READS_CONFINED["seatbelt"]` is
+    False: a named set of hidden paths is not a boundary around reads.
 
     The temp directory is not writable and must not become writable here. An
     earlier version allowed `/private/var/folders` so a toolchain would find
@@ -95,6 +98,10 @@ def sbpl_profile(root, work, *, network: bool = False,
             lines.append(
                 f'(allow network-outbound (remote tcp "localhost:'
                 f'{_egress_port(egress_port)}"))')
+    # Last, so the read denials are the last matching rule for their own
+    # operation. They do not interact with the rules above, which match a
+    # different one.
+    lines += sbpl_deny_lines(protected, _policy_path)
     return "\n".join(lines) + "\n"
 
 

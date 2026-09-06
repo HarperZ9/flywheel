@@ -167,7 +167,7 @@ def test_the_record_says_which_guarantees_actually_held():
         "schema": SCHEMA, "backend": "bwrap", "program": "bwrap",
         "root": "/w", "writable": ["/w", "/s"], "network": False,
         "reads_confined": False, "processes_isolated": True,
-        "egress_hosts": [], "egress_port": None}
+        "protected": [], "egress_hosts": [], "egress_port": None}
     assert mac.record()["processes_isolated"] is False
     assert mac.record()["network"] is True
     assert "network denied" in linux.summary()
@@ -209,10 +209,13 @@ def test_posix_run_hands_the_built_argv_to_the_runner_it_reports_on():
         seen["timeout"] = timeout
         return 0, "hello"
 
+    # `protected=()` because the default is this account's home directory and
+    # the argv would then depend on the machine running the test. The default
+    # is asserted on its own below.
     rc, out, plan = posix_run("echo hello", "/w", "/s", env={"PATH": "/bin"},
                               timeout_seconds=7, platform="linux",
                               which=found("bwrap"), runner=runner,
-                              probe=lambda *a: True)
+                              probe=lambda *a: True, protected=())
     assert (rc, out) == (0, "hello")
     assert seen["timeout"] == 7
     assert seen["argv"] == bwrap_argv("/usr/bin/bwrap", "/w", "/s",

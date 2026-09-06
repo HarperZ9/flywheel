@@ -14,13 +14,19 @@ Two backends, one per platform, both shipped by the OS or a standard package:
 
 NEITHER CONFINES READS, and the record says so on both. `--ro-bind / /`
 remounts the host read-only, which is a write barrier and not a read barrier:
-everything on the machine stays legible, `~/.ssh` included. The Seatbelt
+everything on the machine stays legible. The Seatbelt
 profile opens with `(allow default)` for the same reason, since a
 deny-by-default macOS profile that still lets ordinary build tools run is a
 much larger piece of work than this. Confining reads means enumerating what a
 toolchain may open, and shipping a flag that said reads were confined while
 this argv was running would be worse than shipping no sandbox: it would put a
 false guarantee inside a receipt.
+
+What the argv does carry is a denylist. `sandbox_protected_paths` names the
+credential directories and files a confined command has no business opening,
+and each backend hides them by the only mechanism it has. That is not read
+confinement, `READS_CONFINED` still says False on both, and the record counts
+the hidden paths under their own name so the two facts cannot be read as one.
 
 What does differ is the process table. bwrap unshares pid, ipc, uts and
 cgroup, so a confined process cannot see or signal anything else on the host.
@@ -41,14 +47,22 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
+from pathlib import Path
 
 from .egress_route import bridge_argv
+from .sandbox_confinement import SCHEMA, Confinement
 from .sandbox_policy import (ProfileRefused, posix_path, sbpl_profile,
                              seatbelt_argv)
 from .sandbox_probe import sandbox_starts
+from .sandbox_protected_paths import bwrap_hide_args, present_paths
 
-SCHEMA = "flywheel.posix-sandbox/v1"
+#: `SCHEMA` and `Confinement` moved next door and are re-exported, because
+#: every caller that had them from here still wants them from here and a
+#: file split is not a reason to break an import.
+__all__ = ["BACKENDS", "PROCESS_ISOLATED", "PROGRAM", "READS_CONFINED",
+           "SCHEMA", "Confinement", "ProfileRefused", "backend_for",
+           "build", "bwrap_argv", "describe", "posix_run", "routed",
+           "sbpl_profile", "seatbelt_argv", "with_egress"]
 
 #: What each platform can enforce, best first. A platform absent from this
 #: table has no backend, which is the state every non-Windows host was in.
@@ -71,70 +85,6 @@ READS_CONFINED = {"bwrap": False, "seatbelt": False}
 PROCESS_ISOLATED = {"bwrap": True, "seatbelt": False}
 
 
-@dataclass(frozen=True)
-class Confinement:
-    """Which backend ran, and what it actually enforced."""
-
-    backend: str
-    program: str
-    root: str
-    writable: tuple = ()
-    network: bool = False
-    reads_confined: bool = False
-    processes_isolated: bool = False
-    #: The host rules a proxy was enforcing for this run, if one was. Empty
-    #: means the network was open or denied outright, and `network` says
-    #: which of those two it was.
-    egress_hosts: tuple = ()
-    egress_port: int | None = None
-
-    def record(self) -> dict:
-        return {"schema": SCHEMA, "backend": self.backend,
-                "program": self.program, "root": self.root,
-                "writable": list(self.writable), "network": self.network,
-                "reads_confined": self.reads_confined,
-                "processes_isolated": self.processes_isolated,
-                "egress_hosts": list(self.egress_hosts),
-                "egress_port": self.egress_port}
-
-    def summary(self) -> str:
-        """One line for the transcript, so a difference between hosts shows.
-
-        The limits are named, not only the guarantee. A line that said
-        confined and stopped there would let a reader supply the rest from
-        the word, and the part they would supply is the part that is false.
-
-        The scratch directory is counted rather than left out. It is
-        writable and it is not under the workspace, so a line naming the
-        workspace alone is short by one path. `writable` in the record has
-        the paths themselves for a reader who wants them.
-        """
-        extra = max(len(self.writable) - 1, 0)
-        where = self.root if not extra else (
-            f"{self.root} + {extra} scratch path"
-            f"{'s' if extra > 1 else ''}")
-        return (f"[sandbox {self.backend}: writes confined to {where}, "
-                f"reads {'confined' if self.reads_confined else 'open'}, "
-                f"processes "
-                f"{'isolated' if self.processes_isolated else 'shared'}, "
-                f"network {self.network_words()}]")
-
-    def network_words(self) -> str:
-        """What the network was, in the three states it can be in.
-
-        A run with a proxy is not an open network and it is not a denied
-        one. Calling it either would be wrong in a direction a reader
-        cannot recover from, so the middle state names the count of rules
-        and `egress_hosts` in the record has the rules themselves.
-        """
-        if self.network:
-            return "allowed"
-        if not self.egress_hosts:
-            return "denied"
-        count = len(self.egress_hosts)
-        return f"denied except {count} host rule{'s' if count > 1 else ''}"
-
-
 def backend_for(platform: str | None = None, which=None) -> str | None:
     """The backend this host can actually use, or None.
 
@@ -154,7 +104,8 @@ def backend_for(platform: str | None = None, which=None) -> str | None:
 
 
 def bwrap_argv(program: str, root, work, cmd: str, *,
-               network: bool = False, entry: list | tuple = ()) -> list:
+               network: bool = False, entry: list | tuple = (),
+               protected=()) -> list:
     """The bubblewrap command line. Order matters: later binds layer on top.
 
     `--ro-bind / /` first, then the workspace bound writable over it, then
@@ -176,8 +127,11 @@ def bwrap_argv(program: str, root, work, cmd: str, *,
     here, scratch = posix_path(root), posix_path(work)
     argv += ["--ro-bind", "/", "/",
              "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
-             "--bind", here, here, "--bind", scratch, scratch,
-             "--chdir", here, "--"]
+             "--bind", here, here, "--bind", scratch, scratch]
+    # After the workspace bind, so a protected path that happens to sit
+    # inside the workspace is hidden rather than exposed by it.
+    argv += bwrap_hide_args(protected)
+    argv += ["--chdir", here, "--"]
     argv += list(entry)
     argv += ["/bin/sh", "-c", cmd]
     return argv
@@ -195,7 +149,7 @@ def routed(egress, network: bool):
 
 
 def describe(backend: str, root, work, *, network: bool = False,
-             egress=None) -> Confinement:
+             egress=None, protected=()) -> Confinement:
     """What a run under `backend` will have enforced when it finishes."""
     route = routed(egress, network)
     return Confinement(
@@ -203,12 +157,13 @@ def describe(backend: str, root, work, *, network: bool = False,
         writable=(posix_path(root), posix_path(work)), network=network,
         reads_confined=READS_CONFINED[backend],
         processes_isolated=PROCESS_ISOLATED[backend],
+        protected=tuple(protected),
         egress_hosts=() if route is None else tuple(route.hosts),
         egress_port=None if route is None else route.port)
 
 
 def build(backend: str, program: str, root, work, cmd: str, *,
-          network: bool = False, egress=None) -> list:
+          network: bool = False, egress=None, protected=()) -> list:
     """The argv for one backend. Pure, so a diff shows what will run.
 
     The route is passed whole rather than as the piece each backend wants.
@@ -220,18 +175,18 @@ def build(backend: str, program: str, root, work, cmd: str, *,
     if backend == "bwrap":
         entry = () if route is None else bridge_argv(route)
         return bwrap_argv(program, root, work, cmd, network=network,
-                          entry=entry)
+                          entry=entry, protected=protected)
     if backend == "seatbelt":
         profile = sbpl_profile(root, work, network=network,
                                egress_port=None if route is None
-                               else route.port)
+                               else route.port, protected=protected)
         return seatbelt_argv(program, profile, cmd)
     raise ProfileRefused(f"no such backend: {backend}")
 
 
 def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
               network: bool = False, egress=None, platform: str | None = None,
-              which=None, runner=None, probe=None) -> tuple:
+              which=None, runner=None, probe=None, protected=None) -> tuple:
     """Run `cmd` confined. Returns (returncode, output, Confinement).
 
     Returns None for the backend rather than raising when the host has none:
@@ -242,6 +197,13 @@ def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
 
     `runner` and `probe` are injectable so the argv can be checked, and the
     refusal reached, without a host that has either program.
+
+    `protected` defaults to the credential denylist under this account's home
+    directory, narrowed to the paths that are actually there. Passing an empty
+    tuple is how a caller asks for none, and passing a list of (kind, path)
+    pairs is how a test asks for a path it just created. The default is read
+    here rather than in the builders, which stay pure functions of what they
+    are handed.
     """
     backend = backend_for(platform, which)
     if backend is None:
@@ -250,9 +212,11 @@ def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
     program = found if isinstance(found, str) else PROGRAM[backend]
     if not (probe if probe is not None else sandbox_starts)(backend, program):
         return None
-    plan = describe(backend, root, work, network=network, egress=egress)
+    hidden = present_paths(Path.home()) if protected is None else protected
+    plan = describe(backend, root, work, network=network, egress=egress,
+                    protected=hidden)
     argv = build(backend, program, root, work, cmd, network=network,
-                 egress=egress)
+                 egress=egress, protected=hidden)
     call = runner if runner is not None else _spawn
     rc, out = call(argv, root, with_egress(env, egress), timeout_seconds)
     return rc, out, plan
