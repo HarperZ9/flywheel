@@ -5,6 +5,22 @@ on:
     branches: ["**"]
   pull_request:
 
+# Every push to a branch with a PR open starts two runs of this file, one for
+# `push` and one for `pull_request`, and until this block nothing ended the
+# runs a newer commit had already made pointless. Three generations were alive
+# at once on one branch, and since macOS runners are the scarce ones, the four
+# macOS legs of the current commit sat behind six legs of commits nobody was
+# going to merge. They had been queued for fifty minutes.
+#
+# The key names the event, so the two lanes cancel their own stale generation
+# and never each other's. A `pull_request` run ending a `push` run would mark
+# a check cancelled that the branch may still be waiting on.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  # A commit on main keeps its verdict whatever lands next. Anywhere else the
+  # newest commit is the one worth a runner.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   phase0:
     name: phase 0 + 1A slice
