@@ -92,15 +92,15 @@ python scripts/run_offline_benchmarks.py
 
 | suite | what it answers | headline |
 | --- | --- | --- |
-| accountability | does an unaccountable system score badly here | dimensions 8; harness_overall 1.0; separation 1.0; strawman_overall 0.0 |
+| accountability | does an unaccountable system score badly here | dimensions 8; harness_overall 1.0; separation 0.99; strawman_overall 0.01 |
 | governed-agent | does a workflow refuse an action above its tier | failed 0; mean_quality_score 0.542; pass_rate 1.0; passed 6; scenarios 6 |
 | agent-recovery | does an injected fault recover without failing quietly | receipt_completeness 1.0; recovery_success_rate 1.0; scenarios 6; silent_failure_rate 0.0 |
 | stateful-provider-swap | does state survive a provider swap | checks 10; pass_rate 1.0; passed True |
 | source-mined | do the mined checks still hold against their datasets | cases 26; failed 0; metrics_asserted 170; pass_rate 1.0; passed 26 |
 | paired-replication | did continued pretraining change general code completion | delta_points -0.0305; gains 9; p_exact 0.4049; regressions 14; tasks 164 |
-| receipting-cost | what does it cost to keep the receipt | durability_share 0.8555; log_bytes_per_action 788.3; ms_per_witnessed_action 7.71; recheck_us_per_record 25.7; verdict MATCH |
+| receipting-cost | what does it cost to keep the receipt | durability_share 0.831; log_bytes_per_action 788.3; ms_per_witnessed_action 7.64; recheck_us_per_record 25.2; verdict MATCH |
 
-The strawman, a system with no receipts, scores 0% on the same axes. A
+The strawman, a system with no receipts, scores 1% on the same axes. A
 benchmark that everything passes measures nothing.
 
 Against 5 named peers (codex, cursor, claude code, hermes, omp): 39

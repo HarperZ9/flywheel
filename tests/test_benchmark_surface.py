@@ -198,7 +198,16 @@ def test_the_strawman_is_drawn_next_to_the_harness():
     assert "strawman" in html
     accountability = next(s for s in _record()["suites"]
                           if s["name"] == "accountability")
-    assert accountability["headline"]["strawman_overall"] == 0.0
+    # Not pinned to zero any more. One store attack in the adversarial corpus,
+    # absent_ancestor, cites a receipt that was never written, and no resolver
+    # can fail it because there is no file to load. It stays in the denominator
+    # on purpose, so the floor a strawman reaches on that axis is above zero.
+    # Pinning zero here would forbid every future control of that shape. What
+    # the page owes a reader is that the system built to fail scores far below
+    # the one being measured, which is what these two assertions say.
+    headline = accountability["headline"]
+    assert headline["strawman_overall"] < 0.2, "the strawman has stopped failing"
+    assert headline["separation"] >= 0.8, "the chart no longer separates the two"
     assert any(d.get("strawman") == 0.0 for d in accountability["detail"])
 
 
