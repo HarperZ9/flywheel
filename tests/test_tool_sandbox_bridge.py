@@ -96,12 +96,19 @@ def test_an_unknown_policy_fails_where_it_is_written():
 
 
 def test_an_unset_host_is_a_host_that_says_no():
+    # The empty policy is passed rather than defaulted, so what these lines
+    # assert about the environment is not quietly conditional on whatever the
+    # host running them has pinned.
+    from harness.machine_policy import Policy
     from harness.tool_sandbox_bridge import fallback_from_env
-    assert fallback_from_env({}) == "refuse"
-    assert fallback_from_env({"FLYWHEEL_ALLOW_UNSANDBOXED": ""}) == "refuse"
-    assert fallback_from_env({"FLYWHEEL_ALLOW_UNSANDBOXED": "0"}) == "refuse"
+    none = Policy()
+    assert fallback_from_env({}, none) == "refuse"
+    assert fallback_from_env({"FLYWHEEL_ALLOW_UNSANDBOXED": ""}, none) \
+        == "refuse"
+    assert fallback_from_env({"FLYWHEEL_ALLOW_UNSANDBOXED": "0"}, none) \
+        == "refuse"
     for yes in ("1", "true", "YES", " on "):
-        assert fallback_from_env({"FLYWHEEL_ALLOW_UNSANDBOXED": yes}) \
+        assert fallback_from_env({"FLYWHEEL_ALLOW_UNSANDBOXED": yes}, none) \
             == "disclose"
 
 
