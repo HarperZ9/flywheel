@@ -147,6 +147,39 @@ def test_the_page_carries_every_matrix_row():
         assert row["key"] in html, row["key"]
 
 
+def test_a_star_count_never_travels_without_its_denominator():
+    """The defect this replaces: 27 rows marked "no listed peer declares
+    them" over a three-peer table, where a cell nobody had read counted the
+    same as a cell read and found absent.
+
+    The count is only meaningful beside two other numbers, so both surfaces
+    have to carry all three: how many peers it was measured against, and how
+    many rows still hold a surface nobody here has read.
+    """
+    from harness.parity import parity_matrix
+    doc = parity_matrix()
+    peers, s = doc["peers"], doc["summary"]
+    for text in (HTML.read_text(encoding="utf-8"),
+                 MARKDOWN.read_text(encoding="utf-8")):
+        assert f"all {len(peers)} peers were read" in text
+        assert f"{len(s['undetermined'])} rows carry at least one peer" in text
+        for peer in peers:
+            assert peer["read_on"] in text, peer["key"]
+
+
+def test_the_sealed_record_carries_the_matrix_denominators():
+    """The record is what an outside reader hashes. A star count sealed
+    without the peer set and the unread count seals the flattering half of
+    the finding and leaves the qualifier on the page, where it can be
+    edited."""
+    from harness.parity import parity_matrix
+    doc = parity_matrix()
+    p = _record()["parity"]
+    assert p["peers"] == [x["key"] for x in doc["peers"]]
+    assert p["undetermined"] == len(doc["summary"]["undetermined"])
+    assert p["uniquely_witnessed"] == len(doc["summary"]["uniquely_witnessed"])
+
+
 def test_the_strawman_is_drawn_next_to_the_harness():
     """A benchmark everything passes measures nothing.
 

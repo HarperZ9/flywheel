@@ -51,23 +51,35 @@ def render_markdown(report: dict[str, Any], doc: dict[str, Any]) -> str:
     # The comparison a reader arrives for. It sits above the declared matrix
     # because a measurement outranks a reading of someone else's documentation.
     out += head_to_head(load_record())
-    out += ["## Against the field", "",
+    peers = doc["peers"]
+    names = ", ".join(p["label"] for p in peers)
+    out += [f"## Against {len(peers)} named peers", "",
             "The Flywheel column is checked against this repository every time "
-            "the matrix is read. The competitor columns are dated declarations "
-            f"from public documentation, read on {doc['declared_on']}, and are "
-            "not measurements taken here.", "",
-            "| capability | flywheel | codex | cursor | claude code |",
-            "| --- | --- | --- | --- | --- |"]
+            "the matrix is read. The peer columns are dated readings of public "
+            "documentation and public source, not measurements taken here, and "
+            "`unread` means nobody here has looked at that surface.", "",
+            f"Peers: {names}.", ""]
+    out += [f"- {p['label']}, read {p['read_on']}, {p['source']}"
+            for p in peers]
+    out += ["",
+            "| capability | flywheel | "
+            + " | ".join(p["label"] for p in peers) + " |",
+            "| --- |" + " --- |" * (len(peers) + 1)]
     unique = set(doc["summary"]["uniquely_witnessed"])
     for row in doc["rows"]:
-        cells = " | ".join(CELL[row["competitors"][n]][1]
-                           for n in ("codex", "cursor", "claude-code"))
+        cells = " | ".join(CELL[row["competitors"][p["key"]]][1]
+                           for p in peers)
         mark = " *" if row["key"] in unique else ""
         out.append(f"| {row['key']}{mark} | {row['flywheel'].lower()} | {cells} |")
     s = doc["summary"]
-    out += ["", f"{len(doc['rows'])} rows, {s['witnessed']} witnessed, "
-            f"{s['absent']} absent, {len(s['uniquely_witnessed'])} marked `*` "
-            "because no listed peer declares them.", "",
+    out += ["", wrap(
+        f"{len(doc['rows'])} rows, {s['witnessed']} witnessed, "
+        f"{s['absent']} absent, {len(s['uniquely_witnessed'])} marked `*` "
+        f"because all {len(peers)} peers were read on that row and none of "
+        f"them declares it. {len(s['undetermined'])} rows carry at least one "
+        "peer surface nobody here has read; a star is withheld from every one "
+        "of them, so this count moves up as the reading is done and not "
+        "before."), "",
             "## What was not measured", ""]
     for entry in report["not_run"]:
         out.append(f"- **{entry['suite']}.** Needs {entry['needs']}. "
@@ -113,12 +125,15 @@ def render_readme_block(report: dict[str, Any], doc: dict[str, Any]) -> str:
         wrap(f"The strawman, a system with no receipts, scores "
               f"{acc['strawman_overall']:.0%} on the same axes. A benchmark "
               "that everything passes measures nothing."),
-        wrap(f"Against the field: {len(doc['rows'])} capabilities, "
-              f"{s['witnessed']} witnessed in this repository by a check that "
-              f"runs every time the matrix is read, and "
-              f"{len(s['uniquely_witnessed'])} that no listed peer declares. "
-              "The competitor columns are dated readings of public "
-              "documentation, not measurements taken here."),
+        wrap(f"Against {len(doc['peers'])} named peers "
+             f"({', '.join(p['label'] for p in doc['peers'])}): "
+             f"{len(doc['rows'])} capabilities, {s['witnessed']} witnessed in "
+             "this repository by a check that runs every time the matrix is "
+             f"read, and {len(s['uniquely_witnessed'])} that every peer was "
+             f"read on and none declares. {len(s['undetermined'])} more carry "
+             "a peer surface nobody here has read and are not counted. The "
+             "peer columns are dated readings of public documentation and "
+             "public source, not measurements taken here."),
         wrap("Full results, the matrix, and the measurements that were not "
               "taken: [docs/BENCHMARKS.md](docs/BENCHMARKS.md)."),
         wrap("One of those suites recomputes the project's only capability "
