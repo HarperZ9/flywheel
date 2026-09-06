@@ -28,8 +28,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 REPO = Path(__file__).resolve().parent.parent
 RECORD = REPO / "docs" / "benchmarks" / "report.json"
 
-from scripts.benchmark_head_to_head import load_record, section_html
-from scripts.benchmark_shared import CELL, lede
+from scripts.benchmark_head_to_head import load_record, section_html  # noqa: E402
+from scripts.benchmark_shared import CELL, lede  # noqa: E402
 
 
 def _esc(value: Any) -> str:
@@ -47,6 +47,10 @@ def _headline_number(suite: dict[str, Any]) -> tuple[str, bool]:
         # A regression inside the noise. It leads with its own number and is
         # drawn as a null, never in the color that means a measured pass.
         return f"{head['delta_points'] * 100:+.2f} pp", True
+    if "ms_per_witnessed_action" in head:
+        # A cost, so it leads with its unit. Read without one it looks like a
+        # score, and a low score and a low cost mean opposite things.
+        return f"{head['ms_per_witnessed_action']} ms", False
     for key in ("pass_rate", "recovery_success_rate", "harness_overall"):
         if key in head:
             return _pct(head[key]), head[key] == 0
