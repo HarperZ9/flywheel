@@ -165,6 +165,19 @@ String _cleanPath(String value) => value
 
 String _digest(List<int> bytes) => sha256.convert(bytes).toString();
 
+/// The verdict for an open that failed. GetLastError is a separate trip over
+/// the FFI boundary with runtime work in between, so `code` is not reliably
+/// the one CreateFileW set: a just-deleted file was observed reporting 0,
+/// read as unavailable, which blocked recovery over a routine missing file.
+/// The path is asked first; the code only splits what the path cannot.
+CodeDiskFailure openFailureVerdict(String path, int code) =>
+    FileSystemEntity.typeSync(path, followLinks: false) ==
+            FileSystemEntityType.notFound
+        ? CodeDiskFailure.missing
+        : code == 32
+            ? CodeDiskFailure.busy
+            : CodeDiskFailure.unavailable;
+
 final class _WindowsIo {
   _WindowsIo(DynamicLibrary library)
       : create = library.lookupFunction<_CreateN, _Create>('CreateFileW'),
@@ -210,13 +223,7 @@ final class _WindowsIo {
   int _open(String path, int access, int sharing) {
     final handle = create(_wide(path), access, sharing, nullptr, 3, 0x80, 0);
     if (handle == -1) {
-      final error = lastError();
-      final failure = error == 32
-          ? CodeDiskFailure.busy
-          : error == 2
-              ? CodeDiskFailure.missing
-              : CodeDiskFailure.unavailable;
-      throw WorkspaceFileException(failure);
+      throw WorkspaceFileException(openFailureVerdict(path, lastError()));
     }
     return handle;
   }
