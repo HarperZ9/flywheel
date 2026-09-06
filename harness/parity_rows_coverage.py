@@ -64,7 +64,8 @@ ROWS = [
      "desc": "scan the operator's own codebase for security defects and turn "
              "the findings into reviewable changes",
      "witnesses": [("module", "harness/vulnerability_scan.py"),
-                   ("route", "/api/scan/vulnerabilities")]},
+                   ("route", "/api/scan/vulnerabilities"),
+                   ("test", "tests/test_scan_route.py")]},
     {"key": "generated-visual-artifacts",
      "desc": "produce images, posters, typefaces and other visual output from "
              "a run, addressed and carried like any other result",

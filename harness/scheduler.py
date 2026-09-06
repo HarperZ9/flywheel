@@ -32,6 +32,8 @@ from pathlib import Path
 
 from .accountable_hooks import EVENTS
 from .evidence_json import canonical_sha256
+from .hash_chain import append_sealed, load_chain, seal
+from .hash_chain import chain_intact as _chain_intact
 
 SCHEDULE_SCHEMA = "flywheel.schedule/v1"
 FIRE_SCHEMA = "flywheel.schedule-fire/v1"
@@ -184,9 +186,7 @@ def fire_record(schedule: dict, *, scheduled_for: str, fired_at: str,
         "truncated": int(truncated),
         "prev_sha256": prev_sha256,
     }
-    record["fire_sha256"] = canonical_sha256(
-        {k: v for k, v in record.items() if k != "fire_sha256"})
-    return record
+    return seal(record, digest_key="fire_sha256")
 
 
 def chain_intact(records: list) -> bool:
@@ -196,18 +196,8 @@ def chain_intact(records: list) -> bool:
     is the control on the rest of the module: without it a bad night is
     erased by deleting a file, and every count above still reads clean.
     """
-    previous = ""
-    for record in records:
-        if not isinstance(record, dict) or record.get("schema") != FIRE_SCHEMA:
-            return False
-        if record.get("prev_sha256", "") != previous:
-            return False
-        expected = canonical_sha256(
-            {k: v for k, v in record.items() if k != "fire_sha256"})
-        if record.get("fire_sha256") != expected:
-            return False
-        previous = record["fire_sha256"]
-    return True
+    return _chain_intact(records, schema=FIRE_SCHEMA,
+                         digest_key="fire_sha256")
 
 
 def last_fired_for(records: list) -> str:
@@ -251,25 +241,10 @@ def load_schedules(path: Path) -> list:
 
 
 def load_fires(path: Path) -> list:
-    path = Path(path)
-    if not path.is_file():
-        return []
-    rows = json.loads(path.read_text(encoding="utf-8"))
-    return rows if isinstance(rows, list) else []
+    return load_chain(path)
 
 
 def append_fire(record: dict, *, path: Path) -> list:
-    """Append and refuse to write a chain that does not verify.
-
-    Checking after the append rather than before is deliberate. The thing
-    worth refusing is a bad file on disk, and only the appended list is
-    the file that would be written.
-    """
-    records = load_fires(path) + [record]
-    if not chain_intact(records):
-        _refuse("appending this record would break the fire chain")
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(records, indent=2, sort_keys=True),
-                    encoding="utf-8")
-    return records
+    """Append one firing, refusing to write a history that does not verify."""
+    return append_sealed(record, path=path, schema=FIRE_SCHEMA,
+                         digest_key="fire_sha256")

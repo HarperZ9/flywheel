@@ -1342,13 +1342,18 @@
       "checks": [
         {
           "kind": "module",
-          "present": false,
+          "present": true,
           "ref": "harness/vulnerability_scan.py"
         },
         {
           "kind": "route",
-          "present": false,
+          "present": true,
           "ref": "/api/scan/vulnerabilities"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_scan_route.py"
         }
       ],
       "competitors": {
@@ -1359,7 +1364,7 @@
         "omp": null
       },
       "desc": "scan the operator's own codebase for security defects and turn the findings into reviewable changes",
-      "flywheel": "ABSENT",
+      "flywheel": "WITNESSED",
       "key": "own-code-vulnerability-scan"
     },
     {
@@ -1394,7 +1399,7 @@
   ],
   "schema": "flywheel.parity/v2",
   "summary": {
-    "absent": 3,
+    "absent": 2,
     "coverage": {
       "out_of_frame": 4,
       "read_on": "2026-09-06",
@@ -1404,8 +1409,7 @@
     },
     "gaps": [
       "self-hosted-runner-pool",
-      "browser-and-computer-control",
-      "own-code-vulnerability-scan"
+      "browser-and-computer-control"
     ],
     "undetermined": [
       "scheduled-runs",
@@ -1430,6 +1434,6 @@
       "signed-receipt-external-anchor",
       "formal-proof-oracle"
     ],
-    "witnessed": 45
+    "witnessed": 46
   }
 }
