@@ -106,7 +106,7 @@ def test_process_runner_has_no_provider_writable_stage_and_types_boundaries(tmp_
     typed = DirectCodexAdapter(runner=lambda *a, **k: result, executable_resolver=lambda: "codex.cmd").execute(request(tmp_path))
     assert typed.execution_state == state and not list(tmp_path.glob(".cross-harness-stage-*"))
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows provider boundary")
-def test_process_runner_terminates_descendants_within_bound(tmp_path):
+def test_process_runner_terminates_descendants_within_bound(tmp_path, text_once_written):
     import os, subprocess, time
     marker, pidfile = tmp_path / "survived", tmp_path / "descendant.pid"
     # Grandchild proves survival only: if the runner does not kill it, it writes the
@@ -119,8 +119,12 @@ def test_process_runner_terminates_descendants_within_bound(tmp_path):
     # writes the pid before termination, while elapsed < 4 still proves prompt bounded kill.
     child = "import os,pathlib,subprocess,sys,time;p=subprocess.Popen([sys.executable,'-c',sys.argv[1]],creationflags=(8 if os.name=='nt' else 0),start_new_session=(os.name!='nt'));pathlib.Path(sys.argv[2]).write_text(str(p.pid));time.sleep(60)"; started = time.monotonic()
     result = _run_process([sys.executable, "-c", child, grandchild, str(pidfile)], cwd=tmp_path, stdin_text="", timeout_seconds=2.0)
-    elapsed = time.monotonic() - started; time.sleep(.7)
-    pid = pidfile.read_text()
+    elapsed = time.monotonic() - started; time.sleep(.7)  # settle: let the kill land before probing
+    # Waits for content, not for the name. `write_text` publishes the path
+    # before the digits, and an empty read is not merely a missing pid here:
+    # `"" in stdout` is true of every string, so a pid that never landed would
+    # report the descendant as alive and fail this as a leaked process.
+    pid = text_once_written(pidfile, timeout=5.0, why="the child never recorded its descendant's pid").strip()
     alive = pid in subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True).stdout if os.name == "nt" else os.path.exists(f"/proc/{pid}")
     assert result.timed_out and pidfile.is_file() and elapsed < 4 and not marker.exists() and not alive
 @pytest.mark.parametrize("stdout", [

@@ -107,7 +107,8 @@ def _proc_facts(pid: int) -> str:
 @pytest.mark.skipif(os.name == "nt", reason="POSIX process-tree reaping; "
                      "the Windows path kills via taskkill /T and is covered "
                      "by test_oracle_hostile_candidate.py")
-def test_timeout_kills_the_whole_tree_not_just_the_shell(tmp_path):
+def test_timeout_kills_the_whole_tree_not_just_the_shell(tmp_path,
+                                                        text_once_written):
     """Measured leak (2026-07-28): exec_oracle runs the candidate through
     `shell=True`, and a bare subprocess.run(..., timeout=) kills only the
     shell on expiry -- the candidate, and anything the candidate itself
@@ -133,13 +134,11 @@ def test_timeout_kills_the_whole_tree_not_just_the_shell(tmp_path):
             f"expected the 2s-timeout oracle call to report status='timeout', "
             f"got {result.status!r}")
 
-        deadline = time.monotonic() + 5
-        while not pidfile.exists() and time.monotonic() < deadline:
-            time.sleep(0.1)
-        assert pidfile.exists(), (
-            "candidate never reached the point of recording its grandchild's "
-            "pid -- the test setup itself is broken, not the fix")
-        grandchild_pid = int(pidfile.read_text().strip())
+        grandchild_pid = int(text_once_written(
+            pidfile, timeout=5.0,
+            why="candidate never reached the point of recording its "
+                "grandchild's pid -- the test setup itself is broken, "
+                "not the fix").strip())
 
         # give the reaper a moment to land
         deadline = time.monotonic() + 5
@@ -167,7 +166,7 @@ def test_timeout_kills_the_whole_tree_not_just_the_shell(tmp_path):
                      "the Windows path kills via taskkill /T and is covered "
                      "by test_oracle_hostile_candidate.py")
 def test_non_timeout_exception_during_communicate_still_kills_the_tree(
-        tmp_path, monkeypatch):
+        tmp_path, monkeypatch, text_once_written):
     """Regression test: only subprocess.TimeoutExpired used to trigger
     _kill_tree. Any other exception raised while proc.communicate() is
     running -- a MemoryError from buffering unbounded candidate output, an
@@ -200,9 +199,11 @@ def test_non_timeout_exception_during_communicate_still_kills_the_tree(
     def flaky_communicate(self, *a, **kw):
         calls["n"] += 1
         if calls["n"] == 1:
-            deadline = time.monotonic() + 5
-            while not pidfile.exists() and time.monotonic() < deadline:
-                time.sleep(0.05)
+            # A barrier, not an assertion: the pid has to be on disk before the
+            # pipe breaks, and a setup that never got there is diagnosed below
+            # with the message that says so, not by raising from inside a
+            # monkeypatched communicate.
+            text_once_written(pidfile, timeout=5.0, required=False)
             raise OSError("simulated pipe failure mid-run")
         return real_communicate(self, *a, **kw)
 
@@ -215,13 +216,11 @@ def test_non_timeout_exception_during_communicate_still_kills_the_tree(
             f"expected the simulated OSError to surface as status="
             f"'error:OSError', got {result.status!r}")
 
-        deadline = time.monotonic() + 5
-        while not pidfile.exists() and time.monotonic() < deadline:
-            time.sleep(0.1)
-        assert pidfile.exists(), (
-            "candidate never reached the point of recording its grandchild's "
-            "pid -- the test setup itself is broken, not the fix")
-        grandchild_pid = int(pidfile.read_text().strip())
+        grandchild_pid = int(text_once_written(
+            pidfile, timeout=5.0,
+            why="candidate never reached the point of recording its "
+                "grandchild's pid -- the test setup itself is broken, "
+                "not the fix").strip())
 
         # give the reaper a moment to land
         deadline = time.monotonic() + 5
@@ -244,16 +243,22 @@ def test_failure_class_is_named_not_smuggled_in_the_output_hash(tmp_path):
     without string-parsing output_hash: a timeout is not a wrong answer, and a
     crash is not a mismatch. output_hash stays a pure output witness."""
     task = _exec_task(tmp_path, "42")
-    orc = PythonExecutorOracle(expected="42", timeout=2)
-    assert orc.verify_dense("print(42)", task).status == "match"
-    assert orc.verify_dense("print(7)", task).status == "mismatch"
+    # Two budgets. For a candidate that finishes, the timeout is a ceiling a
+    # loaded runner can hit, reporting `timeout` where the test means to read
+    # `match`; for one that sleeps it is the trigger, and headroom is wall
+    # clock the run pays. Split, the finishing three get a wide margin free,
+    # because they never reach it.
+    finishes = PythonExecutorOracle(expected="42", timeout=30)
+    sleeps = PythonExecutorOracle(expected="42", timeout=2)
+    assert finishes.verify_dense("print(42)", task).status == "match"
+    assert finishes.verify_dense("print(7)", task).status == "mismatch"
     # rc != 0 with the right stdout is a nonzero_exit, never a match
-    crash = orc.verify_dense("print(42)\nraise SystemExit(3)", task)
+    crash = finishes.verify_dense("print(42)\nraise SystemExit(3)", task)
     assert crash.status == "nonzero_exit" and not crash.passed
-    assert orc.verify_dense("import time; time.sleep(10)", task).status == "timeout"
+    assert sleeps.verify_dense("import time; time.sleep(10)", task).status == "timeout"
     # output_hash carries no failure-class label: it is empty when nothing ran
     # to completion, and a returncode:stdout witness otherwise
-    to = orc.verify_dense("import time; time.sleep(10)", task)
+    to = sleeps.verify_dense("import time; time.sleep(10)", task)
     assert to.output_hash == "" and to.status == "timeout"
 
 

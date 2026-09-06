@@ -8,9 +8,48 @@ root, and forgetting to set `h.run_root` writes there, never into E:."""
 
 import shutil
 import tempfile
+import time
 from pathlib import Path
 
 import pytest
+
+
+@pytest.fixture
+def text_once_written():
+    """Read a file a subprocess is writing, without racing its creation.
+
+    `open(path, "w")` makes the name before any content reaches it, so a poll
+    on `Path.exists()` can return the instant the file appears and read an
+    empty string. The window is wide enough to have failed one windows-latest
+    shard on a commit that passed the same shard on a sibling run, and the
+    reads downstream of it were an equality assertion in one file and `int()`
+    in another, so the same race surfaced as two unrelated-looking errors.
+
+    Waiting for content closes it. The timeout message says whether the file
+    never appeared or appeared and stayed empty, because those are different
+    faults in the subprocess under test. Callers that only need the write to
+    have landed pass `required=False` and get whatever is there at the
+    deadline, keeping a barrier a barrier rather than an assertion.
+
+    Whitespace does not count as content; every caller writes a repr or a pid.
+    """
+    def _read(path, *, timeout=30.0, why="", required=True):
+        deadline = time.monotonic() + timeout
+        text = ""
+        while True:
+            try:
+                text = path.read_text(encoding="utf-8")
+            except (FileNotFoundError, PermissionError):
+                text = ""
+            if text.strip() or time.monotonic() >= deadline:
+                break
+            time.sleep(0.02)
+        if not text.strip() and required:
+            state = "stayed empty" if path.exists() else "never appeared"
+            raise AssertionError(
+                f"{path} {state} within {timeout}s. {why}".strip())
+        return text
+    return _read
 
 
 @pytest.fixture
