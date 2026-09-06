@@ -37,10 +37,10 @@ import threading
 from pathlib import Path
 
 try:
-    from .egress_proxy import splice
+    from .egress_relay import splice
 except ImportError:  # run by path inside a sandbox, not imported as a module
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from harness.egress_proxy import splice
+    from harness.egress_relay import splice
 
 #: The exit code for a bridge that could not listen. The command does not
 #: run. A run whose proxy never came up would fail somewhere inside whatever

@@ -31,7 +31,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .egress_policy import EgressPolicy
-from .egress_proxy import EgressProxy, serve
+from .egress_proxy import EgressProxy
+from .egress_relay import serve
 
 SCHEMA = "flywheel.egress-route/v1"
 

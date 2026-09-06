@@ -23,12 +23,12 @@ did first.
 """
 from __future__ import annotations
 
-import selectors
 import socket
 import threading
 from dataclasses import dataclass
 
 from .egress_policy import EgressPolicy, blocked_address
+from .egress_relay import farewell, quiet, splice
 
 SCHEMA = "flywheel.egress-attempts/v1"
 
@@ -41,11 +41,6 @@ MAX_HEAD = 8192
 #: How long a single upstream connect may take. A refusal is a result. A
 #: hang is a run that never ends.
 DIAL_TIMEOUT = 20.0
-
-#: How often an open tunnel wakes to check whether either side has gone.
-#: An idle tunnel is a normal tunnel, so this is a poll interval and not a
-#: deadline: nothing here closes a connection for being quiet.
-SPLICE_POLL = 30.0
 
 ESTABLISHED = b"HTTP/1.1 200 Connection established\r\n\r\n"
 
@@ -196,59 +191,14 @@ class EgressProxy:
                 upstream.sendall(early)
             splice(conn, upstream)
         except ProxyRefused as refused:
-            _quiet(conn.sendall, _refusal(str(refused)))
+            quiet(conn.sendall, _refusal(str(refused)))
+            farewell(conn)
         except OSError:
             pass
         finally:
             for sock in (conn, upstream):
                 if sock is not None:
-                    _quiet(sock.close)
-
-
-def splice(left, right) -> None:
-    """Carry bytes both ways until one side is done.
-
-    Nothing here reads what passes. The policy decided the destination and
-    the tunnel is a tunnel. A proxy that inspected the stream would be a
-    second thing to be wrong about, on the traffic this exists to permit.
-    """
-    selector = selectors.DefaultSelector()
-    selector.register(left, selectors.EVENT_READ, right)
-    selector.register(right, selectors.EVENT_READ, left)
-    try:
-        while True:
-            for key, _ in selector.select(timeout=SPLICE_POLL):
-                data = key.fileobj.recv(65536)
-                if not data:
-                    return
-                key.data.sendall(data)
-    except OSError:
-        return
-    finally:
-        selector.close()
-
-
-def serve(proxy: EgressProxy, listener, stop: threading.Event) -> None:
-    """Accept until `stop` is set. One thread per connection.
-
-    The listener carries the timeout, so a run whose command exits without
-    closing a connection still lets this loop notice `stop` and return.
-    """
-    listener.settimeout(0.5)
-    workers: list = []
-    while not stop.is_set():
-        try:
-            conn, _ = listener.accept()
-        except (socket.timeout, TimeoutError):
-            continue
-        except OSError:
-            break
-        worker = threading.Thread(target=proxy.handle, args=(conn,),
-                                  daemon=True)
-        worker.start()
-        workers.append(worker)
-    for worker in workers:
-        worker.join(timeout=1.0)
+                    quiet(sock.close)
 
 
 def _resolve(host: str, port: int) -> list:
@@ -265,10 +215,3 @@ def _resolve(host: str, port: int) -> list:
 
 def _connect(address: str, port: int):
     return socket.create_connection((address, port), timeout=DIAL_TIMEOUT)
-
-
-def _quiet(call, *args) -> None:
-    try:
-        call(*args)
-    except OSError:
-        pass

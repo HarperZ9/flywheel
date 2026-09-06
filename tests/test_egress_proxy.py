@@ -15,8 +15,9 @@ import threading
 import pytest
 
 from harness.egress_policy import EgressPolicy
-from harness.egress_proxy import (MAX_HEAD, Attempt, EgressProxy, ProxyRefused,
-                                  parse_connect, serve)
+from harness.egress_proxy import (MAX_HEAD, Attempt, EgressProxy,
+                                  ProxyRefused, parse_connect)
+from harness.egress_relay import serve
 
 #: An address outside every range `blocked_address` refuses, so the guard
 #: runs for real in the relay tests and passes.
