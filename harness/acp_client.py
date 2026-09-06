@@ -17,7 +17,6 @@ there refuses.
 """
 from __future__ import annotations
 
-import os
 from pathlib import Path
 import subprocess
 import threading
@@ -28,13 +27,13 @@ from .acp_policy import DenyAll, Policy
 from .acp_turn import TurnCollector, Turn
 from .acp_wire import (AUTH_REQUIRED, INVALID_PARAMS, PROTOCOL_VERSION,
                        SUPPORTED_VERSIONS)
+from .child_stdio import spawn
 
 SESSION_UPDATE = "session/update"
 REQUEST_PERMISSION = "session/request_permission"
 READ_TEXT_FILE = "fs/read_text_file"
 WRITE_TEXT_FILE = "fs/write_text_file"
 
-STDERR_LIMIT = 1 << 16
 
 
 class AuthRequired(RuntimeError):
@@ -113,15 +112,7 @@ class AcpClient:
               env: dict[str, str] | None = None) -> "AcpClient":
         """Start an agent and connect to its stdio."""
         directory = Path(cwd or Path.cwd()).resolve()
-        process = subprocess.Popen(
-            list(argv), cwd=str(directory), stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            env=env if env is not None else _child_env(), bufsize=0)
-        collected: list[bytes] = []
-        # Drained on a thread: an agent that writes diagnostics to a pipe nobody
-        # reads blocks on a full buffer, which looks exactly like a hang.
-        threading.Thread(target=_drain, args=(process.stderr, collected),
-                         name="acp-stderr", daemon=True).start()
+        process, collected = spawn(argv, directory, env=env, name="acp")
         connection = Connection(process.stdin, process.stdout,
                                 observer=observer)
         client = cls(connection, policy=policy, process=process,
@@ -259,23 +250,3 @@ class AcpClient:
         collector, finished = armed
         if collector.accept(params):
             finished.set()
-
-
-def _child_env() -> dict[str, str]:
-    """The same allowlist harness/cross_harness_process.py runs children under."""
-    keep = {"SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "PATH", "TEMP", "TMP",
-            "CODEX_HOME", "USERPROFILE", "LOCALAPPDATA", "APPDATA",
-            "PROGRAMDATA", "HOME", "LANG", "LC_ALL"}
-    return {key: value for key, value in os.environ.items()
-            if key.upper() in keep}
-
-
-def _drain(stream, into: list[bytes], limit: int = STDERR_LIMIT) -> None:
-    held = 0
-    try:
-        for chunk in iter(lambda: stream.read(4096), b""):
-            if held < limit:
-                into.append(chunk[:limit - held])
-                held += len(chunk)
-    except (OSError, ValueError):
-        return

@@ -35,12 +35,12 @@
     "absent": 0,
     "declared_on": "2026-09-03",
     "gaps": [],
-    "rows": 33,
-    "uniquely_witnessed": 24,
-    "witnessed": 33
+    "rows": 34,
+    "uniquely_witnessed": 25,
+    "witnessed": 34
   },
   "python": "3.12.10",
-  "result_sha256": "107a33f920629afb53ddaf0d960ea54f3bed96d6c21c9ed99a0acecd2ac1579b",
+  "result_sha256": "f099f0634c291659f5bf0be9159aede088d050766c469084d18af02757aac392",
   "schema": "flywheel.offline-benchmarks/v1",
   "suites": [
     {
@@ -97,7 +97,7 @@
       "non_goal": "measures accountability, NOT capability. Pair it with a capability bench",
       "question": "does an unaccountable system score badly here",
       "schema": "accountability/v1",
-      "seconds": 8.008
+      "seconds": 8.878
     },
     {
       "detail": [
@@ -184,7 +184,7 @@
       "name": "governed-agent",
       "question": "does a workflow refuse an action above its tier",
       "schema": "governed-agent-workflow-benchmark/v1",
-      "seconds": 0.011
+      "seconds": 0.016
     },
     {
       "detail": [
@@ -262,7 +262,7 @@
       "name": "agent-recovery",
       "question": "does an injected fault recover without failing quietly",
       "schema": "agent.recovery-benchmark/v1",
-      "seconds": 0.042
+      "seconds": 0.08
     },
     {
       "detail": [
@@ -315,7 +315,7 @@
       "name": "stateful-provider-swap",
       "question": "does state survive a provider swap",
       "schema": "unisonai.stateful-benchmark/v1",
-      "seconds": 0.006
+      "seconds": 0.011
     },
     {
       "detail": [],
@@ -329,7 +329,7 @@
       "name": "source-mined",
       "question": "do the mined checks still hold against their datasets",
       "schema": "source-mined.executable-benchmark/v1",
-      "seconds": 0.014
+      "seconds": 0.038
     },
     {
       "caveats": [
@@ -349,7 +349,7 @@
       "non_goal": "continued pretraining on the workspace corpus did not improve general code completion and did not significantly harm it; the point estimate is a regression inside the noise",
       "question": "did continued pretraining change general code completion",
       "schema": "flywheel.paired-replication/v1",
-      "seconds": 0.001
+      "seconds": 0.003
     }
   ]
 }

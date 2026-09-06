@@ -1,16 +1,31 @@
 """lsp_diagnostics.py -- diagnostics and references over the LSP bridge.
 
-Diagnostics arrive as server-initiated notifications, so after syncing the
-live buffer this module sends a cheap fence request (hover at the origin);
-while the fence waits for its answer, any published diagnostics land in the
-bridge's store. The returned set is honest about its bound: it is the state
-as of the last fence, and a server that has not published yet yields an
-empty list, never an invented one."""
+There are two ways a server gives out diagnostics and this route takes whichever
+one the server declared. An older server pushes them as notifications, so it is
+fenced: a cheap hover request cannot be answered before the notifications
+already queued behind it, and by the time the fence returns anything the server
+had to say has landed. A 3.17 server advertises a diagnostic provider and is
+asked outright, and such a server may never push anything at all.
+
+That second case is why this file changed. Against a real `ruff server` the
+fence-only version returned a count of zero for a file with two errors in it,
+and zero is exactly what a caller reads as a clean file.
+
+What comes back is bounded in the one way that matters. `n` is null, not zero,
+when the server said nothing, because a set nobody produced is unknown and a
+count of it would be invented.
+"""
 from __future__ import annotations
 
 from pathlib import Path
 
 from .lsp_bridge import LSPError, _uri, get_bridge, lsp_query
+
+#: Every reading of this route's answer, in the order they change the meaning of
+#: `n`. The last clause is the one a caller acts on.
+NOTE = ("diagnostics as this server hands them out ({model}); they are that "
+        "server's analysis and not an independent check of the code, and a set "
+        "it never produced reads unknown, never invented")
 
 
 def lsp_references(command: list, root: str, file: str, text: str,
@@ -28,14 +43,14 @@ def lsp_diagnostics(command: list, root: str, file: str, text: str,
     try:
         bridge = get_bridge(command, root)
         bridge.sync_buffer(file, text, language_id)
-        # The fence: while hover waits for its reply, published diagnostics
-        # for the fresh buffer are read into the store.
-        bridge.query("hover", file, 0, 0)
-        diags = bridge.diagnostics.get(_uri(file), [])
+        published = bridge.published(file)
+        known = published.version is not None or bool(published.items)
         return {"schema": "flywheel.lsp-diagnostics/v1",
-                "file": file, "n": len(diags), "diagnostics": diags,
-                "note": "state as of the last request fence; an unpublished "
-                        "set reads empty, never invented"}
+                "file": file, "uri": _uri(file), "model": published.model,
+                "published": known,
+                "n": len(published.items) if known else None,
+                "diagnostics": published.items,
+                "note": NOTE.format(model=published.model)}
     except LSPError as e:
         return {"error": str(e)}
     except (OSError, ValueError) as e:
