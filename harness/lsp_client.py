@@ -90,6 +90,8 @@ class LspClient:
         self.messages: list[dict] = []
         self.documents = Documents(DEFAULT_ENCODING)
         self.published: dict[str, Published] = {}
+        self.apply_edit = False          # set before initialize() to declare it
+        self.edit_records: list[dict] = []
         self._initialized = False
         self._stderr = stderr if stderr is not None else []
         self._conn = connection
@@ -130,7 +132,7 @@ class LspClient:
         root_uri = to_uri(self.root) if self.root is not None else None
         result = self._conn.call("initialize", initialize_params(
             root_uri, process_id=os.getpid(), client_name=client_name,
-            client_version=client_version,
+            client_version=client_version, apply_edit=self.apply_edit,
             initialization_options=initialization_options), timeout=timeout)
         result = result if isinstance(result, dict) else {}
         self.encoding = negotiate_encoding(result)

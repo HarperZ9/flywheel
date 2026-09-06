@@ -59,13 +59,20 @@ __all__ = ["PROVIDERS", "SYNC_FULL", "SYNC_INCREMENTAL", "SYNC_NONE",
            "server_summary", "supports", "sync_kind", "wants_open_close"]
 
 
-def client_capabilities(offered: tuple[str, ...] = ENCODINGS) -> dict:
+def client_capabilities(offered: tuple[str, ...] = ENCODINGS, *,
+                        apply_edit: bool = False) -> dict:
     """What this client can actually be asked to do.
 
     Dynamic registration is declined everywhere. A server that can register a
     capability mid-session can also unregister it, and an operation whose
     availability changes under the answer would make a record of that answer
     harder to read rather than easier.
+
+    `applyEdit` is off unless a caller turned writing on, because declaring it
+    and then refusing every edit is worse than never claiming it. The
+    `workspaceEdit` block below is declared either way: it describes what
+    shapes this client can read, which matters for the edits a rename or a code
+    action returns as well as for the ones a server pushes.
     """
     for encoding in offered:
         check_encoding(encoding)
@@ -74,7 +81,18 @@ def client_capabilities(offered: tuple[str, ...] = ENCODINGS) -> dict:
         "workspace": {
             "workspaceFolders": True,
             "configuration": True,
-            "applyEdit": False,
+            "applyEdit": bool(apply_edit),
+            "workspaceEdit": {
+                "documentChanges": True,
+                # None are supported, and saying so keeps a conforming server
+                # from sending a create or a delete this client would refuse.
+                "resourceOperations": [],
+                # Files before the failing one stay changed, which is what
+                # "abort" means and what apply_plan actually does.
+                "failureHandling": "abort",
+                "normalizesLineEndings": False,
+                "changeAnnotationSupport": {"groupsOnLabel": False},
+            },
             "didChangeConfiguration": {"dynamicRegistration": False},
             "symbol": {"dynamicRegistration": False},
         },
@@ -112,7 +130,7 @@ def initialize_params(root_uri: str | None, *, process_id: int | None,
                       client_name: str, client_version: str,
                       offered: tuple[str, ...] = ENCODINGS,
                       initialization_options: dict | None = None,
-                      trace: str = "off") -> dict:
+                      trace: str = "off", apply_edit: bool = False) -> dict:
     """The InitializeParams this client sends, in the order the spec lists them.
 
     processId is what lets a server outlive nothing: it exits when that process
@@ -123,7 +141,7 @@ def initialize_params(root_uri: str | None, *, process_id: int | None,
         "processId": process_id,
         "clientInfo": {"name": client_name, "version": client_version},
         "rootUri": root_uri,
-        "capabilities": client_capabilities(offered),
+        "capabilities": client_capabilities(offered, apply_edit=apply_edit),
         "trace": trace,
     }
     if initialization_options is not None:
