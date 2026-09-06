@@ -18,7 +18,6 @@ breakpoint has already sent `stopped` by the time any request could ask.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import threading
 import time
 
@@ -28,67 +27,17 @@ from .dap_wire import (ATTACH, CONFIGURATION_DONE, CONTINUED, EXITED,
                        SET_EXCEPTION_BREAKPOINTS, START_DEBUGGING, STOPPED,
                        TERMINATED)
 from .dap_peer import CommandNotSupported, DapPeer
+# Re-exported: a caller that holds a session reads `Stop` off it and declares
+# capabilities alongside it, so importing those from two modules would be a
+# seam nobody asked for. What they are is in `dap_state`.
+from .dap_state import (Events, Stop, client_capabilities,  # noqa: F401
+                        stop_from)
 
 #: What one request waits before this side stops waiting. An adapter starting a
 #: program under a debugger is slow once, not slow forever.
 DEFAULT_TIMEOUT = 30.0
 
 __all__ = ["DEFAULT_TIMEOUT", "DapSession", "Stop", "client_capabilities"]
-
-
-@dataclass(frozen=True)
-class Stop:
-    """One `stopped` event, in the shape a caller asks questions about."""
-
-    reason: str = ""
-    thread_id: int | None = None
-    description: str = ""
-    text: str = ""
-    all_threads: bool = False
-    hit_breakpoint_ids: tuple = ()
-
-
-@dataclass
-class Events:
-    """What the adapter said while nothing was asking.
-
-    Kept whole rather than folded, because the fold belongs to the witness and a
-    session that threw away an event it did not recognize would make the record
-    a summary of what this client understood rather than of what crossed.
-    """
-
-    seen: list[tuple[str, dict]] = field(default_factory=list)
-    output: list[dict] = field(default_factory=list)
-    exit_code: int | None = None
-
-
-def client_capabilities(adapter_id: str, *, lines_start_at_one: bool = True,
-                        columns_start_at_one: bool = True) -> dict:
-    """The initialize arguments, declared rather than guessed.
-
-    `supportsRunInTerminalRequest` and `supportsStartDebuggingRequest` are true
-    because this client does answer both, and the answer is a refusal under the
-    default policy. Declaring false would be a different statement: it tells the
-    adapter not to ask, and then the record shows nothing where a request and a
-    refusal belong. The boundary is worth more when it is exercised.
-
-    Line and column bases are declared once here and are the only reason the
-    numbers in a stack frame mean anything. An adapter is free to count from
-    zero and will, unless it is told.
-    """
-    return {"clientID": "flywheel", "clientName": "Flywheel",
-            "adapterID": str(adapter_id), "locale": "en-US",
-            "linesStartAt1": bool(lines_start_at_one),
-            "columnsStartAt1": bool(columns_start_at_one),
-            "pathFormat": "path",
-            "supportsVariableType": True,
-            "supportsVariablePaging": False,
-            "supportsRunInTerminalRequest": True,
-            "supportsStartDebuggingRequest": True,
-            "supportsMemoryReferences": False,
-            "supportsProgressReporting": False,
-            "supportsInvalidatedEvent": False,
-            "supportsMemoryEvent": False}
 
 
 class DapSession:
@@ -108,6 +57,7 @@ class DapSession:
         self._initialized = threading.Event()
         self._stopped = threading.Event()
         self._terminated = threading.Event()
+        self._exited = threading.Event()
         peer.handler = self
 
     # -- what the adapter sends unasked -------------------------------------
@@ -125,7 +75,7 @@ class DapSession:
         if name == INITIALIZED:
             self._initialized.set()
         elif name == STOPPED:
-            self.stop = _stop_from(body)
+            self.stop = stop_from(body)
             self._stopped.set()
         elif name == CONTINUED:
             self.stop = None
@@ -135,12 +85,45 @@ class DapSession:
         elif name == EXITED:
             code = body.get("exitCode")
             self.events.exit_code = code if isinstance(code, int) else None
+            self._exited.set()
         elif name == TERMINATED:
             self._terminated.set()
 
     @property
     def terminated(self) -> bool:
         return self._terminated.is_set()
+
+    @property
+    def exited(self) -> bool:
+        """Whether the `exited` event arrived. Not the same as `terminated`.
+
+        The protocol orders neither event, and real adapters disagree: some send
+        `exited` first, some send `terminated` first. A caller that waits on
+        `terminated` and then reads `exit_code` gets None from half of them.
+        """
+        return self._exited.is_set()
+
+    def settle_exit(self, timeout: float = 0.5) -> int | None:
+        """The exit code, once the two end-of-session events have both landed.
+
+        A program that is still running reports None without waiting. Once
+        either end event has arrived this waits out the other, so a reader
+        cannot catch the pair half-written and record a run as terminated with
+        no exit code.
+
+        Returns None when the adapter ended the session without an `exited`
+        event, which an attach or a detach does. None is the honest answer
+        there and 0 would be a fabricated success.
+
+        The timeout is what that case costs, not a guess at how fast an adapter
+        is. An adapter that sends both writes them back to back on one stream,
+        so the gap being waited out is sub-millisecond; a session that ends with
+        no `exited` at all pays the whole number every time, which is why it is
+        small.
+        """
+        if self._terminated.is_set() or self._exited.is_set():
+            self._exited.wait(timeout)
+        return self.events.exit_code
 
     def clear_stop(self) -> None:
         """Forget where the program was stopped, before resuming it.
@@ -261,14 +244,3 @@ class DapSession:
         verified = [entry for entry in placed
                     if isinstance(entry, dict) and entry.get("verified")]
         return len(verified), len(placed)
-
-
-def _stop_from(body: dict) -> Stop:
-    thread_id = body.get("threadId")
-    hits = body.get("hitBreakpointIds")
-    return Stop(reason=str(body.get("reason", "")),
-                thread_id=thread_id if isinstance(thread_id, int) else None,
-                description=str(body.get("description", "")),
-                text=str(body.get("text", "")),
-                all_threads=bool(body.get("allThreadsStopped")),
-                hit_breakpoint_ids=tuple(hits) if isinstance(hits, list) else ())

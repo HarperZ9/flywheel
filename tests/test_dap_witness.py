@@ -246,6 +246,13 @@ def test_a_session_that_never_started_folds_without_inventing_numbers():
         def verified_breakpoints(self):
             return (0, 0)
 
+        def settle_exit(self):
+            # A session with neither end event has nothing to wait out, so the
+            # real one answers None here without blocking. The stub says so
+            # rather than reaching for the field, because the fold asks the
+            # session for a settled code and that is the interface it has.
+            return None
+
     summary = summarize(Never(), adapter="")
     assert summary["capabilities"] == []
     assert summary["exit_code"] is None

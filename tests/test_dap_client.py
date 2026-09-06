@@ -213,7 +213,10 @@ def test_continuing_to_the_end_keeps_the_exit_code_and_ends_the_wait(adapter):
     client.wait_for_stop(timeout=20.0)
     client.resume(1)
     wait_for(lambda: client.session.terminated)
-    assert client.session.events.exit_code == 0
+    # Through settle_exit, not events.exit_code. The fake sends `terminated`
+    # before `exited`, as some real adapters do, so the raw field is still None
+    # at the moment termination becomes visible.
+    assert client.session.settle_exit() == 0
     # A wait for a stop in a program that has already exited returns rather
     # than burning the timeout: the honest answer is that it never stopped.
     started = time.monotonic()

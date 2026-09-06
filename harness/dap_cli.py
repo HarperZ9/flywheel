@@ -197,7 +197,7 @@ def _report(client: DapClient, stop, args: argparse.Namespace) -> dict:
               "requested": requested, "verified": verified,
               "unbound": _unbound(client.session),
               "terminated": client.session.terminated,
-              "exit_code": client.session.events.exit_code,
+              "exit_code": client.session.settle_exit(),
               "stop": None, "stack": {"frames": [], "total": 0,
                                       "truncated": False},
               "scopes": {},

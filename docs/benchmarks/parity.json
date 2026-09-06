@@ -549,6 +549,11 @@
         {
           "kind": "test",
           "present": true,
+          "ref": "tests/test_dap_session.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
           "ref": "tests/test_dap_cli.py"
         }
       ],
