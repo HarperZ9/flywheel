@@ -138,8 +138,10 @@ the refiling attack lived in.
 - https://github.com/in-toto/attestation/blob/main/spec/v1/statement.md
 - https://github.com/in-toto/docs/blob/master/in-toto-spec.md
 
-Still open: signature verification wired into the re-check path, which needs a
-decision about whose keys are trusted before it means anything.
+Signature verification is what closes the whole-cone case, and it is now wired
+into the re-check path behind a `trusted_keys` mapping the caller supplies. See
+`GROUNDING-SIGNATURES-2026-09-06.md` for what it establishes and what it leaves
+to key distribution.
 
 ## Two consequences worth stating
 
