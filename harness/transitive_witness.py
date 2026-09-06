@@ -1,11 +1,12 @@
 """transitive_witness.py — compositional criterion-conservation over a
 dependency DAG. The closure property the current literature does NOT publish.
 
-Today every receipt is an island: `witness_envelope` re-checks ONE envelope;
-`validate_chain` checks ONE run's internal links. Criterion-conservation does
-not compose end-to-end. This module makes it compose: given a DAG of witnessed
-results where each node cites the ancestors its verdict is GROUNDED on, a node
-is MATCH only along a fully-MATCH dependency path. A single upstream DRIFT turns
+The primitives underneath are per-run: `witness_envelope` re-checks ONE
+envelope, and `validate_chain` checks ONE run's internal links. Neither reaches
+across runs, so criterion-conservation does not compose through them alone.
+This module makes it compose: given a DAG of witnessed results where each node
+cites the ancestors its verdict is GROUNDED on, a node is MATCH only along a
+fully-MATCH dependency path. A single upstream DRIFT turns
 every DOWNSTREAM-DEPENDENT node UNVERIFIABLE — while nodes that do not depend on
 the drifted one keep their own verdict (localized degradation, not total
 collapse). That path-conserved-MATCH is the novel object.
@@ -26,6 +27,13 @@ The adversarial false-accept corpus that gates this (harness/adversarial_corpus.
 is built: the closure scores 0/7 false-accepts (SOUND) while weakened strawmen are
 caught, so the refutation path provably executes. Still not a "breakthrough" — a
 sound, adversarially-gated kernel — but no longer theatrical.
+
+Scope, so a reader does not assume more reach than this has: nothing in the
+shipped run path calls `verify_frontier`. `loop.py` builds its chain and
+witnesses one envelope; `router.py` names this module as the remediation for an
+UNVERIFIABLE stage without invoking it. The closure is a library a caller
+reaches for, and folding it into a run is open work (PROJECT.md section 6,
+item 2).
 """
 from __future__ import annotations
 
