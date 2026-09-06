@@ -20,8 +20,8 @@ from harness import action_witness
 from harness.action_witness import LOG_NAME, verify_log
 from harness.receipting_cost_bench import (RECORDS_PER_ACTION, _actions,
                                            _buffered, _chain_only, _durable,
-                                           _known_bytes, _on_disk, _spread,
-                                           does_not_prove,
+                                           _known_bytes, _on_disk, _reading,
+                                           _share, _spread, does_not_prove,
                                            run_receipting_cost_benchmark)
 
 SMALL = {"batches": 2, "per_batch": 3}
@@ -72,14 +72,20 @@ def test_the_durable_arm_runs_the_path_that_ships():
 def test_a_recorded_action_costs_more_to_keep_than_to_hash():
     """The ordering the three arms have to come out in.
 
-    Each arm does everything the one before it does and then more, so a run
-    where they came out in another order is a run whose arms are not what they
-    are named, whatever the figures say.
+    Each arm does everything the one before it does and then more. Six actions
+    on a shared runner cannot always show that: the same Windows leg that
+    measured a negative durability share had the durable arm finishing first,
+    by about a microsecond. The bound is the slower arm's own measured high, so
+    an inversion inside the noise this run reported passes and one outside it
+    does not.
+
+    An arm that skipped work would not land inside that noise, and it is caught
+    by a count of bytes rather than by a clock in the two tests above.
     """
     report = run_receipting_cost_benchmark(**SMALL)
     arms = report["arms"]
-    assert arms["chain_only"]["median_us"] <= arms["buffered"]["median_us"]
-    assert arms["buffered"]["median_us"] <= arms["durable"]["median_us"]
+    assert arms["chain_only"]["median_us"] <= arms["buffered"]["high_us"]
+    assert arms["buffered"]["median_us"] <= arms["durable"]["high_us"]
 
 
 def test_the_attribution_adds_up_to_the_total_it_split():
@@ -88,7 +94,31 @@ def test_the_attribution_adds_up_to_the_total_it_split():
     parts = (split["hash_and_link_us"] + split["write_us"]
              + split["wait_for_durability_us"])
     assert abs(parts - split["total_us"]) < 0.5
-    assert 0.0 <= split["durability_share"] <= 1.0
+    # Two of the three parts are differences between separately timed arms, so
+    # a small sample on a busy host can invert one. A share is then not a small
+    # number, it is a number that does not exist, and the report has to say so
+    # in both places rather than publish a negative fraction.
+    share = split["durability_share"]
+    if share is None:
+        assert "did not separate" in report["reading"]
+    else:
+        assert 0.0 <= share <= 1.0
+        assert split["wait_for_durability_us"] > 0
+
+
+def test_a_run_that_did_not_separate_the_arms_publishes_no_share():
+    """A Windows runner measured a durable arm faster than the buffered one.
+
+    The assertion it broke was reading -1.09 as a share. Both halves of the
+    answer are checked here because either one alone is misleading: a null
+    share with the ordinary reading beside it looks like a missing field, and
+    the reading alone leaves a negative fraction in the record.
+    """
+    assert _share(-1.0897, 10.0) is None
+    assert _share(0.0, 10.0) is None, "no measured difference is not a share"
+    assert _share(5.0, 10.0) == 0.5
+    assert "did not separate" in _reading(-1.0897, 10.0)
+    assert "did not separate" not in _reading(5.0, 10.0)
 
 
 def test_the_denominator_travels_with_the_number():
