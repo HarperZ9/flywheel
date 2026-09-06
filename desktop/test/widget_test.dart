@@ -43,6 +43,8 @@ const _types = <DestinationId, String>{
   DestinationId.projects: 'ProjectsView',
   DestinationId.swarms: 'SwarmsView',
   DestinationId.roadmap: 'RoadmapView',
+  DestinationId.schedule: 'ScheduleView',
+  DestinationId.scan: 'ScanView',
   DestinationId.feeds: 'FeedsView',
   DestinationId.discourse: 'DiscourseView',
   DestinationId.academy: 'AcademyView',
@@ -65,7 +67,7 @@ const _types = <DestinationId, String>{
 };
 
 void main() {
-  testWidgets('factory preserves all thirty-six exact destination mappings',
+  testWidgets('factory preserves all thirty-eight exact destination mappings',
       (tester) async {
     final dir = Directory.systemTemp.createTempSync('journey-factory-');
     addTearDown(() => dir.deleteSync(recursive: true));
@@ -107,7 +109,7 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('thirty-six labels remain reachable at ordinary scaled viewport',
+  testWidgets('thirty-eight labels remain reachable at ordinary scaled viewport',
       (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
@@ -150,6 +152,30 @@ Future<void> scrollRailTo(WidgetTester tester, String label) async {
   }
 }
 
+/// Tap a rail label wherever it currently sits. The rail is taller than
+/// the test viewport, so a label can be drawn and still lie under the
+/// edge, and reaching one label can carry another off the top. Rewind to
+/// the top, walk down to the label, then tap what is actually visible.
+Future<void> tapRail(WidgetTester tester, String label) async {
+  final railList = find.descendant(
+    of: find.byType(AnimatedContainer),
+    matching: find.byType(ListView),
+  ).first;
+  for (var i = 0; i < 40; i++) {
+    await tester.drag(railList, const Offset(0, 120));
+    await tester.pump();
+  }
+  await scrollRailTo(tester, label);
+  // A list item can be built and still lie past the viewport edge, so
+  // finding it is not the same as being able to tap it. ensureVisible
+  // moves the rail; the pump is what makes that move real to the next
+  // hit test.
+  await tester.ensureVisible(find.text(label));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label));
+  await tester.pumpAndSettle();
+}
+
 void _prepareShellCode(ShellHarness harness) {
   final root = Directory('${harness.directory.path}/workspace')..createSync();
   final file = File('${root.path}/lib/main.dart')
@@ -177,12 +203,11 @@ void _codeGuardWidgetTests() {
       ..replyReady();
     await tester.pumpWidget(harness.app());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Code'));
-    await tester.pumpAndSettle();
+    await tapRail(tester, 'Code');
+    expect(find.byType(CodeView), findsOneWidget);
     _prepareShellCode(harness);
     final controller = harness.code.openFiles.single.controller;
-    await tester.tap(find.text('Chat'));
-    await tester.pumpAndSettle();
+    await tapRail(tester, 'Chat');
     expect(find.byType(CodeView), findsOneWidget);
     expect(requests.single.paths, ['lib/main.dart']);
     expect(harness.code.openFiles.single.controller, same(controller));

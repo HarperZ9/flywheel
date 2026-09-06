@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../client/gateway_roadmap.dart';
+import '../client/gateway_scan.dart';
+import '../client/gateway_schedule.dart';
 import '../client/gateway_swarms.dart';
 import '../controllers/journey_controller.dart';
 import '../ide/code_buffer_session.dart';
@@ -38,6 +40,8 @@ import '../views/plugins_view.dart';
 import '../views/projects_view.dart';
 import '../views/receipts_view.dart';
 import '../views/roadmap_view.dart';
+import '../views/scan_view.dart';
+import '../views/schedule_view.dart';
 import '../views/science_view.dart';
 import '../views/swarms_view.dart';
 import '../views/studio_view.dart';
@@ -109,6 +113,8 @@ Widget? _work(DestinationId id, DestinationInputs i) => switch (id) {
           api: SwarmsApi(baseUrl: i.client.baseUrl), alive: i.alive),
       DestinationId.roadmap => RoadmapView(
           api: RoadmapApi(baseUrl: i.client.baseUrl), alive: i.alive),
+      DestinationId.schedule => ScheduleView(
+          api: ScheduleApi(baseUrl: i.client.baseUrl), alive: i.alive),
       _ => null,
     };
 
@@ -132,6 +138,8 @@ Widget? _code(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.eval => EvalView(client: i.client, alive: i.alive),
       DestinationId.audit => AuditView(client: i.client, alive: i.alive),
       DestinationId.lint => LintView(client: i.client, alive: i.alive),
+      DestinationId.scan => ScanView(
+          api: ScanApi(baseUrl: i.client.baseUrl), alive: i.alive),
       DestinationId.relay => RelayView(client: i.client, alive: i.alive),
       _ => null,
     };

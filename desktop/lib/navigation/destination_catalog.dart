@@ -1,4 +1,4 @@
-// destination_catalog.dart -- the frozen 33-destination map.
+// destination_catalog.dart -- the frozen 38-destination map.
 //
 // Five stable groups, exactly as the completion spec fixes them. Labels
 // are presentation; the DestinationId is the contract, so a label can be
@@ -37,6 +37,8 @@ const destinationCatalog = <DestinationSpec>[
 
   DestinationSpec(DestinationId.roadmap, 'Roadmap',
       abbr: 'RM', group: DestinationGroup.work),
+  DestinationSpec(DestinationId.schedule, 'Schedule',
+      abbr: 'SD', group: DestinationGroup.work),
   DestinationSpec(DestinationId.chat, 'Chat',
       abbr: 'CH', group: DestinationGroup.chat, mobilePrimary: true),
   DestinationSpec(DestinationId.compare, 'Compare',
@@ -53,6 +55,8 @@ const destinationCatalog = <DestinationSpec>[
       abbr: 'AU', group: DestinationGroup.code),
   DestinationSpec(DestinationId.lint, 'Lint',
       abbr: 'LT', group: DestinationGroup.code),
+  DestinationSpec(DestinationId.scan, 'Scan',
+      abbr: 'SN', group: DestinationGroup.code),
   DestinationSpec(DestinationId.receipts, 'Receipts',
       abbr: 'RC', group: DestinationGroup.evidence, mobilePrimary: true),
   DestinationSpec(DestinationId.science, 'Science',
