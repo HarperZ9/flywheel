@@ -709,6 +709,30 @@
         {
           "kind": "module",
           "present": true,
+          "ref": "harness/workspace_clone.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_workspace_clone.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": "partial",
+        "codex": false,
+        "cursor": "partial",
+        "hermes": "partial",
+        "omp": "partial"
+      },
+      "desc": "give a task a disposable copy of the workspace by the cheapest mechanism the filesystem offers, and record which one ran, what the others refused, and what the copy cost",
+      "flywheel": "WITNESSED",
+      "key": "task-isolation"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
           "ref": "harness/infra/isolation_test.py"
         },
         {
@@ -1050,6 +1074,6 @@
       "signed-receipt-external-anchor",
       "formal-proof-oracle"
     ],
-    "witnessed": 37
+    "witnessed": 38
   }
 }

@@ -180,3 +180,22 @@ def test_the_table_and_the_audit_are_separate_modules():
     monkeypatch above stops reaching what parity_matrix reads."""
     from harness import parity_rows
     assert parity.ROWS is parity_rows.ROWS
+
+
+def test_every_note_belongs_to_a_row_and_every_row_is_accounted_for():
+    """The ratchet that replaced a comment sitting above the wrong row.
+
+    Prose keyed by a row key cannot drift onto its neighbour, and a row whose
+    cells carry no reasoning fails here rather than reaching a published
+    matrix. The twelve in UNDOCUMENTED are a shortfall this freezes rather than
+    blesses: that set may lose members and may never gain one.
+    """
+    from harness.parity_peer_notes import NOTES, UNDOCUMENTED
+    keys = {r["key"] for r in parity.ROWS}
+    assert set(NOTES) <= keys, "a note names a row that does not exist"
+    assert UNDOCUMENTED <= keys
+    assert not set(NOTES) & UNDOCUMENTED
+    assert keys == set(NOTES) | UNDOCUMENTED, "a row with no audit trail"
+    assert len(UNDOCUMENTED) <= 12
+    assert all(note.strip() for note in NOTES.values())
+    assert "task-isolation" in NOTES

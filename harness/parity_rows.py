@@ -155,6 +155,12 @@ ROWS = [
                    ("module", "harness/infra/egress_matrix.py"),
                    ("route", "/api/infra/trust-model"),
                    ("test", "tests/test_infra_route.py")]},
+    {"key": "task-isolation",
+     "desc": "give a task a disposable copy of the workspace by the cheapest "
+             "mechanism the filesystem offers, and record which one ran, what "
+             "the others refused, and what the copy cost",
+     "witnesses": [("module", "harness/workspace_clone.py"),
+                   ("test", "tests/test_workspace_clone.py")]},
     {"key": "isolation-probe",
      "desc": "actively test the boundaries the agent is claimed to run "
              "inside, and seal every boundary that was tried",

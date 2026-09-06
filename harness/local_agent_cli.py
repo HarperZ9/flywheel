@@ -13,6 +13,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import tempfile
+from pathlib import Path
 
 from .local_agent import (
     BackendError,
@@ -94,6 +96,34 @@ def _repl(agent: LocalAgent, as_json: bool) -> int:
             print(f"[error] {e}", file=sys.stderr)
 
 
+def _isolated_root(args, ledger) -> "str | None":
+    """The tree the run works in, cloned first when --isolate asked for it.
+
+    None means isolation was asked for and could not be had. Refusing is the
+    call the sandbox makes for the same reason: a run that asked to be isolated
+    and silently was not is worse than a run that never started, because its
+    output looks exactly like an isolated one.
+
+    The clone is left on disk. Removing it would delete whatever the agent
+    produced, and the path is the only way to go and read it.
+    """
+    if not args.isolate:
+        return args.root
+    from .workspace_clone import clone_workspace
+    dest = Path(tempfile.mkdtemp(prefix="flywheel-task-")) / "workspace"
+    clone = clone_workspace(args.root, dest)
+    ledger.append("workspace", str(dest) if clone.ok else "not isolated",
+                  clone.record())
+    if not clone.ok:
+        for name, reason in clone.attempts:
+            print(f"[isolate] {name} refused: {reason}", file=sys.stderr)
+        print("[isolate] refusing to run in the original tree", file=sys.stderr)
+        return None
+    print(f"[isolate] {clone.mechanism} | {clone.files} files | "
+          f"{clone.seconds:.2f}s | {dest}", file=sys.stderr)
+    return str(dest)
+
+
 def _run_agentic(args) -> int:
     if not args.prompt:
         print("[error] --agent needs a task prompt", file=sys.stderr)
@@ -102,12 +132,15 @@ def _run_agentic(args) -> int:
     if agent.live_backend() is None:
         print("[error] no local backend is healthy (start serve.py or ollama)", file=sys.stderr)
         return 1
-    executor = ToolExecutor(root=args.root,
+    ledger = SessionLedger()
+    root = _isolated_root(args, ledger)
+    if root is None:
+        return 1
+    executor = ToolExecutor(root=root,
                             gate=ToolGate(allow_write=args.allow_write, allow_exec=args.allow_exec),
                             runner=make_sandboxed_runner(
                                 bindings=None,
                                 on_unavailable=fallback_from_env()))
-    ledger = SessionLedger()
     from harness import tool_receipts
     result = run_agent(agent, _context_preamble(args.file) + args.prompt, executor, ledger,
                        max_steps=args.max_steps, test_cmd=args.test_cmd or None,
@@ -148,6 +181,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--root", default=".", help="sandbox root for file/exec tools (--agent)")
     ap.add_argument("--allow-write", action="store_true", dest="allow_write")
     ap.add_argument("--allow-exec", action="store_true", dest="allow_exec")
+    ap.add_argument("--isolate", action="store_true",
+                    help="run in a disposable copy of --root (--agent)")
     ap.add_argument("--max-steps", type=int, default=6, dest="max_steps")
     ap.add_argument("--save", default="", help="save the session ledger to this JSONL path")
     ap.add_argument("--auto-commit", action="store_true", dest="auto_commit",
@@ -162,6 +197,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--mcp", action="store_true", help="run as a stdio MCP server")
     args = ap.parse_args(argv)
 
+    if args.isolate and args.auto_commit:
+        # A commit inside a disposable copy goes to a tree that is about to be
+        # forgotten, so the run would report a sha nobody can fetch.
+        ap.error("--isolate and --auto-commit cannot both be set: a commit in "
+                 "a disposable copy is not reachable from the original tree")
     if args.mcp:
         from .local_mcp import serve
         return serve()
