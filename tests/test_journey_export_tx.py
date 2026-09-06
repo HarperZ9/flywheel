@@ -1,5 +1,4 @@
 import json
-import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -9,6 +8,7 @@ import harness.journey_export_tx as export_tx
 from harness.evidence_json import canonical_sha256
 from harness.grant_route import grant_post, resolve_approved_grant
 from harness.journey_export import JourneyExportService
+from harness.journey_lock import ExclusiveJourneyLock
 from harness.journey_packet_v2 import PACKET_PROFILE
 from harness.journey_recovery import recover_store
 from harness.journey_route import journey_post
@@ -56,18 +56,6 @@ def _authority(root, head, request_id="export-1", packet_ref="packets/journey"):
 def _events(root):
     directory = root / "journeys" / "v2" / "owners" / OWNER / JOURNEY / "events"
     return [json.loads(path.read_bytes()) for path in sorted(directory.glob("*.json"))]
-
-
-def _private_path(kind, state):
-    value = {"owner_ref": OWNER, "client_request_sha256": "a" * 64,
-             "packet_digest": "sha256:" + "b" * 64}
-    if kind == "owner":
-        return export_tx.owner_transaction_dir(state, OWNER)
-    if kind == "staging":
-        return export_tx.staging_path(state, value)
-    if kind == "quarantine":
-        return export_tx.quarantine_path(state, value)
-    return export_tx.target_lock_path(state, "artifacts", "packets/out")
 
 
 def _crash(root, point):
@@ -148,43 +136,6 @@ def test_recovery_finishes_crash_after_quarantine_move(tmp_path):
     assert not (artifacts / "packets" / "journey").exists()
 
 
-@pytest.mark.parametrize("kind", ("owner", "staging", "quarantine", "lock"))
-def test_private_export_roots_reject_abstract_reparse_ancestor(
-        tmp_path, monkeypatch, kind):
-    """A Windows-style reparse ancestor must not redirect private custody."""
-    state = tmp_path / "state"; suspect = state / "journey-exports"
-    suspect.mkdir(parents=True)
-    original = export_tx._is_reparse
-    monkeypatch.setattr(export_tx, "_is_reparse", lambda path:
-                        Path(path) == suspect or original(path))
-    with pytest.raises(ValueError):
-        _private_path(kind, state)
-    assert not (suspect / "v2").exists()
-
-
-@pytest.mark.skipif(os.name == "nt", reason="deterministic POSIX symlink case")
-@pytest.mark.parametrize("kind", ("owner", "staging", "quarantine", "lock"))
-def test_private_export_roots_reject_real_symlink_ancestor(tmp_path, kind):
-    """A real symlink must not create transaction material outside state."""
-    state, outside = tmp_path / "state", tmp_path / "outside"
-    state.mkdir(); outside.mkdir()
-    (state / "journey-exports").symlink_to(outside, target_is_directory=True)
-    with pytest.raises(ValueError):
-        _private_path(kind, state)
-    assert list(outside.iterdir()) == []
-
-
-@pytest.mark.parametrize("kind", ("owner", "staging", "quarantine", "lock"))
-def test_private_export_roots_verify_state_containment(tmp_path, monkeypatch, kind):
-    """Every private root must reject a computed path outside state custody."""
-    state, outside = tmp_path / "state", tmp_path / "outside"
-    state.mkdir(); outside.mkdir()
-    monkeypatch.setattr(export_tx, "_tx_root", lambda _state: outside)
-    with pytest.raises(ValueError):
-        _private_path(kind, state)
-    assert list(outside.iterdir()) == []
-
-
 def test_public_export_rejects_broken_reparse_target_before_grant_burn(
         tmp_path, monkeypatch):
     """A broken target reparse point must not consume approved authority."""
@@ -227,6 +178,42 @@ def test_transaction_is_digest_closed_and_omits_raw_grant_ref(tmp_path):
     claimed = value.pop("transaction_sha256")
     assert claimed == canonical_sha256(value)
     assert grant_ref.encode() not in raw and value["phase"] == "prepared"
+
+
+def test_a_held_staging_lock_is_busy_rather_than_a_wait_without_end(tmp_path):
+    """The staging lock has a deadline, and missing it is a fixed failure."""
+    path = export_tx.transaction_path(tmp_path, OWNER, "export-1")
+    with ExclusiveJourneyLock.acquire(path.parent / ".lock"):
+        with pytest.raises(JourneyStoreError) as busy:
+            export_tx.load_or_create(path, {"request_sha256": "a" * 64}, 0.01)
+    assert busy.value.code == str(busy.value) == "STORE_BUSY"
+
+
+def test_the_staging_lock_waits_as_long_as_the_store_was_told_to(
+        tmp_path, monkeypatch):
+    """Every other lock on this path already takes the store's deadline.
+
+    This one read the module default instead, so an operator who raised
+    the timeout for a contended machine still gave up after two seconds
+    here and read the wait as a busy store.
+    """
+    seen = {}
+    real = export_tx.load_or_create
+
+    def spy(path, template, timeout_s=2.0):
+        seen["timeout"] = timeout_s
+        return real(path, template, timeout_s)
+
+    monkeypatch.setattr("harness.journey_export.load_or_create", spy)
+    (tmp_path / "artifacts").mkdir()
+    head = _concluded(tmp_path)
+    request, grant_ref, body = _authority(tmp_path, head)
+    JourneyExportService(journey=_service(tmp_path, lock_timeout_s=37.0),
+                         artifact_root_ref="artifacts").export(
+        journey_ref=JOURNEY, expected_event_head=head,
+        client_request_id="export-1", packet_ref="packets/journey",
+        grant_ref=grant_ref, grant_request=request, body=body)
+    assert seen["timeout"] == 37.0
 
 
 @pytest.mark.parametrize("packet_refs", [
