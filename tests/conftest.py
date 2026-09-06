@@ -6,7 +6,30 @@ history. These fixtures remove the failure mode as a class instead of
 patching it test by test: every test runs against a session-scoped scratch
 root, and forgetting to set `h.run_root` writes there, never into E:."""
 
+import shutil
+import tempfile
+from pathlib import Path
+
 import pytest
+
+
+@pytest.fixture
+def scratch():
+    """A scratch directory shaped like the one the sandbox runner makes.
+
+    Not `tmp_path`. A unix socket path is copied into a 108-byte kernel
+    field (104 on macOS) and `bind` truncates rather than refusing, so a
+    long directory produces a socket nobody can name. pytest builds its
+    path out of the test's own name under a per-user temp root that is
+    already about fifty bytes on macOS, which is over the line before the
+    socket name is added. The runner uses `mkdtemp` with a short prefix,
+    so a test that binds a socket uses the same thing.
+    """
+    where = Path(tempfile.mkdtemp(prefix="fw_sandbox_")).resolve()
+    try:
+        yield where
+    finally:
+        shutil.rmtree(where, ignore_errors=True)
 
 
 @pytest.fixture(autouse=True)

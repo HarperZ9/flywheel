@@ -77,13 +77,23 @@ def _posix_sandboxed_run(
 ) -> tuple[bool, str]:
     """Run `cmd` under whichever POSIX backend this host has.
 
-    Network is left reachable. The Windows backend cannot restrict it, so
-    denying it here would make one command succeed on one machine and fail on
-    another for a reason no caller asked about. The mechanism defaults the
-    other way, and this line is where the parity argument is made rather than
-    a default nobody can see. `Confinement.network` records what held.
+    Network is left reachable unless an operator named the hosts a run may
+    reach. The Windows backend cannot restrict it, so denying it here by
+    default would make one command succeed on one machine and fail on another
+    for a reason no caller asked about. The mechanism defaults the other way,
+    and this line is where the parity argument is made rather than a default
+    nobody can see. `Confinement.network` records what held.
+
+    With `FLYWHEEL_EGRESS_HOSTS` set the run gets a proxy instead, the
+    network is denied around it, and every request the run made is in the
+    output whether it was carried or refused. A policy that was asked for and
+    cannot be routed stops the run. Falling back to the open network there
+    would be the one moment the feature was wanted and the one moment it did
+    nothing.
     """
-    from .posix_sandbox import posix_run
+    from .egress_policy import PolicyRefused, from_env
+    from .egress_route import RouteUnavailable, open_route
+    from .posix_sandbox import backend_for, posix_run
     source = Path(root).resolve()
     # Scratch goes to the system temp rather than beside the workspace.
     # The Windows backend needs a sibling for the integrity ACL; these two
@@ -99,12 +109,31 @@ def _posix_sandboxed_run(
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_")).resolve()
     env = _build_posix_env(bindings, work)
     try:
+        policy = from_env()
+    except PolicyRefused as exc:
+        shutil.rmtree(work, ignore_errors=True)
+        return False, f"[denied] egress policy is unreadable: {exc}"
+    route, attempts = None, []
+    try:
+        if policy is not None:
+            backend = backend_for()
+            if backend is None:
+                raise SandboxUnavailable(_no_backend_reason())
+            route = open_route(policy, backend, work)
         outcome = posix_run(cmd, source, work, env=env,
-                            timeout_seconds=timeout_seconds, network=True)
+                            timeout_seconds=timeout_seconds,
+                            network=policy is None, egress=None if route is
+                            None else route.route)
         if outcome is None:
             raise SandboxUnavailable(_no_backend_reason())
         rc, out, plan = outcome
+        if route is not None:
+            attempts = route.record()["attempts"]
+    except RouteUnavailable as exc:
+        return False, f"[denied] no egress route for this run: {exc}"
     finally:
+        if route is not None:
+            route.close()
         shutil.rmtree(work, ignore_errors=True)
     # A run that never started gets no confinement line. The summary states
     # what the kernel enforced, and a failed exec enforced nothing. The probe
@@ -113,7 +142,9 @@ def _posix_sandboxed_run(
     # own setup still reaches here with its summary attached, which is a
     # narrower gap than the one this replaces and is not closed.
     body = _redact(out, bindings)
-    out = body if rc == 126 else f"{plan.summary()}\n{body}".rstrip()
+    lines = (plan.summary(), _egress_line(attempts))
+    header = "\n".join(part for part in lines if part)
+    out = body if rc == 126 else f"{header}\n{body}".rstrip()
     if rc == 124:
         return False, f"[timeout after {timeout_seconds}s]\n{out}"
     return rc == 0, f"[exit {rc}]\n{out}"
@@ -205,3 +236,22 @@ def _redact(text: str, bindings: CredentialBindings | None) -> str:
     if bindings is None:
         return text
     return bindings.redact(text)
+
+
+def _egress_line(attempts: list) -> str:
+    """What the run asked the network for, refusals named.
+
+    The allowed requests are visible in the command's own output anyway. A
+    refusal is not: the command sees a connection it could not make and
+    usually reports something about its own retry logic instead. So the
+    refused hosts are spelled out and the allowed ones are counted.
+    """
+    if not attempts:
+        return ""
+    refused = [one for one in attempts if not one["allowed"]]
+    carried = len(attempts) - len(refused)
+    if not refused:
+        return f"[egress: {carried} allowed]"
+    named = ", ".join(sorted({f"{one['host']} {one['reason']}"
+                              for one in refused}))
+    return f"[egress: {carried} allowed, {len(refused)} refused: {named}]"
