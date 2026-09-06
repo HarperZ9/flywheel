@@ -213,3 +213,12 @@ def test_the_limits_of_the_record_are_a_command_of_their_own(capsys):
 def test_no_subcommand_prints_help_rather_than_doing_something(capsys):
     assert main([]) == 3
     assert "verify" in capsys.readouterr().out
+
+
+def test_an_abbreviated_grant_flag_is_a_usage_error(agent_script):
+    # `--allow-a` was an unambiguous prefix of `--allow-all`, which is the flag
+    # that drops the boundary entirely. Argparse takes any unambiguous prefix by
+    # default, and a subparser does not inherit the setting that turns it off,
+    # so the widest grant here was reachable by a near miss of its name.
+    with pytest.raises(SystemExit):
+        main(["run", "--prompt", "hello", "--allow-a", "--", agent_script])

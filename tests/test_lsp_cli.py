@@ -229,3 +229,12 @@ def test_the_record_says_which_model_produced_the_set(cli, source, tmp_path):
     folded = [entry for entry in records(directory / "action-witness.jsonl")
               if entry["context"]["action"] == "lsp/published"]
     assert [entry["context"]["model"] for entry in folded] == ["diagnostic"]
+
+
+def test_an_abbreviated_flag_is_a_usage_error_rather_than_a_near_miss(source):
+    # `--stric` was an unambiguous prefix of `--strict`, which decides whether a
+    # request the server never advertised fails or passes. Argparse takes any
+    # unambiguous prefix by default and a subparser does not inherit the setting
+    # that turns it off.
+    with pytest.raises(SystemExit):
+        main(["ask", "--file", source(), "--stric", "--", *FAKE])

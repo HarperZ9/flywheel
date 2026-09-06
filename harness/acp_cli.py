@@ -178,7 +178,8 @@ def _render_verify(result: dict) -> str:
 
 
 def _add_run(sub) -> None:
-    parser = sub.add_parser("run", help="send one prompt to an ACP agent")
+    parser = sub.add_parser("run", allow_abbrev=False,
+                              help="send one prompt to an ACP agent")
     parser.add_argument("--prompt", required=True)
     parser.add_argument("--cwd", type=Path, default=None,
                         help="the directory the agent works in. Defaults here.")
@@ -215,7 +216,8 @@ def _add_run(sub) -> None:
 
 
 def _add_verify(sub) -> None:
-    parser = sub.add_parser("verify", help="recheck a run's log offline")
+    parser = sub.add_parser("verify", allow_abbrev=False,
+                              help="recheck a run's log offline")
     parser.add_argument("--log", required=True, type=Path)
     parser.add_argument("--transcript", type=Path, default=None,
                         help="the bytes the log's digests were taken over. "

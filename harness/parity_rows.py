@@ -24,10 +24,15 @@ grow. `harness/parity.py` reads ROWS from here and does the checking.
 from __future__ import annotations
 
 ROWS = [
+    # The codex cell was False and is wrong. Read 2026-09-05 from OpenAI's own
+    # config reference: `model_providers.<id>` takes `base_url`, `env_key` and
+    # `wire_api`, so Codex does route to a provider of the user's choosing.
+    # Partial rather than True on two counts the same page carries: `wire_api`
+    # accepts only "responses", and nothing there describes a failover chain.
     {"key": "any-provider-routing",
      "desc": "one request shape routed to any provider with failover chains",
      "witnesses": [("route", "/v1/chat/completions"), ("module", "harness/endpoint_registry.py")],
-     "codex": False, "cursor": "partial", "claude-code": False},
+     "codex": "partial", "cursor": "partial", "claude-code": False},
     {"key": "receipt-on-every-answer",
      "desc": "re-checkable receipt attached to every routed answer",
      "witnesses": [("module", "harness/envelope.py")],
@@ -102,17 +107,24 @@ ROWS = [
                    ("route", "/api/lint"),
                    ("test", "tests/test_linter.py")],
      "codex": False, "cursor": False, "claude-code": False},
+    # Both claude-code cells below were False and both are wrong. Read
+    # 2026-09-05 from code.claude.com/docs/en/plugins-reference: a plugin
+    # carries `lspServers` in plugin.json or a `.lsp.json` beside it, naming the
+    # server command and the extensions it handles, and a `diagnostics` option
+    # that pushes diagnostics into context by default. A cell that stays False
+    # once the competitor ships the feature is a claim in our own favour, which
+    # is the direction an audit is least likely to catch.
     {"key": "lsp-go-to-definition",
      "desc": "editor go-to-definition over any user-named LSP server",
      "witnesses": [("module", "harness/lsp_bridge.py"),
                    ("route", "/api/lsp"),
                    ("test", "tests/test_lsp_bridge.py")],
-     "codex": False, "cursor": True, "claude-code": False},
+     "codex": False, "cursor": True, "claude-code": True},
     {"key": "lsp-diagnostics-references",
      "desc": "diagnostics and find-references in the editor",
      "witnesses": [("module", "harness/lsp_diagnostics.py"),
                    ("test", "tests/test_lsp_diagnostics.py")],
-     "codex": False, "cursor": True, "claude-code": False},
+     "codex": False, "cursor": True, "claude-code": True},
     {"key": "lsp-run-record",
      "desc": "a language server client that keeps a re-checkable record of "
              "the exchange: every frame chained, every answer stamped with "
@@ -122,6 +134,32 @@ ROWS = [
                    ("module", "harness/lsp_witness.py"),
                    ("test", "tests/test_lsp_witness.py"),
                    ("test", "tests/test_lsp_cli.py")],
+     "codex": False, "cursor": False, "claude-code": False},
+    # Competitor cells read 2026-09-05 from Microsoft's own implementors list
+    # at microsoft.github.io/debug-adapter-protocol/implementors/tools. It names
+    # VS Code, Visual Studio, Eclipse, Emacs, Theia, Vim/Neovim, IntelliJ, Zed
+    # and Kate. It does not name Cursor, Codex or Claude Code. The cursor cell
+    # is True anyway and by inference rather than from that list: Cursor is a
+    # VS Code fork and ships its debugger. Saying so here rather than quietly
+    # writing True is the point of dating these cells.
+    {"key": "dap-debug-session",
+     "desc": "drive any Debug Adapter Protocol adapter: set breakpoints, run "
+             "to a stop, and read the stack and the variables at it",
+     "witnesses": [("module", "harness/dap_client.py"),
+                   ("module", "harness/dap_session.py"),
+                   ("test", "tests/test_dap_client.py")],
+     "codex": False, "cursor": True, "claude-code": False},
+    {"key": "dap-run-record",
+     "desc": "a debug adapter client under a default-deny grant boundary on "
+             "the two reverse requests, keeping a re-checkable record of every "
+             "frame in both directions, each stop in the order it happened, "
+             "and every request the client refused, with a verify command that "
+             "re-derives the chain offline",
+     "witnesses": [("module", "harness/dap_policy.py"),
+                   ("module", "harness/dap_witness.py"),
+                   ("test", "tests/test_dap_policy.py"),
+                   ("test", "tests/test_dap_witness.py"),
+                   ("test", "tests/test_dap_cli.py")],
      "codex": False, "cursor": False, "claude-code": False},
     # Competitor cells read 2026-09-05 from the protocol's own lists at
     # agentclientprotocol.com/get-started/agents and /get-started/clients.
