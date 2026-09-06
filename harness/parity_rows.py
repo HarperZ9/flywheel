@@ -123,6 +123,22 @@ ROWS = [
                    ("test", "tests/test_lsp_witness.py"),
                    ("test", "tests/test_lsp_cli.py")],
      "codex": False, "cursor": False, "claude-code": False},
+    # Competitor cells read 2026-09-05 from the protocol's own lists at
+    # agentclientprotocol.com/get-started/agents and /get-started/clients.
+    # Codex CLI, Cursor and Claude Agent are all listed on the AGENT side.
+    # None of the three is listed as a CLIENT, and the client half is the half
+    # that holds the permission boundary and can therefore witness a refusal.
+    {"key": "acp-delegation-receipt",
+     "desc": "delegate a turn to any Agent Client Protocol agent as the "
+             "client half of the protocol, under a default-deny permission "
+             "boundary, and keep a re-checkable wire record of the turn that "
+             "includes every request the client refused",
+     "witnesses": [("module", "harness/acp_client.py"),
+                   ("module", "harness/acp_policy.py"),
+                   ("module", "harness/acp_witness.py"),
+                   ("test", "tests/test_acp_policy.py"),
+                   ("test", "tests/test_acp_witness.py")],
+     "codex": False, "cursor": False, "claude-code": False},
     {"key": "plugin-marketplace",
      "desc": "discoverable third-party plugin catalog with one-step install",
      "witnesses": [("module", "harness/marketplace.py"),
