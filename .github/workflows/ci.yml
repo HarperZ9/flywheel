@@ -62,6 +62,7 @@ jobs:
           tests/test_posix_sandbox_entry.py
           tests/test_sandbox_probe.py
           tests/test_sandbox_policy.py
+          tests/test_sandbox_protected_paths.py
           tests/test_egress_policy.py
           tests/test_egress_proxy.py
           tests/test_egress_bridge.py
