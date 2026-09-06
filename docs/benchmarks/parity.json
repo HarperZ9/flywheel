@@ -754,7 +754,7 @@
       "competitors": {
         "claude-code": true,
         "codex": true,
-        "cursor": null,
+        "cursor": true,
         "hermes": "partial",
         "omp": "partial"
       },
@@ -1095,9 +1095,7 @@
   "summary": {
     "absent": 0,
     "gaps": [],
-    "undetermined": [
-      "posix-os-confinement"
-    ],
+    "undetermined": [],
     "uniquely_witnessed": [
       "receipt-on-every-answer",
       "integrity-guard",

@@ -111,7 +111,7 @@ DECLARATIONS: dict[str, dict[str, object]] = {
         {"codex": NO, "cursor": PART, "claude-code": PART,
          "hermes": PART, "omp": PART},
     "posix-os-confinement":
-        {"codex": YES, "cursor": UNREAD, "claude-code": YES,
+        {"codex": YES, "cursor": YES, "claude-code": YES,
          "hermes": PART, "omp": PART},
     "isolation-probe":
         {"codex": NO, "cursor": NO, "claude-code": NO,
