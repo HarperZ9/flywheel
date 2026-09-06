@@ -744,6 +744,11 @@
           "kind": "test",
           "present": true,
           "ref": "tests/test_posix_sandbox.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_posix_sandbox_entry.py"
         }
       ],
       "competitors": {

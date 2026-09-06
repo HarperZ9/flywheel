@@ -167,7 +167,11 @@ ROWS = [
              "and which guarantees it enforced, including the ones it did not",
      "witnesses": [("module", "harness/posix_sandbox.py"),
                    ("module", "harness/sandboxed_runner.py"),
-                   ("test", "tests/test_posix_sandbox.py")]},
+                   ("test", "tests/test_posix_sandbox.py"),
+                   # The builder file next door asserts what the argv and the
+                   # profile say. This one runs them, so it is the witness
+                   # that the claim was tested and not only written down.
+                   ("test", "tests/test_posix_sandbox_entry.py")]},
     {"key": "isolation-probe",
      "desc": "actively test the boundaries the agent is claimed to run "
              "inside, and seal every boundary that was tried",
