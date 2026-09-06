@@ -430,6 +430,43 @@
         {
           "kind": "module",
           "present": true,
+          "ref": "harness/acp_client.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/acp_policy.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/acp_witness.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_acp_policy.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_acp_witness.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "delegate a turn to any Agent Client Protocol agent as the client half of the protocol, under a default-deny permission boundary, and keep a re-checkable wire record of the turn that includes every request the client refused",
+      "flywheel": "WITNESSED",
+      "key": "acp-delegation-receipt"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
           "ref": "harness/marketplace.py"
         },
         {
@@ -839,6 +876,7 @@
       "adaptive-routing-scoreboard",
       "native-receipted-linter",
       "lsp-run-record",
+      "acp-delegation-receipt",
       "agent-boundary-audit",
       "isolation-probe",
       "credential-exposure-scan",
@@ -852,6 +890,6 @@
       "private-verified-benchmarks",
       "paired-uplift-measurement"
     ],
-    "witnessed": 34
+    "witnessed": 35
   }
 }
