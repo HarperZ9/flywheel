@@ -44,6 +44,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 
+from .sandbox_probe import sandbox_starts
+
 SCHEMA = "flywheel.posix-sandbox/v1"
 
 #: What each platform can enforce, best first. A platform absent from this
@@ -247,18 +249,25 @@ def build(backend: str, program: str, root, work, cmd: str, *,
 
 def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
               network: bool = False, platform: str | None = None,
-              which=None, runner=None) -> tuple:
+              which=None, runner=None, probe=None) -> tuple:
     """Run `cmd` confined. Returns (returncode, output, Confinement).
 
     Returns None for the backend rather than raising when the host has none:
-    the caller owns that refusal, and it already has a name for it.
-    `runner` is injectable so the argv can be checked without a sandbox.
+    the caller owns that refusal, and it already has a name for it. A host
+    whose program is installed and refuses to start returns None for the same
+    reason, since `backend_for` reads PATH and PATH does not know whether the
+    kernel will allow the namespace. `sandbox_probe` asks it.
+
+    `runner` and `probe` are injectable so the argv can be checked, and the
+    refusal reached, without a host that has either program.
     """
     backend = backend_for(platform, which)
     if backend is None:
         return None
     found = (which if which is not None else shutil.which)(PROGRAM[backend])
     program = found if isinstance(found, str) else PROGRAM[backend]
+    if not (probe if probe is not None else sandbox_starts)(backend, program):
+        return None
     plan = describe(backend, root, work, network=network)
     argv = build(backend, program, root, work, cmd, network=network)
     call = runner if runner is not None else _spawn

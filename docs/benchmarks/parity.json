@@ -741,6 +741,11 @@
           "ref": "harness/sandboxed_runner.py"
         },
         {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/sandbox_probe.py"
+        },
+        {
           "kind": "test",
           "present": true,
           "ref": "tests/test_posix_sandbox.py"
@@ -749,6 +754,11 @@
           "kind": "test",
           "present": true,
           "ref": "tests/test_posix_sandbox_entry.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_sandbox_probe.py"
         }
       ],
       "competitors": {

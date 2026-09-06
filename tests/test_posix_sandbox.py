@@ -210,7 +210,8 @@ def test_posix_run_hands_the_built_argv_to_the_runner_it_reports_on():
 
     rc, out, plan = posix_run("echo hello", "/w", "/s", env={"PATH": "/bin"},
                               timeout_seconds=7, platform="linux",
-                              which=found("bwrap"), runner=runner)
+                              which=found("bwrap"), runner=runner,
+                              probe=lambda *a: True)
     assert (rc, out) == (0, "hello")
     assert seen["timeout"] == 7
     assert seen["argv"] == bwrap_argv("/usr/bin/bwrap", "/w", "/s",
@@ -222,8 +223,30 @@ def test_a_sandbox_that_cannot_start_is_a_failure_and_not_a_bare_run(
         tmp_path):
     # The program resolved a moment ago and will not exec now. Falling through
     # would run the command unconfined under a name that says otherwise.
+    #
+    # The probe is forced past on purpose. It would catch this host first and
+    # the run would never be attempted, which is the better outcome and is
+    # tested below; this asserts the floor under it, for the exec that fails
+    # after a probe has already succeeded.
     rc, out, _ = posix_run("echo hi", tmp_path, tmp_path, env={},
-                           platform="linux",
+                           platform="linux", probe=lambda *a: True,
                            which=lambda p: str(tmp_path / "no-such-program"))
     assert rc == 126
     assert "failed to start" in out
+
+
+def test_a_program_that_is_installed_and_refuses_to_start_is_not_a_backend():
+    """PATH says installed. The kernel says no. PATH is not the authority.
+
+    Ubuntu 24.04 ships bubblewrap and denies the unprivileged user namespace
+    it needs, so `which` finds the program, the table selects it, and every
+    run fails with a confinement summary printed over the failure. Returning
+    the null here is what turns that into the refusal the caller already
+    raises.
+    """
+    ran = []
+    outcome = posix_run("echo hi", "/w", "/s", env={}, platform="linux",
+                        which=found("bwrap"), probe=lambda *a: False,
+                        runner=lambda *a: ran.append(a) or (0, ""))
+    assert outcome is None
+    assert ran == [], "a host that cannot confine still ran the command"

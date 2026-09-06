@@ -1,5 +1,6 @@
 """Sandboxed runner: shell commands under low-integrity with output capture."""
 import os
+import shutil
 
 import pytest
 
@@ -52,12 +53,21 @@ def test_non_windows_uses_a_backend_or_still_fails_closed():
     A POSIX host with bubblewrap or Seatbelt is confined now, and says which
     one confined it. A host with neither gets the same refusal it always got,
     because the alternative to a sandbox was never a weaker sandbox.
+
+    The condition is the probe and not the PATH lookup. A host that has the
+    program and a kernel that will not let it start belongs on the refusing
+    side of this test, and reading PATH alone would put it on the other one
+    and then fail on the assertion rather than on the claim.
     """
     if os.name == "nt":
         pytest.skip("only tests the non-Windows path")
-    from harness.posix_sandbox import backend_for
+    from harness.posix_sandbox import PROGRAM, backend_for
+    from harness.sandbox_probe import sandbox_starts
     from harness.sandboxed_runner import SandboxUnavailable, sandboxed_run
-    if backend_for() is None:
+    backend = backend_for()
+    usable = backend is not None and sandbox_starts(
+        backend, shutil.which(PROGRAM[backend]) or PROGRAM[backend])
+    if not usable:
         with pytest.raises(SandboxUnavailable):
             sandboxed_run("echo hi", ".")
         return

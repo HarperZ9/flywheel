@@ -37,6 +37,7 @@ jobs:
           python -m pytest
           tests/test_posix_sandbox.py
           tests/test_posix_sandbox_entry.py
+          tests/test_sandbox_probe.py
           tests/test_proc_kill.py
           tests/test_verdict.py
           tests/test_oracle_verdict_widening.py

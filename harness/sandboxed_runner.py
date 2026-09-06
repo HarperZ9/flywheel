@@ -102,16 +102,40 @@ def _posix_sandboxed_run(
         outcome = posix_run(cmd, source, work, env=env,
                             timeout_seconds=timeout_seconds, network=True)
         if outcome is None:
-            raise SandboxUnavailable(
-                f"no sandbox backend on this host: install bubblewrap "
-                f"(linux) or use macOS sandbox-exec; platform={sys.platform}")
+            raise SandboxUnavailable(_no_backend_reason())
         rc, out, plan = outcome
     finally:
         shutil.rmtree(work, ignore_errors=True)
-    out = f"{plan.summary()}\n{_redact(out, bindings)}".rstrip()
+    # A run that never started gets no confinement line. The summary states
+    # what the kernel enforced, and a failed exec enforced nothing. The probe
+    # above catches the common case where the host policy denies the
+    # namespace; a backend that starts and then refuses part way through its
+    # own setup still reaches here with its summary attached, which is a
+    # narrower gap than the one this replaces and is not closed.
+    body = _redact(out, bindings)
+    out = body if rc == 126 else f"{plan.summary()}\n{body}".rstrip()
     if rc == 124:
         return False, f"[timeout after {timeout_seconds}s]\n{out}"
     return rc == 0, f"[exit {rc}]\n{out}"
+
+
+def _no_backend_reason() -> str:
+    """Why this host has no sandbox, in words the operator can act on.
+
+    Two hosts reach here and they need different answers. One has neither
+    program and wants an install line. The other has the program and a
+    kernel that will not let it start, and telling that operator to install
+    what they already installed sends them looking in the wrong place.
+    """
+    from .posix_sandbox import PROGRAM, backend_for
+    from .sandbox_probe import REFUSAL_HINT
+    backend = backend_for()
+    if backend is not None:
+        return (f"{PROGRAM[backend]} resolved and its probe run failed, so "
+                f"this host cannot confine a command. "
+                f"{REFUSAL_HINT.get(backend, '')}").strip()
+    return (f"no sandbox backend on this host: install bubblewrap (linux) "
+            f"or use macOS sandbox-exec; platform={sys.platform}")
 
 
 def _build_posix_env(bindings: CredentialBindings | None,

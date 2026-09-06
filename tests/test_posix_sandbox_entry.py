@@ -11,7 +11,26 @@ from types import SimpleNamespace
 
 import pytest
 
-from harness.posix_sandbox import Confinement, backend_for, posix_run
+import shutil
+
+from harness.posix_sandbox import (PROGRAM, Confinement, backend_for,
+                                   posix_run)
+from harness.sandbox_probe import REFUSAL_HINT, sandbox_starts
+
+
+def usable_backend():
+    """The backend this host can actually run, which PATH cannot answer.
+
+    The real-run tests below need a kernel that will allow the namespace,
+    not a program that exists. Skipping on the PATH lookup alone would run
+    them on a host whose sandbox refuses to start and report the refusal as
+    a failure of the code under test.
+    """
+    backend = backend_for()
+    if backend is None:
+        return None
+    program = shutil.which(PROGRAM[backend]) or PROGRAM[backend]
+    return backend if sandbox_starts(backend, program) else None
 
 
 def posix_host(monkeypatch, module):
@@ -99,8 +118,8 @@ def test_the_child_is_told_to_put_its_temp_files_where_it_can_write_them(
     assert seen["work"] == seen["work"].resolve()
 
 
-@pytest.mark.skipif(backend_for() is None,
-                    reason="this host has no POSIX sandbox backend")
+@pytest.mark.skipif(usable_backend() is None,
+                    reason="this host has no working POSIX sandbox")
 def test_a_real_confined_run_on_this_host(tmp_path):
     # The only test here that proves the policy rather than the string. It
     # runs where a backend exists and skips where none does, which is the
@@ -116,8 +135,8 @@ def test_a_real_confined_run_on_this_host(tmp_path):
     assert plan.backend == backend_for()
 
 
-@pytest.mark.skipif(backend_for() is None,
-                    reason="this host has no POSIX sandbox backend")
+@pytest.mark.skipif(usable_backend() is None,
+                    reason="this host has no working POSIX sandbox")
 def test_a_real_run_cannot_write_outside_the_workspace(tmp_path):
     # The claim the record makes, tested against the filesystem.
     work, outside = tmp_path / "scratch", tmp_path / "outside"
@@ -130,3 +149,49 @@ def test_a_real_run_cannot_write_outside_the_workspace(tmp_path):
                            network=True)
     assert rc != 0, out
     assert not (outside / "leak.txt").exists()
+
+
+def test_a_run_that_never_started_carries_no_confinement_line(
+        monkeypatch, tmp_path):
+    """The summary states what the kernel enforced, so a failed exec has none.
+
+    This is the same rule that took `/private/var/folders` out of the
+    Seatbelt profile, applied one layer up. The output used to open with
+    `writes confined to ...` whatever the return code said, so a reader
+    scanning a transcript for that line found it over a process that was
+    never created.
+    """
+    from harness import posix_sandbox, sandboxed_runner
+    plan = Confinement(backend="bwrap", program="bwrap", root=str(tmp_path),
+                       writable=(str(tmp_path),))
+    posix_host(monkeypatch, sandboxed_runner)
+    monkeypatch.setattr(
+        posix_sandbox, "posix_run",
+        lambda *a, **k: (126, "[sandbox failed to start] OSError", plan))
+    ok, out = sandboxed_runner.sandboxed_run("echo hi", str(tmp_path))
+    assert not ok
+    assert "failed to start" in out
+    assert "writes confined to" not in out
+    # The working case still says which backend held, or the line above
+    # would pass by the summary having been dropped everywhere.
+    monkeypatch.setattr(posix_sandbox, "posix_run",
+                        lambda *a, **k: (0, "hi", plan))
+    _, good = sandboxed_runner.sandboxed_run("echo hi", str(tmp_path))
+    assert "writes confined to" in good
+
+
+def test_the_refusal_tells_an_operator_which_of_two_problems_they_have(
+        monkeypatch, tmp_path):
+    # A host with the program installed and a kernel refusing it gets told
+    # to install the program, under the old message. That sends the one
+    # operator who most needs an answer to look in the wrong place.
+    from harness import posix_sandbox, sandboxed_runner
+    posix_host(monkeypatch, sandboxed_runner)
+    monkeypatch.setattr(posix_sandbox, "backend_for", lambda *a, **k: "bwrap")
+    monkeypatch.setattr(posix_sandbox, "posix_run", lambda *a, **k: None)
+    with pytest.raises(sandboxed_runner.SandboxUnavailable) as stop:
+        sandboxed_runner.sandboxed_run("echo hi", str(tmp_path))
+    said = str(stop.value)
+    assert "probe run failed" in said
+    assert REFUSAL_HINT["bwrap"] in said
+    assert "install bubblewrap" not in said
