@@ -28,16 +28,27 @@ class VerifiedPool:
     """The growing store of VERIFIED facts — the closed memory the next cycle draws
     on. Only verified results enter; unverified ones cannot compound."""
     facts: dict[str, str] = field(default_factory=dict)   # key -> receipt
+    digests: dict[str, str] = field(default_factory=dict)  # key -> receipt content hash
     baseline_history: list[int] = field(default_factory=list)
 
-    def add_verified(self, key: str, receipt: str) -> None:
+    def add_verified(self, key: str, receipt: str, digest: str = "") -> None:
+        """Record a verified fact, and the receipt digest it came from.
+
+        The digest travels into the citation this fact produces, which is what
+        pins a later run to the exact ancestor it read. A caller with no digest
+        to give leaves the citation unpinned rather than guessing one.
+        """
         self.facts[key] = receipt
+        if digest:
+            self.digests[key] = digest
 
     def baseline(self) -> int:
         return len(self.facts)
 
     def context_for(self, prereqs: list[str]) -> list[Retrieved]:
-        return [Retrieved(source=k, receipt=self.facts[k]) for k in prereqs if k in self.facts]
+        return [Retrieved(source=k, receipt=self.facts[k],
+                          digest=self.digests.get(k, ""))
+                for k in prereqs if k in self.facts]
 
 
 def auto_retrieved(pool: VerifiedPool, task: Task, prereqs: list[str]) -> Task:

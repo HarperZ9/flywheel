@@ -36,6 +36,20 @@ def _short_hash(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 
+def _citation(r) -> dict:
+    """Serialise one citation, omitting an empty pin.
+
+    `digest` is dropped while it holds its default, the same rule the envelope
+    applies to its own post-hoc fields. An unpinned run therefore hashes exactly
+    as it did before pins existed, and a pinned one signs the pin along with
+    everything else in `retrieved`.
+    """
+    d = {"source": r.source, "receipt": r.receipt}
+    if getattr(r, "digest", ""):
+        d["digest"] = r.digest
+    return d
+
+
 @dataclass
 class LoopResult:
     envelope: ProofEnvelope
@@ -81,8 +95,7 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
         append_stage(chain, "boot", task.task_id,
                      boot_packet.root_hash, boot_packet.verdict,
                      payload={"git_head": boot_packet.git_head})
-    retrieved = [{"source": r.source, "receipt": r.receipt}
-                 for r in task.retrieved]
+    retrieved = [_citation(r) for r in task.retrieved]
     # Gap A (memory->context): if the caller passed a VerifiedPool and the task
     # arrived with no retrieved context, populate it from prior verified PASSes.
     # This is the feedback edge that closes the loop -- a verified fact from a
@@ -98,8 +111,7 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
                         or task.task_id.split(".")[0].startswith(k.split(".")[0]))]
         if prereqs:
             task = auto_retrieved(pool, task, prereqs)
-            retrieved = [{"source": r.source, "receipt": r.receipt}
-                         for r in task.retrieved]
+            retrieved = [_citation(r) for r in task.retrieved]
     prompt = task.prompt
     if boot_packet is not None and boot_packet.verdict == "MATCH":
         prompt = hydrate_prompt(boot_packet, prompt)
@@ -264,7 +276,8 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
     # task's auto_context can retrieve it. Only PASSes enter (a failed gate
     # must not compound). The receipt hash is the re-checkable handle.
     if pool is not None and accepted:
-        pool.add_verified(task.task_id, f"envelope:{envelope.content_hash()}")
+        pool.add_verified(task.task_id, f"envelope:{envelope.content_hash()}",
+                          digest=envelope.content_hash())
     return LoopResult(
         envelope=envelope, oracle=orc, witness=wv,
         accepted=accepted, elapsed_s=time.time() - t0, grounding=grounding,

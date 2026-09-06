@@ -86,20 +86,60 @@ never steers the citation walk.
 `resolve_ancestors` now reports an absent receipt and an edited one apart. Both
 fail closed; they call for different responses from whoever reads the run.
 
-## What is still open
+## The refiling gap, and the pin that closes it
 
 The name check does not stop an editor who refiles the receipt under its new
 hash. The receipt is then self-consistent and the swap lands.
 `tests/test_grounding_receipt_integrity.py::test_a_refiled_receipt_is_not_stopped_by_this_check`
 asserts that outcome rather than leaving it implied.
 
-Closing it needs one of two things the check is not:
+The cause is that a citation named a task id and nothing else, so the store
+answered with whichever sealing of that id was newest. `Retrieved` now carries
+`digest`, the content hash of the receipt the citer actually read, and a pinned
+source resolves to that one filename or to nothing. A rewrite filed under its
+own new hash is nothing.
 
-- A citation that names the ancestor digest it meant. `retrieved[]` carries the
-  literal string `"envelope"` today, so nothing binds a citing receipt to the
-  specific ancestor it cited.
-- Signature verification wired into the re-check path, which needs a decision
-  about whose keys are trusted before it means anything.
+The pin lives inside `retrieved[]`, which was already folded into both digests,
+so stripping a pin to make a citation swappable again moves the citing
+receipt's hash and runs into the same check one level up. An editor who wants
+the swap has to rewrite every descendant that pins it, and each of those moves
+its own filename in turn. That is the actual value: the edit stops being local.
+It does not stop an editor who rewrites the whole cone, and one externally held
+copy of any node in it is what catches that.
+
+Cost, asserted rather than implied. An unpinned citation still resolves by
+newest sealing and is still swappable, which is the state every receipt sealed
+before today is in. `digest` is dropped from the serialised citation while it
+holds its default, so those receipts hash exactly as they did.
+`tests/test_citation_pin.py` carries the closed case, the unpinned cost, and a
+positive control that an untouched pinned cone still reaches MATCH.
+
+Where pins come from without a caller asking: `run_loop` already recorded
+`envelope:{content_hash}` into the `VerifiedPool` on acceptance, and the pool
+now keeps the digest as a digest rather than inside a display string, so the
+memory-to-context edge hands the next run a pinned citation.
+
+Two orderings are conservative on purpose. A cone that names two digests for
+one source resolves that source to nothing, and so does one that mixes a pinned
+citation with an unpinned citation resolved to a different sealing. Both are
+ambiguous, and re-resolving on the second reading would be a guess. Refusing
+costs a confirmation; the other direction could grant one.
+
+The mechanism is not new and this record does not claim it is. An in-toto
+Statement binds to its artifacts through `subject[].digest`, and the spec says
+subjects are matched purely by digest regardless of content type. Layout MATCH
+rules go further and bind one step's materials to a previous step's products by
+hash equality, which is the same edge this pin covers, published years earlier.
+Both were read live on 2026-09-06, at the two URLs below. What was missing here
+was the application, not the idea: the citation edge carried a task id while
+the environment it rebuilds was already hash-covered, and the mismatch is what
+the refiling attack lived in.
+
+- https://github.com/in-toto/attestation/blob/main/spec/v1/statement.md
+- https://github.com/in-toto/docs/blob/master/in-toto-spec.md
+
+Still open: signature verification wired into the re-check path, which needs a
+decision about whose keys are trusted before it means anything.
 
 ## Two consequences worth stating
 

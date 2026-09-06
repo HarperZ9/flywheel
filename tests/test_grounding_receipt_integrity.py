@@ -11,6 +11,12 @@ That refusal is worth exactly what it covers. An editor who renames the file
 too hands the store a self-consistent receipt and the swap lands. The last test
 asserts that instead of leaving it implied, because a gap nobody wrote down
 reads like a gap somebody closed.
+
+It is now also the cost of citing without a pin. A citation that names the
+ancestor digest it read resolves to that one filename, so the refiled rewrite
+is absent rather than substituted, and `test_citation_pin.py` holds that arm.
+Everything here cites by task id alone, which is the state every receipt sealed
+before pins existed is in, so the outcome below is still the live one.
 """
 import json
 from pathlib import Path
@@ -124,11 +130,10 @@ def test_a_refiled_receipt_is_not_stopped_by_this_check(tmp_path):
     the file to its new content hash makes the receipt self-consistent, and the
     swap lands: the ancestor reads MATCH and the citing task is accepted.
 
-    Closing it needs one of two things this check is not. A citation could name
-    the ancestor digest it meant, where retrieved[] carries the literal string
-    "envelope" today. Or signature verification could be wired into the
-    re-check path, which needs a decision about whose keys are trusted. Both
-    are recorded as open in PROJECT.md.
+    The citation here names a task id and nothing more, so the store answers
+    with its newest sealing of that id. A citation that pins the digest it read
+    refuses the same rewrite; see test_citation_pin.py. Signature verification
+    on this path stays open and is recorded that way in PROJECT.md.
     """
     path = _seal_ancestor(tmp_path, "anc_refiled")
     _swap_in_a_weaker_oracle(path)
