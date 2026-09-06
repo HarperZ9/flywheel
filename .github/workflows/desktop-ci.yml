@@ -18,6 +18,20 @@ on:
 permissions:
   contents: read
 
+# This file compiles a Windows release exe, which is the slowest leg in the
+# repository and runs on the runner class there is least of. Pushing twice to a
+# branch with a PR open left the first compile running for a commit nobody
+# would merge, holding the runner the second commit needed.
+#
+# The key names the event so the three lanes never cancel each other. A
+# workflow_dispatch build is something a person asked for and a pull_request
+# run ending it would be wrong.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  # A commit on main keeps its verdict whatever lands next, and the same holds
+  # for a build somebody asked for by hand, since both resolve to main here.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   flutter:
     # Analyze + test on both hosts. The product ships as a Windows installer,
