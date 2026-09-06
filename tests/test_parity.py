@@ -199,3 +199,17 @@ def test_every_note_belongs_to_a_row_and_every_row_is_accounted_for():
     assert len(UNDOCUMENTED) <= 12
     assert all(note.strip() for note in NOTES.values())
     assert "task-isolation" in NOTES
+
+
+def test_the_two_halves_of_the_note_set_never_answer_for_the_same_row():
+    """A key in both files would be resolved by a merge and by nothing else.
+
+    `NOTES` is `{**_EARLY, **_BOUNDARY}`. A row written up in both places
+    would keep the second note and drop the first without a word, so the
+    reasoning a reader sees would depend on which file they opened. Rows
+    move between the two only by being moved, never by being duplicated.
+    """
+    from harness.parity_peer_notes import NOTES, _EARLY
+    from harness.parity_peer_notes_boundary import NOTES as BOUNDARY
+    assert not set(_EARLY) & set(BOUNDARY), "a row is written up twice"
+    assert len(NOTES) == len(_EARLY) + len(BOUNDARY)
