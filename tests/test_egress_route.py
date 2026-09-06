@@ -207,14 +207,28 @@ def test_the_field_is_counted_in_bytes_and_not_in_characters():
     assert fits_sun_path("é" * (SUN_PATH_LIMIT // 2 + 1)) is False
 
 
+def test_the_scratch_a_real_run_gets_fits_the_field_it_is_named_in(scratch):
+    """The production directory, measured on the host rather than assumed.
+
+    macOS hands out a per-user temp root of about fifty bytes and resolves
+    it under `/private`, so the margin here is real and it is small. A host
+    where this fails would refuse every routed run, and one failing
+    assertion in the slice is a better way to learn that than a
+    `RouteUnavailable` in somebody's build.
+    """
+    assert fits_sun_path(scratch / "egress.sock"), (
+        f"the runner's own scratch path is {len(str(scratch))} bytes, so "
+        f"no socket fits inside it on this host")
+
+
 @UNIX_ONLY
-def test_the_linux_route_listens_in_the_scratch_directory(tmp_path, origin):
+def test_the_linux_route_listens_in_the_scratch_directory(scratch, origin):
     """The scratch directory is already bind-mounted writable into the run,
     so the socket needs no new bubblewrap argument to be reachable."""
     policy = EgressPolicy(hosts=("pypi.org",))
-    with open_route(policy, "bwrap", tmp_path,
+    with open_route(policy, "bwrap", scratch,
                     proxy=proxy_for(policy, origin)) as route:
-        assert route.route.endpoint == str(tmp_path / "egress.sock")
+        assert route.route.endpoint == str(scratch / "egress.sock")
         assert os.path.exists(route.route.endpoint)
         conn = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         conn.settimeout(5)
@@ -226,9 +240,9 @@ def test_the_linux_route_listens_in_the_scratch_directory(tmp_path, origin):
 
 
 @UNIX_ONLY
-def test_the_socket_does_not_outlive_the_run(tmp_path, origin):
+def test_the_socket_does_not_outlive_the_run(scratch, origin):
     policy = EgressPolicy(hosts=("pypi.org",))
-    route = open_route(policy, "bwrap", tmp_path,
+    route = open_route(policy, "bwrap", scratch,
                        proxy=proxy_for(policy, origin))
     path = route.route.endpoint
     route.close()
@@ -237,11 +251,11 @@ def test_the_socket_does_not_outlive_the_run(tmp_path, origin):
 
 @UNIX_ONLY
 def test_the_linux_port_is_inside_the_namespace_and_not_on_the_host(
-        tmp_path, origin):
+        scratch, origin):
     """Nothing on the host answers on that port, and that is correct: the
     bridge binds it inside a namespace the host does not share."""
     policy = EgressPolicy(hosts=("pypi.org",))
-    with open_route(policy, "bwrap", tmp_path,
+    with open_route(policy, "bwrap", scratch,
                     proxy=proxy_for(policy, origin)) as route:
         assert not route.route.endpoint.startswith("127.0.0.1")
         with pytest.raises(OSError):

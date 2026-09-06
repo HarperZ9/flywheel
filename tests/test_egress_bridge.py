@@ -175,14 +175,14 @@ def test_no_command_is_an_error_rather_than_a_bridge_with_nothing_to_guard():
 
 @pytest.mark.skipif(not hasattr(socket, "AF_UNIX"),
                     reason="pathname unix sockets are the Linux crossing")
-def test_a_real_unix_socket_carries_the_connection(tmp_path):
+def test_a_real_unix_socket_carries_the_connection(scratch):
     """The crossing itself, on a host that has one.
 
     Everything above injects this. Here it is a pathname socket, which is
     scoped to the filesystem rather than to the network namespace, and that
     scoping is the whole reason the route works.
     """
-    path = str(tmp_path / "egress.sock")
+    path = str(scratch / "egress.sock")
     server = _Origin(family=socket.AF_UNIX, address=path)
     port = free_port()
     carried = []
