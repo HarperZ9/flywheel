@@ -25,9 +25,14 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install test tooling only
         run: python -m pip install pytest pytest-timeout
+      # test_posix_sandbox.py is here and not only in the whole suite because
+      # the whole suite runs ubuntu and windows, and macOS is the only host in
+      # this file with sandbox-exec on it. Left off the list, the Seatbelt path
+      # would be argv assertions nobody ever executed.
       - name: Phase 0 slice
         run: >
           python -m pytest
+          tests/test_posix_sandbox.py
           tests/test_verdict.py
           tests/test_oracle_verdict_widening.py
           tests/test_oracle_env_boundary.py

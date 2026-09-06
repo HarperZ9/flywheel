@@ -46,9 +46,21 @@ class TestSandboxedRunner:
         assert "super-secret-value" not in repr(out)
 
 
-def test_non_windows_fails_closed():
+def test_non_windows_uses_a_backend_or_still_fails_closed():
+    """The refusal narrowed. It did not go away.
+
+    A POSIX host with bubblewrap or Seatbelt is confined now, and says which
+    one confined it. A host with neither gets the same refusal it always got,
+    because the alternative to a sandbox was never a weaker sandbox.
+    """
     if os.name == "nt":
         pytest.skip("only tests the non-Windows path")
+    from harness.posix_sandbox import backend_for
     from harness.sandboxed_runner import SandboxUnavailable, sandboxed_run
-    with pytest.raises(SandboxUnavailable):
-        sandboxed_run("echo hi", ".")
+    if backend_for() is None:
+        with pytest.raises(SandboxUnavailable):
+            sandboxed_run("echo hi", ".")
+        return
+    ok, out = sandboxed_run("echo hi", ".")
+    assert ok, out
+    assert f"[sandbox {backend_for()}:" in out

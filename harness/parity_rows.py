@@ -161,6 +161,13 @@ ROWS = [
              "the others refused, and what the copy cost",
      "witnesses": [("module", "harness/workspace_clone.py"),
                    ("test", "tests/test_workspace_clone.py")]},
+    {"key": "posix-os-confinement",
+     "desc": "run a shell command under an OS-enforced sandbox on Linux and "
+             "macOS rather than only on Windows, and record which backend ran "
+             "and which guarantees it enforced, including the ones it did not",
+     "witnesses": [("module", "harness/posix_sandbox.py"),
+                   ("module", "harness/sandboxed_runner.py"),
+                   ("test", "tests/test_posix_sandbox.py")]},
     {"key": "isolation-probe",
      "desc": "actively test the boundaries the agent is claimed to run "
              "inside, and seal every boundary that was tried",

@@ -42,13 +42,13 @@
       "hermes",
       "omp"
     ],
-    "rows": 38,
-    "undetermined": 0,
+    "rows": 39,
+    "undetermined": 1,
     "uniquely_witnessed": 10,
-    "witnessed": 38
+    "witnessed": 39
   },
   "python": "3.12.10",
-  "result_sha256": "4f6ea4999b0694dafc4dd2adcced346ae93831e7ba0c4c114360bfb8aaaf95cd",
+  "result_sha256": "47aaf5adc2e7b1bff30213c8f16ebb4a0746b6876bde9e1da59c71b081528754",
   "schema": "flywheel.offline-benchmarks/v1",
   "suites": [
     {
@@ -105,7 +105,7 @@
       "non_goal": "measures accountability, NOT capability. Pair it with a capability bench",
       "question": "does an unaccountable system score badly here",
       "schema": "accountability/v1",
-      "seconds": 8.142
+      "seconds": 8.485
     },
     {
       "detail": [
@@ -192,7 +192,7 @@
       "name": "governed-agent",
       "question": "does a workflow refuse an action above its tier",
       "schema": "governed-agent-workflow-benchmark/v1",
-      "seconds": 0.015
+      "seconds": 0.016
     },
     {
       "detail": [
@@ -270,7 +270,7 @@
       "name": "agent-recovery",
       "question": "does an injected fault recover without failing quietly",
       "schema": "agent.recovery-benchmark/v1",
-      "seconds": 0.066
+      "seconds": 0.047
     },
     {
       "detail": [
@@ -323,7 +323,7 @@
       "name": "stateful-provider-swap",
       "question": "does state survive a provider swap",
       "schema": "unisonai.stateful-benchmark/v1",
-      "seconds": 0.015
+      "seconds": 0.006
     },
     {
       "detail": [],
@@ -337,7 +337,7 @@
       "name": "source-mined",
       "question": "do the mined checks still hold against their datasets",
       "schema": "source-mined.executable-benchmark/v1",
-      "seconds": 0.03
+      "seconds": 0.057
     },
     {
       "caveats": [
@@ -357,7 +357,7 @@
       "non_goal": "continued pretraining on the workspace corpus did not improve general code completion and did not significantly harm it; the point estimate is a regression inside the noise",
       "question": "did continued pretraining change general code completion",
       "schema": "flywheel.paired-replication/v1",
-      "seconds": 0.001
+      "seconds": 0.009
     },
     {
       "caveats": [
@@ -370,29 +370,29 @@
       "detail": [
         {
           "name": "chain_only",
-          "score": 97.1
+          "score": 49.4
         },
         {
           "name": "buffered",
-          "score": 1221.2
+          "score": 1197.7
         },
         {
           "name": "durable",
-          "score": 8225.5
+          "score": 7955.6
         }
       ],
       "headline": {
-        "durability_share": 0.8515,
+        "durability_share": 0.8495,
         "log_bytes_per_action": 788.3,
-        "ms_per_witnessed_action": 8.23,
-        "recheck_us_per_record": 25.2,
+        "ms_per_witnessed_action": 7.96,
+        "recheck_us_per_record": 25.4,
         "verdict": "MATCH"
       },
       "name": "receipting-cost",
       "non_goal": "the record is arithmetic and the durability is a syscall. Most of what a witnessed action costs here is the wait for one fsync, so batching the flush is the lever, and it is paid for in the size of the crash window",
       "question": "what does it cost to keep the receipt",
       "schema": "flywheel.receipting-cost/v1",
-      "seconds": 2.151,
+      "seconds": 2.123,
       "unsealed": [
         "ms_per_witnessed_action",
         "durability_share",
