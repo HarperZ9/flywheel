@@ -76,11 +76,18 @@ def policy_path(platform: str | None = None,
 
     Each is a location that already requires elevation to write, so the path
     carries the authority and this module only checks that it was honoured.
+
+    `platform` says which host to answer for, so the answer may not depend on
+    the host asking. A backslash is a separator on Windows and an ordinary
+    character everywhere else, so the Windows base is written with the
+    separator both flavours split on. Windows accepts it, and a Linux run
+    reading the Windows answer gets the same components a Windows run does
+    rather than one long filename.
     """
     plat = platform if platform is not None else sys.platform
     env = environ if environ is not None else os.environ
     if plat == "win32":
-        base = env.get("ProgramData") or r"C:\ProgramData"
+        base = (env.get("ProgramData") or r"C:\ProgramData").replace("\\", "/")
         return Path(base) / "flywheel" / "policy.json"
     if plat == "darwin":
         return Path("/Library/Application Support/flywheel/policy.json")

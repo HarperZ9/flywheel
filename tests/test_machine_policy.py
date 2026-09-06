@@ -160,6 +160,10 @@ def test_the_path_is_one_that_already_needs_elevation(platform, expected):
     assert policy_path(platform, {}).as_posix().endswith(expected)
     windows = policy_path("win32", {"ProgramData": r"C:\ProgramData"})
     assert windows.as_posix() == "C:/ProgramData/flywheel/policy.json"
+    # The answer is for the platform named, not for the host asking. A Linux
+    # run reading the Windows answer used to get one filename with backslashes
+    # in it, which reads as a path and compares as a name.
+    assert windows.parts[-3:] == ("ProgramData", "flywheel", "policy.json")
 
 
 def test_the_refusal_names_the_pin_rather_than_a_variable_that_is_outranked(
