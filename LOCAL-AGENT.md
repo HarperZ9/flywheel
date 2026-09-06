@@ -158,6 +158,16 @@ python -m harness.local_agent_cli --mcp
 - Subscriptions are reached by invoking the operator's own authenticated CLI
   (`claude`, `codex`), never by proxying or replaying its OAuth token to another
   client.
+- OS-enforced shell isolation is Windows only. `--allow-exec` routes commands
+  through a low-integrity sandbox there. On macOS and Linux that sandbox does
+  not exist, and `run` refuses with `[refused]` rather than executing bare. The
+  denylist and the write gate still apply on every platform, and a static
+  classifier passing a command is a weaker claim than a kernel confining it.
+- To run anyway on a host with no sandbox, set `FLYWHEEL_ALLOW_UNSANDBOXED=1`.
+  Commands then execute with the output prefixed
+  `[UNVERIFIABLE: sandbox unavailable]`, so a downstream reader can tell that
+  the isolation was absent. The same variable governs the CLI, the MCP server,
+  and the router agent.
 
 ## Modules
 

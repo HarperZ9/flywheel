@@ -14,7 +14,7 @@ from .local_agent import LocalAgent, available_backends, health_report
 from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import ToolExecutor, ToolGate
-from .tool_sandbox_bridge import make_sandboxed_runner
+from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
 
 PROTOCOL = "2025-06-18"
 __version__ = "0.1.0"
@@ -93,7 +93,9 @@ def _call(params: dict) -> dict:
             ex = ToolExecutor(root=args.get("root", "."),
                               gate=ToolGate(allow_write=bool(args.get("allow_write")),
                                             allow_exec=bool(args.get("allow_exec"))),
-                              runner=make_sandboxed_runner(bindings=None))
+                              runner=make_sandboxed_runner(
+                                  bindings=None,
+                                  on_unavailable=fallback_from_env()))
             from harness import tool_receipts
             r = run_agent(_agent(args), args["goal"], ex, SessionLedger(),
                           max_steps=int(args.get("max_steps", 6)),

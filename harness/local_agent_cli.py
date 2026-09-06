@@ -24,7 +24,7 @@ from .local_git import commit_run
 from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import ToolExecutor, ToolGate
-from .tool_sandbox_bridge import make_sandboxed_runner
+from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
 
 
 def _all_backends(args) -> list:
@@ -104,7 +104,9 @@ def _run_agentic(args) -> int:
         return 1
     executor = ToolExecutor(root=args.root,
                             gate=ToolGate(allow_write=args.allow_write, allow_exec=args.allow_exec),
-                            runner=make_sandboxed_runner(bindings=None))
+                            runner=make_sandboxed_runner(
+                                bindings=None,
+                                on_unavailable=fallback_from_env()))
     ledger = SessionLedger()
     from harness import tool_receipts
     result = run_agent(agent, _context_preamble(args.file) + args.prompt, executor, ledger,
