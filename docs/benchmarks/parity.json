@@ -5,20 +5,20 @@
     {
       "key": "codex",
       "label": "codex",
-      "read_on": "2026-09-05",
-      "source": "developers.openai.com/codex and the config reference"
+      "read_on": "2026-09-06",
+      "source": "learn.chatgpt.com/docs, the full page index at /llms.txt, and the config reference"
     },
     {
       "key": "cursor",
       "label": "cursor",
-      "read_on": "2026-09-03",
-      "source": "cursor.com/docs"
+      "read_on": "2026-09-06",
+      "source": "cursor.com/docs and the full page index at /llms.txt"
     },
     {
       "key": "claude-code",
       "label": "claude code",
-      "read_on": "2026-09-05",
-      "source": "code.claude.com/docs"
+      "read_on": "2026-09-06",
+      "source": "code.claude.com/docs and the full page index at /docs/llms.txt"
     },
     {
       "key": "hermes",
@@ -208,7 +208,7 @@
       "competitors": {
         "claude-code": true,
         "codex": true,
-        "cursor": true,
+        "cursor": "partial",
         "hermes": "partial",
         "omp": true
       },
@@ -236,7 +236,7 @@
       ],
       "competitors": {
         "claude-code": "partial",
-        "codex": false,
+        "codex": "partial",
         "cursor": "partial",
         "hermes": true,
         "omp": true

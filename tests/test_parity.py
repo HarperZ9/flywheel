@@ -187,8 +187,11 @@ def test_every_note_belongs_to_a_row_and_every_row_is_accounted_for():
 
     Prose keyed by a row key cannot drift onto its neighbour, and a row whose
     cells carry no reasoning fails here rather than reaching a published
-    matrix. The twelve in UNDOCUMENTED are a shortfall this freezes rather than
-    blesses: that set may lose members and may never gain one.
+    matrix. UNDOCUMENTED is a shortfall this freezes rather than blesses: that
+    set may lose members and may never gain one. It was twelve when the rule
+    landed and is three since 2026-09-06, so the bound moves down with it. A
+    bound left at the old number would let nine rows quietly lose their notes
+    again with nothing failing.
     """
     from harness.parity_peer_notes import NOTES, UNDOCUMENTED
     keys = {r["key"] for r in parity.ROWS}
@@ -196,20 +199,49 @@ def test_every_note_belongs_to_a_row_and_every_row_is_accounted_for():
     assert UNDOCUMENTED <= keys
     assert not set(NOTES) & UNDOCUMENTED
     assert keys == set(NOTES) | UNDOCUMENTED, "a row with no audit trail"
-    assert len(UNDOCUMENTED) <= 12
+    assert len(UNDOCUMENTED) <= 3
     assert all(note.strip() for note in NOTES.values())
     assert "task-isolation" in NOTES
 
 
-def test_the_two_halves_of_the_note_set_never_answer_for_the_same_row():
-    """A key in both files would be resolved by a merge and by nothing else.
+def test_no_two_parts_of_the_note_set_answer_for_the_same_row():
+    """A key in two files would be resolved by a merge and by nothing else.
 
-    `NOTES` is `{**_EARLY, **_BOUNDARY}`. A row written up in both places
-    would keep the second note and drop the first without a word, so the
-    reasoning a reader sees would depend on which file they opened. Rows
-    move between the two only by being moved, never by being duplicated.
+    `NOTES` is `{**_EARLY, **_BOUNDARY, **_SHORTFALL}`. A row written up
+    twice would keep the last note and drop the earlier one without a word,
+    so the reasoning a reader sees would depend on which file they opened.
+    Rows move between the parts only by being moved, never by being copied.
+
+    Checked by length rather than pairwise, so a fourth part added later is
+    covered by the same assertion instead of needing a new pair of lines.
     """
     from harness.parity_peer_notes import NOTES, _EARLY
     from harness.parity_peer_notes_boundary import NOTES as BOUNDARY
-    assert not set(_EARLY) & set(BOUNDARY), "a row is written up twice"
-    assert len(NOTES) == len(_EARLY) + len(BOUNDARY)
+    from harness.parity_peer_notes_shortfall import NOTES as SHORTFALL
+    parts = (_EARLY, BOUNDARY, SHORTFALL)
+    assert len(NOTES) == sum(len(part) for part in parts), (
+        "a row is written up in more than one part of the note set")
+
+
+def test_the_rows_written_up_on_the_peer_reading_left_the_shortfall():
+    """The nine that moved, pinned by name.
+
+    Shrinking the set and writing the notes are two edits, and only the first
+    is checked above. Nothing there notices if a key leaves UNDOCUMENTED
+    without a note arriving, because the length bound falls either way. These
+    nine are the rows that reading covered, so they are named where a later
+    edit that drops one has to say so out loud.
+    """
+    from harness.parity_peer_notes import NOTES, UNDOCUMENTED
+    from harness.parity_peer_notes_shortfall import NOTES as SHORTFALL
+    written_up = {
+        "receipt-on-every-answer", "projected-world-hash",
+        "loop-closure-audit", "signed-receipt-external-anchor",
+        "formal-proof-oracle", "dap-run-record", "mcp-client-and-server",
+        "durable-memory-recall", "lsp-diagnostics-references",
+    }
+    assert set(SHORTFALL) == written_up
+    assert not written_up & UNDOCUMENTED
+    for key in written_up:
+        assert "2026-09-06" in NOTES[key], (
+            f"{key} carries no date for the reading behind it")

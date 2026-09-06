@@ -54,10 +54,10 @@ DECLARATIONS: dict[str, dict[str, object]] = {
         {"codex": YES, "cursor": PART, "claude-code": YES,
          "hermes": PART, "omp": YES},
     "mcp-client-and-server":
-        {"codex": YES, "cursor": YES, "claude-code": YES,
+        {"codex": YES, "cursor": PART, "claude-code": YES,
          "hermes": PART, "omp": YES},
     "durable-memory-recall":
-        {"codex": NO, "cursor": PART, "claude-code": PART,
+        {"codex": PART, "cursor": PART, "claude-code": PART,
          "hermes": YES, "omp": YES},
     "context-compaction-receipt":
         {"codex": PART, "cursor": PART, "claude-code": PART,

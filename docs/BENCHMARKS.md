@@ -135,9 +135,9 @@ The Flywheel column is checked against this repository every time the matrix is 
 
 Peers: codex, cursor, claude code, hermes, omp.
 
-- codex, read 2026-09-05, developers.openai.com/codex and the config reference
-- cursor, read 2026-09-03, cursor.com/docs
-- claude code, read 2026-09-05, code.claude.com/docs
+- codex, read 2026-09-06, learn.chatgpt.com/docs, the full page index at /llms.txt, and the config reference
+- cursor, read 2026-09-06, cursor.com/docs and the full page index at /llms.txt
+- claude code, read 2026-09-06, code.claude.com/docs and the full page index at /docs/llms.txt
 - hermes, read 2026-09-06, NousResearch/hermes-agent source: SECURITY.md, docs/, agent/, hermes_cli/, gateway/, evals/, optional-mcps/
 - omp, read 2026-09-06, can1357/oh-my-pi README, docs/ and packages/metaharness/
 
@@ -150,8 +150,8 @@ Peers: codex, cursor, claude code, hermes, omp.
 | staged-workflows | witnessed | no | no | part | part | part |
 | profile-manifests | witnessed | part | part | part | ships | ships |
 | plugin-registry | witnessed | ships | part | ships | part | ships |
-| mcp-client-and-server | witnessed | ships | ships | ships | part | ships |
-| durable-memory-recall | witnessed | no | part | part | ships | ships |
+| mcp-client-and-server | witnessed | ships | part | ships | part | ships |
+| durable-memory-recall | witnessed | part | part | part | ships | ships |
 | context-compaction-receipt | witnessed | part | part | part | part | part |
 | workspace-sandbox | witnessed | ships | ships | ships | ships | ships |
 | live-agent-stream | witnessed | ships | ships | ships | ships | ships |
