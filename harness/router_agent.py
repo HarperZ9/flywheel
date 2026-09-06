@@ -28,7 +28,7 @@ from .endpoint_registry import (
 from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import ToolExecutor, ToolGate
-from .tool_sandbox_bridge import make_sandboxed_runner
+from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
 
 DEFAULT_AGENT_SYSTEM = (
     "You are a coding agent working in a sandboxed repository. Use the tools to "
@@ -213,7 +213,8 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
         root=root, external=external or {},
         gate=ToolGate(allow_write=allow_write, allow_exec=allow_exec,
                       allow_mcp=allow_mcp), receipt_dir=receipt_dir,
-        runner=make_sandboxed_runner(bindings=credential_bindings))
+        runner=make_sandboxed_runner(bindings=credential_bindings,
+                                     on_unavailable=fallback_from_env()))
     pre_state = _workspace_pre(root, allow_write or allow_exec, ledger)
     from . import tool_receipts
     sign_key = tool_receipts.new_session_key()

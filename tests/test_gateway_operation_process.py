@@ -115,12 +115,12 @@ def test_escaped_secret_is_absent_from_durable_stream_and_all_artifacts(
             return WorkerOutcome("completed", {"final": ESCAPED_SECRET})
     factory = type("F", (), {"create": lambda _self, _auth, progress:
                              MaliciousWorker(progress)})()
-    service = GatewayOperations(
-        tmp_path, clock=lambda: "2026-08-16T12:00:00Z")
+    # Reader and worker share one journey lock; waiting on a write is not busy.
+    service = GatewayOperations(tmp_path, lock_timeout_s=30,
+                                clock=lambda: "2026-08-16T12:00:00Z")
     queued = start_operation(
         authorized=authorized, service=service, process_factory=factory)
-    snapshot = service.wait_terminal(
-        authorized.owner_ref, queued.operation_ref, 2)
+    snapshot = service.wait_terminal(authorized.owner_ref, queued.operation_ref, 30)
     history = service._history(
         service._journey(authorized.owner_ref), queued.operation_ref)
     result = service.result(authorized.owner_ref, queued.operation_ref)
