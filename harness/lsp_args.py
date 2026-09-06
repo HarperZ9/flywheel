@@ -45,7 +45,8 @@ def _shared(parser: argparse.ArgumentParser) -> None:
 
 
 def _ask(sub) -> None:
-    parser = sub.add_parser("ask", help="ask about one position in one file")
+    parser = sub.add_parser("ask", allow_abbrev=False,
+                              help="ask about one position in one file")
     _shared(parser)
     parser.add_argument("--operation", default="definition",
                         choices=sorted(OPERATIONS))
@@ -65,7 +66,7 @@ def _ask(sub) -> None:
 
 
 def _diagnostics(sub) -> None:
-    parser = sub.add_parser("diagnostics",
+    parser = sub.add_parser("diagnostics", allow_abbrev=False,
                             help="what the server says is wrong with a file")
     _shared(parser)
     parser.add_argument("--wait", type=float, default=5.0,
@@ -74,7 +75,8 @@ def _diagnostics(sub) -> None:
 
 
 def _verify(sub) -> None:
-    parser = sub.add_parser("verify", help="recheck a run's log offline")
+    parser = sub.add_parser("verify", allow_abbrev=False,
+                              help="recheck a run's log offline")
     parser.add_argument("--log", required=True, type=Path)
     parser.add_argument("--transcript", type=Path, default=None,
                         help="the bytes the log's digests were taken over. "
