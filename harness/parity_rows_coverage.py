@@ -4,13 +4,17 @@
 capability areas the matrix did not score. Nine of them were marked as rows
 owed. These are those rows.
 
-Four of the nine audit ABSENT, and that is the point of writing them down.
-Before this file the matrix reported no gaps, which was true of the rows it
-held and said nothing about the rows it did not. A row that names the module
-it would need, and fails until that module exists, turns a backlog item into
-a number a reader can watch move. The witnesses on those four name what would
-carry the capability, so the audit reports ABSENT today and reports WITNESSED
-on the day the work lands, with no edit to this file.
+Four of the nine audited ABSENT when the file was written, and that was the
+point of writing them down. Before it the matrix reported no gaps, which was
+true of the rows it held and said nothing about the rows it did not. A row
+naming the module it would need, and failing until that module exists, turns
+a backlog item into a number a reader can watch move. All four have since
+landed, and each flipped to WITNESSED on the day its work merged with no edit
+to the witnesses that were written before the code.
+
+Adding a row here is cheap and adding it dishonestly is cheaper, so a row
+that names a module nobody has written belongs in this file immediately. The
+verdict is the audit's to give.
 
 They live apart from `parity_rows` because that file was at the length gate
 and a table designed to grow by one row per shipped capability will keep
@@ -48,7 +52,8 @@ ROWS = [
      "desc": "a pool of machines the operator owns that accept dispatched "
              "runs, with the pool's membership under the operator's control",
      "witnesses": [("module", "harness/runner_pool.py"),
-                   ("route", "/api/runners")]},
+                   ("route", "/api/runners"),
+                   ("test", "tests/test_runner_pool.py")]},
     {"key": "usage-and-cost-accounting",
      "desc": "what a run spent, per action, on a receipt that can be "
              "re-checked rather than a dashboard that has to be believed",
@@ -59,7 +64,8 @@ ROWS = [
      "desc": "drive a browser or a desktop as a tool inside a run, with each "
              "action admitted and recorded",
      "witnesses": [("module", "harness/browser_control.py"),
-                   ("route", "/api/browser")]},
+                   ("route", "/api/browser"),
+                   ("test", "tests/test_browser_control.py")]},
     {"key": "own-code-vulnerability-scan",
      "desc": "scan the operator's own codebase for security defects and turn "
              "the findings into reviewable changes",

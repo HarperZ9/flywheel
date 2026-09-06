@@ -26,7 +26,11 @@ PRIVATE_PATHS = frozenset({
     "/api/plugins/probe", "/api/plugins/call", "/api/plugins/register",
     "/api/plugins/toggle", "/api/plugins/remove",
     "/api/marketplace/install", "/api/marketplace/add",
-    "/api/marketplace/remove"})
+    "/api/marketplace/remove",
+    # Minting a runner enrollment ticket is the one act in the pool that
+    # decides who may join it. The machines' own routes stay open, because
+    # a runner has to reach them; this one is the operator's.
+    "/api/runners/tickets"})
 
 
 def is_private(path: str) -> bool:

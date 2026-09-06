@@ -44,6 +44,7 @@ REPO = Path(__file__).resolve().parent.parent
 if str(REPO) not in sys.path: sys.path.insert(0, str(REPO))
 from harness.run_paths import run_root_default
 from harness.gateway_custody import is_private
+from harness.gateway_lane_calls import _forum_mcp_call, _relay_mcp_call
 from harness.gateway_auth import (authenticate_owner as _auth_owner,
     load_or_create_owner_ref, load_or_create_token, check as _auth_check, DEFAULT_HOSTS)
 from harness import gateway_openai_route as _openai_route
@@ -243,55 +244,6 @@ def _unified_roster() -> dict:
         return unified_roster()
     except Exception as e:                    # a runtime failure must degrade, not crash the handler
         return {"error": f"unified_roster failed: {e}"}
-
-
-def _forum_mcp_call(tool: str, args: dict) -> dict:
-    """Call one forum MCP tool, gracefully degraded.
-
-    Spawns the forum lane's MCP server, calls the named tool, and returns the
-    parsed JSON. If the forum lane is down or slow, returns an honest error
-    dict so the desktop view can render a 'forum offline' state.
-    """
-    from harness.mcp_client import MCPClient, MCPError
-    from harness.lanes import resolve_mcp_launch
-    try:
-        command = resolve_mcp_launch("forum")
-        with MCPClient(command, timeout=20, client_name="flywheel-forum-proxy") as c:
-            res = c.call_text(tool, args)
-            if not res["ok"]:
-                return {"error": f"forum {tool} error: {res['text'][:200]}"}
-            import json as _json
-            try:
-                return _json.loads(res["text"])
-            except _json.JSONDecodeError:
-                return {"raw": res["text"][:500]}
-    except (MCPError, FileNotFoundError, OSError) as e:
-        return {"error": f"forum lane unavailable: {e}"}
-
-
-def _relay_mcp_call(tool: str, args: dict) -> dict:
-    """Call one relay MCP tool, gracefully degraded.
-
-    relay is the execution lane (an accountable, witnessed coding agent). Forwarding
-    to it here makes the gateway the single phone-facing origin: a phone drives the
-    gateway (one auth, one tunnel), and a relay-backed run comes back with relay's
-    verifiable run_id and ledger checkpoint, the same receipts a desktop run gets.
-    """
-    from harness.lanes import resolve_mcp_launch
-    from harness.mcp_client import MCPClient, MCPError
-    try:
-        command = resolve_mcp_launch("relay")
-        with MCPClient(command, timeout=30, client_name="flywheel-relay-proxy") as c:
-            res = c.call_text(tool, args)
-            if not res["ok"]:
-                return {"error": f"relay {tool} error: {res['text'][:200]}"}
-            import json as _json
-            try:
-                return _json.loads(res["text"])
-            except _json.JSONDecodeError:
-                return {"raw": res["text"][:500]}
-    except (MCPError, FileNotFoundError, OSError) as e:
-        return {"error": f"relay lane unavailable: {e}"}
 
 
 def _relay_remote_state() -> dict:
@@ -913,6 +865,14 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/skills":                     # installed skills, read off disk
             from harness.skill_route import handle_skills_get
             return self._json(*handle_skills_get(p, run_root=self.run_root))
+        if p.startswith("/api/runners"):           # the operator's own machines, and the work they hold
+            from harness.runner_route import handle_runners_get
+            return self._json(*handle_runners_get(
+                p, run_root=self.run_root, clock=self.clock))
+        if p.startswith("/api/browser"):           # sessions driving a browser or a desktop
+            from harness.browser_route import handle_browser_get
+            return self._json(*handle_browser_get(
+                p, run_root=self.run_root, clock=self.clock))
         if p == "/api/pm/roadmap":                 # the roadmap, derived from journeys and grants
             from harness.pm_roadmap_route import handle_pm_get
             body, code = handle_pm_get(p, run_root=self.run_root,
@@ -1401,6 +1361,20 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(*handle_scan_post(
                 p, req, root=self.root, run_root=self.run_root,
                 clock=self.clock))
+        if p.startswith("/api/runners/"):          # mint, enroll, dispatch, claim, complete
+            from harness.runner_route import handle_runners_post
+            req, fault = self._json_req()
+            if fault:
+                return self._json(*fault)
+            return self._json(*handle_runners_post(
+                p, req, run_root=self.run_root, clock=self.clock))
+        if p.startswith("/api/browser/"):          # open a session, or attempt one act in it
+            from harness.browser_route import handle_browser_post
+            req, fault = self._json_req()
+            if fault:
+                return self._json(*fault)
+            return self._json(*handle_browser_post(
+                p, req, run_root=self.run_root, clock=self.clock))
         if p.startswith("/api/skills/"):           # install or invoke a skill
             from harness.skill_route import handle_skills_post
             req, fault = self._json_req()

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../client/gateway_browser.dart';
 import '../client/gateway_client.dart';
 import '../client/gateway_roadmap.dart';
+import '../client/gateway_runners.dart';
 import '../client/gateway_scan.dart';
 import '../client/gateway_schedule.dart';
 import '../client/gateway_swarms.dart';
@@ -15,6 +17,7 @@ import '../services/settings.dart';
 import '../views/academy_view.dart';
 import '../views/agent_view.dart';
 import '../views/audit_view.dart';
+import '../views/browser_view.dart';
 import '../views/code_view.dart';
 import '../views/compare_view.dart';
 import '../views/companion_view.dart';
@@ -40,6 +43,7 @@ import '../views/plugins_view.dart';
 import '../views/projects_view.dart';
 import '../views/receipts_view.dart';
 import '../views/roadmap_view.dart';
+import '../views/runners_view.dart';
 import '../views/scan_view.dart';
 import '../views/schedule_view.dart';
 import '../views/science_view.dart';
@@ -115,6 +119,8 @@ Widget? _work(DestinationId id, DestinationInputs i) => switch (id) {
           api: RoadmapApi(baseUrl: i.client.baseUrl), alive: i.alive),
       DestinationId.schedule => ScheduleView(
           api: ScheduleApi(baseUrl: i.client.baseUrl), alive: i.alive),
+      DestinationId.runners => RunnersView(
+          api: RunnersApi(baseUrl: i.client.baseUrl), alive: i.alive),
       _ => null,
     };
 
@@ -174,6 +180,8 @@ Widget? _advanced(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.lessons => LessonsView(client: i.client, alive: i.alive),
       DestinationId.instruments =>
         InstrumentsView(client: i.client, alive: i.alive),
+      DestinationId.browser => BrowserView(
+          api: BrowserApi(baseUrl: i.client.baseUrl), alive: i.alive),
       DestinationId.forum => ForumView(client: i.client),
       DestinationId.registry =>
         RegistryView(client: i.client, alive: i.alive),

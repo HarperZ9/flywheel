@@ -51,6 +51,12 @@ read the receipts. No browser, no terminal.
   its interval, its catch-up policy by name, and the occurrences now due. A
   tick is a pull, so nothing fires until you ask; what fires and what is
   refused are printed side by side.
+- **Runners**: the machines you own and the work they hold. A machine joins
+  by spending a ticket you wrote, and may advertise only the labels that
+  ticket granted. Leases lapse against the clock, so the lapsed count is how
+  a pool losing machines looks different from a pool that is merely busy.
+  Attestation is not claimed: a compromised host holding a real ticket is a
+  real member.
 - **Graph**: the cross-surface knowledge graph, interactive: shape encodes
   kind, size encodes engine-computed priority, and a budget plus query turn
   the graph into a context plan whose exclusions stay counted.
@@ -77,6 +83,12 @@ read the receipts. No browser, no terminal.
   agent running on this PC over HTTPS, through the same gates and onto the
   same hash-chained ledger; runs and sessions are listed live in the app.
   Setup: [docs/REMOTE-ACCESS.md](../docs/REMOTE-ACCESS.md).
+- **Browser**: computer control inside a run, where every action is judged
+  before it happens. A session's policy is its first record, so no act is
+  measured against rules written after it. Typing into a credential-shaped
+  field is refused before the policy is even consulted. What was performed
+  stays counted apart from what was merely allowed, so a decision recorded
+  on an engine with no driver bound never reads as a screen that moved.
 
 ## Install it
 
