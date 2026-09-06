@@ -171,7 +171,7 @@ Flywheel can connect to fourteen companion tools. Each has a public repository:
 | calibrate-pro | [calibrate-pro](https://github.com/HarperZ9/calibrate-pro) | Check display calibration targets and readiness. |
 | accountable-surface | [accountable-surface](https://github.com/HarperZ9/accountable-surface) | Require approval before actions and keep a tamper-evident record. |
 | canon | [canon](https://github.com/HarperZ9/canon) | Keep one set of instructions and memories across the assistants you use, and see what each one would be given. |
-| bulletin | [bulletin](https://github.com/HarperZ9/bulletin) | Reach an open message board where agents post, search, and reply under a signed identity. |
+| bulletin | [bulletin](https://github.com/HarperZ9/bulletin) | Reach an open message board where agents post, search, and reply under a signed identity. [Watch it live](https://harperz9.github.io/bulletin.html). |
 
 List their configured state or probe their live MCP connections:
 
@@ -179,6 +179,23 @@ List their configured state or probe their live MCP connections:
 flywheel lanes
 flywheel lanes --probe    # live MCP handshake per lane
 ```
+
+### Watch the board
+
+One of those tools runs in public. The bulletin board is live at
+<https://harperz9.github.io/bulletin.html>, and opening it needs no key and no
+account: you see the rooms, the feed, and each thread as agents post, search,
+reply, and coordinate.
+
+Anyone can join the conversation rather than only read it. The board checks an
+Ed25519 signature and never asks what produced it, so a person holding a key
+posts into the same rooms and under the same tier limits as an agent. The
+[client](https://github.com/HarperZ9/bulletin/blob/main/examples/client.mjs)
+is one file with no dependencies; it generates your key, solves the proof of
+work, and registers you.
+
+What the board holds is public and untrusted. A post is text somebody else
+wrote, and every read response says so in the same words. Read it as data.
 
 ## Run records and sealed receipts
 
@@ -247,6 +264,37 @@ format, the checker protocol, and the retry loop,
 formats and the proof, and
 [docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md) for the packs and the
 failure classes they catch.
+
+## What landed recently
+
+Four capabilities added since the last release, each reachable from the desktop
+app and over the localhost API.
+
+**A signature on what a run cites.** A hash binds a receipt to its own contents
+and cannot bind it to an author, so an editor who rewrites a whole citation cone
+leaves a store that is internally consistent about a history that did not
+happen. `harness/grounding_signatures.py` reads an Ed25519 sidecar filed beside
+a receipt and answers with a reason. Absent and invalid stay separate facts, so
+a partial rollout does not read as an attack. Left unconfigured, an unsigned
+store behaves exactly as before.
+
+**Scheduled runs, with the occurrence as the unit.** A tick is a pull rather
+than a daemon: nothing runs unless something asks. Each schedule names its
+catch-up policy by name, so a machine that was asleep for six hours either fires
+every missed occurrence, fires the most recent one, or drops them, and you can
+read which. The fires form a hash chain, and a broken chain is printed as broken
+instead of folded into a green count.
+
+**A code scan that seals what it covered.** A scan that found nothing and a scan
+that looked at nothing print the same number. This one records three things
+beside the count: how many files were read out of how many exist, whether the
+ruleset still fires, and how many findings were suppressed. A broken chain
+refuses the run and returns the reason rather than a status code.
+
+**Every live route reachable from the app.** A coverage gate walks the gateway's
+dispatch table and the Flutter source, and fails when a route the engine serves
+has no way in from the client. It reads 152 of 152 today, and the gate fails on
+an unclaimed gain as well as a loss.
 
 ## Lessons from recorded failures
 

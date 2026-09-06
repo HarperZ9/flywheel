@@ -10,7 +10,9 @@ read the receipts. No browser, no terminal.
   learn, telos, local-model, relay, plexus, mneme, calibrate-pro,
   accountable-surface, canon, bulletin) with live health. Probing reaches
   each tool's own MCP server and asks it directly; the verdict shown is the
-  tool's answer.
+  tool's answer. One of them runs in public: the bulletin board is live at
+  <https://harperz9.github.io/bulletin.html>, open to read with no key, and
+  open to post to by anyone holding one, person or agent alike.
 - **World**: the projected, root-hashed state. Recomputed on every read:
   tamper any cataloged receipt and the hash moves.
 - **Receipts**: the ledger of re-checkable artifacts: the in-repo catalog,
@@ -40,6 +42,15 @@ read the receipts. No browser, no terminal.
   then hands off to a staged, receipted workflow run.
 - **Lint**: a native linter whose findings are content-addressed receipts;
   a finding can hand off to the agent to fix.
+- **Scan**: a vulnerability pass over your own code that seals what it
+  covered. Beside the counts it prints how many files were read out of how
+  many exist, whether the ruleset still fires, and how many findings were
+  suppressed, because a scan that found nothing and a scan that looked at
+  nothing otherwise print the same number.
+- **Schedule**: what runs unattended, and what it owes. Each schedule shows
+  its interval, its catch-up policy by name, and the occurrences now due. A
+  tick is a pull, so nothing fires until you ask; what fires and what is
+  refused are printed side by side.
 - **Graph**: the cross-surface knowledge graph, interactive: shape encodes
   kind, size encodes engine-computed priority, and a budget plus query turn
   the graph into a context plan whose exclusions stay counted.
