@@ -43,6 +43,7 @@ REPO = Path(__file__).resolve().parent.parent
 # so the on-demand endpoint_registry / context_forge imports work in both modes.
 if str(REPO) not in sys.path: sys.path.insert(0, str(REPO))
 from harness.run_paths import run_root_default
+from harness.gateway_custody import is_private
 from harness.gateway_auth import (authenticate_owner as _auth_owner,
     load_or_create_owner_ref, load_or_create_token, check as _auth_check, DEFAULT_HOSTS)
 from harness import gateway_openai_route as _openai_route
@@ -634,6 +635,15 @@ class _Handler(BaseHTTPRequestHandler):
             return None
         return None if n < 0 or n > self.MAX_BODY else n
 
+    def _raw(self, body: bytes, content_type: str, code: int = 200):
+        """Send an already-encoded body. For the one surface that is not JSON."""
+        self.send_response(code)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self._cors()
+        self.end_headers()
+        if getattr(self, "command", "") != "HEAD": self.wfile.write(body)
+
     def _json(self, obj, code=200):
         error = obj.get("error") if isinstance(obj, dict) else None
         error_code = error.get("code") if isinstance(error, dict) else None
@@ -694,8 +704,8 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _route_operation(self, method):
         path = self.path.split("?", 1)[0]
-        is_operation = (path == "/api/agent"
-                        or path.startswith("/api/operations/"))
+        is_operation = (path == "/api/agent"       # start or read an agent operation
+                        or path.startswith("/api/operations/"))  # one long-running operation
         if not is_operation: return False
         from harness.gateway_operation_route import route_gateway_operation
         query = self.path.split("?", 1)[1] if "?" in self.path else ""
@@ -822,19 +832,7 @@ class _Handler(BaseHTTPRequestHandler):
         """Refuse before dispatch; public auth-off compatibility stays available,
         while private custody always requires a configured bearer token."""
         path = self.path.split("?", 1)[0]
-        private = (path.startswith(("/api/journeys/", "/api/grants/", "/api/plan/",
-                                    "/api/gateway-grants/",
-                                    "/api/pm/",
-                                    "/api/credential-handles",
-                                    "/api/session-tokens",
-                                    "/api/operations/"))
-                   or path in {"/v1/chat/completions", "/api/agent",
-                               "/api/workflow", "/api/plugins/probe",
-                               "/api/plugins/call", "/api/plugins/register",
-                               "/api/plugins/toggle", "/api/plugins/remove",
-                               "/api/marketplace/install",
-                               "/api/marketplace/add",
-                               "/api/marketplace/remove"})
+        private = is_private(path)
         if not self.auth_token and not private: return True
         if private:
             owner, reason = ((None, "no_token") if not self.auth_token else _auth_owner(
@@ -868,40 +866,47 @@ class _Handler(BaseHTTPRequestHandler):
     def _get(self):
         p = self.path.split("?", 1)[0]
         qs = self.path.split("?", 1)[1] if "?" in self.path else ""
-        if p.startswith("/api/hooks"):
+        if p in ("/openapi.json",  # OpenAPI 3.1 for every route, generated
+                 "/llms.txt",  # the same inventory, in the llmstxt.org shape
+                 "/.well-known/flywheel.json"):  # the card pointing at both
+            from harness.discovery_route import handle_discovery_get
+            document = handle_discovery_get(p)
+            if document is not None:
+                return self._raw(*document)
+        if p.startswith("/api/hooks"):             # hook definitions and their fire history
             from harness.hooks_route import handle_hooks_get
             body, code = handle_hooks_get(p, run_root=Path(self.run_root))
             return self._json(body, code)
-        if p.startswith("/api/subagents"):
+        if p.startswith("/api/subagents"):         # the subagent roster and one agent record
             from harness.subagents_route import handle_subagents_get
             body, code = handle_subagents_get(p, qs, run_root=self.run_root)
             return self._json(body, code)
-        if p == "/api/skills":
+        if p == "/api/skills":                     # installed skills, read off disk
             from harness.skill_route import handle_skills_get
             body, code = handle_skills_get(p, run_root=self.run_root)
             return self._json(body, code)
-        if p == "/api/pm/roadmap":
+        if p == "/api/pm/roadmap":                 # the roadmap, derived from journeys and grants
             from harness.pm_roadmap_route import handle_pm_get
             body, code = handle_pm_get(p, run_root=self.run_root,
                 clock=self.clock,
                 journeys_state_root=self.flywheel_home / "state",
                 owner_ref=self.owner_ref)
             return self._json(body, code)
-        if p.startswith("/api/packs"):
+        if p.startswith("/api/packs"):             # domain packs and their admission state
             from harness.pack_admission_route import handle_pack_get
             body, code = handle_pack_get(p, run_root=self.run_root)
             return self._json(body, code)
-        if p == "/api/endpoints/health":
+        if p == "/api/endpoints/health":           # every configured endpoint, probed
             return self._json(endpoint_roster(self.serve_url, self.ollama_url))
-        if p == "/api/endpoints":
-            return self._json(_unified_roster())     # full universal-router roster
+        if p == "/api/endpoints":                  # the full universal-router roster
+            return self._json(_unified_roster())
         if p == "/api/models":                       # one endpoint's model roster
             name = _qs_value(qs, "endpoint")
             if not name:
                 return self._json({"error": "provide ?endpoint=NAME"}, 400)
             from harness.model_roster import list_models
             return self._json(list_models(name))
-        if p == "/api/world":
+        if p == "/api/world":                      # the projected world state, hashed
             return self._json(_projected_world(self.root))
         if p == "/api/lanes":                        # the lane roster (umbrella layer)
             from harness.lanes import lane_roster
@@ -976,7 +981,7 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/lanes/callable":                # list lanes + their tier requirements
             from harness.lane_caller import list_available_lanes
             return self._json({"lanes": list_available_lanes()})
-        if p == "/api/training/status":
+        if p == "/api/training/status":            # training lane status, read-only
             return self._json(_training_status(self.run_root))
         if p == "/api/train/duel":                    # verified-inference duel summary (read-only)
             from harness.train_surface import duel_summary
@@ -996,8 +1001,9 @@ class _Handler(BaseHTTPRequestHandler):
         # Each infra route is named in full rather than dispatched by prefix.
         # A prefix collapses the family into one entry the coverage gate can
         # satisfy with a single client reference; named, each one is counted.
-        if (p == "/api/infra/trust-model" or p == "/api/infra/bom"
-                or p == "/api/infra/egress"):        # infrastructure, read side
+        if (p == "/api/infra/trust-model"          # who is trusted here, and for what
+                or p == "/api/infra/bom"             # the run bill of materials
+                or p == "/api/infra/egress"):        # the live egress table, scanned
             from harness.infra_route import handle_infra_get
             return self._json(*handle_infra_get(p))
         if p == "/api/instruments":                  # the evaluation-engineering register
@@ -1200,13 +1206,13 @@ class _Handler(BaseHTTPRequestHandler):
                             for n in names],
                 "note": "presence and source only; values never leave "
                         "resolution inside a routed call"})
-        if p == "/api/credential-handles":
+        if p == "/api/credential-handles":         # handles held for this owner, presence only
             from harness.credential_handle_route import credential_handle_get
             body, code = credential_handle_get(
                 p, owner_ref=self.owner_ref,
                 state_root=self.flywheel_home / "state")
             return self._json(body, code)
-        if p == "/api/session-tokens":
+        if p == "/api/session-tokens":             # session tokens issued to this owner
             from harness.session_token_route import session_token_get
             body, code = session_token_get(
                 owner_ref=self.owner_ref, token_store=self._session_tokens())
@@ -1219,7 +1225,9 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(get_router_stats().snapshot())
         if p == "/v1/models":                        # OpenAI-compatible model list (the roster)
             return self._json(openai_models())
-        if p.startswith("/v1/") or p == "/generate" or p == "/health":
+        if (p.startswith("/v1/")                   # OpenAI-compatible, proxied to the endpoint
+                or p == "/generate"                  # the raw generate call, proxied
+                or p == "/health"):                  # is the model endpoint answering
             return self._proxy(self.serve_url.rstrip("/") + p)
         return self._static(p)
 
@@ -1238,8 +1246,8 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _post(self):
         p = self.path.split("?", 1)[0]
-        if p.startswith("/api/plan/"): return self._plan_request(p)
-        if p.startswith("/api/session-tokens/"):
+        if p.startswith("/api/plan/"): return self._plan_request(p)  # a plan request, private custody
+        if p.startswith("/api/session-tokens/"):   # mint or revoke a session token
             length = self._content_length()
             if length is None:
                 return self._json({"schema": "flywheel.evidence-transport-error/v1",
@@ -1255,16 +1263,17 @@ class _Handler(BaseHTTPRequestHandler):
                 token_store=self._session_tokens())
             return self._json(body, code)
         if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
-                         "/api/gateway-grants/", "/api/credential-handles/")):
+                         "/api/gateway-grants/",
+                         "/api/credential-handles/")):  # bind a handle, presence only
             length = self._content_length()
             if length is None:
                 return self._json({"schema": "flywheel.evidence-transport-error/v1",
                     "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
             raw = self.rfile.read(length)
-            if p.startswith("/api/evidence/"):
+            if p.startswith("/api/evidence/"):     # append to the evidence ledger
                 from harness.evidence_route import evidence_post
                 body, code = evidence_post(p, raw, root=self.root)
-            elif p.startswith("/api/journeys/extensions/"):
+            elif p.startswith("/api/journeys/extensions/"):  # contextual extensions, fail-closed
                 # Contextual extensions: fail-closed. The server-side
                 # contract registry is empty, so the sheet has zero rows
                 # and every extension denies until contracts are accepted.
@@ -1313,15 +1322,15 @@ class _Handler(BaseHTTPRequestHandler):
                             "error": {"code": "NOT_FOUND",
                                       "message": "unknown extension"}}, 404
                 return self._json(body, code)
-            elif p.startswith("/api/journeys/"):
+            elif p.startswith("/api/journeys/"):   # advance a journey, receipted
                 from harness.journey_route import journey_post
                 body, code = journey_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
                     evidence_root=self.flywheel_home / "state" / "artifacts", clock=self.clock)
-            elif p.startswith("/api/grants/"):
+            elif p.startswith("/api/grants/"):     # request or answer a capability grant
                 from harness.grant_route import grant_post
                 body, code = grant_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
                     evidence_root=self.flywheel_home / "state" / "artifacts", clock=self.clock)
-            elif p.startswith("/api/gateway-grants/"):
+            elif p.startswith("/api/gateway-grants/"):  # grants scoped to the gateway itself
                 from harness.gateway_grant_route import gateway_grant_post
                 body, code = gateway_grant_post(
                     p, raw, owner_ref=self.owner_ref,
@@ -1333,7 +1342,7 @@ class _Handler(BaseHTTPRequestHandler):
                     state_root=self.flywheel_home / "state")
             return self._json(body, code)
         from harness.gateway_operation import action_for_path, materialize_agent_attachment, thaw_operation
-        if p.startswith("/api/hooks/"):
+        if p.startswith("/api/hooks/"):            # define, edit or fire a hook
             from harness.evidence_public import parse_json
             from harness.hooks_route import handle_hooks_post
             length = self._content_length()
@@ -1348,7 +1357,7 @@ class _Handler(BaseHTTPRequestHandler):
                 p, req, run_root=self.run_root,
                 owner_ref=self.owner_ref, clock=self.clock)
             return self._json(body, code)
-        if p.startswith("/api/subagents/"):
+        if p.startswith("/api/subagents/"):        # run a subagent, recorded
             from harness.evidence_public import parse_json
             from harness.subagents_route import handle_subagents_post
             length = self._content_length()
@@ -1362,7 +1371,7 @@ class _Handler(BaseHTTPRequestHandler):
             body, code = handle_subagents_post(
                 p, req, run_root=self.run_root, clock=self.clock)
             return self._json(body, code)
-        if p.startswith("/api/skills/"):
+        if p.startswith("/api/skills/"):           # install or invoke a skill
             from harness.evidence_public import parse_json
             from harness.skill_route import handle_skills_post
             length = self._content_length()
@@ -1460,7 +1469,8 @@ class _Handler(BaseHTTPRequestHandler):
                 req = {}
             body, code = openai_embeddings(req)
             return self._json(body, code)
-        if p.startswith("/v1/") or p == "/generate":
+        if (p.startswith("/v1/")                   # OpenAI-compatible, proxied to the endpoint
+                or p == "/generate"):                # the raw generate call, proxied
             return self._proxy(self.serve_url.rstrip("/") + p)
         if p == "/api/relay/start":                  # start a witnessed relay run via the exec lane
             req, bad = self._req_json()
@@ -1837,7 +1847,9 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.memory_api import memory_recall
             return self._json(memory_recall(self.run_root, query,
                                             req.get("top_k", 5)))
-        if p in ("/api/auth/login", "/api/auth/token", "/api/auth/logout"):
+        if p in ("/api/auth/login",                # begin a subscription sign-in
+                 "/api/auth/token",                # hand back a pasted token, never logged
+                 "/api/auth/logout"):              # sign out of a provider
             # Subscription sign-in. A browser flow runs in the background and
             # the surface polls /api/auth; a guided flow returns its steps and
             # the surface posts the paste back to /api/auth/token. No token
@@ -1975,8 +1987,10 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.injection_probe import probe
             return self._json(probe(allow_write=bool(req.get("allow_write")),
                                     allow_exec=bool(req.get("allow_exec"))))
-        if p in ("/api/typeface", "/api/typeface/publish",
-                 "/api/typeface/family", "/api/typeface/variable"):
+        if p in ("/api/typeface",                  # mint a typeface
+                 "/api/typeface/publish",          # publish one
+                 "/api/typeface/family",           # derive a family
+                 "/api/typeface/variable"):        # derive a variable font
             # mint / publish / family / variable, one module (typeface_route.py)
             req, bad = self._req_json()
             if bad:
@@ -2194,9 +2208,9 @@ class _Handler(BaseHTTPRequestHandler):
                 return bad
             from harness.lane_call_route import handle_lane_call
             return self._json(*handle_lane_call(p, req))
-        if (p == "/api/infra/credential-scan"
-                or p == "/api/infra/isolation"
-                or p == "/api/infra/kill"):              # infrastructure, act side
+        if (p == "/api/infra/credential-scan"      # scan for exposed credentials
+                or p == "/api/infra/isolation"       # run the isolation test
+                or p == "/api/infra/kill"):          # the kill switch
             req, bad = self._req_json()
             if bad:
                 return bad
