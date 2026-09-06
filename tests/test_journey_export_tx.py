@@ -21,8 +21,9 @@ OWNER = "owner_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 JOURNEY = "jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 
-def _service(root):
-    return JourneyService(owner_ref=OWNER, store=JourneyStore(root),
+def _service(root, lock_timeout_s=2.0):
+    return JourneyService(owner_ref=OWNER,
+        store=JourneyStore(root, lock_timeout_s=lock_timeout_s),
         grants=GrantStore(root, clock=lambda: NOW), clock=lambda: NOW)
 
 
@@ -237,10 +238,18 @@ def test_two_export_races_have_one_cas_winner_and_no_overwrite(tmp_path, packet_
     (tmp_path / "artifacts").mkdir(); head = _concluded(tmp_path)
     authorities = [_authority(tmp_path, head, f"export-{index}", packet_ref)
                    for index, packet_ref in enumerate(packet_refs)]
+    # A long wait, so the loser loses at the head and not at the lock. Both
+    # racers serialize on one export-admission guard that is held across the
+    # whole export, packing and fsync included, and that guard reads its
+    # deadline from store.lock_timeout_s. Under the two-second default a slow
+    # Windows runner hands the loser STORE_BUSY, which is a correct way to
+    # lose and proves nothing about CAS. Same lock for both parametrizations,
+    # which is why differing packet refs failed the same way.
     def run(index):
         request, grant_ref, body = authorities[index]
         try:
-            result = JourneyExportService(journey=_service(tmp_path),
+            result = JourneyExportService(
+                journey=_service(tmp_path, lock_timeout_s=60.0),
                 artifact_root_ref="artifacts").export(
                 journey_ref=JOURNEY, expected_event_head=head,
                 client_request_id=body["client_request_id"],

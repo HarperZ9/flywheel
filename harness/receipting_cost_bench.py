@@ -157,8 +157,28 @@ def _on_disk(count: int = DISK_ACTIONS) -> dict[str, Any]:
             "verify_us_per_record": round(seconds / checked * 1e6, 1)}
 
 
+def _share(waiting: float, total: float) -> float | None:
+    """How much of the total the fsync took, or nothing when it cannot be said.
+
+    The three arms are timed separately, so this difference is a difference of
+    medians rather than a duration anybody measured. On a small sample or a
+    busy host the durable arm can come out no slower than the buffered one, and
+    a Windows runner produced exactly that. Reporting None says the run did not
+    separate them. Clamping to zero would instead report that durability is
+    free, which is a claim this never made and the data does not support.
+    """
+    if total <= 0 or waiting <= 0:
+        return None
+    return round(waiting / total, 4)
+
+
 def _reading(waiting: float, total: float) -> str:
     """One sentence a reader can act on, taken from what was measured."""
+    if waiting <= 0:
+        return ("the arms did not separate on this run: the durable arm was no "
+                "slower than the buffered one, so this sample says nothing "
+                "about what the fsync costs. A larger sample or a quieter host "
+                "is what would answer it")
     if total and waiting / total >= 0.5:
         return ("the record is arithmetic and the durability is a syscall. "
                 "Most of what a witnessed action costs here is the wait for "
@@ -189,8 +209,7 @@ def run_receipting_cost_benchmark(batches: int = BATCHES,
         "arms": {"chain_only": chain, "buffered": buffered, "durable": durable},
         "attribution": {"hash_and_link_us": hashing, "write_us": writing,
                         "wait_for_durability_us": waiting, "total_us": total,
-                        "durability_share": (round(waiting / total, 4)
-                                             if total else 0.0)},
+                        "durability_share": _share(waiting, total)},
         "disk": _on_disk(),
         "reading": _reading(waiting, total),
         "does_not_prove": does_not_prove(),

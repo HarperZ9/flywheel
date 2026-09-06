@@ -733,6 +733,50 @@
         {
           "kind": "module",
           "present": true,
+          "ref": "harness/posix_sandbox.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/sandboxed_runner.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/sandbox_probe.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_posix_sandbox.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_posix_sandbox_entry.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_sandbox_probe.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": true,
+        "hermes": "partial",
+        "omp": "partial"
+      },
+      "desc": "run a shell command under an OS-enforced sandbox on Linux and macOS rather than only on Windows, and record which backend ran and which guarantees it enforced, including the ones it did not",
+      "flywheel": "WITNESSED",
+      "key": "posix-os-confinement"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
           "ref": "harness/infra/isolation_test.py"
         },
         {
@@ -1074,6 +1118,6 @@
       "signed-receipt-external-anchor",
       "formal-proof-oracle"
     ],
-    "witnessed": 38
+    "witnessed": 39
   }
 }

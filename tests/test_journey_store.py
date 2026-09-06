@@ -272,10 +272,13 @@ def test_twenty_cases_have_one_two_writer_cas_winner_and_no_duplicate_sequence(t
     genesis = JourneyStore(tmp_path).create(_create_command(f"create-{case}"))
     barrier = Barrier(2)
 
+    # The loser must reach the head comparison. Under the two-second default
+    # it can miss the lock and come back STORE_BUSY, and a run where nobody
+    # reread the head would pass. Windows CI was slow enough to do that.
     def race(request_id, marker):
         barrier.wait()
         try:
-            return JourneyStore(tmp_path).append(
+            return JourneyStore(tmp_path, lock_timeout_s=60.0).append(
                 _append_command(genesis.event_head_sha256, request_id, marker),
             )
         except JourneyStoreError as exc:

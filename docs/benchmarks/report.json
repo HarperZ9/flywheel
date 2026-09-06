@@ -42,13 +42,13 @@
       "hermes",
       "omp"
     ],
-    "rows": 38,
+    "rows": 39,
     "undetermined": 0,
     "uniquely_witnessed": 10,
-    "witnessed": 38
+    "witnessed": 39
   },
   "python": "3.12.10",
-  "result_sha256": "4f6ea4999b0694dafc4dd2adcced346ae93831e7ba0c4c114360bfb8aaaf95cd",
+  "result_sha256": "30c06708ebde33d4df1b22d05fbe6ba4bfcb58aae2f19e20adb399dcc916979e",
   "schema": "flywheel.offline-benchmarks/v1",
   "suites": [
     {
@@ -105,7 +105,7 @@
       "non_goal": "measures accountability, NOT capability. Pair it with a capability bench",
       "question": "does an unaccountable system score badly here",
       "schema": "accountability/v1",
-      "seconds": 8.142
+      "seconds": 9.082
     },
     {
       "detail": [
@@ -192,7 +192,7 @@
       "name": "governed-agent",
       "question": "does a workflow refuse an action above its tier",
       "schema": "governed-agent-workflow-benchmark/v1",
-      "seconds": 0.015
+      "seconds": 0.007
     },
     {
       "detail": [
@@ -270,7 +270,7 @@
       "name": "agent-recovery",
       "question": "does an injected fault recover without failing quietly",
       "schema": "agent.recovery-benchmark/v1",
-      "seconds": 0.066
+      "seconds": 0.05
     },
     {
       "detail": [
@@ -323,7 +323,7 @@
       "name": "stateful-provider-swap",
       "question": "does state survive a provider swap",
       "schema": "unisonai.stateful-benchmark/v1",
-      "seconds": 0.015
+      "seconds": 0.006
     },
     {
       "detail": [],
@@ -337,7 +337,7 @@
       "name": "source-mined",
       "question": "do the mined checks still hold against their datasets",
       "schema": "source-mined.executable-benchmark/v1",
-      "seconds": 0.03
+      "seconds": 0.016
     },
     {
       "caveats": [
@@ -370,29 +370,29 @@
       "detail": [
         {
           "name": "chain_only",
-          "score": 97.1
+          "score": 48.5
         },
         {
           "name": "buffered",
-          "score": 1221.2
+          "score": 1113.7
         },
         {
           "name": "durable",
-          "score": 8225.5
+          "score": 7706.8
         }
       ],
       "headline": {
-        "durability_share": 0.8515,
+        "durability_share": 0.8555,
         "log_bytes_per_action": 788.3,
-        "ms_per_witnessed_action": 8.23,
-        "recheck_us_per_record": 25.2,
+        "ms_per_witnessed_action": 7.71,
+        "recheck_us_per_record": 25.7,
         "verdict": "MATCH"
       },
       "name": "receipting-cost",
       "non_goal": "the record is arithmetic and the durability is a syscall. Most of what a witnessed action costs here is the wait for one fsync, so batching the flush is the lever, and it is paid for in the size of the crash window",
       "question": "what does it cost to keep the receipt",
       "schema": "flywheel.receipting-cost/v1",
-      "seconds": 2.151,
+      "seconds": 1.951,
       "unsealed": [
         "ms_per_witnessed_action",
         "durability_share",

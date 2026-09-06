@@ -5,6 +5,22 @@ on:
     branches: ["**"]
   pull_request:
 
+# Every push to a branch with a PR open starts two runs of this file, one for
+# `push` and one for `pull_request`, and until this block nothing ended the
+# runs a newer commit had already made pointless. Three generations were alive
+# at once on one branch, and since macOS runners are the scarce ones, the four
+# macOS legs of the current commit sat behind six legs of commits nobody was
+# going to merge. They had been queued for fifty minutes.
+#
+# The key names the event, so the two lanes cancel their own stale generation
+# and never each other's. A `pull_request` run ending a `push` run would mark
+# a check cancelled that the branch may still be waiting on.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  # A commit on main keeps its verdict whatever lands next. Anywhere else the
+  # newest commit is the one worth a runner.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   phase0:
     name: phase 0 + 1A slice
@@ -18,6 +34,13 @@ jobs:
         # that said nothing about the code.
         python: ["3.11", "3.13"]
     runs-on: ${{ matrix.os }}
+    # This leg runs in well under a minute when it runs at all. The bound is
+    # here because `--timeout` cannot reach every hang: a test that stops its
+    # own process group leaves pytest unable to run the alarm that would end
+    # it, and one did, for fifteen minutes, until the runner was recycled with
+    # no test named in the log. A job deadline is the only thing outside the
+    # stopped process.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
@@ -25,9 +48,20 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install test tooling only
         run: python -m pip install pytest pytest-timeout
+      # The POSIX sandbox and proc_kill files are here and not only in the
+      # whole suite because the whole suite runs ubuntu and windows, and macOS
+      # is the only host in this file with sandbox-exec on it. Left off the
+      # list, the Seatbelt path would be argv assertions nobody executed. It
+      # has already earned the seat: the entry-point file's real-run tests
+      # caught a profile that allowed the parent of every macOS temp
+      # directory, on a branch that was green on the other two hosts.
       - name: Phase 0 slice
         run: >
           python -m pytest
+          tests/test_posix_sandbox.py
+          tests/test_posix_sandbox_entry.py
+          tests/test_sandbox_probe.py
+          tests/test_proc_kill.py
           tests/test_verdict.py
           tests/test_oracle_verdict_widening.py
           tests/test_oracle_env_boundary.py
@@ -124,6 +158,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         shard: [0, 1, 2, 3]
     runs-on: ${{ matrix.os }}
+    # The slowest shard takes under four minutes. Same reason as the slice
+    # above: `--timeout=300` is already on the pytest call and a stopped
+    # process never receives it.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
