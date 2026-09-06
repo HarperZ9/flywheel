@@ -398,6 +398,38 @@
         {
           "kind": "module",
           "present": true,
+          "ref": "harness/lsp_client.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/lsp_witness.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_lsp_witness.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_lsp_cli.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": false,
+        "codex": false,
+        "cursor": false
+      },
+      "desc": "a language server client that keeps a re-checkable record of the exchange: every frame chained, every answer stamped with the document version and negotiated encoding it was asked at, and a verify command that re-derives the chain",
+      "flywheel": "WITNESSED",
+      "key": "lsp-run-record"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
           "ref": "harness/marketplace.py"
         },
         {
@@ -806,6 +838,7 @@
       "loop-closure-audit",
       "adaptive-routing-scoreboard",
       "native-receipted-linter",
+      "lsp-run-record",
       "agent-boundary-audit",
       "isolation-probe",
       "credential-exposure-scan",
@@ -819,6 +852,6 @@
       "private-verified-benchmarks",
       "paired-uplift-measurement"
     ],
-    "witnessed": 33
+    "witnessed": 34
   }
 }
