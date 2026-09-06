@@ -133,7 +133,8 @@ short-lived scoped credentials, and logs signed decision records.
 ### Follow-up on OpenKedge, same day
 
 The pair is further along than one sweep showed. Five papers in five months
-from two authors, read live on 2026-09-06:
+from two authors, read live on 2026-09-06. The count is eight, and the second
+follow-up below carries the correction and the two entries missing here:
 
 ```
 2604.08601  2026-04-07  OpenKedge: Governing Agentic Mutation with
@@ -164,9 +165,64 @@ say so. That null stays in.
 
 So the line to stop using is any count of their papers as though the count were
 the gap. The gap is that a numbered preprint is citable and a wheel is not, and
-five preprints in five months compounds while a version bump does not. Nothing
+eight preprints in five months compounds while a version bump does not. Nothing
 here changes the re-execution finding above: the broker verifies a certificate,
 the guardrail bounds an assertion, and neither re-runs the work.
+
+### Second follow-up, same day: the repository count was wrong
+
+The paragraph above measured one repository because one paper named it. That is
+a name-directed sweep standing in for a search, which is the defect this record
+was written to correct, repeated inside the record. Listing the account returns
+seven repositories. Querying arXiv for the author pair returns eight papers.
+
+```
+2604.08601  2026-04-07  OpenKedge: Governing Agentic Mutation with
+                        Execution-Bound Safety and Evidence Chains   17 pp
+2604.22136  2026-04-24  Sovereign Agentic Loops: Decoupling AI Reasoning
+                        from Execution in Real-World Systems         15 pp
+2605.15228  2026-05-13  Verifiable Agentic Infrastructure            19 pp
+2606.11632      2026-06  Sovereign Assurance Boundary
+2606.20520  2026-06-18  Sovereign Execution Broker         19 pp, 6 fig, 10 tab
+2608.11632  2026-08-12  Beyond Memory: A Transactional Continuity Kernel
+                                                          9 pp + 6 pp appendix
+2609.02925  2026-08-24  The Illusion of Independent Quorums          13 pp
+2609.02127  2026-09-02  Stored Is Not Supported                      17 pp
+```
+
+Repositories under `github.com/openkedge`, measured through the GitHub API on
+2026-09-06:
+
+```
+hardknock            Rust         2,870 KB   3 stars   pushed 2026-09-03
+sitbench             Python       1,448 KB   1 star    pushed 2026-08-30
+atp                  Java           646 KB   3 stars   pushed 2026-08-30
+openkedge            TypeScript     341 KB   6 stars   pushed 2026-08-28
+efd                  Python          79 KB   2 stars   pushed 2026-08-24
+pci                  Python          71 KB   2 stars   pushed 2026-09-02
+pdd-protocol-author  Python          14 KB   2 stars   pushed 2026-05-14
+```
+
+So the sentence "they hold citation ground, this project holds shipped ground"
+does not survive its own measurement. About 5.5 MB across four languages is
+code, and two of those repositories are evaluation artifacts: `efd` carries the
+frozen 120-task benchmark its paper announces, and `sitbench` is a benchmark
+harness for persistent identity. Flywheel's comparable artifact is the
+false-accept corpus in `harness/adversarial_corpus.py`, seven attacks with two
+controls.
+
+What survives is narrower, and worth keeping for that reason. Queried on
+2026-09-06, PyPI returns 404 for `openkedge`, `hardknock`, and `sitbench`,
+crates.io returns 404 for `hardknock`, and npm returns 404 for `openkedge`.
+`flywheel-verify` has twelve releases on PyPI. The difference sits in
+distribution. Code exists on both sides, and the adoption null holds on both at
+one to six stars.
+
+One citation discrepancy, recorded rather than buried. The comment field on
+2609.02127 names `arXiv:2608.11632` as its companion, while the entry above
+cites `2606.11632` for Sovereign Assurance Boundary. Both identifiers resolve,
+to different papers by the same authors, so the entry above is right and
+2608.11632 is a paper it was missing.
 
 Separately, Jakob Salfeld-Nebgen, "Governing Actions, Not Agents" (2606.26298,
 2026-06-24), attests preconditions from independent authoritative sources bound
@@ -187,5 +243,10 @@ re-execute. Re-execution remains the axis where Flywheel is not crowded.
 - https://arxiv.org/abs/2604.08601
 - https://arxiv.org/abs/2605.15228
 - https://arxiv.org/abs/2609.02127
+- https://arxiv.org/abs/2604.22136
+- https://arxiv.org/abs/2608.11632
+- https://arxiv.org/abs/2609.02925
 - https://github.com/openkedge/pci
+- https://github.com/openkedge/efd
+- https://api.github.com/users/openkedge/repos
 - https://pypi.org/project/flywheel-verify/
