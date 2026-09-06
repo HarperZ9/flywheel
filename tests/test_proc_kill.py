@@ -6,6 +6,7 @@ candidate keeps running, holding the output pipe the next drain will wait on.
 These tests plant that tree and check it is gone.
 """
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -38,7 +39,13 @@ def _alive(pid: int) -> bool:
 
 
 def _kill_probe(pid: int) -> bool:
-    """Fallback for a host without /proc, which is macOS."""
+    """Fallback for a host without /proc, which is macOS.
+
+    It cannot see a zombie, so it is only honest about a process this one is
+    not the parent of. Every pid this file probes is an orphan whose leader
+    exited, which launchd and init reap on their own. For a direct child, wait
+    on it instead: reaping is the question the probe would be guessing at.
+    """
     try:
         os.kill(pid, 0)
     except OSError:
@@ -150,11 +157,19 @@ def test_a_process_not_spawned_here_still_gets_killed(tmp_path, monkeypatch):
         _kill_tree(proc)
         assert issued == [], (
             f"_kill_tree signalled its caller's own process group: {issued}")
-        assert _wait_until_gone(proc.pid), "the unstamped process survived"
+        # Waiting, not probing. This is the one process in this file that
+        # pytest is the parent of, and a killed child stays a zombie until
+        # somebody reaps it. A zombie answers `os.kill(pid, 0)`, so on a host
+        # with no /proc the probe called this process alive for the whole
+        # five seconds and the test failed on macOS while passing on Linux.
+        # The return code says which signal ended it, which is more than the
+        # probe was ever able to say.
+        assert proc.wait(timeout=10) == -signal.SIGKILL, (
+            f"the unstamped process ended with {proc.returncode}, not SIGKILL")
     finally:
-        if _alive(proc.pid):
-            os.kill(proc.pid, 9)
-        proc.wait(timeout=10)
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=10)
 
 
 @posix_only
