@@ -42,8 +42,9 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
-from pathlib import PurePosixPath
 
+from .sandbox_policy import (ProfileRefused, posix_path, sbpl_profile,
+                             seatbelt_argv)
 from .sandbox_probe import sandbox_starts
 
 SCHEMA = "flywheel.posix-sandbox/v1"
@@ -67,10 +68,6 @@ READS_CONFINED = {"bwrap": False, "seatbelt": False}
 #: it cannot see or signal the rest of the host. This is the real asymmetry
 #: between the two, and it is the one a reader would otherwise guess wrong.
 PROCESS_ISOLATED = {"bwrap": True, "seatbelt": False}
-
-
-class ProfileRefused(ValueError):
-    """A path cannot be written into a policy without changing its meaning."""
 
 
 @dataclass(frozen=True)
@@ -133,66 +130,6 @@ def backend_for(platform: str | None = None, which=None) -> str | None:
     return None
 
 
-def _posix(path) -> str:
-    """The path as the target host spells it.
-
-    These builders describe a run on Linux or macOS, so a path is POSIX text
-    whichever host is reading the function. Resolving with the local flavour
-    would make the argv depend on the machine asking, and the point of a pure
-    builder is that it does not.
-    """
-    return PurePosixPath(str(path).replace("\\", "/")).as_posix()
-
-
-def _policy_path(path) -> str:
-    """A path safe to write into a Seatbelt profile, or a refusal.
-
-    Escaping is not attempted. A quote in a workspace path is rare and a
-    mis-escaped one silently widens the policy, so this refuses and the
-    caller falls back to no sandbox rather than to a weaker one nobody was
-    told about.
-    """
-    text = _posix(path)
-    if '"' in text or "\n" in text:
-        raise ProfileRefused(f"path cannot be expressed in a policy: {text}")
-    return text
-
-
-#: Character devices a shell needs in order to start at all. Each is a single
-#: file or a file descriptor the process already holds, so none of them is a
-#: directory a run could leave something behind in.
-DEV_WRITES = ('  (literal "/dev/null")',
-              '  (literal "/dev/dtracehelper")',
-              '  (literal "/dev/tty")',
-              '  (regex #"^/dev/fd/[0-9]+$"))')
-
-
-def sbpl_profile(root, work, *, network: bool = False) -> str:
-    """The Seatbelt policy confining writes to the workspace.
-
-    Reads stay allowed. That is a real limit of this profile and it is why
-    `READS_CONFINED["seatbelt"]` is False.
-
-    The temp directory is not writable and must not become writable here. An
-    earlier version allowed `/private/var/folders` so a toolchain would find
-    somewhere to put its scratch files, which on macOS is the parent of every
-    per-user temp directory the system hands out: a run confined to a
-    workspace under that tree could write anywhere else under it, and the
-    `writes confined to {root}` line in the record was false for exactly the
-    hosts the policy was written for. The caller points `TMPDIR` at the
-    scratch directory in `writable` instead, so a toolchain still has one and
-    the summary still matches what the kernel enforces.
-    """
-    writable = [_policy_path(root), _policy_path(work)]
-    lines = ["(version 1)", "(allow default)", "(deny file-write*)",
-             "(allow file-write*"]
-    lines += [f'  (subpath "{path}")' for path in writable]
-    lines += list(DEV_WRITES)
-    if not network:
-        lines.append("(deny network*)")
-    return "\n".join(lines) + "\n"
-
-
 def bwrap_argv(program: str, root, work, cmd: str, *,
                network: bool = False) -> list:
     """The bubblewrap command line. Order matters: later binds layer on top.
@@ -208,7 +145,7 @@ def bwrap_argv(program: str, root, work, cmd: str, *,
             "--unshare-pid", "--unshare-ipc", "--unshare-uts", "--unshare-cgroup"]
     if not network:
         argv.append("--unshare-net")
-    here, scratch = _posix(root), _posix(work)
+    here, scratch = posix_path(root), posix_path(work)
     argv += ["--ro-bind", "/", "/",
              "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
              "--bind", here, here, "--bind", scratch, scratch,
@@ -217,21 +154,11 @@ def bwrap_argv(program: str, root, work, cmd: str, *,
     return argv
 
 
-def seatbelt_argv(program: str, profile: str, cmd: str) -> list:
-    """The sandbox-exec command line, profile passed inline.
-
-    Inline rather than through a file: a profile written to disk is a file
-    another process on the host can rewrite between the write and the exec,
-    and the window is the whole point of the policy.
-    """
-    return [program, "-p", profile, "/bin/sh", "-c", cmd]
-
-
 def describe(backend: str, root, work, *, network: bool = False) -> Confinement:
     """What a run under `backend` will have enforced when it finishes."""
     return Confinement(
-        backend=backend, program=PROGRAM[backend], root=_posix(root),
-        writable=(_posix(root), _posix(work)), network=network,
+        backend=backend, program=PROGRAM[backend], root=posix_path(root),
+        writable=(posix_path(root), posix_path(work)), network=network,
         reads_confined=READS_CONFINED[backend],
         processes_isolated=PROCESS_ISOLATED[backend])
 
