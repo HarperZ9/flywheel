@@ -19,6 +19,11 @@ FAIL-CLOSED contract (both directions of honesty):
     before anything runs. Reading the oracle environment out of a receipt is
     what makes that check load-bearing rather than tidy; _load_intact carries
     the measurement and the limit.
+  - A citation that names the digest it read resolves to that one receipt or
+    to nothing. That is what stops an editor who rewrites a receipt and refiles
+    it under its new hash, which the filename check alone cannot see. A
+    citation without a digest still resolves by newest sealing, so it is still
+    swappable; resolve_ancestors states that cost where the rule is.
 
 When the caller supplies no workdir for an ancestor, we try once more in a
 fresh directory rebuilt from the envelope alone (its candidate, plus whatever
@@ -55,6 +60,10 @@ _NO_ENV = ("no oracle environment supplied for re-run — "
 _NO_FILE = "cited grounding has no stored envelope"
 _NOT_INTACT = ("stored receipt does not hash to the name it is filed under, "
                "so it was edited after sealing")
+_NO_PINNED = ("no stored receipt carries the digest this citation names, so "
+              "the ancestor that was read is not the one the store holds")
+_PIN_FORK = ("two citations name different digests for this source, so no "
+             "single receipt satisfies the cone")
 
 
 def _load_intact(path: Path) -> ProofEnvelope | None:
@@ -70,9 +79,10 @@ def _load_intact(path: Path) -> ProofEnvelope | None:
     this check removed, that swap returns MATCH on tasks/example_pass.
 
     What it does not stop is an editor who also renames the file to the new
-    hash. Closing that needs the citation to name the ancestor digest it meant,
-    which `retrieved[]` does not carry today, or signature verification on this
-    path. Both are recorded in PROJECT.md as open.
+    hash, since the rewrite is then self-consistent. A citation that pins the
+    ancestor digest catches that one, because the pinned name is now absent
+    from the store; see resolve_ancestors. An unpinned citation still resolves
+    by newest sealing and is still swappable.
     """
     env = load_envelope(path)
     return env if env.content_hash() == path.stem.rsplit("-", 1)[-1] else None
@@ -83,26 +93,65 @@ def _cited_sources(env: ProofEnvelope) -> list[str]:
             if isinstance(r, dict) and r.get("source")]
 
 
-def _stored_envelope(envelopes_dir: Path, source_id: str) -> Path | None:
+def _cited_pins(env: ProofEnvelope) -> dict[str, str]:
+    """Which ancestor receipt each citation names, for the citations that say.
+
+    `digest` is optional, so this returns only the pinned ones. A citation
+    without it names a task id and nothing more, which is the state every
+    receipt sealed before pins existed is in.
+    """
+    return {str(r["source"]): str(r["digest"]) for r in (env.retrieved or [])
+            if isinstance(r, dict) and r.get("source") and r.get("digest")}
+
+
+def _stored_envelope(envelopes_dir: Path, source_id: str,
+                     pin: str = "") -> Path | None:
+    """Pick the stored receipt a citation meant.
+
+    Pinned, that is one exact filename, and a store that does not hold it
+    resolves to nothing rather than to a substitute. Unpinned, the newest
+    sealing wins, which is a guess: it is the behaviour that lets an editor
+    refile a rewritten receipt under its new hash and have it picked up.
+    """
+    if pin:
+        exact = envelopes_dir / ("%s-%s.json" % (source_id, pin))
+        return exact if exact.is_file() else None
     hits = list(envelopes_dir.glob(source_id + _HASH_GLOB))
     if not hits:
         return None
     return max(hits, key=lambda p: p.stat().st_mtime)   # newest sealing wins
 
 
+def _resolve_one(envelopes_dir: Path, sid: str,
+                 pin: str) -> tuple[ProofEnvelope | None, str]:
+    path = _stored_envelope(envelopes_dir, sid, pin)
+    if path is None:
+        return None, (_NO_PINNED if pin else _NO_FILE)
+    env = _load_intact(path)
+    return env, ("" if env is not None else _NOT_INTACT)
+
+
 def resolve_ancestors(
         envelopes_dir: str | Path, sources: list[str],
+        pins: dict[str, str] | None = None,
 ) -> tuple[dict[str, ProofEnvelope | None], dict[str, str]]:
     """Transitively load the cited grounding from the envelope store.
 
-    Returns the envelopes and, alongside them, why each unusable source is
-    unusable: absent from the store, or present but no longer matching its own
-    content hash. Both map to None and fail closed downstream, and they are
+    `pins` maps a source id to the ancestor content hash the citation named.
+    A pinned source resolves to that one filename or to nothing, which is what
+    closes the refiling gap: rewriting a receipt and refiling it under its new
+    hash leaves the pinned name absent instead of substituting the rewrite.
+    Pins found on the ancestors themselves join the map as the walk proceeds.
+
+    Returns the envelopes and why each unusable source is unusable: absent,
+    pinned to a digest the store does not hold, edited after sealing, or named
+    by two citations that disagree. All map to None and fail closed downstream,
     reported apart because they call for different responses. A receipt that
-    fails the integrity check is dropped whole, so its own `retrieved[]` never
+    fails any of those checks is dropped whole, so its own `retrieved[]` never
     steers this walk.
     """
     envelopes_dir = Path(envelopes_dir)
+    pins, forked = dict(pins or {}), set()
     out: dict[str, ProofEnvelope | None] = {}
     problems: dict[str, str] = {}
     frontier = list(dict.fromkeys(sources))
@@ -110,14 +159,36 @@ def resolve_ancestors(
         sid = frontier.pop()
         if sid in out:
             continue
-        path = _stored_envelope(envelopes_dir, sid)
-        env = _load_intact(path) if path else None
+        env, why = ((None, _PIN_FORK) if sid in forked else
+                    _resolve_one(envelopes_dir, sid, pins.get(sid, "")))
         out[sid] = env
-        if env is not None:
-            frontier.extend(s for s in _cited_sources(env) if s not in out)
-        else:
-            problems[sid] = _NO_FILE if path is None else _NOT_INTACT
+        if env is None:
+            problems[sid] = why
+            continue
+        for dep, pin in _cited_pins(env).items():
+            if pins.setdefault(dep, pin) != pin:
+                forked.add(dep)
+        frontier.extend(s for s in _cited_sources(env) if s not in out)
+    _apply_late_pins(out, problems, pins, forked)
     return out, problems
+
+
+def _apply_late_pins(out: dict, problems: dict, pins: dict, forked: set) -> None:
+    """Drop anything a pin discovered after the fact contradicts.
+
+    A source reachable by two paths can be resolved before the second path
+    contributes its pin. Re-resolving it is not attempted: a cone that names
+    two digests for one source, or that mixes a pinned citation with an
+    unpinned one resolved to a different sealing, is ambiguous, and the
+    conservative reading costs a confirmation where the other could grant one.
+    """
+    for sid, env in out.items():
+        if env is None:
+            continue
+        if sid in forked:
+            out[sid], problems[sid] = None, _PIN_FORK
+        elif pins.get(sid) and env.content_hash() != pins[sid]:
+            out[sid], problems[sid] = None, _NO_PINNED
 
 
 def _rewitness_in_fresh_env(env: ProofEnvelope) -> tuple[str, str]:
@@ -185,7 +256,8 @@ def recheck_grounding(current: ProofEnvelope, local_verdict: str, *,
              "verdicts": {node_id: verdict, ...}, "reasons": {ancestor_id: why}}.
     """
     sources = _cited_sources(current)
-    ancestors, problems = resolve_ancestors(envelopes_dir, sources)
+    ancestors, problems = resolve_ancestors(envelopes_dir, sources,
+                                            _cited_pins(current))
     nodes: list[DepNode] = []
     reasons: dict[str, str] = {}
     for sid, env in ancestors.items():

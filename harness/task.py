@@ -16,6 +16,22 @@ class Retrieved:
     source: str
     receipt: str
     text: str = ""
+    digest: str = ""      # content_hash of the ancestor receipt actually read
+
+
+def cite(envelope, *, receipt: str = "envelope", text: str = "") -> Retrieved:
+    """Build a citation pinned to the receipt the citer actually read.
+
+    The pin is what binds a citation to one specific ancestor. Without it a
+    citation names a task id, the store hands back whichever sealing of that id
+    is newest, and an editor who rewrites a receipt and refiles it under its new
+    hash is handed the swap. See grounding.resolve_ancestors.
+
+    Duck-typed on purpose: anything with `task_id` and `content_hash()` works,
+    which keeps this module free of an import from envelope.py.
+    """
+    return Retrieved(source=envelope.task_id, receipt=receipt, text=text,
+                     digest=envelope.content_hash())
 
 
 @dataclass
