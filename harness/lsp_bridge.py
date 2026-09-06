@@ -1,26 +1,45 @@
-"""lsp_bridge.py -- a native Language Server Protocol client over stdio.
+"""lsp_bridge.py -- the editor surface, over the LSP client that replaced it.
 
-Speaks LSP's JSON-RPC framing (Content-Length headers) to any language
-server the caller names by argv: `dart language-server`, `pyright-langserver
---stdio`, whatever is installed. The bridge holds one initialized server per
-(command, root) pair, sends the editor's live buffer via didOpen/didChange
-so unsaved edits are visible, and answers definition, references, and hover.
-A missing server is a named error, never a silent fallback. Zero deps."""
+This file used to be the whole implementation: its own framing, its own request
+loop, one lock held across a blocking read, and three methods. That work moved
+into harness/lsp_client.py and the modules under it, which speak the lifecycle
+the specification defines, negotiate a position encoding, read the server's
+capabilities before sending, and stamp every answer with the document version it
+was asked at.
+
+What stays here is the surface. The gateway route, the Flutter editor, and
+harness/lsp_diagnostics.py all call these names with these argument orders, and
+a rewrite that also renamed things would have been two changes landing as one.
+New callers should use LspClient directly; it says more than this shape can
+carry, starting with whether an answer is still about the file you are holding.
+
+The three-method whitelist is this file's own and it stays. It is what makes a
+bad method name a refusal here rather than a request going out to a server that
+may or may not answer it.
+"""
 from __future__ import annotations
 
 import atexit
-import json
-import os
-import subprocess
 import threading
 from pathlib import Path
 
+from .lsp_client import LspClient
+from .lsp_connection import ConnectionClosed, PeerError
+from .lsp_documents import to_uri
+from .lsp_pull import PULL, published_from_report
+
+#: Shorter than the client's own default. An editor keystroke that has not been
+#: answered in fifteen seconds has stopped being useful to the person typing.
 _TIMEOUT = 15.0
 
+#: What this surface offers. Deliberately smaller than what the client can ask.
+_METHODS = ("definition", "references", "hover")
 
-def _uri(path: str) -> str:
-    p = Path(path).resolve()
-    return p.as_uri()
+#: Kept under its old name because harness/lsp_diagnostics.py imports it, and
+#: bound to the client's own builder so the two cannot drift into producing
+#: different strings for one path. A lookup keyed on a URI the client never
+#: wrote reads as a file with nothing to say about it.
+_uri = to_uri
 
 
 class LSPError(Exception):
@@ -33,112 +52,76 @@ class LSPBridge:
     def __init__(self, command: list, root: str):
         self.command = list(command)
         self.root = str(Path(root).resolve())
-        self._next_id = 0
-        self._lock = threading.Lock()
-        self._versions: dict = {}
-        # uri -> latest published diagnostics; filled from notifications the
-        # server sends between our request/response pairs.
-        self.diagnostics: dict = {}
         try:
-            self._proc = subprocess.Popen(
-                self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL, cwd=self.root)
-        except (FileNotFoundError, OSError) as e:
+            self._client = LspClient.start(self.command, root=self.root)
+        except (OSError, ValueError) as e:
             raise LSPError(f"language server did not start: {e}") from e
-        self._request("initialize", {
-            "processId": os.getpid(), "rootUri": _uri(self.root),
-            "capabilities": {}})
-        self._notify("initialized", {})
+        try:
+            self._client.initialize(timeout=_TIMEOUT)
+        except (ConnectionClosed, PeerError, TimeoutError, OSError) as e:
+            self._client.close()
+            raise LSPError(f"language server did not initialize: {e}") from e
 
-    # -- framing -----------------------------------------------------------
-    def _send(self, msg: dict) -> None:
-        body = json.dumps(msg).encode("utf-8")
-        frame = b"Content-Length: %d\r\n\r\n%b" % (len(body), body)
-        assert self._proc.stdin is not None
-        self._proc.stdin.write(frame)
-        self._proc.stdin.flush()
+    @property
+    def _proc(self):
+        """The child process, under the name this file used to hold it by."""
+        return self._client.process
 
-    def _read_message(self) -> dict:
-        assert self._proc.stdout is not None
-        length = None
-        while True:
-            line = self._proc.stdout.readline()
-            if not line:
-                raise LSPError("language server closed the stream")
-            if line in (b"\r\n", b"\n"):
-                break
-            if line.lower().startswith(b"content-length:"):
-                length = int(line.split(b":", 1)[1].strip())
-        if length is None:
-            raise LSPError("frame without Content-Length")
-        body = self._proc.stdout.read(length)
-        return json.loads(body.decode("utf-8", "replace"))
+    @property
+    def diagnostics(self) -> dict:
+        """uri -> the last published list, flattened out of the client's record.
 
-    def _request(self, method: str, params: dict) -> dict:
-        with self._lock:
-            self._next_id += 1
-            rid = self._next_id
-            self._send({"jsonrpc": "2.0", "id": rid, "method": method,
-                        "params": params})
-            # Servers may interleave notifications; read until our id answers.
-            timer = threading.Timer(_TIMEOUT, self._proc.kill)
-            timer.start()
-            try:
-                while True:
-                    msg = self._read_message()
-                    if msg.get("method") == "textDocument/publishDiagnostics":
-                        params = msg.get("params") or {}
-                        self.diagnostics[params.get("uri", "")] = \
-                            params.get("diagnostics", [])
-                        continue
-                    if msg.get("id") == rid:
-                        if "error" in msg:
-                            raise LSPError(str(msg["error"]))
-                        return msg.get("result") or {}
-            finally:
-                timer.cancel()
+        The client keeps the version each set was published against and whether
+        it still describes the current buffer. This shape drops both, because
+        the callers of this surface have never had them.
+        """
+        return {uri: entry.items
+                for uri, entry in self._client.published.items()}
 
-    def _notify(self, method: str, params: dict) -> None:
-        with self._lock:
-            self._send({"jsonrpc": "2.0", "method": method, "params": params})
-
-    # -- editor surface ----------------------------------------------------
     def sync_buffer(self, path: str, text: str, language_id: str) -> None:
-        """didOpen on first sight, didChange after: the server always sees
-        the editor's live buffer, unsaved edits included."""
+        """didOpen on first sight, didChange after, so the server sees the live
+        buffer including edits that were never saved."""
+        self._client.sync(path, text, language_id)
+
+    def published(self, path: str):
+        """The diagnostics for one buffer, however this server hands them out.
+
+        A server that advertised a diagnostic provider is asked. One that did
+        not is fenced, because pushing is the only way it says anything. The
+        returned set carries which of the two happened, so a caller can tell an
+        empty answer from an absent one.
+        """
         uri = _uri(path)
-        version = self._versions.get(uri, 0) + 1
-        self._versions[uri] = version
-        if version == 1:
-            self._notify("textDocument/didOpen", {"textDocument": {
-                "uri": uri, "languageId": language_id, "version": version,
-                "text": text}})
-        else:
-            self._notify("textDocument/didChange", {
-                "textDocument": {"uri": uri, "version": version},
-                "contentChanges": [{"text": text}]})
+        if self._client.supports(PULL):
+            try:
+                return published_from_report(
+                    self._client.ask(PULL, uri, timeout=_TIMEOUT))
+            except (ConnectionClosed, PeerError, TimeoutError, OSError) as e:
+                raise LSPError(str(e)) from e
+        self.query("hover", path, 0, 0)
+        return self._client.diagnostics(uri)
 
     def query(self, method: str, path: str, line: int, character: int):
-        lsp_method = {
-            "definition": "textDocument/definition",
-            "references": "textDocument/references",
-            "hover": "textDocument/hover",
-        }.get(method)
-        if lsp_method is None:
+        if method not in _METHODS:
             raise LSPError(f"unknown method '{method}'")
-        params: dict = {"textDocument": {"uri": _uri(path)},
-                        "position": {"line": int(line),
-                                     "character": int(character)}}
-        if method == "references":
-            params["context"] = {"includeDeclaration": True}
-        return self._request(lsp_method, params)
+        try:
+            answer = self._client.ask(method, _uri(path), line=int(line),
+                                      character=int(character),
+                                      timeout=_TIMEOUT)
+        except (ConnectionClosed, PeerError, TimeoutError, OSError) as e:
+            raise LSPError(str(e)) from e
+        # A null result becomes an empty mapping, which is what this surface has
+        # always returned and what the Flutter side reads. Callers who need to
+        # tell "the server has no answer" from "the server answered nothing"
+        # should be asking the client, which keeps them apart.
+        return answer.result or {}
 
     def alive(self) -> bool:
-        return self._proc.poll() is None
+        return self._client.alive()
 
     def close(self) -> None:
         try:
-            self._proc.kill()
+            self._client.close()
         except OSError:
             pass
 

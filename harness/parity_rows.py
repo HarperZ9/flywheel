@@ -113,6 +113,16 @@ ROWS = [
      "witnesses": [("module", "harness/lsp_diagnostics.py"),
                    ("test", "tests/test_lsp_diagnostics.py")],
      "codex": False, "cursor": True, "claude-code": False},
+    {"key": "lsp-run-record",
+     "desc": "a language server client that keeps a re-checkable record of "
+             "the exchange: every frame chained, every answer stamped with "
+             "the document version and negotiated encoding it was asked at, "
+             "and a verify command that re-derives the chain",
+     "witnesses": [("module", "harness/lsp_client.py"),
+                   ("module", "harness/lsp_witness.py"),
+                   ("test", "tests/test_lsp_witness.py"),
+                   ("test", "tests/test_lsp_cli.py")],
+     "codex": False, "cursor": False, "claude-code": False},
     {"key": "plugin-marketplace",
      "desc": "discoverable third-party plugin catalog with one-step install",
      "witnesses": [("module", "harness/marketplace.py"),

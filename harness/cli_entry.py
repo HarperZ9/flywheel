@@ -226,7 +226,8 @@ _PACKAGED = {"acp": "harness.acp_cli",
              "packs": "harness.packs_cli",
              "workstream": "harness.workstream_cli",
              "journey": "harness.journey_cli",
-             "grant": "harness.journey_cli"}
+             "grant": "harness.journey_cli",
+             "lsp": "harness.lsp_cli"}
 def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
     module = _PACKAGED.get(command)
     if module is None:
