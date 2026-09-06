@@ -57,16 +57,14 @@ class JourneyExportService:
             raise JourneyStoreError("IDEMPOTENCY_MISMATCH")
         self.journey._validate_lifecycle_selector(
             journey_ref, expected_event_head)
-        root, artifact_ref = artifact_root_path(
-            self.journey.store.state_root, self.artifact_root_ref)
+        state = self.journey.store.state_root
+        root, artifact_ref = artifact_root_path(state, self.artifact_root_ref)
         target, normalized_packet = packet_target_path(root, packet_ref)
         digest = request_digest(owner_ref=self.journey.owner_ref,
             journey_ref=journey_ref, expected_event_head=expected_event_head,
             client_request_id=client_request_id, body=snapshot)
-        path = transaction_path(self.journey.store.state_root,
-            self.journey.owner_ref, client_request_id)
-        lock_path = target_lock_path(self.journey.store.state_root,
-            artifact_ref, normalized_packet)
+        path = transaction_path(state, self.journey.owner_ref, client_request_id)
+        lock_path = target_lock_path(state, artifact_ref, normalized_packet)
         try:
             with (self.journey._operation_guard(journey_ref, "export-admission"),
                   ExclusiveJourneyLock.acquire(
@@ -105,7 +103,8 @@ class JourneyExportService:
             artifact_ref=artifact_ref, projection=projection,
             grant_record_ref=record_ref, grant_ref_sha256=grant_sha,
             grant_request_sha256=GrantStore._request_sha(grant_request))
-        transaction, _ = load_or_create(path, template)
+        transaction, _ = load_or_create(path, template,
+                                        self.journey.store.lock_timeout_s)
         return self._advance(path, transaction, root, target, grant_ref=grant_ref,
                              grant_request=grant_request, replay=False)
 
