@@ -33,7 +33,7 @@
   ],
   "parity": {
     "absent": 0,
-    "declared_on": "2026-09-05",
+    "declared_on": "2026-09-06",
     "gaps": [],
     "peers": [
       "codex",
@@ -43,12 +43,12 @@
       "omp"
     ],
     "rows": 37,
-    "undetermined": 18,
-    "uniquely_witnessed": 6,
+    "undetermined": 0,
+    "uniquely_witnessed": 10,
     "witnessed": 37
   },
   "python": "3.12.10",
-  "result_sha256": "96a58961389462790ca7936043e317ff58ad9e4fe113fa7cbc792e8028b191dc",
+  "result_sha256": "ad3db04f2849304097cde019b3e96d3c6166d3f46e007f74aaf61c0067958236",
   "schema": "flywheel.offline-benchmarks/v1",
   "suites": [
     {
@@ -105,7 +105,7 @@
       "non_goal": "measures accountability, NOT capability. Pair it with a capability bench",
       "question": "does an unaccountable system score badly here",
       "schema": "accountability/v1",
-      "seconds": 8.911
+      "seconds": 8.951
     },
     {
       "detail": [
@@ -192,7 +192,7 @@
       "name": "governed-agent",
       "question": "does a workflow refuse an action above its tier",
       "schema": "governed-agent-workflow-benchmark/v1",
-      "seconds": 0.015
+      "seconds": 0.019
     },
     {
       "detail": [
@@ -270,7 +270,7 @@
       "name": "agent-recovery",
       "question": "does an injected fault recover without failing quietly",
       "schema": "agent.recovery-benchmark/v1",
-      "seconds": 0.066
+      "seconds": 0.074
     },
     {
       "detail": [
@@ -323,7 +323,7 @@
       "name": "stateful-provider-swap",
       "question": "does state survive a provider swap",
       "schema": "unisonai.stateful-benchmark/v1",
-      "seconds": 0.01
+      "seconds": 0.014
     },
     {
       "detail": [],
@@ -337,7 +337,7 @@
       "name": "source-mined",
       "question": "do the mined checks still hold against their datasets",
       "schema": "source-mined.executable-benchmark/v1",
-      "seconds": 0.03
+      "seconds": 0.079
     },
     {
       "caveats": [
@@ -357,7 +357,7 @@
       "non_goal": "continued pretraining on the workspace corpus did not improve general code completion and did not significantly harm it; the point estimate is a regression inside the noise",
       "question": "did continued pretraining change general code completion",
       "schema": "flywheel.paired-replication/v1",
-      "seconds": 0.002
+      "seconds": 0.019
     },
     {
       "caveats": [
@@ -370,29 +370,29 @@
       "detail": [
         {
           "name": "chain_only",
-          "score": 100.1
+          "score": 96.0
         },
         {
           "name": "buffered",
-          "score": 1208.0
+          "score": 1169.9
         },
         {
           "name": "durable",
-          "score": 8242.9
+          "score": 9482.2
         }
       ],
       "headline": {
-        "durability_share": 0.8534,
+        "durability_share": 0.8766,
         "log_bytes_per_action": 788.3,
-        "ms_per_witnessed_action": 8.24,
-        "recheck_us_per_record": 26.9,
+        "ms_per_witnessed_action": 9.48,
+        "recheck_us_per_record": 25.4,
         "verdict": "MATCH"
       },
       "name": "receipting-cost",
       "non_goal": "the record is arithmetic and the durability is a syscall. Most of what a witnessed action costs here is the wait for one fsync, so batching the flush is the lever, and it is paid for in the size of the crash window",
       "question": "what does it cost to keep the receipt",
       "schema": "flywheel.receipting-cost/v1",
-      "seconds": 2.19,
+      "seconds": 2.755,
       "unsealed": [
         "ms_per_witnessed_action",
         "durability_share",

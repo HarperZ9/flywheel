@@ -118,7 +118,7 @@ def summarize(session, *, adapter: str = "") -> dict:
         "output_characters": sum(len(str(entry.get("output", "")))
                                  for entry in session.events.output),
         "terminated": session.terminated,
-        "exit_code": session.events.exit_code,
+        "exit_code": session.settle_exit(),
         "does_not_prove": does_not_prove(),
     }
 

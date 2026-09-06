@@ -1,5 +1,5 @@
 {
-  "declared_on": "2026-09-05",
+  "declared_on": "2026-09-06",
   "note": "flywheel cells are audited against this repo at read time; peer cells are dated declarations from public docs and source, not measurements, and a null cell means nobody here has read that surface",
   "peers": [
     {
@@ -23,14 +23,14 @@
     {
       "key": "hermes",
       "label": "hermes",
-      "read_on": "2026-09-05",
-      "source": "hermes-agent.nousresearch.com and NousResearch/hermes-agent"
+      "read_on": "2026-09-06",
+      "source": "NousResearch/hermes-agent source: SECURITY.md, docs/, agent/, hermes_cli/, gateway/, evals/, optional-mcps/"
     },
     {
       "key": "omp",
       "label": "omp",
-      "read_on": "2026-09-05",
-      "source": "can1357/oh-my-pi README, docs/ and src/"
+      "read_on": "2026-09-06",
+      "source": "can1357/oh-my-pi README, docs/ and packages/metaharness/"
     }
   ],
   "rows": [
@@ -51,7 +51,7 @@
         "claude-code": false,
         "codex": "partial",
         "cursor": "partial",
-        "hermes": null,
+        "hermes": true,
         "omp": true
       },
       "desc": "one request shape routed to any provider with failover chains",
@@ -89,8 +89,8 @@
         "claude-code": false,
         "codex": false,
         "cursor": false,
-        "hermes": null,
-        "omp": null
+        "hermes": false,
+        "omp": false
       },
       "desc": "reward-hacking guard: a tampered pass is flagged, never accepted",
       "flywheel": "WITNESSED",
@@ -108,8 +108,8 @@
         "claude-code": false,
         "codex": false,
         "cursor": false,
-        "hermes": null,
-        "omp": null
+        "hermes": false,
+        "omp": false
       },
       "desc": "consensus across oracles (all/any/majority/weighted)",
       "flywheel": "WITNESSED",
@@ -156,8 +156,8 @@
         "claude-code": "partial",
         "codex": "partial",
         "cursor": "partial",
-        "hermes": null,
-        "omp": null
+        "hermes": true,
+        "omp": true
       },
       "desc": "named operating profiles over one substrate, any endpoint",
       "flywheel": "WITNESSED",
@@ -185,7 +185,7 @@
         "claude-code": true,
         "codex": true,
         "cursor": "partial",
-        "hermes": null,
+        "hermes": "partial",
         "omp": true
       },
       "desc": "lanes, builtin tools, and custom MCP servers in one registry",
@@ -262,7 +262,7 @@
         "claude-code": "partial",
         "codex": "partial",
         "cursor": "partial",
-        "hermes": null,
+        "hermes": "partial",
         "omp": "partial"
       },
       "desc": "bounded context with a receipt for every fold, recallable later",
@@ -372,8 +372,8 @@
         "claude-code": false,
         "codex": false,
         "cursor": false,
-        "hermes": null,
-        "omp": null
+        "hermes": "partial",
+        "omp": "partial"
       },
       "desc": "observed per-provider success, latency, circuit breakers",
       "flywheel": "WITNESSED",
@@ -401,7 +401,7 @@
         "claude-code": false,
         "codex": false,
         "cursor": false,
-        "hermes": null,
+        "hermes": "partial",
         "omp": false
       },
       "desc": "a built-in extensible linter whose findings are content-addressed and re-checkable, not deferred to external tools",
@@ -549,6 +549,11 @@
         {
           "kind": "test",
           "present": true,
+          "ref": "tests/test_dap_session.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
           "ref": "tests/test_dap_cli.py"
         }
       ],
@@ -624,7 +629,7 @@
         "claude-code": true,
         "codex": true,
         "cursor": true,
-        "hermes": null,
+        "hermes": true,
         "omp": true
       },
       "desc": "discoverable third-party plugin catalog with one-step install",
@@ -653,7 +658,7 @@
         "claude-code": true,
         "codex": true,
         "cursor": true,
-        "hermes": null,
+        "hermes": true,
         "omp": true
       },
       "desc": "provider secrets in the OS keychain (presence-only everywhere else) plus reuse of provider CLI logins; first-party account OAuth does not apply to a bring-your-own-provider tool",
@@ -692,8 +697,8 @@
         "claude-code": false,
         "codex": false,
         "cursor": false,
-        "hermes": null,
-        "omp": null
+        "hermes": "partial",
+        "omp": false
       },
       "desc": "read the trust model, the run bill of materials, and the classified egress of the process the agent is running in",
       "flywheel": "WITNESSED",
@@ -716,8 +721,8 @@
         "claude-code": false,
         "codex": false,
         "cursor": false,
-        "hermes": null,
-        "omp": null
+        "hermes": false,
+        "omp": false
       },
       "desc": "actively test the boundaries the agent is claimed to run inside, and seal every boundary that was tried",
       "flywheel": "WITNESSED",
@@ -740,8 +745,8 @@
         "claude-code": false,
         "codex": false,
         "cursor": false,
-        "hermes": null,
-        "omp": null
+        "hermes": false,
+        "omp": "partial"
       },
       "desc": "find reachable secrets and report non-reversible fingerprints, never the values, in a sealed receipt",
       "flywheel": "WITNESSED",
@@ -764,8 +769,8 @@
         "claude-code": false,
         "codex": false,
         "cursor": false,
-        "hermes": null,
-        "omp": null
+        "hermes": false,
+        "omp": false
       },
       "desc": "stop a running agent only under two different authorities, sealed whether it fires or refuses",
       "flywheel": "WITNESSED",
@@ -870,7 +875,7 @@
         "claude-code": false,
         "codex": false,
         "cursor": false,
-        "hermes": null,
+        "hermes": "partial",
         "omp": "partial"
       },
       "desc": "optional compiled kernels with a mathematically equivalent pure-Python path, so a result never depends on a built extension",
@@ -904,8 +909,8 @@
         "claude-code": false,
         "codex": false,
         "cursor": false,
-        "hermes": null,
-        "omp": null
+        "hermes": "partial",
+        "omp": "partial"
       },
       "desc": "what the agent may do is gated by a recorded autonomy tier, and the architecture decision behind that tier carries a receipt",
       "flywheel": "WITNESSED",
@@ -962,8 +967,8 @@
         "claude-code": false,
         "codex": false,
         "cursor": false,
-        "hermes": null,
-        "omp": null
+        "hermes": "partial",
+        "omp": true
       },
       "desc": "run a private task set across every endpoint, dispose each attempt through a gate you own, and price verified quality",
       "flywheel": "WITNESSED",
@@ -991,8 +996,8 @@
         "claude-code": false,
         "codex": false,
         "cursor": false,
-        "hermes": null,
-        "omp": null
+        "hermes": "partial",
+        "omp": "partial"
       },
       "desc": "same task set, same provider, paired arms, and an interval that is allowed to include zero and say so",
       "flywheel": "WITNESSED",
@@ -1032,31 +1037,16 @@
   "summary": {
     "absent": 0,
     "gaps": [],
-    "undetermined": [
-      "any-provider-routing",
-      "integrity-guard",
-      "verifier-ensembling",
-      "profile-manifests",
-      "plugin-registry",
-      "context-compaction-receipt",
-      "adaptive-routing-scoreboard",
-      "native-receipted-linter",
-      "plugin-marketplace",
-      "secure-credentials",
-      "agent-boundary-audit",
-      "isolation-probe",
-      "credential-exposure-scan",
-      "two-authority-kill-switch",
-      "native-acceleration-with-fallback",
-      "autonomy-tiers-and-decision-records",
-      "private-verified-benchmarks",
-      "paired-uplift-measurement"
-    ],
+    "undetermined": [],
     "uniquely_witnessed": [
       "receipt-on-every-answer",
+      "integrity-guard",
+      "verifier-ensembling",
       "projected-world-hash",
       "loop-closure-audit",
       "dap-run-record",
+      "isolation-probe",
+      "two-authority-kill-switch",
       "signed-receipt-external-anchor",
       "formal-proof-oracle"
     ],

@@ -119,6 +119,7 @@ ROWS = [
                    ("module", "harness/dap_witness.py"),
                    ("test", "tests/test_dap_policy.py"),
                    ("test", "tests/test_dap_witness.py"),
+                   ("test", "tests/test_dap_session.py"),
                    ("test", "tests/test_dap_cli.py")]},
     {"key": "acp-delegation-receipt",
      "desc": "delegate a turn to any Agent Client Protocol agent as the "
