@@ -105,13 +105,56 @@ Closing it needs one of two things the check is not:
 
 Receipts now carry workdir text. That is a disclosure surface on anything
 published, bounded by the caps above and switchable with
-`capture_oracle_inputs=False`.
+`capture_oracle_inputs=False`. The section below narrows it further.
 
 A re-check now executes more third-party content than before, because a
 restored `conftest.py` runs at pytest collection. The boundary was already
 crossed: re-witnessing writes `envelope.candidate` and runs
 `envelope.oracle_cmd` under a shell, from the same untrusted receipt. This
 widens it rather than opening it.
+
+## Credentials are withheld from the capture
+
+The caps keep a snapshot small. Nothing about them keeps it safe, and a `.env`
+in a working directory is a few hundred bytes, so it would have gone into a
+receipt and been signed with the rest of it.
+
+`harness/receipt_secrets.py` answers one question: may this file travel in a
+receipt. Two rules, because they miss different things. A name rule covers
+`.env`, `id_rsa`, `.npmrc`, `wrangler.toml` and key material by extension,
+whatever those files hold, which is the half that still works when a password
+is too short for any pattern to match. A content rule runs
+`credential_scanner.scan_text` and covers a key pasted into a file named
+nothing in particular. `.env.example` is exempt, since the engineering standard
+requires a repo to commit it and its whole purpose is to be readable.
+
+Withheld whole, never masked. A masked fixture looks complete and runs
+differently, and under the asymmetry above a fixture that is present but
+altered is worth less than one that is absent. Restore applies the same rule,
+so a receipt someone else wrote cannot get a credential written onto our disk
+in exchange for a fixture the sealer was never supposed to carry.
+
+What got withheld is recorded on the envelope as `withheld_inputs`, a path and
+a reason per entry and never the matched text, folded into both digests under
+the same drop-when-default rule. Stripping the marker to make a partial capture
+read as a complete one moves the hash. The path of a withheld file is itself
+disclosed, which is the same disclosure every carried file already makes;
+a caller who cannot accept that turns capture off.
+
+The cost is a false withhold, asserted in the tests rather than left to be
+found. A fixture that legitimately assigns a password of eight characters or
+more reads as a leak, gets dropped, and costs its task fresh-environment reach.
+Fail closed is the right direction, and it is not free.
+
+That cost surfaces as an UNVERIFIABLE, which is the verdict a tamper produces
+too, and the hash cannot tell those apart. So the reason string carries the
+fact: `_rewitness_in_fresh_env` counts what the seal withheld and what this end
+refused on the way back in, and names both beside the verdict. Without it a
+reader spends their time looking for an attacker who was never there.
+
+The headline test does not check the rule. It seals a task whose workdir holds
+an AWS key and asserts that the key's text appears nowhere in the serialised
+receipt, because a rule test only proves the rule does what I meant.
 
 ## Reach
 

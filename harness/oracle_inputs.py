@@ -14,6 +14,12 @@ truncated: a truncated fixture produces a run that fails for a reason nobody
 can read, and under the asymmetry in grounding.py a dropped fixture costs a
 confirmation and can never grant one.
 
+Bounds keep the snapshot small without keeping it safe. A `.env` in a working
+directory is comfortably under every cap and would sail into a publishable
+receipt, so credential files are withheld by a separate rule in
+receipt_secrets.py, applied on both ends of the boundary, and what got withheld
+is handed back to the caller rather than disappearing.
+
 Restore applies the SAME exclusions as capture, because capture runs on our
 side and restore runs on receipt data we did not write. The one that must not
 be skipped is the junit file: canonical_hash reads its outcomes back, so a
@@ -31,6 +37,8 @@ changes is how much of it there is.
 from __future__ import annotations
 
 from pathlib import Path
+
+from .receipt_secrets import withhold_reason
 
 MAX_FILES = 64
 MAX_FILE_BYTES = 32 * 1024
@@ -67,8 +75,14 @@ def _excluded(rel: str) -> bool:
     return bool(SKIP_DIRS.intersection(parts)) or parts[-1] in SKIP_NAMES
 
 
-def capture(workdir: str | Path, *, exclude: tuple = ()) -> dict:
+def capture(workdir: str | Path, *, exclude: tuple = ()) -> tuple[dict, list]:
     """Snapshot the text files an oracle will read, bounded, for the receipt.
+
+    Returns the fixture set and, beside it, the entries withheld for looking
+    like credentials: `[{"path", "reason"}]`, no matched text. They are handed
+    back rather than dropped quietly because a withheld fixture is why an
+    otherwise sound task later reads UNVERIFIABLE, and that is not something a
+    reader can work out from the receipt alone.
 
     Call BEFORE the oracle runs, so the candidate and the run's own artefacts
     are not in the picture. `exclude` names paths to leave out regardless, and
@@ -77,9 +91,10 @@ def capture(workdir: str | Path, *, exclude: tuple = ()) -> dict:
     """
     root = Path(workdir)
     if not root.is_dir():
-        return {}
+        return {}, []
     skipped = {safe_relative(str(e)) for e in exclude}
     out: dict[str, str] = {}
+    withheld: list[dict] = []
     total = 0
     for p in sorted(root.rglob("*")):
         if len(out) >= MAX_FILES or total >= MAX_TOTAL_BYTES:
@@ -87,18 +102,26 @@ def capture(workdir: str | Path, *, exclude: tuple = ()) -> dict:
         rel = p.relative_to(root).as_posix()
         if rel in skipped or _excluded(rel) or not p.is_file():
             continue
+        reason = withhold_reason(rel)
+        if reason:      # settled by the name, so the file is never even read
+            withheld.append({"path": rel, "reason": reason})
+            continue
         try:
             if p.stat().st_size > MAX_FILE_BYTES:
                 continue
             text = p.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError, ValueError):
             continue        # binary or unreadable: not our business to carry
+        reason = withhold_reason(rel, text)
+        if reason:
+            withheld.append({"path": rel, "reason": reason})
+            continue
         size = len(text.encode("utf-8"))
         if total + size > MAX_TOTAL_BYTES:
             continue
         out[rel] = text
         total += size
-    return out
+    return out, withheld
 
 
 def restore(inputs: dict, dest: str | Path) -> int:
@@ -117,6 +140,12 @@ def restore(inputs: dict, dest: str | Path) -> int:
         text = inputs[name]
         rel = safe_relative(str(name))
         if rel is None or _excluded(rel) or not isinstance(text, str):
+            continue
+        if withhold_reason(rel, text):
+            # Capture will not put a credential in a receipt, and this end will
+            # not take one out of somebody else's. Writing it would spill a
+            # leaked key onto our disk on the strength of a file we did not
+            # write, to gain a fixture the sealer was never supposed to carry.
             continue
         size = len(text.encode("utf-8"))
         if size > MAX_FILE_BYTES or total + size > MAX_TOTAL_BYTES:
