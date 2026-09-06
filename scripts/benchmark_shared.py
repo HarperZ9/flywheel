@@ -60,12 +60,12 @@ def coverage_note(summary: dict[str, Any]) -> str:
     c = summary["coverage"]
     return (f"{len(summary['gaps'])} rows where a peer declares a capability "
             "this repository does not have. That count is bounded by the row "
-            f"set, which was chosen here, so the {c['unscored_topics']} "
-            "capability areas found in the peers' own page indexes on "
-            f"{c['read_on']} that no row scores are published with it: "
-            f"{c['row_owed']} where a row is owed and {c['out_of_frame']} "
-            "left out on purpose with the reason written down, in "
-            "harness/parity_coverage.py.")
+            f"set, which was chosen here, so the {c['topics']} capability "
+            "areas found in the peers' own page indexes on "
+            f"{c['read_on']} are published with it: {c['scored']} now carry a "
+            f"row, {c['row_owed']} are still owed one, and "
+            f"{c['out_of_frame']} are left out on purpose with the reason "
+            "written down, in harness/parity_coverage.py.")
 
 
 def lede(report: dict[str, Any]) -> str:

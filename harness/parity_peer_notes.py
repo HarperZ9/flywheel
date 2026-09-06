@@ -15,14 +15,16 @@ cells cannot be checked by anyone but their author. The set only shrinks,
 and a new row that is in neither place fails `tests/test_parity.py`.
 
 That gate has since taken this file too. The notes for the rows added on
-2026-09-03 live in `parity_peer_notes_boundary`, and the nine written up on
-2026-09-06 to clear most of the shortfall live in `parity_peer_notes_shortfall`.
-Both are merged into `NOTES` at the bottom, so nothing that reads the matrix has
-to know there are three.
+2026-09-03 live in `parity_peer_notes_boundary`, the nine written up on
+2026-09-06 to clear most of the shortfall live in `parity_peer_notes_shortfall`,
+and the nine rows the coverage reading owed live in
+`parity_peer_notes_coverage`. All three are merged into `NOTES` at the bottom,
+so nothing that reads the matrix has to know there are four.
 """
 from __future__ import annotations
 
 from .parity_peer_notes_boundary import NOTES as _BOUNDARY
+from .parity_peer_notes_coverage import NOTES as _COVERAGE
 from .parity_peer_notes_shortfall import NOTES as _SHORTFALL
 
 #: Row key -> why every peer cell on that row reads the way it does, for the
@@ -139,8 +141,8 @@ _EARLY: dict[str, str] = {
 
 #: The name every reader imports. A key in more than one part would be
 #: resolved here without a word, so `tests/test_parity.py` asserts the
-#: three share no keys at all.
-NOTES: dict[str, str] = {**_EARLY, **_BOUNDARY, **_SHORTFALL}
+#: four share no keys at all.
+NOTES: dict[str, str] = {**_EARLY, **_BOUNDARY, **_SHORTFALL, **_COVERAGE}
 
 #: Rows declared before the note rule. This set can only shrink; every
 #: new row needs an entry in NOTES instead. It was twelve until 2026-09-06,

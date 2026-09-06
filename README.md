@@ -98,18 +98,18 @@ python scripts/run_offline_benchmarks.py
 | stateful-provider-swap | does state survive a provider swap | checks 10; pass_rate 1.0; passed True |
 | source-mined | do the mined checks still hold against their datasets | cases 26; failed 0; metrics_asserted 170; pass_rate 1.0; passed 26 |
 | paired-replication | did continued pretraining change general code completion | delta_points -0.0305; gains 9; p_exact 0.4049; regressions 14; tasks 164 |
-| receipting-cost | what does it cost to keep the receipt | durability_share 0.9175; log_bytes_per_action 788.3; ms_per_witnessed_action 6.88; recheck_us_per_record 12.5; verdict MATCH |
+| receipting-cost | what does it cost to keep the receipt | durability_share 0.7979; log_bytes_per_action 788.3; ms_per_witnessed_action 7.13; recheck_us_per_record 27.3; verdict MATCH |
 
 The strawman, a system with no receipts, scores 1% on the same axes. A
 benchmark that everything passes measures nothing.
 
-Against 5 named peers (codex, cursor, claude code, hermes, omp): 39
-capabilities, 39 witnessed in this repository by a check that runs every time
-the matrix is read, and 10 that every peer was read on and none declares. 0
-rows carry at least one peer surface nobody here has read, so no star is being
-withheld for want of reading across all 39. Adding a row or a peer puts cells
-back in that state until they are read. The peer columns are dated readings of
-public documentation and public source, not measurements taken here.
+Against 5 named peers (codex, cursor, claude code, hermes, omp): 48
+capabilities, 44 witnessed in this repository by a check that runs every time
+the matrix is read, and 10 that every peer was read on and none declares. 9
+rows carry at least one peer surface nobody here has read, and a star is
+withheld from every one of them, so the starred count moves up as the reading
+is done and not before. The peer columns are dated readings of public
+documentation and public source, not measurements taken here.
 
 Full results, the matrix, and the measurements that were not taken:
 [docs/BENCHMARKS.md](docs/BENCHMARKS.md).

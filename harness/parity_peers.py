@@ -149,6 +149,39 @@ DECLARATIONS: dict[str, dict[str, object]] = {
     "phone-access-own-tunnel":
         {"codex": YES, "cursor": NO, "claude-code": YES,
          "hermes": PART, "omp": PART},
+    # The nine rows the 2026-09-06 coverage reading owed. Every YES and PART
+    # below rests on a page listed in that peer's own index on that date, and
+    # hermes and omp publish no index, so their cells are UNREAD rather than
+    # NO. Lowering a peer without reading its page would shrink the gap list
+    # in this project's favour, which is the one direction a matrix must not
+    # move on absent evidence.
+    "scheduled-runs":
+        {"codex": YES, "cursor": YES, "claude-code": YES,
+         "hermes": UNREAD, "omp": UNREAD},
+    "lifecycle-hooks":
+        {"codex": YES, "cursor": YES, "claude-code": YES,
+         "hermes": UNREAD, "omp": UNREAD},
+    "subagent-teams":
+        {"codex": YES, "cursor": YES, "claude-code": YES,
+         "hermes": UNREAD, "omp": UNREAD},
+    "packaged-skills":
+        {"codex": YES, "cursor": YES, "claude-code": YES,
+         "hermes": UNREAD, "omp": UNREAD},
+    "self-hosted-runner-pool":
+        {"codex": UNREAD, "cursor": YES, "claude-code": YES,
+         "hermes": UNREAD, "omp": UNREAD},
+    "usage-and-cost-accounting":
+        {"codex": YES, "cursor": YES, "claude-code": PART,
+         "hermes": UNREAD, "omp": UNREAD},
+    "browser-and-computer-control":
+        {"codex": YES, "cursor": YES, "claude-code": YES,
+         "hermes": UNREAD, "omp": UNREAD},
+    "own-code-vulnerability-scan":
+        {"codex": YES, "cursor": YES, "claude-code": YES,
+         "hermes": UNREAD, "omp": UNREAD},
+    "generated-visual-artifacts":
+        {"codex": YES, "cursor": PART, "claude-code": YES,
+         "hermes": UNREAD, "omp": UNREAD},
 }
 
 

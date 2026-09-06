@@ -19,10 +19,16 @@ Witness kinds:
 
 The table lives apart from the audit because it is the part designed to
 grow. `harness/parity.py` reads ROWS from here and does the checking.
+
+Growing is what took this file to its own length gate. The nine rows the
+2026-09-06 coverage reading said were owed live in `parity_rows_coverage`
+and are appended below, so a caller still reads one ROWS.
 """
 from __future__ import annotations
 
-ROWS = [
+from .parity_rows_coverage import ROWS as _COVERAGE
+
+_ROWS = [
     {"key": "any-provider-routing",
      "desc": "one request shape routed to any provider with failover chains",
      "witnesses": [("route", "/v1/chat/completions"), ("module", "harness/endpoint_registry.py")]},
@@ -268,3 +274,6 @@ ROWS = [
                    ("module", "desktop/lib/assistant/speech_voice.dart"),
                    ("module", "desktop/lib/assistant/url_device_sink.dart")]},
 ]
+
+#: The July table and the rows the coverage reading owed, in one list.
+ROWS = _ROWS + _COVERAGE

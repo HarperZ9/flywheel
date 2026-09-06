@@ -193,11 +193,11 @@ def test_the_sealed_record_carries_the_matrix_denominators():
 
 
 def test_the_empty_gap_count_reaches_both_surfaces_with_its_own_limit():
-    """`gaps 0` is the most flattering number the matrix produces and the one
-    a reader is least equipped to check, because the row set that bounds it
-    was chosen here. Both surfaces have to print the unscored count beside
-    it, and the split between rows owed and topics left out on purpose, or
-    the zero reads as full coverage of the field."""
+    """The gap count is bounded by a row set chosen here, so both surfaces
+    have to print how many peer capability areas were found beside it, and
+    the split: how many now carry a row, how many are still owed one, and how
+    many were left out on purpose. Without that split the count reads as full
+    coverage of the field."""
     from harness.parity import parity_matrix
     c = parity_matrix()["summary"]["coverage"]
     for text in (HTML.read_text(encoding="utf-8"),
@@ -206,9 +206,10 @@ def test_the_empty_gap_count_reaches_both_surfaces_with_its_own_limit():
         # across two lines. Compared on collapsed whitespace, or this test
         # would only be checking where the wrapper happened to break.
         text = " ".join(text.split())
-        assert f"{c['unscored_topics']} capability areas" in text
-        assert f"{c['row_owed']} where a row is owed" in text
-        assert f"{c['out_of_frame']} left out on purpose" in text
+        assert f"{c['topics']} capability areas" in text
+        assert f"{c['scored']} now carry a row" in text
+        assert f"{c['row_owed']} are still owed one" in text
+        assert f"{c['out_of_frame']} are left out on purpose" in text
         assert "harness/parity_coverage.py" in text
 
 

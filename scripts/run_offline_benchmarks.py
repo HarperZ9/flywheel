@@ -139,7 +139,8 @@ def render_table(report: dict[str, Any]) -> str:
                  f"  absent={p['absent']}  gaps={len(p['gaps'])}"
                  f"  peers={len(p['peers'])}"
                  f"  undetermined={p['undetermined']}"
-                 f"  unscored={p['coverage']['unscored_topics']}"
+                 f"  topics={p['coverage']['topics']}"
+                 f"  scored={p['coverage']['scored']}"
                  f"  row_owed={p['coverage']['row_owed']}")
     lines.append(f"  not run: {len(report['not_run'])} suites need a live "
                  "endpoint, each named in the report")

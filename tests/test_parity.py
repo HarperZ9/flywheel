@@ -207,18 +207,19 @@ def test_every_note_belongs_to_a_row_and_every_row_is_accounted_for():
 def test_no_two_parts_of_the_note_set_answer_for_the_same_row():
     """A key in two files would be resolved by a merge and by nothing else.
 
-    `NOTES` is `{**_EARLY, **_BOUNDARY, **_SHORTFALL}`. A row written up
-    twice would keep the last note and drop the earlier one without a word,
-    so the reasoning a reader sees would depend on which file they opened.
-    Rows move between the parts only by being moved, never by being copied.
+    `NOTES` merges four dicts. A row written up twice would keep the last
+    note and drop the earlier one without a word, so the reasoning a reader
+    sees would depend on which file they opened. Rows move between the parts
+    only by being moved, never by being copied.
 
-    Checked by length rather than pairwise, so a fourth part added later is
+    Checked by length rather than pairwise, so a fifth part added later is
     covered by the same assertion instead of needing a new pair of lines.
     """
     from harness.parity_peer_notes import NOTES, _EARLY
     from harness.parity_peer_notes_boundary import NOTES as BOUNDARY
+    from harness.parity_peer_notes_coverage import NOTES as COVERAGE
     from harness.parity_peer_notes_shortfall import NOTES as SHORTFALL
-    parts = (_EARLY, BOUNDARY, SHORTFALL)
+    parts = (_EARLY, BOUNDARY, SHORTFALL, COVERAGE)
     assert len(NOTES) == sum(len(part) for part in parts), (
         "a row is written up in more than one part of the note set")
 

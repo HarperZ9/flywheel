@@ -1144,19 +1144,276 @@
       "desc": "drive the same loop from a phone over a tunnel you run, with no vendor cloud between the phone and the engine",
       "flywheel": "WITNESSED",
       "key": "phone-access-own-tunnel"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": false,
+          "ref": "harness/scheduler.py"
+        },
+        {
+          "kind": "route",
+          "present": false,
+          "ref": "/api/schedule"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": true,
+        "hermes": null,
+        "omp": null
+      },
+      "desc": "run a prompt or a workflow on a schedule, or on a repeating trigger, without a person starting it",
+      "flywheel": "ABSENT",
+      "key": "scheduled-runs"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/accountable_hooks.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/hooks"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_accountable_hooks.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": true,
+        "hermes": null,
+        "omp": null
+      },
+      "desc": "operator scripts and tools that fire at named points in a run, each firing carried on the run's own receipt",
+      "flywheel": "WITNESSED",
+      "key": "lifecycle-hooks"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/subagents.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/subagents"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_subagents.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": true,
+        "hermes": null,
+        "omp": null
+      },
+      "desc": "delegate part of a run to child agents with their own roles and context, and rejoin their work into the parent record",
+      "flywheel": "WITNESSED",
+      "key": "subagent-teams"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/skill_gate.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/skills"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_skill_gate.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": true,
+        "hermes": null,
+        "omp": null
+      },
+      "desc": "named capability packages loaded on demand, admitted through a gate rather than trusted because they are present",
+      "flywheel": "WITNESSED",
+      "key": "packaged-skills"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": false,
+          "ref": "harness/runner_pool.py"
+        },
+        {
+          "kind": "route",
+          "present": false,
+          "ref": "/api/runners"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": null,
+        "cursor": true,
+        "hermes": null,
+        "omp": null
+      },
+      "desc": "a pool of machines the operator owns that accept dispatched runs, with the pool's membership under the operator's control",
+      "flywheel": "ABSENT",
+      "key": "self-hosted-runner-pool"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/usage_receipt.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/usage/verify"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_usage_receipt.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": "partial",
+        "codex": true,
+        "cursor": true,
+        "hermes": null,
+        "omp": null
+      },
+      "desc": "what a run spent, per action, on a receipt that can be re-checked rather than a dashboard that has to be believed",
+      "flywheel": "WITNESSED",
+      "key": "usage-and-cost-accounting"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": false,
+          "ref": "harness/browser_control.py"
+        },
+        {
+          "kind": "route",
+          "present": false,
+          "ref": "/api/browser"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": true,
+        "hermes": null,
+        "omp": null
+      },
+      "desc": "drive a browser or a desktop as a tool inside a run, with each action admitted and recorded",
+      "flywheel": "ABSENT",
+      "key": "browser-and-computer-control"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": false,
+          "ref": "harness/vulnerability_scan.py"
+        },
+        {
+          "kind": "route",
+          "present": false,
+          "ref": "/api/scan/vulnerabilities"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": true,
+        "hermes": null,
+        "omp": null
+      },
+      "desc": "scan the operator's own codebase for security defects and turn the findings into reviewable changes",
+      "flywheel": "ABSENT",
+      "key": "own-code-vulnerability-scan"
+    },
+    {
+      "checks": [
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/design_studio.py"
+        },
+        {
+          "kind": "route",
+          "present": true,
+          "ref": "/api/studio/poster"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_design_studio.py"
+        }
+      ],
+      "competitors": {
+        "claude-code": true,
+        "codex": true,
+        "cursor": "partial",
+        "hermes": null,
+        "omp": null
+      },
+      "desc": "produce images, posters, typefaces and other visual output from a run, addressed and carried like any other result",
+      "flywheel": "WITNESSED",
+      "key": "generated-visual-artifacts"
     }
   ],
   "schema": "flywheel.parity/v2",
   "summary": {
-    "absent": 0,
+    "absent": 4,
     "coverage": {
       "out_of_frame": 4,
       "read_on": "2026-09-06",
-      "row_owed": 9,
-      "unscored_topics": 13
+      "row_owed": 0,
+      "scored": 9,
+      "topics": 13
     },
-    "gaps": [],
-    "undetermined": [],
+    "gaps": [
+      "scheduled-runs",
+      "self-hosted-runner-pool",
+      "browser-and-computer-control",
+      "own-code-vulnerability-scan"
+    ],
+    "undetermined": [
+      "scheduled-runs",
+      "lifecycle-hooks",
+      "subagent-teams",
+      "packaged-skills",
+      "self-hosted-runner-pool",
+      "usage-and-cost-accounting",
+      "browser-and-computer-control",
+      "own-code-vulnerability-scan",
+      "generated-visual-artifacts"
+    ],
     "uniquely_witnessed": [
       "receipt-on-every-answer",
       "integrity-guard",
@@ -1169,6 +1426,6 @@
       "signed-receipt-external-anchor",
       "formal-proof-oracle"
     ],
-    "witnessed": 39
+    "witnessed": 44
   }
 }
