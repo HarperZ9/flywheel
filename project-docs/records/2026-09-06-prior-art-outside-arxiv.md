@@ -130,6 +130,44 @@ submitted 2026-06-18, 19 pages, 6 figures, 10 tables). The broker verifies a
 certificate at the moment of mutation, checks revocation and drift, mints
 short-lived scoped credentials, and logs signed decision records.
 
+### Follow-up on OpenKedge, same day
+
+The pair is further along than one sweep showed. Five papers in five months
+from two authors, read live on 2026-09-06:
+
+```
+2604.08601  2026-04-07  OpenKedge: Governing Agentic Mutation with
+                        Execution-Bound Safety and Evidence Chains  (17 pp)
+2605.15228  2026-05-13  Verifiable Agentic Infrastructure: Proof-Derived
+                        Authorization for Sovereign AI Systems
+2606.11632      2026-06  Sovereign Assurance Boundary
+2606.20520  2026-06-18  Sovereign Execution Broker      (19 pp, 6 fig, 10 tab)
+2609.02127  2026-09-02  Stored Is Not Supported: Typed Provenance and
+                        Assertion Guardrails for Persistent AI Agents
+```
+
+The newest one names a repository, `github.com/openkedge/pci`, which the
+earlier sweep had no reason to look for. Its own claim is a good one and it is
+not ours: persistence changes availability rather than epistemic standing, so
+material an agent stored is not thereby supported. Read against Flywheel that
+is the same fail-closed instinct pointed at agent memory instead of at a cited
+receipt.
+
+What the repository is worth is the part that changes the positioning. Measured
+through the GitHub API on 2026-09-06: created 2026-08-14, last pushed
+2026-09-02, 71 KB, Python, MIT, 2 stars, 0 forks. No package under `openkedge`
+on PyPI, and the `pci` name there belongs to an unrelated statistics library.
+Against `flywheel-verify` 0.3.11 with twelve releases on PyPI out of a 12.2 MB
+repository, the axes separate cleanly: they hold citation ground, this project
+holds shipped ground. Neither holds adoption, and the star counts (2 against 1)
+say so. That null stays in.
+
+So the line to stop using is any count of their papers as though the count were
+the gap. The gap is that a numbered preprint is citable and a wheel is not, and
+five preprints in five months compounds while a version bump does not. Nothing
+here changes the re-execution finding above: the broker verifies a certificate,
+the guardrail bounds an assertion, and neither re-runs the work.
+
 Separately, Jakob Salfeld-Nebgen, "Governing Actions, Not Agents" (2606.26298,
 2026-06-24), attests preconditions from independent authoritative sources bound
 to a declared intent, with a proof-of-concept covering software deployment and
@@ -146,3 +184,8 @@ re-execute. Re-execution remains the axis where Flywheel is not crowded.
 - https://arxiv.org/abs/2606.20520
 - https://arxiv.org/abs/2606.11632
 - https://arxiv.org/abs/2606.26298
+- https://arxiv.org/abs/2604.08601
+- https://arxiv.org/abs/2605.15228
+- https://arxiv.org/abs/2609.02127
+- https://github.com/openkedge/pci
+- https://pypi.org/project/flywheel-verify/
