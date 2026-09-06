@@ -50,18 +50,36 @@ def test_a_changed_number_changes_the_seal():
     """The falsifier for the seal itself.
 
     If the hash did not move when a result moved, every test above it would
-    pass while the page said whatever it liked.
+    pass while the page said whatever it liked. Sealed here by the runner's
+    own function, because a second copy of the rule would let the two drift
+    and this test would then be checking the copy.
     """
     report = _record()
     report["suites"][0]["headline"]["harness_overall"] = 0.5
-    sealed = {"suites": [{k: v for k, v in s.items() if k != "seconds"}
-                         for s in report["suites"]],
-              "parity": report["parity"]}
-    import hashlib
-    changed = hashlib.sha256(
-        json.dumps(sealed, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    changed = bench.seal(report["suites"], report["parity"])
     assert changed != report["result_sha256"]
+
+
+def test_a_timing_a_suite_declared_unsealed_leaves_the_seal_alone():
+    """The other half of the same mechanism.
+
+    A suite may name figures that belong to the machine that ran it. Those
+    have to be out of the seal or a reader on a different disk sees a stale
+    record where there is none. The declaration is narrow: only the names the
+    suite listed move freely, and the list itself is sealed, so widening it
+    later shows up as a mismatch.
+    """
+    report = _record()
+    suite = next(s for s in report["suites"] if s.get("unsealed"))
+    before = bench.seal(report["suites"], report["parity"])
+    assert before == report["result_sha256"]
+    for name in suite["unsealed"]:
+        if name in suite["headline"]:
+            suite["headline"][name] = 99999
+    assert bench.seal(report["suites"], report["parity"]) == before
+    # And the numbers it did not declare still hold the gate shut.
+    suite["headline"]["log_bytes_per_action"] = 1.0
+    assert bench.seal(report["suites"], report["parity"]) != before
 
 
 def test_the_page_and_the_doc_match_the_record():

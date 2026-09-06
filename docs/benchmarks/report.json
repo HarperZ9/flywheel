@@ -40,7 +40,7 @@
     "witnessed": 37
   },
   "python": "3.12.10",
-  "result_sha256": "870fc7ff9a3e0ce30564e103a905ed0cf7ec664925604eda830227c1ebba78ac",
+  "result_sha256": "909d0ac45e975dac41f61d39cc73304e82b265ba422af4062d0b55ed2aa173bb",
   "schema": "flywheel.offline-benchmarks/v1",
   "suites": [
     {
@@ -97,7 +97,7 @@
       "non_goal": "measures accountability, NOT capability. Pair it with a capability bench",
       "question": "does an unaccountable system score badly here",
       "schema": "accountability/v1",
-      "seconds": 8.447
+      "seconds": 9.049
     },
     {
       "detail": [
@@ -184,7 +184,7 @@
       "name": "governed-agent",
       "question": "does a workflow refuse an action above its tier",
       "schema": "governed-agent-workflow-benchmark/v1",
-      "seconds": 0.011
+      "seconds": 0.014
     },
     {
       "detail": [
@@ -262,7 +262,7 @@
       "name": "agent-recovery",
       "question": "does an injected fault recover without failing quietly",
       "schema": "agent.recovery-benchmark/v1",
-      "seconds": 0.039
+      "seconds": 0.057
     },
     {
       "detail": [
@@ -329,7 +329,7 @@
       "name": "source-mined",
       "question": "do the mined checks still hold against their datasets",
       "schema": "source-mined.executable-benchmark/v1",
-      "seconds": 0.077
+      "seconds": 0.021
     },
     {
       "caveats": [
@@ -349,7 +349,49 @@
       "non_goal": "continued pretraining on the workspace corpus did not improve general code completion and did not significantly harm it; the point estimate is a regression inside the noise",
       "question": "did continued pretraining change general code completion",
       "schema": "flywheel.paired-replication/v1",
-      "seconds": 0.01
+      "seconds": 0.002
+    },
+    {
+      "caveats": [
+        "the timings are one machine, one filesystem and one run, and an encrypted, networked or virtualised disk answers fsync differently",
+        "a drive that reports a flush it has not completed returns faster and keeps less, and nothing here can tell the two apart",
+        "it measures the cost of writing the record, not the cost of the action worth recording, so an action that takes a second is barely moved by any figure here",
+        "every action carries the same payload, so hashing runs on warm cache lines and the verifier's resolver is a two-entry map",
+        "the buffered arm is the shipping path with one syscall removed, which is an attribution of the cost rather than a configuration anyone runs"
+      ],
+      "detail": [
+        {
+          "name": "chain_only",
+          "score": 98.7
+        },
+        {
+          "name": "buffered",
+          "score": 1117.7
+        },
+        {
+          "name": "durable",
+          "score": 7985.0
+        }
+      ],
+      "headline": {
+        "durability_share": 0.86,
+        "log_bytes_per_action": 788.3,
+        "ms_per_witnessed_action": 7.99,
+        "recheck_us_per_record": 18.6,
+        "verdict": "MATCH"
+      },
+      "name": "receipting-cost",
+      "non_goal": "the record is arithmetic and the durability is a syscall. Most of what a witnessed action costs here is the wait for one fsync, so batching the flush is the lever, and it is paid for in the size of the crash window",
+      "question": "what does it cost to keep the receipt",
+      "schema": "flywheel.receipting-cost/v1",
+      "seconds": 2.148,
+      "unsealed": [
+        "ms_per_witnessed_action",
+        "durability_share",
+        "recheck_us_per_record",
+        "detail",
+        "non_goal"
+      ]
     }
   ]
 }
