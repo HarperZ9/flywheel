@@ -15,12 +15,17 @@ cells cannot be checked by anyone but their author. The set only shrinks,
 and a new row that is in neither place fails `tests/test_parity.py`.
 
 That gate has since taken this file too. The notes for the rows added on
-2026-09-03 live in `parity_peer_notes_boundary` and are merged into `NOTES`
-at the bottom, so nothing that reads the matrix has to know there are two.
+2026-09-03 live in `parity_peer_notes_boundary`, the nine written up on
+2026-09-06 to clear most of the shortfall live in `parity_peer_notes_shortfall`,
+and the nine rows the coverage reading owed live in
+`parity_peer_notes_coverage`. All three are merged into `NOTES` at the bottom,
+so nothing that reads the matrix has to know there are four.
 """
 from __future__ import annotations
 
 from .parity_peer_notes_boundary import NOTES as _BOUNDARY
+from .parity_peer_notes_coverage import NOTES as _COVERAGE
+from .parity_peer_notes_shortfall import NOTES as _SHORTFALL
 
 #: Row key -> why every peer cell on that row reads the way it does, for the
 #: rows declared in July. The ones added on 2026-09-03 have theirs next door
@@ -134,23 +139,27 @@ _EARLY: dict[str, str] = {
         "login are the two things this row names.",
 }
 
-#: The name every reader imports. A key in both halves would be resolved
-#: here without a word, so `tests/test_parity.py` asserts they share none.
-NOTES: dict[str, str] = {**_EARLY, **_BOUNDARY}
+#: The name every reader imports. A key in more than one part would be
+#: resolved here without a word, so `tests/test_parity.py` asserts the
+#: four share no keys at all.
+NOTES: dict[str, str] = {**_EARLY, **_BOUNDARY, **_SHORTFALL, **_COVERAGE}
 
 #: Rows declared before the note rule. This set can only shrink; every
-#: new row needs an entry in NOTES instead.
+#: new row needs an entry in NOTES instead. It was twelve until 2026-09-06,
+#: when nine were written up from a peer reading. Each of the three left
+#: says what it is still short of, so nobody has to guess whether it was
+#: skipped or judged.
 UNDOCUMENTED: frozenset = frozenset({
-    "receipt-on-every-answer",
-    "mcp-client-and-server",
-    "durable-memory-recall",
+    # Four of five are grounded: Cursor on Landlock and seccomp, Claude Code
+    # on bubblewrap and Seatbelt, omp on pi-iso. The Codex sandboxing page
+    # and any hermes workspace-root check are both unread.
     "workspace-sandbox",
+    # Every cell reads YES and the row earns nobody a star, so it has been
+    # the cheapest one to leave. Naming the streaming surface for each of
+    # the five is the work: Claude Code's is `--output-format stream-json`.
     "live-agent-stream",
-    "projected-world-hash",
-    "loop-closure-audit",
-    "lsp-diagnostics-references",
-    "dap-run-record",
-    "signed-receipt-external-anchor",
-    "formal-proof-oracle",
+    # The Cursor and Codex halves were settled on 2026-09-06: rules a person
+    # writes by hand carry no failure record, and Codex memories carry no
+    # acceptance step. The hermes and omp cells still rest on nothing read.
     "accepted-lesson-loop",
 })

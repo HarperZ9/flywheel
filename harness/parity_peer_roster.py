@@ -34,12 +34,14 @@ VALUES = (YES, PART, NO, UNREAD)
 #: the surface they were read from. A peer added here without a full column in
 #: DECLARATIONS fails `tests/test_parity.py`.
 PEERS = (
-    {"key": "codex", "label": "codex", "read_on": "2026-09-05",
-     "source": "developers.openai.com/codex and the config reference"},
-    {"key": "cursor", "label": "cursor", "read_on": "2026-09-03",
-     "source": "cursor.com/docs"},
-    {"key": "claude-code", "label": "claude code", "read_on": "2026-09-05",
-     "source": "code.claude.com/docs"},
+    {"key": "codex", "label": "codex", "read_on": "2026-09-06",
+     "source": "learn.chatgpt.com/docs, the full page index at /llms.txt, "
+               "and the config reference"},
+    {"key": "cursor", "label": "cursor", "read_on": "2026-09-06",
+     "source": "cursor.com/docs and the full page index at /llms.txt"},
+    {"key": "claude-code", "label": "claude code", "read_on": "2026-09-06",
+     "source": "code.claude.com/docs and the full page index at "
+               "/docs/llms.txt"},
     {"key": "hermes", "label": "hermes", "read_on": "2026-09-06",
      "source": "NousResearch/hermes-agent source: SECURITY.md, docs/, "
                "agent/, hermes_cli/, gateway/, evals/, optional-mcps/"},
@@ -53,8 +55,22 @@ PEER_KEYS = tuple(p["key"] for p in PEERS)
 # front page from a pass through the source.
 #
 # codex, cursor, claude-code: read from published documentation only. Where a
-# cell turns on a mechanism rather than a claim, the row comment in
-# `parity_peers.py` names the page it came from.
+# cell turns on a mechanism rather than a claim, the note in
+# `parity_peer_notes*` names the page it came from.
+#
+# All three were re-read on 2026-09-06, starting from the page index each one
+# publishes at llms.txt rather than from its navigation. A front page shows what
+# a vendor wants read first; the index enumerates everything, so "no page on
+# this topic" becomes a claim a later reader can check against the same file on
+# the same date. That reading corrected two cells, both written up in
+# `parity_peer_notes_shortfall`: codex durable-memory-recall NO to PART, and
+# cursor mcp-client-and-server YES to PART.
+#
+# The codex source moved host as well as date. developers.openai.com/codex now
+# answers 308 to learn.chatgpt.com/docs, and the old string would have sent a
+# later reader to a redirect. One retrieval trap is worth recording: Cursor's
+# own index lists page URLs with a .md suffix that answer 404 to a direct fetch,
+# and the same path without the suffix resolves.
 #
 # hermes: the Hermes Agent (MIT), read 2026-09-06 from its source rather than
 # its front page: agent/provider_registry.py and hermes_cli/fallback_cmd.py for

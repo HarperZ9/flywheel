@@ -24,6 +24,12 @@ FAIL-CLOSED contract (both directions of honesty):
     it under its new hash, which the filename check alone cannot see. A
     citation without a digest still resolves by newest sealing, so it is still
     swappable; resolve_ancestors states that cost where the rule is.
+  - Given trusted keys, an ancestor carrying no signature from one of them is
+    dropped as well. The two checks above both compare the store against
+    itself, and an editor who rewrites the whole cone leaves it self-consistent
+    again. A signature is the one thing in the cone they cannot recompute.
+    grounding_signatures.py holds the check, its five disciplines, and the
+    three things it does not establish.
 
 When the caller supplies no workdir for an ancestor, we try once more in a
 fresh directory rebuilt from the envelope alone (its candidate, plus whatever
@@ -43,19 +49,20 @@ own verdict (localized degradation).
 """
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 from .envelope import ProofEnvelope, load_envelope
-from .oracle_inputs import restore as restore_inputs, safe_relative as _safe_relative
-from .transitive_witness import DepNode, transitive_verdicts, MATCH, UNVERIFIABLE
+# Re-exported: the fresh-environment fallback moved out when this file reached
+# its length limit, and callers and tests still reach these names through here.
+from .grounding_fresh_env import (  # noqa: F401
+    _NO_ENV, _rewitness_in_fresh_env, _safe_relative, _shortfall,
+)
+from .grounding_signatures import verify_envelope_signature
+from .transitive_witness import DepNode, transitive_verdicts, UNVERIFIABLE
 from .witness import witness_envelope
 
 # envelope filenames are f"{task_id}-{content_hash}.json", hash = 16 hex chars
 _HASH_GLOB = "-" + "?" * 16 + ".json"
-
-_NO_ENV = ("no oracle environment supplied for re-run — "
-           "fail closed, not re-run in a wrong workdir")
 
 _NO_FILE = "cited grounding has no stored envelope"
 _NOT_INTACT = ("stored receipt does not hash to the name it is filed under, "
@@ -122,18 +129,25 @@ def _stored_envelope(envelopes_dir: Path, source_id: str,
     return max(hits, key=lambda p: p.stat().st_mtime)   # newest sealing wins
 
 
-def _resolve_one(envelopes_dir: Path, sid: str,
-                 pin: str) -> tuple[ProofEnvelope | None, str]:
+def _resolve_one(envelopes_dir: Path, sid: str, pin: str,
+                 trusted: dict[str, bytes] | None,
+                 ) -> tuple[ProofEnvelope | None, str]:
     path = _stored_envelope(envelopes_dir, sid, pin)
     if path is None:
         return None, (_NO_PINNED if pin else _NO_FILE)
     env = _load_intact(path)
-    return env, ("" if env is not None else _NOT_INTACT)
+    if env is None:
+        return None, _NOT_INTACT
+    if trusted is None:
+        return env, ""
+    ok, why = verify_envelope_signature(env, path, trusted)
+    return (env, "") if ok else (None, why)
 
 
 def resolve_ancestors(
         envelopes_dir: str | Path, sources: list[str],
         pins: dict[str, str] | None = None,
+        trusted_keys: dict[str, bytes] | None = None,
 ) -> tuple[dict[str, ProofEnvelope | None], dict[str, str]]:
     """Transitively load the cited grounding from the envelope store.
 
@@ -143,12 +157,21 @@ def resolve_ancestors(
     hash leaves the pinned name absent instead of substituting the rewrite.
     Pins found on the ancestors themselves join the map as the walk proceeds.
 
+    `trusted_keys` maps key_id to an Ed25519 public key. Left None, ancestors
+    are accepted unsigned, which is what every caller did before signatures
+    existed and is what a store holding no sidecars needs. Given a mapping,
+    each ancestor must carry a sidecar signed by one of those keys, which is
+    the only check here that survives an editor rewriting the whole cone: hashes
+    and pins agree with each other again after such a rewrite, and a signature
+    cannot be reproduced without the key. See grounding_signatures.py for what
+    that does and does not establish.
+
     Returns the envelopes and why each unusable source is unusable: absent,
-    pinned to a digest the store does not hold, edited after sealing, or named
-    by two citations that disagree. All map to None and fail closed downstream,
-    reported apart because they call for different responses. A receipt that
-    fails any of those checks is dropped whole, so its own `retrieved[]` never
-    steers this walk.
+    pinned to a digest the store does not hold, edited after sealing, named by
+    two citations that disagree, or unsigned by any trusted key. All map to None
+    and fail closed downstream, reported apart because they call for different
+    responses. A receipt that fails any of those checks is dropped whole, so its
+    own `retrieved[]` never steers this walk.
     """
     envelopes_dir = Path(envelopes_dir)
     pins, forked = dict(pins or {}), set()
@@ -160,7 +183,8 @@ def resolve_ancestors(
         if sid in out:
             continue
         env, why = ((None, _PIN_FORK) if sid in forked else
-                    _resolve_one(envelopes_dir, sid, pins.get(sid, "")))
+                    _resolve_one(envelopes_dir, sid, pins.get(sid, ""),
+                                 trusted_keys))
         out[sid] = env
         if env is None:
             problems[sid] = why
@@ -191,57 +215,11 @@ def _apply_late_pins(out: dict, problems: dict, pins: dict, forked: set) -> None
             out[sid], problems[sid] = None, _NO_PINNED
 
 
-def _rewitness_in_fresh_env(env: ProofEnvelope) -> tuple[str, str]:
-    """Re-run an ancestor in an empty directory built from its receipt alone.
-
-    Only reproduction is believed. See the asymmetry in the module docstring:
-    MATCH is evidence the environment sufficed, a mismatch is not evidence of
-    drift, so a mismatch degrades to UNVERIFIABLE and keeps its reason.
-
-    Strength depends on the oracle. For `pytest` the canonical hash folds every
-    test id and outcome from the run, so reproducing it in a bare directory is
-    a strong statement. For an oracle whose canonical form is empty the hash
-    covers the return code only, and a fresh-environment MATCH there is worth
-    no more than "it exited the same way".
-    """
-    rel = _safe_relative(env.candidate_path)
-    if rel is None:
-        return UNVERIFIABLE, (_NO_ENV + "; the envelope records no usable "
-                              "candidate path to rebuild one from")
-    offered = len(env.oracle_inputs or {})
-    with tempfile.TemporaryDirectory(prefix="fw-grounding-") as td:
-        written = restore_inputs(env.oracle_inputs, td)
-        v = witness_envelope(env, workdir=td, candidate_path=rel)
-    if v.verdict == MATCH:
-        return MATCH, ("no workdir supplied; reproduced the canonical hash in a "
-                       "fresh environment built from the envelope alone")
-    return UNVERIFIABLE, (
-        f"{_NO_ENV}; a fresh-environment re-run did not reproduce ({v.reason}), "
-        "which does not separate drift from a missing fixture"
-        + _shortfall(env, offered, written))
-
-
-def _shortfall(env: ProofEnvelope, offered: int, written: int) -> str:
-    """Name the fixtures that never reached the fresh directory, if any.
-
-    A mismatch reads as tampering, and sometimes the environment was simply
-    incomplete for a reason recorded on our own side. Both causes are stated
-    where the verdict is, since neither is recoverable from the hash.
-    """
-    notes = []
-    if env.withheld_inputs:
-        notes.append("%d fixture(s) were withheld at seal time as "
-                     "credential-bearing" % len(env.withheld_inputs))
-    if written < offered:
-        notes.append("this end refused %d of %d carried fixtures"
-                     % (offered - written, offered))
-    return ("; " + "; ".join(notes)) if notes else ""
-
-
 def recheck_grounding(current: ProofEnvelope, local_verdict: str, *,
                       envelopes_dir: str | Path,
                       workdirs: dict[str, tuple[str, str]],
-                      fresh_env_retry: bool = True) -> dict:
+                      fresh_env_retry: bool = True,
+                      trusted_keys: dict[str, bytes] | None = None) -> dict:
     """Re-witness the cited ancestors and fold the closure over the citation DAG.
 
     `workdirs` maps ancestor task_id -> (workdir, candidate_path): the oracle
@@ -252,12 +230,15 @@ def recheck_grounding(current: ProofEnvelope, local_verdict: str, *,
     `fresh_env_retry=False` to skip the fallback and go straight to
     UNVERIFIABLE, which is the behaviour callers had before 2026-09-06.
 
+    `trusted_keys` requires each ancestor to carry a signature from a named key
+    before it is re-run at all. Left None, nothing changes.
+
     Returns {"verdict": <transitive verdict for `current`>,
              "verdicts": {node_id: verdict, ...}, "reasons": {ancestor_id: why}}.
     """
     sources = _cited_sources(current)
     ancestors, problems = resolve_ancestors(envelopes_dir, sources,
-                                            _cited_pins(current))
+                                            _cited_pins(current), trusted_keys)
     nodes: list[DepNode] = []
     reasons: dict[str, str] = {}
     for sid, env in ancestors.items():

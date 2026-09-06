@@ -12,7 +12,8 @@ from typing import Any
 
 from scripts.benchmark_head_to_head import load_record
 from scripts.benchmark_head_to_head import render_markdown as head_to_head
-from scripts.benchmark_shared import CELL, lede, unread_note, wrap
+from scripts.benchmark_shared import (CELL, coverage_note, lede, unread_note,
+                                      wrap)
 
 
 def render_markdown(report: dict[str, Any], doc: dict[str, Any]) -> str:
@@ -77,6 +78,7 @@ def render_markdown(report: dict[str, Any], doc: dict[str, Any]) -> str:
         f"{s['absent']} absent, {len(s['uniquely_witnessed'])} marked `*` "
         f"because all {len(peers)} peers were read on that row and none of "
         f"them declares it. {unread_note(s, len(doc['rows']))}"), "",
+            wrap(coverage_note(s)), "",
             "## What was not measured", ""]
     for entry in report["not_run"]:
         out.append(f"- **{entry['suite']}.** Needs {entry['needs']}. "

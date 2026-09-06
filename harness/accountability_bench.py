@@ -59,11 +59,34 @@ def _externalization() -> Dimension:
 
 
 def _adversarial_soundness() -> Dimension:
+    """Two layers, one axis.
+
+    adversarial_corpus scores the pure verdict fold over synthetic graphs.
+    grounding_corpus scores resolution over real receipt files, which is where
+    an in-place edit, a refile under a new hash, a whole-cone rewrite, and a
+    lifted signature live. Scoring the closure alone left this axis reading 1.0
+    while the layer that holds receipts went unmeasured.
+
+    Pooled by attack count rather than averaged per layer, so neither layer's
+    score is diluted by how many attacks the other happens to carry. Store
+    attacks skipped for want of a signer leave the denominator, and the detail
+    string says so.
+    """
     from .adversarial_corpus import run_corpus
+    from .grounding import resolve_ancestors
+    from .grounding_corpus import run_corpus as run_store_corpus
     from .transitive_witness import transitive_verdicts
-    r = run_corpus(transitive_verdicts)
-    return Dimension("adversarial_soundness", 1.0 - r["false_accept_rate"],
-                     "adversarial_corpus.run_corpus", "0 false-accepts over the attack corpus")
+    closure = run_corpus(transitive_verdicts)
+    store = run_store_corpus(resolve_ancestors)
+    fa = closure["false_accepts"] + store["false_accepts"]
+    n = closure["n_false_accept_attacks"] + store["n_false_accept_attacks"]
+    detail = "%d false-accepts over %d attacks (%d closure, %d store)" % (
+        fa, n, closure["n_false_accept_attacks"], store["n_false_accept_attacks"])
+    if store["skipped"]:
+        detail += ", %d store attacks skipped without a signer" % len(
+            store["skipped"])
+    return Dimension("adversarial_soundness", 1.0 - fa / max(n, 1),
+                     "adversarial_corpus + grounding_corpus", detail)
 
 
 def _no_regression() -> Dimension:
@@ -168,11 +191,18 @@ def score_strawman() -> dict:
     receipts, wrong-invariant, hides its null space."""
     # a system that self-authors its checks and never re-witnesses:
     from .adversarial_corpus import run_corpus, naive_closure
+    from .grounding_corpus import run_corpus as run_store_corpus
+    from .grounding_corpus_strawmen import blind_reuse
     naive = run_corpus(naive_closure)                      # outcome-only verifier
+    # The axis pools two layers, so the strawman has to be scored on both or the
+    # credibility test would be checking a different axis than the benchmark.
+    blind = run_store_corpus(blind_reuse)                  # reuses whatever is filed
+    pooled_fa = naive["false_accepts"] + blind["false_accepts"]
+    pooled_n = naive["n_false_accept_attacks"] + blind["n_false_accept_attacks"]
     dims = {
         "re_checkability": 0.0,           # no receipts to re-run
         "externalization": 0.0,           # self-authored selector (ablation showed +0 vs external)
-        "adversarial_soundness": 1.0 - naive["false_accept_rate"],  # naive verifier: 0.0
+        "adversarial_soundness": 1.0 - pooled_fa / max(pooled_n, 1),
         "no_regression": 0.0,             # self-authored valve admits backflow
         "invariant_fidelity": 0.0,        # demands trajectory match -> false DRIFT
         "null_space_honesty": 0.0,        # claims to recover everything

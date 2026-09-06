@@ -48,6 +48,26 @@ def unread_note(summary: dict[str, Any], rows: int, drawn_as: str = "") -> str:
             "that state until they are read.")
 
 
+def coverage_note(summary: dict[str, Any]) -> str:
+    """What the row set leaves out, printed wherever the gap count is.
+
+    A reader who sees no gaps will take the row set for the field. It is not:
+    the rows were chosen here, so an unscored capability produces no gap no
+    matter who ships it. Both renderers call this for the same reason they
+    both call `unread_note`, which is that a sentence written twice is a
+    sentence that stops being true in one of its copies.
+    """
+    c = summary["coverage"]
+    return (f"{len(summary['gaps'])} rows where a peer declares a capability "
+            "this repository does not have. That count is bounded by the row "
+            f"set, which was chosen here, so the {c['topics']} capability "
+            "areas found in the peers' own page indexes on "
+            f"{c['read_on']} are published with it: {c['scored']} now carry a "
+            f"row, {c['row_owed']} are still owed one, and "
+            f"{c['out_of_frame']} are left out on purpose with the reason "
+            "written down, in harness/parity_coverage.py.")
+
+
 def lede(report: dict[str, Any]) -> str:
     """The opening paragraph, with the suite count taken from the record.
 

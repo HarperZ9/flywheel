@@ -32,9 +32,19 @@
     }
   ],
   "parity": {
-    "absent": 0,
+    "absent": 2,
+    "coverage": {
+      "out_of_frame": 4,
+      "read_on": "2026-09-06",
+      "row_owed": 0,
+      "scored": 9,
+      "topics": 13
+    },
     "declared_on": "2026-09-06",
-    "gaps": [],
+    "gaps": [
+      "self-hosted-runner-pool",
+      "browser-and-computer-control"
+    ],
     "peers": [
       "codex",
       "cursor",
@@ -42,13 +52,13 @@
       "hermes",
       "omp"
     ],
-    "rows": 39,
-    "undetermined": 0,
+    "rows": 48,
+    "undetermined": 9,
     "uniquely_witnessed": 10,
-    "witnessed": 39
+    "witnessed": 46
   },
   "python": "3.12.10",
-  "result_sha256": "30c06708ebde33d4df1b22d05fbe6ba4bfcb58aae2f19e20adb399dcc916979e",
+  "result_sha256": "fff561d50287b241dcfb0b5d7f415d60feab3c4fa7f5e0b01ed16cd07460ca23",
   "schema": "flywheel.offline-benchmarks/v1",
   "suites": [
     {
@@ -67,7 +77,7 @@
         {
           "name": "adversarial_soundness",
           "score": 1.0,
-          "strawman": 0.0
+          "strawman": 0.06666666666666665
         },
         {
           "name": "no_regression",
@@ -98,14 +108,14 @@
       "headline": {
         "dimensions": 8,
         "harness_overall": 1.0,
-        "separation": 1.0,
-        "strawman_overall": 0.0
+        "separation": 0.99,
+        "strawman_overall": 0.01
       },
       "name": "accountability",
       "non_goal": "measures accountability, NOT capability. Pair it with a capability bench",
       "question": "does an unaccountable system score badly here",
       "schema": "accountability/v1",
-      "seconds": 9.082
+      "seconds": 9.57
     },
     {
       "detail": [
@@ -192,7 +202,7 @@
       "name": "governed-agent",
       "question": "does a workflow refuse an action above its tier",
       "schema": "governed-agent-workflow-benchmark/v1",
-      "seconds": 0.007
+      "seconds": 0.011
     },
     {
       "detail": [
@@ -270,7 +280,7 @@
       "name": "agent-recovery",
       "question": "does an injected fault recover without failing quietly",
       "schema": "agent.recovery-benchmark/v1",
-      "seconds": 0.05
+      "seconds": 0.035
     },
     {
       "detail": [
@@ -323,7 +333,7 @@
       "name": "stateful-provider-swap",
       "question": "does state survive a provider swap",
       "schema": "unisonai.stateful-benchmark/v1",
-      "seconds": 0.006
+      "seconds": 0.011
     },
     {
       "detail": [],
@@ -337,7 +347,7 @@
       "name": "source-mined",
       "question": "do the mined checks still hold against their datasets",
       "schema": "source-mined.executable-benchmark/v1",
-      "seconds": 0.016
+      "seconds": 0.068
     },
     {
       "caveats": [
@@ -357,7 +367,7 @@
       "non_goal": "continued pretraining on the workspace corpus did not improve general code completion and did not significantly harm it; the point estimate is a regression inside the noise",
       "question": "did continued pretraining change general code completion",
       "schema": "flywheel.paired-replication/v1",
-      "seconds": 0.001
+      "seconds": 0.01
     },
     {
       "caveats": [
@@ -370,29 +380,29 @@
       "detail": [
         {
           "name": "chain_only",
-          "score": 48.5
+          "score": 48.8
         },
         {
           "name": "buffered",
-          "score": 1113.7
+          "score": 620.6
         },
         {
           "name": "durable",
-          "score": 7706.8
+          "score": 7318.3
         }
       ],
       "headline": {
-        "durability_share": 0.8555,
+        "durability_share": 0.9152,
         "log_bytes_per_action": 788.3,
-        "ms_per_witnessed_action": 7.71,
-        "recheck_us_per_record": 25.7,
+        "ms_per_witnessed_action": 7.32,
+        "recheck_us_per_record": 12.1,
         "verdict": "MATCH"
       },
       "name": "receipting-cost",
       "non_goal": "the record is arithmetic and the durability is a syscall. Most of what a witnessed action costs here is the wait for one fsync, so batching the flush is the lever, and it is paid for in the size of the crash window",
       "question": "what does it cost to keep the receipt",
       "schema": "flywheel.receipting-cost/v1",
-      "seconds": 1.951,
+      "seconds": 1.864,
       "unsealed": [
         "ms_per_witnessed_action",
         "durability_share",

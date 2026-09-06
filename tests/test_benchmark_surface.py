@@ -186,6 +186,31 @@ def test_the_sealed_record_carries_the_matrix_denominators():
     assert p["peers"] == [x["key"] for x in doc["peers"]]
     assert p["undetermined"] == len(doc["summary"]["undetermined"])
     assert p["uniquely_witnessed"] == len(doc["summary"]["uniquely_witnessed"])
+    # The gap list is sealed here too and reads empty. What bounds it is the
+    # row set, which this project wrote, so the count of peer capabilities no
+    # row scores is hashed with it or the zero travels alone.
+    assert p["coverage"] == doc["summary"]["coverage"]
+
+
+def test_the_empty_gap_count_reaches_both_surfaces_with_its_own_limit():
+    """The gap count is bounded by a row set chosen here, so both surfaces
+    have to print how many peer capability areas were found beside it, and
+    the split: how many now carry a row, how many are still owed one, and how
+    many were left out on purpose. Without that split the count reads as full
+    coverage of the field."""
+    from harness.parity import parity_matrix
+    c = parity_matrix()["summary"]["coverage"]
+    for text in (HTML.read_text(encoding="utf-8"),
+                 MARKDOWN.read_text(encoding="utf-8")):
+        # The markdown is reflowed to the README width, so a phrase can land
+        # across two lines. Compared on collapsed whitespace, or this test
+        # would only be checking where the wrapper happened to break.
+        text = " ".join(text.split())
+        assert f"{c['topics']} capability areas" in text
+        assert f"{c['scored']} now carry a row" in text
+        assert f"{c['row_owed']} are still owed one" in text
+        assert f"{c['out_of_frame']} are left out on purpose" in text
+        assert "harness/parity_coverage.py" in text
 
 
 def test_the_strawman_is_drawn_next_to_the_harness():
@@ -198,7 +223,16 @@ def test_the_strawman_is_drawn_next_to_the_harness():
     assert "strawman" in html
     accountability = next(s for s in _record()["suites"]
                           if s["name"] == "accountability")
-    assert accountability["headline"]["strawman_overall"] == 0.0
+    # Not pinned to zero any more. One store attack in the adversarial corpus,
+    # absent_ancestor, cites a receipt that was never written, and no resolver
+    # can fail it because there is no file to load. It stays in the denominator
+    # on purpose, so the floor a strawman reaches on that axis is above zero.
+    # Pinning zero here would forbid every future control of that shape. What
+    # the page owes a reader is that the system built to fail scores far below
+    # the one being measured, which is what these two assertions say.
+    headline = accountability["headline"]
+    assert headline["strawman_overall"] < 0.2, "the strawman has stopped failing"
+    assert headline["separation"] >= 0.8, "the chart no longer separates the two"
     assert any(d.get("strawman") == 0.0 for d in accountability["detail"])
 
 

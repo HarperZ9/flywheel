@@ -635,6 +635,26 @@ class _Handler(BaseHTTPRequestHandler):
             return None
         return None if n < 0 or n > self.MAX_BODY else n
 
+    def _json_req(self):
+        """Read a JSON request body. Returns (request, fault), one of them None.
+
+        Four POST routes need the same three steps, and a rule written four
+        times is a rule that gets repaired in three places. An unusable
+        Content-Length is a transport fault and never reaches a handler. A body
+        that is not JSON arrives as an empty mapping, which every handler
+        already refuses on its own terms.
+        """
+        from harness.evidence_public import parse_json
+        length = self._content_length()
+        if length is None:
+            return None, ({"schema": "flywheel.evidence-transport-error/v1",
+                "error": {"code": "INVALID_LENGTH",
+                          "message": "request length is invalid"}}, 400)
+        try:
+            return parse_json(self.rfile.read(length)), None
+        except Exception:
+            return {}, None
+
     def _raw(self, body: bytes, content_type: str, code: int = 200):
         """Send an already-encoded body. For the one surface that is not JSON."""
         self.send_response(code)
@@ -881,10 +901,18 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.subagents_route import handle_subagents_get
             body, code = handle_subagents_get(p, qs, run_root=self.run_root)
             return self._json(body, code)
+        if p == "/api/schedule":                   # schedules, what they owe, chain verdict
+            from harness.schedule_route import handle_schedule_get
+            body, code = handle_schedule_get(p, run_root=self.run_root,
+                                             clock=self.clock)
+            return self._json(body, code)
+        if p == "/api/scan/vulnerabilities":       # the last code scan, re-checked
+            from harness.scan_route import handle_scan_get
+            return self._json(*handle_scan_get(
+                p, root=self.root, run_root=self.run_root, clock=self.clock))
         if p == "/api/skills":                     # installed skills, read off disk
             from harness.skill_route import handle_skills_get
-            body, code = handle_skills_get(p, run_root=self.run_root)
-            return self._json(body, code)
+            return self._json(*handle_skills_get(p, run_root=self.run_root))
         if p == "/api/pm/roadmap":                 # the roadmap, derived from journeys and grants
             from harness.pm_roadmap_route import handle_pm_get
             body, code = handle_pm_get(p, run_root=self.run_root,
@@ -894,8 +922,7 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(body, code)
         if p.startswith("/api/packs"):             # domain packs and their admission state
             from harness.pack_admission_route import handle_pack_get
-            body, code = handle_pack_get(p, run_root=self.run_root)
-            return self._json(body, code)
+            return self._json(*handle_pack_get(p, run_root=self.run_root))
         if p == "/api/endpoints/health":           # every configured endpoint, probed
             return self._json(endpoint_roster(self.serve_url, self.ollama_url))
         if p == "/api/endpoints":                  # the full universal-router roster
@@ -1101,8 +1128,7 @@ class _Handler(BaseHTTPRequestHandler):
                                             budget=budget, query=query))
         if p == "/api/usage":                        # signed usage-metering session summary
             from harness.usage_route import handle_usage_summary
-            body, code = handle_usage_summary(qs, self.run_root)
-            return self._json(body, code)
+            return self._json(*handle_usage_summary(qs, self.run_root))
         if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
             return self._json(receipts_ledger(self.root, self.run_root))
         if p == "/api/receipts/proof":               # prove one receipt is in the log
@@ -1343,45 +1369,43 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(body, code)
         from harness.gateway_operation import action_for_path, materialize_agent_attachment, thaw_operation
         if p.startswith("/api/hooks/"):            # define, edit or fire a hook
-            from harness.evidence_public import parse_json
             from harness.hooks_route import handle_hooks_post
-            length = self._content_length()
-            if length is None:
-                return self._json({"schema": "flywheel.evidence-transport-error/v1",
-                    "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
-            try:
-                req = parse_json(self.rfile.read(length))
-            except Exception:
-                req = {}
+            req, fault = self._json_req()
+            if fault:
+                return self._json(*fault)
             body, code = handle_hooks_post(
                 p, req, run_root=self.run_root,
                 owner_ref=self.owner_ref, clock=self.clock)
             return self._json(body, code)
         if p.startswith("/api/subagents/"):        # run a subagent, recorded
-            from harness.evidence_public import parse_json
             from harness.subagents_route import handle_subagents_post
-            length = self._content_length()
-            if length is None:
-                return self._json({"schema": "flywheel.evidence-transport-error/v1",
-                    "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
-            try:
-                req = parse_json(self.rfile.read(length))
-            except Exception:
-                req = {}
+            req, fault = self._json_req()
+            if fault:
+                return self._json(*fault)
             body, code = handle_subagents_post(
                 p, req, run_root=self.run_root, clock=self.clock)
             return self._json(body, code)
+        if p.startswith("/api/schedule/"):         # define a schedule, or tick the clock
+            from harness.schedule_route import handle_schedule_post
+            req, fault = self._json_req()
+            if fault:
+                return self._json(*fault)
+            body, code = handle_schedule_post(
+                p, req, run_root=self.run_root, clock=self.clock)
+            return self._json(body, code)
+        if p == "/api/scan/vulnerabilities":       # run a scan, append it to the chain
+            from harness.scan_route import handle_scan_post
+            req, fault = self._json_req()
+            if fault:
+                return self._json(*fault)
+            return self._json(*handle_scan_post(
+                p, req, root=self.root, run_root=self.run_root,
+                clock=self.clock))
         if p.startswith("/api/skills/"):           # install or invoke a skill
-            from harness.evidence_public import parse_json
             from harness.skill_route import handle_skills_post
-            length = self._content_length()
-            if length is None:
-                return self._json({"schema": "flywheel.evidence-transport-error/v1",
-                    "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
-            try:
-                req = parse_json(self.rfile.read(length))
-            except Exception:
-                req = {}
+            req, fault = self._json_req()
+            if fault:
+                return self._json(*fault)
             body, code = handle_skills_post(
                 p, req, run_root=self.run_root, clock=self.clock)
             return self._json(body, code)
@@ -1403,14 +1427,12 @@ class _Handler(BaseHTTPRequestHandler):
                     authorized, self.flywheel_home / "state")
                 self._gateway_guarded = True
             except Exception as exc:
-                body, code = gateway_error_response(exc)
-                return self._json(body, code)
+                return self._json(*gateway_error_response(exc))
             from harness.gateway_actions import dispatch_builtin
             try:
                 dispatched = dispatch_builtin(authorized)
             except Exception as exc:
-                body, code = gateway_error_response(exc)
-                return self._json(body, code)
+                return self._json(*gateway_error_response(exc))
             if dispatched is not None:
                 return self._json(*dispatched)
             self._gateway_operation = materialize_agent_attachment(thaw_operation(authorized.operation))
@@ -1467,8 +1489,7 @@ class _Handler(BaseHTTPRequestHandler):
                 req = json.loads(self.rfile.read(length) or b"{}") if length else {}
             except Exception:
                 req = {}
-            body, code = openai_embeddings(req)
-            return self._json(body, code)
+            return self._json(*openai_embeddings(req))
         if (p.startswith("/v1/")                   # OpenAI-compatible, proxied to the endpoint
                 or p == "/generate"):                # the raw generate call, proxied
             return self._proxy(self.serve_url.rstrip("/") + p)
@@ -1996,8 +2017,7 @@ class _Handler(BaseHTTPRequestHandler):
             if bad:
                 return bad
             from harness.typeface_route import typeface_post
-            body, code = typeface_post(p, req)
-            return self._json(body, code)
+            return self._json(*typeface_post(p, req))
         if p == "/api/studio/poster":                  # plate + minted face + copy, one receipt
             req, bad = self._req_json()
             if bad:
@@ -2172,36 +2192,31 @@ class _Handler(BaseHTTPRequestHandler):
             if bad:
                 return bad
             from harness.eval_run_route import handle_eval_run
-            body, code = handle_eval_run(req, self.run_root)
-            return self._json(body, code)
+            return self._json(*handle_eval_run(req, self.run_root))
         if p == "/api/eval/verify":                     # re-check a receipt offline; the verdict is the answer
             req, bad = self._req_json()
             if bad:
                 return bad
             from harness.eval_run_route import handle_eval_verify
-            body, code = handle_eval_verify(req)
-            return self._json(body, code)
+            return self._json(*handle_eval_verify(req))
         if p == "/api/audit/run":                        # a post-work review -> a receipt chained onto the work receipt
             req, bad = self._req_json()
             if bad:
                 return bad
             from harness.audit_run_route import handle_audit_run
-            body, code = handle_audit_run(req, self.run_root)
-            return self._json(body, code)
+            return self._json(*handle_audit_run(req, self.run_root))
         if p == "/api/audit/verify":                     # re-check an audit receipt (and its chain) offline
             req, bad = self._req_json()
             if bad:
                 return bad
             from harness.audit_run_route import handle_audit_verify
-            body, code = handle_audit_verify(req)
-            return self._json(body, code)
+            return self._json(*handle_audit_verify(req))
         if p == "/api/usage/verify":                     # re-check a usage receipt offline; the verdict is the answer
             req, bad = self._req_json()
             if bad:
                 return bad
             from harness.usage_route import handle_usage_verify
-            body, code = handle_usage_verify(req)
-            return self._json(body, code)
+            return self._json(*handle_usage_verify(req))
         if p.startswith("/api/lane/"):                   # generic lane caller
             req, bad = self._req_json()
             if bad:
