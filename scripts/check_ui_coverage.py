@@ -12,6 +12,18 @@ real gap; an earlier hand audit did exactly that. The route itself stays live,
 because the operation route serves what it claims. The dispatch model is read
 from the source here rather than hardcoded.
 
+Not every route is dispatched by a literal. `_post` ends in a table lookup:
+`action_for_path` in `harness/gateway_operation.py`, and `INFRA_PATHS` in
+`harness/gateway_operation_infra.py`, name the paths that reach the grant
+boundary and the builtin dispatcher. No path literal for any of them appears in
+`gateway.py`, so a walk of the handler reports them missing. Seven counted as
+served only because the same paths were listed in the authorization check, which
+says what needs a token rather than what is dispatched; moving that list to its
+own module took the accident away and the gate went red on routes the engine
+does serve. The table is read here now, and read as routes rather than as a
+claim. A claim shadows a duplicate branch in `_get` or `_post`, and this lookup
+is itself the branch in `_post`.
+
 Run: python scripts/check_ui_coverage.py [--list]
 """
 from __future__ import annotations
@@ -23,6 +35,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GATEWAY = ROOT / "harness" / "gateway.py"
+#: The two halves of the table `_post` dispatches on. Split in the engine
+#: because the infrastructure actions carry their own field rules, and read
+#: together here because one lookup reads them together.
+OPERATION = ROOT / "harness" / "gateway_operation.py"
+OPERATION_INFRA = ROOT / "harness" / "gateway_operation_infra.py"
 DART = ROOT / "desktop" / "lib"
 
 # Frozen at the current gap, which is now closed: every route the gateway
@@ -55,6 +72,36 @@ def _api_strings(node: ast.AST) -> set:
                     if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
                         if arg.value.startswith("/api"):
                             found.add(arg.value)
+        # A lookup table dispatches as surely as an if-chain does. The
+        # operation route is written this way and the gateway is not, which is
+        # why a reader of one shape alone saw an empty claim there.
+        if isinstance(sub, ast.Dict):
+            for key in sub.keys:
+                if (isinstance(key, ast.Constant)
+                        and isinstance(key.value, str)
+                        and key.value.startswith("/api")):
+                    found.add(key.value)
+    return found
+
+
+def table_routes(source: str | None = None,
+                 infra_source: str | None = None) -> set:
+    """Every /api path `_post` dispatches through its action table.
+
+    Read from the engine's source rather than restated here, so a path added
+    to the table is counted by this gate on the same commit. Both files are
+    parsed whole: the table is one dict in `action_for_path` and one dict in
+    `INFRA_PATHS`, and nothing else in either module writes an /api literal
+    as a dict key.
+    """
+    texts = [source if source is not None
+             else OPERATION.read_text(encoding="utf-8", errors="replace"),
+             infra_source if infra_source is not None
+             else OPERATION_INFRA.read_text(encoding="utf-8",
+                                            errors="replace")]
+    found = set()
+    for text in texts:
+        found |= _api_strings(ast.parse(text))
     return found
 
 
@@ -87,8 +134,12 @@ def live_routes(source: str | None = None) -> tuple[set, set]:
                 dead.add(route)
             else:
                 live.add(route)
-    # The operation route serves what it claims.
+    # The operation route serves what it claims, and the action table serves
+    # what it lists. The table is behind the source override so a fixture
+    # exercising the dead-branch rule is not silently mixed with live routes.
     live |= {c.rstrip("/") for c in claim if c.rstrip("/")}
+    if source is None:
+        live |= {r.rstrip("/") for r in table_routes() if r.rstrip("/")}
     return {r.rstrip("/") for r in live if r.rstrip("/") != "/api"}, dead
 
 
