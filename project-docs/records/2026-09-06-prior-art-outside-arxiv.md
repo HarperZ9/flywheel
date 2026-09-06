@@ -83,9 +83,23 @@ discrimination test fails a deliberately weakened closure, so the corpus catches
 something. No system in the survey ships a false-accept corpus against its own
 propagation rule. That is the defensible asset.
 
-Weighed against it: nothing in the shipped run path calls `verify_frontier`
-(PROJECT.md section 6, item 2). A closure no loop invokes is a library, and the
-adversarial gate measures the library.
+That asset is stronger than the roadmap said, and finding out how cost a second
+correction on the same day. `loop.py` does fold the closure, through
+`grounding.recheck_grounding`: it resolves an envelope's cited ancestors out of
+the store, re-witnesses each in its own oracle environment, folds
+`transitive_verdicts`, and gates acceptance fail-closed, so a dependent of a
+drifted ancestor never gets sealed. `tests/test_grounding_closure.py` holds all
+seven arms through `run_loop`, positive control and localization control
+included. The earlier claim that no shipped loop invokes the closure came from
+grepping for `verify_frontier` and `validate_chain` rather than tracing the call
+graph, which is this record's own error repeated at smaller scale on the same
+afternoon.
+
+The limit that is real: `grounding_recheck` defaults to False, because
+`recheck_grounding` needs an oracle environment per ancestor and returns
+UNVERIFIABLE for each one it does not get. Fail-closed plus a missing workdir
+means turning it on by default would fail every grounded task. Recovering that
+environment from the stored envelope is what makes the flag defaultable.
 
 ## What this changes
 
@@ -99,6 +113,13 @@ adversarial gate measures the library.
 3. Any future priority sweep reads patents and standards bodies alongside
    arXiv. An arXiv-only sweep is not evidence about priority and should not be
    cited as though it were.
+4. The same rule turned inward. A claim about what this repo does gets traced
+   through the call graph, not grepped for a function name. PROJECT.md section
+   6 item 2 has now been wrong in both directions inside 24 hours, first saying
+   the closure did not exist and then saying no run invoked it, and both
+   readings came from a name search standing in for a trace. Corrected in this
+   commit, with the arms in `tests/test_grounding_closure.py` cited so the next
+   reader can check the entry against the tests instead of trusting it.
 
 ## Competitor movement seen while gathering this
 

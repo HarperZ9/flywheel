@@ -39,12 +39,18 @@ is built: the closure scores 0/7 false-accepts (SOUND) while weakened strawmen a
 caught, so the refutation path provably executes. Still not a "breakthrough" — a
 sound, adversarially-gated kernel — but no longer theatrical.
 
-Scope, so a reader does not assume more reach than this has: nothing in the
-shipped run path calls `verify_frontier`. `loop.py` builds its chain and
-witnesses one envelope; `router.py` names this module as the remediation for an
-UNVERIFIABLE stage without invoking it. The closure is a library a caller
-reaches for, and folding it into a run is open work (PROJECT.md section 6,
-item 2).
+Scope, corrected 2026-09-06. An earlier note here said the closure was a library
+no run reaches for. It is on the critical path: `grounding.recheck_grounding`
+resolves an envelope's cited ancestors transitively, re-witnesses each in its
+own oracle environment, folds `transitive_verdicts`, and `loop.py` gates
+acceptance on the result, so a dependent of a drifted ancestor is never sealed
+into the store (`tests/test_grounding_closure.py`, seven arms including a
+positive control and a localization control). Two things stay true. The fold
+enters through `transitive_verdicts` rather than `verify_frontier`, because the
+bridge has to resolve and re-witness ancestors itself. And `run_loop` takes
+`grounding_recheck=False` by default, since `recheck_grounding` needs a workdir
+per ancestor and fails closed without one, so defaulting it on would make every
+grounded task UNVERIFIABLE (PROJECT.md section 6, item 2).
 """
 from __future__ import annotations
 
