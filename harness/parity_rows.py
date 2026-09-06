@@ -172,7 +172,12 @@ ROWS = [
                    # apart. A host that has bwrap and denies its user
                    # namespace satisfies the second and fails the first.
                    ("module", "harness/sandbox_probe.py"),
+                   # The credential denylist. Named as its own witness
+                   # because it is the only part of this row that touches
+                   # reads, and it is a denylist rather than a boundary.
+                   ("module", "harness/sandbox_protected_paths.py"),
                    ("test", "tests/test_posix_sandbox.py"),
+                   ("test", "tests/test_sandbox_protected_paths.py"),
                    # The builder file next door asserts what the argv and the
                    # profile say. This one runs them, so it is the witness
                    # that the claim was tested and not only written down.
