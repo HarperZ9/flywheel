@@ -166,7 +166,8 @@ def test_the_record_says_which_guarantees_actually_held():
     assert linux.record() == {
         "schema": SCHEMA, "backend": "bwrap", "program": "bwrap",
         "root": "/w", "writable": ["/w", "/s"], "network": False,
-        "reads_confined": False, "processes_isolated": True}
+        "reads_confined": False, "processes_isolated": True,
+        "egress_hosts": [], "egress_port": None}
     assert mac.record()["processes_isolated"] is False
     assert mac.record()["network"] is True
     assert "network denied" in linux.summary()

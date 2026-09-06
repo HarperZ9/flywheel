@@ -5,8 +5,9 @@ no name, which is why it can be read in a diff and asserted from Windows.
 """
 import pytest
 
-from harness.egress_policy import (DEFAULT_PORTS, EgressPolicy, PolicyRefused,
-                                   blocked_address)
+from harness.egress_policy import (DEFAULT_PORTS, ENV_HOSTS, ENV_PORTS,
+                                   EgressPolicy, PolicyRefused,
+                                   blocked_address, from_env)
 
 
 def test_an_exact_host_matches_and_a_neighbour_does_not():
@@ -151,3 +152,61 @@ def test_the_record_names_the_rules_and_the_summary_counts_them():
     assert record["ports"] == [443]
     assert record["schema"].startswith("flywheel.egress-policy/")
     assert policy.summary() == "[egress: 2 host rules on port 443]"
+
+
+def test_an_unset_variable_is_not_a_policy_naming_nothing():
+    """The two answers a caller has to tell apart.
+
+    None leaves whatever network behaviour the caller already had. An empty
+    policy is a run that may reach no host, which is a thing an operator can
+    ask for and would otherwise have no way to say.
+    """
+    assert from_env({}) is None
+    assert from_env({"UNRELATED": "x"}) is None
+    named_nothing = from_env({ENV_HOSTS: ""})
+    assert named_nothing == EgressPolicy(hosts=())
+    assert named_nothing.allows("pypi.org", 443) is False
+
+
+def test_the_hosts_are_read_the_way_an_operator_would_write_them():
+    policy = from_env({ENV_HOSTS: "pypi.org, *.pythonhosted.org ,,"})
+    assert policy.hosts == ("pypi.org", "*.pythonhosted.org")
+    assert policy.ports == DEFAULT_PORTS
+
+
+def test_a_second_port_has_to_be_asked_for_and_then_it_is_the_whole_set():
+    """Naming ports replaces the default rather than adding to it.
+
+    An operator who writes 8443 and gets 443 as well has a policy wider than
+    the one on the screen, and the widening is invisible.
+    """
+    assert from_env({ENV_HOSTS: "h", ENV_PORTS: "443, 8443"}).ports == (
+        443, 8443)
+    assert from_env({ENV_HOSTS: "h", ENV_PORTS: "8443"}).ports == (8443,)
+    assert from_env({ENV_HOSTS: "h", ENV_PORTS: "   "}).ports == DEFAULT_PORTS
+
+
+@pytest.mark.parametrize("written", ["https", "0", "99999", "443;rm -rf /",
+                                     "443 8443", "-1", "4.43", ",,"])
+def test_a_port_that_does_not_parse_stops_the_run_rather_than_defaulting(
+        written):
+    """Somebody typed a policy. A quiet default runs a different one.
+
+    Every value here reaches `_port` as it was written, so the one place
+    that decides what a port is stays the one place that refuses.
+    """
+    with pytest.raises(PolicyRefused):
+        from_env({ENV_HOSTS: "pypi.org", ENV_PORTS: written})
+
+
+def test_a_host_pattern_that_does_not_parse_is_refused_here_too():
+    with pytest.raises(PolicyRefused):
+        from_env({ENV_HOSTS: "https://pypi.org"})
+    with pytest.raises(PolicyRefused):
+        from_env({ENV_HOSTS: "*"})
+
+
+def test_the_ports_variable_alone_configures_nothing():
+    # Ports without hosts is not a policy. Reading it as one would deny a
+    # run its network on the strength of a variable that named no host.
+    assert from_env({ENV_PORTS: "8443"}) is None

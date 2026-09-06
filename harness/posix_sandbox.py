@@ -43,6 +43,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 
+from .egress_route import bridge_argv
 from .sandbox_policy import (ProfileRefused, posix_path, sbpl_profile,
                              seatbelt_argv)
 from .sandbox_probe import sandbox_starts
@@ -81,13 +82,20 @@ class Confinement:
     network: bool = False
     reads_confined: bool = False
     processes_isolated: bool = False
+    #: The host rules a proxy was enforcing for this run, if one was. Empty
+    #: means the network was open or denied outright, and `network` says
+    #: which of those two it was.
+    egress_hosts: tuple = ()
+    egress_port: int | None = None
 
     def record(self) -> dict:
         return {"schema": SCHEMA, "backend": self.backend,
                 "program": self.program, "root": self.root,
                 "writable": list(self.writable), "network": self.network,
                 "reads_confined": self.reads_confined,
-                "processes_isolated": self.processes_isolated}
+                "processes_isolated": self.processes_isolated,
+                "egress_hosts": list(self.egress_hosts),
+                "egress_port": self.egress_port}
 
     def summary(self) -> str:
         """One line for the transcript, so a difference between hosts shows.
@@ -109,7 +117,22 @@ class Confinement:
                 f"reads {'confined' if self.reads_confined else 'open'}, "
                 f"processes "
                 f"{'isolated' if self.processes_isolated else 'shared'}, "
-                f"network {'allowed' if self.network else 'denied'}]")
+                f"network {self.network_words()}]")
+
+    def network_words(self) -> str:
+        """What the network was, in the three states it can be in.
+
+        A run with a proxy is not an open network and it is not a denied
+        one. Calling it either would be wrong in a direction a reader
+        cannot recover from, so the middle state names the count of rules
+        and `egress_hosts` in the record has the rules themselves.
+        """
+        if self.network:
+            return "allowed"
+        if not self.egress_hosts:
+            return "denied"
+        count = len(self.egress_hosts)
+        return f"denied except {count} host rule{'s' if count > 1 else ''}"
 
 
 def backend_for(platform: str | None = None, which=None) -> str | None:
@@ -131,7 +154,7 @@ def backend_for(platform: str | None = None, which=None) -> str | None:
 
 
 def bwrap_argv(program: str, root, work, cmd: str, *,
-               network: bool = False) -> list:
+               network: bool = False, entry: list | tuple = ()) -> list:
     """The bubblewrap command line. Order matters: later binds layer on top.
 
     `--ro-bind / /` first, then the workspace bound writable over it, then
@@ -140,6 +163,11 @@ def bwrap_argv(program: str, root, work, cmd: str, *,
     `READS_CONFINED` says so. `--new-session` is not decoration:
     without it a confined process can push characters into the terminal it
     inherited, which is an escape that does not touch the filesystem.
+
+    `entry` runs inside the namespace and the shell becomes its child. The
+    egress bridge is what goes there, because the proxy it forwards to sits
+    on the other side of `--unshare-net` and nothing outside the namespace
+    can hand a socket across.
     """
     argv = [program, "--die-with-parent", "--new-session",
             "--unshare-pid", "--unshare-ipc", "--unshare-uts", "--unshare-cgroup"]
@@ -149,33 +177,60 @@ def bwrap_argv(program: str, root, work, cmd: str, *,
     argv += ["--ro-bind", "/", "/",
              "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
              "--bind", here, here, "--bind", scratch, scratch,
-             "--chdir", here,
-             "--", "/bin/sh", "-c", cmd]
+             "--chdir", here, "--"]
+    argv += list(entry)
+    argv += ["/bin/sh", "-c", cmd]
     return argv
 
 
-def describe(backend: str, root, work, *, network: bool = False) -> Confinement:
+def routed(egress, network: bool):
+    """The route that will actually apply, which is none on an open network.
+
+    A run that already has the network is not being filtered by anything, so
+    a record naming host rules would describe a limit no kernel is holding.
+    The argv and the record ask the same question here so they cannot answer
+    it differently.
+    """
+    return None if network else egress
+
+
+def describe(backend: str, root, work, *, network: bool = False,
+             egress=None) -> Confinement:
     """What a run under `backend` will have enforced when it finishes."""
+    route = routed(egress, network)
     return Confinement(
         backend=backend, program=PROGRAM[backend], root=posix_path(root),
         writable=(posix_path(root), posix_path(work)), network=network,
         reads_confined=READS_CONFINED[backend],
-        processes_isolated=PROCESS_ISOLATED[backend])
+        processes_isolated=PROCESS_ISOLATED[backend],
+        egress_hosts=() if route is None else tuple(route.hosts),
+        egress_port=None if route is None else route.port)
 
 
 def build(backend: str, program: str, root, work, cmd: str, *,
-          network: bool = False) -> list:
-    """The argv for one backend. Pure, so a diff shows what will run."""
+          network: bool = False, egress=None) -> list:
+    """The argv for one backend. Pure, so a diff shows what will run.
+
+    The route is passed whole rather than as the piece each backend wants.
+    Splitting it into a bridge argv for one and a port number for the other
+    would let a caller hand bwrap's half to Seatbelt, and the result would
+    be a run with no route under a record that says it has one.
+    """
+    route = routed(egress, network)
     if backend == "bwrap":
-        return bwrap_argv(program, root, work, cmd, network=network)
+        entry = () if route is None else bridge_argv(route)
+        return bwrap_argv(program, root, work, cmd, network=network,
+                          entry=entry)
     if backend == "seatbelt":
-        return seatbelt_argv(
-            program, sbpl_profile(root, work, network=network), cmd)
+        profile = sbpl_profile(root, work, network=network,
+                               egress_port=None if route is None
+                               else route.port)
+        return seatbelt_argv(program, profile, cmd)
     raise ProfileRefused(f"no such backend: {backend}")
 
 
 def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
-              network: bool = False, platform: str | None = None,
+              network: bool = False, egress=None, platform: str | None = None,
               which=None, runner=None, probe=None) -> tuple:
     """Run `cmd` confined. Returns (returncode, output, Confinement).
 
@@ -195,11 +250,24 @@ def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
     program = found if isinstance(found, str) else PROGRAM[backend]
     if not (probe if probe is not None else sandbox_starts)(backend, program):
         return None
-    plan = describe(backend, root, work, network=network)
-    argv = build(backend, program, root, work, cmd, network=network)
+    plan = describe(backend, root, work, network=network, egress=egress)
+    argv = build(backend, program, root, work, cmd, network=network,
+                 egress=egress)
     call = runner if runner is not None else _spawn
-    rc, out = call(argv, root, env, timeout_seconds)
+    rc, out = call(argv, root, with_egress(env, egress), timeout_seconds)
     return rc, out, plan
+
+
+def with_egress(env: dict, egress) -> dict:
+    """The environment plus the proxy variables, or the environment.
+
+    A copy rather than an update in place. The caller's dict is often the
+    one a later run will be given, and a proxy address that outlived its
+    listener points at a port that answers nothing.
+    """
+    if egress is None:
+        return env
+    return {**env, **egress.env()}
 
 
 def _spawn(argv: list, root, env: dict, timeout_seconds: int) -> tuple:

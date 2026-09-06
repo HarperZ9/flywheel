@@ -27,6 +27,7 @@ a policy that stopped at the name would carry the request to either.
 from __future__ import annotations
 
 import ipaddress
+import os
 from dataclasses import dataclass
 
 SCHEMA = "flywheel.egress-policy/v1"
@@ -198,3 +199,44 @@ def blocked_address(text) -> str | None:
         if held:
             return reason
     return None
+
+
+#: Where an operator names the hosts a confined run may reach. Absent means
+#: nobody asked for filtering, which is a different answer from a policy
+#: naming no host.
+ENV_HOSTS = "FLYWHEEL_EGRESS_HOSTS"
+
+#: Ports, when the default of 443 alone is not what the run needs.
+ENV_PORTS = "FLYWHEEL_EGRESS_PORTS"
+
+
+def from_env(environ=None):
+    """The policy this host configured, or None when it configured none.
+
+    None and an empty policy are different answers and both are reachable.
+    None means nobody asked for filtering, so the caller keeps whatever
+    network behaviour it already had. A variable set to nothing is a policy
+    naming no host, which denies everything, and an operator who wants a run
+    with no network at all has a way to say so.
+
+    A value that does not parse raises rather than falling back. Somebody
+    typed a policy and a quiet default would run the command under a policy
+    they did not write.
+    """
+    env = os.environ if environ is None else environ
+    raw = env.get(ENV_HOSTS)
+    if raw is None:
+        return None
+    hosts = tuple(one.strip() for one in raw.split(",") if one.strip())
+    written = env.get(ENV_PORTS, "").strip()
+    if not written:
+        return EgressPolicy(hosts=hosts)
+    ports = [one.strip() for one in written.split(",") if one.strip()]
+    if not ports:
+        raise PolicyRefused(f"{ENV_PORTS} names no port")
+    # Only a run of digits becomes a number here. Anything else is handed to
+    # the policy as it was written, so `_port` refuses it and there is one
+    # place that decides what a port is.
+    return EgressPolicy(
+        hosts=hosts,
+        ports=tuple(int(one) if one.isdigit() else one for one in ports))
