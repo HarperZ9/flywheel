@@ -12,7 +12,6 @@ run looks the same as the outcome of a run where nothing was ever asked, and the
 difference between them is the only thing that makes the record worth reading.
 """
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -171,8 +170,8 @@ def test_allow_terminal_still_refuses_a_second_debug_session(tmp_path):
     assert policy.decisions[-1].allowed is False
 
 
-def test_the_adapters_environment_is_layered_on_ours_and_a_null_unsets(tmp_path,
-                                                                      monkeypatch):
+def test_the_adapters_environment_is_layered_on_ours_and_a_null_unsets(
+        tmp_path, monkeypatch, text_once_written):
     # Really started, because the null-means-unset rule lives in the spawn and a
     # fake spawn would only be testing that the dict reached it unchanged.
     monkeypatch.setenv("FLYWHEEL_DAP_KEEP", "kept")
@@ -188,13 +187,13 @@ def test_the_adapters_environment_is_layered_on_ours_and_a_null_unsets(tmp_path,
          "args": [sys.executable, "-c", script, str(written)],
          "env": {"FLYWHEEL_DAP_DROP": None, "FLYWHEEL_DAP_ADDED": "added"}})
     assert isinstance(answer["processId"], int)
-    deadline = time.monotonic() + 30.0
-    while not written.exists() and time.monotonic() < deadline:
-        time.sleep(0.02)
-    assert written.read_text(encoding="utf-8") == repr(["kept", None, "added"])
+    assert text_once_written(
+        written, why="the layered environment never reached the child",
+    ) == repr(["kept", None, "added"])
 
 
-def test_the_command_runs_without_a_shell_interpreting_it(tmp_path):
+def test_the_command_runs_without_a_shell_interpreting_it(tmp_path,
+                                                          text_once_written):
     # No shell, so an argument that looks like syntax is an argument. An adapter
     # that sent `&& rm -rf .` as one argv entry gets a program with that name
     # and not a second command.
@@ -203,10 +202,9 @@ def test_the_command_runs_without_a_shell_interpreting_it(tmp_path):
     AllowTerminal(tmp_path).run_in_terminal(
         {"kind": INTEGRATED, "cwd": str(tmp_path),
          "args": [sys.executable, "-c", script, str(written), "a && b", "$HOME"]})
-    deadline = time.monotonic() + 30.0
-    while not written.exists() and time.monotonic() < deadline:
-        time.sleep(0.02)
-    assert written.read_text(encoding="utf-8") == repr(["a && b", "$HOME"])
+    assert text_once_written(
+        written, why="the child never recorded the argv it was given",
+    ) == repr(["a && b", "$HOME"])
 
 
 def test_a_relative_directory_is_read_against_the_root_and_not_our_own(tmp_path):
