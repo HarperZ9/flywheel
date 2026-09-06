@@ -168,6 +168,15 @@ python -m harness.local_agent_cli --mcp
   `[UNVERIFIABLE: sandbox unavailable]`, so a downstream reader can tell that
   the isolation was absent. The same variable governs the CLI, the MCP server,
   and the router agent.
+- On a shared machine the variable is set by whoever starts the process, so an
+  administrator can pin the answer for every account. Write
+  `{"allow_unsandboxed": false}` to `/etc/flywheel/policy.json`,
+  `/Library/Application Support/flywheel/policy.json`, or
+  `%ProgramData%\flywheel\policy.json`. The file is read only when the platform
+  agrees an administrator owns it and nobody else can write it or its
+  directory; a file that fails that check is ignored and the reason is
+  reported. A file that is present and malformed pins every setting closed,
+  because a typo in a policy should not be weaker than writing no policy.
 
 ## Modules
 

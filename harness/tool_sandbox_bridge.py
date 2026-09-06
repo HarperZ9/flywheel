@@ -17,7 +17,10 @@ only signal was a prefix in a string somebody may never read.
 wants it: the command runs bare and its output is prefixed
 `[UNVERIFIABLE: sandbox unavailable] `. The shipped entry points read that
 choice from FLYWHEEL_ALLOW_UNSANDBOXED through fallback_from_env(), so the
-escape hatch is one documented variable rather than a default nobody set.
+escape hatch is one documented variable rather than a default nobody set. On a
+machine the operator shares, an administrator can close that hatch for every
+account at once through `harness/machine_policy.py`, which outranks the
+variable.
 
 make_unsandboxed_runner() provides bare subprocess execution unconditionally,
 marked `[unsandboxed] `, for a caller who is asking for exactly that.
@@ -44,13 +47,48 @@ _REFUSAL = (
     "outright.")
 
 
-def fallback_from_env(env: "Mapping[str, str] | None" = None) -> str:
-    """Read the operator's standing answer for a host with no sandbox.
+def _refusal(reason: object) -> str:
+    """The refusal text, naming a way out that exists on this host.
+
+    The generic advice is wrong on a machine where an administrator pinned the
+    setting closed, and an operator who already exported the variable would read
+    it as the engine ignoring them. The policy is read again here, which costs
+    one stat on a call that has already failed.
+    """
+    from .machine_policy import load_policy
+    policy = load_policy()
+    if policy.pinned("allow_unsandboxed") is not False:
+        return f"{_REFUSAL}\n[reason] {reason}"
+    text = (
+        "[refused] this host provides no OS-enforced sandbox, and a "
+        f"machine-wide policy pins unsandboxed execution closed. Setting "
+        f"{ALLOW_UNSANDBOXED_ENV} does not override it. The policy is "
+        f"{policy.path}, and only an administrator can change it.")
+    if policy.problem:
+        text += f"\n[policy] {policy.problem}"
+    return f"{text}\n[reason] {reason}"
+
+
+def fallback_from_env(env: "Mapping[str, str] | None" = None,
+                      policy=None) -> str:
+    """Read the standing answer for a host with no sandbox.
 
     Kept out of the runner itself so the policy is visible at the call site
     rather than resolved somewhere inside a factory. An unset variable means
     refuse, so a host that was never configured is a host that says no.
+
+    An administrator's pin outranks the variable. The variable is set by
+    whoever starts the process, which makes it the wrong place to hold a
+    standing "no" on a machine the operator shares; `harness/machine_policy.py`
+    reads a file only an administrator could have written. Pass a `Policy` to
+    say which one applies, including an empty one to ask about the environment
+    alone. The default reads the host.
     """
+    from .machine_policy import load_policy
+    resolved = load_policy() if policy is None else policy
+    pinned = resolved.pinned("allow_unsandboxed")
+    if pinned is not None:
+        return "disclose" if pinned else "refuse"
     raw = (env if env is not None else os.environ).get(
         ALLOW_UNSANDBOXED_ENV, "")
     return "disclose" if raw.strip().lower() in {"1", "true", "yes", "on"} \
@@ -78,7 +116,7 @@ def make_sandboxed_runner(
                 timeout_seconds=timeout_seconds)
         except SandboxUnavailable as e:
             if on_unavailable == "refuse":
-                return False, f"{_REFUSAL}\n[reason] {e}"
+                return False, _refusal(e)
             # Fail OPEN with disclosure: mark the output so downstream code
             # and a human can tell this call never saw OS-enforced isolation,
             # instead of reading like a normal sandboxed result.
