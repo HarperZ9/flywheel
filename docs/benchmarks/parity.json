@@ -751,6 +751,26 @@
           "ref": "harness/sandbox_protected_paths.py"
         },
         {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/egress_policy.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/egress_proxy.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/egress_route.py"
+        },
+        {
+          "kind": "module",
+          "present": true,
+          "ref": "harness/egress_bridge.py"
+        },
+        {
           "kind": "test",
           "present": true,
           "ref": "tests/test_posix_sandbox.py"
@@ -759,6 +779,21 @@
           "kind": "test",
           "present": true,
           "ref": "tests/test_sandbox_protected_paths.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_egress_policy.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_egress_proxy.py"
+        },
+        {
+          "kind": "test",
+          "present": true,
+          "ref": "tests/test_sandbox_egress_wiring.py"
         },
         {
           "kind": "test",
@@ -778,7 +813,7 @@
         "hermes": "partial",
         "omp": "partial"
       },
-      "desc": "run a shell command under an OS-enforced sandbox on Linux and macOS rather than only on Windows, and record which backend ran and which guarantees it enforced, including the ones it did not",
+      "desc": "run a shell command under an OS-enforced sandbox on Linux and macOS rather than only on Windows, over a denied network that still reaches a named host set, and record which backend ran and which guarantees it enforced, including the ones it did not",
       "flywheel": "WITNESSED",
       "key": "posix-os-confinement"
     },

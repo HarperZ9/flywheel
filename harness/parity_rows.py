@@ -163,7 +163,8 @@ ROWS = [
                    ("test", "tests/test_workspace_clone.py")]},
     {"key": "posix-os-confinement",
      "desc": "run a shell command under an OS-enforced sandbox on Linux and "
-             "macOS rather than only on Windows, and record which backend ran "
+             "macOS rather than only on Windows, over a denied network that "
+             "still reaches a named host set, and record which backend ran "
              "and which guarantees it enforced, including the ones it did not",
      "witnesses": [("module", "harness/posix_sandbox.py"),
                    ("module", "harness/sandboxed_runner.py"),
@@ -176,8 +177,23 @@ ROWS = [
                    # because it is the only part of this row that touches
                    # reads, and it is a denylist rather than a boundary.
                    ("module", "harness/sandbox_protected_paths.py"),
+                   # The network half. A denied network that still reaches
+                   # a named host set is a third state, and it is the one
+                   # the record had no word for until these landed. The
+                   # bridge is named separately because without it the
+                   # Linux backend has no route at all: `--unshare-net`
+                   # puts the proxy on the far side of a namespace.
+                   ("module", "harness/egress_policy.py"),
+                   ("module", "harness/egress_proxy.py"),
+                   ("module", "harness/egress_route.py"),
+                   ("module", "harness/egress_bridge.py"),
                    ("test", "tests/test_posix_sandbox.py"),
                    ("test", "tests/test_sandbox_protected_paths.py"),
+                   ("test", "tests/test_egress_policy.py"),
+                   ("test", "tests/test_egress_proxy.py"),
+                   # The wiring claim: the policy that was written is the
+                   # policy the argv routes through, per backend.
+                   ("test", "tests/test_sandbox_egress_wiring.py"),
                    # The builder file next door asserts what the argv and the
                    # profile say. This one runs them, so it is the witness
                    # that the claim was tested and not only written down.
