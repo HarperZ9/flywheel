@@ -1,0 +1,9 @@
+{
+  "name": "flywheel-skills",
+  "owner": {"name": "Zain Dana Harper"},
+  "plugins": [{
+    "name": "flywheel-evidence-task",
+    "source": "./plugins/flywheel-evidence-task",
+    "description": "Check Flywheel and Bulletin claims with source-linked evidence and false-success controls."
+  }]
+}

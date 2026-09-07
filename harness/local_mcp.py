@@ -15,6 +15,7 @@ from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import ToolExecutor, ToolGate
 from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
+from .skill_resources import list_resources, read_resource
 
 PROTOCOL = "2025-06-18"
 __version__ = "0.1.0"
@@ -117,12 +118,25 @@ def _ok(rid, result):
 def handle(req: dict):
     method, rid = req.get("method"), req.get("id")
     if method == "initialize":
-        return _ok(rid, {"protocolVersion": PROTOCOL, "capabilities": {"tools": {}},
+        return _ok(rid, {"protocolVersion": PROTOCOL,
+                         "capabilities": {"tools": {}, "resources": {}},
                          "serverInfo": {"name": "local-agent", "version": __version__}})
     if method == "tools/list":
         return _ok(rid, {"tools": TOOLS})
     if method == "tools/call":
         return _ok(rid, _call(req.get("params", {})))
+    if method == "resources/list":
+        return _ok(rid, list_resources())
+    if method == "resources/read":
+        params = req.get("params")
+        if not isinstance(params, dict):
+            return {"jsonrpc": "2.0", "id": rid,
+                    "error": {"code": -32602, "message": "resource params must be an object"}}
+        try:
+            return _ok(rid, read_resource(params.get("uri")))
+        except KeyError as exc:
+            return {"jsonrpc": "2.0", "id": rid,
+                    "error": {"code": -32602, "message": str(exc)}}
     if rid is None:
         return None
     return {"jsonrpc": "2.0", "id": rid, "error": {"code": -32601, "message": f"method not found: {method}"}}

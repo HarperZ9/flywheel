@@ -37,6 +37,11 @@ This starts the local API gateway on `http://127.0.0.1:8799` and serves a
 browser shell there. The shell is the fallback surface for development and
 CI; the desktop app is the native one.
 
+For a workflow you can use in an existing agent host, see the
+[Flywheel Evidence Task skill](plugins/flywheel-evidence-task/README.md).
+It can be installed independently of the engine and includes Codex and Claude
+plugin manifests, examples, and reproducible download packaging.
+
 ## How a run works
 
 One task, from the moment you send it to the point where somebody who was not
