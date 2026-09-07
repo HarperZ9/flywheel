@@ -80,9 +80,9 @@ def make_receipt(req_params: dict, gen: dict, served_ref: str,
     artifact hash yield DISTINCT receipt_ids -- the provenance field is genuinely
     re-checkable, never a write-only claim. Omitted (default) -> byte-identical to
     the prior no-fingerprint receipt."""
-    request_hash = _h(json.dumps(
-        {k: req_params.get(k) for k in ("prompt", "system", "max_new_tokens",
-                                        "temperature", "seed")}, sort_keys=True))[:16]
+    request = {k: req_params.get(k) for k in ("prompt", "system", "max_new_tokens", "temperature", "seed")}
+    if 'generation_config' in req_params: request['generation_config'] = req_params['generation_config']
+    request_hash = _h(json.dumps(request, sort_keys=True))[:16]
     response_hash = _h(gen.get("text", ""))[:16]
     prompt_hash = gen.get("prompt_hash", _h(req_params.get("prompt", ""))[:16])
     parts = [request_hash, prompt_hash, served_ref, response_hash]

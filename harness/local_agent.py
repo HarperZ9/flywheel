@@ -18,6 +18,7 @@ from typing import Callable, Optional, Protocol
 
 from . import compaction
 from .messages_api import make_receipt, translate_response
+from .local_serving import generation_config, validate_num_ctx
 # A transport is (method, url, body_bytes_or_none, timeout) -> (status, parsed_json).
 # The default hits the network; tests inject a fake to stay hermetic.
 Transport = Callable[[str, str, Optional[bytes], float], "tuple[int, dict]"]
@@ -91,11 +92,8 @@ class ServeBackend:
 
 @dataclass
 class OllamaBackend:
-    """A local Ollama model (qwen2.5 today, any pulled model). Native /api/chat.
-
-    model="" auto-selects the largest pulled model at health time, so the 14B/32B
-    become the backend automatically once pulled into Ollama — no code change."""
-
+    """Native /api/chat. Empty model selects the largest installed model.
+    num_ctx is explicit; omission leaves the server's setting unknown."""
     base_url: str = OLLAMA_URL
     model: str = ""
     name: str = "ollama"
@@ -103,6 +101,10 @@ class OllamaBackend:
     timeout: float = 300.0
     stream_transport: "Callable" = None      # inject (body_bytes)->iter[dict] for tests
     _resolved: str = field(default="", repr=False)
+    num_ctx: int | None = None
+
+    def __post_init__(self):
+        validate_num_ctx(self.num_ctx)
 
     def health(self) -> bool:
         try:
@@ -118,15 +120,9 @@ class OllamaBackend:
         return bool(self._resolved)
 
     def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
-        model = _ollama_native_model(self._resolved or self.model)
+        model, body = self._body(messages, system, max_tokens, temperature, seed, False)
         if not model:
             raise BackendError("no ollama model resolved (call health() or pass model=)")
-        msgs = ([{"role": "system", "content": system}] if system else []) + messages
-        body = json.dumps({
-            "model": model, "messages": msgs, "stream": False,
-            "options": {"temperature": temperature, "seed": seed,
-                        "num_predict": max_tokens},
-        }).encode()
         try:
             status, obj = self.transport("POST", f"{self.base_url}/api/chat", body, self.timeout)
         except (urllib.error.URLError, OSError, ConnectionError) as e:
@@ -137,14 +133,15 @@ class OllamaBackend:
         observed = obj.get("model")
         if not isinstance(observed, str) or not observed or observed != model:
             raise MalformedBackendOutput("ollama response model missing or mismatched")
-        return {"text": text, "model_ref": f"ollama:{observed}", "seed": seed}
+        return {"text": text, "model_ref": f"ollama:{observed}", "seed": seed,
+                "generation_config": json.loads(body)['options']}
 
     def _body(self, messages, system, max_tokens, temperature, seed, stream):
         model = _ollama_native_model(self._resolved or self.model)
         msgs = ([{"role": "system", "content": system}] if system else []) + messages
         return model, json.dumps({
             "model": model, "messages": msgs, "stream": stream,
-            "options": {"temperature": temperature, "seed": seed, "num_predict": max_tokens},
+            "options": generation_config(self, max_tokens, temperature, seed),
         }).encode()
 
     def chat_stream(self, messages, *, system, max_tokens, temperature, seed):
@@ -189,10 +186,10 @@ def _prefer_largest(tags: list[str]) -> str:
 
 
 def available_backends(*, serve_url: str = SERVE_URL, ollama_url: str = OLLAMA_URL,
-                        model: str = "", transport: Transport = _http) -> list[Backend]:
+                        model: str = "", transport: Transport = _http, num_ctx: int | None = None) -> list[Backend]:
     """The local backends in preference order (trained model first, Ollama next)."""
     return [ServeBackend(base_url=serve_url, transport=transport),
-            OllamaBackend(base_url=ollama_url, model=model, transport=transport)]
+            OllamaBackend(base_url=ollama_url, model=model, transport=transport, num_ctx=num_ctx)]
 
 
 def select_backend(backends: list[Backend], prefer: str = "auto") -> Optional[Backend]:
@@ -295,7 +292,9 @@ class LocalAgent:
         req_params = {"prompt": _flatten(self.history), "system": self.system,
                       "max_new_tokens": self.max_tokens, "temperature": self.temperature,
                       "seed": self.seed, "requested_model": gen["model_ref"]}
+        if 'generation_config' in gen: req_params['generation_config'] = gen['generation_config']
         resp = translate_response(gen, req_params, gen["model_ref"])
+        if 'generation_config' in gen: resp['generation_config'] = gen['generation_config']
         self.history.append({"role": "assistant", "content": gen["text"]})
         resp["backend"] = backend_name
         return resp
@@ -320,15 +319,14 @@ class LocalAgent:
         raise BackendError("all healthy backends failed: " + "; ".join(errors))
 
     def stream(self, user_text: str, on_chunk) -> dict:
-        """One turn, streaming text chunks to `on_chunk` as they arrive. Uses the
-        first healthy backend that supports streaming; falls back to send() (whole
-        answer as one chunk) if none does. Same receipt as send()."""
+        """Stream from the first capable healthy backend, else emit send() once."""
         self.history.append({"role": "user", "content": user_text})
         self._maybe_compact()
         for b in self._healthy():
             stream_fn = getattr(b, "chat_stream", None)
             if stream_fn is None:
                 continue
+            config = generation_config(b, self.max_tokens, self.temperature, self.seed) if isinstance(b, OllamaBackend) else None
             full, stream = "", iter(stream_fn(self.history, system=self.system, max_tokens=self.max_tokens,
                                                temperature=self.temperature, seed=self.seed))
             while True:
@@ -339,7 +337,9 @@ class LocalAgent:
                 full += piece
                 on_chunk(piece)
             if not isinstance(ref, str) or not ref: raise MalformedBackendOutput("streaming backend omitted validated model reference")
-            return self._finalize({"text": full, "model_ref": ref, "seed": self.seed}, b.name)
+            gen = {"text": full, "model_ref": ref, "seed": self.seed}
+            if config is not None: gen['generation_config'] = config
+            return self._finalize(gen, b.name)
         # no streaming backend: fall back to a normal turn, emit once
         self.history.pop()                       # send() re-appends the user turn
         resp = self.send(user_text)

@@ -25,6 +25,7 @@ from .local_agent import (
 from .local_git import commit_run
 from .local_loop import run_agent
 from .local_session import SessionLedger
+from .local_serving import context_argument
 from .local_tools import ToolExecutor, ToolGate
 from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
 
@@ -32,7 +33,7 @@ from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
 def _all_backends(args) -> list:
     """Local backends, plus the online provider ladder when --online is set."""
     backends = available_backends(serve_url=args.serve_url, ollama_url=args.ollama_url,
-                                  model=args.model)
+                                  model=args.model, num_ctx=getattr(args, 'num_ctx', None))
     if getattr(args, "online", False):
         from .endpoints import build_endpoints
         provs = [p.strip() for p in args.providers.split(",")] if args.providers else None
@@ -167,6 +168,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--backend", default="auto",
                     help="force a backend by name (auto|serve|ollama|<provider-mode>)")
     ap.add_argument("--model", default="", help="force an Ollama model name")
+    ap.add_argument('--num-ctx', type=context_argument, default=None, help='Ollama context tokens; omitted uses server setting')
     ap.add_argument("--file", action="append", default=[], help="inject a file as context (repeatable)")
     ap.add_argument("--system", default="", help="override the system prompt")
     ap.add_argument("--max-tokens", type=int, default=512, dest="max_tokens")

@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.benchmark_receipts import store_benchmark_outputs  # noqa: E402
 from harness.local_agent import BackendError, OllamaBackend, ServeBackend  # noqa: E402
 from harness.model_ollama import normalize_ollama_digest, ollama_name_matches  # noqa: E402
+from harness.local_serving import profile_num_ctx  # noqa: E402
 
 
 DEFAULT_PROMPT = "Reply with a short sentence confirming the local endpoint gate is active."
@@ -61,7 +62,7 @@ def _backend_for_profile(profile: dict[str, Any], *, timeout_seconds: float, tra
         return ServeBackend(**kwargs)
     if backend == "ollama":
         selectors = profile.get("selectors") if isinstance(profile.get("selectors"), list) else []
-        kwargs = {"base_url": endpoint, "model": str(selectors[0]) if selectors else "", "name": "ollama", "timeout": timeout_seconds}
+        kwargs = {"base_url": endpoint, "model": str(selectors[0]) if selectors else "", "name": "ollama", "timeout": timeout_seconds, "num_ctx": profile_num_ctx(profile)}
         if transport is not None:
             kwargs["transport"] = transport
         return OllamaBackend(**kwargs)
@@ -152,7 +153,11 @@ def probe_profile(
         "generation_attempted": False, "generation_ok": False, "failure_class": "",
         "response_sha256": "", "response_chars": 0, "run_id": run_id,
     }
-    backend = _backend_for_profile(profile, timeout_seconds=timeout_seconds, transport=transport)
+    try:
+        backend = _backend_for_profile(profile, timeout_seconds=timeout_seconds, transport=transport)
+    except ValueError:
+        row['failure_class'] = 'invalid_generation_config'
+        return _finalize_row(row, started)
     if backend is None:
         row["failure_class"] = "unsupported_backend"
         return _finalize_row(row, started)
@@ -174,6 +179,7 @@ def probe_profile(
             max_tokens=max_tokens, temperature=0.0, seed=seed,
         )
         text = str(result.get("text", ""))
+        if 'generation_config' in result: row['generation_config'] = result['generation_config']
         observed = str(result.get("model_ref", ""))
         row.update(generation_ok=bool(text.strip()), observed_model_ref=observed, model_ref=observed,
                    response_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest() if text else "", response_chars=len(text))
