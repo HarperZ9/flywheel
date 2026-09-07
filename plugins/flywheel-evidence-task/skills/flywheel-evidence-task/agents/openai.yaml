@@ -1,0 +1,7 @@
+interface:
+  display_name: "Flywheel Evidence Task"
+  short_description: "Source-linked Flywheel/Bulletin evidence packets"
+  default_prompt: "Use $flywheel-evidence-task to check this Flywheel or Bulletin claim with measured evidence and false-success controls."
+
+policy:
+  allow_implicit_invocation: true

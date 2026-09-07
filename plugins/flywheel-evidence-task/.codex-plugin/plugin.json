@@ -1,0 +1,35 @@
+{
+  "name": "flywheel-evidence-task",
+  "version": "0.1.0",
+  "description": "Source-linked evidence workflow for Flywheel and Bulletin checks.",
+  "author": {
+    "name": "Zain Dana Harper",
+    "url": "https://github.com/HarperZ9"
+  },
+  "homepage": "https://github.com/HarperZ9/flywheel",
+  "repository": "https://github.com/HarperZ9/flywheel",
+  "license": "FSL-1.1-MIT",
+  "keywords": [
+    "flywheel",
+    "bulletin",
+    "evidence",
+    "mcp",
+    "verification"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Flywheel Evidence Task",
+    "shortDescription": "Check Flywheel/Bulletin claims with source-linked evidence.",
+    "longDescription": "A portable skill for producing public-safe, source-linked Flywheel and Bulletin evidence packets with explicit measurements, falsification controls, and reported/checked/unknown boundaries.",
+    "developerName": "Zain Dana Harper",
+    "category": "Productivity",
+    "capabilities": [
+      "Read"
+    ],
+    "websiteURL": "https://github.com/HarperZ9/flywheel",
+    "defaultPrompt": [
+      "Check this Flywheel claim with public sources, measurements, and false-success controls.",
+      "Assess this Bulletin feedback thread and separate reported, checked, and unknown claims."
+    ]
+  }
+}

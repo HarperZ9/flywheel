@@ -1,0 +1,8 @@
+{
+  "name": "flywheel-evidence-task",
+  "version": "0.1.0",
+  "description": "Adds a Flywheel/Bulletin evidence-task skill with source links, measurements, and false-success controls.",
+  "author": {
+    "name": "Zain Dana Harper"
+  }
+}

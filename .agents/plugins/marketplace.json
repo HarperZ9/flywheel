@@ -1,0 +1,10 @@
+{
+  "name": "flywheel-skills",
+  "interface": {"displayName": "Flywheel Skills"},
+  "plugins": [{
+    "name": "flywheel-evidence-task",
+    "source": {"source": "local", "path": "./plugins/flywheel-evidence-task"},
+    "policy": {"installation": "AVAILABLE", "authentication": "ON_INSTALL"},
+    "category": "Productivity"
+  }]
+}
