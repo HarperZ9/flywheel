@@ -36,30 +36,77 @@ _SECRET_FRAGMENTS = ("api_key", "apikey", "token", "secret", "password",
                      "credential", "private_key", "authorization")
 _SHELL_RUNNERS = ("bash", "sh", "zsh", "cmd", "cmd.exe", "powershell",
                   "powershell.exe", "pwsh", "pwsh.exe")
+_REGISTRATION_FIELDS = frozenset((
+    "schema", "hook_id", "event", "argv", "blocking", "created_at",
+    "hook_sha256"))
 
 
 def _refuse(msg: str) -> None:
     raise ValueError(msg)
 
 
-def register_hook(*, event: str, argv: list, blocking: bool,
-                  hook_id: str, created_at: str) -> dict:
-    if event not in EVENTS:
+def _program_name(value: str) -> str:
+    return value.replace("\\", "/").rsplit("/", 1)[-1].lower()
+
+
+def validate_hook_payload(*, event: str, argv: list, blocking: bool,
+                          hook_id: str, created_at: str | None = None) -> None:
+    if type(event) is not str or event not in EVENTS:
         _refuse(f"unknown event: {event!r}")
     if not isinstance(argv, list) or not argv or any(
             not isinstance(a, str) or not a for a in argv):
         _refuse("a hook command is a non-empty argv list")
-    lowered = [a.lower() for a in argv]
-    if argv[0].lower() in _SHELL_RUNNERS:
+    if _program_name(argv[0]) in _SHELL_RUNNERS:
         _refuse(f"shell runners are refused: {argv[0]!r}; "
                 "hooks run argv, never a shell")
-    joined = " ".join(lowered)
+    joined = " ".join(a.lower() for a in argv)
     if any(secret in joined for secret in _SECRET_FRAGMENTS):
         _refuse("the hook command carries secret-shaped text")
     if not isinstance(blocking, bool):
         _refuse("blocking is a boolean")
-    if not hook_id.startswith("hook_"):
+    if not isinstance(hook_id, str) or not hook_id.startswith("hook_"):
         _refuse("hook id is not a hook ref")
+    if created_at is not None and (not isinstance(created_at, str)
+                                   or not created_at.strip()):
+        _refuse("created_at is required")
+
+
+def _validate_sealed_registration(reg: dict) -> None:
+    if (not isinstance(reg, dict) or set(reg) != _REGISTRATION_FIELDS
+            or reg.get("schema") != REGISTRATION_SCHEMA):
+        _refuse("the hook registry holds an unknown or unsealed row")
+    expected = canonical_sha256(
+        {k: v for k, v in reg.items() if k != "hook_sha256"})
+    if reg.get("hook_sha256") != expected:
+        _refuse("the hook registry holds a tampered row")
+    validate_hook_payload(event=reg["event"], argv=reg["argv"],
+                          blocking=reg["blocking"],
+                          hook_id=reg["hook_id"],
+                          created_at=reg["created_at"])
+
+
+def validate_hook_run_plan(*, event: object, registrations: object,
+                           context: object) -> None:
+    if type(event) is not str or event not in EVENTS:
+        _refuse(f"unknown event: {event!r}")
+    if type(context) is not dict:
+        _refuse("hook run context is an object")
+    if type(registrations) is not list or not registrations:
+        _refuse("hook run requires selected registrations")
+    seen = set()
+    for reg in registrations:
+        _validate_sealed_registration(reg)
+        if reg["event"] != event:
+            _refuse("hook run registrations must match the event")
+        if reg["hook_id"] in seen:
+            _refuse("hook run registrations must be unique")
+        seen.add(reg["hook_id"])
+
+
+def register_hook(*, event: str, argv: list, blocking: bool,
+                  hook_id: str, created_at: str) -> dict:
+    validate_hook_payload(event=event, argv=argv, blocking=blocking,
+                          hook_id=hook_id, created_at=created_at)
     reg = {
         "schema": REGISTRATION_SCHEMA,
         "hook_id": hook_id,
@@ -79,6 +126,14 @@ def run_hooks(event: str, registrations: list[dict], *, runner,
     with exit_code/output is injectable; production runs argv via
     subprocess with a hard timeout and no shell. A failing BLOCKING hook
     marks the event blocked; non-blocking failures only report."""
+    if type(event) is not str or event not in EVENTS:
+        _refuse(f"unknown event: {event!r}")
+    if type(context) is not dict:
+        _refuse("hook run context is an object")
+    if type(registrations) is not list:
+        _refuse("hook registrations are a list")
+    for reg in registrations:
+        _validate_sealed_registration(reg)
     receipts = []
     context_sha = canonical_sha256(context) if context else ""
     for reg in registrations:
@@ -125,9 +180,12 @@ def subprocess_runner(timeout_s: float = 30.0):
     import subprocess
 
     def runner(argv: list) -> dict:
-        completed = subprocess.run(
-            argv, capture_output=True, timeout=timeout_s,
-            env={**os.environ, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"})
+        try:
+            completed = subprocess.run(
+                argv, capture_output=True, timeout=timeout_s,
+                env={**os.environ, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"})
+        except subprocess.TimeoutExpired:
+            raise TimeoutError("timeout") from None
         return {
             "exit_code": completed.returncode,
             "output": (completed.stdout + completed.stderr).decode(
@@ -140,8 +198,7 @@ def subprocess_runner(timeout_s: float = 30.0):
 def save_registry(registrations: list[dict], *,
                   registry_path: Path) -> Path:
     for reg in registrations:
-        if reg.get("schema") != REGISTRATION_SCHEMA:
-            _refuse("the registry holds only sealed registrations")
+        _validate_sealed_registration(reg)
     path = Path(registry_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(registrations, indent=2, sort_keys=True),
@@ -157,8 +214,5 @@ def load_registry(registry_path: Path) -> list[dict]:
     if not isinstance(rows, list):
         _refuse("the hook registry is not a list")
     for reg in rows:
-        if (not isinstance(reg, dict)
-                or reg.get("schema") != REGISTRATION_SCHEMA
-                or reg.get("event") not in EVENTS):
-            _refuse("the hook registry holds an unknown or unsealed row")
+        _validate_sealed_registration(reg)
     return rows

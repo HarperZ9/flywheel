@@ -208,6 +208,14 @@ file imported both. The entity panel is `StoreEntityPanel` in
   and `companion_receipt_strip.dart` shows whether the dial the operator set was
   the dial that got applied.
 - The prepare allowlist defect described above.
+- The accountable hook mutation boundary now follows the gateway grant
+  flow. Hook registration is a `hook.register` write grant and cannot
+  execute `hook.registered`; hook firing is a separate `hook.run` exec
+  grant over the exact selected sealed registrations. `GET /api/hooks`
+  is private because it exposes full argv rows. A stale run grant refuses
+  with a registry conflict before any runner is built, registry load/run
+  revalidates schema, seal, and argv policy, and production subprocess
+  timeouts normalize to the hook receipt's `timeout` error.
 
 ## Honest nulls kept
 

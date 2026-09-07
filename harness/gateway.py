@@ -1330,12 +1330,15 @@ class _Handler(BaseHTTPRequestHandler):
         from harness.gateway_operation import action_for_path, materialize_agent_attachment, thaw_operation
         if p.startswith("/api/hooks/"):            # define, edit or fire a hook
             from harness.hooks_route import handle_hooks_post
-            req, fault = self._json_req()
-            if fault:
-                return self._json(*fault)
+            length = self._content_length()
+            if length is None:
+                return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                    "error": {"code": "INVALID_REQUEST",
+                              "message": "gateway operation is invalid"}}, 422)
             body, code = handle_hooks_post(
-                p, req, run_root=self.run_root,
-                owner_ref=self.owner_ref, clock=self.clock)
+                p, self.rfile.read(length), run_root=self.run_root,
+                owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
+                clock=self.clock)
             return self._json(body, code)
         if p.startswith("/api/subagents/"):        # run a subagent, recorded
             from harness.subagents_route import handle_subagents_post

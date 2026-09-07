@@ -17,12 +17,13 @@ from __future__ import annotations
 PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
                     "/api/gateway-grants/", "/api/pm/",
                     "/api/credential-handles", "/api/session-tokens",
-                    "/api/operations/")
+                    "/api/operations/", "/api/hooks/")
 
 #: Exact paths held under private custody. Model calls and anything that runs
 #: an agent, installs a plugin, or reaches the marketplace.
 PRIVATE_PATHS = frozenset({
     "/v1/chat/completions", "/api/agent", "/api/workflow",
+    "/api/hooks",
     "/api/plugins/probe", "/api/plugins/call", "/api/plugins/register",
     "/api/plugins/toggle", "/api/plugins/remove",
     "/api/marketplace/install", "/api/marketplace/add",
