@@ -7,6 +7,7 @@ from urllib.parse import urlsplit
 from .cross_harness_artifacts import canonical_sha256
 from .cross_harness_types import AdapterResult, AvailabilityResult, EnforcementResult, _usage_secret_field_allowed; from .endpoint_registry import BackendProposer
 from .local_agent import MalformedBackendOutput, OllamaBackend, ServeBackend
+from .local_serving import profile_num_ctx, profile_config_error
 from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, ToolGate
@@ -246,7 +247,7 @@ class FlywheelRouterAdapter:
         exe = "" if self.proposer is not None else self.executable_resolver(); proposer = self.proposer or CodexCliProposer(request.requested_model_reference, workspace=request.workspace_root, artifact_dir=request.artifact_dir, timeout_seconds=request.timeout_seconds, runner=self.runner, executable_resolver=self.executable_resolver)
         return _router_result(request, proposer, "flywheel_outer", self.clock, proposer_invocations_max=self.proposer_invocations_max, cli_identity=cli_identity_fields(self.cli_version, exe))
 def _profile_error(profile: dict[str, Any]) -> str:
-    if profile.get("backend") not in {"serve", "ollama"}: return "unsupported_local_backend"
+    if error := profile_config_error(profile): return error
     parsed = urlsplit(str(profile.get("endpoint_url", "")))
     if parsed.scheme not in {"http", "https"} or parsed.username or parsed.password or parsed.query or parsed.fragment: return "unsafe_endpoint_url"
     if parsed.hostname not in {"localhost", "127.0.0.1", "::1"}: return "endpoint_not_loopback"
@@ -271,7 +272,7 @@ def _local_http(method: str, url: str, body: bytes | None, timeout: float) -> tu
     except UnicodeDecodeError as exc: raise MalformedProviderOutput("malformed provider JSON") from exc
 def _backend(profile: dict[str, Any], timeout: float):
     if profile["backend"] == "ollama":
-        return OllamaBackend(base_url=profile["endpoint_url"], model=profile["model_ref"], timeout=timeout, transport=_local_http)
+        return OllamaBackend(base_url=profile["endpoint_url"], model=profile["model_ref"], timeout=timeout, transport=_local_http, num_ctx=profile_num_ctx(profile))
     return ServeBackend(base_url=profile["endpoint_url"], timeout=timeout, transport=_local_http)
 class LocalRouterAdapter:
     adapter_id = "openai_compatible_local/v1"

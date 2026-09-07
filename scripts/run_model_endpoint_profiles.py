@@ -17,6 +17,7 @@ from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 from harness.model_profiles import (candidate_model_roots, model_key, model_profile, release_profile, release_root,
                                     validate_release_identity_provenance)  # noqa: E402
 from harness.provider_roles import provider_role  # noqa: E402
+from harness.local_serving import configure_profiles, context_argument  # noqa: E402
 DEFAULT_SERVE_URLS = {
     "14b": "http://127.0.0.1:8765",
     "32b": "http://127.0.0.1:8767",
@@ -209,6 +210,8 @@ def build_report(
     serve_urls: dict[str, str] | None = None,
     runtime_strategies: dict[str, str] | None = None,
     ollama_url: str,
+    ollama_num_ctx: int | None = 8192,
+    ollama_models: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     validate_release_identity_provenance()
     profiles: list[dict[str, Any]] = []
@@ -225,6 +228,7 @@ def build_report(
         release_row = _release_ollama_profile(model, base_root=base_root, ollama_url=ollama_url)
         if release_row is not None:
             profiles.append(release_row)
+    configure_profiles(profiles, ollama_num_ctx, ollama_models)
     return {
         "schema": "harness.model-endpoint-profiles/v1",
         "timestamp_utc": now_utc(),
@@ -310,6 +314,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--serve-runtime-14b", default="")
     parser.add_argument("--serve-runtime-32b", default="")
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
+    parser.add_argument('--ollama-num-ctx', type=context_argument, default=8192)
+    parser.add_argument('--ollama-model-14b', default='qwen2.5-coder:14b-instruct-q4_K_M')
+    parser.add_argument('--ollama-model-32b', default='qwen2.5-coder:32b-instruct-q4_K_M')
     parser.add_argument("--out", default="")
     parser.add_argument("--markdown-out", default="")
     parser.add_argument("--store-root", default="")
@@ -320,15 +327,11 @@ def main(argv: list[str] | None = None) -> int:
         models=split_names(args.models),
         base_root=Path(args.base_root),
         serve_url=args.serve_url,
-        serve_urls={
-            "14b": args.serve_url_14b,
-            "32b": args.serve_url_32b,
-        },
-        runtime_strategies={
-            "14b": args.serve_runtime_14b,
-            "32b": args.serve_runtime_32b,
-        },
+        serve_urls={"14b": args.serve_url_14b, "32b": args.serve_url_32b},
+        runtime_strategies={"14b": args.serve_runtime_14b, "32b": args.serve_runtime_32b},
         ollama_url=args.ollama_url,
+        ollama_num_ctx=args.ollama_num_ctx,
+        ollama_models={'14b': args.ollama_model_14b, '32b': args.ollama_model_32b},
     )
     json_text = json.dumps(report, indent=2, sort_keys=True)
     md_text = render_markdown(report)
@@ -338,10 +341,7 @@ def main(argv: list[str] | None = None) -> int:
         report,
         store_root=args.store_root,
         run_id=args.run_id,
-        artifacts=[
-            (json_path, "model-endpoint-profiles-json"),
-            (md_path, "model-endpoint-profiles-markdown"),
-        ],
+        artifacts=[(json_path, "model-endpoint-profiles-json"), (md_path, "model-endpoint-profiles-markdown")],
     )
     if store_outputs:
         report = {**report, "store_outputs": store_outputs}
