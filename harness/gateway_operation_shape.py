@@ -8,13 +8,14 @@ scopes.
 """
 from __future__ import annotations
 
+from .evidence_json import canonical_sha256
 from .gateway_operation import PROPOSAL_REF_PATTERN, OPERATION_REF_PATTERN, _text
 
 
 def validate_operation_shape(action: str, value: dict) -> None:
     text_fields = {"model", "goal", "endpoint", "workflow", "profile", "root",
                    "test_cmd", "name", "tool", "detail", "prompt",
-                   "solution_sig", "context", "intent_source",
+                   "solution_sig", "intent_source",
                    "architecture_source", "prp_id", "code", "path", "kind",
                    "oracle_cmd", "fixtures_root", "governance_tier", "effort",
                    "reason", "authority_1", "authority_2", "mode"}
@@ -28,9 +29,21 @@ def validate_operation_shape(action: str, value: dict) -> None:
         elif not _text(items):
             raise ValueError
     if action == "forge.create":
+        if "context" in value and not _text(value["context"]):
+            raise ValueError
         for list_field in ("examples", "documentation"):
             if list_field in value and type(value[list_field]) is not list:
                 raise ValueError
+    if action == "hook.register":
+        from .accountable_hooks import validate_hook_payload
+        validate_hook_payload(event=value["event"], argv=value["argv"],
+                              blocking=value["blocking"],
+                              hook_id=value["hook_id"])
+    if action == "hook.run":
+        from .accountable_hooks import validate_hook_run_plan
+        validate_hook_run_plan(event=value["event"],
+                               registrations=value["registrations"],
+                               context=value["context"])
     if action == "bench.run":
         tasks = value["tasks"]
         if (type(tasks) is not list or not tasks
@@ -151,6 +164,13 @@ def destination_for(action: str, value: dict) -> dict:
         return {"kind": "store", "ref": value["kind"]}
     if action == "import.config":
         return {"kind": "workspace", "ref": value["root"]}
+    if action == "hook.register":
+        return {"kind": "hook", "ref": value["hook_id"]}
+    if action == "hook.run":
+        rows = value["registrations"]
+        return {"kind": "hook-event",
+                "ref": f"{value['event']}:{len(rows)}:"
+                       f"{canonical_sha256(rows)[:12]}"}
     if action == "infra.credential_scan":
         root = value.get("root")
         return {"kind": "scan", "ref": root if root else "environment"}
@@ -199,6 +219,10 @@ def derived_scopes(action: str, value: dict, secrets: bool) -> tuple:
         selected.update(("exec", "network", "plugin"))
     if action in {"packs.admit", "store.put", "import.config"}:
         selected.add("write")
+    if action == "hook.register":
+        selected.add("write")
+    if action == "hook.run":
+        selected.add("exec")
     if action == "infra.credential_scan":
         # It reads the files and variables where credentials live. It records
         # a fingerprint and never a value, and the scope still says secrets.

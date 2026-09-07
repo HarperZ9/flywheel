@@ -7,6 +7,8 @@ hash, duration), and a failing BLOCKING hook blocks the event:
 fail-closed, by registration, not by mood. Secret-shaped commands are
 refused at registration; nothing here ever interpolates a shell.
 """
+import subprocess
+
 import pytest
 
 from harness.accountable_hooks import (
@@ -15,6 +17,7 @@ from harness.accountable_hooks import (
     register_hook,
     run_hooks,
     save_registry,
+    subprocess_runner,
 )
 
 ARGS = ["python", "-c", "print('hook ran')"]
@@ -49,6 +52,18 @@ def test_a_bare_shell_invocation_is_refused():
         _reg(argv=["bash", "-c", "echo hi"])
     with pytest.raises(ValueError):
         _reg(argv=["cmd", "/c", "echo hi"])
+
+
+@pytest.mark.parametrize("argv", [
+    ["/bin/sh", "-c", "echo hi"],
+    [r"C:\Windows\System32\cmd.exe", "/c", "echo hi"],
+    [r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
+     "-Command", "echo hi"],
+    ["../pwsh", "-Command", "echo hi"],
+])
+def test_path_qualified_shell_invocations_are_refused(argv):
+    with pytest.raises(ValueError):
+        _reg(argv=argv)
 
 
 def test_events_allowlist_covers_the_platform():
@@ -115,6 +130,21 @@ def test_a_timeout_is_a_failure(tmp_path):
     assert receipts[0]["error"] == "timeout"
 
 
+def test_subprocess_timeout_is_normalized_by_the_production_runner(
+        monkeypatch):
+    def timeout(*_args, **_kwargs):
+        raise subprocess.TimeoutExpired(
+            cmd=["python", "-c", "pass"], timeout=0.01)
+
+    monkeypatch.setattr(subprocess, "run", timeout)
+    receipts = run_hooks("bench.completed", [_reg(blocking=True)],
+                         runner=subprocess_runner(timeout_s=0.01),
+                         context={})
+    assert receipts[0]["exit_code"] == -1
+    assert receipts[0]["blocked"] is True
+    assert receipts[0]["error"] == "timeout"
+
+
 def test_registry_round_trips(tmp_path):
     reg = _reg()
     path = save_registry([reg], registry_path=tmp_path / "hooks.json")
@@ -128,3 +158,34 @@ def test_registry_refuses_a_blocked_or_unknown_row(tmp_path):
         [{"event": "on.everything"}]), encoding="utf-8")
     with pytest.raises(ValueError):
         load_registry(path)
+
+
+def test_registry_refuses_tampered_sealed_rows(tmp_path):
+    reg = _reg()
+    reg["argv"] = ["python", "-c", "print('tampered')"]
+    path = tmp_path / "hooks.json"
+    path.write_text(__import__("json").dumps([reg]), encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_registry(path)
+
+
+def test_run_hooks_refuses_tampered_rows_before_runner():
+    reg = _reg()
+    reg["argv"] = ["python", "-c", "print('tampered')"]
+    with pytest.raises(ValueError):
+        run_hooks("bench.completed", [reg],
+                  runner=lambda _argv: pytest.fail(
+                      "tampered row reached the runner"),
+                  context={})
+
+
+def test_run_hooks_preflights_all_rows_before_any_runner_call():
+    good = _reg("hook_good")
+    bad = _reg("hook_bad")
+    bad["argv"] = ["python", "-c", "print('tampered')"]
+    calls = []
+    with pytest.raises(ValueError):
+        run_hooks("bench.completed", [good, bad],
+                  runner=lambda argv: calls.append(argv),
+                  context={})
+    assert calls == []

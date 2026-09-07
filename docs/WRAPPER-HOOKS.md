@@ -63,3 +63,14 @@ shape carries no final answer text, the receipt records the prompt
 side only. `POST /api/scaffold` also accepts a `citations` list
 (offset-bound, per docs on verify_citations) so a wrapper that cites
 byte ranges gets them verified in the same receipt.
+
+Flywheel's own accountable hook registry is stricter than the wrapper
+mount shown here. `POST /api/hooks/register` records an argv hook under
+a one-use `hook.register` gateway grant with `write` scope and does not
+fire hooks as part of registration. `GET /api/hooks` is private because it
+returns the full registry, including argv. `POST /api/hooks/run` fires only
+the sealed registrations named in the one-use `hook.run` grant with `exec`
+scope. Before dispatch, the gateway reloads the registry, refuses the grant
+if matching rows changed, and executes the approved rows rather than a later
+registry read. The registry is rechecked on load and run for schema, seal,
+and argv policy so a tampered or shell-shaped row is refused before dispatch.

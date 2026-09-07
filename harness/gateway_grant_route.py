@@ -102,6 +102,10 @@ def _proposal_response(record: dict, operation) -> dict:
         "credential_refs": list(operation.credential_refs),
         "effect": "one dispatch after approval", "expires_at": record["expires_at"],
     }
+    if record["action"] == "hook.run":
+        rows = thaw_operation(operation.operation)["registrations"]
+        summary["hook_registrations"] = [{k: row[k] for k in (
+            "hook_id", "hook_sha256", "argv", "blocking")} for row in rows]
     return {
         "schema": PROPOSAL_SCHEMA, "proposal_ref": record["proposal_ref"],
         "planned_grant_ref": record["planned_grant_ref"],

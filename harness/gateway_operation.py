@@ -106,6 +106,7 @@ _FIELDS = {
     "packs.admit": ({"manifest"} | _REFS, {"fixtures_root"}),
     "store.put": ({"kind", "data"} | _REFS, {"project"}),
     "import.config": ({"root"} | _REFS, set()),
+    "hook.register": ({"event", "argv", "blocking", "hook_id"} | _REFS, set()), "hook.run": ({"event", "context", "registrations"} | _REFS, set()),
 }
 _FIELDS.update(INFRA_FIELDS)          # the infrastructure controls; one table
 # Every action the engine can canonicalize is an action the operator can be
