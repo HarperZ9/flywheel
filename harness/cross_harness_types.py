@@ -117,11 +117,16 @@ _USAGE_COUNT_KEYS = frozenset({
     "total_tokens",
 })
 _USAGE_DETAIL_KEYS = frozenset({"input_tokens_details", "output_tokens_details"})
+_SAFE_SECRETISH_NUMERIC_KEYS = frozenset({"max_output_tokens"})
 
 
 def _usage_secret_field_allowed(key: str, value: Any, in_usage: bool) -> bool:
     return in_usage and ((key in _USAGE_COUNT_KEYS and type(value) is int)
                          or (key in _USAGE_DETAIL_KEYS and isinstance(value, dict)))
+
+
+def _safe_secretish_field_allowed(key: str, value: Any) -> bool:
+    return key in _SAFE_SECRETISH_NUMERIC_KEYS and type(value) is int
 
 
 def sanitize_evidence(value: Any, _in_usage: bool = False) -> Any:
@@ -137,6 +142,7 @@ def sanitize_evidence(value: Any, _in_usage: bool = False) -> Any:
             name = str(key); child_in_usage = _in_usage or name == "usage"
             cleaned[name] = ("[REDACTED]" if _SECRET_KEY.search(name)
                              and not _usage_secret_field_allowed(name, item, _in_usage)
+                             and not _safe_secretish_field_allowed(name, item)
                              else sanitize_evidence(item, child_in_usage))
         return cleaned
     if isinstance(value, list): return [sanitize_evidence(item, _in_usage) for item in value]

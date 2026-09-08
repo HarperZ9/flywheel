@@ -7,8 +7,8 @@ KV, content-addressed stores, verifier memoization, proof-carrying code). The
 unpublished MOVE is using the harness's own C2 invariant as a theorem:
 
     acceptance is oracle-gated and the oracle's verdict does not read the prompt,
-    so the accepted fact is a function of (candidate, oracle, oracle-input) and
-    is INDEPENDENT of the prompt -> the prompt can be dropped from the cache key.
+    so the reusable fact is a function of (candidate, oracle, oracle-input,
+    retrieved provenance, oracle context) and is INDEPENDENT of the prompt.
 
 Input-addressed caches provably cannot do this: they have no oracle certifying
 that two different prompts yield the same verifiable fact, so they must key on
@@ -16,8 +16,9 @@ the input. We have that oracle. Dropping the prompt collapses two prompts that
 differ only in a volatile attribution header (the live F2 bug: 0% agent
 cache-hit) onto ONE entry.
 
-Safety (C2 preserved): a proof-hit is RE-WITNESSED (`witness.witness_envelope`
-re-runs the oracle) and served only on MATCH — never blind-trusted, never stale.
+Safety (C2 preserved): direct proof lookups are RE-WITNESSED
+(`witness.witness_envelope` re-runs the oracle) and served only on MATCH.
+`run_loop` uses proof hits as candidates and runs its current checks itself.
 
 Scope condition (the falsifier's teeth): sound ONLY for oracles whose `verify`
 ignores the prompt. `PROMPT_INDEPENDENT` is that honest allowlist; any oracle not
@@ -30,7 +31,8 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from .cache import ReceiptCache, oracle_input_hash
+from .cache import (ReceiptCache, knowledge_hash, oracle_context_hash,
+                    oracle_input_hash)
 from .envelope import ProofEnvelope
 from .oracle import Oracle
 from .task import Task
@@ -45,21 +47,30 @@ def is_prompt_independent(oracle_type: str) -> bool:
     return PROMPT_INDEPENDENT.get(oracle_type, False)
 
 
-def proof_key(task: Task, oracle_type: str, oracle_cmd: str) -> str:
+def proof_key(task: Task, oracle_type: str, oracle_cmd: str,
+              oracle_context: str = "") -> str:
     """The oracle-certified-fact key. The prompt is ABSENT by construction —
-    only what the accept decision depends on is bound."""
+    the retrieved receipts and oracle context still bind the reusable fact."""
     parts = [task.task_id, oracle_type, oracle_cmd, oracle_input_hash(task)]
+    knowledge = knowledge_hash(task)
+    if knowledge:
+        parts.append(f"knowledge:{knowledge}")
+    context = oracle_context or oracle_context_hash(task, oracle_type)
+    if context:
+        parts.append(f"oracle_context:{context}")
     return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
 
 def proof_lookup(cache: ReceiptCache, task: Task, oracle: Oracle,
-                 *, witness_recheck: bool = True) -> ProofEnvelope | None:
+                 *, witness_recheck: bool = True,
+                 oracle_context: str = "") -> ProofEnvelope | None:
     """Hit only if (a) the oracle is prompt-independent, (b) a PASS envelope is
     stored under proof_key, and (c) re-witnessing it MATCHes now. Otherwise
     None, and the caller does a fresh run. Never a blind or stale serve."""
     if not is_prompt_independent(oracle.oracle_type):
         return None
-    env = cache.lookup(proof_key(task, oracle.oracle_type, task.oracle_cmd))
+    env = cache.lookup(proof_key(task, oracle.oracle_type, task.oracle_cmd,
+                                 oracle_context))
     if env is None or env.verdict != "PASS":
         return None
     if not witness_recheck:
@@ -70,7 +81,8 @@ def proof_lookup(cache: ReceiptCache, task: Task, oracle: Oracle,
 
 
 def proof_insert(cache: ReceiptCache, task: Task,
-                 envelope: ProofEnvelope) -> Path | None:
+                 envelope: ProofEnvelope,
+                 oracle_context: str = "") -> Path | None:
     """Dual-index write: only prompt-independent, accepted (PASS) envelopes get a
     proof-key entry. Returns None when skipped (the honest opt-out).
 
@@ -80,4 +92,6 @@ def proof_insert(cache: ReceiptCache, task: Task,
     stored `envelope.oracle_cmd` is still used for the re-witness re-run."""
     if envelope.verdict != "PASS" or not is_prompt_independent(envelope.oracle):
         return None
-    return cache.insert(envelope, proof_key(task, envelope.oracle, task.oracle_cmd))
+    return cache.insert(
+        envelope, proof_key(task, envelope.oracle, task.oracle_cmd,
+                            oracle_context))
