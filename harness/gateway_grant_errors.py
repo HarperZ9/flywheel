@@ -49,6 +49,14 @@ def gateway_error_response(exc: Exception) -> tuple[dict, int]:
         "STORE_BUSY": (503, "operation store is busy"),
         "STORE_COMMIT_FAILED": (
             500, "operation state could not be committed"),
+        "SOURCE_CONTEXT_PERMISSION_DENIED": (
+            403, "source context is not available to this owner"),
+        "SOURCE_CONTEXT_REF_NOT_FOUND": (
+            404, "source context reference was not found"),
+        "SOURCE_CONTEXT_STORE_CORRUPT": (
+            409, "source context snapshot is invalid"),
+        "SOURCE_CONTEXT_FAILED": (
+            409, "source context snapshot is invalid"),
         "EXTERNAL_ACTION_FAILED": (
             502, "authorized external action failed")}
     code = code if code in errors else "STORE_COMMIT_FAILED"

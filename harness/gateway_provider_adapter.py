@@ -52,6 +52,9 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
         workflow_sha = workflow_snapshot.sha256
         profile_sha = profile_snapshot.sha256
         required, refs = _credential_plan(operation)
+    elif operation.action == "agent.run":
+        _source_context_snapshot(operation, owner_ref, state_root)
+        required, refs = _credential_plan(operation)
     else:
         required, refs = _credential_plan(operation)
         workflow_sha = profile_sha = None
@@ -101,6 +104,22 @@ def _plan_snapshot(operation, owner_ref, state_root):
         raise
     except Exception as exc:
         code = getattr(exc, "code", "PLAN_BINDING_DRIFT")
+        raise GatewayOperationError(code) from None
+
+
+def _source_context_snapshot(operation, owner_ref, state_root) -> None:
+    try:
+        if not any(type(ref) is str and ref.startswith("data_source_context.")
+                   for ref in operation.data_refs):
+            return
+        if type(owner_ref) is not str or state_root is None:
+            raise ValueError
+        from .source_context_worker import validate_source_context_refs
+        validate_source_context_refs(owner_ref, state_root, operation.data_refs)
+    except Exception as exc:
+        code = getattr(exc, "code", "SOURCE_CONTEXT_FAILED")
+        if code == "SOURCE_CONTEXT_FAILED":
+            code = "SOURCE_CONTEXT_STORE_CORRUPT"
         raise GatewayOperationError(code) from None
 
 
