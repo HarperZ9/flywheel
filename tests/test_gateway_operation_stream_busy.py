@@ -1,4 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 
 import pytest
@@ -7,7 +6,9 @@ import harness.gateway_operation_route as operation_route
 from harness.gateway_operation import GatewayOperationError
 from harness.gateway_operation_process import WorkerOutcome
 from harness.gateway_operation_route import (
-    OperationEventBus, operation_ref_for, route_gateway_operation)
+    OperationEventBus, operation_ref_for, queued_payload,
+    route_gateway_operation)
+from harness.gateway_operation_route_reads import read_after_store_busy
 from harness.journey_lock import ExclusiveJourneyLock
 from gateway_route_fixtures import JOURNEY, OWNER, Factory, _setup
 
@@ -100,6 +101,37 @@ class BlockingProcess:
         self.release.set()
 
 
+class ReleaseLockOnWait:
+    def __init__(self, release):
+        self.release = release
+        self.waits = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_exc):
+        return False
+
+    def wait(self, _wait_s):
+        self.waits += 1
+        self.release()
+        return True
+
+    def notify_all(self):
+        return None
+
+def _queue_operation(service, raw):
+    authorized = service.authorizer(
+        "agent.run", raw, owner_ref=OWNER, state_root=service.state_root,
+        clock=service.clock)
+    journey = service._journey(OWNER)
+    head = journey.resume(JOURNEY)["event_head_sha256"]
+    journey._append_lifecycle(
+        journey_ref=JOURNEY, expected_event_head=head,
+        client_request_id=authorized.client_request_id,
+        operation="operation_queued", payload=queued_payload(authorized))
+    return operation_ref_for(OWNER, JOURNEY, authorized.client_request_id)
+
 def test_watch_yields_buffered_progress_when_snapshot_is_busy():
     service, ref = BusySnapshotService(), "op_" + "1" * 32
     service.events.publish(OWNER, ref, "progress", {"step": "ready"})
@@ -120,46 +152,104 @@ def test_watch_still_surfaces_busy_without_buffered_events():
 
 def test_watch_waits_for_real_journey_lock_release_before_retry(tmp_path, monkeypatch):
     service, raw = _setup(tmp_path, lock_timeout_s=0.01)
-    process = BlockingProcess()
-    response = route_gateway_operation(
-        "POST", "/api/agent", owner_ref=OWNER, raw=raw,
-        content_type="application/json", service=service,
-        process_factory=Factory(process))
-    ref = operation_ref_for(OWNER, JOURNEY, "agent-1")
-    busy_seen = Event()
-    original_snapshot = service.snapshot
-
-    def snapshot(*args):
-        try:
-            return original_snapshot(*args)
-        except GatewayOperationError as exc:
-            if exc.code == "STORE_BUSY":
-                busy_seen.set()
-            raise
-
-    def read_first_frame():
-        stream_response = route_gateway_operation(
-            "GET", f"/api/operations/{ref}/events", query="after=999",
-            owner_ref=OWNER, service=service, process_factory=Factory(process))
-        assert stream_response.status == 200
-        return next(stream_response.stream)
-
-    monkeypatch.setattr(service, "snapshot", snapshot)
+    ref = _queue_operation(service, raw)
     lock_path = tmp_path / "journeys" / "v2" / "owners" / OWNER / JOURNEY / ".lock"
-    executor = ThreadPoolExecutor(max_workers=1)
-    future = None
+    original_history = service._history
+    held_lock = None
+    locked_once = False
+
+    def release_lock():
+        nonlocal held_lock
+        if held_lock is not None:
+            held_lock.__exit__(None, None, None)
+            held_lock = None
+
+    def history_then_lock(*args):
+        nonlocal held_lock, locked_once
+        history = original_history(*args)
+        if not locked_once:
+            locked_once = True
+            held_lock = ExclusiveJourneyLock.acquire(lock_path)
+            held_lock.__enter__()
+        return history
+
+    condition = ReleaseLockOnWait(release_lock)
+    monkeypatch.setattr(service, "_history", history_then_lock)
+    monkeypatch.setattr(service.events, "_condition", condition)
+    stream = None
     try:
-        with ExclusiveJourneyLock.acquire(lock_path):
-            future = executor.submit(read_first_frame)
-            assert busy_seen.wait(1)
-            assert not future.done()
-        service.events.wake()
-        assert b"event: snapshot\r\n" in future.result(timeout=1)
+        response = route_gateway_operation(
+            "GET", f"/api/operations/{ref}/events", query="after=999",
+            owner_ref=OWNER, service=service,
+            process_factory=Factory(BlockingProcess()))
+        assert response.status == 200 and response.stream is not None
+        stream = response.stream
+        assert b"event: snapshot\r\n" in next(stream)
+        assert locked_once and condition.waits == 1
     finally:
-        process.release.set()
-        executor.shutdown(wait=True)
-        if response.stream is not None:
-            response.stream.close()
+        release_lock()
+        if stream is not None:
+            stream.close()
+
+
+def test_snapshot_load_busy_after_history_read_retries_through_route_reader(tmp_path, monkeypatch):
+    service, raw = _setup(tmp_path, lock_timeout_s=0.01)
+    ref = _queue_operation(service, raw)
+    lock_path = tmp_path / "journeys" / "v2" / "owners" / OWNER / JOURNEY / ".lock"
+    original_history = service._history
+    held_lock = None
+    locked_once = False
+
+    def release_lock():
+        nonlocal held_lock
+        if held_lock is not None:
+            held_lock.__exit__(None, None, None)
+            held_lock = None
+            service.events.wake()
+
+    def history_then_lock(*args):
+        nonlocal held_lock, locked_once
+        history = original_history(*args)
+        if not locked_once:
+            locked_once = True
+            held_lock = ExclusiveJourneyLock.acquire(lock_path)
+            held_lock.__enter__()
+        return history
+
+    condition = ReleaseLockOnWait(release_lock)
+    monkeypatch.setattr(service, "_history", history_then_lock)
+    try:
+        snapshot = read_after_store_busy(
+            lambda: service.snapshot(OWNER, ref), condition)
+        assert snapshot.operation_ref == ref
+        assert locked_once and condition.waits == 1
+    finally:
+        release_lock()
+
+
+def test_snapshot_load_nonbusy_after_history_read_does_not_retry(tmp_path, monkeypatch):
+    service, raw = _setup(tmp_path, lock_timeout_s=0.01)
+    ref = _queue_operation(service, raw)
+    original_history = service._history
+    corrupted_once = False
+
+    def history_then_corrupt(*args):
+        nonlocal corrupted_once
+        history = original_history(*args)
+        if not corrupted_once:
+            corrupted_once = True
+            projection_path = (
+                tmp_path / "journeys" / "v2" / "owners" / OWNER
+                / JOURNEY / "projection.json")
+            projection_path.write_bytes(b'{"wrong":true}')
+        return history
+
+    condition = ReleaseLockOnWait(lambda: None)
+    monkeypatch.setattr(service, "_history", history_then_corrupt)
+    with pytest.raises(GatewayOperationError) as failure:
+        read_after_store_busy(lambda: service.snapshot(OWNER, ref), condition)
+    assert failure.value.code == "STORE_COMMIT_FAILED"
+    assert corrupted_once and condition.waits == 0
 
 
 def test_watch_retries_transient_busy_before_synthetic_snapshot():

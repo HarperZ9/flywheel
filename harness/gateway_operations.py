@@ -222,7 +222,10 @@ class GatewayOperations:
     def _snapshot(self, journey: JourneyService, ref: str,
                   history: list[dict]) -> OperationSnapshot:
         state, terminal = history_state(history)
-        projection = journey.resume(history[0]["journey_ref"])
+        try:
+            projection = journey.resume(history[0]["journey_ref"])
+        except JourneyStoreError as exc:
+            raise GatewayOperationError(exc.code) from None
         handle = self._handles.get((journey.owner_ref, ref))
         return OperationSnapshot(
             ref, history[0]["journey_ref"], projection["event_head_sha256"],
