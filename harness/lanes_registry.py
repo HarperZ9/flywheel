@@ -22,6 +22,7 @@ class Lane:
     #                                 repo's /src is added to the child PYTHONPATH so a
     #                                 lane that composes uninstalled siblings still probes live
     url: str = ""                   # compiled-in default endpoint for a kind="http" lane
+    package_disabled_reason: str = ""  # package name is not an admitted distribution
 
     def mcp_command(self) -> list[str]:
         """The argv that launches this lane's MCP stdio server.
@@ -79,7 +80,8 @@ LANES: dict[str, Lane] = {
     "telos": Lane(
         "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.2.0",
         "the reconciliation lane: five-tool workflow + creative engine + doctors",
-        "reconciliation", source_repo="public/telos"),
+        "reconciliation", source_repo="public/telos",
+        package_disabled_reason="No published npm distribution is available. Use a Telos source checkout."),
     "local-model": Lane(
         "local-model", "", "python", ("-m", "harness.local_mcp"), "bundled", "0.1.0",
         "the trained 14B proposer + verified-inference harness (the engine lane)",
@@ -87,15 +89,20 @@ LANES: dict[str, Lane] = {
     "relay": Lane(
         "relay", "relay-agent", "relay", ("--mcp",), "pip", "0.1.0",
         "accountable coding agent on any model endpoint (local-first, witnessed runs)",
-        "execution", source_repo="public/relay", py_module="relay.local_agent_cli"),
+        "execution", source_repo="public/relay", py_module="relay.local_agent_cli",
+        package_disabled_reason=("Relay's PyPI name belongs to another project. "
+                                 "Use a HarperZ9 Relay source checkout.")),
     "plexus": Lane(
         "plexus", "plexus-mesh", "plexus", ("mcp",), "pip", "0.2.0",
         "capability discovery + auto-wiring of the tool mesh (the layer above a flat tool list)",
-        "wiring", source_repo="public/plexus", py_module="plexus.cli"),
+        "wiring", source_repo="public/plexus", py_module="plexus.cli",
+        package_disabled_reason="No published PyPI distribution is available. Use a Plexus source checkout."),
     "mneme": Lane(
         "mneme", "mneme-memory", "mneme", ("mcp",), "pip", "0.2.0",
         "accountable memory: recall with re-derivable ranking receipts + drift verdicts",
-        "memory", source_repo="public/mneme", py_module="mneme.cli"),
+        "memory", source_repo="public/mneme", py_module="mneme.cli",
+        package_disabled_reason=("Mneme's PyPI name belongs to another project. "
+                                 "Use a HarperZ9 Mneme source checkout.")),
     "calibrate-pro": Lane(
         "calibrate-pro", "calibrate-pro", "calibrate-pro", ("mcp",), "pip", "1.1.0",
         "evidence-labeled display calibration: color-target and characterized-panel "
@@ -106,7 +113,9 @@ LANES: dict[str, Lane] = {
         "provider-neutral memory bank + personality container: one envelope, "
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",
-        "continuity", source_repo="public/canon", py_module="canon.cli"),
+        "continuity", source_repo="public/canon", py_module="canon.cli",
+        package_disabled_reason=("Canon's PyPI name belongs to another project. "
+                                 "Use a HarperZ9 Canon source checkout.")),
     "bulletin": Lane(
         "bulletin", "", "", (), "http", "0.2.0",
         "the open board: a workstation or another agent reaches it over the web, "
@@ -119,5 +128,7 @@ LANES: dict[str, Lane] = {
         "gate + self-verifying effectors + tamper-evident journal (actuates, so T2)",
         "actuation", source_repo="public/accountable-surface",
         py_module="accountable_surface.server",
-        extra_source_repos=("public/coherence-membrane", "public/proof-surface")),
+        extra_source_repos=("public/coherence-membrane", "public/proof-surface"),
+        package_disabled_reason=("No published PyPI distribution is available. "
+                                 "Use an accountable-surface source checkout.")),
 }

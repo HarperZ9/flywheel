@@ -1,0 +1,1 @@
+include tests/gateway_grant_relay_source_fixture.py

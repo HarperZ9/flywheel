@@ -6,7 +6,9 @@ import os
 from pathlib import Path
 import re
 
-from .lanes import LANES, resolve_mcp_command, resolve_mcp_launch
+from .lanes import LANES, resolve_mcp_command, resolve_mcp_launch, resolve_lane_runtime
+from .gateway_operation import GatewayOperationError
+from .plugin_lane_runtime import lane_plugin_row, require_lane_launch, unavailable_response
 
 # The gated builtin tool sets (local_tools.ToolExecutor). Names only; the
 # gate decides what actually runs.
@@ -87,12 +89,8 @@ def _save_custom(entries: list) -> None:
 
 def plugin_roster() -> dict:
     """Every mounted capability under one manifest shape."""
-    plugins = []
-    for name, lane in LANES.items():
-        plugins.append({
-            "name": name, "kind": "lane", "enabled": True, "removable": False,
-            "detail": lane.role, "organ": lane.organ,
-            "command": resolve_mcp_command(name)})
+    plugins = [lane_plugin_row(name, lane, resolve_mcp_command, resolve_lane_runtime)
+               for name, lane in LANES.items()]
     plugins.append({
         "name": "tools", "kind": "builtin", "enabled": True, "removable": False,
         "detail": "gated in-process tool set; write/exec are grants, not defaults",
@@ -118,8 +116,7 @@ def plugin_roster() -> dict:
 
 def register_mcp(name: str, command: list, detail: str = "", *,
                  requires=(), credential_refs=()) -> dict:
-    """Register a custom MCP stdio server by argv. Names must be new and
-    must not shadow a lane or the builtin set."""
+    """Register a new MCP server without shadowing a reserved name."""
     name = (name or "").strip()
     if not name:
         return {"error": "provide a plugin name"}
@@ -173,7 +170,7 @@ def plugin_execution_plan(name: str):
     if name == "tools":
         return None, "builtin", (), ()
     if name in LANES:
-        return resolve_mcp_launch(name), "lane", (), ()
+        return require_lane_launch(name, resolve_mcp_launch), "lane", (), ()
     entry = next((row for row in _load_custom() if row.get("name") == name), None)
     if entry is None or not entry.get("enabled", True):
         raise PluginPermissionError
@@ -236,6 +233,8 @@ def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
             command = _launch(command, slots, credential_bindings)
         else:
             command, kind = execution_plan.launch, execution_plan.plugin_kind
+    except GatewayOperationError:
+        return unavailable_response(name)
     except PluginPermissionError:
         return _permission()
     from .mcp_client import MCPClient, MCPError
@@ -265,6 +264,8 @@ def probe_plugin(name: str, timeout: float = 20.0, client_factory=None,
             command = _launch(command, slots, credential_bindings)
         else:
             command, kind = execution_plan.launch, execution_plan.plugin_kind
+    except GatewayOperationError:
+        return unavailable_response(name)
     except PluginPermissionError:
         return _permission()
     from .mcp_client import MCPClient, MCPError

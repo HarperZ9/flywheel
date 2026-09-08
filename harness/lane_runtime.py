@@ -105,7 +105,7 @@ def resolve_lane_runtime(
         if raw_source_version is not None else (None, ()))
     runtime_expected, version_codes = _runtime_expected_version(row, expected, profile)
     runtime_python, python_codes = _runtime_python(row)
-    raw_installed = _observed_package_version(
+    raw_installed = None if lane.package_disabled_reason else _observed_package_version(
         lane, runtime_python, installed_version_fn, package_runtime_version_fn)
     installed, installed_codes = (
         validate_public_version(raw_installed, "installed_version_invalid")
@@ -188,6 +188,8 @@ def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
                    extra_roots, importable_fn, runtime_python):
     if profile not in _VALID_PROFILES:
         return None, "invalid"
+    if lane.package_disabled_reason and (is_frozen or profile == "package" or not source):
+        return None, "package"
     if lane.kind == "http":
         return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), "http"
     if is_frozen:
@@ -212,6 +214,8 @@ def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
 def _blocking_codes(lane, profile, selected, source_available, package_available, mismatch):
     if "invalid_runtime_profile" in mismatch:
         return ["invalid_runtime_profile"]
+    if selected == "package" and lane.package_disabled_reason:
+        return ["package_distribution_disabled"]
     if profile == "source" and not source_available:
         return ["source_runtime_missing"]
     if profile == "package" and lane.kind in {"pip", "npm"}:

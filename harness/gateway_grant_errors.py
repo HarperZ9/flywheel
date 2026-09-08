@@ -21,6 +21,7 @@ def gateway_error_response(exc: Exception) -> tuple[dict, int]:
         "PERMISSION_DENIED": (403, "gateway operation approval is invalid"),
         "APPROVAL_EXPIRED": (403, "gateway operation approval expired"),
         "NOT_FOUND": (404, "gateway operation was not found"),
+        "LANE_UNAVAILABLE": (503, "lane runtime is unavailable; inspect Lanes for details"),
         "HEAD_CONFLICT": (409, "Journey head changed"),
         "PLAN_BINDING_DRIFT": (
             409, "plan run does not match its forged contract"),

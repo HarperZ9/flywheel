@@ -56,6 +56,15 @@ unrelated storage failures as errors.
 
 ## Distribution boundary
 
+The configured PyPI names for Relay, Canon and Mneme identify other projects.
+The configured registry entries for Plexus, Telos and accountable-surface are
+unavailable. Flywheel blocks package installation and package-selected execution
+for these six lanes, including external commands from the frozen client.
+Their Lanes cards omit Install, and plugin discovery omits package commands.
+The Python engine can still use their source checkouts. This restriction also
+applies to installed wheels until a distinct distribution or verified runtime
+adapter is available. A matching package version alone is not engine identity.
+
 The engine and native client share one version. Installer signing, clean-machine
 installation, physical Android acceptance, and provider-specific authentication
 remain separate acceptance checks. This update does not establish model
