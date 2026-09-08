@@ -12,6 +12,7 @@ from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, ToolGate
 from .observed_proposer import ObservedProposer
+from .provider_transport_error import MalformedProviderOutput
 from .proposer import ProposerOutput, prompt_hash
 from .router_agent import RouterAgent
 from .structured_finalizer import local_structured_finalizer_factory
@@ -19,7 +20,6 @@ from .cross_harness_policy import compaction_receipt_numeric_allowed, nonnegativ
 MAX_TRACE_EVENTS, MAX_TRACE_BYTES, MAX_LINE_BYTES, MAX_FIELD_BYTES, MAX_DEPTH = 1000, 1 << 20, 1 << 16, 1 << 14, 16
 READ_ONLY_SYSTEM = ("You are the outer Flywheel text-tool agent. Inspect the supplied workspace and return the requested artifact envelope. "
     "The following TOOL protocol is visible, but write, exec, and MCP calls are denied.\n\n" + TOOLS_SYSTEM + "\n\nRead-only override: never emit write_file, edit_file, apply_patch, run, or MCP tools.")
-class MalformedProviderOutput(RuntimeError): pass
 def _resolve_codex() -> str:
     # npm puts wrappers on PATH ahead of the vendor binary; resolve the real executable name.
     return resolve_binary(("codex.exe",) if os.name == "nt" else ("codex",))

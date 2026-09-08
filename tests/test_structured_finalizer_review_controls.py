@@ -13,6 +13,8 @@ from test_structured_finalizer import (
     _finalizer,
     _finalizer_events,
     _policy,
+    _profile,
+    _request,
     _reply,
     _usage,
 )
@@ -78,3 +80,50 @@ def test_max_output_tokens_trace_is_numeric(tmp_path):
     value = _finalizer_events(result)[0]["evidence"]["max_output_tokens"]
     assert type(value) is int
     assert value == 1024
+
+
+def test_real_local_http_malformed_json_becomes_finalizer_denominator(monkeypatch, tmp_path):
+    import harness.cross_harness_adapters as adapters
+
+    class Response:
+        def __init__(self, raw):
+            self.status = 200
+            self.raw = raw
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self, _limit):
+            return self.raw
+
+    class Opener:
+        calls = 0
+
+        def open(self, request, timeout):
+            self.calls += 1
+            if self.calls == 1:
+                body = {**_reply("candidate", usage=_usage(1))[1],
+                        "model": "qwen2.5:7b"}
+                return Response(json.dumps(body).encode())
+            return Response(b'{')
+
+    opener = Opener()
+    monkeypatch.setattr(adapters.urllib.request, "build_opener",
+                        lambda *args, **kwargs: opener)
+    backend = adapters.OllamaBackend(model="ollama:qwen2.5:7b",
+                                     transport=adapters._local_http)
+    adapter = adapters.LocalRouterAdapter("local_14b", _profile(_cap()),
+                                          backend_factory=lambda *_: backend)
+    request = _request(tmp_path, _policy())
+
+    result = adapter.execute(request)
+
+    assert result.execution_state == "returned"
+    assert result.output_text == ""
+    event = _finalizer_events(result)[0]
+    assert event["state"] == "provider_json_invalid"
+    assert event["failure_class"] == "provider_json_invalid"
+    assert result.resource_observation["inner_call_count"] == 2

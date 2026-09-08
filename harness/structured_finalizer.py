@@ -10,6 +10,7 @@ from typing import Any
 from .local_agent import BackendError, OllamaBackend, _ollama_native_model
 from .local_serving import generation_config
 from .local_usage import ollama_native_usage
+from .provider_transport_error import MalformedProviderOutput
 from .proposer import ProposerOutput, prompt_hash
 
 
@@ -100,6 +101,8 @@ class OllamaStructuredFinalProposer:
         except (urllib.error.URLError, OSError, ConnectionError) as exc:
             raise StructuredFinalizerFailure("transport_error", str(exc)) from exc
         except json.JSONDecodeError as exc:
+            raise StructuredFinalizerFailure("provider_json_invalid", str(exc)) from exc
+        except MalformedProviderOutput as exc:
             raise StructuredFinalizerFailure("provider_json_invalid", str(exc)) from exc
         if status != 200:
             raise StructuredFinalizerFailure("request_rejected", f"ollama returned {status}")
