@@ -9,6 +9,8 @@ from typing import Callable
 from .evidence_json import canonical_sha256, strict_load_json
 from .evidence_public import TransportError, error_response, exact_request, parse_json
 from .grant_route import _replace, _request_from
+from .gateway_grant_index import replace_indexed_proposal as _write_indexed
+from .gateway_grant_inbox import gateway_grant_inbox_post
 from .gateway_operation import (AuthorizedOperation, GatewayOperationError, GRANTABLE_ACTIONS, PROPOSAL_REF_PATTERN,
     PROPOSAL_SCHEMA, REQUEST_SCHEMA, canonicalize_operation, thaw_operation)
 from .gateway_envelope import parse_gateway_envelope
@@ -47,7 +49,7 @@ def _validate_record(value: object, owner_ref: str) -> dict:
     if (type(value) is not dict or set(value) != _RECORD_FIELDS
             or value.get("schema") != PROPOSAL_SCHEMA
             or value.get("owner_ref") != owner_ref
-            or value.get("state") not in {"prepared", "approved"}
+            or value.get("state") not in {"prepared", "approved", "rejected"}
             or value.get("record_sha256") != _digest(value)):
         raise GrantError("PERMISSION_DENIED")
     proposal_ref = value.get("proposal_ref", "")
@@ -162,10 +164,9 @@ def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
         record["record_sha256"] = _digest(record)
         owner_dir = _directory(state_root, owner_ref)
         with ExclusiveJourneyLock.acquire(owner_dir / ".lock"):
-            _replace(_path(owner_dir, proposal_ref), record)
+            _write_indexed(owner_dir, record, clock(), _replace, _path(owner_dir, proposal_ref))
     return _proposal_response(record, operation)
-def _approve(body: dict, owner_ref: str, state_root: Path,
-             clock: Callable[[], str]) -> dict:
+def _approve(body: dict, owner_ref: str, state_root: Path, clock: Callable[[], str]) -> dict:
     exact_request(body, {"proposal_ref"})
     if (type(body.get("proposal_ref")) is not str
             or PROPOSAL_REF_PATTERN.fullmatch(body["proposal_ref"]) is None):
@@ -173,6 +174,7 @@ def _approve(body: dict, owner_ref: str, state_root: Path,
     owner_dir = _directory(state_root, owner_ref)
     with ExclusiveJourneyLock.acquire(owner_dir / ".lock"):
         record = _read(owner_dir, body["proposal_ref"], owner_ref)
+        if record["state"] == "rejected": raise GrantError("PERMISSION_DENIED")
         if _parse_time(clock()) >= _parse_time(record["expires_at"]):
             raise GrantError("APPROVAL_EXPIRED")
         issued = GrantStore(state_root, clock=clock).issue_exact(
@@ -181,11 +183,10 @@ def _approve(body: dict, owner_ref: str, state_root: Path,
         if record["state"] != "approved":
             record["state"] = "approved"
             record["record_sha256"] = _digest(record)
-            _replace(_path(owner_dir, record["proposal_ref"]), record)
+            _write_indexed(owner_dir, record, clock(), _replace, _path(owner_dir, record["proposal_ref"]))
     return {"schema": "flywheel.operation-grant-approval/v1",
             "grant_ref": issued["grant_ref"], "expires_at": issued["expires_at"]}
-def _authorize(envelope, *, owner_ref: str, state_root: Path,
-               clock: Callable[[], str]) -> AuthorizedOperation:
+def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[], str]) -> AuthorizedOperation:
     action = envelope.action
     operation = envelope.operation
     plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root)
@@ -279,14 +280,14 @@ def gateway_error_response(exc: Exception) -> tuple[dict, int]:
     code = code if code in errors else "STORE_COMMIT_FAILED"
     status, message = errors[code]
     return error_response(TransportError(code, message, status))
-def gateway_grant_post(
-        path: str, raw: bytes, *, owner_ref: str, state_root: Path,
-        clock: Callable[[], str]) -> tuple[dict, int]:
+def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Path, clock: Callable[[], str]) -> tuple[dict, int]:
     """Prepare or approve without dispatching an external operation."""
     try:
         if not path.startswith(ROUTE_PREFIX):
             raise GatewayOperationError("NOT_FOUND")
         route, body = path[len(ROUTE_PREFIX):], parse_json(raw)
+        if route in {"capabilities", "list", "read", "approve-reviewed-once", "reject"}:
+            return gateway_grant_inbox_post(route, body, owner_ref=owner_ref, state_root=state_root, clock=clock, validate_record=_validate_record, proposal_response=_proposal_response, request_from_record=_request_from, replace_record=_replace, record_digest=_digest)
         if route == "approve-once":
             return _approve(body, owner_ref, state_root, clock), 200
         if not route.startswith("prepare/") or "/" in route[8:]:
@@ -295,6 +296,5 @@ def gateway_grant_post(
         if action not in GRANTABLE_ACTIONS:
             raise GatewayOperationError("NOT_FOUND")
         return _prepare(action, body, owner_ref, state_root, clock), 200
-    except (TransportError, GatewayOperationError, GrantError,
-            JourneyLockBusy, JourneyStoreError, OSError, ValueError) as exc:
+    except (TransportError, GatewayOperationError, GrantError, JourneyLockBusy, JourneyStoreError, OSError, ValueError) as exc:
         return gateway_error_response(exc)

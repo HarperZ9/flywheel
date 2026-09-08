@@ -31,16 +31,16 @@ const destinationCatalog = <DestinationSpec>[
       abbr: 'WF', group: DestinationGroup.work),
   DestinationSpec(DestinationId.projects, 'Projects',
       abbr: 'PR', group: DestinationGroup.work),
-
   DestinationSpec(DestinationId.swarms, 'Swarms',
       abbr: 'SW', group: DestinationGroup.work),
-
   DestinationSpec(DestinationId.roadmap, 'Roadmap',
       abbr: 'RM', group: DestinationGroup.work),
   DestinationSpec(DestinationId.schedule, 'Schedule',
       abbr: 'SD', group: DestinationGroup.work),
   DestinationSpec(DestinationId.runners, 'Runners',
       abbr: 'RN', group: DestinationGroup.work),
+  DestinationSpec(DestinationId.approvals, 'Approvals',
+      abbr: 'AP', group: DestinationGroup.work, mobilePrimary: true),
   DestinationSpec(DestinationId.chat, 'Chat',
       abbr: 'CH', group: DestinationGroup.chat, mobilePrimary: true),
   DestinationSpec(DestinationId.compare, 'Compare',
@@ -114,7 +114,7 @@ DestinationSpec? specFor(DestinationId id) {
   return null;
 }
 
-/// The phone's first-run destinations, in catalog order: Journey, Chat,
+/// The phone's first-run destinations, in catalog order: Journey, Approvals, Chat,
 /// Companion, Receipts. The bottom bar shows these and a More that opens the
 /// full catalog, so the whole set stays reachable. The flag on each spec is
 /// the source of truth; this list follows it.

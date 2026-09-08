@@ -1,4 +1,4 @@
-﻿// The destination catalog: exactly 40 stable IDs in five groups. Labels
+﻿// The destination catalog: exactly 41 stable IDs in five groups. Labels
 // may be renamed; identities never move. This test freezes the contract.
 import 'package:flutter_test/flutter_test.dart';
 
@@ -8,10 +8,11 @@ import 'package:flywheel_desktop/navigation/destination_catalog.dart';
 void main() {
   // The name said 30 while the assertion said 33, so the name had already
   // drifted past the thing it describes. Both move together from here.
-  test('the catalog holds exactly 40 unique destinations', () {
-    expect(destinationCatalog.length, 40);
+  test('the catalog holds exactly 41 unique destinations', () {
+    expect(destinationCatalog.length, 41);
     final ids = destinationCatalog.map((d) => d.id).toSet();
-    expect(ids.length, 40);
+    expect(ids.length, 41);
+    expect(ids, contains(DestinationId.approvals));
   });
 
   test('the five groups carry the exact planned membership and order', () {
@@ -23,7 +24,7 @@ void main() {
             .map((d) => d.id.name)
             .toList(),
         ['journey', 'plan', 'workflows', 'projects', 'swarms', 'roadmap',
-          'schedule', 'runners']);
+          'schedule', 'runners', 'approvals']);
     expect(
         destinationCatalog
             .where((d) => group(d.id) == 'chat')
@@ -53,6 +54,10 @@ void main() {
           'instruments', 'browser', 'lanes', 'forum', 'registry', 'train',
           'uplift', 'family', 'plugins',
         ]);
+    final approvals = specFor(DestinationId.approvals)!;
+    expect(approvals.label, 'Approvals');
+    expect(approvals.group, DestinationGroup.work);
+    expect(approvals.mobilePrimary, isTrue);
   });
 
   test('every destination has a non-empty label and abbreviation', () {

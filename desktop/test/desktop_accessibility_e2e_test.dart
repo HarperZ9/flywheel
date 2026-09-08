@@ -32,10 +32,13 @@ void main() {
     // 1. Journey is home with its resumed evidence.
     expect(find.text('Journey'), findsOneWidget);
 
-    // 2. The catalog holds exactly forty destinations in five groups.
-    expect(destinationCatalog, hasLength(40));
+    // 2. The catalog holds exactly forty-one destinations in five groups.
+    expect(destinationCatalog, hasLength(41));
     expect(destinationCatalog.map((d) => d.group.name).toSet(),
         hasLength(5));
+    final approvals = specFor(DestinationId.approvals);
+    expect(approvals, isNotNull);
+    expect(approvals!.group, DestinationGroup.work);
 
     // 3. Typed navigation: the palette opens with Ctrl+K and goes to Plan.
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);

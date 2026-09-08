@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../models/approval_inbox_models.dart';
+import '../models/evidence_state.dart';
 import '../models/gateway_grant_models.dart';
 import 'gateway_client.dart';
 
@@ -85,6 +87,79 @@ final class GatewayGrantClient {
         !sameGatewayStringList(result.dataRefs, operation.dataRefs) ||
         !sameGatewayStringList(
             result.credentialRefs, operation.credentialRefs)) {
+      throw _invalid();
+    }
+    return result;
+  }
+
+  Future<GatewayGrantCapabilities> capabilities() async {
+    final result = GatewayGrantCapabilities.fromJson(Map<String, Object?>.from(
+        await _post('/api/gateway-grants/capabilities', const {
+      'schema': gatewayGrantCapabilitiesRequestSchema,
+    })));
+    return result;
+  }
+
+  Future<GatewayGrantList> listPending({int limit = 25, String? cursor}) async {
+    if (limit < 1 ||
+        limit > 50 ||
+        cursor != null &&
+            (cursor.isEmpty ||
+                cursor.length > 256 ||
+                !isSafePublicText(cursor))) {
+      throw _invalid();
+    }
+    final result = GatewayGrantList.fromJson(
+        Map<String, Object?>.from(await _post('/api/gateway-grants/list', {
+      'schema': gatewayGrantListRequestSchema,
+      'state': 'pending',
+      'limit': limit,
+      'cursor': cursor,
+    })));
+    if (result.invalidResponse) throw _invalid();
+    return result;
+  }
+
+  Future<GatewayGrantRead> readProposal(String proposalRef) async {
+    if (!proposalRefPattern.hasMatch(proposalRef)) throw _invalid();
+    final result = GatewayGrantRead.fromJson(
+        Map<String, Object?>.from(await _post('/api/gateway-grants/read', {
+      'schema': gatewayGrantReadRequestSchema,
+      'proposal_ref': proposalRef,
+    })));
+    if (result.invalidResponse) throw _invalid();
+    return result;
+  }
+
+  Future<GatewayGrantApproval> approveReviewed(
+      String proposalRef, String reviewSha256) async {
+    if (!proposalRefPattern.hasMatch(proposalRef) ||
+        !sha256Pattern.hasMatch(reviewSha256)) {
+      throw _invalid();
+    }
+    final result = GatewayGrantApproval.fromJson(Map<String, Object?>.from(
+        await _post('/api/gateway-grants/approve-reviewed-once', {
+      'schema': gatewayGrantApprovalRequestSchema,
+      'proposal_ref': proposalRef,
+      'review_sha256': reviewSha256,
+    })));
+    if (result.invalidResponse) throw _invalid();
+    return result;
+  }
+
+  Future<GatewayGrantRejection> rejectProposal(
+      String proposalRef, String recordSha256) async {
+    if (!proposalRefPattern.hasMatch(proposalRef) ||
+        !sha256Pattern.hasMatch(recordSha256)) {
+      throw _invalid();
+    }
+    final result = GatewayGrantRejection.fromJson(
+        Map<String, Object?>.from(await _post('/api/gateway-grants/reject', {
+      'schema': gatewayGrantRejectRequestSchema,
+      'proposal_ref': proposalRef,
+      'expected_record_sha256': recordSha256,
+    })));
+    if (result.invalidResponse || result.proposalRef != proposalRef) {
       throw _invalid();
     }
     return result;
