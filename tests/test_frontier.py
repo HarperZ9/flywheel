@@ -69,8 +69,9 @@ def test_the_frontier_table_composes_receipts(tmp_path):
     # constraint (RAM vs time) picks the winner, so both axes ship.
     assert row["bare_per_s"] == round(0.08 / 3.3, 4)
     assert row["verified_per_s"] == round(0.19 / 11.0, 4)
-    assert row["uplift_separated"] is True
-    assert "measured" in table["note"]
+    assert row["uplift_separated"] is False
+    assert row["claim_status"] == "not_established"
+    assert "no workflow uplift established" in table["note"]
 
 
 def test_missing_disk_size_yields_an_honest_null(tmp_path):

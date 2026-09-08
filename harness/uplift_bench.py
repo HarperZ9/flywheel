@@ -1,25 +1,10 @@
-"""uplift_bench.py -- does the wrapper measurably uplift the model? Paired arms.
+"""Legacy one-attempt versus oracle-selected retry diagnostic.
 
-The one claim the operator wants ("Flywheel raises any model to its best
-performance") is only ever earned per metric, per family, with an interval.
-This bench runs the SAME task set through the SAME provider twice:
-
-- bare     one candidate, graded by the external oracle (what a raw call or a
-           thin web app gives you);
-- wrapped  the verified loop: up to n candidates, the FIRST one the oracle
-           accepts wins. The oracle disposes; the wrapper only proposes more.
-
-The delta row carries a Newcombe (1998) score interval on the uplift, and an
-interval that includes zero is flagged `includes_zero` with a "no uplift
-claimed" note -- the honest null is a first-class result, never dressed up.
-Latency and candidate counts are reported per arm because the wrapper COSTS
-time and tokens; a bench that hid the overhead would be lying by omission.
-
-Honesty is mechanical, exactly as in quality_duel: injected proposers mark
-every row evidence="synthetic" (tests can never masquerade as measurements),
-unverifiable tasks leave the pass-rate denominator visibly, and nothing
-imports this module and fires a quota-consuming run on its own -- a live run
-is an operator decision.
+These arms have different generation budgets and reuse the selector as scorer.
+Their descriptive difference does not establish workflow uplift. New and stored
+v1 results are interpreted by uplift_evidence; historical bytes remain intact.
+Use pool.py and pool_arms.py for generation-matched selection experiments with
+a distinct held-out scorer. Live generation remains an operator action.
 """
 from __future__ import annotations
 
@@ -28,6 +13,8 @@ import json
 import math
 import time
 from pathlib import Path
+
+from .uplift_evidence import interpret_legacy_run
 
 SCHEMA = "flywheel.uplift-bench/v1"
 SUMMARY_SCHEMA = "flywheel.uplift-summary/v1"
@@ -47,9 +34,10 @@ def wilson_interval(passed: int, n: int, z: float = Z95) -> tuple:
 
 def newcombe_diff_interval(passed_a: int, n_a: int,
                            passed_b: int, n_b: int) -> tuple:
-    """Newcombe (1998) method-10 interval for the UPLIFT (b minus a).
-    Direction differs from scripts/run_benchmark_ci.py (a minus b) on
-    purpose: here b is the wrapped arm and the sign IS the claim."""
+    """Legacy independent-proportions difference interval (b minus a).
+
+    Retained for reproducing historical arithmetic, not paired uplift inference.
+    """
     ra = passed_a / n_a if n_a else 0.0
     rb = passed_b / n_b if n_b else 0.0
     la, ua = wilson_interval(passed_a, n_a)
@@ -77,15 +65,25 @@ def oracle_fingerprint(oracle) -> dict:
 
 def load_tasks(tasks_path, max_tasks=None) -> list:
     tasks = []
+    seen = set()
     with open(tasks_path, encoding="utf-8") as f:
-        for line in f:
+        for number, line in enumerate(f, 1):
             line = line.strip()
             if not line:
                 continue
             try:
-                tasks.append(json.loads(line))
-            except ValueError:
-                continue
+                task = json.loads(line)
+            except ValueError as exc:
+                raise ValueError(f"invalid task JSON at line {number}") from exc
+            if (not isinstance(task, dict)
+                    or not isinstance(task.get("task_id"), str)
+                    or not task["task_id"].strip()
+                    or not isinstance(task.get("prompt"), str)):
+                raise ValueError(f"invalid task record at line {number}")
+            if task["task_id"] in seen:
+                raise ValueError(f"duplicate task ID at line {number}")
+            seen.add(task["task_id"])
+            tasks.append(task)
             if max_tasks and len(tasks) >= max_tasks:
                 break
     return tasks
@@ -181,7 +179,18 @@ def run_uplift_bench(tasks_path, providers: list, *, oracle,
     """Bare vs wrapped over every provider. `proposers` maps name -> factory
     (a zero-arg callable returning a fresh proposer); injecting it marks the
     whole run synthetic. Live runs resolve each name from the roster."""
-    tasks = load_tasks(tasks_path, max_tasks)
+    if (type(n_candidates) is not int or n_candidates < 1
+            or (max_tasks is not None
+                and (type(max_tasks) is not int or max_tasks < 1))):
+        return {"error": "candidate and task limits must be positive integers"}
+    if (not isinstance(providers, list) or not providers
+            or any(not isinstance(p, str) or not p.strip() for p in providers)
+            or len(set(providers)) != len(providers)):
+        return {"error": "providers must be a nonempty list of unique names"}
+    try:
+        tasks = load_tasks(tasks_path, max_tasks)
+    except (OSError, ValueError) as exc:
+        return {"error": str(exc)}
     if not tasks:
         return {"error": f"no tasks loaded from {tasks_path}"}
     synthetic = proposers is not None
@@ -207,32 +216,20 @@ def run_uplift_bench(tasks_path, providers: list, *, oracle,
             rows.append(row)
             arms[arm] = row
         b, w = arms["bare"], arms["wrapped"]
-        lo, hi = newcombe_diff_interval(
-            b["passes"], b["graded"], w["passes"], w["graded"])
-        includes_zero = lo <= 0.0 <= hi
         deltas.append({
             "provider": name,
-            # the delta IS the uplift claim: it carries the same synthetic/live
-            # marker the arm rows do, so bench_summary (which serves deltas
-            # verbatim) can never pass a test's delta off as a measurement
+            # Keep provenance beside the descriptive rate difference.
             "evidence": "synthetic" if synthetic else "live",
             "uplift": round(w["pass_rate"] - b["pass_rate"], 4),
-            "newcombe_95": [round(lo, 4), round(hi, 4)],
-            "includes_zero": includes_zero,
             "latency_overhead_ms": round(
                 w["latency_ms_mean"] - b["latency_ms_mean"], 3),
-            "note": ("no uplift claimed: the interval includes zero"
-                     if includes_zero else
-                     "measured uplift: the interval excludes zero"),
         })
     doc = {"schema": SCHEMA,
            "comparison_key": f"uplift:{Path(str(tasks_path)).stem}",
            "n_candidates": n_candidates,
            "oracle": oracle_fingerprint(oracle),
-           "rows": rows, "deltas": deltas,
-           "note": "synthetic rows never enter comparison; the wrapped arm "
-                   "wins only through the external oracle; overhead is "
-                   "reported because the wrapper costs time"}
+           "rows": rows, "deltas": deltas}
+    doc = interpret_legacy_run(doc)
     if out_path:
         p = Path(out_path)
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -255,6 +252,7 @@ def bench_summary(root) -> dict:
             continue
         if doc.get("schema") != SCHEMA:
             continue
+        doc = interpret_legacy_run(doc)
         runs.append({"path": p.name,
                      "comparison_key": doc.get("comparison_key", ""),
                      "providers": sorted({r.get("provider", "")

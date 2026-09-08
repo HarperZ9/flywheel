@@ -207,7 +207,8 @@ reason written down, in harness/parity_coverage.py.
 
 - **m7 capability arms.** Needs a live local or frontier endpoint. `handoff/site-designer/BENCHMARKS.md, docs/claims/2026-07-13-uplift`
   Standing result: retired on 2026-07-26. The arms were not independent: the treatment's first attempt is the same call as the baseline's only attempt, so the treatment cannot score lower and the difference is not a comparison. The quantity measured is verified pass@k. The retired table read verified inference 9/10 against single-shot 8/10, difference +0.100 with 95% CI [-0.236, +0.420], an interval that includes zero, and no capability uplift is claimed.
-- **uplift_bench paired arms.** Needs a provider list and an oracle. `harness/uplift_bench.py, POST /api/uplift`
+- **uplift_bench legacy retry diagnostic.** Needs a provider list and an oracle. `harness/uplift_bench.py, GET /api/uplift`
+  Standing result: Formerly labeled 'uplift_bench paired arms'. Different generation budgets and selector-as-scorer prevent an uplift claim. See docs/UPLIFT-EVALUATION.md for the existing matched-pool apparatus and its limits.
 - **verified_bench private task set.** Needs endpoints and a private task set the operator supplies. `harness/verified_bench.py, POST /api/bench/run`
 - **classifier friction backend modes.** Needs a chat backend per mode. `harness/classifier_friction_bench.py`
 - **backend variants of the governed, recovery, stateful and source-mined suites.** Needs a chat backend; the deterministic variants below ran instead. `run_backend_* in the same modules`

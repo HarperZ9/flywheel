@@ -1,17 +1,7 @@
-"""frontier.py -- the RAM/compute frontier, measured on this machine.
+"""Descriptive serving probes and legacy retry rates.
 
-The field's answer to trillion-parameter economics is architectural --
-MoE active-parameter budgets, hybrid linear attention (Ling/Ring 2.6,
-arXiv 2606.15079), disk-streamed experts (Colibri) -- and every one of
-those claims arrives as someone else's number on someone else's hardware.
-This module is the platform's answer: a model earns its roster place
-through a CAPABILITY PROBE run here (tokens/sec, latency, output hash),
-and the frontier table composes probes with the uplift bench's verified
-rates into capability-per-GB -- so 'which model should this machine run'
-is decided by receipts produced on this machine, never by imported
-leaderboards. The verified loop is part of the economics: the bench
-already showed a 1.8GB model's pass rate doubling under an external
-check, which changes what 'enough model' means.
+Disk-normalized rates do not measure runtime memory or isolate workflow uplift.
+The table preserves historical numbers without promoting an old interval.
 """
 from __future__ import annotations
 
@@ -76,7 +66,6 @@ def frontier_table(root, *, probes: "list | None" = None) -> dict:
                 docs.append(doc)
     rates: dict = {}
     lat: dict = {}
-    separated: dict = {}
     sources: list = []
     for doc in docs:
         sources.append(doc.get("comparison_key", ""))
@@ -87,9 +76,6 @@ def frontier_table(root, *, probes: "list | None" = None) -> dict:
                                                       row.get("pass_rate"))
             lat.setdefault(provider, {}).setdefault(arm,
                                                     row.get("latency_ms_mean"))
-        for d in doc.get("deltas", []):
-            separated.setdefault(d.get("provider"),
-                                 not d.get("includes_zero", True))
     def _per_s(rate, ms):
         return (round(rate / (ms / 1000.0), 4)
                 if isinstance(rate, (int, float))
@@ -112,7 +98,9 @@ def frontier_table(root, *, probes: "list | None" = None) -> dict:
             # picks the winner, so both axes ship side by side.
             "bare_per_s": _per_s(r.get("bare"), l.get("bare")),
             "verified_per_s": _per_s(verified, l.get("wrapped")),
-            "uplift_separated": separated.get(endpoint, False),
+            # All admitted records use the confounded legacy v1 design.
+            "uplift_separated": False,
+            "claim_status": "not_established",
             "capability_per_gb": (round(verified / disk, 4)
                                   if isinstance(verified, (int, float))
                                   and isinstance(disk, (int, float))
@@ -120,5 +108,6 @@ def frontier_table(root, *, probes: "list | None" = None) -> dict:
         })
     return {"schema": "flywheel.frontier/v1", "rows": rows,
             "bench_sources": sources,
-            "note": "every number measured here: probes on this machine, "
-                    "rates from the paired-arm bench; unknowns are nulls"}
+            "note": "Descriptive probe and legacy retry rates; no workflow "
+                    "uplift established. Rates may come from different task "
+                    "sets. Disk size is not runtime memory; unknowns are nulls."}

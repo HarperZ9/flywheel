@@ -1,7 +1,7 @@
-"""The uplift bench must measure, never manufacture: the wrapped arm is the
-verified loop (an external oracle disposes, the wrapper only proposes more),
-the delta carries an interval that can include zero, and an included zero is
-flagged as the honest null instead of being dressed up as a win."""
+"""Legacy retry accounting and historical interval arithmetic.
+
+Descriptive retry gains never establish workflow uplift.
+"""
 
 import json
 
@@ -43,7 +43,7 @@ def test_wilson_reference_values():
     assert wilson_interval(0, 0) == (0.0, 0.0)
 
 
-def test_wrapped_arm_uplifts_only_through_the_oracle(tmp_path):
+def test_wrapped_retry_rate_is_only_a_diagnostic(tmp_path):
     tasks = _tasks_file(tmp_path)
     doc = run_uplift_bench(
         tasks, ["serve"], oracle=lambda cand, task: cand == "good",
@@ -57,7 +57,8 @@ def test_wrapped_arm_uplifts_only_through_the_oracle(tmp_path):
     assert all(r["evidence"] == "synthetic" for r in doc["rows"])
     delta = doc["deltas"][0]
     assert delta["uplift"] == 1.0
-    assert delta["includes_zero"] is False
+    assert delta["includes_zero"] is None
+    assert delta["claim_status"] == "not_established"
     assert (tmp_path / "uplift.json").exists()
 
 
@@ -68,8 +69,8 @@ def test_no_measured_uplift_is_an_honest_null(tmp_path):
         n_candidates=4, proposers={"serve": lambda: _Stub(pass_seed=0)})
     delta = doc["deltas"][0]
     assert delta["uplift"] == 0.0
-    assert delta["includes_zero"] is True
-    assert "no uplift" in delta["note"]
+    assert delta["includes_zero"] is None
+    assert "No workflow uplift established" in delta["note"]
 
 
 def test_unverifiable_tasks_leave_the_denominator_visibly(tmp_path):

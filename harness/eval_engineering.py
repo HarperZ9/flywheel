@@ -126,7 +126,8 @@ def _uplift_lanes(root: Path) -> dict:
             "nulls_kept": nulls,
             "summary": f"{len(runs)} runs over keys {keys}; "
                        f"{nulls} interval(s) including zero kept as "
-                       "honest nulls",
+                       "historical nulls; legacy retry intervals do not "
+                       "establish workflow uplift",
             "receipt": str(updir)}
 
 

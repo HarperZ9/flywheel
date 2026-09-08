@@ -34,10 +34,13 @@ NOT_RUN = [
                         "single-shot 8/10, difference +0.100 with 95% CI "
                         "[-0.236, +0.420], an interval that includes zero, and "
                         "no capability uplift is claimed."},
-    {"suite": "uplift_bench paired arms",
+    {"suite": "uplift_bench legacy retry diagnostic",
      "needs": "a provider list and an oracle",
-     "where": "harness/uplift_bench.py, POST /api/uplift",
-     "standing_result": None},
+     "where": "harness/uplift_bench.py, GET /api/uplift",
+     "standing_result": "Formerly labeled 'uplift_bench paired arms'. "
+                        "Different generation budgets and selector-as-scorer "
+                        "prevent an uplift claim. See docs/UPLIFT-EVALUATION.md "
+                        "for the existing matched-pool apparatus and its limits."},
     {"suite": "verified_bench private task set",
      "needs": "endpoints and a private task set the operator supplies",
      "where": "harness/verified_bench.py, POST /api/bench/run",

@@ -67,11 +67,12 @@ def duel_summary() -> dict:
                        if r.get("ext") and not r.get("single")],
            "note": "single = a model used raw (existing-solution baseline); "
                    "verified = the Flywheel best-of-N loop over the SAME "
-                   "model; the lift is the harness's contribution. "
+                   "model; this descriptive difference does not isolate "
+                   "the harness's contribution. "
                    + ("PARTIAL: not all tasks measured yet."
                       if status == "partial" else "")}
-    # The powered lane, when its artifacts exist: n=110 intervals supersede
-    # a 10-task partial as headline evidence, and the note says so.
+    # Retain historical retry diagnostics without treating their sample count
+    # as a repair for unequal budgets or selector/scorer reuse.
     try:
         from .uplift_bench import bench_summary
         up = bench_summary(REPO)
@@ -83,8 +84,9 @@ def duel_summary() -> dict:
         out["uplift"] = {"comparison_key": latest.get("comparison_key", ""),
                          "deltas": latest.get("deltas", []),
                          "runs": len(up["runs"])}
-        out["note"] += (" A powered uplift lane exists (see 'uplift'): "
-                        "prefer its intervals over this small set.")
+        out["note"] += (" Legacy retry diagnostics are available in 'uplift'; "
+                        "they do not establish workflow uplift. Use matched "
+                        "candidate pools and a distinct held-out scorer.")
     return out
 
 

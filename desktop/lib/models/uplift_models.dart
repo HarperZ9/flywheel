@@ -1,7 +1,6 @@
 // uplift_models.dart — typed reading of the uplift bench summary
-// (flywheel.uplift-summary/v1). Intervals arrive computed; includes_zero
-// is the engine's honest null and renders as the unverifiable verdict —
-// the client never upgrades a null into a win.
+// (flywheel.uplift-summary/v1). These are legacy retry diagnostics, including
+// when an older gateway supplies an interval. They cannot prove workflow uplift.
 
 class UpliftRow {
   final String provider;
@@ -9,6 +8,7 @@ class UpliftRow {
   final int passes;
   final int graded;
   final int unverifiable;
+  final int? nTasks;
   final double passRate;
   final double wilsonLo;
   final double wilsonHi;
@@ -21,6 +21,7 @@ class UpliftRow {
       required this.passes,
       required this.graded,
       required this.unverifiable,
+      this.nTasks,
       required this.passRate,
       required this.wilsonLo,
       required this.wilsonHi,
@@ -37,6 +38,7 @@ class UpliftRow {
       passes: i(j['passes']),
       graded: i(j['graded']),
       unverifiable: i(j['unverifiable']),
+      nTasks: j['n_tasks'] is int && j['n_tasks'] > 0 ? j['n_tasks'] : null,
       passRate: n(j['pass_rate']),
       wilsonLo: w.isNotEmpty ? n(w[0]) : 0.0,
       wilsonHi: w.length > 1 ? n(w[1]) : 0.0,
@@ -64,19 +66,9 @@ class UpliftDelta {
       required this.latencyOverheadMs,
       required this.note});
 
-  /// The honest mapping keys on the SIGN, not just separation: a
-  /// separated interval above zero is a verified uplift; a separated
-  /// interval below zero is a measured regression (drift), which must
-  /// never render as a green win; an interval containing zero is
-  /// unverifiable (no uplift claimed, a first-class null).
-  String get verdict {
-    if (includesZero) return 'unverifiable';
-    return uplift > 0 ? 'verified' : 'drift';
-  }
-
-  /// True when the interval is separated and below zero: the wrapper
-  /// measurably hurt. The view labels this a regression, not an uplift.
-  bool get isRegression => !includesZero && uplift < 0;
+  /// A separated legacy interval does not repair the confounded experiment.
+  String get verdict => 'unverifiable';
+  bool get isRegression => false;
 
   factory UpliftDelta.fromJson(Map<String, dynamic> j) {
     final w = (j['newcombe_95'] is List) ? j['newcombe_95'] as List : const [];
@@ -86,7 +78,7 @@ class UpliftDelta {
       uplift: n(j['uplift']),
       lo: w.isNotEmpty ? n(w[0]) : 0.0,
       hi: w.length > 1 ? n(w[1]) : 0.0,
-      includesZero: j['includes_zero'] ?? true,
+      includesZero: j['includes_zero'] is bool ? j['includes_zero'] : true,
       latencyOverheadMs: n(j['latency_overhead_ms']),
       note: j['note'] ?? '',
     );

@@ -1,6 +1,4 @@
-// The uplift verdict must key on the SIGN of a separated interval, not
-// only on whether it straddles zero: a measured regression is drift, never
-// a green verified win, and an interval containing zero stays unverifiable.
+// Legacy retry comparisons remain diagnostic for either sign of their delta.
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flywheel_desktop/models/uplift_models.dart';
@@ -17,16 +15,16 @@ UpliftDelta _d(double uplift, double lo, double hi, bool includesZero) =>
     );
 
 void main() {
-  test('separated interval above zero is a verified uplift', () {
+  test('separated legacy interval above zero is not verified uplift', () {
     final d = _d(0.18, 0.05, 0.30, false);
-    expect(d.verdict, 'verified');
+    expect(d.verdict, 'unverifiable');
     expect(d.isRegression, isFalse);
   });
 
-  test('separated interval below zero is drift, never verified', () {
+  test('separated legacy interval below zero remains diagnostic', () {
     final d = _d(-0.12, -0.24, -0.02, false);
-    expect(d.verdict, 'drift');
-    expect(d.isRegression, isTrue);
+    expect(d.verdict, 'unverifiable');
+    expect(d.isRegression, isFalse);
     expect(d.verdict, isNot('verified'));
   });
 
@@ -43,6 +41,6 @@ void main() {
       'newcombe_95': [-0.2, -0.01],
       'includes_zero': false,
     });
-    expect(d.verdict, 'drift');
+    expect(d.verdict, 'unverifiable');
   });
 }

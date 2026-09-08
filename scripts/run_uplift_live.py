@@ -1,11 +1,15 @@
 ﻿"""run_uplift_live.py -- fire ONE live uplift bench run. An operator command:
-it consumes local model time (and provider quota if hosted names are given);
+It runs a legacy retry diagnostic, not a workflow uplift experiment, and
+consumes local model time (and provider quota if hosted names are given);
 nothing calls this automatically.
 
 Bare vs wrapped over the hard set (harness/tasks_hard.py), graded by the same
 PytestOracle the M7 harness used: the candidate is written into the task's
-workdir and the hidden tests decide. The artifact lands in artifacts/uplift/
-where GET /api/uplift serves it read-only.
+workdir and the same tests select and score it. Different generation budgets
+confound the rate difference. See docs/UPLIFT-EVALUATION.md for alternatives.
+Use --out and --work-root to keep run artifacts outside the checkout. Without
+--work-root, task work is placed beside --out; the default output directory is
+artifacts/uplift/, served read-only by GET /api/uplift.
 
   python scripts/run_uplift_live.py --providers ollama:qwen2.5:7b --n-candidates 3
 """
@@ -13,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -53,8 +58,28 @@ def prepare(run_root: Path, specs: list,
             lane: str = "tasks_hard") -> tuple[Path, dict]:
     """Materialize the task set: one workdir per task with its hidden tests,
     plus the JSONL the bench loads (named by lane so comparison keys stay
-    distinct per lane). Returns (jsonl_path, task_id -> Task)."""
-    run_root.mkdir(parents=True, exist_ok=True)
+    distinct per lane). Requires a new run root to preserve existing files.
+    Task definitions contain executable tests; this is not a code sandbox.
+    Returns (jsonl_path, task_id -> Task)."""
+    def component(value, field):
+        if (not isinstance(value, str)
+                or not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]*", value)
+                or value.endswith(".")
+                or re.fullmatch(r"CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9]",
+                                value.split(".")[0], re.IGNORECASE)):
+            raise ValueError(f"{field} must be a portable single path component")
+        return value.casefold()
+
+    component(lane, "lane")
+    seen = set()
+    for spec in specs:
+        key = component(spec.task_id, "task_id")
+        if key in seen or key == f"{lane}.jsonl".casefold():
+            raise ValueError("duplicate or reserved task_id")
+        seen.add(key)
+        if component(spec.candidate_filename, "candidate_filename") == "tests":
+            raise ValueError("candidate_filename conflicts with tests directory")
+    run_root.mkdir(parents=True, exist_ok=False)
     tasks_by_id: dict = {}
     lines = []
     for spec in specs:
@@ -73,7 +98,7 @@ def prepare(run_root: Path, specs: list,
     return jsonl, tasks_by_id
 
 
-def main() -> int:
+def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--providers", default="ollama:qwen2.5:7b",
                     help="comma-separated endpoint[:model] roster names")
@@ -82,15 +107,24 @@ def main() -> int:
     ap.add_argument("--tasks-file", default=None,
                     help="curated JSONL lane; default = 10-task built-in set")
     ap.add_argument("--out", default=None)
-    a = ap.parse_args()
+    ap.add_argument("--work-root", default=None,
+                    help="task workspace directory; default is beside --out")
+    a = ap.parse_args(argv)
+    if a.n_candidates < 1 or (a.max_tasks is not None and a.max_tasks < 1):
+        ap.error("candidate and task limits must be positive")
 
     stamp = time.strftime("%Y%m%d-%H%M%S")
     specs = load_specs(a.tasks_file)
+    if a.max_tasks is not None:
+        specs = specs[:a.max_tasks]
     lane = Path(a.tasks_file).stem if a.tasks_file else "hard"
-    run_root = ROOT / "artifacts" / "uplift" / f"work_{stamp}"
     out = Path(a.out) if a.out else (
         ROOT / "artifacts" / "uplift" / f"uplift_{lane}_{stamp}.json")
-    jsonl, tasks_by_id = prepare(run_root, specs, lane=lane)
+    run_root = Path(a.work_root) if a.work_root else out.parent / f"work_{stamp}"
+    try:
+        jsonl, tasks_by_id = prepare(run_root, specs, lane=lane)
+    except (ValueError, FileExistsError) as exc:
+        ap.error(str(exc))
     graded_oracle = PytestOracle(timeout=60)
 
     def oracle(candidate: str, tj: dict):
@@ -122,9 +156,8 @@ def main() -> int:
               f"cand {r['candidates_mean']:.2f} "
               f"unver {r['unverifiable']}")
     for d in doc["deltas"]:
-        lo, hi = d["newcombe_95"]
-        print(f"  {d['provider']:>22}  uplift: {d['uplift']:+.0%} "
-              f"[{lo:.3f}, {hi:.3f}] -- {d['note']}")
+        print(f"  {d['provider']:>22}  descriptive rate difference: "
+              f"{d['uplift']:+.0%} -- {d['note']}")
     return 0
 
 
