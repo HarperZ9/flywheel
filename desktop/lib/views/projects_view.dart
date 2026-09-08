@@ -2,53 +2,77 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../client/continuation_api.dart';
 import '../client/gateway_client.dart';
+import '../client/index_workspace_map_api.dart';
+import '../controllers/index_workspace_map_controller.dart';
 import '../controllers/journey_controller.dart';
 import '../navigation/app_route.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/continuation_agent_sheet.dart';
 import '../widgets/continuation_panel.dart';
 import '../widgets/flywheel_nav.dart';
 import '../widgets/fw.dart';
 import '../widgets/import_config_panel.dart';
 import '../widgets/project_panels.dart';
+import '../widgets/projects_view_parts.dart';
+
 class ProjectsView extends StatefulWidget {
   final GatewayClient client;
   final JourneyController journey;
   final bool alive;
-  const ProjectsView({super.key, required this.client,
-    required this.journey, required this.alive});
+  const ProjectsView({
+    super.key,
+    required this.client,
+    required this.journey,
+    required this.alive,
+  });
   @override
   State<ProjectsView> createState() => _ProjectsViewState();
 }
+
 class _ProjectsViewState extends State<ProjectsView> {
   final _root = TextEditingController();
   List<Map<String, dynamic>> _projects = [];
   Map<String, dynamic>? _store;
   List<Map<String, dynamic>>? _auditTail;
   String? _selected;
-  Map<String, dynamic>? _index;
-  bool _indexing = false;
+  late final IndexWorkspaceMapController _index;
   bool _auditOpen = false;
   String? _error;
   @override
   void initState() {
     super.initState();
+    _index = IndexWorkspaceMapController(
+      api: GatewayIndexWorkspaceMapApi(widget.client),
+    );
+    _index.addListener(_indexChanged);
     _load();
   }
+
   @override
   void didUpdateWidget(ProjectsView old) {
     super.didUpdateWidget(old);
     if (!old.alive && widget.alive) _load();
   }
+
   @override
   void dispose() {
+    _index.removeListener(_indexChanged);
+    _index.dispose();
     _root.dispose();
     super.dispose();
   }
+
+  void _indexChanged() {
+    if (mounted) setState(() {});
+  }
+
   Future<void> _load() async {
     if (!widget.alive) return;
     try {
-      final results =
-          await Future.wait([widget.client.projects(), widget.client.storeStats()]);
+      final results = await Future.wait([
+        widget.client.projects(),
+        widget.client.storeStats(),
+      ]);
       if (mounted) {
         setState(() {
           _projects = ((results[0]['projects'] ?? []) as List)
@@ -62,6 +86,7 @@ class _ProjectsViewState extends State<ProjectsView> {
       if (mounted) setState(() => _error = '$e');
     }
   }
+
   Future<void> _add() async {
     final root = _root.text.trim();
     if (root.isEmpty) return;
@@ -76,6 +101,7 @@ class _ProjectsViewState extends State<ProjectsView> {
     setState(() => _error = null);
     _load();
   }
+
   Future<void> _remove(String root) async {
     try {
       await widget.client.removeProject(root);
@@ -87,50 +113,42 @@ class _ProjectsViewState extends State<ProjectsView> {
     if (_selected == root) {
       setState(() {
         _selected = null;
-        _index = null;
       });
+      _index.detach();
     }
     _load();
   }
+
   Future<void> _loadAudit() async {
     try {
       final r = await widget.client.storeAudit(n: 50);
       if (!mounted) return;
       final entries = (r['entries'] is List)
-          ? (r['entries'] as List)
-              .whereType<Map<String, dynamic>>()
-              .toList()
+          ? (r['entries'] as List).whereType<Map<String, dynamic>>().toList()
           : <Map<String, dynamic>>[];
       setState(() => _auditTail = entries);
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     }
   }
+
   void _toggleAudit() {
     setState(() => _auditOpen = !_auditOpen);
     if (_auditOpen && _auditTail == null) _loadAudit();
   }
+
   Future<void> _openIndex(String root) async {
-    setState(() {
-      _selected = root;
-      _index = null;
-      _indexing = true;
-    });
-    try {
-      final r = await widget.client.indexProject(root, view: 'summary');
-      if (mounted) setState(() => _index = r);
-    } catch (e) {
-      if (mounted) setState(() => _index = {'errors': {'index': '$e'}});
-    } finally {
-      if (mounted) setState(() => _indexing = false);
-    }
+    setState(() => _selected = root);
+    await _index.open(root);
   }
+
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
       return const FwEmpty(
-          'The engine is offline. Projects appear when it runs.',
-          command: 'flywheel up');
+        'The engine is offline. Projects appear when it runs.',
+        command: 'flywheel up',
+      );
     }
     final t = context.fw;
     return ViewScroll(
@@ -156,7 +174,8 @@ class _ProjectsViewState extends State<ProjectsView> {
                   controller: _root,
                   style: fwMono(t, size: 12.5),
                   decoration: const InputDecoration(
-                      hintText: 'Path to a project or monorepo directory…'),
+                    hintText: 'Path to a project or monorepo directory…',
+                  ),
                   onSubmitted: (_) => _add(),
                 ),
               ),
@@ -171,122 +190,87 @@ class _ProjectsViewState extends State<ProjectsView> {
         ContinuationPanel(
           api: GatewayContinuationApi(widget.client),
           alive: widget.alive,
+          onContinueWithAgent: (preview, started) async {
+            try {
+              await showContinuationAgentSheet(
+                  context: context,
+                  client: widget.client,
+                  journey: widget.journey,
+                  alive: widget.alive,
+                  preview: preview,
+                  started: started);
+            } catch (error) {
+              if (mounted) setState(() => _error = '$error');
+              rethrow;
+            }
+          },
           onOpenJourney: (ref, lens) {
             unawaited(widget.journey.openSession(ref, lens));
             FlywheelNav.jump(context, DestinationId.journey);
-          }),
+          },
+        ),
         const SizedBox(height: FwLayout.s4),
-        for (final p in _projects) _projectCard(t, p),
+        for (final p in _projects)
+          ProjectRowCard(
+            project: p,
+            selectedRoot: _selected,
+            indexBusy: _index.busy,
+            onIndex: _openIndex,
+            onRemove: _remove,
+          ),
         if (_selected != null) ...[
           const SizedBox(height: FwLayout.s5),
           const Kicker('index · catalog + knowledge graph', hot: true),
           const SizedBox(height: FwLayout.s3),
-          IndexPanel(index: _index, indexing: _indexing),
+          IndexPanel(
+            summary: _index.summary,
+            job: _index.job,
+            busy: _index.busy,
+            message: _index.message,
+            onCancel: _index.cancel,
+            onRefresh: _index.refreshStatus,
+            onResult: _index.retrieveResult,
+            onResume: _index.resume,
+            onUpdate: _index.updateWorkspaceMap,
+          ),
         ],
         if (_store != null) ...[
           const SizedBox(height: FwLayout.s5),
           const Kicker('verifiable store · content-addressed, chained'),
           const SizedBox(height: FwLayout.s3),
           StorePanel(
-              store: _store!,
-              onVerify: () async {
-                Map<String, dynamic> v;
-                try {
-                  v = await widget.client.storeVerify();
-                } catch (e) {
-                  if (mounted) setState(() => _error = '$e');
-                  return;
-                }
-                if (mounted) {
-                  final chain =
-                      v['chain'] is Map ? v['chain'] as Map : const {};
-                  final records =
-                      v['records'] is Map ? v['records'] as Map : const {};
-                  setState(() => _error = v['ok'] == true
+            store: _store!,
+            onVerify: () async {
+              Map<String, dynamic> v;
+              try {
+                v = await widget.client.storeVerify();
+              } catch (e) {
+                if (mounted) setState(() => _error = '$e');
+                return;
+              }
+              if (mounted) {
+                final chain = v['chain'] is Map ? v['chain'] as Map : const {};
+                final records =
+                    v['records'] is Map ? v['records'] as Map : const {};
+                setState(
+                  () => _error = v['ok'] == true
                       ? 'audit chain verified: ${chain['checked'] ?? 0} '
                           'entries, ${records['checked'] ?? 0} records '
                           're-checked against their hashes'
                       : 'CHAIN BROKEN at ${chain['broken_at'] ?? '?'}: '
-                          '${chain['reason'] ?? 'a record no longer matches its hash'}');
-                }
-              }),
+                          '${chain['reason'] ?? 'a record no longer matches its hash'}',
+                );
+              }
+            },
+          ),
           const SizedBox(height: FwLayout.s3),
-          _auditSection(t),
+          ProjectsAuditSection(
+            open: _auditOpen,
+            entries: _auditTail,
+            onToggle: _toggleAudit,
+          ),
         ],
       ],
-    );
-  }
-  Widget _auditSection(FwTokens t) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      InkWell(
-        onTap: _toggleAudit,
-        child: Row(children: [
-          Icon(_auditOpen ? Icons.expand_less : Icons.expand_more,
-              size: 16, color: t.inkFaint),
-          const SizedBox(width: FwLayout.s1),
-          Text('Audit trail',
-              style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w600, color: t.ink)),
-          const Spacer(),
-          if (_auditTail != null)
-            Text('${_auditTail!.length} entries',
-                style: fwMono(t, size: 10.5, color: t.inkFaint)),
-        ]),
-      ),
-      if (_auditOpen) ...[
-        const SizedBox(height: FwLayout.s2),
-        if (_auditTail == null)
-          const Center(child: CircularProgressIndicator(strokeWidth: 2))
-        else if (_auditTail!.isEmpty)
-          const HonestNull('No audit entries recorded yet.')
-        else
-          for (final entry in _auditTail!) AuditRow(entry: entry),
-      ],
-    ]);
-  }
-  Widget _projectCard(FwTokens t, Map<String, dynamic> p) {
-    final root = '${p['root']}';
-    final exists = p['exists'] == true;
-    final selected = root == _selected;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: FwLayout.s3),
-      child: HairlineCard(
-        recessed: selected,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text('${p['name']}',
-                      style: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w700)),
-                ),
-                VerdictPill('${p['kind']}', status: 'unverifiable'),
-                const SizedBox(width: FwLayout.s2),
-                VerdictPill(exists ? 'present' : 'missing',
-                    status: exists ? 'verified' : 'drift'),
-              ],
-            ),
-            const SizedBox(height: FwLayout.s1),
-            Text(root, style: fwMono(t, size: 11, color: t.inkFaint)),
-            const SizedBox(height: FwLayout.s3),
-            Row(
-              children: [
-                FilledButton.tonal(
-                  onPressed: exists ? () => _openIndex(root) : null,
-                  child: Text(selected && _indexing ? 'Indexing…' : 'Index'),
-                ),
-                const SizedBox(width: FwLayout.s3),
-                OutlinedButton(
-                  onPressed: () => _remove(root),
-                  child: const Text('Remove'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

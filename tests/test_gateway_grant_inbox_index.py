@@ -3,6 +3,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from gateway_grant_relay_source_fixture import relay_source_runtime  # noqa: F401
+
 import harness.gateway_grant_route as grant_route
 import harness.gateway_grant_index as index
 from harness.gateway_grant_route import gateway_grant_post

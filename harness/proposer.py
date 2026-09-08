@@ -25,13 +25,12 @@ class ProposerOutput:
     prompt_hash: str
     cache: str
     served_model: str = ""    # the model the provider SAYS served the call
-    # Provider-REPORTED token usage, when the API returned it, normalized to
-    # {"prompt", "completion", "total"} ints. CLI proposers that retain the
-    # provider's event transcript (CodexCliProposer) instead carry the usage
-    # block VERBATIM, provider field names untouched, so a checker can
-    # recompute it from the transcript. None means the provider gave no
-    # usage object -- a caller that needs a token count must ESTIMATE and say so,
-    # never silently pass an invented number off as reported.
+    # Provider-reported usage, when the API returned it. Direct API proposers
+    # normalize OpenAI/Anthropic token fields to {"prompt", "completion",
+    # "total"} ints. Transcript-backed and local native adapters retain the
+    # provider block verbatim, with field names and units untouched, so a
+    # checker can recompute it from retained events. None means the provider
+    # gave no usable usage object; callers must not silently invent counts.
     usage: dict | None = None
 
 

@@ -1,6 +1,8 @@
 import json
 import threading
 
+from gateway_grant_relay_source_fixture import relay_source_runtime  # noqa: F401
+
 from harness.gateway_grant_route import (
     authorize_gateway_operation,
     gateway_grant_post,

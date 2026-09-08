@@ -198,6 +198,10 @@ def test_frozen_build_never_launches_sys_executable(monkeypatch):
     monkeypatch.setattr(ln, "_frozen", lambda: True)
     monkeypatch.setattr(ln, "_importable", lambda top: True)  # even if importable
     for name in ln.LANES:
+        if name in {"relay", "canon", "mneme", "plexus", "telos", "accountable-surface"}:
+            with pytest.raises(ln.LaneRuntimeError, match="package_distribution_disabled"):
+                ln.resolve_mcp_launch(name)
+            continue
         launch = ln.resolve_mcp_launch(name)
         if not launch.argv:                # an http lane spawns nothing at all
             assert ln.LANES[name].kind == "http", f"{name} lost its argv"
@@ -214,8 +218,8 @@ def test_frozen_pip_lane_uses_console_script(monkeypatch):
 def test_frozen_node_lane_keeps_bare_declared_command(tmp_path, monkeypatch):
     monkeypatch.setattr(ln, "_frozen", lambda: True)
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: tmp_path)
-    assert ln.resolve_mcp_launch("telos") == LaunchSpec(
-        ("node", "demo/telos-mcp.mjs"))
+    assert ln.resolve_mcp_launch("learn") == LaunchSpec(
+        ("node", "src/mcp.mjs"))
 
 
 def test_gateway_forum_proxy_uses_runtime_launch_spec(monkeypatch):

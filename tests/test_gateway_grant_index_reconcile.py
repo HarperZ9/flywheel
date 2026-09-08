@@ -1,5 +1,7 @@
 import json, sqlite3
 
+from gateway_grant_relay_source_fixture import relay_source_runtime  # noqa: F401
+
 from harness.gateway_grant_index import INDEX_FILENAME, read_limited_json, record_filename
 from harness.gateway_grant_index_reconcile import reconcile_owner_index
 from harness.gateway_grant_route import gateway_grant_post

@@ -50,7 +50,8 @@ def _pip_mcp_command(lane: Lane) -> list[str]:
 
 def resolve_mcp_command(name: str) -> list[str]:
     """Return only the portable declared argv used by public roster surfaces."""
-    return LANES[name].mcp_command()
+    lane = LANES[name]
+    return [] if lane.package_disabled_reason else lane.mcp_command()
 
 
 def resolve_lane_runtime(name: str) -> ResolvedLaneRuntime:
@@ -135,8 +136,11 @@ def _probe_lane(name: str, installed: str | None, timeout: float, *,
 def _status_row(lane: Lane, runtime: ResolvedLaneRuntime, status: str,
                 detail: str, *, tools: int | None = None,
                 capability: dict | None = None) -> dict:
+    if "package_distribution_disabled" in runtime.blocking_codes:
+        detail = f"{detail}. {lane.package_disabled_reason}"
     row = {
         "name": lane.name, "kind": lane.kind,
+        "package_installable": lane.kind in {"pip", "npm"} and not lane.package_disabled_reason,
         "installed_version": runtime.installed_version,
         "expected_version": runtime.expected_version, "status": status,
         "organ": lane.organ, "role": lane.role, "detail": detail,
@@ -200,6 +204,10 @@ def install_lane(name: str, *, profile: str = "package") -> dict:
     if lane.kind in ("bundled", "http"):
         return {"name": name, "installed": True,
                 "detail": f"{lane.kind} lane (no install needed)"}
+    if profile != "source" and lane.package_disabled_reason:
+        return {"name": name, "installed": False,
+                "code": "package_distribution_disabled",
+                "detail": lane.package_disabled_reason}
     try:
         if profile == "source":
             repo = resolve_source_repo(lane)

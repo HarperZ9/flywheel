@@ -20,7 +20,7 @@ def _forum_mcp_call(tool: str, args: dict) -> dict:
     dict so the desktop view can render a 'forum offline' state.
     """
     from harness.mcp_client import MCPClient, MCPError
-    from harness.lanes import resolve_mcp_launch
+    from harness.lanes import resolve_mcp_launch, LaneRuntimeError
     try:
         command = resolve_mcp_launch("forum")
         with MCPClient(command, timeout=20, client_name="flywheel-forum-proxy") as c:
@@ -32,6 +32,9 @@ def _forum_mcp_call(tool: str, args: dict) -> dict:
                 return _json.loads(res["text"])
             except _json.JSONDecodeError:
                 return {"raw": res["text"][:500]}
+    except LaneRuntimeError:
+        from .plugin_lane_runtime import unavailable_response
+        return unavailable_response("forum")
     except (MCPError, FileNotFoundError, OSError) as e:
         return {"error": f"forum lane unavailable: {e}"}
 
@@ -44,7 +47,7 @@ def _relay_mcp_call(tool: str, args: dict) -> dict:
     gateway (one auth, one tunnel), and a relay-backed run comes back with relay's
     verifiable run_id and ledger checkpoint, the same receipts a desktop run gets.
     """
-    from harness.lanes import resolve_mcp_launch
+    from harness.lanes import resolve_mcp_launch, LaneRuntimeError
     from harness.mcp_client import MCPClient, MCPError
     try:
         command = resolve_mcp_launch("relay")
@@ -57,5 +60,8 @@ def _relay_mcp_call(tool: str, args: dict) -> dict:
                 return _json.loads(res["text"])
             except _json.JSONDecodeError:
                 return {"raw": res["text"][:500]}
+    except LaneRuntimeError:
+        from .plugin_lane_runtime import unavailable_response
+        return unavailable_response("relay")
     except (MCPError, FileNotFoundError, OSError) as e:
         return {"error": f"relay lane unavailable: {e}"}

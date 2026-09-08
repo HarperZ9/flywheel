@@ -19,6 +19,7 @@ class Lane {
   final String role;
   final String detail;
   final int? tools; // MCP tool count, present only after a real probe
+  final bool packageInstallable;
 
   Lane({
     required this.name,
@@ -30,6 +31,7 @@ class Lane {
     required this.role,
     required this.detail,
     this.tools,
+    this.packageInstallable = true,
   });
 
   factory Lane.fromJson(Map<String, dynamic> j) => Lane(
@@ -42,6 +44,7 @@ class Lane {
         role: j['role'] ?? '',
         detail: j['detail'] ?? '',
         tools: j['tools'] is int ? j['tools'] : null,
+        packageInstallable: j['package_installable'] != false,
       );
 
   bool get isLive => status == 'live';
@@ -52,7 +55,8 @@ class Lane {
   /// inside the engine and a remote lane runs on somebody else's host, so
   /// `install_lane` answers "no install needed" for both. Offering the button
   /// there promises work the gateway will not do.
-  bool get isInstallable => kind == 'pip' || kind == 'npm';
+  bool get isInstallable =>
+      packageInstallable && (kind == 'pip' || kind == 'npm');
 }
 
 /// The full lane roster (GET /api/lanes).

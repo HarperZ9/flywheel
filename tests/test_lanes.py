@@ -43,7 +43,7 @@ def test_every_lane_has_an_mcp_command_and_organ():
         cmd = resolve_mcp_command(name)
         # An http lane is not spawned, so it has no argv. Asserting one anyway
         # would force a fake command into the registry to satisfy the test.
-        assert cmd == [] if lane.kind == "http" else len(cmd) >= 1
+        assert cmd == [] if lane.kind == "http" or lane.package_disabled_reason else len(cmd) >= 1
         assert lane.organ, f"{name} has no organ assigned"
         assert lane.role, f"{name} has no role assigned"
         assert lane.kind in ("pip", "npm", "bundled", "http")
@@ -87,7 +87,8 @@ def test_bundled_lane_needs_no_install():
 
 def test_public_commands_are_portable_declared_argv():
     assert resolve_mcp_command("gather") == ["gather", "mcp"]
-    assert resolve_mcp_command("telos") == ["node", "demo/telos-mcp.mjs"]
+    assert resolve_mcp_command("telos") == []  # unpublished package has no public launch hint
+    assert resolve_mcp_command("learn") == ["node", "src/mcp.mjs"]
     assert resolve_mcp_command("local-model") == [
         "python", "-m", "harness.local_mcp"]
 

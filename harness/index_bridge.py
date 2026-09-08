@@ -21,18 +21,19 @@ _VIEWS = {
     "symbols": ["symbols", "--json"],  # symbol inventory
 }
 _TIMEOUT = 90
+_SUMMARY_TIMEOUT = 20
 
 
 def _index_argv() -> "list | None":
     """The argv that runs the index CLI: the console script if on PATH, else
-    `python -m index` if the module is importable. None when neither works."""
+    `python -m index_graph.cli` if the module is importable. None otherwise."""
     exe = shutil.which("index")
     if exe:
         return [exe]
     try:
         import importlib.util
-        if importlib.util.find_spec("index") is not None:
-            return [sys.executable, "-m", "index"]
+        if importlib.util.find_spec("index_graph") is not None:
+            return [sys.executable, "-m", "index_graph.cli"]
     except Exception:
         pass
     return None
@@ -42,7 +43,7 @@ def index_available() -> bool:
     return _index_argv() is not None
 
 
-def index_view(root: str, view: str) -> dict:
+def index_view(root: str, view: str, *, timeout: int = _TIMEOUT) -> dict:
     """Run one index view over `root`. Returns the engine's JSON under
     `result`, or a named error."""
     view = (view or "map").strip()
@@ -58,9 +59,9 @@ def index_view(root: str, view: str) -> dict:
     cmd = argv + _VIEWS[view] + ["--root", str(root)]
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True,
-                              timeout=_TIMEOUT)
+                              timeout=timeout)
     except subprocess.TimeoutExpired:
-        return {"error": f"index {view} timed out after {_TIMEOUT}s"}
+        return {"error": f"index {view} timed out after {timeout}s"}
     except (OSError, ValueError) as e:
         return {"error": f"{type(e).__name__}: {e}"}
     if proc.returncode != 0:
@@ -75,12 +76,14 @@ def index_view(root: str, view: str) -> dict:
 
 
 def index_summary(root: str) -> dict:
-    """A compact catalog + graph summary for a project card: repo/file/class
-    counts from map, relation/cycle counts from graph. Partial on any view
-    error, with the errors surfaced, never hidden."""
+    """A compact catalog summary for a project card: map stats only.
+
+    Full graph/router context is a durable workspace-map job, not part of the
+    synchronous summary path.
+    """
     out = {"schema": "flywheel.index-summary/v1", "root": str(root),
            "errors": {}}
-    m = index_view(root, "map")
+    m = index_view(root, "map", timeout=_SUMMARY_TIMEOUT)
     if "error" in m:
         out["errors"]["map"] = m["error"]
     else:
@@ -92,13 +95,4 @@ def index_summary(root: str) -> dict:
         cc = res.get("class_counts", {})
         out["class_total"] = sum(cc.values()) if isinstance(cc, dict) else 0
         out["root_sha256_prefix"] = res.get("root_sha256_prefix", "")
-    g = index_view(root, "graph")
-    if "error" in g:
-        out["errors"]["graph"] = g["error"]
-    else:
-        res = g["result"]
-        rel = res.get("relations", [])
-        out["relation_count"] = len(rel) if isinstance(rel, list) else 0
-        out["cycle_count"] = len(res.get("cycles", []) or [])
-        out["role_count"] = len(res.get("roles", {}) or {})
     return out

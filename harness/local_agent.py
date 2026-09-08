@@ -18,7 +18,7 @@ from typing import Callable, Optional, Protocol
 
 from . import compaction
 from .messages_api import make_receipt, translate_response
-from .local_serving import generation_config, validate_num_ctx
+from .local_serving import generation_config, validate_num_ctx; from .local_usage import ollama_native_usage
 # A transport is (method, url, body_bytes_or_none, timeout) -> (status, parsed_json).
 # The default hits the network; tests inject a fake to stay hermetic.
 Transport = Callable[[str, str, Optional[bytes], float], "tuple[int, dict]"]
@@ -134,7 +134,7 @@ class OllamaBackend:
         if not isinstance(observed, str) or not observed or observed != model:
             raise MalformedBackendOutput("ollama response model missing or mismatched")
         return {"text": text, "model_ref": f"ollama:{observed}", "seed": seed,
-                "generation_config": json.loads(body)['options']}
+                "generation_config": json.loads(body)['options'], **({"usage": usage} if (usage := ollama_native_usage(obj)) is not None else {})}
 
     def _body(self, messages, system, max_tokens, temperature, seed, stream):
         model = _ollama_native_model(self._resolved or self.model)

@@ -36,6 +36,20 @@ Future<void> _pump(WidgetTester tester, Lane lane) => tester.pumpWidget(
     );
 
 void main() {
+  testWidgets('a blocked package distribution offers no install',
+      (tester) async {
+    await _pump(
+        tester,
+        Lane.fromJson({
+          'name': 'relay',
+          'kind': 'pip',
+          'package_installable': false,
+          'detail': 'Package distribution disabled; use a source checkout.',
+        }));
+    expect(find.text('Install'), findsNothing);
+    expect(find.textContaining('use a source checkout'), findsOneWidget);
+  });
+
   testWidgets('a pip lane with nothing installed offers the install',
       (tester) async {
     await _pump(tester, _lane('mneme', 'pip'));

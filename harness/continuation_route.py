@@ -8,7 +8,7 @@ from typing import Callable
 from .continuation_context import PRIVATE_CONTEXT_SCHEMA
 from .continuation_preview import build_continuation
 from .continuation_replay import ack_from_record, matching_request_event
-from .continuation_store import intake_ref, load_preview, write_preview
+from .continuation_store import intake_ref, load_preview, load_start_binding, start_lock, write_preview, write_start_binding
 from .evidence_public import TransportError, error_response, exact_request, parse_json
 from .grant_route import grant_post
 from .journey_route import journey_post
@@ -19,23 +19,19 @@ ROUTE_PREFIX = "/api/continuation/"
 START_SCHEMA = "flywheel.native-continuation-start/v1"
 UNDO_SCHEMA = "flywheel.native-continuation-undo/v1"
 
-
 def _raw_json(value: dict) -> bytes:
     return json.dumps(value, separators=(",", ":")).encode()
-
 
 def _sha(value: object, name: str) -> str:
     if type(value) is not str or SHA256_PATTERN.fullmatch(value) is None:
         raise TransportError("INVALID_CONTINUATION", f"{name} is invalid", 422)
     return value
 
-
 def _client_id(req: dict) -> str:
     value = req.get("client_request_id")
     if type(value) is not str or not value.strip():
         raise TransportError("INVALID_CONTINUATION", "client_request_id is invalid", 422)
     return value
-
 
 def _root_from(req: dict, root: Path | None) -> Path:
     if type(req.get("root")) is not str or not req["root"].strip():
@@ -49,7 +45,6 @@ def _root_from(req: dict, root: Path | None) -> Path:
         raise TransportError("ROOT_UNAVAILABLE", "workspace root is unavailable")
     return resolved
 
-
 def _export_from(req: dict) -> Path | None:
     value = req.get("export_path")
     if value is None:
@@ -58,13 +53,11 @@ def _export_from(req: dict) -> Path | None:
         raise TransportError("INVALID_CONTINUATION", "export_path is invalid", 422)
     return Path(value)
 
-
 def _preview(req: dict, *, state_root: Path, root: Path | None) -> dict:
     exact_request(req, {"root", "export_path"}, optional={"export_path"})
     preview, intake = build_continuation(
         _root_from(req, root), export_path=_export_from(req))
     return write_preview(state_root, preview, intake)
-
 
 def _recompute(stored: dict) -> dict:
     source = stored.get("source") if type(stored.get("source")) is dict else {}
@@ -76,7 +69,6 @@ def _recompute(stored: dict) -> dict:
         Path(root), export_path=Path(export) if type(export) is str else None)
     return preview
 
-
 def _ensure_current(req: dict, stored: dict) -> None:
     _sha(req.get("preview_sha256"), "preview_sha256")
     _sha(req.get("source_state_sha256"), "source_state_sha256")
@@ -87,7 +79,6 @@ def _ensure_current(req: dict, stored: dict) -> None:
     if current.get("source_state_sha256") != stored.get("source_state_sha256"):
         raise TransportError("SOURCE_DRIFT", "source changed since continuation preview", 409)
 
-
 def _recovery_action(stored: dict) -> dict:
     return {
         "action_id": "continue-" + stored["preview_ref"],
@@ -96,10 +87,14 @@ def _recovery_action(stored: dict) -> dict:
         "basis_refs": [stored["preview_ref"], stored["intake_ref"]],
     }
 
-
 def _recovery_request_id(req: dict) -> str:
     return req["client_request_id"] + ":recovery-action"
 
+def _start_response(req: dict, journey: dict) -> dict:
+    return {"schema": START_SCHEMA, "mode": "provider_neutral",
+            "preview_ref": req["preview_ref"], "open_lens": "Rescue",
+            "journey": journey,
+            "does_not_prove": ["provider-native web session resume"]}
 
 def _grant_and_run(action: str, request: dict, *, owner_ref: str,
                    state_root: Path, clock: Callable[[], str]) -> dict:
@@ -122,7 +117,6 @@ def _grant_and_run(action: str, request: dict, *, owner_ref: str,
         raise TransportError(journey["error"]["code"], journey["error"]["message"], status)
     return journey
 
-
 def _private_context(req: dict, *, state_root: Path) -> dict:
     exact_request(req, {"preview_ref", "preview_sha256", "source_state_sha256"})
     stored = load_preview(state_root, req["preview_ref"])
@@ -143,7 +137,6 @@ def _private_context(req: dict, *, state_root: Path) -> dict:
                 "provider-native web session resume",
                 "selected context is complete",
                 "a model has executed the runner context"]}
-
 
 def _start_replay(req: dict, *, goal: str, owner_ref: str,
                   state_root: Path) -> dict | None:
@@ -174,7 +167,6 @@ def _start_replay(req: dict, *, goal: str, owner_ref: str,
         raise JourneyStoreError("IDEMPOTENCY_MISMATCH")
     return ack_from_record(recovery_record, recovery_event, recovery_events)
 
-
 def _undo_replay(req: dict, *, owner_ref: str, state_root: Path) -> dict | None:
     found = matching_request_event(
         JourneyStore(state_root), owner_ref=owner_ref,
@@ -192,45 +184,53 @@ def _undo_replay(req: dict, *, owner_ref: str, state_root: Path) -> dict | None:
         raise JourneyStoreError("IDEMPOTENCY_MISMATCH")
     return ack_from_record(record, event, events)
 
-
 def _start(req: dict, *, owner_ref: str, state_root: Path,
            clock: Callable[[], str]) -> dict:
     exact_request(req, {"preview_ref", "preview_sha256", "source_state_sha256",
                        "client_request_id", "goal"}, optional={"goal"})
     _client_id(req)
     goal = req.get("goal") or "Continue work with provider-neutral Flywheel context"
-    stored = load_preview(state_root, req["preview_ref"])
-    _sha(req.get("preview_sha256"), "preview_sha256")
-    if req["preview_sha256"] != stored.get("preview_sha256"):
-        raise TransportError("PREVIEW_MISMATCH", "continuation preview does not match request", 409)
-    replay = _start_replay(req, goal=goal, owner_ref=owner_ref,
-                           state_root=state_root)
-    if replay is not None:
-        return {"schema": START_SCHEMA, "mode": "provider_neutral",
-                "preview_ref": req["preview_ref"], "open_lens": "Rescue",
-                "journey": replay,
-                "does_not_prove": ["provider-native web session resume"]}
-    _ensure_current(req, stored)
-    health = stored.get("health") if type(stored.get("health")) is dict else {}
-    if health.get("state") != "ready":
-        raise TransportError(
-            "CONTINUATION_BLOCKED", "continuation source is incomplete", 409)
-    create = {"goal": goal, "intake_ref": intake_ref(req["preview_ref"]),
-              "client_request_id": req["client_request_id"]}
-    created = _grant_and_run("create", create, owner_ref=owner_ref,
-                             state_root=state_root, clock=clock)
-    append = {"journey_ref": created["journey_ref"],
-              "expected_event_head": created["event_head_sha256"],
-              "client_request_id": _recovery_request_id(req),
-              "command": {"type": "record_next_action",
-                          "next_action": _recovery_action(stored)}}
-    journey = _grant_and_run("append", append, owner_ref=owner_ref,
-                             state_root=state_root, clock=clock)
-    return {"schema": START_SCHEMA, "mode": "provider_neutral",
-            "preview_ref": req["preview_ref"], "open_lens": "Rescue",
-            "journey": journey,
-            "does_not_prove": ["provider-native web session resume"]}
-
+    with start_lock(state_root, owner_ref, req["preview_ref"],
+                    req["client_request_id"]):
+        stored = load_preview(state_root, req["preview_ref"])
+        _sha(req.get("preview_sha256"), "preview_sha256")
+        if req["preview_sha256"] != stored.get("preview_sha256"):
+            raise TransportError("PREVIEW_MISMATCH", "continuation preview does not match request", 409)
+        try:
+            binding = load_start_binding(state_root, owner_ref, req["preview_ref"])
+        except TransportError as exc:
+            if exc.code != "CONTINUATION_NOT_STARTED":
+                raise
+        else:
+            bound = {**req, "client_request_id": binding["start_client_request_id"]}
+            replay = _start_replay(bound, goal=goal, owner_ref=owner_ref,
+                                   state_root=state_root)
+            if replay is None:
+                raise JourneyStoreError("IDEMPOTENCY_MISMATCH")
+            return _start_response(req, replay)
+        replay = _start_replay(req, goal=goal, owner_ref=owner_ref,
+                               state_root=state_root)
+        if replay is not None:
+            write_start_binding(state_root, stored, owner_ref, replay, req["client_request_id"], _recovery_request_id(req))
+            return _start_response(req, replay)
+        _ensure_current(req, stored)
+        health = stored.get("health") if type(stored.get("health")) is dict else {}
+        if health.get("state") != "ready":
+            raise TransportError(
+                "CONTINUATION_BLOCKED", "continuation source is incomplete", 409)
+        create = {"goal": goal, "intake_ref": intake_ref(req["preview_ref"]),
+                  "client_request_id": req["client_request_id"]}
+        created = _grant_and_run("create", create, owner_ref=owner_ref,
+                                 state_root=state_root, clock=clock)
+        append = {"journey_ref": created["journey_ref"],
+                  "expected_event_head": created["event_head_sha256"],
+                  "client_request_id": _recovery_request_id(req),
+                  "command": {"type": "record_next_action",
+                              "next_action": _recovery_action(stored)}}
+        journey = _grant_and_run("append", append, owner_ref=owner_ref,
+                                 state_root=state_root, clock=clock)
+        write_start_binding(state_root, stored, owner_ref, journey, req["client_request_id"], _recovery_request_id(req))
+        return _start_response(req, journey)
 
 def _undo(req: dict, *, owner_ref: str, state_root: Path,
           clock: Callable[[], str]) -> dict:
@@ -260,7 +260,6 @@ def _undo(req: dict, *, owner_ref: str, state_root: Path,
                              state_root=state_root, clock=clock)
     return {"schema": UNDO_SCHEMA, "preview_ref": req["preview_ref"],
             "journey": journey}
-
 
 def handle_continuation_post(path: str, raw: bytes, *, owner_ref: str,
                              state_root: Path, root: Path | None = None,
