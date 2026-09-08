@@ -15,6 +15,8 @@ class OracleContext:
     artifact_paths: dict[str, Path]
     expected_input_sha256s: dict[str, str]
     scorecard_core: dict[str, Any]
+    visible_input_sha256s: dict[str, str] | None = None
+    oracle_input_sha256s: dict[str, str] | None = None
 @dataclass(frozen=True)
 class OracleResult:
     state: str
@@ -25,6 +27,10 @@ class OracleResult:
     checked_artifacts: list[dict[str, str]]
 from harness.cross_harness_oracle_support import _DuplicateKey, _Malformed, _admit, _checked, _digest, _inside, _pairs, _read, _root, _rows, _sha, _strings  # noqa: F401
 _UNPARSED = object()
+def _visible_inputs(context: OracleContext) -> dict[str, str]:
+    return dict(context.visible_input_sha256s if context.visible_input_sha256s is not None else context.expected_input_sha256s)
+def _oracle_inputs(context: OracleContext) -> dict[str, str]:
+    return dict(context.oracle_input_sha256s if context.oracle_input_sha256s is not None else context.expected_input_sha256s)
 def _result(context: OracleContext, state: str, codes=(), *, evidence=None, checked=None) -> OracleResult:
     checker_id = str(context.oracle_spec.get("checker_id", ""))
     return OracleResult(state, checker_id, checker_id.rsplit("/", 1)[-1] if "/" in checker_id else "",
@@ -50,13 +56,14 @@ def _raw_boundary(context: OracleContext, checked, attempt: Path) -> tuple[dict[
         return None, _result(context, "malformed", ["json_invalid"], evidence={"reason": "response_envelope_invalid"}, checked=checked)
     return envelope, None
 def _load_fixture(context: OracleContext, checked):
-    root = _root(context, "workspace_root")
+    split = "oracle_root" in context.scorecard_core or context.oracle_input_sha256s is not None
+    root = _root(context, "oracle_root") if split else _root(context, "workspace_root")
     ref = context.oracle_spec.get("fixture")
     path = _inside(root, ref)
     if path is None: return None, "fixture_unavailable"
-    try: data = _read(checked, "input_fixture", path)
+    try: data = _read(checked, "oracle_fixture" if split else "input_fixture", path)
     except OSError: return None, "fixture_unavailable"
-    if context.expected_input_sha256s.get(ref) != _sha(data): return None, "input_hash_mismatch"
+    if _oracle_inputs(context).get(ref) != _sha(data): return None, "input_hash_mismatch"
     try:
         value = json.loads(data.decode("utf-8"), object_pairs_hook=_pairs)
         return (value, "") if isinstance(value, dict) else (None, "fixture_malformed")
@@ -86,7 +93,7 @@ def _common(context: OracleContext, envelope: dict[str, Any], checked, attempt: 
         if not isinstance(report, dict) or not isinstance(report.get("task_id"), str) or not isinstance(report.get("input_sha256s"), dict): codes.append("json_invalid")
         else:
             if report["task_id"] != context.task_id: codes.append("task_id_mismatch")
-            if report["input_sha256s"] != context.expected_input_sha256s: codes.append("input_hash_mismatch")
+            if report["input_sha256s"] != _visible_inputs(context): codes.append("input_hash_mismatch")
     structural = {"artifact_not_regular", "artifact_not_utf8", "artifact_empty", "json_invalid", "json_duplicate_key"}
     if len(md_names) == 1 and texts.get(md_names[0]) and context.task_id not in texts[md_names[0]]: codes.append("markdown_task_id_missing")
     if not mismatch and not structural & set(codes) and report is not _UNPARSED and all(name in texts for name in md_names):
@@ -129,7 +136,7 @@ def _index(context, report, texts, fixture, checked):
     if stale_mutated: codes.append("stale_artifact_mutated")
     status = re.compile(r"\bmcp(?:\s+(?:server|service|endpoint))?\s+(?:(?:is|was|remain(?:s|ed)?|appear(?:s|ed)?|seem(?:s|ed)?)\s+(?:healthy|live|reachable|operational|working|available|responsive|up)|works?\b|(?:health(?:\s+check)?|status)\s*(?:(?:is|was|remain(?:s|ed)?)\s+|[:=]\s*)?(?:healthy|live|reachable|operational|working|available|responsive|passed|succeeded|ok|up)|(?:passed|succeeded|responded)(?:\s+(?:its\s+)?health\s+check)?\b)", re.I)
     if not healthy and (_structured_mcp(report) or any(_mcp_prose(text, status) for text in texts.values())): codes.append("unsupported_mcp_health_claim")
-    if report["receipt_input_sha256s"] != context.expected_input_sha256s: codes.append("receipt_input_hash_mismatch")
+    if report["receipt_input_sha256s"] != _visible_inputs(context): codes.append("receipt_input_hash_mismatch")
     return codes
 _STATE_VALUES = {"execution_state": {"not_started", "unavailable", "launched", "returned", "timeout", "malformed", "internal_error"},
                  "oracle_state": {"not_run", "pass", "fail", "unverifiable"},

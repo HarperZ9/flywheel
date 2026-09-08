@@ -2,7 +2,7 @@
 
 The cache is the genuine exponential: the more the harness runs, the higher the
 hit rate, the cheaper each subsequent task. Its invariants are load-bearing:
-  - Same query twice -> second is a HIT at ~0 cost (proposer NOT called).
+  - Same query twice -> second is a HIT that skips the proposer.
   - Any key-component drift (model, seed, prompt) -> MISS.
   - Changed test content -> MISS (never serves a stale verdict).
 """
@@ -48,7 +48,7 @@ def test_repeated_query_is_cache_hit_skipping_proposer(task, tmp_path):
     r2 = run_loop(task, p1, PytestOracle(), envelopes_dir=tmp_path / "env", cache=cache)
     assert r2.cache_hit is True
     assert p1.calls == 1, "proposer must not be called on a cache hit"
-    assert r2.oracle is None and r2.witness is None
+    assert r2.oracle is not None and r2.witness is not None
 
 
 def test_different_candidate_is_cache_miss(task, tmp_path):

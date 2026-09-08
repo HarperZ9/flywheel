@@ -17,12 +17,13 @@ from pathlib import Path
 
 from .envelope import ProofEnvelope
 from .oracle import Oracle, OracleResult
-from .proposer import Proposer, prompt_hash
+from .proposer import Proposer, ProposerOutput, prompt_hash
 from .task import Task
 from .witness import witness_envelope, WitnessVerdict
 from .boot import BootPacket, boot as boot_packet, hydrate_prompt
 from .policy import PolicyLayer, PolicyResult, gate as run_gate
-from .cache import ReceiptCache, cache_key, canonical_prompt, knowledge_hash
+from .cache import (ReceiptCache, cache_key, canonical_prompt, knowledge_hash,
+                    oracle_context_hash)
 from .proof_cache import proof_lookup, proof_insert
 from .chain import StageReceipt, append_stage, chain_to_dicts
 from .search import best_of_n, DEFAULT_TEMPS
@@ -117,28 +118,20 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
         prompt = hydrate_prompt(boot_packet, prompt)
 
     ck = None
+    cached = None
+    oracle_context = oracle_context_hash(task, oracle.oracle_type)
     if cache is not None:
-        # Proof-addressed hit (opt-in, SERVING mode): prompt- AND model-invariant
-        # (fixes the F2 0% agent cache-hit from volatile prompt headers),
-        # re-witnessed, served only on MATCH. OFF by default because the fact-key
-        # omits model_ref/prompt: a second model would hit the first's verified
-        # result, which is exactly WRONG for A/B eval (M7) — so eval leaves it
-        # off and serving turns it on. A proof-hit skips the proposer but pays
-        # one oracle re-run (the C2 re-verification tax).
+        # A hit supplies a candidate only. The current policy, oracle, witness,
+        # grounding, and output contract still decide this run.
         if proof_addressed:
-            phit = proof_lookup(cache, task, oracle)
-            if phit is not None:
-                return LoopResult(phit, None, None,
-                                  phit.verdict == "PASS", time.time() - t0,
-                                  cache_hit=True)
+            cached = proof_lookup(cache, task, oracle,
+                                  witness_recheck=False,
+                                  oracle_context=oracle_context)
         ck = cache_key(task, prompt_hash(canonical_prompt(prompt)),
                        proposer.model_ref, task.seed, task.oracle_cmd,
-                       knowledge_hash(task))   # #4: bind cited knowledge -> stale -> miss
-        cached = cache.lookup(ck)
-        if cached is not None:
-            return LoopResult(cached, None, None,
-                              cached.verdict == "PASS", time.time() - t0,
-                              cache_hit=True)
+                       knowledge_hash(task), oracle_context)
+        if cached is None:
+            cached = cache.lookup(ck)
 
     # Snapshot the fixtures BEFORE the oracle runs, so this receipt can rebuild
     # its own environment later without a caller handing one over (the fallback
@@ -149,12 +142,11 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
         task.workdir, exclude=(task.candidate_path,)
     ) if capture_oracle_inputs else ({}, [])
 
-    search_mode = search is not None and search.n_candidates > 1
+    search_mode = search is not None and search.n_candidates > 1 and cached is None
     if search_mode:
         sr = best_of_n(task, proposer, oracle,
                        temps=(search.temps or DEFAULT_TEMPS))
         winner = sr.accepted or sr.candidates[0]
-        from .proposer import ProposerOutput
         out = ProposerOutput(text=winner.text, model_ref=winner.model_ref,
                              seed=winner.seed, prompt_hash=winner.prompt_hash,
                              cache="search")
@@ -174,13 +166,25 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
         budget = {"candidates": len(sr.candidates),
                   "oracle_calls": len(sr.candidates), "proposer_cache": "search"}
     else:
-        out = proposer.generate(
-            prompt, seed=task.seed, temperature=task.temperature,
-            max_new_tokens=task.max_new_tokens, system=task.system)
+        if cached is not None:
+            out = ProposerOutput(
+                text=cached.candidate, model_ref=cached.model_ref,
+                seed=cached.seed, prompt_hash=prompt_hash(prompt), cache="hit")
+            candidates = 0
+        else:
+            out = proposer.generate(
+                prompt, seed=task.seed, temperature=task.temperature,
+                max_new_tokens=task.max_new_tokens, system=task.system)
+            candidates = 1
         cand_hash = _short_hash(out.text)
-        append_stage(chain, "propose", out.prompt_hash, cand_hash, "OK",
-                     payload={"model_ref": out.model_ref, "seed": out.seed,
-                              "cache": out.cache})
+        if cached is not None:
+            append_stage(chain, "cache", cached.content_hash(), cand_hash, "HIT",
+                         payload={"source_verdict": cached.verdict,
+                                  "oracle_context": oracle_context})
+        else:
+            append_stage(chain, "propose", out.prompt_hash, cand_hash, "OK",
+                         payload={"model_ref": out.model_ref, "seed": out.seed,
+                                  "cache": out.cache})
 
         if policy is not None:
             pr = run_gate(policy, "oracle.run", {
@@ -196,15 +200,18 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
                     oracle_cmd=task.oracle_cmd, oracle_output_hash="",
                     verdict="BLOCKED", model_ref=out.model_ref, seed=out.seed,
                     prompt_hash=out.prompt_hash,
-                    budget_spent={"candidates": 1, "oracle_calls": 0},
+                    budget_spent={"candidates": candidates, "oracle_calls": 0},
                     retrieved=retrieved, injected_context=boot_receipt,
                     admission=pr.to_trace(), chain=chain_to_dicts(chain))
-                return LoopResult(env, None, None, False, time.time() - t0, policy=pr)
+                return LoopResult(env, None, None, False, time.time() - t0,
+                                  policy=pr, cache_hit=cached is not None)
 
         orc = oracle.verify(out.text, task)
         append_stage(chain, "verify", cand_hash, orc.output_hash, orc.verdict(),
-                     payload={"oracle": oracle.oracle_type, "rc": orc.rc})
-        budget = {"candidates": 1, "oracle_calls": 1, "proposer_cache": out.cache}
+                     payload={"oracle": oracle.oracle_type, "rc": orc.rc,
+                              "oracle_context": oracle_context})
+        budget = {"candidates": candidates, "oracle_calls": 1,
+                  "proposer_cache": out.cache}
     envelope = ProofEnvelope(
         task_id=task.task_id,
         candidate=out.text,
@@ -271,7 +278,7 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
     if cache is not None and ck is not None:
         cache.insert(envelope, ck)
     if cache is not None and proof_addressed:
-        proof_insert(cache, task, envelope)   # dual-index: prompt/model-invariant fact
+        proof_insert(cache, task, envelope, oracle_context)
     # Gap A (memory->context): bank the verified fact in the pool so the NEXT
     # task's auto_context can retrieve it. Only PASSes enter (a failed gate
     # must not compound). The receipt hash is the re-checkable handle.
@@ -280,5 +287,5 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
                           digest=envelope.content_hash())
     return LoopResult(
         envelope=envelope, oracle=orc, witness=wv,
-        accepted=accepted, elapsed_s=time.time() - t0, grounding=grounding,
-        output=output)
+        accepted=accepted, elapsed_s=time.time() - t0,
+        cache_hit=cached is not None, grounding=grounding, output=output)

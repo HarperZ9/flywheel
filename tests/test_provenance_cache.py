@@ -40,6 +40,22 @@ def test_changed_knowledge_changes_the_key(tmp_path):
     assert k1 != k2, "a drifted cited source must change the key (no stale serve)"
 
 
+def test_changed_retrieved_text_changes_the_knowledge_hash(tmp_path):
+    t1 = load_task(TASK_DIR, workdir=tmp_path / "w1")
+    t2 = load_task(TASK_DIR, workdir=tmp_path / "w2")
+    t1.retrieved = [Retrieved(source="srcA", receipt="r1", text="old")]
+    t2.retrieved = [Retrieved(source="srcA", receipt="r1", text="new")]
+    assert knowledge_hash(t1) != knowledge_hash(t2)
+
+
+def test_changed_retrieved_digest_changes_the_knowledge_hash(tmp_path):
+    t1 = load_task(TASK_DIR, workdir=tmp_path / "w1")
+    t2 = load_task(TASK_DIR, workdir=tmp_path / "w2")
+    t1.retrieved = [Retrieved(source="srcA", receipt="r1", digest="abc")]
+    t2.retrieved = [Retrieved(source="srcA", receipt="r1", digest="def")]
+    assert knowledge_hash(t1) != knowledge_hash(t2)
+
+
 def test_identical_knowledge_keys_identically(tmp_path):
     t1 = _task(tmp_path, [("srcA", "r1"), ("srcB", "r2")])
     t2 = _task(tmp_path, [("srcB", "r2"), ("srcA", "r1")])   # order-independent

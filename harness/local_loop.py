@@ -1,12 +1,4 @@
-"""local_loop.py -- the agentic loop: local model + gated tools + witnessed ledger.
-
-This is what turns the chat client into an actual local coding agent. The model
-proposes tool calls in the text protocol, the executor runs them under the gate,
-observations are fed back, and the whole trajectory (turns + tool calls +
-results) is appended to a hash-chained SessionLedger. The loop terminates when
-the model stops emitting TOOL lines (final answer) or max_steps is hit -- always
-returning a re-verifiable checkpoint.
-"""
+"""Agentic loop: model text-tool calls, gated execution, witnessed ledger."""
 from __future__ import annotations
 
 import json
@@ -15,6 +7,7 @@ from . import integrity, tool_receipts
 from .acceptance_criteria import all_pass, apply_oracle_result, failing, summary
 from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, parse_tool_calls
+from .structured_finalizer import finalized_candidate_text
 
 
 def _edit_fingerprint(name, args, res, executor) -> "dict | None":
@@ -57,8 +50,8 @@ def _result_meta(name, res, sign_key, extra=None) -> dict:
 def run_agent(agent, goal: str, executor: ToolExecutor,
               ledger: "SessionLedger | None" = None, *, max_steps: int = 6,
               test_cmd: "str | None" = None, sign_key: "bytes | None" = None,
-              canaries: "list | None" = None, on_event=None,
-              criteria: "list | None" = None, budget_note: bool = False) -> dict:
+              canaries: "list | None" = None, on_event=None, criteria: "list | None" = None,
+              budget_note: bool = False, finalize_candidate=None) -> dict:
     """Run the goal to completion (or max_steps). Returns the final answer, the
     step count, and the ledger checkpoint + verify verdict.
 
@@ -78,12 +71,9 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
     ultimate backstop: it still ends the run even with criteria unmet, honestly
     (never reports accepted) rather than looping forever.
 
-    `budget_note`, off by default so an existing caller's ledger shape and
-    prompts are untouched, prefixes each message sent to the model with the
-    remaining step count and witnesses it as a "budget" ledger entry every
-    turn, independent of `criteria`; opt in with budget_note=True. The
-    budget is only ever stated to the model, never enforced by it; `max_steps`
-    is what actually enforces it."""
+    `budget_note` is opt-in and only states the remaining step count; `max_steps`
+    enforces it. `finalize_candidate` is opt-in and only runs at eligible no-call
+    done boundaries after the rescue parser and criteria/test gates."""
     ledger = ledger if ledger is not None else SessionLedger()
     # Start the run's byte-witness chain, and its receipt chain when one is set.
     if hasattr(executor, "init_receipt_chain"):
@@ -125,13 +115,15 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
         from .tool_rescue import rescue_tool_calls
         calls, repairs = rescue_tool_calls(text, with_preamble=True)
         for rep in repairs:
-            # a repaired emission is a fact of the run, never a silent fix
             ledger.append("tool_rescue", json.dumps(rep, sort_keys=True))
             _emit(type="tool_rescue", transform=rep["transform"])
         if not calls:
             if not test_cmd:
                 done, feedback = _refuse_if_failing(
-                    criteria, text, step, ledger, system=agent.system, goal=goal)
+                    criteria, text, step, ledger, system=agent.system, goal=goal,
+                    agent=agent, finalize_candidate=finalize_candidate,
+                    candidate_state=("eligible_no_test_no_criteria" if criteria is None
+                                     else "eligible_criteria_satisfied"), emit=_emit)
                 if done is not None:
                     return done
                 message = feedback
@@ -141,10 +133,6 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
             ledger.append("tool_call", f"run {json.dumps({'cmd': test_cmd}, sort_keys=True)}")
             ledger.append("tool_result", res.output, _result_meta("run", res, sign_key, {"gate": "test"}))
             _emit(type="tool_result", name="run", ok=res.ok, output=res.output[:500])
-            # test_cmd is one criterion among several when a criterion is
-            # registered to oracle "test_cmd" -- the model's claim of done
-            # still is not enough, this flip is the only one this loop makes
-            # on its own, and only through the same named-oracle gate.
             if criteria is not None:
                 for cid in [c["id"] for c in criteria if c["oracle"] == "test_cmd"]:
                     rec = apply_oracle_result(criteria, cid, "test_cmd", res.ok,
@@ -158,7 +146,9 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
             if res.ok:
                 done, feedback = _refuse_if_failing(
                     criteria, text, step, ledger, tests_pass=True,
-                    system=agent.system, goal=goal)
+                    system=agent.system, goal=goal, agent=agent,
+                    finalize_candidate=finalize_candidate,
+                    candidate_state="eligible_test_passed", emit=_emit)
                 if done is not None:
                     return done
                 message = feedback
@@ -221,7 +211,8 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
 
 
 def _refuse_if_failing(criteria, text, step, ledger, *, tests_pass=None, note="",
-                       system="", goal="") -> tuple:
+                       system="", goal="", agent=None, finalize_candidate=None,
+                       candidate_state="", emit=None) -> tuple:
     """At the point the loop would report done: witness the check as a
     "criteria" ledger entry, and if `criteria` is given and any criterion is
     still FAILING, refuse -- return the failing ids as the next message
@@ -230,6 +221,10 @@ def _refuse_if_failing(criteria, text, step, ledger, *, tests_pass=None, note=""
     reproduces today's behavior exactly: always finishes here, no entry
     appended (there is nothing to check)."""
     if criteria is None:
+        text = finalized_candidate_text(
+            finalize_candidate, candidate_text=text, candidate_state=candidate_state,
+            step=step, ledger=ledger, agent=agent, system=system, goal=goal,
+            tests_pass=tests_pass, emit=emit)
         return _done(text, step, ledger, tests_pass=tests_pass, note=note,
                      system=system, goal=goal), None
     ids = failing(criteria)
@@ -241,6 +236,11 @@ def _refuse_if_failing(criteria, text, step, ledger, *, tests_pass=None, note=""
                     ". Continue working; do not give a final answer until "
                     "every criterion passes.")
         return None, feedback
+    text = finalized_candidate_text(
+        finalize_candidate, candidate_text=text,
+        candidate_state=candidate_state or "eligible_criteria_satisfied",
+        step=step, ledger=ledger, agent=agent, system=system, goal=goal,
+        tests_pass=tests_pass, emit=emit)
     return _done(text, step, ledger, tests_pass=tests_pass, note=note,
                  system=system, goal=goal, criteria=criteria), None
 
@@ -264,19 +264,11 @@ def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None,
     out = {"final": final, "steps": steps,
            "checkpoint": ledger.checkpoint(), "verified": ledger.verify(),
            "entries": len(ledger.entries), "ledger": ledger,
-           # the reviewability projection: what a senior reviewer checks
-           # first, derived from the witnessed ledger, shipped with the run
            "review": run_review(ledger.entries),
-           # the window manifest: what the model actually saw, replayable
            "context_manifest": context_manifest(
                ledger.entries, system=system, goal=goal),
-           # risk tiers per edit; high tiers name the receipt they demand
            "risk_review": risk_review(ledger.entries),
-           # runtime identity: acceptance re-runs in a NAMED environment
            "environment": _environment()}
-    # Trajectory-integrity verdict: did the agent edit the file that grades it, or
-    # write test-neutralizing code? Surfaced re-checkably so a tampered "green" is
-    # visible, not silently accepted (reward-hacking guard, keeps the C2 invariant).
     out["integrity"] = integrity.integrity_report(integrity.trajectory_integrity(ledger))
     if tests_pass is not None:
         out["tests_pass"] = tests_pass
@@ -285,15 +277,7 @@ def _done(final: str, steps: int, ledger: SessionLedger, *, tests_pass=None,
     if note:
         out["note"] = note
     if criteria is not None:
-        # the accept path is structural, not the model's word: "accepted" is
-        # exactly all_pass(criteria), derived from the same criteria object
-        # only apply_oracle_result was ever allowed to flip.
         out["criteria"] = summary(criteria)
         out["accepted"] = all_pass(criteria)
-        # An oracle can be tampered INTO passing: edit the grading file, the
-        # test goes green, the criterion flips through the legitimate named
-        # oracle. accepted alone cannot see that; the trajectory-integrity
-        # verdict can, so the trusted variant conjoins them, exactly as
-        # tests_pass_trusted does.
         out["accepted_trusted"] = bool(out["accepted"]) and out["integrity"]["clean"]
     return out
