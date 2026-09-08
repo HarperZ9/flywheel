@@ -139,6 +139,11 @@ def test_owner_is_loaded_only_after_bearer_auth_and_survives_rotation(tmp_path, 
 
 @pytest.mark.parametrize(("method", "path"), [
     ("GET", "/api/journeys/list?limit=1"),
+    ("POST", "/api/continuation/preview"),
+    ("POST", "/api/continuation/context"),
+    ("POST", "/api/continuation/start"),
+    ("POST", "/api/continuation/undo"),
+    ("GET", "/api/continuation/context?preview_ref=unknown"),
     ("POST", "/api/journeys/get"),
     ("POST", "/api/grants/approve-once"),
     ("POST", "/api/gateway-grants/prepare/plugin.probe"),

@@ -112,7 +112,8 @@ Widget? _work(DestinationId id, DestinationInputs i) => switch (id) {
         PlanView(client: i.client, alive: i.alive, settings: i.settings),
       DestinationId.workflows => WorkflowsView(
           client: i.client, alive: i.alive, settings: i.settings),
-      DestinationId.projects => ProjectsView(client: i.client, alive: i.alive),
+      DestinationId.projects =>
+        ProjectsView(client: i.client, journey: i.journey, alive: i.alive),
       DestinationId.swarms => SwarmsView(
           api: SwarmsApi(baseUrl: i.client.baseUrl), alive: i.alive),
       DestinationId.roadmap => RoadmapView(

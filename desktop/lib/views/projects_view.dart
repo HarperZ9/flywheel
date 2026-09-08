@@ -1,20 +1,24 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-
+import '../client/continuation_api.dart';
 import '../client/gateway_client.dart';
+import '../controllers/journey_controller.dart';
+import '../navigation/app_route.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/continuation_panel.dart';
+import '../widgets/flywheel_nav.dart';
 import '../widgets/fw.dart';
 import '../widgets/import_config_panel.dart';
 import '../widgets/project_panels.dart';
-
 class ProjectsView extends StatefulWidget {
   final GatewayClient client;
+  final JourneyController journey;
   final bool alive;
-  const ProjectsView({super.key, required this.client, required this.alive});
-
+  const ProjectsView({super.key, required this.client,
+    required this.journey, required this.alive});
   @override
   State<ProjectsView> createState() => _ProjectsViewState();
 }
-
 class _ProjectsViewState extends State<ProjectsView> {
   final _root = TextEditingController();
   List<Map<String, dynamic>> _projects = [];
@@ -25,25 +29,21 @@ class _ProjectsViewState extends State<ProjectsView> {
   bool _indexing = false;
   bool _auditOpen = false;
   String? _error;
-
   @override
   void initState() {
     super.initState();
     _load();
   }
-
   @override
   void didUpdateWidget(ProjectsView old) {
     super.didUpdateWidget(old);
     if (!old.alive && widget.alive) _load();
   }
-
   @override
   void dispose() {
     _root.dispose();
     super.dispose();
   }
-
   Future<void> _load() async {
     if (!widget.alive) return;
     try {
@@ -62,7 +62,6 @@ class _ProjectsViewState extends State<ProjectsView> {
       if (mounted) setState(() => _error = '$e');
     }
   }
-
   Future<void> _add() async {
     final root = _root.text.trim();
     if (root.isEmpty) return;
@@ -77,7 +76,6 @@ class _ProjectsViewState extends State<ProjectsView> {
     setState(() => _error = null);
     _load();
   }
-
   Future<void> _remove(String root) async {
     try {
       await widget.client.removeProject(root);
@@ -94,7 +92,6 @@ class _ProjectsViewState extends State<ProjectsView> {
     }
     _load();
   }
-
   Future<void> _loadAudit() async {
     try {
       final r = await widget.client.storeAudit(n: 50);
@@ -109,12 +106,10 @@ class _ProjectsViewState extends State<ProjectsView> {
       if (mounted) setState(() => _error = '$e');
     }
   }
-
   void _toggleAudit() {
     setState(() => _auditOpen = !_auditOpen);
     if (_auditOpen && _auditTail == null) _loadAudit();
   }
-
   Future<void> _openIndex(String root) async {
     setState(() {
       _selected = root;
@@ -130,7 +125,6 @@ class _ProjectsViewState extends State<ProjectsView> {
       if (mounted) setState(() => _indexing = false);
     }
   }
-
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
@@ -174,6 +168,14 @@ class _ProjectsViewState extends State<ProjectsView> {
         const SizedBox(height: FwLayout.s4),
         ImportConfigPanel(client: widget.client),
         const SizedBox(height: FwLayout.s4),
+        ContinuationPanel(
+          api: GatewayContinuationApi(widget.client),
+          alive: widget.alive,
+          onOpenJourney: (ref, lens) {
+            unawaited(widget.journey.openSession(ref, lens));
+            FlywheelNav.jump(context, DestinationId.journey);
+          }),
+        const SizedBox(height: FwLayout.s4),
         for (final p in _projects) _projectCard(t, p),
         if (_selected != null) ...[
           const SizedBox(height: FwLayout.s5),
@@ -214,7 +216,6 @@ class _ProjectsViewState extends State<ProjectsView> {
       ],
     );
   }
-
   Widget _auditSection(FwTokens t) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       InkWell(
@@ -243,7 +244,6 @@ class _ProjectsViewState extends State<ProjectsView> {
       ],
     ]);
   }
-
   Widget _projectCard(FwTokens t, Map<String, dynamic> p) {
     final root = '${p['root']}';
     final exists = p['exists'] == true;
@@ -289,5 +289,4 @@ class _ProjectsViewState extends State<ProjectsView> {
       ),
     );
   }
-
 }

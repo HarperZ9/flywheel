@@ -1249,6 +1249,7 @@ class _Handler(BaseHTTPRequestHandler):
                 token_store=self._session_tokens())
             return self._json(body, code)
         if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
+                         "/api/continuation/",
                          "/api/gateway-grants/",
                          "/api/credential-handles/")):  # bind a handle, presence only
             length = self._content_length()
@@ -1312,6 +1313,29 @@ class _Handler(BaseHTTPRequestHandler):
                 from harness.journey_route import journey_post
                 body, code = journey_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
                     evidence_root=self.flywheel_home / "state" / "artifacts", clock=self.clock)
+            elif p.startswith("/api/continuation/"):  # preview/import health, then start a Journey
+                from harness.continuation_route import handle_continuation_post
+                resolved_root = None
+                if p == "/api/continuation/preview":  # preview selected context and repository state
+                    from harness.evidence_public import (
+                        TransportError, error_response, parse_json,
+                    )
+                    try:
+                        req = parse_json(raw)
+                    except Exception:
+                        req = None
+                    if req is not None:
+                        resolved_root, err = _resolve_workspace_root(
+                            req.get("root"), self.root)
+                        if err:
+                            body, code = error_response(TransportError(
+                                "ROOT_UNAVAILABLE",
+                                "workspace root is unavailable"))
+                            return self._json(body, code)
+                body, code = handle_continuation_post(
+                    p, raw, owner_ref=self.owner_ref,
+                    state_root=self.flywheel_home / "state",
+                    root=resolved_root, clock=self.clock)
             elif p.startswith("/api/grants/"):     # request or answer a capability grant
                 from harness.grant_route import grant_post
                 body, code = grant_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
