@@ -58,6 +58,7 @@ void main() {
   _modelTests();
   _clientRouteTest();
   _clientMismatchTest();
+  _clientTypedContinuationErrorTest();
   _closeSheetTest();
   _denyApproveSheetTest();
   _bindingSheetTest();
@@ -154,6 +155,26 @@ void _clientMismatchTest() {
       await expectLater(client.prepare(_probe(), binding: _binding),
           throwsA(isA<GatewayGrantException>()));
     }
+  });
+}
+
+void _clientTypedContinuationErrorTest() {
+  test('grant client preserves continuation source drift errors', () async {
+    final client = GatewayGrantClient(GatewayClient(
+        baseUrl: 'https://gateway.invalid',
+        httpClient: MockClient((_) async => http.Response(
+            jsonEncode({
+              'schema': gatewayErrorSchema,
+              'error': {'code': 'SOURCE_DRIFT', 'message': 'changed'},
+            }),
+            409))));
+
+    await expectLater(
+        client.prepare(_probe(), binding: _binding),
+        throwsA(isA<GatewayGrantException>()
+            .having((error) => error.code, 'code', 'SOURCE_DRIFT')
+            .having((error) => error.message, 'message',
+                'Continuation source changed since preview')));
   });
 }
 

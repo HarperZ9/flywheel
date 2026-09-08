@@ -11,88 +11,80 @@ const _journey = 'jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const _head =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
-ContinuationPreview _preview({bool blocked = false}) =>
-    ContinuationPreview.fromJson({
-      'schema': 'flywheel.native-continuation-preview/v1',
-      'preview_ref': 'cpv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      'preview_sha256': _sha,
-      'source_state_sha256': _sha,
-      'intake_ref':
-          'continuation/cpv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.intake.json',
-      'source': {
-        'root': r'C:\work\repo',
-        'export_path': r'C:\work\export.jsonl'
+ContinuationPreview _preview({
+  bool blocked = false,
+}) => ContinuationPreview.fromJson({
+  'schema': 'flywheel.native-continuation-preview/v1',
+  'preview_ref': 'cpv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  'preview_sha256': _sha,
+  'source_state_sha256': _sha,
+  'intake_ref': 'continuation/cpv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.intake.json',
+  'source': {'root': r'C:\work\repo', 'export_path': r'C:\work\export.jsonl'},
+  'repo': {
+    'state': 'git',
+    'branch': 'main',
+    'head': _sha,
+    'dirty_files': [
+      {'path': 'lib/main.dart', 'status': ' M', 'sha256': _sha},
+    ],
+  },
+  'import': {
+    'mappings': [
+      {'source': 'AGENTS.md', 'mapped_to': 'instructions', 'status': 'mapped'},
+    ],
+    'dropped': [
+      {
+        'source': '.claude/settings.json',
+        'reason': 'hooks have no native equivalent yet',
       },
-      'repo': {
-        'state': 'git',
-        'branch': 'main',
-        'head': _sha,
-        'dirty_files': [
-          {'path': 'lib/main.dart', 'status': ' M', 'sha256': _sha}
+    ],
+    'mcp_server_count': 1,
+  },
+  'export': {
+    'state': 'read',
+    'signals': [
+      {'kind': 'user_direction', 'line': 1, 'sha256': _sha},
+    ],
+  },
+  'context_package': {
+    'schema': 'flywheel.native-continuation-context/v1',
+    'selected_tasks': [
+      'Fix parser behavior without exposing this raw text in chrome',
+    ],
+    'selected_summaries': const [],
+    'selected_files': ['lib/parser.dart'],
+    'commits': const [],
+  },
+  'runner_context': {
+    'schema': 'flywheel.native-continuation-runner-context/v1',
+    'root': r'C:\\work\\repo',
+    'goal': 'Private runner prompt',
+    'selected_files': ['lib/parser.dart'],
+  },
+  'provider_native_resume': {
+    'state': 'unavailable',
+    'reason': 'no connector proved read, list, resume, or fork support',
+  },
+  'health': {
+    'state': blocked ? 'blocked' : 'ready',
+    'blocking_omissions': blocked ? ['MISSING_ATTACHMENT'] : const [],
+  },
+  'omissions': blocked
+      ? [
+          {'code': 'MISSING_ATTACHMENT', 'path_hint': 'song.mp3'},
         ]
-      },
-      'import': {
-        'mappings': [
-          {
-            'source': 'AGENTS.md',
-            'mapped_to': 'instructions',
-            'status': 'mapped'
-          }
-        ],
-        'dropped': [
-          {
-            'source': '.claude/settings.json',
-            'reason': 'hooks have no native equivalent yet'
-          }
-        ],
-        'mcp_server_count': 1,
-      },
-      'export': {
-        'state': 'read',
-        'signals': [
-          {'kind': 'user_direction', 'line': 1, 'sha256': _sha}
-        ]
-      },
-      'context_package': {
-        'schema': 'flywheel.native-continuation-context/v1',
-        'selected_tasks': [
-          'Fix parser behavior without exposing this raw text in chrome'
-        ],
-        'selected_summaries': const [],
-        'selected_files': ['lib/parser.dart'],
-        'commits': const [],
-      },
-      'runner_context': {
-        'schema': 'flywheel.native-continuation-runner-context/v1',
-        'root': r'C:\\work\\repo',
-        'goal': 'Private runner prompt',
-        'selected_files': ['lib/parser.dart'],
-      },
-      'provider_native_resume': {
-        'state': 'unavailable',
-        'reason': 'no connector proved read, list, resume, or fork support'
-      },
-      'health': {
-        'state': blocked ? 'blocked' : 'ready',
-        'blocking_omissions': blocked ? ['MISSING_ATTACHMENT'] : const []
-      },
-      'omissions': blocked
-          ? [
-              {'code': 'MISSING_ATTACHMENT', 'path_hint': 'song.mp3'}
-            ]
-          : const [],
-      'next_action':
-          'start a provider-neutral Evidence Journey with fresh grants',
-    });
+      : const [],
+  'next_action': 'start a provider-neutral Evidence Journey with fresh grants',
+});
 
 JourneyMutationAck _ack() => JourneyMutationAck.fromJson({
-      'schema': 'flywheel.evidence-journey-mutation-ack/v2',
-      'journey_ref': _journey,
-      'event_head_sha256': _head,
-      'event_sha256': _head,
-      'projection_sha256': _sha,
-      'idempotent_replay': false,
-    });
+  'schema': 'flywheel.evidence-journey-mutation-ack/v2',
+  'journey_ref': _journey,
+  'event_head_sha256': _head,
+  'event_sha256': _head,
+  'projection_sha256': _sha,
+  'idempotent_replay': false,
+});
 
 class FakeContinuationApi implements ContinuationApi {
   ContinuationPreview previewResult = _preview();
@@ -100,8 +92,10 @@ class FakeContinuationApi implements ContinuationApi {
   final calls = <String>[];
 
   @override
-  Future<ContinuationPreview> preview(
-      {required String root, String? exportPath}) async {
+  Future<ContinuationPreview> preview({
+    required String root,
+    String? exportPath,
+  }) async {
     calls.add('preview:$root:$exportPath');
     return previewResult;
   }
@@ -112,15 +106,32 @@ class FakeContinuationApi implements ContinuationApi {
     final failure = startFailure;
     if (failure != null) throw ContinuationApiException(failure);
     return ContinuationStartResult(
-        journey: _ack(),
-        previewRef: preview.previewRef,
-        openLens: JourneyLens.rescue);
+      journey: _ack(),
+      previewRef: preview.previewRef,
+      openLens: JourneyLens.rescue,
+    );
   }
 
   @override
   Future<ContinuationPrivateContext> privateContext(
-      ContinuationPreview preview) async {
-    throw UnimplementedError();
+    ContinuationPreview preview,
+  ) async {
+    calls.add('context:${preview.previewRef}');
+    return ContinuationPrivateContext.fromJson({
+      'schema': 'flywheel.native-continuation-private-context/v1',
+      'preview_ref': preview.previewRef,
+      'source_state_sha256': preview.sourceStateSha256,
+      'context_package': {
+        'selected_tasks': ['Fix parser behavior'],
+        'selected_files': ['lib/parser.dart'],
+      },
+      'runner_context': {
+        'schema': 'flywheel.native-continuation-runner-context/v1',
+        'root': r'C:\\work\\repo',
+        'goal': 'Private runner prompt',
+        'selected_files': ['lib/parser.dart'],
+      },
+    });
   }
 
   @override
@@ -134,23 +145,33 @@ class FakeContinuationApi implements ContinuationApi {
 }
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: flywheelLightTheme(),
-      home: Scaffold(body: SingleChildScrollView(child: child)),
-    );
+  theme: flywheelLightTheme(),
+  home: Scaffold(body: SingleChildScrollView(child: child)),
+);
 
 void main() {
-  testWidgets('panel previews local state and opens Rescue after start',
-      (tester) async {
+  testWidgets('panel previews local state and opens Rescue after start', (
+    tester,
+  ) async {
     final api = FakeContinuationApi();
     (String, JourneyLens)? opened;
-    await tester.pumpWidget(_wrap(ContinuationPanel(
-        api: api,
-        alive: true,
-        onOpenJourney: (ref, lens) => opened = (ref, lens))));
+    await tester.pumpWidget(
+      _wrap(
+        ContinuationPanel(
+          api: api,
+          alive: true,
+          onOpenJourney: (ref, lens) => opened = (ref, lens),
+        ),
+      ),
+    );
     await tester.enterText(
-        find.byKey(const Key('continuation-root')), r'C:\work\repo');
+      find.byKey(const Key('continuation-root')),
+      r'C:\work\repo',
+    );
     await tester.enterText(
-        find.byKey(const Key('continuation-export')), r'C:\work\export.jsonl');
+      find.byKey(const Key('continuation-export')),
+      r'C:\work\export.jsonl',
+    );
     await tester.tap(find.text('Preview continuation'));
     await tester.pumpAndSettle();
     expect(find.textContaining('dirty 1'), findsOneWidget);
@@ -162,19 +183,27 @@ void main() {
     expect(opened, (_journey, JourneyLens.rescue));
     expect(api.calls, [
       r'preview:C:\work\repo:C:\work\export.jsonl',
-      'start:cpv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+      'start:cpv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     ]);
   });
 
-  testWidgets('stale source failure keeps preview visible and fixed',
-      (tester) async {
+  testWidgets('stale source failure keeps preview visible and fixed', (
+    tester,
+  ) async {
     final api = FakeContinuationApi()
       ..startFailure = const ContinuationFailure(
-          'SOURCE_DRIFT', 'Source changed since preview; preview again.');
-    await tester.pumpWidget(_wrap(
-        ContinuationPanel(api: api, alive: true, onOpenJourney: (_, __) {})));
+        'SOURCE_DRIFT',
+        'Source changed since preview; preview again.',
+      );
+    await tester.pumpWidget(
+      _wrap(
+        ContinuationPanel(api: api, alive: true, onOpenJourney: (_, __) {}),
+      ),
+    );
     await tester.enterText(
-        find.byKey(const Key('continuation-root')), r'C:\work\repo');
+      find.byKey(const Key('continuation-root')),
+      r'C:\work\repo',
+    );
     await tester.tap(find.text('Preview continuation'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Start Journey'));
@@ -183,18 +212,63 @@ void main() {
     expect(find.textContaining('dirty 1'), findsOneWidget);
   });
 
+  testWidgets(
+    'Continue with agent starts Journey then opens handoff callback',
+    (tester) async {
+      final api = FakeContinuationApi();
+      (String, JourneyLens)? opened;
+      (ContinuationPreview, ContinuationStartResult)? handoff;
+      await tester.pumpWidget(
+        _wrap(
+          ContinuationPanel(
+            api: api,
+            alive: true,
+            onOpenJourney: (ref, lens) => opened = (ref, lens),
+            onContinueWithAgent: (preview, result) async {
+              handoff = (preview, result);
+            },
+          ),
+        ),
+      );
+      await tester.enterText(
+        find.byKey(const Key('continuation-root')),
+        r'C:\\work\\repo',
+      );
+      await tester.tap(find.text('Preview continuation'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Continue with agent'));
+      await tester.pumpAndSettle();
+
+      expect(opened, isNull);
+      expect(handoff?.$1.previewRef, 'cpv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+      expect(handoff?.$2.journey.journeyRef, _journey);
+      expect(api.calls, [
+        r'preview:C:\\work\\repo:null',
+        'start:cpv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      ]);
+      expect(find.textContaining('Agent handoff prepared'), findsOneWidget);
+    },
+  );
+
   testWidgets('blocked missing state keeps Start disabled', (tester) async {
     final api = FakeContinuationApi()..previewResult = _preview(blocked: true);
-    await tester.pumpWidget(_wrap(
-        ContinuationPanel(api: api, alive: true, onOpenJourney: (_, __) {})));
+    await tester.pumpWidget(
+      _wrap(
+        ContinuationPanel(api: api, alive: true, onOpenJourney: (_, __) {}),
+      ),
+    );
     await tester.enterText(
-        find.byKey(const Key('continuation-root')), r'C:\work\repo');
+      find.byKey(const Key('continuation-root')),
+      r'C:\work\repo',
+    );
     await tester.tap(find.text('Preview continuation'));
     await tester.pumpAndSettle();
     expect(find.text('BLOCKED'), findsOneWidget);
     expect(find.textContaining('song.mp3'), findsOneWidget);
     final button = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Start Journey'));
+      find.widgetWithText(FilledButton, 'Start Journey'),
+    );
     expect(button.onPressed, isNull);
   });
 }

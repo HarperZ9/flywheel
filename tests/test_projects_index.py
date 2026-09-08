@@ -49,4 +49,30 @@ def test_index_summary_is_partial_not_crash_when_engine_absent(
     monkeypatch.setattr(index_bridge, "_index_argv", lambda: None)
     summary = index_bridge.index_summary(str(proj))
     assert summary["schema"] == "flywheel.index-summary/v1"
-    assert "map" in summary["errors"] and "graph" in summary["errors"]
+    assert "map" in summary["errors"]
+    assert "graph" not in summary["errors"]
+
+
+def test_index_summary_is_catalog_map_only(tmp_path, monkeypatch):
+    proj = tmp_path / "r"
+    proj.mkdir()
+    calls = []
+
+    def fake_index_view(root, view, *, timeout=90):
+        calls.append((root, view))
+        assert timeout == index_bridge._SUMMARY_TIMEOUT
+        return {"schema": "flywheel.index-view/v1", "view": view,
+                "root": root, "result": {
+                    "repo_count": 1, "dirty_count": 0,
+                    "class_counts": {"public": 1},
+                    "root_sha256_prefix": "abc123",
+                }}
+
+    monkeypatch.setattr(index_bridge, "index_view", fake_index_view)
+
+    summary = index_bridge.index_summary(str(proj))
+
+    assert calls == [(str(proj), "map")]
+    assert summary["repo_count"] == 1
+    assert summary["class_total"] == 1
+    assert "relation_count" not in summary

@@ -201,9 +201,9 @@ class _ObservedProposer:
         remaining = self.deadline - self.clock()
         if remaining <= 0: raise TimeoutError("shared attempt deadline expired")
         if self.max_calls is not None and self.calls >= self.max_calls: raise TimeoutError(f"inner proposer invocation budget exhausted: proposer_invocations_max={self.max_calls}")
-        self.calls += 1; backend = getattr(self.inner, "backend", None)
+        self.calls += 1; self.usage_records.append(None); backend = getattr(self.inner, "backend", None)
         if backend is not None and hasattr(backend, "timeout"): backend.timeout = min(backend.timeout, remaining)
-        out = self.inner.generate(*args, **kwargs); self.usage_records.append(getattr(out, "usage", None))
+        out = self.inner.generate(*args, **kwargs); self.usage_records[-1] = getattr(out, "usage", None)
         if self.clock() >= self.deadline: raise TimeoutError("shared attempt deadline expired")
         self.observed = out.served_model or (out.model_ref if self.response_model_attested else "")
         self.basis = "structured_provider_event" if out.served_model else "structured_provider_response" if self.observed else "unknown"; return out
@@ -224,7 +224,7 @@ def _router_result(request, proposer, source: str, clock: Callable = time.monoto
     except Exception as exc: result, state, failure, detail = {"final": ""}, "internal_error", type(exc).__name__, str(exc)
     events.extend({**_clean(asdict(entry)), "source": source, "type": "ledger_entry"} for entry in ledger.entries)
     events.append({"source": source, "type": "ledger_checkpoint", "checkpoint": ledger.checkpoint(), "verified": ledger.verify(), "randomness": "unsupported", "max_output_control": None, "max_output_control_state": "unsupported"})
-    inner = [{**_clean(event), "source": "codex_inner"} for event in getattr(proposer, "events", []) if isinstance(event, dict)]; events = inner + events
+    inner = [{**_clean(event), "source": "codex_inner"} for event in getattr(proposer, "events", []) if isinstance(event, dict)] + ([{"source": usage_source, "inner_call": index, "type": "usage.observed", **({"usage": _clean(record, True)} if isinstance(record, dict) else {})} for index, record in enumerate(tracked.usage_records, 1)] if (usage_source := getattr(proposer, "usage_event_source", "")) else []); events = inner + events
     resource = {"inner_call_count": tracked.calls, **(cli_identity or {}), **({"compact_budget": compact_budget, "last_compaction": _clean(agent.last_compaction)} if compact_budget else {})}
     if compact_budget and agent.last_compaction:
         events.append({"source": source, "type": "compaction", "compact_budget": compact_budget, "last_compaction": resource["last_compaction"]})
@@ -293,7 +293,7 @@ class LocalRouterAdapter:
         available = self.availability(request); failure = available.failure_class
         if failure: return AdapterResult("unavailable", "", [], 0, "", "unsupported", failure, failure, {}, {}, [], [])
         backend = self.backend_factory(self.profile, request.timeout_seconds)
-        proposer = BackendProposer(backend, model_ref="", extract=False)
+        proposer = BackendProposer(backend, model_ref="", extract=False); proposer.usage_event_source = "local_endpoint_inner"
         result = _router_result(request, proposer, "flywheel_outer", self.clock, response_model_attested=True)
         if result.execution_state == "returned" and result.model_observed and result.model_observed != self.profile["model_ref"]:
             return replace(result, execution_state="malformed", failure_class="observed_model_drift", failure_detail="observed model did not match exact endpoint profile")

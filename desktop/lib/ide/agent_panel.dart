@@ -24,17 +24,20 @@ class AgentPanel extends StatefulWidget {
   final EditorAttachmentSupplier? currentAttachment;
   final VoidCallback onRunStarted, onRunFinished;
   final TextEditingController? goalController;
-  const AgentPanel(
-      {super.key,
-      required this.client,
-      required this.alive,
-      required this.workspaceRoot,
-      required this.onRunStarted,
-      required this.onRunFinished,
-      this.activeFile,
-      this.selection,
-      this.currentAttachment,
-      this.goalController});
+  final Map<String, Object?>? continuationHandoff;
+  const AgentPanel({
+    super.key,
+    required this.client,
+    required this.alive,
+    required this.workspaceRoot,
+    required this.onRunStarted,
+    required this.onRunFinished,
+    this.activeFile,
+    this.selection,
+    this.currentAttachment,
+    this.goalController,
+    this.continuationHandoff,
+  });
   @override
   State<AgentPanel> createState() => _AgentPanelState();
 }
@@ -85,10 +88,10 @@ class _AgentPanelState extends State<AgentPanel> {
   }
 
   OperationController _newOperationState() => OperationController(
-      requestId: () => 'desktop-stop-${DateTime.now().microsecondsSinceEpoch}',
-      grants: _stopGrants,
-      onTerminalResult: _finished)
-    ..addListener(_stateChanged);
+    requestId: () => 'desktop-stop-${DateTime.now().microsecondsSinceEpoch}',
+    grants: _stopGrants,
+    onTerminalResult: _finished,
+  )..addListener(_stateChanged);
   void _beginRun() {
     _operationState.dispose();
     _operationState = _newOperationState();
@@ -105,25 +108,32 @@ class _AgentPanelState extends State<AgentPanel> {
     final endpoint = _endpoint, input = _goal.text.trim();
     if (endpoint == null || input.isEmpty) return null;
     try {
-      final attachment = closedEditorAttachment(_attachContext,
-          widget.currentAttachment, widget.activeFile, widget.selection);
+      final attachment = closedEditorAttachment(
+        _attachContext,
+        widget.currentAttachment,
+        widget.activeFile,
+        widget.selection,
+      );
       return GatewayOperation.exact(
-          action: 'agent.run',
-          clientRequestId: request,
-          operation: {
-            'goal': input,
-            'endpoint': endpoint,
-            // The dial nominates the budget. The engine re-resolves `effort`
-            // and stamps both the dial and what it actually enforced, so
-            // these two agreeing here is not something the receipt assumes.
-            'effort': _effort.wire,
-            'max_steps': _effort.maxSteps,
-            'allow_write': _allowWrite,
-            'allow_exec': _allowExec,
-            'stream': true,
-            if (attachment != null) 'attachment': attachment,
-            'root': widget.workspaceRoot
-          });
+        action: 'agent.run',
+        clientRequestId: request,
+        operation: {
+          'goal': input,
+          'endpoint': endpoint,
+          // The dial nominates the budget. The engine re-resolves `effort`
+          // and stamps both the dial and what it actually enforced, so
+          // these two agreeing here is not something the receipt assumes.
+          'effort': _effort.wire,
+          'max_steps': _effort.maxSteps,
+          'allow_write': _allowWrite,
+          'allow_exec': _allowExec,
+          'stream': true,
+          if (attachment != null) 'attachment': attachment,
+          if (widget.continuationHandoff != null)
+            'continuation': widget.continuationHandoff,
+          'root': widget.workspaceRoot,
+        },
+      );
     } catch (_) {
       return null;
     }
@@ -138,15 +148,24 @@ class _AgentPanelState extends State<AgentPanel> {
       return;
     }
     setState(() => _authorizing = true);
-    await authorizeGatewayStream(context, operation, (body) {
-      if (!mounted) return;
-      _beginRun();
-      _operationState.observe(_operations.start(body),
-          onProgress: _onProgress, onInterrupted: _interrupted);
-    }, () {
-      if (!mounted) return;
-      setState(() => _authorizing = false);
-    }, currentOperation: () => _operation(request));
+    await authorizeGatewayStream(
+      context,
+      operation,
+      (body) {
+        if (!mounted) return;
+        _beginRun();
+        _operationState.observe(
+          _operations.start(body),
+          onProgress: _onProgress,
+          onInterrupted: _interrupted,
+        );
+      },
+      () {
+        if (!mounted) return;
+        setState(() => _authorizing = false);
+      },
+      currentOperation: () => _operation(request),
+    );
   }
 
   void _onProgress(Map<String, dynamic> event) {
@@ -163,7 +182,7 @@ class _AgentPanelState extends State<AgentPanel> {
     setState(() {
       _events = [
         ..._events,
-        {...result.result, 'type': 'done'}
+        {...result.result, 'type': 'done'},
       ];
       _started = false;
     });
@@ -180,8 +199,9 @@ class _AgentPanelState extends State<AgentPanel> {
       return;
     }
     if (!mounted) return;
-    await showOperationGrantSheet<OperationSnapshot>(context, _stopGrants,
-        (body) async {
+    await showOperationGrantSheet<OperationSnapshot>(context, _stopGrants, (
+      body,
+    ) async {
       final snapshot = await _operations.cancel(body);
       if (!_operationState.acceptCancelResponse(snapshot)) {
         throw StateError('invalid operation response');
@@ -191,17 +211,19 @@ class _AgentPanelState extends State<AgentPanel> {
   }
 
   void _scrollTail() => WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scroll.hasClients) {
-          _scroll.jumpTo(_scroll.position.maxScrollExtent);
-        }
-      });
+    if (_scroll.hasClients) {
+      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+    }
+  });
   Future<void> _loadPastRuns() async {
     try {
       final r = await widget.client.agentRuns(limit: 10);
       if (mounted) {
-        setState(() => _pastRuns = ((r['runs'] ?? []) as List)
-            .whereType<Map<String, dynamic>>()
-            .toList());
+        setState(
+          () => _pastRuns = ((r['runs'] ?? []) as List)
+              .whereType<Map<String, dynamic>>()
+              .toList(),
+        );
       }
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
@@ -236,12 +258,13 @@ class _AgentPanelState extends State<AgentPanel> {
             _pastSection()
           else ...[
             AgentOperationComposer(
-                controller: _goal,
-                alive: widget.alive,
-                authorizing: _authorizing,
-                snapshot: _operationState.execution,
-                onRun: () => unawaited(_run()),
-                onStop: () => unawaited(_stop())),
+              controller: _goal,
+              alive: widget.alive,
+              authorizing: _authorizing,
+              snapshot: _operationState.execution,
+              onRun: () => unawaited(_run()),
+              onStop: () => unawaited(_stop()),
+            ),
             const SizedBox(height: FwLayout.s2),
             AgentGates(
               endpoints: _endpoints,
@@ -266,7 +289,10 @@ class _AgentPanelState extends State<AgentPanel> {
             if (_events.isNotEmpty) ...[
               const SizedBox(height: FwLayout.s2),
               LiveRunTail(
-                  events: _events, scroll: _scroll, client: widget.client),
+                events: _events,
+                scroll: _scroll,
+                client: widget.client,
+              ),
             ],
           ],
         ],
@@ -275,31 +301,33 @@ class _AgentPanelState extends State<AgentPanel> {
   }
 
   Widget _header(FwTokens t) => Row(
-        children: [
-          Kicker('workspace agent', hot: !_pastOpen),
-          const Spacer(),
-          if (!widget.alive)
-            Text('engine offline', style: fwMono(t, size: 10.5, color: t.drift))
-          else
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _pastOpen = !_pastOpen;
-                  _stored = null;
-                });
-                if (_pastOpen) _loadPastRuns();
-              },
-              child: Text(_pastOpen ? 'live' : 'past runs',
-                  style: fwMono(t, size: 11, color: t.inkMuted)),
-            ),
-        ],
-      );
-  Widget _pastSection() => ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 280),
-        child: SingleChildScrollView(
-          child: _stored != null
-              ? StoredAgentRun(doc: _stored!, client: widget.client)
-              : AgentRunsList(runs: _pastRuns, onOpen: _openStored),
+    children: [
+      Kicker('workspace agent', hot: !_pastOpen),
+      const Spacer(),
+      if (!widget.alive)
+        Text('engine offline', style: fwMono(t, size: 10.5, color: t.drift))
+      else
+        TextButton(
+          onPressed: () {
+            setState(() {
+              _pastOpen = !_pastOpen;
+              _stored = null;
+            });
+            if (_pastOpen) _loadPastRuns();
+          },
+          child: Text(
+            _pastOpen ? 'live' : 'past runs',
+            style: fwMono(t, size: 11, color: t.inkMuted),
+          ),
         ),
-      );
+    ],
+  );
+  Widget _pastSection() => ConstrainedBox(
+    constraints: const BoxConstraints(maxHeight: 280),
+    child: SingleChildScrollView(
+      child: _stored != null
+          ? StoredAgentRun(doc: _stored!, client: widget.client)
+          : AgentRunsList(runs: _pastRuns, onOpen: _openStored),
+    ),
+  );
 }

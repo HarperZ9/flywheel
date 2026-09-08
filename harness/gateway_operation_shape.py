@@ -9,7 +9,11 @@ scopes.
 from __future__ import annotations
 
 from .evidence_json import canonical_sha256
-from .gateway_operation import PROPOSAL_REF_PATTERN, OPERATION_REF_PATTERN, _text
+from .continuation_agent_handoff import AGENT_HANDOFF_SCHEMA
+from .continuation_store import PREVIEW_REF_PATTERN
+from .gateway_operation import (
+    PROPOSAL_REF_PATTERN, OPERATION_REF_PATTERN, _relative_path, _text)
+from .journey_types import SHA256_PATTERN
 
 
 def validate_operation_shape(action: str, value: dict) -> None:
@@ -72,6 +76,8 @@ def validate_operation_shape(action: str, value: dict) -> None:
                        or item["role"] not in {"system", "user", "assistant"}
                        or type(item["content"]) is not str for item in messages)):
             raise ValueError
+    if action == "agent.run" and "continuation" in value:
+        _continuation_agent_shape(value["continuation"])
     for name in ("stream", "allow_write", "allow_exec", "enabled"):
         if name in value and type(value[name]) is not bool:
             raise ValueError
@@ -128,6 +134,23 @@ def _kill_shape(value: dict) -> None:
 
 def _bounded_int(value: object, low: int, high: int) -> None:
     if type(value) is not int or not low <= value <= high:
+        raise ValueError
+
+
+def _continuation_agent_shape(value: object) -> None:
+    fields = {"schema", "preview_ref", "preview_sha256",
+              "source_state_sha256", "selected_files"}
+    if (type(value) is not dict or set(value) != fields
+            or value.get("schema") != AGENT_HANDOFF_SCHEMA
+            or PREVIEW_REF_PATTERN.fullmatch(value.get("preview_ref", "")) is None
+            or SHA256_PATTERN.fullmatch(value.get("preview_sha256", "")) is None
+            or SHA256_PATTERN.fullmatch(
+                value.get("source_state_sha256", "")) is None):
+        raise ValueError
+    files = value["selected_files"]
+    if (type(files) is not list or len(files) > 8
+            or len(set(files)) != len(files)
+            or any(not _relative_path(item) for item in files)):
         raise ValueError
 
 

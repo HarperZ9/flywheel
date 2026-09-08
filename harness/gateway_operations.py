@@ -9,6 +9,7 @@ from .evidence_json import canonical_sha256
 from .gateway_envelope import parse_gateway_envelope
 from .gateway_operation import AuthorizedOperation, GatewayOperationError, OPERATION_REF_PATTERN
 from .gateway_operation_process import MAX_RESULT_BYTES, OperationProcessFactory, WorkerOutcome
+from .gateway_operation_secrets import _secret_values
 from .journey_service import JourneyService
 from .journey_store import JourneyStore, JourneyStoreError
 from .operation_grants import GrantStore
@@ -76,8 +77,7 @@ class GatewayOperations:
                 operation="operation_queued", payload=payload)
             queued = OperationSnapshot(ref, authorized.journey_ref,
                                        ack.event_head_sha256, "queued", False)
-            self._secrets[(authorized.owner_ref, ref)] = tuple(value for value in
-                authorized.credential_bindings.values() if type(value) is str and value)
+            self._secrets[(authorized.owner_ref, ref)] = _secret_values(authorized)
         try: self._publish(authorized.owner_ref, ref, "snapshot", queued.as_json())
         except Exception: pass
         try:

@@ -7,8 +7,9 @@ import re
 import secrets
 from typing import Callable
 from .evidence_json import canonical_sha256, strict_load_json
-from .evidence_public import TransportError, error_response, exact_request, parse_json
+from .evidence_public import TransportError, exact_request, parse_json
 from .grant_route import _replace, _request_from
+from .gateway_grant_errors import gateway_error_response
 from .gateway_grant_index import replace_indexed_proposal as _write_indexed
 from .gateway_grant_inbox import gateway_grant_inbox_post
 from .gateway_operation import (AuthorizedOperation, GatewayOperationError, GRANTABLE_ACTIONS, PROPOSAL_REF_PATTERN,
@@ -121,6 +122,14 @@ def _proposal_response(record: dict, operation) -> dict:
         "credential_refs": list(operation.credential_refs),
         "expires_at": record["expires_at"], "summary": summary,
     }
+def _validate_continuation_handoff(action: str, operation, *, owner_ref: str,
+                                   journey_ref: str, state_root: Path,
+                                   journey_events=None) -> None:
+    if action == "agent.run" and "continuation" in operation.operation:
+        from .continuation_agent_handoff import validate_continuation_agent_operation
+        validate_continuation_agent_operation(
+            operation, state_root, owner_ref=owner_ref,
+            journey_ref=journey_ref, journey_events=journey_events)
 def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
              clock: Callable[[], str]) -> dict:
     exact_request(body, _BASE | {"operation"})
@@ -134,6 +143,9 @@ def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
         raise GatewayOperationError("INVALID_REQUEST")
     validate_no_raw_secrets(body)
     operation = canonicalize_operation(action, body["operation"])
+    _validate_continuation_handoff(
+        action, operation, owner_ref=owner_ref,
+        journey_ref=body["journey_ref"], state_root=state_root)
     plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root)
     credential_slots(operation, owner_ref, state_root, plan=plan)
     store = JourneyStore(state_root)
@@ -200,8 +212,11 @@ def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[]
     store = JourneyStore(state_root)
     journey_dir = store._journey_dir(owner_ref, body.get("journey_ref"))
     with ExclusiveJourneyLock.acquire(journey_dir / ".lock"):
-        if _current_head(store, owner_ref, body.get("journey_ref")) != body.get(
-                "expected_event_head"):
+        head = store._read_head(journey_dir)
+        if head is None:
+            raise JourneyStoreError("JOURNEY_NOT_FOUND")
+        events = store._events_at_head(journey_dir, head)
+        if head["event_head_sha256"] != body.get("expected_event_head"):
             raise GatewayOperationError("HEAD_CONFLICT")
         with ExclusiveJourneyLock.acquire(owner_dir / ".lock"):
             record = _read(owner_dir, proposal_ref, owner_ref)
@@ -218,6 +233,10 @@ def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[]
             request = _request_from(record["grant_request"])
             if request != _request(record, operation):
                 raise GatewayOperationError("PERMISSION_DENIED")
+            _validate_continuation_handoff(
+                action, operation, owner_ref=owner_ref,
+                journey_ref=body["journey_ref"], state_root=state_root,
+                journey_events=events)
             if action == "plan.run":
                 from .plan_run_store import verify_plan_run
                 verified = verify_plan_run(thaw_operation(operation.operation)["binding"],
@@ -254,32 +273,6 @@ def authorize_gateway_envelope(envelope, *, owner_ref: str, state_root: Path,
         raise GatewayOperationError(code) from None
     except (TransportError, OSError, TypeError, ValueError):
         raise GatewayOperationError("INVALID_REQUEST") from None
-def gateway_error_response(exc: Exception) -> tuple[dict, int]:
-    code = getattr(exc, "code", "STORE_COMMIT_FAILED")
-    if isinstance(exc, TransportError):
-        code = "INVALID_REQUEST"
-    elif isinstance(exc, JourneyLockBusy):
-        code = "STORE_BUSY"
-    elif isinstance(exc, JourneyStoreError) and code == "JOURNEY_NOT_FOUND":
-        code = "PERMISSION_REQUIRED"
-    errors = {
-        "INVALID_REQUEST": (422, "gateway operation is invalid"),
-        "AUTH_REQUIRED": (401, "gateway authentication is required"),
-        "PERMISSION_REQUIRED": (403, "gateway operation approval is required"),
-        "PERMISSION_DENIED": (403, "gateway operation approval is invalid"),
-        "APPROVAL_EXPIRED": (403, "gateway operation approval expired"),
-        "NOT_FOUND": (404, "gateway operation was not found"),
-        "HEAD_CONFLICT": (409, "Journey head changed"),
-        "PLAN_BINDING_DRIFT": (409, "plan run does not match its forged contract"),
-        "IDEMPOTENCY_MISMATCH": (409, "operation request conflicts with its prior use"),
-        "INVALID_TRANSITION": (409, "operation state does not allow this action"),
-        "CANCEL_UNAVAILABLE": (409, "operation cancellation is unavailable"),
-        "STORE_BUSY": (503, "operation store is busy"),
-        "STORE_COMMIT_FAILED": (500, "operation state could not be committed"),
-        "EXTERNAL_ACTION_FAILED": (502, "authorized external action failed")}
-    code = code if code in errors else "STORE_COMMIT_FAILED"
-    status, message = errors[code]
-    return error_response(TransportError(code, message, status))
 def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Path, clock: Callable[[], str]) -> tuple[dict, int]:
     """Prepare or approve without dispatching an external operation."""
     try:

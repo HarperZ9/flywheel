@@ -1955,20 +1955,16 @@ class _Handler(BaseHTTPRequestHandler):
             paths = req.get("paths") if isinstance(req.get("paths"), list) else None
             out = lint_project(str(root), paths)
             return self._json(out, 400 if "error" in out else 200)
-        if p == "/api/index":                          # drive the index engine over a project root
+        if (p == "/api/index" or                     # project Index summary routes
+                p == "/api/index/summary" or         # project Index summary routes
+                p.startswith("/api/index/workspace-map/")):  # project Index jobs
             req, bad = self._req_json()
             if bad:
                 return bad
-            root, err = _resolve_workspace_root(req.get("root"), self.root)
-            if err:
-                return self._json({"error": err}, 400)
-            view = (req.get("view") or "summary").strip()
-            if view == "summary":
-                from harness.index_bridge import index_summary
-                return self._json(index_summary(str(root)))
-            from harness.index_bridge import index_view
-            out = index_view(str(root), view)
-            return self._json(out, 400 if "error" in out else 200)
+            from harness.index_route import handle_index_post
+            return self._json(*handle_index_post(
+                p, req, default_root=self.root, run_root=self.run_root,
+                resolve_root=_resolve_workspace_root))
         if p == "/api/discourse":                      # drive the chorus satellite over a gathered corpus
             req, bad = self._req_json()
             if bad:
