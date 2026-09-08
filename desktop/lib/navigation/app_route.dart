@@ -1,4 +1,4 @@
-﻿// app_route.dart -- stable typed locations for the desktop shell.
+// app_route.dart -- stable typed locations for the desktop shell.
 //
 // A location carries a stable route id plus opaque public refs and
 // view-local data. It never carries a widget, an object, or a host path,
@@ -15,6 +15,7 @@ enum DestinationId {
   roadmap,
   schedule,
   runners,
+  approvals,
   chat,
   compare,
   models,
@@ -95,9 +96,8 @@ class AppLocation {
     final scroll = json['scroll'];
     return AppLocation(
       routeId: id.single,
-      journeyRef: json['journey_ref'] is String
-          ? json['journey_ref'] as String
-          : null,
+      journeyRef:
+          json['journey_ref'] is String ? json['journey_ref'] as String : null,
       selectionRef: json['selection_ref'] is String
           ? json['selection_ref'] as String
           : null,
@@ -117,8 +117,8 @@ class AppLocation {
       other.scrollOffset == scrollOffset;
 
   @override
-  int get hashCode => Object.hash(
-      routeId, journeyRef, selectionRef, viewState, scrollOffset);
+  int get hashCode =>
+      Object.hash(routeId, journeyRef, selectionRef, viewState, scrollOffset);
 }
 
 final _jrnRef = RegExp(r'^jrn_[0-9a-f]{32}$');

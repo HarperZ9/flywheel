@@ -11,14 +11,14 @@ hidden.
 
 ## 1. Point the phone at your engine
 
-The app talks to your PC's gateway, which binds to localhost by default and
-stays there unless you widen it. Two flags open it, and both are explicit:
+The app talks to your PC's gateway through a TLS tunnel. Keep the gateway on
+localhost and allow the hostname used by your tunnel:
 
 ```bash
-python -m harness.cli_entry gateway --host 0.0.0.0 --allow-host your-tunnel.example.com
+python -m harness.gateway --allow-host your-tunnel.example.com
 ```
 
-Then put a tunnel in front of it. Relay's `docs/REMOTE-SETUP.md` and
+Point the tunnel at `http://127.0.0.1:8799`. Relay's `docs/REMOTE-SETUP.md` and
 `scripts/serve_cloudflared.ps1` set up a Cloudflare tunnel end to end. Pair the
 tunnel URL and the gateway token in the app under the rail's connection action.
 The token is stored on the device and is never sent anywhere but your gateway.
