@@ -13,6 +13,7 @@ from .plan_run_snapshot import (FrozenJsonSnapshot, freeze_json, thaw_json)
 _LOCAL_MODELS = frozenset((
     "", "flywheel", "flywheel-serve", "serve", "default", "local", "auto",
 ))
+_BULLETIN_KEY_SLOT = "BULLETIN_AGENT_JWK"
 
 
 @dataclass(frozen=True)
@@ -117,6 +118,10 @@ def _credential_plan(operation) -> tuple[tuple[str, ...], tuple[str, ...]]:
     if action in {"plugin.probe", "plugin.call"}:
         from .plugins import plugin_credentials
         return plugin_credentials(value["name"])
+    if (action == "lane.call" and value["name"] == "bulletin"
+            and value["tool"] == "board_write_post"
+            and value["credential_refs"]):
+        return (_BULLETIN_KEY_SLOT,), tuple(value["credential_refs"])
     if action == "plugin.register":
         return tuple(value["requires"]), ()
     if action in {"marketplace.install", "marketplace.remove"}:
@@ -154,6 +159,7 @@ def resolve_credentials(operation, state_root: Path):
     required = credential_slots(
         operation, operation.owner_ref, state_root, plan=plan)
     try:
+        _validate_before_secret_resolution(operation)
         from .keychain import keychain_get
         bindings = CredentialHandleStore(
             state_root, keychain_get=keychain_get).resolve_exact(
@@ -166,6 +172,15 @@ def resolve_credentials(operation, state_root: Path):
                        execution_plan=plan)
     except Exception:
         raise GatewayOperationError("PERMISSION_REQUIRED") from None
+
+
+def _validate_before_secret_resolution(operation) -> None:
+    value = operation.operation
+    if (operation.action == "lane.call" and value["name"] == "bulletin"
+            and value["tool"] == "board_write_post"
+            and operation.credential_refs):
+        from .bulletin_signed_transport import configured_bulletin_base_url
+        configured_bulletin_base_url()
 
 
 def fixed_external_failure() -> tuple[dict, int]:

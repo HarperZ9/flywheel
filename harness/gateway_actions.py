@@ -83,6 +83,9 @@ def _marketplace(operation: AuthorizedOperation) -> object:
 
 def dispatch_builtin(operation: AuthorizedOperation) -> tuple[object, int] | None:
     """Dispatch a short plugin/marketplace action after grant consumption."""
+    if operation.action == "lane.call":
+        from .outcome_bulletin_gateway import dispatch_outcome_bulletin_gateway
+        return dispatch_outcome_bulletin_gateway(operation)
     groups = {
         "plugin.probe": _plugin, "plugin.call": _plugin,
         "plugin.register": _plugin, "plugin.toggle": _plugin,
