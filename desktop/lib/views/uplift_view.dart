@@ -1,8 +1,4 @@
-// uplift_view.dart — the Uplift surface: does the wrapper measurably lift
-// the model? Paired arms with intervals, rendered exactly as the engine
-// scored them. A separated interval is verified; an interval containing
-// zero renders as the honest null it is. Overhead is shown because the
-// wrapper costs time; hiding it would be lying by omission.
+// Historical retry measurements stay inspectable without becoming uplift claims.
 
 import 'package:flutter/material.dart';
 
@@ -63,15 +59,14 @@ class _UpliftViewState extends State<UpliftView> {
     return ViewScroll(
       children: [
         SectionHeader('Uplift',
-            kicker: 'bare vs wrapped, intervals or nothing',
+            kicker: 'historical retry diagnostics',
             trailing: OutlinedButton(
                 onPressed: _load, child: const Text('Refresh'))),
         const SizedBox(height: FwLayout.s3),
         Text(
-          'The same task set through the same model twice: bare single-shot '
-          'vs the verified loop where only an external oracle accepts. The '
-          'delta carries an interval; an interval containing zero is the '
-          'honest null, reported as loudly as a win.',
+          'These runs compare one attempt with oracle-selected retries. '
+          'Different generation budgets and reusing the selector as scorer '
+          'prevent a workflow uplift claim. Rates and costs remain inspectable.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: FwLayout.s4),
@@ -79,7 +74,8 @@ class _UpliftViewState extends State<UpliftView> {
         if (s != null && s.runs.isEmpty)
           HonestNull(
               '${s.note.isEmpty ? "No uplift bench artifact yet." : s.note} '
-              'Fire one: python scripts/run_uplift_live.py'),
+              'For matched selection experiments, inspect harness/pool_arms.py '
+              'and the certificate-family driver scripts/compute_arms.py.'),
         if (s?.latest != null) ..._latest(t, s!.latest!),
         if (s != null && s.runs.length > 1) ...[
           const SizedBox(height: FwLayout.s5),
@@ -119,18 +115,12 @@ class _UpliftViewState extends State<UpliftView> {
                 Expanded(
                     child: Text(d.provider,
                         style: Theme.of(context).textTheme.titleMedium)),
-                VerdictPill(
-                    d.includesZero
-                        ? 'no uplift claimed'
-                        : (d.isRegression
-                            ? 'regression measured'
-                            : 'uplift measured'),
-                    status: d.verdict),
+                VerdictPill('diagnostic only', status: d.verdict),
               ]),
               const SizedBox(height: FwLayout.s2),
               Text(
-                  'uplift ${(d.uplift * 100).toStringAsFixed(0)}% · 95% '
-                  '[${d.lo.toStringAsFixed(3)}, ${d.hi.toStringAsFixed(3)}] '
+                  'conditional rate difference '
+                  '${(d.uplift * 100).toStringAsFixed(0)} percentage points '
                   '· latency overhead '
                   '${(d.latencyOverheadMs / 1000).toStringAsFixed(1)}s',
                   style: fwMono(t, size: 12, color: t.inkSoft)),
@@ -146,12 +136,13 @@ class _UpliftViewState extends State<UpliftView> {
                                 color: t.inkMuted))),
                     Expanded(
                       child: Text(
-                          '${r.passes}/${r.graded} '
+                          '${r.passes}/${r.graded} graded '
                           '(${(r.passRate * 100).toStringAsFixed(0)}%) '
                           '[${r.wilsonLo.toStringAsFixed(3)}, '
                           '${r.wilsonHi.toStringAsFixed(3)}] · '
                           'lat ${(r.latencyMsMean / 1000).toStringAsFixed(1)}s '
-                          '· cand ${r.candidatesMean.toStringAsFixed(2)}'
+                          '· cand ${r.candidatesMean.toStringAsFixed(2)} '
+                          '${r.nTasks == null ? '· completion denominator unavailable' : '· confirmed ${r.passes}/${r.nTasks}'}'
                           '${r.unverifiable > 0 ? ' · unver ${r.unverifiable}' : ''}',
                           style: fwMono(t, size: 11.5)),
                     ),

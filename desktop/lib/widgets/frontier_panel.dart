@@ -4,7 +4,7 @@
 // The probe is one real generation against a live endpoint, so it reaches the
 // network and costs whatever that endpoint costs: it goes through the grant
 // sheet like any other outward operation. The table below it composes those
-// probes with the paired-arm bench. Unknowns stay null and render as a dash;
+// probes with legacy retry diagnostics. Unknowns stay null and render as a dash;
 // filling one with an estimate would turn a measurement into a guess.
 
 import 'package:flutter/material.dart';
@@ -101,9 +101,9 @@ class _FrontierPanelState extends State<FrontierPanel> {
           const SizedBox(height: FwLayout.s1),
           Text(
               'A probe is one measured generation against a live endpoint. '
-              'The table pairs those probes with the bench\'s verified rates, '
-              'so "which model fits this machine" is answered by numbers '
-              'produced here rather than by an imported leaderboard.',
+              'The table adds historical retry rates, which may use different '
+              'task sets. Disk size does not establish runtime memory needs. '
+              'These diagnostics do not establish workflow uplift.',
               style: TextStyle(fontSize: 12.5, color: t.inkMuted)),
           const SizedBox(height: FwLayout.s3),
           _controls(t),

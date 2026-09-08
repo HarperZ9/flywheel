@@ -1,13 +1,11 @@
-"""The Train surface must not headline a stale 10-task partial when a
-powered 110-task lane exists: the duel summary carries the uplift deltas
-alongside, with the note steering readers to the stronger intervals."""
+"""The Train surface carries historical retry diagnostics without uplift claims."""
 
 import json
 
 from harness import train_surface
 
 
-def test_duel_summary_carries_the_powered_lane(tmp_path, monkeypatch):
+def test_duel_summary_carries_diagnostics_without_powered_claim(tmp_path, monkeypatch):
     duels = tmp_path / "artifacts" / "duels"
     duels.mkdir(parents=True)
     (duels / "old.partial.jsonl").write_text(
@@ -29,8 +27,9 @@ def test_duel_summary_carries_the_powered_lane(tmp_path, monkeypatch):
     doc = train_surface.duel_summary()
     assert doc["status"] == "partial"
     assert doc["uplift"]["comparison_key"] == "uplift:hard_v2"
-    assert doc["uplift"]["deltas"][0]["includes_zero"] is False
-    assert "powered uplift lane" in doc["note"]
+    assert doc["uplift"]["deltas"][0]["includes_zero"] is None
+    assert doc["uplift"]["deltas"][0]["claim_status"] == "not_established"
+    assert "do not establish workflow uplift" in doc["note"]
 
 
 def test_without_uplift_artifacts_nothing_is_invented(tmp_path, monkeypatch):

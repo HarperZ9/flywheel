@@ -133,6 +133,9 @@ with 95% CI [-0.236, +0.420], an interval that includes zero, and no capability
 uplift is claimed.
 <!-- benchmarks:end -->
 
+For the distinction between retry diagnostics and evidence of workflow uplift,
+see [the evaluation guide](docs/UPLIFT-EVALUATION.md).
+
 ## What is in this repo
 
 <p align="center"><img src="docs/schematics/architecture.svg" alt="The browser shell, the command line, curl and MCP clients all reach one gateway on localhost, which routes to a local model or an external check and writes a receipt either way, escalating only what does not pass." width="100%"></p>

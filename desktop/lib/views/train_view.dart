@@ -210,10 +210,10 @@ class _TrainViewState extends State<TrainView> {
           Row(
             children: [
               VerdictPill(
-                  'harness lift ${lift >= 0 ? '+' : ''}${(lift * 100).toStringAsFixed(0)} pts',
+                  'rate difference ${lift >= 0 ? '+' : ''}${(lift * 100).toStringAsFixed(0)} pts',
                   // a bare point estimate carries no interval: the duel summary
                   // emits no separation from zero, so the lift is the honest
-                  // null, never a green win. The powered n=110 lane supersedes.
+                  // null, never a green win. Sample count cannot fix the design.
                   status: liftStatus(lift,
                       includesZero: d['lift_includes_zero'] as bool?)),
               const SizedBox(width: FwLayout.s3),

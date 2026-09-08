@@ -225,6 +225,14 @@ def build() -> dict[str, str]:
                                              render_readme_block, splice_readme)
 
     report = json.loads(RECORD.read_text(encoding="utf-8"))
+    # Correct a legacy method label at presentation time; do not rewrite the
+    # sealed historical measurements. Future offline reports use this wording.
+    from scripts.offline_suites import NOT_RUN
+    retry = next(e for e in NOT_RUN
+                 if e["suite"] == "uplift_bench legacy retry diagnostic")
+    report["not_run"] = [dict(retry) if e["suite"] in (
+        "uplift_bench paired arms", "uplift_bench legacy retry diagnostic")
+        else e for e in report["not_run"]]
     doc = parity_matrix()
     readme = (REPO / "README.md").read_text(encoding="utf-8")
     return {"site/benchmarks.html": render_html(report, doc),
