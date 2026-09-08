@@ -11,8 +11,10 @@ from .local_serving import profile_num_ctx, profile_config_error
 from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, ToolGate
+from .observed_proposer import ObservedProposer
 from .proposer import ProposerOutput, prompt_hash
 from .router_agent import RouterAgent
+from .structured_finalizer import local_structured_finalizer_factory
 from .cross_harness_policy import compaction_receipt_numeric_allowed, nonnegative_policy_int; from .cross_harness_process import ProcessOutcome, run_process; from .cross_harness_provider_error import ProviderRejected, inspect_provider_events; from .cross_harness_usage import attempt_usage, usage_from_events; from .cross_harness_cli_identity import cli_identity_fields, codex_cli_version, resolve_binary
 MAX_TRACE_EVENTS, MAX_TRACE_BYTES, MAX_LINE_BYTES, MAX_FIELD_BYTES, MAX_DEPTH = 1000, 1 << 20, 1 << 16, 1 << 14, 16
 READ_ONLY_SYSTEM = ("You are the outer Flywheel text-tool agent. Inspect the supplied workspace and return the requested artifact envelope. "
@@ -193,30 +195,18 @@ class CodexCliProposer:
         final = _final_message(events)
         if process.returncode: raise RuntimeError(f"codex inner process exited {process.returncode}: {_clean(process.stderr)}")
         return ProposerOutput(final, self.model_ref, seed, prompt_hash(prompt), "unsupported", served_model=next((event["model"] for event in reversed(events) if event.get("type") == "turn.completed" and isinstance(event.get("model"), str) and event["model"]), ""), usage=usage_from_events(events))
-class _ObservedProposer:
-    def __init__(self, inner, timeout: float, clock: Callable, response_model_attested: bool = False, max_calls: int | None = None):
-        self.inner, self.model_ref, self.observed, self.usage_records, self.basis, self.response_model_attested = inner, inner.model_ref, "", [], "unknown", response_model_attested
-        self.clock, self.deadline, self.max_calls, self.calls = clock, clock() + timeout, max_calls, 0
-    def generate(self, *args, **kwargs):
-        remaining = self.deadline - self.clock()
-        if remaining <= 0: raise TimeoutError("shared attempt deadline expired")
-        if self.max_calls is not None and self.calls >= self.max_calls: raise TimeoutError(f"inner proposer invocation budget exhausted: proposer_invocations_max={self.max_calls}")
-        self.calls += 1; self.usage_records.append(None); backend = getattr(self.inner, "backend", None)
-        if backend is not None and hasattr(backend, "timeout"): backend.timeout = min(backend.timeout, remaining)
-        out = self.inner.generate(*args, **kwargs); self.usage_records[-1] = getattr(out, "usage", None)
-        if self.clock() >= self.deadline: raise TimeoutError("shared attempt deadline expired")
-        self.observed = out.served_model or (out.model_ref if self.response_model_attested else "")
-        self.basis = "structured_provider_event" if out.served_model else "structured_provider_response" if self.observed else "unknown"; return out
-def _router_result(request, proposer, source: str, clock: Callable = time.monotonic, response_model_attested: bool = False, proposer_invocations_max: int | None = None, cli_identity: dict[str, str] | None = None) -> AdapterResult:
+def _router_result(request, proposer, source: str, clock: Callable = time.monotonic, response_model_attested: bool = False, proposer_invocations_max: int | None = None, cli_identity: dict[str, str] | None = None, finalizer_factory: Callable | None = None) -> AdapterResult:
     ledger, events = SessionLedger(), []
-    tracked = _ObservedProposer(proposer, request.timeout_seconds, clock, response_model_attested, proposer_invocations_max)
+    tracked = ObservedProposer(proposer, request.timeout_seconds, clock, response_model_attested, proposer_invocations_max)
     compact_budget = nonnegative_policy_int(request.tool_policy, "compact_budget", 0)
     agent = RouterAgent(model=request.model_id, proposer=tracked, system=READ_ONLY_SYSTEM, max_tokens=request.tool_policy.get("max_output_tokens", 2048), compact_budget=compact_budget)
     executor = ToolExecutor(root=str(request.workspace_root), gate=ToolGate(False, False, False), external={})
+    finalize_candidate, finalizer_resource = finalizer_factory(tracked) if finalizer_factory else (None, {})
     started = time.perf_counter()
     try:
         result = run_agent(agent, request.prompt, executor, ledger, max_steps=request.tool_policy.get("max_steps", 6),
-                           on_event=lambda event: events.append({**_clean(event), "source": source}))
+                           on_event=lambda event: events.append({**_clean(event), "source": source}),
+                           finalize_candidate=finalize_candidate)
         state, failure, detail = "returned", "", ""
     except TimeoutError as exc: result, state, failure, detail = {"final": ""}, "timeout", "timeout", str(exc)
     except (MalformedProviderOutput, MalformedBackendOutput) as exc: result, state, failure, detail = {"final": ""}, "malformed", "malformed_provider_output", str(exc)
@@ -225,7 +215,7 @@ def _router_result(request, proposer, source: str, clock: Callable = time.monoto
     events.extend({**_clean(asdict(entry)), "source": source, "type": "ledger_entry"} for entry in ledger.entries)
     events.append({"source": source, "type": "ledger_checkpoint", "checkpoint": ledger.checkpoint(), "verified": ledger.verify(), "randomness": "unsupported", "max_output_control": None, "max_output_control_state": "unsupported"})
     inner = [{**_clean(event), "source": "codex_inner"} for event in getattr(proposer, "events", []) if isinstance(event, dict)] + ([{"source": usage_source, "inner_call": index, "type": "usage.observed", **({"usage": _clean(record, True)} if isinstance(record, dict) else {})} for index, record in enumerate(tracked.usage_records, 1)] if (usage_source := getattr(proposer, "usage_event_source", "")) else []); events = inner + events
-    resource = {"inner_call_count": tracked.calls, **(cli_identity or {}), **({"compact_budget": compact_budget, "last_compaction": _clean(agent.last_compaction)} if compact_budget else {})}
+    resource = {"inner_call_count": tracked.calls, **(cli_identity or {}), **({"structured_final_output": _clean(finalizer_resource)} if finalizer_resource else {}), **({"compact_budget": compact_budget, "last_compaction": _clean(agent.last_compaction)} if compact_budget else {})}
     if compact_budget and agent.last_compaction:
         events.append({"source": source, "type": "compaction", "compact_budget": compact_budget, "last_compaction": resource["last_compaction"]})
     capabilities, violations = _audit(events)
@@ -294,7 +284,8 @@ class LocalRouterAdapter:
         if failure: return AdapterResult("unavailable", "", [], 0, "", "unsupported", failure, failure, {}, {}, [], [])
         backend = self.backend_factory(self.profile, request.timeout_seconds)
         proposer = BackendProposer(backend, model_ref="", extract=False); proposer.usage_event_source = "local_endpoint_inner"
-        result = _router_result(request, proposer, "flywheel_outer", self.clock, response_model_attested=True)
+        factory, _resource, total = local_structured_finalizer_factory(self.profile, request)
+        result = _router_result(request, proposer, "flywheel_outer", self.clock, response_model_attested=True, proposer_invocations_max=total, finalizer_factory=factory)
         if result.execution_state == "returned" and result.model_observed and result.model_observed != self.profile["model_ref"]:
             return replace(result, execution_state="malformed", failure_class="observed_model_drift", failure_detail="observed model did not match exact endpoint profile")
         return result
