@@ -84,6 +84,7 @@ SURFACE_GLOBS = (
     "project-docs/releases/*.md",
     ".claude/skills/*/SKILL.md",
     ".claude/commands/*.md",
+    "skills/**/*.md",
     "plugins/**/*.md",
     "harness/skill_resources/**/*.md",
 )
