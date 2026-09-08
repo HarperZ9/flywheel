@@ -34,6 +34,14 @@ def _derived_prompt(task_set: dict, contract: dict, base: dict, task_id: str, in
     return prompt, sha256_text(prompt)
 
 
+def _oracle(task_set: dict, base: dict, fixture: str) -> dict:
+    checker_id = base["oracle"]["checker_id"]
+    checker = task_set.get("oracle_contract", {}).get("checkers", {}).get(checker_id, {})
+    return {**base["oracle"], "fixture": fixture, "expected_artifacts": base["expected_artifacts"],
+            "required_json_fields": list(checker.get("required_json_fields", [])),
+            "json_field_contract": dict(checker.get("json_field_contract", {}))}
+
+
 def build_tasks(source_root: Path, task_set_path: Path, contract_path: Path, run_root: Path):
     task_set, contract = _load(task_set_path), _load(contract_path)
     overlay_root = run_root / "task-overlay"
@@ -48,8 +56,7 @@ def build_tasks(source_root: Path, task_set_path: Path, contract_path: Path, run
             "visible_sources": {row["visible_fixture"]: overlay_root / row["visible_fixture"]},
             "visible_input_sha256s": row["visible_input_sha256s"],
             "oracle_input_sha256s": row["oracle_input_sha256s"], "oracle_root": overlay_root,
-            "oracle": {**base["oracle"], "fixture": row["oracle_fixture"],
-                       "expected_artifacts": base["expected_artifacts"]}})
+            "oracle": _oracle(task_set, base, row["oracle_fixture"])})
     base = by_id["agt-017-budgeted-evidence-selection"]
     rel = base["required_inputs"][0]; path = source_root / rel
     prompt, prompt_hash = _derived_prompt(task_set, contract, base, base["id"], [rel])
@@ -57,8 +64,26 @@ def build_tasks(source_root: Path, task_set_path: Path, contract_path: Path, run
         "prompt": prompt, "raw_prompt_sha256": prompt_hash,
         "expected_artifacts": base["expected_artifacts"], "visible_sources": {rel: path},
         "visible_input_sha256s": {rel: _sha(path)}, "oracle_input_sha256s": {rel: _sha(path)},
-        "oracle_root": source_root, "oracle": {**base["oracle"], "expected_artifacts": base["expected_artifacts"]}})
+        "oracle_root": source_root, "oracle": _oracle(task_set, base, base["oracle"]["fixture"])})
     return out
+
+
+def _local_gate_block(matrix: dict, role: str) -> dict | None:
+    rows = [row for row in matrix.get("runtime_rows", [])
+            if isinstance(row, dict) and row.get("provider_role") == role]
+    if len(rows) != 1:
+        return {"state": "local_endpoint_gate_blocked", "provider_role": role,
+                "blocking_gates": ["runtime_row_ambiguous"]}
+    row = rows[0]
+    blocking = [str(code) for code in row.get("blocking_gates", [])]
+    if row.get("focused_run_ready") is True and row.get("endpoint_gate_ready") is True and not blocking:
+        return None
+    if not blocking:
+        blocking = ["endpoint_gate_not_ready"]
+    return {"state": "local_endpoint_gate_blocked", "provider_role": role,
+            "focused_run_ready": row.get("focused_run_ready") is True,
+            "endpoint_gate_ready": row.get("endpoint_gate_ready") is True,
+            "blocking_gates": blocking}
 
 
 def parser():
@@ -78,6 +103,9 @@ def main(argv=None) -> int:
     matrix = _load(Path(args.runtime_matrix))
     _recheck_local_gate(matrix, Path(args.endpoint_gate), args.gate_run_id,
                         [args.provider_role], datetime.now(UTC), 900)
+    if block := _local_gate_block(matrix, args.provider_role):
+        print(json.dumps(block, sort_keys=True))
+        return 2
     adapters = build_adapter_registry(matrix, [args.provider_role])
     tasks = build_tasks(Path(args.source_root), Path(args.task_set), Path(args.contract), run_root)
     params = {**FIXED_PARAMS, "provider_role": args.provider_role}
@@ -91,5 +119,3 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-

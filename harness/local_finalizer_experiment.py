@@ -17,6 +17,7 @@ from .observed_proposer import ObservedProposer
 from .cross_harness_adapters import READ_ONLY_SYSTEM
 from .router_agent import RouterAgent
 from .structured_finalizer import _messages, local_structured_finalizer_factory
+from .local_finalizer_schema import schema_for_task
 
 FIXED_PARAMS = {
     "provider_role": "local_14b", "repetitions": 1, "temperature": 0.0, "seed": 0,
@@ -35,6 +36,8 @@ SYSTEMIC_FINALIZER_STATES = {
     "deadline_exhausted",
     "provider_json_invalid",
     "request_rejected",
+    "timeout",
+    "transport_error",
     "transport_timeout",
     "unavailable",
     "unsupported",
@@ -89,16 +92,6 @@ def build_nonleaky_overlay(source_root: Path, out_dir: Path) -> list[dict[str, A
     return rows
 
 
-def schema_for_task(task: dict[str, Any]) -> dict[str, Any]:
-    props, required = {}, []
-    for name in task.get("expected_artifacts", []):
-        required.append(str(name))
-        props[str(name)] = {"type": "string" if str(name).endswith(".md") else "object"}
-    return {"type": "object", "required": ["artifacts"], "additionalProperties": False,
-            "properties": {"artifacts": {"type": "object", "required": required,
-                           "additionalProperties": False, "properties": props}}}
-
-
 def _policy(task: dict[str, Any], mode: str, params: dict[str, Any]) -> dict[str, Any]:
     policy = dict(SHARED_TOOL_POLICY)
     policy.update({"max_steps": params["max_normal_invocations"],
@@ -150,6 +143,15 @@ def _row(task, arm, candidate, finalizer_state, oracle_state, codes, calls, req_
             "primary_outcome": "completed" if oracle_state == "pass" else "not_completed"}
 
 
+def _ineligible_state(candidate: dict[str, Any]) -> str:
+    text = " ".join(str(candidate.get(key, "")) for key in ("candidate_state", "selected_text", "failure_detail", "note")).lower()
+    if "max_step" in text or "max steps" in text: return "max_steps_not_eligible"
+    if "exec" in text and "denied" in text: return "exec_denied_not_eligible"
+    if "criteria" in text and ("fail" in text or "failing" in text): return "criteria_failed_not_eligible"
+    if "test" in text and ("fail" in text or "denied" in text): return "criteria_failed_not_eligible"
+    return "candidate_not_eligible"
+
+
 def run_candidate_prefix_experiment(tasks: list[dict[str, Any]], run_root: Path, params: dict[str, Any], *,
                                     candidate_runner: Callable, finalizer_runner: Callable,
                                     score_runner: Callable = score_arm_text) -> dict[str, Any]:
@@ -175,11 +177,12 @@ def run_candidate_prefix_experiment(tasks: list[dict[str, Any]], run_root: Path,
             attempt = run_root / task["task_id"] / arm
             if candidate.get("state") != "returned":
                 rows.append(_row(task, arm, candidate, "upstream_candidate_unavailable", "not_run", [], 0)); continue
+            if not candidate.get("eligible", True):
+                state = _ineligible_state(candidate)
+                rows.append(_row(task, arm, candidate, state, "not_run", [state], 0)); continue
             if arm == "C":
                 state, codes = score_runner(task, arm, candidate["selected_text"], attempt, candidate)
                 rows.append(_row(task, arm, candidate, "not_invoked", state, codes, 0)); continue
-            if not candidate.get("eligible", True):
-                rows.append(_row(task, arm, candidate, "not_eligible", "not_run", [], 0)); continue
             if arm in stopped_finalizer_arms:
                 row = _row(task, arm, candidate, "not_started_after_systemic_finalizer_block",
                            "not_run", [stopped_finalizer_arms[arm]], 0)
@@ -245,8 +248,9 @@ class LocalCandidatePrefixRunner:
         result = run_agent(agent, req.prompt, ToolExecutor(root=str(workspace), gate=ToolGate(False, False, False), external={}),
                            SessionLedger(), max_steps=params["max_normal_invocations"], finalize_candidate=capture)
         ctx = captured[0] if captured else {}
+        state = ctx.get("candidate_state") or ("max_steps_reached" if str(result.get("final", "")).startswith("[max_steps") else "not_eligible")
         return {"state": "returned", "eligible": bool(captured), "selected_text": result["final"],
-                "context": ctx, "candidate_state": ctx.get("candidate_state", "not_eligible"),
+                "context": ctx, "candidate_state": state,
                 "candidate_sha256": _sha(result["final"].encode()), "normal_call_count": tracked.calls,
                 "workspace_root": workspace, "oracle_root": task.get("oracle_root", workspace),
                 "tool_policy": policy}
@@ -265,7 +269,9 @@ class LocalCandidatePrefixRunner:
         tracked = ObservedProposer(proposer, params["finalizer_invocation_timeout_seconds"], time.monotonic,
                                    True, candidate.get("normal_call_count", 0) + 1)
         tracked.calls = candidate.get("normal_call_count", 0)
-        result = factory(tracked)(candidate["context"])
+        finalize, resource = factory(tracked)
+        result = finalize(candidate["context"])
+        if isinstance(resource, dict):
+            result = {**result, "resource": resource}
         _write_json(out_dir / "structured-finalizer-result.json", result)
         return {**result, "request_body_sha256": result.get("evidence", {}).get("request_body_sha256", "")}
-

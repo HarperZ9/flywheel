@@ -51,4 +51,3 @@ def test_hidden_oracle_fixture_split_preserves_visible_input_hashes(tmp_path):
     assert result.state == "pass"
     assert roles >= {"raw_output", "oracle_fixture", "provider:report.json", "provider:report.md"}
     assert "input_fixture" not in roles
-
