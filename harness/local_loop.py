@@ -122,7 +122,8 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                 done, feedback = _refuse_if_failing(
                     criteria, text, step, ledger, system=agent.system, goal=goal,
                     agent=agent, finalize_candidate=finalize_candidate,
-                    candidate_state="eligible_no_test_no_criteria", emit=_emit)
+                    candidate_state=("eligible_no_test_no_criteria" if criteria is None
+                                     else "eligible_criteria_satisfied"), emit=_emit)
                 if done is not None:
                     return done
                 message = feedback

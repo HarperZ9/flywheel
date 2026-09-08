@@ -5,7 +5,7 @@ import base64, binascii, json, math, os, re, shlex, time, urllib.error, urllib.r
 from pathlib import Path; from typing import Any, Callable
 from urllib.parse import urlsplit
 from .cross_harness_artifacts import canonical_sha256
-from .cross_harness_types import AdapterResult, AvailabilityResult, EnforcementResult, _usage_secret_field_allowed; from .endpoint_registry import BackendProposer
+from .cross_harness_types import AdapterResult, AvailabilityResult, EnforcementResult, _safe_secretish_field_allowed, _usage_secret_field_allowed; from .endpoint_registry import BackendProposer
 from .local_agent import MalformedBackendOutput, OllamaBackend, ServeBackend
 from .local_serving import profile_num_ctx, profile_config_error
 from .local_loop import run_agent
@@ -31,6 +31,7 @@ def _clean(value: Any, _in_usage: bool = False) -> Any:
         named_secret = _SECRET_KEY.search(str(value.get("name", ""))); schema = value.get("schema")
         return {str(key): (item if compaction_receipt_numeric_allowed(schema, str(key), item) else "[REDACTED]" if (str(key) == "value" and named_secret)
                  or (_SECRET_KEY.search(str(key)) and not _usage_secret_field_allowed(str(key), item, _in_usage))
+                 and not _safe_secretish_field_allowed(str(key), item)
                  else _clean(item, _in_usage or str(key) == "usage")) for key, item in value.items()}
     if isinstance(value, list): return [_clean(item, _in_usage) for item in value[:MAX_TRACE_EVENTS]]
     if not isinstance(value, str): return value

@@ -99,11 +99,14 @@ class OllamaStructuredFinalProposer:
                                                  body, self.backend.timeout)
         except (urllib.error.URLError, OSError, ConnectionError) as exc:
             raise StructuredFinalizerFailure("transport_error", str(exc)) from exc
+        except json.JSONDecodeError as exc:
+            raise StructuredFinalizerFailure("provider_json_invalid", str(exc)) from exc
         if status != 200:
             raise StructuredFinalizerFailure("request_rejected", f"ollama returned {status}")
         if not isinstance(obj, dict):
             raise StructuredFinalizerFailure("provider_json_invalid", "provider response is not an object")
-        content = (obj.get("message") or {}).get("content")
+        message = obj.get("message") or {}
+        content = message.get("content") if isinstance(message, dict) else None
         usage = ollama_native_usage(obj)
         evidence = {"model": str(obj.get("model", "")), "done": obj.get("done"),
                     "done_reason": str(obj.get("done_reason", "")),
