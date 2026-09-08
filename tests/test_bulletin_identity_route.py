@@ -152,9 +152,21 @@ def test_register_requires_explicit_confirmation(tmp_path) -> None:
     assert body["error"]["code"] == "INVALID_REQUEST"
 
 
+def test_register_refuses_missing_capabilities_before_prepare(tmp_path) -> None:
+    from harness.bulletin_identity_route import bulletin_identity_register_post
+
+    req = {"schema": "flywheel.bulletin-identity-register-request/v1", "action": "register", "confirm_register": True}
+    for keychain, signing, want in ((False, True, "KEYCHAIN_UNAVAILABLE"), (True, False, "SIGNING_UNAVAILABLE")):
+        body, code = bulletin_identity_register_post(
+            req, tmp_path, prepare=lambda **_: (_ for _ in ()).throw(AssertionError("prepared")),
+            keychain_available_fn=lambda keychain=keychain: keychain,
+            signing_available_fn=lambda signing=signing: signing)
+        assert code == 400
+        assert body["error"]["code"] == want
+
+
 def test_register_uses_fixed_production_origin_and_sanitizes_result(tmp_path) -> None:
-    from harness.bulletin_identity_contract import (
-        DEFAULT_BASE_URL, DEFAULT_HANDLE, MAX_POW_BITS)
+    from harness.bulletin_identity_contract import DEFAULT_BASE_URL, DEFAULT_HANDLE, MAX_POW_BITS
     from harness.bulletin_identity_route import bulletin_identity_register_post
 
     captured: dict = {}
@@ -186,6 +198,8 @@ def test_register_uses_fixed_production_origin_and_sanitizes_result(tmp_path) ->
         },
         tmp_path,
         prepare=prepare,
+        keychain_available_fn=lambda: True,
+        signing_available_fn=lambda: True,
     )
 
     assert code == 200
