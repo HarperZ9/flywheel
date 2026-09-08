@@ -37,6 +37,7 @@ class _EndpointsViewState extends State<EndpointsView> {
   List<ProviderScore> _scores = [];
   Map<String, dynamic>? _training;
   Map<String, dynamic>? _keychain;
+  Map<String, dynamic>? _bulletinIdentity;
   Map<String, dynamic>? _auth;
   Map<String, dynamic>? _sessionTokens;
   String? _error;
@@ -66,6 +67,7 @@ class _EndpointsViewState extends State<EndpointsView> {
         widget.client.keychainRoster(),
         widget.client.getJson('/api/auth'),
         widget.client.sessionTokens(),
+        widget.client.bulletinIdentityStatus(),
       ]);
       if (mounted) {
         setState(() {
@@ -78,6 +80,7 @@ class _EndpointsViewState extends State<EndpointsView> {
           _keychain = results[4] as Map<String, dynamic>;
           _auth = results[5] as Map<String, dynamic>;
           _sessionTokens = results[6] as Map<String, dynamic>;
+          _bulletinIdentity = results[7] as Map<String, dynamic>;
           _error = null;
           _loading = false;
         });
@@ -179,8 +182,11 @@ class _EndpointsViewState extends State<EndpointsView> {
           const SizedBox(height: FwLayout.s3),
           KeysPanel(
             doc: _keychain!,
+            bulletinIdentity: _bulletinIdentity,
             onSet: widget.client.keychainSet,
             onDelete: widget.client.keychainDelete,
+            onCreateBulletinIdentity: widget.client.bulletinIdentityCreate,
+            onRegisterBulletinIdentity: widget.client.bulletinIdentityRegister,
             onChanged: _load,
           ),
         ],

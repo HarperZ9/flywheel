@@ -21,6 +21,8 @@ from .gateway_operation import thaw_operation
 from .outcome_bulletin import PREVIEW_SCHEMA
 
 BULLETIN_KEY_SLOT = "BULLETIN_AGENT_JWK"
+BULLETIN_USER_AGENT = (
+    "Flywheel-native-client/1 (+https://github.com/HarperZ9/flywheel)")
 _PUBLICATION_SCHEMA = "flywheel.outcome-bulletin-publication/v1"
 
 
@@ -28,6 +30,15 @@ class BulletinSignedTransportError(RuntimeError):
     def __init__(self, code: str) -> None:
         self.code = code
         super().__init__(code)
+
+
+def bulletin_request(
+        url: str, *, method: str, data: bytes | None = None,
+        headers: dict[str, str] | None = None) -> Request:
+    request_headers = {"User-Agent": BULLETIN_USER_AGENT}
+    if headers:
+        request_headers.update(headers)
+    return Request(url, data=data, method=method, headers=request_headers)
 
 
 def publish_authorized_preview(
@@ -209,7 +220,7 @@ class _SignedClient:
             f'"@signature-params": {params}',
         ])
         signature = self.key["key"].sign(base.encode())
-        request = Request(url, data=body, method="POST", headers={
+        request = bulletin_request(url, data=body, method="POST", headers={
             "content-type": "application/json",
             "content-digest": digest,
             "signature-input": f"sig1={params}",
@@ -219,7 +230,7 @@ class _SignedClient:
 
 
 def _read_json(url: str, timeout: int) -> dict:
-    return _open_json(Request(url, method="GET"), timeout, write=False)
+    return _open_json(bulletin_request(url, method="GET"), timeout, write=False)
 
 
 def _open_json(request: Request, timeout: int, *, write: bool) -> dict:

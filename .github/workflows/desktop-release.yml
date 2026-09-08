@@ -1,9 +1,9 @@
 ﻿# Desktop release CANDIDATE: one version tag (v*) builds the whole
-# platform from the tag's own commit and stages the signed-hash artifact
+# platform from the tag's own commit and stages the artifact with a hash receipt
 # as a workflow artifact. This workflow has READ-ONLY repository
 # permission and never creates or touches a GitHub Release: publishing
-# is a separate protected reusable workflow (windows-publish.yml) that
-# must be called explicitly with the candidate's hash receipt. The tag
+# is a separate operation using the candidate's verified hash receipt. The
+# reusable windows-publish.yml requires an explicit caller. The tag
 # must match desktop/pubspec.yaml AND pyproject.toml at that commit;
 # drift fails the run instead of shipping a mislabeled artifact.
 name: desktop-release
@@ -75,8 +75,16 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install PyInstaller
-        run: python -m pip install pyinstaller==6.21.0
+      - name: Install freeze dependencies
+        shell: pwsh
+        run: |
+          python -m pip install pyinstaller==6.21.0 ".[signing]"
+          @'
+          import importlib.metadata as md
+
+          print("freeze dependency pyinstaller=" + md.version("pyinstaller"))
+          print("freeze dependency cryptography=" + md.version("cryptography"))
+          '@ | python -
 
       - name: Ensure Inno Setup
         shell: pwsh

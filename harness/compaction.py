@@ -1,10 +1,10 @@
 """compaction.py — context auto-compaction for the agent loop, model-agnostic
 and re-checkable.
 
-The modern-harness feature the other local runners skip: when a conversation
-grows past a token budget, fold the middle of the transcript into one summary
-turn so the loop keeps running inside any model's context window, while keeping
-the task anchor and the most recent turns verbatim.
+When a conversation grows past its configured token-count budget, fold the
+middle into one summary while keeping the task anchor and recent turns verbatim.
+The default counter estimates four characters per token; callers can inject a
+model tokenizer. The count excludes backend overhead and cannot guarantee fit.
 
 The fold is witnessed. The receipt binds the sha256 of the exact messages that
 were summarized and the sha256 of the summary that replaced them, so a stranger
@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 SCHEMA = "flywheel.compaction/v1"
+SUMMARY_PREFIX = "[compacted:"
 
 
 def approx_tokens(text: str) -> int:
@@ -122,20 +123,31 @@ class CompactionResult:
     receipt: dict
 
 
+def _is_compaction_summary(m: dict) -> bool:
+    return bool(m.get("compaction_summary")) or str(m.get("content", "")).startswith(SUMMARY_PREFIX)
+
+
 def _is_pinned(m: dict, pin_roles) -> bool:
     """A message is pinned (never folded away) if it is flagged, or its role is a
     pinned role (policy / gate / tool-permission text lives in these)."""
-    return bool(m.get("pinned")) or m.get("role") in pin_roles
+    if bool(m.get("pinned")): return True
+    if _is_compaction_summary(m):
+        return False
+    return m.get("role") in pin_roles
 
 
 def _receipt(before, after, budget, keep_head, keep_recent, folded,
-             span_hash, summary_hash, method, pinned_kept=0, pin_roles=None) -> dict:
+             span_hash, summary_hash, method, pinned_kept=0, pin_roles=None,
+             budget_floor_tokens: int | None = None,
+             budget_status: str | None = None) -> dict:
     return {
         "schema": SCHEMA,
         "method": method,
         "token_budget": budget,
         "tokens_before": before,
         "tokens_after": after,
+        "budget_status": budget_status or ("fit" if after <= budget else "unachievable_pinned_floor"),
+        "budget_floor_tokens": after if budget_floor_tokens is None else budget_floor_tokens,
         "kept_head": keep_head,
         "kept_recent": keep_recent,
         "pinned_kept": pinned_kept,
@@ -144,6 +156,63 @@ def _receipt(before, after, budget, keep_head, keep_recent, folded,
         "summarized_span_sha256": span_hash,
         "summary_sha256": summary_hash,
     }
+
+
+def _summary_message(role: str, content: str) -> dict:
+    return {"role": role, "content": content, "compaction_summary": True}
+
+
+def _summary_content(prefix: str, body: str) -> str:
+    body = (body or "").strip(); return prefix if not body else f"{prefix}\n{body}"
+
+
+def _fit_summary_to_budget(fixed: list, prefix: str, body: str, *, token_budget: int,
+                           count_tokens: Callable, summary_role: str) -> tuple[str, int, int, str]:
+    floor_content = _summary_content(prefix, "")
+    floor_tokens = total_tokens(fixed + [_summary_message(summary_role, floor_content)], count_tokens)
+    if floor_tokens > token_budget:
+        return floor_content, floor_tokens, floor_tokens, "unachievable_pinned_floor"
+
+    full_content = _summary_content(prefix, body)
+    full_tokens = total_tokens(fixed + [_summary_message(summary_role, full_content)], count_tokens)
+    if full_tokens <= token_budget:
+        return full_content, full_tokens, floor_tokens, "fit"
+
+    low, high = 0, len(body or "")
+    best_content, best_tokens = floor_content, floor_tokens
+    while low <= high:
+        mid = (low + high) // 2
+        candidate = _summary_content(prefix, (body or "")[:mid])
+        tokens = total_tokens(fixed + [_summary_message(summary_role, candidate)], count_tokens)
+        if tokens <= token_budget:
+            best_content, best_tokens = candidate, tokens
+            low = mid + 1
+        else:
+            high = mid - 1
+    return best_content, best_tokens, floor_tokens, "fit"
+
+
+def _budget_checks(receipt: dict, original: list, rendered: list, fixed: list,
+                   summary: dict | None, count_tokens: Callable) -> dict:
+    before, after = total_tokens(original, count_tokens), total_tokens(rendered, count_tokens)
+    checks = {
+        "tokens_before": receipt.get("tokens_before") == before,
+        "tokens_after": receipt.get("tokens_after") == after,
+    }
+    if "budget_status" not in receipt and "budget_floor_tokens" not in receipt:
+        checks["budget_fields_legacy_absent"] = True
+        return checks
+    budget = receipt.get("token_budget")
+    if not isinstance(budget, int):
+        checks.update(budget_status=False, budget_floor_tokens=False)
+        return checks
+    if summary is None: floor = after
+    else:
+        floor_content = str(summary.get("content", "")).splitlines()[0] if str(summary.get("content", "")) else ""
+        floor = total_tokens(fixed + [_summary_message(str(summary.get("role", "system")), floor_content)], count_tokens)
+    checks["budget_floor_tokens"] = receipt.get("budget_floor_tokens") == floor
+    checks["budget_status"] = receipt.get("budget_status") == ("fit" if after <= budget else "unachievable_pinned_floor" if floor > budget else "summary_over_budget")
+    return checks
 
 
 def compact(messages: list, *, token_budget: int, keep_recent: int = 6,
@@ -167,7 +236,7 @@ def compact(messages: list, *, token_budget: int, keep_recent: int = 6,
     if before <= token_budget or len(msgs) <= keep_head + keep_recent + 1:
         return CompactionResult(msgs, False, _receipt(
             before, before, token_budget, keep_head, keep_recent, 0, None, None, "noop",
-            0, pins))
+            0, pins, before))
 
     head = msgs[:keep_head]
     tail = msgs[len(msgs) - keep_recent:] if keep_recent else []
@@ -177,20 +246,24 @@ def compact(messages: list, *, token_budget: int, keep_recent: int = 6,
     if not foldable:                                # nothing to fold (all pinned / empty)
         return CompactionResult(msgs, False, _receipt(
             before, before, token_budget, keep_head, keep_recent, 0, None, None, "noop",
-            len(pinned), pins))
+            len(pinned), pins, before))
 
     span_hash = _sha_messages(foldable)
-    summary_content = (f"[compacted: {len(foldable)} earlier turns folded to fit context]\n"
-                       + summarize(foldable))
-    summary_msg = {"role": summary_role, "content": summary_content}
+    prefix = f"[compacted: {len(foldable)} earlier turns folded to fit context]"
+    fixed = head + pinned + tail
+    summary_content, after, floor_tokens, budget_status = _fit_summary_to_budget(
+        fixed, prefix, summarize(foldable), token_budget=token_budget,
+        count_tokens=count_tokens, summary_role=summary_role)
+    summary_msg = _summary_message(summary_role, summary_content)
     new_msgs = head + pinned + [summary_msg] + tail
-    after = total_tokens(new_msgs, count_tokens)
     return CompactionResult(new_msgs, True, _receipt(
         before, after, token_budget, keep_head, keep_recent, len(foldable),
-        span_hash, _sha_text(summary_content), "middle-fold", len(pinned), pins))
+        span_hash, _sha_text(summary_content), "middle-fold", len(pinned), pins,
+        floor_tokens, budget_status))
 
 
-def verify_compaction(original_messages: list, result: CompactionResult) -> dict:
+def verify_compaction(original_messages: list, result: CompactionResult,
+                      count_tokens: Callable = approx_tokens) -> dict:
     """Re-check a fold against the messages it was computed from. Confirms the kept
     head and tail are byte-identical, the folded span hashes to the receipt value,
     and the inserted summary hashes to the receipt value. Returns a MATCH/DRIFT
@@ -198,7 +271,9 @@ def verify_compaction(original_messages: list, result: CompactionResult) -> dict
     r = result.receipt
     if not result.compacted or r.get("method") == "noop":
         ok = result.messages == list(original_messages)
-        return {"verdict": "MATCH" if ok else "DRIFT", "checks": {"noop_unchanged": ok}}
+        checks = {"noop_unchanged": ok}
+        checks.update(_budget_checks(r, list(original_messages), result.messages, result.messages, None, count_tokens))
+        return {"verdict": "MATCH" if all(checks.values()) else "DRIFT", "checks": checks}
 
     orig = list(original_messages)
     kh, kr = r["kept_head"], r["kept_recent"]
@@ -210,12 +285,16 @@ def verify_compaction(original_messages: list, result: CompactionResult) -> dict
     pinned = [m for m in middle if _is_pinned(m, pins)]
     foldable = [m for m in middle if not _is_pinned(m, pins)]
     res = result.messages
+    summary = res[kh + pc] if len(res) > kh + pc else {}
 
     checks = {
         "head_preserved": res[:kh] == head,
         "pinned_preserved": res[kh:kh + pc] == pinned,     # policy text kept verbatim, in order
         "tail_preserved": (res[len(res) - kr:] == tail) if kr else True,
         "span_hash": _sha_messages(foldable) == r["summarized_span_sha256"],
-        "summary_hash": _sha_text(res[kh + pc].get("content", "")) == r["summary_sha256"],
+        "summary_hash": _sha_text(summary.get("content", "")) == r["summary_sha256"],
+        "folded_turns": r.get("folded_turns") == len(foldable),
+        "pinned_kept": pc == len(pinned),
     }
+    checks.update(_budget_checks(r, orig, res, head + pinned + tail, summary, count_tokens))
     return {"verdict": "MATCH" if all(checks.values()) else "DRIFT", "checks": checks}

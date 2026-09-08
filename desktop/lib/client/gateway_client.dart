@@ -15,6 +15,7 @@ part 'gateway_operations.dart';
 part 'gateway_plan_transport.dart';
 part 'gateway_creative.dart';
 part 'gateway_discovery.dart';
+part 'gateway_identity.dart';
 
 class GatewayClient {
   static const String loopback = 'http://127.0.0.1:8799';

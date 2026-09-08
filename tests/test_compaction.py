@@ -39,7 +39,7 @@ def test_noop_when_under_budget():
 
 def test_folds_middle_and_preserves_head_and_tail():
     msgs = _msgs(20)
-    res = compact(msgs, token_budget=200, keep_recent=4, keep_head=1)
+    res = compact(msgs, token_budget=300, keep_recent=4, keep_head=1)
     assert res.compacted is True
     # head (task anchor) and the last 4 turns are untouched
     assert res.messages[0] == msgs[0]
@@ -49,7 +49,61 @@ def test_folds_middle_and_preserves_head_and_tail():
     assert res.messages[1]["content"].startswith("[compacted:")
     # the fold actually shrank the transcript
     assert res.receipt["tokens_after"] < res.receipt["tokens_before"]
+    assert res.receipt["tokens_after"] <= res.receipt["token_budget"]
     assert res.receipt["folded_turns"] == 20 - 1 - 4
+    assert res.receipt["budget_status"] == "fit"
+
+
+def test_recompaction_folds_prior_summary_instead_of_pinning_it():
+    msgs = _msgs(12)
+    first = compact(msgs, token_budget=160, keep_recent=2,
+                    summarize=lambda _folded: "first compacted summary")
+    assert first.compacted is True
+
+    expanded = first.messages + [
+        {"role": "assistant", "content": "new turn %d " % i + "word " * 30}
+        for i in range(8)
+    ]
+    second = compact(expanded, token_budget=160, keep_recent=2,
+                     summarize=lambda _folded: "second compacted summary")
+
+    summaries = [m for m in second.messages
+                 if m.get("content", "").startswith("[compacted:")]
+    assert len(summaries) == 1
+    assert second.receipt["folded_turns"] > 0
+    assert second.receipt["pinned_kept"] == 0
+
+
+def test_receipt_marks_unachievable_budget_when_kept_floor_exceeds_budget():
+    pinned = {"role": "system", "content": "POLICY " + "pinned " * 160}
+    msgs = [
+        {"role": "user", "content": "TASK " + "head " * 80},
+        {"role": "assistant", "content": "fold me " + "middle " * 80},
+        pinned,
+        {"role": "assistant", "content": "recent " + "tail " * 80},
+    ]
+
+    res = compact(msgs, token_budget=80, keep_recent=1, keep_head=1,
+                  summarize=lambda _folded: "small summary")
+
+    assert res.compacted is True
+    assert res.receipt["budget_status"] == "unachievable_pinned_floor"
+    assert res.receipt["budget_floor_tokens"] > res.receipt["token_budget"]
+
+
+def test_verify_rederives_budget_receipt_fields_and_accepts_legacy_receipts():
+    msgs = _msgs(20)
+    res = compact(msgs, token_budget=300, keep_recent=4)
+    legacy = CompactionResult([dict(m) for m in res.messages], res.compacted,
+                              {k: v for k, v in res.receipt.items()
+                               if k not in {"budget_status", "budget_floor_tokens"}})
+    assert verify_compaction(msgs, legacy)["verdict"] == "MATCH"
+
+    for field, value in (("budget_status", "unachievable_pinned_floor"),
+                         ("budget_floor_tokens", 1), ("tokens_after", 1)):
+        tampered = CompactionResult([dict(m) for m in res.messages], res.compacted,
+                                    {**res.receipt, field: value})
+        assert verify_compaction(msgs, tampered)["verdict"] == "DRIFT"
 
 
 def test_receipt_rechecks_and_detects_tampering():
@@ -76,7 +130,7 @@ def test_receipt_rechecks_and_detects_tampering():
 
 def test_injected_summarizer_is_used():
     msgs = _msgs(20)
-    res = compact(msgs, token_budget=200, keep_recent=4,
+    res = compact(msgs, token_budget=300, keep_recent=4,
                   summarize=lambda folded: "STUBSUMMARY")
     assert "STUBSUMMARY" in res.messages[1]["content"]
     # the receipt still binds the real folded span, independent of the summarizer

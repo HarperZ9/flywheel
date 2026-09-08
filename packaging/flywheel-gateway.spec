@@ -27,6 +27,17 @@ a = Analysis(
         "relay.compaction", "relay.review", "relay.run_view",
         "relay.verified_bon", "relay.bisect", "relay.claim_grounding",
         "relay.injection_probe", "relay.intent_audit", "relay.hashline",
+        # Desktop Bulletin identity setup is served through the frozen gateway.
+        # The source package keeps cryptography optional; the Windows freeze
+        # installs .[signing] and must carry the lazy route/import graph.
+        "harness.bulletin_identity", "harness.bulletin_identity_contract",
+        "harness.bulletin_identity_key", "harness.bulletin_identity_network",
+        "harness.bulletin_identity_origin", "harness.bulletin_identity_store",
+        "harness.bulletin_identity_route", "harness.bulletin_signed_transport",
+        "harness.credential_handles", "harness.journey_lock",
+        "harness.key_roster", "harness.keychain", "harness.keychain_route",
+        "cryptography.hazmat.primitives.asymmetric.ed25519",
+        "cryptography.hazmat.primitives.serialization",
     ],
     excludes=["tkinter", "matplotlib", "numpy", "PIL"],
     noarchive=False,

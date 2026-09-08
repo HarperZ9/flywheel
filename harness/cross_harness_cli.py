@@ -9,7 +9,7 @@ from typing import Any
 from .adapter_runtime_matrix import _endpoint_gate_result
 from .cross_harness_adapters import DirectCodexAdapter, FlywheelRouterAdapter, LocalRouterAdapter
 from .cross_harness_artifacts import canonical_sha256, recheck_attempt_receipt, snapshot_source_tree, write_artifact_index
-from .cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest, resolve_task_ids
+from .cross_harness_executor import execute_cross_harness_manifest, resolve_task_ids, tool_policy_for
 from .cross_harness_peer_adapters import DirectClaudeCodeAdapter, DirectCursorAdapter
 from .cross_harness_types import model_observation_pair_error, project_model_identity
 
@@ -65,7 +65,8 @@ def _admission_identity_code(row: dict[str, Any], task: dict[str, Any], spec: di
         ("admission_requested_model_mismatch", row.get("requested_model_reference"), spec.get("requested_model_reference")),
         ("admission_adapter_mismatch", (row.get("harness_id"), row.get("adapter_id")),
          (spec.get("harness_id"), spec.get("adapter_id"))),
-        ("admission_policy_mismatch", row.get("tool_policy_sha256"), canonical_sha256(SHARED_TOOL_POLICY)),
+        ("admission_policy_mismatch", row.get("tool_policy_sha256"),
+         canonical_sha256(tool_policy_for(compact_budget=int(current.get("compact_budget", 0) or 0)))),
         ("admission_source_mismatch", (row.get("source_commit"), row.get("source_snapshot_sha256")),
          (current.get("source_commit"), current.get("source_snapshot_sha256"))),
         ("admission_cache_mismatch", row.get("cache_state"), current.get("cache_state")),
@@ -233,6 +234,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gate-run-id", default="")
     parser.add_argument("--admission-receipt", default="")
     parser.add_argument("--max-gate-age", "--max-gate-age-seconds", dest="max_gate_age", type=int, default=900)
+    parser.add_argument("--compact-budget", type=int, default=0)
     parser.add_argument("--strict-exit", action="store_true")
     return parser
 
@@ -245,6 +247,7 @@ def main(argv: list[str] | None = None) -> int:
     if matrix.get("schema") != "harness.adapter-runtime-matrix/v1": raise ValueError("runtime matrix schema mismatch")
     roles, selectors = _csv(args.roles), _csv(args.tasks)
     if args.repetitions < 1: raise ValueError("repetitions must be positive")
+    if args.compact_budget < 0: raise ValueError("compact budget must be non-negative")
     if any(role.startswith("local_") for role in roles):
         if args.endpoint_gate and args.gate_run_id:
             _recheck_local_gate(matrix, Path(args.endpoint_gate), args.gate_run_id, roles,
@@ -254,12 +257,13 @@ def main(argv: list[str] | None = None) -> int:
                 if role.startswith("local_"): _block(_runtime(matrix, role), "endpoint_gate_missing")
     if args.admission_receipt:
         current = {"source_commit": args.source_commit, "source_snapshot_sha256": snapshot_source_tree(Path(args.source_root))["sha256"],
-                   "cache_state": args.cache, "execution_mode": "focused_run"}
+                   "cache_state": args.cache, "execution_mode": "focused_run", "compact_budget": args.compact_budget}
         _apply_admission(matrix, Path(args.admission_receipt), manifest, selectors, roles, args.repetitions, current=current)
     run = execute_cross_harness_manifest(manifest, matrix, build_adapter_registry(matrix, roles, _task_identities(manifest)),
         artifact_root=Path(args.artifact_root), source_root=Path(args.source_root), run_id=args.run_id,
         phase=args.phase, selectors=selectors, roles=roles, repetitions=args.repetitions,
-        cache_state=args.cache, timeout_seconds=args.timeout, source_commit=args.source_commit)
+        cache_state=args.cache, timeout_seconds=args.timeout, source_commit=args.source_commit,
+        compact_budget=args.compact_budget)
     run_root = Path(args.artifact_root) / args.run_id; scorecard = run_root / "comparison-input.json"
     (run_root / "scorecard.json").write_bytes(scorecard.read_bytes())  # legacy alias
     write_artifact_index(run_root, [path for path in run_root.rglob("*")

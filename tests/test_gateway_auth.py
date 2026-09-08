@@ -147,6 +147,9 @@ def test_owner_is_loaded_only_after_bearer_auth_and_survives_rotation(tmp_path, 
     ("POST", "/api/journeys/get"),
     ("POST", "/api/grants/approve-once"),
     ("POST", "/api/gateway-grants/prepare/plugin.probe"),
+    ("GET", "/api/bulletin-identity"),
+    ("POST", "/api/bulletin-identity/create"),
+    ("POST", "/api/bulletin-identity/register"),
     ("GET", "/api/credential-handles"),
     ("POST", "/api/credential-handles/bind"),
     ("POST", "/api/plugins/probe"),
@@ -158,10 +161,14 @@ def test_private_routes_require_configured_auth_without_loading_owner(
     from harness import gateway
     handler = gateway._Handler.__new__(gateway._Handler)
     handler.path, handler.command = path, method
-    handler.auth_token = ""; handler.flywheel_home = tmp_path
-    handler.headers = {}; handler.wfile = io.BytesIO(); statuses = []
+    handler.auth_token = ""
+    handler.flywheel_home = tmp_path
+    handler.headers = {}
+    handler.wfile = io.BytesIO()
+    statuses = []
     handler.send_response = statuses.append
-    handler.send_header = lambda *_: None; handler.end_headers = lambda: None
+    handler.send_header = lambda *_: None
+    handler.end_headers = lambda: None
     monkeypatch.setattr(gateway, "load_or_create_owner_ref",
                         lambda *_: pytest.fail("private refusal loaded owner custody"))
     assert handler._authorized() is False
