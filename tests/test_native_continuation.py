@@ -105,9 +105,12 @@ def test_start_creates_one_source_bound_sanitized_journey_and_replays(tmp_path):
     assert second["journey"]["idempotent_replay"] is True
     listed, _ = _journey("list", {}, state)
     assert len(listed["journeys"]) == 1
-    event_file = next((state / "journeys" / "v2" / "owners" / OWNER)
-                      .glob("jrn_*/events/*.json"))
-    event = strict_load_json(event_file.read_bytes())
+    events = [strict_load_json(path.read_bytes()) for path in
+              (state / "journeys" / "v2" / "owners" / OWNER).glob("jrn_*/events/*.json")]
+    intake_events = [row for row in events
+                     if row["sequence"] == 0 and row["event_type"] == "intake"]
+    assert len(intake_events) == 1
+    event = intake_events[0]
     serialized = json.dumps(event, sort_keys=True)
     assert str(tmp_path) not in serialized
     assert event["payload"]["intake"]["preview_ref"] == preview["preview_ref"]

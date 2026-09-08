@@ -14,6 +14,15 @@ NOW = "2026-09-07T12:00:00Z"
 OWNER = "owner_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 
+def _git_commit(root: Path, message: str) -> None:
+    subprocess.run([
+        "git", "-C", str(root),
+        "-c", "user.email=a@example.invalid",
+        "-c", "user.name=A",
+        "commit", "-q", "-m", message],
+        check=True)
+
+
 def _post(path: str, body: dict | bytes, state: Path,
           root: Path | None = None):
     raw = body if isinstance(body, bytes) else json.dumps(body).encode()
@@ -35,9 +44,7 @@ def _git_root(tmp_path: Path) -> Path:
     (root / "AGENTS.md").write_text("Run focused tests.\n", encoding="utf-8")
     subprocess.run(["git", "init", "-q"], cwd=root, check=True)
     subprocess.run(["git", "add", "AGENTS.md"], cwd=root, check=True)
-    subprocess.run([
-        "git", "-c", "user.email=a@example.invalid", "-c", "user.name=A",
-        "commit", "-q", "-m", "init"], cwd=root, check=True)
+    _git_commit(root, "init")
     return root
 
 
@@ -46,9 +53,7 @@ def _tracked_dirty_root(tmp_path: Path) -> Path:
     tracked = root / "dirty.txt"
     tracked.write_text("base\n", encoding="utf-8")
     subprocess.run(["git", "-C", str(root), "add", "dirty.txt"], check=True)
-    subprocess.run(["git", "-C", str(root), "commit", "-m", "tracked"],
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                   check=True)
+    _git_commit(root, "tracked")
     tracked.write_text("first dirty bytes\n", encoding="utf-8")
     return root
 
@@ -70,9 +75,7 @@ def test_preview_hashes_dirty_git_status_shapes(tmp_path):
                  "rename-old.txt", "space file.txt"):
         (root / name).write_text(f"{name} base\n", encoding="utf-8")
     subprocess.run(["git", "-C", str(root), "add", "."], check=True)
-    subprocess.run(["git", "-C", str(root), "commit", "-m", "status shapes"],
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                   check=True)
+    _git_commit(root, "status shapes")
     (root / "tracked.txt").write_text("tracked worktree dirty\n", encoding="utf-8")
     (root / "staged.txt").write_text("staged dirty\n", encoding="utf-8")
     subprocess.run(["git", "-C", str(root), "add", "staged.txt"], check=True)
