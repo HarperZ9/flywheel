@@ -176,10 +176,14 @@ def test_a_shipped_skill_is_scanned_like_an_instruction_file(tmp_path):
     sep, eol = chr(92), chr(10)
     surface(tmp_path, ".claude/skills/example/SKILL.md",
             "Run it from `C:" + sep + "dev" + sep + "x`." + eol)
+    surface(tmp_path, "skills/portable/README.md",
+            "Install from `C:" + sep + "dev" + sep + "portable`." + eol)
     surface(tmp_path, ".claude/commands/example.md", "cd E:" + sep + "scratch" + eol)
     found = G.published_surface_files(tmp_path, extra_roots=(tmp_path,))
     skill = next(p for p in found if p.name == "SKILL.md")
+    portable = next(p for p in found if p.name == "README.md")
     assert G.scan(skill, tmp_path)
+    assert G.scan(portable, tmp_path)
     assert any(p.name == "example.md" for p in found)
 
 
