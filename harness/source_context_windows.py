@@ -9,7 +9,9 @@ import os
 from .source_context_store import SourceContextError
 
 FILE_LIST_DIRECTORY = 0x00000001
+FILE_READ_DATA = 0x00000001
 FILE_ADD_FILE = 0x00000002
+FILE_WRITE_DATA = 0x00000002
 FILE_ADD_SUBDIRECTORY = 0x00000004
 FILE_READ_ATTRIBUTES = 0x00000080
 FILE_WRITE_ATTRIBUTES = 0x00000100
@@ -64,7 +66,7 @@ class _FileInformation(ctypes.Structure):
 
 
 def _win32_path(path: Path) -> str:
-    value = os.path.abspath(str(path))
+    value = _norm_path(path)
     if value.startswith("\\\\?\\"):
         raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
     if value.startswith("\\\\.\\"):
@@ -95,23 +97,52 @@ def _create_file_handle(path: Path, access: int, share: int,
     return _WinHandle(handle, Path(path))
 
 
-def _identity(handle: _WinHandle) -> dict:
+def _file_info(handle: _WinHandle) -> _FileInformation:
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     info = _FileInformation()
     ok = kernel.GetFileInformationByHandle(
         ctypes.c_void_p(handle.handle), ctypes.byref(info))
     if not ok:
         raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
+    return info
+
+
+def _final_path(handle: _WinHandle) -> str:
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    final = kernel.GetFinalPathNameByHandleW
+    final.argtypes = (ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_ulong,
+                      ctypes.c_ulong)
+    final.restype = ctypes.c_ulong
+    size = final(ctypes.c_void_p(handle.handle), None, 0, 0)
+    if not size:
+        raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
+    buffer = ctypes.create_unicode_buffer(size + 1)
+    written = final(ctypes.c_void_p(handle.handle), buffer, size + 1, 0)
+    if not written:
+        raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
+    text = buffer.value
+    if text.startswith("\\\\?\\UNC\\"):
+        text = "\\\\" + text[8:]
+    elif text.startswith("\\\\?\\"):
+        text = text[4:]
+    return _norm_text(text)
+
+
+def _identity(handle: _WinHandle) -> dict:
+    info = _file_info(handle)
     attrs = int(info.dwFileAttributes)
     if not attrs & FILE_ATTRIBUTE_DIRECTORY:
         raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
     if attrs & FILE_ATTRIBUTE_REPARSE_POINT:
         raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
+    expected = _norm_text(str(handle.path))
+    if _final_path(handle) != expected:
+        raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
     return {"platform": "windows",
             "volume_serial": int(info.dwVolumeSerialNumber),
             "file_index": (int(info.nFileIndexHigh) << 32)
                           | int(info.nFileIndexLow),
-            "attributes": attrs}
+            "attributes": attrs, "path_sha256": _path_sha(handle.path)}
 
 
 def _components(path: Path) -> list[Path]:
@@ -176,12 +207,57 @@ class SourceContextWindowsGuard:
 
     def identities(self) -> list[dict]:
         self.revalidate()
-        rows = []
-        for path, identity in zip(self._components, self._identities):
-            rows.append(dict(identity, path_sha256=_path_sha(path)))
-        return rows
+        return [dict(identity) for identity in self._identities]
+
+
+def read_guarded_file(path: Path, *, max_bytes: int) -> bytes:
+    handle = _create_file_handle(
+        path, FILE_READ_DATA | FILE_READ_ATTRIBUTES | SYNCHRONIZE,
+        FILE_SHARE_READ, OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT,
+        busy_code="SOURCE_CONTEXT_AUTHORITY_BUSY")
+    try:
+        info = _file_info(handle)
+        attrs = int(info.dwFileAttributes)
+        size = (int(info.nFileSizeHigh) << 32) | int(info.nFileSizeLow)
+        if attrs & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT):
+            raise SourceContextError("SOURCE_CONTEXT_STORE_CORRUPT")
+        if size > max_bytes:
+            raise SourceContextError("SOURCE_CONTEXT_STORE_CORRUPT")
+        return _read_handle(handle, size)
+    finally:
+        handle.close()
+
+
+def _read_handle(handle: _WinHandle, size: int) -> bytes:
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    read_file = kernel.ReadFile
+    read_file.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong,
+                          ctypes.POINTER(ctypes.c_ulong), ctypes.c_void_p)
+    read_file.restype = ctypes.c_int
+    chunks, remaining = [], size
+    while remaining:
+        want = min(remaining, 64 * 1024)
+        buffer = ctypes.create_string_buffer(want)
+        got = ctypes.c_ulong()
+        if not read_file(ctypes.c_void_p(handle.handle), buffer, want,
+                         ctypes.byref(got), None):
+            raise SourceContextError("SOURCE_CONTEXT_STORE_CORRUPT")
+        if not got.value:
+            break
+        chunks.append(buffer.raw[:got.value])
+        remaining -= got.value
+    return b"".join(chunks)
 
 
 def _path_sha(path: Path) -> str:
-    text = os.path.normcase(os.path.abspath(str(path)))
+    text = _norm_path(path)
     return hashlib.sha256(text.encode("utf-8", "strict")).hexdigest()
+
+
+def _norm_path(path: Path) -> str:
+    return _norm_text(os.path.abspath(str(path)))
+
+
+def _norm_text(text: str) -> str:
+    value = os.path.normcase(text)
+    return value.rstrip("\\/") if len(value) > 3 else value

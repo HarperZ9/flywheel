@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from harness.evidence_json import canonical_sha256
 from harness.source_context_store import SourceContextError, SourceContextStore
 
 OWNER = "owner_" + "a" * 32
@@ -10,31 +11,41 @@ ROOT_ID = {"platform": "windows", "volume_serial": 1, "file_index": 2}
 CORPUS_ID = {"platform": "windows", "volume_serial": 1, "file_index": 3}
 
 
-def _selection(text="DECISION-FACT-ALPHA\nnaïve café"):
-    return {
+def _selection(text="DECISION-FACT-ALPHA\nnaïve café", corpus_digest="c" * 64):
+    base = {
         "schema": "gather.readable-context/v1",
-        "corpus_digest": "c" * 64,
-        "selection_digest": "d" * 64,
+        "corpus_digest": corpus_digest,
         "selection_count": 1,
+        "max_rows": 50,
+        "max_total_chars": 100_000,
+        "default_limit": 100_000,
+        "max_catalog_bytes": 100_000_000,
+        "max_catalog_rows": 100_000,
+        "max_body_bytes": 100_000_000,
+        "max_read_bytes": 100_000_000,
+        "total_text_chars": len(text),
         "selections": [{
             "row_ref": "row_abc", "kind": "document", "id": "alpha",
             "title": "Unsafe private title", "source": "docs",
             "ref": "C:/private/source.txt", "method": "file-read",
             "sha256": "e" * 64, "verified_sha256": "f" * 64,
-            "derived_from": [], "full_text_chars": 200,
-            "body_bytes_read": 100,
+            "derived_from": [], "full_text_chars": 200, "body_bytes_read": 100,
             "range": {"start": 10, "end": 36}, "text": text,
             "omissions": [],
         }],
         "omissions": [],
         "does_not_prove": ["truth of selected source claims"],
-        "verified": True,
-        "verified_scope": "selected_rows",
     }
+    return dict(base, selection_digest=canonical_sha256(base),
+                verified=True, verified_scope="selected_rows")
+
+
+def _store(path, **kwargs):
+    return SourceContextStore(path, expected_state_root_identity=ROOT_ID, **kwargs)
 
 
 def test_publish_is_acyclic_idempotent_and_keeps_timestamps_outside_identity(tmp_path):
-    store = SourceContextStore(tmp_path, clock=lambda: "2026-09-08T12:00:00Z")
+    store = _store(tmp_path, clock=lambda: "2026-09-08T12:00:00Z")
 
     first = store.publish_selection(
         owner_ref=OWNER, state_root_identity=ROOT_ID, root_mode="flywheel_corpus",
@@ -58,7 +69,7 @@ def test_publish_is_acyclic_idempotent_and_keeps_timestamps_outside_identity(tmp
 
 
 def test_resolve_returns_approved_snapshot_after_live_corpus_drift_and_rejects_wrong_owner(tmp_path):
-    store = SourceContextStore(tmp_path, clock=lambda: "2026-09-08T12:00:00Z")
+    store = _store(tmp_path, clock=lambda: "2026-09-08T12:00:00Z")
     attached = store.publish_selection(
         owner_ref=OWNER, state_root_identity=ROOT_ID, root_mode="flywheel_corpus",
         profile="demo", corpus_locator="tiny", corpus_root_identity=CORPUS_ID,
@@ -76,11 +87,11 @@ def test_resolve_returns_approved_snapshot_after_live_corpus_drift_and_rejects_w
 
 
 def test_selected_identity_uses_normalized_utf8_text_and_character_ranges(tmp_path):
-    store = SourceContextStore(tmp_path, clock=lambda: "2026-09-08T12:00:00Z")
+    store = _store(tmp_path, clock=lambda: "2026-09-08T12:00:00Z")
     attached = store.publish_selection(
         owner_ref=OWNER, state_root_identity=ROOT_ID, root_mode="flywheel_corpus",
         profile="demo", corpus_locator="tiny", corpus_root_identity=CORPUS_ID,
-        gather_payload=_selection("DECISION-FACT-ALPHA\r\nnaïve café"),
+        gather_payload=_selection("DECISION-FACT-ALPHA\nnaïve café"),
         selected_at="one")
 
     row = store.resolve_worker_payload(
@@ -89,3 +100,14 @@ def test_selected_identity_uses_normalized_utf8_text_and_character_ranges(tmp_pa
     assert row["text"] == "DECISION-FACT-ALPHA\nnaïve café"
     assert row["range"] == {"start": 10, "end": 36}
     assert row["selected_text_utf8_bytes"] == len(row["text"].encode("utf-8"))
+
+
+def test_crlf_selected_text_is_rejected_instead_of_silently_renormalized(tmp_path):
+    with pytest.raises(SourceContextError) as exc:
+        _store(tmp_path).publish_selection(
+            owner_ref=OWNER, state_root_identity=ROOT_ID,
+            root_mode="flywheel_corpus", profile="demo", corpus_locator="tiny",
+            corpus_root_identity=CORPUS_ID,
+            gather_payload=_selection("DECISION-FACT-ALPHA\r\nnaïve café"),
+            selected_at="one")
+    assert exc.value.code == "SOURCE_CONTEXT_SELECTION_FAILED"

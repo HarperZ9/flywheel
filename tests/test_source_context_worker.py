@@ -5,10 +5,7 @@ from harness.gateway_operation import AuthorizedOperation, thaw_operation
 from harness.gateway_operation_process import GatewayAgentProcessFactory
 from harness.gateway_provider_adapter import ExecutionPlan
 from harness.source_context_store import SourceContextStore
-
-OWNER = "owner_" + "a" * 32
-ROOT_ID = {"platform": "windows", "volume_serial": 1, "file_index": 2}
-CORPUS_ID = {"platform": "windows", "volume_serial": 1, "file_index": 3}
+from tests.test_source_context_store import CORPUS_ID, OWNER, _selection
 
 
 def _authorized(ref):
@@ -21,21 +18,12 @@ def _authorized(ref):
 
 
 def _publish(state):
-    payload = {"schema": "gather.readable-context/v1", "corpus_digest": "c" * 64,
-        "selection_digest": "d" * 64, "selection_count": 1,
-        "selections": [{"row_ref": "row_abc", "kind": "document", "id": "alpha",
-            "title": "Private", "source": "docs", "ref": "private/ref",
-            "method": "file-read", "sha256": "e" * 64,
-            "verified_sha256": "f" * 64, "derived_from": [],
-            "full_text_chars": 40, "body_bytes_read": 40,
-            "range": {"start": 0, "end": 19},
-            "text": "DECISION-FACT-ALPHA", "omissions": []}],
-        "omissions": [], "does_not_prove": ["truth"],
-        "verified": True, "verified_scope": "selected_rows"}
-    return SourceContextStore(state, clock=lambda: "now").publish_selection(
-        owner_ref=OWNER, state_root_identity=ROOT_ID, root_mode="flywheel_corpus",
+    store = SourceContextStore(state, clock=lambda: "now")
+    root_id = store.state_root_identity()
+    return store.publish_selection(
+        owner_ref=OWNER, state_root_identity=root_id, root_mode="flywheel_corpus",
         profile="demo", corpus_locator="tiny", corpus_root_identity=CORPUS_ID,
-        gather_payload=payload, selected_at="now")["source_context_ref"]
+        gather_payload=_selection("DECISION-FACT-ALPHA"), selected_at="now")["source_context_ref"]
 
 
 def test_factory_freezes_private_source_bytes_after_grant_for_worker(tmp_path):

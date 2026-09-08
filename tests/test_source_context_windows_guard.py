@@ -80,3 +80,54 @@ def test_reparse_aba_attempt_cannot_get_mutator_handle_before_read(tmp_path):
     result = GatherPathAdapter(inspect_fn=inspect, guard_cls=SourceContextWindowsGuard).inspect(corpus)
     assert result["marker"] == "INSIDE-CANARY"
     assert "OUTSIDE-CANARY" not in result["marker"]
+
+
+def test_preexisting_above_state_directory_writer_returns_busy_before_gather(tmp_path):
+    corpus = tmp_path / "state" / "source-context" / "corpora" / ("owner_" + "a" * 32) / "demo" / "tiny"
+    corpus.mkdir(parents=True)
+    handle = _create_file_handle(tmp_path,
+        FILE_ADD_SUBDIRECTORY | FILE_WRITE_ATTRIBUTES | SYNCHRONIZE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
+    try:
+        calls = []
+        adapter = GatherPathAdapter(inspect_fn=lambda *_a, **_k: calls.append("called") or {}, guard_cls=SourceContextWindowsGuard)
+        with pytest.raises(SourceContextError) as exc:
+            adapter.inspect(corpus)
+        assert exc.value.code == "SOURCE_CONTEXT_AUTHORITY_BUSY"
+        assert calls == []
+    finally:
+        handle.close()
+
+
+def test_reparse_corpus_path_is_rejected_before_gather(tmp_path):
+    parent = tmp_path / "state" / "source-context" / "corpora" / ("owner_" + "a" * 32) / "demo"
+    parent.mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = parent / "tiny"
+    try:
+        os.symlink(outside, link, target_is_directory=True)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"directory symlink unavailable: {exc}")
+    calls = []
+    adapter = GatherPathAdapter(inspect_fn=lambda *_a, **_k: calls.append("called") or {}, guard_cls=SourceContextWindowsGuard)
+    with pytest.raises(SourceContextError) as err:
+        adapter.inspect(link)
+    assert err.value.code == "SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE"
+    assert calls == []
+
+
+def test_private_json_preexisting_writer_blocks_growing_file_success(tmp_path):
+    from harness.source_context_store import _json_file
+    from harness.source_context_windows import FILE_WRITE_DATA
+    path = tmp_path / "private.json"
+    path.write_text('{"ok":true}', encoding="utf-8")
+    handle = _create_file_handle(path, FILE_WRITE_DATA | SYNCHRONIZE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING, 0)
+    try:
+        with pytest.raises(SourceContextError) as exc:
+            _json_file(path, max_bytes=1_000_000)
+        assert exc.value.code == "SOURCE_CONTEXT_AUTHORITY_BUSY"
+    finally:
+        handle.close()
