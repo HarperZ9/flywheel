@@ -1,12 +1,20 @@
 from datetime import UTC, datetime, timedelta
 import hashlib, json, pytest
 from harness.cross_harness_artifacts import bind_attempt_receipt, canonical_sha256
-from harness.cross_harness_cli import _apply_admission, _recheck_local_gate, main as cross_main
+from harness.cross_harness_cli import _apply_admission, _recheck_local_gate, build_parser, main as cross_main
 from harness.cross_harness_executor import SHARED_TOOL_POLICY
 
 def _receipt_hash(row):
     body = {key: value for key, value in row.items() if key not in {"receipt_hash", "latency_ms"}}
     return hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
+def test_cli_accepts_compact_budget_argument():
+    args = build_parser().parse_args([
+        "--manifest", "manifest.json", "--runtime-matrix", "matrix.json", "--artifact-root", "artifacts",
+        "--tasks", "agt-001", "--roles", "flywheel_harness", "--source-commit", "abc",
+        "--source-root", ".", "--phase", "pilot", "--run-id", "run", "--cache", "cold_declared",
+        "--repetitions", "1", "--timeout", "3", "--compact-budget", "900",
+    ])
+    assert args.compact_budget == 900
 def test_local_phase_rechecks_bound_gate_and_emits_all_eight_sanitized_unavailable_rows(tmp_path):
     source = tmp_path / "source"; source.mkdir()
     tasks = [{"task_id": f"agt-{n:03d}-full", "raw_prompt": f"p{n}", "raw_prompt_sha256": f"{n:064x}", "input_sha256s": {}, "required_inputs": [],

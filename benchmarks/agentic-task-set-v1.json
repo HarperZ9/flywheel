@@ -230,6 +230,42 @@
           "contradictions": "array of objects, each {records: array of exactly two distinct record_id strings}, no pair repeated"
         }
       },
+      "kv_source_derived_strict_json/v1": {
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "result"
+        ],
+        "predicates": [
+          "derive the expected result from source records for the checker's supported diagnostic task ids",
+          "require the selected ANSWERED or UNVERIFIABLE result directly under result, without named alternative wrappers",
+          "match answer values and JSON types to the source-derived result",
+          "cite exactly the supporting source record ids without duplicates; order is ignored unless the oracle specifies ordered_array",
+          "match missing evidence and claims not made for an UNVERIFIABLE result"
+        ],
+        "failure_codes": [
+          "fixture_task_id_mismatch",
+          "unknown_kv_task",
+          "task_id_mismatch",
+          "verdict_mismatch",
+          "response_shape_mismatch",
+          "answer_mismatch",
+          "forbidden_claim_or_flag",
+          "missing_evidence_missing",
+          "claims_not_made_missing",
+          "missing_evidence_mismatch",
+          "claims_not_made_mismatch",
+          "citations_type_invalid",
+          "citation_duplicate",
+          "citation_unknown",
+          "citations_mismatch"
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "result": "object with exactly task_id (canonical task id string), verdict (ANSWERED or UNVERIFIABLE string), answer (task-specific source-derived JSON value, null for UNVERIFIABLE), and citations (array of distinct source record_id strings); UNVERIFIABLE additionally requires missing_evidence and claims_not_made, both arrays of strings matching the source-derived evidence boundary; no ANSWERED_result or UNVERIFIABLE_result wrapper"
+        }
+      },
       "budgeted_evidence_selection/v1": {
         "required_json_fields": [
           "task_id",

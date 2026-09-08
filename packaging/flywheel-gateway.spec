@@ -7,14 +7,24 @@
 # and `flywheel relay` work from a frozen build.
 
 from pathlib import Path
+from PyInstaller.utils.hooks import copy_metadata
 
 repo = Path(SPECPATH).parent
 relay_src = repo / "relay" / "src"
+# Keep version/license metadata without pip's local installation URL.
+distribution_data = [
+    (str(path), str(Path(destination) / path.relative_to(source).parent))
+    for source, destination in copy_metadata("flywheel-verify")
+    for path in sorted(Path(source).rglob("*"))
+    if path.is_file() and path.name != "direct_url.json"
+]
 
 a = Analysis(
     [str(repo / "packaging" / "gateway_entry.py")],
     pathex=[str(repo), str(relay_src)],
-    datas=[(str(repo / "site"), "site")],
+    datas=[(str(repo / "site"), "site"),
+           (str(repo / "harness" / "gateway.py"), "harness"),
+           *distribution_data],
     hiddenimports=[
         "relay", "relay.remote_cli", "relay.remote_mcp", "relay.remote_oauth",
         "relay.oauth", "relay.local_agent_cli", "relay.local_agent",
@@ -27,6 +37,17 @@ a = Analysis(
         "relay.compaction", "relay.review", "relay.run_view",
         "relay.verified_bon", "relay.bisect", "relay.claim_grounding",
         "relay.injection_probe", "relay.intent_audit", "relay.hashline",
+        # Desktop Bulletin identity setup is served through the frozen gateway.
+        # The source package keeps cryptography optional; the Windows freeze
+        # installs .[signing] and must carry the lazy route/import graph.
+        "harness.bulletin_identity", "harness.bulletin_identity_contract",
+        "harness.bulletin_identity_key", "harness.bulletin_identity_network",
+        "harness.bulletin_identity_origin", "harness.bulletin_identity_store",
+        "harness.bulletin_identity_route", "harness.bulletin_signed_transport",
+        "harness.credential_handles", "harness.journey_lock",
+        "harness.key_roster", "harness.keychain", "harness.keychain_route",
+        "cryptography.hazmat.primitives.asymmetric.ed25519",
+        "cryptography.hazmat.primitives.serialization",
     ],
     excludes=["tkinter", "matplotlib", "numpy", "PIL"],
     noarchive=False,

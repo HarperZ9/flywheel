@@ -1178,20 +1178,11 @@ class _Handler(BaseHTTPRequestHandler):
             from harness import oauth_service
             return self._json(oauth_service.auth_rows())
         if p == "/api/keychain":                     # credential names + presence, never values
-            from harness.keychain import credential_source, keychain_available
-            try:
-                from harness.endpoints import PROVIDERS
-            except Exception:
-                PROVIDERS = {}
-            names = sorted({s.get("key", "") for s in PROVIDERS.values()
-                            if s.get("key")})
-            return self._json({
-                "schema": "flywheel.keychain/v1",
-                "available": keychain_available(),
-                "entries": [{"name": n, "source": credential_source(n)}
-                            for n in names],
-                "note": "presence and source only; values never leave "
-                        "resolution inside a routed call"})
+            from harness.keychain_route import keychain_get
+            return self._json(keychain_get())
+        if p == "/api/bulletin-identity":            # native Bulletin identity presence
+            from harness.bulletin_identity_route import bulletin_identity_get
+            return self._json(*bulletin_identity_get())
         if p == "/api/credential-handles":         # handles held for this owner, presence only
             from harness.credential_handle_route import credential_handle_get
             body, code = credential_handle_get(
@@ -1897,19 +1888,28 @@ class _Handler(BaseHTTPRequestHandler):
             req, bad = self._req_json()
             if bad:
                 return bad
-            from harness.keychain import keychain_set
-            out = keychain_set((req.get("name") or "").strip(),
-                               req.get("value") or "")
+            from harness.keychain_route import keychain_set_post
+            out, code = keychain_set_post(req)
             # The secret is now only in the OS store; nothing here logs or
             # echoes it, and `req` goes out of scope with this request.
-            return self._json(out, 400 if "error" in out else 200)
+            return self._json(out, code)
         if p == "/api/keychain/delete":                # remove a stored secret
             req, bad = self._req_json()
             if bad:
                 return bad
-            from harness.keychain import keychain_delete
-            out = keychain_delete((req.get("name") or "").strip())
-            return self._json(out, 400 if "error" in out else 200)
+            from harness.keychain_route import keychain_delete_post
+            out, code = keychain_delete_post(req, self.flywheel_home)
+            return self._json(out, code)
+        if p == "/api/bulletin-identity/create":       # create native identity in keychain only
+            from harness.bulletin_identity_route import bulletin_identity_create_post as fn
+        elif p == "/api/bulletin-identity/register":   # register native identity at fixed Bulletin origin
+            from harness.bulletin_identity_route import bulletin_identity_register_post as fn
+        else:
+            fn = None
+        if fn is not None:
+            req, bad = self._req_json()
+            if bad: return bad
+            return self._json(*fn(req, self.flywheel_home))
         if p == "/api/store/entity":                   # store a content-addressed entity
             req, bad = self._req_json()
             if bad:

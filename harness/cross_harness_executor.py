@@ -7,17 +7,13 @@ from harness.cross_harness_artifacts import (bind_attempt_receipt, canonical_sha
     materialize_response_envelope, preflight_artifact_root, recheck_attempt_receipt, remove_readonly_tree,
     snapshot_source_tree, validate_execution_components, write_artifact_index)
 from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle
+from harness.cross_harness_policy import SHARED_TOOL_POLICY, attempt_metrics, tool_policy_for
 from harness.cross_harness_rejected_output import record_rejected_output; from harness.cross_harness_runtime_context import stage_runtime_context
 from harness.cross_harness_run_seal import seal_run, write_json as _write_json
 from harness.cross_harness_usage import recheck_inner_usage
 from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, model_observation_pair_error, sanitize_evidence,
     validate_elapsed_ms)
 class _MalformedAttempt(ValueError): pass
-SHARED_TOOL_POLICY = {
-    "version": "cross-harness-read-only/v1", "allow_read": True,
-    "allow_write": False, "allow_exec": False, "allow_mcp": False,
-    "max_steps": 6, "max_output_tokens": 2048,
-}
 def resolve_task_ids(task_rows: list[dict[str, Any]], selectors: list[str]) -> list[str]:
     task_ids = [str(row.get("task_id", "")) for row in task_rows]
     resolved: list[str] = []
@@ -98,6 +94,7 @@ def _unavailable_evidence(role: str, runtime: dict[str, Any], matrix: dict[str, 
 def expand_attempt_rows(
     manifest: dict[str, Any], runtime_matrix: dict[str, Any], *, artifact_root: Path,
     run_id: str, phase: str, selectors: list[str], roles: list[str], repetitions: int,
+    compact_budget: int = 0,
 ) -> list[dict[str, Any]]:
     """Expand a manifest into deterministic planned rows without launching adapters."""
     if repetitions < 1:
@@ -105,7 +102,8 @@ def expand_attempt_rows(
     task_rows = manifest.get("task_rows", [])
     validate_execution_components(task_rows, run_id, phase, roles)
     selected = resolve_task_ids(task_rows, selectors)
-    policy_hash, rows, seen = canonical_sha256(SHARED_TOOL_POLICY), [], set()
+    policy = tool_policy_for(compact_budget=compact_budget)
+    policy_hash, rows, seen = canonical_sha256(policy), [], set()
     for role in roles:
         spec = _one(manifest.get("provider_specs", []), "provider_role", role)
         runtime = _one(runtime_matrix.get("runtime_rows", []), "provider_role", role)
@@ -126,7 +124,7 @@ def expand_attempt_rows(
                     "task_set_id": str(manifest.get("task_set_id", "")), "task_id": task_id,
                     "benchmark_id": str(task.get("benchmark_id", "")), "coverage_unit": str(task.get("coverage_unit", "")),
                     "task": task, "repetition": repetition, "attempt_dir": str(attempt),
-                    "execution_mode": "focused_run", "tool_policy": dict(SHARED_TOOL_POLICY),
+                    "execution_mode": "focused_run", "tool_policy": dict(policy),
                     "tool_policy_sha256": policy_hash,
                     "planned_available": runtime.get("focused_run_ready") is True,
                     "runtime_evidence": _unavailable_evidence(role, runtime, runtime_matrix),
@@ -156,7 +154,7 @@ def execute_cross_harness_manifest(
     manifest: dict[str, Any], runtime_matrix: dict[str, Any], adapters: dict[str, Any], *,
     artifact_root: Path, source_root: Path, run_id: str, phase: str, selectors: list[str],
     roles: list[str], repetitions: int, cache_state: str = "cold_declared", timeout_seconds: int = 300,
-    source_commit: str = "unverified",
+    source_commit: str = "unverified", compact_budget: int = 0,
 ) -> dict[str, Any]:
     """Execute every planned row while preserving unavailable and failed evidence."""
     source = Path(source_root).resolve(strict=True)
@@ -167,7 +165,8 @@ def execute_cross_harness_manifest(
     before, after, rows, indexed, clean = snapshot_source_tree(source), None, [], [], []
     try:
         plans = expand_attempt_rows(manifest, runtime_matrix, artifact_root=root, run_id=run_id,
-                                    phase=phase, selectors=selectors, roles=roles, repetitions=repetitions)
+                                    phase=phase, selectors=selectors, roles=roles,
+                                    repetitions=repetitions, compact_budget=compact_budget)
         for plan in plans:
             task, attempt = plan["task"], Path(plan["attempt_dir"])
             files: dict[str, Path] = {}; workspace_before = None
@@ -192,7 +191,7 @@ def execute_cross_harness_manifest(
                 prompt = attempt / "prompt.txt"; prompt.write_text(str(task.get("raw_prompt", "")), encoding="utf-8", newline=""); files[prompt.name] = prompt; row["raw_prompt_path"] = str(prompt)
                 request = AttemptRequest(run_id, phase, row["task_set_id"], row["task_id"], task.get("raw_prompt", ""),
                     row["raw_prompt_sha256"], row["provider_role"], row["harness_id"], row["adapter_id"], row["model_id"], row["requested_model_reference"],
-                    workspace, workspace_snapshot["sha256"], observed, dict(SHARED_TOOL_POLICY), row["tool_policy_sha256"],
+                    workspace, workspace_snapshot["sha256"], observed, dict(plan["tool_policy"]), row["tool_policy_sha256"],
                     row["repetition"], cache_state, timeout_seconds, attempt)
                 adapter = adapters.get(row["provider_role"])
                 if adapter is None or adapter.role != row["provider_role"] or adapter.adapter_id != row["adapter_id"]:
@@ -234,7 +233,7 @@ def execute_cross_harness_manifest(
                             usage_verification = recheck_inner_usage(metadata["tool_trace"], metadata["usage"])
                             verified_usage = metadata["usage"] if usage_verification["verified"] else {}
                             row.update(execution_state="malformed" if observation_error else result.execution_state, failure_class="invalid_model_observation" if observation_error else sanitize_evidence(result.failure_class), failure_detail=observation_error or metadata["failure_detail"],
-                                       metrics={"latency_ms": elapsed_ms, "usage": verified_usage, "resource_observation": metadata["resource"]}, usage_verification=usage_verification, model_observed="" if observation_error or metadata["model_observation_basis"] == "unknown" else metadata["model"], model_observation_basis="unknown" if observation_error else metadata["model_observation_basis"], randomness_control=metadata["randomness"],
+                                       metrics=attempt_metrics(elapsed_ms, verified_usage, metadata["resource"], plan["tool_policy"], row["adapter_id"]), usage_verification=usage_verification, model_observed="" if observation_error or metadata["model_observation_basis"] == "unknown" else metadata["model"], model_observation_basis="unknown" if observation_error else metadata["model_observation_basis"], randomness_control=metadata["randomness"],
                                        observed_capabilities=metadata["capabilities"], policy_violations=metadata["violations"])
                             trace = attempt / "tool_trace.json"; _write_json(trace, metadata["tool_trace"]); files[trace.name] = trace; row["tool_trace_path"] = str(trace)
                             if row["execution_state"] == "returned":

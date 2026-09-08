@@ -13,29 +13,26 @@ from .local_session import SessionLedger
 from .local_tools import TOOLS_SYSTEM, ToolExecutor, ToolGate
 from .proposer import ProposerOutput, prompt_hash
 from .router_agent import RouterAgent
-from .cross_harness_process import ProcessOutcome, run_process; from .cross_harness_provider_error import ProviderRejected, inspect_provider_events; from .cross_harness_usage import attempt_usage, usage_from_events; from .cross_harness_cli_identity import cli_identity_fields, codex_cli_version, resolve_binary
+from .cross_harness_policy import compaction_receipt_numeric_allowed, nonnegative_policy_int; from .cross_harness_process import ProcessOutcome, run_process; from .cross_harness_provider_error import ProviderRejected, inspect_provider_events; from .cross_harness_usage import attempt_usage, usage_from_events; from .cross_harness_cli_identity import cli_identity_fields, codex_cli_version, resolve_binary
 MAX_TRACE_EVENTS, MAX_TRACE_BYTES, MAX_LINE_BYTES, MAX_FIELD_BYTES, MAX_DEPTH = 1000, 1 << 20, 1 << 16, 1 << 14, 16
 READ_ONLY_SYSTEM = ("You are the outer Flywheel text-tool agent. Inspect the supplied workspace and return the requested artifact envelope. "
     "The following TOOL protocol is visible, but write, exec, and MCP calls are denied.\n\n" + TOOLS_SYSTEM + "\n\nRead-only override: never emit write_file, edit_file, apply_patch, run, or MCP tools.")
 class MalformedProviderOutput(RuntimeError): pass
 def _resolve_codex() -> str:
-    # npm hides the real codex.exe under a vendor directory and puts text
-    # wrappers on PATH ahead of it. Name the exe and stop: extensionless `codex`
-    # on Windows is one of those wrappers and nothing here reads magic bytes.
+    # npm puts wrappers on PATH ahead of the vendor binary; resolve the real executable name.
     return resolve_binary(("codex.exe",) if os.name == "nt" else ("codex",))
 _BEARER, _ASSIGN = re.compile(r"(?i)(bearer\s+)[^\s,;\"']+"), re.compile(r"(?i)((?:api[_-]?key|token|password|secret|authorization)\s*[:=]\s*)[^\s,;\"']+")
 _JWT, _API_KEY = re.compile(r"\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{3,}\b"), re.compile(r"\b(?:sk|rk|pk)-[A-Za-z0-9_-]{12,}\b", re.I)
 _URL_CREDS, _SECRET_KEY = re.compile(r"(https?://)[^/@\s:]+:[^/@\s]+@", re.I), re.compile(r"authorization|credential|password|secret|token|api[_ -]?key|jwt", re.I)
 def _clean(value: Any, _in_usage: bool = False) -> Any:
     if isinstance(value, dict):
-        named_secret = _SECRET_KEY.search(str(value.get("name", "")))
-        return {str(key): ("[REDACTED]" if (str(key) == "value" and named_secret)
+        named_secret = _SECRET_KEY.search(str(value.get("name", ""))); schema = value.get("schema")
+        return {str(key): (item if compaction_receipt_numeric_allowed(schema, str(key), item) else "[REDACTED]" if (str(key) == "value" and named_secret)
                  or (_SECRET_KEY.search(str(key)) and not _usage_secret_field_allowed(str(key), item, _in_usage))
                  else _clean(item, _in_usage or str(key) == "usage")) for key, item in value.items()}
     if isinstance(value, list): return [_clean(item, _in_usage) for item in value[:MAX_TRACE_EVENTS]]
     if not isinstance(value, str): return value
-    text = _ASSIGN.sub(r"\1[REDACTED]", _BEARER.sub(r"\1[REDACTED]", value))
-    text = _API_KEY.sub("[REDACTED]", _JWT.sub("[REDACTED]", text))
+    text = _API_KEY.sub("[REDACTED]", _JWT.sub("[REDACTED]", _ASSIGN.sub(r"\1[REDACTED]", _BEARER.sub(r"\1[REDACTED]", value))))
     return _URL_CREDS.sub(r"\1[REDACTED]@", text)
 def _run_process(argv: list[str], **kwargs) -> ProcessOutcome: return run_process(argv, **kwargs)
 def _json_pairs(rows):
@@ -213,7 +210,8 @@ class _ObservedProposer:
 def _router_result(request, proposer, source: str, clock: Callable = time.monotonic, response_model_attested: bool = False, proposer_invocations_max: int | None = None, cli_identity: dict[str, str] | None = None) -> AdapterResult:
     ledger, events = SessionLedger(), []
     tracked = _ObservedProposer(proposer, request.timeout_seconds, clock, response_model_attested, proposer_invocations_max)
-    agent = RouterAgent(model=request.model_id, proposer=tracked, system=READ_ONLY_SYSTEM, max_tokens=request.tool_policy.get("max_output_tokens", 2048))
+    compact_budget = nonnegative_policy_int(request.tool_policy, "compact_budget", 0)
+    agent = RouterAgent(model=request.model_id, proposer=tracked, system=READ_ONLY_SYSTEM, max_tokens=request.tool_policy.get("max_output_tokens", 2048), compact_budget=compact_budget)
     executor = ToolExecutor(root=str(request.workspace_root), gate=ToolGate(False, False, False), external={})
     started = time.perf_counter()
     try:
@@ -225,11 +223,13 @@ def _router_result(request, proposer, source: str, clock: Callable = time.monoto
     except ProviderRejected as exc: result, state, failure, detail = {"final": ""}, "internal_error", exc.failure_class, str(exc)
     except Exception as exc: result, state, failure, detail = {"final": ""}, "internal_error", type(exc).__name__, str(exc)
     events.extend({**_clean(asdict(entry)), "source": source, "type": "ledger_entry"} for entry in ledger.entries)
-    events.append({"source": source, "type": "ledger_checkpoint", "checkpoint": ledger.checkpoint(), "verified": ledger.verify(), "randomness": "unsupported",
-                   "max_output_control": None, "max_output_control_state": "unsupported"})
+    events.append({"source": source, "type": "ledger_checkpoint", "checkpoint": ledger.checkpoint(), "verified": ledger.verify(), "randomness": "unsupported", "max_output_control": None, "max_output_control_state": "unsupported"})
     inner = [{**_clean(event), "source": "codex_inner"} for event in getattr(proposer, "events", []) if isinstance(event, dict)]; events = inner + events
+    resource = {"inner_call_count": tracked.calls, **(cli_identity or {}), **({"compact_budget": compact_budget, "last_compaction": _clean(agent.last_compaction)} if compact_budget else {})}
+    if compact_budget and agent.last_compaction:
+        events.append({"source": source, "type": "compaction", "compact_budget": compact_budget, "last_compaction": resource["last_compaction"]})
     capabilities, violations = _audit(events)
-    return AdapterResult(state, _clean(result.get("final", "")), events, max(0, round((time.perf_counter() - started) * 1000)), tracked.observed, "unsupported", failure, _clean(detail), {"inner_call_count": tracked.calls, **(cli_identity or {})}, attempt_usage(tracked.usage_records), capabilities, violations, tracked.basis)
+    return AdapterResult(state, _clean(result.get("final", "")), events, max(0, round((time.perf_counter() - started) * 1000)), tracked.observed, "unsupported", failure, _clean(detail), resource, attempt_usage(tracked.usage_records), capabilities, violations, tracked.basis)
 class FlywheelRouterAdapter:
     role, adapter_id = "flywheel_harness", "flywheel_router/v1"
     def __init__(self, *, proposer=None, runner: Callable = _run_process, executable_resolver: Callable = _resolve_codex,

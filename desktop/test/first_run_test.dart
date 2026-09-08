@@ -119,5 +119,169 @@ void main() {
       expect(find.byType(HonestNull), findsOneWidget);
       expect(find.textContaining('no provider key names'), findsOneWidget);
     });
+
+    testWidgets('native Bulletin identity never renders generic Set',
+        (tester) async {
+      var genericSetCalls = 0;
+      var createCalls = 0;
+      await tester.pumpWidget(_wrap(KeysPanel(
+        doc: const {
+          'available': true,
+          'entries': [
+            {
+              'name': 'BULLETIN_AGENT_JWK',
+              'source': 'absent',
+              'kind': 'native_identity',
+              'protected': true,
+              'generic_set_allowed': false,
+              'set_action': 'bulletin_identity',
+            },
+            {'name': 'OPENAI_API_KEY', 'source': 'absent'},
+          ],
+        },
+        onSet: (n, v) async {
+          genericSetCalls++;
+          return {'stored': n};
+        },
+        onDelete: (n) async => {},
+        onCreateBulletinIdentity: () async {
+          createCalls++;
+          return {'ok': true, 'action': 'created_stored'};
+        },
+        onRegisterBulletinIdentity: () async => {},
+        onChanged: () {},
+      )));
+
+      expect(find.text('Set'), findsOneWidget);
+      expect(find.text('Create identity'), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+      await tester.tap(find.text('Create identity'));
+      await tester.pumpAndSettle();
+      expect(createCalls, 1);
+      expect(genericSetCalls, 0);
+      expect(find.textContaining('created_stored'), findsOneWidget);
+    });
+
+    testWidgets('keychain Bulletin identity renders register and remove',
+        (tester) async {
+      var registerCalls = 0;
+      var removed = '';
+      await tester.pumpWidget(_wrap(KeysPanel(
+        doc: const {
+          'available': true,
+          'entries': [
+            {
+              'name': 'BULLETIN_AGENT_JWK',
+              'source': 'keychain',
+              'kind': 'native_identity',
+              'generic_set_allowed': false,
+              'set_action': 'bulletin_identity',
+            },
+          ],
+        },
+        onSet: (n, v) async => {'stored': n},
+        onDelete: (n) async {
+          removed = n;
+          return {'deleted': n};
+        },
+        onCreateBulletinIdentity: () async => {},
+        onRegisterBulletinIdentity: () async {
+          registerCalls++;
+          return {'ok': true, 'action': 'registered'};
+        },
+        onChanged: () {},
+      )));
+
+      expect(find.text('Set'), findsNothing);
+      expect(find.text('Register'), findsOneWidget);
+      expect(find.text('Remove'), findsOneWidget);
+      await tester.tap(find.text('Register'));
+      await tester.pumpAndSettle();
+      expect(registerCalls, 1);
+      expect(find.textContaining('registered'), findsOneWidget);
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+      expect(removed, 'BULLETIN_AGENT_JWK');
+    });
+
+    testWidgets(
+        'native Bulletin identity disables create when signing is missing',
+        (tester) async {
+      var createCalls = 0;
+      await tester.pumpWidget(_wrap(KeysPanel(
+        doc: const {
+          'available': true,
+          'entries': [
+            {
+              'name': 'BULLETIN_AGENT_JWK',
+              'source': 'absent',
+              'generic_set_allowed': false,
+              'set_action': 'bulletin_identity',
+            },
+          ],
+        },
+        bulletinIdentity: const {
+          'source': 'absent',
+          'keychain_available': true,
+          'signing_available': false,
+          'create_available': false,
+          'unavailable_reason': 'SIGNING_UNAVAILABLE',
+        },
+        onSet: (n, v) async => {'stored': n},
+        onDelete: (n) async => {},
+        onCreateBulletinIdentity: () async {
+          createCalls++;
+          return {'ok': true};
+        },
+        onRegisterBulletinIdentity: () async => {},
+        onChanged: () {},
+      )));
+
+      expect(find.textContaining('signing support is unavailable'),
+          findsOneWidget);
+      await tester.tap(find.text('Create identity'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(createCalls, 0);
+    });
+
+    testWidgets(
+        'native Bulletin identity disables register when signing is missing',
+        (tester) async {
+      var registerCalls = 0;
+      await tester.pumpWidget(_wrap(KeysPanel(
+        doc: const {
+          'available': true,
+          'entries': [
+            {
+              'name': 'BULLETIN_AGENT_JWK',
+              'source': 'keychain',
+              'generic_set_allowed': false,
+              'set_action': 'bulletin_identity',
+            },
+          ],
+        },
+        bulletinIdentity: const {
+          'source': 'keychain',
+          'keychain_available': true,
+          'signing_available': false,
+          'register_available': false,
+          'unavailable_reason': 'SIGNING_UNAVAILABLE',
+        },
+        onSet: (n, v) async => {'stored': n},
+        onDelete: (n) async => {},
+        onCreateBulletinIdentity: () async => {},
+        onRegisterBulletinIdentity: () async {
+          registerCalls++;
+          return {'ok': true};
+        },
+        onChanged: () {},
+      )));
+
+      expect(find.textContaining('signing support is unavailable'),
+          findsOneWidget);
+      await tester.tap(find.text('Register'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(registerCalls, 0);
+    });
   });
 }

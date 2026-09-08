@@ -1,9 +1,9 @@
 ﻿# Desktop release CANDIDATE: one version tag (v*) builds the whole
-# platform from the tag's own commit and stages the signed-hash artifact
+# platform from the tag's own commit and stages the artifact with a hash receipt
 # as a workflow artifact. This workflow has READ-ONLY repository
 # permission and never creates or touches a GitHub Release: publishing
-# is a separate protected reusable workflow (windows-publish.yml) that
-# must be called explicitly with the candidate's hash receipt. The tag
+# is a separate operation using the candidate's verified hash receipt. The
+# reusable windows-publish.yml requires an explicit caller. The tag
 # must match desktop/pubspec.yaml AND pyproject.toml at that commit;
 # drift fails the run instead of shipping a mislabeled artifact.
 name: desktop-release
@@ -55,6 +55,13 @@ jobs:
           "version=$pub" | Out-File -Append $env:GITHUB_OUTPUT -Encoding ascii
           Write-Output "shipping $tag (pubspec $pub, commit $(git rev-parse HEAD))"
 
+      - name: Populate the tag-pinned Relay payload
+        shell: pwsh
+        run: |
+          git submodule update --init --recursive
+          if ($LASTEXITCODE -ne 0) { throw "tag-pinned submodule checkout failed" }
+          git submodule status --recursive
+
       - name: Gate | one version across tag, pubspec, pyproject
         shell: pwsh
         run: |
@@ -75,8 +82,16 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install PyInstaller
-        run: python -m pip install pyinstaller==6.21.0
+      - name: Install freeze dependencies
+        shell: pwsh
+        run: |
+          python -m pip install pyinstaller==6.21.0 ".[signing]"
+          @'
+          import importlib.metadata as md
+
+          print("freeze dependency pyinstaller=" + md.version("pyinstaller"))
+          print("freeze dependency cryptography=" + md.version("cryptography"))
+          '@ | python -
 
       - name: Ensure Inno Setup
         shell: pwsh
@@ -87,6 +102,17 @@ jobs:
           ) | Where-Object { Test-Path $_ } | Select-Object -First 1
           if (-not $iscc) { choco install innosetup -y --no-progress }
 
+      - name: Freeze and check the engine before packaging
+        shell: pwsh
+        run: |
+          python -m PyInstaller packaging/flywheel-gateway.spec --noconfirm
+          if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed" }
+          python scripts/check_frozen_gateway.py --executable dist/flywheel-gateway/flywheel-gateway.exe --expected-version "${{ steps.ver.outputs.version }}" --receipt frozen-gateway-smoke.json
+          if ($LASTEXITCODE -ne 0) { throw "frozen gateway smoke failed" }
+          New-Item -ItemType Directory -Force desktop/build/engine | Out-Null
+          if (Test-Path -LiteralPath desktop/build/engine/flywheel-gateway) { throw "engine staging destination already exists" }
+          Copy-Item -LiteralPath dist/flywheel-gateway -Destination desktop/build/engine/flywheel-gateway -Recurse
+
       - name: Gates + build + package
         shell: pwsh
         working-directory: desktop
@@ -95,7 +121,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "analyze failed" }
           flutter test
           if ($LASTEXITCODE -ne 0) { throw "tests failed" }
-          powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_installer.ps1
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_installer.ps1 -SkipEngine
 
       - name: SHA-256 receipt
         shell: pwsh
@@ -112,5 +138,6 @@ jobs:
           path: |
             desktop/build/installer/Flywheel-Setup-*.exe
             desktop/build/installer/SHA256SUMS.txt
+            frozen-gateway-smoke.json
           if-no-files-found: error
           retention-days: 14

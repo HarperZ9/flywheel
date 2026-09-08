@@ -8,7 +8,7 @@ denylist blocks obviously destructive commands. Every call returns a ToolResult
 that the loop records into the witnessed session ledger.
 
 Protocol (one call per line, args as a JSON object):
-    TOOL read_file {"path": "harness/loop.py"}
+    TOOL read_file {"path": "harness/loop.py", "offset": 0}
     TOOL list_dir {"path": "."}
     TOOL write_file {"path": "out.txt", "content": "..."}
     TOOL run {"cmd": "python -m pytest -q"}
@@ -22,6 +22,8 @@ import subprocess
 import threading
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from .local_read_file import READ_FILE_TOOL_GUIDANCE, read_file_tool
 
 _EXTERNAL_TIMEOUT = 120   # bound on an external/MCP tool call, seconds
 
@@ -354,15 +356,13 @@ class ToolExecutor:
         try:
             ok, out = fn(args)
         except Exception as e:                       # a tool must never crash the loop
+            if name == "read_file":
+                return ToolResult(name, args, False, "[error] read_file_failed")
             return ToolResult(name, args, False, f"[error] {type(e).__name__}: {e}")
-        return ToolResult(name, args, ok, out[: self.max_output])
+        return ToolResult(name, args, ok, out if name == "read_file" else out[: self.max_output])
 
     def _t_read_file(self, args) -> "tuple[bool, str]":
-        p = _safe_path(self.root, args.get("path", ""))
-        if p is None:
-            return False, "[error] path escapes root"
-        with open(p, encoding="utf-8", errors="replace") as f:
-            return True, f.read()
+        return read_file_tool(self.root, args, self.max_output, _safe_path)
 
     def _t_list_dir(self, args) -> "tuple[bool, str]":
         p = _safe_path(self.root, args.get("path", "."))
@@ -478,8 +478,8 @@ class ToolExecutor:
 TOOLS_SYSTEM = (
     "You can use tools by emitting lines in this exact format (one per line):\n"
     'TOOL repo_map {"path": "."}\n'
-    'TOOL read_file {"path": "<path>"}\n'
-    'TOOL list_dir {"path": "<path>"}\n'
+    + READ_FILE_TOOL_GUIDANCE
+    + 'TOOL list_dir {"path": "<path>"}\n'
     'TOOL edit_file {"path": "<path>", "old": "<exact text>", "new": "<replacement>"}\n'
     'TOOL write_file {"path": "<path>", "content": "<text>"}\n'
     'TOOL run {"cmd": "<shell command>"}\n'

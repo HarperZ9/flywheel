@@ -170,6 +170,31 @@ def test_flywheel_runs_outer_loop_with_read_only_gate_and_distinct_enforcement(t
     assert adapter.enforcement(req).equivalence_class == "non_equivalent"
     assert result.resource_observation == {"inner_call_count": 6,  # max_steps=6, one inner call per outer step
         "cli_version": "", "resolved_binary_path": "", "reasoning_effort": "unspecified"}
+def test_flywheel_router_uses_compact_budget_policy_and_reports_receipt(tmp_path):
+    (tmp_path / "x").write_text("evidence " * 120, encoding="utf-8")
+    policy = {**SHARED_TOOL_POLICY, "max_steps": 9, "max_output_tokens": 64,
+              "compact_budget": 220}
+    req = AttemptRequest(**{**request(tmp_path, "flywheel_harness", "flywheel_router/v1").__dict__,
+                            "tool_policy": policy,
+                            "tool_policy_sha256": canonical_sha256(policy)})
+    class Proposer:
+        model_ref = "spark"
+        def __init__(self): self.calls = 0
+        def generate(self, *a, **k):
+            self.calls += 1
+            text = 'TOOL read_file {"path":"x"}' if self.calls < 9 else "done"
+            return type("Out", (), {"text": text, "model_ref": "spark",
+                                    "usage": None, "served_model": ""})()
+    proposer = Proposer()
+
+    result = FlywheelRouterAdapter(proposer=proposer, proposer_invocations_max=None).execute(req)
+
+    assert result.execution_state == "returned"
+    assert result.resource_observation["compact_budget"] == 220
+    assert result.resource_observation["last_compaction"]["method"] == "middle-fold"
+    assert any(event["type"] == "compaction" and
+               event["last_compaction"]["method"] == "middle-fold"
+               for event in result.tool_trace)
 def test_flywheel_cap_refuses_second_inner_call_and_names_the_cap(tmp_path):
     calls = []
     class Proposer:
