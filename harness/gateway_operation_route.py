@@ -7,14 +7,15 @@ from typing import Iterator
 from urllib.parse import parse_qs
 from .evidence_json import canonical_bytes, canonical_sha256
 from .gateway_operation import AuthorizedOperation, GatewayOperationError
+from .gateway_operation_route_reads import (
+    read_snapshot_or_none, terminal_data)
 from .journey_types import SHA256_PATTERN
 _OPERATION_PATH = re.compile(
     r"/api/operations/(op_[0-9a-f]{32})(?:/(events|result))?\Z")
 _MAX_LINE_BYTES = 262_144
 _MAX_BUFFER_BYTES = 1_048_576
 _MAX_GATEWAY_BUFFER_BYTES = 8_388_608
-def operation_ref_for(owner_ref: str, journey_ref: str,
-                      client_request_id: str) -> str:
+def operation_ref_for(owner_ref: str, journey_ref: str, client_request_id: str) -> str:
     digest = canonical_sha256({"owner_ref": owner_ref,
                                "journey_ref": journey_ref,
                                 "client_request_id": client_request_id})
@@ -141,15 +142,18 @@ class OperationEventBus:
             self._subscribers[key] = self._subscribers.get(key, 0) + 1
         try:
             while True:
-                snapshot = service.snapshot(owner_ref, operation_ref)
+                snapshot = read_snapshot_or_none(
+                    service, owner_ref, operation_ref, self._condition)
                 synthetic = None
                 with self._condition:
                     rows, base = list(self._rows.get(key, ())), self._base.get(key, 0)
                     cursor = max(cursor, base)
                     if cursor < base + len(rows):
                         event, data = rows[cursor - base]; cursor += 1
+                    elif snapshot is None:
+                        raise GatewayOperationError("STORE_BUSY")
                     elif snapshot.state in service.terminal_states:
-                        synthetic = [("snapshot", snapshot.as_json()), ("terminal", self._terminal_data(service, owner_ref, operation_ref, snapshot))]
+                        synthetic = [("snapshot", snapshot.as_json()), ("terminal", terminal_data(service, owner_ref, operation_ref, self._condition))]
                     elif not sent_snapshot:
                         synthetic = [("snapshot", snapshot.as_json())]
                         sent_snapshot = True
@@ -160,8 +164,10 @@ class OperationEventBus:
                         cursor += 1; yield {"sequence": cursor, "event": event, "data": data}
                     if snapshot.state in service.terminal_states: return
                     continue
-                if event == "terminal": data = self._terminal_data(
-                    service, owner_ref, operation_ref, snapshot)
+                if event == "terminal" and snapshot is None:
+                    raise GatewayOperationError("STORE_BUSY")
+                if event == "terminal":
+                    data = terminal_data(service, owner_ref, operation_ref, self._condition)
                 yield {"sequence": cursor, "event": event, "data": data}
         finally:
             with self._condition:
@@ -169,11 +175,6 @@ class OperationEventBus:
                 if key in self._completed and self._subscribers[key] == 0:
                     self._drop(key)
                 elif self._subscribers[key] == 0: self._subscribers.pop(key)
-    @staticmethod
-    def _terminal_data(service, owner_ref: str, operation_ref: str,
-                       snapshot) -> dict:
-        snapshot = service.snapshot(owner_ref, operation_ref)
-        return {"snapshot": snapshot.as_json(), "result": service.result(owner_ref, operation_ref)}
     def wake(self) -> None:
         with self._condition:
             self._condition.notify_all()
@@ -195,10 +196,9 @@ def _stream(service, owner_ref: str, operation_ref: str,
         yield _frame(sequence, "snapshot", initial.as_json())
         after = max(after, 1)
         if initial.state in service.terminal_states:
-            result = service.result(owner_ref, operation_ref)
             sequence += 1
-            yield _frame(sequence, "terminal", {
-                "snapshot": initial.as_json(), "result": result})
+            yield _frame(sequence, "terminal", terminal_data(
+                service, owner_ref, operation_ref, service.events._condition))
             terminal = True
     if not terminal:
         for row in service.watch(owner_ref, operation_ref, after):
