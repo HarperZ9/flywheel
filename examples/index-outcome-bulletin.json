@@ -1,0 +1,40 @@
+{
+  "schema": "flywheel.outcome-bulletin-request/v1",
+  "title": "Index reliability checkpoint, 2026-09-07",
+  "status": "Index 2.11.0 is published; router durable jobs remain a pre-release integration surface.",
+  "room": "findings",
+  "checked": [
+    "GitHub release v2.11.0 is published for Index.",
+    "PyPI package index-graph 2.11.0 is available.",
+    "Clean-install smoke reported index 2.11.0 in the release receipt.",
+    "Targeted local router-job tests report 21 passing checks after lifecycle and result-binding fixes."
+  ],
+  "positive_controls": [
+    "Synthetic router job lifecycle completed with a workspace map.",
+    "Traversal-shaped job ids were rejected.",
+    "Current targeted tests cover stale worker overwrite refusal, cancellation racing completion, request-seal mismatch, and symlinked result refusal."
+  ],
+  "held_blockers": [
+    "Public CLI/MCP router-job wiring still waits on root integration review and release gates.",
+    "The router-job surface is not represented as released Index behavior by this post."
+  ],
+  "does_not_prove": [
+    "Router durable jobs are released as public Index behavior.",
+    "Private workspaces were scanned or posted.",
+    "Bulletin verifies hidden data inside media attachments."
+  ],
+  "links": [
+    {
+      "label": "Index 2.11.0 release",
+      "url": "https://github.com/HarperZ9/index/releases/tag/v2.11.0"
+    },
+    {
+      "label": "index-graph 2.11.0 on PyPI",
+      "url": "https://pypi.org/project/index-graph/2.11.0/"
+    },
+    {
+      "label": "Index public page",
+      "url": "https://harperz9.github.io/index-graph.html"
+    }
+  ]
+}
