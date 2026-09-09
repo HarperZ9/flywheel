@@ -6,16 +6,10 @@ from pathlib import Path, PureWindowsPath
 from .private_artifact_fs import BUSY, CLOSED, CONFLICT, IO_ERROR, NOT_FOUND, NOT_REGULAR
 from .private_artifact_fs import TOO_LARGE, UNSAFE_PATH, ArtifactIdentity, PrivateArtifactError
 from . import private_artifact_fs_windows_api as _win
-from .private_artifact_fs_windows_tail import absolute_existing as _absolute_existing
-from .private_artifact_fs_windows_tail import check_name as _check_name, close_handle as _close_handle
-from .private_artifact_fs_windows_tail import handle_identity as _handle_identity
-from .private_artifact_fs_windows_tail import handle_identity_from_info as _handle_identity_from_info
-from .private_artifact_fs_windows_tail import is_dir as _is_dir, is_reparse as _is_reparse
-from .private_artifact_fs_windows_tail import path_identity as _path_identity
-from .private_artifact_fs_windows_tail import raise_dir_error as _raise_dir_error
-from .private_artifact_fs_windows_tail import raise_open_error as _raise_open_error
-from .private_artifact_fs_windows_tail import relative_parts as _relative_parts, size as _size
-from .private_artifact_fs_windows_tail import write_time as _write_time
+from .private_artifact_fs_windows_tail import absolute_existing as _absolute_existing, borrowed_descriptor as _borrowed_descriptor
+from .private_artifact_fs_windows_tail import check_name as _check_name, close_handle as _close_handle, handle_identity as _handle_identity
+from .private_artifact_fs_windows_tail import handle_identity_from_info as _handle_identity_from_info, is_dir as _is_dir, is_reparse as _is_reparse, path_identity as _path_identity
+from .private_artifact_fs_windows_tail import raise_dir_error as _raise_dir_error, raise_open_error as _raise_open_error, relative_parts as _relative_parts, size as _size, write_time as _write_time
 _READ_DIR_SHARE, _WRITE_DIR_SHARE = _win.FILE_SHARE_READ, _win.FILE_SHARE_READ | _win.FILE_SHARE_WRITE
 _READ_SHARE, _TEMP_ATTEMPTS = _win.FILE_SHARE_READ, 8
 _DIR_OPTS = _win.FILE_DIRECTORY_FILE | _win.FILE_OPEN_REPARSE_POINT | _win.FILE_SYNCHRONOUS_IO_NONALERT
@@ -51,6 +45,13 @@ class ArtifactRoot:
         caps, self._caps = self._caps, []
         _close_caps(caps)
         self._closed = True
+    @property
+    def identity(self) -> ArtifactIdentity:
+        if self._closed or not self._caps: raise PrivateArtifactError(CLOSED)
+        return self._caps[-1].identity
+    def borrow_descriptor(self):
+        if self._closed or not self._caps: raise PrivateArtifactError(CLOSED)
+        cap = self._caps[-1]; return _borrowed_descriptor(cap.handle, cap.identity)
     def read_bytes(self, rel: str | os.PathLike[str], *, max_bytes: int) -> bytes:
         if not isinstance(max_bytes, int) or isinstance(max_bytes, bool) or max_bytes < 0:
             raise PrivateArtifactError(UNSAFE_PATH)

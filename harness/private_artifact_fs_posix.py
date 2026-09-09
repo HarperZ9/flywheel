@@ -18,6 +18,7 @@ from .private_artifact_fs import (
 )
 from .private_artifact_fs_posix_tail import (
     absolute_existing as _absolute_existing,
+    borrowed_descriptor as _borrowed_descriptor,
     check_name as _check_name,
     close_fd as _close_fd,
     fsync_dir as _fsync_dir,
@@ -66,6 +67,12 @@ class ArtifactRoot:
         caps, self._caps = self._caps, []
         _close_caps(caps)
         self._closed = True
+    @property
+    def identity(self) -> ArtifactIdentity:
+        return self._active_caps()[-1].identity
+    def borrow_descriptor(self):
+        cap = self._active_caps()[-1]
+        return _borrowed_descriptor(cap.fd, cap.identity)
     def read_bytes(self, rel: str | os.PathLike[str], *, max_bytes: int) -> bytes:
         if not isinstance(max_bytes, int) or isinstance(max_bytes, bool) or max_bytes < 0:
             raise PrivateArtifactError(UNSAFE_PATH)

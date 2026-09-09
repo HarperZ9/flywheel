@@ -47,6 +47,14 @@ class ArtifactIdentity:
         return cls(platform, device, inode)
 
 
+@dataclass(frozen=True, slots=True)
+class BorrowedDescriptor:
+    platform: str
+    identity: ArtifactIdentity
+    fd: int | None = None
+    handle: int | None = None
+
+
 def supported() -> bool:
     backend = _backend()
     return bool(backend and backend.supported())
@@ -84,6 +92,7 @@ def _require_backend() -> Any:
 
 __all__ = [
     "ArtifactIdentity",
+    "BorrowedDescriptor",
     "BUSY",
     "CLOSED",
     "CONFLICT",
