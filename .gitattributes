@@ -36,3 +36,9 @@ tests/fixtures/model-receipt-golden.json -text -diff
 # cloned the repository.
 docs/art/*.svg text eol=lf
 docs/art/*.json text eol=lf
+
+# Desktop font notices are exact installer payload inputs; pin them so the
+# validator sees the same bytes on Windows, Linux, and macOS checkouts.
+desktop/release/FONT-PROVENANCE.json text eol=lf
+desktop/release/THIRD-PARTY-NOTICES.txt text eol=lf
+desktop/release/payload-policy.json text eol=lf
