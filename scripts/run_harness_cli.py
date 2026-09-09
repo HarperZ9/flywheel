@@ -172,7 +172,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
             {
                 "name": "benchmark-coverage",
                 "delegates_to": "scripts/run_benchmark_profile_coverage.py",
-                "purpose": "Compare the weighted benchmark profile against observed scorecard artifacts and flag missing coverage.",
+                "purpose": "Compare the weighted benchmark profile against observed scorecard artifacts, treating endpoint-gate rows as readiness rather than task quality.",
                 "schemas": ["harness.benchmark-profile-coverage/v1"],
                 "evidence_surface": "declared-vs-observed benchmark/provider coverage report",
                 "default_artifacts": ["C:/tmp/harness_benchmark_profile_coverage.json", "C:/tmp/harness_benchmark_profile_coverage.md"],
@@ -182,7 +182,7 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
             {
                 "name": "comparison",
                 "delegates_to": "scripts/run_harness_comparison_report.py",
-                "purpose": "Synthesize Codex-vs-Flywheel deltas from existing scorecard artifacts.",
+                "purpose": "Synthesize Codex-vs-Flywheel deltas from existing scorecard artifacts; endpoint-gate readiness rows do not create quality winners.",
                 "schemas": ["harness.comparison-report/v1"],
                 "evidence_surface": "artifact-ingested provider-role comparison rows and Flywheel-minus-Codex deltas",
                 "default_artifacts": ["C:/tmp/harness_comparison_report.json", "C:/tmp/harness_comparison_report.md"],
@@ -315,9 +315,9 @@ def build_manifest(*, store_root: str = DEFAULT_STORE_ROOT) -> dict:
             {
                 "name": "endpoint-gate",
                 "delegates_to": "scripts/run_model_endpoint_gate.py",
-                "purpose": "Run bounded live health/generation gates against local model endpoint profiles.",
+                "purpose": "Run bounded live health/generation readiness gates against local model endpoint profiles.",
                 "schemas": ["harness.model-endpoint-gate/v1"],
-                "evidence_surface": "local 14B/32B endpoint health and fixed generation rows",
+                "evidence_surface": "local 14B/32B endpoint health, fixed generation, readiness_score, latency, and failure rows",
                 "default_artifacts": ["C:/tmp/model_endpoint_gate_20260709.json", "C:/tmp/model_endpoint_gate_20260709.md"],
                 "long_running_risk": "medium",
                 "recommended_validation_slice": "python -m pytest tests/test_model_endpoint_gate.py tests/test_harness_cli.py -q",
@@ -776,12 +776,12 @@ def build_parser() -> argparse.ArgumentParser:
     runtime_contract.add_argument("--log-root", default="C:/tmp/local_model_serve_logs")
     runtime_contract.add_argument("--env-vars", default="")
 
-    coverage = subparsers.add_parser("benchmark-coverage", help="compare benchmark profile against scorecards")
+    coverage = subparsers.add_parser("benchmark-coverage", help="compare profile coverage; endpoint gates count as readiness")
     _add_common_io(coverage)
     coverage.add_argument("--profile", required=True)
     coverage.add_argument("--artifacts", default="")
 
-    comparison = subparsers.add_parser("comparison", help="synthesize Codex-vs-Flywheel comparison report")
+    comparison = subparsers.add_parser("comparison", help="synthesize Codex-vs-Flywheel comparison report; readiness is not quality")
     _add_common_io(comparison)
     comparison.add_argument("--artifacts", default="")
     comparison.add_argument("--flywheel-role", default="flywheel")
@@ -870,7 +870,7 @@ def build_parser() -> argparse.ArgumentParser:
     classifier.add_argument("--timeout-seconds", type=int, default=120)
     classifier.add_argument("--max-tokens", type=int, default=500)
 
-    endpoint_gate = subparsers.add_parser("endpoint-gate", help="run bounded local model endpoint health/generation gate")
+    endpoint_gate = subparsers.add_parser("endpoint-gate", help="run bounded local model endpoint health/generation readiness gate")
     _add_common_io(endpoint_gate)
     endpoint_gate.add_argument("--profile-artifact", default="C:/tmp/model_endpoint_profiles_20260709.json")
     endpoint_gate.add_argument("--models", default="")
