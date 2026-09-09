@@ -7,7 +7,7 @@
 //   - One hot mark (drift) per view. No decorative color, no gradients.
 //   - Cards are ground tints with a 1px hairline. Never glass, never shadow.
 //   - Two typefaces: Hanken Grotesk (text, hierarchy from weight) and
-//     Conso (mono: labels, hashes, numerals).
+//     Cascadia Mono (mono: labels, hashes, numerals).
 
 import 'dart:math' as math;
 
@@ -59,7 +59,7 @@ class FwTokens extends ThemeExtension<FwTokens> {
     required this.line,
     required this.hairline,
     this.textFamily = 'Hanken Grotesk',
-    this.monoFamily = 'Conso',
+    this.monoFamily = 'Cascadia Mono',
   });
 
   /// Ceramic light — the canon default.
@@ -139,9 +139,7 @@ class FwTokens extends ThemeExtension<FwTokens> {
         ? channel / 12.92
         : math.pow((channel + 0.055) / 1.055, 2.4).toDouble();
 
-    return 0.2126 * linear(c.r) +
-        0.7152 * linear(c.g) +
-        0.0722 * linear(c.b);
+    return 0.2126 * linear(c.r) + 0.7152 * linear(c.g) + 0.0722 * linear(c.b);
   }
 
   @override
@@ -208,4 +206,3 @@ class FwTokens extends ThemeExtension<FwTokens> {
 extension FwTokensContext on BuildContext {
   FwTokens get fw => Theme.of(this).extension<FwTokens>()!;
 }
-

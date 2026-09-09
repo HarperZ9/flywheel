@@ -1,8 +1,8 @@
 // flywheel_theme.dart — builds Flutter ThemeData from the canon tokens.
 //
 // Typography: Hanken Grotesk carries all text; hierarchy comes from weight
-// (800 display, 700/600 titles, 400 body), never a third family. Conso is
-// the mono voice for labels, hashes, and numerals (applied per-widget via
+// (800 display, 700/600 titles, 400 body), never a third family.
+// Cascadia Mono is the mono voice for labels, hashes, and numerals (applied per-widget via
 // FwText styles, plus labelSmall here).
 
 import 'package:flutter/material.dart';
@@ -12,7 +12,7 @@ import 'tokens.dart';
 export 'tokens.dart';
 
 const kTextFamily = 'Hanken Grotesk';
-const kMonoFamily = 'Conso';
+const kMonoFamily = 'Cascadia Mono';
 
 /// Ground themes: the NEUTRAL only. Each entry is
 /// [lightGround, lightGround2, darkGround, darkGround2]; ink and the verdict
@@ -29,7 +29,8 @@ const kGroundThemes = <String, List<int>>{
 FwTokens _withGround(FwTokens t, String? preset, bool dark) {
   final p = kGroundThemes[preset];
   if (p == null) return t;
-  return t.copyWith(ground: Color(p[dark ? 2 : 0]), ground2: Color(p[dark ? 3 : 1]));
+  return t.copyWith(
+      ground: Color(p[dark ? 2 : 0]), ground2: Color(p[dark ? 3 : 1]));
 }
 
 /// Theme builders. The canon pair and ground are the defaults; a user-chosen
@@ -126,8 +127,7 @@ ThemeData _themeFrom(FwTokens t, Brightness brightness) {
       filled: true,
       fillColor: t.panel,
       hintStyle: TextStyle(color: t.inkFaint, fontSize: 13.5),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
         borderSide: BorderSide(color: t.line),

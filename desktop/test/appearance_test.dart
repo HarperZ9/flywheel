@@ -13,7 +13,7 @@ void main() {
     final t = flywheelLightTheme();
     final fw = t.extension<FwTokens>()!;
     expect(fw.textFamily, 'Hanken Grotesk');
-    expect(fw.monoFamily, 'Conso');
+    expect(fw.monoFamily, 'Cascadia Mono');
   });
 
   test('user-chosen families ride the theme extension end to end', () {

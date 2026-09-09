@@ -19,7 +19,7 @@ Precision instrument, reserved energy, honest. Reveal the process; support
 the user's decision; never make it for them.
 
 ## Design Principles
-- Two typefaces only: Hanken Grotesk (text, hierarchy by weight) + Conso
+- Two typefaces only: Hanken Grotesk (text, hierarchy by weight) + Cascadia Mono
   (mono voice: hashes, counts, kickers). Never a third family.
 - Color is verdict-only: verified / drift / unverifiable + ink on a calm
   ground. One hot mark per view. The spectrum lives in generative art only.
