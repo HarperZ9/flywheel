@@ -5,12 +5,17 @@ from pathlib import Path
 import pytest
 
 from harness.bulletin_identity_contract import BulletinIdentityError
-from tests.bulletin_media_fixtures import jwk_json
 from tests.bulletin_media_http_fixture import (
     actual_worker_start_commands,
     register_loopback_identity,
     validate_loopback_bulletin_base_url,
 )
+
+
+def _jwk_json() -> tuple[str, dict]:
+    pytest.importorskip("cryptography")
+    from tests.bulletin_media_fixtures import jwk_json
+    return jwk_json()
 
 
 def test_actual_worker_bridge_accepts_only_plain_loopback_http() -> None:
@@ -31,7 +36,7 @@ def test_actual_worker_bridge_accepts_only_plain_loopback_http() -> None:
 
 
 def test_loopback_identity_registration_uses_bounded_pow() -> None:
-    jwk, _public_jwk = jwk_json()
+    jwk, _public_jwk = _jwk_json()
 
     def get_json(url: str, *, timeout: int) -> dict:
         if url.endswith("/v1/challenge"):
@@ -51,7 +56,7 @@ def test_loopback_identity_registration_uses_bounded_pow() -> None:
 
 
 def test_loopback_identity_registration_uses_synthetic_jwk_only() -> None:
-    jwk, _public_jwk = jwk_json()
+    jwk, _public_jwk = _jwk_json()
     calls: list[tuple[str, dict]] = []
 
     def get_json(url: str, *, timeout: int) -> dict:
@@ -81,7 +86,7 @@ def test_loopback_identity_registration_uses_synthetic_jwk_only() -> None:
 def test_loopback_identity_registration_has_finite_pow_attempt_cap(monkeypatch) -> None:
     import harness.bulletin_identity_network as identity_network
 
-    jwk, _public_jwk = jwk_json()
+    jwk, _public_jwk = _jwk_json()
     seen: dict[str, int | str] = {}
 
     def get_json(url: str, *, timeout: int) -> dict:
