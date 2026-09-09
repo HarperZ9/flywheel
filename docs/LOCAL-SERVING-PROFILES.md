@@ -11,6 +11,14 @@ python scripts/run_model_endpoint_profiles.py --models 14B,32B --base-root /path
 python scripts/run_model_endpoint_gate.py --profile-artifact /path/to/results/profiles.json --backends ollama --timeout-seconds 120 --max-tokens 32 --out /path/to/results/gate.json --strict-exit
 ```
 
+Endpoint-gate rows are readiness evidence. New rows record
+`metric_source_kind: endpoint_readiness`, `readiness_score`, and
+`quality_score_semantics: endpoint_readiness_not_task_quality`. The legacy
+`quality_score` field remains in the row for compatibility with older receipts,
+but comparison and coverage reports treat endpoint-gate artifacts as health,
+generation, latency, and failure evidence; they do not create task-quality
+winners or uplift claims.
+
 The profile command defaults to 8192 context tokens and exact Qwen2.5-Coder
 `14b-instruct-q4_K_M` / `32b-instruct-q4_K_M` base selectors. Override them with
 `--ollama-model-14b` and `--ollama-model-32b` to match installed variants. This

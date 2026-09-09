@@ -200,6 +200,7 @@ def test_gateway_http_media_picker_preview_bytes_uses_authenticated_handler(
             "expected_event_head": head,
             "client_request_id": "http-selected-run-media-1",
             "credential_ref": handle.credential_ref,
+            "timeout": 23,
             "run_id": run["run_id"],
             "destination": {"base_url": board.url},
             "post": {
@@ -233,6 +234,7 @@ def test_gateway_http_media_picker_preview_bytes_uses_authenticated_handler(
         assert operation["client_request_id"] == proposal["client_request_id"]
         assert operation["operation"]["name"] == "bulletin"
         assert operation["operation"]["tool"] == proposal["tool"]
+        assert operation["operation"]["timeout"] == 23
         assert operation["operation"]["data_refs"] == proposal["data_refs"]
         assert operation["operation"]["credential_refs"] == proposal[
             "credential_refs"]

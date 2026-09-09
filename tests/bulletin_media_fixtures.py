@@ -21,8 +21,8 @@ NOW = "2026-09-09T12:00:00Z"
 HEAD_TIME = 1788955200
 POST_ID = "01KMEDIAARTICLE0000000000"
 PNG = base64.b64decode(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8"
-    "z8BQDwAFgwJ/lctT6wAAAABJRU5ErkJggg==")
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNg"
+    "AAIAAAUAAXpeqz8AAAAASUVORK5CYII=")
 MP3 = b"ID3\x04\x00\x00\x00\x00\x00\x08TIT2\x00\x00\x00\x00"
 MP4 = b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom" + b"\x00" * 16
 
@@ -157,9 +157,23 @@ class MediaBoard:
         row = self.preview["media"][len(self.uploads) - 1]
         media = ("wrong" + row["expected_media_id"][5:]
                  if self.mode == "wrong_media" else row["expected_media_id"])
-        handler.json_response(201, {"ok": True, "media": {
-            "id": media, "type": row["media_type"], "kind": row["kind"],
-            "bytes": len(raw), "url": "/v1/media/" + media}})
+        media_type = (
+            "image/jpeg" if self.mode == "wrong_media_type"
+            else row["media_type"])
+        payload = {
+            "id": media, "media_type": media_type, "kind": row["kind"],
+            "bytes": len(raw), "url": "/v1/media/" + media,
+            "width": None, "height": None, "deduplicated": False}
+        if self.mode == "legacy_type_only":
+            payload.pop("media_type")
+            payload["type"] = row["media_type"]
+        if self.mode == "conflicting_media_type":
+            payload["type"] = "application/octet-stream"
+        if self.mode == "wrong_media_url":
+            payload["url"] = "/wrong/" + media
+        if self.mode == "authority_media_url":
+            payload["url"] = "//evil.example/v1/media/" + media
+        handler.json_response(201, {"ok": True, "media": payload})
 
     def _post(self, handler, raw: bytes) -> None:
         payload = json.loads(raw.decode())
@@ -172,7 +186,7 @@ class MediaBoard:
     def _post_readback(self, handler) -> None:
         post = self.posts[0]
         attachments = [
-            {**item, "kind": row["kind"], "type": row["media_type"],
+            {**item, "kind": row["kind"], "media_type": row["media_type"],
              "bytes": row["bytes"], "url": "/v1/media/" + item["media_id"]}
             for item, row in zip(post["attachments"], self.preview["media"])
         ]
@@ -181,6 +195,10 @@ class MediaBoard:
         if self.mode == "authority_attachment_url":
             attachments[0]["url"] = (
                 "//evil.example/v1/media/" + attachments[0]["media_id"])
+        if self.mode == "wrong_attachment_media_type":
+            attachments[0]["media_type"] = "image/jpeg"
+        if self.mode == "conflicting_attachment_media_type":
+            attachments[0]["type"] = "application/octet-stream"
         handler.json_response(200, {"ok": True, "post": {
             "id": POST_ID, "room": post["room"], "body": post["body"],
             "attachments": attachments}})

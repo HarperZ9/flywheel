@@ -195,11 +195,15 @@ void _homeLifecycleTests() {
     expect(find.bySemanticsLabel('Event head $headA'), findsOneWidget);
     await tester.pumpWidget(harness.app());
     await tester.pump();
-    await tester.tap(find.text('Chat'));
+    final chatRail = find.byKey(const ValueKey('rail-chat'));
+    await tester.ensureVisible(chatRail);
+    await tester.pumpAndSettle();
+    await tester.tap(chatRail);
     await tester.pump();
     expect(find.byType(AgentView), findsOneWidget);
-    await tester.tap(find.text('Journey'));
-    await tester.pump();
+    FlywheelNav.jump(
+        tester.element(find.byType(AgentView)), DestinationId.journey);
+    await tester.pumpAndSettle();
     expect(find.byType(JourneyView), findsOneWidget);
     expect(harness.api.calls.where((call) => call == resumeA), hasLength(1));
     expect(harness.api.calls.where((call) => call == 'list'), hasLength(1));

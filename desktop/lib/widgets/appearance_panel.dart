@@ -22,15 +22,15 @@ const kTextChoices = <String?>[
 ];
 
 const kMonoChoices = <String?>[
-  null, // canon: Conso
+  null, // canon: Cascadia Mono
   'Consolas',
   'Cascadia Mono',
   'Courier New',
   'Lucida Console',
 ];
 
-Future<void> showAppearancePanel(BuildContext context,
-    DesktopSettings settings, VoidCallback onChanged) {
+Future<void> showAppearancePanel(
+    BuildContext context, DesktopSettings settings, VoidCallback onChanged) {
   return showDialog(
     context: context,
     builder: (ctx) => Dialog(
@@ -84,7 +84,7 @@ class _AppearanceFormState extends State<_AppearanceForm> {
         _fontRow(t, 'text', s.textFamily, kTextChoices, 'Hanken Grotesk',
             (v) => _apply(() => s.textFamily = v)),
         const SizedBox(height: FwLayout.s3),
-        _fontRow(t, 'mono', s.monoFamily, kMonoChoices, 'Conso',
+        _fontRow(t, 'mono', s.monoFamily, kMonoChoices, 'Cascadia Mono',
             (v) => _apply(() => s.monoFamily = v)),
         const SizedBox(height: FwLayout.s4),
         _groundRow(t, s),
@@ -97,8 +97,7 @@ class _AppearanceFormState extends State<_AppearanceForm> {
               min: 0.85,
               max: 1.3,
               divisions: 9,
-              onChanged: (v) =>
-                  _apply(() => s.uiScale = (v * 20).round() / 20),
+              onChanged: (v) => _apply(() => s.uiScale = (v * 20).round() / 20),
             ),
           ),
           Text('${(s.uiScale * 100).round()}%', style: fwMono(t, size: 12)),
@@ -130,7 +129,8 @@ class _AppearanceFormState extends State<_AppearanceForm> {
         Text('Flywheel v$appVersion · $appPublisher',
             style: fwMono(t, size: 11.5, color: t.inkMuted)),
         const SizedBox(height: 3),
-        SelectableText(appReleases, style: fwMono(t, size: 10.5, color: t.inkFaint)),
+        SelectableText(appReleases,
+            style: fwMono(t, size: 10.5, color: t.inkFaint)),
         const SizedBox(height: 3),
         Text(
             'Every release ships with a SHA-256 receipt beside the installer; '
@@ -156,8 +156,8 @@ class _AppearanceFormState extends State<_AppearanceForm> {
             for (final name in kGroundThemes.keys)
               InkWell(
                 borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
-                onTap: () => _apply(() =>
-                    s.groundPreset = name == 'Ceramic' ? null : name),
+                onTap: () => _apply(
+                    () => s.groundPreset = name == 'Ceramic' ? null : name),
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -181,8 +181,7 @@ class _AppearanceFormState extends State<_AppearanceForm> {
                     Text(name == 'Ceramic' ? 'Ceramic (canon)' : name,
                         style: fwMono(t,
                             size: 11.5,
-                            color:
-                                current == name ? t.ink : t.inkSoft)),
+                            color: current == name ? t.ink : t.inkSoft)),
                   ]),
                 ),
               ),

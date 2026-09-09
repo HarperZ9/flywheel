@@ -1,5 +1,5 @@
 // editor_pane.dart — the editing surface: line numbers beside a highlighted
-// Conso field, Ctrl+S to save, read-only fallback for large or binary
+// Cascadia Mono field, Ctrl+S to save, read-only fallback for large or binary
 // files. The pane owns nothing but rendering; the Code view owns the open
 // files and their controllers.
 

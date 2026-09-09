@@ -17,7 +17,7 @@ class DesktopSettings {
   List<String> recentWorkspaces;
   bool railCollapsed;
   String? textFamily; // null = canon default (Hanken Grotesk)
-  String? monoFamily; // null = canon default (Conso)
+  String? monoFamily; // null = canon default (Cascadia Mono)
   String? groundPreset; // null = canon default (Ceramic)
   double uiScale;
   double railWidth; // width of the expanded side rail, drag-adjustable
@@ -120,9 +120,7 @@ class DesktopSettings {
         savedPrompts: (j['saved_prompts'] is List)
             ? [
                 for (final p in j['saved_prompts'] as List)
-                  if (p is Map &&
-                      p['title'] is String &&
-                      p['text'] is String)
+                  if (p is Map && p['title'] is String && p['text'] is String)
                     {'title': p['title'] as String, 'text': p['text'] as String}
               ]
             : [],

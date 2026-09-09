@@ -131,6 +131,15 @@ def test_run_artifact_selection_route_prepares_proposal_and_bound_preview_bytes(
         "/api/gateway-grants/bulletin-media-preview", json.dumps(bad).encode(),
         owner_ref=OWNER, state_root=state, run_root=run_root, clock=lambda: NOW)
     assert status == 422 and response["error"]["code"] == "INVALID_REQUEST"
+    too_long_alt = {
+        **body,
+        "media": [{**body["media"][0], "alt": "a" * 421}],
+    }
+    response, status = gateway_grant_post(
+        "/api/gateway-grants/bulletin-media-preview",
+        json.dumps(too_long_alt).encode(),
+        owner_ref=OWNER, state_root=state, run_root=run_root, clock=lambda: NOW)
+    assert status == 422 and response["error"]["code"] == "INVALID_REQUEST"
     prepared, status = gateway_grant_post(
         "/api/gateway-grants/bulletin-media-preview", json.dumps(body).encode(),
         owner_ref=OWNER, state_root=state, run_root=run_root, clock=lambda: NOW)
@@ -172,7 +181,6 @@ def test_run_artifact_selection_route_prepares_proposal_and_bound_preview_bytes(
     assert base64.b64decode(media["body_b64"]) == PNG
     assert media["cache"] == "no-store"
     assert media["sha256"] == hashlib.sha256(PNG).hexdigest()
-
 
 
 @pytest.mark.parametrize("name, raw", [
@@ -245,8 +253,14 @@ def test_wrong_media_id_or_lost_upload_never_posts(tmp_path):
     preview = build_media_preview(
         media_request(root, base_url="http://127.0.0.1:1"), state_root=state,
         owner_ref=OWNER, allow_loopback=True)
-    for mode, status in (("wrong_media", "media_upload_drift"),
-                         ("drop_upload", "media_upload_unverified")):
+    for mode, status, fields in (
+            ("wrong_media", "media_upload_drift", ["id", "url"]),
+            ("wrong_media_type", "media_upload_drift", ["media_type"]),
+            ("legacy_type_only", "media_upload_drift", ["media_type", "type"]),
+            ("conflicting_media_type", "media_upload_drift", ["type"]),
+            ("wrong_media_url", "media_upload_drift", ["url"]),
+            ("authority_media_url", "media_upload_drift", ["url"]),
+            ("drop_upload", "media_upload_unverified", None)):
         server = MediaBoard(public_jwk, preview, mode=mode)
         try:
             preview = build_media_preview(
@@ -260,4 +274,8 @@ def test_wrong_media_id_or_lost_upload_never_posts(tmp_path):
         finally:
             server.close()
         assert result["status"] == status
+        if fields is not None:
+            assert result["media_mismatch_fields"] == fields
+        else:
+            assert "media_mismatch_fields" not in result
         assert server.posts == []

@@ -26,10 +26,10 @@ import 'destination_type_expectations.dart';
 import 'journey_controller_test.dart' show headA;
 import 'journey_shell_test.dart';
 
-
 void main() {
-  testWidgets('factory preserves all forty-three exact destination mappings',
-      (tester) async {
+  testWidgets('factory preserves all forty-three exact destination mappings', (
+    tester,
+  ) async {
     final dir = Directory.systemTemp.createTempSync('journey-factory-');
     addTearDown(() => dir.deleteSync(recursive: true));
     final harness = ShellHarness(dir)..replyReady();
@@ -40,7 +40,9 @@ void main() {
       journey: harness.controller,
       code: harness.code,
       codeGuard: UnsavedWorkGuard(
-          session: harness.code, prompt: (_) async => CloseChoice.cancel),
+        session: harness.code,
+        prompt: (_) async => CloseChoice.cancel,
+      ),
       alive: false,
       settings: harness.settings,
       pendingArgument: headA,
@@ -48,20 +50,26 @@ void main() {
       onInstall: (_) async => const {},
     );
     expect(
-        flywheelDestinations.map((item) => item.label).toSet(),
-        expectedDestinationTypes.keys
-            .map((id) =>
-                id.name.substring(0, 1).toUpperCase() + id.name.substring(1))
-            .toSet());
+      flywheelDestinations.map((item) => item.label).toSet(),
+      expectedDestinationTypes.keys
+          .map(
+            (id) =>
+                id.name.substring(0, 1).toUpperCase() + id.name.substring(1),
+          )
+          .toSet(),
+    );
     for (final entry in expectedDestinationTypes.entries) {
-      expect(buildDestinationView(entry.key, inputs).runtimeType.toString(),
-          entry.value,
-          reason: entry.key.name);
+      expect(
+        buildDestinationView(entry.key, inputs).runtimeType.toString(),
+        entry.value,
+        reason: entry.key.name,
+      );
     }
     expect(
-        (buildDestinationView(DestinationId.receipts, inputs) as ReceiptsView)
-            .focusLeaf,
-        headA);
+      (buildDestinationView(DestinationId.receipts, inputs) as ReceiptsView)
+          .focusLeaf,
+      headA,
+    );
     final lanes =
         buildDestinationView(DestinationId.lanes, inputs) as LanesView;
     expect(lanes.onProbe, isNotNull);
@@ -69,29 +77,35 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('forty-three labels remain reachable at ordinary scaled viewport',
-      (tester) async {
-    tester.view.physicalSize = const Size(1440, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final dir = Directory.systemTemp.createTempSync('journey-shell-routes-');
-    addTearDown(() => dir.deleteSync(recursive: true));
-    final harness = ShellHarness(dir)..replyReady();
-    harness.settings.uiScale = 1.4;
-    await tester.pumpWidget(FlywheelApp(
-        settings: harness.settings, dependencies: harness.dependencies));
-    await tester.pumpAndSettle();
-    for (final spec in destinationCatalog) {
-      await scrollRailTo(tester, spec.label);
-      expect(find.text(spec.label), findsOneWidget, reason: spec.id.name);
-    }
-    await tester.tap(find.text('Receipts'));
-    await tester.pump();
-    expect(find.textContaining('receipts ledger'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await unmount(tester);
-  });
+  testWidgets(
+    'forty-three labels remain reachable at ordinary scaled viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final dir = Directory.systemTemp.createTempSync('journey-shell-routes-');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final harness = ShellHarness(dir)..replyReady();
+      harness.settings.uiScale = 1.4;
+      await tester.pumpWidget(
+        FlywheelApp(
+          settings: harness.settings,
+          dependencies: harness.dependencies,
+        ),
+      );
+      await tester.pumpAndSettle();
+      for (final spec in destinationCatalog) {
+        await scrollRailTo(tester, spec.label);
+        expect(find.text(spec.label), findsOneWidget, reason: spec.id.name);
+      }
+      await tester.tap(find.text('Receipts'));
+      await tester.pump();
+      expect(find.textContaining('receipts ledger'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await unmount(tester);
+    },
+  );
   _codeGuardWidgetTests();
   _recoveryPresentationTests();
 }
@@ -154,17 +168,20 @@ void _prepareShellCode(ShellHarness harness) {
 }
 
 void _codeGuardWidgetTests() {
-  testWidgets('rail and FlywheelNav share the same guarded code session',
-      (tester) async {
+  testWidgets('rail and FlywheelNav share the same guarded code session', (
+    tester,
+  ) async {
     final dir = Directory.systemTemp.createTempSync('code-shell-nav-');
     addTearDown(() => dir.deleteSync(recursive: true));
     var choice = CloseChoice.cancel;
     final requests = <UnsavedWorkRequest>[];
-    final harness = ShellHarness(dir, closePrompt: (request) async {
-      requests.add(request);
-      return choice;
-    })
-      ..replyReady();
+    final harness = ShellHarness(
+      dir,
+      closePrompt: (request) async {
+        requests.add(request);
+        return choice;
+      },
+    )..replyReady();
     await tester.pumpWidget(harness.app());
     await tester.pumpAndSettle();
     await tapRail(tester, 'Code');
@@ -184,8 +201,9 @@ void _codeGuardWidgetTests() {
     await unmount(tester);
   });
 
-  testWidgets('app exit guards edits and unmount retains the latest draft',
-      (tester) async {
+  testWidgets('app exit guards edits and unmount retains the latest draft', (
+    tester,
+  ) async {
     final dir = Directory.systemTemp.createTempSync('code-shell-exit-');
     addTearDown(() => dir.deleteSync(recursive: true));
     var choice = CloseChoice.cancel;
@@ -194,17 +212,22 @@ void _codeGuardWidgetTests() {
     await tester.pumpWidget(harness.app());
     await tester.pumpAndSettle();
     _prepareShellCode(harness);
-    expect(await WidgetsBinding.instance.handleRequestAppExit(),
-        AppExitResponse.cancel);
+    expect(
+      await WidgetsBinding.instance.handleRequestAppExit(),
+      AppExitResponse.cancel,
+    );
     choice = CloseChoice.discard;
-    expect(await WidgetsBinding.instance.handleRequestAppExit(),
-        AppExitResponse.exit);
+    expect(
+      await WidgetsBinding.instance.handleRequestAppExit(),
+      AppExitResponse.exit,
+    );
     final open = harness.code.openFiles.single;
     harness.code.snapshot((open..controller.text = 'new dirty text').path);
     final ref = workspace.workspaceReference(harness.code.workspaceRoot!);
     await unmount(tester);
-    final stored = CodeDraftStore(root: Directory('${dir.path}/code'))
-        .load(workspaceRef: ref);
+    final stored = CodeDraftStore(
+      root: Directory('${dir.path}/code'),
+    ).load(workspaceRef: ref);
     expect(stored.single.draft.text, 'new dirty text');
   });
 }
@@ -217,14 +240,15 @@ Future<ShellHarness> _recoveryHarness(CodeRecoveryKind kind) async {
   final file = File('${root.path}/main.dart')..writeAsStringSync('baseline');
   String digest(String value) => sha256.convert(utf8.encode(value)).toString();
   CodeDraftStore(root: Directory('${dir.path}/code')).save(
-      workspaceRef:
-          workspace.workspaceReference(root.resolveSymbolicLinksSync()),
-      draft: CodeDraft(
-          path: 'main.dart',
-          diskSha256: digest('baseline'),
-          bufferSha256: digest('draft'),
-          text: 'draft',
-          updatedAt: DateTime.parse('2026-08-15T12:00:00Z')));
+    workspaceRef: workspace.workspaceReference(root.resolveSymbolicLinksSync()),
+    draft: CodeDraft(
+      path: 'main.dart',
+      diskSha256: digest('baseline'),
+      bufferSha256: digest('draft'),
+      text: 'draft',
+      updatedAt: DateTime.parse('2026-08-15T12:00:00Z'),
+    ),
+  );
   if (kind == CodeRecoveryKind.alreadySaved) file.writeAsStringSync('draft');
   if (kind == CodeRecoveryKind.diskChanged) file.writeAsStringSync('external');
   if (kind == CodeRecoveryKind.fileMissing) file.deleteSync();
@@ -235,17 +259,23 @@ Future<ShellHarness> _recoveryHarness(CodeRecoveryKind kind) async {
 }
 
 Future<void> _pumpCodeView(WidgetTester tester, ShellHarness harness) async {
-  await tester.pumpWidget(MaterialApp(
+  await tester.pumpWidget(
+    MaterialApp(
       theme: flywheelLightTheme(),
       home: Scaffold(
-          body: CodeView(
-              client: harness.client,
-              alive: false,
-              settings: harness.settings,
-              session: harness.code,
-              guard: UnsavedWorkGuard(
-                  session: harness.code,
-                  prompt: (_) async => CloseChoice.cancel)))));
+        body: CodeView(
+          client: harness.client,
+          alive: false,
+          settings: harness.settings,
+          session: harness.code,
+          guard: UnsavedWorkGuard(
+            session: harness.code,
+            prompt: (_) async => CloseChoice.cancel,
+          ),
+        ),
+      ),
+    ),
+  );
   await tester.pumpAndSettle();
 }
 
@@ -264,16 +294,19 @@ void _recoveryPresentationTests() {
       ..openWorkspace(root.path);
     var prompts = 0;
     final guard = UnsavedWorkGuard(
-        session: session,
-        prompt: (_) async {
-          prompts++;
-          return CloseChoice.discard;
-        });
+      session: session,
+      prompt: (_) async {
+        prompts++;
+        return CloseChoice.discard;
+      },
+    );
     expect(await guard.requestNavigation('Chat'), isFalse);
     expect(session.recover(), isEmpty);
     expect(session.phase, CodeSessionPhase.recoveryBlocked);
-    expect(() => session.openFile(file.path),
-        throwsA(isA<CodeSessionException>()));
+    expect(
+      () => session.openFile(file.path),
+      throwsA(isA<CodeSessionException>()),
+    );
     expect(await guard.requestApplicationExit(), isFalse);
     expect(prompts, 0);
     foreign.deleteSync();
@@ -284,8 +317,9 @@ void _recoveryPresentationTests() {
     CodeRecoveryKind.restored: 'Draft restored: main.dart',
     CodeRecoveryKind.alreadySaved: 'Completed save recovered: main.dart',
   }.entries) {
-    testWidgets('${entry.key.name} is neutral and keeps the editor',
-        (tester) async {
+    testWidgets('${entry.key.name} is neutral and keeps the editor', (
+      tester,
+    ) async {
       final harness = await _recoveryHarness(entry.key);
       await _pumpCodeView(tester, harness);
       expect(find.text(entry.value), findsOneWidget);
@@ -298,8 +332,9 @@ void _recoveryPresentationTests() {
     CodeRecoveryKind.diskChanged: 'main.dart: disk changed; draft retained',
     CodeRecoveryKind.fileMissing: 'main.dart: file missing; draft retained',
   }.entries) {
-    testWidgets('${entry.key.name} remains an actionable comparison',
-        (tester) async {
+    testWidgets('${entry.key.name} remains an actionable comparison', (
+      tester,
+    ) async {
       final harness = await _recoveryHarness(entry.key);
       await _pumpCodeView(tester, harness);
       expect(find.text(entry.value), findsOneWidget);

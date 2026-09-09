@@ -21,71 +21,76 @@ void main() {
     String group(DestinationId id) =>
         destinationCatalog.firstWhere((d) => d.id == id).group.name;
     expect(
-        destinationCatalog
-            .where((d) => group(d.id) == 'work')
-            .map((d) => d.id.name)
-            .toList(),
-        [
-          'journey',
-          'plan',
-          'workflows',
-          'projects',
-          'writing',
-          'swarms',
-          'roadmap',
-          'schedule',
-          'runners',
-          'approvals',
-          'bulletin'
-        ]);
+      destinationCatalog
+          .where((d) => group(d.id) == 'work')
+          .map((d) => d.id.name)
+          .toList(),
+      [
+        'journey',
+        'plan',
+        'workflows',
+        'projects',
+        'writing',
+        'swarms',
+        'roadmap',
+        'schedule',
+        'runners',
+        'approvals',
+        'bulletin',
+      ],
+    );
     expect(
-        destinationCatalog
-            .where((d) => group(d.id) == 'chat')
-            .map((d) => d.id.name)
-            .toList(),
-        ['chat', 'compare', 'models', 'companion']);
+      destinationCatalog
+          .where((d) => group(d.id) == 'chat')
+          .map((d) => d.id.name)
+          .toList(),
+      ['chat', 'compare', 'models', 'companion'],
+    );
     expect(
-        destinationCatalog
-            .where((d) => group(d.id) == 'code')
-            .map((d) => d.id.name)
-            .toList(),
-        ['code', 'eval', 'audit', 'lint', 'scan', 'relay']);
+      destinationCatalog
+          .where((d) => group(d.id) == 'code')
+          .map((d) => d.id.name)
+          .toList(),
+      ['code', 'eval', 'audit', 'lint', 'scan', 'relay'],
+    );
     expect(
-        destinationCatalog
-            .where((d) => group(d.id) == 'evidence')
-            .map((d) => d.id.name)
-            .toList(),
-        [
-          'receipts',
-          'science',
-          'world',
-          'memory',
-          'governance',
-          'usage',
-          'infra'
-        ]);
+      destinationCatalog
+          .where((d) => group(d.id) == 'evidence')
+          .map((d) => d.id.name)
+          .toList(),
+      [
+        'receipts',
+        'science',
+        'world',
+        'memory',
+        'governance',
+        'usage',
+        'infra',
+      ],
+    );
     expect(
-        destinationCatalog
-            .where((d) => group(d.id) == 'advanced')
-            .map((d) => d.id.name)
-            .toList(),
-        [
-          'studio',
-          'graph',
-          'feeds',
-          'discourse',
-          'academy',
-          'lessons',
-          'instruments',
-          'browser',
-          'lanes',
-          'forum',
-          'registry',
-          'train',
-          'uplift',
-          'family',
-          'plugins',
-        ]);
+      destinationCatalog
+          .where((d) => group(d.id) == 'advanced')
+          .map((d) => d.id.name)
+          .toList(),
+      [
+        'studio',
+        'graph',
+        'feeds',
+        'discourse',
+        'academy',
+        'lessons',
+        'instruments',
+        'browser',
+        'lanes',
+        'forum',
+        'registry',
+        'train',
+        'uplift',
+        'family',
+        'plugins',
+      ],
+    );
     final approvals = specFor(DestinationId.approvals)!;
     expect(approvals.label, 'Approvals');
     expect(approvals.group, DestinationGroup.work);
@@ -103,12 +108,15 @@ void main() {
   test('a label can be renamed without changing identity', () {
     // The spec maps by ID, never by label: renaming Receipts to Ledger
     // keeps the same DestinationId, so lookups by ID still resolve.
-    final receipts =
-        destinationCatalog.firstWhere((d) => d.id == DestinationId.receipts);
+    final receipts = destinationCatalog.firstWhere(
+      (d) => d.id == DestinationId.receipts,
+    );
     expect(receipts.id.name, 'receipts');
     expect(receipts.label, isNotEmpty);
-    expect(destinationCatalog.where((d) => d.id == DestinationId.receipts),
-        hasLength(1));
+    expect(
+      destinationCatalog.where((d) => d.id == DestinationId.receipts),
+      hasLength(1),
+    );
   });
 
   test('spec lookup by id resolves and unknown ids are absent', () {

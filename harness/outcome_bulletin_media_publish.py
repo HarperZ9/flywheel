@@ -21,6 +21,7 @@ from .evidence_public import TransportError
 from .gateway_operation import thaw_operation
 from .outcome_bulletin_media_runtime import (
     _grant_problem,
+    _media_mismatch_fields,
     _media_metadata_matches,
     _publication,
     _read_packet,
@@ -57,9 +58,12 @@ def publish_authorized_media_preview(
     for row, raw in zip(preview["media"], packet["bytes"]):
         status = _upload_one(client, base, row, raw, deadline)
         if status.get("status") != "uploaded":
+            extra = {"media_mismatch_fields": status["media_mismatch_fields"]} if (
+                "media_mismatch_fields" in status) else {}
             return _publication(status["status"], preview, uploaded_media=uploaded,
-                                media_id=row["expected_media_id"],
-                                does_not_prove=status["does_not_prove"])
+                                 media_id=row["expected_media_id"],
+                                 does_not_prove=status["does_not_prove"],
+                                 **extra)
         uploaded.append(status["media"])
     try:
         client.timeout = _time_left(deadline)
@@ -96,8 +100,10 @@ def _upload_one(client, base: str, row: dict, raw: bytes, deadline: float) -> di
                 "does_not_prove": ["Bulletin accepted or rejected the upload"]}
     media = uploaded.get("media") if type(uploaded) is dict else None
     if not _same_media(media, row):
+        fields = _media_mismatch_fields(media, row)
         return {"status": "media_upload_drift",
-                "does_not_prove": ["Bulletin returned the reviewed media id"]}
+                "does_not_prove": ["Bulletin returned the reviewed media"],
+                "media_mismatch_fields": fields}
     if not _public_media_bytes_match(base, row, raw, deadline):
         return {"status": "media_upload_drift",
                 "does_not_prove": ["public media bytes matched upload"]}

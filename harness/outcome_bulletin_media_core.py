@@ -3,17 +3,14 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import json
-import os
 from pathlib import Path
 import re
 from urllib.parse import urlsplit
-from uuid import uuid4
 
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .evidence_public import TransportError, public_metadata, public_result
 from .gateway_operation import CREDENTIAL_REF_PATTERN, _relative_path, thaw_operation
-from .journey_lock import fsync_directory
+from .outcome_bulletin_media_metadata import _same_media, _media_mismatch_fields
 from .outcome_bulletin import _PUBLIC_PREFIXES, _check_no_private
 from .private_artifact_fs import ArtifactIdentity, open_artifact_root, root_identity
 
@@ -25,6 +22,7 @@ PUBLICATION_SCHEMA = "flywheel.outcome-bulletin-publication/v1"
 TOOL = "board_publish_media_post"
 MAX_MEDIA_BYTES = 10 * 1024 * 1024
 INLINE_PREVIEW_MAX_BYTES = 1_048_576
+MAX_ALT_TEXT_UNITS = 420
 _ROOM = re.compile(r"[a-z0-9][a-z0-9-]{0,63}\Z")
 _URL = re.compile(r"https://[^\s)>\"']+")
 _ARTIFACT = re.compile(r"artifact_[A-Za-z0-9._:-]{1,96}\Z")
@@ -147,7 +145,7 @@ def _media_selection(value: object) -> list[dict[str, str]]:
         out.append({"artifact_id": artifact,
                     "label": _one_text(item.get("label", artifact), 120),
                     "relative_path": item.get("relative_path", ""),
-                    "alt": _one_text(item.get("alt"), 800)})
+                    "alt": _alt_text(item.get("alt"))})
     return out
 
 
@@ -161,7 +159,7 @@ def _read_requested_media(req: dict) -> tuple[list[dict], list[dict]]:
         _fail()
     path = Path(_private_text(root["path"], 2048))
     identity = ArtifactIdentity.from_json_dict(root["identity"])
-    private, public = [], []
+    private, public, media_ids = [], [], set()
     with open_artifact_root(path, expected=identity, writable=False) as fs:
         for item in _media_selection(req["media"]):
             rel = item["relative_path"]
@@ -171,6 +169,9 @@ def _read_requested_media(req: dict) -> tuple[list[dict], list[dict]]:
             media_type, kind = _sniff(raw)
             sha = hashlib.sha256(raw).hexdigest()
             media = _b64u(hashlib.sha256(raw).digest())
+            if media in media_ids:
+                _fail()
+            media_ids.add(media)
             private.append({**item, "sha256": sha, "bytes": len(raw),
                             "expected_media_id": media,
                             "media_type": media_type, "kind": kind})
@@ -184,6 +185,13 @@ def _private_text(value: object, limit: int) -> str:
     if type(value) is not str or not value.strip() or len(value.encode()) > limit:
         _fail()
     return value.strip()
+
+
+def _alt_text(value: object) -> str:
+    text = _one_text(value, MAX_ALT_TEXT_UNITS * 4)
+    if len(text.encode("utf-16-le")) // 2 > MAX_ALT_TEXT_UNITS:
+        _fail()
+    return text
 
 
 def _sniff(raw: bytes) -> tuple[str, str]:
@@ -284,13 +292,6 @@ def _read_row_bytes(packet: dict, row: dict, max_bytes: int) -> bytes:
     with open_artifact_root(Path(root["path"]), expected=identity,
                             writable=False) as fs:
         return fs.read_bytes(row["relative_path"], max_bytes=max_bytes)
-
-
-def _same_media(value: object, row: dict) -> bool:
-    return (type(value) is dict and value.get("id") == row["expected_media_id"]
-            and value.get("type") == row["media_type"]
-            and value.get("kind") == row["kind"]
-            and value.get("bytes") == row["bytes"])
 
 
 PACKET_REF_PATTERN = _PACKET_REF

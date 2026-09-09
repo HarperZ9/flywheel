@@ -13,6 +13,7 @@ from .journey_types import SHA256_PATTERN
 from .outcome_bulletin_media_core import (
     MAX_MEDIA_BYTES,
     _ARTIFACT,
+    _alt_text,
     _b64u,
     _fail,
     _one_text,
@@ -72,7 +73,7 @@ def resolve_selected_media(req: dict, *, run_root: Path) -> list[dict[str, str]]
         if artifact in seen:
             _fail()
         seen.add(artifact)
-        selected.append((artifact, _one_text(item.get("alt"), 800)))
+        selected.append((artifact, _alt_text(item.get("alt"))))
     details = {}
     for row in _artifact_rows(store, run_id):
         if row.get("artifact_id") in seen:

@@ -1,0 +1,202 @@
+{
+  "bounded_inferences": [
+    "Cascadia Mono is the desktop mono UI role for labels, hashes, code, and numerals.",
+    "Existing non-null user mono family settings remain explicit choices and are not migrated or overwritten.",
+    "Hanken exact current-upstream byte identity is not claimed; bundled hashes are the review target."
+  ],
+  "families": [
+    "Cascadia Mono",
+    "Hanken Grotesk"
+  ],
+  "fonts": [
+    {
+      "asset_path": "assets/fonts/hanken-grotesk-light.ttf",
+      "copyright": "Copyright 2021 The Hanken Grotesk Project Authors (https://github.com/marcologous/hanken-grotesk)",
+      "family": "Hanken Grotesk",
+      "license_id": "OFL-1.1",
+      "license_url": "https://scripts.sil.org/OFL",
+      "payload_path": "data/flutter_assets/assets/fonts/hanken-grotesk-light.ttf",
+      "role": "text",
+      "sha256": "9BCD9A09A023501C12F11769EA55AB3C68777C4960B4A986D01FC3911420CEB3",
+      "size": 32180,
+      "source_ref": "hanken_grotesk",
+      "style": "normal",
+      "weight": 300
+    },
+    {
+      "asset_path": "assets/fonts/hanken-grotesk-regular.ttf",
+      "copyright": "Copyright 2021 The Hanken Grotesk Project Authors (https://github.com/marcologous/hanken-grotesk)",
+      "family": "Hanken Grotesk",
+      "license_id": "OFL-1.1",
+      "license_url": "https://scripts.sil.org/OFL",
+      "payload_path": "data/flutter_assets/assets/fonts/hanken-grotesk-regular.ttf",
+      "role": "text",
+      "sha256": "4B46B806D06EF9BE5639B0DE5A20774B21956165A9495A80610C77432B417ECB",
+      "size": 32204,
+      "source_ref": "hanken_grotesk",
+      "style": "normal",
+      "weight": 400
+    },
+    {
+      "asset_path": "assets/fonts/hanken-grotesk-italic.ttf",
+      "copyright": "Copyright 2021 The Hanken Grotesk Project Authors (https://github.com/marcologous/hanken-grotesk)",
+      "family": "Hanken Grotesk",
+      "license_id": "OFL-1.1",
+      "license_url": "https://scripts.sil.org/OFL",
+      "payload_path": "data/flutter_assets/assets/fonts/hanken-grotesk-italic.ttf",
+      "role": "text",
+      "sha256": "83EEDF30F8DAAF654C1226A091CBA84D293CD8173FB9992B48434A9B41044871",
+      "size": 34260,
+      "source_ref": "hanken_grotesk",
+      "style": "italic",
+      "weight": 400
+    },
+    {
+      "asset_path": "assets/fonts/hanken-grotesk-medium.ttf",
+      "copyright": "Copyright 2021 The Hanken Grotesk Project Authors (https://github.com/marcologous/hanken-grotesk)",
+      "family": "Hanken Grotesk",
+      "license_id": "OFL-1.1",
+      "license_url": "https://scripts.sil.org/OFL",
+      "payload_path": "data/flutter_assets/assets/fonts/hanken-grotesk-medium.ttf",
+      "role": "text",
+      "sha256": "A6A44F689CD7453F155D3C521B76F9D35BF7AC83F4DD404D53780153EF86ABAE",
+      "size": 32220,
+      "source_ref": "hanken_grotesk",
+      "style": "normal",
+      "weight": 500
+    },
+    {
+      "asset_path": "assets/fonts/hanken-grotesk-semibold.ttf",
+      "copyright": "Copyright 2021 The Hanken Grotesk Project Authors (https://github.com/marcologous/hanken-grotesk)",
+      "family": "Hanken Grotesk",
+      "license_id": "OFL-1.1",
+      "license_url": "https://scripts.sil.org/OFL",
+      "payload_path": "data/flutter_assets/assets/fonts/hanken-grotesk-semibold.ttf",
+      "role": "text",
+      "sha256": "8A6C38796C7EA332FEBE10B18F45B9F3AFAEDC1C44119879159582D6A8175B57",
+      "size": 32168,
+      "source_ref": "hanken_grotesk",
+      "style": "normal",
+      "weight": 600
+    },
+    {
+      "asset_path": "assets/fonts/hanken-grotesk-bold.ttf",
+      "copyright": "Copyright 2021 The Hanken Grotesk Project Authors (https://github.com/marcologous/hanken-grotesk)",
+      "family": "Hanken Grotesk",
+      "license_id": "OFL-1.1",
+      "license_url": "https://scripts.sil.org/OFL",
+      "payload_path": "data/flutter_assets/assets/fonts/hanken-grotesk-bold.ttf",
+      "role": "text",
+      "sha256": "4CA80AC105E80A582F892B3BBDD67DBA26905F8BDEFC837CB8A8908AD7BE7FC9",
+      "size": 32156,
+      "source_ref": "hanken_grotesk",
+      "style": "normal",
+      "weight": 700
+    },
+    {
+      "asset_path": "assets/fonts/hanken-grotesk-extrabold.ttf",
+      "copyright": "Copyright 2021 The Hanken Grotesk Project Authors (https://github.com/marcologous/hanken-grotesk)",
+      "family": "Hanken Grotesk",
+      "license_id": "OFL-1.1",
+      "license_url": "https://scripts.sil.org/OFL",
+      "payload_path": "data/flutter_assets/assets/fonts/hanken-grotesk-extrabold.ttf",
+      "role": "text",
+      "sha256": "38DF6F21133967C580B9322123DB0E034B7DE70BCB4A76961C54E01AE582C67D",
+      "size": 32160,
+      "source_ref": "hanken_grotesk",
+      "style": "normal",
+      "weight": 800
+    },
+    {
+      "asset_path": "assets/fonts/CascadiaMono.ttf",
+      "copyright": "\u00a9 2021 Microsoft Corporation. All Rights Reserved.",
+      "declared_flutter_weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "family": "Cascadia Mono",
+      "license_id": "OFL-1.1",
+      "license_url": "https://scripts.sil.org/OFL",
+      "payload_path": "data/flutter_assets/assets/fonts/CascadiaMono.ttf",
+      "role": "mono",
+      "sha256": "08026F617EEA315CACA59898784E999F6CDB2D0C34D2040DEEB042BCDC359FA2",
+      "size": 714804,
+      "source_ref": "cascadia_mono_v2407_24",
+      "style": "normal",
+      "variable_axes": {
+        "wght": {
+          "default": 400,
+          "max": 700,
+          "min": 200
+        }
+      },
+      "weight": null
+    },
+    {
+      "asset_path": "assets/fonts/CascadiaMonoItalic.ttf",
+      "copyright": "\u00a9 2021 Microsoft Corporation. All Rights Reserved.",
+      "declared_flutter_weights": [
+        200,
+        300,
+        400,
+        500,
+        600,
+        700
+      ],
+      "family": "Cascadia Mono",
+      "license_id": "OFL-1.1",
+      "license_url": "https://scripts.sil.org/OFL",
+      "payload_path": "data/flutter_assets/assets/fonts/CascadiaMonoItalic.ttf",
+      "role": "mono",
+      "sha256": "D9D23DFB03C6844448A24CF0337A657AC99965262874D2E6FB5B82AC0AC08C4D",
+      "size": 524380,
+      "source_ref": "cascadia_mono_v2407_24",
+      "style": "italic",
+      "variable_axes": {
+        "wght": {
+          "default": 400,
+          "max": 700,
+          "min": 200
+        }
+      },
+      "weight": null
+    }
+  ],
+  "license_facts": [
+    {
+      "fact": "OFL-1.1 license evidence from official upstream license plus matching font metadata license URL in the bundled files.",
+      "family": "Hanken Grotesk",
+      "source": "https://raw.githubusercontent.com/marcologous/hanken-grotesk/eff37d18946b018ad239cf5fd3992db5d19b82a0/OFL.txt"
+    },
+    {
+      "fact": "Microsoft documents Cascadia Code/Mono as SIL OFL licensed; bundled bytes are from the v2407.24 release archive.",
+      "family": "Cascadia Mono",
+      "source": "https://raw.githubusercontent.com/microsoft/cascadia-code/v2407.24/LICENSE"
+    }
+  ],
+  "schema": "flywheel.desktop-font-provenance/v1",
+  "scope": "Desktop Windows bundled font assets only; no website font change.",
+  "source_commit": "2a86c0a8f2da651bceb0bda4c1b1a74379696a39",
+  "sources": {
+    "cascadia_mono_v2407_24": {
+      "archive": "https://github.com/microsoft/cascadia-code/releases/download/v2407.24/CascadiaCode-2407.24.zip",
+      "archive_path": "ttf/CascadiaMono.ttf",
+      "archive_sha256": "E67A68EE3386DB63F48B9054BD196EA752BC6A4EBB4DF35ADCE6733DA50C8474",
+      "basis": "Microsoft Cascadia Code v2407.24 release archive",
+      "release": "https://github.com/microsoft/cascadia-code/releases/tag/v2407.24",
+      "release_commit": "56bcca3f2c1e4cb19458954f0e2bb4635960df91",
+      "upstream_license": "https://raw.githubusercontent.com/microsoft/cascadia-code/v2407.24/LICENSE"
+    },
+    "hanken_grotesk": {
+      "basis": "tracked Flywheel desktop asset at source commit 2a86c0a8f2da651bceb0bda4c1b1a74379696a39",
+      "source_bound": "Exact bundled bytes are verified by local SHA-256 and font metadata; current upstream TTF byte identity is not claimed.",
+      "upstream_license": "https://raw.githubusercontent.com/marcologous/hanken-grotesk/eff37d18946b018ad239cf5fd3992db5d19b82a0/OFL.txt",
+      "upstream_project": "https://github.com/marcologous/hanken-grotesk"
+    }
+  },
+  "status": "accepted_for_next_candidate_payload"
+}

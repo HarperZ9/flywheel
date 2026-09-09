@@ -22,6 +22,9 @@ def safe_float(value: Any) -> float:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
+def optional_float(value: Any) -> float | None:
+    try: return None if value in (None, "") else float(value)
+    except (TypeError, ValueError): return None
 def load_json(path: Path) -> tuple[dict[str, Any] | None, str]:
     try:
         return json.loads(path.read_text(encoding="utf-8")), ""
@@ -41,14 +44,14 @@ def _metric_row(
     pass_rate: Any,
     quality_score: Any,
     latency_ms: Any,
-    failure_class: Any,
+    failure_class: Any, metric_source_kind: str = "task_quality", readiness_score: Any = None,
 ) -> dict[str, Any]:
     provider = str(row.get("provider", ""))
     provider_role = _provider_role(row)
     return {"schema": "harness.comparison-report.metric-row/v1", "artifact_path": artifact_path,
             "artifact_schema": schema, "benchmark_id": benchmark_id, "comparison_key": comparison_key,
             "provider": provider, "provider_role": provider_role, "model_ref": str(row.get("model_ref", "")),
-            "pass_rate": safe_float(pass_rate), "quality_score": safe_float(quality_score),
+            "pass_rate": safe_float(pass_rate), "quality_score": optional_float(quality_score), "readiness_score": optional_float(readiness_score), "metric_source_kind": str(metric_source_kind or "task_quality"),
             "latency_ms": safe_float(latency_ms), "failure_class": str(failure_class or "")}
 def _m7_rows(data: dict[str, Any], path_text: str, *, benchmark_id: str) -> list[dict[str, Any]]:
     rows = data.get("backend_rows")
@@ -73,8 +76,6 @@ def _m7_rows(data: dict[str, Any], path_text: str, *, benchmark_id: str) -> list
             failure_class=row.get("failure_class", ""),
         ))
     return metric_rows
-
-
 def _unisonai_rows(data: dict[str, Any], path_text: str) -> list[dict[str, Any]]:
     rows = data.get("rows") if isinstance(data.get("rows"), list) else []
     metric_rows = []
@@ -93,8 +94,6 @@ def _unisonai_rows(data: dict[str, Any], path_text: str) -> list[dict[str, Any]]
             failure_class=row.get("failure_class", ""),
         ))
     return metric_rows
-
-
 def _classifier_rows(data: dict[str, Any], path_text: str) -> list[dict[str, Any]]:
     summary = data.get("summary") if isinstance(data.get("summary"), dict) else {}
     rows = summary.get("rows") if isinstance(summary.get("rows"), list) else []
@@ -120,8 +119,6 @@ def _classifier_rows(data: dict[str, Any], path_text: str) -> list[dict[str, Any
             failure_class=failure_class,
         ))
     return metric_rows
-
-
 def _endpoint_gate_rows(data: dict[str, Any], path_text: str) -> list[dict[str, Any]]:
     rows = data.get("rows") if isinstance(data.get("rows"), list) else []
     metric_rows = []
@@ -133,6 +130,8 @@ def _endpoint_gate_rows(data: dict[str, Any], path_text: str) -> list[dict[str, 
             **row,
             "provider": row.get("provider", row.get("backend", "")),
         }
+        readiness_score = row.get("readiness_score"); readiness_score = row.get("quality_score") if readiness_score in (None, "") else readiness_score
+        if readiness_score in (None, ""): readiness_score = 1.0 if row.get("health_ok") and row.get("generation_ok") else 0.0
         metric_rows.append(_metric_row(
             artifact_path=path_text,
             schema=str(data.get("schema", "")),
@@ -140,13 +139,13 @@ def _endpoint_gate_rows(data: dict[str, Any], path_text: str) -> list[dict[str, 
             comparison_key=f"local_model_endpoint_gate:{model}",
             row=provider_row,
             pass_rate=1.0 if row.get("generation_ok") else 0.0,
-            quality_score=row.get("quality_score", 0.0),
+            quality_score=None,
+            readiness_score=readiness_score,
+            metric_source_kind=str(row.get("metric_source_kind") or "endpoint_readiness"),
             latency_ms=row.get("latency_ms", 0.0),
             failure_class=row.get("failure_class", ""),
         ))
     return metric_rows
-
-
 def _quality_duel_rows(data: dict[str, Any], path_text: str) -> list[dict[str, Any]]:
     rows = data.get("rows") if isinstance(data.get("rows"), list) else []
     key = str(data.get("comparison_key", "quality_duel"))
@@ -219,8 +218,9 @@ def _aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         return {"rows": len(rows), "pass_rate": round(sum(int(row.get("returned_well_formed")) for row in rows) / launched, 4) if launched else None,
             "quality_score": round(mean(quality), 4) if quality else None, "quality_n": len(quality),
             "latency_ms": round(median(latency), 3) if latency else None, "latency_range_ms": [min(latency), max(latency)] if latency else None, "latency_n": len(latency), "receipt_states": {state: sum(row.get("receipt_state") == state for row in rows) for state in ("verified", "drift", "not_emitted")}, "availability": {key: sum(int(row.get(key) is True) for row in rows) for key in ("planned", "admitted", "blocked", "launched")}, "enforcement_sha256s": sorted({str(row.get("enforcement_sha256")) for row in rows if row.get("enforcement_sha256")}), "failure_classes": sorted({str(row.get("failure_class", "")) for row in rows if row.get("failure_class")}), "artifact_paths": sorted({str(row.get("artifact_path", "")) for row in rows if row.get("artifact_path")})}
+    quality = [float(row["quality_score"]) for row in rows if row.get("quality_score") is not None]; readiness = [float(row["readiness_score"]) for row in rows if row.get("readiness_score") is not None]
     return {"rows": len(rows), "pass_rate": round(mean(row["pass_rate"] for row in rows), 4) if rows else 0.0,
-            "quality_score": round(mean(row["quality_score"] for row in rows), 4) if rows else 0.0,
+            "quality_score": round(mean(quality), 4) if quality else None, "quality_n": len(quality), "readiness_score": round(mean(readiness), 4) if readiness else None, "readiness_n": len(readiness), "metric_source_kinds": sorted({str(row.get("metric_source_kind", "")) for row in rows if row.get("metric_source_kind")}),
             "latency_ms": round(mean(row["latency_ms"] for row in rows), 3) if rows else 0.0,
             "failure_classes": sorted({str(row.get("failure_class", "")) for row in rows if row.get("failure_class")}),
             "artifact_paths": sorted({str(row.get("artifact_path", "")) for row in rows if row.get("artifact_path")})}
@@ -347,7 +347,7 @@ def build_report(
         "conclusion": report_conclusion,
         "limitations": [
             "This report compares existing scorecard artifacts only; it does not execute or validate benchmarks.",
-            "A missing provider row is treated as missing evidence, not as a model-quality failure.",
+            "A missing provider row is treated as missing evidence, not as a model-quality failure; endpoint-gate readiness rows preserve health, generation, latency, and failure evidence but do not create quality winners.",
             "Cross-benchmark aggregation counts comparison keys equally; inspect raw deltas before making release claims.",
         ],
     }

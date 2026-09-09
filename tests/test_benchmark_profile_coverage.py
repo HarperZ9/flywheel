@@ -161,10 +161,10 @@ def test_observed_artifact_summary_maps_model_endpoint_gate_rows_to_release_gate
     assert summary["benchmark_id"] == "local_model_release_gate_14b_32b"
     assert summary["providers"] == ["flywheel", "ollama_local"]
     assert summary["unit_ids"] == ["14B", "32B"]
-    assert summary["unit_metric_completeness"]["14B"]["complete"] is True
-    assert summary["unit_metric_completeness"]["14B"]["valid"] is True
-    assert summary["unit_metric_completeness"]["32B"]["complete"] is True
-    assert summary["unit_metric_completeness"]["32B"]["valid"] is True
+    metrics = summary["unit_metric_completeness"]
+    assert (summary["metric_contract_kind"], metrics["14B"]["metric_contract_kind"]) == ("endpoint_readiness", "endpoint_readiness")
+    assert "readiness" in metrics["14B"]["present"] and "quality" not in metrics["14B"]["present"] and "quality" not in metrics["14B"]["missing"]
+    assert metrics["14B"]["complete"] is metrics["14B"]["valid"] is metrics["32B"]["complete"] is metrics["32B"]["valid"] is True
     assert summary["row_count"] == 2
 def test_observed_artifact_summary_maps_classifier_friction_rows_to_benchmark_id():
     data = {

@@ -101,6 +101,7 @@ REQUIRED_UNIT_METRIC_GROUPS = {
     "failure_class": {"failure_class", "failure_code", "error_class", "verdict"},
     "receipt": {"receipt_hash", "packet_hash", "witness_hash", "byte_witness_id", "attached_witnesses", "receipt"},
 }
+READINESS_UNIT_METRIC_GROUPS = {"readiness": {"readiness_score", "generation_ok", "health_ok"}, "latency": REQUIRED_UNIT_METRIC_GROUPS["latency"], "failure_class": REQUIRED_UNIT_METRIC_GROUPS["failure_class"], "receipt": REQUIRED_UNIT_METRIC_GROUPS["receipt"]}
 VALID_FAILURE_VALUES = {
     "",
     "none",
@@ -295,14 +296,8 @@ def _collect_unit_ids(value: Any) -> set[str]:
     return unit_ids
 
 
-def _metric_groups_present(row: dict[str, Any]) -> dict[str, bool]:
-    present: dict[str, bool] = {}
-    for group, keys in REQUIRED_UNIT_METRIC_GROUPS.items():
-        if group == "failure_class":
-            present[group] = any(key in row and row.get(key) is not None for key in keys)
-        else:
-            present[group] = any(key in row and row.get(key) not in (None, "") for key in keys)
-    return present
+def _metric_groups_present(row: dict[str, Any], metric_groups: dict[str, set[str]] = REQUIRED_UNIT_METRIC_GROUPS) -> dict[str, bool]:
+    return {group: any(key in row and (row.get(key) is not None if group == "failure_class" else row.get(key) not in (None, "")) for key in keys) for group, keys in metric_groups.items()}
 
 
 def _as_float(value: Any) -> float | None:
@@ -331,33 +326,20 @@ def _receipt_value_valid(key: str, value: Any) -> bool:
     return value not in (None, "")
 
 
-def _metric_groups_valid(row: dict[str, Any], present: dict[str, bool]) -> dict[str, bool]:
-    quality_values = [
-        _as_float(row.get(key))
-        for key in REQUIRED_UNIT_METRIC_GROUPS["quality"]
-        if key in row
-    ]
-    latency_values = [
-        _as_float(row.get(key))
-        for key in REQUIRED_UNIT_METRIC_GROUPS["latency"]
-        if key in row
-    ]
-    failure_values = [
-        str(row.get(key, "")).strip().lower()
-        for key in REQUIRED_UNIT_METRIC_GROUPS["failure_class"]
-        if key in row and row.get(key) is not None
-    ]
-    receipt_values = [
-        _receipt_value_valid(key, row.get(key))
-        for key in REQUIRED_UNIT_METRIC_GROUPS["receipt"]
-        if key in row
-    ]
-    return {
-        "quality": present.get("quality", False) and any(value is not None and 0.0 <= value <= 1.0 for value in quality_values),
-        "latency": present.get("latency", False) and any(value is not None and value >= 0.0 for value in latency_values),
-        "failure_class": present.get("failure_class", False) and any(value in VALID_FAILURE_VALUES for value in failure_values),
-        "receipt": present.get("receipt", False) and any(receipt_values),
-    }
+def _metric_groups_valid(row: dict[str, Any], present: dict[str, bool], metric_groups: dict[str, set[str]] = REQUIRED_UNIT_METRIC_GROUPS) -> dict[str, bool]:
+    valid: dict[str, bool] = {}
+    if "quality" in metric_groups:
+        values = [_as_float(row.get(key)) for key in metric_groups["quality"] if key in row]; valid["quality"] = present.get("quality", False) and any(value is not None and 0.0 <= value <= 1.0 for value in values)
+    if "readiness" in metric_groups:
+        values = [_as_float(row.get(key)) for key in metric_groups["readiness"] if key == "readiness_score" and key in row]; bools = [row.get(key) for key in metric_groups["readiness"] if key in {"generation_ok", "health_ok"} and key in row]
+        valid["readiness"] = present.get("readiness", False) and (any(value is not None and 0.0 <= value <= 1.0 for value in values) or any(isinstance(value, bool) for value in bools))
+    if "latency" in metric_groups:
+        values = [_as_float(row.get(key)) for key in metric_groups["latency"] if key in row]; valid["latency"] = present.get("latency", False) and any(value is not None and value >= 0.0 for value in values)
+    if "failure_class" in metric_groups:
+        values = [str(row.get(key, "")).strip().lower() for key in metric_groups["failure_class"] if key in row and row.get(key) is not None]; valid["failure_class"] = present.get("failure_class", False) and any(value in VALID_FAILURE_VALUES for value in values)
+    if "receipt" in metric_groups:
+        values = [_receipt_value_valid(key, row.get(key)) for key in metric_groups["receipt"] if key in row]; valid["receipt"] = present.get("receipt", False) and any(values)
+    return {group: valid.get(group, False) for group in metric_groups}
 
 
 def _unit_id_from_row(row: dict[str, Any]) -> str:
@@ -368,44 +350,34 @@ def _unit_id_from_row(row: dict[str, Any]) -> str:
     return ""
 
 
-def _metric_row_for_unit(unit_id: str, row: dict[str, Any]) -> dict[str, Any]:
-    present = _metric_groups_present(row)
-    missing = [group for group, ok in present.items() if not ok]
-    valid_groups = _metric_groups_valid(row, present)
-    invalid = sorted(group for group in REQUIRED_UNIT_METRIC_GROUPS
-                     if present.get(group) and not valid_groups[group])
-    return {
-        "unit_id": unit_id,
-        "present": present,
-        "missing": missing,
-        "valid_groups": valid_groups,
-        "invalid": invalid,
-        "complete": not missing,
-        "valid": not missing and not invalid,
-    }
+def _metric_row_for_unit(unit_id: str, row: dict[str, Any], metric_groups: dict[str, set[str]] = REQUIRED_UNIT_METRIC_GROUPS, metric_contract_kind: str = "task_quality") -> dict[str, Any]:
+    present = _metric_groups_present(row, metric_groups); missing = [group for group, ok in present.items() if not ok]; valid_groups = _metric_groups_valid(row, present, metric_groups); invalid = sorted(group for group in metric_groups if present.get(group) and not valid_groups[group])
+    return {"unit_id": unit_id, "metric_contract_kind": metric_contract_kind, "required_metric_groups": list(metric_groups), "present": present, "missing": missing, "valid_groups": valid_groups, "invalid": invalid, "complete": not missing, "valid": not missing and not invalid}
+
+
+def _has_any_metric_present(row: dict[str, Any]) -> bool:
+    return any(bool(value) for value in (row.get("present") or {}).values())
+
+
+def _metric_group_order(*rows: dict[str, Any]) -> list[str]:
+    groups: list[str] = []
+    for row in rows:
+        for group in row.get("required_metric_groups") or list((row.get("present") or {}).keys()):
+            group_text = str(group)
+            if group_text and group_text not in groups: groups.append(group_text)
+    return groups or list(REQUIRED_UNIT_METRIC_GROUPS)
 
 
 def _merge_metric_rows(existing: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any]:
-    present = {
-        group: bool(existing.get("present", {}).get(group)) or bool(incoming.get("present", {}).get(group))
-        for group in REQUIRED_UNIT_METRIC_GROUPS
-    }
-    valid_groups = {
-        group: bool(existing.get("valid_groups", {}).get(group)) or bool(incoming.get("valid_groups", {}).get(group))
-        for group in REQUIRED_UNIT_METRIC_GROUPS
-    }
-    missing = [group for group, ok in present.items() if not ok]
-    invalid = sorted(group for group in REQUIRED_UNIT_METRIC_GROUPS
-                     if present.get(group) and not valid_groups[group])
-    return {
-        "unit_id": existing.get("unit_id") or incoming.get("unit_id", ""),
-        "present": present,
-        "missing": missing,
-        "valid_groups": valid_groups,
-        "invalid": invalid,
-        "complete": not missing,
-        "valid": not missing and not invalid,
-    }
+    if not _has_any_metric_present(existing) and _has_any_metric_present(incoming): return {**incoming, "unit_id": existing.get("unit_id") or incoming.get("unit_id", "")}
+    if _has_any_metric_present(existing) and not _has_any_metric_present(incoming): return existing
+    groups = _metric_group_order(existing, incoming)
+    present = {group: bool((existing.get("present") or {}).get(group)) or bool((incoming.get("present") or {}).get(group)) for group in groups}
+    valid_groups = {group: bool((existing.get("valid_groups") or {}).get(group)) or bool((incoming.get("valid_groups") or {}).get(group)) for group in groups}
+    existing_kind = str(existing.get("metric_contract_kind") or ""); incoming_kind = str(incoming.get("metric_contract_kind") or "")
+    metric_contract_kind = "mixed" if existing_kind and incoming_kind and existing_kind != incoming_kind else existing_kind or incoming_kind or "task_quality"
+    missing = [group for group, ok in present.items() if not ok]; invalid = sorted(group for group in groups if present.get(group) and not valid_groups[group])
+    return {"unit_id": existing.get("unit_id") or incoming.get("unit_id", ""), "metric_contract_kind": metric_contract_kind, "required_metric_groups": groups, "present": present, "missing": missing, "valid_groups": valid_groups, "invalid": invalid, "complete": not missing, "valid": not missing and not invalid}
 
 
 def _merge_provider_unit_maps(
@@ -422,7 +394,7 @@ def _merge_provider_unit_maps(
     return target
 
 
-def _collect_provider_unit_metric_completeness(value: Any, inherited_provider: str = "") -> dict[str, dict[str, dict[str, Any]]]:
+def _collect_provider_unit_metric_completeness(value: Any, inherited_provider: str = "", metric_groups: dict[str, set[str]] = REQUIRED_UNIT_METRIC_GROUPS, metric_contract_kind: str = "task_quality") -> dict[str, dict[str, dict[str, Any]]]:
     collected: dict[str, dict[str, dict[str, Any]]] = {}
     if isinstance(value, dict):
         if value.get("skipped"):
@@ -430,13 +402,13 @@ def _collect_provider_unit_metric_completeness(value: Any, inherited_provider: s
         provider = str(value.get("provider_role") or value.get("provider") or inherited_provider)
         unit_id = _unit_id_from_row(value)
         if provider and unit_id:
-            collected.setdefault(provider, {})[unit_id] = _metric_row_for_unit(unit_id, value)
+            collected.setdefault(provider, {})[unit_id] = _metric_row_for_unit(unit_id, value, metric_groups, metric_contract_kind)
         for key, item in value.items():
             if key in UNIT_CONTAINER_KEYS or isinstance(item, (dict, list)):
-                _merge_provider_unit_maps(collected, _collect_provider_unit_metric_completeness(item, provider))
+                _merge_provider_unit_maps(collected, _collect_provider_unit_metric_completeness(item, provider, metric_groups, metric_contract_kind))
     elif isinstance(value, list):
         for item in value:
-            _merge_provider_unit_maps(collected, _collect_provider_unit_metric_completeness(item, inherited_provider))
+            _merge_provider_unit_maps(collected, _collect_provider_unit_metric_completeness(item, inherited_provider, metric_groups, metric_contract_kind))
     return collected
 
 
@@ -451,36 +423,18 @@ def _normalize_provider_unit_map(
     return normalized
 
 
-def _collect_unit_metric_completeness(value: Any) -> dict[str, dict[str, Any]]:
+def _collect_unit_metric_completeness(value: Any, metric_groups: dict[str, set[str]] = REQUIRED_UNIT_METRIC_GROUPS, metric_contract_kind: str = "task_quality") -> dict[str, dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     if isinstance(value, dict):
-        unit_id = ""
-        for key in UNIT_ID_KEYS:
-            item = value.get(key)
-            if isinstance(item, (str, int, float)) and str(item):
-                unit_id = str(item)
-                break
+        unit_id = _unit_id_from_row(value)
         if unit_id:
-            present = _metric_groups_present(value)
-            missing = [group for group, ok in present.items() if not ok]
-            valid_groups = _metric_groups_valid(value, present)
-            invalid = sorted(group for group in REQUIRED_UNIT_METRIC_GROUPS
-                             if present.get(group) and not valid_groups[group])
-            rows.append({
-                "unit_id": unit_id,
-                "present": present,
-                "missing": missing,
-                "valid_groups": valid_groups,
-                "invalid": invalid,
-                "complete": not missing,
-                "valid": not missing and not invalid,
-            })
+            rows.append(_metric_row_for_unit(unit_id, value, metric_groups, metric_contract_kind))
         for key, item in value.items():
             if key in UNIT_CONTAINER_KEYS or isinstance(item, (dict, list)):
-                rows.extend(_collect_unit_metric_completeness(item).values())
+                rows.extend(_collect_unit_metric_completeness(item, metric_groups, metric_contract_kind).values())
     elif isinstance(value, list):
         for item in value:
-            rows.extend(_collect_unit_metric_completeness(item).values())
+            rows.extend(_collect_unit_metric_completeness(item, metric_groups, metric_contract_kind).values())
 
     merged: dict[str, dict[str, Any]] = {}
     for row in rows:
@@ -488,27 +442,18 @@ def _collect_unit_metric_completeness(value: Any) -> dict[str, dict[str, Any]]:
         if unit_id not in merged:
             merged[unit_id] = row
             continue
-        present = {
-            group: bool(merged[unit_id]["present"].get(group)) or bool(row["present"].get(group))
-            for group in REQUIRED_UNIT_METRIC_GROUPS
-        }
-        valid_groups = {
-            group: bool(merged[unit_id].get("valid_groups", {}).get(group)) or bool(row.get("valid_groups", {}).get(group))
-            for group in REQUIRED_UNIT_METRIC_GROUPS
-        }
-        missing = [group for group, ok in present.items() if not ok]
-        invalid = sorted(group for group in REQUIRED_UNIT_METRIC_GROUPS
-                         if present.get(group) and not valid_groups[group])
-        merged[unit_id] = {
-            "unit_id": unit_id,
-            "present": present,
-            "missing": missing,
-            "valid_groups": valid_groups,
-            "invalid": invalid,
-            "complete": not missing,
-            "valid": not missing and not invalid,
-        }
+        merged[unit_id] = _merge_metric_rows(merged[unit_id], row)
     return merged
+
+
+def _endpoint_readiness_metric_data(data: dict[str, Any]) -> dict[str, Any]:
+    converted_rows = []
+    for row in data.get("rows") if isinstance(data.get("rows"), list) else []:
+        if not isinstance(row, dict): continue
+        converted = dict(row); readiness_score = converted.get("readiness_score"); readiness_score = converted.get("quality_score") if readiness_score in (None, "") else readiness_score
+        if readiness_score in (None, ""): readiness_score = 1.0 if converted.get("health_ok") and converted.get("generation_ok") else 0.0
+        converted.update(readiness_score=readiness_score, metric_source_kind=str(converted.get("metric_source_kind") or "endpoint_readiness"), quality_score_semantics=str(converted.get("quality_score_semantics") or "endpoint_readiness_not_task_quality")); converted.pop("quality_score", None); converted_rows.append(converted)
+    return {**data, "rows": converted_rows}
 
 
 def observed_artifact_summary(data: dict[str, Any], path_text: str) -> dict[str, Any]:
@@ -529,6 +474,9 @@ def observed_artifact_summary(data: dict[str, Any], path_text: str) -> dict[str,
         return _forum_deep_verify_summary(data, path_text)
     providers: list[str] = []
     row_count = 0
+    metric_data = data
+    metric_groups = REQUIRED_UNIT_METRIC_GROUPS
+    metric_contract_kind = "task_quality"
     if schema in {"m7-source-mined-scorecard/v1", "m7-governed-agent-scorecard/v1"}:
         rows = data.get("backend_rows")
         if not isinstance(rows, list) and schema == "m7-source-mined-scorecard/v1":
@@ -554,6 +502,9 @@ def observed_artifact_summary(data: dict[str, Any], path_text: str) -> dict[str,
         rows = data.get("rows")
         providers = _providers_from_rows(rows)
         row_count = len(rows) if isinstance(rows, list) else 0
+        metric_data = _endpoint_readiness_metric_data(data)
+        metric_groups = READINESS_UNIT_METRIC_GROUPS
+        metric_contract_kind = "endpoint_readiness"
     elif schema == "harness.gather-readiness/v1":
         row_count = int(data.get("summary", {}).get("config_count", 0) or 0) if isinstance(data.get("summary"), dict) else 0
     unit_ids = sorted(_collect_unit_ids(data))
@@ -571,8 +522,9 @@ def observed_artifact_summary(data: dict[str, Any], path_text: str) -> dict[str,
         "unit_ids": unit_ids,
         "dataset_lanes": sorted(dataset_lanes),
         "pressure_variables": sorted(pressure_variables),
-        "unit_metric_completeness": _collect_unit_metric_completeness(data),
-        "provider_unit_metric_completeness": _collect_provider_unit_metric_completeness(data),
+        "metric_contract_kind": metric_contract_kind,
+        "unit_metric_completeness": _collect_unit_metric_completeness(metric_data, metric_groups, metric_contract_kind),
+        "provider_unit_metric_completeness": _collect_provider_unit_metric_completeness(metric_data, metric_groups=metric_groups, metric_contract_kind=metric_contract_kind),
         "row_count": row_count,
         "recognized": bool(benchmark_id),
     }

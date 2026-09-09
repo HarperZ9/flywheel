@@ -1,7 +1,8 @@
 param(
   [string]$FlutterPath = "",
   [string]$PythonPath = "",
-  [string]$ValidationDir = ""
+  [string]$ValidationDir = "",
+  [string]$BulletinBaseUrl = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -121,11 +122,17 @@ try {
     throw "flutter pub get failed with exit code $testExit"
   }
 
+  $fixtureMode = "synthetic_media_board"
+  $fixtureScript = Join-Path $scriptRoot "bulletin_media_gateway_fixture.py"
   $fixtureArgs = @(
-    (Join-Path $scriptRoot "bulletin_media_gateway_fixture.py"),
+    $fixtureScript,
     "--fixture-root", $fixtureRoot,
     "--config", $configPath
   )
+  if (![string]::IsNullOrWhiteSpace($BulletinBaseUrl)) {
+    $fixtureMode = "actual_worker_loopback"
+    $fixtureArgs += @("--bulletin-base-url", $BulletinBaseUrl)
+  }
   $process = Start-Process -FilePath $pythonExe -ArgumentList $fixtureArgs `
     -WorkingDirectory $repoRoot -PassThru -WindowStyle Hidden `
     -RedirectStandardOutput $fixtureLog -RedirectStandardError $fixtureErrLog
@@ -175,6 +182,9 @@ try {
     test_log = $testLog
     flutter_path = $flutterExe
     python_path = $pythonExe
+    fixture_mode = $fixtureMode
+    fixture_script = $fixtureScript
+    bulletin_base_url = if (![string]::IsNullOrWhiteSpace($BulletinBaseUrl)) { $BulletinBaseUrl } else { $null }
     fixture_pid = if ($null -ne $process) { $process.Id } else { $null }
     test_exit = $testExit
     error = if ($null -ne $caughtError) { $caughtError.Exception.Message } else { $null }

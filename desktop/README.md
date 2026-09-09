@@ -133,7 +133,7 @@ checkout falls back to `flywheel` on PATH.
 
 ## Design
 
-Hanken Grotesk and Conso ship as the default pair, and the surface is yours:
+Hanken Grotesk and Cascadia Mono ship as the default pair, and the surface is yours:
 text family, mono family, and UI scale are user settings (the tune control
 at the rail's foot), applied live and persisted. Panels resize by dragging
 their hairline dividers; layouts adapt to narrow windows. One rule is not on

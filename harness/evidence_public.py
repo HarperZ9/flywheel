@@ -45,7 +45,8 @@ def parse_json(raw: bytes | str) -> dict:
 
 def exact_request(value: dict, expected, *, optional=()) -> dict:
     fields, optional_fields = frozenset(expected), frozenset(optional)
-    extra, missing = value.keys() - fields, fields - value.keys() - optional_fields
+    extra = value.keys() - (fields | optional_fields)
+    missing = fields - value.keys() - optional_fields
     if extra:
         raise TransportError("UNKNOWN_FIELD", "request contains unsupported fields")
     if missing:

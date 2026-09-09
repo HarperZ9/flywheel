@@ -20,9 +20,11 @@ from .outcome_bulletin_media_core import (
     PRIVATE_PACKET_SCHEMA,
     PUBLICATION_SCHEMA,
     TOOL,
+    _alt_text,
     _fail,
     _private_text,
     _read_row_bytes as _read_bytes_for_row,
+    _media_mismatch_fields as _media_mismatch_fields_value,
     _same_media as _same_media_value,
     _strict_dict,
 )
@@ -129,8 +131,13 @@ def _read_packet(
             or packet.get("post") != preview["post"]
             or packet.get("public_media") != preview["media"]):
         _fail()
+    private_rows = packet.get("private_media")
+    public_rows = preview.get("media")
+    if type(private_rows) is not list or type(public_rows) is not list:
+        _fail()
+    _validate_packet_media_policy(private_rows, public_rows, preview)
     raw_rows = []
-    for private, public in zip(packet["private_media"], preview["media"]):
+    for private, public in zip(private_rows, public_rows):
         raw = _read_row_bytes(packet, private, MAX_MEDIA_BYTES)
         if _same_public(private, public, raw) is False:
             _fail()
@@ -138,6 +145,32 @@ def _read_packet(
     if len(raw_rows) != len(preview["media"]):
         _fail()
     return {**packet, "bytes": raw_rows} if with_bytes else packet
+
+
+def _validate_packet_media_policy(
+        private_rows: list, public_rows: list, preview: dict) -> None:
+    attachments = preview.get("post", {}).get("attachments")
+    if (type(attachments) is not list
+            or len(private_rows) != len(public_rows)
+            or len(attachments) != len(public_rows)):
+        _fail()
+    seen_media_ids = set()
+    for private, public, attachment in zip(
+            private_rows, public_rows, attachments):
+        if type(private) is not dict or type(public) is not dict:
+            _fail()
+        if type(attachment) is not dict:
+            _fail()
+        _alt_text(private.get("alt"))
+        _alt_text(public.get("alt"))
+        _alt_text(attachment.get("alt"))
+        media_id = public.get("expected_media_id")
+        if (type(media_id) is not str or not media_id
+                or private.get("expected_media_id") != media_id
+                or attachment.get("media_id") != media_id
+                or media_id in seen_media_ids):
+            _fail()
+        seen_media_ids.add(media_id)
 
 
 def _read_row_bytes(packet: dict, row: dict, max_bytes: int) -> bytes:
@@ -179,9 +212,11 @@ def _publication(status: str, preview: dict, **extra) -> dict:
 
 
 def _same_media(value: object, row: dict) -> bool:
-    if type(value) is not dict:
-        return False
     return _same_media_value(value, row)
+
+
+def _media_mismatch_fields(value: object, row: dict) -> list[str]:
+    return _media_mismatch_fields_value(value, row)
 
 
 def _media_metadata_matches(post: object, preview: dict) -> bool:
@@ -193,11 +228,17 @@ def _media_metadata_matches(post: object, preview: dict) -> bool:
                 or returned.get("kind") != row["kind"]
                 or returned.get("bytes") != row["bytes"]):
             return False
-        media_type = returned.get("type", returned.get("media_type"))
+        media_type = returned.get("media_type")
+        legacy_type = returned.get("type")
+        if legacy_type is not None and legacy_type != media_type:
+            return False
         if media_type != row["media_type"]:
             return False
         url = returned.get("url")
-        parsed = urlsplit(url) if type(url) is str else None
+        try:
+            parsed = urlsplit(url) if type(url) is str else None
+        except ValueError:
+            return False
         expected_path = f"/v1/media/{quote(row['expected_media_id'], safe='')}"
         if (parsed is None or parsed.scheme or parsed.netloc
                 or parsed.path != expected_path or parsed.query or parsed.fragment):

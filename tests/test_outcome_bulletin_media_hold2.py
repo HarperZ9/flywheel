@@ -70,11 +70,11 @@ def _authorized_media(state, preview, credential_ref):
         owner_ref=OWNER, state_root=state, clock=lambda: NOW)
 
 
-def _auth_for_preview(preview):
+def _auth_for_preview(preview, credential_ref="cred_" + "a" * 32):
     operation = {"name": "bulletin", "tool": "board_publish_media_post",
                  "args": preview, "governance_tier": "T2", "timeout": 20,
                  "data_refs": preview["data_refs"],
-                 "credential_refs": ["cred_" + "a" * 32]}
+                 "credential_refs": [credential_ref]}
     return AuthorizedOperation.for_test(
         action="lane.call", operation=operation,
         scopes=("exec", "network", "plugin", "secrets"))
@@ -202,6 +202,8 @@ def test_http_huge_cursor_is_typed_media_request_error(tmp_path, monkeypatch):
 @pytest.mark.parametrize("mode", [
     "wrong_attachment_url",
     "authority_attachment_url",
+    "wrong_attachment_media_type",
+    "conflicting_attachment_media_type",
 ])
 def test_loopback_readback_rejects_extra_bytes_and_noncanonical_urls(
         tmp_path, mode):
