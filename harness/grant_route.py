@@ -75,14 +75,15 @@ def _client_item(kind: str, item: object) -> dict:
     return item
 def _append_operation(req: dict, service: JourneyService) -> tuple[str, dict]:
     command = req["command"]
-    if type(command) is not dict or type(command.get("type")) is not str:
-        raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
+    if type(command) is not dict or type(command.get("type")) is not str: raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
     kind = command["type"]
-    expected = {"advance_stage": {"type"}, "record_claim": {"type", "claim"},
-                "record_next_action": {"type", "next_action"}}.get(kind)
-    if expected is None or set(command) != expected:
-        raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
+    expected = {"advance_stage": {"type"}, "record_claim": {"type", "claim"}, "record_next_action": {"type", "next_action"}, "record_writing_artifact": {"type", "kind", "artifact_ref", "artifact_sha256", "opaque_ref"}}.get(kind)
+    if expected is None or set(command) != expected: raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
     public_metadata(command)
+    if kind == "record_writing_artifact":
+        if service is None: raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
+        from .writing_artifacts import plan_writing_artifact_append
+        return plan_writing_artifact_append(service, req, command)
     if kind == "advance_stage":
         projection = service.resume(req["journey_ref"])
         try:
@@ -123,9 +124,6 @@ def _operation(action: str, req: dict, owner_ref: str, state_root: Path,
         intake = json_ref(admitted_root(evidence_root), req["intake_ref"])
         body = {"legacy_label": None, "goal": public_text(req, "goal"), "intake": intake, "occurred_at": clock()}
         return "intake", body, "journey.create", ("journey:create",), (req["intake_ref"],)
-    if action == "append" and (type(req["command"]) is not dict or req["command"].get("type") != "advance_stage"):
-        operation, payload = _append_operation(req, None)
-        body = {"occurred_at": clock(), "payload": payload}; return operation, body, "journey.append", ("journey:append",), ()
     service = _service(owner_ref, state_root, clock)
     if action == "append":
         operation, payload = _append_operation(req, service)
@@ -267,6 +265,8 @@ def resolve_approved_grant(grant_ref: str, *, owner_ref: str, state_root: Path,
         "operation": record["operation"], "operation_body": record["operation_body"],
         "operation_ref": record["operation_ref"],
         "grant_request": _request_from(record["grant_request"])}
+def read_proposal_record(proposal_ref: str, *, owner_ref: str, state_root: Path) -> dict:
+    return _read(_proposal_dir(state_root, owner_ref), proposal_ref, owner_ref)
 def _mapped_error(exc: Exception) -> tuple[dict, int]:
     if isinstance(exc, TransportError): return error_response(exc)
     if isinstance(exc, JourneyLockBusy) or (isinstance(exc, GrantError) and exc.code == "STORE_BUSY"):

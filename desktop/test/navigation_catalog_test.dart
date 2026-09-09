@@ -1,4 +1,4 @@
-﻿// The destination catalog: exactly 41 stable IDs in five groups. Labels
+﻿// The destination catalog: exactly 42 stable IDs in five groups. Labels
 // may be renamed; identities never move. This test freezes the contract.
 import 'package:flutter_test/flutter_test.dart';
 
@@ -8,10 +8,10 @@ import 'package:flywheel_desktop/navigation/destination_catalog.dart';
 void main() {
   // The name said 30 while the assertion said 33, so the name had already
   // drifted past the thing it describes. Both move together from here.
-  test('the catalog holds exactly 41 unique destinations', () {
-    expect(destinationCatalog.length, 41);
+  test('the catalog holds exactly 42 unique destinations', () {
+    expect(destinationCatalog.length, 42);
     final ids = destinationCatalog.map((d) => d.id).toSet();
-    expect(ids.length, 41);
+    expect(ids.length, 42);
     expect(ids, contains(DestinationId.approvals));
   });
 
@@ -23,8 +23,8 @@ void main() {
             .where((d) => group(d.id) == 'work')
             .map((d) => d.id.name)
             .toList(),
-        ['journey', 'plan', 'workflows', 'projects', 'swarms', 'roadmap',
-          'schedule', 'runners', 'approvals']);
+        ['journey', 'plan', 'workflows', 'projects', 'writing', 'swarms',
+          'roadmap', 'schedule', 'runners', 'approvals']);
     expect(
         destinationCatalog
             .where((d) => group(d.id) == 'chat')

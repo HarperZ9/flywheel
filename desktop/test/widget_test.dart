@@ -19,6 +19,7 @@ import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/views/agent_view.dart';
 import 'package:flywheel_desktop/views/code_view.dart';
 import 'package:flywheel_desktop/views/lanes_view.dart';
+import 'package:flywheel_desktop/views/writing_view.dart';
 import 'package:flywheel_desktop/views/receipts_view.dart';
 import 'package:flywheel_desktop/widgets/flywheel_nav.dart';
 
@@ -40,6 +41,7 @@ const _types = <DestinationId, String>{
   DestinationId.memory: 'MemoryView',
   DestinationId.graph: 'GraphView',
   DestinationId.projects: 'ProjectsView',
+  DestinationId.writing: 'WritingView',
   DestinationId.swarms: 'SwarmsView',
   DestinationId.roadmap: 'RoadmapView',
   DestinationId.schedule: 'ScheduleView',
@@ -69,7 +71,7 @@ const _types = <DestinationId, String>{
 };
 
 void main() {
-  testWidgets('factory preserves all forty-one exact destination mappings',
+  testWidgets('factory preserves all forty-two exact destination mappings',
       (tester) async {
     final dir = Directory.systemTemp.createTempSync('journey-factory-');
     addTearDown(() => dir.deleteSync(recursive: true));
@@ -111,7 +113,7 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('forty-one labels remain reachable at ordinary scaled viewport',
+  testWidgets('forty-two labels remain reachable at ordinary scaled viewport',
       (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
