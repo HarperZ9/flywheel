@@ -126,5 +126,3 @@ run_journey(manifest: str | Path | JourneyManifest, *, artifact_root: str | Path
 ```
 
 Stateful environment journeys can share lifecycle/result vocabulary and artifact layout while keeping product-specific action/state/hidden-control logic in their own modules. This slice owns only the E2E journey modules, tests, fixtures, docs, and the single `cli_entry` dispatch row.
-
-

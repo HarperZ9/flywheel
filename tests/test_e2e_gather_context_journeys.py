@@ -126,4 +126,3 @@ def test_altered_installed_executable_is_blocked_by_expected_hash(tmp_path, monk
 
     assert result.status == "blocked"
     assert result.primary_outcome == "runtime_executable_hash_mismatch"
-
