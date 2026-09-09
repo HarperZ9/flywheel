@@ -16,6 +16,7 @@ const expectedDestinationTypes = <DestinationId, String>{
   DestinationId.memory: 'MemoryView',
   DestinationId.graph: 'GraphView',
   DestinationId.projects: 'ProjectsView',
+  DestinationId.writing: 'WritingView',
   DestinationId.swarms: 'SwarmsView',
   DestinationId.roadmap: 'RoadmapView',
   DestinationId.schedule: 'ScheduleView',

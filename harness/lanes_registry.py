@@ -86,6 +86,10 @@ LANES: dict[str, Lane] = {
         "local-model", "", "python", ("-m", "harness.local_mcp"), "bundled", "0.1.0",
         "the trained 14B proposer + verified-inference harness (the engine lane)",
         "propose-verify"),
+    "writing": Lane(
+        "writing", "", "python", ("-m", "harness.writing_mcp"), "bundled", "0.1.0",
+        "private author workspace: scoped revisions, exact approval, and export receipts",
+        "authoring"),
     "relay": Lane(
         "relay", "relay-agent", "relay", ("--mcp",), "pip", "0.1.0",
         "accountable coding agent on any model endpoint (local-first, witnessed runs)",

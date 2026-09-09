@@ -7,6 +7,7 @@ import '../client/gateway_runners.dart';
 import '../client/gateway_scan.dart';
 import '../client/gateway_schedule.dart';
 import '../client/gateway_swarms.dart';
+import '../client/writing_api.dart';
 import '../controllers/journey_controller.dart';
 import '../ide/code_buffer_session.dart';
 import '../ide/unsaved_work_guard.dart';
@@ -55,6 +56,7 @@ import '../views/train_view.dart';
 import '../views/uplift_view.dart';
 import '../views/usage_view.dart';
 import '../views/workflows_view.dart';
+import '../views/writing_view.dart';
 import '../views/world_view.dart';
 import '../widgets/fw.dart';
 import '../widgets/side_rail.dart';
@@ -115,6 +117,8 @@ Widget? _work(DestinationId id, DestinationInputs i) => switch (id) {
         WorkflowsView(client: i.client, alive: i.alive, settings: i.settings),
       DestinationId.projects =>
         ProjectsView(client: i.client, journey: i.journey, alive: i.alive),
+      DestinationId.writing =>
+        WritingView(api: GatewayWritingApi(i.client), alive: i.alive),
       DestinationId.swarms =>
         SwarmsView(api: SwarmsApi(baseUrl: i.client.baseUrl), alive: i.alive),
       DestinationId.roadmap =>

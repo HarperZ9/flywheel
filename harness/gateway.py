@@ -845,6 +845,8 @@ class _Handler(BaseHTTPRequestHandler):
             document = handle_discovery_get(p)
             if document is not None:
                 return self._raw(*document)
+        if p.startswith("/api/writing/"):          # private Writing workspace
+            from harness.writing_route import writing_get; return self._json(*writing_get(self.path, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state", clock=self.clock))
         if p.startswith("/api/hooks"):             # hook definitions and their fire history
             from harness.hooks_route import handle_hooks_get
             body, code = handle_hooks_get(p, run_root=Path(self.run_root))
@@ -1240,7 +1242,7 @@ class _Handler(BaseHTTPRequestHandler):
                 token_store=self._session_tokens())
             return self._json(body, code)
         if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
-                         "/api/continuation/",
+                         "/api/continuation/", "/api/writing/",
                          "/api/gateway-grants/",
                          "/api/credential-handles/")):  # bind a handle, presence only
             length = self._content_length()
@@ -1331,6 +1333,8 @@ class _Handler(BaseHTTPRequestHandler):
                 from harness.grant_route import grant_post
                 body, code = grant_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
                     evidence_root=self.flywheel_home / "state" / "artifacts", clock=self.clock)
+            elif p.startswith("/api/writing/"):    # private Writing workspace
+                from harness.writing_route import writing_post; body, code = writing_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state", clock=self.clock)
             elif p.startswith("/api/gateway-grants/"):  # grants scoped to the gateway itself
                 from harness.gateway_grant_route import gateway_grant_post
                 body, code = gateway_grant_post(

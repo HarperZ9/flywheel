@@ -1,43 +1,16 @@
 #!/usr/bin/env python3
-"""writing_pysource.py -- the prose inside Python source, and nothing else.
-
-Phase 1 recorded the gap this closes: pointing the linter at a .py file scored
-its string DATA as prose, so the ban lists tripped their own linter. The prose
-of a Python file is its docstrings and comments; string literals are payload.
-Both scoring paths use this extraction: per-file scoring and --delta.
-
-In the --delta path the front-matter profile tag is resolved from the
-EXTRACTED prose, where docstrings precede comments; a tag written as a code
-comment may fall outside the first 10 lines there. Tag .py files in the
-module docstring's opening lines when delta scoring matters.
-
-Standard library only.
-"""
+"""Compatibility shim for `harness.writing_lint.pysource`."""
 from __future__ import annotations
 
-import ast
-import io
-import tokenize
+import sys
+from pathlib import Path
 
+_ROOT = Path(__file__).resolve().parents[1]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
-def prose_of(source: str) -> str:
-    """Docstrings and comments, joined with blank lines. Empty on a parse error,
-    because unparseable source has no reliably identifiable prose."""
-    parts: list[str] = []
-    try:
-        tree = ast.parse(source)
-    except SyntaxError:
-        return ""
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef,
-                             ast.AsyncFunctionDef)):
-            doc = ast.get_docstring(node)
-            if doc:
-                parts.append(doc)
-    try:
-        for tok in tokenize.generate_tokens(io.StringIO(source).readline):
-            if tok.type == tokenize.COMMENT:
-                parts.append(tok.string.lstrip("#").strip())
-    except tokenize.TokenError:
-        pass
-    return "\n\n".join(p for p in parts if p)
+from harness.writing_lint import pysource as _impl
+
+for _name, _value in vars(_impl).items():
+    if _name not in {"__name__", "__package__", "__loader__", "__spec__", "__builtins__"}:
+        globals()[_name] = _value
