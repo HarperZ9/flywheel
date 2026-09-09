@@ -36,6 +36,14 @@
   directory-metadata crash-durability claim.
 - `ArtifactIdentity.to_json_dict()` and `from_json_dict()` provide the stable
   JSON shape: `platform`, `device`, and `inode`.
+- `ArtifactRoot.identity` returns the retained opened root cap identity. It does
+  not re-open the root path.
+- `ArtifactRoot.borrow_descriptor()` is a same-process scoped context manager.
+  It duplicates the retained root fd/HANDLE, validates the duplicate identity,
+  returns a `BorrowedDescriptor`, and closes only that duplicate on exit. The
+  descriptor is not a JSON or CLI surface and carries no dependency on Gather.
+  One borrow manager is non-reentrant and single-use after a successful enter;
+  callers request another manager from `borrow_descriptor()` for another borrow.
 
 ---
 
@@ -49,6 +57,9 @@
 - Produces: `PrivateArtifactError`, `ArtifactIdentity`, `root_identity`, `open_artifact_root`.
 - `open_artifact_root(root, expected=identity, writable=False)` captures a
   read-only root authority. `write_new_or_same` on that authority raises `BUSY`.
+- `with cap.borrow_descriptor() as borrowed:` yields a process-local duplicate
+  of the retained root authority. POSIX sets `borrowed.fd`; Windows sets
+  `borrowed.handle`.
 
 - [ ] Write failing tests for the requested API and error code contract.
 - [ ] Run `python -m pytest tests/test_private_artifact_fs.py -q` and observe import failure.

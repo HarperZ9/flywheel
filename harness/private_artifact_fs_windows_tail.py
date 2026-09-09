@@ -6,10 +6,14 @@ from pathlib import Path, PureWindowsPath
 
 from .private_artifact_fs import (
     BUSY,
+    CLOSED,
     CONFLICT,
+    IO_ERROR,
     NOT_REGULAR,
     UNSAFE_PATH,
+    UNSUPPORTED_OS,
     ArtifactIdentity,
+    BorrowedDescriptor,
     PrivateArtifactError,
 )
 from . import private_artifact_fs_windows_api as _win
@@ -70,6 +74,61 @@ def handle_identity_from_info(info) -> ArtifactIdentity:
         "windows",
         int(info.dwVolumeSerialNumber),
         (int(info.nFileIndexHigh) << 32) | int(info.nFileIndexLow),
+    )
+
+
+def duplicate_handle(handle: int) -> int:
+    try:
+        return _win.duplicate_handle(handle)
+    except AttributeError as exc:
+        raise PrivateArtifactError(UNSUPPORTED_OS) from exc
+    except OSError as exc:
+        code = CLOSED if _is_invalid_handle(exc) else IO_ERROR
+        raise PrivateArtifactError(code) from exc
+
+
+def borrowed_descriptor(handle: int, expected: ArtifactIdentity):
+    return _BorrowedHandle(handle, expected)
+
+
+class _BorrowedHandle:
+    def __init__(self, handle: int, expected: ArtifactIdentity) -> None:
+        self._source = handle
+        self._expected = expected
+        self._handle: int | None = None
+        self._used = False
+
+    def __enter__(self) -> BorrowedDescriptor:
+        if self._handle is not None:
+            raise PrivateArtifactError(BUSY)
+        if self._used:
+            raise PrivateArtifactError(CLOSED)
+        handle = duplicate_handle(self._source)
+        try:
+            info = _win.handle_info(handle)
+            if handle_identity_from_info(info) != self._expected or not is_dir(info) or is_reparse(info):
+                raise PrivateArtifactError(UNSAFE_PATH)
+            self._handle = handle
+            self._used = True
+            return BorrowedDescriptor("windows", self._expected, handle=handle)
+        except PrivateArtifactError:
+            close_handle(handle)
+            raise
+        except OSError as exc:
+            close_handle(handle)
+            raise PrivateArtifactError(IO_ERROR) from exc
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
+
+    def close(self) -> None:
+        handle, self._handle = self._handle, None
+        close_handle(handle)
+
+
+def _is_invalid_handle(exc: OSError) -> bool:
+    return getattr(exc, "winerror", None) == 6 or getattr(exc, "errno", None) == 6 or (
+        bool(exc.args) and exc.args[0] == 6
     )
 
 
@@ -134,6 +193,8 @@ __all__ = [
     "absolute_existing",
     "check_name",
     "close_handle",
+    "borrowed_descriptor",
+    "duplicate_handle",
     "handle_identity",
     "handle_identity_from_info",
     "is_dir",

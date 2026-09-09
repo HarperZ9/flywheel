@@ -227,7 +227,7 @@ _PACKAGED = {"acp": "harness.acp_cli", "dap": "harness.dap_cli",
              "cross-harness-execute": "harness.cross_harness_cli",
              "workstream": "harness.workstream_cli",
              "journey": "harness.journey_cli", "grant": "harness.journey_cli",
-             "e2e-journey": "harness.e2e_cli"}
+             "e2e-journey": "harness.e2e_cli", "endpoint-gate": "harness.model_endpoint_gate_cli"}
 def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
     module = _PACKAGED.get(command)
     if module is None:
@@ -276,7 +276,8 @@ def main(argv: list[str] | None = None) -> int:
                   "Umbrella commands (run from a bare install): up, lanes, "
                   "loop-status, install, corpus-export, gate, why, down, "
                   "remote, relay, grant, journey, evidence, bulletin-identity,\n"
-                  "cross-harness-execute, check-output, packs, workstream\n"
+                  "cross-harness-execute, check-output, packs, workstream, "
+                  "endpoint-gate\n"
                   "Passthrough commands need a source checkout "
                   "(scripts/run_harness_cli.py).",
                   file=sys.stdout if wants_help else sys.stderr)
@@ -284,7 +285,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"`flywheel {command}` requires a source checkout (scripts/run_harness_cli.py).",
               file=sys.stderr)
         print("Run from a checkout, or use the umbrella commands "
-              "(up, lanes, loop-status, install, corpus-export).", file=sys.stderr)
+              "(up, lanes, loop-status, install, corpus-export, endpoint-gate).", file=sys.stderr)
         return 2
     os.chdir(repo_root)
     script = repo_root / "scripts" / "run_harness_cli.py"
@@ -294,7 +295,6 @@ def main(argv: list[str] | None = None) -> int:
     except SystemExit as exc:
         return int(exc.code or 0)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

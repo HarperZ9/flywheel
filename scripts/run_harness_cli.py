@@ -875,6 +875,8 @@ def build_parser() -> argparse.ArgumentParser:
     endpoint_gate.add_argument("--profile-artifact", default="C:/tmp/model_endpoint_profiles_20260709.json")
     endpoint_gate.add_argument("--models", default="")
     endpoint_gate.add_argument("--backends", default="")
+    endpoint_gate.add_argument("--profile-id")
+    endpoint_gate.add_argument("--max-generation-calls", type=int)
     endpoint_gate.add_argument("--timeout-seconds", type=float, default=300.0)  # cold 32B load
     endpoint_gate.add_argument("--max-tokens", type=int, default=64)
     endpoint_gate.add_argument("--strict-exit", action="store_true")
@@ -1281,15 +1283,13 @@ def build_command(args, *, repo_root: Path) -> list[str]:
         _common_outputs(command, args)
         return command
     if args.command_name == "endpoint-gate":
-        command = [
-            py,
-            "scripts/run_model_endpoint_gate.py",
+        command = [py, "scripts/run_model_endpoint_gate.py",
             "--profile-artifact", args.profile_artifact,
-            "--timeout-seconds",
-            str(args.timeout_seconds),
-            "--max-tokens",
-            str(args.max_tokens),
-        ]
+            "--timeout-seconds", str(args.timeout_seconds), "--max-tokens", str(args.max_tokens)]
+        if args.profile_id is not None:
+            command.extend(["--profile-id", args.profile_id])
+        if args.max_generation_calls is not None:
+            command.extend(["--max-generation-calls", str(args.max_generation_calls)])
         _append_if(command, "--models", args.models)
         _append_if(command, "--backends", args.backends)
         if args.strict_exit:

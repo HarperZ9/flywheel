@@ -28,6 +28,7 @@ GENERIC_WRITE = 0x40000000
 OPEN_EXISTING = 3
 SYNCHRONIZE = 0x00100000
 _OBJ_CASE_INSENSITIVE = 0x40
+_DUPLICATE_SAME_ACCESS = 2
 _STATUS_NAME_COLLISION = 0xC0000035
 _STATUS_NAME_NOT_FOUND = 0xC0000034
 _ERROR_ALREADY_EXISTS = 183
@@ -38,7 +39,9 @@ _INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
 
 _CloseHandle = None
 _CreateFileW = None
+_DuplicateHandle = None
 _FlushFileBuffers = None
+_GetCurrentProcess = None
 _GetFileInformationByHandle = None
 _NtCreateFile = None
 _NtSetInformationFile = None
@@ -95,6 +98,17 @@ def create_file(path: str, access: int, share: int, disposition: int, flags: int
     if handle == _INVALID_HANDLE_VALUE:
         raise _last_error("CreateFileW failed")
     return int(handle)
+
+
+def duplicate_handle(handle: int) -> int:
+    _load()
+    process = _GetCurrentProcess()
+    duplicate = wintypes.HANDLE()
+    ok = _DuplicateHandle(process, wintypes.HANDLE(handle), process, ctypes.byref(duplicate),
+                          0, False, _DUPLICATE_SAME_ACCESS)
+    if not ok:
+        raise _last_error("DuplicateHandle failed")
+    return int(duplicate.value)
 
 
 def nt_create_relative(handle: int, name: str, access: int, share: int,
@@ -192,7 +206,8 @@ def close_handle(handle: int | None) -> None:
 
 
 def _load() -> None:
-    global _CloseHandle, _CreateFileW, _FlushFileBuffers, _GetFileInformationByHandle
+    global _CloseHandle, _CreateFileW, _DuplicateHandle, _FlushFileBuffers
+    global _GetCurrentProcess, _GetFileInformationByHandle
     global _NtCreateFile, _NtSetInformationFile, _ReadFile, _RtlNtStatusToDosError
     global _SetFilePointerEx, _WriteFile
     if _CreateFileW is not None:
@@ -209,12 +224,19 @@ def _load() -> None:
                              wintypes.LPVOID, wintypes.DWORD, wintypes.DWORD,
                              wintypes.HANDLE]
     _CreateFileW.restype = wintypes.HANDLE
+    _DuplicateHandle = kernel32.DuplicateHandle
+    _DuplicateHandle.argtypes = [wintypes.HANDLE, wintypes.HANDLE, wintypes.HANDLE,
+                                 ctypes.POINTER(wintypes.HANDLE), wintypes.DWORD,
+                                 wintypes.BOOL, wintypes.DWORD]
+    _DuplicateHandle.restype = wintypes.BOOL
     _FlushFileBuffers = kernel32.FlushFileBuffers
     _FlushFileBuffers.argtypes = [wintypes.HANDLE]
     _FlushFileBuffers.restype = wintypes.BOOL
     _GetFileInformationByHandle = kernel32.GetFileInformationByHandle
     _GetFileInformationByHandle.argtypes = [wintypes.HANDLE, ctypes.POINTER(HandleInfo)]
     _GetFileInformationByHandle.restype = wintypes.BOOL
+    _GetCurrentProcess = kernel32.GetCurrentProcess
+    _GetCurrentProcess.restype = wintypes.HANDLE
     _ReadFile = kernel32.ReadFile
     _ReadFile.argtypes = [wintypes.HANDLE, wintypes.LPVOID, wintypes.DWORD,
                           ctypes.POINTER(wintypes.DWORD), wintypes.LPVOID]

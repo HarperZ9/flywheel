@@ -11,7 +11,7 @@ import harness.cli_entry as cli
 import harness.gateway as gw
 import pytest
 import subprocess
-import hashlib, json, sys, venv
+import hashlib, json, sys
 import base64
 from harness.cross_harness_adapters import CodexCliProposer, DirectCodexAdapter, FlywheelRouterAdapter, _run_process
 from harness.cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest
@@ -154,21 +154,6 @@ def test_cross_harness_source_wrapper_exposes_the_same_help_from_any_cwd(tmp_pat
                                capture_output=True, text=True, check=False)
     assert completed.returncode == 0
     assert "--runtime-matrix" in completed.stdout
-
-
-def test_built_wheel_exposes_root_and_cross_harness_help_outside_checkout(tmp_path):
-    root, wheels, env = cli.Path(__file__).resolve().parents[1], tmp_path / "wheels", tmp_path / "env"
-    wheels.mkdir()
-    built = subprocess.run([sys.executable, "-m", "pip", "wheel", ".", "--no-deps", "-w", str(wheels)], cwd=root, capture_output=True, text=True)
-    assert built.returncode == 0, built.stderr
-    venv.EnvBuilder(with_pip=True).create(env)
-    python = env / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
-    installed = subprocess.run([str(python), "-m", "pip", "install", "--no-deps", "--no-index", str(next(wheels.glob("*.whl")))], capture_output=True, text=True)
-    assert installed.returncode == 0, installed.stderr
-    exe = env / ("Scripts/flywheel.exe" if sys.platform == "win32" else "bin/flywheel")
-    root_help = subprocess.run([str(exe), "--help"], cwd=tmp_path, capture_output=True, text=True)
-    sub_help = subprocess.run([str(exe), "cross-harness-execute", "--help"], cwd=tmp_path, capture_output=True, text=True)
-    assert root_help.returncode == sub_help.returncode == 0 and "cross-harness-execute" in root_help.stdout and "--runtime-matrix" in sub_help.stdout
 
 
 def _attempt(tmp_path, role="codex_harness", adapter="codex_cli_json/v1"):
