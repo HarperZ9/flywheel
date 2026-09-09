@@ -295,20 +295,68 @@ publisher returns an accepted post id and no readback function is supplied.
 
 Failure results use fixed messages and do not echo downstream network errors.
 
+## Native media publication
+
+The native media backend uses the same grant store for a compound upload and
+post operation. The authenticated routes
+`POST /api/gateway-grants/bulletin-media-runs` and
+`POST /api/gateway-grants/bulletin-media-artifacts` expose normalized picker rows
+from the gateway-configured `run_root`. The preview route
+`POST /api/gateway-grants/bulletin-media-preview` then accepts a selected
+`run_id`, selected `artifact_id` rows, alt text, public post fields, destination
+origin, and one `cred_*` handle. The native request cannot include local paths,
+stored paths, relative paths, artifact roots, media ids, or external preview URLs.
+The run list accepts optional nullable `limit` and `cursor` fields; non-null
+limits are bounded to 1 through 100 and cursors are server-returned ASCII
+decimal offset strings of at most 9 digits. Oversized or non-decimal cursors
+fail before integer conversion.
+
+This first slice implements `artifact_share` for creative artifacts such as
+music, memes, art, images, audio, and video. The rendered post uses title,
+description, source attribution, public allowlisted links, and explicit
+limits. It does not claim the artifact was independently checked, and upload
+success does not prove license, authorship, malware safety, hidden-data absence,
+or semantic truth.
+
+The proposal response adds `summary.bulletin_media_review` with the exact room,
+body, destination, ordered media hashes, expected content-addressed media IDs,
+byte counts, sniffed media types, preview refs, packet hash, and the limits a
+reviewer should see. Private artifact bytes stay in the local packet until the
+operator approves. `POST /api/gateway-grants/bulletin-media-preview-bytes`
+serves only authenticated, proposal-bound base64 preview bytes for a live
+proposal, bounded by the same 10 MiB media limit, and returns `cache: no-store`;
+it accepts only minted preview refs and rehashes bytes on every read.
+
+After approval, the dispatcher consumes the single exact
+`board_publish_media_post` grant, reopens and rehashes the artifact bytes, checks
+the configured Bulletin origin still matches the reviewed destination, and only
+then resolves the exact `BULLETIN_AGENT_JWK` handle. It signs raw
+`POST /v1/media` uploads, verifies the returned media identity, verifies public
+media bytes with an expected-size-plus-one read, verifies audio/video range
+reads, requires exact relative `/v1/media/<media_id>` attachment URLs on post
+readback, signs the existing `POST /v1/posts` payload, and reads the public post
+back. The reviewed timeout is a total deadline
+for uploads, public GETs, range checks, post write, and post readback.
+
+The media publication states are deliberately partial when the network result is
+ambiguous: `media_upload_unverified` means bytes may already be public by their
+content-addressed media id and no post was attempted; `media_uploaded_post_failed`
+and `media_uploaded_post_unverified` mean at least one upload was confirmed but
+the post was not proven public. The backend does not silently retry those states.
+
 ## Current integration boundary
 
 The existing Flywheel gateway already canonicalizes `lane.call` grant requests.
-This adapter does not change the lane route. It intercepts the intended
-Bulletin board-write lane in `gateway_actions.dispatch_builtin()` before the
-generic lane route would call the unsigned MCP lane transport. The minimal
-publication contract is:
+Plain text Bulletin publication still uses the exact `board_write_post` path.
+Native media publication adds only the selected-artifact preview route and the
+compound `board_publish_media_post` dispatcher described above; it does not
+create a second grant store or a parallel auth framework.
 
-1. Authorize the final `flywheel.gateway-operation/v1` envelope for action
-   `lane.call`.
-2. Consume the exact approved grant.
-3. Resolve the exact `BULLETIN_AGENT_JWK` handle after the configured origin
-   passes validation.
-4. Dispatch the resulting authorized operation through the signed Bulletin
-   bridge.
-5. Read back the public Bulletin post and compare room and body before reporting
-   success.
+The native desktop sheet renders the review block, retrieves authenticated
+preview bytes into its private cache, and passes the approved envelope through
+the existing gateway action dispatch. Coverage includes widget tests, Windows
+decoder checks, and a Dart client test against the actual authenticated Python
+gateway and a signed loopback board. These checks cover different parts of the
+workflow; they do not prove a live production publication. The loopback tests
+use synthetic credentials and do not upload to production Bulletin or edit the
+Bulletin service.

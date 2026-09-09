@@ -122,6 +122,10 @@ def _credential_plan(operation) -> tuple[tuple[str, ...], tuple[str, ...]]:
             and value["tool"] == "board_write_post"
             and value["credential_refs"]):
         return (_BULLETIN_KEY_SLOT,), tuple(value["credential_refs"])
+    if (action == "lane.call" and value["name"] == "bulletin"
+            and value["tool"] == "board_publish_media_post"
+            and value["credential_refs"]):
+        return (_BULLETIN_KEY_SLOT,), tuple(value["credential_refs"])
     if action == "plugin.register":
         return tuple(value["requires"]), ()
     if action in {"marketplace.install", "marketplace.remove"}:
@@ -137,6 +141,10 @@ def credential_slots(operation, owner_ref: str, state_root: Path,
     """Validate owner handle metadata against the server-derived frozen plan."""
     try:
         plan = plan or freeze_execution_plan(operation)
+        if _is_bulletin_media(operation):
+            from .outcome_bulletin_media import validate_media_authorized_operation
+            validate_media_authorized_operation(
+                operation, state_root=state_root, owner_ref=owner_ref)
         required, frozen_refs = plan.required_slots, plan.credential_refs
         refs = operation.credential_refs
         store = CredentialHandleStore(
@@ -159,7 +167,7 @@ def resolve_credentials(operation, state_root: Path):
     required = credential_slots(
         operation, operation.owner_ref, state_root, plan=plan)
     try:
-        _validate_before_secret_resolution(operation)
+        _validate_before_secret_resolution(operation, state_root)
         from .keychain import keychain_get
         bindings = CredentialHandleStore(
             state_root, keychain_get=keychain_get).resolve_exact(
@@ -168,19 +176,34 @@ def resolve_credentials(operation, state_root: Path):
             from .plugins import _restricted_launch
             plan = replace(
                 plan, launch=_restricted_launch(plan.launch, bindings, required))
+        if _is_bulletin_media(operation):
+            plan = replace(plan, verified_plan={
+                "bulletin_media_state_root": str(Path(state_root))})
         return replace(operation, credential_bindings=bindings,
                        execution_plan=plan)
     except Exception:
         raise GatewayOperationError("PERMISSION_REQUIRED") from None
 
 
-def _validate_before_secret_resolution(operation) -> None:
+def _validate_before_secret_resolution(operation, state_root: Path) -> None:
     value = operation.operation
     if (operation.action == "lane.call" and value["name"] == "bulletin"
             and value["tool"] == "board_write_post"
             and operation.credential_refs):
         from .bulletin_signed_transport import configured_bulletin_base_url
         configured_bulletin_base_url()
+    if _is_bulletin_media(operation):
+        from .outcome_bulletin_media import validate_media_authorized_operation
+        validate_media_authorized_operation(
+            operation, state_root=state_root, require_config=True,
+            owner_ref=operation.owner_ref)
+
+
+def _is_bulletin_media(operation) -> bool:
+    value = operation.operation
+    return (operation.action == "lane.call" and value["name"] == "bulletin"
+            and value["tool"] == "board_publish_media_post"
+            and operation.credential_refs)
 
 
 def fixed_external_failure() -> tuple[dict, int]:

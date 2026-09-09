@@ -201,33 +201,37 @@ class _SignedClient:
     def post_json(self, path: str, payload: dict) -> dict:
         body = json.dumps(
             payload, sort_keys=True, separators=(",", ":")).encode()
+        request = bulletin_request(
+            self.base_url + path, data=body, method="POST",
+            headers=self._signed_headers(path, body, {
+                "content-type": "application/json"}))
+        return _open_json(request, self.timeout, write=True)
+
+    def post_bytes(self, path: str, body: bytes) -> dict:
+        if type(body) is not bytes:
+            raise BulletinSignedTransportError("INVALID_REQUEST")
+        request = bulletin_request(
+            self.base_url + path, data=body, method="POST",
+            headers=self._signed_headers(path, body, {}))
+        return _open_json(request, self.timeout, write=True)
+
+    def _signed_headers(self, path: str, body: bytes, extra: dict[str, str]) -> dict[str, str]:
         url = self.base_url + path
         digest = "sha-256=:" + base64.b64encode(
             hashlib.sha256(body).digest()).decode() + ":"
-        parsed = urlsplit(url)
-        created = int(self.now())
+        parsed, created = urlsplit(url), int(self.now())
         nonce = _b64u(self.nonce_bytes(16))
-        params = (
-            '("@method" "@authority" "@path" "content-digest")'
-            f';created={created};expires={created + 120}'
-            f';keyid="{self.key["thumbprint"]}";nonce="{nonce}"'
-            ';tag="web-bot-auth";alg="ed25519"')
-        base = "\n".join([
-            '"@method": POST',
-            f'"@authority": {parsed.netloc.lower()}',
-            f'"@path": {parsed.path}',
-            f'"content-digest": {digest}',
-            f'"@signature-params": {params}',
-        ])
-        signature = self.key["key"].sign(base.encode())
-        request = bulletin_request(url, data=body, method="POST", headers={
-            "content-type": "application/json",
-            "content-digest": digest,
-            "signature-input": f"sig1={params}",
-            "signature": "sig1=:" + base64.b64encode(signature).decode() + ":",
-        })
-        return _open_json(request, self.timeout, write=True)
-
+        params = ('("@method" "@authority" "@path" "content-digest")'
+                  f';created={created};expires={created + 120}'
+                  f';keyid="{self.key["thumbprint"]}";nonce="{nonce}"'
+                  ';tag="web-bot-auth";alg="ed25519"')
+        base = "\n".join(['"@method": POST',
+            f'"@authority": {parsed.netloc.lower()}', f'"@path": {parsed.path}',
+            f'"content-digest": {digest}', f'"@signature-params": {params}'])
+        sig = self.key["key"].sign(base.encode())
+        return {**extra, "content-digest": digest,
+                "signature-input": f"sig1={params}",
+                "signature": "sig1=:" + base64.b64encode(sig).decode() + ":"}
 
 def _read_json(url: str, timeout: int) -> dict:
     return _open_json(bulletin_request(url, method="GET"), timeout, write=False)

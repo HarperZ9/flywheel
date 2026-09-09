@@ -1,3 +1,4 @@
+import 'bulletin_media_review.dart';
 import 'evidence_state.dart';
 
 const gatewayGrantSummarySchema = 'flywheel.gateway-grant-summary/v1';
@@ -20,6 +21,7 @@ const _proposalFields = {
   'expires_at',
   'summary'
 };
+
 /// Destination kinds whose ref is a directory on this machine. Every other
 /// kind names a model, an endpoint, a plugin: text that is safe to show
 /// anywhere. These three name a path, so they are read with the narrower
@@ -79,6 +81,7 @@ final class GatewayJourneyBinding {
 final class GatewayGrantSummary extends DefensiveModel {
   final String action, journeyRef, eventHead, tool, operationSha256;
   final String argumentsSha256, effect, expiresAt;
+  final BulletinMediaReview? bulletinMediaReview;
   final GatewayDestination destination;
   final List<String> scopes, dataRefs, credentialRefs;
 
@@ -95,30 +98,43 @@ final class GatewayGrantSummary extends DefensiveModel {
       this.credentialRefs,
       this.effect,
       this.expiresAt,
+      this.bulletinMediaReview,
       super.parseIssues);
 
   factory GatewayGrantSummary.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
+    const fields = {
+      'schema',
+      'action',
+      'journey_ref',
+      'expected_event_head',
+      'destination',
+      'tool',
+      'operation_sha256',
+      'arguments_sha256',
+      'scopes',
+      'data_refs',
+      'credential_refs',
+      'effect',
+      'expires_at'
+    };
     exactGatewayFields(
         json,
-        const {
-          'schema',
-          'action',
-          'journey_ref',
-          'expected_event_head',
-          'destination',
-          'tool',
-          'operation_sha256',
-          'arguments_sha256',
-          'scopes',
-          'data_refs',
-          'credential_refs',
-          'effect',
-          'expires_at'
-        },
+        json.containsKey('bulletin_media_review')
+            ? {...fields, 'bulletin_media_review'}
+            : fields,
         issues,
         'summary');
     expectSchema(json, gatewayGrantSummarySchema, issues);
+    final bulletinReview = json['bulletin_media_review'] is Map<String, Object?>
+        ? BulletinMediaReview.fromJson(
+            json['bulletin_media_review'] as Map<String, Object?>)
+        : null;
+    if (json.containsKey('bulletin_media_review') && bulletinReview == null) {
+      addParseIssue(
+          issues, 'bulletin_media_review', json['bulletin_media_review']);
+    }
+    if (bulletinReview != null) issues.addAll(bulletinReview.parseIssues);
     return GatewayGrantSummary._(
         readText(json, 'action', issues),
         readText(json, 'journey_ref', issues, pattern: _journeyRef),
@@ -132,6 +148,7 @@ final class GatewayGrantSummary extends DefensiveModel {
         readGatewayCredentialRefs(json['credential_refs'], issues),
         readText(json, 'effect', issues),
         readText(json, 'expires_at', issues),
+        bulletinReview,
         issues);
   }
 }

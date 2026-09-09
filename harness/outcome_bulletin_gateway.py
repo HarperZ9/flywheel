@@ -23,6 +23,18 @@ _PUBLIC_PREFIXES = (
 
 def dispatch_outcome_bulletin_gateway(authorized):
     """Return a gateway response for the exact Bulletin outcome lane, else None."""
+    if _targets_media_bulletin(authorized):
+        from .outcome_bulletin_media import publish_authorized_media_preview
+        from .gateway_operation import thaw_operation
+        op = thaw_operation(getattr(authorized, "operation", {}))
+        plan = getattr(authorized, "execution_plan", None)
+        media_state = getattr(plan, "verified_plan", {}) or {}
+        result = publish_authorized_media_preview(
+            authorized, op["args"], state_root=Path(
+                media_state.get("bulletin_media_state_root", ".")),
+            credential_bindings=authorized.credential_bindings,
+            allow_loopback=os.environ.get("FLYWHEEL_BULLETIN_ALLOW_LOOPBACK") == "1")
+        return result, 200
     if not _targets_outcome_bulletin(authorized):
         return None
     try:
@@ -67,6 +79,14 @@ def _targets_outcome_bulletin(authorized) -> bool:
         getattr(authorized, "action", None) == "lane.call"
         and op.get("name") == "bulletin"
         and op.get("tool") == "board_write_post")
+
+
+def _targets_media_bulletin(authorized) -> bool:
+    op = dict(getattr(authorized, "operation", {}))
+    return (
+        getattr(authorized, "action", None) == "lane.call"
+        and op.get("name") == "bulletin"
+        and op.get("tool") == "board_publish_media_post")
 
 
 def _post(value: object) -> dict:

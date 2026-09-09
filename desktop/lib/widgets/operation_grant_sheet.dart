@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../controllers/gateway_operation_controller.dart';
 import '../controllers/journey_controller.dart';
+import '../models/bulletin_media_models.dart';
 import '../models/gateway_grant_models.dart';
 export '../models/gateway_grant_models.dart'
     show GatewayDestination, GatewayOperation;
@@ -175,6 +176,8 @@ final class _OperationGrantSheetState<T>
           _refs('Data refs', proposal.summary.dataRefs),
           _refs('Credential refs', proposal.summary.credentialRefs),
           _line('Effect', proposal.summary.effect),
+          if (proposal.summary.bulletinMediaReview != null)
+            _bulletinReview(proposal.summary.bulletinMediaReview!),
           _line('Expires', proposal.summary.expiresAt),
           const SizedBox(height: 12),
           Wrap(
@@ -200,6 +203,26 @@ final class _OperationGrantSheetState<T>
   Widget _refs(String label, List<String> values) =>
       _line(label, values.isEmpty ? 'None' : values.join(', '));
 
+  Widget _bulletinReview(BulletinMediaReview review) => Padding(
+        padding: const EdgeInsets.only(top: 12, bottom: 12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Bulletin public review',
+              style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Text(review.post.body),
+          const SizedBox(height: 6),
+          const Text(
+              'The entire selected file becomes public, including embedded metadata.'),
+          ...review.attachments.map((media) => Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child:
+                    Text('${media.kind.name}: ${media.label} · ${media.alt}'),
+              )),
+          const SizedBox(height: 6),
+          Text('Preview SHA-256: ${review.previewSha256}',
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+        ]),
+      );
   Widget _line(String label, String value) => Padding(
         padding: const EdgeInsets.only(bottom: 6),
         child: Text('$label: $value',

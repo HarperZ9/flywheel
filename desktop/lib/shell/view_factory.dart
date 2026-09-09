@@ -19,6 +19,7 @@ import '../views/agent_view.dart';
 import '../views/approvals_inbox_view.dart';
 import '../views/audit_view.dart';
 import '../views/browser_view.dart';
+import '../views/bulletin_media_view.dart';
 import '../views/code_view.dart';
 import '../views/compare_view.dart';
 import '../views/companion_view.dart';
@@ -61,15 +62,14 @@ import '../widgets/side_rail.dart';
 /// Rail entries derive from the frozen catalog: one source of truth, so
 /// the rail can never drift from the route contract.
 final flywheelDestinations = destinationCatalog
-    .map((spec) => RailDestination(spec.label,
-        abbr: spec.abbr, group: spec.group.name))
+    .map((spec) =>
+        RailDestination(spec.label, abbr: spec.abbr, group: spec.group.name))
     .toList();
 
-DestinationId destinationForLabel(String label) =>
-    destinationCatalog
-        .firstWhere((spec) => spec.label == label,
-            orElse: () => destinationCatalog.first)
-        .id;
+DestinationId destinationForLabel(String label) => destinationCatalog
+    .firstWhere((spec) => spec.label == label,
+        orElse: () => destinationCatalog.first)
+    .id;
 
 final class DestinationInputs {
   const DestinationInputs({
@@ -111,20 +111,22 @@ Widget? _work(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.journey => JourneyView(controller: i.journey),
       DestinationId.plan =>
         PlanView(client: i.client, alive: i.alive, settings: i.settings),
-      DestinationId.workflows => WorkflowsView(
-          client: i.client, alive: i.alive, settings: i.settings),
+      DestinationId.workflows =>
+        WorkflowsView(client: i.client, alive: i.alive, settings: i.settings),
       DestinationId.projects =>
         ProjectsView(client: i.client, journey: i.journey, alive: i.alive),
-      DestinationId.swarms => SwarmsView(
-          api: SwarmsApi(baseUrl: i.client.baseUrl), alive: i.alive),
-      DestinationId.roadmap => RoadmapView(
-          api: RoadmapApi(baseUrl: i.client.baseUrl), alive: i.alive),
+      DestinationId.swarms =>
+        SwarmsView(api: SwarmsApi(baseUrl: i.client.baseUrl), alive: i.alive),
+      DestinationId.roadmap =>
+        RoadmapView(api: RoadmapApi(baseUrl: i.client.baseUrl), alive: i.alive),
       DestinationId.schedule => ScheduleView(
           api: ScheduleApi(baseUrl: i.client.baseUrl), alive: i.alive),
-      DestinationId.runners => RunnersView(
-          api: RunnersApi(baseUrl: i.client.baseUrl), alive: i.alive),
+      DestinationId.runners =>
+        RunnersView(api: RunnersApi(baseUrl: i.client.baseUrl), alive: i.alive),
       DestinationId.approvals =>
         ApprovalsInboxView(client: i.client, alive: i.alive),
+      DestinationId.bulletin =>
+        BulletinMediaView(client: i.client, journey: i.journey),
       _ => null,
     };
 
@@ -134,7 +136,8 @@ Widget? _chat(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.compare =>
         CompareView(client: i.client, alive: i.alive, settings: i.settings),
       DestinationId.models => EndpointsView(client: i.client, alive: i.alive),
-      DestinationId.companion => CompanionView(client: i.client, alive: i.alive),
+      DestinationId.companion =>
+        CompanionView(client: i.client, alive: i.alive),
       _ => null,
     };
 
@@ -148,8 +151,8 @@ Widget? _code(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.eval => EvalView(client: i.client, alive: i.alive),
       DestinationId.audit => AuditView(client: i.client, alive: i.alive),
       DestinationId.lint => LintView(client: i.client, alive: i.alive),
-      DestinationId.scan => ScanView(
-          api: ScanApi(baseUrl: i.client.baseUrl), alive: i.alive),
+      DestinationId.scan =>
+        ScanView(api: ScanApi(baseUrl: i.client.baseUrl), alive: i.alive),
       DestinationId.relay => RelayView(client: i.client, alive: i.alive),
       _ => null,
     };
@@ -184,11 +187,10 @@ Widget? _advanced(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.lessons => LessonsView(client: i.client, alive: i.alive),
       DestinationId.instruments =>
         InstrumentsView(client: i.client, alive: i.alive),
-      DestinationId.browser => BrowserView(
-          api: BrowserApi(baseUrl: i.client.baseUrl), alive: i.alive),
+      DestinationId.browser =>
+        BrowserView(api: BrowserApi(baseUrl: i.client.baseUrl), alive: i.alive),
       DestinationId.forum => ForumView(client: i.client),
-      DestinationId.registry =>
-        RegistryView(client: i.client, alive: i.alive),
+      DestinationId.registry => RegistryView(client: i.client, alive: i.alive),
       DestinationId.lanes => LanesView(
           client: i.client,
           roster: i.roster,
