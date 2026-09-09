@@ -221,7 +221,7 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
 # Commands that live in the package and run without a source checkout.
 _PACKAGED = {"acp": "harness.acp_cli", "dap": "harness.dap_cli",
              "lsp": "harness.lsp_cli", "packs": "harness.packs_cli",
-             "evidence": "harness.evidence_cli",
+             "evidence": "harness.evidence_cli", "import-norvane": "harness.norvane_capture_cli",
              "bulletin-identity": "harness.bulletin_identity_cli",
              "check-output": "harness.output_check_cli",
              "cross-harness-execute": "harness.cross_harness_cli",
