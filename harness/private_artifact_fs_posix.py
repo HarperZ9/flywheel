@@ -29,6 +29,8 @@ from .private_artifact_fs_posix_tail import (
     relative_parts as _relative_parts,
     write_all as _write_all,
 )
+from .private_artifact_fs_mount import admit_fd_mount as _admit_fd_mount
+from .private_artifact_fs_mount import supported as _mount_admission_supported
 @dataclass(frozen=True, slots=True)
 class _DirCap:
     path: Path
@@ -42,6 +44,7 @@ def supported() -> bool:
         and os.unlink in os.supports_dir_fd
         and os.link in os.supports_dir_fd
         and all(hasattr(os, name) for name in ("O_DIRECTORY", "O_NOFOLLOW"))
+        and _mount_admission_supported()
     )
 def identity_for_root(root: Path) -> ArtifactIdentity:
     caps = _open_root_chain(root, None)
@@ -187,6 +190,7 @@ def _read_at(chain: list[_DirCap], name: str, max_bytes: int) -> bytes:
         raise PrivateArtifactError(UNSAFE_PATH) from exc
     try:
         before = os.fstat(fd)
+        _admit_fd_mount(fd)
         if not stat.S_ISREG(before.st_mode):
             raise PrivateArtifactError(NOT_REGULAR)
         if before.st_size > max_bytes:
@@ -250,6 +254,7 @@ def _write_temp(chain: list[_DirCap], final_name: str, data: bytes) -> tuple[int
     fd: int | None = None
     try:
         fd = _open_anonymous_tmp(parent.fd)
+        _admit_fd_mount(fd)
         ident = _identity(os.fstat(fd))
         _write_all(fd, data)
         os.fsync(fd)
@@ -281,6 +286,7 @@ def _verify_dir(cap: _DirCap) -> None:
         raise PrivateArtifactError(UNSAFE_PATH)
     if not stat.S_ISDIR(opened.st_mode) or _identity(opened) != cap.identity:
         raise PrivateArtifactError(UNSAFE_PATH)
+    _admit_fd_mount(cap.fd)
 def _conflict() -> str:
     raise PrivateArtifactError(CONFLICT)
 def _close_caps(caps: list[_DirCap]) -> None:

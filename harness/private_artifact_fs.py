@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 UNSUPPORTED_OS = "UNSUPPORTED_OS"
+UNSUPPORTED_FS = "UNSUPPORTED_FS"
 UNSAFE_PATH = "UNSAFE_PATH"
 NOT_FOUND = "NOT_FOUND"
 NOT_REGULAR = "NOT_REGULAR"
@@ -101,6 +102,7 @@ __all__ = [
     "NOT_REGULAR",
     "PrivateArtifactError",
     "TOO_LARGE",
+    "UNSUPPORTED_FS",
     "UNSAFE_PATH",
     "UNSUPPORTED_OS",
     "open_artifact_root",

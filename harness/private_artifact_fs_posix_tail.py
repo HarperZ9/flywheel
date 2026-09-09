@@ -17,6 +17,7 @@ from .private_artifact_fs import (
     BorrowedDescriptor,
     PrivateArtifactError,
 )
+from .private_artifact_fs_mount import admit_fd_mount
 
 AT_EMPTY_PATH = 0x1000
 _LINKAT = None
@@ -144,6 +145,7 @@ class _BorrowedFd:
             info = os.fstat(fd)
             if identity(info) != self._expected or not stat.S_ISDIR(info.st_mode):
                 raise PrivateArtifactError(UNSAFE_PATH)
+            admit_fd_mount(fd)
             self._fd = fd
             self._used = True
             return BorrowedDescriptor("posix", self._expected, fd=fd)
