@@ -18,10 +18,11 @@ from harness.lanes import (
 def test_registry_covers_the_expected_lanes():
     # the six spine flagships + local-model (the engine) + relay (execution) +
     # plexus (wiring) + mneme (memory) + calibrate-pro (its own calibration lane)
-    # + accountable-surface (actuation) + canon (continuity)
+    # + accountable-surface (actuation) + canon (continuity) + writing (authoring)
     assert set(LANES) == {"gather", "crucible", "index", "forum",
                           "learn", "telos", "local-model", "relay", "plexus", "mneme",
-                          "calibrate-pro", "accountable-surface", "canon", "bulletin"}
+                          "calibrate-pro", "accountable-surface", "canon", "bulletin",
+                          "writing"}
 
 
 def test_install_name_to_command_asymmetry_is_mapped():

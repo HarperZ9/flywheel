@@ -1,20 +1,14 @@
-"""Read-only Writing Workspace projection over Journey v2 events."""
+"""Project private Writing Workspace state from digest-bound Journey facts."""
 from __future__ import annotations
 
 from copy import deepcopy
 
-from .journey_projection import reduce_events
+from .evidence_public import TransportError
+from .journey_store import JourneyStoreError, MutationCommand
 from .writing_artifacts import WritingArtifactError, WritingArtifactStore
-from .writing_state_rules import WritingStateError, validate_transition
-from .writing_types import MAX_MANUSCRIPT_TEXT_BYTES, SCHEMAS
-
-WRITING_PROJECTION_SCHEMA = "flywheel.writing-project-projection/v1"
-_ARTIFACT_ID = {
-    "section": "section_ref", "revision": "revision_ref",
-    "diagnostic": "diagnostic_ref", "card": "card_ref",
-    "candidate": "candidate_ref", "decision": "decision_ref",
-    "review": "review_ref", "export": "export_ref",
-}
+from .writing_state_rules import (
+    WritingStateError, validate_decision, validate_transition,
+)
 
 
 class WritingProjectionError(RuntimeError):
@@ -23,240 +17,231 @@ class WritingProjectionError(RuntimeError):
         super().__init__(code)
 
 
+_ID_FIELDS = {
+    "section": "section_ref", "revision": "revision_ref",
+    "diagnostic": "diagnostic_ref", "card": "card_ref",
+    "candidate": "candidate_ref", "decision": "decision_ref",
+    "review": "review_ref", "export": "export_ref",
+}
+
+
 def project_from_events(events: list[dict], artifacts: WritingArtifactStore) -> dict:
-    """Replay committed Writing artifacts and reject semantic drift."""
-    try:
-        base = reduce_events(events)
-        state, owner_ref = _initial_state(events[0], base)
-        for event in events[1:]:
-            for fact in event["payload"].get("facts", []):
-                command = _command_from_fact(fact)
-                if command is None:
-                    continue
-                artifact = _read_artifact(artifacts, command, owner_ref,
-                                          state["project_ref"])
-                validate_transition(state, command["kind"], artifact,
-                                    artifacts, owner_ref)
-                _apply_artifact(state, command, artifact, artifacts, owner_ref)
-            state["event_head_sha256"] = event["event_sha256"]
-        return state
-    except WritingProjectionError:
-        raise
-    except WritingStateError as exc:
-        raise WritingProjectionError(exc.code) from exc
-    except WritingArtifactError as exc:
-        raise WritingProjectionError(exc.code) from exc
-    except (KeyError, TypeError, ValueError, IndexError) as exc:
-        raise WritingProjectionError("PROJECTION_INVALID") from exc
-
-
-def validate_writing_append(journeys, artifacts: WritingArtifactStore,
-                            request: dict, operation: str,
-                            operation_body: dict) -> None:
-    """Recompute the proposed Writing append before burning the grant."""
-    try:
-        command = _require_command(request.get("command"))
-        if operation != "record_fact":
-            raise WritingProjectionError("INVALID_TRANSITION")
-        state = project_from_events(journeys._events(request["journey_ref"]),
-                                    artifacts)
-        if state["event_head_sha256"] != request["expected_event_head"]:
-            from .evidence_public import TransportError
-            raise TransportError("HEAD_CONFLICT", "Journey head changed", 409)
-        artifact = _read_artifact(artifacts, command, journeys.owner_ref,
-                                  state["project_ref"])
-        validate_transition(state, command["kind"], artifact, artifacts,
-                            journeys.owner_ref)
-        from .writing_artifacts import record_fact_for_artifact
-        expected = record_fact_for_artifact(
-            artifacts, command, owner_ref=journeys.owner_ref,
-            project_ref=state["project_ref"])
-        if (type(operation_body) is not dict
-                or set(operation_body) != {"occurred_at", "payload"}
-                or type(operation_body.get("occurred_at")) is not str
-                or operation_body.get("payload") != expected):
-            raise WritingProjectionError("INVALID_TRANSITION")
-    except WritingProjectionError:
-        raise
-    except WritingStateError as exc:
-        raise WritingProjectionError(exc.code) from exc
-    except WritingArtifactError as exc:
-        raise WritingProjectionError(exc.code) from exc
-    except (KeyError, TypeError, ValueError) as exc:
-        raise WritingProjectionError("INVALID_TRANSITION") from exc
-
-
-def _initial_state(first_event: dict, base_projection: dict) -> tuple[dict, str | None]:
-    payload = first_event["payload"]
-    intake = deepcopy(payload.get("intake", {}))
-    project_ref = intake.get("project_ref")
-    owner_ref = _owner_from_intake(intake) if _is_writing_intake(intake) else None
-    return ({
-        "schema": WRITING_PROJECTION_SCHEMA,
-        "journey_ref": first_event["journey_ref"],
-        "event_head_sha256": first_event["event_sha256"],
-        "project_ref": project_ref, "intake": intake,
-        "journey_stage": base_projection.get("stage"),
-        "section_order": [], "sections": {}, "revisions": {},
+    if not events:
+        return {"projects": []}
+    genesis = events[0]["payload"].get("intake", {})
+    owner_ref = events[0].get("actor_id")
+    state = {
+        "project_ref": genesis.get("project_ref"),
+        "journey_ref": events[0]["journey_ref"],
+        "event_head_sha256": events[0]["event_sha256"],
+        "intake": deepcopy(genesis),
+        "sections": {}, "section_order": [], "revisions": {},
+        "accepted_revision_refs_by_section": {},
         "diagnostics": {}, "cards": {}, "candidates": {},
         "decisions": [], "reviews": [], "exports": [],
-        "accepted_revision_refs_by_section": {},
-    }, owner_ref)
+    }
+    for event in events[1:]:
+        for fact in event["payload"].get("facts", []):
+            _apply_fact(state, artifacts, fact, owner_ref)
+        state["event_head_sha256"] = event["event_sha256"]
+    _attach_current_bodies(state, artifacts, owner_ref)
+    return state
 
 
-def _is_writing_intake(intake: object) -> bool:
-    return type(intake) is dict and intake.get("schema") == "flywheel.writing-intake/v1"
+def validate_writing_append(service, artifacts: WritingArtifactStore, req: dict,
+                            operation: str, body: dict) -> None:
+    if operation != "record_fact" or _is_exact_replay(service, req, operation, body):
+        return
+    facts = body.get("payload", {}).get("facts") if type(body) is dict else None
+    writing_facts = [fact for fact in facts or [] if _fact_kind(fact)]
+    if not writing_facts:
+        return
+    events = service._events(req["journey_ref"])
+    if not events or events[-1]["event_sha256"] != req["expected_event_head"]:
+        raise TransportError("HEAD_CONFLICT", "writing state head changed", 409)
+    project_ref = events[0]["payload"].get("intake", {}).get("project_ref")
+    if events[0]["payload"].get("intake", {}).get("schema") != "flywheel.writing-intake/v1":
+        raise TransportError("INVALID_TRANSITION", "writing journey is unavailable", 422)
+    try:
+        state = project_from_events(events, artifacts)
+    except (WritingArtifactError, WritingProjectionError, WritingStateError) as exc:
+        _fail(getattr(exc, "code", "INVALID_TRANSITION"), True, exc)
+    for fact in writing_facts:
+        kind, artifact = _artifact_for_fact(
+            fact, artifacts, service.owner_ref, project_ref, as_transport=True)
+        try:
+            validate_transition(state, kind, artifact, artifacts, service.owner_ref)
+            _apply_artifact(state, kind, artifact, artifacts, service.owner_ref)
+        except (WritingArtifactError, WritingProjectionError, WritingStateError) as exc:
+            _fail(getattr(exc, "code", "INVALID_TRANSITION"), True, exc)
 
 
-def _owner_from_intake(intake: dict) -> str:
-    scopes = [_scope(ref) for ref in (
-        intake.get("brief_ref"), intake.get("source_packet_ref"))]
-    owners = {owner for owner, _project in scopes}
-    projects = {project for _owner, project in scopes}
-    if len(owners) != 1 or projects != {intake.get("project_ref")}:
-        raise WritingProjectionError("PROJECT_MISMATCH")
-    return next(iter(owners))
+def _is_exact_replay(service, req: dict, operation: str, body: dict) -> bool:
+    command = MutationCommand(
+        owner_ref=service.owner_ref, journey_ref=req["journey_ref"],
+        expected_event_head=req["expected_event_head"],
+        client_request_id=req["client_request_id"],
+        operation=operation, body=body)
+    try:
+        return service.store.lookup_replay(command) is not None
+    except JourneyStoreError:
+        raise
 
 
-def _scope(artifact_ref: object) -> tuple[str, str]:
-    if type(artifact_ref) is not str or "\\" in artifact_ref:
-        raise WritingProjectionError("ARTIFACT_REF_INVALID")
-    parts = artifact_ref.split("/")
-    if (len(parts) < 8 or tuple(parts[:3]) != ("writing", "v1", "owners")
-            or parts[4] != "projects"):
-        raise WritingProjectionError("ARTIFACT_REF_INVALID")
-    return parts[3], parts[5]
+def _apply_fact(state: dict, artifacts: WritingArtifactStore, fact: dict,
+                owner_ref: str | None) -> None:
+    kind, artifact = _artifact_for_fact(
+        fact, artifacts, owner_ref, state["project_ref"], as_transport=False)
+    if kind is None:
+        return
+    try:
+        validate_transition(state, kind, artifact, artifacts, owner_ref)
+        _apply_artifact(state, kind, artifact, artifacts, owner_ref)
+    except WritingStateError as exc:
+        raise WritingProjectionError(exc.code) from exc
 
 
-def _command_from_fact(fact: object) -> dict | None:
-    if type(fact) is not dict:
-        raise WritingProjectionError("INVALID_TRANSITION")
-    fact_id = fact.get("fact_id")
+def _apply_artifact(state: dict, kind: str, artifact: dict,
+                    artifacts: WritingArtifactStore | None = None,
+                    owner_ref: str | None = None) -> None:
+    if kind == "section":
+        section = deepcopy(artifact); ref = section["section_ref"]
+        previous = state["sections"].get(ref, {})
+        state["sections"][ref] = {
+            **section,
+            "current_revision_ref": previous.get("current_revision_ref"),
+            "current_body_ref": previous.get("current_body_ref"),
+            "current_body_sha256": previous.get("current_body_sha256"),
+        }
+        state["accepted_revision_refs_by_section"].setdefault(ref, [])
+        state["section_order"] = sorted(
+            state["sections"],
+            key=lambda name: (state["sections"][name]["order_index"], name),
+        )
+    elif kind == "revision":
+        _record_revision(state, artifact, accepted=True)
+    elif kind in {"diagnostic", "card", "candidate"}:
+        state[f"{kind}s"][artifact[f"{kind}_ref"]] = deepcopy(artifact)
+    elif kind == "decision":
+        state["decisions"].append(deepcopy(artifact))
+        _apply_decision(state, artifact, artifacts, owner_ref)
+    elif kind == "review":
+        state["reviews"].append(deepcopy(artifact))
+    elif kind == "export":
+        state["exports"].append(deepcopy(artifact))
+
+
+def _artifact_for_fact(fact: dict, artifacts: WritingArtifactStore,
+                       owner_ref: str | None, project_ref: str | None,
+                       *, as_transport: bool) -> tuple[str | None, dict | None]:
+    kind = _fact_kind(fact)
+    if kind is None:
+        return None, None
+    refs, digest = fact.get("receipt_refs"), fact.get("artifact_sha256")
+    if type(refs) is not list or len(refs) != 1 or type(digest) is not str:
+        _fail("ARTIFACT_RECEIPT_INVALID", as_transport)
+    try:
+        artifact = artifacts.read_json(
+            refs[0], digest, expected_kind=kind,
+            expected_owner_ref=owner_ref, expected_project_ref=project_ref)
+    except WritingArtifactError as exc:
+        _fail(exc.code, as_transport, exc)
+    artifact["artifact_ref"] = refs[0]
+    artifact["artifact_sha256"] = digest
+    if _identity(kind, artifact) != fact["fact_id"].rsplit(":", 1)[1]:
+        _fail("ARTIFACT_IDENTITY_MISMATCH", as_transport)
+    return kind, artifact
+
+
+def _fact_kind(fact: object) -> str | None:
+    fact_id = fact.get("fact_id") if type(fact) is dict else None
     if type(fact_id) is not str or not fact_id.startswith("writing:"):
         return None
     parts = fact_id.split(":", 2)
-    if len(parts) != 3 or parts[1] not in _ARTIFACT_ID:
-        raise WritingProjectionError("INVALID_TRANSITION")
-    refs = fact.get("receipt_refs")
-    if (fact.get("receipt_state") != "MATCH" or type(refs) is not list
-            or len(refs) != 1 or type(fact.get("artifact_sha256")) is not str):
-        raise WritingProjectionError("INVALID_TRANSITION")
-    return {"type": "record_writing_artifact", "kind": parts[1],
-            "opaque_ref": parts[2], "artifact_ref": refs[0],
-            "artifact_sha256": fact["artifact_sha256"]}
+    return parts[1] if len(parts) == 3 and parts[1] in _ID_FIELDS else None
 
 
-def _require_command(command: object) -> dict:
-    if type(command) is not dict or set(command) != {
-            "type", "kind", "artifact_ref", "artifact_sha256", "opaque_ref"}:
-        raise WritingProjectionError("INVALID_TRANSITION")
-    if command.get("type") != "record_writing_artifact" or command.get("kind") not in _ARTIFACT_ID:
-        raise WritingProjectionError("INVALID_TRANSITION")
-    return command
+def _identity(kind: str, artifact: dict) -> str:
+    value = artifact.get(_ID_FIELDS[kind])
+    if type(value) is not str:
+        raise WritingProjectionError("ARTIFACT_IDENTITY_MISMATCH")
+    return value
 
 
-def _read_artifact(artifacts: WritingArtifactStore, command: dict,
-                   owner_ref: str | None, project_ref: str) -> dict:
-    artifact = artifacts.read_json(
-        command["artifact_ref"], command["artifact_sha256"],
-        expected_kind=command["kind"], expected_owner_ref=owner_ref,
-        expected_project_ref=project_ref)
-    if artifact.get(_ARTIFACT_ID[command["kind"]]) != command["opaque_ref"]:
-        raise WritingProjectionError("ARTIFACT_REF_INVALID")
-    return artifact
+def _record_revision(state: dict, revision: dict, *, accepted: bool) -> None:
+    ref, section_ref = revision["revision_ref"], revision["section_ref"]
+    state["revisions"][ref] = deepcopy(revision)
+    section = state["sections"].setdefault(section_ref, {
+        "section_ref": section_ref, "order_index": 10_000, "heading": section_ref,
+        "purpose": "implicit section from revision", "reader_entry_state": "unknown",
+        "promises": [], "current_revision_ref": None, "current_body_ref": None,
+        "current_body_sha256": None,
+    })
+    if accepted:
+        accepted_refs = state["accepted_revision_refs_by_section"].setdefault(
+            section_ref, [])
+        if ref not in accepted_refs:
+            accepted_refs.append(ref)
+    _set_current(section, revision)
+    if section_ref not in state["section_order"]:
+        state["section_order"].append(section_ref)
 
 
-def _apply_artifact(state: dict, command: dict, artifact: dict,
-                    artifacts: WritingArtifactStore, owner_ref: str | None) -> None:
-    kind = command["kind"]
-    stored = {**deepcopy(artifact), "artifact_ref": command["artifact_ref"],
-              "artifact_sha256": command["artifact_sha256"]}
-    if kind == "section":
-        _apply_section(state, stored)
-    elif kind == "revision":
-        _apply_revision(state, stored, artifacts, owner_ref)
-    elif kind == "diagnostic":
-        state["diagnostics"][stored["diagnostic_ref"]] = stored
-    elif kind == "card":
-        state["cards"][stored["card_ref"]] = stored
-    elif kind == "candidate":
-        state["candidates"][stored["candidate_ref"]] = stored
-    elif kind == "decision":
-        _apply_decision(state, stored, artifacts, owner_ref)
-    elif kind == "review":
-        state["reviews"].append(stored)
-    elif kind == "export":
-        state["exports"].append(stored)
-
-
-def _apply_section(state: dict, section: dict) -> None:
-    prior = state["sections"].get(section["section_ref"], {})
-    section.update({key: prior.get(key) for key in (
-        "current_revision_ref", "current_body_ref", "current_body_sha256",
-        "current_body")})
-    state["sections"][section["section_ref"]] = section
-    if section["section_ref"] not in state["section_order"]:
-        state["section_order"].append(section["section_ref"])
-    state["section_order"].sort(
-        key=lambda ref: state["sections"][ref]["order_index"])
-    state["accepted_revision_refs_by_section"].setdefault(
-        section["section_ref"], [])
-
-
-def _apply_revision(state: dict, revision: dict, artifacts: WritingArtifactStore,
+def _apply_decision(state: dict, decision: dict,
+                    artifacts: WritingArtifactStore | None,
                     owner_ref: str | None) -> None:
-    state["revisions"][revision["revision_ref"]] = revision
-    body = artifacts.read_text(
-        revision["body_ref"], revision["body_sha256"],
-        expected_owner_ref=owner_ref, expected_project_ref=state["project_ref"])
-    _set_current_revision(state, revision, body)
-
-
-def _apply_decision(state: dict, decision: dict, artifacts: WritingArtifactStore,
-                    owner_ref: str | None) -> None:
-    state["decisions"].append(decision)
-    if decision["decision"] == "accept":
-        _accept_candidate(state, state["candidates"][decision["candidate_ref"]],
-                          artifacts, owner_ref)
-    elif decision["decision"] == "rollback":
-        revision = state["revisions"][decision["to_revision_ref"]]
-        body = artifacts.read_text(
-            revision["body_ref"], revision["body_sha256"],
-            expected_owner_ref=owner_ref,
-            expected_project_ref=state["project_ref"])
-        _set_current_revision(state, revision, body)
-
-
-def _accept_candidate(state: dict, candidate: dict,
-                      artifacts: WritingArtifactStore,
-                      owner_ref: str | None) -> None:
-    card = state["cards"][candidate["card_ref"]]
-    body = artifacts.read_text(
-        candidate["candidate_body_ref"], candidate["candidate_body_sha256"],
-        expected_owner_ref=owner_ref, expected_project_ref=state["project_ref"],
-        max_bytes=MAX_MANUSCRIPT_TEXT_BYTES)
-    revision = {"schema": SCHEMAS["revision"], "project_ref": state["project_ref"],
-        "section_ref": card["target"]["section_ref"],
+    validate_decision(state, decision)
+    section = state["sections"][decision["section_ref"]]
+    if decision["decision"] in {"reject", "supersede"}:
+        return
+    if decision["decision"] == "rollback":
+        _set_current(section, state["revisions"][decision["to_revision_ref"]])
+        return
+    candidate = state["candidates"][decision["candidate_ref"]]
+    revision = {
+        "schema": "flywheel.writing-revision/v1",
+        "project_ref": decision["project_ref"],
+        "section_ref": decision["section_ref"],
         "revision_ref": candidate["candidate_revision_ref"],
-        "base_revision_ref": candidate["base_revision_ref"],
+        "base_revision_ref": decision["from_revision_ref"],
         "body_ref": candidate["candidate_body_ref"],
         "body_sha256": candidate["candidate_body_sha256"],
-        "word_count": len(body.split()), "author_supplied": False,
-        "scope_refs": [candidate["card_ref"]],
-        "text_admission": candidate["text_admission"],
+        "word_count": len(_read_candidate_body(state, candidate, artifacts, owner_ref).split()),
+        "author_supplied": False, "scope_refs": [candidate["card_ref"]],
         "does_not_prove": candidate["does_not_prove"],
-        "accepted_candidate_ref": candidate["candidate_ref"]}
-    state["revisions"][revision["revision_ref"]] = revision
-    _set_current_revision(state, revision, body)
+        "artifact_ref": candidate["artifact_ref"],
+        "artifact_sha256": candidate["artifact_sha256"],
+        "accepted_candidate_ref": candidate["candidate_ref"],
+    }
+    _record_revision(state, revision, accepted=True)
 
 
-def _set_current_revision(state: dict, revision: dict, body: str) -> None:
-    section = state["sections"][revision["section_ref"]]
+def _read_candidate_body(state: dict, candidate: dict,
+                         artifacts: WritingArtifactStore | None,
+                         owner_ref: str | None) -> str:
+    if artifacts is None:
+        return ""
+    return artifacts.read_text(candidate["candidate_body_ref"],
+        candidate["candidate_body_sha256"], expected_owner_ref=owner_ref,
+        expected_project_ref=state["project_ref"])
+
+def _set_current(section: dict, revision: dict) -> None:
     section["current_revision_ref"] = revision["revision_ref"]
     section["current_body_ref"] = revision["body_ref"]
     section["current_body_sha256"] = revision["body_sha256"]
-    section["current_body"] = body
-    accepted = state["accepted_revision_refs_by_section"].setdefault(
-        revision["section_ref"], [])
-    if revision["revision_ref"] not in accepted:
-        accepted.append(revision["revision_ref"])
+
+
+def _attach_current_bodies(state: dict, artifacts: WritingArtifactStore,
+                           owner_ref: str | None) -> None:
+    for section in state["sections"].values():
+        ref = section.get("current_body_ref")
+        digest = section.get("current_body_sha256")
+        section["current_body"] = artifacts.read_text(
+            ref, digest, expected_owner_ref=owner_ref,
+            expected_project_ref=state["project_ref"]) if ref and digest else None
+
+
+def _fail(code: str, as_transport: bool, exc: Exception | None = None):
+    if as_transport:
+        raise TransportError(code, "writing append is unavailable", 403) from exc
+    raise WritingProjectionError(code) from exc

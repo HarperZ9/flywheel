@@ -20,22 +20,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('SOURCE PACKET'), findsOneWidget);
     expect(find.textContaining('Recommendation: hold.'), findsOneWidget);
-    await tester.enterText(
-        find.byKey(const Key('writing-candidate-body')),
+    await _enterVisible(tester, find.byKey(const Key('writing-candidate-body')),
         'Recommendation: release.\n');
-    await tester.tap(find.text('Prepare candidate'));
-    await tester.pumpAndSettle();
+    await _tapVisible(tester, find.text('Prepare candidate'));
+    expect(api.calls, contains('candidate:card_a'));
     expect(find.textContaining('Recommendation: release.'), findsWidgets);
-    expect(find.textContaining('prp_candidate'), findsOneWidget);
-    await tester.tap(find.text('Approve + commit proposal'));
-    await tester.pumpAndSettle();
+    await _bringVisible(tester, _selectableTextContaining('prp_candidate'));
+    expect(_selectableTextContaining('prp_candidate'), findsOneWidget);
+    await _tapVisible(tester, find.text('Approve + commit proposal'));
     expect(api.calls, contains('commit:prp_candidate:gnt_prp_candidate'));
-    await tester.tap(find.text('Hold latest candidate'));
-    await tester.pumpAndSettle();
+    await _tapVisible(tester, find.text('Hold latest candidate'));
     expect(api.calls, contains('decision:reject:cand_a'));
-    await tester.enterText(find.byKey(const Key('writing-export-ref')), 'final');
-    await tester.tap(find.text('Prepare export'));
-    await tester.pumpAndSettle();
+    await _enterVisible(
+        tester, find.byKey(const Key('writing-export-ref')), 'final');
+    await _tapVisible(tester, find.text('Prepare export'));
     expect(api.calls, contains('export:final'));
   });
 
@@ -53,6 +51,31 @@ void main() {
     expect(find.textContaining('Gateway unavailable'), findsOneWidget);
   });
 }
+
+Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
+  await _bringVisible(tester, finder);
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _enterVisible(
+    WidgetTester tester, Finder finder, String value) async {
+  await _bringVisible(tester, finder);
+  await tester.enterText(finder, value);
+}
+
+Future<void> _bringVisible(WidgetTester tester, Finder finder) async {
+  if (finder.evaluate().isEmpty) {
+    await tester.scrollUntilVisible(finder, 240,
+        scrollable: find.byType(Scrollable).first);
+  } else {
+    await tester.ensureVisible(finder);
+  }
+  await tester.pumpAndSettle();
+}
+
+Finder _selectableTextContaining(String value) => find.byWidgetPredicate(
+    (widget) => widget is SelectableText && (widget.data ?? '').contains(value));
 
 class _FakeWritingApi implements WritingApi {
   _FakeWritingApi() : _empty = false;

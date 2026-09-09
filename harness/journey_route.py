@@ -76,6 +76,12 @@ def _create(req: dict, service: JourneyService, approved: dict) -> dict:
 
 
 def _append(req: dict, service: JourneyService, approved: dict) -> dict:
+    if approved["operation"] == "record_fact":
+        from .writing_artifacts import WritingArtifactStore
+        from .writing_projection import validate_writing_append
+        validate_writing_append(
+            service, WritingArtifactStore(service.store.state_root),
+            req, approved["operation"], approved["operation_body"])
     ack = service.append(
         journey_ref=req["journey_ref"],
         expected_event_head=req["expected_event_head"],

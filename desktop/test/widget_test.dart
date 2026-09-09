@@ -19,7 +19,6 @@ import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/views/agent_view.dart';
 import 'package:flywheel_desktop/views/code_view.dart';
 import 'package:flywheel_desktop/views/lanes_view.dart';
-import 'package:flywheel_desktop/views/writing_view.dart';
 import 'package:flywheel_desktop/views/receipts_view.dart';
 import 'package:flywheel_desktop/widgets/flywheel_nav.dart';
 

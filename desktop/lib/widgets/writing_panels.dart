@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../ide/diff.dart';
 import '../ide/diff_view.dart';
 import '../models/writing_models.dart';
-import '../theme/flywheel_theme.dart';
 import 'fw.dart';
 
 class WritingPanels extends StatelessWidget {

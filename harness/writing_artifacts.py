@@ -257,16 +257,8 @@ def plan_writing_artifact_append(service, req: dict, command: dict) -> tuple[str
     if artifact.get("project_ref") != project_ref:
         raise TransportError(
             "INVALID_TRANSITION", "writing artifact project mismatch", 422)
-    payload = record_fact_for_artifact(
+    return "record_fact", record_fact_for_artifact(
         store, command, owner_ref=owner_ref, project_ref=project_ref)
-    from .writing_projection import WritingProjectionError, validate_writing_append
-    try:
-        validate_writing_append(
-            service, store, req, "record_fact",
-            {"occurred_at": "1970-01-01T00:00:00Z", "payload": payload})
-    except WritingProjectionError as exc:
-        raise TransportError(exc.code, "writing artifact is invalid", 422) from exc
-    return "record_fact", payload
 def artifact_plan_body(value: dict) -> bytes:
     return canonical_bytes(validate_artifact(value))
 def _cap(kind: str) -> int:
