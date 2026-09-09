@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,7 @@ def main(argv: list[str] | None = None) -> int:
     review = commands.add_parser("review")
     review.add_argument("artifact_dir", type=Path)
     review.add_argument("--json", action="store_true")
+    review.add_argument("--html-out", type=Path)
     doctor = commands.add_parser("doctor")
     doctor.add_argument("--out", required=True, type=Path)
     doctor.add_argument("--json", action="store_true")
@@ -50,7 +52,17 @@ def main(argv: list[str] | None = None) -> int:
         _emit(result, args.json)
         return 0 if result["observed_state"] == "pass" else 1
     if args.command == "review":
-        return _emit(product.review_artifacts(args.artifact_dir), args.json)
+        report = product.review_artifacts(args.artifact_dir)
+        if args.html_out:
+            try:
+                product.write_review_html(report, args.html_out)
+            except (OSError, ValueError) as exc:
+                # Do not echo OS errors that contain private paths.
+                code = str(exc) if isinstance(exc, ValueError) else "html_output_write_failed"
+                print(code, file=sys.stderr)
+                return 2
+        _emit(report, args.json)
+        return 0 if report["verification"]["observed_state"] == "pass" else 1
     if args.command == "doctor":
         report = product.doctor(args.out)
         _emit(report, args.json)
