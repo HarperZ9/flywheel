@@ -38,7 +38,7 @@ def build_preview_prepare_body(
     exact_request(body, {
         "schema", "journey_ref", "expected_event_head", "client_request_id",
         "credential_ref", "run_id", "destination", "post", "media"},
-        optional={"timeout"})
+        optional={"timeout", "bulletin_access"})
     if body.get("schema") != SELECTION_SCHEMA:
         raise TransportError(
             "INVALID_BULLETIN_MEDIA", "Bulletin media request is invalid", 422)
@@ -55,7 +55,8 @@ def build_preview_prepare_body(
         expected_event_head=body["expected_event_head"],
         client_request_id=body["client_request_id"],
         timeout=body.get("timeout", 20),
-        credential_ref=body["credential_ref"])
+        credential_ref=body["credential_ref"],
+        bulletin_access=body.get("bulletin_access"))
 
 
 def preview_bytes_body(

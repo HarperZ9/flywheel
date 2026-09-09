@@ -38,9 +38,10 @@ def test_an_absent_grant_leaves_the_path_standing_alone(monkeypatch):
     # is not a mismatch; the path is then the only claim there is.
     called = {}
 
-    def _fake(lane, tool, args, *, timeout, governance_tier):
+    def _fake(lane, tool, args, *, timeout, governance_tier,
+              bulletin_access=None):
         called.update(lane=lane, tool=tool, args=args, timeout=timeout,
-                      tier=governance_tier)
+                      tier=governance_tier, bulletin_access=bulletin_access)
         return {"ok": True}
 
     import harness.lane_caller as caller
@@ -49,6 +50,7 @@ def test_an_absent_grant_leaves_the_path_standing_alone(monkeypatch):
     assert code == 200 and result == {"ok": True}
     assert called["lane"] == "gather" and called["tool"] == "gather.status"
     assert called["args"] == {} and called["tier"] == ""
+    assert called["bulletin_access"] is None
 
 
 def test_args_must_be_an_object_and_a_bad_timeout_falls_back(monkeypatch):
@@ -58,7 +60,8 @@ def test_args_must_be_an_object_and_a_bad_timeout_falls_back(monkeypatch):
 
     seen = {}
 
-    def _fake(lane, tool, args, *, timeout, governance_tier):
+    def _fake(lane, tool, args, *, timeout, governance_tier,
+              bulletin_access=None):
         seen["timeout"] = timeout
         return {"ok": True}
 
@@ -70,8 +73,41 @@ def test_args_must_be_an_object_and_a_bad_timeout_falls_back(monkeypatch):
     assert seen["timeout"] != 1
 
 
+def test_bulletin_access_is_forwarded_to_the_lane_caller(monkeypatch):
+    seen = {}
+
+    def _fake(lane, tool, args, *, timeout, governance_tier,
+              bulletin_access=None):
+        seen.update(lane=lane, tool=tool, access=bulletin_access)
+        return {"ok": True}
+
+    import harness.lane_caller as caller
+    monkeypatch.setattr(caller, "call_lane_tool", _fake)
+    result, code = handle_lane_call(
+        "/api/lane/bulletin/board_feed",
+        {"name": "bulletin", "tool": "board_feed", "args": {},
+         "bulletin_access": "off"})
+    assert code == 200 and result == {"ok": True}
+    assert seen == {"lane": "bulletin", "tool": "board_feed", "access": "off"}
+
+
+def test_target_mismatch_refuses_before_bulletin_access_is_used(monkeypatch):
+    def _fake(*_args, **_kwargs):
+        raise AssertionError("caller should not run after route mismatch")
+
+    import harness.lane_caller as caller
+    monkeypatch.setattr(caller, "call_lane_tool", _fake)
+    result, code = handle_lane_call(
+        "/api/lane/gather/gather.status",
+        {"name": "bulletin", "tool": "board_feed", "args": {},
+         "bulletin_access": "off"})
+    assert code == 409
+    assert "do not match" in result["error"]
+
+
 def test_a_governance_denial_is_an_answer_with_its_own_status(monkeypatch):
-    def _denied(lane, tool, args, *, timeout, governance_tier):
+    def _denied(lane, tool, args, *, timeout, governance_tier,
+                bulletin_access=None):
         return {"governance_denied": "tier T3 requires an approved TADR",
                 "lane": lane}
 
@@ -83,7 +119,8 @@ def test_a_governance_denial_is_an_answer_with_its_own_status(monkeypatch):
 
 
 def test_a_lane_error_is_reported_as_the_callers_400(monkeypatch):
-    def _err(lane, tool, args, *, timeout, governance_tier):
+    def _err(lane, tool, args, *, timeout, governance_tier,
+             bulletin_access=None):
         return {"error": "no such tool"}
 
     import harness.lane_caller as caller

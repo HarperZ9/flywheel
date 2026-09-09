@@ -17,6 +17,7 @@ def call_lane_tool(
     *,
     timeout: int = 20,
     governance_tier: str = "",
+    bulletin_access: object = None,
 ) -> dict[str, Any]:
     """Call one tool on a registered lane's MCP server.
 
@@ -39,6 +40,12 @@ def call_lane_tool(
                          f">= {min_tier}, but governance tier is {governance_tier}",
                 "governance_denied": True,
             }
+
+    from .bulletin_access import bulletin_access_denial
+    denial = bulletin_access_denial(
+        lane_name, tool_name, requested_access=bulletin_access)
+    if denial is not None:
+        return denial
 
     from harness.lanes import resolve_mcp_launch, LANES
     if lane_name not in LANES:
@@ -153,5 +160,8 @@ def list_available_lanes() -> list[dict[str, object]]:
         if per_tool:
             entry["tool_tiers"] = dict(per_tool)
             entry["unlisted_tool_tier"] = SPLIT_DEFAULT_TIER
+        if name == "bulletin":
+            from .bulletin_access import policy_summary
+            entry["bulletin_access_policy"] = policy_summary()
         listing.append(entry)
     return listing

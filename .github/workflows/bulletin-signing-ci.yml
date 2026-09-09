@@ -61,6 +61,8 @@ jobs:
           set +e
           python -m pytest \
             tests/test_bulletin_media_http_fixture.py \
+            tests/test_bulletin_access_invalid_http.py \
+            tests/test_bulletin_access_media_http.py \
             tests/test_outcome_bulletin_media_publication.py \
             tests/test_outcome_bulletin_media_hold2.py \
             tests/test_outcome_bulletin_media_packet_policy.py \

@@ -127,28 +127,31 @@ def build_media_preview_from_run_selection(
 def build_gateway_media_grant_request(
         preview: dict, *, journey_ref: str, expected_event_head: str,
         client_request_id: str, timeout: int = 20,
-        credential_ref: str | None = None) -> dict:
+        credential_ref: str | None = None,
+        bulletin_access: str | None = None) -> dict:
     preview = _validate_preview(preview)
     refs = [] if credential_ref is None else [_credential_ref(credential_ref)]
+    operation = {"name": "bulletin", "tool": TOOL, "args": preview,
+                 "governance_tier": "T2", "timeout": timeout,
+                 "data_refs": preview["data_refs"], "credential_refs": refs}
+    if bulletin_access is not None:
+        operation["bulletin_access"] = bulletin_access
     return {"schema": GATEWAY_SCHEMA, "journey_ref": journey_ref,
             "expected_event_head": expected_event_head,
-            "client_request_id": client_request_id,
-            "operation": {"name": "bulletin", "tool": TOOL, "args": preview,
-                          "governance_tier": "T2", "timeout": timeout,
-                          "data_refs": preview["data_refs"],
-                          "credential_refs": refs}}
+            "client_request_id": client_request_id, "operation": operation}
 
 
 def build_gateway_media_publish_envelope(
         preview: dict, *, journey_ref: str, expected_event_head: str,
         client_request_id: str, grant_ref: str, timeout: int = 20,
-        credential_ref: str | None = None) -> dict:
+        credential_ref: str | None = None,
+        bulletin_access: str | None = None) -> dict:
     if type(grant_ref) is not str or GRANT_REF_PATTERN.fullmatch(grant_ref) is None:
         _fail()
     req = build_gateway_media_grant_request(
         preview, journey_ref=journey_ref, expected_event_head=expected_event_head,
         client_request_id=client_request_id, timeout=timeout,
-        credential_ref=credential_ref)
+        credential_ref=credential_ref, bulletin_access=bulletin_access)
     return {"schema": GATEWAY_SCHEMA, "journey_ref": journey_ref,
             "expected_event_head": expected_event_head,
             "client_request_id": client_request_id, "grant_ref": grant_ref,
