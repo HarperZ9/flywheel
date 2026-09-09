@@ -32,6 +32,7 @@ FIXED_PARAMS = {
     "cache_state": "warm_or_unknown_recorded",
 }
 ARMS = ("C", "A", "B")
+ORDER_PLAN_SCHEMA = "harness.local-finalizer-candidate-prefix-order-plan/v1"
 SYSTEMIC_FINALIZER_STATES = {
     "deadline_exhausted",
     "provider_json_invalid",
@@ -54,6 +55,21 @@ def _write_json(path: Path, value: Any) -> Path:
                                allow_nan=False) + "\n", encoding="utf-8", newline="")
     return path
 
+def _task_arm_orders(tasks: list[dict[str, Any]], order_plan: dict[str, Any] | None) -> dict[str, list[str]]:
+    ids = [task["task_id"] for task in tasks]
+    if order_plan is None: return {task_id: list(ARMS) for task_id in ids}
+    err = "order plan must name every task and each arm exactly once"
+    orders = order_plan.get("orders") if isinstance(order_plan, dict) else None
+    if not isinstance(order_plan, dict) or order_plan.get("schema") != ORDER_PLAN_SCHEMA or not isinstance(orders, dict) or set(orders) != set(ids):
+        raise ValueError(err)
+    task_sets = [task.get("task_set_id") for task in tasks]
+    if not task_sets or any(not isinstance(item, str) or not item for item in task_sets) or len(set(task_sets)) != 1 or order_plan.get("task_set_id") != task_sets[0]: raise ValueError("order plan task_set_id must match unique task set")
+    out = {}
+    for task_id in ids:
+        order = orders[task_id]
+        if not isinstance(order, list) or len(order) != len(ARMS) or set(order) != set(ARMS): raise ValueError(err)
+        out[task_id] = list(order)
+    return out
 
 def _copy_json(src: Path, dst: Path, drop) -> str:
     item = json.loads(src.read_text(encoding="utf-8"))
@@ -134,12 +150,13 @@ def score_arm_text(task: dict[str, Any], arm: str, text: str, attempt: Path, can
     return oracle.state, oracle.failure_codes
 
 
-def _row(task, arm, candidate, finalizer_state, oracle_state, codes, calls, req_hash=""):
+def _row(task, arm, candidate, finalizer_state, oracle_state, codes, calls, req_hash="", order_index=0, order_hash=""):
     return {"schema": "harness.local-finalizer-candidate-prefix-row/v1", "task_id": task["task_id"],
             "arm": arm, "candidate_sha256": candidate.get("candidate_sha256", ""),
             "candidate_state": candidate.get("candidate_state", ""), "finalizer_state": finalizer_state,
             "oracle_state": oracle_state, "failure_codes": list(codes),
             "model_calls_after_prefix": calls, "request_body_sha256": req_hash,
+            "arm_order_index": order_index, "task_arm_order_sha256": order_hash,
             "primary_outcome": "completed" if oracle_state == "pass" else "not_completed"}
 
 
@@ -153,15 +170,18 @@ def _ineligible_state(candidate: dict[str, Any]) -> str:
 
 
 def run_candidate_prefix_experiment(tasks: list[dict[str, Any]], run_root: Path, params: dict[str, Any], *,
-                                    candidate_runner: Callable, finalizer_runner: Callable,
-                                    score_runner: Callable = score_arm_text) -> dict[str, Any]:
+                                     candidate_runner: Callable, finalizer_runner: Callable,
+                                     score_runner: Callable = score_arm_text,
+                                     order_plan: dict[str, Any] | None = None) -> dict[str, Any]:
     run_root = Path(run_root)
-    if run_root.exists():
-        raise ValueError("run root already exists")
+    if run_root.exists(): raise ValueError("run root already exists")
+    task_arm_orders = _task_arm_orders(tasks, order_plan)
+    order_hash = canonical_sha256(task_arm_orders)
     run_root.mkdir(parents=True)
     manifest = {"schema": "harness.local-finalizer-candidate-prefix-manifest/v1",
                 "arms": list(ARMS), "params": params,
-                "tasks": [task["task_id"] for task in tasks]}
+                "tasks": [task["task_id"] for task in tasks],
+                "task_arm_orders": task_arm_orders, "task_arm_order_sha256": order_hash}
     _write_json(run_root / "pre-run-manifest.json", manifest)
     rows = []
     stopped_finalizer_arms: dict[str, str] = {}
@@ -173,26 +193,28 @@ def run_candidate_prefix_experiment(tasks: list[dict[str, Any]], run_root: Path,
         except Exception as exc:
             candidate = {"state": "upstream_candidate_unavailable", "candidate_state": "upstream_candidate_unavailable",
                          "candidate_sha256": "", "failure_detail": type(exc).__name__}
-        for arm in ARMS:
+        for order_index, arm in enumerate(task_arm_orders[task["task_id"]]):
             attempt = run_root / task["task_id"] / arm
+            def row(finalizer_state, oracle_state, codes, calls, req_hash=""):
+                return _row(task, arm, candidate, finalizer_state, oracle_state, codes, calls,
+                            req_hash, order_index, order_hash)
             if candidate.get("state") != "returned":
-                rows.append(_row(task, arm, candidate, "upstream_candidate_unavailable", "not_run", [], 0)); continue
+                rows.append(row("upstream_candidate_unavailable", "not_run", [], 0)); continue
             if not candidate.get("eligible", True):
                 state = _ineligible_state(candidate)
-                rows.append(_row(task, arm, candidate, state, "not_run", [state], 0)); continue
+                rows.append(row(state, "not_run", [state], 0)); continue
             if arm == "C":
                 state, codes = score_runner(task, arm, candidate["selected_text"], attempt, candidate)
-                rows.append(_row(task, arm, candidate, "not_invoked", state, codes, 0)); continue
+                rows.append(row("not_invoked", state, codes, 0)); continue
             if arm in stopped_finalizer_arms:
-                row = _row(task, arm, candidate, "not_started_after_systemic_finalizer_block",
-                           "not_run", [stopped_finalizer_arms[arm]], 0)
-                rows.append(row); continue
+                rows.append(row("not_started_after_systemic_finalizer_block",
+                                "not_run", [stopped_finalizer_arms[arm]], 0)); continue
             try:
                 out = finalizer_runner(arm, task, candidate, params, attempt)
             except Exception as exc:
                 finalizer_state = type(exc).__name__
                 stopped_finalizer_arms[arm] = finalizer_state
-                rows.append(_row(task, arm, candidate, finalizer_state, "not_run", [], 1)); continue
+                rows.append(row(finalizer_state, "not_run", [], 1)); continue
             fstate = str(out.get("state", "returned"))
             if fstate in SYSTEMIC_FINALIZER_STATES:
                 stopped_finalizer_arms[arm] = fstate
@@ -200,9 +222,10 @@ def run_candidate_prefix_experiment(tasks: list[dict[str, Any]], run_root: Path,
                 state, codes = score_runner(task, arm, out["selected_text"], attempt, candidate)
             else:
                 state, codes = "not_run", []
-            rows.append(_row(task, arm, candidate, fstate, state, codes, 1, str(out.get("request_body_sha256", ""))))
+            rows.append(row(fstate, state, codes, 1, str(out.get("request_body_sha256", ""))))
     summary = {"schema": "harness.local-finalizer-candidate-prefix-run/v1", "denominator": len(tasks) * 3,
-               "rows": rows, "params_sha256": canonical_sha256(params)}
+               "rows": rows, "params_sha256": canonical_sha256(params),
+               "task_arm_orders": task_arm_orders, "task_arm_order_sha256": order_hash}
     _write_json(run_root / "rows.json", rows)
     _write_json(run_root / "run-summary.json", summary)
     return summary
