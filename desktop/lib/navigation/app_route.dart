@@ -17,6 +17,7 @@ enum DestinationId {
   schedule,
   runners,
   approvals,
+  bulletin,
   chat,
   compare,
   models,

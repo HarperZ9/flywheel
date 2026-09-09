@@ -3,7 +3,8 @@ import json
 import pytest
 
 from harness.evidence_public import (
-    TransportError, json_ref, public_metadata, public_result, relative_ref,
+    TransportError, exact_request, json_ref, public_metadata, public_result,
+    relative_ref,
 )
 
 
@@ -17,6 +18,15 @@ def test_extracted_metadata_keeps_public_https_and_nested_refs(tmp_path):
         json.dumps(value), encoding="utf-8")
     assert json_ref(tmp_path, "nested/receipt.json") == value
     assert relative_ref("nested/receipt.json").as_posix() == "nested/receipt.json"
+
+
+def test_exact_request_accepts_declared_optional_fields():
+    value = {"required": "yes", "timeout": 20}
+    assert exact_request(value, {"required"}, optional={"timeout"}) is value
+    with pytest.raises(TransportError) as failure:
+        exact_request({"required": "yes", "extra": "no"}, {"required"},
+                      optional={"timeout"})
+    assert failure.value.code == "UNKNOWN_FIELD"
 
 
 @pytest.mark.parametrize("value", [

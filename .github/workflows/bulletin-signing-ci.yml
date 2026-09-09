@@ -1,0 +1,95 @@
+name: bulletin-signing-ci
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - ".github/workflows/bulletin-signing-ci.yml"
+      - "harness/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "pytest.ini"
+      - "conftest.py"
+      - "tests/conftest.py"
+  pull_request:
+    paths:
+      - ".github/workflows/bulletin-signing-ci.yml"
+      - "harness/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "pytest.ini"
+      - "conftest.py"
+      - "tests/conftest.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}
+
+jobs:
+  signing-controls:
+    name: signing controls (${{ matrix.os }}, Python 3.11)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.11"
+      - name: Install optional signing dependencies
+        run: python -m pip install ".[signing]" pytest pytest-timeout
+      - name: Verify signing backend is present
+        shell: bash
+        run: |
+          python -c '
+          import cryptography
+          from importlib import metadata
+
+          print("cryptography=" + metadata.version("cryptography"))
+          print("cryptography module=" + cryptography.__file__)
+          '
+      - name: Bulletin signing and media controls
+        shell: bash
+        run: |
+          set +e
+          python -m pytest \
+            tests/test_bulletin_media_http_fixture.py \
+            tests/test_outcome_bulletin_media_publication.py \
+            tests/test_outcome_bulletin_media_hold2.py \
+            tests/test_outcome_bulletin_media_packet_policy.py \
+            tests/test_outcome_bulletin_media_http_route.py \
+            -q --junitxml=bulletin-signing-junit.xml
+          pytest_status=$?
+          python -c '
+          import sys
+          import xml.etree.ElementTree as ET
+
+          path = "bulletin-signing-junit.xml"
+          root = ET.parse(path).getroot()
+          suites = root.findall("testsuite") if root.tag == "testsuites" else [root]
+          total = sum(int(suite.attrib.get("tests", "0")) for suite in suites)
+          failures = sum(int(suite.attrib.get("failures", "0")) for suite in suites)
+          errors = sum(int(suite.attrib.get("errors", "0")) for suite in suites)
+          skipped = sum(int(suite.attrib.get("skipped", "0")) for suite in suites)
+          print(
+              f"junit total={total} failures={failures} "
+              f"errors={errors} skipped={skipped}"
+          )
+          if total <= 0:
+              raise SystemExit("no tests ran in bulletin signing CI")
+          if skipped:
+              raise SystemExit("bulletin signing CI must not skip signing tests")
+          if failures or errors:
+              raise SystemExit("bulletin signing CI had failing tests")
+          '
+          junit_status=$?
+          if [ "$pytest_status" -ne 0 ] || [ "$junit_status" -ne 0 ]; then
+            exit 1
+          fi

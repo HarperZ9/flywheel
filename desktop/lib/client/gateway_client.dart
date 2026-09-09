@@ -100,7 +100,8 @@ class GatewayClient {
   Future<Map<String, dynamic>> relayRuns() => getJson('/api/relay/runs');
 
   /// GET /api/relay/sessions — saved relay sessions (follow you).
-  Future<Map<String, dynamic>> relaySessions() => getJson('/api/relay/sessions');
+  Future<Map<String, dynamic>> relaySessions() =>
+      getJson('/api/relay/sessions');
 
   /// GET /api/relay/remote. Whether a phone could reach this workstation.
   /// Presence only: credential keys come back as booleans, never values.
@@ -114,11 +115,12 @@ class GatewayClient {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/companion'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(authorizedBody ?? {
-        'prompt': prompt,
-        if (solutionSig != null) 'solution_sig': solutionSig,
-        if (effort != null) 'effort': effort,
-      }),
+      body: jsonEncode(authorizedBody ??
+          {
+            'prompt': prompt,
+            if (solutionSig != null) 'solution_sig': solutionSig,
+            if (effort != null) 'effort': effort,
+          }),
     );
     return CompanionResult.fromJson(_decode(r));
   }
@@ -129,11 +131,12 @@ class GatewayClient {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/route'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(authorizedBody ?? {
-        'prompt': prompt,
-        'endpoint': endpoint,
-        if (model != null && model.isNotEmpty) 'model': model,
-      }),
+      body: jsonEncode(authorizedBody ??
+          {
+            'prompt': prompt,
+            'endpoint': endpoint,
+            if (model != null && model.isNotEmpty) 'model': model,
+          }),
     );
     return _decode(r);
   }
@@ -146,8 +149,7 @@ class GatewayClient {
   }
 
   /// Generic POST returning decoded JSON, for small parameterless verbs.
-  Future<Map<String, dynamic>> postJson(
-      String path, Map<String, dynamic> body,
+  Future<Map<String, dynamic>> postJson(String path, Map<String, dynamic> body,
       {Duration timeout = const Duration(seconds: 15)}) async {
     final r = await _http
         .post(
@@ -157,6 +159,19 @@ class GatewayClient {
         )
         .timeout(timeout);
     return _decode(r);
+  }
+
+  /// Generic POST returning decoded JSON while rejecting redirects.
+  Future<Map<String, dynamic>> postJsonNoRedirect(
+      String path, Map<String, dynamic> body,
+      {Duration timeout = const Duration(seconds: 15)}) async {
+    final request = http.Request('POST', Uri.parse('$baseUrl$path'))
+      ..followRedirects = false
+      ..headers['Content-Type'] = 'application/json'
+      ..body = jsonEncode(body);
+    final streamed = await _http.send(request).timeout(timeout);
+    final response = await http.Response.fromStream(streamed);
+    return _decode(response);
   }
 
   /// POST returning the decoded body whatever the status came back as.

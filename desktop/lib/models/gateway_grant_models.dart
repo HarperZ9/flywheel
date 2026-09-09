@@ -10,6 +10,7 @@ const gatewayOperationSchema = 'flywheel.gateway-operation/v1';
 final _credentialRef = RegExp(r'^cred_[0-9a-f]{32}$');
 final _dataRef = RegExp(r'^data_[A-Za-z0-9._:-]{0,123}$');
 final _requestId = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$');
+
 /// Operation fields the engine declares as filesystem paths: the workspace to
 /// import, the suite to audit, the fixtures a pack admission reads. A path in
 /// any other field is a mistake, so the exemption is named rather than a
@@ -28,6 +29,7 @@ Object? _snapshot(Object? value, List<int> budget, int depth,
   if (value is num) return value.isFinite ? value : _invalid();
   if (value is String) {
     if (!isSafePublicText(value) &&
+        !(key == 'base_url' && isSafePublicBaseUrl(value)) &&
         !(_pathFields.contains(key) && isSafeLocalPath(value))) {
       _invalid();
     }
@@ -41,7 +43,11 @@ Object? _snapshot(Object? value, List<int> budget, int depth,
     final result = <String, Object?>{};
     for (final entry in value.entries) {
       final name = entry.key as String;
-      if (_secretKey.hasMatch(name) && name != 'credential_refs') _invalid();
+      if (_secretKey.hasMatch(name) &&
+          name != 'credential_refs' &&
+          !(name == 'credential_values' && entry.value == 'never included')) {
+        _invalid();
+      }
       result[name] = _snapshot(entry.value, budget, depth + 1, key: name);
     }
     return Map<String, Object?>.unmodifiable(result);
@@ -140,35 +146,26 @@ final class GatewayOperation {
 
   factory GatewayOperation.companionAsk(String request, String prompt,
           {String? solutionSig, String? effort}) =>
-      GatewayOperation._withRefs(
-          'companion.ask',
-          request,
-          const GatewayDestination('model', 'companion'),
-          'companion.ask',
-          {
-            'prompt': prompt,
-            if (solutionSig != null) 'solution_sig': solutionSig,
-            // The dial travels in the grant, so the operator approves the
-            // budget they are actually authorizing rather than a default the
-            // sheet never showed them.
-            if (effort != null) 'effort': effort,
-          },
+      GatewayOperation._withRefs('companion.ask', request,
+          const GatewayDestination('model', 'companion'), 'companion.ask', {
+        'prompt': prompt,
+        if (solutionSig != null) 'solution_sig': solutionSig,
+        // The dial travels in the grant, so the operator approves the
+        // budget they are actually authorizing rather than a default the
+        // sheet never showed them.
+        if (effort != null) 'effort': effort,
+      },
           dataRefs: const [],
           credentialRefs: const []);
 
-  factory GatewayOperation.routeSend(String request, String prompt,
-          String endpoint,
-          {String? model}) =>
-      GatewayOperation._withRefs(
-          'route.send',
-          request,
-          GatewayDestination('endpoint', endpoint),
-          'route.send',
-          {
-            'prompt': prompt,
-            'endpoint': endpoint,
-            if (model != null && model.isNotEmpty) 'model': model,
-          },
+  factory GatewayOperation.routeSend(
+          String request, String prompt, String endpoint, {String? model}) =>
+      GatewayOperation._withRefs('route.send', request,
+          GatewayDestination('endpoint', endpoint), 'route.send', {
+        'prompt': prompt,
+        'endpoint': endpoint,
+        if (model != null && model.isNotEmpty) 'model': model,
+      },
           dataRefs: const [],
           credentialRefs: const []);
 
@@ -177,19 +174,15 @@ final class GatewayOperation {
           List<String>? examples,
           String? intentSource,
           String? architectureSource}) =>
-      GatewayOperation._withRefs(
-          'forge.create',
-          request,
-          const GatewayDestination('forge', 'forge'),
-          'forge.create',
-          {
-            'goal': goal,
-            if (context != null) 'context': context,
-            if (examples != null) 'examples': examples,
-            if (intentSource != null) 'intent_source': intentSource,
-            if (architectureSource != null)
-              'architecture_source': architectureSource,
-          },
+      GatewayOperation._withRefs('forge.create', request,
+          const GatewayDestination('forge', 'forge'), 'forge.create', {
+        'goal': goal,
+        if (context != null) 'context': context,
+        if (examples != null) 'examples': examples,
+        if (intentSource != null) 'intent_source': intentSource,
+        if (architectureSource != null)
+          'architecture_source': architectureSource,
+      },
           dataRefs: const [],
           credentialRefs: const []);
 

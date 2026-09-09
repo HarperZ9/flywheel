@@ -1338,7 +1338,7 @@ class _Handler(BaseHTTPRequestHandler):
             elif p.startswith("/api/gateway-grants/"):  # grants scoped to the gateway itself
                 from harness.gateway_grant_route import gateway_grant_post
                 body, code = gateway_grant_post(
-                    p, raw, owner_ref=self.owner_ref,
+                    p, raw, owner_ref=self.owner_ref, run_root=Path(self.run_root),
                     state_root=self.flywheel_home / "state", clock=self.clock)
             else:
                 from harness.credential_handle_route import credential_handle_post
@@ -2164,7 +2164,6 @@ class _Handler(BaseHTTPRequestHandler):
             if not lesson_id:
                 return self._json({"error": "provide 'lesson_id'"}, 400)
             from harness.lesson_store import LessonStore
-            from pathlib import Path
             store = LessonStore.load(Path(self.run_root) / "lessons.jsonl")
             try:
                 row = store.transition(lesson_id, "admitted")
@@ -2180,7 +2179,6 @@ class _Handler(BaseHTTPRequestHandler):
             if not lesson_id:
                 return self._json({"error": "provide 'lesson_id'"}, 400)
             from harness.lesson_store import LessonStore
-            from pathlib import Path
             store = LessonStore.load(Path(self.run_root) / "lessons.jsonl")
             try:
                 row = store.transition(lesson_id, "retired")

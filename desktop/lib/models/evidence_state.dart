@@ -45,6 +45,22 @@ bool isSafePublicText(String value) =>
     !_secretValue.hasMatch(value) &&
     !_assignedSecret.hasMatch(value);
 
+bool isSafePublicBaseUrl(String value) {
+  final parsed = Uri.tryParse(value);
+  return value.isNotEmpty &&
+      value.length <= 512 &&
+      !_fileUri.hasMatch(value) &&
+      !_secretValue.hasMatch(value) &&
+      !_assignedSecret.hasMatch(value) &&
+      parsed != null &&
+      const {'http', 'https'}.contains(parsed.scheme) &&
+      parsed.hasAuthority &&
+      parsed.userInfo.isEmpty &&
+      (parsed.path.isEmpty || parsed.path == '/') &&
+      !parsed.hasQuery &&
+      !parsed.hasFragment;
+}
+
 /// A local filesystem path the engine needs verbatim: the workspace it should
 /// import, the suite it should audit. Such a value fails isSafePublicText by
 /// construction, because that predicate exists to keep paths off published

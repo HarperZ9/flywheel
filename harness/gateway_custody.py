@@ -18,6 +18,7 @@ PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
                     "/api/continuation/",
                     "/api/writing/",
                     "/api/gateway-grants/", "/api/pm/",
+                    "/api/lane/",
                     "/api/credential-handles", "/api/session-tokens",
                     "/api/bulletin-identity", "/api/operations/", "/api/hooks/")
 

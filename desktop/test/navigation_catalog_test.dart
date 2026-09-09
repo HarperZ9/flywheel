@@ -1,4 +1,4 @@
-﻿// The destination catalog: exactly 42 stable IDs in five groups. Labels
+// The destination catalog: exactly 43 stable IDs in five groups. Labels
 // may be renamed; identities never move. This test freezes the contract.
 import 'package:flutter_test/flutter_test.dart';
 
@@ -8,52 +8,89 @@ import 'package:flywheel_desktop/navigation/destination_catalog.dart';
 void main() {
   // The name said 30 while the assertion said 33, so the name had already
   // drifted past the thing it describes. Both move together from here.
-  test('the catalog holds exactly 42 unique destinations', () {
-    expect(destinationCatalog.length, 42);
+  test('the catalog holds exactly 43 unique destinations', () {
+    expect(destinationCatalog.length, 43);
     final ids = destinationCatalog.map((d) => d.id).toSet();
-    expect(ids.length, 42);
+    expect(ids.length, 43);
     expect(ids, contains(DestinationId.approvals));
+    expect(ids, contains(DestinationId.writing));
+    expect(ids, contains(DestinationId.bulletin));
   });
 
   test('the five groups carry the exact planned membership and order', () {
     String group(DestinationId id) =>
         destinationCatalog.firstWhere((d) => d.id == id).group.name;
     expect(
-        destinationCatalog
-            .where((d) => group(d.id) == 'work')
-            .map((d) => d.id.name)
-            .toList(),
-        ['journey', 'plan', 'workflows', 'projects', 'writing', 'swarms',
-          'roadmap', 'schedule', 'runners', 'approvals']);
+      destinationCatalog
+          .where((d) => group(d.id) == 'work')
+          .map((d) => d.id.name)
+          .toList(),
+      [
+        'journey',
+        'plan',
+        'workflows',
+        'projects',
+        'writing',
+        'swarms',
+        'roadmap',
+        'schedule',
+        'runners',
+        'approvals',
+        'bulletin',
+      ],
+    );
     expect(
-        destinationCatalog
-            .where((d) => group(d.id) == 'chat')
-            .map((d) => d.id.name)
-            .toList(),
-        ['chat', 'compare', 'models', 'companion']);
+      destinationCatalog
+          .where((d) => group(d.id) == 'chat')
+          .map((d) => d.id.name)
+          .toList(),
+      ['chat', 'compare', 'models', 'companion'],
+    );
     expect(
-        destinationCatalog
-            .where((d) => group(d.id) == 'code')
-            .map((d) => d.id.name)
-            .toList(),
-        ['code', 'eval', 'audit', 'lint', 'scan', 'relay']);
+      destinationCatalog
+          .where((d) => group(d.id) == 'code')
+          .map((d) => d.id.name)
+          .toList(),
+      ['code', 'eval', 'audit', 'lint', 'scan', 'relay'],
+    );
     expect(
-        destinationCatalog
-            .where((d) => group(d.id) == 'evidence')
-            .map((d) => d.id.name)
-            .toList(),
-        ['receipts', 'science', 'world', 'memory', 'governance', 'usage',
-          'infra']);
+      destinationCatalog
+          .where((d) => group(d.id) == 'evidence')
+          .map((d) => d.id.name)
+          .toList(),
+      [
+        'receipts',
+        'science',
+        'world',
+        'memory',
+        'governance',
+        'usage',
+        'infra',
+      ],
+    );
     expect(
-        destinationCatalog
-            .where((d) => group(d.id) == 'advanced')
-            .map((d) => d.id.name)
-            .toList(),
-        [
-          'studio', 'graph', 'feeds', 'discourse', 'academy', 'lessons',
-          'instruments', 'browser', 'lanes', 'forum', 'registry', 'train',
-          'uplift', 'family', 'plugins',
-        ]);
+      destinationCatalog
+          .where((d) => group(d.id) == 'advanced')
+          .map((d) => d.id.name)
+          .toList(),
+      [
+        'studio',
+        'graph',
+        'feeds',
+        'discourse',
+        'academy',
+        'lessons',
+        'instruments',
+        'browser',
+        'lanes',
+        'forum',
+        'registry',
+        'train',
+        'uplift',
+        'family',
+        'plugins',
+      ],
+    );
     final approvals = specFor(DestinationId.approvals)!;
     expect(approvals.label, 'Approvals');
     expect(approvals.group, DestinationGroup.work);
@@ -72,11 +109,14 @@ void main() {
     // The spec maps by ID, never by label: renaming Receipts to Ledger
     // keeps the same DestinationId, so lookups by ID still resolve.
     final receipts = destinationCatalog.firstWhere(
-        (d) => d.id == DestinationId.receipts);
+      (d) => d.id == DestinationId.receipts,
+    );
     expect(receipts.id.name, 'receipts');
     expect(receipts.label, isNotEmpty);
-    expect(destinationCatalog.where((d) => d.id == DestinationId.receipts),
-        hasLength(1));
+    expect(
+      destinationCatalog.where((d) => d.id == DestinationId.receipts),
+      hasLength(1),
+    );
   });
 
   test('spec lookup by id resolves and unknown ids are absent', () {

@@ -29,13 +29,10 @@ _RECORD_FIELDS = {"schema", "proposal_ref", "planned_grant_ref", "owner_ref", "a
     "record_sha256"}
 def _directory(state_root: Path, owner_ref: str) -> Path:
     _validate_owner_ref(owner_ref)
-    state = Path(state_root)
-    state.mkdir(parents=True, exist_ok=True)
-    root = state / "gateway-grant-proposals"
-    root.mkdir(exist_ok=True)
+    state = Path(state_root); state.mkdir(parents=True, exist_ok=True)
+    root = state / "gateway-grant-proposals"; root.mkdir(exist_ok=True)
     _secure_owner_only(root, directory=True)
-    owner = root / owner_ref
-    owner.mkdir(exist_ok=True)
+    owner = root / owner_ref; owner.mkdir(exist_ok=True)
     _secure_owner_only(owner, directory=True)
     return owner
 def _path(owner_dir: Path, proposal_ref: str) -> Path:
@@ -109,6 +106,9 @@ def _proposal_response(record: dict, operation) -> dict:
         rows = thaw_operation(operation.operation)["registrations"]
         summary["hook_registrations"] = [{k: row[k] for k in (
             "hook_id", "hook_sha256", "argv", "blocking")} for row in rows]
+    if record["action"] == "lane.call":
+        from .outcome_bulletin_media import proposal_review as _br; mr = _br(operation)
+        if mr is not None: summary["bulletin_media_review"] = mr
     return {
         "schema": PROPOSAL_SCHEMA, "proposal_ref": record["proposal_ref"],
         "planned_grant_ref": record["planned_grant_ref"],
@@ -273,21 +273,27 @@ def authorize_gateway_envelope(envelope, *, owner_ref: str, state_root: Path,
         raise GatewayOperationError(code) from None
     except (TransportError, OSError, TypeError, ValueError):
         raise GatewayOperationError("INVALID_REQUEST") from None
-def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Path, clock: Callable[[], str]) -> tuple[dict, int]:
+def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Path, clock: Callable[[], str], run_root: Path | None = None) -> tuple[dict, int]:
     """Prepare or approve without dispatching an external operation."""
     try:
-        if not path.startswith(ROUTE_PREFIX):
-            raise GatewayOperationError("NOT_FOUND")
+        if not path.startswith(ROUTE_PREFIX): raise GatewayOperationError("NOT_FOUND")
         route, body = path[len(ROUTE_PREFIX):], parse_json(raw)
         if route in {"capabilities", "list", "read", "approve-reviewed-once", "reject"}:
             return gateway_grant_inbox_post(route, body, owner_ref=owner_ref, state_root=state_root, clock=clock, validate_record=_validate_record, proposal_response=_proposal_response, request_from_record=_request_from, replace_record=_replace, record_digest=_digest)
         if route == "approve-once":
             return _approve(body, owner_ref, state_root, clock), 200
-        if not route.startswith("prepare/") or "/" in route[8:]:
-            raise GatewayOperationError("NOT_FOUND")
+        if route.startswith("bulletin-media-") and run_root is None: raise GatewayOperationError("INVALID_REQUEST")
+        if route == "bulletin-media-runs":
+            from .outcome_bulletin_media_route import runs_body as _rb; return _rb(body, run_root=run_root), 200
+        if route == "bulletin-media-artifacts":
+            from .outcome_bulletin_media_route import artifacts_body as _ab; return _ab(body, run_root=run_root), 200
+        if route == "bulletin-media-preview":
+            from .outcome_bulletin_media_route import prepared_preview_body as _mp; return _mp(body, state_root=state_root, run_root=run_root, owner_ref=owner_ref, prepare=lambda req: _prepare("lane.call", req, owner_ref, state_root, clock)), 200
+        if route == "bulletin-media-preview-bytes":
+            from .outcome_bulletin_media_route import preview_bytes_body as _pb; owner_dir = _directory(state_root, owner_ref); return _pb(body, state_root=state_root, owner_ref=owner_ref, clock=clock, load_record=lambda ref: _read(owner_dir, ref, owner_ref)), 200
+        if not route.startswith("prepare/") or "/" in route[8:]: raise GatewayOperationError("NOT_FOUND")
         action = route[8:]
-        if action not in GRANTABLE_ACTIONS:
-            raise GatewayOperationError("NOT_FOUND")
+        if action not in GRANTABLE_ACTIONS: raise GatewayOperationError("NOT_FOUND")
         return _prepare(action, body, owner_ref, state_root, clock), 200
     except (TransportError, GatewayOperationError, GrantError, JourneyLockBusy, JourneyStoreError, OSError, ValueError) as exc:
         return gateway_error_response(exc)

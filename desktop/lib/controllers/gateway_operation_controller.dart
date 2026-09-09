@@ -65,6 +65,26 @@ final class GatewayOperationController extends ChangeNotifier {
   GatewayOperationFailure? get failure => _failure;
   bool get pending => _pending;
 
+  bool adoptPreparedProposal(
+    GatewayOperation operation,
+    GatewayGrantProposal proposal, {
+    required GatewayJourneyBinding binding,
+    required GatewayOperationSupplier currentOperation,
+    required GatewayJourneyBindingSupplier currentBinding,
+    GatewayHeadConflictRefresh? refreshOnHeadConflict,
+  }) {
+    if (_pending || _proposal != null) return false;
+    _capture(operation, binding, currentOperation, currentBinding,
+        refreshOnHeadConflict);
+    if (!_proposalMatches(proposal, operation, binding)) {
+      _rejectInvalidPrepared();
+      return false;
+    }
+    _proposal = proposal;
+    notifyListeners();
+    return true;
+  }
+
   Future<bool> prepare(GatewayOperation operation,
       {required GatewayJourneyBinding binding,
       required GatewayOperationSupplier currentOperation,
@@ -173,6 +193,26 @@ final class GatewayOperationController extends ChangeNotifier {
     return false;
   }
 
+  bool _rejectInvalidPrepared() {
+    _proposal = null;
+    _failure = const GatewayOperationFailure(
+        'INVALID_RESPONSE', 'Prepared gateway proposal was invalid');
+    notifyListeners();
+    return false;
+  }
+
+  bool _proposalMatches(GatewayGrantProposal proposal,
+          GatewayOperation operation, GatewayJourneyBinding binding) =>
+      !proposal.invalidResponse &&
+      proposal.action == operation.action &&
+      proposal.journeyRef == binding.journeyRef &&
+      proposal.eventHead == binding.eventHead &&
+      proposal.clientRequestId == operation.clientRequestId &&
+      proposal.destination == operation.destination &&
+      proposal.tool == operation.tool &&
+      sameGatewayStringList(proposal.scopes, operation.scopes) &&
+      sameGatewayStringList(proposal.dataRefs, operation.dataRefs) &&
+      sameGatewayStringList(proposal.credentialRefs, operation.credentialRefs);
   Future<void> _recordFailure(
       Object error, int lifetime, int generation) async {
     if (generation != _generation) return;
