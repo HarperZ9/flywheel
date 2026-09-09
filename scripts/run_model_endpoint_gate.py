@@ -17,6 +17,7 @@ from harness.benchmark_receipts import store_benchmark_outputs  # noqa: E402
 from harness.local_agent import BackendError, OllamaBackend, ServeBackend  # noqa: E402
 from harness.model_ollama import normalize_ollama_digest, ollama_name_matches  # noqa: E402
 from harness.local_serving import profile_num_ctx  # noqa: E402
+from harness.model_endpoint_selection import select_profiles  # noqa: E402
 
 
 DEFAULT_PROMPT = "Reply with a short sentence confirming the local endpoint gate is active."
@@ -194,22 +195,24 @@ def probe_profile(
 def build_report(
     *, profile_artifact: str, models: list[str], backends: list[str], prompt: str = DEFAULT_PROMPT,
     timeout_seconds: float = GENERATION_TIMEOUT_SECONDS, max_tokens: int = 64, seed: int = 0,
-    run_id: str = "", transport=None,
+    run_id: str = "", transport=None, profile_id: str | None = None,
+    max_generation_calls: int | None = None,
 ) -> dict[str, Any]:
     profiles = _load_profiles(profile_artifact)
-    wanted_models, wanted_backends = {item.lower() for item in models}, {item.lower() for item in backends}
-    selected = [profile for profile in profiles
-                if (not wanted_models or str(profile.get("model", "")).lower() in wanted_models)
-                and (not wanted_backends or str(profile.get("backend", "")).lower() in wanted_backends)]
+    selected, failure = select_profiles(profiles, models=models, backends=backends,
+                                       profile_id=profile_id, max_generation_calls=max_generation_calls)
     rows = [probe_profile(profile, prompt=prompt, timeout_seconds=timeout_seconds, max_tokens=max_tokens,
-                          seed=seed, run_id=run_id, transport=transport) for profile in selected]
+                          seed=seed, run_id=run_id, transport=transport) for profile in selected] if not failure else []
     failed_rows = sum(bool(row.get("failure_class")) for row in rows)
-    selection_failure = not selected
+    selection_failure = bool(failure)
     verdict = "MODEL_ENDPOINT_GATE_FAIL" if selection_failure else (
         "MODEL_ENDPOINT_GATE_PARTIAL" if failed_rows else "MODEL_ENDPOINT_GATE_PASS")
     return {
         "schema": "harness.model-endpoint-gate/v1", "timestamp_utc": now_utc(), "run_id": run_id,
-        "verdict": verdict, "failure_class": "no_profiles_selected" if selection_failure else "",
+        "verdict": verdict, "failure_class": failure,
+        "generation_plan": {"profile_ids": [row.get("profile_id", "") for row in selected],
+                            "planned_max_generation_calls": len(selected),
+                            "max_generation_calls": max_generation_calls, "admitted": not selection_failure},
         "profile_artifact": profile_artifact, "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
         "rows": rows,
         "summary": {
@@ -253,6 +256,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--profile-artifact", required=True)
     parser.add_argument("--models", default="")
     parser.add_argument("--backends", default="")
+    parser.add_argument("--profile-id", help="Select exactly one case-sensitive profile ID; duplicates fail.")
+    parser.add_argument("--max-generation-calls", type=int, help="Refuse the whole plan before I/O if it exceeds this cap.")
     parser.add_argument("--prompt", default=DEFAULT_PROMPT)
     parser.add_argument("--timeout-seconds", type=float, default=GENERATION_TIMEOUT_SECONDS)
     parser.add_argument("--max-tokens", type=int, default=64)
@@ -266,6 +271,7 @@ def main(argv: list[str] | None = None) -> int:
     report = build_report(
         profile_artifact=args.profile_artifact, models=_split_csv(args.models), backends=_split_csv(args.backends),
         prompt=args.prompt, timeout_seconds=args.timeout_seconds, max_tokens=args.max_tokens, seed=args.seed, run_id=args.run_id,
+        profile_id=args.profile_id, max_generation_calls=args.max_generation_calls,
     )
     json_text, md_text = json.dumps(report, indent=2, sort_keys=True), render_markdown(report)
     json_path, md_path = _write(args.out, json_text), _write(args.markdown_out, md_text)
