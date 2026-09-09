@@ -31,7 +31,8 @@ class BackendProposer:
     temperature, seed) -> {text, model_ref, seed}`) to the Proposer protocol, so a
     native Anthropic/Gemini/CLI/OpenCode backend feeds the same accept path the
     OpenAI-shaped proposers reach. `extract` strips code fences for the code loop
-    (default); set False for general routing where prose must survive."""
+    (default); set False for general routing where prose must survive. A backend
+    usage dict is retained verbatim; missing or non-object telemetry stays None."""
 
     def __init__(self, backend, *, model_ref: str | None = None, extract: bool = True):
         self.backend = backend
@@ -49,7 +50,8 @@ class BackendProposer:
         return ProposerOutput(
             text=text, model_ref=(out.get("model_ref", self.model_ref) if isinstance(out, dict) else self.model_ref),
             seed=(out.get("seed", seed) if isinstance(out, dict) else seed),
-            prompt_hash=prompt_hash(prompt), cache="miss")
+            prompt_hash=prompt_hash(prompt), cache="miss",
+            usage=(out.get("usage") if isinstance(out, dict) and isinstance(out.get("usage"), dict) else None))
 
 
 # Native (non-OpenAI-shaped) endpoints endpoints.py serves directly.
