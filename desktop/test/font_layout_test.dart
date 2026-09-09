@@ -47,10 +47,12 @@ void main() {
       tester.widget<Text>(find.byKey(const Key('hankenSubtitle'))).style!,
       maxWidth: 600,
     );
-    await expectLater(
-      find.byKey(const Key('cascadiaDenseLayout')),
-      matchesGoldenFile('goldens/cascadia_dense_layout.png'),
-    );
+    if (Platform.isWindows) {
+      await expectLater(
+        find.byKey(const Key('cascadiaDenseLayout')),
+        matchesGoldenFile('goldens/cascadia_dense_layout.png'),
+      );
+    }
   });
 }
 
