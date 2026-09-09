@@ -1,0 +1,5 @@
+Title: Gather E2E private fixture
+
+E2E_SENTINEL_ALPHA selected body. This exact sentence should be selected by the journey oracle.
+
+E2E_SENTINEL_BETA wrong body. This sentence must not appear in the selected payload.
