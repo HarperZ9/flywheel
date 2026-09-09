@@ -175,7 +175,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Test-only dependencies
-        run: python -m pip install pytest pytest-timeout pynacl pillow numpy scipy
+        run: python -m pip install pytest pytest-timeout pynacl pillow numpy scipy "setuptools>=68" wheel
       - name: Every test, no file list to fall behind
         shell: bash
         run: |
