@@ -76,8 +76,7 @@ class GatewayOperations:
                 operation="operation_queued", payload=payload)
             queued = OperationSnapshot(ref, authorized.journey_ref,
                                        ack.event_head_sha256, "queued", False)
-            self._secrets[(authorized.owner_ref, ref)] = tuple(value for value in
-                authorized.credential_bindings.values() if type(value) is str and value)
+            self._secrets[(authorized.owner_ref, ref)] = _secret_values(authorized)
         try: self._publish(authorized.owner_ref, ref, "snapshot", queued.as_json())
         except Exception: pass
         try:
@@ -286,3 +285,16 @@ def start_operation(*, authorized: AuthorizedOperation, service: GatewayOperatio
     return service.start(authorized, process_factory)
 def cancel_operation(*, action: str, raw: bytes, owner_ref: str, service: GatewayOperations) -> OperationSnapshot:
     return service.cancel(action=action, raw=raw, owner_ref=owner_ref)
+
+
+def _secret_values(authorized: AuthorizedOperation) -> tuple[str, ...]:
+    bindings = authorized.credential_bindings
+    if bindings is None:
+        return ()
+    if hasattr(bindings, "values"):
+        values = bindings.values()
+    else:
+        value_for = getattr(bindings, "value_for", None)
+        slots = getattr(authorized.execution_plan, "required_slots", ())
+        values = [value_for(slot) for slot in slots] if callable(value_for) else ()
+    return tuple(value for value in values if type(value) is str and value)

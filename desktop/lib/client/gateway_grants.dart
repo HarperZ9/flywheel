@@ -17,6 +17,22 @@ const _errors = <String, (Set<int>, String)>{
   'APPROVAL_EXPIRED': ({403}, 'Gateway approval expired'),
   'HEAD_CONFLICT': ({409}, 'Journey state changed'),
   'PLAN_BINDING_DRIFT': ({409}, 'Plan run no longer matches its forge'),
+  'SOURCE_DRIFT': ({409}, 'Continuation source changed since preview'),
+  'PREVIEW_MISMATCH': ({409}, 'Continuation preview no longer matches'),
+  'CONTINUATION_BLOCKED': ({409}, 'Continuation source is incomplete'),
+  'CONTINUATION_ROOT_MISMATCH': ({422}, 'Continuation runner root mismatch'),
+  'CONTINUATION_CONTEXT_MISMATCH': (
+    {422},
+    'Continuation runner context mismatch'
+  ),
+  'CONTINUATION_NOT_STARTED': ({409}, 'Continuation has not been started'),
+  'CONTINUATION_JOURNEY_MISMATCH': (
+    {409},
+    'Continuation Journey does not match this run'
+  ),
+  'CONTINUATION_BINDING_DRIFT': ({409}, 'Continuation start binding changed'),
+  'INVALID_CONTINUATION': ({422}, 'Continuation preview is invalid'),
+  'PREVIEW_NOT_FOUND': ({404}, 'Continuation preview was not found'),
   'IDEMPOTENCY_MISMATCH': (
     {409},
     'Plan run request conflicts with its prior use'
