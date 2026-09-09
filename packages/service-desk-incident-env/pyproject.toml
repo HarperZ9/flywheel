@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flywheel-env-service-desk-incident"
+version = "0.1.0"
+description = "Independent synthetic ServiceDesk incident environment product."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "FSL-1.1-MIT"
+authors = [{ name = "Zain" }]
+dependencies = ["flywheel-verify>=0.6.1,<0.7"]
+
+[project.scripts]
+service-desk-incident-env = "service_desk_incident_env.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["service_desk_incident_env*"]
+
+[tool.setuptools.package-data]
+service_desk_incident_env = ["v1/source-basis.json"]
