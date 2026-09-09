@@ -37,7 +37,8 @@ def measure_loop(tmp_dir) -> dict:
     from .proposer import StubProposer
     from .oracle import PytestOracle
     from .loop import run_loop
-    from .cache import ReceiptCache, cache_key, canonical_prompt, knowledge_hash
+    from .cache import (ReceiptCache, cache_key, canonical_prompt, knowledge_hash,
+                        oracle_context_hash)
     from .proposer import prompt_hash
 
     TASK_DIR = Path(__file__).parent.parent / "tasks" / "example_pass"
@@ -72,7 +73,8 @@ def measure_loop(tmp_dir) -> dict:
 
         # verify -> memory (EXECUTED)
         ck = cache_key(task, prompt_hash(canonical_prompt(task.prompt)), "stub",
-                       task.seed, task.oracle_cmd, knowledge_hash(task))
+                       task.seed, task.oracle_cmd, knowledge_hash(task),
+                       oracle_context_hash(task, "pytest"))
         cache.insert(res.envelope, ck)
         hs.append(Handoff("verify", "memory", "receipt",
                           closed=res.accepted and cache.lookup(ck) is not None,
