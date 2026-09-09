@@ -119,6 +119,14 @@ def test_passthrough_without_checkout_fails_gracefully(monkeypatch, capsys):
     assert "requires a source checkout" in capsys.readouterr().err
 
 
+def test_passthrough_without_checkout_lists_writing_umbrella(monkeypatch, capsys):
+    monkeypatch.setattr(cli, "find_repo_root", _no_repo)
+    monkeypatch.setattr(cli.sys, "frozen", False, raising=False)
+    rc = cli.main(["mcp-health"])
+    assert rc == 2
+    assert "endpoint-gate, writing" in capsys.readouterr().err
+
+
 def test_bare_invocation_without_checkout_prints_usage(monkeypatch, capsys):
     monkeypatch.setattr(cli, "find_repo_root", _no_repo)
     monkeypatch.setattr(cli.sys, "frozen", False, raising=False)

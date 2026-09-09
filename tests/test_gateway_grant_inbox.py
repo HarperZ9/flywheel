@@ -97,6 +97,43 @@ def _final(proposal, grant, **changes):
     return json.dumps(body, separators=(",", ":")).encode()
 
 
+def _record_outcome(outcomes, errors, name, call):
+    try:
+        outcomes.append((name, call()))
+    except BaseException as exc:
+        errors.append((name, type(exc).__name__, str(exc)))
+
+
+def _assert_approve_reject_race_terminal(root, proposal, review, item,
+                                         outcomes, errors):
+    assert errors == []
+    assert sorted(name for name, _result in outcomes) == ["approve", "reject"]
+    statuses = {name: result[1] for name, result in outcomes}
+    assert list(statuses.values()).count(200) == 1
+    winner = next(name for name, status in statuses.items() if status == 200)
+    loser = "reject" if winner == "approve" else "approve"
+    loser_body = dict(outcomes)[loser][0]
+    loser_status = statuses[loser]
+
+    final, final_status = _read(root, proposal)
+    assert final_status == 200
+    expected_state = "approved" if winner == "approve" else "rejected"
+    assert final["proposal_state"] == expected_state
+
+    if loser_status in {403, 409}:
+        return
+    assert loser_status == 503
+    assert loser_body["error"]["code"] == "STORE_BUSY"
+    if winner == "approve":
+        retried, retry_status = _reject(root, item)
+        assert retry_status == 409
+        assert retried["error"]["code"] == "INVALID_TRANSITION"
+    else:
+        retried, retry_status = _approve_reviewed(root, proposal, review)
+        assert retry_status == 403
+        assert retried["error"]["code"] == "PERMISSION_DENIED"
+
+
 def test_missing_owner_mutations_are_permission_denied(tmp_path):
     proposal = {"proposal_ref": "prp_" + "a" * 32}
     review = {"review_sha256": "0" * 64}
@@ -237,15 +274,17 @@ def test_approve_reject_race_reports_one_winner(tmp_path):
     review = read["review"]
     barrier = threading.Barrier(3)
     outcomes = []
+    errors = []
 
     def approve():
         barrier.wait()
-        outcomes.append(("approve", _approve_reviewed(
-            tmp_path, proposal, review)))
+        _record_outcome(outcomes, errors, "approve", lambda:
+                        _approve_reviewed(tmp_path, proposal, review))
 
     def reject():
         barrier.wait()
-        outcomes.append(("reject", _reject(tmp_path, item)))
+        _record_outcome(outcomes, errors, "reject", lambda:
+                        _reject(tmp_path, item))
 
     threads = [threading.Thread(target=approve), threading.Thread(target=reject)]
     for thread in threads:
@@ -254,10 +293,5 @@ def test_approve_reject_race_reports_one_winner(tmp_path):
     for thread in threads:
         thread.join()
 
-    statuses = {name: result[1] for name, result in outcomes}
-    assert list(statuses.values()).count(200) == 1
-    assert sorted(status for status in statuses.values() if status != 200
-                  ) in ([403], [409])
-    final, status = _read(tmp_path, proposal)
-    assert status == 200
-    assert final["proposal_state"] in {"approved", "rejected"}
+    _assert_approve_reject_race_terminal(
+        tmp_path, proposal, review, item, outcomes, errors)

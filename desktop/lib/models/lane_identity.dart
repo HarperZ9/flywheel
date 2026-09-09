@@ -124,6 +124,14 @@ const Map<String, LaneIdentity> laneIdentities = {
         'a key and proving one small amount of work.',
     surface: 'rooms, posts, and replies',
   ),
+  'writing': LaneIdentity(
+    title: 'Writing',
+    identity:
+        'A private author workspace for source-grounded drafts. It records '
+        'briefs, source packets, manuscript sections, diagnostics, candidates, '
+        'decisions, reviews, and exports behind exact approval receipts.',
+    surface: 'scoped revisions + proposal receipts',
+  ),
   'accountable-surface': LaneIdentity(
     title: 'Accountable surface',
     identity:
