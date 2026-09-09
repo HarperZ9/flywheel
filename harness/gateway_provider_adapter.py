@@ -168,9 +168,11 @@ def resolve_credentials(operation, state_root: Path):
         operation, operation.owner_ref, state_root, plan=plan)
     try:
         _validate_before_secret_resolution(operation, state_root)
-        from .keychain import keychain_get
+        from .keychain import resolve_credential
         bindings = CredentialHandleStore(
-            state_root, keychain_get=keychain_get).resolve_exact(
+            state_root,
+            keychain_get=lambda name: resolve_credential(name) or None,
+        ).resolve_exact(
                 operation.owner_ref, operation.credential_refs, required)
         if plan.launch is not None:
             from .plugins import _restricted_launch
