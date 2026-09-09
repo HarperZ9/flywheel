@@ -128,6 +128,45 @@ def test_complete_envelope_is_closed_and_returns_canonical_operation():
         parse_gateway_envelope("plugin.probe", _raw(extra="field"))
 
 
+def test_bulletin_lane_call_envelope_binds_exposure_access():
+    parsed = parse_gateway_envelope("lane.call", _raw(operation={
+        "name": "bulletin", "tool": "board_feed", "args": {"limit": 1},
+        "governance_tier": "T1", "bulletin_access": "off",
+        "data_refs": [], "credential_refs": [],
+    }))
+    assert dict(parsed.operation.operation) == {
+        "name": "bulletin", "tool": "board_feed", "args": {"limit": 1},
+        "governance_tier": "T1", "bulletin_access": "off",
+        "data_refs": (), "credential_refs": (),
+    }
+
+
+@pytest.mark.parametrize(
+    "value", ["metadata", "unexpected", "OFF", " full ", 1, True, None])
+def test_bulletin_lane_call_rejects_unsupported_access_values(value):
+    with pytest.raises(GatewayOperationError) as failure:
+        parse_gateway_envelope("lane.call", _raw(operation={
+            "name": "bulletin", "tool": "board_feed", "args": {},
+            "bulletin_access": value,
+            "data_refs": [], "credential_refs": [],
+        }))
+    assert failure.value.code == "INVALID_REQUEST"
+
+
+def test_bulletin_access_field_is_only_for_bulletin_lane_calls():
+    with pytest.raises(GatewayOperationError) as failure:
+        parse_gateway_envelope("lane.call", _raw(operation={
+            "name": "gather", "tool": "gather.status", "args": {},
+            "bulletin_access": "off",
+            "data_refs": [], "credential_refs": [],
+        }))
+    assert failure.value.code == "INVALID_REQUEST"
+
+    with pytest.raises(GatewayOperationError) as failure:
+        parse_gateway_envelope("plugin.probe", _raw(bulletin_access="off"))
+    assert failure.value.code == "INVALID_REQUEST"
+
+
 @pytest.mark.parametrize("value", [
     {"headers": ["Authorization: Bearer synthetic-marker-123456"]},
     {"headers": ["Cookie: session=synthetic-marker-123456"]},

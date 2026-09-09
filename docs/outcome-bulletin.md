@@ -251,6 +251,26 @@ That output is the final body for action `lane.call`: it flattens the approved
 Bulletin operation beside the selected Journey head and grant ref, matching the
 existing gateway authorization parser.
 
+## Bulletin exposure ceiling
+
+`FLYWHEEL_BULLETIN_ACCESS` controls whether this gateway may expose Bulletin
+lane calls. It is an operator ceiling: unset or empty means `full`; `off` denies
+Bulletin lane dispatch before MCP launch, transport, media upload, post dispatch,
+or key resolution. Any other value fails closed and reports only a constant
+`invalid` public label, with a fixed policy error code.
+
+An exact `lane.call` operation may include `bulletin_access: "off"` or
+`bulletin_access: "full"` when `name` is `bulletin`. That per-call value can
+only narrow the operator ceiling. A reviewed operation that asks for `full`
+still resolves to `off` when the environment ceiling is `off`.
+
+`metadata` is not implemented. Bulletin status and report-shaped responses can
+carry untrusted text, so this slice exposes no metadata-only allowlist. The
+policy covers the gateway's Bulletin lane caller, exact-granted Bulletin reads,
+plain `board_write_post`, and native media `board_publish_media_post`. It does
+not prove reviewer blindness, IP privacy, or absence of Bulletin content in
+other files, prompts, logs, browser state, or non-Bulletin network paths.
+
 ## Publication and readback behavior
 
 `harness.bulletin_signed_transport.publish_authorized_preview()` accepts an

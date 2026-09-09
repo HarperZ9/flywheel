@@ -23,6 +23,10 @@ _PUBLIC_PREFIXES = (
 
 def dispatch_outcome_bulletin_gateway(authorized):
     """Return a gateway response for the exact Bulletin outcome lane, else None."""
+    if _targets_bulletin_lane(authorized):
+        denied = _bulletin_access_denial(authorized)
+        if denied is not None:
+            return denied, 403
     if _targets_media_bulletin(authorized):
         from .outcome_bulletin_media import publish_authorized_media_preview
         from .gateway_operation import thaw_operation
@@ -46,6 +50,18 @@ def dispatch_outcome_bulletin_gateway(authorized):
         credential_bindings=authorized.credential_bindings,
         allow_loopback=os.environ.get("FLYWHEEL_BULLETIN_ALLOW_LOOPBACK") == "1")
     return result, 200
+
+
+def _targets_bulletin_lane(authorized) -> bool:
+    op = dict(getattr(authorized, "operation", {}))
+    return (
+        getattr(authorized, "action", None) == "lane.call"
+        and op.get("name") == "bulletin")
+
+
+def _bulletin_access_denial(authorized) -> dict | None:
+    from .bulletin_access import authorized_bulletin_access_denial
+    return authorized_bulletin_access_denial(authorized)
 
 
 def preview_from_authorized_operation(authorized) -> dict:

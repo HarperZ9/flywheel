@@ -21,7 +21,8 @@ def validate_operation_shape(action: str, value: dict) -> None:
                    "test_cmd", "name", "tool", "detail", "prompt",
                    "solution_sig", "intent_source",
                    "architecture_source", "prp_id", "code", "path", "kind",
-                   "oracle_cmd", "fixtures_root", "governance_tier", "effort",
+                   "oracle_cmd", "fixtures_root", "governance_tier",
+                   "bulletin_access", "effort",
                    "reason", "authority_1", "authority_2", "mode"}
     if any(key in value and not _text(value[key]) for key in text_fields):
         raise ValueError
@@ -104,6 +105,11 @@ def validate_operation_shape(action: str, value: dict) -> None:
         _bounded_int(value["max_mutants"], 1, 20)
     if action == "lane.call" and "timeout" in value:
         _bounded_int(value["timeout"], 1, 600)
+    if action == "lane.call" and "bulletin_access" in value:
+        if value.get("name") != "bulletin":
+            raise ValueError
+        from .bulletin_access import validate_request_access
+        validate_request_access(value["bulletin_access"])
     if (action == "capability.probe" and "disk_gb" in value
             and type(value["disk_gb"]) not in (int, float)):
         raise ValueError

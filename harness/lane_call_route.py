@@ -40,9 +40,12 @@ def handle_lane_call(path: str, req: object) -> tuple[dict, int]:
     timeout = body.get("timeout")
     if not isinstance(timeout, int) or isinstance(timeout, bool):
         timeout = _DEFAULT_TIMEOUT
+    bulletin_access = (body["bulletin_access"]
+                       if "bulletin_access" in body else None)
     from .lane_caller import call_lane_tool
     result = call_lane_tool(lane_name, tool_name, args, timeout=timeout,
-                            governance_tier=str(tier or ""))
+                            governance_tier=str(tier or ""),
+                            bulletin_access=bulletin_access)
     if result.get("governance_denied"):
         return result, 403
     return result, 400 if "error" in result else 200

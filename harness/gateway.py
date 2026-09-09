@@ -621,6 +621,7 @@ class _Handler(BaseHTTPRequestHandler):
         error_code = error.get("code") if isinstance(error, dict) else None
         if (getattr(self, "_gateway_guarded", False)
                 and error_code != "PERMISSION_REQUIRED"
+                and not (isinstance(obj, dict) and obj.get("governance_denied") is True)
                 and (code >= 400 or error_code)):
             from harness.gateway_provider_adapter import fixed_external_failure
             obj, code = fixed_external_failure()
@@ -1418,9 +1419,10 @@ class _Handler(BaseHTTPRequestHandler):
                 authorized = authorize_gateway_operation(
                     action, self.rfile.read(length), owner_ref=self.owner_ref,
                     state_root=self.flywheel_home / "state", clock=self.clock)
+                from harness.bulletin_access import authorized_bulletin_access_denial as _bad
+                if (denied := _bad(authorized)) is not None: self._gateway_guarded = True; return self._json(denied, 403)
                 from harness.gateway_provider_adapter import resolve_credentials
-                authorized = resolve_credentials(
-                    authorized, self.flywheel_home / "state")
+                authorized = resolve_credentials(authorized, self.flywheel_home / "state")
                 self._gateway_guarded = True
             except Exception as exc:
                 return self._json(*gateway_error_response(exc))
