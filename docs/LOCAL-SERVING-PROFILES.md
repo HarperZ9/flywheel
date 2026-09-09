@@ -17,6 +17,17 @@ The profile command defaults to 8192 context tokens and exact Qwen2.5-Coder
 does not download models or change the trained-release selectors. Profile
 generation is metadata only; inspect every gate row, including failed rows.
 
+Model and backend filters can select several profiles. To admit a single probe,
+copy its exact `profile_id` from the generated artifact and add
+`--profile-id PROFILE_ID --max-generation-calls 1` to the gate command.
+An absent or duplicate ID fails before endpoint I/O. The call cap counts the
+maximum possible generations across the entire selected plan, including profiles
+that may later fail health checks. An over-budget plan fails before any health or
+generation request; it never silently truncates coverage. The JSON
+`generation_plan` records the selected IDs, cap and admission decision. Omitting
+these options preserves multi-profile probing with no call cap. The cap covers
+this gate invocation only; subsequent experiments need their own budget.
+
 For the standalone local agent:
 
 ```sh

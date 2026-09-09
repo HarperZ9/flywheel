@@ -1,0 +1,79 @@
+{
+  "schema": "flywheel.enterprise-environment-source-basis-manifest/v1",
+  "created_at_utc": "2026-09-08T22:02:41.998Z",
+  "artifact_ref": "harness/enterprise_envs/envs/service_desk_incident_v1/source-basis.json",
+  "entries": [
+    {
+      "id": "statemachines_home",
+      "url": "https://www.usestatemachines.com/",
+      "retrieved_at_utc": "2026-09-08T22:02:40.720Z",
+      "status_code": 200,
+      "content_type": "text/html; charset=utf-8",
+      "body_bytes": 140431,
+      "body_sha256": "2e3a77ab0cd2848f1085f16637bc533be99cd81ee0da3c5217f9c66b2a61ecb8",
+      "used_for": ["product-family signal", "stateful enterprise API positioning"],
+      "body_stored": false,
+      "body_not_stored_reason": "private provenance manifest stores digest and retrieval metadata only; full page text is not copied"
+    },
+    {
+      "id": "statemachines_llms",
+      "url": "https://www.usestatemachines.com/llms.txt",
+      "retrieved_at_utc": "2026-09-08T22:02:40.990Z",
+      "status_code": 200,
+      "content_type": "text/plain; charset=utf-8",
+      "body_bytes": 3047,
+      "body_sha256": "9ad71e5eff85f592ef101f34318958dc12cd52f55e37829b16a55275d79b7231",
+      "used_for": ["public contract boundary", "do-not-invent unavailable docs/apis/sdk/pricing"],
+      "body_stored": false,
+      "body_not_stored_reason": "private provenance manifest stores digest and retrieval metadata only; full page text is not copied"
+    },
+    {
+      "id": "statemachines_book",
+      "url": "https://www.usestatemachines.com/book",
+      "retrieved_at_utc": "2026-09-08T22:02:41.076Z",
+      "status_code": 200,
+      "content_type": "text/html; charset=utf-8",
+      "body_bytes": 14505,
+      "body_sha256": "d9e79c80dc7d7aff631cdf0fc58aa6a6b9042a6d91d9c68d964883b31af3e8ee",
+      "used_for": ["private access boundary"],
+      "body_stored": false,
+      "body_not_stored_reason": "private provenance manifest stores digest and retrieval metadata only; full page text is not copied"
+    },
+    {
+      "id": "servicenow_table_api",
+      "url": "https://www.servicenow.com/docs/r/api-reference/rest-apis/c_TableAPI.html",
+      "retrieved_at_utc": "2026-09-08T22:02:41.146Z",
+      "status_code": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "body_bytes": 8413,
+      "body_sha256": "2cdbfe0fe7a622f2965689d381045cd4f894b61f12b333be539e9c3884bba534",
+      "used_for": ["table path shape", "record read", "record patch", "record insert"],
+      "body_stored": false,
+      "body_not_stored_reason": "private provenance manifest stores digest and retrieval metadata only; full page text is not copied"
+    },
+    {
+      "id": "servicenow_attachment_api",
+      "url": "https://www.servicenow.com/docs/r/api-reference/rest-apis/c_AttachmentAPI.html",
+      "retrieved_at_utc": "2026-09-08T22:02:41.504Z",
+      "status_code": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "body_bytes": 8413,
+      "body_sha256": "daebfeef90b409129d6ca51d94040b80efc41b1f47582a5c0448d98a690ed71a",
+      "used_for": ["attachment upload/query shape", "incident attachment role boundary"],
+      "body_stored": false,
+      "body_not_stored_reason": "private provenance manifest stores digest and retrieval metadata only; full page text is not copied"
+    },
+    {
+      "id": "servicenow_atf",
+      "url": "https://www.servicenow.com/docs/r/zurich/application-development/automated-test-framework-atf/automated-test-framework.html",
+      "retrieved_at_utc": "2026-09-08T22:02:41.740Z",
+      "status_code": 200,
+      "content_type": "text/html; charset=UTF-8",
+      "body_bytes": 8413,
+      "body_sha256": "30f45d40e0ceb3d71f843dde70abd3d5ac58d7ddacf8b7ba79b733d928b84cd2",
+      "used_for": ["rollback/data-set testing analogy"],
+      "body_stored": false,
+      "body_not_stored_reason": "private provenance manifest stores digest and retrieval metadata only; full page text is not copied"
+    }
+  ]
+}

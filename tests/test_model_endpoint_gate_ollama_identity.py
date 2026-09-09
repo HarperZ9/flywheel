@@ -176,7 +176,7 @@ def test_ollama_report_fails_when_observed_digest_differs_from_profile(tmp_path)
 def test_strict_exit_tracks_ollama_digest_gate(tmp_path, monkeypatch, digest, expected):
     profiles = write_profiles(tmp_path, [profile("ollama")])
     monkeypatch.setattr(
-        "scripts.run_model_endpoint_gate._backend_for_profile",
+        "harness.model_endpoint_gate_cli._backend_for_profile",
         lambda selected, *, timeout_seconds, transport=None: _backend_for_profile(
             selected, timeout_seconds=timeout_seconds, transport=tag_transport(digest)))
     assert main(["--profile-artifact", str(profiles), "--strict-exit"]) == expected
