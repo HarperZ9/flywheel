@@ -71,6 +71,7 @@ class _WritingViewState extends State<WritingView> {
       onPrepareCandidate: () => unawaited(_prepareCandidate()),
       onAccept: () => unawaited(_decision('accept')),
       onHold: () => unawaited(_decision('reject')),
+      onReview: () => unawaited(_review()),
       onExport: () => unawaited(_export()),
       onApproveCommit: () => unawaited(_approveCommit()),
     );
@@ -109,7 +110,9 @@ class _WritingViewState extends State<WritingView> {
         final project = _requireProject();
         final cardRef = project.firstCardRef;
         final body = _candidate.text;
-        if (cardRef == null) throw StateError('No diagnosis card is available.');
+        if (cardRef == null) {
+          throw StateError('No diagnosis card is available.');
+        }
         if (body.trim().isEmpty) throw StateError('Candidate text is empty.');
         final proposal = await widget.api.prepareCandidate(
           journeyRef: project.journeyRef,
@@ -126,15 +129,28 @@ class _WritingViewState extends State<WritingView> {
   Future<void> _decision(String decision) => _run(() async {
         final project = _requireProject();
         final candidateRef = _latestCandidateRef ?? project.firstCandidateRef;
-        if (candidateRef == null) throw StateError('No candidate is available.');
+        if (candidateRef == null) {
+          throw StateError('No candidate is available.');
+        }
         await _captureProposal(await widget.api.prepareDecision(
           journeyRef: project.journeyRef,
           expectedEventHead: project.eventHeadSha256,
           projectRef: project.projectRef,
           decision: decision,
           candidateRef: candidateRef,
-          reason: decision == 'reject' ? 'author hold from native Writing' : null,
+          reason:
+              decision == 'reject' ? 'author hold from native Writing' : null,
           clientRequestId: _requestId(decision),
+        ));
+      });
+
+  Future<void> _review() => _run(() async {
+        final project = _requireProject();
+        await _captureProposal(await widget.api.prepareReview(
+          journeyRef: project.journeyRef,
+          expectedEventHead: project.eventHeadSha256,
+          projectRef: project.projectRef,
+          clientRequestId: _requestId('review'),
         ));
       });
 

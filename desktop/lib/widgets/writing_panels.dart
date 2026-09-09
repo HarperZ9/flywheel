@@ -20,6 +20,7 @@ class WritingPanels extends StatelessWidget {
   final VoidCallback onPrepareCandidate;
   final VoidCallback onAccept;
   final VoidCallback onHold;
+  final VoidCallback onReview;
   final VoidCallback onExport;
   final VoidCallback onApproveCommit;
 
@@ -39,6 +40,7 @@ class WritingPanels extends StatelessWidget {
     required this.onPrepareCandidate,
     required this.onAccept,
     required this.onHold,
+    required this.onReview,
     required this.onExport,
     required this.onApproveCommit,
   });
@@ -186,6 +188,9 @@ class WritingPanels extends StatelessWidget {
             OutlinedButton(
                 onPressed: busy ? null : onHold,
                 child: const Text('Hold latest candidate')),
+            OutlinedButton(
+                onPressed: busy ? null : onReview,
+                child: const Text('Prepare review')),
           ]),
           const SizedBox(height: FwLayout.s3),
           Row(children: [
@@ -229,8 +234,8 @@ class WritingPanels extends StatelessWidget {
           SizedBox(
             height: 260,
             child: DiffViewPanel(diffs: [
-              diffFiles('writing-candidate.txt', shown.diffBefore,
-                  shown.diffAfter),
+              diffFiles(
+                  'writing-candidate.txt', shown.diffBefore, shown.diffAfter),
             ]),
           ),
         ],
@@ -248,7 +253,8 @@ List<Map<String, dynamic>> _sourceRows(Map<String, dynamic> packet) {
   final raw = packet['sources'];
   if (raw is! List) return const [];
   return [
-    for (final item in raw) if (item is Map) Map<String, dynamic>.from(item)
+    for (final item in raw)
+      if (item is Map) Map<String, dynamic>.from(item)
   ];
 }
 

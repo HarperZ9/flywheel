@@ -2,7 +2,7 @@
 
 Writing Workspace is a private author workflow in Flywheel. It gives a writer or agent an owned place to record briefs, source packets, sections, revisions, reader cards, scoped candidates, explicit decisions, review artifacts, and exports.
 
-The first release is a backend, CLI, and MCP slice. It does not include desktop UI. It records deterministic custody and scope checks; it does not measure writing quality, factual truth, source support, or publication readiness.
+The first release covers the backend, CLI, MCP, and an initial native desktop surface for recorded Writing state and proposal controls. It records deterministic custody and scope checks; it does not measure writing quality, factual truth, source support, or publication readiness.
 
 ## Workflow
 

@@ -26,6 +26,15 @@ void main() {
         expect(body['body'], 'draft');
         return http.Response(jsonEncode(_proposal('rev_1')), 200);
       }
+      if (request.url.path == '/api/writing/review/prepare') {
+        expect(body, {
+          'journey_ref': 'jrn_a',
+          'expected_event_head': 'h1',
+          'project_ref': 'wpr_a',
+          'client_request_id': 'review-1',
+        });
+        return http.Response(jsonEncode(_proposal('wrev_1', 'review')), 200);
+      }
       if (request.url.path == '/api/writing/proposal/approve') {
         expect(body, {'proposal_ref': 'prp_1'});
         return http.Response(jsonEncode({'grant_ref': 'gnt_1'}), 200);
@@ -39,31 +48,44 @@ void main() {
     final api = GatewayWritingApi(client);
     expect((await api.status()).projects, isEmpty);
     expect((await api.project('jrn_a')).sections.single.heading, 'Intro');
-    expect((await api.prepareRevision(
-      journeyRef: 'jrn_a',
-      expectedEventHead: 'h1',
-      projectRef: 'wpr_a',
-      sectionRef: 'sec_intro',
-      body: 'draft',
-      clientRequestId: 'r1',
-    )).proposalRef, 'prp_1');
+    expect(
+        (await api.prepareRevision(
+          journeyRef: 'jrn_a',
+          expectedEventHead: 'h1',
+          projectRef: 'wpr_a',
+          sectionRef: 'sec_intro',
+          body: 'draft',
+          clientRequestId: 'r1',
+        ))
+            .proposalRef,
+        'prp_1');
+    expect(
+        (await api.prepareReview(
+          journeyRef: 'jrn_a',
+          expectedEventHead: 'h1',
+          projectRef: 'wpr_a',
+          clientRequestId: 'review-1',
+        ))
+            .artifactKind,
+        'review');
     expect((await api.approve('prp_1'))['grant_ref'], 'gnt_1');
     expect((await api.commit('prp_1', 'gnt_1'))['event_head_sha256'], 'h2');
     expect(seen, [
       'GET /api/writing/status',
       'GET /api/writing/project',
       'POST /api/writing/revision/prepare',
+      'POST /api/writing/review/prepare',
       'POST /api/writing/proposal/approve',
       'POST /api/writing/proposal/commit',
     ]);
   });
 }
 
-Map<String, dynamic> _proposal(String id) => {
+Map<String, dynamic> _proposal(String id, [String kind = 'revision']) => {
       'proposal_ref': 'prp_1',
       'approval_required': true,
       'artifact_id': id,
-      'artifact_kind': 'revision',
+      'artifact_kind': kind,
     };
 
 Map<String, dynamic> _project() => {

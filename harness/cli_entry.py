@@ -285,7 +285,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"`flywheel {command}` requires a source checkout (scripts/run_harness_cli.py).",
               file=sys.stderr)
         print("Run from a checkout, or use the umbrella commands "
-              "(up, lanes, loop-status, install, corpus-export, endpoint-gate).", file=sys.stderr)
+              "(up, lanes, loop-status, install, corpus-export, endpoint-gate, writing).", file=sys.stderr)
         return 2
     os.chdir(repo_root)
     script = repo_root / "scripts" / "run_harness_cli.py"

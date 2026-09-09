@@ -29,6 +29,8 @@ void main() {
     expect(_selectableTextContaining('prp_candidate'), findsOneWidget);
     await _tapVisible(tester, find.text('Approve + commit proposal'));
     expect(api.calls, contains('commit:prp_candidate:gnt_prp_candidate'));
+    await _tapVisible(tester, find.text('Prepare review'));
+    expect(api.calls, contains('review'));
     await _tapVisible(tester, find.text('Hold latest candidate'));
     expect(api.calls, contains('decision:reject:cand_a'));
     await _enterVisible(
@@ -74,8 +76,9 @@ Future<void> _bringVisible(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
-Finder _selectableTextContaining(String value) => find.byWidgetPredicate(
-    (widget) => widget is SelectableText && (widget.data ?? '').contains(value));
+Finder _selectableTextContaining(String value) =>
+    find.byWidgetPredicate((widget) =>
+        widget is SelectableText && (widget.data ?? '').contains(value));
 
 class _FakeWritingApi implements WritingApi {
   _FakeWritingApi() : _empty = false;
@@ -87,15 +90,18 @@ class _FakeWritingApi implements WritingApi {
   @override
   Future<WritingStatus> status() async {
     if (failStatus) throw Exception('Gateway unavailable');
-    return WritingStatus(projects: _empty ? [] : [
-      const WritingProjectSummary(
-        projectRef: 'wpr_a',
-        journeyRef: 'jrn_a',
-        eventHeadSha256: 'h1',
-        sectionRefs: ['sec_recommendation'],
-        title: 'Release evidence',
-      )
-    ]);
+    return WritingStatus(
+        projects: _empty
+            ? []
+            : [
+                const WritingProjectSummary(
+                  projectRef: 'wpr_a',
+                  journeyRef: 'jrn_a',
+                  eventHeadSha256: 'h1',
+                  sectionRefs: ['sec_recommendation'],
+                  title: 'Release evidence',
+                )
+              ]);
   }
 
   @override
@@ -140,7 +146,8 @@ class _FakeWritingApi implements WritingApi {
       {'grant_ref': 'gnt_$proposalRef'};
 
   @override
-  Future<Map<String, dynamic>> commit(String proposalRef, String grantRef) async {
+  Future<Map<String, dynamic>> commit(
+      String proposalRef, String grantRef) async {
     calls.add('commit:$proposalRef:$grantRef');
     return {'event_head_sha256': 'h2'};
   }
@@ -182,31 +189,61 @@ class _FakeWritingApi implements WritingApi {
   }
 
   @override
-  Future<WritingProposal> prepareInit({required Map<String, dynamic> brief,
-    required Map<String, dynamic> sourcePacket,
-    required String clientRequestId}) async => throw UnimplementedError();
-
-  @override
-  Future<WritingProposal> prepareSection({required String journeyRef,
-    required String expectedEventHead, required Map<String, dynamic> section,
-    required String clientRequestId}) async => throw UnimplementedError();
-
-  @override
-  Future<WritingProposal> prepareRevision({required String journeyRef,
-    required String expectedEventHead, required String projectRef,
-    required String sectionRef, required String body,
-    required String clientRequestId}) async => throw UnimplementedError();
-
-  @override
-  Future<WritingProposal> prepareDiagnose({required String journeyRef,
-    required String expectedEventHead, required String projectRef,
-    required String revisionRef, required String clientRequestId}) async =>
+  Future<WritingProposal> prepareInit(
+          {required Map<String, dynamic> brief,
+          required Map<String, dynamic> sourcePacket,
+          required String clientRequestId}) async =>
       throw UnimplementedError();
 
   @override
-  Future<WritingProposal> prepareCard({required String journeyRef,
-    required String expectedEventHead, required Map<String, dynamic> card,
-    required String clientRequestId}) async => throw UnimplementedError();
+  Future<WritingProposal> prepareSection(
+          {required String journeyRef,
+          required String expectedEventHead,
+          required Map<String, dynamic> section,
+          required String clientRequestId}) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<WritingProposal> prepareRevision(
+          {required String journeyRef,
+          required String expectedEventHead,
+          required String projectRef,
+          required String sectionRef,
+          required String body,
+          required String clientRequestId}) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<WritingProposal> prepareDiagnose(
+          {required String journeyRef,
+          required String expectedEventHead,
+          required String projectRef,
+          required String revisionRef,
+          required String clientRequestId}) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<WritingProposal> prepareReview({
+    required String journeyRef,
+    required String expectedEventHead,
+    required String projectRef,
+    required String clientRequestId,
+  }) async {
+    calls.add('review');
+    return const WritingProposal(
+        proposalRef: 'prp_review',
+        artifactId: 'wrev_a',
+        artifactKind: 'review',
+        approvalRequired: true);
+  }
+
+  @override
+  Future<WritingProposal> prepareCard(
+          {required String journeyRef,
+          required String expectedEventHead,
+          required Map<String, dynamic> card,
+          required String clientRequestId}) async =>
+      throw UnimplementedError();
 }
 
 WritingProjectView _project() => WritingProjectView.fromJson({

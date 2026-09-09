@@ -56,6 +56,12 @@ abstract interface class WritingApi {
     String? reason,
     required String clientRequestId,
   });
+  Future<WritingProposal> prepareReview({
+    required String journeyRef,
+    required String expectedEventHead,
+    required String projectRef,
+    required String clientRequestId,
+  });
   Future<WritingProposal> prepareExport({
     required String journeyRef,
     required String expectedEventHead,
@@ -73,7 +79,8 @@ final class GatewayWritingApi implements WritingApi {
   GatewayWritingApi(this._client);
 
   @override
-  Future<Map<String, dynamic>> doctor() => _client.getJson('/api/writing/doctor');
+  Future<Map<String, dynamic>> doctor() =>
+      _client.getJson('/api/writing/doctor');
 
   @override
   Future<WritingStatus> status() async =>
@@ -91,7 +98,8 @@ final class GatewayWritingApi implements WritingApi {
     required Map<String, dynamic> brief,
     required Map<String, dynamic> sourcePacket,
     required String clientRequestId,
-  }) => _proposal('/api/writing/init/prepare', {
+  }) =>
+      _proposal('/api/writing/init/prepare', {
         'brief': brief,
         'source_packet': sourcePacket,
         'client_request_id': clientRequestId,
@@ -103,7 +111,8 @@ final class GatewayWritingApi implements WritingApi {
     required String expectedEventHead,
     required Map<String, dynamic> section,
     required String clientRequestId,
-  }) => _proposal('/api/writing/section/prepare', {
+  }) =>
+      _proposal('/api/writing/section/prepare', {
         'journey_ref': journeyRef,
         'expected_event_head': expectedEventHead,
         'section': section,
@@ -118,7 +127,8 @@ final class GatewayWritingApi implements WritingApi {
     required String sectionRef,
     required String body,
     required String clientRequestId,
-  }) => _proposal('/api/writing/revision/prepare', {
+  }) =>
+      _proposal('/api/writing/revision/prepare', {
         'journey_ref': journeyRef,
         'expected_event_head': expectedEventHead,
         'project_ref': projectRef,
@@ -134,7 +144,8 @@ final class GatewayWritingApi implements WritingApi {
     required String projectRef,
     required String revisionRef,
     required String clientRequestId,
-  }) => _proposal('/api/writing/diagnose/prepare', {
+  }) =>
+      _proposal('/api/writing/diagnose/prepare', {
         'journey_ref': journeyRef,
         'expected_event_head': expectedEventHead,
         'project_ref': projectRef,
@@ -148,7 +159,8 @@ final class GatewayWritingApi implements WritingApi {
     required String expectedEventHead,
     required Map<String, dynamic> card,
     required String clientRequestId,
-  }) => _proposal('/api/writing/card/prepare', {
+  }) =>
+      _proposal('/api/writing/card/prepare', {
         'journey_ref': journeyRef,
         'expected_event_head': expectedEventHead,
         'card': card,
@@ -163,7 +175,8 @@ final class GatewayWritingApi implements WritingApi {
     required String cardRef,
     required String body,
     required String clientRequestId,
-  }) => _proposal('/api/writing/candidate/prepare', {
+  }) =>
+      _proposal('/api/writing/candidate/prepare', {
         'journey_ref': journeyRef,
         'expected_event_head': expectedEventHead,
         'project_ref': projectRef,
@@ -183,7 +196,8 @@ final class GatewayWritingApi implements WritingApi {
     String? toRevisionRef,
     String? reason,
     required String clientRequestId,
-  }) => _proposal('/api/writing/decision/prepare', {
+  }) =>
+      _proposal('/api/writing/decision/prepare', {
         'journey_ref': journeyRef,
         'expected_event_head': expectedEventHead,
         'project_ref': projectRef,
@@ -196,13 +210,28 @@ final class GatewayWritingApi implements WritingApi {
       });
 
   @override
+  Future<WritingProposal> prepareReview({
+    required String journeyRef,
+    required String expectedEventHead,
+    required String projectRef,
+    required String clientRequestId,
+  }) =>
+      _proposal('/api/writing/review/prepare', {
+        'journey_ref': journeyRef,
+        'expected_event_head': expectedEventHead,
+        'project_ref': projectRef,
+        'client_request_id': clientRequestId,
+      });
+
+  @override
   Future<WritingProposal> prepareExport({
     required String journeyRef,
     required String expectedEventHead,
     required String projectRef,
     required String outRef,
     required String clientRequestId,
-  }) => _proposal('/api/writing/export/prepare', {
+  }) =>
+      _proposal('/api/writing/export/prepare', {
         'journey_ref': journeyRef,
         'expected_event_head': expectedEventHead,
         'project_ref': projectRef,
@@ -216,8 +245,8 @@ final class GatewayWritingApi implements WritingApi {
           '/api/writing/proposal/get', {'proposal_ref': proposalRef}));
 
   @override
-  Future<Map<String, dynamic>> approve(String proposalRef) => _client.postJson(
-      '/api/writing/proposal/approve', {'proposal_ref': proposalRef});
+  Future<Map<String, dynamic>> approve(String proposalRef) => _client
+      .postJson('/api/writing/proposal/approve', {'proposal_ref': proposalRef});
 
   @override
   Future<Map<String, dynamic>> commit(String proposalRef, String grantRef) =>
