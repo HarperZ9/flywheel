@@ -189,6 +189,3 @@ def test_empty_schema_capability_refuses_before_transport(tmp_path, monkeypatch)
                  if item.get("type") == "structured_finalization")
     assert event["state"] == "unsupported"
     assert event["evidence"] == {}
-
-
-
