@@ -65,3 +65,30 @@ comparisons need separate model runs, held-out tasks and complete cost records.
 Write artifacts into a dedicated output directory outside the installed package
 or source tree. A rejected artifact root returns a typed failure; do not treat
 that refusal as a successful workflow.
+
+## Share a review without changing the evidence
+
+```sh
+service-desk-incident-env review RETURNED_ARTIFACT_DIR --html-out ./review-output/review.html --json
+```
+
+The optional HTML report uses no scripts, network requests, or external assets.
+Its output must be a new file outside the artifact directory. Open it locally
+and inspect it before sharing. The JSON response keeps the existing identity,
+verification, cases, and calibration fields and adds separate evidence layers.
+It contains local paths; the HTML omits those paths and redacts common credential
+and local-path strings. This is not comprehensive sensitive-data detection.
+
+The report distinguishes receipt claims, internal digest consistency, task
+semantics recomputed by the bounded synthetic oracle, and consistency of recorded
+authorization, response, and mutation flags. Verify and review both reject a
+record that claims a mutation was applied while authorization was denied or the
+response was unsuccessful, even when its digest has been recomputed. Malformed
+and missing evidence produces a failure report. Review exits 1 for failed checks;
+output errors exit 2. The original recorded cases and calibration cases are shown,
+not rerun. No submitted log action is executed.
+
+Matching hashes establish internal consistency, not trusted provenance. A recorded
+allowed flag does not establish real authorization. Fabricated coherent state and
+logs may satisfy the task oracle and record checks. These checks do not establish
+independent ground truth, general agent safety, or production containment.
