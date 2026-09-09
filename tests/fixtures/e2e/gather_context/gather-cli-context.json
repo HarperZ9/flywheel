@@ -1,0 +1,35 @@
+{
+  "allowed_resource_paths": [
+    "tests/fixtures/e2e/gather_context/sample.txt"
+  ],
+  "controls": [
+    "wrong_body",
+    "tamper_refusal"
+  ],
+  "fixtures": {
+    "source_text": "tests/fixtures/e2e/gather_context/sample.txt"
+  },
+  "journey_id": "gather-context-selection-cli-private-temp-v1",
+  "oracle": {
+    "end_marker": "E2E_SENTINEL_BETA",
+    "exclude_text": "E2E_SENTINEL_BETA wrong body.",
+    "include_text": "E2E_SENTINEL_ALPHA selected body.",
+    "kind": "gather_context_selection/v1",
+    "start_marker": "E2E_SENTINEL_ALPHA"
+  },
+  "platforms": [
+    "windows"
+  ],
+  "product": "gather",
+  "product_version": "1.7.0",
+  "runtime": {
+    "executable_env": "FLYWHEEL_E2E_GATHER17_EXE",
+    "expected_distribution": "gather-engine",
+    "expected_version_prefix": "1.7.",
+    "expected_wheel_sha256": "69fdea1aee67c6dd8a0d93c40bcb51476edb26c0163e6e7e25f4c86c1bb7b0c6",
+    "forbid_editable": true,
+    "forbid_pythonpath": true,
+    "kind": "cli_process"
+  },
+  "schema": "flywheel.product-e2e-journey/v1"
+}
