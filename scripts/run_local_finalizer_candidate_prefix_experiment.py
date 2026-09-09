@@ -91,11 +91,13 @@ def parser():
     for name in ("source-root", "task-set", "contract", "runtime-matrix", "endpoint-gate", "gate-run-id", "private-run-root"):
         p.add_argument(f"--{name}", required=True)
     p.add_argument("--provider-role", default="local_14b")
+    p.add_argument("--order-plan")
     return p
 
 
 def main(argv=None) -> int:
     args = parser().parse_args(argv)
+    order_plan = _load(Path(args.order_plan)) if args.order_plan else None
     run_root = Path(args.private_run_root)
     if run_root.exists():
         raise ValueError("private run root already exists")
@@ -111,7 +113,7 @@ def main(argv=None) -> int:
     params = {**FIXED_PARAMS, "provider_role": args.provider_role}
     runner = LocalCandidatePrefixRunner(adapters[args.provider_role], Path(args.source_root), params)
     summary = run_candidate_prefix_experiment(tasks, run_root / "primary", params,
-        candidate_runner=runner.candidate, finalizer_runner=runner.finalizer)
+        candidate_runner=runner.candidate, finalizer_runner=runner.finalizer, order_plan=order_plan)
     print(json.dumps({"run_summary": str(run_root / "primary" / "run-summary.json"),
                       "rows": len(summary["rows"]), "params_sha256": summary["params_sha256"]}, sort_keys=True))
     return 0
