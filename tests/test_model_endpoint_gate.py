@@ -35,6 +35,9 @@ def test_gate_emits_exact_profile_identity_and_fresh_observation(tmp_path, backe
     assert row["backend"] == backend
     assert row["health_ok"] is True and row["generation_ok"] is True
     assert row["failure_class"] == ""
+    assert row["metric_source_kind"] == "endpoint_readiness"
+    assert row["readiness_score"] == 1.0
+    assert row["quality_score_semantics"] == "endpoint_readiness_not_task_quality"
     assert row["ollama_digest"] == ("sha256:abc" if backend == "ollama" else "")
     assert row["release_asset_sha256"] == ("a" * 64 if backend == "ollama" else "")
     assert row["expected_ollama_digest"] == ("sha256:abc" if backend == "ollama" else "")
@@ -54,6 +57,9 @@ def test_gate_preserves_failed_probe_identity(tmp_path):
     assert row["profile_sha256"] == canonical_hash(selected)
     assert row["run_id"] == "failed-run"
     assert row["observed_at"].endswith("Z")
+    assert row["metric_source_kind"] == "endpoint_readiness"
+    assert row["readiness_score"] == 0.0
+    assert row["quality_score_semantics"] == "endpoint_readiness_not_task_quality"
     assert row["quality_score"] == 0.0 and row["receipt_hash"]
 
 

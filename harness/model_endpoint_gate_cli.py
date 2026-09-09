@@ -129,7 +129,11 @@ def _stable_row_receipt(row: dict[str, Any]) -> str:
 def _finalize_row(row: dict[str, Any], started: float) -> dict[str, Any]:
     row["latency_ms"] = round((time.perf_counter() - started) * 1000, 3)
     row["observed_at"] = now_utc()
-    row["quality_score"] = 1.0 if row.get("health_ok") and row.get("generation_ok") else 0.0
+    readiness_score = 1.0 if row.get("health_ok") and row.get("generation_ok") else 0.0
+    row["metric_source_kind"] = "endpoint_readiness"
+    row["readiness_score"] = readiness_score
+    row["quality_score_semantics"] = "endpoint_readiness_not_task_quality"
+    row["quality_score"] = readiness_score
     row["receipt_hash"] = _stable_row_receipt(row)
     return row
 

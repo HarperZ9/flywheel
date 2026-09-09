@@ -90,6 +90,46 @@ def test_build_report_keeps_missing_codex_as_insufficient_evidence(tmp_path):
     assert report["conclusion"]["verdict"] == "COMPARISON_INSUFFICIENT"
 
 
+def test_endpoint_gate_readiness_scores_do_not_create_quality_winner(tmp_path):
+    gate = tmp_path / "endpoint_gate.json"
+    gate.write_text(json.dumps({
+        "schema": "harness.model-endpoint-gate/v1",
+        "rows": [
+            {
+                "model": "14B",
+                "backend": "serve",
+                "provider_role": "flywheel",
+                "generation_ok": True,
+                "quality_score": 1.0,
+                "latency_ms": 12,
+                "failure_class": "",
+            },
+            {
+                "model": "14B",
+                "backend": "codex",
+                "provider_role": "codex",
+                "generation_ok": False,
+                "quality_score": 0.0,
+                "latency_ms": 19,
+                "failure_class": "endpoint_unavailable",
+            },
+        ],
+    }), encoding="utf-8")
+
+    rows = metric_rows_from_artifact(json.loads(gate.read_text(encoding="utf-8")), str(gate))
+    report = build_report(artifact_paths=[gate])
+    comparison = report["comparisons"][0]
+
+    assert {row["metric_source_kind"] for row in rows} == {"endpoint_readiness"}
+    assert [row["readiness_score"] for row in rows] == [1.0, 0.0]
+    assert [row["quality_score"] for row in rows] == [None, None]
+    assert comparison["available"] is True
+    assert comparison["pass_rate_delta_flywheel_minus_codex"] == 1.0
+    assert comparison["quality_delta_flywheel_minus_codex"] is None
+    assert comparison["winner_by_quality"] == "insufficient_evidence"
+    assert report["conclusion"]["verdict"] == "COMPARISON_INSUFFICIENT"
+
+
 def test_main_writes_json_markdown_and_store_receipt(tmp_path):
     classifier = tmp_path / "classifier.json"
     classifier.write_text(json.dumps({
