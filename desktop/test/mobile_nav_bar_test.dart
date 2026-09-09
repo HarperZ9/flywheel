@@ -27,14 +27,20 @@ MobileNavBar _bar({
     );
 
 void main() {
-  testWidgets('shows the four first-run destinations and More', (tester) async {
+  testWidgets('shows the five first-run destinations and More', (tester) async {
     await tester.pumpWidget(_wrap(_bar()));
-    for (final label in const ['Journey', 'Chat', 'Companion', 'Receipts']) {
+    for (final label in const [
+      'Journey',
+      'Approvals',
+      'Chat',
+      'Companion',
+      'Receipts'
+    ]) {
       expect(find.text(label), findsOneWidget);
     }
     expect(find.text('More'), findsOneWidget);
-    expect(mobilePrimaryDestinations, hasLength(4),
-        reason: 'four primaries keep the bar readable on a phone');
+    expect(mobilePrimaryDestinations, hasLength(5),
+        reason: 'the approval inbox joins the phone primary set');
   });
 
   testWidgets('marks exactly the selected destination', (tester) async {
@@ -56,8 +62,8 @@ void main() {
       (tester) async {
     var moreTapped = false;
     DestinationId? went;
-    await tester.pumpWidget(_wrap(
-        _bar(onGo: (id) => went = id, onMore: () => moreTapped = true)));
+    await tester.pumpWidget(
+        _wrap(_bar(onGo: (id) => went = id, onMore: () => moreTapped = true)));
     await tester.tap(find.text('More'));
     expect(moreTapped, isTrue);
     expect(went, isNull, reason: 'More is not a route');

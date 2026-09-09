@@ -1,4 +1,4 @@
-﻿// Desktop accessibility end-to-end: one deterministic pass over the
+// Desktop accessibility end-to-end: one deterministic pass over the
 // shell's critical flows â€” journey home, typed navigation, the palette,
 // keyboard activation, semantics, and the assistive display modes â€” with
 // fakes, no network.
@@ -16,8 +16,7 @@ import 'package:flywheel_desktop/theme/tokens.dart';
 import 'journey_shell_test.dart' show ShellHarness, unmount;
 
 void main() {
-  testWidgets('the shell serves the critical flows end to end',
-      (tester) async {
+  testWidgets('the shell serves the critical flows end to end', (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -32,10 +31,9 @@ void main() {
     // 1. Journey is home with its resumed evidence.
     expect(find.text('Journey'), findsOneWidget);
 
-    // 2. The catalog holds exactly forty destinations in five groups.
-    expect(destinationCatalog, hasLength(40));
-    expect(destinationCatalog.map((d) => d.group.name).toSet(),
-        hasLength(5));
+    // 2. The catalog holds exactly forty-one destinations in five groups.
+    expect(destinationCatalog, hasLength(41));
+    expect(destinationCatalog.map((d) => d.group.name).toSet(), hasLength(5));
 
     // 3. Typed navigation: the palette opens with Ctrl+K and goes to Plan.
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);

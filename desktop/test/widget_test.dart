@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show AppExitResponse;
 
@@ -65,11 +65,12 @@ const _types = <DestinationId, String>{
   DestinationId.plugins: 'PluginsView',
   DestinationId.infra: 'InfraView',
   DestinationId.runners: 'RunnersView',
+  DestinationId.approvals: 'ApprovalsInboxView',
   DestinationId.browser: 'BrowserView',
 };
 
 void main() {
-  testWidgets('factory preserves all forty exact destination mappings',
+  testWidgets('factory preserves all forty-one exact destination mappings',
       (tester) async {
     final dir = Directory.systemTemp.createTempSync('journey-factory-');
     addTearDown(() => dir.deleteSync(recursive: true));
@@ -100,18 +101,17 @@ void main() {
           reason: entry.key.name);
     }
     expect(
-        (buildDestinationView(DestinationId.receipts, inputs)
-                as ReceiptsView)
+        (buildDestinationView(DestinationId.receipts, inputs) as ReceiptsView)
             .focusLeaf,
         headA);
-    final lanes = buildDestinationView(DestinationId.lanes, inputs)
-        as LanesView;
+    final lanes =
+        buildDestinationView(DestinationId.lanes, inputs) as LanesView;
     expect(lanes.onProbe, isNotNull);
     expect(lanes.onInstall, isNotNull);
     await unmount(tester);
   });
 
-  testWidgets('forty labels remain reachable at ordinary scaled viewport',
+  testWidgets('catalog labels remain reachable at ordinary scaled viewport',
       (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
@@ -143,10 +143,12 @@ void main() {
 /// large step can jump a whole lazy build window and skip a row -- and
 /// re-check after each.
 Future<void> scrollRailTo(WidgetTester tester, String label) async {
-  final railList = find.descendant(
-    of: find.byType(AnimatedContainer),
-    matching: find.byType(ListView),
-  ).first;
+  final railList = find
+      .descendant(
+        of: find.byType(AnimatedContainer),
+        matching: find.byType(ListView),
+      )
+      .first;
   for (var i = 0; i < 60; i++) {
     if (find.text(label).evaluate().isNotEmpty) return;
     await tester.drag(railList, const Offset(0, -60));
@@ -159,10 +161,12 @@ Future<void> scrollRailTo(WidgetTester tester, String label) async {
 /// edge, and reaching one label can carry another off the top. Rewind to
 /// the top, walk down to the label, then tap what is actually visible.
 Future<void> tapRail(WidgetTester tester, String label) async {
-  final railList = find.descendant(
-    of: find.byType(AnimatedContainer),
-    matching: find.byType(ListView),
-  ).first;
+  final railList = find
+      .descendant(
+        of: find.byType(AnimatedContainer),
+        matching: find.byType(ListView),
+      )
+      .first;
   for (var i = 0; i < 40; i++) {
     await tester.drag(railList, const Offset(0, 120));
     await tester.pump();

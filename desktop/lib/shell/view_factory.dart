@@ -16,6 +16,7 @@ import '../navigation/destination_catalog.dart';
 import '../services/settings.dart';
 import '../views/academy_view.dart';
 import '../views/agent_view.dart';
+import '../views/approvals_inbox_view.dart';
 import '../views/audit_view.dart';
 import '../views/browser_view.dart';
 import '../views/code_view.dart';
@@ -121,6 +122,8 @@ Widget? _work(DestinationId id, DestinationInputs i) => switch (id) {
           api: ScheduleApi(baseUrl: i.client.baseUrl), alive: i.alive),
       DestinationId.runners => RunnersView(
           api: RunnersApi(baseUrl: i.client.baseUrl), alive: i.alive),
+      DestinationId.approvals =>
+        ApprovalsInboxView(client: i.client, alive: i.alive),
       _ => null,
     };
 
