@@ -101,7 +101,7 @@ def _row(row: dict) -> dict:
         "selected_text_utf8_bytes": len(text.encode("utf-8", "strict")),
         "selected_text_utf8_sha256": _sha_text(text),
         "full_text_chars": full_chars, "body_bytes_read": body_bytes,
-        "omissions": list(row.get("omissions") or [])}
+        "omissions": _public_list(row.get("omissions") or [])}
 
 
 def projection_for(ref: str, private: dict, private_hash: str) -> dict:
@@ -110,12 +110,17 @@ def projection_for(ref: str, private: dict, private_hash: str) -> dict:
         "selected_text_utf8_sha256_prefix": row["selected_text_utf8_sha256"][:16],
         "normalized_full_text_sha256_prefix": row["normalized_full_text_sha256"][:16],
         "omissions": row["omissions"]} for row in private["rows"]]
-    return {"schema": PROJECTION_SCHEMA, "source_context_ref": ref,
+    projection = {"schema": PROJECTION_SCHEMA, "source_context_ref": ref,
         "private_payload_sha256": private_hash, "root_mode": private["root_mode"],
         "profile": private["profile"], "row_count": private["row_count"],
         "rows": rows, "selected_text_utf8_bytes": private["selected_text_utf8_bytes"],
         "caps": private["caps"], "omissions": private["omissions"],
         "does_not_prove": private["does_not_prove"]}
+    try:
+        public_metadata(projection)
+    except Exception:
+        raise SourceContextError("SOURCE_CONTEXT_SELECTION_FAILED") from None
+    return projection
 
 
 def journey_basis_for(ref: str, projection: dict) -> dict:

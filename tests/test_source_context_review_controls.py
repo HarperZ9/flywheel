@@ -29,7 +29,12 @@ def test_default_adapter_preserves_guarded_state_root_identity(tmp_path, monkeyp
              "platform": "test", "file_index": 12345},
         )
         def __init__(self, **_kwargs): pass
-        def select(self, *_args, **_kwargs): return payload
+        def select(self, *_args, before_read=None, **_kwargs):
+            if before_read:
+                before_read(self)
+            return payload
+        def identity(self): return self.last_identity
+        def identities(self): return list(self.last_identities)
     monkeypatch.setattr(route, "GatherPathAdapter", Adapter)
 
     _selected, ids = route._guarded_call(
@@ -135,6 +140,24 @@ def test_gather_omission_host_path_is_not_published_to_projection(tmp_path):
             root_mode="flywheel_corpus", profile="demo",
             corpus_locator="tiny", corpus_root_identity=CORPUS_ID,
             gather_payload=bad, selected_at="one")
+    assert exc.value.code == "SOURCE_CONTEXT_SELECTION_FAILED"
+
+
+def test_row_omission_host_path_is_not_published_to_projection(tmp_path):
+    bad = _selection()
+    bad["selections"][0]["omissions"] = [{
+        "code": "PRIVATE_ROW_PATH",
+        "private_ref": "C:/synthetic-private/title.txt",
+    }]
+    bad = _refresh_selection_digest(bad)
+
+    with pytest.raises(SourceContextError) as exc:
+        SourceContextStore(tmp_path, expected_state_root_identity=ROOT_ID).publish_selection(
+            owner_ref=OWNER, state_root_identity=ROOT_ID,
+            root_mode="flywheel_corpus", profile="demo",
+            corpus_locator="tiny", corpus_root_identity=CORPUS_ID,
+            gather_payload=bad, selected_at="one")
+
     assert exc.value.code == "SOURCE_CONTEXT_SELECTION_FAILED"
 
 def test_oversized_private_json_is_rejected_without_full_read(tmp_path, monkeypatch):

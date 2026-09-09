@@ -6,15 +6,16 @@ import hashlib
 import re
 
 from .evidence_json import canonical_sha256
+from .plan_run_snapshot import freeze_json, thaw_json
 from .source_context_store import (
     SOURCE_REF_PREFIX, WORKER_SCHEMA, SourceContextError, SourceContextStore,
 )
+from .source_context_store_io import MAX_PRIVATE_BYTES
 
 
 def validate_source_context_refs(owner_ref: str, state_root: Path,
                                  data_refs) -> None:
-    if any(type(ref) is str and ref.startswith(SOURCE_REF_PREFIX)
-           for ref in data_refs):
+    if _has_source_refs(data_refs):
         SourceContextStore(state_root).resolve_worker_payload(
             owner_ref, tuple(data_refs))
 
@@ -24,9 +25,34 @@ def resolve_source_context_for_worker(authorized, state_root: Path) -> dict | No
         authorized.owner_ref, tuple(authorized.data_refs))
 
 
-def source_context_or_failed_worker(authorized, state_root: Path):
+def freeze_source_context_payload(owner_ref: str, state_root: Path,
+                                  data_refs):
+    payload = SourceContextStore(state_root).resolve_worker_payload(
+        owner_ref, tuple(data_refs))
+    if payload is None:
+        return None
+    validate_worker_source_payload(payload)
+    return freeze_json(payload, max_bytes=MAX_PRIVATE_BYTES)
+
+
+def source_context_from_execution_plan(authorized) -> dict | None:
+    if not _has_source_refs(getattr(authorized, "data_refs", ())):
+        return None
+    plan = getattr(authorized, "execution_plan", None)
+    digest = getattr(plan, "source_context_payload_sha256", None)
+    snapshot = getattr(plan, "source_context_payload", None)
+    if type(digest) is not str:
+        raise SourceContextError("SOURCE_CONTEXT_FAILED")
+    payload = thaw_json(snapshot)
+    validate_worker_source_payload(payload)
+    if payload.get("source_payload_sha256") != digest:
+        raise SourceContextError("SOURCE_CONTEXT_FAILED")
+    return payload
+
+
+def source_context_or_failed_worker(authorized, state_root: Path | None = None):
     try:
-        return resolve_source_context_for_worker(authorized, state_root)
+        return source_context_from_execution_plan(authorized)
     except Exception as exc:
         return SourceContextFailedWorker(
             getattr(exc, "code", "SOURCE_CONTEXT_FAILED"))
@@ -103,6 +129,11 @@ def materialize_goal(goal: str, payload: dict | None) -> str:
 def _texts(payload: dict) -> tuple[str, ...]:
     return tuple(row["text"] for context in payload.get("contexts", [])
                  for row in context.get("rows", []))
+
+
+def _has_source_refs(data_refs) -> bool:
+    return any(type(ref) is str and ref.startswith(SOURCE_REF_PREFIX)
+               for ref in data_refs)
 
 
 def _delimiter(digest: str, texts: tuple[str, ...]) -> str:

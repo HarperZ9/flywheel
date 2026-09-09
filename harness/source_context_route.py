@@ -6,9 +6,11 @@ import hashlib
 import os
 import re
 
-from .evidence_json import canonical_sha256
 from .evidence_public import TransportError, error_response, exact_request, parse_json
-from .source_context_gather import GatherPathAdapter
+from .source_context_gather import (
+    ADAPTER_VERSION, GatherPathAdapter, SourceContextArtifactGuard,
+)
+from .source_context_identity import current_identity
 from .source_context_store import (
     SourceContextError, SourceContextStore, _json_file, _owner, _write_once,
 )
@@ -50,14 +52,15 @@ def admit_flywheel_corpus(state_root: Path, owner_ref: str, profile: str,
         "corpus_root_identity": ids["corpus_root_identity"],
         "canonical_volume_root_identity": ids["component_identities"][0],
         "component_identities": list(ids["component_identities"]),
-        "guard_contract": "windows-directory-read-share-only/v1"}
-    _write_once(_admission_path(state_root, owner, profile, corpus), record)
+        "guard_contract": getattr(guard, "guard_contract",
+                                  "windows-directory-read-share-only/v1")}
+    _write_once(_admission_path(state_root, owner, profile, corpus), record,
+        state_root=state_root, expected_root_identity=ids["state_root_identity"])
     return record
 
 
-def source_context_post(path: str, raw: bytes, *, owner_ref: str,
-                        state_root: Path, clock, gather=None,
-                        guard_cls=None) -> tuple[dict, int]:
+def source_context_post(path: str, raw: bytes, *, owner_ref: str, state_root: Path,
+                        clock, gather=None, guard_cls=None) -> tuple[dict, int]:
     try:
         action = path.rstrip("/").rsplit("/", 1)[-1]
         if action not in {"inspect", "select", "attach"}:
@@ -70,8 +73,8 @@ def source_context_post(path: str, raw: bytes, *, owner_ref: str,
         if req["schema"] != REQUEST_SCHEMA:
             raise SourceContextError("INVALID_REQUEST")
         caps = _caps(req, cap_names)
-        corpus, admission = _corpus_admission(
-            Path(state_root), owner_ref, req["root_mode"], req["profile"], req["corpus"])
+        corpus, admission = _corpus_admission(Path(state_root), owner_ref,
+            req["root_mode"], req["profile"], req["corpus"])
         if action == "inspect":
             return _inspect(corpus, caps, gather, guard_cls, state_root, admission)
         if ("expected_corpus_digest" not in req or "selections" not in req
@@ -96,32 +99,43 @@ def source_context_post(path: str, raw: bytes, *, owner_ref: str,
         return _source_error(SourceContextError("SOURCE_CONTEXT_SELECTION_FAILED"))
 
 
-def _inspect(corpus: Path, caps: dict, gather, guard_cls,
-             state_root: Path, admission: dict) -> tuple[dict, int]:
-    result, ids = _guarded_call(corpus, gather, guard_cls, "inspect",
-        caps=caps, state_root=state_root, admission=admission)
-    return dict(result, adapter_version="gather.context.path-api/v1",
-        corpus_root_identity=ids["corpus_root_identity"]), 200
-
-
-def _select(corpus: Path, selections: list, digest: str, caps: dict,
-            gather, guard_cls, state_root: Path, admission: dict) -> tuple[dict, dict]:
-    return _guarded_call(corpus, gather, guard_cls, "select",
-        selections=selections, expected_corpus_digest=digest, caps=caps,
+def _inspect(corpus: Path, caps: dict, gather, guard_cls, state_root: Path,
+             admission: dict) -> tuple[dict, int]:
+    result, ids = _guarded_call(corpus, gather, guard_cls, "inspect", caps=caps,
         state_root=state_root, admission=admission)
+    return dict(result, adapter_version=ADAPTER_VERSION,
+                corpus_root_identity=ids["corpus_root_identity"]), 200
+
+
+def _select(corpus: Path, selections: list, digest: str, caps: dict, gather,
+            guard_cls, state_root: Path, admission: dict) -> tuple[dict, dict]:
+    return _guarded_call(corpus, gather, guard_cls, "select", selections=selections,
+        expected_corpus_digest=digest, caps=caps, state_root=state_root, admission=admission)
 
 
 def _guarded_call(corpus: Path, gather, guard_cls, action: str, **kwargs):
+    state_root, admission = kwargs.get("state_root"), kwargs.get("admission")
     if gather is None:
         adapter = GatherPathAdapter(guard_cls=guard_cls or _default_guard())
-        result = getattr(adapter, action)(corpus, **_flatten(kwargs))
-        return result, _identity_bundle(kwargs.get("state_root"),
-            adapter.last_identity, getattr(adapter, "last_identities", ()),
-            kwargs.get("admission"))
+        before = {}
+        def admitted(guard):
+            before["ids"] = _bundle_from_guard(state_root, guard, admission)
+        authority = {}
+        if admission is not None:
+            authority = {"expected_identity": admission["corpus_root_identity"],
+                "expected_state_identity": admission["state_root_identity"], "state_root": state_root}
+        result = getattr(adapter, action)(
+            corpus, before_read=admitted, **authority, **_flatten(kwargs))
+        after = _identity_bundle(state_root, adapter.last_identity,
+            getattr(adapter, "last_identities", ()), admission)
+        if before.get("ids") != after:
+            raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
+        return result, after
     if guard_cls is None:
         guard_cls = _default_guard()
     with guard_cls(corpus) as guard:
         _revalidate(guard)
+        before = _bundle_from_guard(state_root, guard, admission)
         if action == "inspect":
             result = gather.inspect(corpus, **kwargs["caps"])
         else:
@@ -129,9 +143,17 @@ def _guarded_call(corpus: Path, gather, guard_cls, action: str, **kwargs):
                 expected_corpus_digest=kwargs["expected_corpus_digest"],
                 **kwargs["caps"])
         _revalidate(guard)
-        read = getattr(guard, "identities", None)
-        return result, _identity_bundle(kwargs.get("state_root"), guard.identity(),
-            tuple(read()) if callable(read) else (), kwargs.get("admission"))
+        after = _bundle_from_guard(state_root, guard, admission)
+        if before != after:
+            raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
+        return result, after
+
+
+def _bundle_from_guard(state_root: Path | None, guard,
+                       admission: dict | None) -> dict:
+    read = getattr(guard, "identities", None)
+    return _identity_bundle(state_root, guard.identity(),
+        tuple(read()) if callable(read) else (), admission)
 
 
 def _flatten(kwargs: dict) -> dict:
@@ -140,19 +162,16 @@ def _flatten(kwargs: dict) -> dict:
             if key not in {"caps", "state_root", "admission"}} | caps
 
 
-def _default_guard():
-    from .source_context_windows import SourceContextWindowsGuard
-    return SourceContextWindowsGuard
+def _default_guard(): return SourceContextArtifactGuard
 
 
 def _revalidate(guard) -> None:
     check = getattr(guard, "revalidate", None)
-    if callable(check):
-        check()
+    if callable(check): check()
 
 
-def _corpus_admission(state_root: Path, owner_ref: str, root_mode: object,
-                      profile: object, corpus: object) -> tuple[Path, dict]:
+def _corpus_admission(state_root: Path, owner_ref: str, root_mode: object, profile: object,
+                      corpus: object) -> tuple[Path, dict]:
     if root_mode != "flywheel_corpus":
         raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
     owner, profile = _owner(owner_ref), _safe_name(profile)
@@ -169,7 +188,9 @@ def _read_admission(state_root: Path, owner: str, profile: str, corpus: str) -> 
     path = _admission_path(state_root, owner, profile, corpus)
     if not path.exists():
         raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
-    value = _json_file(path)
+    state_identity = current_identity(state_root)
+    value = _json_file(path, state_root=state_root,
+                       expected_root_identity=state_identity)
     components = value.get("component_identities")
     if type(components) is not list or not components:
         raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
@@ -207,30 +228,17 @@ def _safe_name(value: object) -> str:
 
 def _contained(root: Path, candidate: Path) -> bool:
     try:
-        root_name = os.path.normcase(str(root.resolve(strict=True)))
-        cand_name = os.path.normcase(str(candidate.resolve(strict=True)))
+        root_name, cand_name = (os.path.normcase(str(item.resolve(strict=True)))
+                                for item in (root, candidate))
         return os.path.commonpath((root_name, cand_name)) == root_name
-    except (OSError, RuntimeError, ValueError):
-        return False
-
-
-def _state_identity(path: Path) -> dict:
-    try:
-        stat = Path(path).stat()
-        return {"platform": os.name, "path_sha256": canonical_sha256(
-            {"path": os.path.normcase(str(Path(path).absolute()))}),
-            "mtime_ns": int(stat.st_mtime_ns), "inode": int(stat.st_ino)}
-    except OSError:
-        return {"platform": os.name, "path_sha256": canonical_sha256(
-            {"path": os.path.normcase(str(Path(path).absolute()))})}
+    except (OSError, RuntimeError, ValueError): return False
 
 
 def _identity_bundle(state_root: Path | None, final: dict | None,
                      identities: tuple[dict, ...], admission: dict | None) -> dict:
     if state_root is None or final is None:
         raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
-    state = next((item for item in identities
-                  if item.get("path_sha256") == _plain_path_sha(state_root)), None)
+    state = next((item for item in identities if item.get("path_sha256") == _plain_path_sha(state_root)), None)
     if state is None:
         raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
     bundle = {"state_root_identity": dict(state), "corpus_root_identity": dict(final),
@@ -248,12 +256,10 @@ def _validate_admission_identity(bundle: dict, admission: dict) -> None:
 
 
 def _plain_path_sha(path: Path) -> str:
-    text = os.path.normcase(os.path.abspath(str(Path(path))))
-    return hashlib.sha256(text.encode("utf-8", "strict")).hexdigest()
+    return hashlib.sha256(os.path.normcase(os.path.abspath(str(Path(path)))).encode("utf-8", "strict")).hexdigest()
 
 
-def _plain_text_sha(value: str) -> str:
-    return hashlib.sha256(value.encode("utf-8", "strict")).hexdigest()
+def _plain_text_sha(value: str) -> str: return hashlib.sha256(value.encode("utf-8", "strict")).hexdigest()
 
 
 def _caps(req: dict, names) -> dict:
@@ -289,5 +295,4 @@ def _source_error(exc: SourceContextError) -> tuple[dict, int]:
         "SOURCE_CONTEXT_SELECTION_FAILED": "source context selection failed",
         "SOURCE_CONTEXT_STORE_CORRUPT": "source context snapshot is invalid",
         "INVALID_REQUEST": "source-context request is invalid"}
-    return error_response(TransportError(exc.code,
-        messages.get(exc.code, "source context store is invalid"), status))
+    return error_response(TransportError(exc.code, messages.get(exc.code, "source context store is invalid"), status))

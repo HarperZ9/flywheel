@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import os
 import re
 
 from .evidence_json import canonical_sha256
@@ -14,6 +13,7 @@ from .source_context_payload import (
     projection_for, validated_gather_payload, worker_context_for,
 )
 from .source_context_store_io import MAX_PRIVATE_BYTES, _json_file, _write_once
+from .source_context_identity import current_identity
 
 
 def _owner(value: object) -> str:
@@ -35,17 +35,7 @@ class SourceContextStore:
     def state_root_identity(self) -> dict:
         if self.expected_state_root_identity is not None:
             return dict(self.expected_state_root_identity)
-        if os.name == "nt":
-            from .source_context_windows import SourceContextWindowsGuard
-            with SourceContextWindowsGuard(self.state_root) as guard:
-                ids = guard.identities()
-                if not ids:
-                    raise SourceContextError("SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE")
-                return ids[-1]
-        stat = self.state_root.stat()
-        return {"platform": os.name,
-            "path_sha256": _sha_text(os.path.normcase(os.path.abspath(str(self.state_root)))),
-            "mtime_ns": int(stat.st_mtime_ns), "inode": int(stat.st_ino)}
+        return current_identity(self.state_root)
 
     def publish_selection(self, *, owner_ref: str, state_root_identity: dict,
                           root_mode: str, profile: str, corpus_locator: str,
@@ -76,24 +66,30 @@ class SourceContextStore:
         projection = projection_for(ref, private, private_hash)
         projection_hash = canonical_sha256(projection)
         binding = _binding(owner, ref, actual_state, private, private_hash, projection_hash)
-        self._publish(owner, ref, private_hash, projection_hash, private, projection, binding)
+        self._publish(owner, ref, actual_state, private_hash, projection_hash,
+                      private, projection, binding)
         return {"schema": "flywheel.source-context-attach/v1",
             "source_context_ref": ref, "private_payload_sha256": private_hash,
             "projection_sha256": projection_hash, "projection": projection,
             "binding": binding, "selected_at": selected_at,
             "journey_basis": journey_basis_for(ref, projection)}
 
-    def _publish(self, owner: str, ref: str, private_hash: str,
-                 projection_hash: str, private: dict, projection: dict,
-                 binding: dict) -> None:
+    def _publish(self, owner: str, ref: str, actual_state: dict,
+                 private_hash: str, projection_hash: str, private: dict,
+                 projection: dict, binding: dict) -> None:
         base = self.root / "owners" / owner
-        _write_once(base / "payloads" / f"{private_hash}.json", private)
-        _write_once(base / "projections" / f"{projection_hash}.json", projection)
-        _write_once(base / "bindings" / f"{private_hash}.json", binding)
+        _write_once(base / "payloads" / f"{private_hash}.json", private,
+            state_root=self.state_root, expected_root_identity=actual_state)
+        _write_once(base / "projections" / f"{projection_hash}.json",
+            projection, state_root=self.state_root,
+            expected_root_identity=actual_state)
+        _write_once(base / "bindings" / f"{private_hash}.json", binding,
+            state_root=self.state_root, expected_root_identity=actual_state)
         _write_once(base / "refs" / f"{ref.removeprefix(SOURCE_REF_PREFIX)}.json",
             {"schema": "flywheel.source-context-ref/v1", "source_context_ref": ref,
              "private_payload_sha256": private_hash,
-             "projection_sha256": projection_hash})
+             "projection_sha256": projection_hash}, state_root=self.state_root,
+            expected_root_identity=actual_state)
 
     def read_private_for_test(self, owner_ref: str, ref: str) -> dict:
         private, _projection, _binding = self._resolve(_owner(owner_ref), ref)
@@ -125,15 +121,19 @@ class SourceContextStore:
         if not ref_path.exists():
             raise SourceContextError("SOURCE_CONTEXT_REF_NOT_FOUND" if base.exists()
                 else "SOURCE_CONTEXT_PERMISSION_DENIED")
-        record = _json_file(ref_path)
+        record = _json_file(ref_path, state_root=self.state_root,
+            expected_root_identity=actual)
         private_hash = _hex(record.get("private_payload_sha256"), "SOURCE_CONTEXT_STORE_CORRUPT")
         projection_hash = _hex(record.get("projection_sha256"), "SOURCE_CONTEXT_STORE_CORRUPT")
         if (record.get("schema") != "flywheel.source-context-ref/v1"
                 or record.get("source_context_ref") != ref or private_hash[:32] != suffix):
             raise SourceContextError("SOURCE_CONTEXT_REF_COLLISION")
-        private = _json_file(base / "payloads" / f"{private_hash}.json")
-        projection = _json_file(base / "projections" / f"{projection_hash}.json")
-        binding = _json_file(base / "bindings" / f"{private_hash}.json")
+        private = _json_file(base / "payloads" / f"{private_hash}.json",
+            state_root=self.state_root, expected_root_identity=actual)
+        projection = _json_file(base / "projections" / f"{projection_hash}.json",
+            state_root=self.state_root, expected_root_identity=actual)
+        binding = _json_file(base / "bindings" / f"{private_hash}.json",
+            state_root=self.state_root, expected_root_identity=actual)
         self._validate_resolved(owner, ref, actual, private_hash,
             projection_hash, private, projection, binding)
         return private, projection, binding

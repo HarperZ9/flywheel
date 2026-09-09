@@ -55,6 +55,10 @@ def gateway_error_response(exc: Exception) -> tuple[dict, int]:
             404, "source context reference was not found"),
         "SOURCE_CONTEXT_STORE_CORRUPT": (
             409, "source context snapshot is invalid"),
+        "SOURCE_CONTEXT_AUTHORITY_BUSY": (
+            503, "source context authority is busy"),
+        "SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE": (
+            409, "source context authority is unavailable"),
         "SOURCE_CONTEXT_FAILED": (
             409, "source context snapshot is invalid"),
         "EXTERNAL_ACTION_FAILED": (

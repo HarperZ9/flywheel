@@ -9,17 +9,14 @@ from .evidence_json import canonical_bytes, strict_load_json
 from .gateway_operation import AuthorizedOperation, canonicalize_operation, materialize_agent_attachment, thaw_operation
 from .gateway_operation_recovery import validate_operation_value
 from .gateway_secret_boundary import validate_no_raw_secrets
+from .gateway_worker_env import minimal_worker_env
 _PRIVATE_SCHEMA = "flywheel.gateway-operation-worker/v1"
 MAX_RESULT_BYTES = 250_000
-_ENV_KEYS = frozenset(("SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "PATH", "TEMP", "TMP"))
 @dataclass(frozen=True)
 class WorkerOutcome:
     state: str; result: dict
 class OperationProcessFactory(Protocol):
     def create(self, authorized: AuthorizedOperation, progress: Callable[[dict], None]) -> object: ...
-def _minimal_env(repo_root: Path) -> dict[str, str]:
-    env = {key: value for key, value in os.environ.items() if key.upper() in _ENV_KEYS}
-    return dict(env, PYTHONPATH=str(repo_root))
 def _launch(spec: ProcessLaunch) -> OwnedProcess:
     if spec.shell or not spec.suspended:
         raise OSError("owned launch is invalid")
@@ -131,17 +128,16 @@ class GatewayAgentProcessFactory:
                 bindings = dict(bindings or {})
             except (TypeError, ValueError):
                 raise ValueError("gateway worker credentials are invalid") from None
-        source_context = None
-        if self.state_root is not None:
-            from .source_context_worker import source_context_or_failed_worker
-            source_context = source_context_or_failed_worker(authorized, self.state_root)
-            if getattr(source_context, "control_class", None): return source_context
+        from .source_context_worker import source_context_or_failed_worker
+        source_context = source_context_or_failed_worker(authorized, self.state_root)
+        if getattr(source_context, "control_class", None): return source_context
         payload = {"schema": _PRIVATE_SCHEMA, "operation": thaw_operation(authorized.operation),
                    "credential_bindings": dict(bindings), "repo_root": str(self.repo_root),
                    "run_root": str(self.run_root), "source_context": source_context}
         spec = ProcessLaunch(
             (sys.executable, "-m", "harness.gateway_operation_process", "worker"),
-            self.repo_root, canonical_bytes(payload), _minimal_env(self.repo_root))
+            self.repo_root, canonical_bytes(payload), minimal_worker_env(
+                self.repo_root, run_root=self.run_root, state_root=self.state_root))
         return GatewayWorker(self.launcher(spec), progress, tuple(
             value for value in bindings.values() if type(value) is str and value))
 def _commit_terminal(callback: Callable[[WorkerOutcome], None], outcome: WorkerOutcome) -> None:

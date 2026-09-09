@@ -207,9 +207,14 @@ def test_gateway_handler_routes_source_context_attach(monkeypatch, tmp_path):
         last_identity = admission["corpus_root_identity"]
         last_identities = tuple(admission["component_identities"])
         def __init__(self, **_kwargs): pass
-        def select(self, path, selections, *, expected_corpus_digest, **_caps):
+        def select(self, path, selections, *, expected_corpus_digest,
+                   before_read=None, **_caps):
+            if before_read:
+                before_read(self)
             assert str(path).endswith("tiny")
             return _context_payload(expected_corpus_digest)
+        def identity(self): return self.last_identity
+        def identities(self): return list(self.last_identities)
     monkeypatch.setattr(route, "GatherPathAdapter", FakeAdapter)
     monkeypatch.setattr(gateway._Handler, "flywheel_home", tmp_path,
                         raising=False)

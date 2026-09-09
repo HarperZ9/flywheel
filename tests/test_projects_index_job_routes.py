@@ -52,6 +52,7 @@ def test_frozen_gateway_bundles_index_or_route_fails_actionably(
     root = tmp_path / "repo"
     root.mkdir()
     monkeypatch.setattr(index_jobs, "_index_argv", lambda: None)
+    monkeypatch.setattr(index_jobs, "_module_argv", lambda: None)
 
     out = index_jobs.start_workspace_map(root, run_root=tmp_path / "run")
 

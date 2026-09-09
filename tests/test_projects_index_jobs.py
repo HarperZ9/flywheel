@@ -253,6 +253,7 @@ def test_workspace_map_start_reports_unavailable_engine(tmp_path, monkeypatch):
     root = tmp_path / "repo"
     root.mkdir()
     monkeypatch.setattr(index_jobs, "_index_argv", lambda: None)
+    monkeypatch.setattr(index_jobs, "_module_argv", lambda: None)
 
     out = index_jobs.start_workspace_map(root, run_root=tmp_path / "run")
 

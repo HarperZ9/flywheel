@@ -1,4 +1,5 @@
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -12,9 +13,23 @@ from harness.source_context_windows import (
     FILE_SHARE_WRITE, OPEN_EXISTING, SYNCHRONIZE,
     SourceContextWindowsGuard, _create_file_handle,
 )
-from harness.source_context_store import SourceContextError
+from harness.source_context_store import SourceContextError, SourceContextStore
+from harness.source_context_route import admit_flywheel_corpus, source_context_post
+from tests.test_source_context_route import FakeGather
+from tests.test_source_context_route import NOW, OWNER
+from tests.test_source_context_store import CORPUS_ID, _selection
 
 pytestmark = pytest.mark.skipif(os.name != "nt", reason="Windows guard contract")
+
+
+def _junction(link: Path, target: Path) -> None:
+    link.parent.mkdir(parents=True, exist_ok=True)
+    target.mkdir(parents=True, exist_ok=True)
+    result = subprocess.run([os.environ.get("COMSPEC", "cmd.exe"), "/c",
+        "mklink", "/J", str(link), str(target)], check=False,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if result.returncode != 0:
+        pytest.skip(f"junction unavailable: {result.stderr or result.stdout}")
 
 
 def test_preexisting_writable_directory_handle_returns_busy_before_gather(tmp_path):
@@ -131,3 +146,91 @@ def test_private_json_preexisting_writer_blocks_growing_file_success(tmp_path):
         assert exc.value.code == "SOURCE_CONTEXT_AUTHORITY_BUSY"
     finally:
         handle.close()
+
+
+def test_store_publication_rejects_junction_anchor_without_outside_writes(tmp_path):
+    state, outside = tmp_path / "state", tmp_path / "outside-store"
+    (state / "source-context").mkdir(parents=True)
+    _junction(state / "source-context" / "v1", outside)
+    store = SourceContextStore(state, clock=lambda: NOW)
+    state_id = store.state_root_identity()
+
+    with pytest.raises(SourceContextError) as exc:
+        store.publish_selection(owner_ref=OWNER, state_root_identity=state_id,
+            root_mode="flywheel_corpus", profile="demo", corpus_locator="tiny",
+            corpus_root_identity=CORPUS_ID, gather_payload=_selection(),
+            selected_at=NOW)
+
+    assert exc.value.code == "SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE"
+    assert list(outside.rglob("*.json")) == []
+
+
+def test_store_refread_rejects_junction_anchor_before_outside_read(
+        tmp_path, monkeypatch):
+    state = tmp_path / "state"
+    state.mkdir()
+    store = SourceContextStore(state, clock=lambda: NOW)
+    state_id = store.state_root_identity()
+    attached = store.publish_selection(owner_ref=OWNER,
+        state_root_identity=state_id, root_mode="flywheel_corpus",
+        profile="demo", corpus_locator="tiny", corpus_root_identity=CORPUS_ID,
+        gather_payload=_selection(), selected_at=NOW)
+    v1, outside = state / "source-context" / "v1", tmp_path / "outside-store"
+    v1.rename(outside)
+    _junction(v1, outside)
+    import harness.source_context_windows as win
+    reads = []
+    original = win._read_handle
+    def observed_read(handle, size):
+        reads.append(str(handle.path))
+        return original(handle, size)
+    monkeypatch.setattr(win, "_read_handle", observed_read)
+
+    with pytest.raises(SourceContextError) as exc:
+        store.resolve_worker_payload(OWNER, (attached["source_context_ref"],))
+
+    assert exc.value.code == "SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE"
+    assert reads == []
+
+
+def test_admission_registry_write_rejects_junction_without_outside_write(tmp_path):
+    corpus = tmp_path / "source-context" / "corpora" / OWNER / "demo" / "tiny"
+    corpus.mkdir(parents=True)
+    outside = tmp_path / "outside-admissions"
+    _junction(tmp_path / "source-context" / "admissions", outside)
+
+    with pytest.raises(SourceContextError) as exc:
+        admit_flywheel_corpus(tmp_path, OWNER, "demo", "tiny",
+            clock=lambda: NOW)
+
+    assert exc.value.code == "SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE"
+    assert list(outside.rglob("*.json")) == []
+
+
+def test_admission_registry_read_rejects_junction_before_outside_read(
+        tmp_path, monkeypatch):
+    corpus = tmp_path / "source-context" / "corpora" / OWNER / "demo" / "tiny"
+    corpus.mkdir(parents=True)
+    admit_flywheel_corpus(tmp_path, OWNER, "demo", "tiny",
+        clock=lambda: NOW)
+    admissions = tmp_path / "source-context" / "admissions"
+    outside = tmp_path / "outside-admissions"
+    admissions.rename(outside)
+    _junction(admissions, outside)
+    import harness.source_context_windows as win
+    reads = []
+    original = win._read_handle
+    def observed_read(handle, size):
+        reads.append(str(handle.path))
+        return original(handle, size)
+    monkeypatch.setattr(win, "_read_handle", observed_read)
+
+    body, status = source_context_post("/api/source-context/inspect",
+        b'{"schema":"flywheel.source-context-request/v1",'
+        b'"root_mode":"flywheel_corpus","profile":"demo","corpus":"tiny"}',
+        owner_ref=OWNER, state_root=tmp_path, clock=lambda: NOW,
+        gather=FakeGather())
+
+    assert status == 409
+    assert body["error"]["code"] == "SOURCE_CONTEXT_AUTHORITY_UNAVAILABLE"
+    assert reads == []
