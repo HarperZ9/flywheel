@@ -31,6 +31,10 @@ $version = ($versionLine -replace 'version:\s*', '' -split '\+')[0].Trim()
 if (-not $version) { throw "could not read version from pubspec.yaml" }
 Write-Output "== Flywheel installer build, version $version =="
 
+Write-Output "-- validating desktop font provenance source"
+python scripts\check_font_provenance.py source --desktop-root $repo
+if ($LASTEXITCODE -ne 0) { throw "font provenance source check failed" }
+
 # 1. Flutter release bundle.
 if (-not $SkipFlutter) {
     Write-Output "-- flutter build windows --release"
@@ -41,6 +45,18 @@ $appDir = Join-Path $repo "build\windows\x64\runner\Release"
 if (-not (Test-Path (Join-Path $appDir "flywheel_desktop.exe"))) {
     throw "app payload missing: $appDir (run without -SkipFlutter)"
 }
+
+# The installer includes AppDir recursively, so stage the human-readable
+# font provenance and OFL notices beside the app payload before ISCC.
+$licenseDir = Join-Path $appDir "licenses"
+New-Item -ItemType Directory -Force $licenseDir | Out-Null
+Copy-Item -LiteralPath (Join-Path $repo "release\FONT-PROVENANCE.json") `
+    -Destination (Join-Path $licenseDir "FONT-PROVENANCE.json") -Force
+Copy-Item -LiteralPath (Join-Path $repo "release\THIRD-PARTY-NOTICES.txt") `
+    -Destination (Join-Path $licenseDir "THIRD-PARTY-NOTICES.txt") -Force
+Write-Output "-- validating staged desktop font/notice payload"
+python scripts\check_font_provenance.py staging --desktop-root $repo --staging-root $appDir
+if ($LASTEXITCODE -ne 0) { throw "font provenance staging check failed" }
 
 # 2. Frozen engine.
 $engineOut = Join-Path $repo "build\engine\flywheel-gateway"

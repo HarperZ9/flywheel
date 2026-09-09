@@ -1,12 +1,124 @@
-﻿{
-  "_comment": "Default-reject payload policy: only explicitly declared rows may ship. Font provenance is BLOCKED: the current font files have no accepted redistribution evidence and must be licensed, replaced, or removed.",
-  "blocked": ["font_provenance", "third_party_notices"],
-  "allow": [],
-  "reject_globs": true,
-  "reject_symlinks": true,
+{
+  "_comment": "Default-reject for reviewed desktop font/notice payload bytes. This focused policy is validated by scripts/check_font_provenance.py and copied by scripts/build_installer.ps1.",
+  "allow": [
+    {
+      "component": "Hanken Grotesk",
+      "license": "SIL Open Font License 1.1",
+      "license_id": "OFL-1.1",
+      "path": "data/flutter_assets/assets/fonts/hanken-grotesk-light.ttf",
+      "purpose": "font",
+      "sha256": "9BCD9A09A023501C12F11769EA55AB3C68777C4960B4A986D01FC3911420CEB3",
+      "size": 32180,
+      "source_path": "assets/fonts/hanken-grotesk-light.ttf"
+    },
+    {
+      "component": "Hanken Grotesk",
+      "license": "SIL Open Font License 1.1",
+      "license_id": "OFL-1.1",
+      "path": "data/flutter_assets/assets/fonts/hanken-grotesk-regular.ttf",
+      "purpose": "font",
+      "sha256": "4B46B806D06EF9BE5639B0DE5A20774B21956165A9495A80610C77432B417ECB",
+      "size": 32204,
+      "source_path": "assets/fonts/hanken-grotesk-regular.ttf"
+    },
+    {
+      "component": "Hanken Grotesk",
+      "license": "SIL Open Font License 1.1",
+      "license_id": "OFL-1.1",
+      "path": "data/flutter_assets/assets/fonts/hanken-grotesk-italic.ttf",
+      "purpose": "font",
+      "sha256": "83EEDF30F8DAAF654C1226A091CBA84D293CD8173FB9992B48434A9B41044871",
+      "size": 34260,
+      "source_path": "assets/fonts/hanken-grotesk-italic.ttf"
+    },
+    {
+      "component": "Hanken Grotesk",
+      "license": "SIL Open Font License 1.1",
+      "license_id": "OFL-1.1",
+      "path": "data/flutter_assets/assets/fonts/hanken-grotesk-medium.ttf",
+      "purpose": "font",
+      "sha256": "A6A44F689CD7453F155D3C521B76F9D35BF7AC83F4DD404D53780153EF86ABAE",
+      "size": 32220,
+      "source_path": "assets/fonts/hanken-grotesk-medium.ttf"
+    },
+    {
+      "component": "Hanken Grotesk",
+      "license": "SIL Open Font License 1.1",
+      "license_id": "OFL-1.1",
+      "path": "data/flutter_assets/assets/fonts/hanken-grotesk-semibold.ttf",
+      "purpose": "font",
+      "sha256": "8A6C38796C7EA332FEBE10B18F45B9F3AFAEDC1C44119879159582D6A8175B57",
+      "size": 32168,
+      "source_path": "assets/fonts/hanken-grotesk-semibold.ttf"
+    },
+    {
+      "component": "Hanken Grotesk",
+      "license": "SIL Open Font License 1.1",
+      "license_id": "OFL-1.1",
+      "path": "data/flutter_assets/assets/fonts/hanken-grotesk-bold.ttf",
+      "purpose": "font",
+      "sha256": "4CA80AC105E80A582F892B3BBDD67DBA26905F8BDEFC837CB8A8908AD7BE7FC9",
+      "size": 32156,
+      "source_path": "assets/fonts/hanken-grotesk-bold.ttf"
+    },
+    {
+      "component": "Hanken Grotesk",
+      "license": "SIL Open Font License 1.1",
+      "license_id": "OFL-1.1",
+      "path": "data/flutter_assets/assets/fonts/hanken-grotesk-extrabold.ttf",
+      "purpose": "font",
+      "sha256": "38DF6F21133967C580B9322123DB0E034B7DE70BCB4A76961C54E01AE582C67D",
+      "size": 32160,
+      "source_path": "assets/fonts/hanken-grotesk-extrabold.ttf"
+    },
+    {
+      "component": "Cascadia Mono",
+      "license": "SIL Open Font License 1.1",
+      "license_id": "OFL-1.1",
+      "path": "data/flutter_assets/assets/fonts/CascadiaMono.ttf",
+      "purpose": "font",
+      "sha256": "08026F617EEA315CACA59898784E999F6CDB2D0C34D2040DEEB042BCDC359FA2",
+      "size": 714804,
+      "source_path": "assets/fonts/CascadiaMono.ttf"
+    },
+    {
+      "component": "Cascadia Mono",
+      "license": "SIL Open Font License 1.1",
+      "license_id": "OFL-1.1",
+      "path": "data/flutter_assets/assets/fonts/CascadiaMonoItalic.ttf",
+      "purpose": "font",
+      "sha256": "D9D23DFB03C6844448A24CF0337A657AC99965262874D2E6FB5B82AC0AC08C4D",
+      "size": 524380,
+      "source_path": "assets/fonts/CascadiaMonoItalic.ttf"
+    },
+    {
+      "component": "font notices",
+      "license": "SIL Open Font License 1.1",
+      "license_id": "OFL-1.1",
+      "path": "licenses/FONT-PROVENANCE.json",
+      "purpose": "font provenance",
+      "sha256": "9C7161E9A6309B992B83947B3640E504457646F85ADBCE322F0C296269F4A7E8",
+      "size": 8274,
+      "source_path": "release/FONT-PROVENANCE.json"
+    },
+    {
+      "component": "font notices",
+      "license": "SIL Open Font License 1.1",
+      "license_id": "OFL-1.1",
+      "path": "licenses/THIRD-PARTY-NOTICES.txt",
+      "purpose": "third-party notices",
+      "sha256": "0683712551894DB5454F0030DB780E127C0637741A49F9F57166F036935D7276",
+      "size": 6730,
+      "source_path": "release/THIRD-PARTY-NOTICES.txt"
+    }
+  ],
+  "blocked": [],
+  "font_payload_schema": "flywheel.desktop-font-payload/v1",
+  "font_provenance": "accepted: bundled desktop fonts are Hanken Grotesk plus Cascadia Mono with exact hashes in FONT-PROVENANCE.json",
   "reject_alternate_data_streams": true,
   "reject_case_collisions": true,
+  "reject_globs": true,
   "reject_reserved_names": true,
-  "font_provenance": "BLOCKED",
-  "third_party_notices": "BLOCKED"
+  "reject_symlinks": true,
+  "third_party_notices": "accepted: THIRD-PARTY-NOTICES.txt is copied into the Windows installer payload"
 }

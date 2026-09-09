@@ -42,16 +42,35 @@ flutter:
           weight: 700
         - asset: assets/fonts/hanken-grotesk-extrabold.ttf
           weight: 800
-    - family: Conso
+    - family: Cascadia Mono
       fonts:
-        - asset: assets/fonts/conso-regular.ttf
+        - asset: assets/fonts/CascadiaMono.ttf
+          weight: 200
+        - asset: assets/fonts/CascadiaMono.ttf
+          weight: 300
+        - asset: assets/fonts/CascadiaMono.ttf
           weight: 400
-        - asset: assets/fonts/conso-regularitalic.ttf
+        - asset: assets/fonts/CascadiaMono.ttf
+          weight: 500
+        - asset: assets/fonts/CascadiaMono.ttf
+          weight: 600
+        - asset: assets/fonts/CascadiaMono.ttf
+          weight: 700
+        - asset: assets/fonts/CascadiaMonoItalic.ttf
+          weight: 200
+          style: italic
+        - asset: assets/fonts/CascadiaMonoItalic.ttf
+          weight: 300
+          style: italic
+        - asset: assets/fonts/CascadiaMonoItalic.ttf
           weight: 400
           style: italic
-        - asset: assets/fonts/conso-medium.ttf
+        - asset: assets/fonts/CascadiaMonoItalic.ttf
           weight: 500
-        - asset: assets/fonts/conso-semibold.ttf
+          style: italic
+        - asset: assets/fonts/CascadiaMonoItalic.ttf
           weight: 600
-        - asset: assets/fonts/conso-bold.ttf
+          style: italic
+        - asset: assets/fonts/CascadiaMonoItalic.ttf
           weight: 700
+          style: italic
