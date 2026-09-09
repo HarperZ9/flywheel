@@ -70,6 +70,15 @@ const Map<String, LaneIdentity> laneIdentities = {
         'The oracle decides, the model proposes. No receipt, no accept.',
     surface: 'training and benchmark receipts',
   ),
+  'writing': LaneIdentity(
+    title: 'Writing',
+    identity:
+        'A private author workspace over Journey and grants. Briefs, source '
+        'packets, drafts, reader cards, scoped candidates, decisions, and '
+        'exports stay in owner-local artifacts. Every text change requires '
+        'an exact approved proposal before it becomes accepted state.',
+    surface: 'draft custody + scoped export',
+  ),
   'relay': LaneIdentity(
     title: 'Relay',
     identity:

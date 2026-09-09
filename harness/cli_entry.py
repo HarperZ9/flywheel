@@ -226,7 +226,8 @@ _PACKAGED = {"acp": "harness.acp_cli", "dap": "harness.dap_cli",
              "check-output": "harness.output_check_cli",
              "cross-harness-execute": "harness.cross_harness_cli",
              "workstream": "harness.workstream_cli",
-             "journey": "harness.journey_cli", "grant": "harness.journey_cli"}
+             "journey": "harness.journey_cli", "grant": "harness.journey_cli",
+             "writing": "harness.writing_cli"}
 def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
     module = _PACKAGED.get(command)
     if module is None:
@@ -275,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
                   "Umbrella commands (run from a bare install): up, lanes, "
                   "loop-status, install, corpus-export, gate, why, down, "
                   "remote, relay, grant, journey, evidence, bulletin-identity,\n"
-                  "cross-harness-execute, check-output, packs, workstream\n"
+                  "cross-harness-execute, check-output, packs, workstream, writing\n"
                   "Passthrough commands need a source checkout "
                   "(scripts/run_harness_cli.py).",
                   file=sys.stdout if wants_help else sys.stderr)

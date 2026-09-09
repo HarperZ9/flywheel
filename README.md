@@ -174,6 +174,7 @@ Flywheel can connect to fourteen companion tools. Each has a public repository:
 | telos | [telos](https://github.com/HarperZ9/telos) | Reconcile findings from several tools. |
 | local-model | [archived predecessor](https://github.com/HarperZ9/local-model) | Historical engine repository. Its runtime is now part of Flywheel; the lane name remains for compatibility. |
 | relay | [relay](https://github.com/HarperZ9/relay) | Run a coding agent with a local or hosted model. |
+| writing | [docs/writing-workspace.md](docs/writing-workspace.md) | Private author workflow with scoped revisions, exact approval, and export receipts. |
 | plexus | [plexus](https://github.com/HarperZ9/plexus) | Find installed tools and connect them. |
 | mneme | [mneme](https://github.com/HarperZ9/mneme) | Store and retrieve memories with source checks. |
 | calibrate-pro | [calibrate-pro](https://github.com/HarperZ9/calibrate-pro) | Check display calibration targets and readiness. |
