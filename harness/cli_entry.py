@@ -222,6 +222,7 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
 _PACKAGED = {"acp": "harness.acp_cli", "dap": "harness.dap_cli",
              "lsp": "harness.lsp_cli", "packs": "harness.packs_cli",
              "evidence": "harness.evidence_cli",
+             "bulletin-identity": "harness.bulletin_identity_cli",
              "check-output": "harness.output_check_cli",
              "cross-harness-execute": "harness.cross_harness_cli",
              "workstream": "harness.workstream_cli",
@@ -273,8 +274,8 @@ def main(argv: list[str] | None = None) -> int:
             print("usage: flywheel <command> [options]\n"
                   "Umbrella commands (run from a bare install): up, lanes, "
                   "loop-status, install, corpus-export, gate, why, down, "
-                  "remote, relay, grant, journey, evidence, cross-harness-execute,\n"
-                  "check-output, packs, workstream\n"
+                  "remote, relay, grant, journey, evidence, bulletin-identity,\n"
+                  "cross-harness-execute, check-output, packs, workstream\n"
                   "Passthrough commands need a source checkout "
                   "(scripts/run_harness_cli.py).",
                   file=sys.stdout if wants_help else sys.stderr)

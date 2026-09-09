@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import sys
+import unicodedata
 
 _PREFIX = "flywheel/"
 _IS_WINDOWS = sys.platform == "win32"
@@ -45,8 +46,20 @@ def keychain_available() -> bool:
     return _IS_WINDOWS
 
 
+def keychain_name_error(name: str) -> dict | None:
+    """Return a public error for names unsafe at native credential boundaries."""
+    if _has_control_character(name):
+        return {"error": {
+            "code": "INVALID_KEYCHAIN_NAME",
+            "message": "credential name must not contain control characters",
+        }}
+    return None
+
+
 def keychain_get(name: str) -> "str | None":
     """The stored secret for `name`, or None. Callers must never log it."""
+    if keychain_name_error(name) is not None:
+        return None
     if not _IS_WINDOWS or not name:
         return None
     pcred = _PCREDENTIAL()
@@ -68,6 +81,9 @@ def keychain_get(name: str) -> "str | None":
 def keychain_set(name: str, secret: str) -> dict:
     if not name or not secret:
         return {"error": "provide 'name' and a non-empty secret"}
+    out = keychain_name_error(name)
+    if out is not None:
+        return out
     if not _IS_WINDOWS:
         return {"error": "no supported OS credential store on this platform; "
                          "use the environment variable instead"}
@@ -87,6 +103,11 @@ def keychain_set(name: str, secret: str) -> dict:
 
 
 def keychain_delete(name: str) -> dict:
+    if not name:
+        return {"error": "provide 'name'"}
+    out = keychain_name_error(name)
+    if out is not None:
+        return out
     if not _IS_WINDOWS:
         return {"error": "no supported OS credential store on this platform"}
     if not _advapi32.CredDeleteW(_PREFIX + name, _CRED_TYPE_GENERIC, 0):
@@ -97,7 +118,7 @@ def keychain_delete(name: str) -> dict:
 def resolve_credential(key_env: str) -> str:
     """The credential for a provider: the environment wins, the keychain
     backs it. Returns '' when neither holds it."""
-    if not key_env:
+    if not key_env or keychain_name_error(key_env) is not None:
         return ""
     return os.environ.get(key_env) or keychain_get(key_env) or ""
 
@@ -105,10 +126,14 @@ def resolve_credential(key_env: str) -> str:
 def credential_source(key_env: str) -> str:
     """Where the credential would come from: env | keychain | absent.
     Presence only; the value never leaves resolve_credential's callers."""
-    if not key_env:
+    if not key_env or keychain_name_error(key_env) is not None:
         return "absent"
     if os.environ.get(key_env):
         return "env"
     if keychain_get(key_env):
         return "keychain"
     return "absent"
+
+
+def _has_control_character(name: str) -> bool:
+    return any(unicodedata.category(ch) == "Cc" for ch in name)

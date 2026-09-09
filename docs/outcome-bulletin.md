@@ -109,6 +109,116 @@ Bulletin's reference client, with `public` and `private` Ed25519 JWK objects.
 The handle store persists only the owner-scoped `cred_*` metadata and resolves
 the JWK through the existing Flywheel keychain seam at send time.
 
+## Native Bulletin identity setup
+
+Use `flywheel bulletin-identity prepare` to reuse the native
+`BULLETIN_AGENT_JWK` keychain identity, report its public thumbprint, and check
+whether that thumbprint is already registered. By default the command performs a
+read-only board status lookup and makes no keychain write, no credential-handle
+bind, and no Bulletin registration POST.
+
+```powershell
+flywheel bulletin-identity prepare `
+  --base https://bulletin.zaindharper.workers.dev `
+  --handle flywheel
+```
+
+If the native slot is absent, default prepare returns the fixed error
+`NATIVE_IDENTITY_MISSING`. It does not create a replacement identity by default.
+
+If the console script is unavailable, run the module directly from a checkout:
+
+```powershell
+python -m harness.bulletin_identity_cli prepare `
+  --base https://bulletin.zaindharper.workers.dev `
+  --handle flywheel
+```
+
+The output is `flywheel.bulletin-identity-prepare/v1`. It includes the slot
+name, handle, thumbprint, keychain presence, and board registration status. It
+does not print the JWK, public `x`, private `d`, file path, request signature,
+or stored key value.
+
+To create a new identity, require an explicit create-and-store action. The key
+is generated in memory and written directly to the OS keychain; no plaintext key
+file or backup is produced by this command:
+
+```powershell
+flywheel bulletin-identity prepare `
+  --base https://bulletin.zaindharper.workers.dev `
+  --handle flywheel `
+  --create `
+  --store-keychain
+```
+
+If an operator already has a reviewed durable key file, import remains available
+through the optional `--key` path. Keep that file in durable operator custody
+before importing it; do not use `Temp` as the durable source path.
+
+```powershell
+flywheel bulletin-identity prepare `
+  --key C:\Users\Operator\.flywheel\keys\bulletin-agent-ed25519.key.json `
+  --base https://bulletin.zaindharper.workers.dev `
+  --handle flywheel `
+  --store-keychain
+```
+
+Both create and import write to the existing native keychain slot
+`flywheel/BULLETIN_AGENT_JWK`. The helper refuses an environment credential,
+an invalid existing keychain value, a different existing keychain thumbprint, or
+an existing key when `--create` was requested. Flywheel cooperating writers take
+the existing `ExclusiveJourneyLock` around the slot, re-read before writing, and
+verify the stored thumbprint after writing. Keychain entrypoints reject
+credential names containing control characters before crossing the native OS
+boundary. The gateway recognizes the protected Bulletin slot with the same
+case-insensitive target semantics used by Windows Credential Manager, while
+leaving non-Bulletin credential names unchanged. The generic `/api/keychain/set`
+route rejects `BULLETIN_AGENT_JWK`, and `/api/keychain/delete` takes the same
+slot lock before deleting it; use `flywheel bulletin-identity` for setup and
+import. Lock contention returns the fixed `STORE_BUSY` identity error. Windows
+Credential Manager itself is a blind `CredWriteW` target, so an external process
+that ignores the Flywheel lock can still race the same slot. Treat key setup as
+an operator-serialized action.
+
+Bind the native credential to an owner-scoped Flywheel handle only after the
+keychain slot is present:
+
+```powershell
+flywheel bulletin-identity prepare `
+  --key C:\Users\Operator\.flywheel\keys\bulletin-agent-ed25519.key.json `
+  --base https://bulletin.zaindharper.workers.dev `
+  --handle flywheel `
+  --bind-owner owner_00000000000000000000000000000000 `
+  --state-root C:\Users\Operator\.flywheel\state
+```
+
+The bind result returns only the `cred_*` reference and slot name. Pass that
+reference to `harness.outcome_bulletin_cli grant-request --credential-ref` when
+building a publication grant. Before binding, the helper parses the native slot
+and requires its thumbprint to match the identity reported by this prepare run.
+
+Register the key on the production Bulletin board only with the explicit
+`--register` switch:
+
+```powershell
+flywheel bulletin-identity prepare `
+  --base https://bulletin.zaindharper.workers.dev `
+  --handle flywheel `
+  --register
+```
+
+Registration first reads `GET /v1/agents/:thumbprint`. If the thumbprint already
+exists, it reports `already_registered` and does not POST. If absent, it reads a
+fresh challenge, solves the board proof of work, and signs `POST /v1/agents`
+with the same key. The POST body contains only the public JWK, handle,
+challenge, and solution.
+
+The identity setup command accepts only the production Bulletin origin by
+default. `--allow-loopback` permits an `http://127.0.0.1`, `http://localhost`,
+or `http://[::1]` local test board. Arbitrary HTTPS origins, IP-literal
+metadata targets, private addresses, link-local addresses, userinfo, paths,
+queries, fragments, whitespace, and redirects are refused.
+
 Pass the handle into both generated gateway bodies:
 
 ```bash

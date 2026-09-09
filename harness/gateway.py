@@ -1178,18 +1178,12 @@ class _Handler(BaseHTTPRequestHandler):
             from harness import oauth_service
             return self._json(oauth_service.auth_rows())
         if p == "/api/keychain":                     # credential names + presence, never values
+            from harness.key_roster import keychain_entries
             from harness.keychain import credential_source, keychain_available
-            try:
-                from harness.endpoints import PROVIDERS
-            except Exception:
-                PROVIDERS = {}
-            names = sorted({s.get("key", "") for s in PROVIDERS.values()
-                            if s.get("key")})
             return self._json({
                 "schema": "flywheel.keychain/v1",
                 "available": keychain_available(),
-                "entries": [{"name": n, "source": credential_source(n)}
-                            for n in names],
+                "entries": keychain_entries(credential_source),
                 "note": "presence and source only; values never leave "
                         "resolution inside a routed call"})
         if p == "/api/credential-handles":         # handles held for this owner, presence only
@@ -1873,9 +1867,17 @@ class _Handler(BaseHTTPRequestHandler):
             req, bad = self._req_json()
             if bad:
                 return bad
+            from harness.keychain import keychain_name_error
+            from harness.key_roster import generic_keychain_set_error
+            name = (req.get("name") or "").strip()
+            out = keychain_name_error(name)
+            if out is not None:
+                return self._json(out, 400)
+            out = generic_keychain_set_error(name)
+            if out is not None:
+                return self._json(out, 400)
             from harness.keychain import keychain_set
-            out = keychain_set((req.get("name") or "").strip(),
-                               req.get("value") or "")
+            out = keychain_set(name, req.get("value") or "")
             # The secret is now only in the OS store; nothing here logs or
             # echoes it, and `req` goes out of scope with this request.
             return self._json(out, 400 if "error" in out else 200)
@@ -1883,8 +1885,22 @@ class _Handler(BaseHTTPRequestHandler):
             req, bad = self._req_json()
             if bad:
                 return bad
+            from harness.keychain import keychain_name_error
+            from harness.key_roster import (
+                BULLETIN_CREDENTIAL_NAME,
+                protected_keychain_name,
+            )
+            name = (req.get("name") or "").strip()
+            out = keychain_name_error(name)
+            if out is not None:
+                return self._json(out, 400)
+            if protected_keychain_name(name) == BULLETIN_CREDENTIAL_NAME:
+                from harness.bulletin_identity_store import delete_identity_keychain_slot
+                out = delete_identity_keychain_slot(
+                    keychain_lock_root=self.flywheel_home / "state")
+                return self._json(out, 400 if "error" in out else 200)
             from harness.keychain import keychain_delete
-            out = keychain_delete((req.get("name") or "").strip())
+            out = keychain_delete(name)
             return self._json(out, 400 if "error" in out else 200)
         if p == "/api/store/entity":                   # store a content-addressed entity
             req, bad = self._req_json()
