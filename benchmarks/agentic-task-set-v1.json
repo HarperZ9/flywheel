@@ -257,6 +257,41 @@
           "total_cost_usd": "number, the summed cost_usd of the selected items, exact to whole cents",
           "total_value": "number, the summed evidence_value of the selected items"
         }
+      },
+      "kv_source_derived_strict_json/v1": {
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "result"
+        ],
+        "predicates": [
+          "derive the expected task result from source_records only",
+          "match the submitted result task_id, verdict, answer, and citations to the derived source result",
+          "require missing_evidence and claims_not_made only for UNVERIFIABLE source results",
+          "cite only fixture source record ids, with citation order controlled by oracle spec or fixture"
+        ],
+        "failure_codes": [
+          "fixture_task_id_mismatch",
+          "unknown_kv_task",
+          "task_id_mismatch",
+          "verdict_mismatch",
+          "response_shape_mismatch",
+          "answer_mismatch",
+          "forbidden_claim_or_flag",
+          "missing_evidence_missing",
+          "claims_not_made_missing",
+          "missing_evidence_mismatch",
+          "claims_not_made_mismatch",
+          "citations_type_invalid",
+          "citation_duplicate",
+          "citation_unknown",
+          "citations_mismatch"
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly the canonical task id",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "result": "object with task_id, verdict, answer, and citations; ANSWERED carries answer as an object; UNVERIFIABLE carries answer as null plus missing_evidence and claims_not_made arrays of strings"
+        }
       }
     },
     "provider_authored_scores_or_booleans_are_non_authoritative": true

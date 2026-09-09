@@ -24,6 +24,7 @@ from __future__ import annotations
 from typing import Any
 
 from harness.cross_harness_oracle_support import _Malformed, _rows, _strings
+from harness.cross_harness_kv_source_oracle import CHECKERS as _KV_SOURCE_CHECKERS
 
 
 def _number(value: Any, field: str) -> float:
@@ -248,4 +249,5 @@ CHECKERS = {
     "evidence_bound_reporting/v1": _evidence_bound,
     "contradiction_detection/v1": _contradiction,
     "budgeted_evidence_selection/v1": _budgeted,
+    **_KV_SOURCE_CHECKERS,
 }
