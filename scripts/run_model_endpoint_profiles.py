@@ -17,7 +17,7 @@ from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 from harness.model_profiles import (candidate_model_roots, model_key, model_profile, release_profile, release_root,
                                     validate_release_identity_provenance)  # noqa: E402
 from harness.provider_roles import provider_role  # noqa: E402
-from harness.local_serving import configure_profiles, context_argument  # noqa: E402
+from harness.local_serving import (configure_profiles, context_argument, ollama_structured_final_output_capability)  # noqa: E402
 DEFAULT_SERVE_URLS = {
     "14b": "http://127.0.0.1:8765",
     "32b": "http://127.0.0.1:8767",
@@ -31,10 +31,8 @@ RUNTIME_STRATEGIES = {
     },
 }
 
-
 def now_utc() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
-
 
 def split_names(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
@@ -164,8 +162,8 @@ def _ollama_profile(model: str, *, base_root: Path, ollama_url: str) -> dict[str
         "content_read": False,
         "live_probed": False,
         "supports_agentic_workflow": True,
+        "structured_final_output": ollama_structured_final_output_capability(),
     }
-
 
 def _release_ollama_profile(model: str, *, base_root: Path, ollama_url: str) -> dict[str, Any] | None:
     release = release_profile(model)
@@ -201,6 +199,7 @@ def _release_ollama_profile(model: str, *, base_root: Path, ollama_url: str) -> 
         "content_read": False,
         "live_probed": False,
         "supports_agentic_workflow": True,
+        "structured_final_output": ollama_structured_final_output_capability(),
     }
 def build_report(
     *,

@@ -12,6 +12,16 @@ def context_argument(value):
     return validate_num_ctx(int(value))
 
 
+def ollama_structured_final_output_capability():
+    return {
+        'state': 'supported',
+        'transport': 'ollama_chat_format_json_schema',
+        'request_field': 'format',
+        'schema_limits': 'basic_json_schema_only',
+        'evidence': 'configured_ollama_api_chat_format_json_schema',
+    }
+
+
 def profile_num_ctx(profile):
     config = profile.get('generation_config', {})
     if not isinstance(config, dict) or set(config) - {'num_ctx'}:

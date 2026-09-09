@@ -162,16 +162,25 @@ def _runtime_row(
 def _profile_matches(selector: dict[str, Any], data: dict[str, Any]) -> list[dict[str, Any]]:
     wanted = {"profile_id": selector.get("profile_id"), "backend": selector.get("backend"), "model_ref": selector.get("model_reference")}
     rows = data.get("profiles") if isinstance(data.get("profiles"), list) else []
-    return [{
-        "profile_id": item.get("profile_id", ""), "model": item.get("model", ""),
-        "backend": item.get("backend", ""), "provider_role": item.get("provider_role", ""),
-        "model_ref": item.get("model_ref", ""), "profile_sha256": _canonical_sha256(item),
-        "release_asset_sha256": item.get("release_asset_sha256", ""),
-        "expected_ollama_digest": item.get("expected_ollama_digest", ""),
-        "root_exists": item.get("root_exists") is True,
-        "supports_agentic_workflow": item.get("supports_agentic_workflow") is True,
-        "live_probed": bool(item.get("live_probed")),
-    } for item in rows if isinstance(item, dict) and all(item.get(key) == value for key, value in wanted.items())]
+    matches = []
+    for item in rows:
+        if not isinstance(item, dict) or not all(item.get(key) == value for key, value in wanted.items()):
+            continue
+        projected = {
+            "profile_id": item.get("profile_id", ""), "model": item.get("model", ""),
+            "backend": item.get("backend", ""), "provider_role": item.get("provider_role", ""),
+            "model_ref": item.get("model_ref", ""), "profile_sha256": _canonical_sha256(item),
+            "release_asset_sha256": item.get("release_asset_sha256", ""),
+            "expected_ollama_digest": item.get("expected_ollama_digest", ""),
+            "root_exists": item.get("root_exists") is True,
+            "supports_agentic_workflow": item.get("supports_agentic_workflow") is True,
+            "live_probed": bool(item.get("live_probed")),
+        }
+        capability = item.get("structured_final_output")
+        if isinstance(capability, dict):
+            projected["structured_final_output"] = dict(capability)
+        matches.append(projected)
+    return matches
 
 
 def _profile_failure(profile: dict[str, Any], selector: dict[str, Any]) -> str:
