@@ -10,7 +10,7 @@ single rule:
   - a guided sign-in returns its numbered steps as data; the surface shows
     them, takes the paste in its own obscured field, and posts the value
     back, which lands in the same credential store,
-  - a registered provider returns its refusal, unchanged.
+  - a registered provider refuses until configured, then runs asynchronously.
 
 The redaction discipline is unchanged and load-bearing: a token value is
 accepted as input and handed to the credential store, and never appears in a
@@ -24,8 +24,10 @@ from typing import Optional
 
 from . import keychain, oauth_signin
 from .oauth_profiles import PROFILES
+from .oauth_attempt import SigninAttempt
 
 _LOCK = threading.Lock()
+_ATTEMPTS: dict = {}
 _JOBS: dict = {}          # provider -> {"state": ..., "error": ..., "at": ...}
 
 
@@ -45,9 +47,13 @@ def _job(provider: str) -> dict:
 def auth_rows() -> dict:
     """The roster the surface renders: presence, source, terms, and whatever
     the last sign-in attempt did. Labels only; never a value."""
+    # Read job state first: completion during credential presence reads must
+    # retain the old pending state so the client polls once more.
+    with _LOCK:
+        jobs = {provider: dict(job) for provider, job in _JOBS.items()}
     rows = []
     for row in oauth_signin.status():
-        job = _job(row["provider"])
+        job = jobs.get(row["provider"], {})
         rows.append({**row,
                      "kind_label": {"pkce": "browser sign-in",
                                     "guided-cli": "provider tool",
@@ -65,7 +71,7 @@ def auth_rows() -> dict:
 def begin(provider: str, callback_base: Optional[str] = None) -> dict:
     """Start a sign-in. A browser flow runs in the background and the caller
     polls; a guided flow returns steps for the surface to render; a
-    registered provider returns its honest refusal.
+    registered provider refuses until its operator-owned registration is configured.
 
     callback_base is set only by a remote client (a paired phone): it is the
     engine address that client reached, and the browser flow returns the
@@ -86,58 +92,84 @@ def begin(provider: str, callback_base: Optional[str] = None) -> dict:
                 "steps": list(profile.guide),
                 "keychain_name": profile.keychain_name,
                 "sanction": profile.sanction}
-    if profile.kind == "registered":
-        result = oauth_signin.login(provider)   # refuses without a client id
-        if not result.get("ok"):
-            return {**result, "mode": "registered"}
-        return {**result, "mode": "browser"}
-    if _job(provider).get("state") == "running":
-        return {"ok": True, "provider": provider, "mode": "browser",
-                "note": "a sign-in is already running; finish it in the browser"}
-    if callback_base:
-        return _begin_remote_pkce(provider, profile, callback_base)
-
-    def _run():
-        try:
-            result = oauth_signin.login(provider)
-            _set_job(provider, "done" if result.get("ok") else "failed",
-                     result.get("error"))
-        except Exception as exc:                 # never leak a body or value
-            _set_job(provider, "failed", f"sign-in failed ({type(exc).__name__})")
-
-    _set_job(provider, "running")
-    threading.Thread(target=_run, daemon=True, name=f"signin-{provider}").start()
+    registered = profile.kind == "registered"
+    if registered:
+        profile = oauth_signin._registered_profile(profile)
+        if isinstance(profile, dict):
+            return {**profile, "mode": "registered"}
+    with _LOCK:
+        if _JOBS.get(provider, {}).get("state") == "running":
+            return {"ok": True, "provider": provider, "mode": "browser",
+                    "note": "a sign-in is already running; finish it in the browser"}
+        attempt = SigninAttempt()
+        _ATTEMPTS[provider] = attempt
+        _JOBS[provider] = {"state": "running"}
+    server = None
+    try:
+        if callback_base:
+            host = urllib.parse.urlparse(callback_base).hostname
+            if not host:
+                raise ValueError("invalid engine address")
+            server, callback, verifier, url = oauth_signin._pkce_begin(
+                profile, advertise_host=host)
+            def action():
+                return oauth_signin._pkce_finish(profile, server, callback, verifier, attempt=attempt)
+        elif registered:
+            def action():
+                return oauth_signin._login_pkce(profile, attempt=attempt)
+        else:
+            def action():
+                return oauth_signin.login(provider, attempt=attempt)
+        thread = threading.Thread(target=_run, args=(provider, attempt, action, server),
+                                  daemon=True, name=f"signin-{provider}")
+        thread.start()
+    except Exception:
+        if server is not None:
+            server.server_close()
+        result = {"ok": False, "provider": provider,
+                  "error": "could not start sign-in; check the engine address and try again"}
+        _complete(provider, attempt, result)
+        return result
     return {"ok": True, "provider": provider, "mode": "browser",
-            "note": "a browser window is opening; approve the sign-in there"}
+            **({"authorize_url": url} if callback_base else {}),
+            "note": "open the sign-in page and approve it; completion appears here"}
 
 
-def _begin_remote_pkce(provider: str, profile, callback_base: str) -> dict:
-    """Run a PKCE flow whose callback a paired phone can reach. The engine
-    builds the authorize URL and listens on an advertised address; the phone
-    opens the URL and its browser delivers the redirect back over the network.
-    The code is useless without the verifier, which never leaves this engine."""
-    host = urllib.parse.urlparse(callback_base).hostname
-    if not host:
-        return {"ok": False, "provider": provider, "mode": "browser",
-                "error": "could not read the engine address to return the "
-                         "sign-in to; sign in on the computer instead"}
-    server, callback, verifier, authorize_url = oauth_signin._pkce_begin(
-        profile, advertise_host=host)
-
-    def _run():
+def _run(provider, attempt, action, server=None):
+    try:
+        result = ({"ok": False, "error": "sign-in cancelled locally"}
+                  if attempt.cancelled.is_set() else action())
+    except Exception as exc:
+        result = {"ok": False, "error": f"sign-in failed ({type(exc).__name__})"}
+    if server is not None:
         try:
-            result = oauth_signin._pkce_finish(profile, server, callback,
-                                               verifier)
-            _set_job(provider, "done" if result.get("ok") else "failed",
-                     result.get("error"))
-        except Exception as exc:                 # never leak a body or value
-            _set_job(provider, "failed", f"sign-in failed ({type(exc).__name__})")
+            server.server_close()
+        except Exception:
+            result = {"ok": False, "error": "could not close the sign-in listener"}
+    _complete(provider, attempt, result)
 
-    _set_job(provider, "running")
-    threading.Thread(target=_run, daemon=True, name=f"signin-{provider}").start()
-    return {"ok": True, "provider": provider, "mode": "browser",
-            "authorize_url": authorize_url,
-            "note": "open the sign-in link on this device and approve it"}
+
+def _complete(provider, attempt, result):
+    attempt.finish()
+    with _LOCK:
+        if _ATTEMPTS.get(provider) is not attempt or attempt.cancelled.is_set():
+            return
+        record = {"state": "done" if result.get("ok") else "failed"}
+        if result.get("error"):
+            record["error"] = result["error"]
+        _JOBS[provider] = record
+
+
+def cancel(provider: str) -> dict:
+    """Cancel local completion; an already committed store is not reversed."""
+    with _LOCK:
+        attempt = _ATTEMPTS.get(provider)
+        if attempt is None or not attempt.cancel():
+            return {"ok": False, "provider": provider, "state": "already_completed",
+                    "error": "no active sign-in to cancel; refresh its final status"}
+        _JOBS[provider] = {"state": "cancelled"}
+        return {"ok": True, "provider": provider, "state": "cancelled"}
+
 
 
 def submit(provider: str, token: str) -> dict:
@@ -160,7 +192,13 @@ def submit(provider: str, token: str) -> dict:
 
 
 def sign_out(provider: str) -> dict:
-    result = oauth_signin.logout(provider)
+    # Claim/cancel/delete share one boundary: replacement begin cannot race
+    # deletion, and a stale worker can neither store nor publish afterwards.
     with _LOCK:
+        attempt = _ATTEMPTS.get(provider)
+        if attempt is not None:
+            attempt.cancel()
+        result = oauth_signin.logout(provider)
+        _ATTEMPTS.pop(provider, None)
         _JOBS.pop(provider, None)
     return result

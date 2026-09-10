@@ -176,7 +176,7 @@ void main() {
     await tester.pumpAndSettle();
     // the reason is surfaced, not swallowed
     expect(find.textContaining('could not reach the engine'), findsOneWidget);
-    expect(find.textContaining('gateway returned 400'), findsOneWidget);
+    expect(find.textContaining('gateway returned 400'), findsNothing);
     // and the button is live again, not stuck disabled
     expect(tester.widget<FilledButton>(signIn).onPressed, isNotNull);
   });

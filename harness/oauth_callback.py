@@ -21,11 +21,12 @@ import secrets
 import socket
 import sys
 import threading
+import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Optional
 
-_OK_BODY = b"Signed in. You can close this tab and return to flywheel."
+_OK_BODY = b"Authorization received. Return to flywheel to check exchange and storage."
 _DENIED_BODY = b"Sign-in was denied or carried no authorization code."
 _STRAY_BODY = b"Not found."
 
@@ -36,11 +37,13 @@ class CallbackServer(HTTPServer):
     # Never let another process co-bind this port (the default 1 permits it).
     allow_reuse_address = False
 
-    def __init__(self, advertise_host: Optional[str] = None):
+    def __init__(self, advertise_host: Optional[str] = None, expected_state=None):
         self.nonce = secrets.token_urlsafe(16)
         self.code: Optional[str] = None
         self.error: Optional[str] = None
         self._captured = threading.Event()
+        self._capture_lock = threading.Lock()
+        self.expected_state = expected_state
         # A local sign-in keeps loopback: the browser and the engine share the
         # machine. A phone reaches a paired engine over the network, so a
         # remote sign-in binds every interface and advertises the address the
@@ -74,18 +77,30 @@ class CallbackServer(HTTPServer):
 
     def capture(self, code: Optional[str], error: Optional[str]) -> None:
         """First matching result wins; a later request can never clobber it."""
-        if self._captured.is_set():
-            return
-        self.code, self.error = code, error
-        self._captured.set()
+        with self._capture_lock:
+            if self._captured.is_set():
+                return
+            self.code, self.error = code, error
+            self._captured.set()
 
-    def wait_for_code(self, timeout: float) -> Optional[str]:
+    def wait_for_code(self, timeout: float, cancelled=None) -> Optional[str]:
         """Serve until the nonce path answers or the timeout expires. Always
         closes the socket."""
         thread = threading.Thread(target=self.serve_forever, daemon=True)
-        thread.start()
         try:
-            self._captured.wait(timeout)
+            thread.start()
+        except Exception:
+            self.server_close()
+            raise
+        try:
+            deadline = time.monotonic() + timeout
+            while not self._captured.is_set():
+                if cancelled is not None and cancelled.is_set():
+                    return None
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                self._captured.wait(min(remaining, .1))
         finally:
             self.shutdown()
             thread.join(5)
@@ -98,9 +113,22 @@ class _CallbackHandler(BaseHTTPRequestHandler):
         if not self.server.path_matches(self.path):
             self._respond(404, _STRAY_BODY)   # keep serving: this was not ours
             return
-        params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query,
+                                     keep_blank_values=True)
+        expected = self.server.expected_state
+        states = params.get('state', [])
+        invalid = any(len(params.get(k, [])) > 1 for k in ('code', 'error', 'state'))
+        invalid |= bool('code' in params and 'error' in params)
+        if expected is not None:
+            invalid |= len(states) != 1 or not secrets.compare_digest(
+                states[0].encode() if len(states) == 1 else b'', expected.encode())
+        if invalid or not (params.get('code', [''])[0] or params.get('error', [''])[0]):
+            self._respond(400, _DENIED_BODY)
+            return
         code = (params.get("code") or [None])[0]
         error = (params.get("error") or [None])[0]
+        if error:
+            error = 'access_denied' if error == 'access_denied' else 'provider_denied'
         self.server.capture(code, error)
         self._respond(200 if code else 400, _OK_BODY if code else _DENIED_BODY)
         threading.Thread(target=self.server.shutdown, daemon=True).start()

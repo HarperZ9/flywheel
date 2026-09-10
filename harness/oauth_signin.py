@@ -65,11 +65,12 @@ def _fail(provider: str, error: str) -> dict:
 def _store(profile: OAuthProfile, value: str) -> dict:
     """Persist the token, and report the credential store's own verdict. A
     write that did not happen is never reported as a success."""
-    result = keychain.keychain_set(profile.keychain_name, value)
-    if "error" in result:
-        return _fail(profile.provider,
-                     f"token obtained but NOT stored: {result['error']}. "
-                     f"Export it as {profile.keychain_name} to use it.")
+    try:
+        result = keychain.keychain_set(profile.keychain_name, value)
+    except Exception:
+        result = {}
+    if not isinstance(result, dict) or result.get('stored') != profile.keychain_name or 'error' in result:
+        return _fail(profile.provider, "token obtained but NOT stored: credential store write failed")
     return {"provider": profile.provider, "ok": True,
             "stored": profile.keychain_name, "sha256": _fingerprint(value)}
 
@@ -122,18 +123,22 @@ def _pkce_begin(profile: OAuthProfile, advertise_host=None):
     for a loopback sign-in on this machine."""
     verifier, challenge = _pkce_pair()
     state = secrets.token_urlsafe(16)
-    server = CallbackServer(advertise_host=advertise_host)
+    server = CallbackServer(advertise_host=advertise_host,
+                            expected_state=state if profile.wire == WIRE_OAUTH2 else None)
     callback = server.callback_url
     authorize_url = _authorize_url(profile, callback, challenge, state)
     return server, callback, verifier, authorize_url
 
 
 def _pkce_finish(profile: OAuthProfile, server, callback: str, verifier: str,
-                 opener=None, timeout: float = 300) -> dict:
+                 opener=None, timeout: float = 300, attempt=None) -> dict:
     """Wait for the redirect, exchange the code, and store the token. Always
     lets the server close its own socket."""
     opener = opener or urllib.request.urlopen
-    code = server.wait_for_code(timeout)   # always closes its socket
+    code = server.wait_for_code(timeout, cancelled=attempt.cancelled if attempt else None)
+    cancelled = _fail(profile.provider, 'sign-in cancelled locally')
+    if attempt and attempt.cancelled.is_set():
+        return cancelled
     if not code:
         detail = f" ({server.error})" if server.error else ""
         return _fail(profile.provider,
@@ -152,14 +157,14 @@ def _pkce_finish(profile: OAuthProfile, server, callback: str, verifier: str,
         return _fail(profile.provider,
                      "token exchange returned a body that was not JSON")
     key = data.get("key") or data.get("access_token") if isinstance(data, dict) else None
-    if not key:
+    if not isinstance(key, str) or not key.strip():
         return _fail(profile.provider,
                      "the exchange response carried no token field")
-    return _store(profile, key)
+    return attempt.commit(lambda: _store(profile, key), cancelled) if attempt else _store(profile, key)
 
 
 def _login_pkce(profile: OAuthProfile, opener=None, timeout: float = 300,
-                browser=None) -> dict:
+                browser=None, attempt=None) -> dict:
     """Authorization-code + PKCE against a hardened loopback callback. The
     browser opens on this machine and the callback listens on loopback."""
     refusal = _preflight(profile)
@@ -170,9 +175,15 @@ def _login_pkce(profile: OAuthProfile, opener=None, timeout: float = 300,
     print(f"Opening the {profile.provider} sign-in page. Approve it there;")
     print(f"the callback returns to 127.0.0.1 on port "
           f"{server.server_address[1]}.")
-    browser(authorize_url)
+    try:
+        opened = browser(authorize_url)
+    except Exception:
+        opened = False
+    if not opened:
+        server.server_close()
+        return _fail(profile.provider, 'could not open the sign-in browser')
     return _pkce_finish(profile, server, callback, verifier,
-                        opener=opener, timeout=timeout)
+                        opener=opener, timeout=timeout, attempt=attempt)
 
 
 def _login_guided(profile: OAuthProfile, prompt=None, **_) -> dict:
@@ -193,7 +204,7 @@ def _login_guided(profile: OAuthProfile, prompt=None, **_) -> dict:
     return _store(profile, value)
 
 
-def _login_registered(profile: OAuthProfile, **kwargs) -> dict:
+def _registered_profile(profile: OAuthProfile):
     """A partner-program flow: honest refusal until the operator registers
     the app and configures the endpoints; standard OAuth2 + PKCE after."""
     client_id = os.environ.get(profile.client_id_env, "")
@@ -206,12 +217,16 @@ def _login_registered(profile: OAuthProfile, **kwargs) -> dict:
         return _fail(profile.provider,
                      f"set {prefix}_AUTHORIZE_URL and {prefix}_EXCHANGE_URL "
                      "from the provider's registration")
-    runtime = OAuthProfile(
+    return OAuthProfile(
         provider=profile.provider, kind="pkce",
         keychain_name=profile.keychain_name, sanction=profile.sanction,
         authorize_url=authorize, exchange_url=exchange,
         wire=WIRE_OAUTH2, client_id=client_id)
-    return _login_pkce(runtime, **kwargs)
+
+
+def _login_registered(profile: OAuthProfile, **kwargs) -> dict:
+    runtime = _registered_profile(profile)
+    return runtime if isinstance(runtime, dict) else _login_pkce(runtime, **kwargs)
 
 
 def login(provider: str, **kwargs) -> dict:
@@ -237,7 +252,7 @@ def logout(provider: str) -> dict:
     out = {"provider": provider, "ok": "error" not in result,
            "cleared": profile.keychain_name}
     if "error" in result:
-        out["error"] = result["error"]
+        out["error"] = "local credential removal failed"
     if still == "env":
         out["ok"] = False
         out["error"] = (f"{profile.keychain_name} is still set in the "

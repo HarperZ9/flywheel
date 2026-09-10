@@ -1,10 +1,4 @@
 // signin_panel.dart — subscription sign-in, one row per provider.
-//
-// A monthly subscription can carry usage instead of a raw key. Each provider
-// states its own terms rather than being flattened into one button: a
-// documented browser flow, a provider's own tool, or an app registration the
-// operator owns. The token itself is never displayed, and a paste leaves this
-// widget the moment it is handed to the engine.
 
 import 'package:flutter/material.dart';
 
@@ -17,6 +11,7 @@ class SigninPanel extends StatefulWidget {
   final Future<Map<String, dynamic>> Function(String provider, String token)
       onToken;
   final Future<Map<String, dynamic>> Function(String provider) onLogout;
+  final Future<Map<String, dynamic>> Function(String provider)? onCancel;
   final VoidCallback onChanged;
 
   /// Open a sign-in URL on this device. A remote (paired-phone) browser flow
@@ -33,6 +28,7 @@ class SigninPanel extends StatefulWidget {
     required this.onLogout,
     required this.onChanged,
     this.onOpenUrl,
+    this.onCancel,
   });
 
   @override
@@ -52,11 +48,12 @@ class _SigninPanelState extends State<SigninPanel> {
     super.dispose();
   }
 
-  // Every handler follows the same shape: set _busy, do the work in a try, and
-  // reset _busy in a finally so the button always re-enables. _busy is one
-  // field shared by every row, so a stuck call would otherwise disable the
-  // whole panel. A throw (a non-200 from the engine, or a timed-out call to a
-  // remote/paired engine) surfaces its reason in _note instead of vanishing.
+  @override
+  void didUpdateWidget(SigninPanel old) {
+    super.didUpdateWidget(old);
+    if (!_busy && old.doc != widget.doc) _note = null;
+  }
+
   Future<void> _start(String provider) async {
     setState(() {
       _busy = true;
@@ -77,6 +74,10 @@ class _SigninPanelState extends State<SigninPanel> {
         // than claiming a browser started somewhere the user cannot see.
         final opened = await widget.onOpenUrl!(url);
         if (!mounted) return;
+        if (!opened && widget.onCancel != null) {
+          try { await widget.onCancel!(provider); } catch (_) { /* status will report it */ }
+          if (!mounted) return;
+        }
         setState(() {
           _note = opened
               ? 'opening the sign-in page; approve it, then return here'
@@ -90,9 +91,9 @@ class _SigninPanelState extends State<SigninPanel> {
         });
       }
       widget.onChanged();
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        setState(() => _note = 'sign-in could not reach the engine: $e');
+        setState(() => _note = 'sign-in could not reach the engine');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -119,30 +120,32 @@ class _SigninPanelState extends State<SigninPanel> {
       // attempt keeps the paste and the user can retry without re-entering it.
       if (ok) _paste.clear();
       widget.onChanged();
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        setState(() => _note = 'could not store the token: $e');
+        setState(() => _note = 'could not store the token; check engine status');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _out(String provider) async {
+  Future<void> _out(String provider, {bool cancel = false}) async {
     setState(() {
       _busy = true;
       _note = null;
     });
     try {
-      final r = await widget.onLogout(provider);
+      final r = await (cancel ? widget.onCancel!(provider) : widget.onLogout(provider));
       if (!mounted) return;
       setState(() {
-        _note = r['ok'] == true ? 'signed out of $provider' : '${r['error']}';
+        _note = r['ok'] == true
+            ? (cancel ? 'sign-in cancelled locally' : 'local credential removed for $provider')
+            : '${r['error']}';
       });
       widget.onChanged();
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        setState(() => _note = 'could not sign out: $e');
+        setState(() => _note = cancel ? 'could not cancel sign-in' : 'could not sign out');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -205,10 +208,14 @@ class _SigninPanelState extends State<SigninPanel> {
                 Text('${p['kind_label'] ?? p['kind']}',
                     style: fwMono(t, size: 10, color: t.inkFaint)),
                 const Spacer(),
-                if (pending)
+                if (pending) ...[
                   Text('waiting for the browser',
-                      style: fwMono(t, size: 10, color: t.inkMuted))
-                else if (present)
+                      style: fwMono(t, size: 10, color: t.inkMuted)),
+                  if (widget.onCancel != null) TextButton(
+                    onPressed: _busy ? null : () => _out(provider, cancel: true),
+                    child: const Text('Cancel'),
+                  ),
+                ] else if (present)
                   TextButton(
                     onPressed: _busy ? null : () => _out(provider),
                     child: const Text('Sign out'),
@@ -221,6 +228,8 @@ class _SigninPanelState extends State<SigninPanel> {
               ],
             ),
             const SizedBox(height: FwLayout.s2),
+            if (!pending && p['last'] == 'done' && present) const Text('credential stored'),
+            if (p['last'] == 'cancelled') const Text('sign-in cancelled locally'),
             // The terms, always visible: what this provider actually permits
             // is not something the app decides on the user's behalf.
             Text('${p['sanction'] ?? ''}',
