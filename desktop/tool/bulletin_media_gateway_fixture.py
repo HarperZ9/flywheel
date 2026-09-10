@@ -126,6 +126,7 @@ def main() -> int:
         "run_id": run["run_id"],
         "artifact_id": artifact["artifact_id"],
         "bulletin_base_url": bulletin_base_url,
+        "identity_thumbprint": _identity_thumbprint(public_jwk),
         "control_url": control_url,
     }
     if registration is not None:
@@ -198,6 +199,13 @@ def _start_control_server(board: object) -> ThreadingHTTPServer:
     thread.start()
     server.thread = thread
     return server
+
+
+def _identity_thumbprint(public_jwk: dict) -> str:
+    # Setup metadata binds an independent task contract before any actor post.
+    from harness.bulletin_signed_transport import _thumbprint
+
+    return _thumbprint(public_jwk)
 
 
 def _utc_now() -> str:

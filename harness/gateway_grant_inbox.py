@@ -148,7 +148,7 @@ def _read(body: dict, owner_ref: str, state_root: Path, clock, validate_record,
                    owner_ref, validate_record)
     item = _item(record, owner_ref, _parse_time(clock()), proposal_response,
                  record_digest)
-    result = {"schema": READ_SCHEMA, "server_time": clock(), **item}
+    result = {**item, "schema": READ_SCHEMA, "server_time": clock()}
     if item["review_available"]:
         result["review"] = _review(record, owner_ref, record_digest)[0]
     else:
