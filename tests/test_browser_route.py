@@ -135,7 +135,7 @@ def test_the_answer_says_nothing_was_performed_when_nothing_is_bound(tmp_path):
 
 
 def test_a_bound_driver_shows_up_in_both_answers(tmp_path):
-    register_driver("recorder", lambda act: {"ok": True, "performed": True})
+    register_driver("recorder", lambda act: {"ok": True, "performed": True}, binding_sha256="a" * 64)
     _started(tmp_path)
     _post("/api/browser/action",
           {"run_id": "r1", "request_id": "one", "action": {"kind": "navigate",

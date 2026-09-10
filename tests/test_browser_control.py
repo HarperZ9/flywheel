@@ -197,7 +197,7 @@ def test_with_nothing_bound_the_engine_decides_and_performs_nothing(tmp_path):
 
 def test_a_bound_driver_sees_admitted_acts_and_never_a_refused_one(tmp_path):
     seen = []
-    register_driver("recorder", lambda act: seen.append(act) or {"ok": True, "performed": True})
+    register_driver("recorder", lambda act: seen.append(act) or {"ok": True, "performed": True}, binding_sha256="a" * 64)
     _started(tmp_path)
     attempt(tmp_path, run_id="r1",
             action={"kind": "navigate", "url": "https://example.test/"}, at=NOW, request_id="allowed")
@@ -212,8 +212,8 @@ def test_a_bound_driver_sees_admitted_acts_and_never_a_refused_one(tmp_path):
 
 
 def test_two_bound_drivers_are_ambiguous_so_neither_is_used(tmp_path):
-    register_driver("one", lambda act: {"ok": True})
-    register_driver("two", lambda act: {"ok": True})
+    register_driver("one", lambda act: {"ok": True}, binding_sha256="a" * 64)
+    register_driver("two", lambda act: {"ok": True}, binding_sha256="a" * 64)
     _started(tmp_path)
     record = attempt(tmp_path, run_id="r1",
                      action={"kind": "navigate", "url": "https://example.test/"},
@@ -223,7 +223,7 @@ def test_two_bound_drivers_are_ambiguous_so_neither_is_used(tmp_path):
 
 def test_a_driver_that_cannot_be_called_is_refused_at_binding(tmp_path):
     with pytest.raises(Refused, match="must be callable"):
-        register_driver("broken", "notafunction")
+        register_driver("broken", "notafunction", binding_sha256="a" * 64)
 
 
 def test_every_verdict_cites_the_one_before_it(tmp_path):

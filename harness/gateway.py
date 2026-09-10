@@ -2309,9 +2309,9 @@ def main(argv=None) -> int:
     _Handler.ollama_url = a.ollama_url
     _Handler.run_root = a.run_root
     _Handler.cors = a.cors
-    # Default is unchanged: nothing goes remote unless the operator opts in with
-    # --host and names the public hostname with --allow-host. The token and the
-    # Host allowlist remain the guard on every request.
+    from harness.telos_browser_registration import configure_telos_browser
+    if configure_telos_browser(os.environ.get("FLYWHEEL_TELOS_BROWSER_CONFIG"))["available"] is None: raise SystemExit("browser registration state unknown; gateway not started")
+    # Default remains opt-in via --host and --allow-host; token and Host allowlist still guard requests.
     _Handler.allowed_hosts = DEFAULT_HOSTS | frozenset(a.allow_host)
     flywheel_home = Path(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
     _Handler.flywheel_home = flywheel_home

@@ -19,6 +19,8 @@ from urllib.parse import urlsplit
 
 from .evidence_json import canonical_sha256
 from . import browser_control_store as store
+from . import browser_control_drivers as drivers
+from .browser_control_drivers import bound_driver, clear_drivers, unregister_driver
 from .hash_chain import chain_intact as _chain_intact
 
 EVENT_SCHEMA = "flywheel.browser-action/v1"
@@ -39,9 +41,6 @@ SECRET_FIELDS = ("password", "passwd", "pwd", "otp", "mfa", "2fa", "cvv",
                  "cvc", "card", "cardnumber", "ssn", "secret", "token",
                  "apikey", "api_key", "private_key", "seed_phrase")
 
-_DRIVERS: dict = {}
-
-
 class Refused(ValueError):
     """A malformed request, as opposed to an act the policy turned down."""
 
@@ -50,27 +49,12 @@ def _refuse(message: str) -> None:
     raise Refused(message)
 
 
-def register_driver(name: str, run) -> None:
-    """Bind something that can actually perform an admitted action.
-
-    The seam exists so the gate can be tested, and shipped, without any
-    actuation at all. A caller that binds nothing gets a session that decides
-    and records; that is the default, and it is a supported way to run.
-    """
-    if not callable(run):
-        _refuse("a driver must be callable")
-    _DRIVERS[str(name)] = run
-
-
-def clear_drivers() -> None:
-    _DRIVERS.clear()
-
-
-def bound_driver():
-    """The single bound driver, or None. Two bound drivers is ambiguous."""
-    if len(_DRIVERS) != 1:
-        return None, None
-    return next(iter(_DRIVERS.items()))
+def register_driver(name: str, run, *, binding_sha256) -> None:
+    """Register a live driver with explicit immutable configuration metadata."""
+    try:
+        drivers.register(name, run, binding_sha256=binding_sha256)
+    except ValueError as exc:
+        _refuse(str(exc))
 
 
 def chain_path(run_root, run_id: str) -> Path:
@@ -187,6 +171,7 @@ def open_session(run_root, *, run_id: str, policy: dict, at: str) -> dict:
         path, records = _open(run_root, run_id)
         if _state(records)["policy"] is not None:
             _refuse(f"session {run_id} already has a policy")
+        settled["driver_binding"] = drivers.binding(drivers.snapshot())
         return _write(path, records, {"kind": "policy", "at": at,
                                       "run_id": str(run_id), "policy": settled})
 
@@ -209,7 +194,8 @@ def _complete(driver, wanted, admission):
     interrupted = None
     try:
         outcome = driver(dict(wanted, origin=admission["origin"],
-                              run_id=admission["run_id"], request_id=admission["request_id"]))
+                              run_id=admission["run_id"], request_id=admission["request_id"],
+                              driver_binding=dict(admission["driver_binding"])))
         terminal["result_sha256"] = canonical_sha256(outcome)
         if isinstance(outcome, dict) and outcome.get("performed") is False:
             terminal.update(performed=False, delivery_status="driver_reported_not_performed")
@@ -228,9 +214,11 @@ def _complete(driver, wanted, admission):
 def attempt(run_root, *, run_id: str, action: dict, at: str, request_id=None) -> dict:
     """Reserve one attempt before dispatch; uncertain delivery never retries."""
     wanted = _action(action)
-    name, driver = bound_driver()
-    identity = _request_id(request_id, driver)
     with store.guard(chain_path(run_root, run_id)):
+        captured = drivers.snapshot()
+        name, driver = (captured.name, captured.run) if captured else (None, None)
+        binding = drivers.binding(captured)
+        identity = _request_id(request_id, driver)
         path, records = _open(run_root, run_id)
         state = _state(records)
         if state["policy"] is None:
@@ -244,6 +232,8 @@ def attempt(run_root, *, run_id: str, action: dict, at: str, request_id=None) ->
         if driver is not None:
             state["origin"] = state["live_origin"]
         admitted, reason, origin = _verdict(wanted, state)
+        if binding != state["policy"].get("driver_binding"):
+            admitted, reason, origin = False, "driver binding differs; create an explicit new session", None
         if driver is not None and state["delivery_unknown"]:
             admitted, reason, origin = False, "previous delivery is unknown; reconcile before further actuation", None
         dispatch = admitted and driver is not None
@@ -252,6 +242,7 @@ def attempt(run_root, *, run_id: str, action: dict, at: str, request_id=None) ->
             "seq": state["attempted"] + 1, "action": wanted,
             "admitted": admitted, "reason": reason, "origin": origin,
             "driver": name if dispatch else None, "simulated": driver is None,
+            "driver_binding": binding,
             "phase": "admitted" if dispatch else "settled",
             "performed": None if dispatch else False, "result_sha256": "",
             "delivery_status": "unknown" if dispatch else "not_dispatched"})
