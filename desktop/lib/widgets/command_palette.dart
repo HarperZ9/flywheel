@@ -1,5 +1,5 @@
-﻿// command_palette.dart -- Ctrl+K. Type to filter all thirty destinations
-// by stable label; arrows move, Enter opens, Escape dismisses. Fully
+// command_palette.dart -- Ctrl+K. Type to filter all forty-three destinations
+// by label or workflow term; arrows move, Enter opens, Escape dismisses. Fully
 // keyboard-first with semantic roles on every row.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../accessibility/accessible_action.dart';
 import '../navigation/app_route.dart';
 import '../navigation/destination_catalog.dart';
+import '../navigation/destination_search.dart';
 import '../theme/flywheel_theme.dart';
 
 class PaletteGo extends InheritedWidget {
@@ -20,7 +21,7 @@ class PaletteGo extends InheritedWidget {
   bool updateShouldNotify(PaletteGo old) => old.onGo != onGo;
 }
 
-/// Opens the palette: type filters all thirty destinations, arrows move,
+/// Opens the palette: type filters all destinations, arrows move,
 /// Enter opens, Escape closes without navigating.
 void showCommandPalette(
   BuildContext context,
@@ -49,9 +50,7 @@ class _CommandPaletteDialogState extends State<_CommandPaletteDialog> {
   List<DestinationSpec> get _matches {
     final q = _query.trim().toLowerCase();
     if (q.isEmpty) return destinationCatalog;
-    return destinationCatalog
-        .where((d) => d.label.toLowerCase().contains(q))
-        .toList();
+    return destinationCatalog.where((d) => destinationMatches(d, q)).toList();
   }
 
   void _open(DestinationSpec spec) {
@@ -106,26 +105,10 @@ class _CommandPaletteDialogState extends State<_CommandPaletteDialog> {
                           style: TextStyle(fontSize: 12.5, color: t.inkMuted)),
                     ),
                   for (var i = 0; i < matches.length; i++)
-                    AccessibleAction(
-                      semanticLabel: 'Go to ${matches[i].label}',
-                      onActivate: () => _open(matches[i]),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: FwLayout.s4, vertical: 8),
-                        color: i == _highlight ? t.ground2 : null,
-                        child: Row(children: [
-                          Text(matches[i].label,
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  color: i == _highlight
-                                      ? t.ink
-                                      : t.inkMuted)),
-                          const Spacer(),
-                          Text(matches[i].group.name,
-                              style: TextStyle(
-                                  fontSize: 10.5, color: t.inkFaint)),
-                        ]),
-                      ),
+                    _PaletteDestinationRow(
+                      spec: matches[i],
+                      selected: i == _highlight,
+                      onOpen: () => _open(matches[i]),
                     ),
                 ],
               ),
@@ -137,11 +120,63 @@ class _CommandPaletteDialogState extends State<_CommandPaletteDialog> {
   }
 }
 
+class _PaletteDestinationRow extends StatelessWidget {
+  const _PaletteDestinationRow({
+    required this.spec,
+    required this.selected,
+    required this.onOpen,
+  });
+
+  final DestinationSpec spec;
+  final bool selected;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.fw;
+    final label = Text(
+      spec.label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(fontSize: 13, color: selected ? t.ink : t.inkMuted),
+    );
+    final group = Text(
+      destinationGroupLabel(spec.group),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(fontSize: 10.5, color: t.inkFaint),
+    );
+    return AccessibleAction(
+      semanticLabel: 'Go to ${spec.label}',
+      onActivate: onOpen,
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: FwLayout.s4, vertical: 8),
+        color: selected ? t.ground2 : null,
+        child: LayoutBuilder(builder: (context, constraints) {
+          if (constraints.maxWidth < 260) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [label, const SizedBox(height: 2), group],
+            );
+          }
+          return Row(children: [
+            Expanded(child: label),
+            const SizedBox(width: FwLayout.s2),
+            Flexible(
+              child: Align(alignment: Alignment.centerRight, child: group),
+            ),
+          ]);
+        }),
+      ),
+    );
+  }
+}
+
 class PaletteShortcuts extends StatelessWidget {
   final Widget child;
   final ValueChanged<DestinationId> onGo;
-  const PaletteShortcuts(
-      {super.key, required this.child, required this.onGo});
+  const PaletteShortcuts({super.key, required this.child, required this.onGo});
 
   @override
   Widget build(BuildContext context) {
@@ -152,8 +187,7 @@ class PaletteShortcuts extends StatelessWidget {
       },
       child: Actions(
         actions: {
-          _OpenPaletteIntent: CallbackAction<_OpenPaletteIntent>(
-              onInvoke: (_) {
+          _OpenPaletteIntent: CallbackAction<_OpenPaletteIntent>(onInvoke: (_) {
             showCommandPalette(context, onGo);
             return null;
           }),

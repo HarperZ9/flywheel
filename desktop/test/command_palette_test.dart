@@ -17,11 +17,13 @@ void main() {
       home: PaletteGo(
         onGo: opened.add,
         child: Scaffold(
-          body: Builder(builder: (context) => Center(
-            child: ElevatedButton(
-                onPressed: () => showCommandPalette(context, opened.add),
-                child: const Text('open palette')),
-          )),
+          body: Builder(
+              builder: (context) => Center(
+                    child: ElevatedButton(
+                        onPressed: () =>
+                            showCommandPalette(context, opened.add),
+                        child: const Text('open palette')),
+                  )),
         ),
       ),
     ));
@@ -53,11 +55,13 @@ void main() {
       home: PaletteGo(
         onGo: opened.add,
         child: Scaffold(
-          body: Builder(builder: (context) => Center(
-            child: ElevatedButton(
-                onPressed: () => showCommandPalette(context, opened.add),
-                child: const Text('open palette')),
-          )),
+          body: Builder(
+              builder: (context) => Center(
+                    child: ElevatedButton(
+                        onPressed: () =>
+                            showCommandPalette(context, opened.add),
+                        child: const Text('open palette')),
+                  )),
         ),
       ),
     ));
@@ -88,5 +92,40 @@ void main() {
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     await tester.pumpAndSettle();
     expect(find.text('Go to…'), findsOneWidget);
+  });
+
+  testWidgets('the palette keeps metadata inside a narrow scaled dialog',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final opened = <DestinationId>[];
+    await tester.pumpWidget(MaterialApp(
+      theme: flywheelLightTheme(),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context)
+            .copyWith(textScaler: const TextScaler.linear(1.3)),
+        child: child!,
+      ),
+      home: PaletteGo(
+        onGo: opened.add,
+        child: Scaffold(
+          body: Builder(
+              builder: (context) => Center(
+                    child: ElevatedButton(
+                        onPressed: () =>
+                            showCommandPalette(context, opened.add),
+                        child: const Text('open palette')),
+                  )),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('open palette'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Start & run'), findsWidgets);
+    expect(tester.takeException(), isNull);
   });
 }
