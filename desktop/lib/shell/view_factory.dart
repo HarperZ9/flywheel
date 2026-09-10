@@ -87,6 +87,7 @@ final class DestinationInputs {
     required this.settings,
     required this.onProbe,
     required this.onInstall,
+    this.onStartEngine,
     this.pendingArgument,
     this.roster,
     this.world,
@@ -103,6 +104,7 @@ final class DestinationInputs {
   final WorldDoc? world;
   final VoidCallback onProbe;
   final Future<Map<String, dynamic>> Function(String) onInstall;
+  final VoidCallback? onStartEngine;
 }
 
 Widget buildDestinationView(DestinationId id, DestinationInputs input) =>
@@ -114,7 +116,11 @@ Widget buildDestinationView(DestinationId id, DestinationInputs input) =>
     const FwEmpty('Unknown view');
 
 Widget? _work(DestinationId id, DestinationInputs i) => switch (id) {
-  DestinationId.journey => JourneyView(controller: i.journey),
+  DestinationId.journey => JourneyView(
+    controller: i.journey,
+    alive: i.alive,
+    onStartEngine: i.onStartEngine,
+  ),
   DestinationId.plan => PlanView(
     client: i.client,
     alive: i.alive,
