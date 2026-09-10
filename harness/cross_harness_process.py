@@ -179,6 +179,9 @@ class OwnedProcess:
     def stdout_snapshot(self) -> tuple[bytes, bool]:
         return self._captured.get("stdout", (b"", False))
 
+    def capture_overflow(self) -> bool:
+        return any(self._captured.get(key, (b"", False))[1] for key in ("stdout", "stderr"))
+
     def _start_io(self) -> None:
         streams = ((self._proc.stdout, "stdout"), (self._proc.stderr, "stderr"))
         self._readers = [threading.Thread(
@@ -238,7 +241,7 @@ def _terminate_unowned(proc) -> None:
 
 
 def start_owned_process(argv: Sequence[str], *, cwd: Path, stdin_bytes: bytes,
-                        env: Mapping[str, str]) -> OwnedProcess:
+                        env: Mapping[str, str], hide_window: bool = False) -> OwnedProcess:
     if sys.platform.startswith("linux"):
         raise OSError("Linux provider containment unavailable")
     if os.name != "nt":
@@ -247,7 +250,8 @@ def start_owned_process(argv: Sequence[str], *, cwd: Path, stdin_bytes: bytes,
         "cwd": str(cwd), "env": dict(env), "stdin": subprocess.PIPE,
         "stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "shell": False,
         "close_fds": True,
-        "creationflags": subprocess.CREATE_NEW_PROCESS_GROUP | 0x4,
+        "creationflags": subprocess.CREATE_NEW_PROCESS_GROUP | 0x4 | (
+            subprocess.CREATE_NO_WINDOW if hide_window else 0),
     }
     proc = subprocess.Popen(tuple(argv), **options)
     try:
