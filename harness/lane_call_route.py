@@ -13,8 +13,9 @@ _DEFAULT_TIMEOUT = 20
 
 def parse_lane_path(path: str) -> tuple[str, str] | None:
     """('lane', 'tool') from /api/lane/<lane>/<tool>, or None if malformed."""
-    parts = path.split("/")
-    if len(parts) < 5 or not parts[3].strip() or not parts[4].strip():
+    parts = path.split("?", 1)[0].split("/")
+    if (len(parts) != 5 or parts[:3] != ["", "api", "lane"]
+            or not parts[3].strip() or not parts[4].strip()):
         return None
     return parts[3], parts[4]
 
@@ -22,7 +23,8 @@ def parse_lane_path(path: str) -> tuple[str, str] | None:
 def handle_lane_call(path: str, req: object) -> tuple[dict, int]:
     target = parse_lane_path(path)
     if target is None:
-        return {"error": "use /api/lane/<name>/<tool>"}, 400
+        return {"code": "GATEWAY_ROUTE_MALFORMED",
+                "error": "use /api/lane/<name>/<tool>"}, 400
     lane_name, tool_name = target
     body = req if isinstance(req, dict) else {}
     # When a grant ran, these fields are the authorized ones. Absent (a
@@ -31,7 +33,8 @@ def handle_lane_call(path: str, req: object) -> tuple[dict, int]:
     granted_tool = body.get("tool")
     if ((granted_name is not None and granted_name != lane_name)
             or (granted_tool is not None and granted_tool != tool_name)):
-        return {"error": "the authorized lane and tool do not match the "
+        return {"code": "GATEWAY_ROUTE_MISMATCH",
+                "error": "the authorized lane and tool do not match the "
                          "route they were sent to"}, 409
     args = body.get("args") or {}
     if not isinstance(args, dict):

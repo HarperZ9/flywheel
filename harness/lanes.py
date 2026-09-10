@@ -117,11 +117,13 @@ def _probe_lane(name: str, installed: str | None, timeout: float, *,
             if health is not None:
                 try:
                     res = c.call_text(health, {})
-                    if res.get("ok"):
-                        verdict = LIVE
-                        detail = f"{health} answered; {len(tools)} tools"
-                    else:
+                    if not res.get("ok"):
                         detail = f"{health} error: health_tool_error (not healthy)"
+                    else:
+                        verdict, detail = _health_verdict(
+                            name, health, res.get("text", ""),
+                            getattr(c, "server_info", {}),
+                            runtime, len(tools))
                 except MCPError:
                     detail = f"{health} error: health_tool_exception"
             return _status_row(
@@ -155,6 +157,35 @@ def _declared_detail(lane: Lane, runtime: ResolvedLaneRuntime) -> str:
     if lane.kind == "http":
         return lane.endpoint_detail()
     return f"{runtime.selected_runtime} runtime selected; not MCP-probed"
+
+
+def _health_verdict(
+        name: str, health: str, text: str, server_info: dict,
+        runtime: ResolvedLaneRuntime, tool_count: int) -> tuple[str, str]:
+    if name == "relay":
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError:
+            return STALE, f"{health} answered invalid JSON"
+        if not isinstance(payload, dict):
+            return STALE, f"{health} answered invalid JSON"
+        expected = runtime.expected_version
+        if payload.get("ok") is not True:
+            return STALE, f"{health} answered but Relay is not healthy"
+        if payload.get("server") != "relay":
+            return STALE, f"{health} answered with wrong Relay identity"
+        if expected and payload.get("version") != expected:
+            return STALE, f"{health} answered with wrong Relay version"
+        if expected and server_info.get("version") != expected:
+            return STALE, f"{health} serverInfo version mismatch"
+        return LIVE, f"{health} answered Relay {expected}; {tool_count} tools"
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return LIVE, f"{health} answered; {tool_count} tools"
+    if isinstance(payload, dict) and payload.get("ok") is False:
+        return STALE, f"{health} answered but reported not healthy"
+    return LIVE, f"{health} answered; {tool_count} tools"
 
 
 def _probe_failure_code(error: BaseException) -> str:

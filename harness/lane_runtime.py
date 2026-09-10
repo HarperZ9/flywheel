@@ -50,6 +50,7 @@ class ResolvedLaneRuntime:
     source_version: str | None
     mismatch_codes: tuple[str, ...]
     blocking_codes: tuple[str, ...]
+    bundled_component: dict | None = None
 
     @property
     def present(self) -> bool:
@@ -61,7 +62,7 @@ class ResolvedLaneRuntime:
         return self.launch
 
     def to_dict(self, capability: dict | None = None) -> dict:
-        return {
+        row = {
             "schema": RUNTIME_SCHEMA,
             "selected_profile": self.selected_profile,
             "selection_source": self.selection_source,
@@ -77,6 +78,9 @@ class ResolvedLaneRuntime:
             "capability": dict(capability or UNPROBED_CAPABILITY),
             "mismatch_codes": list(self.mismatch_codes),
         }
+        if self.bundled_component is not None:
+            row["bundled_component"] = dict(self.bundled_component)
+        return row
 
 
 def resolve_lane_runtime(
@@ -119,13 +123,14 @@ def resolve_lane_runtime(
         mismatch.append("source_version_mismatch")
     if installed and runtime_expected and installed != runtime_expected and lane.kind in {"pip", "npm"}:
         mismatch.append("installed_version_mismatch")
-    launch, selected = _select_launch(
+    launch, selected, bundled_component, bundled_codes = _select_launch(
         lane, profile, source, python_executable, environ, is_frozen,
         extra_roots, importable_fn, runtime_python)
     blocking = _blocking_codes(
-        lane, profile, selected, bool(source), package_available, mismatch)
+        lane, profile, selected, bool(source), package_available,
+        [*mismatch, *bundled_codes])
     blocking = tuple(dict.fromkeys(blocking))
-    all_codes = tuple(dict.fromkeys([*mismatch, *blocking]))
+    all_codes = tuple(dict.fromkeys([*mismatch, *bundled_codes, *blocking]))
     return ResolvedLaneRuntime(
         name=name, launch=launch, selected_profile=profile,
         selection_source=selection_source, selected_runtime=selected,
@@ -133,7 +138,7 @@ def resolve_lane_runtime(
         installed_version=installed, source_available=source is not None,
         package_available=package_available, source_selected=selected == "source",
         source_version=source_version, mismatch_codes=all_codes,
-        blocking_codes=blocking,
+        blocking_codes=blocking, bundled_component=bundled_component,
     )
 
 
@@ -187,33 +192,43 @@ def _observed_package_version(lane, runtime_python, installed_fn, python_version
 def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
                    extra_roots, importable_fn, runtime_python):
     if profile not in _VALID_PROFILES:
-        return None, "invalid"
+        return None, "invalid", None, ()
+    if lane.name == "relay" and is_frozen and profile == "auto":
+        from .bundled_lane_admission import admit_bundled_lane
+        admission = admit_bundled_lane(
+            "relay", executable=python_executable, environ=environ,
+            importable_fn=importable_fn)
+        if not admission.blocking_codes:
+            return admission.launch, "bundled", admission.component, ()
+        return None, "bundled", admission.component, admission.blocking_codes
     if lane.package_disabled_reason and (is_frozen or profile == "package" or not source):
-        return None, "package"
+        return None, "package", None, ()
     if lane.kind == "http":
-        return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), "http"
+        return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), "http", None, ()
     if is_frozen:
         return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), (
-            "package" if lane.kind in {"pip", "npm"} else lane.kind)
+            "package" if lane.kind in {"pip", "npm"} else lane.kind), None, ()
     if lane.kind == "bundled":
         return (LaunchSpec((python_executable, *lane.mcp_args))
-                if lane.command == "python" else LaunchSpec(tuple(lane.mcp_command()))), "bundled"
+                if lane.command == "python" else LaunchSpec(tuple(lane.mcp_command()))), "bundled", None, ()
     if profile == "source":
         return (_support.source_launch(
-            lane, source, python_executable, environ, extra_roots), "source") if source else (None, "source")
+            lane, source, python_executable, environ, extra_roots), "source", None, ()) if source else (None, "source", None, ())
     if profile == "package":
         return _support.package_launch(
-            lane, python_executable, importable_fn, runtime_python), "package"
+            lane, python_executable, importable_fn, runtime_python), "package", None, ()
     if source:
         return _support.source_launch(
-            lane, source, python_executable, environ, extra_roots), "source"
+            lane, source, python_executable, environ, extra_roots), "source", None, ()
     return _support.package_launch(
-        lane, python_executable, importable_fn, runtime_python), "package"
+        lane, python_executable, importable_fn, runtime_python), "package", None, ()
 
 
 def _blocking_codes(lane, profile, selected, source_available, package_available, mismatch):
     if "invalid_runtime_profile" in mismatch:
         return ["invalid_runtime_profile"]
+    if selected == "bundled":
+        return [code for code in mismatch if code.startswith("bundled_")]
     if selected == "package" and lane.package_disabled_reason:
         return ["package_distribution_disabled"]
     if profile == "source" and not source_available:

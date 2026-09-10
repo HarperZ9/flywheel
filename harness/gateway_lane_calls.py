@@ -12,6 +12,15 @@ test that patches `gateway._relay_mcp_call` still reaches the dispatch sites.
 from __future__ import annotations
 
 
+def _relay_start_not_admitted(handler):
+    """Reject Relay run starts before model/run custody is admitted."""
+    _, bad = handler._req_json()
+    if bad:
+        return bad
+    from harness.mcp_client import capability_not_admitted
+    return handler._json(capability_not_admitted("relay", "local_agent_start"), 403)
+
+
 def _forum_mcp_call(tool: str, args: dict) -> dict:
     """Call one forum MCP tool, gracefully degraded.
 
@@ -48,9 +57,12 @@ def _relay_mcp_call(tool: str, args: dict) -> dict:
     verifiable run_id and ledger checkpoint, the same receipts a desktop run gets.
     """
     from harness.lanes import resolve_mcp_launch, LaneRuntimeError
-    from harness.mcp_client import MCPClient, MCPError
+    from harness.mcp_client import (
+        MCPClient, MCPError, capability_not_admitted, launch_allows_tool)
     try:
         command = resolve_mcp_launch("relay")
+        if not launch_allows_tool(command, tool):
+            return capability_not_admitted("relay", tool)
         with MCPClient(command, timeout=30, client_name="flywheel-relay-proxy") as c:
             res = c.call_text(tool, args)
             if not res["ok"]:

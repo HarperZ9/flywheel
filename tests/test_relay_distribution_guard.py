@@ -42,8 +42,9 @@ def test_unadmitted_package_has_no_public_command_or_plugin_launch(monkeypatch, 
         assert _relay_mcp_call("status", {})["code"] == "LANE_UNAVAILABLE"
 
 
-@pytest.mark.parametrize("profile", ["auto", "package", "source"])
-@pytest.mark.parametrize("frozen", [False, True])
+@pytest.mark.parametrize("profile,frozen", [
+    ("auto", False), ("package", False), ("package", True),
+    ("source", False), ("source", True)])
 def test_relay_untrusted_package_never_probed_or_launched(
         monkeypatch, tmp_path, profile, frozen):
     monkeypatch.setattr(lanes, "read_registry", lambda: {
@@ -86,7 +87,7 @@ def test_relay_untrusted_package_never_probed_or_launched(
 def test_relay_source_still_resolves_and_installs(monkeypatch, tmp_path):
     source = tmp_path / "relay"
     (source / "src" / "relay").mkdir(parents=True)
-    (source / "pyproject.toml").write_text('[project]\nversion="0.1.0"\n')
+    (source / "pyproject.toml").write_text('[project]\nversion="0.2.0"\n')
     monkeypatch.setattr(lanes, "read_registry", lambda: {})
     monkeypatch.setattr(lanes, "resolve_source_repo", lambda lane: source)
     monkeypatch.setattr(lanes, "_frozen", lambda: False)
@@ -109,7 +110,7 @@ def test_other_package_install_keeps_its_distribution(monkeypatch):
 
 
 @pytest.mark.parametrize("profile,frozen", [
-    ("package", False), ("package", True), ("auto", True), ("source", True)])
+    ("package", False), ("package", True), ("source", True)])
 def test_source_presence_cannot_bypass_disabled_package_choice(
         monkeypatch, tmp_path, profile, frozen):
     monkeypatch.setattr(lanes, "read_registry", lambda: {"relay": {"runtime_profile": profile}})

@@ -212,6 +212,9 @@ def launch_summary(launch: LaunchSpec | None) -> dict:
         "env_override_keys": sorted(key for key, _ in launch.env_overrides),
         "inherit_env": launch.inherit_env,
         "url_selected": bool(launch.url),
+        "hide_window": launch.hide_window,
+        "allowed_tools": (
+            None if launch.allowed_tools is None else list(launch.allowed_tools)),
     }
 
 

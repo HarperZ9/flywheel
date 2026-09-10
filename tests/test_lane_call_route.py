@@ -11,15 +11,20 @@ from harness.lane_call_route import handle_lane_call, parse_lane_path
 
 
 def test_a_malformed_path_is_a_caller_mistake():
+    assert parse_lane_path("/wrong/lane/relay/relay.status") is None
     assert parse_lane_path("/api/lane/gather") is None
     assert parse_lane_path("/api/lane//status") is None
     assert parse_lane_path("/api/lane/gather/ ") is None
+    assert parse_lane_path("/api/lane/relay/relay.status/extra") is None
+    assert parse_lane_path("/api/lane/relay/relay.status/") is None
     body, code = handle_lane_call("/api/lane/gather", {})
     assert code == 400 and "use /api/lane" in body["error"]
 
 
 def test_the_path_splits_into_lane_and_tool():
     assert parse_lane_path("/api/lane/gather/gather.status") == (
+        "gather", "gather.status")
+    assert parse_lane_path("/api/lane/gather/gather.status?trace=1") == (
         "gather", "gather.status")
 
 

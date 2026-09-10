@@ -21,6 +21,7 @@ def lane_plugin_row(name, lane, command_resolver, runtime_resolver):
     if lane.package_disabled_reason:
         runtime = runtime_resolver(name)
         row.update(enabled=runtime.present, command=[],
-                   status="source_selected" if runtime.present else "unavailable",
+                   status=(f"{runtime.selected_runtime}_selected"
+                           if runtime.present else "unavailable"),
                    detail=f"{lane.role}. {lane.package_disabled_reason}")
     return row

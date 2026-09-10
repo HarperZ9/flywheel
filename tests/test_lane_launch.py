@@ -198,7 +198,13 @@ def test_frozen_build_never_launches_sys_executable(monkeypatch):
     monkeypatch.setattr(ln, "_frozen", lambda: True)
     monkeypatch.setattr(ln, "_importable", lambda top: True)  # even if importable
     for name in ln.LANES:
-        if name in {"relay", "canon", "mneme", "plexus", "telos", "accountable-surface"}:
+        if name == "relay":
+            launch = ln.resolve_mcp_launch("relay")
+            assert launch.argv == (sys.executable, "--bundled-lane-mcp", "relay")
+            assert launch.allowed_tools == ("relay.status",)
+            assert launch.inherit_env is False
+            continue
+        if name in {"canon", "mneme", "plexus", "telos", "accountable-surface"}:
             with pytest.raises(ln.LaneRuntimeError, match="package_distribution_disabled"):
                 ln.resolve_mcp_launch(name)
             continue

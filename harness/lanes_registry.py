@@ -91,7 +91,7 @@ LANES: dict[str, Lane] = {
         "private author workspace: scoped revisions, exact approval, and export receipts",
         "authoring"),
     "relay": Lane(
-        "relay", "relay-agent", "relay", ("--mcp",), "pip", "0.1.0",
+        "relay", "relay-agent", "relay", ("--mcp",), "pip", "0.2.0",
         "accountable coding agent on any model endpoint (local-first, witnessed runs)",
         "execution", source_repo="public/relay", py_module="relay.local_agent_cli",
         package_disabled_reason=("Relay's PyPI name belongs to another project. "

@@ -778,7 +778,7 @@ def test_relay_get_routes_forward_to_the_exec_lane(monkeypatch):
     assert calls[-1][0] == "local_agent_sessions"
 
 
-def test_relay_start_route_forwards_the_body(monkeypatch):
+def test_relay_start_route_is_not_admitted(monkeypatch):
     calls = []
     monkeypatch.setattr(gateway, "_relay_mcp_call",
                         lambda tool, args: (calls.append((tool, args)) or {"run_id": "r1"}))
@@ -788,5 +788,6 @@ def test_relay_start_route_forwards_the_body(monkeypatch):
     h._req_json = lambda: ({"goal": "fix the parser", "allow_write": True}, None)
     h.path = "/api/relay/start"
     h._post()
-    assert calls[-1] == ("local_agent_start", {"goal": "fix the parser", "allow_write": True})
-    assert seen["body"] == {"run_id": "r1"}
+    assert calls == []
+    assert seen["code"] == 403
+    assert seen["body"]["code"] == "CAPABILITY_NOT_ADMITTED"
