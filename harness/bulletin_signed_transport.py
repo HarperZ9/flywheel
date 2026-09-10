@@ -15,7 +15,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from .bulletin_readback import post_matches
 from .credential_handles import CredentialHandleError, CredentialHandleStore
-from .evidence_json import canonical_sha256, strict_load_json
+from .evidence_json import strict_load_json
 from .evidence_public import public_result
 from .gateway_operation import thaw_operation
 from .outcome_bulletin import PREVIEW_SCHEMA
@@ -82,7 +82,7 @@ def publish_authorized_preview(
             "posted_readback_unavailable", preview, post_id=post_id,
             does_not_prove=["public board readback matched the requested post"])
     post = seen.get("post") if type(seen) is dict else None
-    if post_matches(post, preview["post"]):
+    if post_matches(post, preview["post"]) and post.get("author") == key["thumbprint"]:
         return _publication("posted_readback_match", preview, post_id=post_id)
     return _publication(
         "posted_readback_drift", preview, post_id=post_id,

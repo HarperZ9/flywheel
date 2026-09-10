@@ -7,6 +7,11 @@ review requirements, limitations, and does_not_prove on its face. It
 never accepts itself, never executes, never writes a lesson. Later
 admission is a separately granted CAS command bound to the proposal and
 graph hashes.
+
+Check-node IDs use a domain-separated canonical digest. Regenerating a
+proposal created with legacy process-randomized IDs changes its node IDs
+and graph hash. Persisted proposals remain immutable; consumers must
+review the regenerated graph rather than rewriting an old admission.
 """
 from __future__ import annotations
 
@@ -15,6 +20,16 @@ from .incident_case import SCHEMA as CASE_SCHEMA
 
 PROPOSAL_SCHEMA = "flywheel.incident-proposed-graph/v1"
 _BANNED = ("accepted", "pass", "receipt", "execution", "command", "verdict")
+_CHECK_NODE_ID_DOMAIN = "flywheel.incident-proposal.check-node-id/v1"
+
+
+def _check_node_id(fact_id: str, summary: str) -> str:
+    digest = canonical_sha256({
+        "domain": _CHECK_NODE_ID_DOMAIN,
+        "fact_id": fact_id,
+        "summary": summary,
+    })
+    return f"chk_{digest[:12]}"
 
 
 def _compile_checks(case: dict, projection: dict) -> tuple[list, list]:
@@ -25,8 +40,8 @@ def _compile_checks(case: dict, projection: dict) -> tuple[list, list]:
     checks = []
     edges = []
     fact_ids = sorted(ref["fact_id"] for ref in case["source_refs"])
-    for i, fact_id in enumerate(fact_ids):
-        node_id = f"chk_{abs(hash((fact_id, summary))) % 16**12:012x}"
+    for fact_id in fact_ids:
+        node_id = _check_node_id(fact_id, summary)
         checks.append({"node_id": node_id, "kind": "review",
                        "of_fact": fact_id,
                        "statement": f"re-derive: {summary}"})

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+import os
 from pathlib import Path
 
 from .credential_handles import CredentialHandleStore
@@ -193,7 +194,8 @@ def _validate_before_secret_resolution(operation, state_root: Path) -> None:
             and value["tool"] == "board_write_post"
             and operation.credential_refs):
         from .bulletin_signed_transport import configured_bulletin_base_url
-        configured_bulletin_base_url()
+        configured_bulletin_base_url(
+            allow_loopback=os.environ.get("FLYWHEEL_BULLETIN_ALLOW_LOOPBACK") == "1")
     if _is_bulletin_media(operation):
         from .outcome_bulletin_media import validate_media_authorized_operation
         validate_media_authorized_operation(

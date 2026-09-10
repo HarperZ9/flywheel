@@ -107,7 +107,8 @@ def test_writing_smoke_requires_real_route_state_sequence():
 
 
 
-def test_bulletin_media_smoke_requires_authenticated_result_state():
+@pytest.mark.parametrize("corruption", [None, "preview", "upload", "missing_upload", "duplicate_upload"])
+def test_bulletin_media_smoke_binds_actual_bytes_before_acceptance(corruption):
     from scripts.frozen_gateway_native_smoke import run_bulletin_media_acceptance_smoke
 
     class Board:
@@ -115,6 +116,7 @@ def test_bulletin_media_smoke_requires_authenticated_result_state():
         preview = None
         signed_requests = 0
         posts = []
+        uploads = []
 
     class Fixture:
         board = Board()
@@ -123,7 +125,7 @@ def test_bulletin_media_smoke_requires_authenticated_result_state():
         credential_ref = "cred_" + "a" * 32
         run_id = "run_20260909T120000_abcdefabcdef"
         artifact_id = "artifact_" + "c" * 16
-        artifact_sha256 = "d" * 64
+        artifact_sha256 = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         artifact_bytes = 3
 
     calls = []
@@ -157,15 +159,27 @@ def test_bulletin_media_smoke_requires_authenticated_result_state():
         if path == "/api/gateway-grants/bulletin-media-preview-bytes":
             assert body["preview_sha256"] == "e" * 64
             return 200, {"bytes": 3, "sha256": Fixture.artifact_sha256,
-                         "body_b64": base64.b64encode(raw).decode()}
+                         "body_b64": base64.b64encode(
+                             b"abd" if corruption == "preview" else raw).decode()}
         if path == "/api/gateway-grants/approve-once":
             return 200, {"grant_ref": "grant_" + "a" * 32}
         if path == "/api/lane/bulletin/board_publish_media_post":
             Fixture.board.signed_requests = 2
             Fixture.board.posts = [{"body": "posted"}]
+            Fixture.board.uploads = [b"abd" if corruption == "upload" else raw]
+            if corruption == "missing_upload":
+                Fixture.board.uploads = []
+            elif corruption == "duplicate_upload":
+                Fixture.board.uploads = [raw, raw]
             return 200, {"status": "posted_readback_match"}
         raise AssertionError(path)
 
+    if corruption:
+        failure = "MEDIA_PREVIEW_BYTES" if corruption == "preview" else "MEDIA_UPLOAD_BYTES"
+        with pytest.raises(RuntimeError, match=failure):
+            run_bulletin_media_acceptance_smoke(
+                "http://127.0.0.1:1", "token", Fixture(), request=fake_request)
+        return
     summary = run_bulletin_media_acceptance_smoke(
         "http://127.0.0.1:1", "token", Fixture(), request=fake_request)
 

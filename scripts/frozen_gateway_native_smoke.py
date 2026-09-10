@@ -26,7 +26,6 @@ def _png_chunk(kind: bytes, data: bytes) -> bytes:
     return (struct.pack(">I", len(data)) + kind + data
             + struct.pack(">I", zlib.crc32(kind + data) & 0xffffffff))
 
-
 _scanlines = b"".join((
     b"\x00\x80\x20\xa0\xff\xc0\x20\xa0\xff",
     b"\x00\x80\x60\xa0\xff\xc0\x60\xa0\xff"))
@@ -34,7 +33,6 @@ _PNG = (b"\x89PNG\r\n\x1a\n"
         + _png_chunk(b"IHDR", struct.pack(">IIBBBBB", 2, 2, 8, 6, 0, 0, 0))
         + _png_chunk(b"IDAT", zlib.compress(_scanlines))
         + _png_chunk(b"IEND", b""))
-
 
 @dataclass
 class NativeSmokeFixture:
@@ -218,8 +216,9 @@ def run_bulletin_media_acceptance_smoke(
                    "proposal_ref": proposal["proposal_ref"],
                    "preview_ref": review["preview_media"][0]["preview_ref"],
                    "preview_sha256": review["preview_sha256"]}, secrets)
-    raw = base64.b64decode(media["body_b64"])
+    raw = base64.b64decode(media["body_b64"], validate=True)
     require(media.get("sha256") == fixture.artifact_sha256 and
+            hashlib.sha256(raw).hexdigest() == fixture.artifact_sha256 and
             len(raw) == fixture.artifact_bytes, "MEDIA_PREVIEW_BYTES")
     approval = _post(request, base, token, "/api/gateway-grants/approve-once",
                      routes, {"proposal_ref": proposal["proposal_ref"]},
@@ -237,6 +236,10 @@ def run_bulletin_media_acceptance_smoke(
             "BULLETIN_MEDIA_RESULT")
     require(fixture.board.signed_requests == 2 and len(fixture.board.posts) == 1,
             "BULLETIN_MEDIA_SIGNED_TRANSPORT")
+    require(len(fixture.board.uploads) == 1 and
+            len(fixture.board.uploads[0]) == fixture.artifact_bytes and
+            hashlib.sha256(fixture.board.uploads[0]).hexdigest() == fixture.artifact_sha256,
+            "MEDIA_UPLOAD_BYTES")
     return {"run_id": fixture.run_id, "artifact_id": fixture.artifact_id,
             "preview_bytes": media["bytes"],
             "preview_sha256": review["preview_sha256"],

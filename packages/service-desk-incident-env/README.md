@@ -15,11 +15,29 @@ python -m pip install . ./packages/service-desk-incident-env
 service-desk-incident-env identity --json
 ```
 
-The product version is 0.1.0. It requires `flywheel-verify>=0.6.1,<0.7`, exposes
+The product version is 0.2.0. It requires `flywheel-verify>=0.6.1,<0.7`, exposes
 the `service_desk_incident_env` Python package and uses environment ID
 `service-desk-incident/v1`. It can also be installed from its wheel alongside a
 compatible engine wheel. A source directory or wheel download is not evidence
 of a PyPI listing.
+
+This add-on has its own release version. Version 0.2.0 adds the portable HTML
+review report and stricter evidence checks. Review now exits 1 when checks fail;
+callers that previously relied on an unconditional zero exit must handle failure.
+The frozen `service-desk-incident/v1` definition and engine version are unchanged.
+
+To install downloaded add-on and engine wheels without a package index:
+
+```sh
+python -m venv .venv
+# Activate the virtual environment before running these commands.
+python -m pip install --no-index ./flywheel_verify-0.6.1-py3-none-any.whl ./flywheel_env_service_desk_incident-0.2.0-py3-none-any.whl
+python -m pip check
+service-desk-incident-env identity --json
+```
+
+Use the checksums supplied with the release to check downloaded files. This
+installation needs neither the desktop application nor a model endpoint.
 
 ## Run and verify a workflow
 
@@ -65,3 +83,30 @@ comparisons need separate model runs, held-out tasks and complete cost records.
 Write artifacts into a dedicated output directory outside the installed package
 or source tree. A rejected artifact root returns a typed failure; do not treat
 that refusal as a successful workflow.
+
+## Share a review without changing the evidence
+
+```sh
+service-desk-incident-env review RETURNED_ARTIFACT_DIR --html-out ./review-output/review.html --json
+```
+
+The optional HTML report uses no scripts, network requests, or external assets.
+Its output must be a new file outside the artifact directory. Open it locally
+and inspect it before sharing. The JSON response keeps the existing identity,
+verification, cases, and calibration fields and adds separate evidence layers.
+It contains local paths; the HTML omits those paths and redacts common credential
+and local-path strings. This is not comprehensive sensitive-data detection.
+
+The report distinguishes receipt claims, internal digest consistency, task
+semantics recomputed by the bounded synthetic oracle, and consistency of recorded
+authorization, response, and mutation flags. Verify and review both reject a
+record that claims a mutation was applied while authorization was denied or the
+response was unsuccessful, even when its digest has been recomputed. Malformed
+and missing evidence produces a failure report. Review exits 1 for failed checks;
+output errors exit 2. The original recorded cases and calibration cases are shown,
+not rerun. No submitted log action is executed.
+
+Matching hashes establish internal consistency, not trusted provenance. A recorded
+allowed flag does not establish real authorization. Fabricated coherent state and
+logs may satisfy the task oracle and record checks. These checks do not establish
+independent ground truth, general agent safety, or production containment.
