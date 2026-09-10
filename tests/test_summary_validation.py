@@ -92,13 +92,43 @@ def test_the_ledger_is_not_discarded_by_a_torn_or_foreign_line(tmp_path: Path) -
     assert read_validation(tmp_path / "absent.jsonl") == []
 
 
-def test_the_summary_never_carries_the_value_an_answer_failed_against(repo: Path, tmp_path: Path) -> None:
+def test_the_summary_never_carries_the_value_an_answer_failed_against(
+        repo: Path, tmp_path: Path, monkeypatch) -> None:
     """Same reason the feedback block does not: a summary that repeated the
     number would hand the next attempt its answer key."""
-    path = _ledger(tmp_path / "validation.jsonl", _entry("t-1", "HOLD", ["tax"]))
+    from harness import session_summary
+
+    # Short numeric answers can also occur inside unrelated Git object IDs.
+    # Force that collision so this test never depends on commit timestamps.
+    git = session_summary._git
+    head = "aaaa4169bbbb" + "c" * 28
+    def git_identity(root, *args):
+        if args == ("rev-parse", "HEAD"):
+            return head
+        output = git(root, *args)
+        if args[:2] == ("log", "--format=%h%x1f%s"):
+            return "\n".join(head[:7] + "\x1f" + line.partition("\x1f")[2]
+                             for line in output.splitlines())
+        return output
+    monkeypatch.setattr(session_summary, "_git", git_identity)
+    entry = json.loads(_entry("t-1", "HOLD", ["tax"]))
+    canary = "answer-key-canary:4169:do-not-repeat"
+    entry["fields"].append({"field": "canary", "authoritative_value": canary})
+    path = _ledger(tmp_path / "validation.jsonl", json.dumps(entry))
     summary = build_session_summary(repo, scope="task", validation_ledger=str(path))
-    assert "4169" not in json.dumps(summary)
-    assert "4169" not in render_markdown(summary)
+    assert summary["evidence"]["head"] == head
+    assert summary["evidence"]["validation"] == [{
+        "at": "2026-09-04T00:00:00+00:00", "scope": "task", "subject": "t-1",
+        "verdict": "FAIL", "release": "HOLD", "blocking": ["tax"],
+        "unresolved": ["tax"], "checked": 2, "passed": 1}]
+    assert "4169" not in json.dumps(summary["evidence"]["validation"])
+    assert "authoritative_value" not in json.dumps(summary)
+    assert canary not in json.dumps(summary)
+    assert canary not in render_markdown(summary)
+    # Exempt only the exact controlled identity and its documented display
+    # prefix, not arbitrary hex text or other fields that might leak the value.
+    for output in (json.dumps(summary), render_markdown(summary)):
+        assert "4169" not in output.replace(head, "").replace(head[:12], "")
 
 
 def test_a_since_bound_applies_to_the_ledger_as_well(repo: Path, tmp_path: Path) -> None:

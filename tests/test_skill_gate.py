@@ -1,7 +1,4 @@
-"""The skill gate: an admitted skill is a procedure (a lesson) plus a
-passing gate receipt. Evidence is either a verified bench where every
-attempt passed, or a trace regression report with zero regressions.
-Anything less refuses to bind -- that refusal IS the skill's teeth."""
+"""Skill evidence consistency; local fixtures do not authenticate evaluators."""
 import json
 from pathlib import Path
 
@@ -14,6 +11,8 @@ from harness.lesson import (
     build_lesson,
 )
 from harness.lesson_store import LessonStore
+from harness.trace_bench import regression_report
+from harness.verified_bench import run_benchmark
 from harness.skill_gate import (
     DRIFT,
     build_skill_gate,
@@ -39,26 +38,13 @@ def _lesson(status=STATUS_ADMITTED):
 
 
 def _bench(passing=True, attempts=2):
-    return {
-        "schema": "flywheel.verified-bench/v1",
-        "bench_sha256": "b" * 64,
-        "denominator": {"attempts": attempts},
-        "attempts": [
-            {"task_id": f"trace-{i}", "endpoint": "dry",
-             "gate_pass": passing}
-            for i in range(attempts)
-        ],
-    }
-
-
-def _regression(regressed=False):
-    return {
-        "schema": "flywheel.trace-regression/v1",
-        "regressions": [{"task_id": "t", "endpoint": "e"}] if regressed else [],
-        "improvements": [],
-        "stable": 3,
-        "new": [],
-    }
+    return run_benchmark(
+        tasks=[{"task_id": f"trace-{i}", "prompt": "fixture",
+                "gate_cmd": "fixed-fixture"} for i in range(attempts)],
+        endpoints=["dry"], created_at="fixture",
+        propose=lambda endpoint, prompt, seed: "fixture-proposal",
+        run_gate=lambda command, proposal: {"passed": passing,
+                                            "gate_ref": "fixture-gate"})
 
 
 def _store(lesson):
@@ -74,7 +60,7 @@ def test_an_admitted_lesson_binds_a_passing_bench():
     binding = build_skill_gate(
         lesson=store.latest_for(lesson["lesson_id"]),
         evidence=_bench(), bound_at="2026-08-24T01:00:00Z")
-    assert binding["schema"] == "flywheel.skill-gate/v1"
+    assert binding["schema"] == "flywheel.skill-gate/v2"
     assert binding["all_passed"] is True
     assert binding["tasks_bound"] == 2
     assert len(binding["evidence_sha256"]) == 64
@@ -101,12 +87,13 @@ def test_a_surfaced_lesson_is_not_yet_a_skill():
 def test_zero_regressions_bind_and_one_regression_refuses():
     store = _store(_lesson())
     latest = store.latest_for(_lesson()["lesson_id"])
-    ok = build_skill_gate(lesson=latest, evidence=_regression(),
-                          bound_at="t")
+    prior, current = _bench(), _bench()
+    ok = build_skill_gate(lesson=latest, evidence=regression_report(prior, current),
+                         prior_bench=prior, current_bench=current, bound_at="t")
     assert ok["evidence_kind"] == "trace_regression"
     with pytest.raises(ValueError):
-        build_skill_gate(lesson=latest, evidence=_regression(regressed=True),
-                         bound_at="t")
+        build_skill_gate(lesson=latest, evidence=regression_report(prior, _bench(False)),
+                         prior_bench=prior, current_bench=_bench(False), bound_at="t")
 
 
 def test_verify_catches_a_tampered_binding():
