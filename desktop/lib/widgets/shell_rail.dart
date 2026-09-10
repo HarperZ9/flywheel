@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../accessibility/accessible_action.dart';
 import '../navigation/app_route.dart';
 import '../navigation/destination_catalog.dart';
+import '../navigation/destination_search.dart';
 import '../theme/flywheel_theme.dart';
 import 'nav_group.dart';
 import 'nav_search_field.dart';
@@ -71,11 +72,12 @@ class _ShellRailState extends State<ShellRail> {
   Widget build(BuildContext context) {
     final t = context.fw;
     final q = _query.trim().toLowerCase();
-    bool matches(DestinationSpec spec) =>
-        q.isEmpty || spec.label.toLowerCase().contains(q);
     final groups = <String, List<DestinationSpec>>{};
     for (final spec in destinationCatalog) {
-      if (matches(spec)) (groups[spec.group.name] ??= []).add(spec);
+      if (destinationMatches(spec, q)) {
+        final group = destinationGroupLabel(spec.group);
+        (groups[group] ??= []).add(spec);
+      }
     }
     final rail = AnimatedContainer(
       duration: Duration.zero,
@@ -178,6 +180,14 @@ class _ShellRailState extends State<ShellRail> {
         child: Column(children: [
           _footerIcon(t, Icons.contrast, 'Toggle theme',
               widget.onToggleTheme),
+          const SizedBox(height: 8),
+          _footerIcon(t, Icons.restore_rounded, 'Open recovery center',
+              widget.onOpenRecovery),
+          if (widget.onOpenConnection != null) ...[
+            const SizedBox(height: 8),
+            _footerIcon(t, Icons.devices_rounded,
+                'Pair a gateway connection', widget.onOpenConnection!),
+          ],
           const SizedBox(height: 8),
           _footerIcon(t, Icons.tune, 'Open appearance settings',
               widget.onOpenAppearance),

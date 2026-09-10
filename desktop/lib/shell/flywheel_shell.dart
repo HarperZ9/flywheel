@@ -142,6 +142,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
                   onProbe: () => unawaited(_coordinator.probeLanes()),
                   onInstall: (name) async =>
                       await _coordinator.installLane(name),
+                  onStartEngine: () => unawaited(_coordinator.start()),
                 ),
               );
             }));
