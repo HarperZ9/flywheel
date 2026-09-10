@@ -33,6 +33,28 @@ class LaunchSpec:
     inherit_env: bool = True
     url: str = ""                   # set instead of argv for a lane that is already
     #                                 running behind an endpoint rather than spawned
+    hide_window: bool = False
+    allowed_tools: tuple[str, ...] | None = None
+
+
+def launch_allows_tool(launch: LaunchSpec, tool_name: str) -> bool:
+    """Whether this launch spec admits one MCP tool.
+
+    ``None`` preserves the existing unfiltered behavior. An empty tuple is a
+    deny-all launch, which is useful for explicit future capability staging.
+    """
+    allowed = launch.allowed_tools
+    return allowed is None or tool_name in allowed
+
+
+def capability_not_admitted(lane_name: str, tool_name: str) -> dict[str, str]:
+    return {
+        "code": "CAPABILITY_NOT_ADMITTED",
+        "error": "lane capability is not admitted",
+        "status": "unavailable",
+        "name": lane_name,
+        "tool": tool_name,
+    }
 
 
 class MCPError(RuntimeError):
@@ -53,6 +75,8 @@ class StdioTransport:
             child_env.update(command.env_overrides)
             argv = list(command.argv)
             popen_kwargs.update(cwd=command.cwd, env=child_env)
+            if command.hide_window and os.name == "nt":
+                popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
         else:
             argv = command
         self.proc = subprocess.Popen(
@@ -140,6 +164,9 @@ class MCPClient:
                  timeout: float = 30.0, client_name: str = "flywheel"):
         if transport is None and command is None:
             raise ValueError("MCPClient needs a command or a transport")
+        self.allowed_tools = (
+            getattr(command, "allowed_tools", None)
+            if isinstance(command, LaunchSpec) else None)
         if transport is None:
             spec_url = getattr(command, "url", "")
             # A spec carrying a url, or one with no argv to spawn, is a lane that is
@@ -185,9 +212,15 @@ class MCPClient:
 
     def list_tools(self) -> list:
         self.tools = self._request("tools/list").get("tools", [])
+        if self.allowed_tools is not None:
+            allowed = set(self.allowed_tools)
+            self.tools = [tool for tool in self.tools
+                          if tool.get("name") in allowed]
         return self.tools
 
     def call_tool(self, name: str, arguments: "dict | None" = None) -> dict:
+        if self.allowed_tools is not None and name not in self.allowed_tools:
+            raise MCPError(f"CAPABILITY_NOT_ADMITTED: {name}")
         return self._request("tools/call", {"name": name, "arguments": arguments or {}})
 
     def call_text(self, name: str, arguments: "dict | None" = None) -> dict:

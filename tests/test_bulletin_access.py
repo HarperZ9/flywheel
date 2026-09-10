@@ -86,7 +86,8 @@ def test_full_access_still_uses_existing_mcp_path(monkeypatch):
 
     class FakeClient:
         def __init__(self, command, *, timeout, client_name):
-            calls.append((tuple(command), timeout, client_name))
+            assert command.allowed_tools is None
+            calls.append((command.argv, timeout, client_name))
         def __enter__(self):
             return self
         def __exit__(self, *_exc):
@@ -97,8 +98,10 @@ def test_full_access_still_uses_existing_mcp_path(monkeypatch):
             return {"ok": True, "text": '{"ok":true,"posts":[]}'}
 
     monkeypatch.setenv("FLYWHEEL_BULLETIN_ACCESS", "full")
-    monkeypatch.setattr(lanes, "resolve_mcp_launch", lambda name: ["mcp", name],
-                        raising=False)
+    monkeypatch.setattr(
+        lanes, "resolve_mcp_launch",
+        lambda name: mcp_client.LaunchSpec(("mcp", name)),
+        raising=False)
     monkeypatch.setattr(mcp_client, "MCPClient", FakeClient)
 
     result = call_lane_tool(
@@ -161,7 +164,8 @@ def test_actual_gateway_lane_route_enforces_access_before_transport(
 
     class FakeClient:
         def __init__(self, command, *, timeout, client_name):
-            calls.append((tuple(command), timeout, client_name))
+            assert command.allowed_tools is None
+            calls.append((command.argv, timeout, client_name))
         def __enter__(self):
             return self
         def __exit__(self, *_exc):
@@ -178,8 +182,10 @@ def test_actual_gateway_lane_route_enforces_access_before_transport(
         {"legacy_label": None, "goal": "read bulletin board", "intake": {},
          "occurred_at": "2026-09-09T12:00:00Z"})).event_head_sha256
     monkeypatch.setenv("FLYWHEEL_BULLETIN_ACCESS", ceiling)
-    monkeypatch.setattr(lanes, "resolve_mcp_launch", lambda name: ["mcp", name],
-                        raising=False)
+    monkeypatch.setattr(
+        lanes, "resolve_mcp_launch",
+        lambda name: mcp_client.LaunchSpec(("mcp", name)),
+        raising=False)
     monkeypatch.setattr(mcp_client, "MCPClient", FakeClient)
     monkeypatch.setattr(gateway._Handler, "root", tmp_path, raising=False)
     monkeypatch.setattr(gateway._Handler, "run_root", str(tmp_path / "runs"),

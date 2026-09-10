@@ -20,37 +20,147 @@ posix_only = pytest.mark.skipif(
     reason="process groups are POSIX; the Windows path reaps via taskkill /T "
            "and is covered by tests/test_oracle_hostile_candidate.py")
 
+_PS_STATES = set("DIRSTUWXYZ")
+_PS_STATE_SUFFIXES = set("<ENLsl+")
+
 
 def _alive(pid: int) -> bool:
     """Live and not a zombie.
 
     A zombie still answers `os.kill(pid, 0)`, so the cheap probe would call a
     reaped process alive for as long as its parent took to wait on it. Reading
-    the state field costs one open and removes the whole race.
+    the state field removes the whole race: procfs on Linux, ps on macOS.
     """
+    state = _process_state(pid)
+    if state is not None:
+        return state != "Z"
+    return _kill_probe(pid)
+
+
+def _process_state(pid: int) -> str | None:
     try:
         with open(f"/proc/{pid}/stat") as fh:
             raw = fh.read()
     except OSError:
-        return _kill_probe(pid)
+        return _ps_state(pid)
     # comm is "(name)" and may contain ')', so the state is the first field
     # after the LAST one.
-    return raw.rsplit(")", 1)[1].split()[0] != "Z"
+    return raw.rsplit(")", 1)[1].split()[0]
+
+
+def _ps_state(pid: int) -> str | None:
+    for column in ("state=", "stat="):
+        try:
+            result = subprocess.run(
+                ["ps", "-o", column, "-p", str(pid)],
+                capture_output=True,
+                text=True,
+                timeout=2,
+            )
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if result.returncode != 0:
+            continue
+        state = _parse_ps_state(result.stdout)
+        if state is not None:
+            return state
+    return None
+
+
+def _parse_ps_state(stdout: str) -> str | None:
+    fields = stdout.strip().split()
+    if len(fields) != 1:
+        return None
+    state = fields[0]
+    if state[0] not in _PS_STATES:
+        return None
+    if any(flag not in _PS_STATE_SUFFIXES for flag in state[1:]):
+        return None
+    return state[0]
 
 
 def _kill_probe(pid: int) -> bool:
     """Fallback for a host without /proc, which is macOS.
 
-    It cannot see a zombie, so it is only honest about a process this one is
-    not the parent of. Every pid this file probes is an orphan whose leader
-    exited, which launchd and init reap on their own. For a direct child, wait
-    on it instead: reaping is the question the probe would be guessing at.
+    It cannot see a zombie, so it is only honest after both state probes were
+    unavailable. For a direct child, wait on it instead: reaping is the
+    question the probe would be guessing at.
     """
     try:
         os.kill(pid, 0)
+    except PermissionError:
+        return True
     except OSError:
         return False
     return True
+
+
+def _hide_proc(monkeypatch):
+    real_open = open
+
+    def without_proc(path, *args, **kwargs):
+        if os.fspath(path).startswith("/proc/"):
+            raise FileNotFoundError(path)
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.open", without_proc)
+
+
+@posix_only
+def test_alive_treats_zombie_state_as_gone_without_proc(monkeypatch):
+    _hide_proc(monkeypatch)
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            args[0], 0, stdout="Z+\n", stderr=""),
+    )
+    monkeypatch.setattr(sys.modules[__name__], "_kill_probe", lambda pid: True)
+
+    assert not _alive(12345)
+
+
+@posix_only
+def test_alive_treats_non_zombie_state_as_alive_without_proc(monkeypatch):
+    _hide_proc(monkeypatch)
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            args[0], 0, stdout="S\n", stderr=""),
+    )
+    monkeypatch.setattr(sys.modules[__name__], "_kill_probe", lambda pid: False)
+
+    assert _alive(12345)
+
+
+@posix_only
+@pytest.mark.parametrize(
+    "result",
+    [
+        subprocess.CompletedProcess(["ps"], 0, stdout="", stderr=""),
+        subprocess.CompletedProcess(["ps"], 0, stdout="   \n", stderr=""),
+        subprocess.CompletedProcess(["ps"], 1, stdout="", stderr="no process"),
+        subprocess.CompletedProcess(["ps"], 0, stdout="Z garbled\n", stderr=""),
+        subprocess.CompletedProcess(["ps"], 0, stdout="Zombie garbled\n", stderr=""),
+    ],
+)
+def test_alive_falls_back_to_kill_probe_when_ps_state_is_not_decisive(monkeypatch, result):
+    _hide_proc(monkeypatch)
+    monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: result)
+    monkeypatch.setattr(sys.modules[__name__], "_kill_probe", lambda pid: True)
+
+    assert _alive(12345)
+
+
+@posix_only
+def test_kill_probe_treats_permission_error_as_alive(monkeypatch):
+    def denied(pid, sig):
+        raise PermissionError(pid)
+
+    monkeypatch.setattr(os, "kill", denied)
+
+    assert _kill_probe(12345)
 
 
 def _wait_until_gone(pid: int, seconds: float = 5.0) -> bool:

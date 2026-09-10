@@ -6,11 +6,30 @@
 # as its engine/ payload. Includes the relay submodule so `flywheel remote`
 # and `flywheel relay` work from a frozen build.
 
+import sys
 from pathlib import Path
 from PyInstaller.utils.hooks import copy_metadata
 
 repo = Path(SPECPATH).parent
 relay_src = repo / "relay" / "src"
+for import_root in (repo, relay_src):
+    value = str(import_root)
+    while value in sys.path:
+        sys.path.remove(value)
+sys.path.insert(0, str(repo))
+sys.path.insert(0, str(relay_src))
+from scripts.check_bundled_lane_descriptors import check_lane_descriptor
+import importlib.util
+
+descriptor_check = check_lane_descriptor(repo, "relay")
+if descriptor_check["verdict"] != "PASS":
+    raise RuntimeError(
+        "bundled Relay descriptor gate failed: "
+        + ",".join(descriptor_check["blocking_codes"]))
+relay_import = importlib.util.find_spec("relay.local_mcp")
+relay_origin = Path(relay_import.origin).resolve() if relay_import and relay_import.origin else None
+if relay_origin is None or not relay_origin.is_relative_to(relay_src.resolve()):
+    raise RuntimeError("bundled Relay import shadowed outside relay/src")
 # Keep version/license metadata without pip's local installation URL.
 distribution_data = [
     (str(path), str(Path(destination) / path.relative_to(source).parent))
@@ -21,9 +40,11 @@ distribution_data = [
 
 a = Analysis(
     [str(repo / "packaging" / "gateway_entry.py")],
-    pathex=[str(repo), str(relay_src)],
+    pathex=[str(relay_src), str(repo)],
     datas=[(str(repo / "site"), "site"),
            (str(repo / "harness" / "gateway.py"), "harness"),
+           (str(repo / "packaging" / "bundled-lanes" / "relay.json"),
+            "packaging/bundled-lanes"),
            *distribution_data],
     hiddenimports=[
         "relay", "relay.remote_cli", "relay.remote_mcp", "relay.remote_oauth",
@@ -37,6 +58,8 @@ a = Analysis(
         "relay.compaction", "relay.review", "relay.run_view",
         "relay.verified_bon", "relay.bisect", "relay.claim_grounding",
         "relay.injection_probe", "relay.intent_audit", "relay.hashline",
+        "relay.remote_state", "harness.bundled_lane_admission",
+        "harness.bundled_lane_expectations",
         # Desktop Bulletin identity setup is served through the frozen gateway.
         # The source package keeps cryptography optional; the Windows freeze
         # installs .[signing] and must carry the lazy route/import graph.

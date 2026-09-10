@@ -58,7 +58,10 @@ def call_lane_tool(
         return {"error": f"cannot resolve MCP command for {lane_name!r}: {e}"}
 
     try:
-        from harness.mcp_client import MCPClient, MCPError
+        from harness.mcp_client import (
+            MCPClient, MCPError, capability_not_admitted, launch_allows_tool)
+        if not launch_allows_tool(command, tool_name):
+            return capability_not_admitted(lane_name, tool_name)
         with MCPClient(command, timeout=timeout,
                        client_name=f"flywheel-{lane_name}-proxy") as c:
             res = c.call_text(tool_name, args)

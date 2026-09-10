@@ -190,9 +190,9 @@ def _direct_refusal(name, probe):
                 {"error": f"plugin '{name}' is disabled; enable it first"})
     return None
 
-
 def _restricted_launch(command, bindings, slots):
     from .mcp_client import LaunchSpec
+    if isinstance(command, LaunchSpec) and not slots and not command.inherit_env: return command
     platform = "windows" if os.name == "nt" else "posix"
     try:
         child_env = bindings.child_environment(os.environ, platform=platform)
@@ -204,18 +204,16 @@ def _restricted_launch(command, bindings, slots):
             or any(type(key) is not str or type(value) is not str
                    for key, value in child_env.items())):
         raise PluginPermissionError
-    if isinstance(command, LaunchSpec):
-        argv, cwd = command.argv, command.cwd
-    else:
-        argv, cwd = tuple(command), None
-    return LaunchSpec(argv, cwd, tuple(sorted(child_env.items())), False)
+    spec = command if isinstance(command, LaunchSpec) else LaunchSpec(tuple(command))
+    return LaunchSpec(
+        spec.argv, spec.cwd, tuple(sorted(child_env.items())), False,
+        url=spec.url, hide_window=spec.hide_window, allowed_tools=spec.allowed_tools)
 def _launch(command, slots, bindings):
     if bindings is None:
         if slots:
             raise PluginPermissionError
         return command
     return _restricted_launch(command, bindings, slots)
-
 
 def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
                 timeout: float = 45.0, client_factory=None,
@@ -237,7 +235,9 @@ def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
         return unavailable_response(name)
     except PluginPermissionError:
         return _permission()
-    from .mcp_client import MCPClient, MCPError
+    from .mcp_client import MCPClient, MCPError, capability_not_admitted
+    if getattr(command, "allowed_tools", None) is not None and tool not in command.allowed_tools:
+        return capability_not_admitted(name, tool)
     factory = client_factory or MCPClient
     try:
         with factory(command, timeout=timeout,

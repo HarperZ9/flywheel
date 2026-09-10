@@ -23,6 +23,7 @@ import urllib.request
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+from scripts.frozen_gateway_relay_smoke import relay_status_smoke
 
 NATIVE_ROUTES = {
     "/api/bulletin-identity": "get",
@@ -85,11 +86,18 @@ def _environment(home: Path, *, bulletin_key: str, bulletin_base_url: str) -> di
 
 
 def _request(base: str, path: str, token: str | None, *,
-             secret_values: tuple[str, ...] = ()):
+             body: dict | None = None, secret_values: tuple[str, ...] = ()):
     headers = {"Authorization": "Bearer " + token} if token else {}
+    data = None
+    method = "GET"
+    if body is not None:
+        data = json.dumps(body, separators=(",", ":")).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+        method = "POST"
     # Never use ambient proxies for this exclusively loopback probe.
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    request = urllib.request.Request(base + path, headers=headers)
+    request = urllib.request.Request(
+        base + path, data=data, headers=headers, method=method)
     try:
         response = opener.open(request, timeout=10)
     except urllib.error.HTTPError as exc:
@@ -101,6 +109,10 @@ def _request(base: str, path: str, token: str | None, *,
         for secret in (*secret_values, token):
             require(not secret or secret not in body, "CREDENTIAL_ECHO")
         return response.code, body
+
+
+
+
 
 
 def check(executable: Path, expected_version: str, receipt: dict) -> None:
@@ -160,10 +172,15 @@ def check(executable: Path, expected_version: str, receipt: dict) -> None:
                 docs.append(body if path == "/llms.txt" else json.loads(body))
             validate_documents(*docs, expected_version=expected_version)
             native_acceptance = run_native_acceptance_smoke(base, token, fixture)
+            from harness.gateway_auth import load_or_create_owner_ref
+            owner_ref = load_or_create_owner_ref(home)
+            relay_acceptance = relay_status_smoke(
+                base, token, home, owner_ref, secret_values, _request, require)
             receipt.update(signing_imports_available=True, identity_source="env",
                            version=docs[2]["version"], routes=docs[2]["routes"],
                            native_routes=list(NATIVE_ROUTES),
                            native_acceptance=native_acceptance,
+                           relay_bundled_status=relay_acceptance,
                            credential_echo=False)
         finally:
             if process is not None:
@@ -189,7 +206,8 @@ def main() -> int:
                "expected_version": args.expected_version,
                "does_not_prove": ["installer integration", "clean OS compatibility",
                                   "Flutter UI rendering", "native identity registration",
-                                  "Relay execution", "production Bulletin posting"]}
+                                  "Relay model-backed task execution",
+                                  "production Bulletin posting"]}
     try:
         check(args.executable.resolve(), args.expected_version, receipt)
         receipt["verdict"] = "PASS"

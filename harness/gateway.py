@@ -44,7 +44,7 @@ REPO = Path(__file__).resolve().parent.parent
 if str(REPO) not in sys.path: sys.path.insert(0, str(REPO))
 from harness.run_paths import run_root_default
 from harness.gateway_custody import is_private
-from harness.gateway_lane_calls import _forum_mcp_call, _relay_mcp_call
+from harness.gateway_lane_calls import _forum_mcp_call, _relay_mcp_call, _relay_start_not_admitted
 from harness.gateway_auth import (authenticate_owner as _auth_owner,
     load_or_create_owner_ref, load_or_create_token, check as _auth_check, DEFAULT_HOSTS)
 from harness import gateway_openai_route as _openai_route
@@ -619,9 +619,11 @@ class _Handler(BaseHTTPRequestHandler):
     def _json(self, obj, code=200):
         error = obj.get("error") if isinstance(obj, dict) else None
         error_code = error.get("code") if isinstance(error, dict) else None
+        public_boundary = isinstance(obj, dict) and obj.get("code") in {"CAPABILITY_NOT_ADMITTED", "GATEWAY_ROUTE_MALFORMED", "GATEWAY_ROUTE_MISMATCH"}
         if (getattr(self, "_gateway_guarded", False)
                 and error_code != "PERMISSION_REQUIRED"
                 and not (isinstance(obj, dict) and obj.get("governance_denied") is True)
+                and not public_boundary
                 and (code >= 400 or error_code)):
             from harness.gateway_provider_adapter import fixed_external_failure
             obj, code = fixed_external_failure()
@@ -1491,11 +1493,8 @@ class _Handler(BaseHTTPRequestHandler):
         if (p.startswith("/v1/")                   # OpenAI-compatible, proxied to the endpoint
                 or p == "/generate"):                # the raw generate call, proxied
             return self._proxy(self.serve_url.rstrip("/") + p)
-        if p == "/api/relay/start":                  # start a witnessed relay run via the exec lane
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            return self._json(_relay_mcp_call("local_agent_start", req))
+        if p == "/api/relay/start":                  # Relay run launch is not admitted in the bundled release
+            return _relay_start_not_admitted(self)
         if p == "/api/forge":                        # goal -> verified PRP (the studio)
             req, bad = self._req_json()
             if bad:

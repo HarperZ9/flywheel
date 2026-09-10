@@ -147,6 +147,14 @@ def test_frozen_discovery_keeps_source_and_distribution_metadata():
     assert '(str(repo / "harness" / "gateway.py"), "harness")' in spec
 
 
+def test_frozen_gateway_spec_pins_owned_relay_submodule_before_analysis():
+    spec = (PACKAGING / "flywheel-gateway.spec").read_text(encoding="utf-8")
+    assert "check_lane_descriptor(repo, \"relay\")" in spec
+    assert "bundled Relay import shadowed outside relay/src" in spec
+    assert "find_spec(\"relay.local_mcp\")" in spec
+    assert "pathex=[str(relay_src), str(repo)]" in spec
+
+
 def test_candidate_checks_the_actual_frozen_engine_before_installer():
     text = _text("desktop-release.yml")
     freeze = text.index("python -m PyInstaller")

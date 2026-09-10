@@ -61,6 +61,8 @@ jobs:
           git submodule update --init --recursive
           if ($LASTEXITCODE -ne 0) { throw "tag-pinned submodule checkout failed" }
           git submodule status --recursive
+          python scripts/check_bundled_lane_descriptors.py --lane relay --strict
+          if ($LASTEXITCODE -ne 0) { throw "bundled Relay descriptor gate failed" }
 
       - name: Gate | one version across tag, pubspec, pyproject
         shell: pwsh
