@@ -1,15 +1,8 @@
-"""flywheel.py — the engine. The substrate Project Telos is built around.
+"""Run tasks, recheck cached candidates and surface configuration proposals.
 
-Turns the meta-cycle and emits the momentum trace. Each spin: run the task set
-→ the M5 receipt cache fills (verified results become reusable assets) →
-telemetry profiles the run → evolve surfaces falsifier-gated auto-config
-candidates → the next spin starts from a higher/cheaper baseline. The wheel is
-hard to start (turn 0: cold cache, full cost) but once spinning, repeats cost
-~0 (cache hits skip the proposer + oracle entirely) — genuine compounding
-momentum, measured turn-over-turn.
-
-This is the loop the whole program is for: do verified work, bank the receipts,
-reuse them, surface the next lever, spin again. Each turn the floor rises.
+Optional memory_sources_by_task authorizes exact prior task content for each
+target. Configuration candidates are not applied; model uplift requires a
+separate measured comparison. Cache hits still execute the current oracle.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
@@ -46,28 +39,43 @@ class SpinTrace:
     insights: list[str] = field(default_factory=list)
     auto_apply_candidates: list[dict] = field(default_factory=list)
     cycle_summary: str = ""
+    memory_context_enabled: bool = False
 
     def momentum_line(self) -> str:
         return (f"turn {self.turn}: pass={self.pass_rate:.0%} "
                 f"cache_hit={self.cache_hit_rate:.0%} "
                 f"avg_oracle={self.avg_oracle_calls:.1f} "
-                f"elapsed={self.total_elapsed_s:.2f}s")
+                f"elapsed={self.total_elapsed_s:.2f}s "
+                f"memory={'enabled' if self.memory_context_enabled else 'disabled'}")
 
 
 def spin(task_set: list[Task], proposer: Proposer, oracle: Oracle, *,
          cache: ReceiptCache, search: ArmConfig | None = None,
-         turns: int = 3, research_feed: dict | None = None) -> list[SpinTrace]:
-    """Run the flywheel for `turns` spins. Turn 0 is cold (cache empty, full
-    cost); subsequent turns reuse cached verdicts (cost -> ~0 for repeats) and
-    surface auto-config candidates from telemetry + any research feed. Returns
-    the momentum trace — the proof the wheel is spinning."""
+         turns: int = 3, research_feed: dict | None = None,
+         memory_sources_by_task: dict[str, list[str]] | None = None,
+         envelopes_dir: str | None = None, context_budget: int = 4096,
+         context_byte_budget: int = 16384) -> list[SpinTrace]:
+    """Run the task set; optional exact dependencies enable memory disclosure.
+
+    Supply envelopes_dir with an explicit dependency map. The shared pool and
+    envelope root last for this spin call; no global or cross-tenant store exists.
+    Omitting the map keeps memory disclosure disabled and preserves cache behavior.
+    """
+    from .evolutionary_flywheel import VerifiedPool
+    if memory_sources_by_task is not None and (not isinstance(memory_sources_by_task, dict)
+                                               or envelopes_dir is None):
+        raise ValueError("memory_sources_by_task requires a mapping and envelopes_dir")
+    pool = VerifiedPool() if memory_sources_by_task is not None else None
     traces: list[SpinTrace] = []
     for turn in range(turns):
         signals: list[RunSignal] = []
         for task in task_set:
             r = run_loop(task, proposer, oracle,
-                         envelopes_dir=f"envelopes-turn-{turn}",
-                         cache=cache, search=search)
+                         envelopes_dir=envelopes_dir or f"envelopes-turn-{turn}",
+                         cache=cache, search=search, pool=pool,
+                         memory_sources=(memory_sources_by_task.get(task.task_id, [])
+                                         if memory_sources_by_task is not None else None),
+                         context_budget=context_budget, context_byte_budget=context_byte_budget)
             signals.append(signal_from_result(r))
         prof = profile(signals)
         eff_feed = efficiency_feed(signals)
@@ -81,7 +89,8 @@ def spin(task_set: list[Task], proposer: Proposer, oracle: Oracle, *,
             total_elapsed_s=prof.total_elapsed_s,
             insights=prof.insights,
             auto_apply_candidates=cycle.get("auto_apply", []),
-            cycle_summary=cycle.get("cycle_summary", "")))
+            cycle_summary=cycle.get("cycle_summary", ""),
+            memory_context_enabled=memory_sources_by_task is not None))
     return traces
 
 

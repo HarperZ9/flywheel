@@ -12,7 +12,7 @@ UNVERIFIABLE and emits no accepting envelope.
 from __future__ import annotations
 import hashlib
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from .envelope import ProofEnvelope
@@ -85,7 +85,10 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
              output_verify_proof: bool = False,
              validation_ledger=None,
              pool: "VerifiedPool | None" = None,
-             auto_context: bool = True) -> LoopResult:
+             auto_context: bool = True,
+             memory_sources: list[str] | None = None,
+             context_budget: int = 4096,
+             context_byte_budget: int = 16384) -> LoopResult:
     t0 = time.time()
     chain: list[StageReceipt] = []
     if boot_packet is None and boot_root is not None:
@@ -97,17 +100,13 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
                      boot_packet.root_hash, boot_packet.verdict,
                      payload={"git_head": boot_packet.git_head})
     retrieved = [_citation(r) for r in task.retrieved]
-    # Gap A (memory->context): if the caller passed a VerifiedPool and the task
-    # arrived with no retrieved context, populate it from prior verified PASSes.
-    # This is the feedback edge that closes the loop -- a verified fact from a
-    # prior run becomes available to this proposal. auto_context=False leaves
-    # the task untouched (clean ablation). See loop_closure.py handoff
-    # memory->context and evolutionary_flywheel.auto_retrieved.
+    # Legacy family matching selects citations only. Content requires an exact
+    # caller-supplied allowlist; a related task name never grants disclosure.
     if auto_context and pool is not None and not task.retrieved:
         from .evolutionary_flywheel import auto_retrieved
         # Match facts whose source key relates to this task (same task_id family
         # or a shared prefix). A pool with no matching facts leaves retrieved empty.
-        prereqs = [k for k in pool.facts if k != task.task_id
+        prereqs = memory_sources if memory_sources is not None else [k for k in pool.facts if k != task.task_id
                    and (k.startswith(task.task_id.split(".")[0])
                         or task.task_id.split(".")[0].startswith(k.split(".")[0]))]
         if prereqs:
@@ -116,6 +115,12 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
     prompt = task.prompt
     if boot_packet is not None and boot_packet.verdict == "MATCH":
         prompt = hydrate_prompt(boot_packet, prompt)
+    memory_context = None
+    if pool is not None or memory_sources is not None:
+        from .evolutionary_flywheel import memory_prompt
+        prompt, memory_context = memory_prompt(
+            task, prompt, pool, envelopes_dir, allowed_sources=memory_sources,
+            enabled=auto_context, budget=context_budget, byte_budget=context_byte_budget)
 
     ck = None
     cached = None
@@ -132,6 +137,10 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
                        knowledge_hash(task), oracle_context)
         if cached is None:
             cached = cache.lookup(ck)
+    if memory_context is not None:
+        memory_context["proposer_called"] = cached is None
+        append_stage(chain, "memory_context", prompt_hash(task.prompt),
+                     prompt_hash(prompt), memory_context["status"], payload=memory_context)
 
     # Snapshot the fixtures BEFORE the oracle runs, so this receipt can rebuild
     # its own environment later without a caller handing one over (the fallback
@@ -144,7 +153,7 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
 
     search_mode = search is not None and search.n_candidates > 1 and cached is None
     if search_mode:
-        sr = best_of_n(task, proposer, oracle,
+        sr = best_of_n(replace(task, prompt=prompt), proposer, oracle,
                        temps=(search.temps or DEFAULT_TEMPS))
         winner = sr.accepted or sr.candidates[0]
         out = ProposerOutput(text=winner.text, model_ref=winner.model_ref,
@@ -279,12 +288,10 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
         cache.insert(envelope, ck)
     if cache is not None and proof_addressed:
         proof_insert(cache, task, envelope, oracle_context)
-    # Gap A (memory->context): bank the verified fact in the pool so the NEXT
-    # task's auto_context can retrieve it. Only PASSes enter (a failed gate
-    # must not compound). The receipt hash is the re-checkable handle.
+    # Bind the full accepted claim, including verdict, for later disclosure.
     if pool is not None and accepted:
         pool.add_verified(task.task_id, f"envelope:{envelope.content_hash()}",
-                          digest=envelope.content_hash())
+                          digest=envelope.content_hash(), claim_digest=envelope.claim_sha256())
     return LoopResult(
         envelope=envelope, oracle=orc, witness=wv,
         accepted=accepted, elapsed_s=time.time() - t0,
