@@ -22,7 +22,7 @@ def driver(action):
     if mode == 'crash': os._exit(23)
     time.sleep(0.15)
     return {'ok':True, 'performed':True}
-browser.register_driver('fixture', driver)
+browser.register_driver('fixture', driver, binding_sha256='a'*64)
 (root/('ready-'+name)).touch()
 deadline=time.monotonic()+10
 while not (root/'go').exists():
@@ -56,8 +56,14 @@ def finish(process):
 
 
 def opened(root, cap=5):
-    browser.open_session(root, run_id="r", at="fixture", policy={
-        "origins": ["https://example.test"], "max_actions": cap})
+    def parent_driver(action):
+        raise AssertionError("only the owned child process may perform this fixture")
+    browser.register_driver("fixture", parent_driver, binding_sha256="a" * 64)
+    try:
+        browser.open_session(root, run_id="r", at="fixture", policy={
+            "origins": ["https://example.test"], "max_actions": cap})
+    finally:
+        browser.clear_drivers()
 
 
 def test_process_dies_after_effect_admission_blocks_fresh_process_replay(tmp_path):
