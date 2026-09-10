@@ -103,7 +103,7 @@ _FIELDS = {
     "lean.check": ({"code"} | _REFS, set()),
     "suite.audit": ({"path"} | _REFS, {"oracle_cmd", "max_mutants"}),
     "lane.call": ({"name", "tool", "args"} | _REFS,
-                  {"governance_tier", "timeout", "bulletin_access"}),
+                  {"governance_tier", "timeout", "bulletin_access", "bulletin_base_url"}),
     "packs.admit": ({"manifest"} | _REFS, {"fixtures_root"}),
     "store.put": ({"kind", "data"} | _REFS, {"project"}),
     "import.config": ({"root"} | _REFS, set()),

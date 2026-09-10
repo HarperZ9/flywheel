@@ -31,7 +31,7 @@ class ActorLaunch {
       }
       parentIds = List<String>.from(parents);
       gatewayOrigin = actorOrigin(config['base_url'] as String);
-      boardOrigin = actorOrigin(config['bulletin_base_url'] as String);
+      boardOrigin = actorBoardOrigin(config['bulletin_base_url'] as String);
     } on Object {
       actorInvalid();
     }
@@ -124,6 +124,7 @@ class ActorLaunch {
         operation: {
           'name': 'bulletin',
           'tool': 'board_write_post',
+          'bulletin_base_url': boardOrigin.toString(),
           'governance_tier': 'T2',
           'timeout': 20,
           'args': {

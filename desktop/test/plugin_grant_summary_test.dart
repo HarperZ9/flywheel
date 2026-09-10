@@ -55,8 +55,57 @@ GatewayOperation _call() => GatewayOperation.pluginCall(
     credentialRefs: const [_credential],
     clientRequestId: 'request-1');
 
+const _bulletinOrigin = 'https://bulletin.zaindharper.workers.dev';
+
+GatewayOperation _bulletinCall() => GatewayOperation.exact(
+    action: 'lane.call',
+    clientRequestId: 'request-1',
+    credentialRefs: const [_credential],
+    operation: const {
+      'name': 'bulletin',
+      'tool': 'board_write_post',
+      'args': {'room': 'findings', 'body': 'Synthetic origin control'},
+      'governance_tier': 'T2',
+      'timeout': 20,
+      'bulletin_base_url': _bulletinOrigin,
+    });
+
+Map<String, Object?> _bulletinProposal(GatewayOperation operation) => {
+      'schema': 'flywheel.gateway-grant-proposal/v1',
+      'proposal_ref': 'prp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      'planned_grant_ref': 'gnt_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      'action': 'lane.call',
+      'journey_ref': _journey,
+      'expected_event_head': _head,
+      'client_request_id': 'request-1',
+      'destination': operation.destination.toJson(),
+      'tool': 'board_write_post',
+      'operation_sha256': _head,
+      'arguments_sha256': _head,
+      'scopes': ['exec', 'network', 'plugin', 'secrets'],
+      'data_refs': [],
+      'credential_refs': [_credential],
+      'expires_at': '2026-08-15T12:02:00Z',
+      'summary': {
+        'schema': 'flywheel.gateway-grant-summary/v1',
+        'action': 'lane.call',
+        'journey_ref': _journey,
+        'expected_event_head': _head,
+        'destination': operation.destination.toJson(),
+        'tool': 'board_write_post',
+        'operation_sha256': _head,
+        'arguments_sha256': _head,
+        'scopes': ['exec', 'network', 'plugin', 'secrets'],
+        'data_refs': [],
+        'credential_refs': [_credential],
+        'effect': 'one dispatch after approval',
+        'expires_at': '2026-08-15T12:02:00Z',
+      }
+    };
+
 void main() {
   _summaryTest();
+  _bulletinSummaryTest();
   _typedFailureTest();
   _downstreamFailureTest();
 }
@@ -88,6 +137,33 @@ void _summaryTest() {
     expect(find.textContaining('Tool: find'), findsOneWidget);
     expect(find.textContaining('data_public_fixture'), findsOneWidget);
     expect(find.textContaining(_credential), findsOneWidget);
+  });
+}
+
+void _bulletinSummaryTest() {
+  testWidgets('challenge renders selected Bulletin origin', (tester) async {
+    final operation = _bulletinCall();
+    final controller = GatewayOperationController(GatewayGrantClient(
+        GatewayClient(
+            baseUrl: 'https://gateway.invalid',
+            httpClient: MockClient((_) async =>
+                http.Response(jsonEncode(_bulletinProposal(operation)), 200)))));
+    expect(
+        await controller.prepare(operation,
+            binding: const GatewayJourneyBinding(_journey, _head),
+            currentOperation: () => operation,
+            currentBinding: () => const GatewayJourneyBinding(_journey, _head)),
+        isTrue);
+    await tester.pumpWidget(MaterialApp(home: Builder(builder: (context) {
+      return FilledButton(
+          onPressed: () =>
+              showOperationGrantSheet<void>(context, controller, (_) async {}),
+          child: const Text('Open Bulletin'));
+    })));
+    await tester.tap(find.text('Open Bulletin'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('lane: bulletin'), findsOneWidget);
+    expect(find.textContaining(_bulletinOrigin), findsOneWidget);
   });
 }
 

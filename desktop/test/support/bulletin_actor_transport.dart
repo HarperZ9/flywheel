@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:flywheel_desktop/client/strict_plan_json.dart';
+import 'package:flywheel_desktop/models/gateway_grant_models.dart';
 
 class ActorTransportError implements Exception {
   const ActorTransportError(this.code);
@@ -28,18 +29,31 @@ Uri actorOrigin(String value) {
   return uri.replace(path: '');
 }
 
+Uri actorBoardOrigin(String value) {
+  final uri = Uri.tryParse(value);
+  if (uri == null ||
+      !isCanonicalBulletinOrigin(value) ||
+      uri.scheme != 'http' ||
+      !{'127.0.0.1', 'localhost', '::1'}.contains(uri.host)) {
+    throw const ActorTransportError('origin_denied');
+  }
+  return uri;
+}
+
 /// One request per approved route, with no redirect or application retry.
 /// The byte ceiling covers bodies, not raw HTTP framing. Timeout closes the
 /// owned client; the supervisor remains the final process lifetime fence.
 final class ActorGatewayTransport extends http.BaseClient {
-  ActorGatewayTransport(Uri origin, this._token,
-      {http.BaseClient? inner,
-      this.maxBytes = 65536,
-      Duration timeout = const Duration(seconds: 10),
-      this.onEvent})
-      : origin = actorOrigin(origin.toString()),
-        _timeout = timeout,
-        _inner = inner ?? IOClient(HttpClient()..findProxy = (_) => 'DIRECT') {
+  ActorGatewayTransport(
+    Uri origin,
+    this._token, {
+    http.BaseClient? inner,
+    this.maxBytes = 65536,
+    Duration timeout = const Duration(seconds: 10),
+    this.onEvent,
+  }) : origin = actorOrigin(origin.toString()),
+       _timeout = timeout,
+       _inner = inner ?? IOClient(HttpClient()..findProxy = (_) => 'DIRECT') {
     if (maxBytes < 1 ||
         maxBytes > 1048576 ||
         timeout <= Duration.zero ||
@@ -132,12 +146,16 @@ final class ActorGatewayTransport extends http.BaseClient {
     if (_closed) throw const ActorTransportError('transport_closed');
     _record('response_received', request.url.path);
     strictPlanJsonObject(
-        bytes); // Reject duplicate keys before production parsing.
-    return http.StreamedResponse(Stream.value(bytes), response.statusCode,
-        headers: response.headers,
-        contentLength: bytes.length,
-        request: request,
-        reasonPhrase: response.reasonPhrase);
+      bytes,
+    ); // Reject duplicate keys before production parsing.
+    return http.StreamedResponse(
+      Stream.value(bytes),
+      response.statusCode,
+      headers: response.headers,
+      contentLength: bytes.length,
+      request: request,
+      reasonPhrase: response.reasonPhrase,
+    );
   }
 
   @override

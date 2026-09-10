@@ -168,8 +168,7 @@ final class _OperationGrantSheetState<T>
           _line('Operation', proposal.summary.action),
           _line('Journey', proposal.summary.journeyRef),
           _line('Head', proposal.summary.eventHead),
-          _line('Destination',
-              '${proposal.summary.destination.kind}: ${proposal.summary.destination.ref}'),
+          _line('Destination', _destinationText(proposal.summary.destination)),
           _line('Tool', proposal.summary.tool),
           _line('Operation digest', proposal.summary.operationSha256),
           _line('Arguments', proposal.summary.argumentsSha256),
@@ -202,6 +201,12 @@ final class _OperationGrantSheetState<T>
 
   Widget _refs(String label, List<String> values) =>
       _line(label, values.isEmpty ? 'None' : values.join(', '));
+
+  String _destinationText(GatewayDestination destination) {
+    final base = '${destination.kind}: ${destination.ref}';
+    final origin = destination.bulletinBaseUrl;
+    return origin == null ? base : '$base - $origin';
+  }
 
   Widget _bulletinReview(BulletinMediaReview review) => Padding(
         padding: const EdgeInsets.only(top: 12, bottom: 12),

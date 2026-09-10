@@ -12,6 +12,7 @@ import 'support/bulletin_actor_exchange.dart';
 const hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const proposalRef = 'prp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const grantRef = 'gnt_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const bulletinOrigin = 'http://127.0.0.1:54321';
 const binding =
     GatewayJourneyBinding('jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', hash);
 final op = GatewayOperation.exact(
@@ -25,6 +26,7 @@ final op = GatewayOperation.exact(
       'tool': 'board_write_post',
       'governance_tier': 'T2',
       'timeout': 20,
+      'bulletin_base_url': bulletinOrigin,
       'args': {
         'room': 'findings',
         'parent_id': 'decoy-1',
@@ -200,8 +202,9 @@ void main() {
           };
         } else {
           expect(path, '/api/lane/bulletin/board_write_post');
-          expect(
-              (jsonDecode(request.body) as Map)['args'], op.operation['args']);
+          final dispatched = jsonDecode(request.body) as Map;
+          expect(dispatched['args'], op.operation['args']);
+          expect(dispatched['bulletin_base_url'], bulletinOrigin);
           response = {'status': 'posted_readback_match', 'post_id': 'reply-1'};
         }
         return http.Response(jsonEncode(response), 200,

@@ -195,14 +195,15 @@ class BulletinServer:
 
 def test_gateway_grant_with_bulletin_credential_publishes_and_reads_back(tmp_path):
     jwk_value, public_jwk = _jwk_json()
-    slots = {BULLETIN_KEY_SLOT: jwk_value}
-    store = CredentialHandleStore(tmp_path, keychain_get=slots.get,
-                                  token_hex=lambda _size: "a" * 32)
-    handle = store.bind(OWNER, BULLETIN_KEY_SLOT)
-    preview = build_preview(_public_outcome())
-    authorized = _authorized(tmp_path, preview, handle.credential_ref)
     server = BulletinServer(public_jwk)
     try:
+        slots = {BULLETIN_KEY_SLOT: jwk_value}
+        store = CredentialHandleStore(tmp_path, keychain_get=slots.get,
+                                      token_hex=lambda _size: "a" * 32)
+        handle = store.bind(OWNER, BULLETIN_KEY_SLOT)
+        preview = build_preview(
+            _public_outcome(), bulletin_base_url=server.url, allow_loopback=True)
+        authorized = _authorized(tmp_path, preview, handle.credential_ref)
         result = publish_authorized_preview(
             authorized, preview, state_root=tmp_path, keychain_get=slots.get,
             base_url=server.url, allow_loopback=True,
@@ -216,14 +217,15 @@ def test_gateway_grant_with_bulletin_credential_publishes_and_reads_back(tmp_pat
 
 def test_readback_drift_is_typed_after_signed_write(tmp_path):
     jwk_value, public_jwk = _jwk_json()
-    slots = {BULLETIN_KEY_SLOT: jwk_value}
-    store = CredentialHandleStore(tmp_path, keychain_get=slots.get,
-                                  token_hex=lambda _size: "b" * 32)
-    handle = store.bind(OWNER, BULLETIN_KEY_SLOT)
-    preview = build_preview(_public_outcome())
-    authorized = _authorized(tmp_path, preview, handle.credential_ref)
     server = BulletinServer(public_jwk, mode="drift")
     try:
+        slots = {BULLETIN_KEY_SLOT: jwk_value}
+        store = CredentialHandleStore(tmp_path, keychain_get=slots.get,
+                                      token_hex=lambda _size: "b" * 32)
+        handle = store.bind(OWNER, BULLETIN_KEY_SLOT)
+        preview = build_preview(
+            _public_outcome(), bulletin_base_url=server.url, allow_loopback=True)
+        authorized = _authorized(tmp_path, preview, handle.credential_ref)
         result = publish_authorized_preview(
             authorized, preview, state_root=tmp_path, keychain_get=slots.get,
             base_url=server.url, allow_loopback=True,
@@ -236,14 +238,15 @@ def test_readback_drift_is_typed_after_signed_write(tmp_path):
 
 def test_lost_post_response_does_not_retry_or_claim_publication(tmp_path):
     jwk_value, public_jwk = _jwk_json()
-    slots = {BULLETIN_KEY_SLOT: jwk_value}
-    store = CredentialHandleStore(tmp_path, keychain_get=slots.get,
-                                  token_hex=lambda _size: "c" * 32)
-    handle = store.bind(OWNER, BULLETIN_KEY_SLOT)
-    preview = build_preview(_public_outcome())
-    authorized = _authorized(tmp_path, preview, handle.credential_ref)
     server = BulletinServer(public_jwk, mode="drop")
     try:
+        slots = {BULLETIN_KEY_SLOT: jwk_value}
+        store = CredentialHandleStore(tmp_path, keychain_get=slots.get,
+                                      token_hex=lambda _size: "c" * 32)
+        handle = store.bind(OWNER, BULLETIN_KEY_SLOT)
+        preview = build_preview(
+            _public_outcome(), bulletin_base_url=server.url, allow_loopback=True)
+        authorized = _authorized(tmp_path, preview, handle.credential_ref)
         result = publish_authorized_preview(
             authorized, preview, state_root=tmp_path, keychain_get=slots.get,
             base_url=server.url, allow_loopback=True,
@@ -258,6 +261,7 @@ def test_unconfigured_transport_is_typed_and_does_not_resolve_secret(tmp_path):
     preview = build_preview(_public_outcome())
     operation = {"name": "bulletin", "tool": "board_write_post",
                  "args": preview["post"], "governance_tier": "T2",
+                 "bulletin_base_url": preview["target"]["bulletin_base_url"],
                  "timeout": 20, "data_refs": [], "credential_refs": []}
     authorized = AuthorizedOperation.for_test(
         action="lane.call", operation=operation,
@@ -272,7 +276,9 @@ def test_grant_binding_mismatch_fails_before_secret_resolution(tmp_path):
     preview = build_preview(_public_outcome())
     operation = {"name": "bulletin", "tool": "board_write_post",
                  "args": {"room": "findings", "body": "different"},
-                 "governance_tier": "T2", "timeout": 20, "data_refs": [],
+                 "governance_tier": "T2",
+                 "bulletin_base_url": preview["target"]["bulletin_base_url"],
+                 "timeout": 20, "data_refs": [],
                  "credential_refs": ["cred_" + "a" * 32]}
     authorized = AuthorizedOperation.for_test(
         action="lane.call", operation=operation,

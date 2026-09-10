@@ -131,7 +131,10 @@ Object? freezeApprovalJson(Object? value, List<ParseIssue> issues, String field,
     return null;
   }
   if (value is String) {
-    if (isSafePublicText(value)) return value;
+    if (isSafePublicText(value) ||
+        (key == 'bulletin_base_url' && isCanonicalBulletinOrigin(value))) {
+      return value;
+    }
     addParseIssue(issues, field, value);
     return '';
   }

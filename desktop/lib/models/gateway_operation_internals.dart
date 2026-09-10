@@ -6,7 +6,10 @@
 part of 'gateway_grant_models.dart';
 
 List<String> _refs(
-    Map<String, Object?> raw, String field, List<String>? given) {
+  Map<String, Object?> raw,
+  String field,
+  List<String>? given,
+) {
   final present = raw[field];
   if (present != null &&
       (present is! List || present.any((value) => value is! String))) {
@@ -55,15 +58,25 @@ String _packRef(Object? manifest) {
 }
 
 GatewayDestination _destination(String action, Map<String, Object?> value) {
+  if (_isBulletinBoardWrite(action, value)) {
+    final origin = value['bulletin_base_url'];
+    return origin is String && isCanonicalBulletinOrigin(origin)
+        ? GatewayDestination('lane', 'bulletin', origin)
+        : _invalid();
+  }
   if (action == 'infra.credential_scan') {
     final root = value['root'];
     return GatewayDestination(
-        'scan', root is String && root.isNotEmpty ? root : 'environment');
+      'scan',
+      root is String && root.isNotEmpty ? root : 'environment',
+    );
   }
   if (action == 'infra.kill') {
     final mode = value['mode'];
-    return GatewayDestination('kill-switch',
-        mode is String && mode.isNotEmpty ? mode : 'evidence-preserving');
+    return GatewayDestination(
+      'kill-switch',
+      mode is String && mode.isNotEmpty ? mode : 'evidence-preserving',
+    );
   }
   final fixed = _fixedDestinations[action];
   if (fixed != null) return fixed;
@@ -78,27 +91,70 @@ GatewayDestination _destination(String action, Map<String, Object?> value) {
   if (action == 'embeddings.create') {
     final ref = value['model'];
     return GatewayDestination(
-        'model', ref is String && ref.isNotEmpty ? ref : 'embeddings');
+      'model',
+      ref is String && ref.isNotEmpty ? ref : 'embeddings',
+    );
   }
   final plugin = action.startsWith('plugin.');
   final market = action.startsWith('marketplace.');
   final field = plugin || market
       ? 'name'
       : action == 'chat.complete'
-          ? 'model'
-          : 'endpoint';
+      ? 'model'
+      : 'endpoint';
   final ref = value[field];
   return ref is String
       ? GatewayDestination(
           plugin
               ? 'plugin'
               : market
-                  ? 'marketplace'
-                  : action == 'chat.complete'
-                      ? 'model'
-                      : 'endpoint',
-          ref)
+              ? 'marketplace'
+              : action == 'chat.complete'
+              ? 'model'
+              : 'endpoint',
+          ref,
+        )
       : _invalid();
+}
+
+bool _isBulletinBoardWrite(String action, Map<String, Object?> value) =>
+    action == 'lane.call' &&
+    value['name'] == 'bulletin' &&
+    value['tool'] == 'board_write_post';
+
+void _validateBulletinOriginBinding(
+  String action,
+  Map<String, Object?> value,
+  GatewayDestination destination,
+) {
+  final hasOrigin = value.containsKey('bulletin_base_url');
+  if (!_isBulletinBoardWrite(action, value)) {
+    if (hasOrigin || destination.bulletinBaseUrl != null) _invalid();
+    return;
+  }
+  if (_containsBulletinOriginField(value['args'])) _invalid();
+  final origin = value['bulletin_base_url'];
+  if (origin is! String || !isCanonicalBulletinOrigin(origin)) _invalid();
+  if (destination.kind != 'lane' ||
+      destination.ref != 'bulletin' ||
+      destination.bulletinBaseUrl != origin) {
+    _invalid();
+  }
+}
+
+bool _containsBulletinOriginField(Object? value) {
+  if (value is Map) {
+    for (final entry in value.entries) {
+      if (entry.key == 'bulletin_base_url' ||
+          _containsBulletinOriginField(entry.value)) {
+        return true;
+      }
+    }
+  }
+  if (value is List) {
+    return value.any(_containsBulletinOriginField);
+  }
+  return false;
 }
 
 /// The engine reads the operation's own tool field wherever one exists, which
@@ -113,16 +169,16 @@ List<String> _scopes(String action, Map<String, Object?> value) {
   if (action == 'operation.cancel') return const ['exec'];
   final selected = <String>{};
   if (const {
-        'chat.complete',
-        'agent.run',
-        'workflow.run',
-        'plan.run',
-        'companion.ask',
-        'route.send',
-        'forge.create',
-        'forge.recheck',
-        'embeddings.create',
-      }.contains(action)) {
+    'chat.complete',
+    'agent.run',
+    'workflow.run',
+    'plan.run',
+    'companion.ask',
+    'route.send',
+    'forge.create',
+    'forge.recheck',
+    'embeddings.create',
+  }.contains(action)) {
     selected.add('network');
   }
   if (action == 'bench.run') {
@@ -172,9 +228,13 @@ List<String> _scopes(String action, Map<String, Object?> value) {
   if ((value['credential_refs'] as List).isNotEmpty) {
     selected.add('secrets');
   }
-  return const ['write', 'exec', 'network', 'plugin', 'secrets']
-      .where(selected.contains)
-      .toList();
+  return const [
+    'write',
+    'exec',
+    'network',
+    'plugin',
+    'secrets',
+  ].where(selected.contains).toList();
 }
 
 void _validateCancel(Map<String, Object?> value) {
@@ -182,7 +242,7 @@ void _validateCancel(Map<String, Object?> value) {
     'operation_ref',
     'timeout_ms',
     'data_refs',
-    'credential_refs'
+    'credential_refs',
   };
   final reference = value['operation_ref'];
   final timeout = value['timeout_ms'];

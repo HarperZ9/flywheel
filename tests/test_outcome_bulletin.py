@@ -4,6 +4,7 @@ import pytest
 
 from harness.evidence_json import canonical_bytes
 from harness.evidence_json import canonical_sha256
+from harness.bulletin_origin import PUBLIC_BULLETIN_ORIGIN
 from harness.gateway_grant_route import gateway_grant_post
 from harness.gateway_grant_route import authorize_gateway_operation
 from harness.gateway_operation import GatewayOperationError
@@ -53,7 +54,6 @@ INDEX_OUTCOME = {
     ],
 }
 
-
 def test_preview_is_deterministic_public_bulletin_payload():
     """If rendering depends on dict order or private state, public review drifts."""
     first = build_preview(dict(INDEX_OUTCOME))
@@ -65,6 +65,7 @@ def test_preview_is_deterministic_public_bulletin_payload():
         "lane": "bulletin",
         "tool": "board_write_post",
         "governance_tier": "T2",
+        "bulletin_base_url": PUBLIC_BULLETIN_ORIGIN,
     }
     assert first["post"] == {
         "room": "findings",
@@ -109,7 +110,6 @@ def test_private_journey_fields_are_rejected_before_rendering(field):
     assert failure.value.code == "UNSAFE_PUBLIC_OUTCOME"
     assert "owner_" not in str(failure.value)
 
-
 def test_host_paths_and_unallowlisted_urls_are_rejected_without_echoing():
     """A public post must not depend on operator checkout paths or arbitrary URLs."""
     path_outcome = dict(INDEX_OUTCOME)
@@ -123,7 +123,6 @@ def test_host_paths_and_unallowlisted_urls_are_rejected_without_echoing():
     with pytest.raises(OutcomeBulletinError) as url_failure:
         build_preview(url_outcome)
     assert "example.com" not in str(url_failure.value)
-
 
 def test_gateway_grant_request_binds_the_preview_to_lane_call():
     """A grant for another lane or payload must fail canonical gateway binding."""
@@ -141,6 +140,7 @@ def test_gateway_grant_request_binds_the_preview_to_lane_call():
         "tool": "board_write_post",
         "args": preview["post"],
         "governance_tier": "T2",
+        "bulletin_base_url": PUBLIC_BULLETIN_ORIGIN,
         "timeout": 20,
         "data_refs": [],
         "credential_refs": [],
@@ -149,7 +149,6 @@ def test_gateway_grant_request_binds_the_preview_to_lane_call():
         "schema", "journey_ref", "expected_event_head",
         "client_request_id", "operation",
     }
-
 
 def test_gateway_grant_route_accepts_the_generated_lane_call_request(tmp_path):
     """Extra preview metadata in the grant body would make publication unwirable."""
@@ -178,9 +177,13 @@ def test_gateway_grant_route_accepts_the_generated_lane_call_request(tmp_path):
 
     assert status == 200
     assert proposal["tool"] == "board_write_post"
-    assert proposal["destination"] == {"kind": "lane", "ref": "bulletin"}
+    assert proposal["destination"] == {
+        "kind": "lane", "ref": "bulletin",
+        "bulletin_base_url": PUBLIC_BULLETIN_ORIGIN,
+    }
+    assert proposal["summary"]["destination"]["bulletin_base_url"] == (
+        PUBLIC_BULLETIN_ORIGIN)
     assert proposal["scopes"] == ["exec", "network", "plugin"]
-
 
 def test_gateway_publish_envelope_authorizes_one_exact_lane_call(tmp_path):
     """The final publication body must consume only the approved lane.call grant."""
@@ -225,13 +228,15 @@ def test_gateway_publish_envelope_authorizes_one_exact_lane_call(tmp_path):
         "lane.call", canonical_bytes(envelope), owner_ref=owner,
         state_root=tmp_path, clock=lambda: "2026-09-07T12:00:00Z")
     assert authorized.tool == "board_write_post"
-    assert dict(authorized.destination) == {"kind": "lane", "ref": "bulletin"}
+    assert dict(authorized.destination) == {
+        "kind": "lane", "ref": "bulletin",
+        "bulletin_base_url": PUBLIC_BULLETIN_ORIGIN,
+    }
     assert dict(authorized.operation)["args"] == preview["post"]
     with pytest.raises(GatewayOperationError):
         authorize_gateway_operation(
             "lane.call", canonical_bytes(envelope), owner_ref=owner,
             state_root=tmp_path, clock=lambda: "2026-09-07T12:00:00Z")
-
 
 def test_publish_uses_t2_bulletin_write_and_verifies_readback():
     """A successful write is not accepted until the public read returns same text."""
@@ -258,7 +263,6 @@ def test_publish_uses_t2_bulletin_write_and_verifies_readback():
     assert result["status"] == "posted_readback_match"
     assert result["post_id"] == "1788722917000-test"
 
-
 def test_publish_without_signed_publisher_reports_no_live_write():
     """Defaulting to unsigned HTTP MCP would fail on the live Bulletin write tool."""
     preview = build_preview(INDEX_OUTCOME)
@@ -267,7 +271,6 @@ def test_publish_without_signed_publisher_reports_no_live_write():
 
     assert result["status"] == "publish_unavailable"
     assert result["does_not_prove"] == ["a signed Bulletin write was attempted"]
-
 
 def test_publish_reports_write_and_readback_failures_without_raw_echo():
     """Publication failures must not echo downstream text that may include secrets."""

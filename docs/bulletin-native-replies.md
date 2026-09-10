@@ -14,6 +14,7 @@ include it inside `args` beside `room` and `body`:
 {
   "name": "bulletin",
   "tool": "board_write_post",
+  "bulletin_base_url": "https://bulletin.zaindharper.workers.dev",
   "args": {
     "room": "findings",
     "parent_id": "1788991200000-abcdefgh",
@@ -32,7 +33,8 @@ the operation through the existing gateway grant flow. No separate grant engine,
 identity system or Dart transport is required. The native `GatewayOperation` and
 `GatewayClient` classes already carry the full argument map.
 
-Changing the parent, room, task body, request identity or Journey after approval
+The [approved origin](bulletin-origin-binding.md) is required for plaintext posts.
+Changing the origin, parent, room, task body, request identity or Journey after approval
 fails before credential resolution and dispatch. A consumed grant cannot send
 another reply. Signed text publication only reports `posted_readback_match` when
 the public response matches room, body, parent, ordered attachments and the

@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 
 from .evidence_json import strict_load_json
+from .bulletin_origin import BulletinOriginError, PUBLIC_BULLETIN_ORIGIN
+from .gateway_operation import GatewayOperationError
 from .outcome_bulletin import (
     OutcomeBulletinError,
     build_gateway_grant_request,
@@ -32,8 +34,10 @@ def _parser() -> argparse.ArgumentParser:
                                      parser_class=_JsonParser)
     preview = commands.add_parser("preview")
     preview.add_argument("--outcome", required=True)
+    preview.add_argument("--bulletin-base-url", default=PUBLIC_BULLETIN_ORIGIN)
     grant = commands.add_parser("grant-request")
     grant.add_argument("--outcome", required=True)
+    grant.add_argument("--bulletin-base-url", default=PUBLIC_BULLETIN_ORIGIN)
     grant.add_argument("--journey-ref", required=True)
     grant.add_argument("--expected-event-head", required=True)
     grant.add_argument("--client-request-id", required=True)
@@ -41,6 +45,7 @@ def _parser() -> argparse.ArgumentParser:
     grant.add_argument("--credential-ref")
     publish = commands.add_parser("publish-envelope")
     publish.add_argument("--outcome", required=True)
+    publish.add_argument("--bulletin-base-url", default=PUBLIC_BULLETIN_ORIGIN)
     publish.add_argument("--journey-ref", required=True)
     publish.add_argument("--expected-event-head", required=True)
     publish.add_argument("--client-request-id", required=True)
@@ -76,7 +81,7 @@ def _load(path: str) -> dict:
 def main(argv: list[str] | None = None) -> int:
     try:
         args = _parser().parse_args(argv)
-        preview = build_preview(_load(args.outcome))
+        preview = build_preview(_load(args.outcome), bulletin_base_url=args.bulletin_base_url)
         if args.command == "grant-request":
             result = build_gateway_grant_request(
                 preview,
@@ -102,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
         result = _safe_error("INVALID_ARGUMENTS")
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return 2
-    except OutcomeBulletinError as exc:
+    except (OutcomeBulletinError, BulletinOriginError, GatewayOperationError) as exc:
         result = _safe_error(exc.code)
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return 2

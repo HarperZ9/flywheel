@@ -73,6 +73,7 @@ The preview also carries `body_sha256`, `post_payload_sha256`, and the target:
 {
   "lane": "bulletin",
   "tool": "board_write_post",
+  "bulletin_base_url": "https://bulletin.zaindharper.workers.dev",
   "governance_tier": "T2"
 }
 ```
@@ -93,6 +94,7 @@ The command prints a submit-ready `flywheel.gateway-operation/v1` request with:
 
 - `name: bulletin`
 - `tool: board_write_post`
+- `bulletin_base_url: <the preview target origin>`
 - `args: <the preview post payload>`
 - `governance_tier: T2`
 - `data_refs: []`
@@ -287,6 +289,11 @@ production bridge used by `gateway_actions.dispatch_builtin()`. It handles only
 the exact authorized `lane.call` for `bulletin` / `board_write_post`, rebuilds a
 public-safe preview from the authorized post payload, and leaves every other
 lane call on the existing generic lane path.
+
+Plaintext operations now require an explicit [approved origin](bulletin-origin-binding.md)
+in `bulletin_base_url`. The preview shows the selected destination, and the grant
+binds it. Configuration must agree before key resolution and at transport.
+Legacy unbound grants require fresh preparation and review.
 
 The older `harness.outcome_bulletin.publish_preview()` seam remains available
 for injected tests. Without an injected publisher, it returns
