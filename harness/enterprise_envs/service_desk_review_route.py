@@ -2,14 +2,18 @@
 from __future__ import annotations
 
 import json
-import os
 import re
+from html import unescape
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
 
 from harness.bundle import scan_for_secrets
 from harness.enterprise_envs import compat
+from harness.enterprise_envs.artifact_snapshot import (
+    ArtifactSnapshotError,
+    snapshotted_artifact_dir,
+)
 from harness.enterprise_envs.compat import EnterpriseEnvironmentProductMissing
 from harness.evidence_public import (
     TransportError,
@@ -44,6 +48,7 @@ _POSIX_PATH = re.compile(r"(?:^|[\s=(\[{,:;])/(?!/)[^\s]+|/"
     r"(?:Users|home|private|tmp|var|etc|root|opt|mnt|srv|usr|bin|sbin|lib|"
     r"Applications|Volumes|dev|proc|sys|run)(?:/|$)")
 _FILE_URI = re.compile(r"(?i)(?<![A-Za-z0-9+.-])file:")
+_MAX_REPORT_STRING_BYTES = 16 * 1024
 
 
 def service_desk_review_post(
@@ -59,9 +64,16 @@ def service_desk_review_post(
         if not artifact_dir.is_dir():
             raise TransportError(
                 "INVALID_REF", "artifact reference must name a directory", 422)
-        _assert_safe_artifact_tree(artifact_dir, root)
         product = _load_product()
-        report = product.review_artifacts(artifact_dir)
+        try:
+            with snapshotted_artifact_dir(artifact_dir) as review_dir:
+                report = product.review_artifacts(review_dir)
+        except ArtifactSnapshotError as exc:
+            raise TransportError(
+                "UNSAFE_ARTIFACT_TREE",
+                "artifact tree cannot be safely snapshotted",
+                422,
+            ) from exc
         sanitized = _sanitize_report(report, artifact_ref, artifact_dir.name)
         body = {
             "schema": ROUTE_SCHEMA,
@@ -145,44 +157,28 @@ def _assert_complete_report(report: dict) -> None:
         )
 
 
-def _assert_safe_artifact_tree(artifact_dir: Path, run_root: Path) -> None:
-    try:
-        for path in (artifact_dir, *artifact_dir.rglob("*")):
-            if _is_link_like(path):
-                raise TransportError(
-                    "UNSAFE_ARTIFACT_TREE",
-                    "artifact tree contains a link or junction",
-                    422,
-                )
-            resolved = path.resolve(strict=True)
-            if not _contained(run_root, resolved) or not _contained(
-                    artifact_dir, resolved):
-                raise TransportError(
-                    "UNSAFE_ARTIFACT_TREE",
-                    "artifact tree escapes the admitted run root",
-                    422,
-                )
-    except TransportError:
-        raise
-    except (FileNotFoundError, OSError, RuntimeError, ValueError) as exc:
-        raise TransportError(
-            "UNSAFE_ARTIFACT_TREE", "artifact tree cannot be admitted", 422) from exc
-
-
 def _assert_safe_report_strings(value: Any) -> None:
     if isinstance(value, dict):
-        for item in value.values():
+        for key, item in value.items():
+            if isinstance(key, str):
+                _assert_safe_report_text(key)
             _assert_safe_report_strings(item)
     elif isinstance(value, list):
         for item in value:
             _assert_safe_report_strings(item)
     elif isinstance(value, str):
+        _assert_safe_report_text(value)
+
+
+def _assert_safe_report_text(value: str) -> None:
+    for variant in _decoded_variants(value):
         if (
-            scan_for_secrets(value)
-            or _FILE_URI.search(unquote(value))
-            or _WINDOWS_PATH.search(value)
-            or _UNC_PATH.search(value)
-            or _POSIX_PATH.search(value)
+            len(variant.encode("utf-8")) > _MAX_REPORT_STRING_BYTES
+            or scan_for_secrets(variant)
+            or _FILE_URI.search(variant)
+            or _WINDOWS_PATH.search(variant)
+            or _UNC_PATH.search(variant)
+            or _POSIX_PATH.search(variant)
         ):
             raise TransportError(
                 "UNSAFE_REPORT",
@@ -191,16 +187,20 @@ def _assert_safe_report_strings(value: Any) -> None:
             )
 
 
-def _is_link_like(path: Path) -> bool:
-    is_junction = getattr(path, "is_junction", None)
-    return path.is_symlink() or (callable(is_junction) and is_junction())
-
-
-def _contained(root: Path, path: Path) -> bool:
-    return os.path.commonpath((
-        os.path.normcase(str(root)),
-        os.path.normcase(str(path)),
-    )) == os.path.normcase(str(root))
+def _decoded_variants(value: str) -> tuple[str, ...]:
+    variants: list[str] = []
+    seen: set[str] = set()
+    current = value
+    for _ in range(4):
+        for candidate in (current, unescape(current)):
+            if candidate not in seen:
+                variants.append(candidate)
+                seen.add(candidate)
+        decoded = unquote(unescape(current))
+        if decoded == current:
+            break
+        current = decoded
+    return tuple(variants)
 
 
 def _string(value: Any) -> str:

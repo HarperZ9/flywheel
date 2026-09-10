@@ -17,9 +17,18 @@ drive-qualified paths, `file://` references, parent traversal, links, junctions,
 and artifact trees that resolve outside the admitted directory are refused before
 the product review runs.
 
+The product review recursively reads the selected directory, so path admission
+alone is not a safe handoff boundary. Before invoking the trusted local product,
+the gateway copies the selected artifact through the existing private artifact
+filesystem custody layer into a temporary snapshot directory. The product reviews
+that snapshot, not the caller-controlled original path. This bounds the review to
+regular files that were read through no-follow descriptor or handle operations;
+it does not claim the whole host or original directory remained unchanged after
+the snapshot was made.
+
 The route loads the optional product through
 `harness.enterprise_envs.compat.load_service_desk_product()` and calls
-`product.review_artifacts(artifact_dir)`. The returned report must include the
+`product.review_artifacts(snapshot_dir)`. The returned report must include the
 complete `service-desk-incident-env-review/v1` shape: verification, claimed
 outcome, recomputed outcome, source-integrity, synthetic-task, record-consistency,
 external-trust layers, and limits. Missing or older product support returns
