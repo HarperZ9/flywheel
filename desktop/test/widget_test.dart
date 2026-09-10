@@ -101,7 +101,7 @@ void main() {
       }
       await tester.tap(find.text('Receipts'));
       await tester.pump();
-      expect(find.textContaining('receipts ledger'), findsOneWidget);
+      expect(find.byType(ReceiptsView), findsOneWidget);
       expect(tester.takeException(), isNull);
       await unmount(tester);
     },

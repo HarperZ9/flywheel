@@ -144,9 +144,8 @@ class _EndpointsViewState extends State<EndpointsView> {
               value: '${h.localHealthy}/${h.localTotal}',
               status: fractionStatus(h.localHealthy, h.localTotal)),
           StatTile(
-              label: 'subscriptions',
-              value: '${h.subscriptionAvailable}',
-              status: h.subscriptionAvailable > 0 ? 'verified' : null),
+              label: 'subscription CLIs present',
+              value: '${_roster.where((r) => r.cliPresent).length}'),
           StatTile(
               label: 'keys present',
               value: '${h.hostedConfigured}/${h.hosted.length}'),
@@ -162,7 +161,7 @@ class _EndpointsViewState extends State<EndpointsView> {
           TrainingCard(training: _training!),
         ],
         const SizedBox(height: FwLayout.s5),
-        const Kicker('providers · credential presence only, never values'),
+        const Kicker('providers · presence only; sign-in and access not verified'),
         const SizedBox(height: FwLayout.s3),
         ProviderRoster(roster: _roster),
         const SizedBox(height: FwLayout.s5),

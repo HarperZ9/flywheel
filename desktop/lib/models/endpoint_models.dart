@@ -64,8 +64,8 @@ class EndpointHealthDoc {
   final int localHealthy;
   final int localTotal;
   final int hostedConfigured;
-  final int subscriptionAvailable; // hosted providers usable via subscription CLI
-  final int enterpriseUsable; // hosted providers usable at all (subscription or key)
+  final int? subscriptionAvailable; // null when the gateway did not report it
+  final int? enterpriseUsable; // presence is not authenticated availability
 
   EndpointHealthDoc(
       {required this.local,
@@ -73,8 +73,8 @@ class EndpointHealthDoc {
       required this.localHealthy,
       required this.localTotal,
       required this.hostedConfigured,
-      this.subscriptionAvailable = 0,
-      this.enterpriseUsable = 0});
+      this.subscriptionAvailable,
+      this.enterpriseUsable});
 
   factory EndpointHealthDoc.fromJson(Map<String, dynamic> j) =>
       EndpointHealthDoc(
@@ -87,10 +87,12 @@ class EndpointHealthDoc {
         localHealthy: j['local_healthy'] ?? 0,
         localTotal: j['local_total'] ?? 0,
         hostedConfigured: j['enterprise_configured'] ?? 0,
-        subscriptionAvailable: j['subscription_available'] ?? 0,
-        enterpriseUsable: j['enterprise_usable'] ?? 0,
+        subscriptionAvailable: _count(j['subscription_available']),
+        enterpriseUsable: _count(j['enterprise_usable']),
       );
 }
+
+int? _count(Object? value) => value is int && value >= 0 ? value : null;
 
 /// One provider's observed routing record (GET /api/router/stats).
 class ProviderScore {

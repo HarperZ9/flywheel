@@ -28,6 +28,7 @@ class JourneyView extends StatelessWidget {
           onLens: controller.selectLens,
           alive: alive,
           onStartEngine: onStartEngine,
+          onRetryRead: controller.retryRead,
         ),
       );
 }
@@ -38,9 +39,11 @@ class _JourneyBody extends StatelessWidget {
     required this.onLens,
     required this.alive,
     required this.onStartEngine,
+    required this.onRetryRead,
   });
   final JourneyViewState state;
   final Future<void> Function(JourneyLens) onLens;
+  final Future<void> Function() onRetryRead;
   final bool alive;
   final VoidCallback? onStartEngine;
 
@@ -49,7 +52,8 @@ class _JourneyBody extends StatelessWidget {
     final projection = state.projection;
     if (projection == null) {
       return _EmptyJourney(
-          state: state, alive: alive, onStartEngine: onStartEngine);
+          state: state, alive: alive, onStartEngine: onStartEngine,
+          onRetryRead: onRetryRead);
     }
     return ViewScroll(storageKey: 'journey', children: [
       SectionHeader('Evidence Journey', kicker: state.phase.name),
@@ -114,8 +118,10 @@ class _EmptyJourney extends StatelessWidget {
     required this.state,
     required this.alive,
     required this.onStartEngine,
+    required this.onRetryRead,
   });
   final JourneyViewState state;
+  final Future<void> Function() onRetryRead;
   final bool alive;
   final VoidCallback? onStartEngine;
 
@@ -140,6 +146,9 @@ class _EmptyJourney extends StatelessWidget {
                 : 'The local Journey record could not be read: $local.')),
       const SizedBox(height: FwLayout.s4),
       JourneyStartCard(alive: alive, onStartEngine: onStartEngine),
+      if (state.remoteFailure != null && alive)
+        OutlinedButton(onPressed: _busy(state.phase) ? null : onRetryRead,
+          child: const Text('Retry Journey read')),
     ]);
   }
 }
