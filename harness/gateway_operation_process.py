@@ -6,22 +6,17 @@ from pathlib import Path
 from typing import Callable, Mapping, Protocol
 from .cross_harness_process import OwnedProcess, ProcessLaunch, ProcessOutcome, start_owned_process
 from .evidence_json import canonical_bytes, strict_load_json
-from .gateway_operation import (AuthorizedOperation, canonicalize_operation,
-    materialize_agent_attachment, thaw_operation)
+from .gateway_operation import AuthorizedOperation, canonicalize_operation, materialize_agent_attachment, thaw_operation
 from .gateway_operation_recovery import validate_operation_value
 from .gateway_secret_boundary import validate_no_raw_secrets
+from .gateway_worker_env import minimal_worker_env
 _PRIVATE_SCHEMA = "flywheel.gateway-operation-worker/v1"
 MAX_RESULT_BYTES = 250_000
-_ENV_KEYS = frozenset((
-    "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "PATH", "TEMP", "TMP"))
 @dataclass(frozen=True)
 class WorkerOutcome:
     state: str; result: dict
 class OperationProcessFactory(Protocol):
     def create(self, authorized: AuthorizedOperation, progress: Callable[[dict], None]) -> object: ...
-def _minimal_env(repo_root: Path) -> dict[str, str]:
-    env = {key: value for key, value in os.environ.items() if key.upper() in _ENV_KEYS}
-    return dict(env, PYTHONPATH=str(repo_root))
 def _launch(spec: ProcessLaunch) -> OwnedProcess:
     if spec.shell or not spec.suspended:
         raise OSError("owned launch is invalid")
@@ -29,11 +24,9 @@ def _launch(spec: ProcessLaunch) -> OwnedProcess:
 class GatewayWorker:
     control_class = "windows_job_v1"
     def __init__(self, owned, progress: Callable[[dict], None], secret_values: tuple[str, ...]) -> None:
-        self._owned, self._progress = owned, progress
-        self._secrets, self._outcome = secret_values, None
-        self._state_lock, self._poll_lock = threading.Lock(), threading.Lock()
-        self._seen, self._pending = b"", bytearray()
-        self._terminal: WorkerOutcome | None = None
+        self._owned, self._progress, self._secrets = owned, progress, secret_values
+        self._outcome = self._terminal = None
+        self._state_lock, self._poll_lock = threading.Lock(), threading.Lock(); self._seen, self._pending = b"", bytearray()
         self._terminal_before_cancel = False
         self._cancel_requested = self._invalid = False
     def resume(self) -> bool: return self._owned.resume()
@@ -44,8 +37,7 @@ class GatewayWorker:
             final = self._owned.wait(0); self._consume_current(final)
             with self._state_lock:
                 self._invalid = self._invalid or final is None or not self._capture_valid(final)
-                self._terminal_before_cancel = self._terminal is not None and not self._invalid
-                self._cancel_requested = True
+                self._terminal_before_cancel = self._terminal is not None and not self._invalid; self._cancel_requested = True
             if self._outcome is None and final is not None: self._outcome = self._finish(final)
         return confirmed
     def wait(self, timeout_s: float) -> WorkerOutcome | None:
@@ -121,8 +113,11 @@ class GatewayWorker:
         if outcome.returncode == 0 and self._terminal is not None: return self._terminal
         return _failed()
 class GatewayAgentProcessFactory:
-    def __init__(self, *, repo_root: Path, run_root: Path, launcher: Callable[[ProcessLaunch], object] = _launch) -> None:
-        self.repo_root, self.run_root = Path(repo_root), Path(run_root)
+    def __init__(self, *, repo_root: Path, run_root: Path,
+                 state_root: Path | None = None,
+                 launcher: Callable[[ProcessLaunch], object] = _launch) -> None:
+        self.repo_root, self.run_root, self.state_root = (
+            Path(repo_root), Path(run_root), Path(state_root) if state_root is not None else None)
         self.launcher = launcher
     def create(self, authorized: AuthorizedOperation, progress: Callable[[dict], None]) -> GatewayWorker:
         if authorized.action != "agent.run": raise ValueError(
@@ -133,12 +128,16 @@ class GatewayAgentProcessFactory:
                 bindings = dict(bindings or {})
             except (TypeError, ValueError):
                 raise ValueError("gateway worker credentials are invalid") from None
+        from .source_context_worker import source_context_or_failed_worker
+        source_context = source_context_or_failed_worker(authorized, self.state_root)
+        if getattr(source_context, "control_class", None): return source_context
         payload = {"schema": _PRIVATE_SCHEMA, "operation": thaw_operation(authorized.operation),
                    "credential_bindings": dict(bindings), "repo_root": str(self.repo_root),
-                   "run_root": str(self.run_root)}
+                   "run_root": str(self.run_root), "source_context": source_context}
         spec = ProcessLaunch(
             (sys.executable, "-m", "harness.gateway_operation_process", "worker"),
-            self.repo_root, canonical_bytes(payload), _minimal_env(self.repo_root))
+            self.repo_root, canonical_bytes(payload), minimal_worker_env(
+                self.repo_root, run_root=self.run_root, state_root=self.state_root))
         return GatewayWorker(self.launcher(spec), progress, tuple(
             value for value in bindings.values() if type(value) is str and value))
 def _commit_terminal(callback: Callable[[WorkerOutcome], None], outcome: WorkerOutcome) -> None:
@@ -147,12 +146,9 @@ def _commit_terminal(callback: Callable[[WorkerOutcome], None], outcome: WorkerO
         try:
             callback(outcome); return
         except Exception: pass
-def supervise_operation(*, authorized: AuthorizedOperation,
-                        factory: OperationProcessFactory,
-                        progress: Callable[[dict], None],
-                        started: Callable[[str], None],
-                        registered: Callable[[object], None],
-                        terminal: Callable[[WorkerOutcome], None]) -> None:
+def supervise_operation(*, authorized: AuthorizedOperation, factory: OperationProcessFactory,
+                        progress: Callable[[dict], None], started: Callable[[str], None],
+                        registered: Callable[[object], None], terminal: Callable[[WorkerOutcome], None]) -> None:
     """Create suspended, durably start, register, resume, then monitor."""
     worker = None
     try:
@@ -177,8 +173,7 @@ def supervise_operation(*, authorized: AuthorizedOperation,
         except Exception: pass
         outcome = WorkerOutcome("failed", {"reason": "OWNERSHIP_UNAVAILABLE"})
     _commit_terminal(terminal, outcome)
-def supervise_gateway_operation(service, authorized: AuthorizedOperation,
-                                operation_ref: str,
+def supervise_gateway_operation(service, authorized: AuthorizedOperation, operation_ref: str,
                                 factory: OperationProcessFactory) -> None:
     """Bind generic process supervision to durable lifecycle callbacks."""
     from .gateway_operation import GatewayOperationError
@@ -203,19 +198,17 @@ def supervise_gateway_operation(service, authorized: AuthorizedOperation,
         service._handles[(owner, operation_ref)] = handle
         snapshot = service.snapshot(owner, operation_ref)
         service._publish(owner, operation_ref, "snapshot", snapshot.as_json())
-    supervise_operation(
-        authorized=authorized, factory=factory,
-        progress=lambda event: service._publish(
-            owner, operation_ref, "progress", event),
+    supervise_operation(authorized=authorized, factory=factory,
+        progress=lambda event: service._publish(owner, operation_ref, "progress", event),
         started=started, registered=registered,
         terminal=lambda outcome: service._terminal(owner, operation_ref, outcome))
 def _failed() -> WorkerOutcome: return WorkerOutcome("failed", {"reason": "EXTERNAL_ACTION_FAILED"})
 def _emit(value: dict) -> None:
     sys.stdout.buffer.write(canonical_bytes(value) + b"\n"); sys.stdout.buffer.flush()
-def _worker_request() -> tuple[dict, dict, Path, Path]:
+def _worker_request() -> tuple[dict, dict, Path, Path, dict | None]:
     value = strict_load_json(sys.stdin.buffer.read(), max_bytes=1_048_576)
     if (set(value) != {"schema", "operation", "credential_bindings",
-                       "repo_root", "run_root"}
+                       "repo_root", "run_root", "source_context"}
             or value["schema"] != _PRIVATE_SCHEMA):
         raise ValueError
     operation = canonicalize_operation("agent.run", value["operation"])
@@ -224,10 +217,11 @@ def _worker_request() -> tuple[dict, dict, Path, Path]:
             or any(type(key) is not str or type(item) is not str
                    for key, item in bindings.items())
             or type(value["repo_root"]) is not str
-            or type(value["run_root"]) is not str):
+            or type(value["run_root"]) is not str
+            or not (value["source_context"] is None
+                    or type(value["source_context"]) is dict)):
         raise ValueError
-    return (thaw_operation(operation.operation), bindings,
-            Path(value["repo_root"]), Path(value["run_root"]))
+    return (thaw_operation(operation.operation), bindings, Path(value["repo_root"]), Path(value["run_root"]), value["source_context"])
 class _SecretOutput(ValueError): pass
 def _check_child_value(value: object, secrets: tuple[str, ...]) -> None:
     try:
@@ -245,11 +239,13 @@ def _persist_failed_run(run_root: Path, goal: str, endpoint: str,
     try: save_agent_run(run_root, value)
     except Exception: pass
 def _run_agent(operation: dict, bindings: Mapping[str, str],
-               repo_root: Path, run_root: Path) -> dict:
+               repo_root: Path, run_root: Path, source_context=None) -> dict:
     from .gateway import _countersign_run, _resolve_workspace_root
     from .router_agent import run_router_agent; from .effort import resolve_effort, stamp_applied
-    from .scaffold import scaffold_answer, scaffold_turn
-    goal, endpoint = operation["goal"], operation["endpoint"]; effort = resolve_effort(operation["effort"]) if operation.get("effort") else None
+    from .scaffold import scaffold_answer, scaffold_turn; from .source_context_worker import materialize_goal
+    user_goal = operation["goal"]
+    goal = materialize_goal(user_goal, source_context)
+    endpoint = operation["endpoint"]; effort = resolve_effort(operation["effort"]) if operation.get("effort") else None
     root, error = _resolve_workspace_root(operation.get("root"), repo_root)
     if error: raise ValueError
     events: list[dict] = []
@@ -267,27 +263,29 @@ def _run_agent(operation: dict, bindings: Mapping[str, str],
         _check_child_value(events, secrets); _check_child_value(result, secrets)
         if len(canonical_bytes(result)) > MAX_RESULT_BYTES: raise ValueError
         result["scaffold"] = scaffold_answer(
-            str(result.get("final") or ""), scaffold_turn(goal),
+            str(result.get("final") or ""), scaffold_turn(user_goal),
             provenance={"endpoint": endpoint, "model_ref": endpoint})
         if effort: result["effort"] = stamp_applied(effort, max_steps_applied=operation["max_steps"], n_candidates_applied=False)
         _check_child_value(result, secrets); result["run_receipt"] = _countersign_run(result)
         _check_child_value(result, secrets)
     except _SecretOutput: raise
     except Exception:
-        _persist_failed_run(run_root, goal, endpoint, events, secrets)
+        _persist_failed_run(run_root, user_goal, endpoint, events, secrets)
         raise
     try:
         from .eval_store import save_agent_run, trim_events
-        stored = dict(result, goal_excerpt=goal[:200], events=trim_events(events))
+        stored = dict(result, goal_excerpt=user_goal[:200],
+                      events=trim_events(events))
         _check_child_value(stored, secrets)
         result["run_id"] = save_agent_run(run_root, stored)["run_id"]
     except Exception: result["receipt_note"] = "authorized external action failed"
     return result
 def _main() -> int:
     try:
-        operation, bindings, repo_root, run_root = _worker_request()
+        request = _worker_request(); operation, bindings, repo_root, run_root = request[:4]
+        source_context = request[4] if len(request) > 4 else None
         result = _run_agent(materialize_agent_attachment(operation), bindings,
-                            repo_root, run_root)
+                            repo_root, run_root, source_context)
         secrets = tuple(value for value in bindings.values() if value)
         _check_child_value(result, secrets)
         _emit({"type": "terminal", "state": "completed", "result": result})

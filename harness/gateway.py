@@ -196,7 +196,6 @@ def _qs_value(qs: str, key: str) -> str:
         if part.startswith(key + "="): return part[len(key) + 1:]
     return ""
 
-
 def _qs_int(qs: str, key: str, default: int) -> int:
     try:
         return int(_qs_value(qs, key))
@@ -642,7 +641,7 @@ class _Handler(BaseHTTPRequestHandler):
             service = GatewayOperations(state_root, clock=self.clock)
             type(self).operation_service = service
             type(self).operation_process_factory = GatewayAgentProcessFactory(
-                repo_root=Path(self.root), run_root=Path(self.run_root))
+                repo_root=Path(self.root), run_root=Path(self.run_root), state_root=state_root)
         return service, type(self).operation_process_factory
 
     def _session_tokens(self):
@@ -1244,7 +1243,7 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.enterprise_envs.service_desk_review_route import service_desk_review_post; return self._json(*service_desk_review_post(p, self.rfile.read(length), run_root=Path(self.run_root)))
         if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
                          "/api/continuation/", "/api/writing/",
-                         "/api/gateway-grants/",
+                         "/api/source-context/", "/api/gateway-grants/",
                          "/api/credential-handles/")):  # bind a handle, presence only
             length = self._content_length()
             if length is None:
@@ -1307,13 +1306,14 @@ class _Handler(BaseHTTPRequestHandler):
                 from harness.journey_route import journey_post
                 body, code = journey_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
                     evidence_root=self.flywheel_home / "state" / "artifacts", clock=self.clock)
+            elif p.startswith("/api/source-context/"):  # attach readable selected context
+                from harness.source_context_route import source_context_post
+                body, code = source_context_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state", clock=self.clock)
             elif p.startswith("/api/continuation/"):  # preview/import health, then start a Journey
                 from harness.continuation_route import handle_continuation_post
                 resolved_root = None
                 if p == "/api/continuation/preview":  # preview selected context and repository state
-                    from harness.evidence_public import (
-                        TransportError, error_response, parse_json,
-                    )
+                    from harness.evidence_public import TransportError, error_response, parse_json
                     try:
                         req = parse_json(raw)
                     except Exception:
@@ -2333,7 +2333,7 @@ def main(argv=None) -> int:
     from harness.journey_recovery import recover_store
     _Handler.operation_service = GatewayOperations(state_root, clock=_Handler.clock)
     _Handler.operation_process_factory = GatewayAgentProcessFactory(
-        repo_root=_Handler.root, run_root=Path(_Handler.run_root))
+        repo_root=_Handler.root, run_root=Path(_Handler.run_root), state_root=state_root)
     from harness.credential_handles import CredentialHandleStore
     from harness.keychain import keychain_get
     from harness.session_token import SessionTokenStore

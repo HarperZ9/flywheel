@@ -31,6 +31,8 @@ class ExecutionPlan:
     workflow_snapshot: FrozenJsonSnapshot | None = field(default=None, repr=False)
     profile_snapshot: FrozenJsonSnapshot | None = field(default=None, repr=False)
     verified_plan: object | None = field(default=None, repr=False)
+    source_context_payload_sha256: str | None = None
+    source_context_payload: FrozenJsonSnapshot | None = field(default=None, repr=False)
 
 
 def freeze_execution_plan(operation, *, owner_ref: str | None = None,
@@ -39,6 +41,8 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
     launch = kind = market = None
     workflow_sha = profile_sha = None
     workflow_snapshot = profile_snapshot = None
+    source_context_payload = None
+    source_context_sha = None
     verified = None
     if operation.action in {"plugin.probe", "plugin.call"}:
         from .plugins import plugin_execution_plan
@@ -53,6 +57,10 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
             operation, owner_ref, state_root)
         workflow_sha = workflow_snapshot.sha256
         profile_sha = profile_snapshot.sha256
+        required, refs = _credential_plan(operation)
+    elif operation.action == "agent.run":
+        source_context_sha, source_context_payload = _source_context_snapshot(
+            operation, owner_ref, state_root)
         required, refs = _credential_plan(operation)
     else:
         required, refs = _credential_plan(operation)
@@ -71,10 +79,11 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
         "required_slots": list(required), "credential_refs": list(refs),
         "plugin_kind": kind, "argv": list(argv), "cwd": cwd,
         "marketplace": market_value, "workflow_sha256": workflow_sha,
-        "profile_sha256": profile_sha})
+        "profile_sha256": profile_sha,
+        "source_context_payload_sha256": source_context_sha})
     return ExecutionPlan(digest, tuple(required), tuple(refs), launch, kind,
         market, workflow_sha, profile_sha, workflow_snapshot,
-        profile_snapshot, verified)
+        profile_snapshot, verified, source_context_sha, source_context_payload)
 
 
 def _plan_snapshot(operation, owner_ref, state_root):
@@ -103,6 +112,30 @@ def _plan_snapshot(operation, owner_ref, state_root):
         raise
     except Exception as exc:
         code = getattr(exc, "code", "PLAN_BINDING_DRIFT")
+        raise GatewayOperationError(code) from None
+
+
+def _source_context_snapshot(operation, owner_ref, state_root):
+    try:
+        if not any(type(ref) is str and ref.startswith("data_source_context.")
+                   for ref in operation.data_refs):
+            return None, None
+        if type(owner_ref) is not str or state_root is None:
+            raise ValueError
+        from .source_context_worker import freeze_source_context_payload
+        snapshot = freeze_source_context_payload(
+            owner_ref, state_root, operation.data_refs)
+        if snapshot is None:
+            raise ValueError
+        payload = thaw_json(snapshot)
+        digest = payload.get("source_payload_sha256")
+        if type(digest) is not str:
+            raise ValueError
+        return digest, snapshot
+    except Exception as exc:
+        code = getattr(exc, "code", "SOURCE_CONTEXT_FAILED")
+        if code == "SOURCE_CONTEXT_FAILED":
+            code = "SOURCE_CONTEXT_STORE_CORRUPT"
         raise GatewayOperationError(code) from None
 
 

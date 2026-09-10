@@ -59,13 +59,13 @@ def test_worker_launch_is_suspended_private_pipe_minimal_env_and_bounded(tmp_pat
             authorized, progress.append)
     assert worker.resume() is True
     outcome = worker.wait(1)
-    spec = captures.single if hasattr(captures, "single") else captures[0]
+    spec = captures[0]
     assert spec.shell is False and spec.suspended is True
     assert SECRET not in repr(authorized) and SECRET not in repr(spec)
     assert SECRET not in repr(spec.argv) and SECRET not in repr(spec.env)
     assert SECRET in spec.stdin_bytes.decode()
-    assert set(spec.env) <= {"SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT",
-                             "PATH", "TEMP", "TMP", "PYTHONPATH"}
+    assert set(spec.env) <= {"SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "PATH", "TEMP",
+        "TMP", "PYTHONPATH", "FLYWHEEL_HOME", "FLYWHEEL_RUN_ROOT", "HOME", "USERPROFILE"}
     assert outcome.state == "completed" and outcome.result == {"final": "answer"}
     assert progress == []
 
