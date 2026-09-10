@@ -51,7 +51,8 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
               ledger: "SessionLedger | None" = None, *, max_steps: int = 6,
               test_cmd: "str | None" = None, sign_key: "bytes | None" = None,
               canaries: "list | None" = None, on_event=None, criteria: "list | None" = None,
-              budget_note: bool = False, finalize_candidate=None) -> dict:
+              budget_note: bool = False, finalize_candidate=None,
+              event_errors_fatal: bool = False) -> dict:
     """Run the goal to completion (or max_steps). Returns the final answer, the
     step count, and the ledger checkpoint + verify verdict.
 
@@ -85,7 +86,7 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
             try:
                 on_event(e)
             except Exception:
-                pass
+                if event_errors_fatal: raise
 
     if TOOLS_SYSTEM not in agent.system:
         agent.system = agent.system + "\n\n" + TOOLS_SYSTEM

@@ -247,6 +247,13 @@ class GatewayOperations:
                 return current
             state, result = normalize_outcome(
                 current.state, outcome.state, outcome.result)
+            if state in {"failed", "cancelled"}:
+                from .gateway_agent_execution import recovered_projection
+                try:
+                    result = recovered_projection(self.state_root, owner_ref,
+                        current.journey_ref, ref, state, result.get("reason")) or result
+                except Exception:
+                    pass  # retain fixed failure, never claim an unverified prefix
             state, result, digest = seal_outcome(
                 self._seal, owner_ref, ref, history[0]["payload"]["action"],
                 state, result)

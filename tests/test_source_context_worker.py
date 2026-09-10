@@ -1,5 +1,7 @@
 from dataclasses import replace
 import json
+import pytest
+from harness.gateway_agent_trace import AgentTrace
 
 import harness.gateway_operation_process as worker_protocol
 from harness.gateway_operation import AuthorizedOperation, thaw_operation
@@ -73,9 +75,10 @@ def test_worker_sends_exact_selected_text_to_fake_provider_without_reopening(tmp
         return {"final": "ok"}
     monkeypatch.setattr("harness.router_agent.run_router_agent", fake_run)
 
-    result = worker_protocol._run_agent(operation, {}, tmp_path, tmp_path, source_payload)
+    result = worker_protocol._run_agent(operation, {}, tmp_path, tmp_path, source_payload, trace=AgentTrace(
+            tmp_path, OWNER, "jrn_" + "a" * 32, "op_" + "a" * 32))
 
-    assert result["final"] == "ok"
+    assert result["state"] == "completed"
     assert "DECISION-FACT-ALPHA" in seen[0]
     assert seen[0].count("DECISION-FACT-ALPHA") == 1
     assert "truth" in seen[0]
@@ -103,13 +106,14 @@ def test_worker_keeps_selected_source_urls_out_of_scaffold_and_run_artifacts(
     monkeypatch.setattr("harness.scaffold._default_snapshotter", fake_snapshotter)
 
     result = worker_protocol._run_agent(
-        operation, {}, tmp_path, tmp_path, source_payload)
+        operation, {}, tmp_path, tmp_path, source_payload, trace=AgentTrace(
+            tmp_path, OWNER, "jrn_" + "a" * 32, "op_" + "a" * 32))
 
-    assert result["final"] == "ok"
+    assert result["state"] == "completed"
     assert scaffold_urls == []
     assert private_url not in json.dumps(result, sort_keys=True)
     stored_runs = list((tmp_path / "agent_runs").glob("*.json"))
-    assert stored_runs
+    assert stored_runs == []
     assert all(private_url not in path.read_text(encoding="utf-8")
                for path in stored_runs)
 
@@ -149,7 +153,7 @@ def test_missing_frozen_source_payload_with_no_state_root_fails_before_launch(
     assert outcome.result["reason"] == "SOURCE_CONTEXT_FAILED"
 
 
-def test_frozen_source_payload_with_no_state_root_is_sent_to_worker(tmp_path):
+def test_frozen_source_payload_still_requires_trace_state_root(tmp_path):
     ref = _publish(tmp_path)
     captured = []
     class Launched:
@@ -157,12 +161,10 @@ def test_frozen_source_payload_with_no_state_root_is_sent_to_worker(tmp_path):
         def wait(self, _timeout): return None
         def close(self): pass
 
-    GatewayAgentProcessFactory(
-        repo_root=tmp_path, run_root=tmp_path,
-        launcher=lambda spec: (captured.append(spec), Launched())[1]).create(
+    with pytest.raises(ValueError, match="private trace custody"):
+        GatewayAgentProcessFactory(
+            repo_root=tmp_path, run_root=tmp_path,
+            launcher=lambda spec: (captured.append(spec), Launched())[1]).create(
             _authorized(ref, _frozen_plan(tmp_path, ref)), lambda _event: None)
 
-    payload = json.loads(captured[0].stdin_bytes)
-    source = payload["source_context"]
-    assert source["contexts"][0]["rows"][0]["text"] == "DECISION-FACT-ALPHA"
-    assert source["source_payload_sha256"] == source["source_payload_sha256"].lower()
+    assert captured == []

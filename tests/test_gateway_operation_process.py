@@ -1,9 +1,7 @@
 from dataclasses import replace
 import json
-import os
-import sys
-import threading
-import time
+import os, sys
+import threading, time
 import pytest
 import harness.gateway_operation_process as worker_protocol
 from harness.cross_harness_process import ProcessOutcome, start_owned_process
@@ -47,15 +45,16 @@ def _authorized(tmp_path, secret=SECRET):
 
 def test_worker_launch_is_suspended_private_pipe_minimal_env_and_bounded(tmp_path):
     captures = []
-    terminal = json.dumps({"type": "terminal", "state": "completed",
-                           "result": {"final": "answer"}})
+    from harness.gateway_agent_execution import trace_context, trace_from_request
+    projected = trace_from_request(trace_context(_authorized(tmp_path), tmp_path)).projection("completed")
+    terminal = json.dumps({"type": "terminal", "state": "completed", "result": projected})
     def launch(spec):
         captures.append(spec)
         return Tree(terminal)
     progress = []
     authorized = _authorized(tmp_path)
     worker = GatewayAgentProcessFactory(
-        repo_root=tmp_path, run_root=tmp_path, launcher=launch).create(
+        repo_root=tmp_path, run_root=tmp_path, state_root=tmp_path, launcher=launch).create(
             authorized, progress.append)
     assert worker.resume() is True
     outcome = worker.wait(1)
@@ -66,7 +65,7 @@ def test_worker_launch_is_suspended_private_pipe_minimal_env_and_bounded(tmp_pat
     assert SECRET in spec.stdin_bytes.decode()
     assert set(spec.env) <= {"SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "PATH", "TEMP",
         "TMP", "PYTHONPATH", "FLYWHEEL_HOME", "FLYWHEEL_RUN_ROOT", "HOME", "USERPROFILE"}
-    assert outcome.state == "completed" and outcome.result == {"final": "answer"}
+    assert outcome.state == "completed" and outcome.result == projected
     assert progress == []
 
 @pytest.mark.parametrize(("secret", "stdout"), [
@@ -83,7 +82,7 @@ def test_worker_launch_is_suspended_private_pipe_minimal_env_and_bounded(tmp_pat
 def test_malformed_overflow_or_secret_worker_output_fails_closed(
         tmp_path, secret, stdout):
     worker = GatewayAgentProcessFactory(
-        repo_root=tmp_path, run_root=tmp_path,
+        repo_root=tmp_path, run_root=tmp_path, state_root=tmp_path,
         launcher=lambda _spec: Tree(stdout)).create(
             _authorized(tmp_path, secret), lambda _event: None)
     worker.resume()
@@ -170,12 +169,15 @@ def test_review_critical_child_secret_leak_writes_no_artifact(
     monkeypatch.setattr("harness.router_agent.run_router_agent", leaking_run)
     monkeypatch.setattr(worker_protocol, "_emit", emitted.append)
     monkeypatch.setattr(worker_protocol, "_worker_request", lambda: (
-        operation, {"TOKEN": ESCAPED_SECRET}, tmp_path, run_root))
+        operation, {"TOKEN": ESCAPED_SECRET}, tmp_path, run_root, None,
+        __import__("harness.gateway_agent_execution", fromlist=["trace_context"]).trace_context(
+            _authorized(tmp_path), tmp_path)))
     assert worker_protocol._main() == 1
-    assert emitted == [{"type": "terminal", "state": "failed",
-                        "result": {"reason": "EXTERNAL_ACTION_FAILED"}}]
+    assert emitted[-1]["type"] == "terminal" and emitted[-1]["state"] == "failed"
+    assert ESCAPED_SECRET not in json.dumps(emitted)
     artifacts = [path for path in tmp_path.rglob("*") if path.is_file()]
-    assert artifacts == []
+    assert all(ESCAPED_SECRET not in path.read_text() for path in artifacts)
+    assert not (run_root / "agent_runs").exists()
 @pytest.mark.parametrize(("stderr", "malformed", "expected"), (
     ("", False, "completed"), (SECRET, False, "cancelled"),
     ("", True, "cancelled")), ids=("natural", "secret-stderr", "malformed"))
@@ -201,7 +203,6 @@ def test_review_w2_final_drain_requires_wholly_valid_outcome(
     assert worker.signal_tree() is True
     assert worker.wait(1).state == expected
 
-
 def test_review_w3_terminal_retry_keeps_exact_worker_outcome(tmp_path):
     class Immediate:
         control_class = "windows_job_v1"
@@ -221,7 +222,6 @@ def test_review_w3_terminal_retry_keeps_exact_worker_outcome(tmp_path):
         registered=lambda _worker: None, terminal=commit)
     assert [attempt.state for attempt in attempts] == ["completed", "completed"]
     assert attempts[0] == attempts[1]
-
 
 def test_review_w6_progress_is_published_before_worker_exit():
     progress_line = json.dumps(
@@ -249,7 +249,6 @@ def test_review_w6_progress_is_published_before_worker_exit():
         tree.release.set(); thread.join(1)
     assert progress == [{"step": 1}] and outcomes[0].state == "completed"
 
-
 def test_review_w14_failed_run_persists_only_bounded_fixed_diagnostics(
         monkeypatch, tmp_path):
     run_root, emitted = tmp_path / "runs", []
@@ -265,18 +264,19 @@ def test_review_w14_failed_run_persists_only_bounded_fixed_diagnostics(
     monkeypatch.setattr("harness.router_agent.run_router_agent", failed_run)
     monkeypatch.setattr(worker_protocol, "_emit", emitted.append)
     monkeypatch.setattr(worker_protocol, "_worker_request", lambda: (
-        operation, {}, tmp_path, run_root))
+        operation, {}, tmp_path, run_root, None,
+        __import__("harness.gateway_agent_execution", fromlist=["trace_context"]).trace_context(
+            _authorized(tmp_path), tmp_path)))
 
     assert worker_protocol._main() == 1
     files = list((run_root / "agent_runs").glob("*.json"))
-    assert len(files) == 1
-    stored = json.loads(files[0].read_bytes())
-    assert stored["status"] == "FAILED"
-    assert stored["failure"] == {"code": "EXTERNAL_ACTION_FAILED"}
-    assert len(stored["events"]) == 201
-    assert stored["events"][-1] == {"type": "truncated", "dropped": 5}
-    assert "private provider diagnostic" not in repr(stored)
-    assert emitted[-1]["result"] == {"reason": "EXTERNAL_ACTION_FAILED"}
+    assert files == []
+    from harness.gateway_agent_execution import trace_context, trace_from_request
+    records = trace_from_request(trace_context(_authorized(tmp_path), tmp_path)).read()
+    assert len([r for r in records if r["kind"] == "progress"]) == 205
+    assert "private provider diagnostic" in repr(records)
+    assert "safe" not in json.dumps(emitted)
+    assert emitted[-1]["result"]["reason"] == "EXTERNAL_ACTION_FAILED"
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows process-tree boundary")

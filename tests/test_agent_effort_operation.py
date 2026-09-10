@@ -42,7 +42,10 @@ def fake_loop(monkeypatch):
 
 
 def _run(operation, tmp_path):
-    return _run_agent(operation, {}, Path(tmp_path), Path(tmp_path) / "runs")
+    from harness.gateway_agent_trace import AgentTrace
+    trace = AgentTrace(tmp_path, "owner_" + "a" * 32, "jrn_" + "b" * 32, "op_" + "c" * 32)
+    _run_agent(operation, {}, Path(tmp_path), Path(tmp_path) / "runs", trace=trace)
+    return trace.read()[-1]["payload"]
 
 
 def test_the_schema_accepts_effort_on_the_live_agent_action():

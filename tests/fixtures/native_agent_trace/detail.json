@@ -1,0 +1,35 @@
+{
+  "schema": "flywheel.gateway-agent-trace-detail/v1",
+  "trace_ref": "agt_3e2197a3f63109a97f701d387b758689",
+  "operation_ref": "op_cccccccccccccccccccccccccccccccc",
+  "journey_ref": "jrn_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "record_count": 1,
+  "trace_head_sha256": "362e9efbd2e796cf7a7fd8bda27b8eb811cc7462eed16191198f019210ec42df",
+  "record": {
+    "journey_ref": "jrn_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "kind": "result",
+    "operation_ref": "op_cccccccccccccccccccccccccccccccc",
+    "owner_ref": "owner_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "payload": {
+      "duration_s": 1.25,
+      "environment": {
+        "machine": "AMD64",
+        "platform": "Windows-11",
+        "python": "3.12.1"
+      },
+      "final": "Synthetic café source, line 7: naïve ✓",
+      "usage_cost": 0.001
+    },
+    "prior_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "schema": "flywheel.gateway-agent-record/v1",
+    "sequence": 0,
+    "trace_ref": "agt_3e2197a3f63109a97f701d387b758689",
+    "record_sha256": "362e9efbd2e796cf7a7fd8bda27b8eb811cc7462eed16191198f019210ec42df"
+  },
+  "record_canonical_base64": "eyJqb3VybmV5X3JlZiI6Impybl9iYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiIsImtpbmQiOiJyZXN1bHQiLCJvcGVyYXRpb25fcmVmIjoib3BfY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2MiLCJvd25lcl9yZWYiOiJvd25lcl9hYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSIsInBheWxvYWQiOnsiZHVyYXRpb25fcyI6MS4yNSwiZW52aXJvbm1lbnQiOnsibWFjaGluZSI6IkFNRDY0IiwicGxhdGZvcm0iOiJXaW5kb3dzLTExIiwicHl0aG9uIjoiMy4xMi4xIn0sImZpbmFsIjoiU3ludGhldGljIGNhZsOpIHNvdXJjZSwgbGluZSA3OiBuYcOvdmUg4pyTIiwidXNhZ2VfY29zdCI6MC4wMDF9LCJwcmlvcl9zaGEyNTYiOiIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIiwic2NoZW1hIjoiZmx5d2hlZWwuZ2F0ZXdheS1hZ2VudC1yZWNvcmQvdjEiLCJzZXF1ZW5jZSI6MCwidHJhY2VfcmVmIjoiYWd0XzNlMjE5N2EzZjYzMTA5YTk3ZjcwMWQzODdiNzU4Njg5In0=",
+  "next_sequence": null,
+  "does_not_prove": [
+    "NOT_SEMANTIC_TRUTH",
+    "NOT_UNLIMITED_TOOL_OUTPUT"
+  ]
+}

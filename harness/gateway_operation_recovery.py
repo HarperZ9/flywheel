@@ -279,8 +279,11 @@ def recover_gateway_operations(state_root: Path, now: str) -> dict:
                 if state in TERMINALS:
                     operations.result(owner_dir.name, ref)
                     continue
+                from .gateway_agent_execution import recovered_projection
+                result = recovered_projection(state_root, owner_dir.name,
+                    history[0]["journey_ref"], ref, "failed", "OPERATION_INTERRUPTED")
                 operations._terminal(owner_dir.name, ref, WorkerOutcome(
-                    "failed", {"reason": "OPERATION_INTERRUPTED"}))
+                    "failed", result or {"reason": "OPERATION_INTERRUPTED"}))
                 closed += 1
             except Exception:
                 ambiguous += 1

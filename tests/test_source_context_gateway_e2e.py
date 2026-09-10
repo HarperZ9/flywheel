@@ -84,10 +84,13 @@ def test_real_gather_source_context_to_gateway_stub_provider_durable_trace(tmp_p
             text = source["contexts"][0]["rows"][0]["text"]
             assert text == "DECISION-FACT-ALPHA\nnaïve"
             assert "alpha-private-ref" not in json.dumps(source)
-            result = {"final": "provider-stub consumed selected source",
-                      "source_payload_sha256": source["source_payload_sha256"]}
+            from harness.gateway_agent_execution import trace_from_request
+            trace = trace_from_request(private["trace_context"])
+            trace.append("result", {"final": "provider-stub consumed selected source",
+                      "source_payload_sha256": source["source_payload_sha256"]})
+            result = trace.projection("completed")
             output = "\n".join((json.dumps({"type": "progress",
-                "event": {"provider": "stub", "source_context_ref": ref}}),
+                "event": trace.projection("running")}),
                 json.dumps({"type": "terminal", "state": "completed",
                             "result": result}), ""))
             return ProcessOutcome(0, output, "", 1, False)
@@ -109,7 +112,7 @@ def test_real_gather_source_context_to_gateway_stub_provider_durable_trace(tmp_p
             launcher=launcher))
 
     assert response.status == 200
-    assert response.body["final"] == "provider-stub consumed selected source"
+    assert response.body["state"] == "completed"
     operation_ref = next(iter(service.operation_refs(OWNER)))
     result = service.result(OWNER, operation_ref)
     history = service._history(service._journey(OWNER), operation_ref)
@@ -234,7 +237,10 @@ def test_real_gather_source_context_to_owned_os_child_agent_stub_plumbing(
             run_root=tmp_path / "runs", state_root=tmp_path))
 
     assert response.status == 200
-    assert response.body["final"] == "os-child agent stub consumed selected source"
+    assert response.body["state"] == "completed"
+    from harness.gateway_agent_trace import AgentTrace
+    private_trace = AgentTrace(tmp_path, OWNER, JOURNEY, response.body["operation_ref"])
+    assert private_trace.read()[-1]["payload"]["final"] == "os-child agent stub consumed selected source"
     child_receipt = json.loads(receipt.read_text(encoding="utf-8"))
     assert child_receipt == {"endpoint": "stub",
         "flywheel_home": str(tmp_path),
@@ -255,5 +261,5 @@ def test_real_gather_source_context_to_owned_os_child_agent_stub_plumbing(
     assert not (ambient_flywheel / "store.db").exists()
     assert not (ambient_run / "agent_runs").exists()
     assert not (worker_profile / ".flywheel" / "store.db").exists()
-    assert (tmp_path / "store.db").is_file()
-    assert list((tmp_path / "runs" / "agent_runs").glob("*.json"))
+    assert not (tmp_path / "store.db").is_file()
+    assert not list((tmp_path / "runs" / "agent_runs").glob("*.json"))
