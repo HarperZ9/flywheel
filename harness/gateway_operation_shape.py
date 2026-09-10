@@ -105,6 +105,16 @@ def validate_operation_shape(action: str, value: dict) -> None:
         _bounded_int(value["max_mutants"], 1, 20)
     if action == "lane.call" and "timeout" in value:
         _bounded_int(value["timeout"], 1, 600)
+    if action == "lane.call":
+        from .bulletin_origin import BulletinOriginError, operation_bulletin_origin
+        from .gateway_operation import GatewayOperationError
+        if value["name"] == "bulletin" and value["tool"] == "board_write_post":
+            try:
+                operation_bulletin_origin(value)
+            except BulletinOriginError as exc:
+                raise GatewayOperationError(exc.code) from None
+        elif "bulletin_base_url" in value:
+            raise ValueError
     if action == "lane.call" and "bulletin_access" in value:
         if value.get("name") != "bulletin":
             raise ValueError
@@ -186,6 +196,9 @@ def destination_for(action: str, value: dict) -> dict:
     if action == "suite.audit":
         return {"kind": "suite", "ref": value["path"]}
     if action == "lane.call":
+        if value["name"] == "bulletin" and value["tool"] == "board_write_post":
+            return {"kind": "lane", "ref": "bulletin",
+                    "bulletin_base_url": value.get("bulletin_base_url", "")}
         return {"kind": "lane", "ref": value["name"]}
     if action == "packs.admit":
         return {"kind": "pack", "ref": _pack_ref(value["manifest"])}

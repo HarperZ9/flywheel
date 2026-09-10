@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 
 from .bulletin_signed_transport import publish_authorized_preview
+from .bulletin_origin import BulletinOriginError, operation_bulletin_origin
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .evidence_public import TransportError, error_response, public_result
 from .outcome_bulletin import PREVIEW_SCHEMA, OutcomeBulletinError, _PARENT, _check_no_private
@@ -67,6 +68,10 @@ def _bulletin_access_denial(authorized) -> dict | None:
 def preview_from_authorized_operation(authorized) -> dict:
     op = dict(getattr(authorized, "operation", {}))
     post = _post(op.get("args"))
+    try:
+        origin = operation_bulletin_origin(op)
+    except BulletinOriginError as exc:
+        raise TransportError(exc.code, "Bulletin origin requires a new exact grant", 422) from None
     body = post["body"]
     preview = {
         "schema": PREVIEW_SCHEMA,
@@ -74,6 +79,7 @@ def preview_from_authorized_operation(authorized) -> dict:
             "lane": "bulletin",
             "tool": "board_write_post",
             "governance_tier": "T2",
+            "bulletin_base_url": origin,
         },
         "post": post,
         "body_bytes": len(body.encode("utf-8", "surrogateescape")),

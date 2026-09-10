@@ -53,7 +53,7 @@ def test_frozen_authorized_attachment_payload_can_be_sent_exactly(tmp_path, monk
     result = transport.publish_authorized_preview(
         auth, preview, state_root=tmp_path,
         credential_bindings=CredentialBindings({transport.BULLETIN_KEY_SLOT: jwk}),
-        base_url="https://bulletin.example")
+        base_url=preview["target"]["bulletin_base_url"])
     assert result["status"] == "posted_readback_match"
     assert sent == [("/v1/posts", preview["post"])]
 
@@ -75,7 +75,7 @@ def test_attachment_readback_drift_never_reports_match(tmp_path, monkeypatch, re
     result = transport.publish_authorized_preview(
         auth, preview, state_root=tmp_path,
         credential_bindings=CredentialBindings({transport.BULLETIN_KEY_SLOT: jwk}),
-        base_url="https://bulletin.example")
+        base_url=preview["target"]["bulletin_base_url"])
     assert result["status"] == "posted_readback_drift"
 
 
@@ -90,7 +90,7 @@ def test_unexpected_attachment_on_plain_post_is_drift(tmp_path, monkeypatch):
     result = transport.publish_authorized_preview(
         auth, preview, state_root=tmp_path,
         credential_bindings=CredentialBindings({transport.BULLETIN_KEY_SLOT: jwk}),
-        base_url="https://bulletin.example")
+        base_url=preview["target"]["bulletin_base_url"])
     assert result["status"] == "posted_readback_drift"
 
 

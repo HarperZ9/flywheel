@@ -178,6 +178,7 @@ class NativeCoordinator:
             r = record["review"]; unsigned = {k: x for k, x in r.items() if k != "review_sha256"}
             _check(r["schema"] == "flywheel.gateway-grant-review/v1" and canonical_sha256(unsigned) == r["review_sha256"])
             operation = {"name": "bulletin", "tool": "board_write_post", "governance_tier": "T2", "timeout": 20,
+                         "bulletin_base_url": self.launch.bulletin_origin,
                          "args": {k: action[k] for k in ("room", "body", "parent_id")}, "data_refs": [],
                          "credential_refs": [self.config["credential_ref"]]}
             op = canonicalize_operation("lane.call", operation)

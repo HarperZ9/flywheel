@@ -16,6 +16,9 @@ def gateway_error_response(exc: Exception) -> tuple[dict, int]:
         code = "PERMISSION_REQUIRED"
     errors = {
         "INVALID_REQUEST": (422, "gateway operation is invalid"),
+        "BULLETIN_ORIGIN_REQUIRED": (422, "Bulletin origin requires a new exact grant"),
+        "BULLETIN_ORIGIN_INVALID": (422, "Bulletin origin is invalid"),
+        "BULLETIN_ORIGIN_MISMATCH": (409, "Bulletin configured origin differs from approval"),
         "AUTH_REQUIRED": (401, "gateway authentication is required"),
         "PERMISSION_REQUIRED": (403, "gateway operation approval is required"),
         "PERMISSION_DENIED": (403, "gateway operation approval is invalid"),

@@ -5,6 +5,7 @@ import json
 import pytest
 
 from harness.bulletin_readback import post_matches
+from harness.bulletin_origin import PUBLIC_BULLETIN_ORIGIN
 from harness.evidence_public import TransportError
 from harness.gateway_operation import AuthorizedOperation
 from harness.outcome_bulletin import build_preview, OutcomeBulletinError
@@ -14,11 +15,12 @@ from tests.test_bulletin_signed_transport import _public_outcome
 PARENT = "1788991200000-abcdefgh"
 
 
-def _authorized(post):
+def _authorized(post, *, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN):
     return AuthorizedOperation.for_test(
         action="lane.call", operation={"name": "bulletin",
         "tool": "board_write_post", "args": post, "governance_tier": "T2",
-        "timeout": 20, "data_refs": [], "credential_refs": []},
+        "bulletin_base_url": bulletin_base_url, "timeout": 20,
+        "data_refs": [], "credential_refs": []},
         scopes=("exec", "network", "plugin"))
 
 
@@ -67,12 +69,14 @@ def test_signed_reply_readback_binds_signing_actor(tmp_path, mode):
     from tests.test_bulletin_signed_transport import (
         OWNER, BulletinServer, _authorized as grant, _jwk_json)
     key, public = _jwk_json()
-    store = CredentialHandleStore(tmp_path, keychain_get=lambda _: key)
-    handle = store.bind(OWNER, BULLETIN_KEY_SLOT)
-    preview = build_preview({**_public_outcome(), "parent_id": PARENT})
-    authorized = grant(tmp_path, preview, handle.credential_ref)
     board = BulletinServer(public, mode=mode)
     try:
+        store = CredentialHandleStore(tmp_path, keychain_get=lambda _: key)
+        handle = store.bind(OWNER, BULLETIN_KEY_SLOT)
+        preview = build_preview(
+            {**_public_outcome(), "parent_id": PARENT},
+            bulletin_base_url=board.url, allow_loopback=True)
+        authorized = grant(tmp_path, preview, handle.credential_ref)
         result = publish_authorized_preview(
             authorized, preview, state_root=tmp_path,
             keychain_get=lambda _: key, base_url=board.url, allow_loopback=True)
@@ -91,10 +95,12 @@ def test_gateway_local_board_requires_explicit_existing_loopback_flag(
     from harness.gateway_provider_adapter import resolve_credentials
     from tests.test_bulletin_signed_transport_review import _authorized_with_handle
     from harness import keychain
-    authorized, _, key = _authorized_with_handle(tmp_path)
+    origin = "http://127.0.0.1:8787"
+    authorized, _, key = _authorized_with_handle(
+        tmp_path, bulletin_base_url=origin, allow_loopback=True)
     calls = []
     monkeypatch.setattr(keychain, "keychain_get", lambda slot: calls.append(slot) or key)
-    monkeypatch.setenv("FLYWHEEL_BULLETIN_BASE_URL", "http://127.0.0.1:8787")
+    monkeypatch.setenv("FLYWHEEL_BULLETIN_BASE_URL", origin)
     monkeypatch.setenv("FLYWHEEL_BULLETIN_ALLOW_LOOPBACK", allow)
     if allow == "1":
         assert resolve_credentials(authorized, tmp_path).credential_bindings
@@ -105,9 +111,17 @@ def test_gateway_local_board_requires_explicit_existing_loopback_flag(
         assert calls == []
 
 
-@pytest.mark.parametrize("changed", ["parent_id", "room", "body", "journey", "request"])
+@pytest.mark.parametrize("changed, expected_status, expected_code", [
+    ("parent_id", 403, "PERMISSION_DENIED"),
+    ("room", 403, "PERMISSION_DENIED"),
+    ("body", 403, "PERMISSION_DENIED"),
+    ("journey", 403, "PERMISSION_REQUIRED"),
+    ("request", 403, "PERMISSION_DENIED"),
+    ("bulletin_base_url", 403, "PERMISSION_DENIED"),
+    ("missing_bulletin_base_url", 422, "BULLETIN_ORIGIN_REQUIRED"),
+])
 def test_changed_reply_grant_denied_before_resolver_or_dispatch(
-        tmp_path, monkeypatch, changed):
+        tmp_path, monkeypatch, changed, expected_status, expected_code):
     from harness.credential_handles import CredentialHandleStore
     from harness.gateway_grant_route import gateway_grant_post
     from harness.outcome_bulletin import (
@@ -137,6 +151,10 @@ def test_changed_reply_grant_denied_before_resolver_or_dispatch(
         final["journey_ref"] = "jrn_" + "b" * 32
     elif changed == "request":
         final["client_request_id"] = "different-task"
+    elif changed == "bulletin_base_url":
+        final["bulletin_base_url"] = "https://example.invalid"
+    elif changed == "missing_bulletin_base_url":
+        del final["bulletin_base_url"]
     else:
         final["args"] = {**final["args"], changed: "different"}
     calls = []
@@ -146,6 +164,6 @@ def test_changed_reply_grant_denied_before_resolver_or_dispatch(
         lambda *_: calls.append("dispatch") or pytest.fail("dispatch"))
     status, result = _handler_post(tmp_path,
         "/api/lane/bulletin/board_write_post", OWNER, NOW, final)
-    assert status == 403
-    assert result["error"]["code"] in {"PERMISSION_DENIED", "PERMISSION_REQUIRED"}
+    assert status == expected_status
+    assert result["error"]["code"] == expected_code
     assert calls == []

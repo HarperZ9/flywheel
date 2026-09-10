@@ -20,6 +20,7 @@ def digest(value):
 
 def review_for(launch, action, proposal_sha):
     op = {"name": "bulletin", "tool": "board_write_post", "governance_tier": "T2", "timeout": 20,
+          "bulletin_base_url": launch.bulletin_origin,
           "args": {k: action[k] for k in ("room", "body", "parent_id")}, "data_refs": [],
           "credential_refs": ["cred_" + "c" * 32]}
     operation = canonicalize_operation("lane.call", op)

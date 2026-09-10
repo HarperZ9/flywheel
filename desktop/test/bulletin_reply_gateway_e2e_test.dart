@@ -39,6 +39,7 @@ void main() {
             operation: {
               'name': 'bulletin',
               'tool': 'board_write_post',
+              'bulletin_base_url': board,
               'args': post,
               'governance_tier': 'T2',
               'timeout': 20,

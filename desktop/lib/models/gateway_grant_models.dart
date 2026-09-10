@@ -30,6 +30,7 @@ Object? _snapshot(Object? value, List<int> budget, int depth,
   if (value is String) {
     if (!isSafePublicText(value) &&
         !(key == 'base_url' && isSafePublicBaseUrl(value)) &&
+        !(key == 'bulletin_base_url' && isCanonicalBulletinOrigin(value)) &&
         !(_pathFields.contains(key) && isSafeLocalPath(value))) {
       _invalid();
     }
@@ -81,6 +82,7 @@ final class GatewayOperation {
         credentialRefs.toSet().length != credentialRefs.length) {
       _invalid();
     }
+    _validateBulletinOriginBinding(action, raw, destination);
     if (action == 'operation.cancel') _validateCancel(raw);
     if (action == 'plan.run') validatePlanRunOperation(raw);
   }

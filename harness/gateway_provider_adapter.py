@@ -5,6 +5,7 @@ from dataclasses import dataclass, field, replace
 import os
 from pathlib import Path
 
+from .bulletin_origin import BulletinOriginError, checked_bulletin_origin
 from .credential_handles import CredentialHandleStore
 from .evidence_json import canonical_sha256
 from .gateway_operation import GatewayOperationError
@@ -184,6 +185,8 @@ def resolve_credentials(operation, state_root: Path):
                 "bulletin_media_state_root": str(Path(state_root))})
         return replace(operation, credential_bindings=bindings,
                        execution_plan=plan)
+    except BulletinOriginError as exc:
+        raise GatewayOperationError(exc.code) from None
     except Exception:
         raise GatewayOperationError("PERMISSION_REQUIRED") from None
 
@@ -191,10 +194,8 @@ def resolve_credentials(operation, state_root: Path):
 def _validate_before_secret_resolution(operation, state_root: Path) -> None:
     value = operation.operation
     if (operation.action == "lane.call" and value["name"] == "bulletin"
-            and value["tool"] == "board_write_post"
-            and operation.credential_refs):
-        from .bulletin_signed_transport import configured_bulletin_base_url
-        configured_bulletin_base_url(
+            and value["tool"] == "board_write_post"):
+        checked_bulletin_origin(value,
             allow_loopback=os.environ.get("FLYWHEEL_BULLETIN_ALLOW_LOOPBACK") == "1")
     if _is_bulletin_media(operation):
         from .outcome_bulletin_media import validate_media_authorized_operation

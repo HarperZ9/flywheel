@@ -5,6 +5,7 @@ import re
 from typing import Callable
 
 from .bulletin_readback import post_matches
+from .bulletin_origin import PUBLIC_BULLETIN_ORIGIN, canonical_bulletin_origin
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .evidence_public import TransportError, public_result
 from .gateway_operation import (
@@ -143,7 +144,6 @@ def _section(title: str, rows: list[str]) -> list[str]:
         return []
     return ["", f"{title}:"] + [f"- {row}" for row in rows]
 
-
 def _render(outcome: dict) -> str:
     lines = [outcome["title"], "", f"Status: {outcome['status']}"]
     lines += _section("Checked", outcome.get("checked", []))
@@ -155,8 +155,8 @@ def _render(outcome: dict) -> str:
     lines += [f"- {row['label']}: {row['url']}" for row in outcome["links"]]
     return "\n".join(lines)
 
-
-def build_preview(outcome: dict) -> dict:
+def build_preview(outcome: dict, *, bulletin_base_url: str = PUBLIC_BULLETIN_ORIGIN,
+                  allow_loopback: bool = False) -> dict:
     """Render a deterministic public Bulletin post preview from public input."""
     normalized = _normalize(outcome)
     body = _render(normalized)
@@ -171,6 +171,8 @@ def build_preview(outcome: dict) -> dict:
             "lane": "bulletin",
             "tool": "board_write_post",
             "governance_tier": "T2",
+            "bulletin_base_url": canonical_bulletin_origin(
+                bulletin_base_url, allow_loopback=allow_loopback),
         },
         "post": post,
         "body_bytes": len(body.encode("utf-8", "surrogateescape")),
@@ -183,7 +185,6 @@ def build_preview(outcome: dict) -> dict:
         },
     }
     return strict_load_json(canonical_bytes(preview), max_bytes=1_048_576, max_depth=32)
-
 
 def build_gateway_grant_request(
         preview: dict, *, journey_ref: str, expected_event_head: str,
@@ -200,6 +201,7 @@ def build_gateway_grant_request(
         "tool": "board_write_post",
         "args": preview["post"],
         "governance_tier": "T2",
+        "bulletin_base_url": preview.get("target", {}).get("bulletin_base_url"),
         "timeout": timeout,
         "data_refs": [],
         "credential_refs": [] if credential_ref is None else [credential_ref],
@@ -215,7 +217,6 @@ def build_gateway_grant_request(
     if not canonical.operation_sha256 or not canonical.arguments_sha256:
         _fail()
     return request
-
 
 def build_gateway_publish_envelope(
         preview: dict, *, journey_ref: str, expected_event_head: str,
@@ -241,7 +242,6 @@ def build_gateway_publish_envelope(
         **request["operation"],
     }
 
-
 def _safe_publication(status: str, preview: dict, **extra) -> dict:
     body = {
         "schema": PUBLICATION_SCHEMA,
@@ -251,12 +251,10 @@ def _safe_publication(status: str, preview: dict, **extra) -> dict:
     }
     return public_result("outcome-bulletin-publication", body)
 
-
 def _post_id(value: object) -> str | None:
     post = value.get("post") if type(value) is dict else None
     post_id = post.get("id") if type(post) is dict else None
     return post_id if type(post_id) is str and post_id.strip() else None
-
 
 def publish_preview(
         preview: dict, *, grant_ref: str,
