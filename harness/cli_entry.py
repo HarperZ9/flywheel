@@ -103,24 +103,23 @@ def _cmd_install(argv: list[str]) -> int:
 
 
 def _launch_gateway(gateway_argv: list[str]) -> int:
-    """Prefer a source checkout; fall back to the installed harness package."""
+    """Serve in this process, retaining a source checkout's working directory."""
     repo_root = None
     if not getattr(sys, "frozen", False):
         try:
             repo_root = find_repo_root()
         except FileNotFoundError:
             repo_root = None
-    if repo_root is None:
-        from harness.gateway import main as _gw_main
-        return _gw_main(gateway_argv)
-    os.chdir(repo_root)
-    script = repo_root / "scripts" / "run_harness_cli.py"
-    sys.argv = [str(script), "app", *gateway_argv]
-    try:
-        runpy.run_path(str(script), run_name="__main__")
-    except SystemExit as exc:
-        return int(exc.code or 0)
-    return 0
+    if repo_root is not None:
+        os.chdir(repo_root)
+        # Prefix the selected root so explicit caller options still win. The
+        # imported package can live elsewhere; its REPO default is not this cwd.
+        gateway_argv = ["--root", str(repo_root), *gateway_argv]
+    # The generic script dispatcher spawns another Python process. A desktop
+    # owner stopping its launcher must not leave that gateway running behind it.
+    # Use the gateway's portable, configured run-root default in every mode.
+    from harness.gateway import main as _gw_main
+    return _gw_main(gateway_argv)
 
 
 def _cmd_up(argv: list[str]) -> int:

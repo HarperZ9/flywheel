@@ -6,12 +6,30 @@
 // no bundle, so `flywheel up` on PATH stays as the fallback. Stopping the
 // app leaves a user-started gateway running only if it was already running.
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+typedef GatewayProcessStarter = Future<Process> Function(
+  String executable,
+  List<String> arguments, {
+  required ProcessStartMode mode,
+  required bool runInShell,
+});
+
 class GatewayProcess {
+  GatewayProcess({
+    GatewayProcessStarter? processStarter,
+    String? Function()? bundledEngineResolver,
+  })  : _processStarter = processStarter ?? Process.start,
+        _bundledEngineResolver = bundledEngineResolver ?? bundledEngine;
+
+  final GatewayProcessStarter _processStarter;
+  final String? Function() _bundledEngineResolver;
   Process? _child;
+  Future<String?>? _starting;
+  int _generation = 0;
 
   bool get startedByUs => _child != null;
 
@@ -35,46 +53,77 @@ class GatewayProcess {
   /// `flywheel up` from PATH otherwise. Returns an error message, or null
   /// on success. The gateway needs a few seconds to come up; callers keep
   /// polling.
-  Future<String?> start({int port = 8799}) async {
-    if (_child != null) return null;
-    final bundled = bundledEngine();
+  Future<String?> start({int port = 8799}) {
+    if (_child != null) return Future.value();
+    if (_starting != null) return _starting!;
+    final launch = _launch(port, ++_generation);
+    _starting = launch;
+    return launch.whenComplete(() {
+      if (identical(_starting, launch)) _starting = null;
+    });
+  }
+
+  Future<String?> _launch(int port, int generation) async {
+    final bundled = _bundledEngineResolver();
+    final executable =
+        bundled ?? (Platform.isWindows ? 'flywheel.exe' : 'flywheel');
+    if (Platform.isWindows && !executable.toLowerCase().endsWith('.exe')) {
+      return 'Windows startup requires an executable engine, not a script wrapper.';
+    }
     try {
-      if (bundled != null) {
-        _child = await Process.start(
-          bundled,
-          ['--port', '$port'],
-          mode: ProcessStartMode.detachedWithStdio,
-        );
-      } else {
-        _child = await Process.start(
-          'flywheel',
-          ['up', '--port', '$port'],
-          mode: ProcessStartMode.detachedWithStdio,
-          runInShell: true,
-        );
+      final child = await _processStarter(
+        executable,
+        [if (bundled == null) 'up', '--port', '$port'],
+        // Dart uses CREATE_NO_WINDOW for this mode on Windows. Detached
+        // shell wrappers can give their children a visible console instead.
+        mode: ProcessStartMode.normal,
+        runInShell: false,
+      );
+      _child = child;
+      _observe(child);
+      if (generation != _generation) {
+        stopIfOwned();
+        return 'Engine start was cancelled.';
       }
       return null;
-    } on ProcessException catch (e) {
-      debugPrint('gateway start failed: $e');
-      _child = null;
+    } on ProcessException {
+      debugPrint('gateway start failed');
       if (bundled != null) {
         return 'The bundled engine failed to start ($bundled). '
             'Reinstall Flywheel, or run `flywheel up` from a terminal.';
+      }
+      if (Platform.isWindows) {
+        return 'flywheel.exe is not available on PATH. Install the engine with '
+            'pip install flywheel-verify, or reinstall Flywheel. Windows script '
+            'wrappers are not supported for automatic startup.';
       }
       return 'flywheel is not on PATH. Install the engine: pip install flywheel-verify '
           '(or pip install -e . from a checkout), then retry.';
     }
   }
 
+  void _observe(Process child) {
+    // Drain without retaining or printing output: it can contain private data,
+    // and unread pipes can block an otherwise healthy gateway.
+    unawaited(child.stdout.drain<void>().catchError((Object _) {}));
+    unawaited(child.stderr.drain<void>().catchError((Object _) {}));
+    unawaited(child.stdin.close().catchError((Object _) {}));
+    unawaited(child.exitCode.then<void>((_) {
+      if (identical(_child, child)) _child = null;
+    }, onError: (Object _) {
+      // An observation error does not prove exit; retain stop ownership.
+    }));
+  }
+
   /// Stop the child gateway if this app started it.
   void stopIfOwned() {
+    _generation++;
     final p = _child;
     if (p != null) {
-      _child = null;
       try {
-        p.kill();
-      } catch (e) {
-        debugPrint('gateway stop failed: $e');
+        if (p.kill() && identical(_child, p)) _child = null;
+      } catch (_) {
+        debugPrint('gateway stop failed');
       }
     }
   }
