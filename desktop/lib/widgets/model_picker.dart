@@ -137,7 +137,8 @@ class _ModelPickerDialogState extends State<_ModelPickerDialog> {
 
   Widget _row(FwTokens t, EndpointRow e, bool selected) {
     final (label, color) = switch (e.credential) {
-      'cli-auth' => ('subscription', t.verified),
+      'cli-auth' when e.cliAuthenticated => ('subscription', t.verified),
+      'cli-auth' => ('sign-in needed', t.inkFaint),
       'present' => ('ready', t.verified),
       'local-none' => ('local', t.verified),
       _ => ('no key', t.inkFaint),

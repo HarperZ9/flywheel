@@ -144,8 +144,11 @@ class _EndpointsViewState extends State<EndpointsView> {
               value: '${h.localHealthy}/${h.localTotal}',
               status: fractionStatus(h.localHealthy, h.localTotal)),
           StatTile(
-              label: 'subscription CLIs present',
-              value: '${_roster.where((r) => r.cliPresent).length}'),
+              label: 'Claude account ready',
+              value: _roster.any(
+                      (r) => r.name == 'claude-cli' && r.cliAuthenticated)
+                  ? 'yes'
+                  : 'no'),
           StatTile(
               label: 'keys present',
               value: '${h.hostedConfigured}/${h.hosted.length}'),
@@ -161,7 +164,7 @@ class _EndpointsViewState extends State<EndpointsView> {
           TrainingCard(training: _training!),
         ],
         const SizedBox(height: FwLayout.s5),
-        const Kicker('providers · presence only; sign-in and access not verified'),
+        const Kicker('providers - presence and typed account readiness only'),
         const SizedBox(height: FwLayout.s3),
         ProviderRoster(roster: _roster),
         const SizedBox(height: FwLayout.s5),
@@ -181,7 +184,7 @@ class _EndpointsViewState extends State<EndpointsView> {
             onToken: (p, token) => _authAction('/api/auth/token', {'provider': p, 'token': token}),
             onLogout: (p) => _authAction('/api/auth/logout', {'provider': p}),
             onCancel: (p) => _authAction('/api/auth/cancel', {'provider': p}),
-            onChanged: _authStatus.refresh,
+            onChanged: () { _authStatus.refresh(); _load(); },
           ),
         ],
         if (_sessionTokens != null) ...[

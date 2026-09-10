@@ -1,18 +1,7 @@
-"""endpoint_registry.py -- one roster of EVERY provider, one bridge to the
-verified accept path. The superapp's universal-router foundation (increment 3).
+"""One endpoint roster and bridge into the verified accept path.
 
-Two provider abstractions existed side by side: `providers.REGISTRY` (OpenAI-
-shaped endpoints -> `make_proposer` -> the verified accept path) and `endpoints.py`'s
-rich NATIVE backends (Anthropic, Gemini, subscription-CLI tiers, OpenCode) that the
-local agent used but that never reached the harness's oracle+witness+receipt path.
-This unifies them: `BackendProposer` bridges ANY `.chat` backend into a Proposer,
-so every provider -- local serve/ollama, OpenAI-compat, native Anthropic/Gemini,
-subscription CLI -- feeds the SAME verified loop, and `unified_roster()` enumerates
-them all with credential-PRESENCE booleans (env presence only, never a value).
-
-The differentiator over every other router (OpenRouter, LiteLLM, ...): they route;
-this routes AND verifies. Provider provenance rides `model_ref` into every receipt,
-and the accept authority stays the oracle -- the provider only proposes.
+Credential fields are presence labels only. Provider provenance rides model_ref;
+the oracle keeps accept authority.
 """
 from __future__ import annotations
 
@@ -22,7 +11,7 @@ import re
 import shutil
 from dataclasses import replace
 
-from . import providers
+from . import claude_cli_auth, providers
 from .proposer import Proposer, ProposerOutput, prompt_hash
 
 ProviderPermissionError = providers.ProviderPermissionError
@@ -56,8 +45,6 @@ class BackendProposer:
             usage=(out.get("usage") if isinstance(out, dict) and isinstance(out.get("usage"), dict) else None))
 
 
-# Native (non-OpenAI-shaped) endpoints endpoints.py serves directly.
-# (name, kind, key_env, host, default_model). CLI tiers use their own login.
 _NATIVE = [
     ("anthropic", "anthropic", "ANTHROPIC_API_KEY", "api.anthropic.com", "claude-sonnet-5"),
     ("gemini", "gemini", "GEMINI_API_KEY", "generativelanguage.googleapis.com", "gemini-2.5-flash"),
@@ -67,10 +54,7 @@ _NATIVE = [
 ]
 
 
-# the binary a CLI endpoint shells out to; presence on PATH gates usability
 _CLI_BINARY = {"claude-cli": "claude", "codex-cli": "codex", "opencode": "opencode"}
-# roster name -> the backend name build_endpoints actually produces, so a
-# usable-looking endpoint can actually be turned into a proposer
 _BUILD_ALIAS = {"claude-cli": "claude-plan", "codex-cli": "codex-plan"}
 _LOCAL_ALIASES = frozenset(("local", "default", "auto", "flywheel", "flywheel-serve"))
 
@@ -98,6 +82,12 @@ def _host(url: str) -> str:
     return url.split("://", 1)[-1].split("/", 1)[0]
 
 
+def _row_usable(row: dict) -> bool:
+    if row["name"] == "claude-cli" and row["credential"] == "cli-auth":
+        return row.get("account_authenticated") is True
+    return row["credential"] in ("present", "cli-auth", "local-none")
+
+
 def unified_roster() -> dict:
     """Every endpoint in one list, with credential-presence (never a value). Every
     entry is receipt_capable: it can be turned into a verified Proposer."""
@@ -112,13 +102,23 @@ def unified_roster() -> dict:
                  "receipt_capable": True, "source": "builtin"})
     for name, kind, key_env, host, dm in _NATIVE:
         cred = _credential(key_env, local=False, kind=kind, name=name)
+        extra = {}
+        if name == "claude-cli":
+            account = claude_cli_auth.public_status()
+            extra = {"account_state": account.get("state", "unknown"),
+                     "account_authenticated": account.get("authenticated") is True,
+                     "account_executable": account.get("executable", "")}
+        capable = cred != "cli-absent"
+        if name == "claude-cli":
+            capable = capable and extra.get("account_authenticated") is True
         # receipt_capable only if it can actually be built AND is reachable:
         # a cli whose binary is absent is advertised, but not as usable
         rows.append({"name": name, "kind": kind, "local": kind in ("cli", "opencode"),
-                     "credential": cred,
-                     "host": host, "default_model": dm,
-                     "receipt_capable": cred != "cli-absent", "source": "endpoints"})
-    usable = [r for r in rows if r["credential"] in ("present", "cli-auth", "local-none")]
+                      "credential": cred,
+                      "host": host, "default_model": dm,
+                      "receipt_capable": capable, "source": "endpoints",
+                      **extra})
+    usable = [r for r in rows if _row_usable(r)]
     # a routing digest over the roster's IDENTITY fields (not the volatile
     # credential-presence), so a mutation of the routable set is a receiptable
     # change: a caller records roster_sha and can prove which registry state
@@ -286,5 +286,7 @@ def _build_endpoint_proposer(name: str, *, model: str | None, base_url: str | No
                 b = _codex_model_override(b, model)
             elif name == "claude-cli" and model is not None and model != "":
                 b = _cli_model_override(b, model, provider="Claude")
+            if name == "claude-cli":
+                b = claude_cli_auth.bind_authenticated_backend(b)
             return BackendProposer(b, extract=extract)
     raise ValueError(f"unknown endpoint {name!r}; see unified_roster()['usable_names']")

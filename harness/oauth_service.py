@@ -22,7 +22,7 @@ import threading
 import urllib.parse
 from typing import Optional
 
-from . import keychain, oauth_signin
+from . import claude_cli_auth, keychain, oauth_signin
 from .oauth_profiles import PROFILES
 from .oauth_attempt import SigninAttempt
 
@@ -55,17 +55,18 @@ def auth_rows() -> dict:
     for row in oauth_signin.status():
         job = jobs.get(row["provider"], {})
         rows.append({**row,
-                     "kind_label": {"pkce": "browser sign-in",
-                                    "guided-cli": "provider tool",
-                                    "registered": "needs registration"}
+                      "kind_label": {"pkce": "browser sign-in",
+                                     "guided-cli": "provider tool",
+                                     "official-cli": "Claude Code account",
+                                     "registered": "needs registration"}
                      .get(row["kind"], row["kind"]),
                      "pending": job.get("state") == "running",
                      "last": job.get("state", ""),
                      "last_error": job.get("error", "")})
     return {"providers": rows,
             "credential_store": keychain.keychain_available(),
-            "note": "Sign-in stores a token in the OS credential store under "
-                    "the name the router reads. Values are never displayed."}
+            "note": "Sign-in rows show credential or account presence only. "
+                    "Values and account metadata are never displayed."}
 
 
 def begin(provider: str, callback_base: Optional[str] = None) -> dict:
@@ -82,6 +83,11 @@ def begin(provider: str, callback_base: Optional[str] = None) -> dict:
     if profile is None:
         return {"ok": False, "provider": provider,
                 "error": f"unknown provider; known: {', '.join(sorted(PROFILES))}"}
+    if profile.kind == "official-cli":
+        result = claude_cli_auth.begin_login(provider=provider)
+        _set_job(provider, "done" if result.get("ok") else "failed",
+                 result.get("error"))
+        return result
     if not keychain.keychain_available():
         return {"ok": False, "provider": provider, "mode": "unavailable",
                 "error": "no OS credential store on this platform, so a token "
@@ -179,6 +185,9 @@ def submit(provider: str, token: str) -> dict:
     profile = PROFILES.get(provider)
     if profile is None:
         return {"ok": False, "provider": provider, "error": "unknown provider"}
+    if profile.kind == "official-cli":
+        return {"ok": False, "provider": provider,
+                "error": "Claude Code account sign-in does not accept token paste"}
     if profile.kind != "guided-cli":
         return {"ok": False, "provider": provider,
                 "error": f"{provider} signs in through its own flow, not a paste"}
