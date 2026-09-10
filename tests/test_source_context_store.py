@@ -30,7 +30,7 @@ def _selection(text="DECISION-FACT-ALPHA\nnaïve café", corpus_digest="c" * 64)
             "ref": "C:/private/source.txt", "method": "file-read",
             "sha256": "e" * 64, "verified_sha256": "f" * 64,
             "derived_from": [], "full_text_chars": 200, "body_bytes_read": 100,
-            "range": {"start": 10, "end": 36}, "text": text,
+            "range": {"start": 10, "end": 10 + len(text)}, "text": text,
             "omissions": [],
         }],
         "omissions": [],
@@ -98,7 +98,7 @@ def test_selected_identity_uses_normalized_utf8_text_and_character_ranges(tmp_pa
         OWNER, (attached["source_context_ref"],))["contexts"][0]["rows"][0]
 
     assert row["text"] == "DECISION-FACT-ALPHA\nnaïve café"
-    assert row["range"] == {"start": 10, "end": 36}
+    assert row["range"] == {"start": 10, "end": 40}
     assert row["selected_text_utf8_bytes"] == len(row["text"].encode("utf-8"))
 
 

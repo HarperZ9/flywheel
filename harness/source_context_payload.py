@@ -57,7 +57,8 @@ def validated_gather_payload(payload: dict) -> tuple[list[dict], dict]:
         raise SourceContextError("SOURCE_CONTEXT_SELECTION_FAILED")
     caps, rows = _caps(payload), _rows(payload)
     total = payload.get("total_text_chars")
-    if (payload.get("selection_count") != len(rows) or type(total) is not int
+    count = payload.get("selection_count")
+    if (type(count) is not int or count != len(rows) or type(total) is not int
             or total != sum(len(row["text"]) for row in rows)
             or len(rows) > caps.get("max_rows", _CAP_LIMITS["max_rows"])
             or total > caps.get("max_total_chars", _CAP_LIMITS["max_total_chars"])):
@@ -76,8 +77,10 @@ def _rows(payload: dict) -> list[dict]:
 
 
 def _row(row: dict) -> dict:
+    if type(row) is not dict:
+        raise SourceContextError("SOURCE_CONTEXT_SELECTION_FAILED")
     span, text = row.get("range"), row.get("text")
-    if type(row) is not dict or type(span) is not dict or type(text) is not str or "\r" in text:
+    if type(span) is not dict or type(text) is not str or "\r" in text:
         raise SourceContextError("SOURCE_CONTEXT_SELECTION_FAILED")
     start, end = span.get("start"), span.get("end")
     if type(start) is not int or type(end) is not int or start < 0 or end < start:
@@ -85,12 +88,13 @@ def _row(row: dict) -> dict:
     row_ref, full_hash = row.get("row_ref"), row.get("verified_sha256") or row.get("sha256")
     if type(row_ref) is not str or _ROW_REF.fullmatch(row_ref) is None:
         raise SourceContextError("SOURCE_CONTEXT_SELECTION_FAILED")
-    try:
-        full_chars = int(row.get("full_text_chars", 0))
-        body_bytes = int(row.get("body_bytes_read", 0))
-    except (TypeError, ValueError):
-        raise SourceContextError("SOURCE_CONTEXT_SELECTION_FAILED") from None
-    if full_chars < 0 or body_bytes < 0:
+    full_chars, body_bytes = row.get("full_text_chars"), row.get("body_bytes_read")
+    if (type(full_chars) is not int or type(body_bytes) is not int
+            or full_chars < 0 or body_bytes < 0):
+        raise SourceContextError("SOURCE_CONTEXT_SELECTION_FAILED")
+    # Gather ranges index normalized Python characters, not UTF-8 bytes.
+    # A matching payload digest alone cannot validate its locator arithmetic.
+    if end > full_chars or end - start != len(text):
         raise SourceContextError("SOURCE_CONTEXT_SELECTION_FAILED")
     return {"row_ref": row_ref, "kind": _safe_name(row.get("kind")),
         "id_sha256": _sha_text(str(row.get("id", ""))),
