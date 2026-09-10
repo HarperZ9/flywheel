@@ -37,6 +37,10 @@ void main() {
     await tester.pumpWidget(_rail());
     final search = find.byType(TextField);
 
+    await tester.enterText(search, 'assistant');
+    await tester.pump();
+    expect(find.text('Rowan'), findsOneWidget);
+
     await tester.enterText(search, 'connect');
     await tester.pump();
     expect(find.text('Models'), findsOneWidget);

@@ -54,7 +54,7 @@ void main() {
       'Start engine',
       'Models setup',
       'Projects',
-      'Chat',
+      'Rowan',
       'Plan',
       'Code',
       'Receipts',
@@ -69,7 +69,7 @@ void main() {
     expect(opened.last, DestinationId.models);
     await tester.tap(find.widgetWithText(OutlinedButton, 'Projects'));
     expect(opened.last, DestinationId.projects);
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Chat'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Rowan'));
     expect(opened.last, DestinationId.chat);
     await tester.tap(find.widgetWithText(OutlinedButton, 'Plan'));
     expect(opened.last, DestinationId.plan);

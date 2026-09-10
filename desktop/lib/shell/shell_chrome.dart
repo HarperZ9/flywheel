@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../assistant/assistant_executor.dart';
+import '../assistant/assistant_identity.dart';
 import '../assistant/url_device_sink.dart';
 import '../assistant/voice.dart';
 import '../client/gateway_client.dart';
@@ -106,7 +107,7 @@ class ShellMobileTopBar extends StatelessWidget {
             const Spacer(),
             _topAction(context, Icons.contrast, 'Theme',
                 onToggleTheme),
-            _topAction(context, Icons.assistant_rounded, 'Assistant',
+            _topAction(context, Icons.assistant_rounded, AssistantIdentity.openLabel,
                 onAssistant),
           ]),
         );
