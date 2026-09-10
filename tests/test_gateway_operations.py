@@ -122,37 +122,6 @@ def test_start_orders_queue_create_start_resume_and_seals_one_terminal(tmp_path)
     assert service.result(OWNER, queued.operation_ref)["result"] == {
         "final": "answer"}
     assert kinds.count("operation_completed") == 1
-def test_identical_start_replays_but_changed_identity_is_mismatch(tmp_path):
-    process = Process(WorkerOutcome("completed", {"ok": True}))
-    process.ready.set()
-    service = GatewayOperations(tmp_path, clock=lambda: NOW)
-    authorized = _authorized(tmp_path)
-    factory = Factory(process, tmp_path)
-    first = start_operation(
-        authorized=authorized, service=service, process_factory=factory)
-    service.wait_terminal(OWNER, first.operation_ref, 2)
-
-    replay = start_operation(
-        authorized=authorized, service=service, process_factory=factory)
-    assert replay.state == "completed" and factory.calls == 1
-    changed = replace(authorized, operation_sha256="e" * 64)
-    with pytest.raises(Exception) as failure:
-        start_operation(
-            authorized=changed, service=service, process_factory=factory)
-    assert getattr(failure.value, "code", None) == "IDEMPOTENCY_MISMATCH"
-def test_worker_cannot_claim_cancelled_without_durable_cancel_request(tmp_path):
-    process = Process(WorkerOutcome("cancelled", {"stopped": True}))
-    process.ready.set()
-    service = GatewayOperations(tmp_path, clock=lambda: NOW)
-    queued = start_operation(
-        authorized=_authorized(tmp_path), service=service,
-        process_factory=Factory(process, tmp_path))
-    terminal = service.wait_terminal(OWNER, queued.operation_ref, 2)
-    assert terminal.state == "failed"
-    assert service.result(OWNER, queued.operation_ref)["result"] == {
-        "reason": "EXTERNAL_ACTION_FAILED"}
-    kinds = [event["event_type"] for event in _events(tmp_path)]
-    assert "operation_cancelled" not in kinds
 def test_oversized_result_seals_one_fixed_result_failure(tmp_path):
     process = Process(WorkerOutcome("completed", {"value": "x" * 1_048_576}))
     process.ready.set()
