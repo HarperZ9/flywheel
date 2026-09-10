@@ -4,7 +4,7 @@ A bare `pip install flywheel-verify` ships harness/ but not scripts/. `flywheel
 up` and `flywheel app` must start the gateway by importing harness.gateway
 directly, never requiring a source checkout. Passthrough commands with no
 checkout must fail with a message, not a traceback. When a checkout IS present
-(dev), the launcher must still prefer scripts/run_harness_cli.py. When frozen
+(dev), the launcher retains its checkout working directory but serves in-process. When frozen
 (PyInstaller exe), the checkout probe must be skipped entirely.
 """
 import harness.cli_entry as cli
@@ -40,24 +40,19 @@ def test_launch_gateway_uses_package_when_no_checkout(monkeypatch):
     assert seen["argv"] == ["--port", "8799"]
 
 
-def test_launch_gateway_prefers_checkout_when_present(monkeypatch, tmp_path):
-    (tmp_path / "scripts").mkdir()
-    (tmp_path / "scripts" / "run_harness_cli.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
+def test_launch_gateway_keeps_checkout_cwd_but_runs_in_process(monkeypatch, tmp_path):
     monkeypatch.setattr(cli, "find_repo_root", lambda: tmp_path)
     monkeypatch.setattr(cli.sys, "frozen", False, raising=False)
-    monkeypatch.setattr(cli.os, "chdir", lambda p: None)  # no real cwd change
-    ran = {}
-
-    def _fake_runpath(path, run_name=None):
-        ran["path"] = path
-        ran["argv"] = list(cli.sys.argv)
-        raise SystemExit(0)
-
-    monkeypatch.setattr(cli.runpy, "run_path", _fake_runpath)
-    rc = cli._launch_gateway(["--port", "8799"])
-    assert rc == 0
-    assert ran["path"].endswith("run_harness_cli.py")
-    assert ran["argv"][1:] == ["app", "--port", "8799"]
+    seen = {}
+    monkeypatch.setattr(cli.os, "chdir", lambda path: seen.update(cwd=path))
+    monkeypatch.setattr(gw, "main", lambda argv: seen.update(argv=argv) or 23)
+    def no_wrapper(*args, **kwargs):
+        pytest.fail("gateway launch must not delegate to a spawning wrapper")
+    monkeypatch.setattr(cli.runpy, "run_path", no_wrapper)
+    monkeypatch.setattr(subprocess, "run", no_wrapper)
+    argv = ["--port", "9876", "--root", "app"]
+    assert cli._launch_gateway(argv) == 23
+    assert seen == {"cwd": tmp_path, "argv": ["--root", str(tmp_path), *argv]}
 
 
 def test_launch_gateway_frozen_never_consults_the_checkout(monkeypatch, tmp_path):
