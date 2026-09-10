@@ -53,7 +53,6 @@ def test_frozen_gateway_bundles_index_or_route_fails_actionably(
     root.mkdir()
     monkeypatch.setattr(index_jobs, "_index_argv", lambda: None)
     monkeypatch.setattr(index_jobs, "_module_argv", lambda: None)
-
     def no_subprocess(*_args, **_kwargs):
         raise AssertionError("missing engine must not launch a subprocess")
 

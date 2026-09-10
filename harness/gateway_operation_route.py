@@ -7,8 +7,7 @@ from typing import Iterator
 from urllib.parse import parse_qs
 from .evidence_json import canonical_bytes, canonical_sha256
 from .gateway_operation import AuthorizedOperation, GatewayOperationError
-from .gateway_operation_route_reads import (
-    read_snapshot_or_none, terminal_data)
+from .gateway_operation_route_reads import read_snapshot_or_none, terminal_data
 from .journey_types import SHA256_PATTERN
 _OPERATION_PATH = re.compile(
     r"/api/operations/(op_[0-9a-f]{32})(?:/(events|result))?\Z")
@@ -16,9 +15,7 @@ _MAX_LINE_BYTES = 262_144
 _MAX_BUFFER_BYTES = 1_048_576
 _MAX_GATEWAY_BUFFER_BYTES = 8_388_608
 def operation_ref_for(owner_ref: str, journey_ref: str, client_request_id: str) -> str:
-    digest = canonical_sha256({"owner_ref": owner_ref,
-                               "journey_ref": journey_ref,
-                                "client_request_id": client_request_id})
+    digest = canonical_sha256({"owner_ref": owner_ref, "journey_ref": journey_ref, "client_request_id": client_request_id})
     return f"op_{digest[:32]}"
 def authorization_sha256(authorized: AuthorizedOperation) -> str:
     plan = getattr(authorized.execution_plan, "digest", None)
@@ -40,12 +37,11 @@ def authorization_sha256(authorized: AuthorizedOperation) -> str:
     })
 def replay_authorization_sha256(envelope, owner_ref: str,
                                 state_root: Path) -> str:
-    """Reconstruct one prior grant authorization without consuming it."""
     try:
         from .evidence_json import strict_load_json
         from .gateway_grant_route import _validate_record
         from .gateway_operation import thaw_operation
-        from .gateway_provider_adapter import freeze_execution_plan
+        from .gateway_provider_adapter import ExecutionPlan, freeze_execution_plan
         from .operation_grants import OWNER_REF_PATTERN
         if OWNER_REF_PATTERN.fullmatch(owner_ref) is None:
             raise ValueError
@@ -53,8 +49,10 @@ def replay_authorization_sha256(envelope, owner_ref: str,
         owner_dir = (Path(state_root) / "gateway-grant-proposals" / owner_ref)
         path = owner_dir / f"{canonical_sha256(proposal_ref)}.json"
         record = _validate_record(strict_load_json(path.read_bytes()), owner_ref)
-        operation, plan = envelope.operation, freeze_execution_plan(
-            envelope.operation)
+        operation = envelope.operation
+        plan = (ExecutionPlan(record["execution_plan_sha256"], (), ())
+            if _has_source_context_ref(operation.data_refs) else freeze_execution_plan(
+                operation, owner_ref=owner_ref, state_root=state_root))
         if (record["state"] != "approved" or record["action"] != envelope.action
                 or record["journey_ref"] != envelope.journey_ref
                 or record["expected_event_head"] != envelope.expected_event_head
@@ -63,9 +61,8 @@ def replay_authorization_sha256(envelope, owner_ref: str,
                 or record["execution_plan_sha256"] != plan.digest
                 or record["planned_grant_ref"] != envelope.grant_ref):
             raise ValueError
-        authorized = AuthorizedOperation(
-            operation.action, operation.tool, operation.destination,
-            operation.operation, operation.operation_sha256,
+        authorized = AuthorizedOperation(operation.action, operation.tool,
+            operation.destination, operation.operation, operation.operation_sha256,
             operation.arguments_sha256, operation.scopes, operation.data_refs,
             operation.credential_refs, owner_ref, record["journey_ref"],
             record["expected_event_head"], record["client_request_id"],
@@ -75,9 +72,8 @@ def replay_authorization_sha256(envelope, owner_ref: str,
         raise GatewayOperationError("IDEMPOTENCY_MISMATCH") from None
 def queued_payload(authorized: AuthorizedOperation) -> dict:
     return {
-        "operation_ref": operation_ref_for(
-            authorized.owner_ref, authorized.journey_ref,
-            authorized.client_request_id),
+        "operation_ref": operation_ref_for(authorized.owner_ref,
+            authorized.journey_ref, authorized.client_request_id),
         "client_request_id": authorized.client_request_id,
         "action": authorized.action, "tool": authorized.tool,
         "authorization_sha256": authorization_sha256(authorized),
@@ -180,8 +176,7 @@ class OperationEventBus:
             self._condition.notify_all()
 @dataclass(frozen=True)
 class RouteResponse:
-    status: int; body: dict | None = None
-    stream: Iterator[bytes] | None = None
+    status: int; body: dict | None = None; stream: Iterator[bytes] | None = None
 def _frame(sequence: int, event: str, value) -> bytes:
     data = b"[DONE]" if value == "[DONE]" else canonical_bytes(value)
     if len(b"data: ") + len(data) > _MAX_LINE_BYTES:
@@ -211,26 +206,30 @@ def _stream(service, owner_ref: str, operation_ref: str,
         yield _frame(sequence + 1, "terminal", "[DONE]")
 def _start_replay(service, owner_ref: str, envelope, journey):
     from .gateway_provider_adapter import freeze_execution_plan
-    ref = operation_ref_for(owner_ref, envelope.journey_ref,
-                            envelope.client_request_id)
+    ref = operation_ref_for(owner_ref, envelope.journey_ref, envelope.client_request_id)
     history = service._history(journey, ref)
     if not history:
         return None
     queued = history[0]["payload"]
+    plan_digest = (queued.get("execution_plan_sha256")
+        if _has_source_context_ref(envelope.operation.data_refs) else
+        freeze_execution_plan(envelope.operation, owner_ref=owner_ref,
+                              state_root=service.state_root).digest)
     expected = {
         "client_request_id": envelope.client_request_id,
         "action": envelope.action, "tool": envelope.operation.tool,
         "operation_sha256": envelope.operation.operation_sha256,
         "arguments_sha256": envelope.operation.arguments_sha256,
         "grant_ref_sha256": canonical_sha256(envelope.grant_ref),
-        "execution_plan_sha256": freeze_execution_plan(
-            envelope.operation).digest,
+        "execution_plan_sha256": plan_digest,
     }
     if (history[0]["journey_ref"] != envelope.journey_ref
             or history[0]["prior_event_sha256"] != envelope.expected_event_head
             or any(queued.get(key) != value for key, value in expected.items())):
         raise GatewayOperationError("IDEMPOTENCY_MISMATCH")
     return service._snapshot(journey, ref, history)
+def _has_source_context_ref(data_refs) -> bool:
+    return any(type(ref) is str and ref.startswith("data_source_context.") for ref in data_refs)
 def _start(raw: bytes, owner_ref: str, service, process_factory) -> RouteResponse:
     from .gateway_envelope import parse_gateway_envelope
     envelope = parse_gateway_envelope("agent.run", raw)

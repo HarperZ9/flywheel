@@ -254,7 +254,6 @@ def test_workspace_map_start_reports_unavailable_engine(tmp_path, monkeypatch):
     root.mkdir()
     monkeypatch.setattr(index_jobs, "_index_argv", lambda: None)
     monkeypatch.setattr(index_jobs, "_module_argv", lambda: None)
-
     def no_subprocess(*_args, **_kwargs):
         raise AssertionError("missing engine must not launch a subprocess")
 
