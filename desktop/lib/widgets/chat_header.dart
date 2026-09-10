@@ -10,6 +10,7 @@ import '../theme/flywheel_theme.dart';
 import 'mode_chip.dart';
 import 'model_picker.dart';
 import 'model_selector.dart';
+import 'rowan_avatar.dart';
 
 class ChatHeader extends StatelessWidget {
   final bool agentMode;
@@ -58,61 +59,74 @@ class ChatHeader extends StatelessWidget {
             child: _row(context, t, constraints.maxWidth >= 650)));
   }
 
-  Widget _row(BuildContext context, FwTokens t, bool showReceiptCopy) =>
-      Row(children: [
-        if (onShowConversations != null) ...[
-          IconButton(
-            onPressed: onShowConversations,
-            icon: Icon(Icons.forum_outlined, size: 18, color: t.inkMuted),
-            tooltip: 'Conversations',
-            constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-            padding: const EdgeInsets.all(4),
-          ),
-          const SizedBox(width: FwLayout.s1),
-        ],
-        Text(AssistantIdentity.name, style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(width: FwLayout.s4),
-        FwModeChip(
-            label: 'chat',
-            active: !agentMode,
-            onTap: () {
-              if (!streaming) onMode(false);
-            }),
+  Widget _row(BuildContext context, FwTokens t, bool showReceiptCopy) {
+    final children = <Widget>[
+      if (onShowConversations != null) ...[
+        IconButton(
+          onPressed: onShowConversations,
+          icon: Icon(Icons.forum_outlined, size: 18, color: t.inkMuted),
+          tooltip: 'Conversations',
+          constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+          padding: const EdgeInsets.all(4),
+        ),
         const SizedBox(width: FwLayout.s1),
-        FwModeChip(
-            label: 'agent',
-            active: agentMode,
-            onTap: () {
-              if (!streaming) onMode(true);
-            }),
-        const SizedBox(width: FwLayout.s4),
-        if (!agentMode && endpoints.isNotEmpty)
-          ModelPickerButton(
-            endpoints: endpoints,
-            current: endpoint,
-            enabled: !streaming,
-            onSelect: onEndpoint,
-          ),
-        if (!agentMode && endpoint != null && showReceiptCopy) ...[
-          const SizedBox(width: FwLayout.s2),
-          ModelSelectorButton(
-            loadModels: loadModels,
-            current: chosenModel,
-            enabled: !streaming,
-            onSelect: onModel,
-          ),
-        ],
-        if (showReceiptCopy) ...[
-          const Spacer(),
-          Flexible(
-            child: Text(
-                agentMode
-                    ? 'every run persists with its trace'
-                    : 'receipt state shown on every reply',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: fwMono(t, size: 10.5, color: t.inkFaint)),
-          ),
-        ],
-      ]);
+      ],
+      const RowanAvatar(),
+      if (showReceiptCopy) ...[
+        const SizedBox(width: FwLayout.s2),
+        ExcludeSemantics(
+            child: Text(AssistantIdentity.name,
+                style: Theme.of(context).textTheme.titleMedium)),
+      ],
+      const SizedBox(width: FwLayout.s4),
+      FwModeChip(
+          label: 'chat',
+          active: !agentMode,
+          onTap: () {
+            if (!streaming) onMode(false);
+          }),
+      const SizedBox(width: FwLayout.s1),
+      FwModeChip(
+          label: 'agent',
+          active: agentMode,
+          onTap: () {
+            if (!streaming) onMode(true);
+          }),
+      const SizedBox(width: FwLayout.s4),
+      if (!agentMode && endpoints.isNotEmpty)
+        ModelPickerButton(
+          endpoints: endpoints,
+          current: endpoint,
+          enabled: !streaming,
+          onSelect: onEndpoint,
+        ),
+      if (!agentMode && endpoint != null && showReceiptCopy) ...[
+        const SizedBox(width: FwLayout.s2),
+        ModelSelectorButton(
+          loadModels: loadModels,
+          current: chosenModel,
+          enabled: !streaming,
+          onSelect: onModel,
+        ),
+      ],
+      if (showReceiptCopy) ...[
+        const Spacer(),
+        Flexible(
+          child: Text(
+              agentMode
+                  ? 'every run persists with its trace'
+                  : 'receipt state shown on every reply',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: fwMono(t, size: 10.5, color: t.inkFaint)),
+        ),
+      ],
+    ];
+    return showReceiptCopy
+        ? Row(children: children)
+        : Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: FwLayout.s2,
+            children: children);
+  }
 }

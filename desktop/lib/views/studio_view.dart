@@ -1,10 +1,6 @@
-// studio_view.dart — the Studio: creation with provenance. The art plate is
-// a seeded flow-field kernel (the seed is recorded on the plate, so every
-// image is reproducible); the schematic draws the verified loop from live
-// state; the music lane is declared with an honest null, not faked.
-//
-// The spectrum band is allowed HERE and only here: generative art is the
-// one surface where color is the subject rather than a verdict.
+// Studio combines seeded, reproducible art with live-state schematics.
+// Generative art is the surface where color is a subject, not a verdict.
+// The music lane keeps unavailable state visible.
 
 import 'dart:math' as math;
 
@@ -27,6 +23,7 @@ import '../widgets/sound_panel.dart';
 import '../widgets/typeface_panel.dart';
 import '../widgets/face_gallery_card.dart';
 import '../widgets/variable_family_card.dart';
+import '../widgets/rowan_presenter.dart';
 
 class StudioView extends StatefulWidget {
   final WorldDoc? world;
@@ -60,6 +57,8 @@ class _StudioViewState extends State<StudioView> {
           'stale diagram.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
+        const SizedBox(height: FwLayout.s4),
+        const RowanPresenter(),
         const SizedBox(height: FwLayout.s4),
         const Kicker('field plate · seeded kernel', hot: true),
         const SizedBox(height: FwLayout.s3),

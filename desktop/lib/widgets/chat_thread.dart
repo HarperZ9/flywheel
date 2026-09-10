@@ -10,6 +10,7 @@ import '../models/chat.dart';
 import '../models/evidence_state.dart';
 import '../theme/flywheel_theme.dart';
 import 'turn_receipt.dart';
+import 'rowan_avatar.dart';
 
 class ChatThread extends StatelessWidget {
   final List<ChatMessage> messages;
@@ -59,13 +60,7 @@ class _BubbleState extends State<_Bubble> {
         mainAxisAlignment:
             isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          if (!isUser)
-            _avatar(
-                t,
-                'AI',
-                message.receiptState == ReceiptState.match
-                    ? t.verified
-                    : t.inkMuted),
+          if (!isUser) const RowanAvatar(),
           if (!isUser) const SizedBox(width: FwLayout.s3),
           Flexible(
             child: Column(

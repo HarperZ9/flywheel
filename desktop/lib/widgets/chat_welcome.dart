@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../assistant/assistant_identity.dart';
 import '../theme/flywheel_theme.dart';
 import 'chat_composer.dart' show chatStarters;
+import 'rowan_avatar.dart';
 
 class ChatWelcome extends StatelessWidget {
   final ValueChanged<String>? onStarter;
@@ -17,40 +18,42 @@ class ChatWelcome extends StatelessWidget {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 460),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.auto_awesome_outlined, size: 30, color: t.verified),
-          const SizedBox(height: FwLayout.s4),
-          Text(AssistantIdentity.welcome,
+        child: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const RowanAvatar(size: 64),
+            const SizedBox(height: FwLayout.s4),
+            Text(AssistantIdentity.welcome,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: FwLayout.s2),
+            Text(
+              AssistantIdentity.introduction,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: FwLayout.s2),
-          Text(
-            AssistantIdentity.introduction,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: t.inkFaint, fontSize: 13.5, height: 1.5),
-          ),
-          if (onStarter != null) ...[
-            const SizedBox(height: FwLayout.s5),
-            Wrap(
-              spacing: FwLayout.s2,
-              runSpacing: FwLayout.s2,
-              alignment: WrapAlignment.center,
-              children: [
-                for (final s in chatStarters)
-                  ActionChip(
-                    label: Text(s['title']!,
-                        style: TextStyle(fontSize: 12.5, color: t.inkSoft)),
-                    onPressed: () => onStarter!(s['text']!),
-                    side: BorderSide(color: t.line),
-                    backgroundColor: t.panel,
-                    shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(FwLayout.radiusSmall)),
-                  ),
-              ],
+              style: TextStyle(color: t.inkFaint, fontSize: 13.5, height: 1.5),
             ),
-          ],
-        ]),
+            if (onStarter != null) ...[
+              const SizedBox(height: FwLayout.s5),
+              Wrap(
+                spacing: FwLayout.s2,
+                runSpacing: FwLayout.s2,
+                alignment: WrapAlignment.center,
+                children: [
+                  for (final s in chatStarters)
+                    ActionChip(
+                      label: Text(s['title']!,
+                          style: TextStyle(fontSize: 12.5, color: t.inkSoft)),
+                      onPressed: () => onStarter!(s['text']!),
+                      side: BorderSide(color: t.line),
+                      backgroundColor: t.panel,
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(FwLayout.radiusSmall)),
+                    ),
+                ],
+              ),
+            ],
+          ]),
+        ),
       ),
     );
   }
