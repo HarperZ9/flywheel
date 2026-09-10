@@ -71,11 +71,30 @@ class _ModelRosterDialog extends StatefulWidget {
 
 class _ModelRosterDialogState extends State<_ModelRosterDialog> {
   Map<String, dynamic>? _doc;
+  final _manual = TextEditingController();
+  String? _manualError;
 
   @override
   void initState() {
     super.initState();
+    _manual.text = widget.current ?? '';
     _load();
+  }
+
+  @override
+  void dispose() {
+    _manual.dispose();
+    super.dispose();
+  }
+
+  void _selectManual() {
+    final id = _manual.text.trim();
+    if (!RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:/@+\-]{0,159}$').hasMatch(id)) {
+      setState(
+          () => _manualError = 'Enter a model ID of 1–160 safe characters.');
+      return;
+    }
+    Navigator.of(context).pop(id);
   }
 
   Future<void> _load() async {
@@ -116,7 +135,7 @@ class _ModelRosterDialogState extends State<_ModelRosterDialog> {
           borderRadius: BorderRadius.circular(FwLayout.radius),
           side: BorderSide(color: t.line)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380, maxHeight: 420),
+        constraints: const BoxConstraints(maxWidth: 420, maxHeight: 560),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -148,12 +167,36 @@ class _ModelRosterDialogState extends State<_ModelRosterDialog> {
                 shrinkWrap: true,
                 padding: const EdgeInsets.symmetric(vertical: FwLayout.s2),
                 children: [
-                  for (final (id, isDefault) in _rows)
-                    _row(t, id, isDefault),
+                  for (final (id, isDefault) in _rows) _row(t, id, isDefault),
                 ],
               ),
             ),
           ],
+          Padding(
+            padding: const EdgeInsets.all(FwLayout.s4),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextField(
+                controller: _manual,
+                decoration: InputDecoration(
+                  labelText: 'Requested model ID',
+                  helperText: 'Availability is not verified by this selection.',
+                  helperMaxLines: 2,
+                  errorText: _manualError,
+                  errorMaxLines: 2,
+                ),
+                onSubmitted: (_) => _selectManual(),
+              ),
+              const SizedBox(height: FwLayout.s2),
+              Wrap(spacing: FwLayout.s2, children: [
+                TextButton(
+                    onPressed: () => Navigator.of(context).pop(''),
+                    child: const Text('Use endpoint default')),
+                TextButton(
+                    onPressed: _selectManual,
+                    child: const Text('Use model ID')),
+              ]),
+            ]),
+          ),
         ]),
       ),
     );
@@ -178,8 +221,8 @@ class _ModelRosterDialogState extends State<_ModelRosterDialog> {
             child: Text(id.isEmpty ? 'endpoint default' : id,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: fwMono(t,
-                    size: 12.5, color: selected ? t.ink : t.inkSoft)),
+                style:
+                    fwMono(t, size: 12.5, color: selected ? t.ink : t.inkSoft)),
           ),
           if (isDefault)
             Text('default', style: fwMono(t, size: 10.5, color: t.inkFaint)),
