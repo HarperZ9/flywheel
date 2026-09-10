@@ -60,6 +60,8 @@ jobs:
         run: |
           set +e
           python -m pytest \
+            tests/test_bulletin_native_reply.py \
+            tests/test_outcome_bulletin_media_boundary.py \
             tests/test_bulletin_media_http_fixture.py \
             tests/test_bulletin_access_invalid_http.py \
             tests/test_bulletin_access_media_http.py \

@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives.asymmetric import ed25519
 
 from harness.bulletin_signed_transport import (
     BULLETIN_KEY_SLOT,
+    _thumbprint,
     publish_authorized_preview,
 )
 from harness.credential_handles import CredentialHandleStore
@@ -150,7 +151,11 @@ class BulletinServer:
                 self.send_header("content-type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps({"ok": True, "post": {
-                    "id": POST_ID, "room": post["room"], "body": body}}).encode())
+                    "id": POST_ID, "room": post["room"], "body": body,
+                    "parent_id": post.get("parent_id"),
+                    "author": (None if parent.mode == "missing_author" else
+                               "wrong" if parent.mode == "wrong_author" else
+                               _thumbprint(parent.public_jwk))}}).encode())
 
         self.server = HTTPServer(("127.0.0.1", 0), Handler)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
