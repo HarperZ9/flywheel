@@ -37,6 +37,22 @@ class _RecDevice implements DeviceSink {
 }
 
 void main() {
+  test('an unsafe gateway run reference cannot become a submitted task',
+      () async {
+    final client = GatewayClient(
+        httpClient: MockClient((_) async => http.Response(
+            jsonEncode({'run_id': '../private', 'state': 'running'}), 200)));
+    expect(await GatewayAgentSink(client).startTask('inspect the release'),
+        isNull);
+  });
+
+  test('a lost submission response does not claim the work started', () async {
+    final ex = AssistantExecutor(agent: _RecAgent(null), device: _RecDevice());
+    final rec = await ex.handle('inspect the release');
+    expect(rec.reply, contains('unknown'));
+    expect(rec.reply, isNot(contains('I will start')));
+  });
+
   test('a work command starts a witnessed run and logs it', () async {
     final agent = _RecAgent('run-42');
     final device = _RecDevice();
@@ -52,7 +68,8 @@ void main() {
     expect(ex.log, hasLength(1));
   });
 
-  test('a device command opens the deep link and never touches the agent', () async {
+  test('a device command opens the deep link and never touches the agent',
+      () async {
     final agent = _RecAgent();
     final device = _RecDevice();
     final ex = AssistantExecutor(agent: agent, device: device);
@@ -72,16 +89,20 @@ void main() {
     expect(rec.runId, isNull);
   });
 
-  test('the gateway agent sink posts the goal and returns the run_id', () async {
+  test('the gateway agent sink posts the goal and returns the run_id',
+      () async {
     final client = GatewayClient(
       baseUrl: 'https://pc.example',
       httpClient: MockClient((req) async {
         expect(req.url.path, '/api/relay/start');
         expect(jsonDecode(req.body)['goal'], 'fix the flaky test');
-        return http.Response(jsonEncode({'run_id': 'r-9', 'checkpoint': 'abc'}), 200);
+        return http.Response(
+            jsonEncode({'run_id': '0123456789abcdef', 'state': 'running'}),
+            200);
       }),
     );
-    expect(await GatewayAgentSink(client).startTask('fix the flaky test'), 'r-9');
+    expect(await GatewayAgentSink(client).startTask('fix the flaky test'),
+        '0123456789abcdef');
   });
 
   test('the gateway agent sink returns null when the gateway errors', () async {
