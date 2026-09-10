@@ -20,6 +20,7 @@ from __future__ import annotations
 from .browser_control import (Refused, attempt, bound_driver, open_session,
                               session, sessions)
 from .evidence_public import TransportError, error_response
+from .browser_control_store import BrowserStoreError, JourneyLockBusy
 
 ROSTER_SCHEMA = "flywheel.browser-roster/v1"
 SESSION_SCHEMA = "flywheel.browser-session/v1"
@@ -49,6 +50,8 @@ def handle_browser_get(path: str, *, run_root, clock) -> tuple[dict, int]:
         body = session(run_root, run_id=run_id)
     except Refused as exc:
         return _invalid(str(exc))
+    except BrowserStoreError:
+        return error_response(TransportError("BROWSER_STORE_UNAVAILABLE", "browser history is unavailable", 503))
     return dict(body, schema=SESSION_SCHEMA, read_at=clock()), 200
 
 
@@ -68,9 +71,12 @@ def handle_browser_post(path: str, body: dict, *, run_root,
                                   policy=body.get("policy") or {}, at=now)
         else:
             record = attempt(run_root, run_id=run_id,
-                             action=body.get("action") or {}, at=now)
+                             action=body.get("action") or {}, at=now,
+                             request_id=body.get("request_id"))
+        snapshot = session(run_root, run_id=run_id)
     except Refused as exc:
         return _invalid(str(exc))
+    except (BrowserStoreError, JourneyLockBusy, OSError):
+        return error_response(TransportError("BROWSER_STORE_UNAVAILABLE", "browser admission is unavailable; retry only the same request_id", 503))
     return {"schema": ACK_SCHEMA, "recorded": True, "at": now,
-            "event": record,
-            "session": session(run_root, run_id=run_id)}, 200
+            "event": record, "session": snapshot}, 200

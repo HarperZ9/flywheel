@@ -135,10 +135,10 @@ def test_the_answer_says_nothing_was_performed_when_nothing_is_bound(tmp_path):
 
 
 def test_a_bound_driver_shows_up_in_both_answers(tmp_path):
-    register_driver("recorder", lambda act: {"ok": True})
+    register_driver("recorder", lambda act: {"ok": True, "performed": True})
     _started(tmp_path)
     _post("/api/browser/action",
-          {"run_id": "r1", "action": {"kind": "navigate",
+          {"run_id": "r1", "request_id": "one", "action": {"kind": "navigate",
                                       "url": "https://example.test/"}},
           tmp_path)
     roster, _ = _get("/api/browser", tmp_path)

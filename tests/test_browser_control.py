@@ -197,13 +197,13 @@ def test_with_nothing_bound_the_engine_decides_and_performs_nothing(tmp_path):
 
 def test_a_bound_driver_sees_admitted_acts_and_never_a_refused_one(tmp_path):
     seen = []
-    register_driver("recorder", lambda act: seen.append(act) or {"ok": True})
+    register_driver("recorder", lambda act: seen.append(act) or {"ok": True, "performed": True})
     _started(tmp_path)
     attempt(tmp_path, run_id="r1",
-            action={"kind": "navigate", "url": "https://example.test/"}, at=NOW)
+            action={"kind": "navigate", "url": "https://example.test/"}, at=NOW, request_id="allowed")
     attempt(tmp_path, run_id="r1",
             action={"kind": "navigate", "url": "https://elsewhere.test/"},
-            at=NOW)
+            at=NOW, request_id="refused")
     assert [a["url"] for a in seen] == ["https://example.test/"]
     body = session(tmp_path, run_id="r1")
     assert body["driver"] == "recorder" and body["performed"] == 1

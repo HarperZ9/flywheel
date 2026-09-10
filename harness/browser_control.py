@@ -1,21 +1,10 @@
 """browser_control.py -- driving a browser or a desktop, one admitted act at a time.
 
-Agents that operate a screen are usually shipped as a capability with a log
-bolted beside it. The log records what the tool did, which is the wrong half:
-by the time a line appears, the click has happened. Nothing in it can say why
-the click was allowed, and a refusal leaves no trace at all, so the quietest
-run and the most constrained run look identical afterwards.
-
-Here the gate and the record are the same write. Every attempt lands on an
-append-only chain carrying the verdict, admitted or refused, before anything
-touches a screen. The policy that decided it is the chain's first record, so
-loosening the rules to explain a bad afternoon breaks the citation on every
-action that followed.
-
-Actuation sits behind a driver seam. With no driver bound the session admits,
-records, and reports `performed: false`, which is an honest null rather than a
-pretend success. The driver shipped with the tests records what it was asked
-to do and touches nothing.
+Each admitted driver call first reserves a budget slot on the durable action
+chain. A correlated terminal records the driver's acknowledgement; absent or
+uncertain delivery pauses actuation instead of inviting a retry. The policy
+is fixed by the first record. With no driver bound the same grammar supports
+explicit simulation, which does not establish a real browser origin.
 
 What this is not: it is not a way past a control someone else put up. Typing
 into a credential-shaped field is refused here whatever the policy says, a
@@ -25,10 +14,11 @@ challenge, rotating an address, or disguising what the client is.
 from __future__ import annotations
 
 from pathlib import Path
+from uuid import uuid4
 from urllib.parse import urlsplit
 
 from .evidence_json import canonical_sha256
-from .hash_chain import append_sealed, head_digest, load_chain, seal
+from . import browser_control_store as store
 from .hash_chain import chain_intact as _chain_intact
 
 EVENT_SCHEMA = "flywheel.browser-action/v1"
@@ -148,17 +138,7 @@ def _action(raw: dict) -> dict:
     return action
 
 
-def _state(records) -> dict:
-    """Fold the chain into the policy, the open origin, and the count."""
-    policy, origin, attempted = None, None, 0
-    for record in records:
-        if record.get("kind") == "policy":
-            policy = record["policy"]
-        else:
-            attempted += 1
-            if record["admitted"] and record["action"]["kind"] == "navigate":
-                origin = record["origin"]
-    return {"policy": policy, "origin": origin, "attempted": attempted}
+_state = store.fold
 
 
 def _verdict(action: dict, state: dict) -> tuple:
@@ -188,75 +168,122 @@ def _verdict(action: dict, state: dict) -> tuple:
 
 def _open(run_root, run_id: str):
     path = chain_path(run_root, run_id)
-    records = load_chain(path)
-    if records and not chain_intact(records):
-        _refuse("the action chain for this session is broken")
-    return path, records
+    try:
+        return path, store.load(path)
+    except store.BrowserStoreError as exc:
+        if str(exc) == "BROWSER_HISTORY_INVALID":
+            _refuse("the action chain for this session is broken")
+        raise
 
 
 def _write(path, records, record: dict) -> dict:
-    sealed = seal(dict(record, schema=EVENT_SCHEMA,
-                       prev_sha256=head_digest(records, digest_key=DIGEST_KEY)),
-                  digest_key=DIGEST_KEY)
-    append_sealed(sealed, path=path, schema=EVENT_SCHEMA, digest_key=DIGEST_KEY)
-    return sealed
+    return store.append(path, records, record)
 
 
 def open_session(run_root, *, run_id: str, policy: dict, at: str) -> dict:
-    """Start a session by writing the policy that will judge every act."""
+    """Fix the policy durably before any admission."""
     settled = _policy(policy)
-    path, records = _open(run_root, run_id)
-    if _state(records)["policy"] is not None:
-        _refuse(f"session {run_id} already has a policy")
-    return _write(path, records, {"kind": "policy", "at": at,
-                                  "run_id": str(run_id), "policy": settled})
+    with store.guard(chain_path(run_root, run_id)):
+        path, records = _open(run_root, run_id)
+        if _state(records)["policy"] is not None:
+            _refuse(f"session {run_id} already has a policy")
+        return _write(path, records, {"kind": "policy", "at": at,
+                                      "run_id": str(run_id), "policy": settled})
 
 
-def attempt(run_root, *, run_id: str, action: dict, at: str) -> dict:
-    """Judge one action, record the verdict, and perform it if admitted.
+def _request_id(value, driver) -> str:
+    if value is None and driver is None:
+        return uuid4().hex
+    if (not isinstance(value, str) or not 1 <= len(value) <= 128
+            or not value.isascii() or any(not (c.isalnum() or c in "_.:-") for c in value)):
+        _refuse("request_id must identify each driver-bound request (1 to 128 characters)")
+    return value
 
-    A refusal is written too. A gate that records only what it allowed cannot
-    be audited for what it turned down, and the turned-down half is the half
-    somebody will argue about later.
-    """
+
+def _complete(driver, wanted, admission):
+    """A driver acknowledgement is a report, not independent semantic truth."""
+    terminal = dict(admission, kind="completion", phase="completed",
+                    admission_sha256=admission[DIGEST_KEY],
+                    performed=None, delivery_status="unknown", error_code="")
+    terminal.pop(DIGEST_KEY)
+    interrupted = None
+    try:
+        outcome = driver(dict(wanted, origin=admission["origin"],
+                              run_id=admission["run_id"], request_id=admission["request_id"]))
+        terminal["result_sha256"] = canonical_sha256(outcome)
+        if isinstance(outcome, dict) and outcome.get("performed") is False:
+            terminal.update(performed=False, delivery_status="driver_reported_not_performed")
+        elif (isinstance(outcome, dict) and outcome.get("performed") is True
+              and outcome.get("ok") is True):
+            terminal.update(performed=True, delivery_status="driver_reported_performed")
+        else:
+            terminal["error_code"] = "DRIVER_ACKNOWLEDGEMENT_UNKNOWN"
+    except BaseException as exc:
+        terminal["error_code"] = "DRIVER_EXCEPTION"
+        if not isinstance(exc, Exception):
+            interrupted = exc
+    return terminal, interrupted
+
+
+def attempt(run_root, *, run_id: str, action: dict, at: str, request_id=None) -> dict:
+    """Reserve one attempt before dispatch; uncertain delivery never retries."""
     wanted = _action(action)
-    path, records = _open(run_root, run_id)
-    state = _state(records)
-    if state["policy"] is None:
-        _refuse(f"session {run_id} has no policy yet")
-    admitted, reason, origin = _verdict(wanted, state)
     name, driver = bound_driver()
-    performed, result = False, ""
-    if admitted and driver is not None:
-        outcome = driver(dict(wanted, origin=origin, run_id=str(run_id)))
-        performed, result = True, canonical_sha256(
-            outcome if isinstance(outcome, dict) else {"value": str(outcome)})
-    return _write(path, records, {
-        "kind": "action", "at": at, "run_id": str(run_id),
-        "seq": state["attempted"] + 1, "action": wanted,
-        "admitted": admitted, "reason": reason, "origin": origin,
-        "driver": name if admitted else None,
-        "performed": performed, "result_sha256": result})
+    identity = _request_id(request_id, driver)
+    with store.guard(chain_path(run_root, run_id)):
+        path, records = _open(run_root, run_id)
+        state = _state(records)
+        if state["policy"] is None:
+            _refuse(f"session {run_id} has no policy yet")
+        previous = state["requests"].get(identity)
+        if previous is not None:
+            result = state["actions"][previous]
+            if result["action"] != wanted:
+                _refuse("request_id already binds a different action")
+            return result
+        if driver is not None:
+            state["origin"] = state["live_origin"]
+        admitted, reason, origin = _verdict(wanted, state)
+        if driver is not None and state["delivery_unknown"]:
+            admitted, reason, origin = False, "previous delivery is unknown; reconcile before further actuation", None
+        dispatch = admitted and driver is not None
+        admission = _write(path, records, {
+            "kind": "action", "at": at, "run_id": str(run_id), "request_id": identity,
+            "seq": state["attempted"] + 1, "action": wanted,
+            "admitted": admitted, "reason": reason, "origin": origin,
+            "driver": name if dispatch else None, "simulated": driver is None,
+            "phase": "admitted" if dispatch else "settled",
+            "performed": None if dispatch else False, "result_sha256": "",
+            "delivery_status": "unknown" if dispatch else "not_dispatched"})
+        if not dispatch:
+            return admission
+        terminal, interrupted = _complete(driver, wanted, admission)
+        completed = _write(path, records, terminal)
+        if interrupted is not None:
+            raise interrupted
+        return completed
 
 
 def session(run_root, *, run_id: str) -> dict:
-    """One session's policy, verdicts and counts, chain verdict at the top."""
-    records = load_chain(chain_path(run_root, run_id))
-    intact = chain_intact(records) if records else True
-    state = _state(records) if intact else {"policy": None, "origin": None,
-                                            "attempted": 0}
-    acts = [r for r in records if r.get("kind") == "action"] if intact else []
+    """Return one action per reservation, correlated with its terminal record."""
+    intact = True
+    try:
+        records = store.load(chain_path(run_root, run_id))
+    except store.BrowserStoreError as exc:
+        if str(exc) != "BROWSER_HISTORY_INVALID":
+            raise
+        intact, records = False, []
+    state = _state(records)
+    acts = state["actions"]
     name, _ = bound_driver()
-    return {"chain_intact": intact,
-            "run_id": str(run_id),
-            "policy": state["policy"],
-            "open_origin": state["origin"],
-            "driver": name,
-            "actions": acts,
-            "attempted": len(acts),
+    return {"chain_intact": intact, "run_id": str(run_id),
+            "policy": state["policy"], "open_origin": state["origin"],
+            "driver_open_origin": state["live_origin"],
+            "delivery_unknown": state["delivery_unknown"], "driver": name,
+            "actions": acts, "attempted": len(acts),
             "admitted": sum(1 for a in acts if a["admitted"]),
             "refused": sum(1 for a in acts if not a["admitted"]),
-            "performed": sum(1 for a in acts if a["performed"])}
+            "performed": sum(1 for a in acts if a["performed"] is True)}
 
 
 def sessions(run_root) -> list:
