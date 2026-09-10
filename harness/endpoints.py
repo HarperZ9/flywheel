@@ -268,7 +268,7 @@ class CliBackend:
             if self.runner is not None:
                 rc, out, err = self.runner(cmd)
             else:
-                p = subprocess.run(cmd, capture_output=True, timeout=self.timeout)
+                p = subprocess.run(cmd, capture_output=True, timeout=self.timeout, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
                 rc, out, err = p.returncode, p.stdout, p.stderr
         except (OSError, subprocess.SubprocessError) as e:
             raise BackendError(f"{self.name} cli failed: {e}") from e
