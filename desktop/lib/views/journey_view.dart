@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../assistant/assistant_identity.dart';
 import '../controllers/journey_controller.dart';
 import '../models/journey_models.dart';
 import '../navigation/app_route.dart';
@@ -174,7 +175,7 @@ class JourneyStartCard extends StatelessWidget {
         const SizedBox(height: FwLayout.s2),
         Text(
           'Connect the engine, choose a model, register work, then run '
-          'through Chat, Plan, or Code. Receipts keep the proof.',
+          'through ${AssistantIdentity.name}, Plan, or Code. Receipts keep the proof.',
           style: TextStyle(fontSize: 12.5, height: 1.45, color: t.inkMuted),
         ),
         const SizedBox(height: FwLayout.s3),
@@ -186,7 +187,7 @@ class JourneyStartCard extends StatelessWidget {
             ),
           _route(context, 'Models setup', DestinationId.models),
           _route(context, 'Projects', DestinationId.projects),
-          _route(context, 'Chat', DestinationId.chat),
+          _route(context, AssistantIdentity.name, DestinationId.chat),
           _route(context, 'Plan', DestinationId.plan),
           _route(context, 'Code', DestinationId.code),
           _route(context, 'Receipts', DestinationId.receipts),

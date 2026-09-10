@@ -1,23 +1,17 @@
-// destination_catalog.dart -- the frozen 43-destination map.
-//
-// Five stable groups, exactly as the completion spec fixes them. Labels
-// are presentation; the DestinationId is the contract, so a label can be
-// renamed without a single route changing.
+// Five stable destination groups. Labels are presentation;
+// DestinationId remains the routing contract when a label changes.
+import '../assistant/assistant_identity.dart';
 import 'app_route.dart';
 
 enum DestinationGroup { work, chat, code, evidence, advanced }
-
 class DestinationSpec {
   final DestinationId id;
   final String label;
   final String abbr;
   final DestinationGroup group;
 
-  /// A phone opens on one clear surface and shows a few first-run
-  /// destinations in a bottom bar, not the whole catalog behind a drawer.
-  /// The rest stay one tap away under More; nothing is removed.
+  /// Phone primary destinations appear in the bottom bar; the rest are in More.
   final bool mobilePrimary;
-
   const DestinationSpec(
     this.id,
     this.label, {
@@ -98,8 +92,8 @@ const destinationCatalog = <DestinationSpec>[
   ),
   DestinationSpec(
     DestinationId.chat,
-    'Chat',
-    abbr: 'CH',
+    AssistantIdentity.name,
+    abbr: AssistantIdentity.abbreviation,
     group: DestinationGroup.chat,
     mobilePrimary: true,
   ),
@@ -300,10 +294,7 @@ DestinationSpec? specFor(DestinationId id) {
   return null;
 }
 
-/// The phone's first-run destinations, in catalog order: Journey, Approvals, Chat,
-/// Companion, Receipts. The bottom bar shows these and a More that opens the
-/// full catalog, so the whole set stays reachable. The flag on each spec is
-/// the source of truth; this list follows it.
+/// Bottom-bar destinations in catalog order, followed by More for the full set.
 final List<DestinationSpec> mobilePrimaryDestinations = destinationCatalog
     .where((spec) => spec.mobilePrimary)
     .toList();

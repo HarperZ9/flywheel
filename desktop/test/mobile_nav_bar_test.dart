@@ -32,7 +32,7 @@ void main() {
     for (final label in const [
       'Journey',
       'Approvals',
-      'Chat',
+      'Rowan',
       'Companion',
       'Receipts'
     ]) {
@@ -56,6 +56,13 @@ void main() {
     await tester.pumpWidget(_wrap(_bar(onGo: (id) => went = id)));
     await tester.tap(find.text('Companion'));
     expect(went, DestinationId.companion);
+  });
+
+  testWidgets('Rowan opens the existing chat destination', (tester) async {
+    DestinationId? went;
+    await tester.pumpWidget(_wrap(_bar(onGo: (id) => went = id)));
+    await tester.tap(find.text('Rowan'));
+    expect(went, DestinationId.chat);
   });
 
   testWidgets('More opens the full catalog and is not a destination',
