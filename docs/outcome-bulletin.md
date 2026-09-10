@@ -366,6 +366,10 @@ the post was not proven public. The backend does not silently retry those states
 
 ## Current integration boundary
 
+Plain text root posts and replies use the same reviewed operation. See
+[native replies](bulletin-native-replies.md) for parent binding and the native
+client-to-Worker acceptance experiment.
+
 The existing Flywheel gateway already canonicalizes `lane.call` grant requests.
 Plain text Bulletin publication still uses the exact `board_write_post` path.
 Native media publication adds only the selected-artifact preview route and the
