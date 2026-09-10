@@ -6,14 +6,17 @@
 // run's id, or the deep link a device action opens. On the phone this is where
 // speech in and out plug in; typed input is the always-available fallback.
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../assistant/assistant_executor.dart';
 import '../assistant/assistant_identity.dart';
 import '../assistant/assistant_intent.dart';
+import '../assistant/assistant_task_controller.dart';
 import '../assistant/voice.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
+import 'assistant_task_list.dart';
 
 Future<void> showAssistantPanel(
   BuildContext context, {
@@ -30,7 +33,9 @@ Future<void> showAssistantPanel(
         child: Padding(
           padding: const EdgeInsets.all(FwLayout.s5),
           child: AssistantPanel(
-              executor: executor, voiceInput: voiceInput, voiceOutput: voiceOutput),
+              executor: executor,
+              voiceInput: voiceInput,
+              voiceOutput: voiceOutput),
         ),
       ),
     ),
@@ -55,9 +60,41 @@ class AssistantPanel extends StatefulWidget {
 class _AssistantPanelState extends State<AssistantPanel> {
   final _input = TextEditingController();
   bool _busy = false;
+  Timer? _poll;
+  AssistantTaskController? get _tasks => widget.executor.tasks;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectTasks();
+  }
+
+  void _connectTasks() {
+    _tasks?.addListener(_tasksChanged);
+    _tasks?.recover();
+    _poll = Timer.periodic(const Duration(seconds: 5), (_) {
+      _tasks?.refreshTracked();
+    });
+  }
+
+  void _tasksChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(AssistantPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.executor != widget.executor) {
+      oldWidget.executor.tasks?.removeListener(_tasksChanged);
+      _poll?.cancel();
+      _connectTasks();
+    }
+  }
 
   @override
   void dispose() {
+    _poll?.cancel();
+    _tasks?.removeListener(_tasksChanged);
     _input.dispose();
     super.dispose();
   }
@@ -69,7 +106,8 @@ class _AssistantPanelState extends State<AssistantPanel> {
     if (!mounted) return;
     _input.clear();
     setState(() => _busy = false);
-    await widget.voiceOutput.speak(record.reply); // no-op unless a speaker is wired
+    await widget.voiceOutput
+        .speak(record.reply); // no-op unless a speaker is wired
   }
 
   void _send() => _run(_input.text.trim());
@@ -101,14 +139,18 @@ class _AssistantPanelState extends State<AssistantPanel> {
             style: TextStyle(fontSize: 11.5, color: t.inkFaint)),
         const SizedBox(height: FwLayout.s4),
         Flexible(
-          child: log.isEmpty
+          child: log.isEmpty && _tasks == null
               ? const HonestNull(
                   'Nothing yet. Try "navigate to the airport" or "fix the failing test".')
-              : ListView.separated(
+              : ListView(
                   shrinkWrap: true,
-                  itemCount: log.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: FwLayout.s2),
-                  itemBuilder: (context, i) => _record(t, log[i]),
+                  children: [
+                    for (final record in log)
+                      Padding(
+                          padding: const EdgeInsets.only(bottom: FwLayout.s2),
+                          child: _record(t, record)),
+                    if (_tasks != null) AssistantTaskList(controller: _tasks!),
+                  ],
                 ),
         ),
         const SizedBox(height: FwLayout.s3),
@@ -127,13 +169,14 @@ class _AssistantPanelState extends State<AssistantPanel> {
               key: const Key('assistant-input'),
               controller: _input,
               style: fwMono(t, size: 12),
-              decoration:
-                  const InputDecoration(isDense: true, hintText: 'Type a command...'),
+              decoration: const InputDecoration(
+                  isDense: true, hintText: 'Type a command...'),
               onSubmitted: (_) => _send(),
             ),
           ),
           const SizedBox(width: FwLayout.s2),
-          FilledButton(onPressed: _busy ? null : _send, child: const Text('Send')),
+          FilledButton(
+              onPressed: _busy ? null : _send, child: const Text('Send')),
         ]),
       ],
     );
@@ -141,7 +184,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
 
   Widget _record(FwTokens t, AssistantRecord r) {
     final detail = r.channel == AssistantChannel.agent
-        ? (r.runId != null ? 'run ${r.runId}' : 'could not start the run')
+        ? (r.runId != null ? 'run ${r.runId}' : 'submission outcome unknown')
         : (r.deepLink != null ? 'opens ${r.deepLink}' : '');
     return HairlineCard(
       child: Column(

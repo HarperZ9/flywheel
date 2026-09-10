@@ -78,11 +78,14 @@ void main() {
 
     expect(agent.tasks.single, 'fix the failing test');
     expect(find.textContaining('run run-7'), findsOneWidget);
-    expect(find.text('On it. I will start on that and keep the receipts.'),
+    expect(
+        find.text(
+            'Submitted. Completion and the answer still need to be checked.'),
         findsOneWidget); // the spoken reply, distinct from the panel's description
   });
 
-  testWidgets('a spoken command runs and the reply is spoken back', (tester) async {
+  testWidgets('a spoken command runs and the reply is spoken back',
+      (tester) async {
     final device = _Device();
     final voiceOut = _RecordingVoice();
     await tester.pumpWidget(MaterialApp(
@@ -105,7 +108,8 @@ void main() {
 
   testWidgets('no microphone is shown when no speech engine is present',
       (tester) async {
-    await tester.pumpWidget(host(AssistantExecutor(agent: _Agent(), device: _Device())));
+    await tester.pumpWidget(
+        host(AssistantExecutor(agent: _Agent(), device: _Device())));
     expect(find.byKey(const Key('assistant-mic')), findsNothing);
   });
 }
