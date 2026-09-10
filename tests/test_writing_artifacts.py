@@ -104,8 +104,7 @@ def test_artifact_root_rejects_junction_or_symlink_authority(tmp_path):
     root = state / "artifacts"
     if os.name == "nt":
         created = subprocess.run(
-            ["powershell", "-NoProfile", "-Command",
-             f"New-Item -ItemType Junction -Path '{root}' -Target '{outside}' | Out-Null"],
+            ["cmd", "/d", "/c", "mklink", "/J", str(root), str(outside)],
             capture_output=True, text=True, timeout=20)
         if created.returncode:
             pytest.skip("junction creation unavailable")

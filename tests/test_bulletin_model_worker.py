@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -96,11 +97,22 @@ def test_missing_reservation_denies_before_launch(tmp_path):
                 timeout_seconds=2, launcher=lambda *a, **k: pytest.fail("launched"))
 
 
-def test_deadline_kills_owned_tree_and_never_retries(tmp_path):
+@pytest.mark.parametrize("elapsed,failure,expected", [
+    (0.0, "worker_timeout", ["launch", "resume", "wait", "kill", "wait", "close"]),
+    (0.05, "worker_not_resumed", ["launch", "kill", "close"]),
+])
+def test_deadline_kills_owned_tree_and_never_retries(tmp_path, monkeypatch, elapsed, failure, expected):
+    from harness import bulletin_model_worker as worker
+    # Control the supervision clock, not disk speed or the production deadline.
+    ticks = iter((0.0, elapsed))
+    monkeypatch.setattr(worker, "time", SimpleNamespace(monotonic=lambda: next(ticks)))
     req, actions = request(), []
     class Owned:
         def resume(self): actions.append("resume"); return True
-        def wait(self, timeout): actions.append("wait"); return None
+        def wait(self, timeout):
+            actions.append("wait")
+            assert timeout == (.05 if actions.count("wait") == 1 else .5)
+            return None
         def signal_tree(self): actions.append("kill"); return True
         def close(self): actions.append("close")
     def launch(argv, **kwargs):
@@ -113,8 +125,8 @@ def test_deadline_kills_owned_tree_and_never_retries(tmp_path):
         result = supervise_generation(req, exchange=store, ledger=ledger, reservation={"record_name":"ledger-0001.json",
             "sha256":digest}, repository=Path.cwd(), python_executable=Path(sys.executable),
             timeout_seconds=.05, launcher=launch)
-        assert result["outcome"] == "unknown" and result["failure"] == "worker_timeout"
-        assert actions == ["launch", "resume", "wait", "kill", "wait", "close"]
+        assert result["outcome"] == "unknown" and result["failure"] == failure
+        assert actions == expected
 
 
 @pytest.fixture
