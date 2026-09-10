@@ -1868,11 +1868,9 @@ class _Handler(BaseHTTPRequestHandler):
                                             req.get("top_k", 5)))
         if p in ("/api/auth/login",                # begin a subscription sign-in
                  "/api/auth/token",                # hand back a pasted token, never logged
+                 "/api/auth/cancel",               # cancel local completion only
                  "/api/auth/logout"):              # sign out of a provider
-            # Subscription sign-in. A browser flow runs in the background and
-            # the surface polls /api/auth; a guided flow returns its steps and
-            # the surface posts the paste back to /api/auth/token. No token
-            # value is logged, echoed, or returned.
+            # Poll /api/auth for final status; never echo credential values.
             req, bad = self._req_json()
             if bad:
                 return bad
@@ -1887,6 +1885,8 @@ class _Handler(BaseHTTPRequestHandler):
                     provider, callback_base=(req.get("callback_base") or None))
             elif p == "/api/auth/token":
                 out = oauth_service.submit(provider, req.get("token") or "")
+            elif p == "/api/auth/cancel":
+                out = oauth_service.cancel(provider)
             else:
                 out = oauth_service.sign_out(provider)
             return self._json(out, 200 if out.get("ok") else 400)

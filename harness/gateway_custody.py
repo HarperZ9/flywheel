@@ -15,6 +15,7 @@ from __future__ import annotations
 
 #: Everything under these prefixes is private, however deep.
 PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
+                    "/api/auth/",
                     "/api/continuation/",
                     "/api/writing/",
                     "/api/gateway-grants/", "/api/pm/",
@@ -25,6 +26,7 @@ PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
 #: Exact paths held under private custody. Model calls and anything that runs
 #: an agent, installs a plugin, or reaches the marketplace.
 PRIVATE_PATHS = frozenset({
+    "/api/auth",
     "/v1/chat/completions", "/api/agent", "/api/workflow",
     "/api/hooks",
     "/api/plugins/probe", "/api/plugins/call", "/api/plugins/register",

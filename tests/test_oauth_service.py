@@ -8,6 +8,7 @@ no credential store refuses before anything is minted.
 """
 import json
 import time
+from types import SimpleNamespace
 
 import harness.oauth_service as svc
 
@@ -146,7 +147,7 @@ def test_remote_pkce_returns_the_url_and_advertises_the_reached_host(monkeypatch
 
     def _fake_begin(profile, advertise_host=None):
         seen["host"] = advertise_host
-        return (object(), "http://10.0.0.5:55555/cb/n", "verifier",
+        return (SimpleNamespace(server_close=lambda: None), "http://10.0.0.5:55555/cb/n", "verifier",
                 "https://openrouter.ai/auth?callback_url=http%3A%2F%2F10.0.0.5")
 
     def _fake_finish(profile, server, callback, verifier, **k):
