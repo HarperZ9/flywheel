@@ -1210,7 +1210,6 @@ class _Handler(BaseHTTPRequestHandler):
                 or p == "/health"):                  # is the model endpoint answering
             return self._proxy(self.serve_url.rstrip("/") + p)
         return self._static(p)
-
     def _plan_request(self, path):
         length = self._content_length()
         if length is None:
@@ -1218,12 +1217,10 @@ class _Handler(BaseHTTPRequestHandler):
                 "error": {"code": "INVALID_REQUEST",
                           "message": "gateway operation is invalid"}}, 422)
         from harness.plan_run_route import plan_post
-        body, code = plan_post(path, self.rfile.read(length), owner_ref=self.owner_ref,
-            state_root=self.flywheel_home / "state", default_root=self.root,
-            run_root=self.run_root, clock=self.clock,
-            resolve_root=_resolve_workspace_root, countersign=_countersign_workflow)
+        body, code = plan_post(path, self.rfile.read(length), owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
+            default_root=self.root, run_root=self.run_root, clock=self.clock, resolve_root=_resolve_workspace_root,
+            countersign=_countersign_workflow)
         return self._json(body, code)
-
     def _post(self):
         p = self.path.split("?", 1)[0]
         if p.startswith("/api/plan/"): return self._plan_request(p)  # a plan request, private custody
@@ -1238,10 +1235,13 @@ class _Handler(BaseHTTPRequestHandler):
                 req = {}
             action = p.rsplit("/", 1)[-1]
             from harness.session_token_route import session_token_post
-            body, code = session_token_post(
-                action, req, owner_ref=self.owner_ref,
-                token_store=self._session_tokens())
+            body, code = session_token_post(action, req, owner_ref=self.owner_ref, token_store=self._session_tokens())
             return self._json(body, code)
+        if p == "/api/enterprise-envs/service-desk-incident/review":  # review ServiceDesk incident evidence
+            length = self._content_length()
+            if length is None: return self._json({"schema": "flywheel.evidence-transport-error/v1",
+                "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
+            from harness.enterprise_envs.service_desk_review_route import service_desk_review_post; return self._json(*service_desk_review_post(p, self.rfile.read(length), run_root=Path(self.run_root)))
         if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
                          "/api/continuation/", "/api/writing/",
                          "/api/gateway-grants/",

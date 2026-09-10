@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/gateway_models.dart';
 import '../models/operation_models.dart';
+import '../models/service_desk_review.dart';
 import '../models/workflow_models.dart';
 import 'gateway_auth.dart';
 import 'gateway_error.dart';
@@ -108,49 +109,64 @@ class GatewayClient {
   Future<Map<String, dynamic>> relayRemote() => getJson('/api/relay/remote');
 
   /// POST /api/companion — answer locally, escalate the hard slice.
-  Future<CompanionResult> companion(String prompt,
-      {String? solutionSig,
-      String? effort,
-      Map<String, dynamic>? authorizedBody}) async {
+  Future<CompanionResult> companion(
+    String prompt, {
+    String? solutionSig,
+    String? effort,
+    Map<String, dynamic>? authorizedBody,
+  }) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/companion'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(authorizedBody ??
-          {
-            'prompt': prompt,
-            if (solutionSig != null) 'solution_sig': solutionSig,
-            if (effort != null) 'effort': effort,
-          }),
+      body: jsonEncode(
+        authorizedBody ??
+            {
+              'prompt': prompt,
+              if (solutionSig != null) 'solution_sig': solutionSig,
+              if (effort != null) 'effort': effort,
+            },
+      ),
     );
     return CompanionResult.fromJson(_decode(r));
   }
 
   /// POST /api/route — route a prompt to a named provider, get a receipt.
-  Future<Map<String, dynamic>> route(String prompt, String endpoint,
-      {String? model, Map<String, dynamic>? authorizedBody}) async {
+  Future<Map<String, dynamic>> route(
+    String prompt,
+    String endpoint, {
+    String? model,
+    Map<String, dynamic>? authorizedBody,
+  }) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/route'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(authorizedBody ??
-          {
-            'prompt': prompt,
-            'endpoint': endpoint,
-            if (model != null && model.isNotEmpty) 'model': model,
-          }),
+      body: jsonEncode(
+        authorizedBody ??
+            {
+              'prompt': prompt,
+              'endpoint': endpoint,
+              if (model != null && model.isNotEmpty) 'model': model,
+            },
+      ),
     );
     return _decode(r);
   }
 
   /// Generic GET returning decoded JSON, for lightweight read-only routes.
-  Future<Map<String, dynamic>> getJson(String path,
-      {Duration timeout = const Duration(seconds: 15)}) async {
+  Future<Map<String, dynamic>> getJson(
+    String path, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     final r = await _http.get(Uri.parse('$baseUrl$path')).timeout(timeout);
     return _decode(r);
   }
 
   /// Generic POST returning decoded JSON, for small parameterless verbs.
-  Future<Map<String, dynamic>> postJson(String path, Map<String, dynamic> body,
-      {Duration timeout = const Duration(seconds: 15)}) async {
+  Future<Map<String, dynamic>> postJson(
+    String path,
+    Map<String, dynamic> body, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     final r = await _http
         .post(
           Uri.parse('$baseUrl$path'),
@@ -163,8 +179,10 @@ class GatewayClient {
 
   /// Generic POST returning decoded JSON while rejecting redirects.
   Future<Map<String, dynamic>> postJsonNoRedirect(
-      String path, Map<String, dynamic> body,
-      {Duration timeout = const Duration(seconds: 15)}) async {
+    String path,
+    Map<String, dynamic> body, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     final request = http.Request('POST', Uri.parse('$baseUrl$path'))
       ..followRedirects = false
       ..headers['Content-Type'] = 'application/json'
@@ -180,8 +198,10 @@ class GatewayClient {
   /// cannot be audited is a 400 that names why. Throwing those away would
   /// report a transport failure where the engine actually answered.
   Future<Map<String, dynamic>> postJsonLenient(
-      String path, Map<String, dynamic> body,
-      {Duration timeout = const Duration(seconds: 15)}) async {
+    String path,
+    Map<String, dynamic> body, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     final r = await _http
         .post(
           Uri.parse('$baseUrl$path'),
@@ -190,6 +210,18 @@ class GatewayClient {
         )
         .timeout(timeout);
     return _decodeLenient(r);
+  }
+
+  Future<ServiceDeskReviewResult> serviceDeskIncidentReview(
+    String artifactDirRef, {
+    Duration timeout = const Duration(seconds: 60),
+  }) async {
+    final body = await postJsonLenient(
+      '/api/enterprise-envs/service-desk-incident/review',
+      {'artifact_dir_ref': artifactDirRef},
+      timeout: timeout,
+    );
+    return ServiceDeskReviewResult.fromJson(body);
   }
 
   Map<String, dynamic> _decode(http.Response r) {
