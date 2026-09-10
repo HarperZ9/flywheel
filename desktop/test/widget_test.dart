@@ -53,7 +53,7 @@ void main() {
       flywheelDestinations.map((item) => item.label).toSet(),
       expectedDestinationTypes.keys
           .map(
-            (id) =>
+            (id) => id == DestinationId.chat ? 'Rowan' :
                 id.name.substring(0, 1).toUpperCase() + id.name.substring(1),
           )
           .toSet(),
@@ -188,7 +188,7 @@ void _codeGuardWidgetTests() {
     expect(find.byType(CodeView), findsOneWidget);
     _prepareShellCode(harness);
     final controller = harness.code.openFiles.single.controller;
-    await tapRail(tester, 'Chat');
+    await tapRail(tester, 'Rowan');
     expect(find.byType(CodeView), findsOneWidget);
     expect(requests.single.paths, ['lib/main.dart']);
     expect(harness.code.openFiles.single.controller, same(controller));

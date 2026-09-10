@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../assistant/assistant_identity.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import 'mode_chip.dart';
@@ -69,7 +70,7 @@ class ChatHeader extends StatelessWidget {
           ),
           const SizedBox(width: FwLayout.s1),
         ],
-        Text('Chat', style: Theme.of(context).textTheme.titleMedium),
+        Text(AssistantIdentity.name, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(width: FwLayout.s4),
         FwModeChip(
             label: 'chat',

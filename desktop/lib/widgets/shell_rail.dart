@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 
 import '../accessibility/accessible_action.dart';
+import '../assistant/assistant_identity.dart';
 import '../navigation/app_route.dart';
 import '../navigation/destination_catalog.dart';
 import '../navigation/destination_search.dart';
@@ -202,7 +203,7 @@ class _ShellRailState extends State<ShellRail> {
         _footerIcon(t, Icons.restore_rounded, 'Open recovery center',
             widget.onOpenRecovery),
         if (widget.onOpenAssistant != null)
-          _footerIcon(t, Icons.assistant_rounded, 'Open assistant',
+          _footerIcon(t, Icons.assistant_rounded, AssistantIdentity.openLabel,
               widget.onOpenAssistant!),
         if (widget.onOpenSessions != null)
           _footerIcon(t, Icons.history_rounded, 'Open sessions',
@@ -224,9 +225,9 @@ class _ShellRailState extends State<ShellRail> {
         const SizedBox(height: FwLayout.s2),
         _footerKicker(t, 'TOOLS'),
         if (widget.onOpenAssistant != null)
-          _labeledAction(t, Icons.assistant_rounded, 'Assistant',
+          _labeledAction(t, Icons.assistant_rounded, AssistantIdentity.name,
               widget.onOpenAssistant!,
-              semantic: 'Open assistant'),
+              semantic: AssistantIdentity.openLabel),
         if (widget.onOpenSessions != null)
           _labeledAction(t, Icons.history_rounded, 'Sessions',
               widget.onOpenSessions!,
