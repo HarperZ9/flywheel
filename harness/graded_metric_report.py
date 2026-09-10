@@ -1,23 +1,7 @@
-"""Turn a run's scorecard into the per-role numbers a chart can carry.
+"""Aggregate recorded efficiency and graded quality, keeping each denominator.
 
-A scorecard row already holds everything the graded oracles measured. It holds
-it one attempt at a time, in a 365 KB document with sixty-odd keys per row, and
-nothing in the repository rolled it up. So the published benchmark surface could
-show which harness passed and never show by how much, or what the answer cost.
-
-This module reads a scorecard and answers two questions per provider role:
-
-  efficiency  what fraction of attempts reached a provider, what fraction came
-              back readable, how long they took, and what they cost
-  quality     for each graded checker, the mean of every metric it reported
-
-Both halves keep their denominators. A rate over zero attempts is reported as
-null with the reason, never as zero or one. A cost is reported only for the
-attempts whose provider actually stated one, and the coverage travels with it,
-because four of the five roles in the 2026-09-03 run report no cost at all and
-a total that hides that reads as though the run was nearly free.
-
-Reading is all this does. It calls no provider and writes nothing.
+Quality remains conditional on graded answers. Zero denominators stay null.
+This reads scorecards without calling providers or writing files.
 """
 from __future__ import annotations
 
@@ -31,6 +15,18 @@ from harness.attempt_attribution import attribute, recovery
 
 SCHEMA = "flywheel.graded_metric_report/v1"
 SCORED_STATES = ("pass", "fail")
+PASS_DENOMINATORS = (
+    "Passed counts recorded oracle passes. All attempts includes blocked and "
+    "unavailable assignments; readable includes only graded answers. These rates "
+    "do not establish general task correctness."
+)
+
+
+def pass_fraction(role: dict[str, Any], denominator: str) -> str:
+    """Render counts from v1 records, including those predating the added rate."""
+    total = role[denominator]
+    passed = role["oracle_pass"]
+    return f"{passed}/{total} ({passed / total:.0%})" if total else "not reported"
 
 # Which way is better, for a chart that has to orient a bar without a caption.
 DIRECTION = {
@@ -157,6 +153,7 @@ def summarize_role(role: str, rows: list[dict[str, Any]],
         "launch_rate": _rate(len(launched), len(rows)),
         "readable_rate": _rate(len(scored), len(rows)),
         "pass_rate": _rate(passed, len(scored)),
+        "pass_rate_all_attempts": _rate(passed, len(rows)),
         "latency_ms_median": _percentile(latencies, 0.5),
         "latency_ms_p90": _percentile(latencies, 0.9),
         "cost_usd_total": cost_total,
@@ -259,9 +256,10 @@ def _efficiency_rows(record: dict[str, Any]) -> list[str]:
     for row in record["roles"]:
         counted = f"{row['launched']}/{row['attempts']} | {row['scored']}/{row['attempts']}"
         rates = f"{_cell(row['launch_rate'])} | {_cell(row['readable_rate'])}"
+        passes = f"{pass_fraction(row, 'attempts')} | {pass_fraction(row, 'scored')}"
         spend = f"{_cell(row['cost_usd_total'])} | {_cell(row['cost_coverage'])}"
         lines.append(f"| {row['provider_role']} | {counted} | {rates} "
-                     f"| {_cell(row['latency_ms_median'])} | {spend} |")
+                     f"| {passes} | {_cell(row['latency_ms_median'])} | {spend} |")
     return lines
 
 
@@ -275,9 +273,11 @@ def render_markdown(record: dict[str, Any]) -> str:
         f"- scored: {counts['scored']}",
         f"- graded checkers reporting: {counts['graded_checkers']}", "",
         "## Efficiency by role", "",
-        "| role | launched | scored | launch rate | readable rate | median ms "
+        PASS_DENOMINATORS, "",
+        "| role | launched | scored | launch rate | readable rate "
+        "| passed / all attempts | passed / readable | median ms "
         "| cost usd | cost coverage |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     lines += _efficiency_rows(record)
     for checker in record["checkers"]:

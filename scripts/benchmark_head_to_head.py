@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any
 
 from harness.attempt_attribution import recovery_sentence, summarize
+from harness.graded_metric_report import PASS_DENOMINATORS, pass_fraction
 from scripts.benchmark_shared import esc as _esc
 
 RECORD = Path(__file__).resolve().parent.parent / "docs" / "benchmarks" / "graded-metrics.json"
@@ -85,7 +86,8 @@ def role_cells(role: dict[str, Any]) -> list[tuple[str, str, bool]]:
     return [
         ("launched", f"{role['launched']}/{role['attempts']}", not role["launched"]),
         ("readable", f"{role['scored']}/{role['attempts']}", not role["scored"]),
-        ("pass rate", _pct(role["pass_rate"]), role["pass_rate"] is None),
+        ("passed / all attempts", pass_fraction(role, "attempts"), not role["attempts"]),
+        ("passed / readable", pass_fraction(role, "scored"), not role["scored"]),
         ("median latency", _ms(role["latency_ms_median"]), role["latency_ms_median"] is None),
         ("cost", _money(role["cost_usd_total"]) if not cost_note else ABSENT, bool(cost_note)),
         ("cost coverage", _pct(role["cost_coverage"]), role["cost_coverage"] is None),
@@ -208,6 +210,7 @@ def render_html(record: dict[str, Any] | None) -> str:
         f'{counts["scored"]} readable, on task set '
         f'{_esc(", ".join(record["task_set_ids"]) or "unnamed")}.</p>',
         "<h3>What an attempt cost</h3>",
+        f'<p class="legend">{_esc(PASS_DENOMINATORS)}</p>',
         _efficiency_html(record),
         "<h3>What came back readable</h3>",
         _readable_bars(record),
@@ -239,7 +242,7 @@ def render_markdown(record: dict[str, Any] | None) -> list[str]:
     out += [f"{counts['attempts']} attempts across {counts['roles']} harnesses, "
             f"{counts['launched']} launched, {counts['scored']} readable, on task set "
             f"{', '.join(record['task_set_ids']) or 'unnamed'}.", "",
-            "### What an attempt cost", ""]
+            "### What an attempt cost", "", PASS_DENOMINATORS, ""]
     labels = [label for label, _, _ in role_cells(record["roles"][0])]
     out += _markdown_table(
         ["harness", *labels],
