@@ -905,7 +905,7 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/desktop/status":               # read-only connection facts
             from harness.desktop_status import desktop_status
             from harness.lanes import lane_roster
-            return self._json(desktop_status(lane_roster()))
+            return self._json(desktop_status(lane_roster(), startup_recovery=getattr(self, "startup_recovery", None)))
         if p == "/api/forum/status":                  # forum lane status (via MCP)
             return self._json(_forum_mcp_call("forum.status", {}))
         if p == "/api/forum/ledger":                  # forum ledger summary
@@ -2309,9 +2309,9 @@ def main(argv=None) -> int:
     _Handler.ollama_url = a.ollama_url
     _Handler.run_root = a.run_root
     _Handler.cors = a.cors
-    # Default is unchanged: nothing goes remote unless the operator opts in with
-    # --host and names the public hostname with --allow-host. The token and the
-    # Host allowlist remain the guard on every request.
+    from harness.telos_browser_registration import configure_telos_browser
+    if configure_telos_browser(os.environ.get("FLYWHEEL_TELOS_BROWSER_CONFIG"))["available"] is None: raise SystemExit("browser registration state unknown; gateway not started")
+    # Default remains opt-in via --host and --allow-host; token and Host allowlist still guard requests.
     _Handler.allowed_hosts = DEFAULT_HOSTS | frozenset(a.allow_host)
     flywheel_home = Path(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
     _Handler.flywheel_home = flywheel_home
@@ -2340,8 +2340,7 @@ def main(argv=None) -> int:
     _Handler.session_token_store = SessionTokenStore(
         CredentialHandleStore(state_root, keychain_get=keychain_get))
     _Handler._session_token_state_root = state_root
-    recover_store(state_root, now=_Handler.clock())
-    recover_gateway_operations(state_root, now=_Handler.clock())
+    _Handler.startup_recovery = {"journeys": recover_store(state_root, now=_Handler.clock()), "gateway_operations": recover_gateway_operations(state_root, now=_Handler.clock())}
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
     print(f"  bound     {', '.join(f'{h}:{a.port}' for h in bound)}")
     print(f"  token     {flywheel_home / 'gateway.token'}  (send as: Authorization: Bearer <token>)")

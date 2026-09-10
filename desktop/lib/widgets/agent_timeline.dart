@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/flywheel_theme.dart';
+import 'agent_event_detail.dart';
 import 'fw.dart';
 
 class AgentTimeline extends StatelessWidget {
@@ -26,13 +27,31 @@ class AgentTimeline extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: FwLayout.s2),
       child: switch (type) {
         'assistant' => _assistant(t, e),
-        'tool_call' => _toolCall(t, e),
-        'tool_result' => _toolResult(t, e),
+        'tool_call' => _inspectable(context, e, _toolCall(t, e)),
+        'tool_result' => _inspectable(context, e, _toolResult(t, e)),
         'tool_rescue' => _rescue(t, e),
         'done' => _done(t, e),
         'error' => HonestNull('The run failed: ${e['error']}'),
-        _ => const SizedBox.shrink(),
+        _ => _inspectable(context, e,
+            Text('Event: ${type.isEmpty ? 'type not recorded' : type}')),
       },
+    );
+  }
+
+  Widget _inspectable(
+      BuildContext context, Map<String, dynamic> event, Widget preview) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        preview,
+        TextButton(
+          onPressed: () => showDialog<void>(
+            context: context,
+            builder: (_) => AgentEventDetail(event: event),
+          ),
+          child: const Text('Details'),
+        ),
+      ],
     );
   }
 
@@ -71,18 +90,17 @@ class AgentTimeline extends StatelessWidget {
   }
 
   Widget _toolResult(FwTokens t, Map<String, dynamic> e) {
-    final ok = e['ok'] == true;
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        VerdictDot(ok ? 'verified' : 'drift', size: 6),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text('${e['name']}: ${e['output'] ?? ''}',
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: fwMono(t, size: 11, color: t.inkFaint)),
-        ),
+        Text(agentExecutionStatus(e),
+            style: fwMono(t, size: 11, color: t.inkMuted)),
+        Text(
+            '${e['name'] ?? 'Tool name not recorded'}: '
+            '${e['output'] ?? 'Output not recorded'}',
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: fwMono(t, size: 11, color: t.inkFaint)),
       ],
     );
   }

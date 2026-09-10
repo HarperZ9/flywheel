@@ -11,6 +11,23 @@ import time
 import urllib.error
 
 
+def _route_block(entry: dict, roster: dict, endpoint: str) -> tuple[dict, int] | None:
+    if entry.get("credential") == "absent":
+        return {"error": f"endpoint {endpoint!r} has no credential present; set its API "
+                f"key in the environment (presence only, never read here)",
+                "credential": "absent"}, 400
+    if endpoint != "claude-cli":
+        return None
+    usable = roster.get("usable_names")
+    not_usable = isinstance(usable, list) and endpoint not in usable
+    if (entry.get("account_authenticated") is not True
+            or entry.get("receipt_capable") is not True or not_usable):
+        return {"error": "Claude Code account sign-in required before routing claude-cli",
+                "credential": entry.get("credential", ""),
+                "account_state": entry.get("account_state", "unknown")}, 403
+    return None
+
+
 def route_request(
         prompt: str, endpoint: str, model: str = "", *, unified_roster,
         router_ledger, route_answer) -> tuple[dict, int]:
@@ -21,10 +38,9 @@ def route_request(
     if entry is None:
         usable = roster.get("usable_names", [])
         return {"error": f"unknown endpoint {endpoint!r}", "usable": usable}, 404
-    if entry.get("credential") == "absent":
-        return {"error": f"endpoint {endpoint!r} has no credential present; set its API "
-                f"key in the environment (presence only, never read here)",
-                "credential": "absent"}, 400
+    blocked = _route_block(entry, roster, endpoint)
+    if blocked is not None:
+        return blocked
     try:
         from harness.endpoint_registry import make_endpoint_proposer
     except Exception:
@@ -82,8 +98,9 @@ def resolve_proposer(
                       if e["name"] == name), None)
         if entry is None:
             return None, f"unknown model {m!r}; see GET /v1/models", 404
-        if entry.get("credential") == "absent":
-            return None, f"model {name!r} has no credential present", 400
+        blocked = _route_block(entry, roster, name)
+        if blocked is not None:
+            return None, blocked[0]["error"], blocked[1]
     try:
         from harness.endpoint_registry import (
             make_authorized_endpoint_proposer, make_endpoint_proposer)

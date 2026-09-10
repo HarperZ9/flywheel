@@ -1,30 +1,9 @@
-"""oauth_signin.py -- the stepwise sign-in seam for subscription accounts.
+"""Stepwise sign-in seams for provider accounts.
 
-subscription_auth.py stays read-only by covenant: it consumes a token an
-authorized login already produced. THIS module is the login. It is explicit,
-operator-initiated, and writes exactly one thing: the resulting token into
-the OS credential store, under the same name the read-only adapters already
-consume. No resolver rewiring; sign in, and the router sees it.
-
-Provider honesty is typed, not implied. Each profile carries its sanction:
-
-  - `pkce`        the provider documents a third-party PKCE flow with no app
-                  registration (OpenRouter). Works out of the box.
-  - `guided-cli`  the provider's own official tool mints the token (Anthropic:
-                  `claude setup-token`); this module walks the user through it
-                  and stores the paste. It never impersonates another app's
-                  OAuth client, and it claims no provider sanction: what the
-                  resulting token may be used for is governed by that
-                  provider's terms, which the operator is accountable to.
-  - `registered`  the provider runs a partner program; the flow lights up once
-                  the operator registers the app and configures a client id.
-                  Until then the honest answer is "requires registration",
-                  never a borrowed client id.
-
-Redaction discipline matches subscription_auth: a token value exists in
-memory and in the credential store, and appears nowhere else. Failures are
-returned as error dicts, never raised as tracebacks, and never carry a
-response body (which can echo a code).
+PKCE and registered flows store only credential presence labels. Guided flows
+accept a hidden paste only for providers that still use that contract. Claude
+Code account auth is native-CLI-owned: this module delegates launch and status
+to claude_cli_auth and never stores setup-token output.
 """
 from __future__ import annotations
 
@@ -39,7 +18,7 @@ import urllib.request
 import webbrowser
 from typing import Optional
 
-from . import keychain
+from . import claude_cli_auth, keychain
 from .oauth_callback import CallbackServer
 from .oauth_profiles import (  # noqa: F401  (re-exported: the module API)
     PROFILES, WIRE_OAUTH2, WIRE_OPENROUTER, OAuthProfile,
@@ -238,6 +217,8 @@ def login(provider: str, **kwargs) -> dict:
         return _login_pkce(profile, **kwargs)
     if profile.kind == "guided-cli":
         return _login_guided(profile, **kwargs)
+    if profile.kind == "official-cli":
+        return claude_cli_auth.begin_login(provider=provider)
     return _login_registered(profile, **kwargs)
 
 
@@ -247,6 +228,8 @@ def logout(provider: str) -> dict:
     profile = PROFILES.get(provider)
     if profile is None:
         return _fail(provider, "unknown provider")
+    if profile.kind == "official-cli":
+        return _fail(provider, "Claude Code owns sign-out; use Claude Code directly")
     result = keychain.keychain_delete(profile.keychain_name)
     still = keychain.credential_source(profile.keychain_name)
     out = {"provider": provider, "ok": "error" not in result,
@@ -265,6 +248,18 @@ def status() -> list:
     rows = []
     for name in sorted(PROFILES):
         profile = PROFILES[name]
+        if profile.kind == "official-cli":
+            account = claude_cli_auth.public_status()
+            source = account.get("source") or (
+                "claude-code-account" if account.get("authenticated") is True
+                else account.get("state", ""))
+            rows.append({"provider": name, "kind": profile.kind,
+                         "keychain_name": "",
+                         "present": account.get("authenticated") is True,
+                         "source": source,
+                         "sanction": profile.sanction,
+                         "official_cli": account})
+            continue
         rows.append({"provider": name, "kind": profile.kind,
                      "keychain_name": profile.keychain_name,
                      "present": bool(keychain.resolve_credential(profile.keychain_name)),
@@ -279,7 +274,9 @@ def cli(argv: list) -> int:
     verb = args[0] if args else "status"
     if verb == "status":
         for row in status():
-            mark = "credential present; authentication unverified" if row["present"] else "absent"
+            mark = (claude_cli_auth.status_label(row.get("official_cli", {}))
+                    if row["kind"] == "official-cli" else
+                    "credential present; authentication unverified" if row["present"] else "absent")
             print(f"  {row['provider']:<12} {mark}  [{row['kind']}] "
                   f"{row['sanction']}")
         return 0

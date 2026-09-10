@@ -109,3 +109,25 @@ def _isolated_keychain(request, monkeypatch):
     except Exception:
         pass  # keychain may be absent in a stripped slice; env path still holds
     yield
+
+
+@pytest.fixture(autouse=True)
+def _isolated_claude_cli_status(request, monkeypatch):
+    """Unit tests must not read the operator's real Claude account state."""
+    if request.node.get_closest_marker("real_claude_cli"):
+        yield
+        return
+    try:
+        from harness import claude_cli_auth
+        monkeypatch.setattr(
+            claude_cli_auth,
+            "_run_status",
+            lambda _argv, _timeout: type("P", (), {
+                "returncode": 1,
+                "stdout": '{"loggedIn": false}',
+                "stderr": "",
+            })(),
+        )
+    except Exception:
+        pass
+    yield

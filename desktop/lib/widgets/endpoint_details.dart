@@ -29,14 +29,18 @@ class ProviderRoster extends StatelessWidget {
   Widget _row(FwTokens t, EndpointRow r) {
     final (label, status) = switch (r.credential) {
       'present' => ('key present', 'verified'),
+      'cli-auth' when r.needsAccountAuth && r.accountAuthenticated => (
+          'account ready',
+          'verified'
+        ),
       'cli-auth' => ('CLI present', 'declared'),
       'local-none' => ('local', 'verified'),
       _ => ('no key', 'absent'),
     };
     return Container(
       padding: const EdgeInsets.symmetric(vertical: FwLayout.s2 + 2),
-      decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: t.hairline))),
+      decoration:
+          BoxDecoration(border: Border(bottom: BorderSide(color: t.hairline))),
       child: Row(
         children: [
           Expanded(
@@ -48,8 +52,7 @@ class ProviderRoster extends StatelessWidget {
           const SizedBox(width: FwLayout.s3),
           Expanded(
             flex: 4,
-            child: Text(
-                r.providerRole.isNotEmpty ? r.providerRole : r.backend,
+            child: Text(r.providerRole.isNotEmpty ? r.providerRole : r.backend,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 12, color: t.inkMuted)),
           ),
@@ -93,8 +96,8 @@ class EndpointScoreboard extends StatelessWidget {
   Widget _scoreRow(FwTokens t, ProviderScore s) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: FwLayout.s2 + 2),
-      decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: t.hairline))),
+      decoration:
+          BoxDecoration(border: Border(bottom: BorderSide(color: t.hairline))),
       child: Row(
         children: [
           SizedBox(

@@ -28,14 +28,14 @@ def act(root, request_id="a", action=None):
 
 
 def test_driver_sees_durable_budget_reservation(tmp_path):
-    opened(tmp_path, cap=1)
     def driver(action):
         snapshot = browser.session(tmp_path, run_id="r")
         assert snapshot["attempted"] == 1
         assert snapshot["actions"][0]["phase"] == "admitted"
         assert snapshot["actions"][0]["performed"] is None
         return {"ok": True, "performed": True}
-    browser.register_driver("fixture", driver)
+    browser.register_driver("fixture", driver, binding_sha256="a" * 64)
+    opened(tmp_path, cap=1)
     result = act(tmp_path)
     assert result["performed"] is True
     assert browser.session(tmp_path, run_id="r")["attempted"] == 1
@@ -44,9 +44,9 @@ def test_driver_sees_durable_budget_reservation(tmp_path):
 
 
 def test_admission_persistence_failure_prevents_driver(tmp_path, monkeypatch):
-    opened(tmp_path)
     calls = []
-    browser.register_driver("fixture", lambda action: calls.append(action))
+    browser.register_driver("fixture", lambda action: calls.append(action), binding_sha256="a" * 64)
+    opened(tmp_path)
     monkeypatch.setattr(store.os, "fsync", lambda fd: (_ for _ in ()).throw(OSError()))
     with pytest.raises(store.BrowserStoreError):
         act(tmp_path)
@@ -54,12 +54,12 @@ def test_admission_persistence_failure_prevents_driver(tmp_path, monkeypatch):
 
 
 def test_exception_is_unknown_and_same_request_never_redispatches(tmp_path):
-    opened(tmp_path)
     calls = []
     def driver(action):
         calls.append(action)
         raise RuntimeError("PRIVATE_EXCEPTION_CANARY")
-    browser.register_driver("fixture", driver)
+    browser.register_driver("fixture", driver, binding_sha256="a" * 64)
+    opened(tmp_path)
     result = act(tmp_path)
     assert result["delivery_status"] == "unknown"
     assert result["performed"] is None
@@ -71,9 +71,9 @@ def test_exception_is_unknown_and_same_request_never_redispatches(tmp_path):
 
 
 def test_completion_write_failure_leaves_nonreplayable_admission(tmp_path, monkeypatch):
-    opened(tmp_path)
     calls = []
-    browser.register_driver("fixture", lambda action: calls.append(action) or {"ok": True, "performed": True})
+    browser.register_driver("fixture", lambda action: calls.append(action) or {"ok": True, "performed": True}, binding_sha256="a" * 64)
+    opened(tmp_path)
     original = store.append
     def fail_terminal(path, records, record):
         if record["kind"] == "completion":
@@ -88,9 +88,10 @@ def test_completion_write_failure_leaves_nonreplayable_admission(tmp_path, monke
 
 
 @pytest.mark.parametrize("outcome", [{}, None, {"ok": True}, {"ok": False, "performed": True}])
+
 def test_missing_or_contradictory_acknowledgement_is_not_success(tmp_path, outcome):
+    browser.register_driver("fixture", lambda action: outcome, binding_sha256="a" * 64)
     opened(tmp_path)
-    browser.register_driver("fixture", lambda action: outcome)
     result = act(tmp_path)
     assert result["performed"] is None
     assert result["delivery_status"] == "unknown"
@@ -98,8 +99,8 @@ def test_missing_or_contradictory_acknowledgement_is_not_success(tmp_path, outco
 
 
 def test_explicit_no_action_acknowledgement_is_recorded_without_success(tmp_path):
+    browser.register_driver("fixture", lambda action: {"ok": False, "performed": False}, binding_sha256="a" * 64)
     opened(tmp_path)
-    browser.register_driver("fixture", lambda action: {"ok": False, "performed": False})
     assert act(tmp_path)["performed"] is False
 
 
@@ -107,16 +108,16 @@ def test_simulated_navigation_cannot_authorize_later_driver_click(tmp_path):
     opened(tmp_path)
     assert act(tmp_path)["simulated"] is True
     calls = []
-    browser.register_driver("fixture", lambda action: calls.append(action))
+    browser.register_driver("fixture", lambda action: calls.append(action), binding_sha256="a" * 64)
     result = act(tmp_path, "click", {"kind": "click", "selector": "#go"})
     assert result["admitted"] is False
     assert calls == []
 
 
 def test_conflicting_duplicate_and_missing_identifier_refused(tmp_path):
-    opened(tmp_path)
     calls = []
-    browser.register_driver("fixture", lambda action: calls.append(action) or {"ok": True, "performed": True})
+    browser.register_driver("fixture", lambda action: calls.append(action) or {"ok": True, "performed": True}, binding_sha256="a" * 64)
+    opened(tmp_path)
     act(tmp_path)
     with pytest.raises(browser.Refused, match="request_id"):
         act(tmp_path, action={"kind": "screenshot"})
@@ -126,12 +127,12 @@ def test_conflicting_duplicate_and_missing_identifier_refused(tmp_path):
 
 
 def test_interrupt_retains_unknown_delivery_and_does_not_retry(tmp_path):
-    opened(tmp_path)
     calls = []
     def driver(action):
         calls.append(action)
         raise KeyboardInterrupt()
-    browser.register_driver("fixture", driver)
+    browser.register_driver("fixture", driver, binding_sha256="a" * 64)
+    opened(tmp_path)
     with pytest.raises(KeyboardInterrupt):
         act(tmp_path)
     assert act(tmp_path)["performed"] is None
@@ -139,6 +140,7 @@ def test_interrupt_retains_unknown_delivery_and_does_not_retry(tmp_path):
 
 
 @pytest.mark.parametrize("corrupt", ["{", "{}", "null"])
+
 def test_malformed_history_is_not_an_empty_new_session(tmp_path, corrupt):
     opened(tmp_path)
     browser.chain_path(tmp_path, "r").write_text(corrupt)
@@ -147,8 +149,8 @@ def test_malformed_history_is_not_an_empty_new_session(tmp_path, corrupt):
 
 
 def test_a_valid_hash_does_not_make_unknown_delivery_a_performed_success(tmp_path):
+    browser.register_driver("fixture", lambda action: {"ok": True, "performed": True}, binding_sha256="a" * 64)
     opened(tmp_path)
-    browser.register_driver("fixture", lambda action: {"ok": True, "performed": True})
     act(tmp_path)
     path = browser.chain_path(tmp_path, "r")
     records = json.loads(path.read_text())
@@ -165,12 +167,12 @@ def test_a_valid_hash_does_not_make_unknown_delivery_a_performed_success(tmp_pat
 
 def test_existing_route_forwards_identifier_and_returns_unknown_without_replay(tmp_path):
     from harness.browser_route import handle_browser_post
-    opened(tmp_path)
     calls = []
     def driver(action):
         calls.append(action)
         raise RuntimeError("PRIVATE_ROUTE_CANARY")
-    browser.register_driver("fixture", driver)
+    browser.register_driver("fixture", driver, binding_sha256="a" * 64)
+    opened(tmp_path)
     request = {"run_id": "r", "action": NAV, "request_id": "same"}
     first, code = handle_browser_post("/api/browser/action", request, run_root=tmp_path, clock=lambda: NOW)
     second, replay_code = handle_browser_post("/api/browser/action", request, run_root=tmp_path, clock=lambda: NOW)
@@ -183,9 +185,9 @@ def test_existing_route_forwards_identifier_and_returns_unknown_without_replay(t
 
 def test_route_reports_persistence_failure_without_claiming_recorded(tmp_path, monkeypatch):
     from harness.browser_route import handle_browser_post
-    opened(tmp_path)
     calls = []
-    browser.register_driver("fixture", lambda action: calls.append(action))
+    browser.register_driver("fixture", lambda action: calls.append(action), binding_sha256="a" * 64)
+    opened(tmp_path)
     def fail(*args):
         raise store.BrowserStoreError("PRIVATE_PATH_CANARY")
     monkeypatch.setattr(store, "append", fail)
@@ -198,9 +200,9 @@ def test_route_reports_persistence_failure_without_claiming_recorded(tmp_path, m
 
 def test_phase_less_new_record_cannot_downgrade_to_legacy_success(tmp_path):
     from harness.hash_chain import seal
-    opened(tmp_path)
     calls = []
-    browser.register_driver("fixture", lambda action: calls.append(action))
+    browser.register_driver("fixture", lambda action: calls.append(action), binding_sha256="a" * 64)
+    opened(tmp_path)
     act(tmp_path)
     path = browser.chain_path(tmp_path, "r")
     records = json.loads(path.read_text())[:-1]
@@ -225,6 +227,8 @@ def test_genuine_legacy_driver_record_is_retained_but_not_authoritative(tmp_path
     opened(tmp_path)
     path = browser.chain_path(tmp_path, "r")
     records = json.loads(path.read_text())
+    records[0]["policy"].pop("driver_binding")
+    records[0] = seal(records[0], digest_key=store.DIGEST)
     legacy = dict(schema=store.SCHEMA, kind="action", at=NOW, run_id="r", seq=1,
                   action=NAV, admitted=True, reason="allowed", origin="https://example.test",
                   driver="fixture", performed=True, result_sha256="a" * 64,
@@ -232,7 +236,7 @@ def test_genuine_legacy_driver_record_is_retained_but_not_authoritative(tmp_path
     records.append(seal(legacy, digest_key=store.DIGEST))
     path.write_text(json.dumps(records))
     calls = []
-    browser.register_driver("fixture", lambda action: calls.append(action))
+    browser.register_driver("fixture", lambda action: calls.append(action), binding_sha256="a" * 64)
     snapshot = browser.session(tmp_path, run_id="r")
     assert snapshot["chain_intact"] is True
     assert snapshot["performed"] == 0

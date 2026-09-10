@@ -22,7 +22,7 @@ class OAuthProfile:
     lands, and what the honest sanction label is."""
 
     provider: str
-    kind: str                     # pkce | guided-cli | registered
+    kind: str                     # pkce | guided-cli | official-cli | registered
     keychain_name: str            # where the token lands; the resolver reads it
     sanction: str                 # one honest sentence for status output
     authorize_url: str = ""
@@ -43,20 +43,12 @@ PROFILES = {
         wire=WIRE_OPENROUTER,
     ),
     "anthropic": OAuthProfile(
-        provider="anthropic", kind="guided-cli",
-        keychain_name="CLAUDE_CODE_OAUTH_TOKEN",
-        sanction="token minted by the official claude CLI; flywheel runs no "
-                 "OAuth client of its own and claims no provider sanction. "
-                 "Permitted use is governed by the provider's terms",
-        guide=(
-            "On the computer running the engine, run `claude setup-token`. "
-            "That is the official Claude Code CLI, and it opens the "
-            "provider's own browser sign-in. On a phone the engine is your "
-            "paired computer, not the phone itself.",
-            "Approve the sign-in in the browser that opens.",
-            "Paste the token the CLI prints into the box below. The paste is "
-            "hidden and lands only in the OS credential store.",
-        ),
+        provider="anthropic", kind="official-cli",
+        keychain_name="",
+        sanction="Claude Code owns account sign-in. Flywheel runs no OAuth "
+                 "client of its own, launches the operator-selected CLI only "
+                 "when asked, reads account status as labels, and keeps direct "
+                 "Anthropic API keys separate",
     ),
     "openai": OAuthProfile(
         provider="openai", kind="registered",

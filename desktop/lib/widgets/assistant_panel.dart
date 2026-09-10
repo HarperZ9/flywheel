@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 
 import '../assistant/assistant_executor.dart';
+import '../assistant/assistant_identity.dart';
 import '../assistant/assistant_intent.dart';
 import '../assistant/voice.dart';
 import '../theme/flywheel_theme.dart';
@@ -89,7 +90,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Kicker('assistant', hot: true),
+        const Kicker(AssistantIdentity.name, hot: true),
         const SizedBox(height: FwLayout.s2),
         const Text('Ask for work, or say what you need.',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),

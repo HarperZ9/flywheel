@@ -33,6 +33,31 @@ Map<String, dynamic> _doc({
   ],
 };
 
+Map<String, dynamic> _officialDoc({bool present = false}) => {
+  'credential_store': true,
+  'note': 'Values are never displayed.',
+  'providers': [
+    {
+      'provider': 'anthropic',
+      'kind': 'official-cli',
+      'kind_label': 'Claude Code account',
+      'keychain_name': '',
+      'present': present,
+      'source': present ? 'claude-code-account' : 'not_authenticated',
+      'sanction': 'Claude Code owns account sign-in.',
+      'pending': false,
+      'last': '',
+      'last_error': '',
+      'official_cli': {
+        'state': present ? 'authenticated' : 'not_authenticated',
+        'authenticated': present,
+        'cli_present': true,
+        'executable': 'claude.exe',
+      },
+    },
+  ],
+};
+
 SigninPanel _panel(
   Map<String, dynamic> doc, {
   Future<Map<String, dynamic>> Function(String)? onLogin,
@@ -79,6 +104,25 @@ void main() {
     );
   });
 
+  testWidgets('official Claude account auth never shows token paste', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_wrap(_panel(_officialDoc())));
+    expect(find.widgetWithText(FilledButton, 'Open sign-in'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.textContaining('Claude Code account not signed in'), findsOneWidget);
+    expect(find.textContaining('token in'), findsNothing);
+  });
+
+  testWidgets('official Claude account auth can verify without token text', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_wrap(_panel(_officialDoc(present: true))));
+    expect(find.textContaining('Claude Code account authenticated'), findsOneWidget);
+    expect(find.textContaining('authentication unverified'), findsNothing);
+    expect(find.textContaining('token in'), findsNothing);
+  });
+
   testWidgets(
     'successful token storage reports stored but authentication unverified',
     (tester) async {
@@ -93,7 +137,7 @@ void main() {
             },
             onToken: (provider, token) async => {
               'ok': true,
-              'stored': 'CLAUDE_CODE_OAUTH_TOKEN',
+              'stored': 'TEST_TOKEN',
             },
           ),
         ),
@@ -107,7 +151,7 @@ void main() {
 
       expect(
         find.text(
-          'credential stored CLAUDE_CODE_OAUTH_TOKEN; authentication unverified',
+          'credential stored TEST_TOKEN; authentication unverified',
         ),
         findsOneWidget,
       );
@@ -146,7 +190,7 @@ void main() {
     expect(find.textContaining('NOT stored'), findsOneWidget);
     expect(
       find.text(
-        'credential stored CLAUDE_CODE_OAUTH_TOKEN; authentication unverified',
+        'credential stored TEST_TOKEN; authentication unverified',
       ),
       findsNothing,
     );

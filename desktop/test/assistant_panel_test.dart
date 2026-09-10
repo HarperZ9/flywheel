@@ -54,6 +54,8 @@ void main() {
     final ex = AssistantExecutor(agent: _Agent(), device: device);
     await tester.pumpWidget(host(ex));
 
+    expect(find.text('ROWAN'), findsOneWidget);
+
     await tester.enterText(
         find.byKey(const Key('assistant-input')), 'navigate to the pier');
     await tester.tap(find.text('Send'));
