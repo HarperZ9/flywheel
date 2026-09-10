@@ -33,7 +33,8 @@ class MemorySettings extends DesktopSettings {
 
 class ClosingMockClient extends MockClient {
   ClosingMockClient([Future<http.Response> Function(http.Request)? handler])
-      : super(handler ?? ((_) async => http.Response('{}', 503)));
+      : super(handler ?? ((r) async => http.Response('{"n_lanes":0,"by_status":{}}',
+          ['/api/world', '/api/lanes'].contains(r.url.path) ? 200 : 503)));
   int closes = 0;
   @override
   void close() {
@@ -150,9 +151,7 @@ void _responsiveTests() {
     await tester.pumpWidget(harness.app());
     await tester.pumpAndSettle();
 
-    // The phone shows a top-bar hamburger and a bottom bar with More; both
-    // open the drawer. The full rail (its appearance action) lives in the
-    // closed drawer, offstage, until the hamburger or More opens it.
+    // More opens the full rail in the drawer.
     expect(find.byIcon(Icons.menu), findsOneWidget);
     expect(find.text('More'), findsOneWidget);
     expect(find.bySemanticsLabel('Open appearance settings'), findsNothing);
@@ -191,7 +190,7 @@ void _homeLifecycleTests() {
     expect(find.text('Journey'), findsOneWidget,
         reason: 'the journey destination leads the rail');
     expect(find.text('fact-1'), findsWidgets);
-    expect(find.text('engine offline'), findsOneWidget);
+    expect(find.text('engine online · no lanes declared'), findsOneWidget);
     expect(find.bySemanticsLabel('Event head $headA'), findsOneWidget);
     await tester.pumpWidget(harness.app());
     await tester.pump();
@@ -284,7 +283,7 @@ void _recoveryTests() {
       JourneyRecoveryAction.retrySameRequest,
     });
     expect(harness.controller.state.projection?.eventHeadSha256, headB);
-    expect(find.text('engine offline'), findsOneWidget);
+    expect(find.text('engine online · no lanes declared'), findsOneWidget);
     expect(find.text('fact-1'), findsWidgets);
     await unmount(tester);
   });
@@ -297,7 +296,8 @@ void _lifecycleRaceTests() {
     addTearDown(() => dir.deleteSync(recursive: true));
     final start = Completer<String?>();
     final gateway = CountingGatewayProcess(startResult: start);
-    final harness = ShellHarness(dir, gateway: gateway)..replyReady();
+    final harness = ShellHarness(dir, gateway: gateway,
+        handler: (_) async => http.Response('{}', 503))..replyReady();
     await tester.pumpWidget(harness.app());
     await tester.pumpAndSettle();
     await tester.tap(find.text('start engine'));

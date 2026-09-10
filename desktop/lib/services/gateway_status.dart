@@ -4,6 +4,7 @@
 // version mismatch; none of them may collapse into one boolean.
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show SocketException;
 
 import 'package:http/http.dart' as http;
 
@@ -22,10 +23,20 @@ class GatewayStatusDoc extends GatewayStatusOutcome {
 }
 
 class GatewayStatusFailure extends GatewayStatusOutcome {
-  const GatewayStatusFailure(super.statusCode);
+  const GatewayStatusFailure(super.statusCode,
+      {this.connectionRefused = false});
+  final bool connectionRefused;
 }
 
 class GatewayStatusService {
+  bool localEngineUnavailable = false;
+
+  // Only an OS connection refusal proves that no listener accepted this
+  // connection. A timeout, malformed response or HTTP error does not.
+  static bool _connectionRefused(Object error) =>
+      error is SocketException &&
+      const {61, 111, 1225, 10061}.contains(error.osError?.errorCode);
+
   /// Injectable so tests exercise every transport outcome without a
   /// network. Production supplies a real GET against /api/desktop/status.
   final Future<GatewayStatusOutcome> Function(Uri url) statusEndpoint;
@@ -39,7 +50,7 @@ class GatewayStatusService {
     required this.statusEndpoint,
     Uri Function()? endpoint,
     this.fallbackAlive,
-  })  : endpoint = endpoint ??
+  }) : endpoint = endpoint ??
             (() => Uri.parse('http://127.0.0.1:8799/api/desktop/status'));
 
   /// Production probe: its own authed client, but reading the SAME token
@@ -61,8 +72,9 @@ class GatewayStatusService {
         http.Response r;
         try {
           r = await authed.get(url).timeout(const Duration(seconds: 3));
-        } catch (_) {
-          return const GatewayStatusFailure(0);
+        } catch (error) {
+          return GatewayStatusFailure(0,
+              connectionRefused: _connectionRefused(error));
         }
         if (r.statusCode != 200) return GatewayStatusFailure(r.statusCode);
         try {
@@ -75,6 +87,8 @@ class GatewayStatusService {
   }
 
   Future<ConnectionStatus> probe() async {
+    localEngineUnavailable = false;
+    late final Uri target;
     final GatewayStatusOutcome outcome;
     final pending = Completer<GatewayStatusOutcome>();
     final timer = Timer(const Duration(seconds: 4), () {
@@ -83,16 +97,20 @@ class GatewayStatusService {
       }
     });
     try {
+      target = endpoint();
       // A completer pins the awaited type to GatewayStatusOutcome: an
       // injected closure may return a covariant Future<GatewayStatusDoc>,
       // and Future.sync would hand that specialized future straight back,
       // breaking .timeout-style typing at runtime.
-      unawaited(statusEndpoint(endpoint()).then(
+      unawaited(statusEndpoint(target).then(
         (value) {
           if (!pending.isCompleted) pending.complete(value);
         },
         onError: (Object e) {
-          if (!pending.isCompleted) pending.completeError(e);
+          if (!pending.isCompleted) {
+            pending.complete(GatewayStatusFailure(0,
+                connectionRefused: _connectionRefused(e)));
+          }
         },
       ));
       outcome = await pending.future;
@@ -104,6 +122,10 @@ class GatewayStatusService {
     if (outcome is GatewayStatusDoc) {
       return ConnectionStatus.fromStatusDoc(outcome.doc);
     }
+    localEngineUnavailable = outcome is GatewayStatusFailure &&
+        outcome.statusCode == 0 &&
+        outcome.connectionRefused &&
+        target.toString() == 'http://127.0.0.1:8799/api/desktop/status';
     if (outcome.statusCode == 404 && fallbackAlive != null) {
       try {
         if (await fallbackAlive!()) {

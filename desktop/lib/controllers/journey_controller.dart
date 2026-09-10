@@ -18,12 +18,23 @@ final class JourneyController extends ChangeNotifier {
   late final _View _view = _View(notifyListeners);
   final _Custody _custody;
   Future<void> _tail = Future.value();
+  Future<void>? _readRetry;
+  bool _disposed = false;
   final Map<String, String> _cancelHeads = {};
   final _Acks _acks = _Acks();
   _Target? _desired;
   var _epoch = 0;
   JourneyViewState get state => _view.snapshot;
+  @override
+  void dispose() {
+    _disposed = true;
+    _epoch++;
+    _desired = null;
+    super.dispose();
+  }
+
   Future<void> initialize() async {
+    if (_disposed) return;
     final epoch = ++_epoch;
     JourneySession? session;
     try {
@@ -42,6 +53,7 @@ final class JourneyController extends ChangeNotifier {
         failure = _fail(error);
       }
     }
+    if (epoch != _epoch) return;
     List<JourneySummary> listed = const [];
     try {
       listed = await _api.list();

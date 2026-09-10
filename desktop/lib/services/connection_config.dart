@@ -36,8 +36,8 @@ class ConnectionConfig {
 
   /// A token source for AuthedClient: the paired token when set, otherwise the
   /// local gateway.token via readGatewayToken(), so desktop stays byte-identical.
-  String? Function() get tokenSource => () =>
-      (token != null && token!.isNotEmpty) ? token : readGatewayToken();
+  String? Function() get tokenSource =>
+      () => (token != null && token!.isNotEmpty) ? token : readGatewayToken();
 
   Map<String, dynamic> toJson() => {
         if (isRemote) 'base_url': baseUrl,
@@ -57,19 +57,29 @@ class ConnectionConfig {
 /// Persists the paired connection beside the engine's own home. Mirrors the
 /// other stores: an injectable [file] for tests, a defensive load that never
 /// throws, and a save that creates the parent directory.
+enum ConnectionLoadState { unread, absent, loaded, invalidOrUnreadable }
+
 class ConnectionStore {
   ConnectionStore({File? file}) : storageFile = file ?? _defaultFile();
 
   final File storageFile;
+  ConnectionLoadState _loadState = ConnectionLoadState.unread;
+  ConnectionLoadState get loadState => _loadState;
 
   static File _defaultFile() =>
       File('${flywheelHome()}${Platform.pathSeparator}connection.json');
 
   ConnectionConfig load() {
+    _loadState = ConnectionLoadState.invalidOrUnreadable;
     try {
-      if (!storageFile.existsSync()) return const ConnectionConfig();
+      if (FileSystemEntity.typeSync(storageFile.path, followLinks: false) ==
+          FileSystemEntityType.notFound) {
+        _loadState = ConnectionLoadState.absent;
+        return const ConnectionConfig();
+      }
       final decoded = jsonDecode(storageFile.readAsStringSync());
       if (decoded is! Map<String, dynamic>) return const ConnectionConfig();
+      _loadState = ConnectionLoadState.loaded;
       return ConnectionConfig.fromJson(decoded);
     } catch (_) {
       // A corrupt or unreadable file must never block launch.

@@ -279,12 +279,14 @@ def cli(argv: list) -> int:
     verb = args[0] if args else "status"
     if verb == "status":
         for row in status():
-            mark = "signed-in" if row["present"] else "absent   "
+            mark = "credential present; authentication unverified" if row["present"] else "absent"
             print(f"  {row['provider']:<12} {mark}  [{row['kind']}] "
                   f"{row['sanction']}")
         return 0
     if verb in ("login", "logout") and len(args) >= 2:
         result = login(args[1]) if verb == "login" else logout(args[1])
+        if verb == "login" and result.get("ok") and result.get("stored"):
+            result = {**result, "note": f"credential stored {result['stored']}; authentication unverified"}
         print(json.dumps(result, indent=2))
         return 0 if result.get("ok") else 1
     print("usage: flywheel auth [status | login <provider> | logout <provider>]")
