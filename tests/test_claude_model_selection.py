@@ -8,10 +8,30 @@ from harness.local_agent import BackendError
 
 _REQUESTED = "claude-opus-4-1-20250805"
 _OTHER = "claude-sonnet-4-5-20250929"
+_OFFICIAL_CLAUDE = "C:/official/claude.exe"
+
+
+def _allow_claude_account(monkeypatch):
+    monkeypatch.setattr(endpoint_registry.claude_cli_auth, "resolve_official_cli",
+                        lambda **_: {
+                            "ok": True,
+                            "state": "available",
+                            "cli_present": True,
+                            "path": _OFFICIAL_CLAUDE,
+                            "executable": "claude.exe",
+                            "identity": "same",
+                        })
+    monkeypatch.setattr(endpoint_registry.claude_cli_auth, "_run_status",
+                        lambda _argv, _timeout: type("P", (), {
+                            "returncode": 0,
+                            "stdout": '{"loggedIn":true,"authMethod":"claude.ai","apiProvider":"firstParty"}',
+                            "stderr": "SECRET",
+                        })())
 
 
 @pytest.fixture
 def real_claude_plan_ladder(monkeypatch):
+    _allow_claude_account(monkeypatch)
     monkeypatch.delenv("CLAUDE_CLI", raising=False)
     monkeypatch.delenv("CLAUDE_MODEL", raising=False)
     build = endpoints.build_endpoints
@@ -94,6 +114,7 @@ def test_none_and_empty_model_preserve_configured_environment_default(
 
 
 def test_explicit_model_does_not_mutate_shared_claude_plan_backend(monkeypatch):
+    _allow_claude_account(monkeypatch)
     shared = CliBackend(
         "claude-plan",
         ["claude", "-p", "{prompt}", "--model", "{model}"],
@@ -119,7 +140,8 @@ def test_explicit_model_does_not_mutate_shared_claude_plan_backend(monkeypatch):
     assert first.backend.model == _REQUESTED
     assert second.backend.model == _OTHER
     assert shared.model == "configured-default"
-    assert default.backend is shared
+    assert default.backend is not shared
+    assert default.backend.argv[0] == _OFFICIAL_CLAUDE
     assert _model_arg(_capture_command(first)) == _REQUESTED
     assert _model_arg(_capture_command(second)) == _OTHER
     assert _model_arg(_capture_command(default)) == "configured-default"

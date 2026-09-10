@@ -1,6 +1,6 @@
 // Sign-in in the app does what the engine promises: each provider states its
-// own terms, a browser flow starts without asking for a value, a guided flow
-// takes the paste in an obscured field and never shows it back, and a machine
+// own terms, a browser flow starts without asking for a value, Anthropic opens
+// Claude Code account sign-in without token paste, and a machine
 // with no credential store says so instead of offering a dead button.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,25 +24,34 @@ Map<String, dynamic> _doc({bool store = true, bool present = false}) => {
           'keychain_name': 'OPENROUTER_API_KEY',
           'present': present,
           'source': present ? 'keychain' : 'absent',
-          'sanction': 'documented third-party PKCE flow; no registration required',
+          'sanction':
+              'documented third-party PKCE flow; no registration required',
           'pending': false,
           'last': '',
           'last_error': '',
         },
-        {
-          'provider': 'anthropic',
-          'kind': 'guided-cli',
-          'kind_label': 'provider tool',
-          'keychain_name': 'CLAUDE_CODE_OAUTH_TOKEN',
-          'present': false,
-          'source': 'absent',
-          'sanction': 'token minted by the official claude CLI; flywheel runs '
-              'no OAuth client of its own',
-          'pending': false,
-          'last': '',
-          'last_error': '',
-        },
+        _anthropicOfficial(),
       ],
+    };
+
+Map<String, dynamic> _anthropicOfficial({bool present = false}) => {
+      'provider': 'anthropic',
+      'kind': 'official-cli',
+      'kind_label': 'Claude Code account',
+      'keychain_name': '',
+      'present': present,
+      'source': present ? 'claude-code-account' : 'not_authenticated',
+      'sanction': 'Claude Code owns account sign-in; Flywheel runs no '
+          'OAuth client of its own for Anthropic',
+      'pending': false,
+      'last': '',
+      'last_error': '',
+      'official_cli': {
+        'state': present ? 'authenticated' : 'not_authenticated',
+        'authenticated': present,
+        'cli_present': true,
+        'executable': 'claude.exe',
+      },
     };
 
 SigninPanel _panel(
@@ -67,10 +76,30 @@ void main() {
     expect(find.text('openrouter'), findsOneWidget);
     expect(find.text('anthropic'), findsOneWidget);
     expect(find.textContaining('no registration required'), findsOneWidget);
-    expect(find.textContaining('runs no OAuth client of its own'), findsOneWidget);
+    expect(
+        find.textContaining('runs no OAuth client of its own'), findsOneWidget);
     // the kind is named in the user's words, not the enum's
     expect(find.text('browser sign-in'), findsOneWidget);
-    expect(find.text('provider tool'), findsOneWidget);
+    expect(find.text('Claude Code account'), findsOneWidget);
+  });
+
+  testWidgets('official Claude sign-in opens CLI auth without token paste',
+      (tester) async {
+    final calls = <String>[];
+    await tester.pumpWidget(_wrap(_panel(_doc(), onLogin: (p) async {
+      calls.add(p);
+      return {
+        'ok': true,
+        'mode': 'official-cli',
+        'note': 'finish Claude Code sign-in, then return here'
+      };
+    })));
+    await tester.tap(find.widgetWithText(FilledButton, 'Open sign-in'));
+    await tester.pumpAndSettle();
+    expect(calls, ['anthropic']);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.textContaining('TEST_TOKEN'), findsNothing);
+    expect(find.textContaining('finish Claude Code sign-in'), findsOneWidget);
   });
 
   testWidgets('a browser sign-in starts without asking for a value',
@@ -78,7 +107,11 @@ void main() {
     final calls = <String>[];
     await tester.pumpWidget(_wrap(_panel(_doc(), onLogin: (p) async {
       calls.add(p);
-      return {'ok': true, 'mode': 'browser', 'note': 'a browser window is opening'};
+      return {
+        'ok': true,
+        'mode': 'browser',
+        'note': 'a browser window is opening'
+      };
     })));
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in').first);
     await tester.pumpAndSettle();
@@ -96,16 +129,16 @@ void main() {
       onLogin: (p) async => {
         'ok': true,
         'mode': 'guided',
-        'steps': ['Run `claude setup-token`', 'Approve it', 'Paste it below'],
+        'steps': ['Run the provider tool', 'Approve it', 'Paste it below'],
       },
       onToken: (p, t) async {
         sentToken = t;
-        return {'ok': true, 'stored': 'CLAUDE_CODE_OAUTH_TOKEN'};
+        return {'ok': true, 'stored': 'TEST_TOKEN'};
       },
     )));
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in').last);
     await tester.pumpAndSettle();
-    expect(find.textContaining('1. Run `claude setup-token`'), findsOneWidget);
+    expect(find.textContaining('1. Run the provider tool'), findsOneWidget);
 
     final field = tester.widget<TextField>(find.byType(TextField));
     expect(field.obscureText, isTrue); // never shown back
@@ -118,14 +151,14 @@ void main() {
     // rendered anywhere on screen
     expect(find.byType(TextField), findsNothing);
     expect(find.textContaining('SECRET'), findsNothing);
-    expect(find.textContaining('stored CLAUDE_CODE_OAUTH_TOKEN'), findsOneWidget);
+    expect(find.textContaining('stored TEST_TOKEN'), findsOneWidget);
   });
 
   testWidgets('a signed-in provider offers sign out and names its source',
       (tester) async {
     final out = <String>[];
-    await tester.pumpWidget(_wrap(_panel(_doc(present: true),
-        onLogout: (p) async {
+    await tester
+        .pumpWidget(_wrap(_panel(_doc(present: true), onLogout: (p) async {
       out.add(p);
       return {'ok': true};
     })));
@@ -146,8 +179,8 @@ void main() {
     (doc['providers'] as List)[0]['pending'] = true;
     await tester.pumpWidget(_wrap(_panel(doc)));
     expect(find.textContaining('waiting for the browser'), findsOneWidget);
-    // only the guided provider still offers a button
-    expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
+    // only the official CLI provider still offers a button
+    expect(find.widgetWithText(FilledButton, 'Open sign-in'), findsOneWidget);
   });
 
   testWidgets('a failed attempt shows its reason', (tester) async {
@@ -159,9 +192,10 @@ void main() {
   });
 
   testWidgets('an empty roster is stated, never blank', (tester) async {
-    await tester.pumpWidget(_wrap(_panel(
-        {'credential_store': true, 'note': '', 'providers': []})));
-    expect(find.textContaining('declared no sign-in providers'), findsOneWidget);
+    await tester.pumpWidget(
+        _wrap(_panel({'credential_store': true, 'note': '', 'providers': []})));
+    expect(
+        find.textContaining('declared no sign-in providers'), findsOneWidget);
   });
 
   // The reported bug: on mobile the sign-in call to a remote engine threw (a
@@ -242,8 +276,8 @@ void main() {
     )));
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in').first);
     await tester.pumpAndSettle();
-    expect(find.textContaining('could not open the sign-in page'),
-        findsOneWidget);
+    expect(
+        find.textContaining('could not open the sign-in page'), findsOneWidget);
   });
 
   testWidgets('a sign-out that throws re-enables the button and shows why',

@@ -10,6 +10,8 @@ class EndpointRow {
   final String credential; // present | absent | local-none | cli-auth
   final String providerRole;
   final bool configured;
+  final String accountState;
+  final bool accountAuthenticated;
 
   EndpointRow({
     required this.name,
@@ -17,6 +19,8 @@ class EndpointRow {
     required this.credential,
     required this.providerRole,
     required this.configured,
+    this.accountState = '',
+    this.accountAuthenticated = false,
   });
 
   factory EndpointRow.fromJson(Map<String, dynamic> j) => EndpointRow(
@@ -25,16 +29,21 @@ class EndpointRow {
         credential: j['credential'] ?? 'absent',
         providerRole: j['provider_role'] ?? '',
         configured: j['configured'] ?? false,
+        accountState: j['account_state'] ?? '',
+        accountAuthenticated: j['account_authenticated'] == true,
       );
 
-  bool get hasCredential => credential == 'present' || credential == 'cli-auth';
+  bool get needsAccountAuth => name == 'claude-cli';
+  bool get cliAuthenticated =>
+      credential == 'cli-auth' && (!needsAccountAuth || accountAuthenticated);
+  bool get hasCredential => credential == 'present' || cliAuthenticated;
   // The legacy wire label means a CLI was found, not that sign-in was checked.
   bool get cliPresent => credential == 'cli-auth';
 
   /// A row a first send can actually answer through: a signed-in
   /// subscription CLI, a present key, or a local tier.
   bool get usable =>
-      credential == 'cli-auth' ||
+      cliAuthenticated ||
       credential == 'present' ||
       credential == 'local-none';
 }
@@ -42,10 +51,11 @@ class EndpointRow {
 /// The one credential ranking every surface sorts by: subscription tier
 /// first (the paid-for CLI), then keyed/local, then unusable.
 int endpointRank(EndpointRow e) => switch (e.credential) {
-      'cli-auth' => 0,
+      'cli-auth' when e.cliAuthenticated => 0,
       'present' => 1,
       'local-none' => 1,
-      _ => 2,
+      'cli-auth' => 2,
+      _ => 3,
     };
 
 /// The endpoint a fresh Chat should default to: the best USABLE row by

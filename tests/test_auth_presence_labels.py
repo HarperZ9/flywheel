@@ -7,6 +7,7 @@ provider sign-in or leak the credential value.
 import json
 
 import harness.oauth_signin as osi
+import harness.oauth_service as svc
 
 
 def _provider_line(output: str, provider: str) -> str:
@@ -17,6 +18,12 @@ def _provider_line(output: str, provider: str) -> str:
 
 
 def test_cli_status_labels_presence_as_authentication_unverified(monkeypatch, capsys):
+    monkeypatch.setattr(
+        osi.claude_cli_auth,
+        "public_status",
+        lambda: {"state": "not_authenticated", "authenticated": False,
+                 "cli_present": True, "executable": "claude.exe"},
+    )
     monkeypatch.setattr(
         osi.keychain,
         "resolve_credential",
@@ -38,36 +45,57 @@ def test_cli_status_labels_presence_as_authentication_unverified(monkeypatch, ca
     assert "synthetic-openrouter-token" not in out
     assert "signed-in" not in openrouter
     assert "credential present; authentication unverified" in openrouter
-    assert "absent" in anthropic
+    assert "Claude Code account not signed in" in anthropic
 
 
-def test_cli_successful_store_feedback_does_not_claim_signed_in(
+def test_cli_login_launches_official_tool_without_token_paste(
     monkeypatch, capsys
 ):
-    written = {}
-    monkeypatch.setattr(osi.keychain, "keychain_available", lambda: True)
     monkeypatch.setattr(
-        osi.keychain,
-        "keychain_set",
-        lambda name, value: written.update({name: value}) or {"stored": name},
+        osi.claude_cli_auth,
+        "begin_login",
+        lambda **_: {"ok": True, "provider": "anthropic",
+                     "mode": "official-cli",
+                     "note": "finish Claude Code sign-in, then return"},
     )
-
-    def _synthetic_prompt(_prompt: str) -> str:
-        return "sk-ant-oat-synthetic-credential"
-
-    monkeypatch.setattr("getpass.getpass", _synthetic_prompt)
 
     assert osi.cli(["login", "anthropic"]) == 0
 
     out = capsys.readouterr().out
-    assert written == {"CLAUDE_CODE_OAUTH_TOKEN": "sk-ant-oat-synthetic-credential"}
-    assert "sk-ant-oat-synthetic-credential" not in out
+    assert "CLAUDE_CODE_OAUTH_TOKEN" not in out
+    assert "setup-token" not in out
     assert "signed in" not in out
     assert "signed-in" not in out
-    assert (
-        "credential stored CLAUDE_CODE_OAUTH_TOKEN; authentication unverified"
-        in out
+    assert "official-cli" in out
+    assert "finish Claude Code sign-in" in out
+
+
+def test_service_reports_official_cli_account_without_metadata(monkeypatch):
+    monkeypatch.setattr(
+        svc.claude_cli_auth,
+        "public_status",
+        lambda: {"state": "authenticated", "authenticated": True,
+                 "cli_present": True, "executable": "claude.exe",
+                 "auth_method": "claude.ai", "api_provider": "firstParty"},
     )
+    doc = svc.auth_rows()
+    anthropic = next(r for r in doc["providers"] if r["provider"] == "anthropic")
+
+    assert anthropic["kind"] == "official-cli"
+    assert anthropic["kind_label"] == "Claude Code account"
+    assert anthropic["present"] is True
+    assert anthropic["source"] == "claude-code-account"
+    dumped = json.dumps(doc)
+    assert "CLAUDE_CODE_OAUTH_TOKEN" not in dumped
+    assert "secret@" not in dumped
+
+
+def test_service_refuses_official_cli_token_paste_without_leaking_value():
+    result = svc.submit("anthropic", "sk-ant-oat-SECRET")
+
+    assert result["ok"] is False
+    assert "Claude Code" in result["error"]
+    assert "SECRET" not in json.dumps(result)
 
 
 def test_failed_store_control_still_reports_not_stored(monkeypatch):

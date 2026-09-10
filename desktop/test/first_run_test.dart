@@ -4,21 +4,24 @@
 // Set-key path.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flywheel_desktop/models/gateway_models.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/fw.dart';
 import 'package:flywheel_desktop/widgets/keys_panel.dart';
 import 'package:flywheel_desktop/widgets/model_picker.dart';
-
-EndpointRow _row(String name, String credential) => EndpointRow.fromJson(
-    {'name': name, 'backend': 'b', 'credential': credential});
-
+EndpointRow _row(String name, String credential,
+        {bool accountAuthenticated = false}) =>
+    EndpointRow.fromJson({
+      'name': name,
+      'backend': 'b',
+      'credential': credential,
+      if (accountAuthenticated) 'account_authenticated': true,
+      if (accountAuthenticated) 'account_state': 'authenticated',
+    });
 Widget _wrap(Widget child) => MaterialApp(
       theme: flywheelLightTheme(),
       home: Scaffold(body: SingleChildScrollView(child: child)),
     );
-
 void main() {
   group('defaultEndpoint', () {
     test('skips keyless rows even when they sit first in the roster', () {
@@ -29,27 +32,28 @@ void main() {
       ];
       expect(defaultEndpoint(rows)?.name, 'local');
     });
-
-    test('prefers the subscription tier over a keyed provider', () {
+    test('requires Claude account auth before preferring its CLI', () {
       final rows = [
         _row('keyed', 'present'),
         _row('claude-cli', 'cli-auth'),
       ];
-      expect(defaultEndpoint(rows)?.name, 'claude-cli');
+      expect(defaultEndpoint(rows)?.name, 'keyed');
+      final authed = [
+        _row('keyed', 'present'),
+        _row('claude-cli', 'cli-auth', accountAuthenticated: true),
+      ];
+      expect(defaultEndpoint(authed)?.name, 'claude-cli');
     });
-
     test('returns null when nothing on the roster can answer', () {
       expect(defaultEndpoint([_row('a', 'absent'), _row('b', 'absent')]),
           isNull);
       expect(defaultEndpoint([]), isNull);
     });
-
     test('roster order breaks ties within a tier', () {
       final rows = [_row('first-keyed', 'present'), _row('second', 'present')];
       expect(defaultEndpoint(rows)?.name, 'first-keyed');
     });
   });
-
   group('model picker gating', () {
     testWidgets('a no-key row does not select; a usable row does',
         (tester) async {
@@ -63,7 +67,11 @@ void main() {
                 onPressed: () async {
                   picked = await showModelPicker(
                       context,
-                      [_row('dead', 'absent'), _row('alive', 'local-none')],
+                      [
+                        _row('dead', 'absent'),
+                        _row('claude-cli', 'cli-auth'),
+                        _row('alive', 'local-none'),
+                      ],
                       null);
                 },
                 child: const Text('open'),
@@ -74,20 +82,21 @@ void main() {
       ));
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
-
       // Tapping the keyless row leaves the dialog open and selects nothing.
       await tester.tap(find.text('dead'), warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(find.text('Search models…'), findsOneWidget); // still open
       expect(picked, isNull);
-
+      await tester.tap(find.text('claude-cli'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.text('sign-in needed'), findsOneWidget);
+      expect(picked, isNull);
       // Tapping the usable row selects and closes.
       await tester.tap(find.text('alive'));
       await tester.pumpAndSettle();
       expect(picked, 'alive');
     });
   });
-
   group('keys panel first run', () {
     testWidgets('an all-absent roster still renders a Set path per key',
         (tester) async {
@@ -107,7 +116,6 @@ void main() {
       expect(find.text('Set'), findsNWidgets(2)); // the in-GUI path exists
       expect(find.text('ABSENT'), findsNWidgets(2)); // honesty stays visible
     });
-
     testWidgets('an empty roster states itself instead of rendering blank',
         (tester) async {
       await tester.pumpWidget(_wrap(KeysPanel(
@@ -119,7 +127,6 @@ void main() {
       expect(find.byType(HonestNull), findsOneWidget);
       expect(find.textContaining('no provider key names'), findsOneWidget);
     });
-
     testWidgets('native Bulletin identity never renders generic Set',
         (tester) async {
       var genericSetCalls = 0;
@@ -151,7 +158,6 @@ void main() {
         onRegisterBulletinIdentity: () async => {},
         onChanged: () {},
       )));
-
       expect(find.text('Set'), findsOneWidget);
       expect(find.text('Create identity'), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
@@ -161,7 +167,6 @@ void main() {
       expect(genericSetCalls, 0);
       expect(find.textContaining('created_stored'), findsOneWidget);
     });
-
     testWidgets('keychain Bulletin identity renders register and remove',
         (tester) async {
       var registerCalls = 0;
@@ -191,7 +196,6 @@ void main() {
         },
         onChanged: () {},
       )));
-
       expect(find.text('Set'), findsNothing);
       expect(find.text('Register'), findsOneWidget);
       expect(find.text('Remove'), findsOneWidget);
@@ -203,7 +207,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(removed, 'BULLETIN_AGENT_JWK');
     });
-
     testWidgets(
         'native Bulletin identity disables create when signing is missing',
         (tester) async {
@@ -236,14 +239,12 @@ void main() {
         onRegisterBulletinIdentity: () async => {},
         onChanged: () {},
       )));
-
       expect(find.textContaining('signing support is unavailable'),
           findsOneWidget);
       await tester.tap(find.text('Create identity'), warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(createCalls, 0);
     });
-
     testWidgets(
         'native Bulletin identity disables register when signing is missing',
         (tester) async {
@@ -276,7 +277,6 @@ void main() {
         },
         onChanged: () {},
       )));
-
       expect(find.textContaining('signing support is unavailable'),
           findsOneWidget);
       await tester.tap(find.text('Register'), warnIfMissed: false);

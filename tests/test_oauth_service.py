@@ -42,15 +42,19 @@ def test_roster_carries_terms_and_never_a_value(monkeypatch):
     assert all(r["sanction"] and r["kind_label"] for r in doc["providers"])
 
 
-def test_guided_provider_returns_steps_instead_of_running_a_flow(monkeypatch):
-    monkeypatch.setattr(svc.keychain, "keychain_available", lambda: True)
-    monkeypatch.setattr(svc.oauth_signin, "login",
-                        lambda *a, **k: (_ for _ in ()).throw(
-                            AssertionError("guided must not run a browser flow")))
+def test_official_provider_launches_cli_without_credential_store(monkeypatch):
+    launched = []
+    monkeypatch.setattr(svc.keychain, "keychain_available", lambda: False)
+    monkeypatch.setattr(
+        svc.claude_cli_auth,
+        "begin_login",
+        lambda provider: launched.append(provider) or {"ok": True,
+            "provider": provider, "mode": "official-cli",
+            "note": "finish Claude Code sign-in"},
+    )
     out = svc.begin("anthropic")
-    assert out["ok"] is True and out["mode"] == "guided"
-    assert len(out["steps"]) >= 2
-    assert out["keychain_name"] == "CLAUDE_CODE_OAUTH_TOKEN"
+    assert out["ok"] is True and out["mode"] == "official-cli"
+    assert launched == ["anthropic"]
 
 
 def test_browser_flow_returns_at_once_and_reports_through_the_roster(monkeypatch):
@@ -113,22 +117,32 @@ def test_nothing_starts_without_a_credential_store(monkeypatch):
 
 def test_paste_is_accepted_only_for_a_guided_provider(monkeypatch):
     stored = {}
+    guided = type(svc.PROFILES["openrouter"])(
+        provider="guided-test", kind="guided-cli", keychain_name="TEST_TOKEN",
+        sanction="test guided provider", guide=("run tool", "paste token"))
+    monkeypatch.setitem(svc.PROFILES, "guided-test", guided)
     monkeypatch.setattr(svc.oauth_signin.keychain, "keychain_set",
                         lambda n, v: stored.update({n: v}) or {"stored": n})
-    ok = svc.submit("anthropic", "  sk-ant-oat-VALUE  ")
-    assert ok["ok"] is True and stored == {"CLAUDE_CODE_OAUTH_TOKEN": "sk-ant-oat-VALUE"}
+    ok = svc.submit("guided-test", "  sk-ant-oat-VALUE  ")
+    assert ok["ok"] is True and stored == {"TEST_TOKEN": "sk-ant-oat-VALUE"}
     assert "sk-ant-oat-VALUE" not in json.dumps(ok)
-    # a browser provider must not accept a value it did not obtain itself
+    bad = svc.submit("anthropic", "sk-ant-oat-SECRET")
+    assert bad["ok"] is False and "Claude Code" in bad["error"]
+    assert "SECRET" not in json.dumps(bad)
     bad = svc.submit("openrouter", "sk-or-pasted")
     assert bad["ok"] is False and "not a paste" in bad["error"]
     assert "OPENROUTER_API_KEY" not in stored
 
 
 def test_empty_paste_stores_nothing(monkeypatch):
+    guided = type(svc.PROFILES["openrouter"])(
+        provider="guided-test", kind="guided-cli", keychain_name="TEST_TOKEN",
+        sanction="test guided provider", guide=("run tool", "paste token"))
+    monkeypatch.setitem(svc.PROFILES, "guided-test", guided)
     monkeypatch.setattr(svc.oauth_signin.keychain, "keychain_set",
                         lambda n, v: (_ for _ in ()).throw(
                             AssertionError("stored an empty paste")))
-    assert svc.submit("anthropic", "   ")["ok"] is False
+    assert svc.submit("guided-test", "   ")["ok"] is False
 
 
 def test_unknown_provider_is_named_on_every_verb():

@@ -37,6 +37,12 @@ def _cli_on_path(monkeypatch):
     # env-driven and untouched by this.
     monkeypatch.setattr(endpoint_registry.shutil, "which",
                         lambda binary: f"/usr/bin/{binary}")
+    monkeypatch.setattr(
+        endpoint_registry.claude_cli_auth,
+        "public_status",
+        lambda: {"state": "authenticated", "authenticated": True,
+                 "cli_present": True, "executable": "claude.exe"},
+    )
 
 
 def test_roster_enumerates_every_provider(monkeypatch):
@@ -69,6 +75,27 @@ def test_local_and_cli_credentials(monkeypatch):
     assert ollama["credential"] == "local-none" and ollama["local"] is True
     cli = next(e for e in r["endpoints"] if e["name"] == "claude-cli")
     assert cli["credential"] == "cli-auth"             # its own login, not an env key
+    assert cli["account_authenticated"] is True
+    assert "claude-cli" in r["usable_names"]
+
+
+def test_claude_cli_binary_without_account_is_not_usable(monkeypatch):
+    monkeypatch.setattr(endpoint_registry.shutil, "which",
+                        lambda binary: f"/usr/bin/{binary}")
+    monkeypatch.setattr(
+        endpoint_registry.claude_cli_auth,
+        "public_status",
+        lambda: {"state": "not_authenticated", "authenticated": False,
+                 "cli_present": True, "executable": "claude.exe"},
+    )
+
+    r = unified_roster()
+    cli = next(e for e in r["endpoints"] if e["name"] == "claude-cli")
+    assert cli["credential"] == "cli-auth"
+    assert cli["account_authenticated"] is False
+    assert cli["account_state"] == "not_authenticated"
+    assert cli["receipt_capable"] is False
+    assert "claude-cli" not in r["usable_names"]
 
 
 class FakeBackend:
@@ -175,6 +202,12 @@ def test_cli_credential_is_gated_on_the_binary_present(monkeypatch):
     import harness.endpoint_registry as er
     # no CLI on PATH -> cli rows are not advertised as usable
     monkeypatch.setattr(er.shutil, "which", lambda cmd: None)
+    monkeypatch.setattr(
+        er.claude_cli_auth,
+        "public_status",
+        lambda: {"state": "cli_absent", "authenticated": False,
+                 "cli_present": False, "executable": ""},
+    )
     r = unified_roster()
     cli_rows = {row["name"]: row for row in r["endpoints"] if row["kind"] == "cli"}
     assert cli_rows, "expected cli rows in the roster"
