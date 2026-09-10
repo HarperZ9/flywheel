@@ -14,6 +14,7 @@ import '../widgets/fw.dart';
 import '../widgets/packet_recheck_panel.dart';
 import '../widgets/receipt_proof_panel.dart';
 import '../widgets/scaffold_panel.dart';
+import '../widgets/service_desk_review_panel.dart';
 
 class ReceiptsView extends StatefulWidget {
   final GatewayClient client;
@@ -22,8 +23,12 @@ class ReceiptsView extends StatefulWidget {
   /// A 64-hex leaf handed in from another view (a tapped hash): the view
   /// proves its inclusion on arrival.
   final String? focusLeaf;
-  const ReceiptsView(
-      {super.key, required this.client, required this.alive, this.focusLeaf});
+  const ReceiptsView({
+    super.key,
+    required this.client,
+    required this.alive,
+    this.focusLeaf,
+  });
 
   @override
   State<ReceiptsView> createState() => _ReceiptsViewState();
@@ -118,8 +123,9 @@ class _ReceiptsViewState extends State<ReceiptsView> {
   Widget build(BuildContext context) {
     if (!widget.alive) {
       return const FwEmpty(
-          'The engine is offline. The receipts ledger appears when it runs.',
-          command: 'flywheel up');
+        'The engine is offline. The receipts ledger appears when it runs.',
+        command: 'flywheel up',
+      );
     }
     if (_error != null) {
       return FwEmpty('The ledger could not be read: $_error');
@@ -140,26 +146,33 @@ class _ReceiptsViewState extends State<ReceiptsView> {
           ),
         ),
         const SizedBox(height: FwLayout.s4),
-        AdaptiveTiles(children: [
-          StatTile(
+        AdaptiveTiles(
+          children: [
+            StatTile(
               label: 'catalog present',
               value: '${l.catalogPresent}/${l.catalog.length}',
-              status: l.catalogPresent == l.catalog.length
-                  ? 'verified'
-                  : 'drift'),
-          StatTile(label: 'envelopes', value: '${l.envelopeCount}'),
-          StatTile(
+              status:
+                  l.catalogPresent == l.catalog.length ? 'verified' : 'drift',
+            ),
+            StatTile(label: 'envelopes', value: '${l.envelopeCount}'),
+            StatTile(
               label: 'accepted pass',
               value: '${l.passCount}',
-              status: countStatus(l.passCount)),
-        ]),
+              status: countStatus(l.passCount),
+            ),
+          ],
+        ),
         const SizedBox(height: FwLayout.s5),
-        const Kicker('catalog · in-repo artifacts, re-hashed on every read',
-            hot: true),
+        const Kicker(
+          'catalog · in-repo artifacts, re-hashed on every read',
+          hot: true,
+        ),
         const SizedBox(height: FwLayout.s3),
         HairlineCard(
           padding: const EdgeInsets.symmetric(
-              horizontal: FwLayout.s4, vertical: FwLayout.s2),
+            horizontal: FwLayout.s4,
+            vertical: FwLayout.s2,
+          ),
           child: Column(
             children: [for (final r in l.catalog) _catalogRow(t, r)],
           ),
@@ -169,28 +182,34 @@ class _ReceiptsViewState extends State<ReceiptsView> {
           const Kicker('inclusion proof · re-walkable offline', hot: true),
           const SizedBox(height: FwLayout.s3),
           ReceiptProofPanel(
-              leaf: _proofLeaf,
-              proof: _proof,
-              proving: _proving,
-              error: _proofError),
+            leaf: _proofLeaf,
+            proof: _proof,
+            proving: _proving,
+            error: _proofError,
+          ),
         ],
         const SizedBox(height: FwLayout.s5),
         const Kicker('envelopes · proof of accepted verified work'),
         const SizedBox(height: FwLayout.s3),
         if (l.envelopes.isEmpty)
           const HonestNull(
-              'No proof envelopes in this run root yet. They appear when the '
-              'loop accepts verified work; nothing is claimed until then.')
+            'No proof envelopes in this run root yet. They appear when the '
+            'loop accepts verified work; nothing is claimed until then.',
+          )
         else
           HairlineCard(
             padding: const EdgeInsets.symmetric(
-                horizontal: FwLayout.s4, vertical: FwLayout.s2),
+              horizontal: FwLayout.s4,
+              vertical: FwLayout.s2,
+            ),
             child: Column(
               children: [for (final e in l.envelopes) _envelopeRow(t, e)],
             ),
           ),
         const SizedBox(height: FwLayout.s5),
         const ActionWitnessPanel(),
+        const SizedBox(height: FwLayout.s4),
+        ServiceDeskReviewPanel(client: widget.client),
         const SizedBox(height: FwLayout.s4),
         PacketRecheckPanel(client: widget.client),
         const SizedBox(height: FwLayout.s4),
@@ -203,26 +222,32 @@ class _ReceiptsViewState extends State<ReceiptsView> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: FwLayout.s2 + 2),
       decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: t.hairline))),
+        border: Border(bottom: BorderSide(color: t.hairline)),
+      ),
       child: Row(
         children: [
           VerdictDot(r.present ? 'present' : 'absent', size: 7),
           const SizedBox(width: FwLayout.s3),
           Expanded(child: Text(r.path, style: fwMono(t, size: 12))),
           if (r.size != null)
-            Text(_fmtSize(r.size!),
-                style: fwMono(t, size: 11, color: t.inkFaint)),
+            Text(
+              _fmtSize(r.size!),
+              style: fwMono(t, size: 11, color: t.inkFaint),
+            ),
           const SizedBox(width: FwLayout.s4),
           SizedBox(
             width: 110,
             child: Text(
-                r.present
-                    ? r.sha256.substring(0, 12.clamp(0, r.sha256.length))
-                    : 'absent',
-                textAlign: TextAlign.right,
-                style: fwMono(t,
-                    size: 11,
-                    color: r.present ? t.inkMuted : t.unverifiable)),
+              r.present
+                  ? r.sha256.substring(0, 12.clamp(0, r.sha256.length))
+                  : 'absent',
+              textAlign: TextAlign.right,
+              style: fwMono(
+                t,
+                size: 11,
+                color: r.present ? t.inkMuted : t.unverifiable,
+              ),
+            ),
           ),
         ],
       ),
@@ -236,8 +261,9 @@ class _ReceiptsViewState extends State<ReceiptsView> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: FwLayout.s2 + 2),
         decoration: BoxDecoration(
-            color: selected ? t.drift.withValues(alpha: 0.06) : null,
-            border: Border(bottom: BorderSide(color: t.hairline))),
+          color: selected ? t.drift.withValues(alpha: 0.06) : null,
+          border: Border(bottom: BorderSide(color: t.hairline)),
+        ),
         child: Row(
           children: [
             VerdictPill(e.verdict, status: envelopeStatus(e.verdict)),
@@ -246,10 +272,14 @@ class _ReceiptsViewState extends State<ReceiptsView> {
             if (e.taskId.isNotEmpty)
               Text(e.taskId, style: fwMono(t, size: 11, color: t.inkMuted)),
             const SizedBox(width: FwLayout.s4),
-            Text(e.sha256.substring(0, 12.clamp(0, e.sha256.length)),
-                style: fwMono(t,
-                    size: 11,
-                    color: e.sha256.length == 64 ? t.drift : t.inkFaint)),
+            Text(
+              e.sha256.substring(0, 12.clamp(0, e.sha256.length)),
+              style: fwMono(
+                t,
+                size: 11,
+                color: e.sha256.length == 64 ? t.drift : t.inkFaint,
+              ),
+            ),
             if (e.sha256.length == 64) ...[
               const SizedBox(width: 4),
               Icon(Icons.verified_outlined, size: 13, color: t.drift),

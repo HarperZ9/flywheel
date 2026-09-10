@@ -28,6 +28,8 @@ class EndpointRow {
       );
 
   bool get hasCredential => credential == 'present' || credential == 'cli-auth';
+  // The legacy wire label means a CLI was found, not that sign-in was checked.
+  bool get cliPresent => credential == 'cli-auth';
 
   /// A row a first send can actually answer through: a signed-in
   /// subscription CLI, a present key, or a local tier.

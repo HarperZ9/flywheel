@@ -53,18 +53,26 @@ class GatewayProcess {
   /// `flywheel up` from PATH otherwise. Returns an error message, or null
   /// on success. The gateway needs a few seconds to come up; callers keep
   /// polling.
-  Future<String?> start({int port = 8799}) {
+  Future<String?> start({int port = 8799}) => _start(port, false);
+
+  /// Automatic startup cannot silently change to an external PATH command.
+  Future<String?> startBundled({int port = 8799}) => _start(port, true);
+
+  Future<String?> _start(int port, bool requireBundled) {
     if (_child != null) return Future.value();
     if (_starting != null) return _starting!;
-    final launch = _launch(port, ++_generation);
+    final launch = _launch(port, ++_generation, requireBundled);
     _starting = launch;
     return launch.whenComplete(() {
       if (identical(_starting, launch)) _starting = null;
     });
   }
 
-  Future<String?> _launch(int port, int generation) async {
+  Future<String?> _launch(int port, int generation, bool requireBundled) async {
     final bundled = _bundledEngineResolver();
+    if (requireBundled && bundled == null) {
+      return 'The bundled engine is unavailable. Reinstall Flywheel to restore it.';
+    }
     final executable =
         bundled ?? (Platform.isWindows ? 'flywheel.exe' : 'flywheel');
     if (Platform.isWindows && !executable.toLowerCase().endsWith('.exe')) {

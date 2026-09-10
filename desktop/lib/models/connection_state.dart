@@ -7,6 +7,8 @@
 // six canonical phases from the completion spec. Presentation renders
 // the phase; it never derives it.
 
+import 'lane_readiness.dart';
+
 enum ConnectionPhase {
   starting,
   online,
@@ -50,6 +52,11 @@ class ConnectionStatus {
     final lanesTotal = total is int && total >= lanesLive ? total : lanesLive;
     final compatible = doc['compatible'];
     final status = doc['status'];
+    final readiness = doc.containsKey('lane_readiness')
+        ? laneReadinessDetail(total, {
+            for (final key in ['live', 'declared', 'missing', 'stale'])
+              key: doc['lanes_$key'],
+          }, unknown: doc['lane_readiness'] == 'unknown') : null;
     if (compatible == false || status == 'incompatible') {
       return ConnectionStatus.typed(ConnectionPhase.versionMismatch,
           lanesLive: lanesLive,
@@ -61,13 +68,13 @@ class ConnectionStatus {
       return ConnectionStatus.typed(ConnectionPhase.degraded,
           lanesLive: lanesLive,
           lanesTotal: lanesTotal,
-          detail: '$lanesLive/$lanesTotal lanes live · degraded');
+          detail: readiness ?? '$lanesLive/$lanesTotal lanes live · degraded');
     }
     if (status == 'ok') {
       return ConnectionStatus.typed(ConnectionPhase.online,
           lanesLive: lanesLive,
           lanesTotal: lanesTotal,
-          detail: '$lanesLive/$lanesTotal lanes live');
+          detail: readiness ?? '$lanesLive/$lanesTotal lanes live');
     }
     return const ConnectionStatus.typed(ConnectionPhase.offline,
         detail: 'the engine reported an unknown status');

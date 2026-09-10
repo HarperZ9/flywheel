@@ -114,7 +114,7 @@ class _SigninPanelState extends State<SigninPanel> {
       setState(() {
         _guided = null;
         _steps = const [];
-        _note = ok ? 'signed in; stored ${r['stored']}' : '${r['error']}';
+        _note = ok ? 'credential stored ${r['stored']}; authentication unverified' : '${r['error']}';
       });
       // The token leaves this widget only once it is stored, so a failed
       // attempt keeps the paste and the user can retry without re-entering it.
@@ -199,7 +199,7 @@ class _SigninPanelState extends State<SigninPanel> {
           children: [
             Row(
               children: [
-                VerdictDot(present ? 'verified' : 'unverifiable', size: 7),
+                const VerdictDot('unverifiable', size: 7),
                 const SizedBox(width: FwLayout.s2),
                 Text(provider,
                     style: const TextStyle(
@@ -229,6 +229,7 @@ class _SigninPanelState extends State<SigninPanel> {
             ),
             const SizedBox(height: FwLayout.s2),
             if (!pending && p['last'] == 'done' && present) const Text('credential stored'),
+            if (present) const Text('credential present; authentication unverified'),
             if (p['last'] == 'cancelled') const Text('sign-in cancelled locally'),
             // The terms, always visible: what this provider actually permits
             // is not something the app decides on the user's behalf.

@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import 'dart:io' show Platform;
 
 import '../client/gateway_auth.dart';
 import '../client/gateway_client.dart';
@@ -21,10 +22,12 @@ final class FlywheelDependencies {
     required this.code,
     this.closePrompt,
     this.status,
+    this.autoStartBundledEngine = false,
   });
 
   factory FlywheelDependencies.production() {
-    final conn = ConnectionStore().load();
+    final connectionStore = ConnectionStore();
+    final conn = connectionStore.load();
     final client = GatewayClient(
       baseUrl: conn.effectiveBaseUrl,
       httpClient: AuthedClient(http.Client(), readToken: conn.tokenSource),
@@ -32,6 +35,11 @@ final class FlywheelDependencies {
     return FlywheelDependencies(
       client: client,
       gateway: GatewayProcess(),
+      autoStartBundledEngine: !(Platform.isAndroid || Platform.isIOS) &&
+          connectionStore.loadState == ConnectionLoadState.absent &&
+          !conn.isRemote &&
+          conn.token == null &&
+          GatewayProcess.bundledEngine() != null,
       code: CodeBufferSession(draftStore: CodeDraftStore()),
       journey: JourneyController(
         api: GatewayJourneyApi(client),
@@ -48,6 +56,7 @@ final class FlywheelDependencies {
 
   final GatewayClient client;
   final GatewayProcess gateway;
+  final bool autoStartBundledEngine;
   final JourneyController journey;
   final CodeBufferSession code;
   final CloseChoicePrompt? closePrompt;
