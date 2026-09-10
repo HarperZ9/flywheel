@@ -2,11 +2,15 @@
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 from harness.bulletin_identity_key import parse_identity_json
-from tests.bulletin_media_fixtures import jwk_json
 
 
 def test_fixture_thumbprint_matches_existing_signer_without_private_output():
+    pytest.importorskip("cryptography", reason="real signing identity control requires the optional signing dependency")
+    from tests.bulletin_media_fixtures import jwk_json
+
     path = Path(__file__).resolve().parents[1] / "desktop/tool/bulletin_media_gateway_fixture.py"
     spec = importlib.util.spec_from_file_location("fixture_identity_control", path)
     fixture = importlib.util.module_from_spec(spec)
