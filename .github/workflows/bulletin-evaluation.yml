@@ -1,0 +1,44 @@
+name: Bulletin evaluation bridge
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'harness/bulletin_task_*.py'
+      - 'harness/bulletin_observer.py'
+      - 'scripts/bulletin_eval/**'
+      - 'scripts/run_bulletin_*check.py'
+      - 'scripts/run_bulletin_evaluation_e2e.mjs'
+      - 'tests/test_bulletin_task_*.py'
+      - 'tests/test_bulletin_observer.py'
+      - '.github/workflows/bulletin-evaluation.yml'
+permissions:
+  contents: read
+jobs:
+  local-worker-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: HarperZ9/bulletin
+          ref: 1a75703b7d29e4d830096ff1231522a9188731fc
+          path: .bulletin-fixture
+          persist-credentials: false
+      - run: npm --prefix .bulletin-fixture ci
+      - run: node scripts/run_bulletin_evaluation_e2e.mjs --bulletin .bulletin-fixture --dependencies .bulletin-fixture --out bulletin-evaluation-artifacts
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        if: always()
+        with:
+          name: bulletin-evaluation-controls
+          path: |
+            bulletin-evaluation-artifacts/results.json
+            bulletin-evaluation-artifacts/*/review.json
+            bulletin-evaluation-artifacts/*/contract.json
+            bulletin-evaluation-artifacts/missing-observation.json

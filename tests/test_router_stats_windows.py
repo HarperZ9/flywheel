@@ -102,10 +102,16 @@ def test_held_windows_reader_contention_is_typed_and_bounded(tmp_path):
         with pytest.raises(router_stats.RouterStatsError) as failure:
             blocked_stats.record("blocked", True)
     finally:
+        operation_elapsed = time.monotonic() - started
+        cleanup_started = time.monotonic()
         release.set()
         thread.join(2)
+        cleanup_elapsed = time.monotonic() - cleanup_started
+    assert not thread.is_alive(), f"reader cleanup incomplete after {cleanup_elapsed:.6f}s"
     assert failure.value.code == str(failure.value) == "STORE_BUSY"
-    assert time.monotonic() - started < 1.0
+    assert operation_elapsed < 1.0, (
+        f"record took {operation_elapsed:.6f}s; reader cleanup took {cleanup_elapsed:.6f}s"
+    )
     persisted = RouterStats(p)
     assert "blocked" not in blocked_stats.stats
     assert "blocked" not in persisted.stats

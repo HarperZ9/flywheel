@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+import os
 from pathlib import Path
 
 from .credential_handles import CredentialHandleStore
@@ -168,9 +169,11 @@ def resolve_credentials(operation, state_root: Path):
         operation, operation.owner_ref, state_root, plan=plan)
     try:
         _validate_before_secret_resolution(operation, state_root)
-        from .keychain import keychain_get
+        from .keychain import resolve_credential
         bindings = CredentialHandleStore(
-            state_root, keychain_get=keychain_get).resolve_exact(
+            state_root,
+            keychain_get=lambda name: resolve_credential(name) or None,
+        ).resolve_exact(
                 operation.owner_ref, operation.credential_refs, required)
         if plan.launch is not None:
             from .plugins import _restricted_launch
@@ -191,7 +194,8 @@ def _validate_before_secret_resolution(operation, state_root: Path) -> None:
             and value["tool"] == "board_write_post"
             and operation.credential_refs):
         from .bulletin_signed_transport import configured_bulletin_base_url
-        configured_bulletin_base_url()
+        configured_bulletin_base_url(
+            allow_loopback=os.environ.get("FLYWHEEL_BULLETIN_ALLOW_LOOPBACK") == "1")
     if _is_bulletin_media(operation):
         from .outcome_bulletin_media import validate_media_authorized_operation
         validate_media_authorized_operation(

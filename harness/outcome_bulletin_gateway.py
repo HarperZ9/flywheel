@@ -9,7 +9,7 @@ import re
 from .bulletin_signed_transport import publish_authorized_preview
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .evidence_public import TransportError, error_response, public_result
-from .outcome_bulletin import PREVIEW_SCHEMA, OutcomeBulletinError, _check_no_private
+from .outcome_bulletin import PREVIEW_SCHEMA, OutcomeBulletinError, _PARENT, _check_no_private
 
 _ROOM = re.compile(r"[a-z0-9][a-z0-9-]{0,63}\Z")
 _URL = re.compile(r"https://[^\s)>\"']+")
@@ -113,7 +113,7 @@ def _post(value: object) -> dict:
     if not {"room", "body"} <= set(value):
         raise TransportError(
             "INVALID_REQUEST", "authorized Bulletin post is invalid", 422)
-    if set(value) - {"room", "body", "attachments"}:
+    if set(value) - {"room", "body", "attachments", "parent_id"}:
         raise TransportError(
             "INVALID_REQUEST", "authorized Bulletin post is invalid", 422)
     room, body = value["room"], value["body"]
@@ -125,6 +125,12 @@ def _post(value: object) -> dict:
             "INVALID_REQUEST", "authorized Bulletin post is invalid", 422)
     guarded_body = _guard_urls(body)
     post = {"room": room, "body": body}
+    if "parent_id" in value:
+        parent = value["parent_id"]
+        if type(parent) is not str or _PARENT.fullmatch(parent) is None:
+            raise TransportError("INVALID_REQUEST",
+                                 "authorized Bulletin post is invalid", 422)
+        post["parent_id"] = parent
     attachments = _attachments(value.get("attachments"))
     if attachments:
         post["attachments"] = attachments

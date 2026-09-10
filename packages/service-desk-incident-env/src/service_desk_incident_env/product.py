@@ -14,7 +14,7 @@ from .v1.e2e_cases import run_e2e
 from .v1.http_runtime import ServiceDeskRuntime
 
 DISTRIBUTION = "flywheel-env-service-desk-incident"
-PACKAGE_VERSION = "0.1.0"
+PACKAGE_VERSION = "0.2.0"
 ENGINE_REQUIREMENT = "flywheel-verify>=0.6.1,<0.7"
 CONTRACT_VERSION = "service-desk-incident/v1"
 
@@ -26,7 +26,7 @@ def identity() -> dict[str, Any]:
         "distribution": DISTRIBUTION,
         "package_version": PACKAGE_VERSION,
         "engine_requirement": ENGINE_REQUIREMENT,
-        "engine_release_prerequisite": "first flywheel-verify release containing harness.enterprise_envs, planned >=0.6.1,<0.7",
+        "engine_release_prerequisite": "flywheel-verify 0.6.1 contains harness.enterprise_envs; supported >=0.6.1,<0.7",
         "environment_id": ENVIRONMENT_ID,
         "contract_version": CONTRACT_VERSION,
         "descriptor_sha256": descriptor_sha256(),

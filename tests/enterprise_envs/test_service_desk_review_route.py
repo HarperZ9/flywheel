@@ -6,6 +6,7 @@ import os
 import shutil
 import stat
 from pathlib import Path
+from urllib.parse import quote
 
 import pytest
 
@@ -212,7 +213,7 @@ def test_route_rejects_symlink_artifacts_before_product_scan(tmp_path):
     outside = tmp_path / "outside.txt"
     artifact_dir.mkdir(parents=True)
     outside.write_text("outside", encoding="utf-8")
-    link = artifact_dir / "outside-link.txt"
+    link = artifact_dir / "descriptor.json"
     try:
         os.symlink(outside, link)
     except (OSError, NotImplementedError):
@@ -228,6 +229,10 @@ def test_route_rejects_symlink_artifacts_before_product_scan(tmp_path):
     "C%3A%5CUsers%5CZain%5C.env",
     "api_key%3Dabcdefghijklmnop",
     "sk%2Dprojabcdefghijklmnopqrstuvwxyz",
+    quote(quote(quote(quote("api_key=abcdefghijklmnop", safe=""), safe=""),
+                safe=""), safe=""),
+    quote(quote(quote(quote("C:\\Users\\Zain\\private-file.txt", safe=""),
+                      safe=""), safe=""), safe=""),
 ])
 def test_route_rejects_encoded_paths_and_secret_text_before_display(
         tmp_path, monkeypatch, limit):

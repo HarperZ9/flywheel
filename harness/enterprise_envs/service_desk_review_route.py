@@ -49,6 +49,7 @@ _POSIX_PATH = re.compile(r"(?:^|[\s=(\[{,:;])/(?!/)[^\s]+|/"
     r"Applications|Volumes|dev|proc|sys|run)(?:/|$)")
 _FILE_URI = re.compile(r"(?i)(?<![A-Za-z0-9+.-])file:")
 _MAX_REPORT_STRING_BYTES = 16 * 1024
+_MAX_REPORT_DECODE_ROUNDS = 4
 
 
 def service_desk_review_post(
@@ -180,27 +181,42 @@ def _assert_safe_report_text(value: str) -> None:
             or _UNC_PATH.search(variant)
             or _POSIX_PATH.search(variant)
         ):
-            raise TransportError(
-                "UNSAFE_REPORT",
-                "ServiceDesk review report contains unsafe local content",
-                422,
-            )
+            _raise_unsafe_report()
 
 
 def _decoded_variants(value: str) -> tuple[str, ...]:
     variants: list[str] = []
     seen: set[str] = set()
     current = value
-    for _ in range(4):
-        for candidate in (current, unescape(current)):
-            if candidate not in seen:
-                variants.append(candidate)
-                seen.add(candidate)
+    for _ in range(_MAX_REPORT_DECODE_ROUNDS):
+        _append_decoded_candidates(variants, seen, current)
         decoded = unquote(unescape(current))
         if decoded == current:
             break
         current = decoded
+    else:
+        _append_decoded_candidates(variants, seen, current)
+        if unquote(unescape(current)) != current:
+            _raise_unsafe_report()
+        return tuple(variants)
+    _append_decoded_candidates(variants, seen, current)
     return tuple(variants)
+
+
+def _append_decoded_candidates(
+        variants: list[str], seen: set[str], current: str) -> None:
+    for candidate in (current, unescape(current)):
+        if candidate not in seen:
+            variants.append(candidate)
+            seen.add(candidate)
+
+
+def _raise_unsafe_report() -> None:
+    raise TransportError(
+        "UNSAFE_REPORT",
+        "ServiceDesk review report contains unsafe local content",
+        422,
+    )
 
 
 def _string(value: Any) -> str:

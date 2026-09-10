@@ -18,7 +18,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
+from dataclasses import replace
 
 from . import providers
 from .proposer import Proposer, ProposerOutput, prompt_hash
@@ -69,7 +71,7 @@ _NATIVE = [
 _CLI_BINARY = {"claude-cli": "claude", "codex-cli": "codex", "opencode": "opencode"}
 # roster name -> the backend name build_endpoints actually produces, so a
 # usable-looking endpoint can actually be turned into a proposer
-_BUILD_ALIAS = {"claude-cli": "claude", "codex-cli": "codex"}
+_BUILD_ALIAS = {"claude-cli": "claude", "codex-cli": "codex-plan"}
 _LOCAL_ALIASES = frozenset(("local", "default", "auto", "flywheel", "flywheel-serve"))
 
 
@@ -231,6 +233,27 @@ def make_authorized_endpoint_proposer(
             if ledger is not None else prop)
 
 
+def _codex_model_override(backend, model):
+    """Bind a requested ID to a supported CLI option, not served-model proof."""
+    from .endpoints import CliBackend
+    if not isinstance(model, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,159}", model):
+        raise ValueError("invalid Codex model ID")
+    if not isinstance(backend, CliBackend):
+        raise ValueError("Codex model override requires a CLI backend")
+    argv = list(backend.argv)
+    slots = [i for i, arg in enumerate(argv) if "{model}" in arg]
+    options = [i for i, arg in enumerate(argv)
+               if arg == "--model" or arg.startswith("--model=") or arg.startswith("-m")]
+    boundary = min([i for i, arg in enumerate(argv) if arg in ("--", "{prompt}")]
+                   or [len(argv)])
+    if (len(slots) != 1 or slots[0] == 0 or argv[slots[0]] != "{model}"
+            or options != [slots[0] - 1] or argv[slots[0] - 1] not in ("--model", "-m")
+            or slots[0] >= boundary):
+        raise ValueError("Codex command cannot forward the requested model")
+    return replace(backend, model=model, argv=argv)
+
+
 def _build_endpoint_proposer(name: str, *, model: str | None, base_url: str | None,
                              extract: bool) -> Proposer:
     if name in providers.REGISTRY or name in ("serve", "stub"):
@@ -252,5 +275,7 @@ def _build_endpoint_proposer(name: str, *, model: str | None, base_url: str | No
     target = _BUILD_ALIAS.get(name, name)
     for b in endpoints.build_endpoints(only_configured=False):
         if getattr(b, "name", None) == target:
+            if name == "codex-cli" and model is not None and model != "":
+                b = _codex_model_override(b, model)
             return BackendProposer(b, extract=extract)
     raise ValueError(f"unknown endpoint {name!r}; see unified_roster()['usable_names']")

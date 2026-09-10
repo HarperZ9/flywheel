@@ -78,7 +78,8 @@ def _npm_global_root() -> Path | None:
     try:
         npm = "npm.cmd" if os.name == "nt" else "npm"
         result = subprocess.run(
-            [npm, "root", "-g"], capture_output=True, text=True, timeout=20)
+            [npm, "root", "-g"], capture_output=True, text=True, timeout=20,
+            creationflags=0x08000000 if os.name == "nt" else 0)  # CREATE_NO_WINDOW
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return None
     line = result.stdout.strip()
@@ -123,7 +124,8 @@ def package_runtime_version(lane: Lane, python_executable: str) -> str | None:
     try:
         result = subprocess.run(
             [python_executable, "-I", "-c", code, lane.install_name],
-            capture_output=True, text=True, timeout=8)
+            capture_output=True, text=True, timeout=8,
+            creationflags=0x08000000 if os.name == "nt" else 0)  # CREATE_NO_WINDOW
     except (FileNotFoundError, PermissionError, subprocess.TimeoutExpired, OSError):
         return None
     version = result.stdout.strip()

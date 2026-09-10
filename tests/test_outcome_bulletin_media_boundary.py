@@ -48,7 +48,7 @@ def test_frozen_authorized_attachment_payload_can_be_sent_exactly(tmp_path, monk
 
     monkeypatch.setattr(transport._SignedClient, "post_json", send)
     monkeypatch.setattr(transport, "_read_json", lambda *_: {
-        "post": {**preview["post"], "attachments": [
+        "post": {**preview["post"], "author": transport._parse_key(jwk)["thumbprint"], "attachments": [
             {**MEDIA, "kind": "image", "url": "/v1/media/" + MEDIA["media_id"]}]}})
     result = transport.publish_authorized_preview(
         auth, preview, state_root=tmp_path,
@@ -70,7 +70,8 @@ def test_attachment_readback_drift_never_reports_match(tmp_path, monkeypatch, re
     monkeypatch.setattr(transport._SignedClient, "post_json", lambda *_: {
         "ok": True, "post": {"id": POST_ID}})
     monkeypatch.setattr(transport, "_read_json", lambda *_: {
-        "post": {**preview["post"], "attachments": returned}})
+        "post": {**preview["post"], "author": transport._parse_key(jwk)["thumbprint"],
+                 "attachments": returned}})
     result = transport.publish_authorized_preview(
         auth, preview, state_root=tmp_path,
         credential_bindings=CredentialBindings({transport.BULLETIN_KEY_SLOT: jwk}),
@@ -84,7 +85,8 @@ def test_unexpected_attachment_on_plain_post_is_drift(tmp_path, monkeypatch):
     monkeypatch.setattr(transport._SignedClient, "post_json", lambda *_: {
         "ok": True, "post": {"id": POST_ID}})
     monkeypatch.setattr(transport, "_read_json", lambda *_: {
-        "post": {**preview["post"], "attachments": [MEDIA]}})
+        "post": {**preview["post"], "author": transport._parse_key(jwk)["thumbprint"],
+                 "attachments": [MEDIA]}})
     result = transport.publish_authorized_preview(
         auth, preview, state_root=tmp_path,
         credential_bindings=CredentialBindings({transport.BULLETIN_KEY_SLOT: jwk}),

@@ -10,6 +10,7 @@ from typing import Any, Iterator
 
 from harness.cross_harness_artifacts import snapshot_source_tree
 from harness.private_artifact_fs import (
+    NOT_FOUND,
     PrivateArtifactError,
     open_artifact_root,
     root_identity,
@@ -18,6 +19,20 @@ from harness.private_artifact_fs import (
 MAX_REVIEW_FILE_BYTES = 32 * 1024 * 1024
 MAX_REVIEW_TOTAL_BYTES = 128 * 1024 * 1024
 MAX_REVIEW_FILES = 256
+_SERVICE_DESK_REVIEW_INPUTS = (
+    "descriptor.json",
+    "source-basis.json",
+    "agent-view.json",
+    "control-view.json",
+    "domain-state-before.json",
+    "domain-state-after.json",
+    "action-log.json",
+    "state-snapshot-before.json",
+    "state-snapshot-after.json",
+    "receipt.json",
+    "review.html",
+    "calibration/calibration-receipt.json",
+)
 
 
 class ArtifactSnapshotError(ValueError):
@@ -31,28 +46,35 @@ def snapshotted_artifact_dir(source: Path) -> Iterator[Path]:
     try:
         source = Path(source)
         identity = root_identity(source)
-        manifest = snapshot_source_tree(source)
-        files, directories = _rows(manifest, "files"), _rows(manifest, "directories")
-        if len(files) > MAX_REVIEW_FILES:
+        if len(_SERVICE_DESK_REVIEW_INPUTS) > MAX_REVIEW_FILES:
             raise ArtifactSnapshotError("artifact tree contains too many files")
-        total = sum(_size(row) for row in files)
-        if total > MAX_REVIEW_TOTAL_BYTES:
-            raise ArtifactSnapshotError("artifact tree is too large")
         temp = Path(tempfile.mkdtemp(prefix="flywheel-servicedesk-review-"))
-        for row in directories:
-            rel = _relative_dir(row.get("path"))
-            if rel is not None:
-                (temp / rel).mkdir(parents=True, exist_ok=True)
+        manifest = {"files": []}
+        total = 0
         with open_artifact_root(source, expected=identity, writable=False) as opened:
-            for row in files:
-                rel = _relative_file(row.get("path"))
-                size = _size(row)
-                data = opened.read_bytes(rel.as_posix(), max_bytes=size)
-                if len(data) != size or hashlib.sha256(data).hexdigest() != _sha(row):
-                    raise ArtifactSnapshotError("artifact changed while snapshotting")
+            for name in _SERVICE_DESK_REVIEW_INPUTS:
+                rel = _relative_file(name)
+                remaining = MAX_REVIEW_TOTAL_BYTES - total
+                if remaining < 0:
+                    raise ArtifactSnapshotError("artifact tree is too large")
+                try:
+                    data = opened.read_bytes(
+                        rel.as_posix(),
+                        max_bytes=min(MAX_REVIEW_FILE_BYTES, remaining),
+                    )
+                except PrivateArtifactError as exc:
+                    if exc.code == NOT_FOUND:
+                        continue
+                    raise
+                total += len(data)
+                if total > MAX_REVIEW_TOTAL_BYTES:
+                    raise ArtifactSnapshotError("artifact tree is too large")
                 target = temp / rel
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(data)
+                manifest["files"].append(
+                    {"path": rel.as_posix(), "sha256": hashlib.sha256(data).hexdigest()}
+                )
         copied = snapshot_source_tree(temp)
         if _file_index(copied) != _file_index(manifest):
             raise ArtifactSnapshotError("artifact snapshot copy mismatch")
@@ -73,12 +95,6 @@ def _rows(manifest: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return value
 
 
-def _relative_dir(value: Any) -> Path | None:
-    if value == ".":
-        return None
-    return _relative(value)
-
-
 def _relative_file(value: Any) -> PurePosixPath:
     return PurePosixPath(_relative(value).as_posix())
 
@@ -90,15 +106,6 @@ def _relative(value: Any) -> Path:
     if posix.is_absolute() or any(part in ("", ".", "..") for part in posix.parts):
         raise ArtifactSnapshotError("artifact path is unsafe")
     return Path(*posix.parts)
-
-
-def _size(row: dict[str, Any]) -> int:
-    value = row.get("size")
-    if type(value) is not int or isinstance(value, bool) or value < 0:
-        raise ArtifactSnapshotError("artifact size is malformed")
-    if value > MAX_REVIEW_FILE_BYTES:
-        raise ArtifactSnapshotError("artifact file is too large")
-    return value
 
 
 def _sha(row: dict[str, Any]) -> str:

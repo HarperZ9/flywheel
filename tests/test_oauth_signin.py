@@ -50,6 +50,8 @@ def _approve(url, query="code=ok"):
     parsed = urllib.parse.urlparse(url)
     params = urllib.parse.parse_qs(parsed.query)
     callback = (params.get("callback_url") or params.get("redirect_uri"))[0]
+    if 'state' in params:
+        query += '&' + urllib.parse.urlencode({'state': params['state'][0]})
     threading.Timer(0.2, lambda: _get(f"{callback}?{query}")).start()
     return True
 
@@ -63,8 +65,6 @@ def _get(url):
     except Exception:
         return None
 
-
-# --- PKCE math -------------------------------------------------------------
 
 def test_pkce_challenge_is_s256_of_verifier():
     verifier, challenge = osi._pkce_pair()

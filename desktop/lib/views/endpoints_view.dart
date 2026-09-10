@@ -12,6 +12,7 @@ import '../client/gateway_client.dart';
 import '../models/endpoint_models.dart';
 import '../models/gateway_models.dart';
 import '../models/render_status.dart';
+import '../services/oauth_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/endpoint_details.dart';
 import '../widgets/frontier_panel.dart';
@@ -38,7 +39,7 @@ class _EndpointsViewState extends State<EndpointsView> {
   Map<String, dynamic>? _training;
   Map<String, dynamic>? _keychain;
   Map<String, dynamic>? _bulletinIdentity;
-  Map<String, dynamic>? _auth;
+  late final OAuthStatus _authStatus;
   Map<String, dynamic>? _sessionTokens;
   String? _error;
   bool _loading = false;
@@ -46,13 +47,33 @@ class _EndpointsViewState extends State<EndpointsView> {
   @override
   void initState() {
     super.initState();
+    _authStatus = OAuthStatus(read: widget.client.authStatus, onCompleted: _load)
+      ..addListener(_authUpdated)
+      ..configure(widget.client.authStatus, widget.alive);
     _load();
   }
 
   @override
   void didUpdateWidget(EndpointsView old) {
     super.didUpdateWidget(old);
-    if (!old.alive && widget.alive) _load();
+    if (old.alive != widget.alive || old.client != widget.client) {
+      _authStatus.configure(widget.client.authStatus, widget.alive);
+      if (widget.alive) _load();
+    }
+  }
+
+  void _authUpdated() { if (mounted) setState(() {}); }
+
+  Future<Map<String, dynamic>> _authAction(String path, Map<String, dynamic> body) async {
+    _authStatus.suspend();
+    try { return await widget.client.postJson(path, body); }
+    finally { _authStatus.refresh(afterAction: true); }
+  }
+
+  @override
+  void dispose() {
+    _authStatus.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -65,7 +86,6 @@ class _EndpointsViewState extends State<EndpointsView> {
         widget.client.routerStats(),
         widget.client.trainingStatus(),
         widget.client.keychainRoster(),
-        widget.client.getJson('/api/auth'),
         widget.client.sessionTokens(),
         widget.client.bulletinIdentityStatus(),
       ]);
@@ -78,9 +98,8 @@ class _EndpointsViewState extends State<EndpointsView> {
               ProviderScore.listFromStats(results[2] as Map<String, dynamic>);
           _training = results[3] as Map<String, dynamic>;
           _keychain = results[4] as Map<String, dynamic>;
-          _auth = results[5] as Map<String, dynamic>;
-          _sessionTokens = results[6] as Map<String, dynamic>;
-          _bulletinIdentity = results[7] as Map<String, dynamic>;
+          _sessionTokens = results[5] as Map<String, dynamic>;
+          _bulletinIdentity = results[6] as Map<String, dynamic>;
           _error = null;
           _loading = false;
         });
@@ -114,7 +133,7 @@ class _EndpointsViewState extends State<EndpointsView> {
           'Endpoints',
           kicker: 'one request shape, every provider',
           trailing: OutlinedButton(
-            onPressed: _loading ? null : _load,
+            onPressed: _loading ? null : () { _authStatus.refresh(); _load(); },
             child: Text(_loading ? 'Probing…' : 'Probe'),
           ),
         ),
@@ -148,22 +167,22 @@ class _EndpointsViewState extends State<EndpointsView> {
         ProviderRoster(roster: _roster),
         const SizedBox(height: FwLayout.s5),
         FrontierPanel(client: widget.client, endpoints: _roster),
-        if (_auth != null) ...[
+        if (_authStatus.error != null) HonestNull(_authStatus.error!),
+        if (_authStatus.doc != null) ...[
           const SizedBox(height: FwLayout.s5),
           const Kicker('sign in · a subscription can carry usage'),
           const SizedBox(height: FwLayout.s3),
           SigninPanel(
-            doc: _auth!,
-            onLogin: (p) => widget.client.postJson('/api/auth/login', {
+            doc: _authStatus.doc!,
+            onLogin: (p) => _authAction('/api/auth/login', {
               'provider': p,
               if (_mobile) 'callback_base': widget.client.baseUrl,
             }),
             onOpenUrl: _mobile ? _openSignInUrl : null,
-            onToken: (p, token) => widget.client
-                .postJson('/api/auth/token', {'provider': p, 'token': token}),
-            onLogout: (p) => widget.client
-                .postJson('/api/auth/logout', {'provider': p}),
-            onChanged: _load,
+            onToken: (p, token) => _authAction('/api/auth/token', {'provider': p, 'token': token}),
+            onLogout: (p) => _authAction('/api/auth/logout', {'provider': p}),
+            onCancel: (p) => _authAction('/api/auth/cancel', {'provider': p}),
+            onChanged: _authStatus.refresh,
           ),
         ],
         if (_sessionTokens != null) ...[

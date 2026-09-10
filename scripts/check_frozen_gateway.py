@@ -1,7 +1,8 @@
 """Check the actual frozen gateway before packaging it into an installer.
 
-Uses an isolated profile, local bearer and synthetic invalid identity. It never
-creates/registers an identity or contacts model providers. This checks the
+Uses an isolated profile, local bearer, synthetic identity, native Writing workflow,
+and native Bulletin media publication through a loopback board. It
+never creates/registers an identity or contacts model providers. This checks the
 onedir payload, not installer behavior, clean-OS compatibility or Relay runs.
 """
 from __future__ import annotations
@@ -13,12 +14,16 @@ import os
 from pathlib import Path
 import socket
 import subprocess
+import sys
 import tempfile
 import time
 import urllib.error
 import urllib.request
 
-SYNTHETIC_KEY = "SYNTHETIC_INVALID_FROZEN_GATEWAY_SMOKE_NOT_A_KEY"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 NATIVE_ROUTES = {
     "/api/bulletin-identity": "get",
     "/api/bulletin-identity/create": "post",
@@ -66,18 +71,21 @@ def validate_documents(identity, spec, card, llms, *, expected_version: str):
     require(expected_version in llms and len(llms.strip()) > 40, "LLMS_VERSION")
 
 
-def _environment(home: Path) -> dict[str, str]:
+def _environment(home: Path, *, bulletin_key: str, bulletin_base_url: str) -> dict[str, str]:
     retained = {"SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "SYSTEMDRIVE"}
     env = {k: v for k, v in os.environ.items() if k.upper() in retained}
     env.update({"FLYWHEEL_HOME": str(home), "USERPROFILE": str(home),
                 "HOME": str(home), "TMP": str(home), "TEMP": str(home),
                 "APPDATA": str(home), "LOCALAPPDATA": str(home),
-                "BULLETIN_AGENT_JWK": SYNTHETIC_KEY,
+                "BULLETIN_AGENT_JWK": bulletin_key,
+                "FLYWHEEL_BULLETIN_ALLOW_LOOPBACK": "1",
+                "FLYWHEEL_BULLETIN_BASE_URL": bulletin_base_url,
                 "PATH": str(Path(os.environ.get("SystemRoot", "/")) / "System32")})
     return env
 
 
-def _request(base: str, path: str, token: str | None):
+def _request(base: str, path: str, token: str | None, *,
+             secret_values: tuple[str, ...] = ()):
     headers = {"Authorization": "Bearer " + token} if token else {}
     # Never use ambient proxies for this exclusively loopback probe.
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -90,30 +98,37 @@ def _request(base: str, path: str, token: str | None):
         raw = response.read(2_000_001)
         require(len(raw) <= 2_000_000, "OVERSIZED_RESPONSE")
         body = raw.decode("utf-8")
-        require(SYNTHETIC_KEY not in body and (not token or token not in body),
-                "CREDENTIAL_ECHO")
+        for secret in (*secret_values, token):
+            require(not secret or secret not in body, "CREDENTIAL_ECHO")
         return response.code, body
 
 
 def check(executable: Path, expected_version: str, receipt: dict) -> None:
     require(executable.is_file(), "EXECUTABLE_MISSING")
     receipt["executable_sha256"] = hashlib.sha256(executable.read_bytes()).hexdigest()
+    from scripts.frozen_gateway_native_smoke import (
+        prepare_native_smoke_fixture, run_native_acceptance_smoke)
+
     # TemporaryDirectory owns only its newly allocated child; no supplied path
     # is recursively removed. The owned process is terminal before cleanup.
     with tempfile.TemporaryDirectory(prefix="flywheel-frozen-smoke-") as directory:
         home = Path(directory).resolve()
+        fixture = prepare_native_smoke_fixture(home, home / "runs")
+        secret_values = (fixture.key_json,)
         with socket.socket() as sock:
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
-        env = _environment(home)
-        process = subprocess.Popen([
-            str(executable), "--host", "127.0.0.1", "--port", str(port),
-            "--root", str(home), "--run-root", str(home / "runs"),
-            "--serve-url", "http://127.0.0.1:1", "--ollama-url", "http://127.0.0.1:1",
-        ], cwd=home, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+        env = _environment(
+            home, bulletin_key=fixture.key_json, bulletin_base_url=fixture.board.url)
+        process = None
         try:
+            process = subprocess.Popen([
+                str(executable), "--host", "127.0.0.1", "--port", str(port),
+                "--root", str(home), "--run-root", str(home / "runs"),
+                "--serve-url", "http://127.0.0.1:1", "--ollama-url", "http://127.0.0.1:1",
+            ], cwd=home, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
             deadline = time.monotonic() + 30
             token_path = home / "gateway.token"
             while time.monotonic() < deadline:
@@ -130,7 +145,8 @@ def check(executable: Path, expected_version: str, receipt: dict) -> None:
             token = token_path.read_text(encoding="utf-8").strip()
             require(len(token) >= 32, "LOCAL_TOKEN_INVALID")
             base = f"http://127.0.0.1:{port}"
-            status, body = _request(base, "/api/bulletin-identity", None)
+            status, body = _request(
+                base, "/api/bulletin-identity", None, secret_values=secret_values)
             require(token not in body, "CREDENTIAL_ECHO")
             require(status == 401 and json.loads(body).get("error", {}).get("code")
                     == "AUTH_REQUIRED", "PRIVATE_AUTH_NOT_ENFORCED")
@@ -138,23 +154,28 @@ def check(executable: Path, expected_version: str, receipt: dict) -> None:
             docs = []
             for path in ("/api/bulletin-identity", "/openapi.json",
                          "/.well-known/flywheel.json", "/llms.txt"):
-                status, body = _request(base, path, token)
+                status, body = _request(base, path, token, secret_values=secret_values)
                 receipt.setdefault("authenticated_statuses", {})[path] = status
                 require(status == 200, "HTTP_FAILURE:" + path)
                 docs.append(body if path == "/llms.txt" else json.loads(body))
             validate_documents(*docs, expected_version=expected_version)
+            native_acceptance = run_native_acceptance_smoke(base, token, fixture)
             receipt.update(signing_imports_available=True, identity_source="env",
                            version=docs[2]["version"], routes=docs[2]["routes"],
-                           native_routes=list(NATIVE_ROUTES), credential_echo=False)
+                           native_routes=list(NATIVE_ROUTES),
+                           native_acceptance=native_acceptance,
+                           credential_echo=False)
         finally:
-            if process.poll() is None:
-                process.terminate()
-            try:
-                process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait(timeout=5)
-            receipt["owned_process_terminal"] = process.poll() is not None
+            if process is not None:
+                if process.poll() is None:
+                    process.terminate()
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=5)
+                receipt["owned_process_terminal"] = process.poll() is not None
+            fixture.board.close()
     receipt["isolated_runtime_removed"] = not home.exists()
 
 
@@ -167,7 +188,8 @@ def main() -> int:
     receipt = {"schema": "flywheel.frozen-gateway-smoke/v1", "verdict": "HOLD",
                "expected_version": args.expected_version,
                "does_not_prove": ["installer integration", "clean OS compatibility",
-                                  "native identity registration", "Relay execution"]}
+                                  "Flutter UI rendering", "native identity registration",
+                                  "Relay execution", "production Bulletin posting"]}
     try:
         check(args.executable.resolve(), args.expected_version, receipt)
         receipt["verdict"] = "PASS"

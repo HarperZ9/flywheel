@@ -18,7 +18,7 @@ PUBLICATION_SCHEMA = "flywheel.outcome-bulletin-publication/v1"
 _ALLOWED_FIELDS = frozenset((
     "schema", "title", "status", "room", "checked", "positive_controls",
     "held_blockers", "next_actions", "does_not_prove", "links",
-    "attachments",
+    "attachments", "parent_id",
 ))
 _TEXT_LISTS = ("checked", "positive_controls", "held_blockers",
                "next_actions", "does_not_prove")
@@ -30,6 +30,7 @@ _PRIVATE_FIELDS = frozenset((
 ))
 _PRIVATE_HANDLE = re.compile(r"\b(?:owner|jrn|gnt|prp|op|cred)_[0-9a-f]{32}\b")
 _ROOM = re.compile(r"[a-z0-9][a-z0-9-]{0,63}\Z")
+_PARENT = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 _PUBLIC_PREFIXES = (
     "https://github.com/HarperZ9/",
     "https://pypi.org/project/",
@@ -44,13 +45,11 @@ class OutcomeBulletinError(RuntimeError):
         self.code = code
         super().__init__(message)
 
-
 def _fail() -> None:
     raise OutcomeBulletinError(
         "UNSAFE_PUBLIC_OUTCOME",
         "outcome contains fields or content that cannot be projected publicly",
     )
-
 
 def _check_no_private(value: object) -> None:
     if type(value) is dict:
@@ -65,7 +64,6 @@ def _check_no_private(value: object) -> None:
     elif type(value) is str and _PRIVATE_HANDLE.search(value):
         _fail()
 
-
 def _text(value: object) -> str:
     if type(value) is not str or not value.strip():
         _fail()
@@ -73,12 +71,10 @@ def _text(value: object) -> str:
         _fail()
     return value.strip()
 
-
 def _text_list(value: object) -> list[str]:
     if type(value) is not list or not value or len(value) > 12:
         _fail()
     return [_text(item) for item in value]
-
 
 def _links(value: object) -> list[dict[str, str]]:
     if type(value) is not list or not value or len(value) > 8:
@@ -95,7 +91,6 @@ def _links(value: object) -> list[dict[str, str]]:
         rows.append({"label": label, "url": url})
     return rows
 
-
 def _attachments(value: object) -> list[dict[str, str]]:
     if value is None:
         return []
@@ -110,7 +105,6 @@ def _attachments(value: object) -> list[dict[str, str]]:
             _fail()
         rows.append({"media_id": media, "alt": alt})
     return rows
-
 
 def _normalize(outcome: dict) -> dict:
     if type(outcome) is not dict or set(outcome) - _ALLOWED_FIELDS:
@@ -128,6 +122,11 @@ def _normalize(outcome: dict) -> dict:
         "links": _links(outcome.get("links")),
         "attachments": _attachments(outcome.get("attachments")),
     }
+    if "parent_id" in outcome:
+        parent = outcome["parent_id"]
+        if type(parent) is not str or _PARENT.fullmatch(parent) is None:
+            _fail()
+        normalized["parent_id"] = parent
     for name in _TEXT_LISTS:
         if name in outcome:
             normalized[name] = _text_list(outcome[name])
@@ -138,7 +137,6 @@ def _normalize(outcome: dict) -> dict:
     except TransportError:
         _fail()
     return normalized
-
 
 def _section(title: str, rows: list[str]) -> list[str]:
     if not rows:
@@ -163,6 +161,8 @@ def build_preview(outcome: dict) -> dict:
     normalized = _normalize(outcome)
     body = _render(normalized)
     post = {"room": normalized["room"], "body": body}
+    if "parent_id" in normalized:
+        post["parent_id"] = normalized["parent_id"]
     if normalized["attachments"]:
         post["attachments"] = normalized["attachments"]
     preview = {

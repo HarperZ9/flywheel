@@ -92,7 +92,48 @@ def parser():
         p.add_argument(f"--{name}", required=True)
     p.add_argument("--provider-role", default="local_14b")
     p.add_argument("--order-plan")
+    p.add_argument("--record-invocations", action="store_true",
+                   help="Write per-prefix accounting; legacy counters are not transport usage.")
     return p
+
+
+def _source_revision(root):
+    import subprocess
+    try:
+        result = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
+                                capture_output=True, text=True, timeout=5, check=False)
+        revision = result.stdout.strip() if result.returncode == 0 else ""
+        return revision if len(revision) == 40 and all(c in "0123456789abcdef" for c in revision) else None
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def _source_dirty(root):
+    import subprocess
+    try:
+        result = subprocess.run(["git", "-C", str(root), "status", "--porcelain"],
+                                capture_output=True, text=True, timeout=5, check=False)
+        return bool(result.stdout.strip()) if result.returncode == 0 else None
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def build_candidate_runner(adapter, source_root, params, *, record_invocations=False,
+                           task_set_path=None, contract_path=None):
+    accounting = None
+    if record_invocations:
+        from harness.local_finalizer_accounting import ExperimentAccounting
+        execution_root = Path(__file__).resolve().parents[1]
+        profile = adapter.profile
+        bindings = {"fixture_source_head": _source_revision(source_root),
+                    "execution_source_head": _source_revision(execution_root),
+                    "fixture_source_dirty": _source_dirty(source_root),
+                    "execution_source_dirty": _source_dirty(execution_root),
+                    "task_set_sha256": _sha(Path(task_set_path)) if task_set_path else None,
+                    "contract_sha256": _sha(Path(contract_path)) if contract_path else None,
+                    **{key: profile.get(key) for key in ("profile_id", "model_ref", "profile_sha256")}}
+        accounting = ExperimentAccounting(bindings=bindings)
+    return LocalCandidatePrefixRunner(adapter, Path(source_root), params, accounting=accounting), accounting
 
 
 def main(argv=None) -> int:
@@ -111,11 +152,14 @@ def main(argv=None) -> int:
     adapters = build_adapter_registry(matrix, [args.provider_role])
     tasks = build_tasks(Path(args.source_root), Path(args.task_set), Path(args.contract), run_root)
     params = {**FIXED_PARAMS, "provider_role": args.provider_role}
-    runner = LocalCandidatePrefixRunner(adapters[args.provider_role], Path(args.source_root), params)
+    runner, accounting = build_candidate_runner(adapters[args.provider_role], Path(args.source_root), params,
+        record_invocations=args.record_invocations, task_set_path=Path(args.task_set), contract_path=Path(args.contract))
     summary = run_candidate_prefix_experiment(tasks, run_root / "primary", params,
-        candidate_runner=runner.candidate, finalizer_runner=runner.finalizer, order_plan=order_plan)
+        candidate_runner=runner.candidate, finalizer_runner=runner.finalizer, order_plan=order_plan,
+        accounting=accounting)
     print(json.dumps({"run_summary": str(run_root / "primary" / "run-summary.json"),
-                      "rows": len(summary["rows"]), "params_sha256": summary["params_sha256"]}, sort_keys=True))
+                      "rows": len(summary["rows"]), "params_sha256": summary["params_sha256"],
+                      **({"invocation_accounting": summary["invocation_accounting"]} if accounting else {})}, sort_keys=True))
     return 0
 
 
