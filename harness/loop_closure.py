@@ -1,24 +1,12 @@
-"""loop_closure.py — is the model+harness+memory cycle actually a CLOSED loop?
+"""Measure bounded deterministic handoffs; report structural paths separately.
 
-The operator's question, made measurable: not "is it a being" (unfalsifiable) but
-"is the self-recursive loop closed end-to-end, and where is it still open?" A
-closed loop means every organ's output feeds the next organ's input, and a receipt
-survives the cycle. This audits each handoff and EXECUTES the ones it can, so the
-verdict is measured, not asserted.
-
-The cycle:
-  perceive -> propose -> verify -> memory -> {serve | telemetry->evolve->propose |
-  corpus -> model}
-
-Honest finding baked in: the loop is closed at the FAST (cache) and CONFIG (evolve)
-altitudes and OPEN at the CONTENT (auto-context) and WEIGHT (auto-retrain)
-altitudes. Those two open links are the remaining integration points — named, not
-hand-waved. Closing content-feedback is buildable now; auto-retrain needs an
-orchestration trigger.
+This instrument exercises a fixture oracle and a deterministic memory reader.
+It does not measure learned-model utility, alignment, automatic configuration
+application or training. A function's presence cannot establish loop closure.
 """
 from __future__ import annotations
-
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+import json
 
 
 @dataclass
@@ -27,138 +15,101 @@ class Handoff:
     to: str
     carries: str
     closed: bool
-    verified: bool          # True if closure was EXECUTED, False if only structurally assessed
+    verified: bool  # An execution was observed; inspect closed for its outcome.
     evidence: str
+
+
+class _MemoryReader:
+    model_ref = "closure-memory-reader"
+
+    def __init__(self):
+        self.inputs = []
+
+    def generate(self, prompt, *, seed, temperature, max_new_tokens, system=""):
+        from .proposer import ProposerOutput, prompt_hash
+        self.inputs.append(prompt)
+        rows = [json.loads(line) for line in prompt.splitlines()
+                if line.startswith('{"memory_source":')]
+        text = rows[0]["content"] if rows else "def add(a, b):\n    return 0\n"
+        return ProposerOutput(text, self.model_ref, seed, prompt_hash(prompt), "off")
 
 
 def measure_loop(tmp_dir) -> dict:
     from pathlib import Path
     from .task import load_task
-    from .proposer import StubProposer
+    from .proposer import StubProposer, prompt_hash
     from .oracle import PytestOracle
     from .loop import run_loop
-    from .cache import (ReceiptCache, cache_key, canonical_prompt, knowledge_hash,
-                        oracle_context_hash)
-    from .proposer import prompt_hash
+    from .cache import ReceiptCache
+    from .evolutionary_flywheel import VerifiedPool
 
-    TASK_DIR = Path(__file__).parent.parent / "tasks" / "example_pass"
-    CORRECT = "def add(a, b):\n    return a + b\n"
+    fixture = Path(__file__).parent.parent / "tasks" / "example_pass"
+    correct = "def add(a, b):\n    return a + b\n"
     tmp = Path(tmp_dir)
-    # Graceful: when the task fixture is absent (e.g. a frozen exe that does
-    # not bundle tasks/), the executed handoffs degrade to structural-only.
-    task = None
-    cache = ReceiptCache(tmp / "cache")
-    task_fixture_missing = False
+    hs = []
+    control = {"executed": False, "enabled_accepted": False,
+               "disabled_accepted": False, "prompt_changed": False,
+               "source_in_actual_input": False}
     try:
-        task = load_task(TASK_DIR, workdir=tmp / "w")
-    except (FileNotFoundError, OSError):
-        task_fixture_missing = True
-
-    hs: list[Handoff] = []
-
-    # perceive -> propose (structural: boot hydrates context into the prompt)
-    from . import boot as _boot
-    hs.append(Handoff("perceive", "propose", "context",
-                      closed=hasattr(_boot, "boot") and hasattr(_boot, "hydrate_prompt"),
-                      verified=False, evidence="boot.boot/hydrate_prompt present"))
-
-    # propose -> verify (EXECUTED when the task fixture is available)
-    res = None
-    ck = None
+        task = replace(load_task(fixture, workdir=tmp / "seed"), task_id="closure.seed")
+    except OSError:
+        task = None
     if task is not None:
-        res = run_loop(task, StubProposer(CORRECT), PytestOracle(), envelopes_dir=tmp / "env")
-        hs.append(Handoff("propose", "verify", "candidate",
-                          closed=res.envelope.verdict in ("PASS", "FAIL"),
-                          verified=True, evidence=f"oracle ran on candidate -> {res.envelope.verdict}"))
-
-        # verify -> memory (EXECUTED)
-        ck = cache_key(task, prompt_hash(canonical_prompt(task.prompt)), "stub",
-                       task.seed, task.oracle_cmd, knowledge_hash(task),
-                       oracle_context_hash(task, "pytest"))
-        cache.insert(res.envelope, ck)
-        hs.append(Handoff("verify", "memory", "receipt",
-                          closed=res.accepted and cache.lookup(ck) is not None,
-                          verified=True, evidence="accepted envelope inserted + looked up"))
-
-        # memory -> serve (EXECUTED: the fast loop — a repeat is served from the cache)
-        hs.append(Handoff("memory", "serve", "verified result",
-                          closed=cache.lookup(ck) is not None,
-                          verified=True, evidence="repeat query hits the receipt cache (proof-addressed)"))
+        pool, cache = VerifiedPool(), ReceiptCache(tmp / "cache")
+        source = run_loop(task, StubProposer(correct), PytestOracle(),
+                          pool=pool, cache=cache, envelopes_dir=tmp / "env")
+        hs.append(Handoff("propose", "verify", "candidate", source.accepted, True,
+                          "fixture oracle and witness executed"))
+        hs.append(Handoff("verify", "memory", "accepted claim",
+                          pool.claim_digests.get(task.task_id) == source.envelope.claim_sha256(),
+                          True, "accepted claim digest banked in the pool"))
+        repeat = run_loop(task, StubProposer("raise AssertionError('cache miss')"),
+                          PytestOracle(), cache=cache, envelopes_dir=tmp / "env")
+        hs.append(Handoff("memory", "serve", "cached candidate",
+                          repeat.cache_hit and repeat.accepted, True,
+                          "repeat run reused candidate and rechecked current oracle"))
+        target = replace(load_task(fixture, workdir=tmp / "target"), task_id="closure.target")
+        on, off = _MemoryReader(), _MemoryReader()
+        args = dict(pool=pool, memory_sources=[task.task_id], envelopes_dir=tmp / "env")
+        enabled = run_loop(target, on, PytestOracle(), **args)
+        disabled = run_loop(target, off, PytestOracle(), auto_context=False, **args)
+        actual = on.inputs[0]
+        records = [json.loads(line) for line in actual.splitlines()
+                   if line.startswith('{"memory_source":')]
+        control = {"executed": True, "enabled_accepted": enabled.accepted,
+                   "disabled_accepted": disabled.accepted,
+                   "prompt_changed": actual != off.inputs[0],
+                   "source_in_actual_input": any(r == {"memory_source": task.task_id,
+                                                        "content": correct} for r in records),
+                   "enabled_prompt_hash": prompt_hash(actual),
+                   "disabled_prompt_hash": prompt_hash(off.inputs[0])}
     else:
-        miss = "task fixture unavailable (frozen exe or missing tasks/example_pass)"
-        hs.append(Handoff("propose", "verify", "candidate",
-                          closed=True, verified=False, evidence=miss))
-        hs.append(Handoff("verify", "memory", "receipt",
-                          closed=True, verified=False, evidence=miss))
-        hs.append(Handoff("memory", "serve", "verified result",
-                          closed=True, verified=False, evidence=miss))
-
-    # verify -> telemetry -> evolve (structural: config self-improvement is wired)
-    from . import flywheel as _fw
-    import inspect
-    spin_sig = inspect.signature(_fw.spin) if hasattr(_fw, "spin") else None
-    evolve_wired = spin_sig is not None and "research_feed" in spin_sig.parameters
-    hs.append(Handoff("verify", "evolve", "run signals -> config candidates",
-                      closed=evolve_wired, verified=False,
-                      evidence="flywheel.spin threads research_feed into meta_cycle"))
-
-    # evolve -> propose (structural: improved config feeds the next spin)
-    hs.append(Handoff("evolve", "propose", "improved config",
-                      closed=evolve_wired, verified=False,
-                      evidence="next spin starts from evolve's auto-config baseline"))
-
-    # verify -> corpus (structural: verified experience -> developmental corpus)
-    from . import developmental as _dev
-    hs.append(Handoff("verify", "corpus", "verified experience",
-                      closed=hasattr(_dev, "record") or hasattr(_dev, "curate") or bool(dir(_dev)),
-                      verified=False, evidence="developmental corpus module present"))
-
-    # memory -> context: CLOSED and EXECUTED. run_loop now accepts a VerifiedPool
-    # and auto_context flag (default on): before proposal, if the task arrived
-    # with no retrieved context, it is populated from prior verified PASSes in
-    # the pool; after a PASS, the fact is banked. This is the feedback edge that
-    # makes the loop compound. Falsified in test_loop_closure.
-    try:
-        from . import loop as _loop_mod
-        import inspect
-        _sig = inspect.signature(_loop_mod.run_loop)
-        auto_context_wired = "pool" in _sig.parameters and "auto_context" in _sig.parameters
-    except Exception:
-        auto_context_wired = False
-    hs.append(Handoff("memory", "context", "verified fact -> next retrieved",
-                      closed=auto_context_wired, verified=auto_context_wired,
-                      evidence="run_loop(pool=..., auto_context=True) banks PASSes and "
-                               "retrieves them into the next task's context; falsified in "
-                               "test_memory_to_context_is_executed_not_just_structural"))
-
-    # corpus -> model: PATH closed (corpus_export writes a verified shard with a
-    # re-checkable receipt), TRIGGER deliberately operator-gated (training
-    # start/hard-stop stay gated per SUPERAPP.md). verified=False is honest: the
-    # path is wired but the auto-trigger is intentionally absent, so the full
-    # handoff is not executed end-to-end by the loop itself.
-    try:
-        from . import corpus_export as _ce
-        export_path_wired = hasattr(_ce, "export_corpus") and hasattr(_ce, "verify_corpus_export")
-    except Exception:
-        export_path_wired = False
-    hs.append(Handoff("corpus", "model", "training data -> weights",
-                      closed=export_path_wired, verified=False,
-                      evidence="corpus_export.export_corpus writes a verified-"
-                               "experience shard (flywheel.corpus-export/v1, re-checkable); "
-                               "the training START remains operator-gated per SUPERAPP.md -- "
-                               "path closed, automation deliberately not"))
-
-    n_closed = sum(1 for h in hs if h.closed)
-    return {
-        "handoffs": [h.__dict__ for h in hs],
-        "n_handoffs": len(hs), "n_closed": n_closed,
-        "closure_fraction": round(n_closed / len(hs), 3),
-        "fully_closed": n_closed == len(hs),
-        "open_links": [f"{h.frm}->{h.to}" for h in hs if not h.closed],
-        "executed_links": [f"{h.frm}->{h.to}" for h in hs if h.verified],
-    }
+        for frm, to, carries in [("propose", "verify", "candidate"),
+                                 ("verify", "memory", "claim"), ("memory", "serve", "candidate")]:
+            hs.append(Handoff(frm, to, carries, False, False, "fixture unavailable; not executed"))
+    memory_closed = (control["executed"] and control["enabled_accepted"]
+                     and not control["disabled_accepted"] and control["prompt_changed"]
+                     and control["source_in_actual_input"])
+    hs.append(Handoff("memory", "context", "authorized candidate content", memory_closed,
+                      control["executed"], "deterministic dependent task with retrieval ablation"))
+    # Available plumbing and surfaced candidates remain explicitly unexecuted.
+    for frm, to, carries, evidence in [
+        ("perceive", "propose", "boot context", "structural boot path; not measured here"),
+        ("verify", "evolve", "configuration proposals", "spin surfaces meta_cycle proposals; not measured here"),
+        ("evolve", "propose", "configuration change", "proposal-only; spin does not apply candidates"),
+        ("verify", "corpus", "experience export", "structural corpus path; not measured here"),
+        ("corpus", "model", "trained weights", "export is not training; operator-gated training not executed")]:
+        hs.append(Handoff(frm, to, carries, False, False, evidence))
+    n_closed = sum(h.closed and h.verified for h in hs)
+    return {"handoffs": [h.__dict__ for h in hs], "memory_control": control,
+            "n_handoffs": len(hs), "n_closed": n_closed,
+            "closure_fraction": round(n_closed / len(hs), 3),
+            "fully_closed": n_closed == len(hs),
+            "open_links": [f"{h.frm}->{h.to}" for h in hs if not h.closed],
+            "executed_links": [f"{h.frm}->{h.to}" for h in hs if h.verified],
+            "does_not_prove": "Learned-model utility, alignment, automatic configuration application or training."}
 
 
 def loop_report(m: dict) -> str:
     return (f"loop closure {m['n_closed']}/{m['n_handoffs']} ({m['closure_fraction']:.0%}); "
-            f"{len(m['executed_links'])} executed; open: {', '.join(m['open_links']) or 'none'}")
+            f"{len(m['executed_links'])} executed; open or unmeasured: {', '.join(m['open_links']) or 'none'}")

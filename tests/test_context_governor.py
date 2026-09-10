@@ -130,3 +130,12 @@ def test_reliable_fraction_carries_its_provenance():
                               reliable_fraction_source="ruler:qwen2.5-7b@8k")
     assert measured["reliable_fraction"] == 0.8
     assert measured["reliable_fraction_source"] == "ruler:qwen2.5-7b@8k"
+
+
+def test_byte_budget_folds_evidence_without_dropping_pins():
+    items = [{"id": "task", "role": "pin", "text": "task"},
+             {"id": "source", "role": "evidence", "text": "x" * 1000}]
+    result = govern_context(items, budget=100, reliable_fraction=1.0, byte_budget=32)
+    assert [row["id"] for row in result["window"]] == ["task"]
+    assert result["used_bytes"] == 4
+    assert result["folded_count"] == 1

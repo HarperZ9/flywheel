@@ -50,11 +50,10 @@ def test_flywheel_takes_off_cache_momentum(task_set, tmp_path):
     # turn 0: cold cache -> 0% hits, full oracle cost
     assert traces[0].cache_hit_rate == 0.0
     assert traces[0].avg_oracle_calls > 0
-    # turn 1+: cache hot -> hit rate jumps, oracle cost collapses
+    # turn 1+: cache hit saves generation, but current oracle checks remain
     assert traces[1].cache_hit_rate > traces[0].cache_hit_rate, (
         "flywheel must accelerate: cache_hit_rate must rise turn-over-turn")
-    assert traces[1].avg_oracle_calls < traces[0].avg_oracle_calls, (
-        "flywheel momentum: avg_oracle_calls must fall as cache fills")
+    assert traces[1].avg_oracle_calls == traces[0].avg_oracle_calls == 1.0
 
 
 def test_flywheel_no_pass_rate_regression_on_reuse(task_set, tmp_path):
@@ -86,3 +85,38 @@ def test_momentum_report_renders(task_set, tmp_path):
     report = momentum_report(traces)
     assert "flywheel momentum" in report
     assert "delta over 2 turns" in report
+
+
+
+def test_spin_explicit_dependency_map_drives_real_memory_input(tmp_path):
+    import json
+    from dataclasses import replace
+    from harness.proposer import StubProposer
+
+    class DependentProposer(StubProposer):
+        def __init__(self):
+            super().__init__("")
+            self.inputs = []
+
+        def generate(self, prompt, **kwargs):
+            self.inputs.append(prompt)
+            records = [json.loads(line) for line in prompt.splitlines()
+                       if line.startswith('{"memory_source":')]
+            self._canned = (CORRECT["add_two"] if prompt == "seed solution" else
+                         records[0]["content"] if records else "def add(a,b): return 0")
+            return super().generate(prompt, **kwargs)
+
+    fixture = Path(__file__).resolve().parent.parent / "tasks" / "example_pass"
+    tasks = [replace(load_task(fixture, workdir=tmp_path / "seed"),
+                     task_id="family.seed", prompt="seed solution"),
+             replace(load_task(fixture, workdir=tmp_path / "target"), task_id="family.next")]
+    on, off = DependentProposer(), DependentProposer()
+    enabled = spin(tasks, on, PytestOracle(), cache=ReceiptCache(tmp_path / "on"),
+                   turns=1, envelopes_dir=str(tmp_path / "envelopes"),
+                   memory_sources_by_task={"family.next": ["family.seed"]})
+    disabled = spin(tasks, off, PytestOracle(), cache=ReceiptCache(tmp_path / "off"),
+                    turns=1, envelopes_dir=str(tmp_path / "disabled"))
+    assert enabled[0].pass_rate == 1.0 and disabled[0].pass_rate == 0.5
+    assert enabled[0].memory_context_enabled and not disabled[0].memory_context_enabled
+    assert "Untrusted memory evidence" in on.inputs[1]
+    assert off.inputs[1] == tasks[1].prompt

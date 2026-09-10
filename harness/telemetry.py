@@ -32,11 +32,6 @@ class RunSignal:
 
 def signal_from_result(r: LoopResult) -> RunSignal:
     env = r.envelope
-    if r.cache_hit:
-        return RunSignal(
-            task_id=env.task_id, accepted=r.accepted, cache_hit=True,
-            oracle_calls=0, candidates=0, elapsed_s=r.elapsed_s,
-            chain_stages=[], verdict=env.verdict)
     return RunSignal(
         task_id=env.task_id, accepted=r.accepted, cache_hit=r.cache_hit,
         oracle_calls=env.budget_spent.get("oracle_calls", 0),
