@@ -25,6 +25,7 @@ from typing import Any
 
 from harness.cross_harness_oracle_support import _Malformed, _rows, _strings
 from harness.cross_harness_kv_source_oracle import CHECKERS as _KV_SOURCE_CHECKERS
+from harness.cross_harness_context_recovery import CHECKERS as _CONTEXT_RECOVERY_CHECKERS
 
 
 def _number(value: Any, field: str) -> float:
@@ -250,4 +251,5 @@ CHECKERS = {
     "contradiction_detection/v1": _contradiction,
     "budgeted_evidence_selection/v1": _budgeted,
     **_KV_SOURCE_CHECKERS,
+    **_CONTEXT_RECOVERY_CHECKERS,
 }
