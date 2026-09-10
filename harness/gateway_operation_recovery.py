@@ -8,9 +8,10 @@ import re
 from .evidence_json import canonical_bytes, canonical_sha256
 from .gateway_operation import GatewayOperationError
 from .journey_service import JourneyService
-from .journey_store import JourneyStore
+from .journey_store import JourneyStore, JourneyStoreError
 from .journey_types import SHA256_PATTERN
 from .operation_grants import GrantStore, OWNER_REF_PATTERN, _secure_owner_only
+from .recovery_limited import safe_dirs, state_ref
 
 RESULT_SCHEMA = "flywheel.gateway-operation-result/v1"
 
@@ -253,16 +254,25 @@ def recover_gateway_operations(state_root: Path, now: str) -> dict:
     """Fail exact abandoned runs; retain ambiguous histories for diagnosis."""
     from .gateway_operation_process import WorkerOutcome
     from .gateway_operations import GatewayOperations, TERMINALS
-    root, closed, ambiguous, diagnostics = Path(state_root), 0, 0, []
+    root, closed, ambiguous, diagnostics, limited = Path(state_root), 0, 0, [], []
     owners = root / "journeys" / "v2" / "owners"
-    for owner_dir in sorted(owners.glob("owner_*")) if owners.exists() else ():
+    owner_dirs, boundary = safe_dirs(root, owners, "owner_*")
+    if boundary is not None:
+        limited.append(boundary)
+    for owner_dir in owner_dirs:
         if OWNER_REF_PATTERN.fullmatch(owner_dir.name) is None:
             continue
-        service = JourneyService(
-            owner_ref=owner_dir.name, store=JourneyStore(root),
-            grants=GrantStore(root, clock=lambda: now), clock=lambda: now)
+        try:
+            service = JourneyService(
+                owner_ref=owner_dir.name, store=JourneyStore(root),
+                grants=GrantStore(root, clock=lambda: now), clock=lambda: now)
+            groups = _groups(service)
+        except (JourneyStoreError, OSError):
+            ambiguous += 1
+            limited.append(state_ref(root, owner_dir))
+            continue
         operations = GatewayOperations(root, clock=lambda: now)
-        for ref, history in _groups(service):
+        for ref, history in groups:
             try:
                 validate_history(history, ref)
                 state, _ = history_state(history)
@@ -277,5 +287,9 @@ def recover_gateway_operations(state_root: Path, now: str) -> dict:
                 diagnostics.append(canonical_sha256({
                     "owner_ref": owner_dir.name, "operation_ref": ref,
                     "event_refs": [event["event_sha256"] for event in history]}))
-    return {"closed": closed, "ambiguous": ambiguous,
-            "diagnostic_refs": diagnostics}
+    result = {"closed": closed, "ambiguous": ambiguous,
+              "diagnostic_refs": diagnostics}
+    if limited:
+        result["recovery_limited"] = True
+        result["limited_refs"] = sorted(set(limited))
+    return result

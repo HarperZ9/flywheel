@@ -905,7 +905,7 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/desktop/status":               # read-only connection facts
             from harness.desktop_status import desktop_status
             from harness.lanes import lane_roster
-            return self._json(desktop_status(lane_roster()))
+            return self._json(desktop_status(lane_roster(), startup_recovery=getattr(self, "startup_recovery", None)))
         if p == "/api/forum/status":                  # forum lane status (via MCP)
             return self._json(_forum_mcp_call("forum.status", {}))
         if p == "/api/forum/ledger":                  # forum ledger summary
@@ -2340,8 +2340,7 @@ def main(argv=None) -> int:
     _Handler.session_token_store = SessionTokenStore(
         CredentialHandleStore(state_root, keychain_get=keychain_get))
     _Handler._session_token_state_root = state_root
-    recover_store(state_root, now=_Handler.clock())
-    recover_gateway_operations(state_root, now=_Handler.clock())
+    _Handler.startup_recovery = {"journeys": recover_store(state_root, now=_Handler.clock()), "gateway_operations": recover_gateway_operations(state_root, now=_Handler.clock())}
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
     print(f"  bound     {', '.join(f'{h}:{a.port}' for h in bound)}")
     print(f"  token     {flywheel_home / 'gateway.token'}  (send as: Authorization: Bearer <token>)")

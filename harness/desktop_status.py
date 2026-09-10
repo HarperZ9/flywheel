@@ -16,7 +16,26 @@ SCHEMA = "flywheel.desktop-status/v1"
 API_VERSION = 1
 
 
-def desktop_status(lanes: dict, *, client_api: int = API_VERSION) -> dict:
+def _recovery_summary(value: dict | None) -> dict:
+    if not isinstance(value, dict):
+        return {"limited": False}
+    out = {"limited": False}
+    for key in ("journeys", "gateway_operations"):
+        item = value.get(key)
+        if not isinstance(item, dict):
+            continue
+        limited = len(item.get("limited_refs") or [])
+        out[key] = {
+            "limited": bool(item.get("recovery_limited")),
+            "limited_count": limited,
+            "diagnostic_count": len(item.get("diagnostic_refs") or []),
+        }
+        out["limited"] = out["limited"] or out[key]["limited"] or bool(limited)
+    return out
+
+
+def desktop_status(lanes: dict, *, client_api: int = API_VERSION,
+                   startup_recovery: dict | None = None) -> dict:
     """Fixed connection facts for the desktop shell.
 
     `ok` means the engine responds without a known lane failure. Declared
@@ -41,8 +60,11 @@ def desktop_status(lanes: dict, *, client_api: int = API_VERSION) -> dict:
                      else "unavailable" if counts["missing"] == total
                      else "partial" if counts["missing"] else "probed")
     compatible = isinstance(client_api, int) and client_api <= API_VERSION
+    recovery = _recovery_summary(startup_recovery)
     if not compatible:
         state = "incompatible"
+    elif recovery["limited"]:
+        state = "degraded"
     elif complete and (counts["missing"] or counts["stale"]):
         state = "degraded"
     else:
@@ -57,4 +79,5 @@ def desktop_status(lanes: dict, *, client_api: int = API_VERSION) -> dict:
         **{f"lanes_{key}": counts[key] if complete else None
            for key in ("declared", "missing", "stale")},
         "compatible": compatible,
+        "startup_recovery": recovery,
     }

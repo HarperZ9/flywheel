@@ -28,6 +28,8 @@ TX_FIELDS = frozenset(("schema", "owner_ref", "client_request_sha256",
     "grant_ref_sha256", "grant_request_sha256", "phase", "packet_digest",
     "final_event_head_sha256", "final_projection_sha256",
     "transaction_sha256"))
+RECOVERY_STORAGE_CODES = frozenset(("STORE_BUSY", "STORE_COMMIT_FAILED",
+                                    "VERSION_MISMATCH"))
 
 def request_digest(*, owner_ref: str, journey_ref: str, expected_event_head: str,
                    client_request_id: str, body: dict) -> str:
@@ -204,18 +206,51 @@ def consumed_grant_matches(state_root: Path, value: dict) -> bool:
     except (OSError, TypeError, ValueError):
         return False
 
-def iter_transactions(state_root: Path) -> list[tuple[Path, dict]]:
+def _transaction_paths(state_root: Path) -> list[Path]:
     owners = _tx_root(state_root) / "owners"
     if not path_present(owners):
         return []
     _prepare_private(owners, state_root)
+    return sorted(owners.glob("*/*.json"))
+
+
+def _tx_ref(state_root: Path, path: Path) -> str:
+    try:
+        return Path(path).relative_to(Path(state_root)).as_posix()
+    except ValueError:
+        return Path(path).name
+
+
+def _recovery_storage_error(exc: JourneyStoreError) -> bool:
+    return getattr(exc, "code", None) in RECOVERY_STORAGE_CODES
+
+
+def iter_transactions(state_root: Path) -> list[tuple[Path, dict]]:
     output = []
-    for path in sorted(owners.glob("*/*.json")):
+    for path in _transaction_paths(state_root):
         _prepare_private(path.parent, state_root)
         value = load_transaction(path)
         if value is not None:
             output.append((path, value))
     return output
+
+
+def _recovery_transactions(state_root: Path, diagnostics: list[str]) -> list[tuple[Path, dict]]:
+    output = []
+    for path in _transaction_paths(state_root):
+        _prepare_private(path.parent, state_root)
+        try:
+            value = load_transaction(path)
+        except JourneyStoreError as exc:
+            if not _recovery_storage_error(exc):
+                raise
+            diagnostics.append(_tx_ref(state_root, path))
+            continue
+        if value is not None:
+            output.append((path, value))
+    return output
+
+
 def recover_export_transactions(state_root: Path, *, now: str) -> tuple[int, int, list[str]]:
     """Advance consumed exact transactions or quarantine their one owned target."""
     from .journey_export import JourneyExportService
@@ -223,7 +258,7 @@ def recover_export_transactions(state_root: Path, *, now: str) -> tuple[int, int
     from .journey_store import JourneyStore
     from .operation_grants import GrantStore
     completed, quarantined, diagnostics = 0, 0, []
-    for path, value in iter_transactions(state_root):
+    for path, value in _recovery_transactions(state_root, diagnostics):
         if value["phase"] in {"committed", "quarantined"}:
             continue
         service = JourneyService(owner_ref=value["owner_ref"],
