@@ -29,7 +29,7 @@ class ProviderRoster extends StatelessWidget {
   Widget _row(FwTokens t, EndpointRow r) {
     final (label, status) = switch (r.credential) {
       'present' => ('key present', 'verified'),
-      'cli-auth' => ('subscription', 'verified'),
+      'cli-auth' => ('CLI present', 'declared'),
       'local-none' => ('local', 'verified'),
       _ => ('no key', 'absent'),
     };

@@ -26,9 +26,10 @@ def test_full_roster_reads_online():
     assert doc["compatible"] is True
 
 
-def test_partial_roster_reads_degraded():
+def test_partial_roster_keeps_readiness_unknown():
     doc = desktop_status(_roster(2, 3))
-    assert doc["status"] == "degraded"
+    assert doc["status"] == "ok"
+    assert doc["lane_readiness"] == "unknown"
 
 
 def test_zero_lanes_is_an_honest_ok_not_a_degraded():

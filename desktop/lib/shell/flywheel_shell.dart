@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../client/gateway_grants.dart';
 import '../client/journey_api.dart';
 import '../controllers/gateway_operation_controller.dart';
+import '../controllers/journey_controller.dart';
 import '../navigation/app_route.dart';
 import '../navigation/destination_catalog.dart';
 import '../navigation/navigation_controller.dart';
@@ -90,9 +91,9 @@ class _FlywheelShellState extends State<FlywheelShell> {
       status: _dependencies.status,
       startEngine: () => _dependencies.gateway.start(),
       onOrphanStart: _dependencies.gateway.stopIfOwned,
+      onReady: _dependencies.journey.retryRead,
     );
     _lifecycle = AppLifecycleListener(onExitRequested: _requestExit);
-    unawaited(_dependencies.journey.initialize());
     _coordinator.beginPolling();
   }
 

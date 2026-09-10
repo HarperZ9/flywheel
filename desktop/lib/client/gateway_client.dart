@@ -42,7 +42,11 @@ class GatewayClient {
     final r = await _http.get(
       Uri.parse('$baseUrl/api/lanes${probe ? '?probe=true' : ''}'),
     );
-    return LaneRoster.fromJson(_decode(r));
+    final body = _decode(r);
+    if (body['n_lanes'] is! int || body['by_status'] is! Map) {
+      throw const FormatException('Lane inventory was not reported');
+    }
+    return LaneRoster.fromJson(body);
   }
 
   /// GET /api/world — the projected world (spine + root hash + findings).
