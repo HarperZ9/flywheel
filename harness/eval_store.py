@@ -145,41 +145,12 @@ def _agent_intact(p: Path, doc: dict) -> bool:
 
 
 def agent_runs(run_root, limit: int = 20) -> dict:
-    """Agent-run history rows, newest first, content-address checked."""
-    d = Path(run_root) / "agent_runs"
-    files = (sorted(d.glob("*.json"), key=lambda p: p.stat().st_mtime,
-                    reverse=True)[:max(1, limit)] if d.is_dir() else [])
-    runs = []
-    for p in files:
-        try:
-            doc = json.loads(p.read_text(encoding="utf-8"))
-        except Exception:
-            runs.append({"run_id": p.stem, "status": "UNREADABLE",
-                         "intact": False})
-            continue
-        intact = _agent_intact(p, doc)
-        runs.append({"run_id": p.stem, "intact": intact,
-                     "status": ("TAMPERED" if not intact else
-                                str(doc.get("status", "DONE"))),
-                     "goal_excerpt": doc.get("goal_excerpt"),
-                     "endpoint": doc.get("endpoint"),
-                     "steps": doc.get("steps"),
-                     "verified": doc.get("verified"),
-                     "duration_s": doc.get("duration_s"),
-                     "ttva_s": doc.get("ttva_s"),
-                     "started": doc.get("started")})
-    return {"schema": AGENT_SCHEMA, "runs": runs, "total": len(runs)}
+    """Agent-run history through the shared bounded private-file reader."""
+    from .agent_run_reader import agent_runs as read
+    return read(run_root, limit)
 
 
 def agent_run_detail(run_root, run_id: str) -> dict:
-    """One full stored agent run, content-address checked."""
-    rid = (run_id or "").strip().lower()
-    p = Path(run_root) / "agent_runs" / f"{rid}.json"
-    if not rid or not p.is_file():
-        return {"error": f"no agent run '{rid}'"}
-    try:
-        doc = json.loads(p.read_text(encoding="utf-8"))
-    except Exception:
-        return {"error": f"receipt unreadable: {p.name}"}
-    doc["intact"] = _agent_intact(p, doc)
-    return doc
+    """One stored agent run through the bounded private-file reader."""
+    from .agent_run_reader import agent_run_detail as read
+    return read(run_root, run_id)

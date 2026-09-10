@@ -27,7 +27,7 @@ PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
 #: Exact paths held under private custody. Model calls and anything that runs
 #: an agent, installs a plugin, or reaches the marketplace.
 PRIVATE_PATHS = frozenset({
-    "/api/auth",
+    "/api/auth", "/api/agent/run", "/api/agent/runs",
     "/v1/chat/completions", "/api/agent", "/api/workflow",
     "/api/hooks",
     "/api/plugins/probe", "/api/plugins/call", "/api/plugins/register",

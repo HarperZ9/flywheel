@@ -1118,14 +1118,9 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.eval_store import science_run_detail
             return self._json(science_run_detail(
                 self.run_root, _qs_value(qs, "chain")))
-        if p == "/api/agent/runs":                   # agent-run history, content-addressed
-            from harness.eval_store import agent_runs
-            return self._json(agent_runs(
-                self.run_root, limit=_qs_int(qs, "limit", 20)))
-        if p == "/api/agent/run":                    # one stored agent run
-            from harness.eval_store import agent_run_detail
-            return self._json(agent_run_detail(
-                self.run_root, _qs_value(qs, "id")))
+        if p in ("/api/agent/runs", "/api/agent/run"):  # private bounded history
+            from harness.agent_run_reader import route_agent_history
+            return self._json(*route_agent_history(p, qs, self.run_root))
         if p == "/api/memory":                       # durable memory stats (fold index)
             from harness.memory_api import memory_stats
             return self._json(memory_stats(self.run_root))
