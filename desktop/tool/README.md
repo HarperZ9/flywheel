@@ -33,3 +33,44 @@ Pass `-BulletinBaseUrl` to test against an already running, isolated local Bulle
 ```
 
 Keep the run summary, Dart receipt, and Worker log together. The Dart receipt alone does not distinguish the synthetic board from the local Worker.
+
+# Installed launch acceptance runner
+
+`run_installed_launch_acceptance.ps1` validates a Flywheel install tree without
+running the installer or launching the native UI. It checks installed payload
+binding, Start-menu/registry metadata when the host exposes it, and, only with
+`-StartEngine`, starts the installed `engine/flywheel-gateway.exe` in an
+isolated validation profile on loopback.
+
+The runner creates a fresh `run_id`, invokes the stdlib Python harness, then
+rejects a zero-exit run if the receipt is missing, stale, malformed,
+incomplete, source-mismatched, semantically incomplete, missing any exact
+H01-H20 or P0-P6 row, or lacks the H20 source-binding row.
+
+H20 requires an operator-supplied build manifest that binds the expected source
+commit, product version, installed app SHA-256, and installed engine SHA-256 to
+the observed installed version. This is an integrity binding for the acceptance
+run, not external source attestation. A manifest with an unknown schema, stale
+source/version, malformed hashes, missing mandatory hashes, or mismatched
+installed version keeps the receipt incomplete.
+
+The Python and PowerShell summaries redact local paths by default. Use
+`--include-local-paths` or `-IncludeLocalPaths` only for private local evidence.
+The PowerShell runner preserves arguments with spaces through a Windows-quoted
+hidden process launch path that remains compatible with Windows PowerShell 5.1.
+
+Useful commands:
+
+```powershell
+./tool/run_installed_launch_acceptance.ps1 -SelfTest
+./tool/run_installed_launch_acceptance.ps1 -InstallRoot <Flywheel install dir> -Out <receipt.json> -BuildManifest <manifest.json>
+./tool/run_installed_launch_acceptance.ps1 -InstallRoot <Flywheel install dir> -Out <receipt.json> -BuildManifest <manifest.json> -StartEngine
+```
+
+The receipt explicitly does not prove native Start-menu launch, first-run UI,
+deep links, provider OAuth, model endpoint readiness, Relay readiness, or
+upgrade behavior without before/after installed snapshots. The headless cleanup
+row requires a Windows Job Object assigned before the child can run, then records
+job termination, wait, active-process query, captured descendant identities, and
+handle closure; it still does not prove native UI process ownership or installer
+post-install launch behavior.
