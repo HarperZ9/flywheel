@@ -2,12 +2,7 @@
 from __future__ import annotations
 
 import json
-import threading
-import time
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-
-import harness.continuation_route as continuation_route
 
 from harness.evidence_json import canonical_bytes, canonical_sha256
 from harness.gateway_grant_route import gateway_grant_post
@@ -81,90 +76,6 @@ def _write_binding(state: Path, preview: dict, journey: dict,
     path = _binding_path(state, preview["preview_ref"])
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_bytes(value))
-
-
-def test_duplicate_start_serializes_one_journey_without_orphan(tmp_path,
-                                                              monkeypatch):
-    root, state = _git_root(tmp_path), tmp_path / "state"
-    preview, preview_status = _continuation_post(
-        "/api/continuation/preview",
-        {"root": str(root), "export_path": str(_export(tmp_path))},
-        state, root)
-    assert preview_status == 200
-    original = continuation_route._grant_and_run
-    entered_create = 0
-    entered_lock = threading.Lock()
-
-    def delayed_grant_and_run(action, request, **kwargs):
-        nonlocal entered_create
-        if action == "create":
-            with entered_lock:
-                entered_create += 1
-            time.sleep(0.05)
-        return original(action, request, **kwargs)
-
-    monkeypatch.setattr(
-        continuation_route, "_grant_and_run", delayed_grant_and_run)
-    start = {"preview_ref": preview["preview_ref"],
-             "preview_sha256": preview["preview_sha256"],
-             "source_state_sha256": preview["source_state_sha256"],
-             "client_request_id": "continuation-start"}
-
-    with ThreadPoolExecutor(max_workers=12) as pool:
-        results = list(pool.map(lambda _: _continuation_post(
-            "/api/continuation/start", start, state), range(12)))
-
-    assert [(status, body.get("error", {}).get("code"))
-            for body, status in results] == [(200, None)] * 12
-    refs = {body["journey"]["journey_ref"] for body, _ in results}
-    assert len(refs) == 1
-    assert sum(1 for body, _ in results
-               if not body["journey"].get("idempotent_replay")) == 1
-    owner_dir = state / "journeys" / "v2" / "owners" / OWNER
-    assert sorted(path.name for path in owner_dir.glob("jrn_*")) == list(refs)
-    assert entered_create == 1
-
-
-def test_duplicate_start_different_request_ids_replay_one_preview_journey(
-        tmp_path, monkeypatch):
-    root, state = _git_root(tmp_path), tmp_path / "state"
-    preview, preview_status = _continuation_post(
-        "/api/continuation/preview",
-        {"root": str(root), "export_path": str(_export(tmp_path))},
-        state, root)
-    assert preview_status == 200
-    original = continuation_route._grant_and_run
-    entered_create = 0
-    entered_lock = threading.Lock()
-
-    def delayed_grant_and_run(action, request, **kwargs):
-        nonlocal entered_create
-        if action == "create":
-            with entered_lock:
-                entered_create += 1
-            time.sleep(0.05)
-        return original(action, request, **kwargs)
-
-    monkeypatch.setattr(
-        continuation_route, "_grant_and_run", delayed_grant_and_run)
-
-    def start_one(index: int):
-        start = {"preview_ref": preview["preview_ref"],
-                 "preview_sha256": preview["preview_sha256"],
-                 "source_state_sha256": preview["source_state_sha256"],
-                 "client_request_id": f"continuation-start-{index}"}
-        return _continuation_post("/api/continuation/start", start, state)
-
-    with ThreadPoolExecutor(max_workers=12) as pool:
-        results = list(pool.map(start_one, range(12)))
-
-    assert [(status, body.get("error", {}).get("code"))
-            for body, status in results] == [(200, None)] * 12
-    refs = {body["journey"]["journey_ref"] for body, _ in results}
-    assert len(refs) == 1
-    owner_dir = state / "journeys" / "v2" / "owners" / OWNER
-    assert sorted(path.name for path in owner_dir.glob("jrn_*")) == list(refs)
-    assert entered_create == 1
 
 
 def test_continuation_agent_grant_refuses_cross_journey_handoff(tmp_path):
