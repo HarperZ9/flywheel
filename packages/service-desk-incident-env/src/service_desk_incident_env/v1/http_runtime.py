@@ -58,7 +58,9 @@ class ServiceDeskRuntime:
         self.agent_base_url = f"http://127.0.0.1:{self._agent_server.server_port}"
         self.control_base_url = f"http://127.0.0.1:{self._control_server.server_port}"
         for server in (self._agent_server, self._control_server):
-            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread = threading.Thread(
+                target=server.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True,
+            )
             thread.start()
             self._threads.append(thread)
 
