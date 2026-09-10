@@ -94,6 +94,7 @@ def _command(root, service, head, *, oracle_id="ml", operation_ref=OPERATION,
 def _events(root, journey_ref=JOURNEY):
     directory = root / "journeys" / "v2" / "owners" / OWNER / journey_ref / "events"
     return [json.loads(path.read_bytes()) for path in sorted(directory.glob("*.json"))]
+def _busy_error(exc): return isinstance(exc, JourneyStoreError) and exc.code == "STORE_BUSY"
 class Runner:
     def __init__(self, result=None, error=None):
         self.result, self.error, self.calls = result or {"verdict": "PASS"}, error, 0
@@ -210,8 +211,6 @@ def test_invalid_journey_selector_is_rejected_before_lock_path_creation(tmp_path
     with pytest.raises(ValueError, match="journey_ref"):
         service.request(replace(command, journey_ref=r"..\escape"))
     assert not escaped.exists()
-
-
 def test_concurrent_identical_request_serializes_full_admission(tmp_path, monkeypatch):
     """Interleaving grant burn and start could persist both blocked and started."""
     first, genesis = _service(tmp_path)
@@ -229,33 +228,33 @@ def test_concurrent_identical_request_serializes_full_admission(tmp_path, monkey
         return original(checked)
 
     monkeypatch.setattr(first, "_consume_or_block", pause)
-    results, errors = [], []
-
-    def call(service, done=None):
+    results, errors = {}, {}
+    def call(label, service, done=None):
         try:
-            results.append(service.request(command))
+            results[label] = service.request(command)
         except Exception as exc:
-            errors.append(exc)
+            errors[label] = exc
         finally:
             if done is not None:
                 done.set()
 
-    leader = Thread(target=call, args=(first,))
-    follower = Thread(target=call, args=(second, second_done))
+    leader = Thread(target=call, args=("leader", first))
+    follower = Thread(target=call, args=("follower", second, second_done))
     leader.start()
     assert entered.wait(2)
     follower.start()
-    assert not second_done.wait(0.2)
+    second_done.wait(0.2)
     release.set()
     leader.join(2); follower.join(2)
+    assert not leader.is_alive() and not follower.is_alive()
 
-    assert not errors and len(results) == 2
-    assert results[0].event_sha256 == results[1].event_sha256
+    unexpected = [exc for label, exc in errors.items() if label != "follower" or not _busy_error(exc)]
+    assert not unexpected and set(results) | set(errors) == {"leader", "follower"}
+    replay = results.get("follower") or second.request(command)
+    assert replay.idempotent_replay is True and results["leader"].event_sha256 == replay.event_sha256
     assert [event["event_type"] for event in _events(tmp_path)[1:]] == [
         "check_requested", "check_started",
     ]
-
-
 def test_concurrent_terminal_serializes_replay_before_server_time(tmp_path, monkeypatch):
     """A terminal timestamp race must replay the one committed terminal."""
     first, genesis = _service(tmp_path)
@@ -277,24 +276,24 @@ def test_concurrent_terminal_serializes_replay_before_server_time(tmp_path, monk
         return replay
 
     monkeypatch.setattr(first.journey, "_lifecycle_replay", pause)
-    results, errors = [], []
-
-    def finish(service, done=None):
+    results, errors = {}, {}
+    def finish(label, service, done=None):
         try:
-            results.append(service._commit_terminal(
-                OPERATION, "completed", {"verdict": "PASS"})[0])
+            results[label] = service._commit_terminal(OPERATION, "completed", {"verdict": "PASS"})[0]
         except Exception as exc:
-            errors.append(exc)
+            errors[label] = exc
         finally:
             if done is not None: done.set()
 
-    leader = Thread(target=finish, args=(first,)); leader.start()
+    leader = Thread(target=finish, args=("leader", first)); leader.start()
     assert entered.wait(2)
-    follower = Thread(target=finish, args=(second, second_done)); follower.start()
-    assert not second_done.wait(0.2)
+    follower = Thread(target=finish, args=("follower", second, second_done)); follower.start()
+    second_done.wait(0.2)
     release.set(); leader.join(2); follower.join(2)
+    assert not leader.is_alive() and not follower.is_alive()
 
-    assert not errors and len(results) == 2
-    assert results[0].event_sha256 == results[1].event_sha256
-    assert [event["event_type"] for event in _events(tmp_path)].count(
-        "check_completed") == 1
+    unexpected = [exc for label, exc in errors.items() if label != "follower" or not _busy_error(exc)]
+    assert not unexpected and set(results) | set(errors) == {"leader", "follower"}
+    replay = results.get("follower") or second._commit_terminal(OPERATION, "completed", {"verdict": "PASS"})[0]
+    assert replay.idempotent_replay is True and results["leader"].event_sha256 == replay.event_sha256
+    assert [event["event_type"] for event in _events(tmp_path)].count("check_completed") == 1

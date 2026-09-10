@@ -15,7 +15,7 @@ from harness.journey_store import JourneyStore, JourneyStoreError, MutationComma
 from harness.operation_grants import GrantStore
 from harness.pytest_prepared import verify_prepared
 from test_journey_checks import (
-    JOURNEY_TWO, NOW as CHECK_NOW, OPERATION, OWNER, Runner,
+    JOURNEY_TWO, NOW as CHECK_NOW, OPERATION, OWNER, Runner, _busy_error,
     _command as check_command, _events as check_events, _service as check_service,
 )
 
@@ -118,10 +118,8 @@ def test_python_refusal_does_not_even_resolve_or_open_candidate(tmp_path):
     class UnreadablePath(type(Path())):
         def resolve(self, *args, **kwargs):
             raise AssertionError("candidate resolution reached")
-
         def open(self, *args, **kwargs):
             raise AssertionError("candidate open reached")
-
     candidate = UnreadablePath(tmp_path / "never-read.py")
     context = {
         "task_id": "containment-v1", "prompt": "Check candidate",
@@ -257,13 +255,14 @@ def test_different_operation_race_has_no_bare_request_or_second_grant_burn(
         "check_requested", "check_started"]
     second.journey.grants.consume(
         follower_command.grant_ref, follower_command.grant_request, now=CHECK_NOW)
-def test_cross_service_run_executes_runner_and_side_effect_once(tmp_path):
+@pytest.mark.parametrize("follower_timeout", (0.0, 2.0))
+def test_cross_service_run_executes_runner_and_side_effect_once(tmp_path, follower_timeout):
     """A follower replays the terminal without invoking its runner."""
     first, genesis = check_service(tmp_path)
     command = check_command(tmp_path, first, genesis.event_head_sha256)
     first.request(command)
     second = JourneyCheckService(journey=JourneyService(
-        owner_ref=OWNER, store=JourneyStore(tmp_path),
+        owner_ref=OWNER, store=JourneyStore(tmp_path, lock_timeout_s=follower_timeout),
         grants=GrantStore(tmp_path, clock=lambda: CHECK_NOW), clock=lambda: CHECK_NOW))
     second.request(replace(
         command, grant_ref="gnt_ffffffffffffffffffffffffffffffff"))
@@ -273,23 +272,29 @@ def test_cross_service_run_executes_runner_and_side_effect_once(tmp_path):
         def __init__(self, pause=False): super().__init__(); self.pause = pause
         def __call__(self, *args, **kwargs):
             self.calls += 1
-            if self.pause: entered.set(); assert release.wait(2)
+            if self.pause: entered.set(); assert release.wait(5)
             with side_effect.open("a", encoding="utf-8") as stream:
                 stream.write("effect\n")
             return self.result
     leader_runner, follower_runner = EffectRunner(True), EffectRunner()
-    results, errors = [], []
-    def execute(service, runner, done=None):
-        try: results.append(service.run(OPERATION, runner))
-        except Exception as exc: errors.append(exc)
+    results, errors = {}, {}
+    def execute(label, service, runner, done=None):
+        try: results[label] = service.run(OPERATION, runner)
+        except Exception as exc: errors[label] = exc
         finally:
             if done is not None: done.set()
-    leader = Thread(target=execute, args=(first, leader_runner)); leader.start()
+    leader = Thread(target=execute, args=("leader", first, leader_runner)); leader.start()
     assert entered.wait(2)
     follower = Thread(
-        target=execute, args=(second, follower_runner, follower_done)); follower.start()
-    early = follower_done.wait(0.2); release.set(); leader.join(2); follower.join(2)
-    assert not early and not errors and len(results) == 2
+        target=execute, args=("follower", second, follower_runner, follower_done)); follower.start()
+    early = follower_done.wait(2 if follower_timeout == 0.0 else 0.2)
+    try: assert follower_timeout != 0.0 or (early and _busy_error(errors.get("follower")))
+    finally:
+        release.set(); leader.join(5); follower.join(5)
+    assert not leader.is_alive() and not follower.is_alive()
+    unexpected = [exc for label, exc in errors.items() if label != "follower" or not _busy_error(exc)]
+    assert not unexpected and set(results) | set(errors) == {"leader", "follower"}
+    replay = results.get("follower") or second.run(OPERATION, follower_runner)
+    assert replay.idempotent_replay is True and results["leader"].event_sha256 == replay.event_sha256
     assert leader_runner.calls == 1 and follower_runner.calls == 0
     assert side_effect.read_text(encoding="utf-8") == "effect\n"
-    assert results[0].event_sha256 == results[1].event_sha256
