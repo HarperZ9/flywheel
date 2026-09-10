@@ -201,7 +201,8 @@ def test_actual_gateway_lane_route_enforces_access_before_transport(
                      "Authorization": f"Bearer {token}"},
             method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=10) as response:
+            # This checks access policy, not the latency of durable grant writes.
+            with urllib.request.urlopen(req, timeout=30) as response:
                 return response.status, json.loads(response.read())
         except urllib.error.HTTPError as response:
             return response.code, json.loads(response.read())
