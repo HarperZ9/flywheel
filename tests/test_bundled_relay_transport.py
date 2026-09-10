@@ -81,8 +81,12 @@ def test_child_environment_excludes_secret_sentinel_and_pythonpath():
     assert env["SYSTEMROOT"] == "C:/Windows"
 
 
-def test_launch_spec_hide_window_passes_windows_flag(monkeypatch):
-    """Catches losing CREATE_NO_WINDOW for the bundled child."""
+@pytest.mark.parametrize("platform,hide_window", [
+    ("nt", True), ("nt", False), ("posix", True), ("posix", False),
+])
+def test_launch_spec_hide_window_passes_windows_flag(monkeypatch, platform, hide_window):
+    """Hide only opted-in Windows children, on either test host."""
+    from types import SimpleNamespace
     import harness.mcp_client as mcp_client
     from harness.mcp_client import LaunchSpec, StdioTransport
 
@@ -115,13 +119,22 @@ def test_launch_spec_hide_window_passes_windows_flag(monkeypatch):
         captured["kwargs"] = kwargs
         return FakeProc()
 
-    monkeypatch.setattr(mcp_client.os, "name", "nt")
+    monkeypatch.setattr(mcp_client, "os", SimpleNamespace(
+        name=platform, environ=os.environ))
+    # subprocess exposes this constant only on Windows. Emulating os.name
+    # must emulate that part of the subprocess API as well.
+    no_window = 0x08000000
+    monkeypatch.setattr(mcp_client.subprocess, "CREATE_NO_WINDOW", no_window,
+                        raising=False)
     monkeypatch.setattr(mcp_client.subprocess, "Popen", fake_popen)
 
     StdioTransport(LaunchSpec(("gateway.exe", "--bundled-lane-mcp", "relay"),
-                              hide_window=True), timeout=0.1)
+                              hide_window=hide_window, inherit_env=False), timeout=0.1)
 
-    assert captured["kwargs"]["creationflags"] == mcp_client.subprocess.CREATE_NO_WINDOW
+    if platform == "nt" and hide_window:
+        assert captured["kwargs"]["creationflags"] == no_window
+    else:
+        assert "creationflags" not in captured["kwargs"]
 
 
 def test_timed_out_child_is_closed():
