@@ -11,6 +11,9 @@ from harness.gateway_operations import (
 from harness.gateway_provider_adapter import ExecutionPlan
 from harness.journey_store import JourneyStore, MutationCommand
 
+# These lifecycle assertions allow durable I/O to finish on loaded runners.
+# Dedicated busy-store tests exercise the production deadline separately.
+WAIT_S = 30
 NOW = "2026-08-16T12:00:00Z"
 OWNER = "owner_" + "a" * 32
 OTHER = "owner_" + "b" * 32
@@ -49,8 +52,10 @@ class Process:
         self.resume_calls = self.signal_calls = 0
         self.wait_calls = []
         self.ready = threading.Event()
+        self.resumed = threading.Event()
     def resume(self):
         self.resume_calls += 1
+        self.resumed.set()
         return True
     def signal_tree(self):
         self.signal_calls += 1
@@ -74,7 +79,7 @@ class Factory:
         assert _events(self.root)[-1]["event_type"] == "operation_queued"
         self.created.set()
         if self.gate is not None:
-            self.gate.wait(2)
+            assert self.gate.wait(WAIT_S), "test never released worker creation"
         return self.process
 def _cancel_raw(snapshot, operation_ref, *, request="stop-1", grant="gnt_" + "d" * 32,
                 timeout=5000):
@@ -100,21 +105,22 @@ def _authorize_action(action, raw, *, owner_ref, **_):
         credential_bindings={})
 def _service(root):
     return GatewayOperations(
-        root, clock=lambda: NOW, authorizer=_authorize_action,
+        root, clock=lambda: NOW, lock_timeout_s=WAIT_S,
+        authorizer=_authorize_action,
         credential_resolver=lambda value, _root: value)
 def test_start_orders_queue_create_start_resume_and_seals_one_terminal(tmp_path):
     gate = threading.Event()
     process = Process(WorkerOutcome("completed", {"final": "answer"}))
     process.ready.set()
-    service = GatewayOperations(tmp_path, clock=lambda: NOW)
+    service = GatewayOperations(tmp_path, clock=lambda: NOW, lock_timeout_s=WAIT_S)
     factory = Factory(process, tmp_path, gate)
     queued = start_operation(
         authorized=_authorized(tmp_path), service=service,
         process_factory=factory)
-    assert queued.state == "queued" and factory.created.wait(1)
+    assert queued.state == "queued" and factory.created.wait(WAIT_S)
     assert process.resume_calls == 0
     gate.set()
-    terminal = service.wait_terminal(OWNER, queued.operation_ref, 2)
+    terminal = service.wait_terminal(OWNER, queued.operation_ref, WAIT_S)
     kinds = [event["event_type"] for event in _events(tmp_path)]
     assert kinds[-3:] == ["operation_queued", "operation_started",
                           "operation_completed"]
@@ -125,12 +131,12 @@ def test_start_orders_queue_create_start_resume_and_seals_one_terminal(tmp_path)
 def test_oversized_result_seals_one_fixed_result_failure(tmp_path):
     process = Process(WorkerOutcome("completed", {"value": "x" * 1_048_576}))
     process.ready.set()
-    service = GatewayOperations(tmp_path, clock=lambda: NOW)
+    service = GatewayOperations(tmp_path, clock=lambda: NOW, lock_timeout_s=WAIT_S)
     queued = start_operation(
         authorized=_authorized(tmp_path), service=service,
         process_factory=Factory(process, tmp_path))
 
-    terminal = service.wait_terminal(OWNER, queued.operation_ref, 2)
+    terminal = service.wait_terminal(OWNER, queued.operation_ref, WAIT_S)
     sealed = service.result(OWNER, queued.operation_ref)
 
     assert terminal.state == "failed"
@@ -145,15 +151,14 @@ def test_stop_signals_once_and_replay_never_consumes_or_signals_again(tmp_path):
         authorizations.append(raw)
         return _authorize_action(action, raw, **kwargs)
     service = GatewayOperations(
-        tmp_path, clock=lambda: NOW, authorizer=authorize,
+        tmp_path, clock=lambda: NOW, lock_timeout_s=WAIT_S, authorizer=authorize,
         credential_resolver=lambda value, _root: value)
     factory = Factory(process, tmp_path)
     running = start_operation(
         authorized=_authorized(tmp_path), service=service,
         process_factory=factory)
-    factory.created.wait(1)
-    while service.snapshot(OWNER, running.operation_ref).state != "running":
-        pass
+    factory.created.wait(WAIT_S)
+    assert process.resumed.wait(WAIT_S), "worker never resumed"
     raw = _cancel_raw(
         service.snapshot(OWNER, running.operation_ref), running.operation_ref)
     first = cancel_operation(
@@ -179,8 +184,7 @@ def test_natural_completion_racing_stop_is_never_coerced_to_cancelled(tmp_path):
     running = start_operation(
         authorized=_authorized(tmp_path), service=service,
         process_factory=Factory(process, tmp_path))
-    while service.snapshot(OWNER, running.operation_ref).state != "running":
-        pass
+    assert process.resumed.wait(WAIT_S), "worker never resumed"
     raw = _cancel_raw(
         service.snapshot(OWNER, running.operation_ref), running.operation_ref)
     terminal = cancel_operation(
@@ -197,8 +201,7 @@ def test_unconfirmed_stop_stays_cancel_requested(tmp_path, signal, confirm):
     running = start_operation(
         authorized=_authorized(tmp_path), service=service,
         process_factory=Factory(process, tmp_path))
-    while service.snapshot(OWNER, running.operation_ref).state != "running":
-        pass
+    assert process.resumed.wait(WAIT_S), "worker never resumed"
     raw = _cancel_raw(
         service.snapshot(OWNER, running.operation_ref), running.operation_ref,
         timeout=1)
@@ -226,8 +229,7 @@ def test_cross_owner_stop_is_non_enumerating_and_observer_close_is_inert(tmp_pat
     started = start_operation(
         authorized=_authorized(tmp_path), service=service,
         process_factory=Factory(process, tmp_path))
-    while service.snapshot(OWNER, started.operation_ref).state != "running":
-        pass
+    assert process.resumed.wait(WAIT_S), "worker never resumed"
     observer = service.watch(OWNER, started.operation_ref, 0)
     next(observer)
     observer.close()
@@ -249,13 +251,12 @@ def test_review_w1_invalid_cancel_bindings_consume_zero_grants(tmp_path):
         authorizations.append(raw)
         return _authorize_action(action, raw, **kwargs)
     service = GatewayOperations(
-        tmp_path, clock=lambda: NOW, authorizer=authorize,
+        tmp_path, clock=lambda: NOW, lock_timeout_s=WAIT_S, authorizer=authorize,
         credential_resolver=lambda value, _root: value)
     started = start_operation(
         authorized=_authorized(tmp_path), service=service,
         process_factory=Factory(process, tmp_path))
-    while service.snapshot(OWNER, started.operation_ref).state != "running":
-        pass
+    assert process.resumed.wait(WAIT_S), "worker never resumed"
     snapshot = service.snapshot(OWNER, started.operation_ref)
     raw = json.loads(_cancel_raw(snapshot, started.operation_ref))
     cases = ({**raw, "journey_ref": "jrn_" + "b" * 32},

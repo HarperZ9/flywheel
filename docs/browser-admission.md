@@ -97,3 +97,40 @@ as an action receipt.
 Tests use inert drivers and filesystem-only synthetic effects. Process-death
 and competing-process controls establish admission/replay behavior, not live
 browser safety, target binding, privacy enforcement or Telos integration.
+
+## Explicit driver configuration binding
+
+The live-driver API now requires
+`register_driver(name, callable, binding_sha256=<64 lowercase hexadecimal characters>)`.
+This intentionally replaces the previous two-argument registration API; callers
+and inert fixtures must migrate. There is no default digest. Session creation
+captures the configured driver's name and digest inside `policy.driver_binding`.
+The existing v1 envelopes remain, with this additive binding object. Histories
+without binding remain readable but cannot acquire live-driver authority.
+
+Create a new session after configuring a driver. A session created with no
+bound driver supports simulation and cannot silently become a live session.
+A changed name, changed digest or removed driver refuses further dispatch.
+The recorded refusal consumes an attempt, as other policy refusals do. A prior
+request ID still returns its recorded result without dispatching it again.
+The caller cannot select the binding by inserting one in the policy request.
+
+Registration metadata is captured atomically and remains fixed for each call.
+`unregister_driver(name)` removes only that registration from future captures;
+it does not cancel an action already captured. Changing a callable's mutable
+attributes does not change registered metadata. A matching digest establishes
+configuration continuity, not permission, callable identity, runtime integrity,
+observed target identity or task success. The adapter must validate its actual
+runtime, browser instance, exact target and origin before acting.
+
+The binding appears in policy, admission, completion and the normalized driver
+input. Store validation rejects missing or conflicting binding fields, including
+a hash-valid attempt to remove the policy binding while retaining bound actions.
+The gateway startup hook now passes only the explicitly configured
+`FLYWHEEL_TELOS_BROWSER_CONFIG` path to the Telos registration helper. An absent
+or invalid configuration leaves that driver unavailable; the helper removes an
+old named registration before replacement. An unknown removal/registration state
+aborts gateway startup before token loading or server binding. Successful
+configuration means `configured_not_runtime_verified`; startup performs no
+browser discovery or actuation. The ordinary host allowlist and token guards
+remain unchanged. Real browser and native-client acceptance remain separate.

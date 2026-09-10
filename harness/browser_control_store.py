@@ -6,6 +6,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from .evidence_json import canonical_bytes, strict_load_json
+from .browser_control_drivers import valid_binding
 from .hash_chain import chain_intact, head_digest, seal
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy, fsync_directory
 
@@ -93,8 +94,21 @@ def fold(records: list) -> dict:
             if policy is not None or actions:
                 raise ValueError("policy must be first and unique")
             policy = record["policy"]
+            if not valid_binding(policy.get("driver_binding")):
+                raise ValueError("invalid policy driver binding")
         elif kind == "action":
             _delivery(record)
+            if (record.get("phase") == "admitted" and "driver_binding" in record
+                    and "driver_binding" not in (policy or {})):
+                raise ValueError("admission binding needs a bound policy schema")
+            if "driver_binding" in (policy or {}):
+                if "driver_binding" not in record or not valid_binding(record["driver_binding"]):
+                    raise ValueError("missing or invalid admission driver binding")
+                if record.get("phase") == "admitted" and (
+                        record["driver_binding"] != policy["driver_binding"]
+                        or record["driver_binding"] is None
+                        or record["driver"] != record["driver_binding"]["name"]):
+                    raise ValueError("admission differs from policy driver binding")
             if policy is None or record["seq"] != len(actions) + 1:
                 raise ValueError("invalid admission sequence")
             actions.append(record)
@@ -114,6 +128,8 @@ def fold(records: list) -> dict:
                         "admitted", "simulated", "reason"):
                 if record[key] != admission[key]:
                     raise ValueError("completion binding differs")
+            if record.get("driver_binding") != admission.get("driver_binding"):
+                raise ValueError("completion driver binding differs")
             actions[index] = record
         else:
             raise ValueError("unknown browser event")
@@ -144,7 +160,7 @@ def _delivery(record: dict) -> None:
     phase, performed = record.get("phase"), record.get("performed")
     if "phase" not in record and record["kind"] == "action":
         if any(key in record for key in ("delivery_status", "request_id", "simulated",
-                                         "admission_sha256", "error_code")):
+                                         "admission_sha256", "error_code", "driver_binding")):
             raise ValueError("mixed legacy and admission delivery fields")
         return  # Genuine legacy history is projected as non-authoritative.
     if type(record.get("admitted")) is not bool or type(record.get("simulated")) is not bool:
