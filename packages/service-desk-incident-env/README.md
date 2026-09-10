@@ -15,11 +15,29 @@ python -m pip install . ./packages/service-desk-incident-env
 service-desk-incident-env identity --json
 ```
 
-The product version is 0.1.0. It requires `flywheel-verify>=0.6.1,<0.7`, exposes
+The product version is 0.2.0. It requires `flywheel-verify>=0.6.1,<0.7`, exposes
 the `service_desk_incident_env` Python package and uses environment ID
 `service-desk-incident/v1`. It can also be installed from its wheel alongside a
 compatible engine wheel. A source directory or wheel download is not evidence
 of a PyPI listing.
+
+This add-on has its own release version. Version 0.2.0 adds the portable HTML
+review report and stricter evidence checks. Review now exits 1 when checks fail;
+callers that previously relied on an unconditional zero exit must handle failure.
+The frozen `service-desk-incident/v1` definition and engine version are unchanged.
+
+To install downloaded add-on and engine wheels without a package index:
+
+```sh
+python -m venv .venv
+# Activate the virtual environment before running these commands.
+python -m pip install --no-index ./flywheel_verify-0.6.1-py3-none-any.whl ./flywheel_env_service_desk_incident-0.2.0-py3-none-any.whl
+python -m pip check
+service-desk-incident-env identity --json
+```
+
+Use the checksums supplied with the release to check downloaded files. This
+installation needs neither the desktop application nor a model endpoint.
 
 ## Run and verify a workflow
 
