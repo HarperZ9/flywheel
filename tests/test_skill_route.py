@@ -4,6 +4,7 @@ import json
 
 from harness.lesson import STATUS_ADMITTED, build_lesson
 from harness.skill_route import handle_skills_get, handle_skills_post
+from tests.test_skill_gate import _bench
 
 
 def _lesson():
@@ -15,14 +16,6 @@ def _lesson():
         evidence_class="repeated", repetition_count=2,
         scope="harness", status=STATUS_ADMITTED,
         created_at="2026-08-24T00:00:00Z")
-
-
-def _bench():
-    return {"schema": "flywheel.verified-bench/v1",
-            "bench_sha256": "b" * 64,
-            "denominator": {"attempts": 1},
-            "attempts": [{"task_id": "t0", "endpoint": "dry",
-                          "gate_pass": True}]}
 
 
 def test_bind_round_trip_and_listing(tmp_path):
@@ -69,4 +62,4 @@ def test_registry_survives_a_reload(tmp_path):
     raw = (tmp_path / "skills" / "gates.jsonl").read_text(encoding="utf-8")
     assert len(raw.strip().splitlines()) == 1
     row = json.loads(raw)
-    assert row["schema"] == "flywheel.skill-gate/v1"
+    assert row["schema"] == "flywheel.skill-gate/v2"

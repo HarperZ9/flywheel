@@ -1,7 +1,7 @@
 """skill_route.py -- skill-gate routes.
 
 GET  /api/skills       list bound skill gates
-POST /api/skills/bind  bind an admitted lesson to passing gate evidence
+POST /api/skills/bind  bind an admitted lesson to consistent reported evidence
 
 The registry persists at <run_root>/skills/gates.jsonl and holds only
 sealed rows; a tampered row refuses to load rather than degrading.
@@ -15,6 +15,7 @@ from .skill_gate import (
     build_skill_gate,
     load_skill_gates,
     save_skill_gates,
+    verify_skill_gate,
 )
 
 
@@ -30,7 +31,9 @@ def handle_skills_get(path: str, *, run_root) -> tuple[dict, int]:
     if path == "/api/skills":
         rows = load_skill_gates(_registry_path(Path(run_root)))
         return {"schema": "flywheel.skill-list/v1",
-                "skills": rows, "count": len(rows)}, 200
+                "skills": rows, "count": len(rows),
+                "assurance": {r["gate_sha256"]: verify_skill_gate(r)
+                              for r in rows}}, 200
     return error_response(TransportError("NOT_FOUND",
                                          "unknown skill route", 404))
 
@@ -50,6 +53,8 @@ def handle_skills_post(path: str, body: dict, *, run_root,
     try:
         binding = build_skill_gate(
             lesson=lesson, evidence=evidence,
+            prior_bench=body.get("prior_bench"),
+            current_bench=body.get("current_bench"),
             bound_at=str(body.get("bound_at") or (clock() if clock else "")))
     except ValueError as exc:
         return _invalid(str(exc))
@@ -60,4 +65,7 @@ def handle_skills_post(path: str, body: dict, *, run_root,
     rows.append(binding)
     save_skill_gates(rows, registry_path=path_reg)
     return {"schema": "flywheel.skill-bind-ack/v1",
-            "skill_gate": binding}, 200
+            "skill_gate": binding,
+            "assurance": verify_skill_gate(
+                binding, evidence=evidence, prior_bench=body.get("prior_bench"),
+                current_bench=body.get("current_bench"))}, 200
