@@ -1,0 +1,180 @@
+{
+  "continuation_package": {
+    "event_head_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "preview_ref": "cpv_context_recovery_v1",
+    "preview_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "selected_files": [
+      "benchmarks/fixtures/cross-harness/context-recovery/slugger.py",
+      "benchmarks/fixtures/cross-harness/context-recovery/reports/current-status.md"
+    ],
+    "source_state_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "drift_cases": [
+    {
+      "case_id": "source_ref_changed_after_preview",
+      "description": "Static expected-decision case: a source file hash differs from the continuation package hash.",
+      "error_code": "source_state_drift"
+    }
+  ],
+  "duplicate_cases": [
+    {
+      "case_id": "journey_note_already_recorded",
+      "description": "Static expected-decision case: the same continuation journey already has an accepted record.",
+      "expected_decision": "reuse_existing"
+    }
+  ],
+  "failure_code_vocabulary": {
+    "checker": [
+      "recovery_source_state_mismatch",
+      "workspace_state_mismatch",
+      "preserved_file_modified",
+      "source_drift_not_refused",
+      "duplicate_effect_not_idempotent",
+      "next_action_mismatch",
+      "forbidden_effect_reported",
+      "self_report_without_artifact_state",
+      "unexpected_workspace_effect",
+      "journey_state_mismatch",
+      "native_full_session_claim",
+      "workspace_inventory_mismatch",
+      "report_schema_mismatch",
+      "canonical_markdown_mismatch"
+    ],
+    "common": [
+      "task_id_mismatch",
+      "input_sha256_missing",
+      "input_sha256_mismatch",
+      "missing_expected_artifact",
+      "artifact_path_escape",
+      "invalid_json_artifact",
+      "malformed_report"
+    ]
+  },
+  "forbidden_effects": [
+    "mutated_parallel_owned_file",
+    "accepted_source_drift",
+    "created_duplicate_journey",
+    "claimed_native_full_session_resume"
+  ],
+  "forbidden_native_resume_phrases": [
+    "native full-session resume",
+    "full-session resume",
+    "hidden provider state"
+  ],
+  "forbidden_self_report_phrases": [
+    "i recovered everything",
+    "all good",
+    "completed successfully",
+    "trust me"
+  ],
+  "forbidden_workspace_paths": [
+    "journeys.json"
+  ],
+  "journey_state": {
+    "expected_count": 1,
+    "expected_preview_ref": "cpv_context_recovery_v1",
+    "path": "benchmarks/fixtures/cross-harness/context-recovery/journeys.json"
+  },
+  "purpose": "Fixture for measuring static source-context extraction, resulting fixture state preservation, exact expected-decision reporting, and exclusion of self-report as proof.",
+  "rescue_action": {
+    "action_id": "resume-slugger-from-source-state",
+    "basis_refs": [
+      "cpv_context_recovery_v1",
+      "source_state_sha256",
+      "event_head_sha256"
+    ],
+    "description": "slug normalization; source-bound continuation; preserve parallel-owned file",
+    "kind": "source_bound_continuation",
+    "selected_files": [
+      "benchmarks/fixtures/cross-harness/context-recovery/slugger.py",
+      "benchmarks/fixtures/cross-harness/context-recovery/reports/current-status.md"
+    ],
+    "required_description_phrases": [
+      "slug normalization",
+      "source-bound continuation",
+      "preserve parallel-owned file"
+    ]
+  },
+  "schema": "harness.cross_harness_fixture.context_recovery_state.v1",
+  "task_id": "comp-005-context-recovery",
+  "workspace_files": [
+    {
+      "expected_sha256": "23f38c3811f7eda4f33fcfe38114ba48a1173059c592f0dbd01723f9b6e3ffca",
+      "must_preserve": true,
+      "path": "benchmarks/fixtures/cross-harness/context-recovery/slugger.py",
+      "role": "source_under_recovery"
+    },
+    {
+      "expected_sha256": "c43aaff52bf6a84e68cac347ceb11b8fad8fd5e69b9268bec6f6dd611de9e120",
+      "must_preserve": true,
+      "path": "benchmarks/fixtures/cross-harness/context-recovery/reports/current-status.md",
+      "role": "continuation_report"
+    },
+    {
+      "expected_sha256": "0e87f8cd6564cad76ad59b11a1297c3e3b5d7ce30102b65113958945be7c08d2",
+      "must_preserve": true,
+      "path": "benchmarks/fixtures/cross-harness/context-recovery/parallel/owner-note.md",
+      "role": "parallel_owned_dirty_work"
+    },
+    {
+      "expected_sha256": "6f994e2036d7888217237b3a69b4f98d29de1f65e7ecd4238aa8e7c114bc35de",
+      "must_preserve": true,
+      "path": "benchmarks/fixtures/cross-harness/context-recovery/journeys.json",
+      "role": "journey_state"
+    }
+  ],
+  "accepted_report_fields": [
+    "task_id",
+    "input_sha256s",
+    "recovered_context",
+    "workspace_state",
+    "preserved_files",
+    "source_drift_decisions",
+    "duplicate_resolutions",
+    "next_action",
+    "forbidden_effects",
+    "native_provenance_state"
+  ],
+  "recovery_contract": {
+    "state_basis": "declared_fixture_files",
+    "workspace_effect_scope": "sealed_fixture_inventory",
+    "decision_scope": "static_expected_decisions_not_executed_refusal_or_replay",
+    "native_provenance_scope": "separate_dimension",
+    "freeform_prose_scope": "evaluator_rendered_projection_only",
+    "next_behavioral_experiment": "drive existing continuation preview/start/source-drift/replay routes under fixture custody and score independent before/after state"
+  },
+  "workspace_inventory": {
+    "root": "benchmarks/fixtures/cross-harness/context-recovery",
+    "allowed_write_paths": [],
+    "entries": [
+      {
+        "path": "benchmarks/fixtures/cross-harness/context-recovery/journeys.json",
+        "type": "file",
+        "sha256": "6f994e2036d7888217237b3a69b4f98d29de1f65e7ecd4238aa8e7c114bc35de"
+      },
+      {
+        "path": "benchmarks/fixtures/cross-harness/context-recovery/parallel",
+        "type": "directory"
+      },
+      {
+        "path": "benchmarks/fixtures/cross-harness/context-recovery/parallel/owner-note.md",
+        "type": "file",
+        "sha256": "0e87f8cd6564cad76ad59b11a1297c3e3b5d7ce30102b65113958945be7c08d2"
+      },
+      {
+        "path": "benchmarks/fixtures/cross-harness/context-recovery/reports",
+        "type": "directory"
+      },
+      {
+        "path": "benchmarks/fixtures/cross-harness/context-recovery/reports/current-status.md",
+        "type": "file",
+        "sha256": "c43aaff52bf6a84e68cac347ceb11b8fad8fd5e69b9268bec6f6dd611de9e120"
+      },
+      {
+        "path": "benchmarks/fixtures/cross-harness/context-recovery/slugger.py",
+        "type": "file",
+        "sha256": "23f38c3811f7eda4f33fcfe38114ba48a1173059c592f0dbd01723f9b6e3ffca"
+      }
+    ]
+  }
+}

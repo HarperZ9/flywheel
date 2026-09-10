@@ -1,0 +1,10 @@
+{
+  "journeys": [
+    {
+      "continuation": "cpv_context_recovery_v1",
+      "effect_count": 1,
+      "id": "journey_note_already_recorded"
+    }
+  ],
+  "schema": "harness.context_recovery_journey_state.v1"
+}

@@ -293,6 +293,59 @@
           "total_cost_usd": "number, the summed cost_usd of the selected items, exact to whole cents",
           "total_value": "number, the summed evidence_value of the selected items"
         }
+      },
+      "context_recovery_state/v1": {
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "recovered_context",
+          "workspace_state",
+          "preserved_files",
+          "source_drift_decisions",
+          "duplicate_resolutions",
+          "next_action",
+          "forbidden_effects",
+          "native_provenance_state"
+        ],
+        "predicates": [
+          "recover the continuation package from source-backed files",
+          "report workspace file state from actual artifact bytes",
+          "preserve every declared context-recovery fixture workspace entry byte-for-byte",
+          "reject unapproved added, removed, type-changed, symlinked, or modified paths in the sealed fixture inventory",
+          "compare source-drift cases as static expected-decision rows with zero reported effect",
+          "compare duplicate continuation cases as static expected-decision rows against the resulting fixture state",
+          "name the source-bound next action through exact structured fields",
+          "accept Markdown only as an evaluator-rendered projection from checked JSON fields",
+          "keep native product provenance as a separate measured dimension"
+        ],
+        "failure_codes": [
+          "recovery_source_state_mismatch",
+          "workspace_state_mismatch",
+          "preserved_file_modified",
+          "source_drift_not_refused",
+          "duplicate_effect_not_idempotent",
+          "next_action_mismatch",
+          "forbidden_effect_reported",
+          "self_report_without_artifact_state",
+          "unexpected_workspace_effect",
+          "journey_state_mismatch",
+          "native_full_session_claim",
+          "workspace_inventory_mismatch",
+          "report_schema_mismatch",
+          "canonical_markdown_mismatch"
+        ],
+        "json_field_contract": {
+          "task_id": "string, exactly comp-005-context-recovery",
+          "input_sha256s": "object mapping each required input path to its 64-character lowercase hex sha256",
+          "recovered_context": "object with preview_ref, preview_sha256, source_state_sha256, event_head_sha256, and selected_files copied from the continuation package",
+          "workspace_state": "array of objects with path, role, and sha256 for each fixture workspace file, recomputed from actual bytes; the checker also compares the sealed fixture inventory for unreported workspace effects and rejects symlinked expected files",
+          "preserved_files": "array of paths for every fixture file that remains byte-for-byte preserved",
+          "source_drift_decisions": "array of static expected-decision rows with case_id, decision=refuse, error_code, and effect_count=0; the checker does not execute source-drift behavior",
+          "duplicate_resolutions": "array of static expected-decision rows with case_id, decision, new_effect_count=0, and journey_count matching the resulting fixture state; bool is not accepted as an integer count",
+          "next_action": "object with action_id, kind, selected_files, basis_refs, and exact fixture-declared description; arbitrary prose is not semantically accepted",
+          "forbidden_effects": "empty array; any listed forbidden effect fails the checker",
+          "native_provenance_state": "string exactly separate_dimension, acknowledging native product receipts are measured separately from semantic recovery and must not be turned into a full-session resume claim"
+        }
       }
     },
     "provider_authored_scores_or_booleans_are_non_authoritative": true
@@ -838,6 +891,44 @@
       "oracle": {
         "checker_id": "budgeted_evidence_selection/v1",
         "fixture": "benchmarks/fixtures/cross-harness/budgeted-evidence-pool-v1.json"
+      }
+    },
+    {
+      "id": "comp-005-context-recovery",
+      "lane": "cross_harness_reproducibility",
+      "difficulty": "focused",
+      "prompt": "Recover the source-bound continuation state from the supplied context-recovery fixture. Produce context_recovery_state.json and context_recovery_state.md. The JSON artifact must report the continuation package, actual workspace file hashes, preserved files, static expected-decision records for source-drift cases, duplicate expected-decision records checked against the resulting fixture state, and the exact structured next action. The Markdown artifact must equal the evaluator-rendered canonical projection from the checked JSON fields. Do not edit the workspace, add unapproved paths under the sealed context-recovery fixture inventory, mutate parallel-owned work, present static expected-decision rows as executed source-drift or replay behavior, claim a native full-session resume, or use self-report/freeform prose as proof.",
+      "required_inputs": [
+        "benchmarks/fixtures/cross-harness/context-recovery-state-v1.json",
+        "benchmarks/fixtures/cross-harness/context-recovery/slugger.py",
+        "benchmarks/fixtures/cross-harness/context-recovery/reports/current-status.md",
+        "benchmarks/fixtures/cross-harness/context-recovery/parallel/owner-note.md",
+        "benchmarks/fixtures/cross-harness/context-recovery/journeys.json"
+      ],
+      "expected_artifacts": [
+        "context_recovery_state.json",
+        "context_recovery_state.md"
+      ],
+      "scoring_focus": [
+        "source_context_continuity",
+        "quality",
+        "reliability",
+        "operator_effort",
+        "reproducibility"
+      ],
+      "must_not": [
+        "mutate fixture workspace files or parallel-owned work",
+        "add unapproved files, directories, or symlinked expected paths under the sealed context-recovery fixture inventory",
+        "present static source-drift expected-decision rows as executed behavior",
+        "present static duplicate expected-decision rows as executed replay behavior",
+        "claim native product full-session resume from typed source records alone",
+        "treat a self-report, echo, or arbitrary prose as evidence of recovered state",
+        "report duplicate expected-decision state without matching the real journey-state fixture file",
+        "change the evaluator-rendered Markdown projection or append unverified prose to it"
+      ],
+      "oracle": {
+        "checker_id": "context_recovery_state/v1",
+        "fixture": "benchmarks/fixtures/cross-harness/context-recovery-state-v1.json"
       }
     }
   ],
