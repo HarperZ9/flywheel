@@ -81,6 +81,10 @@ void main() {
   test('agent execution summary rejects unknown or malformed fields', () {
     for (final bad in [
       {...gatewayAgentExecutionReview, 'extra': 'field'},
+      {
+        ...gatewayAgentExecutionReview,
+        'tool_protocol': gatewayTextToolProtocol
+      },
       {...gatewayAgentExecutionReview, 'binding_sha256': 'short'},
       {
         ...gatewayAgentExecutionReview,

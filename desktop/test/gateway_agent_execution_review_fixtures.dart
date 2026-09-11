@@ -17,8 +17,14 @@ const gatewayExplicitBindingHash =
     '23bf265c3a138fcbc28840431a5cc49a01dd032b4f87f0effe8fefc529670a33';
 const gatewayDefaultBindingHash =
     '3b76f5a55e3920324f354bd42c3d61f4997b6f327810663d5a4b6cb835a1a7e8';
+const gatewayNativeBindingHash =
+    'ee09a032db61c34f7a59f3386cd0bf4e115d3034b4718eae8a43d471695ff6cd';
+const gatewayNativeToolSchemaHash =
+    '8ebf974e7819a1e22bac1b725f2bed185d896b8fff90c7da212561e2a8b343a3';
 const gatewayWorkspacePolicyHash =
     '709271920c84a91aa06ffc9c9689d0334e5284a4cce7924d00887acc0c07f271';
+const gatewayNativeWorkspacePolicyHash =
+    'fef5e739facb303ff967113b65e3434a72919e47f11b7870a6a505746eacd840';
 const gatewayAgentTestJourney = 'jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const gatewayAgentTestBinding =
     GatewayJourneyBinding(gatewayAgentTestJourney, gatewayAgentTestHash);
@@ -59,6 +65,62 @@ final gatewayDefaultAgentExecutionReview = {
     'observation_policy': 'ollama_exact',
     'profile': null,
   },
+};
+
+const gatewayOpenAiNativeToolProtocol = {
+  'schema': 'flywheel.gateway-agent-tool-protocol/v1',
+  'protocol': 'native',
+  'native_api_route': 'openai_responses',
+  'tool_schema_sha256': gatewayNativeToolSchemaHash,
+  'tool_names': ['read_file', 'list_dir', 'grep'],
+  'strict_schemas': true,
+  'parallel_tool_calls': false,
+  'result_order_policy': 'provider_order_sequential',
+};
+
+const gatewayTextToolProtocol = {
+  'schema': 'flywheel.gateway-agent-tool-protocol/v1',
+  'protocol': 'text',
+  'native_api_route': null,
+  'tool_schema_sha256': null,
+  'tool_names': <String>[],
+  'strict_schemas': false,
+  'parallel_tool_calls': false,
+  'result_order_policy': 'text_tool_loop',
+};
+
+final gatewayNativeAgentExecutionReview = {
+  'schema': 'flywheel.gateway-agent-review/v2',
+  'binding_sha256': gatewayNativeBindingHash,
+  'endpoint': 'openai',
+  'base_url': 'https://api.openai.com/v1',
+  'model': const {
+    'requested_model_reference': 'gpt-6-astra',
+    'model_id': 'gpt-6-astra',
+    'selection': 'explicit',
+    'observation_policy': 'provider_reported',
+    'profile': null,
+  },
+  'root':
+      r'D:\fw-ship-sweep-20260910\provider-harness-parity\native-review-probe-ff3d\three-turn',
+  'workspace_policy_sha256': gatewayNativeWorkspacePolicyHash,
+  'budget': const {
+    'max_steps': 4,
+    'max_tokens': 321,
+    'timeout_s': 15,
+  },
+  'capabilities': const {
+    'allow_exec': false,
+    'allow_mcp': false,
+    'allow_write': false,
+  },
+  'tool_protocol': gatewayOpenAiNativeToolProtocol,
+};
+
+final gatewayTextAgentExecutionReview = {
+  ...gatewayAgentExecutionReview,
+  'schema': 'flywheel.gateway-agent-review/v2',
+  'tool_protocol': gatewayTextToolProtocol,
 };
 
 GatewayOperation gatewayAgentRunOperation() => GatewayOperation.exact(

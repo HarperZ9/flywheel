@@ -1,5 +1,8 @@
 part of 'gateway_agent_execution_review.dart';
 
+// Tool-protocol authority lives in its own part so each review model file stays
+// under the desktop source gate.
+
 final class GatewayAgentExecutionModel extends DefensiveModel {
   final String? requestedModelReference;
   final String modelId, selection, observationPolicy;

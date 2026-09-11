@@ -89,6 +89,7 @@ final class GatewayOperation {
       _invalid();
     }
     _validateBulletinOriginBinding(action, raw, destination);
+    _validateAgentToolProtocol(action, raw);
     if (action == 'operation.cancel') _validateCancel(raw);
     if (action == 'plan.run') validatePlanRunOperation(raw);
   }

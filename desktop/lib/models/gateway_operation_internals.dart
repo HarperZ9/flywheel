@@ -258,3 +258,13 @@ void _validateCancel(Map<String, Object?> value) {
     _invalid();
   }
 }
+
+void _validateAgentToolProtocol(String action, Map<String, Object?> value) {
+  if (!value.containsKey('tool_protocol')) return;
+  final protocol = value['tool_protocol'];
+  if (action != 'agent.run' ||
+      protocol is! String ||
+      !const {'native', 'text'}.contains(protocol)) {
+    _invalid();
+  }
+}

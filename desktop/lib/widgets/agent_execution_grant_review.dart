@@ -40,6 +40,11 @@ class AgentExecutionGrantReview extends StatelessWidget {
     return [
       _Line('Requested model', review.model.requestedLabel, tokens: t),
       _Line('Resolved model', review.model.modelId, tokens: t),
+      if (review.toolProtocol != null) ...[
+        _Line('Tool protocol', review.toolProtocol!.protocolLabel, tokens: t),
+        _Line('Tool schema digest', review.toolProtocol!.toolSchemaDigestLabel,
+            tokens: t),
+      ],
       _Line('Selection', review.model.selectionLabel, tokens: t),
       _Line('Observation basis', review.model.observationPolicyLabel,
           tokens: t),
@@ -65,6 +70,16 @@ class AgentExecutionGrantReview extends StatelessWidget {
               _HashLine('Binding', review.bindingSha256, tokens: t),
               _HashLine('Workspace policy', review.workspacePolicySha256,
                   tokens: t),
+              if (review.toolProtocol != null) ...[
+                _ReceiptLine('Tool names', review.toolProtocol!.toolNamesLabel,
+                    tokens: t),
+                _ReceiptLine(
+                    'Tool result order',
+                    review.toolProtocol!.resultOrderPolicy.isEmpty
+                        ? 'unknown'
+                        : review.toolProtocol!.resultOrderPolicy,
+                    tokens: t),
+              ],
               if (review.model.profile != null) ...[
                 _HashLine('Expected manifest',
                     review.model.profile!.expectedManifestSha256,
@@ -97,6 +112,33 @@ class _Line extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(color: tokens.inkSoft, fontSize: 13)),
+      );
+}
+
+class _ReceiptLine extends StatelessWidget {
+  final String label, value;
+  final FwTokens tokens;
+  const _ReceiptLine(this.label, this.value, {required this.tokens});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(children: [
+          Text(label,
+              style: TextStyle(
+                  color: tokens.inkFaint,
+                  fontFamily: tokens.monoFamily,
+                  fontSize: 11.5)),
+          const SizedBox(width: 8),
+          Expanded(
+              child: SelectableText(value,
+                  maxLines: 2,
+                  style: TextStyle(
+                      color: tokens.inkSoft,
+                      fontFamily: tokens.monoFamily,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600))),
+        ]),
       );
 }
 
