@@ -83,8 +83,9 @@ def validate_operation_shape(action: str, value: dict) -> None:
         from .gateway_agent_binding import MODEL_PATTERN
         if "model" in value and MODEL_PATTERN.fullmatch(value["model"]) is None:
             raise ValueError
-        if "tool_protocol" in value and value["tool_protocol"] not in {"text", "native"}:
-            raise ValueError
+        if (value.get('execution_mode', 'native_cli_session') != 'native_cli_session'
+            or 'execution_mode' in value and ('tool_protocol' in value or value['endpoint'] not in {'claude-cli', 'codex-cli'})
+            or 'tool_protocol' in value and value['tool_protocol'] not in {'text', 'native'}): raise ValueError
         if "max_tokens" in value: _bounded_int(value["max_tokens"], 1, 32768)
         if "timeout_s" in value: _bounded_int(value["timeout_s"], 1, 1800)
     for name in ("stream", "allow_write", "allow_exec", "enabled"):

@@ -108,7 +108,7 @@ def _capture(pipe, bucket: dict[str, Any], key: str) -> None:
     data, overflow = bytearray(), False
     bucket[key] = b"", False
     try:
-        while chunk := pipe.read(65536):
+        while chunk := getattr(pipe, 'read1', pipe.read)(65536):
             room = max(0, MAX_CAPTURE_BYTES - len(data))
             data.extend(chunk[:room])
             overflow |= len(chunk) > room

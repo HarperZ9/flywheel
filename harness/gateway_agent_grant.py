@@ -31,6 +31,9 @@ def compare_binding(record, plan):
 def review_binding(record):
     binding = record.get("agent_binding")
     if binding is None: return {"status": "reprepare_required"}
+    if binding.get('execution_mode') == 'native_cli_session':
+        from .gateway_cli_binding import review_cli_binding
+        return review_cli_binding(binding)
     review = {"schema": ("flywheel.gateway-agent-review/v2"
             if "tool_protocol" in binding else "flywheel.gateway-agent-review/v1"),
         "binding_sha256": freeze_json(binding).sha256,

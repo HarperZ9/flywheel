@@ -91,6 +91,9 @@ def _tool_protocol(value, endpoint, capabilities):
 
 def freeze_agent_binding(operation, workspace_root: Path | None = None):
     value = operation.operation
+    if value.get('execution_mode') == 'native_cli_session':
+        from .gateway_cli_binding import freeze_cli_binding
+        return freeze_cli_binding(operation, workspace_root)
     endpoint = _endpoint(value["endpoint"])
     capabilities = _capabilities(value)
     protocol = _tool_protocol(value, endpoint, capabilities)
@@ -111,6 +114,9 @@ def freeze_agent_binding(operation, workspace_root: Path | None = None):
 
 def validate_agent_binding(binding, operation):
     """Validate the IPC snapshot without reloading registry, root policy or env."""
+    if operation.operation.get('execution_mode') == 'native_cli_session':
+        from .gateway_cli_binding import validate_cli_binding
+        return validate_cli_binding(binding, operation)
     try:
         value = operation.operation
         expected_keys = {"schema", "operation_sha256", "endpoint", "model",
