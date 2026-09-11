@@ -11,26 +11,24 @@ GatewayOperation? _agentOperation(_AgentPanelState state, String request) {
       state.widget.activeFile,
       state.widget.selection,
     );
-    return GatewayOperation.exact(
-      action: 'agent.run',
-      clientRequestId: request,
-      operation: {
-        'goal': input,
-        'endpoint': endpoint,
-        if (state._model != null && state._model!.isNotEmpty)
-          'model': state._model,
-        if (state._toolProtocol.wire != null)
-          'tool_protocol': state._toolProtocol.wire,
-        'effort': state._effort.wire,
-        'max_steps': state._effort.maxSteps,
-        'allow_write': state._allowWrite,
-        'allow_exec': state._allowExec,
-        'stream': true,
-        if (attachment != null) 'attachment': attachment,
-        if (state.widget.continuationHandoff != null)
-          'continuation': state.widget.continuationHandoff,
-        'root': state.widget.workspaceRoot,
-      },
+    return agentRunOperation(
+      requestId: request,
+      goal: input,
+      endpoint: endpoint,
+      model: state._model,
+      root: state.widget.workspaceRoot,
+      executionMode: state._executionMode,
+      effort: state._effort,
+      maxSteps: state._executionMode.isNativeCli
+          ? state._nativeCliMaxSteps
+          : state._effort.maxSteps,
+      maxTokens: null,
+      timeoutSeconds: 300,
+      allowWrite: state._allowWrite,
+      allowExec: state._allowExec,
+      toolProtocol: state._toolProtocol,
+      attachment: attachment,
+      continuation: state.widget.continuationHandoff,
     );
   } catch (_) {
     return null;
