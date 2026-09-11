@@ -166,18 +166,16 @@ def test_expired_deadline_prevents_connection():
         with pytest.raises(AgentTransportError) as error:
             send(call, origin)
         assert error.value.code == 'OPERATION_DEADLINE_EXCEEDED'
+        assert call.calls == 0
         assert not requests
 
 
 def test_slow_real_http_response_cannot_extend_aggregate_deadline():
-    with server(chunk_delay=0.03) as (origin, requests):
-        started = time.monotonic()
-        call = transport(origin, deadline=started + 0.15)
-        with pytest.raises(AgentTransportError) as error:
-            send(call, origin, timeout=3)
-        assert error.value.code == 'OPERATION_DEADLINE_EXCEEDED'
-        assert time.monotonic() - started < 1.5
-        assert len(requests) == 1
+    from tests.test_gateway_agent_transport_dribble import ControlledDribble, run_dribble
+
+    with ControlledDribble() as fixture:
+        call, error = run_dribble(fixture)
+        fixture.assert_expired_after_reads(call, error)
 
 
 @pytest.mark.parametrize('missing', ['model', 'max_tokens'])
