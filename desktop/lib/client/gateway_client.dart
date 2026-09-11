@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/gateway_models.dart';
+import '../models/evidence_state.dart' show isSafePublicText;
 import '../models/operation_models.dart';
 import '../models/service_desk_review.dart';
 import '../models/workflow_models.dart';
