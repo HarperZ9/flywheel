@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib import error, request
 
 try:
+    from .installed_launch_acceptance_shortcuts import resolve_links
     from .installed_launch_acceptance_jobs import start_windows_job_process
     from .installed_launch_acceptance_model import (
         MetadataResult, NullHttpClient, NullProcessController,
@@ -15,6 +16,7 @@ try:
         registry_values,
     )
 except ImportError:
+    from installed_launch_acceptance_shortcuts import resolve_links  # type: ignore
     from installed_launch_acceptance_jobs import start_windows_job_process  # type: ignore
     from installed_launch_acceptance_model import (  # type: ignore
         MetadataResult, NullHttpClient, NullProcessController,
@@ -102,22 +104,7 @@ class LocalWindowsMetadata(NullWindowsMetadata):
         return entries
 
     def _resolve_links(self, paths: list[Path]) -> list[ShortcutRecord]:
-        found = [str(p) for p in paths if p.exists()]
-        if not found or os.name != "nt":
-            return []
-        script = ("$s=New-Object -ComObject WScript.Shell; $args | % { "
-                  "$l=$s.CreateShortcut($_); [pscustomobject]@{"
-                  "name=[IO.Path]::GetFileNameWithoutExtension($_); target=$l.TargetPath} "
-                  "} | ConvertTo-Json")
-        out = subprocess.run(["powershell", "-NoProfile", "-Command", script, *found],
-                             text=True, stdout=subprocess.PIPE,
-                             stderr=subprocess.DEVNULL,
-                             creationflags=WINDOW_FLAGS)
-        if out.returncode != 0 or not out.stdout.strip():
-            return []
-        data = json.loads(out.stdout)
-        rows = data if isinstance(data, list) else [data]
-        return [ShortcutRecord(str(r["name"]), Path(str(r["target"]))) for r in rows]
+        return resolve_links(paths)
 
 
 class LocalHttpClient(NullHttpClient):
