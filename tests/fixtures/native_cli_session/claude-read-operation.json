@@ -1,0 +1,14 @@
+{
+  "goal": "Read fixture.txt and report its checksum.",
+  "endpoint": "claude-cli",
+  "model": "fixture-model-exact",
+  "root": "C:\\fixture\\workspace",
+  "execution_mode": "native_cli_session",
+  "max_steps": 4,
+  "timeout_s": 60,
+  "allow_write": false,
+  "allow_exec": false,
+  "stream": true,
+  "data_refs": [],
+  "credential_refs": []
+}

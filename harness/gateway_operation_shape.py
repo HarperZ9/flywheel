@@ -1,11 +1,4 @@
-"""gateway_operation_shape.py -- per-action shape validation.
-
-Extracted from gateway_operation.py to keep that module under its
-ceiling. One function, pure: given an action and its canonical snapshot,
-raise ValueError on any shape this gateway refuses. Field-type rules
-live here so the canonicalization core stays about digests, refs, and
-scopes.
-"""
+"""gateway_operation_shape.py -- per-action shape validation."""
 from __future__ import annotations
 
 from .evidence_json import canonical_sha256
@@ -17,6 +10,9 @@ from .journey_types import SHA256_PATTERN
 
 
 def validate_operation_shape(action: str, value: dict) -> None:
+    if action == "output.check":
+        from .output_check_gateway import validate_output_check_operation as v
+        return v(value)
     text_fields = {"model", "goal", "endpoint", "workflow", "profile", "root",
                    "test_cmd", "name", "tool", "detail", "prompt",
                    "solution_sig", "intent_source",
@@ -83,8 +79,9 @@ def validate_operation_shape(action: str, value: dict) -> None:
         from .gateway_agent_binding import MODEL_PATTERN
         if "model" in value and MODEL_PATTERN.fullmatch(value["model"]) is None:
             raise ValueError
-        if "tool_protocol" in value and value["tool_protocol"] not in {"text", "native"}:
-            raise ValueError
+        if (value.get('execution_mode', 'native_cli_session') != 'native_cli_session'
+            or 'execution_mode' in value and ('tool_protocol' in value or value['endpoint'] not in {'claude-cli', 'codex-cli'})
+            or 'tool_protocol' in value and value['tool_protocol'] not in {'text', 'native'}): raise ValueError
         if "max_tokens" in value: _bounded_int(value["max_tokens"], 1, 32768)
         if "timeout_s" in value: _bounded_int(value["timeout_s"], 1, 1800)
     for name in ("stream", "allow_write", "allow_exec", "enabled"):
@@ -201,6 +198,9 @@ def destination_for(action: str, value: dict) -> dict:
         return {"kind": "forge", "ref": "conjecture-forge"}
     if action == "lean.check":
         return {"kind": "oracle", "ref": "lean"}
+    if action == "output.check":
+        from .output_check_gateway import output_check_destination as d
+        return d(value)
     if action == "suite.audit":
         return {"kind": "suite", "ref": value["path"]}
     if action == "lane.call":
@@ -237,8 +237,7 @@ def destination_for(action: str, value: dict) -> dict:
 
 
 def _pack_ref(manifest: dict) -> str:
-    """Name the pack the operator is admitting, or say the manifest is unnamed
-    rather than inventing an identifier the admission may not carry."""
+    """Use a declared pack name; never invent one for an unnamed manifest."""
     ref = manifest.get("pack_id") or manifest.get("name")
     return ref if type(ref) is str and ref.strip() else "unnamed-pack"
 
@@ -262,6 +261,9 @@ def derived_scopes(action: str, value: dict, secrets: bool) -> tuple:
     if action == "lean.check":
         # The Lean kernel is a subprocess and the verdict is stored.
         selected.update(("exec", "write"))
+    if action == "output.check":
+        from .output_check_gateway import output_check_scopes as scopes
+        selected.update(scopes(value))
     if action == "suite.audit":
         # Mutation audit runs the project's own test command repeatedly.
         selected.add("exec")
@@ -274,8 +276,7 @@ def derived_scopes(action: str, value: dict, secrets: bool) -> tuple:
     if action == "hook.run":
         selected.add("exec")
     if action == "infra.credential_scan":
-        # It reads the files and variables where credentials live. It records
-        # a fingerprint and never a value, and the scope still says secrets.
+        # Record credential fingerprints, never values; retain the secrets scope.
         selected.add("secrets")
     if action == "infra.isolation":
         selected.add("network")

@@ -39,7 +39,11 @@ def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
     try:
         with pinned_workspace(binding["workspace"]) as root:
             goal = materialize_goal(execution["goal"], source_context)
-            if binding.get("tool_protocol", {}).get("protocol") == "native":
+            if binding.get('execution_mode') == 'native_cli_session':
+                from .gateway_cli_execution import run_cli_session
+                result = run_cli_session(goal, binding, root, deadline, progress,
+                    state_root=trace.root, state_identity=trace.identity)
+            elif binding.get("tool_protocol", {}).get("protocol") == "native":
                 from .gateway_agent_native_tools import run_native_tool_agent
                 result = run_native_tool_agent(goal, binding,
                     CredentialBindings(bindings), root, ledger, deadline,

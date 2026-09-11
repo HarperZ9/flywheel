@@ -68,7 +68,7 @@ from .answer_docs import DocumentError, read_answer
 from .authority_registry import build_authorities
 from .contract_feedback import feedback
 from .contract_terms import HOLD
-from .domain_packs import PACKS, field_spec, load_pack
+from .domain_packs import PACKS, declared_pack, field_spec, load_pack
 from .output_contract import check_answer, new_contract
 from .proof_lean import lean_source
 from .proof_relations import RelationError
@@ -102,7 +102,8 @@ def pack_ref(name: str, base_dir) -> str:
     return str(beside) if beside.is_file() else name
 
 
-def specs(contract_doc: dict, *, base_dir=None) -> list[dict]:
+def specs(contract_doc: dict, *, base_dir=None,
+          pinned_sources: dict[str, bytes] | None = None) -> list[dict]:
     """The field specs, with a named pack filling in what the domain decides.
 
     A field entry that names a `use` gets its authority kind, criticality and
@@ -113,7 +114,14 @@ def specs(contract_doc: dict, *, base_dir=None) -> list[dict]:
     name = contract_doc.get("pack", "")
     if not name:
         return raw
-    pack = load_pack(pack_ref(name, base_dir))
+    ref = pack_ref(name, base_dir)
+    if pinned_sources is not None and name in pinned_sources:
+        pack = declared_pack(
+            json.loads(pinned_sources[name].decode("utf-8")), shipped=PACKS)
+    elif pinned_sources is not None and (ref != name or name.endswith(".json")):
+        raise FileNotFoundError(f"pinned domain pack missing for {name}")
+    else:
+        pack = load_pack(ref)
     built = []
     for spec in raw:
         spec = dict(spec)
@@ -122,10 +130,14 @@ def specs(contract_doc: dict, *, base_dir=None) -> list[dict]:
     return built
 
 
-def check(contract_doc: dict, answer: dict, *, base_dir, allow_commands: bool) -> dict:
-    contract = new_contract(specs(contract_doc, base_dir=base_dir))
+def check(contract_doc: dict, answer: dict, *, base_dir, allow_commands: bool,
+          pinned_sources: dict[str, bytes] | None = None) -> dict:
+    contract = new_contract(specs(contract_doc, base_dir=base_dir,
+                                  pinned_sources=pinned_sources))
     authorities = build_authorities(contract_doc.get("authorities") or {},
-                                    allow_commands=allow_commands, base_dir=base_dir)
+                                    allow_commands=allow_commands,
+                                    base_dir=base_dir,
+                                    pinned_sources=pinned_sources)
     report = check_answer(answer, contract, authorities)
     report["next"] = feedback(report)
     return report

@@ -6,6 +6,8 @@ import 'package:flutter/widgets.dart';
 
 import '../client/gateway_client.dart';
 import '../client/gateway_grants.dart';
+import '../models/agent_execution_mode.dart';
+import '../models/agent_run_operation.dart';
 import '../models/evidence_state.dart';
 import '../models/agent_tool_protocol.dart';
 import '../models/gateway_models.dart';
@@ -38,6 +40,7 @@ final class RowanOperationController extends ChangeNotifier {
 
   List<EndpointRow> _endpoints = const [];
   String? _endpoint, _selectedModel, _workspaceRoot, _error;
+  AgentExecutionMode _executionMode = AgentExecutionMode.api;
   EffortLevel _effort = EffortLevel.standard;
   AgentToolProtocol _toolProtocol = AgentToolProtocol.compatibility;
   int _maxTokens = 1024, _timeoutSeconds = 300;
@@ -52,6 +55,7 @@ final class RowanOperationController extends ChangeNotifier {
   String? get endpoint => _endpoint;
   String? get selectedModel => _selectedModel;
   String? get workspaceRoot => _workspaceRoot;
+  AgentExecutionMode get executionMode => _executionMode;
   EffortLevel get effort => _effort;
   AgentToolProtocol get toolProtocol => _toolProtocol;
   int get maxSteps => _maxStepsOverride ?? _effort.maxSteps;
@@ -78,6 +82,11 @@ final class RowanOperationController extends ChangeNotifier {
       final rows = await client.endpointRoster();
       _endpoints = List<EndpointRow>.unmodifiable(rows);
       _endpoint ??= rows.isNotEmpty ? rows.first.name : null;
+      if (_executionMode.isNativeCli &&
+          !agentExecutionModeSupportsEndpoint(_executionMode, _endpoint)) {
+        _endpoint = _nativeCliEndpoint(rows);
+        _selectedModel = null;
+      }
       notifyListeners();
     } catch (error) {
       _error = '$error';
@@ -89,6 +98,20 @@ final class RowanOperationController extends ChangeNotifier {
     if (_endpoint == value) return;
     _endpoint = value;
     _selectedModel = null;
+    _bump();
+  }
+
+  void setExecutionMode(AgentExecutionMode value) {
+    if (_executionMode == value) return;
+    _executionMode = value;
+    if (value.isNativeCli) {
+      _toolProtocol = AgentToolProtocol.compatibility;
+      _allowExec = false;
+      if (!agentExecutionModeSupportsEndpoint(value, _endpoint)) {
+        _endpoint = _nativeCliEndpoint(_endpoints);
+        _selectedModel = null;
+      }
+    }
     _bump();
   }
 
@@ -119,9 +142,20 @@ final class RowanOperationController extends ChangeNotifier {
   }
 
   void setToolProtocol(AgentToolProtocol value) {
+    if (_executionMode.isNativeCli &&
+        value != AgentToolProtocol.compatibility) {
+      return;
+    }
     if (_toolProtocol == value) return;
     _toolProtocol = value;
     _bump();
+  }
+
+  String? _nativeCliEndpoint(List<EndpointRow> rows) {
+    for (final row in rows) {
+      if (row.name == 'claude-cli') return row.name;
+    }
+    return null;
   }
 
   void dismissRecoveryBlock() {
@@ -146,6 +180,7 @@ final class RowanOperationController extends ChangeNotifier {
           selectionRef: prior.selectionRef,
           operationRef: prior.operationRef,
           operationEventHeadSha256: prior.operationEventHeadSha256,
+          operationExecutionMode: prior.operationExecutionMode,
           detailsExpanded: prior.detailsExpanded,
           recoveryVisible: prior.recoveryVisible,
         ),
@@ -195,6 +230,13 @@ final class RowanOperationController extends ChangeNotifier {
   }
 
   void setAllowExec(bool value) {
+    if (_executionMode.isNativeCli && value) {
+      if (_allowExec) {
+        _allowExec = false;
+        _bump();
+      }
+      return;
+    }
     if (_allowExec == value) return;
     _allowExec = value;
     _bump();

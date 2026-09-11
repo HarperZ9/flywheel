@@ -40,6 +40,12 @@ class AgentExecutionGrantReview extends StatelessWidget {
     return [
       _Line('Requested model', review.model.requestedLabel, tokens: t),
       _Line('Resolved model', review.model.modelId, tokens: t),
+      if (review.cliSession != null) ...[
+        _Line('Execution mode', 'native CLI session', tokens: t),
+        _Line('CLI engine', review.cliSession!.engineLabel, tokens: t),
+        _Line('CLI profile', review.cliSession!.profile, tokens: t),
+        _Line('CLI auth', review.cliSession!.authLabel, tokens: t),
+      ],
       if (review.toolProtocol != null) ...[
         _Line('Tool protocol', review.toolProtocol!.protocolLabel, tokens: t),
         _Line('Tool schema digest', review.toolProtocol!.toolSchemaDigestLabel,
@@ -51,6 +57,15 @@ class AgentExecutionGrantReview extends StatelessWidget {
       _Line('Endpoint', _endpointLabel, tokens: t),
       _Line('Workspace', review.root, tokens: t),
       _Line('Budget', review.budget.label, tokens: t),
+      if (review.cliSession != null) ...[
+        _Line('CLI bounds', review.cliSession!.boundsLabel, tokens: t),
+        _Line('Filesystem scope', review.cliSession!.filesystemScopeLabel,
+            tokens: t),
+        _Line('Provider policy', review.cliSession!.providerPolicyLabel,
+            tokens: t),
+        _Line('Reasoning evidence', review.cliSession!.reasoningEvidenceLabel,
+            tokens: t),
+      ],
       _Line('Gates', review.capabilities.label, tokens: t),
       if (review.model.profile != null)
         _Line('Profile', review.model.profile!.profile, tokens: t),
@@ -78,6 +93,13 @@ class AgentExecutionGrantReview extends StatelessWidget {
                     review.toolProtocol!.resultOrderPolicy.isEmpty
                         ? 'unknown'
                         : review.toolProtocol!.resultOrderPolicy,
+                    tokens: t),
+              ],
+              if (review.cliSession != null) ...[
+                _ReceiptLine('CLI tools', review.cliSession!.toolsLabel,
+                    tokens: t),
+                _ReceiptLine(
+                    'CLI limitations', review.cliSession!.limitationsLabel,
                     tokens: t),
               ],
               if (review.model.profile != null) ...[
