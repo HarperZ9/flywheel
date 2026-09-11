@@ -8,6 +8,7 @@ from urllib.parse import parse_qs
 from .evidence_json import canonical_bytes, canonical_sha256
 from .gateway_operation import AuthorizedOperation, GatewayOperationError
 from .gateway_operation_route_reads import read_snapshot_or_none, terminal_data
+from .gateway_operation_read_dispatch import _read
 from .journey_types import SHA256_PATTERN
 _OPERATION_PATH = re.compile(
     r"/api/operations/(op_[0-9a-f]{32})(?:/(events|result|trace))?\Z")
@@ -51,8 +52,7 @@ def replay_authorization_sha256(envelope, owner_ref: str,
         record = _validate_record(strict_load_json(path.read_bytes()), owner_ref)
         operation = envelope.operation
         plan = (ExecutionPlan(record["execution_plan_sha256"], (), ())
-            if _has_source_context_ref(operation.data_refs) else freeze_execution_plan(
-                operation, owner_ref=owner_ref, state_root=state_root))
+            if operation.action == "agent.run" or _has_source_context_ref(operation.data_refs) else freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root))
         if (record["state"] != "approved" or record["action"] != envelope.action
                 or record["journey_ref"] != envelope.journey_ref
                 or record["expected_event_head"] != envelope.expected_event_head
@@ -212,7 +212,7 @@ def _start_replay(service, owner_ref: str, envelope, journey):
         return None
     queued = history[0]["payload"]
     plan_digest = (queued.get("execution_plan_sha256")
-        if _has_source_context_ref(envelope.operation.data_refs) else
+        if envelope.action == "agent.run" or _has_source_context_ref(envelope.operation.data_refs) else
         freeze_execution_plan(envelope.operation, owner_ref=owner_ref,
                               state_root=service.state_root).digest)
     expected = {
@@ -241,7 +241,8 @@ def _start(raw: bytes, owner_ref: str, service, process_factory) -> RouteRespons
         if replay is None:
             authorized = service.authorizer(
                 "agent.run", raw, owner_ref=owner_ref,
-                state_root=service.state_root, clock=service.clock)
+                state_root=service.state_root, clock=service.clock, **(
+                    {"workspace_root": getattr(process_factory, "repo_root", None)} if getattr(service.authorizer, "__module__", "") == "harness.gateway_grant_route" else {}))
             authorized = service.credential_resolver(
                 authorized, service.state_root)
             snapshot = service.start(
@@ -251,33 +252,9 @@ def _start(raw: bytes, owner_ref: str, service, process_factory) -> RouteRespons
     if envelope.operation.operation["stream"]:
         return RouteResponse(200, stream=_stream(
             service, owner_ref, snapshot.operation_ref, snapshot))
-    terminal = service.wait_terminal(owner_ref, snapshot.operation_ref, 300)
-    if terminal.state != "completed":
-        raise GatewayOperationError("EXTERNAL_ACTION_FAILED")
-    return RouteResponse(200, service.result(
-        owner_ref, snapshot.operation_ref)["result"])
-def _read(method: str, path: str, query: str, owner_ref: str,
-          service) -> RouteResponse:
-    match = _OPERATION_PATH.fullmatch(path)
-    if method != "GET" or match is None:
-        raise GatewayOperationError("INVALID_REQUEST")
-    ref, selector = match.groups()
-    if selector == "trace":
-        from .gateway_agent_trace_route import read_trace; return RouteResponse(200, read_trace(service, owner_ref, ref, query))
-    if selector == "events":
-        values = parse_qs(query, keep_blank_values=True, strict_parsing=True)
-        if set(values) - {"after"} or any(len(value) != 1 for value in values.values()):
-            raise GatewayOperationError("INVALID_REQUEST")
-        raw_after = values.get("after", ["0"])[0]
-        if (len(raw_after) > 18 or not raw_after.isascii()
-                or not raw_after.isdecimal()):
-            raise GatewayOperationError("INVALID_REQUEST")
-        return RouteResponse(200, stream=_stream(
-            service, owner_ref, ref, after=int(raw_after)))
-    if query: raise GatewayOperationError("INVALID_REQUEST")
-    value = service.result(owner_ref, ref) if selector == "result" else (
-        service.snapshot(owner_ref, ref).as_json())
-    return RouteResponse(200, value)
+    from .gateway_operation_route_reads import completed_result
+    return RouteResponse(200, completed_result(service, owner_ref,
+        snapshot.operation_ref, envelope.operation.operation.get("timeout_s", 300)))
 def route_gateway_operation(
         method: str, path: str, *, owner_ref: str, service, process_factory,
         raw: bytes = b"", query: str = "", content_type: str = "") -> RouteResponse:

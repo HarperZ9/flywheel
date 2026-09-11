@@ -23,22 +23,26 @@ final _secretKey = RegExp(
 Never _invalid() => throw ArgumentError('Gateway operation is invalid');
 
 Object? _snapshot(Object? value, List<int> budget, int depth,
-    {String key = ''}) {
+    {String key = '', String action = ''}) {
   if (depth > 16 || --budget[0] < 0) _invalid();
   if (value == null || value is bool || value is int) return value;
   if (value is num) return value.isFinite ? value : _invalid();
   if (value is String) {
+    final agentRemoteRoot =
+        action == 'agent.run' && key == 'root' && isSafePublicText(value);
     if (!isSafePublicText(value) &&
         !(key == 'base_url' && isSafePublicBaseUrl(value)) &&
         !(key == 'bulletin_base_url' && isCanonicalBulletinOrigin(value)) &&
-        !(_pathFields.contains(key) && isSafeLocalPath(value))) {
+        !(_pathFields.contains(key) && isSafeLocalPath(value)) &&
+        !agentRemoteRoot) {
       _invalid();
     }
     return value;
   }
   if (value is List) {
     return List.unmodifiable(
-        value.map((item) => _snapshot(item, budget, depth + 1, key: key)));
+        value.map((item) =>
+            _snapshot(item, budget, depth + 1, key: key, action: action)));
   }
   if (value is Map && value.keys.every((item) => item is String)) {
     final result = <String, Object?>{};
@@ -49,7 +53,8 @@ Object? _snapshot(Object? value, List<int> budget, int depth,
           !(name == 'credential_values' && entry.value == 'never included')) {
         _invalid();
       }
-      result[name] = _snapshot(entry.value, budget, depth + 1, key: name);
+      result[name] =
+          _snapshot(entry.value, budget, depth + 1, key: name, action: action);
     }
     return Map<String, Object?>.unmodifiable(result);
   }
@@ -64,7 +69,8 @@ final class GatewayOperation {
 
   GatewayOperation._(this.action, this.clientRequestId, this.destination,
       this.tool, Map<String, Object?> raw)
-      : operation = _snapshot(raw, [4096], 0) as Map<String, Object?>,
+      : operation = _snapshot(raw, [4096], 0, action: action)
+            as Map<String, Object?>,
         scopes = List<String>.unmodifiable(_scopes(action, raw)),
         dataRefs = List<String>.unmodifiable(raw['data_refs'] as List<String>),
         credentialRefs =
@@ -83,6 +89,7 @@ final class GatewayOperation {
       _invalid();
     }
     _validateBulletinOriginBinding(action, raw, destination);
+    _validateAgentToolProtocol(action, raw);
     if (action == 'operation.cancel') _validateCancel(raw);
     if (action == 'plan.run') validatePlanRunOperation(raw);
   }

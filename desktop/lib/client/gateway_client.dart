@@ -1,7 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import '../models/gateway_models.dart';
+import '../models/agent_trace.dart';
+import '../models/agent_trace_record.dart';
+import '../models/agent_trace_json.dart';
+import 'agent_trace_reader.dart';
+import '../models/evidence_state.dart' show isSafePublicText;
 import '../models/operation_models.dart';
 import '../models/service_desk_review.dart';
 import '../models/workflow_models.dart';
@@ -13,6 +20,7 @@ export 'gateway_error.dart';
 
 part 'gateway_streams.dart';
 part 'gateway_operations.dart';
+part 'gateway_agent_trace.dart';
 part 'gateway_plan_transport.dart';
 part 'gateway_creative.dart';
 part 'gateway_discovery.dart';

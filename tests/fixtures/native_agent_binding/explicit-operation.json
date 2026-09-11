@@ -1,0 +1,13 @@
+{
+  "allow_exec": false,
+  "allow_write": false,
+  "credential_refs": [],
+  "data_refs": [],
+  "endpoint": "ollama",
+  "goal": "Inspect the selected fixture.",
+  "max_steps": 2,
+  "max_tokens": 1024,
+  "model": "operator-model:tag",
+  "stream": true,
+  "timeout_s": 300
+}

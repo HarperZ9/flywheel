@@ -5,6 +5,8 @@ import '../client/gateway_auth.dart';
 import '../client/gateway_client.dart';
 import '../client/journey_api.dart';
 import '../controllers/journey_controller.dart';
+import '../controllers/rowan_operation_controller.dart';
+import '../controllers/rowan_operation_host_adapter.dart';
 import '../ide/code_buffer_session.dart';
 import '../ide/unsaved_work_guard.dart';
 import '../services/code_draft_store.dart';
@@ -19,6 +21,8 @@ final class FlywheelDependencies {
     required this.client,
     required this.gateway,
     required this.journey,
+    required this.rowan,
+    required this.rowanOperationHost,
     required this.code,
     this.closePrompt,
     this.status,
@@ -32,6 +36,11 @@ final class FlywheelDependencies {
       baseUrl: conn.effectiveBaseUrl,
       httpClient: AuthedClient(http.Client(), readToken: conn.tokenSource),
     );
+    final journeySessionStore = JourneySessionStore();
+    final rowan = RowanOperationController(
+      client,
+      sessionStore: journeySessionStore,
+    );
     return FlywheelDependencies(
       client: client,
       gateway: GatewayProcess(),
@@ -44,8 +53,10 @@ final class FlywheelDependencies {
       journey: JourneyController(
         api: GatewayJourneyApi(client),
         draftStore: JourneyDraftStore(),
-        sessionStore: JourneySessionStore(),
+        sessionStore: journeySessionStore,
       ),
+      rowan: rowan,
+      rowanOperationHost: RowanOperationHostAdapter(rowan),
       status: GatewayStatusService.production(
         baseUrl: client.baseUrl,
         readToken: conn.tokenSource,
@@ -58,6 +69,8 @@ final class FlywheelDependencies {
   final GatewayProcess gateway;
   final bool autoStartBundledEngine;
   final JourneyController journey;
+  final RowanOperationController rowan;
+  final RowanOperationHostAdapter rowanOperationHost;
   final CodeBufferSession code;
   final CloseChoicePrompt? closePrompt;
 
@@ -69,6 +82,8 @@ final class FlywheelDependencies {
 
   void dispose() {
     journey.dispose();
+    rowanOperationHost.dispose();
+    rowan.dispose();
     code.dispose();
     client.close();
     gateway.stopIfOwned();

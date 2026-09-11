@@ -140,8 +140,56 @@ def test_the_live_scan_actually_reads_this_platform():
     """Non-vacuity for the OS query itself. A predicate that is perfect over
     synthetic rows proves nothing if the real scan returns an empty list on
     this platform, so this asserts the scan finds the running interpreter."""
-    records = run_confirmatory._live_process_records()
-    assert records, "the process scan returned no rows at all"
+    diagnostics = {}
+    records = run_confirmatory._live_process_records(diagnostics=diagnostics)
+    assert records, f"the process scan returned no rows: {diagnostics}"
     me = [r for r in records if r[0] == os.getpid()]
-    assert me, f"the scan did not find our own pid {os.getpid()}"
-    assert "python" in me[0][1].lower(), me[0]
+    assert me, f"the scan did not find its own interpreter: {diagnostics}"
+    assert "python" in me[0][1].lower(), diagnostics
+
+
+@pytest.mark.parametrize("failure,status", [
+    (subprocess.TimeoutExpired("PRIVATE_COMMAND", 30,
+                               output=b"PRIVATE_OUTPUT"), "timeout"),
+    (FileNotFoundError("PRIVATE_PATH"), "unavailable"),
+    (subprocess.SubprocessError("PRIVATE_ERROR"), "scan_error"),
+])
+def test_scan_failure_diagnostics_do_not_expose_private_content(
+        monkeypatch, failure, status):
+    monkeypatch.setattr(run_confirmatory.subprocess, "run",
+                        _fake_run(raises=failure))
+    diagnostics = {"stale": "PRIVATE_STALE"}
+    assert run_confirmatory._live_process_records(diagnostics=diagnostics) == []
+    assert diagnostics["status"] == status
+    assert diagnostics["elapsed_s"] >= 0
+    assert diagnostics["timeout_s"] == run_confirmatory._SCAN_TIMEOUT
+    assert "PRIVATE" not in repr(diagnostics)
+    assert set(diagnostics) == {"backend", "status", "elapsed_s", "timeout_s"}
+
+
+@pytest.mark.parametrize("stdout,returncode,status,rows", [
+    (b"", 0, "empty_output", 0),
+    (b"PRIVATE_UNPARSEABLE", 0, "unparseable_output", 0),
+    (b"", 1, "process_error", 0),
+    (b"4242|@|python.exe|@|PRIVATE_COMMAND\n", 0, "ok", 1),
+    (b"4242|@|python.exe|@|PRIVATE_COMMAND\n", 1, "process_error", 1),
+])
+def test_completed_scan_diagnostics_preserve_rows_and_hide_output(
+        monkeypatch, stdout, returncode, status, rows):
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr(run_confirmatory.subprocess, "run",
+                        lambda *a, **k: types.SimpleNamespace(
+                            stdout=stdout, stderr=b"PRIVATE_ERROR",
+                            returncode=returncode))
+    diagnostics = {}
+    records = run_confirmatory._live_process_records(diagnostics=diagnostics)
+    assert len(records) == rows
+    assert diagnostics["status"] == status
+    assert diagnostics["returncode"] == returncode
+    assert diagnostics["stdout_bytes"] == len(stdout)
+    assert diagnostics["stderr_bytes"] == len(b"PRIVATE_ERROR")
+    assert diagnostics["row_count"] == rows
+    assert "PRIVATE" not in repr(diagnostics)
+    assert set(diagnostics) == {
+        "backend", "status", "elapsed_s", "timeout_s", "returncode",
+        "stdout_bytes", "stderr_bytes", "row_count"}

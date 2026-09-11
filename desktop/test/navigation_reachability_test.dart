@@ -1,4 +1,4 @@
-﻿// Reachability: every catalog destination builds a real view from the
+// Reachability: every catalog destination builds a real view from the
 // factory, the rail search narrows by stable label, and no destination
 // is reachable by label alone.
 import 'dart:io';
@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flywheel_desktop/controllers/journey_controller.dart';
+import 'package:flywheel_desktop/controllers/rowan_operation_controller.dart';
+import 'package:flywheel_desktop/controllers/rowan_operation_host_adapter.dart';
 import 'package:flywheel_desktop/ide/code_buffer_session.dart';
 import 'package:flywheel_desktop/ide/unsaved_work_guard.dart';
 import 'package:flywheel_desktop/navigation/app_route.dart';
@@ -28,15 +30,22 @@ void main() {
       (tester) async {
     final dir = Directory.systemTemp.createTempSync('nav-reach-');
     addTearDown(() => dir.deleteSync(recursive: true));
+    final sessionStore = JourneySessionStore(file: File('${dir.path}/s.json'));
+    final client = GatewayClient();
     final controller = JourneyController(
         api: ScriptedJourneyApi(),
         draftStore: JourneyDraftStore(file: File('${dir.path}/d.json')),
-        sessionStore:
-            JourneySessionStore(file: File('${dir.path}/s.json')));
+        sessionStore: sessionStore);
+    final rowan = RowanOperationController(client, sessionStore: sessionStore);
+    final rowanHost = RowanOperationHostAdapter(rowan);
+    addTearDown(rowanHost.dispose);
+    addTearDown(rowan.dispose);
     addTearDown(controller.dispose);
+    addTearDown(client.close);
     final inputs = DestinationInputs(
-      client: GatewayClient(),
+      client: client,
       journey: controller,
+      rowanOperationHost: rowanHost,
       code: CodeBufferSession(
           draftStore: CodeDraftStore(root: Directory(dir.path))),
       codeGuard: UnsavedWorkGuard(
@@ -62,8 +71,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       theme: flywheelLightTheme(),
       home: Scaffold(
-          body: NavSearchField(
-              controller: controller, onChanged: (_) {})),
+          body: NavSearchField(controller: controller, onChanged: (_) {})),
     ));
     await tester.enterText(find.byType(TextField), 'receipt');
     await tester.pump();

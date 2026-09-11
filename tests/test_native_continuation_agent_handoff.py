@@ -125,7 +125,7 @@ def _operation_body(preview: dict, started: dict, context: dict, **overrides):
     selected_files = list(runner["selected_files"])
     operation = {
         "goal": runner["goal"],
-        "endpoint": "local",
+        "endpoint": "stub",
         "max_steps": 2,
         "allow_write": False,
         "allow_exec": False,

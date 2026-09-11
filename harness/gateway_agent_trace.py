@@ -65,6 +65,10 @@ def _private_value(value, secrets, *, result=False):
     validate_no_raw_secrets(bounded(value))
 
 
+def validate_private_trace_value(value, secrets=(), *, result=False):
+    _private_value(value, tuple(secrets), result=result)
+
+
 class AgentTrace:
     def __init__(self, state_root: Path, owner_ref: str, journey_ref: str,
                  operation_ref: str, *, secrets=(), expected_identity=None):

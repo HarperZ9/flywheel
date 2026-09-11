@@ -22,6 +22,7 @@ final class OperationController extends ChangeNotifier {
   String? _pendingHead;
   StreamSubscription<GatewayOperationEvent>? _watch;
   OperationObserverState _observer = OperationObserverState.idle;
+  int _lastSequence = 0;
   bool _terminalNotified = false, _disposed = false;
 
   OperationController({
@@ -41,6 +42,7 @@ final class OperationController extends ChangeNotifier {
   OperationSnapshot? get execution => _execution;
   OperationResult? get terminalResult => _terminalResult;
   OperationObserverState get observerState => _observer;
+  int get lastSequence => _lastSequence;
   GatewayJourneyBinding? get currentBinding => _execution?.binding;
   bool get hasTerminal => _execution?.isTerminal == true;
 
@@ -50,26 +52,41 @@ final class OperationController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void observe(Stream<GatewayOperationEvent> stream,
-      {required ValueChanged<Map<String, dynamic>> onProgress,
-      required VoidCallback onInterrupted}) {
+  void observe(
+    Stream<GatewayOperationEvent> stream, {
+    required ValueChanged<Map<String, dynamic>> onProgress,
+    required VoidCallback onInterrupted,
+  }) {
     if (_disposed) return;
     _watch?.cancel();
     beginObservation();
-    _watch = stream.listen((event) {
-      if (event.progress != null) onProgress(event.progress!);
-      final snapshot = event.snapshot;
-      final accepted = event.result == null
-          ? snapshot == null || acceptSnapshot(snapshot)
-          : snapshot != null && acceptTerminal(snapshot, event.result!);
-      if (!accepted) onInterrupted();
-    }, onError: (_) {
-      failObservation();
-      if (!_disposed && !hasTerminal) onInterrupted();
-    }, onDone: () {
-      closeObservation();
-      if (!_disposed && !hasTerminal) onInterrupted();
-    });
+    _watch = stream.listen(
+      (event) {
+        if (event.sequence <= _lastSequence) {
+          failObservation();
+          onInterrupted();
+          return;
+        }
+        if (event.progress != null) onProgress(event.progress!);
+        final snapshot = event.snapshot;
+        final accepted = event.result == null
+            ? snapshot == null || acceptSnapshot(snapshot)
+            : snapshot != null && acceptTerminal(snapshot, event.result!);
+        if (accepted) {
+          _lastSequence = event.sequence;
+        } else {
+          onInterrupted();
+        }
+      },
+      onError: (_) {
+        failObservation();
+        if (!_disposed && !hasTerminal) onInterrupted();
+      },
+      onDone: () {
+        closeObservation();
+        if (!_disposed && !hasTerminal) onInterrupted();
+      },
+    );
   }
 
   bool acceptSnapshot(OperationSnapshot next) {
@@ -92,6 +109,13 @@ final class OperationController extends ChangeNotifier {
     grants?.invalidate();
     notifyListeners();
     return true;
+  }
+
+  bool acceptRecoveredSnapshot(OperationSnapshot snapshot, int sequence) {
+    if (sequence < 0) return false;
+    final accepted = acceptSnapshot(snapshot);
+    if (accepted && sequence > _lastSequence) _lastSequence = sequence;
+    return accepted;
   }
 
   bool acceptTerminal(OperationSnapshot next, OperationResult result) {
@@ -138,7 +162,10 @@ final class OperationController extends ChangeNotifier {
     }
     _pendingHead = snapshot.eventHeadSha256;
     return _pendingStop = GatewayOperation.cancel(
-        _requestId(), snapshot.operationRef, stopTimeoutMs);
+      _requestId(),
+      snapshot.operationRef,
+      stopTimeoutMs,
+    );
   }
 
   bool isPendingOperation(GatewayOperation operation) {
@@ -158,15 +185,17 @@ final class OperationController extends ChangeNotifier {
         !isPendingOperation(operation)) {
       return false;
     }
-    return grantController.prepare(operation,
-        binding: binding,
-        currentOperation: () =>
-            isPendingOperation(operation) ? operation : null,
-        currentBinding: () => currentBinding);
+    return grantController.prepare(
+      operation,
+      binding: binding,
+      currentOperation: () => isPendingOperation(operation) ? operation : null,
+      currentBinding: () => currentBinding,
+    );
   }
 
   void closeObservation() {
     if (_disposed) return;
+    if (_observer == OperationObserverState.error) return;
     _observer = OperationObserverState.closed;
     notifyListeners();
   }

@@ -24,7 +24,8 @@ def projection(binding: dict, state: str, count: int, head: str,
     if runtime is not None:
         value["runtime"] = runtime_facts(runtime)
     if reason is not None:
-        if reason not in {"EXTERNAL_ACTION_FAILED", "OPERATION_INTERRUPTED"}:
+        from .gateway_agent_failures import AGENT_FAILURES
+        if reason not in AGENT_FAILURES | {"EXTERNAL_ACTION_FAILED", "OPERATION_INTERRUPTED"}:
             raise ValueError("invalid trace failure")
         value["reason"] = reason
     validate_no_raw_secrets(value)

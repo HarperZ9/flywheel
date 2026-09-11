@@ -4,6 +4,7 @@ import '../client/gateway_client.dart';
 import '../client/gateway_grants.dart';
 import '../controllers/gateway_operation_controller.dart';
 import '../controllers/operation_controller.dart';
+import '../models/agent_tool_protocol.dart';
 import '../models/gateway_models.dart';
 import '../models/operation_models.dart';
 import '../theme/flywheel_theme.dart';
@@ -15,6 +16,8 @@ import 'agent_gates.dart';
 import 'agent_runs_panel.dart';
 import 'editor_pane.dart';
 import 'live_run_tail.dart';
+
+part 'agent_panel_helpers.dart';
 
 class AgentPanel extends StatefulWidget {
   final GatewayClient client;
@@ -47,7 +50,8 @@ class _AgentPanelState extends State<AgentPanel> {
       widget.goalController ?? TextEditingController();
   final _scroll = ScrollController();
   List<EndpointRow> _endpoints = [];
-  String? _endpoint, _error;
+  String? _endpoint, _model, _error;
+  AgentToolProtocol _toolProtocol = AgentToolProtocol.compatibility;
   bool _allowWrite = false, _allowExec = false, _attachContext = true;
   EffortLevel _effort = EffortLevel.standard;
   bool _authorizing = false, _started = false, _pastOpen = false;
@@ -88,10 +92,11 @@ class _AgentPanelState extends State<AgentPanel> {
   }
 
   OperationController _newOperationState() => OperationController(
-    requestId: () => 'desktop-stop-${DateTime.now().microsecondsSinceEpoch}',
-    grants: _stopGrants,
-    onTerminalResult: _finished,
-  )..addListener(_stateChanged);
+        requestId: () =>
+            'desktop-stop-${DateTime.now().microsecondsSinceEpoch}',
+        grants: _stopGrants,
+        onTerminalResult: _finished,
+      )..addListener(_stateChanged);
   void _beginRun() {
     _operationState.dispose();
     _operationState = _newOperationState();
@@ -104,45 +109,10 @@ class _AgentPanelState extends State<AgentPanel> {
     });
   }
 
-  GatewayOperation? _operation(String request) {
-    final endpoint = _endpoint, input = _goal.text.trim();
-    if (endpoint == null || input.isEmpty) return null;
-    try {
-      final attachment = closedEditorAttachment(
-        _attachContext,
-        widget.currentAttachment,
-        widget.activeFile,
-        widget.selection,
-      );
-      return GatewayOperation.exact(
-        action: 'agent.run',
-        clientRequestId: request,
-        operation: {
-          'goal': input,
-          'endpoint': endpoint,
-          // The dial nominates the budget. The engine re-resolves `effort`
-          // and stamps both the dial and what it actually enforced, so
-          // these two agreeing here is not something the receipt assumes.
-          'effort': _effort.wire,
-          'max_steps': _effort.maxSteps,
-          'allow_write': _allowWrite,
-          'allow_exec': _allowExec,
-          'stream': true,
-          if (attachment != null) 'attachment': attachment,
-          if (widget.continuationHandoff != null)
-            'continuation': widget.continuationHandoff,
-          'root': widget.workspaceRoot,
-        },
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<void> _run() async {
     if (_authorizing || _started) return;
     final request = 'desktop-agent-${DateTime.now().microsecondsSinceEpoch}';
-    final operation = _operation(request);
+    final operation = _agentOperation(this, request);
     if (operation == null) {
       setState(() => _error = 'INVALID_CONTEXT');
       return;
@@ -164,7 +134,7 @@ class _AgentPanelState extends State<AgentPanel> {
         if (!mounted) return;
         setState(() => _authorizing = false);
       },
-      currentOperation: () => _operation(request),
+      currentOperation: () => _agentOperation(this, request),
     );
   }
 
@@ -211,10 +181,10 @@ class _AgentPanelState extends State<AgentPanel> {
   }
 
   void _scrollTail() => WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (_scroll.hasClients) {
-      _scroll.jumpTo(_scroll.position.maxScrollExtent);
-    }
-  });
+        if (_scroll.hasClients) {
+          _scroll.jumpTo(_scroll.position.maxScrollExtent);
+        }
+      });
   Future<void> _loadPastRuns() async {
     try {
       final r = await widget.client.agentRuns(limit: 10);
@@ -239,6 +209,14 @@ class _AgentPanelState extends State<AgentPanel> {
     }
   }
 
+  void _togglePastRuns() {
+    setState(() {
+      _pastOpen = !_pastOpen;
+      _stored = null;
+    });
+    if (_pastOpen) _loadPastRuns();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
@@ -252,10 +230,10 @@ class _AgentPanelState extends State<AgentPanel> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(t),
+          _agentHeader(this, t),
           const SizedBox(height: FwLayout.s2),
           if (_pastOpen)
-            _pastSection()
+            _agentPastSection(this)
           else ...[
             AgentOperationComposer(
               controller: _goal,
@@ -269,10 +247,18 @@ class _AgentPanelState extends State<AgentPanel> {
             AgentGates(
               endpoints: _endpoints,
               endpoint: _endpoint,
+              model: _model,
               allowWrite: _allowWrite,
               allowExec: _allowExec,
               attachContext: _attachContext,
-              onEndpoint: (v) => setState(() => _endpoint = v),
+              toolProtocol: _toolProtocol,
+              onEndpoint: (v) => setState(() {
+                _endpoint = v;
+                _model = null;
+              }),
+              onModel: (v) => setState(() => _model = v.isEmpty ? null : v),
+              onToolProtocol: (v) => setState(() => _toolProtocol = v),
+              loadModels: () => widget.client.models(_endpoint!),
               onWrite: (v) => setState(() => _allowWrite = v),
               onExec: (v) => setState(() => _allowExec = v),
               onAttach: (v) => setState(() => _attachContext = v),
@@ -292,6 +278,8 @@ class _AgentPanelState extends State<AgentPanel> {
                 events: _events,
                 scroll: _scroll,
                 client: widget.client,
+                snapshot: _operationState.execution,
+                terminalResult: _operationState.terminalResult,
               ),
             ],
           ],
@@ -299,35 +287,4 @@ class _AgentPanelState extends State<AgentPanel> {
       ),
     );
   }
-
-  Widget _header(FwTokens t) => Row(
-    children: [
-      Kicker('workspace agent', hot: !_pastOpen),
-      const Spacer(),
-      if (!widget.alive)
-        Text('engine offline', style: fwMono(t, size: 10.5, color: t.drift))
-      else
-        TextButton(
-          onPressed: () {
-            setState(() {
-              _pastOpen = !_pastOpen;
-              _stored = null;
-            });
-            if (_pastOpen) _loadPastRuns();
-          },
-          child: Text(
-            _pastOpen ? 'live' : 'past runs',
-            style: fwMono(t, size: 11, color: t.inkMuted),
-          ),
-        ),
-    ],
-  );
-  Widget _pastSection() => ConstrainedBox(
-    constraints: const BoxConstraints(maxHeight: 280),
-    child: SingleChildScrollView(
-      child: _stored != null
-          ? StoredAgentRun(doc: _stored!, client: widget.client)
-          : AgentRunsList(runs: _pastRuns, onOpen: _openStored),
-    ),
-  );
 }

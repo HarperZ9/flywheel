@@ -6,71 +6,18 @@ import os
 import sys
 from pathlib import Path
 
+from .evidence_public import TransportError
 from .writing_artifacts import WritingArtifactError
+from .writing_operations import (
+    SCHEMA, mcp_schemas, mcp_tool_descriptors, operation_for_mcp,
+    validate_mcp_arguments)
 from .writing_service import WritingError, WritingService
 
 PROTOCOL = "2025-06-18"
 __version__ = "0.1.0"
 
-
-def _schema(required=(), properties=None):
-    return {"type": "object", "required": list(required),
-            "additionalProperties": False, "properties": properties or {}}
-
-
-S, O = {"type": "string"}, {"type": "object"}
-COMMON = {"home": S, "journey_ref": S, "expected_event_head": S,
-          "client_request_id": S}
-PROJECT = {**COMMON, "project_ref": S}
-TOOLS = [
-    {"name": "writing.status", "description": "List owner-local writing projects.",
-     "inputSchema": _schema(properties={"home": S})},
-    {"name": "writing.doctor", "description": "Report local writing workflow readiness.",
-     "inputSchema": _schema(properties={"home": S})},
-    {"name": "writing.project_init", "description": "Prepare a project init proposal.",
-     "inputSchema": _schema(("brief_path", "source_packet_path", "client_request_id"),
-                            {"home": S, "brief_path": S, "source_packet_path": S,
-                             "client_request_id": S})},
-    {"name": "writing.section_record", "description": "Prepare a section proposal.",
-     "inputSchema": _schema(("journey_ref", "expected_event_head", "section",
-                             "client_request_id"), {**COMMON, "section": O})},
-    {"name": "writing.revision_record", "description": "Prepare a revision proposal.",
-     "inputSchema": _schema(("journey_ref", "expected_event_head", "project_ref",
-                             "section_ref", "body", "client_request_id"),
-                            {**PROJECT, "section_ref": S, "body": S})},
-    {"name": "writing.diagnose", "description": "Prepare a reader-flow diagnostic proposal.",
-     "inputSchema": _schema(("journey_ref", "expected_event_head", "project_ref",
-                             "revision_ref", "client_request_id"),
-                            {**PROJECT, "revision_ref": S})},
-    {"name": "writing.card_record", "description": "Prepare an author card proposal.",
-     "inputSchema": _schema(("journey_ref", "expected_event_head", "card",
-                             "client_request_id"), {**COMMON, "card": O})},
-    {"name": "writing.candidate_record", "description": "Prepare a scoped candidate proposal.",
-     "inputSchema": _schema(("journey_ref", "expected_event_head", "project_ref",
-                             "card_ref", "body", "client_request_id"),
-                            {**PROJECT, "card_ref": S, "body": S})},
-    {"name": "writing.decision_record", "description": "Prepare an accept/reject/rollback proposal.",
-     "inputSchema": _schema(("journey_ref", "expected_event_head", "project_ref",
-                             "decision", "client_request_id"),
-                            {**PROJECT, "decision": S, "candidate_ref": S,
-                             "section_ref": S, "to_revision_ref": S,
-                             "reason": S})},
-    {"name": "writing.review_prepare", "description": "Prepare an unmeasured review proposal.",
-     "inputSchema": _schema(("journey_ref", "expected_event_head", "project_ref",
-                             "client_request_id"), PROJECT)},
-    {"name": "writing.export_prepare", "description": "Prepare a manuscript export proposal.",
-     "inputSchema": _schema(("journey_ref", "expected_event_head", "project_ref",
-                             "out_ref", "client_request_id"),
-                            {**PROJECT, "out_ref": S})},
-    {"name": "writing.proposal_get", "description": "Inspect an exact proposal preview.",
-     "inputSchema": _schema(("proposal_ref",), {"home": S, "proposal_ref": S})},
-    {"name": "writing.proposal_commit", "description": "Commit with an externally approved grant.",
-     "inputSchema": _schema(("proposal_ref", "grant_ref"),
-                            {"home": S, "proposal_ref": S, "grant_ref": S})},
-    {"name": "writing.proposal_approve", "description": "Unavailable over MCP; approve by CLI.",
-     "inputSchema": _schema(("proposal_ref",), {"home": S, "proposal_ref": S})},
-]
-SCHEMAS = {tool["name"]: tool["inputSchema"] for tool in TOOLS}
+TOOLS = mcp_tool_descriptors()
+SCHEMAS = mcp_schemas()
 
 
 def _service(args: dict) -> WritingService:
@@ -84,18 +31,11 @@ def _text(value: object) -> dict:
 
 
 def _ensure_args(name: str, args: object) -> dict:
-    schema = SCHEMAS.get(name)
-    if schema is None or type(args) is not dict:
+    try:
+        op = operation_for_mcp(name)
+        return validate_mcp_arguments(op, args)
+    except (KeyError, TransportError):
         raise WritingError("INVALID_ARGUMENTS")
-    allowed, required = set(schema["properties"]), set(schema["required"])
-    if not required.issubset(args) or set(args) - allowed:
-        raise WritingError("INVALID_ARGUMENTS")
-    for key, spec in schema["properties"].items():
-        if key in args and spec["type"] == "string" and type(args[key]) is not str:
-            raise WritingError("INVALID_ARGUMENTS")
-        if key in args and spec["type"] == "object" and type(args[key]) is not dict:
-            raise WritingError("INVALID_ARGUMENTS")
-    return args
 
 
 def _call(params: dict) -> dict:
@@ -152,7 +92,8 @@ def _call(params: dict) -> dict:
         if name == "writing.proposal_commit":
             return _text(svc.commit_proposal(args["proposal_ref"], args["grant_ref"]))
         if name == "writing.proposal_approve":
-            return _text({"error": {"code": "APPROVAL_UNAVAILABLE",
+            op = operation_for_mcp(name)
+            return _text({"error": {"code": op.mcp_unavailable_reason,
                                     "message": "approve writing proposals with the local CLI"}})
         return {"content": [{"type": "text", "text": "unknown writing tool"}],
                 "isError": True}
@@ -172,7 +113,8 @@ def handle_request(req: dict):
     method, rid = req.get("method"), req.get("id")
     if method == "initialize":
         return _ok(rid, {"protocolVersion": PROTOCOL,
-                         "capabilities": {"tools": {}},
+                         "capabilities": {"tools": {
+                             "x-flywheel-operation-schema": SCHEMA}},
                          "serverInfo": {"name": "writing-workspace",
                                         "version": __version__}})
     if method == "tools/list":

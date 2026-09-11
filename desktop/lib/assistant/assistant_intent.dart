@@ -1,8 +1,8 @@
 // assistant_intent.dart -- what a spoken or typed command asks the agent to do.
 //
 // The mobile assistant reads one command and routes it to one of two channels: a
-// WorkTask goes to the accountable agent (relay, over the gateway), so real work
-// stays witnessed and re-verifiable; a device intent (music, navigation, a timer)
+// WorkTask goes to the accountable agent sink, so real work stays witnessed and
+// re-verifiable; a device intent (music, navigation, a timer)
 // is a quick local action the phone performs and gets out of the way. The types
 // are a sealed set so the planner switches over them exhaustively, and every field
 // is plain data, so routing and planning are pure and fully testable without a
@@ -21,8 +21,8 @@ sealed class AssistantIntent {
   const AssistantIntent();
 }
 
-/// A work request, handed to the accountable agent (relay via the gateway) so the
-/// run is witnessed and the receipts travel with it.
+/// A work request, handed to the accountable agent sink so the operation is
+/// witnessed and the receipts travel with it.
 class WorkTask extends AssistantIntent {
   const WorkTask(this.goal);
   final String goal;

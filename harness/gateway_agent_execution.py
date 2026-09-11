@@ -8,18 +8,24 @@ from .gateway_agent_trace import AgentTrace, TraceError, TraceLedger
 
 
 def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
-                      trace: AgentTrace, source_context, emit) -> dict:
+                      trace: AgentTrace, source_context, emit, *, binding=None, deadline=None) -> dict:
     from .effort import resolve_effort, stamp_applied
-    from .gateway import _resolve_workspace_root
+    import time
+    from .gateway_agent_binding import validate_agent_binding
+    from .gateway_agent_workspace import pinned_workspace
+    from .gateway_agent_proposer import BoundAgentProposer
+    from .gateway_operation import canonicalize_operation, materialize_agent_attachment, GatewayOperationError
     from .router_agent import run_router_agent
     from .source_context_worker import materialize_goal
 
     # Credentials travel only via the approved in-memory binding interface.
     # They are never copied to the request/evidence or ambient environment.
-    trace.append("request", {"operation": operation, "source_context": source_context})
-    root, error = _resolve_workspace_root(operation.get("root"), repo_root)
-    if error:
-        raise TraceError()
+    if binding is None or type(deadline) not in (int, float):
+        raise GatewayOperationError("AGENT_REPREPARE_REQUIRED")
+    validate_agent_binding(binding, canonicalize_operation("agent.run", operation))
+    trace.append("request", {"operation": operation, "source_context": source_context, "execution_binding": binding})
+    execution = materialize_agent_attachment(operation)
+    ledger = TraceLedger(trace)
     rejected = []
 
     def progress(event):
@@ -31,12 +37,26 @@ def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
             raise TraceError() from None
 
     try:
-        result = run_router_agent(
-            materialize_goal(operation["goal"], source_context), operation["endpoint"],
-            root=str(root), allow_write=operation["allow_write"],
-            allow_exec=operation["allow_exec"], max_steps=operation["max_steps"],
-            test_cmd=operation.get("test_cmd"), credential_bindings=CredentialBindings(bindings),
-            on_event=progress, ledger=TraceLedger(trace), event_errors_fatal=True)
+        with pinned_workspace(binding["workspace"]) as root:
+            goal = materialize_goal(execution["goal"], source_context)
+            if binding.get("tool_protocol", {}).get("protocol") == "native":
+                from .gateway_agent_native_tools import run_native_tool_agent
+                result = run_native_tool_agent(goal, binding,
+                    CredentialBindings(bindings), root, ledger, deadline,
+                    on_event=progress, test_cmd=execution.get("test_cmd"))
+            else:
+                proposer = BoundAgentProposer(binding, CredentialBindings(bindings), ledger, deadline)
+                result = run_router_agent(
+                    goal, binding["endpoint"]["name"], root=str(root),
+                    allow_write=binding["capabilities"]["allow_write"],
+                    allow_exec=binding["capabilities"]["allow_exec"], max_steps=binding["budget"]["max_steps"],
+                    model=binding["model"]["model_id"], max_tokens=binding["budget"]["max_tokens"],
+                    temperature=binding["sampling"]["temperature"], seed=binding["sampling"]["router_seed"],
+                    proposer=proposer, test_cmd=execution.get("test_cmd"),
+                    credential_bindings=CredentialBindings(bindings),
+                    on_event=progress, ledger=ledger, event_errors_fatal=True)
+            if time.monotonic() >= deadline:
+                raise GatewayOperationError("OPERATION_DEADLINE_EXCEEDED")
         if rejected:
             raise TraceError()
         if operation.get("effort"):

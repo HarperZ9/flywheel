@@ -74,17 +74,17 @@ class _FlywheelShellState extends State<FlywheelShell> {
   void initState() {
     super.initState();
     _dependencies = widget.dependencies ?? FlywheelDependencies.production();
-    _operations =
-        GatewayOperationController(GatewayGrantClient(_dependencies.client));
+    _operations = GatewayOperationController(
+      GatewayGrantClient(_dependencies.client),
+    );
     _guard = UnsavedWorkGuard(
-        session: _dependencies.code,
-        prompt: _dependencies.closePrompt ??
-            (request) => showUnsavedWorkPrompt(context, request));
+      session: _dependencies.code,
+      prompt: _dependencies.closePrompt ??
+          (request) => showUnsavedWorkPrompt(context, request),
+    );
     _navigation = NavigationController(
       guard: _guard.requestNavigation,
-      initial: _mobile
-          ? const AppLocation(routeId: DestinationId.chat)
-          : null,
+      initial: _mobile ? const AppLocation(routeId: DestinationId.chat) : null,
     );
     _coordinator = GatewayStatusCoordinator(
       client: _dependencies.client,
@@ -113,9 +113,11 @@ class _FlywheelShellState extends State<FlywheelShell> {
 
   void _goTo(DestinationId routeId, {Object? arg}) {
     if (arg != null) setState(() => _pendingArgument = arg);
-    unawaited(_navigation
-        .go(AppLocation(routeId: routeId))
-        .then((ok) => mounted ? setState(() {}) : null));
+    unawaited(
+      _navigation
+          .go(AppLocation(routeId: routeId))
+          .then((ok) => mounted ? setState(() {}) : null),
+    );
   }
 
   Future<AppExitResponse> _requestExit() async =>
@@ -129,27 +131,28 @@ class _FlywheelShellState extends State<FlywheelShell> {
         location.routeId == DestinationId.receipts ? _pendingArgument : null;
     if (location.routeId == DestinationId.receipts) _pendingArgument = null;
     return AnimatedBuilder(
-        animation: Listenable.merge([_coordinator, _navigation]),
-        builder: (context, _) => _views.viewFor(location, (_) {
-              return buildDestinationView(
-                location.routeId,
-                DestinationInputs(
-                  client: _dependencies.client,
-                  journey: _dependencies.journey,
-                  code: _dependencies.code,
-                  codeGuard: _guard,
-                  alive: _coordinator.alive,
-                  settings: widget.settings,
-                  pendingArgument: argument,
-                  roster: _coordinator.roster,
-                  world: _coordinator.world,
-                  onProbe: () => unawaited(_coordinator.probeLanes()),
-                  onInstall: (name) async =>
-                      await _coordinator.installLane(name),
-                  onStartEngine: () => unawaited(_coordinator.start()),
-                ),
-              );
-            }));
+      animation: Listenable.merge([_coordinator, _navigation]),
+      builder: (context, _) => _views.viewFor(location, (_) {
+        return buildDestinationView(
+          location.routeId,
+          DestinationInputs(
+            client: _dependencies.client,
+            journey: _dependencies.journey,
+            rowanOperationHost: _dependencies.rowanOperationHost,
+            code: _dependencies.code,
+            codeGuard: _guard,
+            alive: _coordinator.alive,
+            settings: widget.settings,
+            pendingArgument: argument,
+            roster: _coordinator.roster,
+            world: _coordinator.world,
+            onProbe: () => unawaited(_coordinator.probeLanes()),
+            onInstall: (name) async => await _coordinator.installLane(name),
+            onStartEngine: () => unawaited(_coordinator.start()),
+          ),
+        );
+      }),
+    );
   }
 
   static const double narrowBreakpoint = 640;
@@ -159,20 +162,21 @@ class _FlywheelShellState extends State<FlywheelShell> {
     return PaletteShortcuts(
       onGo: _goTo,
       child: GatewayOperationScope(
-        authorize:
-            journeyGatewayAuthorizer(_operations, _dependencies.journey),
-        child: LayoutBuilder(builder: (context, constraints) {
-          final narrow = constraints.maxWidth < narrowBreakpoint;
-          return Scaffold(
-            drawer: narrow
-                ? Drawer(child: SafeArea(child: _rail(inDrawer: true)))
-                : null,
-            body: FlywheelNav(
-              goTo: _goTo,
-              child: narrow ? _narrowBody(context) : _wideBody(),
-            ),
-          );
-        }),
+        authorize: journeyGatewayAuthorizer(_operations, _dependencies.journey),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final narrow = constraints.maxWidth < narrowBreakpoint;
+            return Scaffold(
+              drawer: narrow
+                  ? Drawer(child: SafeArea(child: _rail(inDrawer: true)))
+                  : null,
+              body: FlywheelNav(
+                goTo: _goTo,
+                child: narrow ? _narrowBody(context) : _wideBody(),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -180,10 +184,12 @@ class _FlywheelShellState extends State<FlywheelShell> {
   Widget _wideBody() => Column(
         children: [
           Expanded(
-            child: Row(children: [
-              _rail(),
-              Expanded(child: _activeView()),
-            ]),
+            child: Row(
+              children: [
+                _rail(),
+                Expanded(child: _activeView()),
+              ],
+            ),
           ),
           _statusBar(),
         ],
@@ -198,8 +204,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
               coordinator: _coordinator,
               onToggleTheme: widget.onToggleTheme,
               onAssistant: () => openAssistant(
-                  context, _dependencies.client,
-                  _voiceInput, _voiceOutput),
+                  context, _dependencies, _voiceInput, _voiceOutput),
             ),
             Expanded(child: _activeView()),
             _statusBar(),
@@ -221,53 +226,51 @@ class _FlywheelShellState extends State<FlywheelShell> {
   Widget _statusBar() => AnimatedBuilder(
         animation: _coordinator,
         builder: (context, _) => StatusBar(
-              alive: _coordinator.alive,
-              message: _coordinator.message,
-              startError: _coordinator.startError,
-              world: _coordinator.world,
-              onStartEngine: () => unawaited(_coordinator.start()),
-              local: !_mobile,
-              gatewayAddress:
-                  Uri.tryParse(_dependencies.client.baseUrl)?.authority
-                      ?? _dependencies.client.baseUrl,
-            ),
+          alive: _coordinator.alive,
+          message: _coordinator.message,
+          startError: _coordinator.startError,
+          world: _coordinator.world,
+          onStartEngine: () => unawaited(_coordinator.start()),
+          local: !_mobile,
+          gatewayAddress:
+              Uri.tryParse(_dependencies.client.baseUrl)?.authority ??
+                  _dependencies.client.baseUrl,
+        ),
       );
 
   Widget _rail({bool inDrawer = false}) {
     return AnimatedBuilder(
-        animation: Listenable.merge([_navigation, _coordinator]),
-        builder: (context, _) => ShellRail(
-              collapsed: inDrawer ? false : _railCollapsed,
-              width: inDrawer ? 264 : _railWidth,
-              selected: _navigation.current.routeId,
-              onGo: inDrawer
-                  ? (routeId) {
-                      _goTo(routeId);
-                      Navigator.of(context).maybePop();
-                    }
-                  : _goTo,
-              onResize: _resizeRail,
-              onToggleCollapse: _toggleRail,
-              onToggleTheme: widget.onToggleTheme,
-              onOpenAppearance: () => showAppearancePanel(
-                context,
-                widget.settings,
-                widget.onAppearanceChanged ?? () {},
-              ),
-              onOpenConnection: () => showConnectionPanel(context),
-              onOpenSessions: () => showSessionsPanel(
-                context,
-                api: GatewayJourneyApi(_dependencies.client),
-                onOpen: (ref, lens) =>
-                    _dependencies.journey.openSession(ref, lens),
-              ),
-              inDrawer: inDrawer,
-              onOpenAssistant: () => openAssistant(
-                  context, _dependencies.client,
-                  _voiceInput, _voiceOutput),
-              onOpenRecovery: () =>
-                  openRecoveryCenter(context, _dependencies),
-            ));
+      animation: Listenable.merge([_navigation, _coordinator]),
+      builder: (context, _) => ShellRail(
+        collapsed: inDrawer ? false : _railCollapsed,
+        width: inDrawer ? 264 : _railWidth,
+        selected: _navigation.current.routeId,
+        onGo: inDrawer
+            ? (routeId) {
+                _goTo(routeId);
+                Navigator.of(context).maybePop();
+              }
+            : _goTo,
+        onResize: _resizeRail,
+        onToggleCollapse: _toggleRail,
+        onToggleTheme: widget.onToggleTheme,
+        onOpenAppearance: () => showAppearancePanel(
+          context,
+          widget.settings,
+          widget.onAppearanceChanged ?? () {},
+        ),
+        onOpenConnection: () => showConnectionPanel(context),
+        onOpenSessions: () => showSessionsPanel(
+          context,
+          api: GatewayJourneyApi(_dependencies.client),
+          onOpen: (ref, lens) => _dependencies.journey.openSession(ref, lens),
+        ),
+        inDrawer: inDrawer,
+        onOpenAssistant: () =>
+            openAssistant(context, _dependencies, _voiceInput, _voiceOutput),
+        onOpenRecovery: () => openRecoveryCenter(context, _dependencies),
+      ),
+    );
   }
 
   void _resizeRail(double width) {

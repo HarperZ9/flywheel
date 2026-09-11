@@ -840,6 +840,11 @@ class _Handler(BaseHTTPRequestHandler):
     def _get(self):
         p = self.path.split("?", 1)[0]
         qs = self.path.split("?", 1)[1] if "?" in self.path else ""
+        if p == "/api/operations":  # discover owner/Journey operation metadata
+            from harness.gateway_operation_route import route_gateway_operation
+            service, factory = self._operation_components()
+            return self._operation_response(route_gateway_operation(
+                "GET", p, query=qs, owner_ref=self.owner_ref, service=service, process_factory=factory))
         if p in ("/openapi.json",  # OpenAPI 3.1 for every route, generated
                  "/llms.txt",  # the same inventory, in the llmstxt.org shape
                  "/.well-known/flywheel.json"):  # the card pointing at both
@@ -1337,7 +1342,7 @@ class _Handler(BaseHTTPRequestHandler):
                 from harness.gateway_grant_route import gateway_grant_post
                 body, code = gateway_grant_post(
                     p, raw, owner_ref=self.owner_ref, run_root=Path(self.run_root),
-                    state_root=self.flywheel_home / "state", clock=self.clock)
+                    state_root=self.flywheel_home / "state", clock=self.clock, workspace_root=Path(self.root))
             else:
                 from harness.credential_handle_route import credential_handle_post
                 body, code = credential_handle_post(

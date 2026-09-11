@@ -1,25 +1,31 @@
 from dataclasses import replace
 import json
+import time
+from harness.gateway_agent_binding import freeze_agent_binding
 import pytest
 from harness.gateway_agent_trace import AgentTrace
 
 import harness.gateway_operation_process as worker_protocol
-from harness.gateway_operation import AuthorizedOperation, thaw_operation
+from harness.gateway_operation import AuthorizedOperation, canonicalize_operation, thaw_operation
 from harness.gateway_operation_process import GatewayAgentProcessFactory
 from harness.gateway_provider_adapter import ExecutionPlan
-from harness.plan_run_snapshot import freeze_json
+from harness.plan_run_snapshot import freeze_json, thaw_json
 from harness.source_context_store import SourceContextStore
 from tests.test_source_context_store import CORPUS_ID, OWNER, _selection
 
 
-def _authorized(ref, plan=None):
-    operation = {"goal": "Use the selected context", "endpoint": "local",
+def _authorized(ref, root, plan=None):
+    operation = {"goal": "Use the selected context", "endpoint": "stub",
         "max_steps": 1, "allow_write": False, "allow_exec": False,
-        "stream": True, "root": "workspace", "data_refs": [ref],
+        "stream": True, "root": str(root), "data_refs": [ref],
         "credential_refs": []}
     base = AuthorizedOperation.for_test(action="agent.run", operation=operation, scopes=("network",))
-    return replace(base, owner_ref=OWNER,
-        execution_plan=plan or ExecutionPlan("a" * 64, (), ()),
+    canonical = canonicalize_operation("agent.run", operation)
+    base = replace(base, operation_sha256=canonical.operation_sha256,
+                   arguments_sha256=canonical.arguments_sha256)
+    plan = replace(plan or ExecutionPlan("a" * 64, (), ()),
+                   agent_binding=freeze_agent_binding(base, root))
+    return replace(base, owner_ref=OWNER, execution_plan=plan,
         credential_bindings={})
 
 
@@ -41,7 +47,7 @@ def _frozen_plan(state, ref):
 
 def test_factory_freezes_private_source_bytes_after_grant_for_worker(tmp_path):
     ref = _publish(tmp_path)
-    authorized = _authorized(ref, _frozen_plan(tmp_path, ref))
+    authorized = _authorized(ref, tmp_path, _frozen_plan(tmp_path, ref))
     for path in (tmp_path / "source-context" / "v1" / "owners" / OWNER
                  / "payloads").glob("*.json"):
         path.write_text("{}", encoding="utf-8")
@@ -67,7 +73,7 @@ def test_factory_freezes_private_source_bytes_after_grant_for_worker(tmp_path):
 def test_worker_sends_exact_selected_text_to_fake_provider_without_reopening(tmp_path, monkeypatch):
     ref = _publish(tmp_path)
     source_payload = SourceContextStore(tmp_path).resolve_worker_payload(OWNER, (ref,))
-    operation = thaw_operation(_authorized(ref).operation)
+    operation = thaw_operation(_authorized(ref, tmp_path).operation)
     operation["root"] = str(tmp_path)
     seen = []
     def fake_run(goal, endpoint, **kwargs):
@@ -76,7 +82,9 @@ def test_worker_sends_exact_selected_text_to_fake_provider_without_reopening(tmp
     monkeypatch.setattr("harness.router_agent.run_router_agent", fake_run)
 
     result = worker_protocol._run_agent(operation, {}, tmp_path, tmp_path, source_payload, trace=AgentTrace(
-            tmp_path, OWNER, "jrn_" + "a" * 32, "op_" + "a" * 32))
+            tmp_path, OWNER, "jrn_" + "a" * 32, "op_" + "a" * 32),
+        binding=thaw_json(freeze_agent_binding(canonicalize_operation("agent.run", operation), tmp_path)),
+        deadline=time.monotonic() + 300)
 
     assert result["state"] == "completed"
     assert "DECISION-FACT-ALPHA" in seen[0]
@@ -89,7 +97,7 @@ def test_worker_keeps_selected_source_urls_out_of_scaffold_and_run_artifacts(
     private_url = "https://private.example.invalid/token-DO-NOT-LEAK"
     ref = _publish(tmp_path, f"DECISION-FACT-ALPHA {private_url}")
     source_payload = SourceContextStore(tmp_path).resolve_worker_payload(OWNER, (ref,))
-    operation = thaw_operation(_authorized(ref).operation)
+    operation = thaw_operation(_authorized(ref, tmp_path).operation)
     operation["root"] = str(tmp_path)
     operation["goal"] = "Use selected context without freezing private URLs"
     scaffold_urls = []
@@ -107,7 +115,9 @@ def test_worker_keeps_selected_source_urls_out_of_scaffold_and_run_artifacts(
 
     result = worker_protocol._run_agent(
         operation, {}, tmp_path, tmp_path, source_payload, trace=AgentTrace(
-            tmp_path, OWNER, "jrn_" + "a" * 32, "op_" + "a" * 32))
+            tmp_path, OWNER, "jrn_" + "a" * 32, "op_" + "a" * 32),
+        binding=thaw_json(freeze_agent_binding(canonicalize_operation("agent.run", operation), tmp_path)),
+        deadline=time.monotonic() + 300)
 
     assert result["state"] == "completed"
     assert scaffold_urls == []
@@ -125,7 +135,7 @@ def test_missing_frozen_source_payload_returns_typed_failure_without_launch(tmp_
     worker = GatewayAgentProcessFactory(
         repo_root=tmp_path, run_root=tmp_path, state_root=tmp_path,
         launcher=lambda spec: launched.append(spec)).create(
-            _authorized(ref), lambda _event: None)
+            _authorized(ref, tmp_path), lambda _event: None)
     outcome = worker.wait(0)
 
     assert launched == []
@@ -145,7 +155,7 @@ def test_missing_frozen_source_payload_with_no_state_root_fails_before_launch(
     worker = GatewayAgentProcessFactory(
         repo_root=tmp_path, run_root=tmp_path,
         launcher=lambda spec: (launched.append(spec), Launched())[1]).create(
-            _authorized(ref), lambda _event: None)
+            _authorized(ref, tmp_path), lambda _event: None)
     outcome = worker.wait(0)
 
     assert launched == []
@@ -165,6 +175,6 @@ def test_frozen_source_payload_still_requires_trace_state_root(tmp_path):
         GatewayAgentProcessFactory(
             repo_root=tmp_path, run_root=tmp_path,
             launcher=lambda spec: (captured.append(spec), Launched())[1]).create(
-            _authorized(ref, _frozen_plan(tmp_path, ref)), lambda _event: None)
+            _authorized(ref, tmp_path, _frozen_plan(tmp_path, ref)), lambda _event: None)
 
     assert captured == []
