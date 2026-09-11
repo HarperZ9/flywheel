@@ -1,0 +1,20 @@
+{
+  "schema": "flywheel.gateway-agent-projection/v1",
+  "operation_ref": "op_cccccccccccccccccccccccccccccccc",
+  "journey_ref": "jrn_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "state": "completed",
+  "trace_ref": "agt_3e2197a3f63109a97f701d387b758689",
+  "record_count": 3,
+  "trace_head_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "omissions": [
+    "PRIVATE_CONTENT",
+    "CREDENTIAL_VALUES",
+    "UPSTREAM_OUTPUT_LIMITS"
+  ],
+  "does_not_prove": [
+    "NOT_SEMANTIC_TRUTH",
+    "NOT_UNLIMITED_TOOL_OUTPUT",
+    "ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED"
+  ],
+  "projection_sha256": "871dc53779e955e7c53b220540d1679a093ba0dbd35d6508c3c01ded59b2c382"
+}

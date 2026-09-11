@@ -10,7 +10,7 @@ from .gateway_operation import AuthorizedOperation, canonicalize_operation, mate
 from .gateway_operation_recovery import validate_operation_value
 from .gateway_secret_boundary import validate_no_raw_secrets
 from .gateway_worker_env import minimal_worker_env
-_PRIVATE_SCHEMA = "flywheel.gateway-operation-worker/v1"
+_PRIVATE_SCHEMA = "flywheel.gateway-operation-worker/v2"
 MAX_RESULT_BYTES = 250_000
 @dataclass(frozen=True)
 class WorkerOutcome:
@@ -23,12 +23,13 @@ def _launch(spec: ProcessLaunch) -> OwnedProcess:
     return start_owned_process(spec.argv, cwd=spec.cwd, stdin_bytes=spec.stdin_bytes, env=spec.env)
 class GatewayWorker:
     control_class = "windows_job_v1"
-    def __init__(self, owned, progress: Callable[[dict], None], secret_values: tuple[str, ...]) -> None:
+    def __init__(self, owned, progress: Callable[[dict], None], secret_values: tuple[str, ...], projection_binding=None) -> None:
         self._owned, self._progress, self._secrets = owned, progress, secret_values
         self._outcome = self._terminal = None
         self._state_lock, self._poll_lock = threading.Lock(), threading.Lock(); self._seen, self._pending = b"", bytearray()
         self._terminal_before_cancel = False
         self._cancel_requested = self._invalid = False
+        self._projection_binding = projection_binding
     def resume(self) -> bool: return self._owned.resume()
     def signal_tree(self) -> bool:
         with self._poll_lock:
@@ -88,6 +89,7 @@ class GatewayWorker:
             raise ValueError
         if set(row) == {"type", "event"} and row.get("type") == "progress":
             if type(row["event"]) is not dict: raise ValueError
+            self._validate_projection(row["event"], "running")
             validate_operation_value(row["event"], self._secrets); validate_no_raw_secrets(row["event"])
             if len(canonical_bytes(row["event"])) > MAX_RESULT_BYTES: raise ValueError
             self._progress(row["event"]); return
@@ -97,9 +99,16 @@ class GatewayWorker:
                 or type(row.get("result")) is not dict):
             raise ValueError
         validate_operation_value(row["result"], self._secrets); validate_no_raw_secrets(row["result"])
+        self._validate_projection(row["result"], row["state"])
         if len(canonical_bytes(row["result"])) > MAX_RESULT_BYTES: raise ValueError
         self._terminal = WorkerOutcome(row["state"], row["result"])
         self._terminal_before_cancel = not self._cancel_requested
+    def _validate_projection(self, value, state):
+        if self._projection_binding is not None:
+            if state == "failed" and value == {"reason": "EXTERNAL_ACTION_FAILED"}: return
+            from .gateway_agent_projection import validate_projection
+            validate_projection(value, self._projection_binding)
+            if value["state"] != state: raise ValueError
     def _capture_valid(self, outcome: ProcessOutcome) -> bool:
         try: validate_no_raw_secrets({"stderr": outcome.stderr})
         except Exception: return False
@@ -110,7 +119,9 @@ class GatewayWorker:
                     else WorkerOutcome("cancelled", {"stopped": True}))
         if self._invalid or not self._capture_valid(outcome):
             return _failed()
-        if outcome.returncode == 0 and self._terminal is not None: return self._terminal
+        if self._terminal is not None and (outcome.returncode == 0
+                or outcome.returncode == 1 and self._terminal.state == "failed"):
+            return self._terminal
         return _failed()
 class GatewayAgentProcessFactory:
     def __init__(self, *, repo_root: Path, run_root: Path,
@@ -125,21 +136,29 @@ class GatewayAgentProcessFactory:
         bindings = authorized.credential_bindings
         if type(bindings) is not dict:
             try:
-                bindings = dict(bindings or {})
+                from .credential_handles import CredentialBindings
+                bindings = (bindings.child_environment({}, platform="windows")
+                    if isinstance(bindings, CredentialBindings) else dict(bindings or {}))
             except (TypeError, ValueError):
                 raise ValueError("gateway worker credentials are invalid") from None
         from .source_context_worker import source_context_or_failed_worker
         source_context = source_context_or_failed_worker(authorized, self.state_root)
         if getattr(source_context, "control_class", None): return source_context
+        from .gateway_agent_execution import trace_context
+        if self.state_root is None:
+            raise ValueError("private trace custody is unavailable")
         payload = {"schema": _PRIVATE_SCHEMA, "operation": thaw_operation(authorized.operation),
                    "credential_bindings": dict(bindings), "repo_root": str(self.repo_root),
-                   "run_root": str(self.run_root), "source_context": source_context}
+                   "run_root": str(self.run_root), "source_context": source_context,
+                   "trace_context": trace_context(authorized, self.state_root)}
         spec = ProcessLaunch(
             (sys.executable, "-m", "harness.gateway_operation_process", "worker"),
             self.repo_root, canonical_bytes(payload), minimal_worker_env(
                 self.repo_root, run_root=self.run_root, state_root=self.state_root))
+        from .gateway_agent_execution import trace_from_request
         return GatewayWorker(self.launcher(spec), progress, tuple(
-            value for value in bindings.values() if type(value) is str and value))
+            value for value in bindings.values() if type(value) is str and value),
+            trace_from_request(payload["trace_context"]).binding)
 def _commit_terminal(callback: Callable[[WorkerOutcome], None], outcome: WorkerOutcome) -> None:
     """Retry the same CAS outcome; never substitute a second terminal."""
     for _ in range(2):
@@ -208,7 +227,7 @@ def _emit(value: dict) -> None:
 def _worker_request() -> tuple[dict, dict, Path, Path, dict | None]:
     value = strict_load_json(sys.stdin.buffer.read(), max_bytes=1_048_576)
     if (set(value) != {"schema", "operation", "credential_bindings",
-                       "repo_root", "run_root", "source_context"}
+                       "repo_root", "run_root", "source_context", "trace_context"}
             or value["schema"] != _PRIVATE_SCHEMA):
         raise ValueError
     operation = canonicalize_operation("agent.run", value["operation"])
@@ -221,7 +240,7 @@ def _worker_request() -> tuple[dict, dict, Path, Path, dict | None]:
             or not (value["source_context"] is None
                     or type(value["source_context"]) is dict)):
         raise ValueError
-    return (thaw_operation(operation.operation), bindings, Path(value["repo_root"]), Path(value["run_root"]), value["source_context"])
+    return (thaw_operation(operation.operation), bindings, Path(value["repo_root"]), Path(value["run_root"]), value["source_context"], value["trace_context"])
 class _SecretOutput(ValueError): pass
 def _check_child_value(value: object, secrets: tuple[str, ...]) -> None:
     try:
@@ -229,70 +248,31 @@ def _check_child_value(value: object, secrets: tuple[str, ...]) -> None:
     except Exception: raise _SecretOutput from None
     if any(secret.encode("utf-8") in data for secret in secrets if secret):
         raise _SecretOutput
-def _persist_failed_run(run_root: Path, goal: str, endpoint: str,
-                        events: list[dict], secrets: tuple[str, ...]) -> None:
-    from .eval_store import save_agent_run, trim_events
-    value = {"status": "FAILED", "goal_excerpt": goal[:200],
-             "endpoint": endpoint, "events": trim_events(events),
-             "failure": {"code": "EXTERNAL_ACTION_FAILED"}}
-    _check_child_value(value, secrets)
-    try: save_agent_run(run_root, value)
-    except Exception: pass
 def _run_agent(operation: dict, bindings: Mapping[str, str],
-               repo_root: Path, run_root: Path, source_context=None) -> dict:
-    from .gateway import _countersign_run, _resolve_workspace_root
-    from .router_agent import run_router_agent; from .effort import resolve_effort, stamp_applied
-    from .scaffold import scaffold_answer, scaffold_turn; from .source_context_worker import materialize_goal
-    user_goal = operation["goal"]
-    goal = materialize_goal(user_goal, source_context)
-    endpoint = operation["endpoint"]; effort = resolve_effort(operation["effort"]) if operation.get("effort") else None
-    root, error = _resolve_workspace_root(operation.get("root"), repo_root)
-    if error: raise ValueError
-    events: list[dict] = []
-    secrets = tuple(value for value in bindings.values() if value)
-    def progress(event: dict) -> None:
-        events.append(event); _check_child_value(events, secrets)
-        if type(event) is not dict or len(canonical_bytes(event)) > MAX_RESULT_BYTES: events.append(_SecretOutput()); raise ValueError
-        _emit({"type": "progress", "event": event})
-    try:
-        result = run_router_agent(
-            goal, endpoint, root=str(root), allow_write=operation["allow_write"],
-            allow_exec=operation["allow_exec"], max_steps=operation["max_steps"],
-            test_cmd=operation.get("test_cmd"),
-            credential_bindings=dict(bindings), on_event=progress)
-        _check_child_value(events, secrets); _check_child_value(result, secrets)
-        if len(canonical_bytes(result)) > MAX_RESULT_BYTES: raise ValueError
-        result["scaffold"] = scaffold_answer(
-            str(result.get("final") or ""), scaffold_turn(user_goal),
-            provenance={"endpoint": endpoint, "model_ref": endpoint})
-        if effort: result["effort"] = stamp_applied(effort, max_steps_applied=operation["max_steps"], n_candidates_applied=False)
-        _check_child_value(result, secrets); result["run_receipt"] = _countersign_run(result)
-        _check_child_value(result, secrets)
-    except _SecretOutput: raise
-    except Exception:
-        _persist_failed_run(run_root, user_goal, endpoint, events, secrets)
-        raise
-    try:
-        from .eval_store import save_agent_run, trim_events
-        stored = dict(result, goal_excerpt=user_goal[:200],
-                      events=trim_events(events))
-        _check_child_value(stored, secrets)
-        result["run_id"] = save_agent_run(run_root, stored)["run_id"]
-    except Exception: result["receipt_note"] = "authorized external action failed"
-    return result
+               repo_root: Path, run_root: Path, source_context=None, *, trace=None) -> dict:
+    from .gateway_agent_execution import run_private_agent
+    if trace is None:
+        raise ValueError("private trace custody is unavailable")
+    return run_private_agent(operation, dict(bindings), repo_root, trace, source_context, _emit)
+
 def _main() -> int:
+    trace = None
     try:
         request = _worker_request(); operation, bindings, repo_root, run_root = request[:4]
         source_context = request[4] if len(request) > 4 else None
+        from .gateway_agent_execution import trace_from_request
+        trace = trace_from_request(request[5], tuple(v for v in bindings.values() if v))
         result = _run_agent(materialize_agent_attachment(operation), bindings,
-                            repo_root, run_root, source_context)
+                            repo_root, run_root, source_context, trace=trace)
         secrets = tuple(value for value in bindings.values() if value)
         _check_child_value(result, secrets)
         _emit({"type": "terminal", "state": "completed", "result": result})
         return 0
     except Exception:
-        _emit({"type": "terminal", "state": "failed",
-               "result": {"reason": "EXTERNAL_ACTION_FAILED"}})
+        result = {"reason": "EXTERNAL_ACTION_FAILED"}
+        if trace is not None and trace.count:
+            result = trace.projection("failed", reason="EXTERNAL_ACTION_FAILED")
+        _emit({"type": "terminal", "state": "failed", "result": result})
         return 1
 if __name__ == "__main__":
     raise SystemExit(_main() if sys.argv[1:] == ["worker"] else 2)

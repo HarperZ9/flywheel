@@ -202,9 +202,10 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                      max_tokens: int = 1024, temperature: float = 0.0, seed: int = 0,
                      compact_budget: int = 0, proposer=None, credential_bindings=None,
                      canaries: "list | None" = None, on_event=None,
-                     receipt_dir: "str | None" = None) -> dict:
+                     receipt_dir: "str | None" = None, ledger=None,
+                     event_errors_fatal: bool = False) -> dict:
     """Run one gated agentic loop over a named or explicitly bound endpoint."""
-    ledger = SessionLedger()
+    ledger = SessionLedger() if ledger is None else ledger
     agent = RouterAgent(
         endpoint, model=model, base_url=base_url, proposer=proposer,
         credential_bindings=credential_bindings, max_tokens=max_tokens,
@@ -221,7 +222,8 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
     started = time.perf_counter()
     result = run_agent(
         agent, goal, executor, ledger, max_steps=max_steps, test_cmd=test_cmd,
-        sign_key=sign_key, canaries=canaries, on_event=on_event)
+        sign_key=sign_key, canaries=canaries, on_event=on_event,
+        event_errors_fatal=event_errors_fatal)
     return _finalize_run(
         result, endpoint=endpoint, agent=agent, executor=executor,
         receipt_dir=receipt_dir, duration=round(time.perf_counter() - started, 3),

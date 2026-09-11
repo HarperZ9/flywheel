@@ -2,6 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import os
+from .private_artifact_fs_listing import ArtifactListing
 from pathlib import Path, PureWindowsPath
 from .private_artifact_fs import BUSY, CLOSED, CONFLICT, IO_ERROR, NOT_FOUND, NOT_REGULAR
 from .private_artifact_fs import TOO_LARGE, UNSAFE_PATH, ArtifactIdentity, PrivateArtifactError
@@ -27,7 +28,7 @@ def identity_for_root(root: Path) -> ArtifactIdentity:
         return caps[-1].identity
     finally:
         _close_caps(caps)
-class ArtifactRoot:
+class ArtifactRoot(ArtifactListing):
     def __init__(self, root: Path, expected: ArtifactIdentity | None, writable: bool = True) -> None:
         self._root_path = _absolute_existing(root)
         self._expected = expected

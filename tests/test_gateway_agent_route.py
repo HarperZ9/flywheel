@@ -83,7 +83,10 @@ def test_agent_route_denied_permission_reaches_the_agent_call_unchanged(
                 "checkpoint": "abc", "endpoint": endpoint}
 
     monkeypatch.setattr("harness.router_agent.run_router_agent", fake_run)
-    _run_agent(dict(_OPERATION), {}, tmp_path, tmp_path)
+    from harness.gateway_agent_trace import AgentTrace
+    trace = AgentTrace(tmp_path, "owner_" + "a" * 32,
+                       "jrn_" + "b" * 32, "op_" + "c" * 32)
+    _run_agent(dict(_OPERATION), {}, tmp_path, tmp_path, trace=trace)
     assert seen["allow_write"] is False
     assert seen["allow_exec"] is False
     assert seen["max_steps"] == 6
