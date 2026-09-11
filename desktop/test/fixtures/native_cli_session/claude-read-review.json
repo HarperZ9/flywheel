@@ -1,0 +1,52 @@
+{
+  "schema": "flywheel.gateway-agent-review/v3",
+  "binding_sha256": "21d35b0a0fb3dfa7ca9fd60c6fcfadd254b1c0ebf04970ec76d45340c01ca9ce",
+  "execution_mode": "native_cli_session",
+  "endpoint": "claude-cli",
+  "base_url": "",
+  "model": {
+    "requested_model_reference": "fixture-model-exact",
+    "model_id": "fixture-model-exact",
+    "selection": "explicit",
+    "observation_policy": "provider_reported",
+    "profile": null
+  },
+  "root": "C:\\fixture\\workspace",
+  "workspace_policy_sha256": "fef5e739facb303ff967113b65e3434a72919e47f11b7870a6a505746eacd840",
+  "budget": {
+    "max_steps": 4,
+    "max_tokens": null,
+    "timeout_s": 60
+  },
+  "capabilities": {
+    "allow_write": false,
+    "allow_exec": false,
+    "allow_mcp": false
+  },
+  "cli_session": {
+    "provider": "claude-cli",
+    "profile": "claude_restricted_files_v1",
+    "tools": [
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "filesystem_scope": "working_directory_file_tools",
+    "auth_mode": "official_cli_own_auth",
+    "controls": {
+      "timeout_s": "owned_process_deadline",
+      "max_steps": "native_turn_limit",
+      "max_tokens": "unsupported",
+      "seed": "unsupported"
+    },
+    "limitations": [
+      "NO_OS_ADMINISTRATION",
+      "NO_PROVIDER_RESUME",
+      "PROVIDER_POLICY_APPLIES",
+      "NO_HARD_TOKEN_LIMIT",
+      "HIDDEN_REASONING_UNAVAILABLE",
+      "CLAUDE_REASONING_NOT_RETAINED"
+    ],
+    "version": "2.1.251"
+  }
+}

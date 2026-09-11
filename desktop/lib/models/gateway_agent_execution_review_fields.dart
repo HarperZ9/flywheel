@@ -103,28 +103,41 @@ GatewayAgentModelProfile? _profile(
 }
 
 final class GatewayAgentExecutionBudget extends DefensiveModel {
-  final int maxSteps, maxTokens, timeoutSeconds;
-  static final empty = GatewayAgentExecutionBudget._(0, 0, 0, const []);
+  final int maxSteps, timeoutSeconds;
+  final int? maxTokens;
+  static final empty = GatewayAgentExecutionBudget._(0, null, 0, const []);
   GatewayAgentExecutionBudget._(
       this.maxSteps, this.maxTokens, this.timeoutSeconds, super.parseIssues);
 
-  factory GatewayAgentExecutionBudget.fromRaw(Object? raw, String field) {
+  factory GatewayAgentExecutionBudget.fromRaw(Object? raw, String field,
+      {bool allowUnsupportedMaxTokens = false}) {
     if (raw is! Map<String, Object?>) {
       return GatewayAgentExecutionBudget._(
-          0, 0, 0, [(field: field, rawValue: safeRawValue(raw))]);
+          0, null, 0, [(field: field, rawValue: safeRawValue(raw))]);
     }
     final issues = <ParseIssue>[];
     _exactFields(
         raw, const {'max_steps', 'max_tokens', 'timeout_s'}, issues, field);
     return GatewayAgentExecutionBudget._(
         _readInt(raw, 'max_steps', 1, 12, issues),
-        _readInt(raw, 'max_tokens', 1, 32768, issues),
+        allowUnsupportedMaxTokens
+            ? _readUnsupportedMaxTokens(raw, 'max_tokens', issues)
+            : _readInt(raw, 'max_tokens', 1, 32768, issues),
         _readInt(raw, 'timeout_s', 1, 1800, issues),
         issues);
   }
 
-  String get label =>
-      '$maxSteps steps / $maxTokens output tokens / ${timeoutSeconds}s';
+  String get label => maxTokens == null
+      ? '$maxSteps steps / output tokens unsupported / ${timeoutSeconds}s'
+      : '$maxSteps steps / $maxTokens output tokens / ${timeoutSeconds}s';
+}
+
+int? _readUnsupportedMaxTokens(
+    Map<String, Object?> json, String field, List<ParseIssue> issues) {
+  final raw = json[field];
+  if (raw == null) return null;
+  addParseIssue(issues, field, raw);
+  return null;
 }
 
 final class GatewayAgentExecutionCapabilities extends DefensiveModel {
