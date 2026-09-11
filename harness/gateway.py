@@ -639,10 +639,10 @@ class _Handler(BaseHTTPRequestHandler):
         service = type(self).operation_service
         if service is None or service.state_root != state_root:
             from harness.gateway_operations import GatewayOperations
-            from harness.gateway_operation_process import GatewayAgentProcessFactory
+            from harness.gateway_operation_process import GatewayOperationProcessFactory
             service = GatewayOperations(state_root, clock=self.clock)
             type(self).operation_service = service
-            type(self).operation_process_factory = GatewayAgentProcessFactory(
+            type(self).operation_process_factory = GatewayOperationProcessFactory(
                 repo_root=Path(self.root), run_root=Path(self.run_root), state_root=state_root)
         return service, type(self).operation_process_factory
 
@@ -678,7 +678,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _route_operation(self, method):
         path = self.path.split("?", 1)[0]
-        is_operation = (path == "/api/agent"       # start or read an agent operation
+        is_operation = (path in {"/api/agent", "/api/output/check"}  # start or read a governed operation
                         or path.startswith("/api/operations/"))  # one long-running operation
         if not is_operation: return False
         from harness.gateway_operation_route import route_gateway_operation
@@ -2327,11 +2327,11 @@ def main(argv=None) -> int:
               f"bind with a TLS tunnel; allowlisted hosts = {sorted(_Handler.allowed_hosts)}")
     state_root = flywheel_home / "state"
     from harness.gateway_operations import GatewayOperations
-    from harness.gateway_operation_process import GatewayAgentProcessFactory
+    from harness.gateway_operation_process import GatewayOperationProcessFactory
     from harness.gateway_operation_recovery import recover_gateway_operations
     from harness.journey_recovery import recover_store
     _Handler.operation_service = GatewayOperations(state_root, clock=_Handler.clock)
-    _Handler.operation_process_factory = GatewayAgentProcessFactory(
+    _Handler.operation_process_factory = GatewayOperationProcessFactory(
         repo_root=_Handler.root, run_root=Path(_Handler.run_root), state_root=state_root)
     from harness.credential_handles import CredentialHandleStore
     from harness.keychain import keychain_get

@@ -233,6 +233,7 @@ def supervise_gateway_operation(service, authorized: AuthorizedOperation, operat
         started=started, registered=registered,
         terminal=lambda outcome: service._terminal(owner, operation_ref, outcome))
 def _failed() -> WorkerOutcome: return WorkerOutcome("failed", {"reason": "EXTERNAL_ACTION_FAILED"})
+from .output_check_worker import GatewayOutputCheckProcessFactory, GatewayOperationProcessFactory
 def _emit(value: dict) -> None:
     sys.stdout.buffer.write(canonical_bytes(value) + b"\n"); sys.stdout.buffer.flush()
 def _worker_request() -> tuple[dict, dict, Path, Path, dict | None, dict, dict, float]:

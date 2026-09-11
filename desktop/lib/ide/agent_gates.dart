@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../models/agent_execution_mode.dart';
 import '../models/agent_tool_protocol.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
@@ -17,9 +18,11 @@ class AgentGates extends StatelessWidget {
   final bool allowWrite;
   final bool allowExec;
   final bool attachContext;
+  final AgentExecutionMode executionMode;
   final AgentToolProtocol toolProtocol;
   final ValueChanged<String?> onEndpoint;
   final ValueChanged<String> onModel;
+  final ValueChanged<AgentExecutionMode> onExecutionMode;
   final ValueChanged<AgentToolProtocol> onToolProtocol;
   final Future<Map<String, dynamic>> Function() loadModels;
   final ValueChanged<bool> onWrite;
@@ -27,6 +30,8 @@ class AgentGates extends StatelessWidget {
   final ValueChanged<bool> onAttach;
   final EffortLevel effort;
   final ValueChanged<EffortLevel> onEffort;
+  final int nativeCliMaxSteps;
+  final ValueChanged<int> onNativeCliMaxSteps;
   final bool effortEnabled;
   const AgentGates({
     super.key,
@@ -36,9 +41,11 @@ class AgentGates extends StatelessWidget {
     required this.allowWrite,
     required this.allowExec,
     required this.attachContext,
+    required this.executionMode,
     required this.toolProtocol,
     required this.onEndpoint,
     required this.onModel,
+    required this.onExecutionMode,
     required this.onToolProtocol,
     required this.loadModels,
     required this.onWrite,
@@ -46,31 +53,56 @@ class AgentGates extends StatelessWidget {
     required this.onAttach,
     required this.effort,
     required this.onEffort,
+    required this.nativeCliMaxSteps,
+    required this.onNativeCliMaxSteps,
     this.effortEnabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
+    final nativeCli = executionMode.isNativeCli;
+    final visibleEndpoints = nativeCli
+        ? endpoints.where((endpoint) => endpoint.name == 'claude-cli').toList()
+        : endpoints;
+    final endpointValue =
+        visibleEndpoints.any((e) => e.name == endpoint) ? endpoint : null;
     return Wrap(
       spacing: FwLayout.s3,
       runSpacing: FwLayout.s1,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        DropdownButton<String>(
-          value: endpoint,
+        DropdownButton<AgentExecutionMode>(
+          key: const Key('agent-execution-mode'),
+          value: executionMode,
           underline: const SizedBox(),
           style: fwMono(t, size: 11.5, color: t.inkSoft),
           items: [
-            for (final e in endpoints)
+            for (final value in AgentExecutionMode.values)
+              DropdownMenuItem(value: value, child: Text(value.label)),
+          ],
+          onChanged: effortEnabled ? (value) => onExecutionMode(value!) : null,
+        ),
+        DropdownButton<String>(
+          value: endpointValue,
+          underline: const SizedBox(),
+          style: fwMono(t, size: 11.5, color: t.inkSoft),
+          items: [
+            for (final e in visibleEndpoints)
               DropdownMenuItem(
                 value: e.name,
                 child: Text('${e.name}${e.hasCredential ? '' : ' (no key)'}'),
               ),
           ],
-          onChanged: onEndpoint,
+          onChanged:
+              effortEnabled && visibleEndpoints.isNotEmpty ? onEndpoint : null,
         ),
-        if (endpoint != null)
+        if (nativeCli)
+          Text(
+            'CLI-owned auth; output tokens unsupported; Codex CLI unavailable',
+            style: fwMono(t, size: 10.5, color: t.inkFaint),
+          ),
+        if (endpointValue != null)
           ModelSelectorButton(
             loadModels: loadModels,
             current: model,
@@ -78,20 +110,48 @@ class AgentGates extends StatelessWidget {
             enabled: effortEnabled,
           ),
         _toggle(t, 'write', allowWrite, onWrite),
-        _toggle(t, 'exec', allowExec, onExec),
-        _toggle(t, 'attach file', attachContext, onAttach),
-        DropdownButton<AgentToolProtocol>(
-          key: const Key('agent-tool-protocol'),
-          value: toolProtocol,
-          underline: const SizedBox(),
-          style: fwMono(t, size: 11.5, color: t.inkSoft),
-          items: [
-            for (final value in AgentToolProtocol.values)
-              DropdownMenuItem(value: value, child: Text(value.label)),
-          ],
-          onChanged: effortEnabled ? (value) => onToolProtocol(value!) : null,
+        _toggle(
+          t,
+          'exec',
+          nativeCli ? false : allowExec,
+          nativeCli ? null : onExec,
         ),
-        EffortDial(value: effort, onChanged: onEffort, enabled: effortEnabled),
+        _toggle(t, 'attach file', attachContext, onAttach),
+        if (!nativeCli)
+          DropdownButton<AgentToolProtocol>(
+            key: const Key('agent-tool-protocol'),
+            value: toolProtocol,
+            underline: const SizedBox(),
+            style: fwMono(t, size: 11.5, color: t.inkSoft),
+            items: [
+              for (final value in AgentToolProtocol.values)
+                DropdownMenuItem(value: value, child: Text(value.label)),
+            ],
+            onChanged: effortEnabled ? (value) => onToolProtocol(value!) : null,
+          ),
+        if (nativeCli)
+          DropdownButton<int>(
+            key: const Key('agent-native-cli-max-steps'),
+            value: nativeCliMaxSteps,
+            underline: const SizedBox(),
+            style: fwMono(t, size: 11.5, color: t.inkSoft),
+            items: const [
+              DropdownMenuItem(value: 1, child: Text('1 step')),
+              DropdownMenuItem(value: 2, child: Text('2 steps')),
+              DropdownMenuItem(value: 4, child: Text('4 steps')),
+              DropdownMenuItem(value: 8, child: Text('8 steps')),
+              DropdownMenuItem(value: 12, child: Text('12 steps')),
+            ],
+            onChanged: effortEnabled
+                ? (value) => onNativeCliMaxSteps(value ?? nativeCliMaxSteps)
+                : null,
+          )
+        else
+          EffortDial(
+            value: effort,
+            onChanged: onEffort,
+            enabled: effortEnabled,
+          ),
       ],
     );
   }
@@ -100,7 +160,7 @@ class AgentGates extends StatelessWidget {
     FwTokens t,
     String label,
     bool value,
-    ValueChanged<bool> onChanged,
+    ValueChanged<bool>? onChanged,
   ) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -110,7 +170,7 @@ class AgentGates extends StatelessWidget {
           width: 28,
           child: Checkbox(
             value: value,
-            onChanged: (v) => onChanged(v ?? false),
+            onChanged: onChanged == null ? null : (v) => onChanged(v ?? false),
             visualDensity: VisualDensity.compact,
           ),
         ),

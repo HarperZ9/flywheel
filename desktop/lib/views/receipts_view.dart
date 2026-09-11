@@ -12,6 +12,7 @@ import '../theme/flywheel_theme.dart';
 import '../widgets/action_witness_panel.dart';
 import '../widgets/fw.dart';
 import '../widgets/packet_recheck_panel.dart';
+import '../widgets/output_check_panel.dart';
 import '../widgets/receipt_proof_panel.dart';
 import '../widgets/scaffold_panel.dart';
 import '../widgets/service_desk_review_panel.dart';
@@ -212,6 +213,8 @@ class _ReceiptsViewState extends State<ReceiptsView> {
         ServiceDeskReviewPanel(client: widget.client),
         const SizedBox(height: FwLayout.s4),
         PacketRecheckPanel(client: widget.client),
+        const SizedBox(height: FwLayout.s4),
+        OutputCheckPanel(client: widget.client),
         const SizedBox(height: FwLayout.s4),
         ScaffoldPanel(client: widget.client),
       ],

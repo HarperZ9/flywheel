@@ -1,0 +1,91 @@
+{
+  "schema": "flywheel.gateway-agent-binding/v3",
+  "execution_mode": "native_cli_session",
+  "operation_sha256": "2982b6928c05ee10709fb1d56d0b0c2dac6c1556323492709fe77181f23da991",
+  "endpoint": {
+    "name": "codex-cli",
+    "adapter": "native_cli",
+    "base_url": "",
+    "slot": "",
+    "local": false,
+    "default_model": "",
+    "specification_sha256": "af58ee47e885bd8f290ce442e209f750a9deb0ad4412cee9c0f32a8cb70c8c70"
+  },
+  "model": {
+    "requested_model_reference": "fixture-model-exact",
+    "model_id": "fixture-model-exact",
+    "selection": "explicit",
+    "observation_policy": "provider_reported",
+    "profile": null
+  },
+  "workspace": {
+    "root": "C:\\fixture\\workspace",
+    "root_identity": {
+      "platform": "windows",
+      "device": 1,
+      "inode": 2
+    },
+    "policy": {
+      "mode": "legacy_open",
+      "allowed_roots": []
+    },
+    "policy_sha256": "fef5e739facb303ff967113b65e3434a72919e47f11b7870a6a505746eacd840"
+  },
+  "budget": {
+    "max_steps": 4,
+    "max_tokens": null,
+    "timeout_s": 60
+  },
+  "capabilities": {
+    "allow_write": false,
+    "allow_exec": true,
+    "allow_mcp": false
+  },
+  "cli_session": {
+    "provider": "codex-cli",
+    "profile": "codex_windows_sandbox_v1",
+    "tools": [
+      "command_execution"
+    ],
+    "filesystem_scope": "os_read_scope_workspace_write_only",
+    "auth_mode": "official_cli_own_auth",
+    "required_flags": [
+      "--ignore-user-config",
+      "--ignore-rules",
+      "--sandbox",
+      "--json",
+      "--ephemeral",
+      "--model",
+      "--cd"
+    ],
+    "controls": {
+      "timeout_s": "owned_process_deadline",
+      "max_steps": "unsupported",
+      "max_tokens": "unsupported",
+      "seed": "unsupported"
+    },
+    "limitations": [
+      "NO_OS_ADMINISTRATION",
+      "NO_PROVIDER_RESUME",
+      "PROVIDER_POLICY_APPLIES",
+      "NO_HARD_TOKEN_LIMIT",
+      "HIDDEN_REASONING_UNAVAILABLE",
+      "NO_HARD_NATIVE_TURN_LIMIT",
+      "READ_SCOPE_NOT_WORKSPACE_CONFINED",
+      "UNRECOGNIZED_SUMMARY_FIELDS_OMITTED"
+    ]
+  },
+  "cli_runtime": {
+    "executable": "C:\\fixture\\bin\\codex-cli.exe",
+    "identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "version": "0.153.4",
+    "help_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "auth_directory": "C:\\fixture\\own-auth",
+    "auth_directory_identity": {
+      "platform": "windows",
+      "device": 1,
+      "inode": 3
+    }
+  },
+  "argv_sha256": "e14dc026399a8560ca89c9cdc54e69ec4342898e6e5ac195197605a0bb702426"
+}

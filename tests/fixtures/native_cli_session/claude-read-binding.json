@@ -1,0 +1,91 @@
+{
+  "schema": "flywheel.gateway-agent-binding/v3",
+  "execution_mode": "native_cli_session",
+  "operation_sha256": "dae3af566a0fd7cd89be276c00cb74feda70f3f4b80e1b3d84db21470f948ac9",
+  "endpoint": {
+    "name": "claude-cli",
+    "adapter": "native_cli",
+    "base_url": "",
+    "slot": "",
+    "local": false,
+    "default_model": "",
+    "specification_sha256": "8ccd28c85e4b720879fb15c04097b43768bedd651f503951733d3b2a271c8e17"
+  },
+  "model": {
+    "requested_model_reference": "fixture-model-exact",
+    "model_id": "fixture-model-exact",
+    "selection": "explicit",
+    "observation_policy": "provider_reported",
+    "profile": null
+  },
+  "workspace": {
+    "root": "C:\\fixture\\workspace",
+    "root_identity": {
+      "platform": "windows",
+      "device": 1,
+      "inode": 2
+    },
+    "policy": {
+      "mode": "legacy_open",
+      "allowed_roots": []
+    },
+    "policy_sha256": "fef5e739facb303ff967113b65e3434a72919e47f11b7870a6a505746eacd840"
+  },
+  "budget": {
+    "max_steps": 4,
+    "max_tokens": null,
+    "timeout_s": 60
+  },
+  "capabilities": {
+    "allow_write": false,
+    "allow_exec": false,
+    "allow_mcp": false
+  },
+  "cli_session": {
+    "provider": "claude-cli",
+    "profile": "claude_restricted_files_v1",
+    "tools": [
+      "Read",
+      "Glob",
+      "Grep"
+    ],
+    "filesystem_scope": "working_directory_file_tools",
+    "auth_mode": "official_cli_own_auth",
+    "required_flags": [
+      "--restricted",
+      "--safe-mode",
+      "--strict-mcp-config",
+      "--tools",
+      "--settings",
+      "--no-session-persistence",
+      "--output-format"
+    ],
+    "controls": {
+      "timeout_s": "owned_process_deadline",
+      "max_steps": "native_turn_limit",
+      "max_tokens": "unsupported",
+      "seed": "unsupported"
+    },
+    "limitations": [
+      "NO_OS_ADMINISTRATION",
+      "NO_PROVIDER_RESUME",
+      "PROVIDER_POLICY_APPLIES",
+      "NO_HARD_TOKEN_LIMIT",
+      "HIDDEN_REASONING_UNAVAILABLE",
+      "CLAUDE_REASONING_NOT_RETAINED"
+    ]
+  },
+  "cli_runtime": {
+    "executable": "C:\\fixture\\bin\\claude-cli.exe",
+    "identity": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "version": "2.1.251",
+    "help_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "auth_directory": "C:\\fixture\\own-auth",
+    "auth_directory_identity": {
+      "platform": "windows",
+      "device": 1,
+      "inode": 3
+    }
+  },
+  "argv_sha256": "3b32b7f377b486b7a5a4db519edab8037daf447ffcefb3e3c76baecd617df158"
+}

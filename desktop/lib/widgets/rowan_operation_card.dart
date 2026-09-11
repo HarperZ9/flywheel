@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../controllers/operation_controller.dart';
 import '../controllers/rowan_operation_controller.dart';
+import '../models/agent_execution_mode.dart';
 import '../models/agent_tool_protocol.dart';
 import '../theme/flywheel_theme.dart';
 import 'effort_dial.dart';
@@ -31,6 +32,14 @@ final class RowanOperationCard extends StatelessWidget {
     final t = context.fw;
     final snapshot = rowan.snapshot;
     final finalText = rowan.terminalResult?.result['final'];
+    final nativeCli = rowan.executionMode.isNativeCli;
+    final endpoints = nativeCli
+        ? rowan.endpoints
+            .where((endpoint) => endpoint.name == 'claude-cli')
+            .toList()
+        : rowan.endpoints;
+    final endpointValue =
+        endpoints.any((e) => e.name == rowan.endpoint) ? rowan.endpoint : null;
     return HairlineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,21 +63,56 @@ final class RowanOperationCard extends StatelessWidget {
             runSpacing: FwLayout.s2,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              DropdownButton<AgentExecutionMode>(
+                key: const Key('assistant-rowan-execution-mode'),
+                value: rowan.executionMode,
+                underline: const SizedBox(),
+                style: fwMono(t, size: 11.5, color: t.inkSoft),
+                items: [
+                  for (final value in AgentExecutionMode.values)
+                    DropdownMenuItem(value: value, child: Text(value.label)),
+                ],
+                onChanged: rowan.active || rowan.authorizing
+                    ? null
+                    : (value) {
+                        if (value == null) return;
+                        rowan.setExecutionMode(value);
+                        if (value.isNativeCli &&
+                            !agentExecutionModeSupportsEndpoint(
+                                value, rowan.endpoint)) {
+                          String? claude;
+                          for (final endpoint in rowan.endpoints) {
+                            if (endpoint.name == 'claude-cli') {
+                              claude = endpoint.name;
+                              break;
+                            }
+                          }
+                          rowan.setEndpoint(claude);
+                        }
+                      },
+              ),
               DropdownButton<String>(
-                value: rowan.endpoint,
+                value: endpointValue,
                 hint: const Text('endpoint'),
                 underline: const SizedBox(),
                 style: fwMono(t, size: 11.5, color: t.inkSoft),
                 items: [
-                  for (final endpoint in rowan.endpoints)
+                  for (final endpoint in endpoints)
                     DropdownMenuItem(
                       value: endpoint.name,
                       child: Text(endpoint.name),
                     ),
                 ],
-                onChanged: rowan.active ? null : rowan.setEndpoint,
+                onChanged: rowan.active || endpoints.isEmpty
+                    ? null
+                    : rowan.setEndpoint,
               ),
-              if (rowan.endpoint != null)
+              if (nativeCli)
+                Text(
+                  'CLI-owned auth; output tokens unsupported; Codex CLI unavailable',
+                  style: fwMono(t, size: 10.5, color: t.inkFaint),
+                ),
+              if (endpointValue != null)
                 ModelSelectorButton(
                   enabled: !rowan.active,
                   current: rowan.selectedModel,
@@ -84,37 +128,66 @@ final class RowanOperationCard extends StatelessWidget {
               _toggle(
                 t,
                 'exec',
-                rowan.allowExec,
-                rowan.active ? null : rowan.setAllowExec,
+                nativeCli ? false : rowan.allowExec,
+                rowan.active || nativeCli ? null : rowan.setAllowExec,
               ),
-              DropdownButton<AgentToolProtocol>(
-                key: const Key('assistant-rowan-tool-protocol'),
-                value: rowan.toolProtocol,
-                underline: const SizedBox(),
-                style: fwMono(t, size: 11.5, color: t.inkSoft),
-                items: [
-                  for (final value in AgentToolProtocol.values)
-                    DropdownMenuItem(
-                      value: value,
-                      child: Text(value.label),
-                    ),
-                ],
-                onChanged: rowan.active || rowan.authorizing
-                    ? null
-                    : (value) {
-                        if (value != null) rowan.setToolProtocol(value);
-                      },
-              ),
-              EffortDial(
-                value: rowan.effort,
-                onChanged: rowan.setEffort,
-                enabled: !rowan.active,
-              ),
+              if (!nativeCli)
+                DropdownButton<AgentToolProtocol>(
+                  key: const Key('assistant-rowan-tool-protocol'),
+                  value: rowan.toolProtocol,
+                  underline: const SizedBox(),
+                  style: fwMono(t, size: 11.5, color: t.inkSoft),
+                  items: [
+                    for (final value in AgentToolProtocol.values)
+                      DropdownMenuItem(
+                        value: value,
+                        child: Text(value.label),
+                      ),
+                  ],
+                  onChanged: rowan.active || rowan.authorizing
+                      ? null
+                      : (value) {
+                          if (value != null) rowan.setToolProtocol(value);
+                        },
+                ),
+              if (nativeCli)
+                DropdownButton<int>(
+                  key: const Key('assistant-rowan-native-cli-max-steps'),
+                  value: rowan.maxSteps < 1
+                      ? 1
+                      : rowan.maxSteps > 12
+                          ? 12
+                          : rowan.maxSteps,
+                  underline: const SizedBox(),
+                  style: fwMono(t, size: 11.5, color: t.inkSoft),
+                  items: [
+                    for (var step = 1; step <= 12; step++)
+                      DropdownMenuItem(
+                        value: step,
+                        child: Text('$step step${step == 1 ? '' : 's'}'),
+                      ),
+                  ],
+                  onChanged: rowan.active || rowan.authorizing
+                      ? null
+                      : (value) {
+                          if (value != null) rowan.setMaxStepsOverride(value);
+                        },
+                )
+              else
+                EffortDial(
+                  value: rowan.effort,
+                  onChanged: rowan.setEffort,
+                  enabled: !rowan.active,
+                ),
             ],
           ),
           const SizedBox(height: FwLayout.s2),
           _BudgetRow(
-              rowan: rowan, root: root, tokens: tokens, timeout: timeout),
+            rowan: rowan,
+            root: root,
+            tokens: tokens,
+            timeout: timeout,
+          ),
           if (snapshot != null) ...[
             const SizedBox(height: FwLayout.s2),
             Text(
@@ -203,6 +276,7 @@ final class _BudgetRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
+    final nativeCli = rowan.executionMode.isNativeCli;
     return Row(
       children: [
         Expanded(
@@ -219,13 +293,19 @@ final class _BudgetRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: FwLayout.s2),
-        _NumberField(
-          key: const Key('assistant-rowan-max-tokens'),
-          controller: tokens,
-          enabled: !rowan.active,
-          label: 'tokens',
-          onSubmitted: rowan.setMaxTokens,
-        ),
+        if (nativeCli)
+          Text(
+            'output tokens unsupported',
+            style: fwMono(t, size: 10.5, color: t.inkFaint),
+          )
+        else
+          _NumberField(
+            key: const Key('assistant-rowan-max-tokens'),
+            controller: tokens,
+            enabled: !rowan.active,
+            label: 'tokens',
+            onSubmitted: rowan.setMaxTokens,
+          ),
         const SizedBox(width: FwLayout.s2),
         _NumberField(
           key: const Key('assistant-rowan-timeout'),
