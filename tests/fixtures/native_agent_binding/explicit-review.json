@@ -1,0 +1,25 @@
+{
+  "base_url": "http://127.0.0.1:11434/v1",
+  "binding_sha256": "23bf265c3a138fcbc28840431a5cc49a01dd032b4f87f0effe8fefc529670a33",
+  "budget": {
+    "max_steps": 2,
+    "max_tokens": 1024,
+    "timeout_s": 300
+  },
+  "capabilities": {
+    "allow_exec": false,
+    "allow_mcp": false,
+    "allow_write": false
+  },
+  "endpoint": "ollama",
+  "model": {
+    "model_id": "operator-model:tag",
+    "observation_policy": "ollama_exact",
+    "profile": null,
+    "requested_model_reference": "operator-model:tag",
+    "selection": "explicit"
+  },
+  "root": "C:\\fixture\\workspace",
+  "schema": "flywheel.gateway-agent-review/v1",
+  "workspace_policy_sha256": "709271920c84a91aa06ffc9c9689d0334e5284a4cce7924d00887acc0c07f271"
+}

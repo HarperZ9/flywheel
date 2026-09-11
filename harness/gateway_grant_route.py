@@ -17,6 +17,8 @@ from .gateway_operation import (AuthorizedOperation, GatewayOperationError, GRAN
 from .gateway_envelope import parse_gateway_envelope
 from .gateway_secret_boundary import validate_no_raw_secrets
 from .gateway_provider_adapter import credential_slots, freeze_execution_plan
+from .gateway_grant_summary import proposal_response as _proposal_response
+from .gateway_agent_grant import validate_record_fields, record_binding, attach_binding, compare_binding
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy
 from .journey_store import JourneyStore, JourneyStoreError
 from .journey_types import JOURNEY_REF_PATTERN, SHA256_PATTERN
@@ -44,7 +46,7 @@ def _digest(record: dict) -> str:
     return canonical_sha256({key: value for key, value in record.items()
                              if key != "record_sha256"})
 def _validate_record(value: object, owner_ref: str) -> dict:
-    if (type(value) is not dict or set(value) != _RECORD_FIELDS
+    if (not validate_record_fields(value, _RECORD_FIELDS)
             or value.get("schema") != PROPOSAL_SCHEMA
             or value.get("owner_ref") != owner_ref
             or value.get("state") not in {"prepared", "approved", "rejected"}
@@ -56,6 +58,7 @@ def _validate_record(value: object, owner_ref: str) -> dict:
             or value.get("planned_grant_ref") != f"gnt_{suffix}"):
         raise GrantError("PERMISSION_DENIED")
     operation = canonicalize_operation(value.get("action"), value.get("operation"))
+    record_binding(value, operation)
     request = _request_from(value.get("grant_request"))
     if request != _request(value, operation):
         raise GrantError("PERMISSION_DENIED")
@@ -90,38 +93,6 @@ def _current_head(store: JourneyStore, owner_ref: str, journey_ref: str) -> str:
         raise JourneyStoreError("JOURNEY_NOT_FOUND")
     store._events_at_head(journey_dir, head)
     return head["event_head_sha256"]
-def _proposal_response(record: dict, operation) -> dict:
-    summary = {
-        "schema": "flywheel.gateway-grant-summary/v1", "action": record["action"],
-        "journey_ref": record["journey_ref"],
-        "expected_event_head": record["expected_event_head"],
-        "destination": dict(operation.destination), "tool": operation.tool,
-        "operation_sha256": operation.operation_sha256,
-        "arguments_sha256": operation.arguments_sha256,
-        "scopes": list(operation.scopes), "data_refs": list(operation.data_refs),
-        "credential_refs": list(operation.credential_refs),
-        "effect": "one dispatch after approval", "expires_at": record["expires_at"],
-    }
-    if record["action"] == "hook.run":
-        rows = thaw_operation(operation.operation)["registrations"]
-        summary["hook_registrations"] = [{k: row[k] for k in (
-            "hook_id", "hook_sha256", "argv", "blocking")} for row in rows]
-    if record["action"] == "lane.call":
-        from .outcome_bulletin_media import proposal_review as _br; mr = _br(operation)
-        if mr is not None: summary["bulletin_media_review"] = mr
-    return {
-        "schema": PROPOSAL_SCHEMA, "proposal_ref": record["proposal_ref"],
-        "planned_grant_ref": record["planned_grant_ref"],
-        "action": record["action"], "journey_ref": record["journey_ref"],
-        "expected_event_head": record["expected_event_head"],
-        "client_request_id": record["client_request_id"], "tool": operation.tool,
-        "destination": dict(operation.destination),
-        "operation_sha256": operation.operation_sha256,
-        "arguments_sha256": operation.arguments_sha256,
-        "scopes": list(operation.scopes), "data_refs": list(operation.data_refs),
-        "credential_refs": list(operation.credential_refs),
-        "expires_at": record["expires_at"], "summary": summary,
-    }
 def _validate_continuation_handoff(action: str, operation, *, owner_ref: str,
                                    journey_ref: str, state_root: Path,
                                    journey_events=None) -> None:
@@ -131,7 +102,7 @@ def _validate_continuation_handoff(action: str, operation, *, owner_ref: str,
             operation, state_root, owner_ref=owner_ref,
             journey_ref=journey_ref, journey_events=journey_events)
 def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
-             clock: Callable[[], str]) -> dict:
+             clock: Callable[[], str], workspace_root: Path | None = None) -> dict:
     exact_request(body, _BASE | {"operation"})
     if (body.get("schema") != REQUEST_SCHEMA
             or JOURNEY_REF_PATTERN.fullmatch(body.get("journey_ref", "")) is None
@@ -146,7 +117,7 @@ def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
     _validate_continuation_handoff(
         action, operation, owner_ref=owner_ref,
         journey_ref=body["journey_ref"], state_root=state_root)
-    plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root)
+    plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root, workspace_root=workspace_root)
     credential_slots(operation, owner_ref, state_root, plan=plan)
     store = JourneyStore(state_root)
     journey_dir = store._journey_dir(owner_ref, body["journey_ref"])
@@ -167,6 +138,7 @@ def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
             "execution_plan_sha256": plan.digest,
             "expires_at": expires, "state": "prepared",
         }
+        attach_binding(record, plan)
         request = _request(record, operation)
         GrantStore._validate_request(request, allow_default_expiry=False)
         grant_value = asdict(request)
@@ -198,10 +170,10 @@ def _approve(body: dict, owner_ref: str, state_root: Path, clock: Callable[[], s
             _write_indexed(owner_dir, record, clock(), _replace, _path(owner_dir, record["proposal_ref"]))
     return {"schema": "flywheel.operation-grant-approval/v1",
             "grant_ref": issued["grant_ref"], "expires_at": issued["expires_at"]}
-def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[], str]) -> AuthorizedOperation:
+def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[], str], workspace_root: Path | None = None) -> AuthorizedOperation:
     action = envelope.action
     operation = envelope.operation
-    plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root)
+    plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root, workspace_root=workspace_root)
     credential_slots(operation, owner_ref, state_root, plan=plan)
     body = {"journey_ref": envelope.journey_ref,
             "expected_event_head": envelope.expected_event_head,
@@ -227,8 +199,10 @@ def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[]
                     or record["client_request_id"] != body.get(
                         "client_request_id")
                     or record["operation"] != thaw_operation(operation.operation)
-                    or record["execution_plan_sha256"] != plan.digest
                     or record["planned_grant_ref"] != body.get("grant_ref")):
+                raise GatewayOperationError("PERMISSION_DENIED")
+            compare_binding(record, plan)
+            if record["execution_plan_sha256"] != plan.digest:
                 raise GatewayOperationError("PERMISSION_DENIED")
             request = _request_from(record["grant_request"])
             if request != _request(record, operation):
@@ -255,13 +229,13 @@ def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[]
     )
 def authorize_gateway_operation(
         action: str, raw: bytes, *, owner_ref: str, state_root: Path,
-        clock: Callable[[], str]) -> AuthorizedOperation:
-    return authorize_gateway_envelope(parse_gateway_envelope(action, raw), owner_ref=owner_ref, state_root=state_root, clock=clock)
+        clock: Callable[[], str], workspace_root: Path | None = None) -> AuthorizedOperation:
+    return authorize_gateway_envelope(parse_gateway_envelope(action, raw), owner_ref=owner_ref, state_root=state_root, clock=clock, workspace_root=workspace_root)
 def authorize_gateway_envelope(envelope, *, owner_ref: str, state_root: Path,
-        clock: Callable[[], str]) -> AuthorizedOperation:
+        clock: Callable[[], str], workspace_root: Path | None = None) -> AuthorizedOperation:
     try:
         return _authorize(envelope, owner_ref=owner_ref,
-                          state_root=state_root, clock=clock)
+                          state_root=state_root, clock=clock, workspace_root=workspace_root)
     except GatewayOperationError:
         raise
     except GrantError as exc:
@@ -273,7 +247,7 @@ def authorize_gateway_envelope(envelope, *, owner_ref: str, state_root: Path,
         raise GatewayOperationError(code) from None
     except (TransportError, OSError, TypeError, ValueError):
         raise GatewayOperationError("INVALID_REQUEST") from None
-def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Path, clock: Callable[[], str], run_root: Path | None = None) -> tuple[dict, int]:
+def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Path, clock: Callable[[], str], run_root: Path | None = None, workspace_root: Path | None = None) -> tuple[dict, int]:
     """Prepare or approve without dispatching an external operation."""
     try:
         if not path.startswith(ROUTE_PREFIX): raise GatewayOperationError("NOT_FOUND")
@@ -294,6 +268,6 @@ def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Pat
         if not route.startswith("prepare/") or "/" in route[8:]: raise GatewayOperationError("NOT_FOUND")
         action = route[8:]
         if action not in GRANTABLE_ACTIONS: raise GatewayOperationError("NOT_FOUND")
-        return _prepare(action, body, owner_ref, state_root, clock), 200
+        return _prepare(action, body, owner_ref, state_root, clock, workspace_root), 200
     except (TransportError, GatewayOperationError, GrantError, JourneyLockBusy, JourneyStoreError, OSError, ValueError) as exc:
         return gateway_error_response(exc)

@@ -33,10 +33,11 @@ class ExecutionPlan:
     verified_plan: object | None = field(default=None, repr=False)
     source_context_payload_sha256: str | None = None
     source_context_payload: FrozenJsonSnapshot | None = field(default=None, repr=False)
+    agent_binding: FrozenJsonSnapshot | None = field(default=None, repr=False)
 
 
 def freeze_execution_plan(operation, *, owner_ref: str | None = None,
-                          state_root: Path | None = None) -> ExecutionPlan:
+                          state_root: Path | None = None, workspace_root: Path | None = None) -> ExecutionPlan:
     """Snapshot server-derived dispatch metadata before approval."""
     launch = kind = market = None
     workflow_sha = profile_sha = None
@@ -44,6 +45,7 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
     source_context_payload = None
     source_context_sha = None
     verified = None
+    agent_binding = None
     if operation.action in {"plugin.probe", "plugin.call"}:
         from .plugins import plugin_execution_plan
         launch, kind, required, refs = plugin_execution_plan(
@@ -59,9 +61,12 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
         profile_sha = profile_snapshot.sha256
         required, refs = _credential_plan(operation)
     elif operation.action == "agent.run":
+        from .gateway_agent_binding import freeze_agent_binding
+        agent_binding = freeze_agent_binding(operation, workspace_root)
         source_context_sha, source_context_payload = _source_context_snapshot(
             operation, owner_ref, state_root)
-        required, refs = _credential_plan(operation)
+        slot = thaw_json(agent_binding)["endpoint"]["slot"]
+        required, refs = ((slot,) if slot else ()), ()
     else:
         required, refs = _credential_plan(operation)
         workflow_sha = profile_sha = None
@@ -74,16 +79,18 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
         "name": market.name, "command": list(market.command),
         "detail": market.detail, "required_slots": list(market.required_slots),
         "credential_refs": list(market.credential_refs)})
-    digest = canonical_sha256({
+    material = {
         "action": operation.action, "operation_sha256": operation.operation_sha256,
         "required_slots": list(required), "credential_refs": list(refs),
         "plugin_kind": kind, "argv": list(argv), "cwd": cwd,
         "marketplace": market_value, "workflow_sha256": workflow_sha,
         "profile_sha256": profile_sha,
-        "source_context_payload_sha256": source_context_sha})
+        "source_context_payload_sha256": source_context_sha}
+    if agent_binding is not None: material["agent_binding_sha256"] = agent_binding.sha256
+    digest = canonical_sha256(material)
     return ExecutionPlan(digest, tuple(required), tuple(refs), launch, kind,
         market, workflow_sha, profile_sha, workflow_snapshot,
-        profile_snapshot, verified, source_context_sha, source_context_payload)
+        profile_snapshot, verified, source_context_sha, source_context_payload, agent_binding)
 
 
 def _plan_snapshot(operation, owner_ref, state_root):

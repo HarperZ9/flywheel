@@ -625,18 +625,19 @@ def test_gateway_agent_worker_persists_private_trace_and_returns_projection(
     from harness import gateway_operation_process as process
     from harness.gateway_agent_trace import AgentTrace
     from harness.gateway_agent_projection import validate_projection
+    from harness.gateway_agent_binding import freeze_agent_binding
+    from harness.gateway_operation import canonicalize_operation
+    from harness.plan_run_snapshot import thaw_json
     marker = "PRIVATE_WORKER_FIXTURE_73b9"
     binding = ("owner_" + "a" * 32, "jrn_" + "b" * 32, "op_" + "c" * 32)
     trace = AgentTrace(tmp_path, *binding)
     emitted = []
-
     def fake_run(goal, endpoint, **kw):
-        assert goal == marker
+        assert goal == marker and kw["model"] == "stub"
         kw["ledger"].append("assistant", marker)
         kw["on_event"]({"type": "assistant", "step": 1, "text": marker})
         return {"final": marker, "steps": 1, "verified": True,
                 "checkpoint": "abc", "endpoint": endpoint}
-
     def forbidden(*args, **kwargs):
         raise AssertionError("private worker reached a global content sink")
     monkeypatch.setattr("harness.eval_store.save_agent_run", forbidden)
@@ -644,10 +645,11 @@ def test_gateway_agent_worker_persists_private_trace_and_returns_projection(
     monkeypatch.setattr(gateway, "_countersign_run", forbidden)
     monkeypatch.setattr("harness.router_agent.run_router_agent", fake_run)
     monkeypatch.setattr(process, "_emit", emitted.append)
-    result = process._run_agent({
-        "goal": marker, "endpoint": "anthropic", "max_steps": 2,
-        "allow_write": False, "allow_exec": False,
-    }, {}, tmp_path, tmp_path, trace=trace)
+    operation = {"goal": marker, "endpoint": "stub", "max_steps": 2,
+        "allow_write": False, "allow_exec": False, "stream": True, "data_refs": [], "credential_refs": []}
+    frozen = thaw_json(freeze_agent_binding(canonicalize_operation("agent.run", operation), tmp_path))
+    result = process._run_agent(operation, {}, tmp_path, tmp_path, trace=trace,
+        binding=frozen, deadline=__import__("time").monotonic() + 300)
     validate_projection(result, trace.binding)
     assert result["state"] == "completed" and result["trace_ref"] == trace.ref
     records = AgentTrace(tmp_path, *binding).read_reference(result["trace_ref"])
@@ -664,7 +666,6 @@ def test_gateway_agent_worker_persists_private_trace_and_returns_projection(
     assert progress["trace_head_sha256"] == records[2]["record_sha256"]
     assert marker not in json.dumps([result, emitted])
     assert not (tmp_path / "agent_runs").exists()
-
 
 def test_workflow_run_is_countersigned_into_the_store(tmp_path, monkeypatch):
     # /api/workflow must bank a gateway-side witness like every other run
