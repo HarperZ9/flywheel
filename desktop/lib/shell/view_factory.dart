@@ -228,6 +228,13 @@ Widget? _evidence(DestinationId id, DestinationInputs i) => switch (id) {
         GovernanceView(client: i.client, alive: i.alive),
       DestinationId.usage => UsageView(client: i.client, alive: i.alive),
       DestinationId.infra => InfraView(client: i.client, alive: i.alive),
+      DestinationId.lanes => LanesView(
+          client: i.client,
+          roster: i.roster,
+          alive: i.alive,
+          onProbe: i.onProbe,
+          onInstall: i.onInstall,
+        ),
       _ => null,
     };
 
@@ -259,13 +266,6 @@ Widget? _advanced(DestinationId id, DestinationInputs i) => switch (id) {
         ),
       DestinationId.forum => ForumView(client: i.client),
       DestinationId.registry => RegistryView(client: i.client, alive: i.alive),
-      DestinationId.lanes => LanesView(
-          client: i.client,
-          roster: i.roster,
-          alive: i.alive,
-          onProbe: i.onProbe,
-          onInstall: i.onInstall,
-        ),
       DestinationId.train => TrainView(client: i.client, alive: i.alive),
       DestinationId.uplift => UpliftView(client: i.client, alive: i.alive),
       DestinationId.family => FamilyView(client: i.client, alive: i.alive),

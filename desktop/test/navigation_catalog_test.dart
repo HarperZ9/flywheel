@@ -66,6 +66,7 @@ void main() {
         'governance',
         'usage',
         'infra',
+        'lanes',
       ],
     );
     expect(
@@ -82,7 +83,6 @@ void main() {
         'lessons',
         'instruments',
         'browser',
-        'lanes',
         'forum',
         'registry',
         'train',
