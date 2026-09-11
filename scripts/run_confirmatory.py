@@ -86,7 +86,7 @@ def other_walk_pids(records, self_pid: int) -> list:
     return sorted(pids)
 
 
-def _live_process_records() -> list:
+def _live_process_records(*, diagnostics: dict | None = None) -> list:
     """(pid, image name, command line) for every live process.
 
     FAIL OPEN, in the code and not only in this docstring. The first version of
@@ -101,8 +101,15 @@ def _live_process_records() -> list:
 
     So the bytes are decoded lossily on purpose, because the only things ever
     matched here are the ASCII substrings "python" and "run_confirmatory" and an
-    ASCII pid, and any scan that fails at all returns nothing.
+    ASCII pid, and any scan that cannot run returns nothing. Optional diagnostics
+    distinguish those failure branches without exposing command lines, paths,
+    subprocess output, or exception messages. They do not change scan behavior.
     """
+    started = time.monotonic()
+    info = diagnostics if diagnostics is not None else {}
+    info.clear()
+    info.update(backend="cim" if sys.platform == "win32" else "ps",
+                timeout_s=_SCAN_TIMEOUT)
     if sys.platform == "win32":
         ps = ("Get-CimInstance Win32_Process | ForEach-Object { "
               f"'{{0}}{_SEP}{{1}}{_SEP}{{2}}' -f "
@@ -115,7 +122,11 @@ def _live_process_records() -> list:
         # timeout bounds a wedged process query, which would otherwise hang the
         # walker forever while still matching the supervisor's liveness probe.
         proc = subprocess.run(cmd, capture_output=True, timeout=_SCAN_TIMEOUT)
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError) as exc:
+        info.update(status=("timeout" if isinstance(exc, subprocess.TimeoutExpired)
+                            else "unavailable" if isinstance(exc, OSError)
+                            else "scan_error"),
+                    elapsed_s=round(time.monotonic() - started, 3))
         return []
     out = (proc.stdout or b"").decode("utf-8", "replace")
     records = []
@@ -125,6 +136,11 @@ def _live_process_records() -> list:
         if len(parts) != 3 or not parts[0].strip().isdigit():
             continue
         records.append((int(parts[0].strip()), parts[1].strip(), parts[2]))
+    info.update(status=("process_error" if proc.returncode else "ok" if records
+                        else "unparseable_output" if out else "empty_output"),
+                elapsed_s=round(time.monotonic() - started, 3),
+                returncode=proc.returncode, stdout_bytes=len(proc.stdout or b""),
+                stderr_bytes=len(proc.stderr or b""), row_count=len(records))
     return records
 
 
