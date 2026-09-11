@@ -27,12 +27,15 @@ def _write_shortcut(script: Path, link: Path, target: Path) -> None:
         ]),
         encoding="utf-8",
     )
+    # A cold Windows PowerShell 5.1 launch under Defender and disk load on a CI
+    # runner overruns a tight bound; the COM save itself is fast. Keep the budget
+    # generous. The pytest --timeout=300 wrapper stays the real hang backstop.
     completed = subprocess.run(
         [
             _windows_powershell_51(), "-NoProfile", "-ExecutionPolicy", "Bypass",
             "-File", str(script), "-Link", str(link), "-Target", str(target),
         ],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8", errors="replace", timeout=10,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8", errors="replace", timeout=120,
     )
     assert completed.returncode == 0, completed.stderr
     assert link.is_file(), "COM did not save the requested literal shortcut path"
@@ -98,9 +101,10 @@ def test_resolve_links_rejects_com_best_fit_path_substitution(tmp_path):
         "$s=New-Object -ComObject WScript.Shell\n$s.CreateShortcut($Link).FullName\n",
         encoding="utf-8",
     )
+    # Same cold-launch budget rationale as _write_shortcut above.
     observed = subprocess.run(
         [_windows_powershell_51(), "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(probe),
-         "-Link", str(requested)], capture_output=True, encoding="utf-8", timeout=10,
+         "-Link", str(requested)], capture_output=True, encoding="utf-8", timeout=120,
     )
     assert observed.returncode == 0, observed.stderr
     if Path(observed.stdout.strip()) == requested:
