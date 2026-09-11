@@ -23,7 +23,10 @@ import 'package:flywheel_desktop/shell/flywheel_dependencies.dart';
 import 'journey_controller_test.dart';
 
 class MemorySettings extends DesktopSettings {
-  MemorySettings({super.uiScale});
+  // Defaults to the returning-user state so a shell pumped through the harness
+  // does not raise the first-run walkthrough over steady-state assertions; the
+  // first-run path has its own tests. save() counts instead of writing disk.
+  MemorySettings({super.uiScale, super.firstRunSeen = true});
   int saves = 0;
   @override
   void save() => saves++;
@@ -79,11 +82,12 @@ class ShellHarness {
     this.directory, {
     JourneyLens lens = JourneyLens.verify,
     bool seedSession = true,
+    bool firstRunSeen = true,
     Future<http.Response> Function(http.Request)? handler,
     CountingGatewayProcess? gateway,
     CloseChoicePrompt? closePrompt,
   })  : api = ScriptedJourneyApi(),
-        settings = MemorySettings(),
+        settings = MemorySettings(firstRunSeen: firstRunSeen),
         transport = ClosingMockClient(handler),
         process = gateway ?? CountingGatewayProcess() {
     client = GatewayClient(

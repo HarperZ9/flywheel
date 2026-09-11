@@ -19,3 +19,10 @@ HANDOFF-*.md
 android/key.properties
 *.jks
 *.keystore
+
+# Rowan launch tour marketing frames: regenerated on demand with
+# `flutter test --update-goldens test/rowan_launch_tour_golden_test.dart`.
+# They are media artifacts, not CI fixtures (the tour test gates its pixel
+# compare behind --update-goldens), so they stay out of the repo. The
+# cascadia_dense_layout.png golden is tracked and unaffected by this rule.
+test/goldens/tour_*.png

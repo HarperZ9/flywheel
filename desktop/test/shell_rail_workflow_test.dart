@@ -8,6 +8,7 @@ Widget _rail({
   bool collapsed = false,
   VoidCallback? onOpenRecovery,
   VoidCallback? onOpenConnection,
+  VoidCallback? onOpenWalkthrough,
 }) =>
     MaterialApp(
       theme: flywheelLightTheme(),
@@ -26,6 +27,7 @@ Widget _rail({
             onOpenAppearance: () {},
             onOpenRecovery: onOpenRecovery ?? () {},
             onOpenConnection: onOpenConnection,
+            onOpenWalkthrough: onOpenWalkthrough,
           ),
         ),
       ),
@@ -57,6 +59,27 @@ void main() {
     await tester.enterText(search, 'marketplace');
     await tester.pump();
     expect(find.text('Plugins'), findsOneWidget);
+  });
+
+  testWidgets('the walkthrough replay action fires when supplied', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    var replays = 0;
+    await tester.pumpWidget(_rail(onOpenWalkthrough: () => replays += 1));
+    await tester.tap(find.bySemanticsLabel('Replay the walkthrough'));
+    await tester.pump();
+    expect(replays, 1);
+    semantics.dispose();
+  });
+
+  testWidgets('the walkthrough replay action is absent when not supplied', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(_rail());
+    expect(find.bySemanticsLabel('Replay the walkthrough'), findsNothing);
+    semantics.dispose();
   });
 
   testWidgets('collapsed rail exposes recovery and connection actions', (

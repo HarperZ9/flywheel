@@ -38,6 +38,10 @@ class ShellRail extends StatefulWidget {
   /// only when supplied.
   final VoidCallback? onOpenAssistant;
 
+  /// Replays the first-run walkthrough Rowan gives. Optional; renders only when
+  /// supplied, so hand-built rails in tests keep compiling.
+  final VoidCallback? onOpenWalkthrough;
+
   const ShellRail({
     super.key,
     required this.collapsed,
@@ -53,6 +57,7 @@ class ShellRail extends StatefulWidget {
     this.onOpenConnection,
     this.onOpenSessions,
     this.onOpenAssistant,
+    this.onOpenWalkthrough,
   });
 
   @override
@@ -207,6 +212,15 @@ class _ShellRailState extends State<ShellRail> {
               'Open recovery center',
               widget.onOpenRecovery,
             ),
+            if (widget.onOpenWalkthrough != null) ...[
+              const SizedBox(height: 8),
+              _footerIcon(
+                t,
+                Icons.auto_awesome,
+                'Replay the walkthrough',
+                widget.onOpenWalkthrough!,
+              ),
+            ],
             if (widget.onOpenConnection != null) ...[
               const SizedBox(height: 8),
               _footerIcon(
@@ -240,6 +254,13 @@ class _ShellRailState extends State<ShellRail> {
             'Open recovery center',
             widget.onOpenRecovery,
           ),
+          if (widget.onOpenWalkthrough != null)
+            _footerIcon(
+              t,
+              Icons.auto_awesome,
+              'Replay the walkthrough',
+              widget.onOpenWalkthrough!,
+            ),
           if (widget.onOpenAssistant != null)
             _footerIcon(
               t,
@@ -302,6 +323,14 @@ class _ShellRailState extends State<ShellRail> {
           widget.onOpenRecovery,
           semantic: 'Open recovery center',
         ),
+        if (widget.onOpenWalkthrough != null)
+          _labeledAction(
+            t,
+            Icons.auto_awesome,
+            'Walkthrough',
+            widget.onOpenWalkthrough!,
+            semantic: 'Replay the walkthrough',
+          ),
         Container(
           height: 1,
           margin: const EdgeInsets.symmetric(
