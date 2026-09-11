@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'bulletin_media_review.dart';
 import 'evidence_state.dart';
+import 'gateway_agent_execution_review.dart';
+
+export 'gateway_agent_execution_review.dart';
 
 part 'gateway_destination.dart';
 part 'gateway_grant_proposal.dart';
@@ -34,6 +37,7 @@ final class GatewayJourneyBinding {
 final class GatewayGrantSummary extends DefensiveModel {
   final String action, journeyRef, eventHead, tool, operationSha256;
   final String argumentsSha256, effect, expiresAt;
+  final GatewayAgentExecutionReview? agentExecution;
   final BulletinMediaReview? bulletinMediaReview;
   final GatewayDestination destination;
   final List<String> scopes, dataRefs, credentialRefs;
@@ -51,6 +55,7 @@ final class GatewayGrantSummary extends DefensiveModel {
     this.credentialRefs,
     this.effect,
     this.expiresAt,
+    this.agentExecution,
     this.bulletinMediaReview,
     super.parseIssues,
   );
@@ -74,13 +79,29 @@ final class GatewayGrantSummary extends DefensiveModel {
     };
     exactGatewayFields(
       json,
-      json.containsKey('bulletin_media_review')
-          ? {...fields, 'bulletin_media_review'}
-          : fields,
+      {
+        ...fields,
+        if (json.containsKey('bulletin_media_review')) 'bulletin_media_review',
+        if (json.containsKey('agent_execution')) 'agent_execution',
+      },
       issues,
       'summary',
     );
     expectSchema(json, gatewayGrantSummarySchema, issues);
+    final action = readText(json, 'action', issues);
+    final agentExecution = json['agent_execution'] is Map<String, Object?>
+        ? GatewayAgentExecutionReview.fromJson(
+            json['agent_execution'] as Map<String, Object?>,
+            'agent_execution',
+          )
+        : null;
+    if (json.containsKey('agent_execution') && agentExecution == null) {
+      addParseIssue(issues, 'agent_execution', json['agent_execution']);
+    }
+    if (agentExecution != null) {
+      issues.addAll(agentExecution.parseIssues);
+      if (action != 'agent.run') addParseIssue(issues, 'agent_execution', null);
+    }
     final bulletinReview = json['bulletin_media_review'] is Map<String, Object?>
         ? BulletinMediaReview.fromJson(
             json['bulletin_media_review'] as Map<String, Object?>,
@@ -95,7 +116,7 @@ final class GatewayGrantSummary extends DefensiveModel {
     }
     if (bulletinReview != null) issues.addAll(bulletinReview.parseIssues);
     return GatewayGrantSummary._(
-      readText(json, 'action', issues),
+      action,
       readText(json, 'journey_ref', issues, pattern: _journeyRef),
       readText(json, 'expected_event_head', issues, pattern: sha256Pattern),
       GatewayDestination.fromJson(json['destination'], issues, 'destination'),
@@ -107,6 +128,7 @@ final class GatewayGrantSummary extends DefensiveModel {
       readGatewayCredentialRefs(json['credential_refs'], issues),
       readText(json, 'effect', issues),
       readText(json, 'expires_at', issues),
+      agentExecution,
       bulletinReview,
       issues,
     );
