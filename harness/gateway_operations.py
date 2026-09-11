@@ -2,7 +2,7 @@
 from __future__ import annotations
 from contextlib import nullcontext
 from dataclasses import dataclass
-import threading, time
+import threading
 from pathlib import Path
 from typing import Callable, Iterator
 from .evidence_json import canonical_sha256
@@ -185,13 +185,9 @@ class GatewayOperations:
         return self.events.watch(self, owner_ref, ref, after_sequence)
     def wait_terminal(self, owner_ref: str, ref: str,
                       timeout_s: float) -> OperationSnapshot:
-        deadline = time.monotonic() + timeout_s
-        while time.monotonic() < deadline:
-            snapshot = self.snapshot(owner_ref, ref)
-            if snapshot.state in TERMINALS:
-                return snapshot
-            time.sleep(min(.05, max(0, deadline - time.monotonic())))
-        raise TimeoutError("gateway operation did not become terminal")
+        from .gateway_operation_wait import wait_for_terminal
+        return wait_for_terminal(lambda: self.snapshot(owner_ref, ref),
+                                 TERMINALS, self.events._condition, timeout_s)
     def shutdown(self) -> None:
         for handle in list(self._handles.values()):
             try:
