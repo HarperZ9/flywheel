@@ -1,6 +1,7 @@
 """The finite loopback client must not hide failures or retry actions."""
 import http.client
 import io
+import math
 
 import pytest
 
@@ -52,6 +53,41 @@ def test_headers_and_body_share_one_send_and_401_is_preserved(monkeypatch):
     assert b'Content-Length: 21' in head
     assert b'Authorization: Bearer synthetic' in head
     assert body == b'{"provider":"openai"}'
+
+
+def test_configurable_timeout_budget_reaches_socket_without_retry(monkeypatch):
+    sock, connections = socket_for(monkeypatch,
+        b'HTTP/1.0 200 OK\r\nContent-Length: 2\r\n\r\n{}')
+    assert request(8799, '/api/auth', timeout=8) == (200, '{}')
+    assert connections == [(('127.0.0.1', 8799), 8)]
+    assert len(sock.sent) == 1
+
+
+@pytest.mark.parametrize('timeout', [None, math.inf, math.nan, 0, -0.1])
+def test_invalid_timeout_budget_is_rejected_before_connect(monkeypatch, timeout):
+    connections = []
+
+    def connect(address, timeout):
+        connections.append((address, timeout))
+        raise AssertionError('invalid timeout reached socket')
+
+    monkeypatch.setattr('tests.http_fixture_client.socket.create_connection', connect)
+    with pytest.raises(ValueError, match='timeout'):
+        request(8799, '/api/auth', timeout=timeout)
+    assert connections == []
+
+
+def test_socket_timeout_propagates_without_retry(monkeypatch):
+    connections = []
+
+    def connect(address, timeout):
+        connections.append((address, timeout))
+        raise TimeoutError('synthetic fixture deadline')
+
+    monkeypatch.setattr('tests.http_fixture_client.socket.create_connection', connect)
+    with pytest.raises(TimeoutError, match='synthetic fixture deadline'):
+        request(8799, '/api/auth', timeout=8)
+    assert connections == [(('127.0.0.1', 8799), 8)]
 
 
 @pytest.mark.parametrize(('wire', 'exception'), [
