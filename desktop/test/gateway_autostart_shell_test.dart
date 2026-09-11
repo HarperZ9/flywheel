@@ -19,6 +19,7 @@ void main() {
         gateway: engine,
         journey: harness.controller,
         rowan: harness.rowan,
+        rowanOperationHost: harness.rowanHost,
         code: harness.code,
         autoStartBundledEngine: true,
         status: GatewayStatusService(

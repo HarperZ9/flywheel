@@ -37,6 +37,7 @@ final class RowanOperationController extends ChangeNotifier {
   String? _endpoint, _selectedModel, _workspaceRoot, _error;
   EffortLevel _effort = EffortLevel.standard;
   int _maxTokens = 1024, _timeoutSeconds = 300;
+  int? _maxStepsOverride;
   bool _allowWrite = false, _allowExec = false, _authorizing = false;
   int _configGeneration = 0;
   String? _pendingRequestSha256;
@@ -47,6 +48,7 @@ final class RowanOperationController extends ChangeNotifier {
   String? get selectedModel => _selectedModel;
   String? get workspaceRoot => _workspaceRoot;
   EffortLevel get effort => _effort;
+  int get maxSteps => _maxStepsOverride ?? _effort.maxSteps;
   int get maxTokens => _maxTokens;
   int get timeoutSeconds => _timeoutSeconds;
   bool get allowWrite => _allowWrite;
@@ -103,8 +105,20 @@ final class RowanOperationController extends ChangeNotifier {
   }
 
   void setEffort(EffortLevel value) {
-    if (_effort == value) return;
+    if (_effort == value && _maxStepsOverride == null) return;
     _effort = value;
+    _maxStepsOverride = null;
+    _bump();
+  }
+
+  void setMaxStepsOverride(int? value) {
+    if (value != null && (value < 1 || value > 12)) {
+      _error = 'INVALID_MAX_STEPS';
+      notifyListeners();
+      return;
+    }
+    if (_maxStepsOverride == value) return;
+    _maxStepsOverride = value;
     _bump();
   }
 

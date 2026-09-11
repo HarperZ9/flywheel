@@ -10,6 +10,7 @@ import 'package:flywheel_desktop/app.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/controllers/journey_controller.dart';
 import 'package:flywheel_desktop/controllers/rowan_operation_controller.dart';
+import 'package:flywheel_desktop/controllers/rowan_operation_host_adapter.dart';
 import 'package:flywheel_desktop/ide/code_buffer_session.dart';
 import 'package:flywheel_desktop/ide/unsaved_work_guard.dart';
 import 'package:flywheel_desktop/models/journey_models.dart';
@@ -102,6 +103,7 @@ class ShellHarness {
       sessionStore: sessions,
     );
     rowan = RowanOperationController(client, sessionStore: sessions);
+    rowanHost = RowanOperationHostAdapter(rowan);
     code = CodeBufferSession(
       draftStore: CodeDraftStore(root: Directory('${directory.path}/code')),
     );
@@ -110,6 +112,7 @@ class ShellHarness {
       gateway: process,
       journey: controller,
       rowan: rowan,
+      rowanOperationHost: rowanHost,
       code: code,
       closePrompt: closePrompt,
     );
@@ -124,6 +127,7 @@ class ShellHarness {
   late final JourneySessionStore sessions;
   late final JourneyController controller;
   late final RowanOperationController rowan;
+  late final RowanOperationHostAdapter rowanHost;
   late final CodeBufferSession code;
   late final FlywheelDependencies dependencies;
 

@@ -9,6 +9,7 @@ import '../client/gateway_schedule.dart';
 import '../client/gateway_swarms.dart';
 import '../client/writing_api.dart';
 import '../controllers/journey_controller.dart';
+import '../controllers/rowan_walkthrough_operation_host.dart';
 import '../ide/code_buffer_session.dart';
 import '../ide/unsaved_work_guard.dart';
 import '../models/gateway_models.dart';
@@ -81,6 +82,7 @@ final class DestinationInputs {
   const DestinationInputs({
     required this.client,
     required this.journey,
+    this.rowanOperationHost,
     required this.code,
     required this.codeGuard,
     required this.alive,
@@ -95,6 +97,7 @@ final class DestinationInputs {
 
   final GatewayClient client;
   final JourneyController journey;
+  final RowanWalkthroughOperationHost? rowanOperationHost;
   final CodeBufferSession code;
   final UnsavedWorkGuard codeGuard;
   final bool alive;
@@ -116,153 +119,156 @@ Widget buildDestinationView(DestinationId id, DestinationInputs input) =>
     const FwEmpty('Unknown view');
 
 Widget? _work(DestinationId id, DestinationInputs i) => switch (id) {
-  DestinationId.journey => JourneyView(
-    controller: i.journey,
-    alive: i.alive,
-    onStartEngine: i.onStartEngine,
-  ),
-  DestinationId.plan => PlanView(
-    client: i.client,
-    alive: i.alive,
-    settings: i.settings,
-  ),
-  DestinationId.workflows => WorkflowsView(
-    client: i.client,
-    alive: i.alive,
-    settings: i.settings,
-  ),
-  DestinationId.projects => ProjectsView(
-    client: i.client,
-    journey: i.journey,
-    alive: i.alive,
-  ),
-  DestinationId.writing => WritingView(
-    api: GatewayWritingApi(i.client),
-    alive: i.alive,
-  ),
-  DestinationId.swarms => SwarmsView(
-    api: SwarmsApi(baseUrl: i.client.baseUrl),
-    alive: i.alive,
-  ),
-  DestinationId.roadmap => RoadmapView(
-    api: RoadmapApi(baseUrl: i.client.baseUrl),
-    alive: i.alive,
-  ),
-  DestinationId.schedule => ScheduleView(
-    api: ScheduleApi(baseUrl: i.client.baseUrl),
-    alive: i.alive,
-  ),
-  DestinationId.runners => RunnersView(
-    api: RunnersApi(baseUrl: i.client.baseUrl),
-    alive: i.alive,
-  ),
-  DestinationId.approvals => ApprovalsInboxView(
-    client: i.client,
-    alive: i.alive,
-  ),
-  DestinationId.bulletin => BulletinMediaView(
-    client: i.client,
-    journey: i.journey,
-  ),
-  _ => null,
-};
+      DestinationId.journey => JourneyView(
+          controller: i.journey,
+          alive: i.alive,
+          onStartEngine: i.onStartEngine,
+        ),
+      DestinationId.plan => PlanView(
+          client: i.client,
+          alive: i.alive,
+          settings: i.settings,
+        ),
+      DestinationId.workflows => WorkflowsView(
+          client: i.client,
+          alive: i.alive,
+          settings: i.settings,
+        ),
+      DestinationId.projects => ProjectsView(
+          client: i.client,
+          journey: i.journey,
+          alive: i.alive,
+        ),
+      DestinationId.writing => WritingView(
+          api: GatewayWritingApi(i.client),
+          alive: i.alive,
+        ),
+      DestinationId.swarms => SwarmsView(
+          api: SwarmsApi(baseUrl: i.client.baseUrl),
+          alive: i.alive,
+        ),
+      DestinationId.roadmap => RoadmapView(
+          api: RoadmapApi(baseUrl: i.client.baseUrl),
+          alive: i.alive,
+        ),
+      DestinationId.schedule => ScheduleView(
+          api: ScheduleApi(baseUrl: i.client.baseUrl),
+          alive: i.alive,
+        ),
+      DestinationId.runners => RunnersView(
+          api: RunnersApi(baseUrl: i.client.baseUrl),
+          alive: i.alive,
+        ),
+      DestinationId.approvals => ApprovalsInboxView(
+          client: i.client,
+          alive: i.alive,
+        ),
+      DestinationId.bulletin => BulletinMediaView(
+          client: i.client,
+          journey: i.journey,
+        ),
+      _ => null,
+    };
 
 Widget? _chat(DestinationId id, DestinationInputs i) => switch (id) {
-  DestinationId.chat => AgentView(
-    client: i.client,
-    alive: i.alive,
-    settings: i.settings,
-  ),
-  DestinationId.compare => CompareView(
-    client: i.client,
-    alive: i.alive,
-    settings: i.settings,
-  ),
-  DestinationId.models => EndpointsView(client: i.client, alive: i.alive),
-  DestinationId.companion => CompanionView(client: i.client, alive: i.alive),
-  _ => null,
-};
+      DestinationId.chat => AgentView(
+          client: i.client,
+          alive: i.alive,
+          settings: i.settings,
+        ),
+      DestinationId.compare => CompareView(
+          client: i.client,
+          alive: i.alive,
+          settings: i.settings,
+        ),
+      DestinationId.models => EndpointsView(client: i.client, alive: i.alive),
+      DestinationId.companion =>
+        CompanionView(client: i.client, alive: i.alive),
+      _ => null,
+    };
 
 Widget? _code(DestinationId id, DestinationInputs i) => switch (id) {
-  DestinationId.code => CodeView(
-    client: i.client,
-    alive: i.alive,
-    settings: i.settings,
-    session: i.code,
-    guard: i.codeGuard,
-  ),
-  DestinationId.eval => EvalView(client: i.client, alive: i.alive),
-  DestinationId.audit => AuditView(client: i.client, alive: i.alive),
-  DestinationId.lint => LintView(client: i.client, alive: i.alive),
-  DestinationId.scan => ScanView(
-    api: ScanApi(baseUrl: i.client.baseUrl),
-    alive: i.alive,
-  ),
-  DestinationId.relay => RelayView(client: i.client, alive: i.alive),
-  _ => null,
-};
+      DestinationId.code => CodeView(
+          client: i.client,
+          alive: i.alive,
+          settings: i.settings,
+          session: i.code,
+          guard: i.codeGuard,
+        ),
+      DestinationId.eval => EvalView(client: i.client, alive: i.alive),
+      DestinationId.audit => AuditView(client: i.client, alive: i.alive),
+      DestinationId.lint => LintView(client: i.client, alive: i.alive),
+      DestinationId.scan => ScanView(
+          api: ScanApi(baseUrl: i.client.baseUrl),
+          alive: i.alive,
+        ),
+      DestinationId.relay => RelayView(client: i.client, alive: i.alive),
+      _ => null,
+    };
 
 Widget? _evidence(DestinationId id, DestinationInputs i) => switch (id) {
-  DestinationId.receipts => ReceiptsView(
-    client: i.client,
-    alive: i.alive,
-    focusLeaf: i.pendingArgument is String
-        ? i.pendingArgument! as String
-        : null,
-  ),
-  DestinationId.science => ScienceView(
-    client: i.client,
-    alive: i.alive,
-    settings: i.settings,
-  ),
-  DestinationId.world => WorldView(
-    world: i.world,
-    alive: i.alive,
-    client: i.client,
-  ),
-  DestinationId.memory => MemoryView(client: i.client, alive: i.alive),
-  DestinationId.governance => GovernanceView(client: i.client, alive: i.alive),
-  DestinationId.usage => UsageView(client: i.client, alive: i.alive),
-  DestinationId.infra => InfraView(client: i.client, alive: i.alive),
-  _ => null,
-};
+      DestinationId.receipts => ReceiptsView(
+          client: i.client,
+          alive: i.alive,
+          focusLeaf:
+              i.pendingArgument is String ? i.pendingArgument! as String : null,
+        ),
+      DestinationId.science => ScienceView(
+          client: i.client,
+          alive: i.alive,
+          settings: i.settings,
+        ),
+      DestinationId.world => WorldView(
+          world: i.world,
+          alive: i.alive,
+          client: i.client,
+        ),
+      DestinationId.memory => MemoryView(client: i.client, alive: i.alive),
+      DestinationId.governance =>
+        GovernanceView(client: i.client, alive: i.alive),
+      DestinationId.usage => UsageView(client: i.client, alive: i.alive),
+      DestinationId.infra => InfraView(client: i.client, alive: i.alive),
+      _ => null,
+    };
 
 Widget? _advanced(DestinationId id, DestinationInputs i) => switch (id) {
-  DestinationId.studio => StudioView(
-    world: i.world,
-    roster: i.roster,
-    alive: i.alive,
-    client: i.client,
-  ),
-  DestinationId.graph => GraphView(client: i.client, alive: i.alive),
-  DestinationId.feeds => FeedsView(client: i.client, alive: i.alive),
-  DestinationId.discourse => DiscourseView(
-    client: i.client,
-    alive: i.alive,
-    settings: i.settings,
-  ),
-  DestinationId.academy => AcademyView(client: i.client, alive: i.alive),
-  DestinationId.lessons => LessonsView(client: i.client, alive: i.alive),
-  DestinationId.instruments => InstrumentsView(
-    client: i.client,
-    alive: i.alive,
-  ),
-  DestinationId.browser => BrowserView(
-    api: BrowserApi(baseUrl: i.client.baseUrl),
-    alive: i.alive,
-  ),
-  DestinationId.forum => ForumView(client: i.client),
-  DestinationId.registry => RegistryView(client: i.client, alive: i.alive),
-  DestinationId.lanes => LanesView(
-    client: i.client,
-    roster: i.roster,
-    alive: i.alive,
-    onProbe: i.onProbe,
-    onInstall: i.onInstall,
-  ),
-  DestinationId.train => TrainView(client: i.client, alive: i.alive),
-  DestinationId.uplift => UpliftView(client: i.client, alive: i.alive),
-  DestinationId.family => FamilyView(client: i.client, alive: i.alive),
-  DestinationId.plugins => PluginsView(client: i.client, alive: i.alive),
-  _ => null,
-};
+      DestinationId.studio => StudioView(
+          world: i.world,
+          roster: i.roster,
+          journey: i.journey,
+          alive: i.alive,
+          client: i.client,
+          rowanOperationHost: i.rowanOperationHost,
+        ),
+      DestinationId.graph => GraphView(client: i.client, alive: i.alive),
+      DestinationId.feeds => FeedsView(client: i.client, alive: i.alive),
+      DestinationId.discourse => DiscourseView(
+          client: i.client,
+          alive: i.alive,
+          settings: i.settings,
+        ),
+      DestinationId.academy => AcademyView(client: i.client, alive: i.alive),
+      DestinationId.lessons => LessonsView(client: i.client, alive: i.alive),
+      DestinationId.instruments => InstrumentsView(
+          client: i.client,
+          alive: i.alive,
+        ),
+      DestinationId.browser => BrowserView(
+          api: BrowserApi(baseUrl: i.client.baseUrl),
+          alive: i.alive,
+        ),
+      DestinationId.forum => ForumView(client: i.client),
+      DestinationId.registry => RegistryView(client: i.client, alive: i.alive),
+      DestinationId.lanes => LanesView(
+          client: i.client,
+          roster: i.roster,
+          alive: i.alive,
+          onProbe: i.onProbe,
+          onInstall: i.onInstall,
+        ),
+      DestinationId.train => TrainView(client: i.client, alive: i.alive),
+      DestinationId.uplift => UpliftView(client: i.client, alive: i.alive),
+      DestinationId.family => FamilyView(client: i.client, alive: i.alive),
+      DestinationId.plugins => PluginsView(client: i.client, alive: i.alive),
+      _ => null,
+    };
