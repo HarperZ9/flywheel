@@ -8,6 +8,7 @@ import '../models/agent_trace.dart';
 import '../models/agent_trace_record.dart';
 import '../models/agent_trace_json.dart';
 import 'agent_trace_reader.dart';
+import '../models/evidence_state.dart' show isSafePublicText;
 import '../models/operation_models.dart';
 import '../models/service_desk_review.dart';
 import '../models/workflow_models.dart';

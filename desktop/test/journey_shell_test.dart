@@ -4,131 +4,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
-import 'package:flywheel_desktop/app.dart';
-import 'package:flywheel_desktop/client/gateway_client.dart';
+
 import 'package:flywheel_desktop/controllers/journey_controller.dart';
-import 'package:flywheel_desktop/ide/code_buffer_session.dart';
-import 'package:flywheel_desktop/ide/unsaved_work_guard.dart';
 import 'package:flywheel_desktop/models/journey_models.dart';
 import 'package:flywheel_desktop/navigation/app_route.dart';
-import 'package:flywheel_desktop/services/gateway_process.dart';
-import 'package:flywheel_desktop/services/code_draft_store.dart';
-import 'package:flywheel_desktop/services/journey_draft_store.dart';
-import 'package:flywheel_desktop/services/journey_session_store.dart';
-import 'package:flywheel_desktop/services/settings.dart';
-import 'package:flywheel_desktop/shell/flywheel_shell.dart';
 import 'package:flywheel_desktop/views/agent_view.dart';
 import 'package:flywheel_desktop/views/journey_view.dart';
 import 'package:flywheel_desktop/views/lanes_view.dart';
 import 'package:flywheel_desktop/widgets/flywheel_nav.dart';
 import 'journey_controller_test.dart';
+import 'journey_shell_harness.dart';
 
-class MemorySettings extends DesktopSettings {
-  MemorySettings({super.uiScale});
-  int saves = 0;
-  @override
-  void save() => saves++;
-}
-
-class ClosingMockClient extends MockClient {
-  ClosingMockClient([Future<http.Response> Function(http.Request)? handler])
-      : super(handler ?? ((r) async => http.Response('{"n_lanes":0,"by_status":{}}',
-          ['/api/world', '/api/lanes'].contains(r.url.path) ? 200 : 503)));
-  int closes = 0;
-  @override
-  void close() {
-    closes++;
-    super.close();
-  }
-}
-
-class CountingGatewayProcess extends GatewayProcess {
-  CountingGatewayProcess({this.startResult});
-  final Completer<String?>? startResult;
-  int stops = 0;
-  int starts = 0;
-  int ownedStops = 0;
-  bool owned = false;
-  @override
-  Future<String?> start({int port = 8799}) async {
-    starts++;
-    if (startResult == null) return 'test process disabled';
-    final error = await startResult!.future;
-    owned = error == null;
-    return error;
-  }
-
-  @override
-  void stopIfOwned() {
-    stops++;
-    if (owned) {
-      owned = false;
-      ownedStops++;
-    }
-  }
-}
-
-class ShellHarness {
-  ShellHarness(
-    this.directory, {
-    JourneyLens lens = JourneyLens.verify,
-    bool seedSession = true,
-    Future<http.Response> Function(http.Request)? handler,
-    CountingGatewayProcess? gateway,
-    CloseChoicePrompt? closePrompt,
-  })  : api = ScriptedJourneyApi(),
-        settings = MemorySettings(),
-        transport = ClosingMockClient(handler),
-        process = gateway ?? CountingGatewayProcess() {
-    client =
-        GatewayClient(baseUrl: 'https://shell.invalid', httpClient: transport);
-    drafts = JourneyDraftStore(file: File('${directory.path}/drafts.json'));
-    sessions =
-        JourneySessionStore(file: File('${directory.path}/session.json'));
-    if (seedSession) {
-      sessions.save(JourneySession(journeyRef: journeyA, lens: lens));
-    }
-    controller =
-        JourneyController(api: api, draftStore: drafts, sessionStore: sessions);
-    code = CodeBufferSession(
-        draftStore: CodeDraftStore(root: Directory('${directory.path}/code')));
-    dependencies = FlywheelDependencies(
-        client: client,
-        gateway: process,
-        journey: controller,
-        code: code,
-        closePrompt: closePrompt);
-  }
-  final Directory directory;
-  final ScriptedJourneyApi api;
-  final MemorySettings settings;
-  final ClosingMockClient transport;
-  final CountingGatewayProcess process;
-  late final GatewayClient client;
-  late final JourneyDraftStore drafts;
-  late final JourneySessionStore sessions;
-  late final JourneyController controller;
-  late final CodeBufferSession code;
-  late final FlywheelDependencies dependencies;
-
-  void replyReady({
-    JourneyLens lens = JourneyLens.verify,
-    String head = headA,
-  }) {
-    final value = projection(head: head, lens: lens);
-    api
-      ..reply('resume:$journeyA:${lens.name}', value)
-      ..reply('list', <JourneySummary>[value]);
-  }
-
-  Widget app() => FlywheelApp(settings: settings, dependencies: dependencies);
-}
-
-Future<void> unmount(WidgetTester tester) async {
-  await tester.pumpWidget(const SizedBox.shrink());
-  await tester.pump();
-}
+export 'journey_shell_harness.dart' show ShellHarness, unmount;
 
 void main() {
   _homeLifecycleTests();
@@ -139,8 +26,9 @@ void main() {
 }
 
 void _responsiveTests() {
-  testWidgets('a phone width shows a bottom bar and More opens the full rail',
-      (tester) async {
+  testWidgets('a phone width shows a bottom bar and More opens the full rail', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(375, 812);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -161,8 +49,9 @@ void _responsiveTests() {
     await unmount(tester);
   });
 
-  testWidgets('a desktop width keeps the rail inline with no menu',
-      (tester) async {
+  testWidgets('a desktop width keeps the rail inline with no menu', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1280, 800);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -180,15 +69,19 @@ void _responsiveTests() {
 }
 
 void _homeLifecycleTests() {
-  testWidgets('Journey is home and shell dependencies have one lifecycle',
-      (tester) async {
+  testWidgets('Journey is home and shell dependencies have one lifecycle', (
+    tester,
+  ) async {
     final dir = Directory.systemTemp.createTempSync('journey-shell-home-');
     addTearDown(() => dir.deleteSync(recursive: true));
     final harness = ShellHarness(dir)..replyReady();
     await tester.pumpWidget(harness.app());
     await tester.pumpAndSettle();
-    expect(find.text('Journey'), findsOneWidget,
-        reason: 'the journey destination leads the rail');
+    expect(
+      find.text('Journey'),
+      findsOneWidget,
+      reason: 'the journey destination leads the rail',
+    );
     expect(find.text('fact-1'), findsWidgets);
     expect(find.text('engine online · no lanes declared'), findsOneWidget);
     expect(find.bySemanticsLabel('Event head $headA'), findsOneWidget);
@@ -201,7 +94,9 @@ void _homeLifecycleTests() {
     await tester.pump();
     expect(find.byType(AgentView), findsOneWidget);
     FlywheelNav.jump(
-        tester.element(find.byType(AgentView)), DestinationId.journey);
+      tester.element(find.byType(AgentView)),
+      DestinationId.journey,
+    );
     await tester.pumpAndSettle();
     expect(find.byType(JourneyView), findsOneWidget);
     expect(harness.api.calls.where((call) => call == resumeA), hasLength(1));
@@ -214,8 +109,9 @@ void _homeLifecycleTests() {
 }
 
 void _restartLensTests() {
-  testWidgets('all lenses stay equal and restart resumes exact Diagnose data',
-      (tester) async {
+  testWidgets('all lenses stay equal and restart resumes exact Diagnose data', (
+    tester,
+  ) async {
     final dir = Directory.systemTemp.createTempSync('journey-shell-restart-');
     addTearDown(() => dir.deleteSync(recursive: true));
     final first = ShellHarness(dir)..replyReady();
@@ -251,8 +147,9 @@ void _restartLensTests() {
 }
 
 void _recoveryTests() {
-  testWidgets('conflict and typed failure retain draft and accepted evidence',
-      (tester) async {
+  testWidgets('conflict and typed failure retain draft and accepted evidence', (
+    tester,
+  ) async {
     final dir = Directory.systemTemp.createTempSync('journey-shell-failure-');
     addTearDown(() => dir.deleteSync(recursive: true));
     final harness = ShellHarness(dir)..replyReady();
@@ -290,14 +187,18 @@ void _recoveryTests() {
 }
 
 void _lifecycleRaceTests() {
-  testWidgets('successful delayed start is stopped after shell unmount',
-      (tester) async {
+  testWidgets('successful delayed start is stopped after shell unmount', (
+    tester,
+  ) async {
     final dir = Directory.systemTemp.createTempSync('journey-start-race-');
     addTearDown(() => dir.deleteSync(recursive: true));
     final start = Completer<String?>();
     final gateway = CountingGatewayProcess(startResult: start);
-    final harness = ShellHarness(dir, gateway: gateway,
-        handler: (_) async => http.Response('{}', 503))..replyReady();
+    final harness = ShellHarness(
+      dir,
+      gateway: gateway,
+      handler: (_) async => http.Response('{}', 503),
+    )..replyReady();
     await tester.pumpWidget(harness.app());
     await tester.pumpAndSettle();
     await tester.tap(find.text('start engine'));
@@ -311,22 +212,27 @@ void _lifecycleRaceTests() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('delayed lane install cannot probe a disposed shell',
-      (tester) async {
+  testWidgets('delayed lane install cannot probe a disposed shell', (
+    tester,
+  ) async {
     final dir = Directory.systemTemp.createTempSync('journey-install-race-');
     addTearDown(() => dir.deleteSync(recursive: true));
     final install = Completer<http.Response>();
     var probes = 0;
-    final harness = ShellHarness(dir, handler: (request) {
-      if (request.url.path == '/api/lanes/install') return install.future;
-      if (request.url.path == '/api/lanes' && request.url.hasQuery) probes++;
-      return Future.value(http.Response('{}', 503));
-    })
-      ..replyReady();
+    final harness = ShellHarness(
+      dir,
+      handler: (request) {
+        if (request.url.path == '/api/lanes/install') return install.future;
+        if (request.url.path == '/api/lanes' && request.url.hasQuery) probes++;
+        return Future.value(http.Response('{}', 503));
+      },
+    )..replyReady();
     await tester.pumpWidget(harness.app());
     await tester.pumpAndSettle();
     FlywheelNav.jump(
-        tester.element(find.byType(JourneyView)), DestinationId.lanes);
+      tester.element(find.byType(JourneyView)),
+      DestinationId.lanes,
+    );
     await tester.pumpAndSettle();
     final lanes = tester.widget<LanesView>(find.byType(LanesView));
     final pending = lanes.onInstall!('mneme');
