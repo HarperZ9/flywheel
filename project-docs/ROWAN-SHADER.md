@@ -2,14 +2,25 @@
 
 Rowan is the same assistant in chat, native tasks and presentation. The canonical
 RowanAvatar draws an abstract luminous aperture through Flutter's FragmentProgram
-and Paint.shader: rounded amber contours, a warm soft core and a restrained cool
-rim. The shader contains analytical geometry and shading; no portrait bitmap,
+and Paint.shader: a rounded woven aperture, a warm soft core, peach/pink material
+and a localized cool rim. Geometric flutes and an inset lip add surface relief
+and depth. The shader contains analytical geometry and shading; no portrait bitmap,
 image sampler, video or WebView supplies the character.
 
 The visual recipe draws from the portfolio's
 [seeded aperture](https://github.com/HarperZ9/HarperZ9.github.io/blob/dce83e300ef1a5045cb939acb3ae433352e0a460/system/generative-field.js#L2230)
 and [Atelier layered light](https://github.com/HarperZ9/HarperZ9.github.io/blob/dce83e300ef1a5045cb939acb3ae433352e0a460/system/atelier.js#L1668).
 This is a native interpretation, not a direct port of the site's 2D functions.
+
+The material refinement also draws from the site's
+[Twisted Torus Coil](https://github.com/HarperZ9/HarperZ9.github.io/blob/dce83e300ef1a5045cb939acb3ae433352e0a460/system/shader-presets.js#L1414),
+directional satin and seeded facet recipes. A bounded finish uses the
+[Outrun palette](https://github.com/HarperZ9/HarperZ9.github.io/blob/dce83e300ef1a5045cb939acb3ae433352e0a460/system/retro-palettes.js#L38),
+a source grid capped at 240 cells across the shorter canvas dimension, Bayer 4
+dithering, and brightness-dependent scanlines. Weighted RGB palette selection
+with a 38% mix is an approximation;
+it does not reproduce the Retro Engine's OKLab brackets, Bayer 8, full phosphor
+mask or multipass CRT resampling. The pixelated geometry edge is intentional.
 
 Chat uses static 32-pixel companions and a 64-pixel welcome character. Studio
 contains the same renderer up to 320 pixels. Turn and Opening sliders support
@@ -61,8 +72,11 @@ compatibility; Dart and user-facing controls use attention and opening:
 Nonfinite pose values become zero; finite values are clamped to this contract.
 Output is premultiplied RGBA with transparent background. The integration uses
 Paint.shader, not the Impeller-only ImageFilter.shader path.
-The kernel uses at most 52 ray-march steps. Its reviewed source SHA-256 is
-`3bed916a43cbba6bc657deadbfe606f7e915a5d17ebb0c1a8c46be507afa5672`.
+The kernel uses at most 64 ray-march evaluations, six normal evaluations and four
+local occlusion probes per body pixel, followed by eight fixed palette comparisons.
+Misses omit normals and occlusion; pixels outside the art circle exit immediately.
+Its reviewed source SHA-256 is
+`72cd6136bba787ef79080dc9bfdc39b533517e522342cb5fb8ce22247f8486cb`.
 Capture receipts record the actual source hash again on each run.
 
 ## Verification and capture
@@ -93,3 +107,11 @@ These measurements are test-engine raster/readback observations. They do not
 establish GPU throughput, sustained frame rate, battery cost, real mobile behavior
 or the visual quality of the character. Visual review and real target-device
 measurements remain separate from the pixel/control regression checks.
+
+The material/retro study roughly doubled the baseline's single-run Picture.toImage
+raster/readback cost at 320 and 640 pixels. Source-grid pixelation does not reduce
+the number of output shader invocations. This is added rendering cost, not a
+performance improvement; static rendering remains the default. Sampled adjacent
+native motion frames and small yaw changes were reviewed, with exact equality for
+motion-disabled frames at different times. Those samples do not establish a
+formal flicker threshold, exhaustive pose coverage, or a global distance-field proof.
