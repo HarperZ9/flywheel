@@ -138,6 +138,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
           DestinationInputs(
             client: _dependencies.client,
             journey: _dependencies.journey,
+            rowanOperationHost: _dependencies.rowanOperationHost,
             code: _dependencies.code,
             codeGuard: _guard,
             alive: _coordinator.alive,

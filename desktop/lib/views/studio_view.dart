@@ -7,6 +7,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
+import '../controllers/journey_controller.dart';
+import '../controllers/rowan_walkthrough_operation_host.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/aperture.dart';
@@ -23,15 +25,26 @@ import '../widgets/sound_panel.dart';
 import '../widgets/typeface_panel.dart';
 import '../widgets/face_gallery_card.dart';
 import '../widgets/variable_family_card.dart';
-import '../widgets/rowan_presenter.dart';
+import '../widgets/rowan_studio_prelude.dart';
+
+part 'studio_field_painter.dart';
 
 class StudioView extends StatefulWidget {
   final WorldDoc? world;
   final LaneRoster? roster;
+  final JourneyController? journey;
   final bool alive;
   final GatewayClient? client;
-  const StudioView(
-      {super.key, this.world, this.roster, required this.alive, this.client});
+  final RowanWalkthroughOperationHost? rowanOperationHost;
+  const StudioView({
+    super.key,
+    this.world,
+    this.roster,
+    this.journey,
+    required this.alive,
+    this.client,
+    this.rowanOperationHost,
+  });
 
   @override
   State<StudioView> createState() => _StudioViewState();
@@ -58,8 +71,12 @@ class _StudioViewState extends State<StudioView> {
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: FwLayout.s4),
-        const RowanPresenter(),
-        const SizedBox(height: FwLayout.s4),
+        RowanStudioPrelude(
+          client: widget.client,
+          alive: widget.alive,
+          journey: widget.journey,
+          operationHost: widget.rowanOperationHost,
+        ),
         const Kicker('field plate · seeded kernel', hot: true),
         const SizedBox(height: FwLayout.s3),
         HairlineCard(
@@ -88,8 +105,8 @@ class _StudioViewState extends State<StudioView> {
                         style: fwMono(t, size: 11, color: t.inkMuted)),
                     const Spacer(),
                     OutlinedButton(
-                      onPressed: () => setState(() =>
-                          _seed = (_seed * 48271 + 11) % 100000),
+                      onPressed: () =>
+                          setState(() => _seed = (_seed * 48271 + 11) % 100000),
                       child: const Text('New seed'),
                     ),
                   ],
@@ -107,8 +124,7 @@ class _StudioViewState extends State<StudioView> {
           const Kicker('typeface forge · parametric type'),
           const SizedBox(height: FwLayout.s3),
           TypefacePanel(
-            onMint: (params, seed) =>
-                widget.client!.typefaceMint(params, seed),
+            onMint: (params, seed) => widget.client!.typefaceMint(params, seed),
             onMinted: (params) => setState(() => _mintedFace = params),
           ),
           const SizedBox(height: FwLayout.s3),
@@ -242,58 +258,3 @@ class _StudioViewState extends State<StudioView> {
 
 /// Plotter-thin flow-field arcs banded across the spectrum. Deterministic
 /// from the seed; the same seed always draws the same plate.
-class _FieldPainter extends CustomPainter {
-  final int seed;
-  final Color ground;
-  _FieldPainter({required this.seed, required this.ground});
-
-  // The spectrum band from the inspiration corpus: art-only colors.
-  static const _band = [
-    Color(0xFFC2447F), // magenta
-    Color(0xFFC96F3A), // ember
-    Color(0xFFC9A23A), // gold
-    Color(0xFF6FA33C), // lime
-    Color(0xFF3A9FA8), // cyan
-    Color(0xFF6C5CE0), // iris
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = ground);
-    final rng = Mulberry32(seed);
-    final cx = size.width * (0.25 + 0.5 * rng.next());
-    final cy = size.height * (0.3 + 0.4 * rng.next());
-    final k1 = 1.5 + rng.next() * 2.5;
-    final k2 = 0.8 + rng.next() * 1.8;
-    const arcs = 130;
-    for (var i = 0; i < arcs; i++) {
-      var x = size.width * rng.next();
-      var y = size.height * rng.next();
-      final color = _band[i % _band.length];
-      final paint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.7
-        ..color = color.withValues(alpha: 0.30 + 0.30 * rng.next());
-      final path = Path()..moveTo(x, y);
-      for (var s = 0; s < 64; s++) {
-        final dx = x - cx, dy = y - cy;
-        final r = math.sqrt(dx * dx + dy * dy) + 1e-6;
-        final angle = math.atan2(dy, dx) +
-            math.pi / 2 +
-            0.6 * math.sin(k1 * r / size.width * math.pi) +
-            0.3 * math.cos(k2 * x / size.width * math.pi);
-        x += math.cos(angle) * 3.2;
-        y += math.sin(angle) * 3.2;
-        if (x < -20 || y < -20 || x > size.width + 20 || y > size.height + 20) {
-          break;
-        }
-        path.lineTo(x, y);
-      }
-      canvas.drawPath(path, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_FieldPainter old) =>
-      old.seed != seed || old.ground != ground;
-}

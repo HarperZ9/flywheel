@@ -54,9 +54,12 @@ The application id is `io.github.harperz9.flywheel`.
 
 ## 3. What the phone can do
 
-- "fix the failing test" starts a witnessed run on your PC through the gateway.
-  The reply and the run id come back to the phone, and the receipts travel with
-  them.
+- "fix the failing test" starts a supervised Rowan operation on your PC
+  through the paired gateway. The phone uses the same Journey-bound approval,
+  exact model, root, budget, reconnect, and cancel path as the desktop shell.
+  The UI shows an operation reference when the gateway returns one; if the
+  first response is lost, it keeps only the request digest needed to locate the
+  exact operation later.
 - "navigate to the airport" opens the maps app with directions.
 - "play some jazz" opens the music app to that search.
 - "set a timer for 5 minutes", "pause", "skip" route to device actions. The
@@ -74,8 +77,15 @@ pure Dart and are tested without a device:
 - `lib/assistant/assistant_router.dart`: `routeIntent` and `planFor`,
   deterministic and offline.
 - `lib/assistant/assistant_executor.dart`: `AssistantExecutor`, `AgentSink`,
-  `DeviceSink`, and `GatewayAgentSink`, which posts a work task to
-  `POST /api/relay/start`.
+  and `DeviceSink`. The shell supplies `RowanAgentSink` from
+  `lib/shell/shell_chrome.dart`, so Android work commands enter the shared
+  `RowanOperationController` instead of the blocked `POST /api/relay/start`
+  route. `GatewayAgentSink` remains only for legacy Relay-specific tests and
+  surfaces.
+- `lib/controllers/rowan_operation_controller.dart`: the session-lived native
+  operation controller used by desktop and Android assistant openings. It keeps
+  only locator metadata in the local Journey session, never the original prompt,
+  private trace, caption text, provider key, or result body.
 - `lib/assistant/voice.dart`: the `VoiceInput` and `VoiceOutput` interfaces,
   with a `SilentVoice` default so a build with no speech engine still types.
 - `lib/widgets/assistant_panel.dart`: the panel itself.
@@ -87,8 +97,11 @@ changes when it is swapped:
   music links and returns false for the internal media and timer actions.
 - `lib/assistant/speech_voice.dart`: `SpeechVoiceInput` and
   `FlutterTtsVoiceOutput` over `speech_to_text` and `flutter_tts`.
-- `lib/shell/flywheel_shell.dart` selects the speech pair on Android and iOS
-  and `SilentVoice` everywhere else.
+- `lib/shell/flywheel_shell.dart` selects the speech pair on Android and iOS,
+  `SilentVoice` everywhere else, and passes the existing paired `GatewayClient`
+  into the shared Rowan operation controller. A remote gateway root is reviewed
+  as the gateway's workspace root; the Android app does not apply local Windows
+  filesystem checks to it.
 
 Permissions are declared in `android/app/src/main/AndroidManifest.xml`:
 `INTERNET` to reach the paired gateway and `RECORD_AUDIO` to hear a spoken

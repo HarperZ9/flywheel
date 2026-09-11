@@ -10,6 +10,12 @@ coding agent on your PC, applies the same tool gates, and writes the same
 hash-chained session ledger. Long tasks run in the background so a flaky
 mobile connection does not kill them.
 
+The Flywheel Android app uses a different path: it pairs directly with the
+Flywheel gateway and starts supervised Rowan operations through the same
+Journey-bound controller as the desktop shell. Relay MCP remains the Claude
+connector path; Android assistant work commands should not be routed through
+`POST /api/relay/start`.
+
 ## Prerequisites
 
 - Python 3.11+ on the PC (the Flywheel installer bundles the engine, but
