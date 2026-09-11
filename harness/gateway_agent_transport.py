@@ -172,12 +172,17 @@ class BoundAgentTransport:
                 raise ValueError
             return
         if self._native_protocol == 'anthropic_messages':
-            required = {'model', 'messages', 'max_tokens', 'tools', 'stream'}
+            required = {'model', 'messages', 'max_tokens', 'tools', 'stream', 'tool_choice'}
             allowed = required | {'system'}
+            tools = payload.get('tools')
             if (not required <= payload.keys() or payload.keys() - allowed or
                     payload.get('model') != self._model or
                     not isinstance(payload.get('messages'), list) or
-                    not isinstance(payload.get('tools'), list) or
+                    not isinstance(tools, list) or
+                    not tools or any(not isinstance(tool, dict) or
+                        tool.get('strict') is not True for tool in tools) or
+                    payload.get('tool_choice') != {
+                        'type': 'auto', 'disable_parallel_tool_use': True} or
                     payload.get('stream') is not False or
                     payload.get('max_tokens') != self._max_tokens):
                 raise ValueError

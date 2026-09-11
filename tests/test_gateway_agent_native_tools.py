@@ -82,10 +82,11 @@ def test_openai_responses_two_turn_uses_exact_call_id_and_no_text_rescue(tmp_pat
                     "status": "completed", "output": first_output,
                     "usage": {"input_tokens": 4, "output_tokens": 5,
                                  "total_tokens": 9}}
-            assert payload["input"][:3] == first_output
-            assert payload["input"][3]["type"] == "function_call_output"
-            assert payload["input"][3]["call_id"] == "call_1"
-            assert "OPENAI_NATIVE_READBACK" in payload["input"][3]["output"]
+            assert payload["input"][0] == {"role": "user", "content": "read fixture"}
+            assert payload["input"][1:4] == first_output
+            assert payload["input"][4]["type"] == "function_call_output"
+            assert payload["input"][4]["call_id"] == "call_1"
+            assert "OPENAI_NATIVE_READBACK" in payload["input"][4]["output"]
             return 200, {"id": "resp_2", "model": "gpt-6-astra",
                 "status": "completed", "output": [
                     {"type": "message", "role": "assistant",
@@ -107,6 +108,50 @@ def test_openai_responses_two_turn_uses_exact_call_id_and_no_text_rescue(tmp_pat
     assert tools[0]["meta"]["provider_call_id"] == "call_1"
     assert tools[0]["meta"]["native_block"] is True
     assert json.dumps(result).find("OPENAI_NATIVE_READBACK") == -1
+
+
+def test_openai_responses_three_turn_replays_all_prior_items(tmp_path, monkeypatch):
+    (tmp_path / "one.txt").write_text("ONE_READBACK", encoding="utf-8")
+    (tmp_path / "two.txt").write_text("TWO_READBACK", encoding="utf-8")
+    op, binding = native_binding(tmp_path)
+    captured = []
+    first = [{"type": "function_call", "id": "fc_1", "call_id": "call_1",
+        "name": "read_file", "arguments": json.dumps({"path": "one.txt"})}]
+    second = [{"type": "reasoning", "id": "rs_2", "encrypted_content": "OPAQUE2"},
+        {"type": "function_call", "id": "fc_2", "call_id": "call_2",
+         "name": "read_file", "arguments": json.dumps({"path": "two.txt"})}]
+
+    class Transport:
+        def __init__(self, **kwargs):
+            assert kwargs["native_protocol"] == "openai_responses"
+
+        def __call__(self, method, url, headers, body, timeout):
+            payload = json.loads(body)
+            captured.append(payload["input"])
+            if len(captured) == 1:
+                return 200, {"id": "resp_1", "model": "gpt-6-astra",
+                    "status": "completed", "output": first}
+            if len(captured) == 2:
+                assert captured[1][:2] == [{"role": "user", "content": "read fixture"}, *first]
+                assert captured[1][2]["call_id"] == "call_1"
+                return 200, {"id": "resp_2", "model": "gpt-6-astra",
+                    "status": "completed", "output": second}
+            expected = [{"role": "user", "content": "read fixture"}, *first, captured[1][2], *second]
+            assert captured[2][:len(expected)] == expected
+            assert captured[2][-1]["type"] == "function_call_output"
+            assert captured[2][-1]["call_id"] == "call_2"
+            return 200, {"id": "resp_3", "model": "gpt-6-astra",
+                "status": "completed", "output": [{"type": "message",
+                "content": [{"type": "output_text", "text": "done"}]}]}
+
+    monkeypatch.setattr("harness.gateway_agent_native_tools.BoundAgentTransport", Transport)
+    trace = AgentTrace(tmp_path, OWNER, JOURNEY, OP)
+    result = run_private_agent(op, {"OPENAI_API_KEY": "OPENAI_KEY"}, tmp_path,
+        trace, None, lambda event: None, binding=binding,
+        deadline=time.monotonic() + 15)
+    assert result["state"] == "completed"
+    assert [row["meta"]["provider_call_id"] for row in ledger_rows(trace, "tool_call")] == [
+        "call_1", "call_2"]
 
 
 def test_absent_protocol_keeps_v1_and_explicit_text_is_bound_compat(tmp_path):

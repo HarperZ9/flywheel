@@ -1,6 +1,7 @@
 """Provider-native tool contracts for bound supervised agent runs."""
 from __future__ import annotations
 
+import json
 import time
 from types import SimpleNamespace
 
@@ -11,6 +12,7 @@ from .gateway_agent_native_runtime import (
 )
 from .gateway_agent_transport import BoundAgentTransport
 from .gateway_operation import GatewayOperationError
+from .gateway_agent_trace import validate_private_trace_value
 from .local_loop import _done
 from .local_tools import ToolExecutor, ToolGate
 from .router_agent import _finalize_run, _workspace_pre
@@ -96,6 +98,26 @@ def validate_openai_strict_tools(tools: list[dict]) -> dict[str, dict]:
     return result
 
 
+def _native_transport_opener():
+    return None
+
+
+def _native_private_guard(credentials, ledger):
+    secrets = tuple(getattr(getattr(ledger, "trace", None), "secrets", ()))
+
+    def guard(value):
+        try:
+            validate_private_trace_value(value, secrets)
+            raw = json.dumps(value, sort_keys=True, separators=(",", ":"),
+                             ensure_ascii=False)
+        except Exception:
+            raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR") from None
+        if credentials.contains_secret(raw):
+            raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
+
+    return guard
+
+
 def run_native_tool_agent(goal: str, binding: dict, credentials, root, ledger,
                           deadline: float, *, on_event=None, test_cmd=None) -> dict:
     endpoint = binding["endpoint"]
@@ -113,7 +135,9 @@ def run_native_tool_agent(goal: str, binding: dict, credentials, root, ledger,
         deadline=deadline, max_tokens=binding["budget"]["max_tokens"],
         max_calls=binding["transport"]["max_requests"],
         native_protocol=contract["native_api_route"],
+        opener=_native_transport_opener(),
         allow_omitted_temperature=contract["native_api_route"] == "anthropic_messages")
+    secret_guard = _native_private_guard(credentials, ledger)
     executor = ToolExecutor(root=str(root), gate=gate,
         runner=make_sandboxed_runner(bindings=credentials,
                                      on_unavailable=fallback_from_env()))
@@ -126,11 +150,12 @@ def run_native_tool_agent(goal: str, binding: dict, credentials, root, ledger,
     ledger.append("user", goal)
     final, steps = run_native_protocol_loop(contract["native_api_route"], goal,
         binding, key, transport, executor, ledger, sign_key, deadline, on_event,
-        tools, props)
+        tools, props, secret_guard)
     tests_pass = None
     if test_cmd:
         tests_pass = execute_native_test_command(
-            test_cmd, executor, ledger, sign_key, on_event, deadline).ok
+            test_cmd, executor, ledger, sign_key, on_event, deadline,
+            secret_guard).ok
     result = _done(final, steps, ledger, tests_pass=tests_pass,
                    system="provider-native tool loop", goal=goal)
     return _finalize_run(result, endpoint=endpoint["name"],

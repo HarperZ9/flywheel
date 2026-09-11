@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../client/gateway_client.dart';
-import '../models/agent_trace.dart';
 import '../models/operation_models.dart';
 import 'agent_trace_viewer.dart';
+import 'operation_trace_projection.dart';
 
 /// Public projection metadata is only a locator for an explicit private read.
 class OperationTraceEntry extends StatelessWidget {
@@ -19,31 +19,10 @@ class OperationTraceEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Map<String, dynamic>? raw;
-    if (result != null && result!.result['schema'] == traceProjectionSchema) {
-      if (result!.operationRef != snapshot.operationRef ||
-          result!.state != snapshot.state ||
-          result!.canonicalSha256 != snapshot.resultSha256) {
-        return const Text(
-            'Private trace unavailable: operation result did not match.');
-      }
-      raw = Map<String, dynamic>.from(result!.result);
-    } else if (!snapshot.isTerminal) {
-      for (final event in progress.reversed) {
-        if (event['schema'] == traceProjectionSchema) {
-          raw = event;
-          break;
-        }
-      }
-    }
-    if (raw == null) return const SizedBox.shrink();
     try {
-      final projection = TraceProjection.fromJson(raw,
-          operationRef: snapshot.operationRef, journeyRef: snapshot.journeyRef);
-      if ((snapshot.isTerminal && projection.state != result?.state.name) ||
-          (!snapshot.isTerminal && !projection.isRunning)) {
-        invalidTrace();
-      }
+      final projection = acceptedOperationTraceProjection(
+          snapshot: snapshot, result: result, progress: progress);
+      if (projection == null) return const SizedBox.shrink();
       return TextButton.icon(
         icon: const Icon(Icons.receipt_long_outlined, size: 16),
         label: Text(
@@ -70,8 +49,8 @@ class OperationTraceEntry extends StatelessWidget {
                           ])))));
         },
       );
-    } catch (_) {
-      return const Text('Private trace unavailable: metadata did not match.');
+    } on OperationTraceProjectionException catch (error) {
+      return Text(error.message);
     }
   }
 }

@@ -49,6 +49,45 @@ void main() {
     }
   });
 
+  test('typed model inference records become inference activity, not reasoning',
+      () {
+    final pages = captionPages([
+      captionLedger('model_inference', '{"raw":"not shown as caption"}', meta: {
+        'schema': 'flywheel.gateway-agent-inference/v1',
+        'ordinal': 1,
+        'binding_sha256': 'a' * 64,
+        'endpoint': 'ollama',
+        'model_id': 'qwen2.5-coder:14b',
+        'phase': 'response_received',
+        'observed_at_utc': '2026-09-10T12:00:00Z',
+        'elapsed_ms': 125,
+        'reason': null,
+      }),
+      captionLedger('model_inference', 'bad', meta: {
+        'schema': 'flywheel.gateway-agent-inference/v1',
+        'ordinal': 2,
+        'binding_sha256': 'a' * 64,
+        'endpoint': 'ollama',
+        'model_id': 'qwen2.5-coder:14b',
+        'phase': 'reasoning',
+        'observed_at_utc': '2026-09-10T12:00:00Z',
+        'elapsed_ms': 125,
+        'reason': null,
+      }),
+    ]);
+
+    final caption =
+        AgentCaption.fromRecord(captionPage(pages[0], 0).record, received)!;
+    expect(caption.kind, CaptionKind.inferenceActivity);
+    expect(caption.label, 'Inference response received');
+    expect(caption.text, contains('endpoint ollama'));
+    expect(caption.text, contains('model qwen2.5-coder:14b'));
+    expect(caption.text, isNot(contains('raw')));
+    expect(caption.text.toLowerCase(), isNot(contains('reasoning')));
+    expect(AgentCaption.fromRecord(captionPage(pages[1], 1).record, received),
+        isNull);
+  });
+
   test('only typed reported progress maps; mirrored output is omitted', () {
     final pages = captionPages([
       {'type': 'budget', 'step': 2, 'max_steps': 4, 'remaining': 2},

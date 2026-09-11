@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../models/agent_tool_protocol.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/effort_dial.dart';
@@ -16,8 +17,10 @@ class AgentGates extends StatelessWidget {
   final bool allowWrite;
   final bool allowExec;
   final bool attachContext;
+  final AgentToolProtocol toolProtocol;
   final ValueChanged<String?> onEndpoint;
   final ValueChanged<String> onModel;
+  final ValueChanged<AgentToolProtocol> onToolProtocol;
   final Future<Map<String, dynamic>> Function() loadModels;
   final ValueChanged<bool> onWrite;
   final ValueChanged<bool> onExec;
@@ -33,8 +36,10 @@ class AgentGates extends StatelessWidget {
     required this.allowWrite,
     required this.allowExec,
     required this.attachContext,
+    required this.toolProtocol,
     required this.onEndpoint,
     required this.onModel,
+    required this.onToolProtocol,
     required this.loadModels,
     required this.onWrite,
     required this.onExec,
@@ -75,6 +80,17 @@ class AgentGates extends StatelessWidget {
         _toggle(t, 'write', allowWrite, onWrite),
         _toggle(t, 'exec', allowExec, onExec),
         _toggle(t, 'attach file', attachContext, onAttach),
+        DropdownButton<AgentToolProtocol>(
+          key: const Key('agent-tool-protocol'),
+          value: toolProtocol,
+          underline: const SizedBox(),
+          style: fwMono(t, size: 11.5, color: t.inkSoft),
+          items: [
+            for (final value in AgentToolProtocol.values)
+              DropdownMenuItem(value: value, child: Text(value.label)),
+          ],
+          onChanged: effortEnabled ? (value) => onToolProtocol(value!) : null,
+        ),
         EffortDial(value: effort, onChanged: onEffort, enabled: effortEnabled),
       ],
     );

@@ -19,6 +19,8 @@ GatewayOperation? _agentOperation(_AgentPanelState state, String request) {
         'endpoint': endpoint,
         if (state._model != null && state._model!.isNotEmpty)
           'model': state._model,
+        if (state._toolProtocol.wire != null)
+          'tool_protocol': state._toolProtocol.wire,
         'effort': state._effort.wire,
         'max_steps': state._effort.maxSteps,
         'allow_write': state._allowWrite,
@@ -42,4 +44,21 @@ Widget _agentPastSection(_AgentPanelState state) => ConstrainedBox(
             ? StoredAgentRun(doc: state._stored!, client: state.widget.client)
             : AgentRunsList(runs: state._pastRuns, onOpen: state._openStored),
       ),
+    );
+
+Widget _agentHeader(_AgentPanelState state, FwTokens t) => Row(
+      children: [
+        Kicker('workspace agent', hot: !state._pastOpen),
+        const Spacer(),
+        if (!state.widget.alive)
+          Text('engine offline', style: fwMono(t, size: 10.5, color: t.drift))
+        else
+          TextButton(
+            onPressed: state._togglePastRuns,
+            child: Text(
+              state._pastOpen ? 'live' : 'past runs',
+              style: fwMono(t, size: 11, color: t.inkMuted),
+            ),
+          ),
+      ],
     );

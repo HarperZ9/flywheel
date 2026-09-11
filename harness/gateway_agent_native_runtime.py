@@ -7,31 +7,38 @@ import time
 from copy import deepcopy
 
 from .evidence_json import canonical_sha256
+from .gateway_agent_native_validation import (
+    anthropic_calls, anthropic_terminal_guard, anthropic_text, anthropic_tools,
+    openai_calls, openai_terminal_guard, openai_text, provider_response_content,
+    provider_response_meta, reject_private_value,
+)
 from .gateway_operation import GatewayOperationError
 from .local_loop import _edit_fingerprint, _result_meta
 from .proposer import normalize_usage
 
 
 def run_native_protocol_loop(route, goal, binding, key, transport, executor,
-                             ledger, sign_key, deadline, on_event, tools, props):
+                             ledger, sign_key, deadline, on_event, tools, props,
+                             private_guard=None):
     if route == "openai_responses":
         return _openai_loop(goal, binding, key, transport, executor, ledger,
-                            sign_key, deadline, on_event, tools, props)
+                            sign_key, deadline, on_event, tools, props, private_guard)
     if route == "anthropic_messages":
         return _anthropic_loop(goal, binding, key, transport, executor, ledger,
-                               sign_key, deadline, on_event, tools, props)
+                               sign_key, deadline, on_event, tools, props, private_guard)
     raise GatewayOperationError("AGENT_BINDING_DRIFT")
 
 
 def execute_native_test_command(test_cmd, executor, ledger, sign_key,
-                                on_event, deadline):
+                                on_event, deadline, private_guard=None):
     return _execute({"name": "run", "args": {"cmd": test_cmd},
         "provider_call_id": "test_cmd", "provider_item_id": "test_cmd",
         "provider_order_index": 0}, executor, ledger, sign_key,
-        {"native_block": False, "gate": "test"}, on_event, deadline)
+        {"native_block": False, "gate": "test"}, on_event, deadline, private_guard)
+
 
 def _openai_loop(goal, binding, key, transport, executor, ledger, sign_key,
-                 deadline, on_event, tools, props):
+                 deadline, on_event, tools, props, private_guard):
     headers = {"Content-Type": "application/json", "Authorization": "Bearer " + key}
     url = binding["endpoint"]["base_url"] + "/responses"
     input_items, used = [{"role": "user", "content": goal}], set()
@@ -40,29 +47,32 @@ def _openai_loop(goal, binding, key, transport, executor, ledger, sign_key,
             "max_output_tokens": binding["budget"]["max_tokens"], "store": False,
             "parallel_tool_calls": False, "tools": tools, "stream": False,
             "temperature": 0}
-        obj = _call(binding, transport, url, payload, headers, ledger, step, deadline)
-        _openai_terminal_guard(obj)
+        obj = _call("openai_responses", binding, transport, url, payload, headers,
+                    ledger, step, deadline, private_guard)
+        openai_terminal_guard(obj)
         output = obj.get("output")
         if not isinstance(output, list):
             raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-        calls = _openai_calls(output, props, used)
+        calls = openai_calls(output, props, used)
+        _reject_call_secrets(calls, private_guard)
         if not calls:
-            text = _openai_text(output)
+            text = openai_text(output)
             ledger.append("assistant", text, {"backend": binding["endpoint"]["name"],
                 "native_api_route": "openai_responses", "response_id": obj.get("id")})
             return text, step
         results = []
         for call in calls:
             res = _execute(call, executor, ledger, sign_key, _call_meta(
-                "openai_responses", obj, call), on_event, deadline)
+                "openai_responses", obj, call), on_event, deadline, private_guard)
             results.append({"type": "function_call_output",
                 "call_id": call["provider_call_id"], "output": res.output})
-        input_items = deepcopy(output) + results
+        input_items.extend(deepcopy(output))
+        input_items.extend(results)
     return "[max_steps reached without a final answer]", binding["budget"]["max_steps"]
 
 
 def _anthropic_loop(goal, binding, key, transport, executor, ledger, sign_key,
-                    deadline, on_event, tools, props):
+                    deadline, on_event, tools, props, private_guard):
     headers = {"Content-Type": "application/json", "x-api-key": key,
                "anthropic-version": "2023-06-01"}
     url = binding["endpoint"]["base_url"] + "/v1/messages"
@@ -70,15 +80,18 @@ def _anthropic_loop(goal, binding, key, transport, executor, ledger, sign_key,
     for step in range(1, binding["budget"]["max_steps"] + 1):
         payload = {"model": binding["model"]["model_id"], "messages": messages,
             "max_tokens": binding["budget"]["max_tokens"],
-            "tools": _anthropic_tools(tools), "stream": False}
-        obj = _call(binding, transport, url, payload, headers, ledger, step, deadline)
-        _anthropic_terminal_guard(obj)
+            "tools": anthropic_tools(tools), "stream": False,
+            "tool_choice": {"type": "auto", "disable_parallel_tool_use": True}}
+        obj = _call("anthropic_messages", binding, transport, url, payload, headers,
+                    ledger, step, deadline, private_guard)
+        anthropic_terminal_guard(obj)
         content = obj.get("content")
         if not isinstance(content, list):
             raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-        calls = _anthropic_calls(content, props, used)
+        calls = anthropic_calls(content, props, used)
+        _reject_call_secrets(calls, private_guard)
         if not calls:
-            text = _anthropic_text(content)
+            text = anthropic_text(content)
             ledger.append("assistant", text, {"backend": binding["endpoint"]["name"],
                 "native_api_route": "anthropic_messages", "response_id": obj.get("id")})
             return text, step
@@ -86,14 +99,15 @@ def _anthropic_loop(goal, binding, key, transport, executor, ledger, sign_key,
         blocks = []
         for call in calls:
             res = _execute(call, executor, ledger, sign_key, _call_meta(
-                "anthropic_messages", obj, call), on_event, deadline)
+                "anthropic_messages", obj, call), on_event, deadline, private_guard)
             blocks.append({"type": "tool_result", "tool_use_id": call["provider_call_id"],
-                           "content": res.output})
+                           "content": res.output, "is_error": not res.ok})
         messages.append({"role": "user", "content": blocks})
     return "[max_steps reached without a final answer]", binding["budget"]["max_steps"]
 
 
-def _call(binding, transport, url, payload, headers, ledger, ordinal, deadline):
+def _call(route, binding, transport, url, payload, headers, ledger, ordinal,
+          deadline, private_guard):
     if time.monotonic() >= deadline:
         raise GatewayOperationError("OPERATION_DEADLINE_EXCEEDED")
     started = time.monotonic()
@@ -103,10 +117,22 @@ def _call(binding, transport, url, payload, headers, ledger, ordinal, deadline):
             json.dumps(payload, separators=(",", ":")).encode(), binding["budget"]["timeout_s"])
         elapsed = int(max(0, (time.monotonic() - started) * 1000))
         if not 200 <= status < 300:
-            ledger.append("provider_error", "", {"status": status, "response": obj})
+            ledger.append("provider_error", "", _provider_error_meta(status, obj, private_guard))
             _inference(ledger, binding, ordinal, "failed", elapsed, "EXTERNAL_ACTION_FAILED")
             raise GatewayOperationError("EXTERNAL_ACTION_FAILED")
+        if not isinstance(obj, dict):
+            _inference(ledger, binding, ordinal, "failed", elapsed, "AGENT_NATIVE_PROTOCOL_ERROR")
+            raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
+        try:
+            reject_private_value(private_guard, obj)
+        except GatewayOperationError:
+            _inference(ledger, binding, ordinal, "failed", elapsed, "AGENT_NATIVE_PROTOCOL_ERROR")
+            raise
         _inference(ledger, binding, ordinal, "response_received", elapsed, None)
+        content = provider_response_content(route, obj)
+        reject_private_value(private_guard, content)
+        ledger.append("provider_response", json.dumps(content, sort_keys=True),
+                      provider_response_meta(route, binding, ordinal, obj))
         _model_call(ledger, binding, ordinal, obj, elapsed)
         return obj
     except GatewayOperationError:
@@ -118,127 +144,19 @@ def _call(binding, transport, url, payload, headers, ledger, ordinal, deadline):
         raise
 
 
-def _openai_calls(output, props, used):
-    calls, seen = [], set()
-    for index, item in enumerate(output):
-        if not isinstance(item, dict):
-            raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-        if item.get("type") != "function_call":
-            continue
-        call_id, item_id = item.get("call_id"), item.get("id")
-        if (type(call_id) is not str or not call_id or type(item_id) is not str
-                or call_id == item_id or call_id in used or call_id in seen):
-            raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-        seen.add(call_id)
-        args = _json_args(item.get("arguments"))
-        _validate_args(item.get("name"), args, props)
-        calls.append({"name": item["name"], "args": args,
-            "provider_call_id": call_id, "provider_item_id": item_id,
-            "provider_order_index": index})
-    used.update(seen)
-    return calls
-
-
-def _anthropic_calls(content, props, used):
-    calls, seen = [], set()
-    for index, block in enumerate(content):
-        if not isinstance(block, dict):
-            raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-        if block.get("type") != "tool_use":
-            continue
-        call_id = block.get("id")
-        if (type(call_id) is not str or not call_id or call_id in used
-                or call_id in seen):
-            raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-        seen.add(call_id)
-        args = block.get("input")
-        if not isinstance(args, dict):
-            raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-        _validate_args(block.get("name"), args, props)
-        calls.append({"name": block["name"], "args": args,
-            "provider_call_id": call_id, "provider_item_id": call_id,
-            "provider_order_index": index})
-    used.update(seen)
-    return calls
-
-
-def _validate_args(name, args, props):
-    if type(name) is not str or name not in props or not isinstance(args, dict):
-        raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-    wanted = props[name]
-    if set(args) != set(wanted):
-        raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-    for key, schema in wanted.items():
-        kind = schema.get("type")
-        if kind == "string" and type(args[key]) is not str:
-            raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-        if kind == "integer" and (type(args[key]) is not int or args[key] < schema.get("minimum", 0)):
-            raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-
-
-def _json_args(raw):
-    if type(raw) is not str:
-        raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
+def _provider_error_meta(status, obj, private_guard):
+    meta = {"status": status}
     try:
-        value = json.loads(raw)
-    except json.JSONDecodeError:
-        raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR") from None
-    if not isinstance(value, dict):
-        raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-    return value
+        reject_private_value(private_guard, obj)
+        meta["response"] = obj
+    except GatewayOperationError:
+        meta["response_omitted_reason"] = "secret_boundary"
+    return meta
 
 
-def _openai_text(output):
-    pieces = []
-    for item in output:
-        if item.get("type") == "refusal":
-            raise GatewayOperationError("AGENT_NATIVE_REFUSAL")
-        if item.get("type") != "message":
-            continue
-        for block in item.get("content", []):
-            if not isinstance(block, dict):
-                raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-            if block.get("type") == "refusal":
-                raise GatewayOperationError("AGENT_NATIVE_REFUSAL")
-            if block.get("type") in {"output_text", "text"} and isinstance(block.get("text"), str):
-                pieces.append(block["text"])
-    if not pieces:
-        raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-    return "\n".join(pieces)
-
-
-def _anthropic_text(content):
-    pieces = []
-    for block in content:
-        if block.get("type") == "refusal":
-            raise GatewayOperationError("AGENT_NATIVE_REFUSAL")
-        if block.get("type") == "text" and isinstance(block.get("text"), str):
-            pieces.append(block["text"])
-    if not pieces:
-        raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-    return "\n".join(pieces)
-
-
-def _openai_terminal_guard(obj):
-    if obj.get("status") in {"incomplete", "cancelled", "failed", "expired"}:
-        raise GatewayOperationError("AGENT_NATIVE_INCOMPLETE")
-    if obj.get("status") not in {None, "completed"}:
-        raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-
-
-def _anthropic_terminal_guard(obj):
-    reason = obj.get("stop_reason")
-    if reason in {"max_tokens", "pause_turn", "model_context_window_exceeded"}:
-        raise GatewayOperationError("AGENT_NATIVE_INCOMPLETE")
-    if reason in {"refusal", "safety"}:
-        raise GatewayOperationError("AGENT_NATIVE_REFUSAL")
-    if reason not in {"tool_use", "end_turn"}:
-        raise GatewayOperationError("AGENT_NATIVE_PROTOCOL_ERROR")
-
-
-def _anthropic_tools(tools):
-    return [{"name": t["name"], "description": t.get("description", ""),
-             "input_schema": t["parameters"]} for t in tools]
+def _reject_call_secrets(calls, private_guard):
+    for call in calls:
+        reject_private_value(private_guard, call["args"])
 
 
 def _call_meta(route, obj, call):
@@ -274,9 +192,10 @@ def _model_call(ledger, binding, ordinal, obj, elapsed_ms):
         "does_not_prove": ["MODEL_WEIGHTS_IDENTITY", "SEMANTIC_TRUTH"]})
 
 
-def _execute(call, executor, ledger, sign_key, meta, on_event, deadline):
+def _execute(call, executor, ledger, sign_key, meta, on_event, deadline, private_guard):
     if time.monotonic() >= deadline:
         raise GatewayOperationError("OPERATION_DEADLINE_EXCEEDED")
+    reject_private_value(private_guard, call["args"])
     res = executor.execute(call["name"], call["args"])
     ledger.append("tool_call", f"{call['name']} {json.dumps(call['args'], sort_keys=True)}", meta)
     extra = _edit_fingerprint(call["name"], call["args"], res, executor) if res.ok else None

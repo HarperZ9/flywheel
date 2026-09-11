@@ -6,6 +6,16 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
     String goal, {
     Map<String, Object?>? continuation,
   }) async {
+    if (_recoveryBlocked) {
+      _error = 'OPERATION_RECOVERY_PENDING';
+      _changed();
+      return GatewayAuthorizationOutcome.failure(
+        const GatewayOperationFailure(
+          'OPERATION_RECOVERY_PENDING',
+          'A pending operation could not be recovered yet',
+        ),
+      );
+    }
     if (_authorizing || active) {
       return GatewayAuthorizationOutcome.failure(
         const GatewayOperationFailure(
@@ -37,6 +47,7 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
         timeoutSeconds: _timeoutSeconds,
         allowWrite: _allowWrite,
         allowExec: _allowExec,
+        toolProtocol: _toolProtocol,
         continuation: continuation,
       );
     } on Object {
@@ -47,12 +58,6 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
 
     _authorizing = true;
     _error = null;
-    _pendingRequestSha256 = requestHash;
-    _saveRowanSessionLocator(
-      store: _sessionStore,
-      requestSha256: requestHash,
-      pendingRequestSha256: _pendingRequestSha256,
-    );
     _changed();
 
     try {
@@ -60,6 +65,12 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
         context,
         operation,
         (body) async {
+          _pendingRequestSha256 = requestHash;
+          _saveRowanSessionLocator(
+            store: _sessionStore,
+            requestSha256: requestHash,
+            pendingRequestSha256: _pendingRequestSha256,
+          );
           _beginRowanRun(this);
           _operationState.observe(
             _operations.start(body),
@@ -86,7 +97,7 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
     }
   }
 
-  Future<void> reconnect(OperationSnapshot hint) async {
+  Future<bool> reconnect(OperationSnapshot hint) async {
     _error = null;
     _changed();
     try {
@@ -96,12 +107,15 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
       }
       if (fresh.isTerminal) {
         final result = await _operations.result(fresh.operationRef);
-        _operationState.acceptTerminal(fresh, result);
+        if (!_operationState.acceptTerminal(fresh, result)) {
+          throw StateError('operation state rejected');
+        }
       } else {
-        _operationState.acceptRecoveredSnapshot(
+        final accepted = _operationState.acceptRecoveredSnapshot(
           fresh,
           _operationState.lastSequence,
         );
+        if (!accepted) throw StateError('operation state rejected');
         _operationState.observe(
           _operations.watch(
             fresh.operationRef,
@@ -116,9 +130,13 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
         snapshot: fresh,
         pendingRequestSha256: _pendingRequestSha256,
       );
+      _recoveryBlocked = false;
+      _changed();
+      return true;
     } catch (error) {
       _error = '$error';
       _changed();
+      return false;
     }
   }
 
@@ -126,22 +144,45 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
     final session = _sessionStore?.load();
     if (session == null) return false;
     final direct = session.operationRef;
-    if (direct != null) {
-      final snapshot = await _operations.snapshot(direct);
-      if (snapshot.journeyRef != session.journeyRef) return false;
-      await reconnect(snapshot);
-      return true;
-    }
     final requestSha = session.operationRequestSha256;
-    if (requestSha == null) return false;
-    final page = await _operations.listByJourney(session.journeyRef);
-    for (final snapshot in page.operations) {
-      if (page.requestSha256ByOperation[snapshot.operationRef] == requestSha) {
-        await reconnect(snapshot);
-        return true;
+    try {
+      if (direct != null) {
+        final snapshot = await _operations.snapshot(direct);
+        if (snapshot.journeyRef == session.journeyRef) {
+          final recovered = await reconnect(snapshot);
+          if (!recovered && requestSha != null) {
+            _blockRowanRecovery(this, requestSha);
+          }
+          return recovered;
+        }
+        if (requestSha == null) return false;
       }
+      if (requestSha == null) return false;
+      _pendingRequestSha256 = requestSha;
+      String? cursor;
+      for (var pageIndex = 0; pageIndex < 10; pageIndex++) {
+        final page = await _operations.listByJourney(
+          session.journeyRef,
+          limit: 50,
+          cursor: cursor,
+        );
+        for (final snapshot in page.operations) {
+          if (page.requestSha256ByOperation[snapshot.operationRef] ==
+              requestSha) {
+            final recovered = await reconnect(snapshot);
+            if (!recovered) _blockRowanRecovery(this, requestSha);
+            return recovered;
+          }
+        }
+        cursor = page.nextCursor;
+        if (cursor == null) break;
+      }
+      _blockRowanRecovery(this, requestSha);
+      return false;
+    } catch (_) {
+      if (requestSha != null) _blockRowanRecovery(this, requestSha);
+      return false;
     }
-    return false;
   }
 
   Future<OperationListPage> discoverJourney(String journeyRef) =>
@@ -165,6 +206,13 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
       return snapshot;
     });
   }
+}
+
+void _blockRowanRecovery(RowanOperationController owner, String requestSha) {
+  owner._pendingRequestSha256 = requestSha;
+  owner._recoveryBlocked = true;
+  owner._error = 'OPERATION_RECOVERY_PENDING';
+  owner._changed();
 }
 
 OperationController _newRowanOperationState(RowanOperationController owner) =>
@@ -217,74 +265,3 @@ void _finishRowanOperation(
   ]);
   owner._changed();
 }
-
-GatewayOperation _rowanOperation({
-  required String requestId,
-  required String goal,
-  required String endpoint,
-  required String? model,
-  required String? root,
-  required EffortLevel effort,
-  required int maxSteps,
-  required int maxTokens,
-  required int timeoutSeconds,
-  required bool allowWrite,
-  required bool allowExec,
-  Map<String, Object?>? continuation,
-}) =>
-    GatewayOperation.exact(
-      action: 'agent.run',
-      clientRequestId: requestId,
-      operation: {
-        'goal': goal,
-        'endpoint': endpoint,
-        if (model != null && model.isNotEmpty) 'model': model,
-        'effort': effort.wire,
-        'max_steps': maxSteps,
-        'max_tokens': maxTokens,
-        'timeout_s': timeoutSeconds,
-        'allow_write': allowWrite,
-        'allow_exec': allowExec,
-        'stream': true,
-        if (root != null && root.isNotEmpty) 'root': root,
-        if (continuation != null) 'continuation': continuation,
-      },
-    );
-
-void _saveRowanSessionLocator({
-  required JourneySessionStore? store,
-  OperationSnapshot? snapshot,
-  String? requestSha256,
-  String? pendingRequestSha256,
-}) {
-  if (store == null) return;
-  try {
-    final prior = store.load();
-    final journeyRef = snapshot?.journeyRef ?? prior?.journeyRef;
-    if (journeyRef == null) return;
-    final startingNewOperation = snapshot == null && requestSha256 != null;
-    store.save(
-      JourneySession(
-        journeyRef: journeyRef,
-        lens: prior?.lens ?? JourneyLens.verify,
-        selectionRef: prior?.selectionRef,
-        operationRef: startingNewOperation
-            ? null
-            : snapshot?.operationRef ?? prior?.operationRef,
-        operationEventHeadSha256: startingNewOperation
-            ? null
-            : snapshot?.eventHeadSha256 ?? prior?.operationEventHeadSha256,
-        operationRequestSha256: requestSha256 ??
-            pendingRequestSha256 ??
-            prior?.operationRequestSha256,
-        detailsExpanded: prior?.detailsExpanded ?? false,
-        recoveryVisible: prior?.recoveryVisible ?? false,
-      ),
-    );
-  } on Object {
-    // Session locators are hints; authoritative operation state is remote.
-  }
-}
-
-String rowanRequestIdSha256(String clientRequestId) =>
-    sha256.convert(utf8.encode(jsonEncode(clientRequestId))).toString();

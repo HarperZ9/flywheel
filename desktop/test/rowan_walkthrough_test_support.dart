@@ -67,6 +67,7 @@ class FakeRowanOperationHost extends ChangeNotifier
   int startCalls = 0;
   int reconnectCalls = 0;
   OperationSnapshot? reconnectedFrom;
+  bool failReconnect = false;
 
   @override
   Future<void> loadEndpoints() async {
@@ -152,14 +153,16 @@ class FakeRowanOperationHost extends ChangeNotifier
   }
 
   @override
-  Future<void> reconnect(OperationSnapshot hint) async {
+  Future<bool> reconnect(OperationSnapshot hint) async {
     reconnectCalls += 1;
     reconnectedFrom = hint;
+    if (failReconnect) return false;
     final result = terminalResult;
     if (result == null) throw StateError('missing terminal result');
     snapshot =
         rowanTestSnapshot('completed', resultSha256: result.canonicalSha256);
     notifyListeners();
+    return true;
   }
 
   void complete(OperationResult result) {

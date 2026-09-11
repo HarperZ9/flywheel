@@ -89,14 +89,17 @@ wait a further 30 seconds for terminal state commitment after execution stops.
 
 Native OpenAI uses the Responses API with nonstreaming `store:false`, strict
 function tools, exact `call_id` to `function_call_output` pairing, and stateless
-replay of provider output items. Opaque reasoning or encrypted content blocks are
-preserved as provider continuity material and are never decoded or converted into
-tool intent. Native Anthropic uses Messages tool-use blocks, preserves assistant
-content blocks in order, and appends an immediate user message containing all
-`tool_result` blocks before any other user content. Duplicate, missing or replayed
-IDs; loose tool schemas; malformed final responses; max-token or pause turns; and
-refusals are typed failures before new tool side effects. Incidental text such as
-`TOOL ...` inside a native response is not parsed or rescued.
+replay of the initial goal, prior provider output items, and prior tool results.
+Opaque reasoning or encrypted content blocks are preserved as provider continuity
+material and are never decoded or converted into tool intent. Native Anthropic
+uses Messages tool-use blocks, transmits strict tool schemas with `tool_choice`
+`disable_parallel_tool_use: true`, preserves assistant content blocks in order,
+and appends an immediate user message containing all `tool_result` blocks,
+including `is_error` from the local executor result, before any other user
+content. Duplicate, empty, missing or replayed call IDs or item IDs; loose tool
+schemas; malformed final responses; max-token or pause turns; and refusals are
+typed failures before new tool side effects. Incidental text such as `TOOL ...`
+inside a native response is not parsed or rescued.
 
 The native tool schema is exactly the existing local `ToolGate` surface:
 read/list/grep plus write tools only when `allow_write` is approved and `run` only
@@ -116,10 +119,15 @@ or manifest observation is invented, and a matching name does not prove weights
 or semantic correctness.
 
 The full original request, source, tool results, thread and model observations
-remain in the existing private trace. Public progress and terminal projections
-retain the existing content-free shape and separately hashed trace references.
-Credential values are excluded from both private records and public projections.
-Closed failure reasons add `AGENT_BINDING_DRIFT`, `AGENT_REPREPARE_REQUIRED`,
+remain in the existing private trace. Native provider-response receipts add observable provider text/tool content, source
+IDs, canonical bytes/hash and opaque continuity item markers without
+logging encrypted or hidden reasoning fields. A provider response or planned tool
+argument that fails the existing trace secret grammar or contains a bound
+credential value is rejected before logging the raw value or performing the side
+effect. Public progress and terminal projections retain the existing content-free
+shape and separately hashed trace references. Credential values are excluded from
+both private records and public projections. Closed failure reasons add
+`AGENT_BINDING_DRIFT`, `AGENT_REPREPARE_REQUIRED`,
 `AGENT_MODEL_MISMATCH`, `AGENT_ENDPOINT_UNSUPPORTED`,
 `AGENT_NATIVE_TOOL_UNSUPPORTED`, `AGENT_NATIVE_PROTOCOL_ERROR`,
 `AGENT_NATIVE_INCOMPLETE`, `AGENT_NATIVE_REFUSAL` and
@@ -130,9 +138,11 @@ IPC, root substitution before provider invocation, exact transmitted requests,
 native observed aliases and unknowns, mismatch before tool use, source/credential
 nonleak, terminal replay under changed configuration, and actual Windows owned
 stub execution and deadline cleanup. Native focused controls add deterministic
-fake-provider OpenAI and Anthropic two-turn execution, exact IDs and ordered
-results, strict schema mismatch, unsupported native authority, incomplete or
-malformed response handling, unchanged v1 compatibility, binding drift before
-credential materialization, no native text rescue, redacted public projection and
-exact native sampling. They do not establish live model quality, provider
-availability, device acceptance, or launch readiness.
+fake-provider OpenAI and Anthropic execution, three-turn OpenAI stateless replay,
+loopback HTTP transport through first-party provider URLs, exact IDs and ordered
+results, duplicate/replayed item-ID rejection, strict schema mismatch, unsupported
+native authority, incomplete or malformed response handling, unchanged v1
+compatibility, binding drift before credential materialization, trace-secret and
+secret-valued native arguments before write, no native text rescue, redacted public
+projection and exact native sampling. They do not establish live model quality,
+provider availability, device acceptance, or launch readiness.
