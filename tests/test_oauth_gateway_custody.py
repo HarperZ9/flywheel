@@ -30,7 +30,9 @@ def http_gateway(tmp_path, monkeypatch):
         headers = {'Content-Type': 'application/json'}
         if token:
             headers['Authorization'] = 'Bearer ' + token
-        return local_request(server.server_port, path, headers=headers,
+        # Real owner custody verifies filesystem permissions before dispatch.
+        # This is an authentication contract test, not a three-second latency SLA.
+        return local_request(server.server_port, path, headers=headers, timeout=8,
             data=None if path.split('?')[0] in ('/api/auth', '/api/world') else b'{"provider":"openai"}')
     yield request, calls
     server.shutdown()

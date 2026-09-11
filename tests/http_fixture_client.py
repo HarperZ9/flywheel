@@ -7,11 +7,15 @@ the real server, response parser, and all transport exceptions observable.
 This is not a streaming client or a production HTTP transport.
 """
 import http.client
+import math
 import socket
 
 
-def request(port, path, *, data=None, headers=None):
+def request(port, path, *, data=None, headers=None, timeout=3):
     """Send exactly once; return the actual status/body, with no retries."""
+    if (isinstance(timeout, bool) or not isinstance(timeout, (int, float))
+            or not math.isfinite(timeout) or timeout <= 0):
+        raise ValueError('timeout must be a finite positive number')
     method = 'GET' if data is None else 'POST'
     body = data or b''
     fields = {'Host': f'127.0.0.1:{port}', 'Connection': 'close',
@@ -19,7 +23,7 @@ def request(port, path, *, data=None, headers=None):
     head = f'{method} {path} HTTP/1.1\r\n'
     head += ''.join(f'{key}: {value}\r\n' for key, value in fields.items())
     wire = (head + '\r\n').encode('ascii') + body
-    with socket.create_connection(('127.0.0.1', port), timeout=3) as conn:
+    with socket.create_connection(('127.0.0.1', port), timeout=timeout) as conn:
         conn.sendall(wire)
         with http.client.HTTPResponse(conn) as response:
             response.begin()
