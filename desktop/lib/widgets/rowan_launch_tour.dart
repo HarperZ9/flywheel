@@ -141,10 +141,12 @@ class _RowanWalkthroughTourState extends State<RowanWalkthroughTour> {
                       key: ValueKey(_step),
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (_isFirst) ...[
-                          const RowanPresenter(),
-                          const SizedBox(height: FwLayout.s4),
-                        ],
+                        // The name and headline lead so the first thing seen is
+                        // the message, not the tall control panel. On step one
+                        // the avatar sits directly under the headline as the
+                        // hero; the presenter's own kicker is suppressed so
+                        // ROWAN is not printed twice, and the body that follows
+                        // still reads "the avatar above".
                         Kicker(step.kicker),
                         const SizedBox(height: FwLayout.s2),
                         Semantics(
@@ -153,6 +155,10 @@ class _RowanWalkthroughTourState extends State<RowanWalkthroughTour> {
                               style: Theme.of(context).textTheme.titleLarge),
                         ),
                         const SizedBox(height: FwLayout.s2),
+                        if (_isFirst) ...[
+                          const RowanPresenter(showKicker: false),
+                          const SizedBox(height: FwLayout.s3),
+                        ],
                         Text(step.body,
                             style: TextStyle(
                                 color: t.inkSoft, fontSize: 13.5, height: 1.5)),
