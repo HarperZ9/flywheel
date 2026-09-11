@@ -1,10 +1,16 @@
 import 'evidence_state.dart';
 
 part 'gateway_agent_execution_review_fields.dart';
+part 'gateway_agent_tool_protocol_review.dart';
 
-const gatewayAgentReviewSchema = 'flywheel.gateway-agent-review/v1';
+const gatewayAgentReviewSchemaV1 = 'flywheel.gateway-agent-review/v1';
+const gatewayAgentReviewSchemaV2 = 'flywheel.gateway-agent-review/v2';
+const gatewayAgentToolProtocolSchema =
+    'flywheel.gateway-agent-tool-protocol/v1';
+const gatewayAgentReviewSchema = gatewayAgentReviewSchemaV1;
 
 final _modelReference = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,159}$');
+final _toolName = RegExp(r'^[a-z][a-z0-9_]{0,63}$');
 final _endpointSecret =
     RegExp(r'(-----BEGIN [A-Z ]*PRIVATE KEY-----|\bAKIA[0-9A-Z]{16}\b|'
         r'\bgh[pousr]_[A-Za-z0-9]{30,}\b|'
@@ -26,6 +32,7 @@ final class GatewayAgentExecutionReview extends DefensiveModel {
   final GatewayAgentExecutionModel model;
   final GatewayAgentExecutionBudget budget;
   final GatewayAgentExecutionCapabilities capabilities;
+  final GatewayAgentToolProtocol? toolProtocol;
 
   GatewayAgentExecutionReview._(
       this.reprepareRequired,
@@ -37,6 +44,7 @@ final class GatewayAgentExecutionReview extends DefensiveModel {
       this.workspacePolicySha256,
       this.budget,
       this.capabilities,
+      this.toolProtocol,
       super.parseIssues);
 
   factory GatewayAgentExecutionReview.fromJson(
@@ -53,11 +61,14 @@ final class GatewayAgentExecutionReview extends DefensiveModel {
           '',
           GatewayAgentExecutionBudget.empty,
           GatewayAgentExecutionCapabilities.empty,
+          null,
           issues);
     }
+    final schema = json['schema'];
+    final isV2 = schema == gatewayAgentReviewSchemaV2;
     _exactFields(
         json,
-        const {
+        {
           'schema',
           'binding_sha256',
           'endpoint',
@@ -67,20 +78,31 @@ final class GatewayAgentExecutionReview extends DefensiveModel {
           'workspace_policy_sha256',
           'budget',
           'capabilities',
+          if (isV2) 'tool_protocol',
         },
         issues,
         field);
-    expectSchema(json, gatewayAgentReviewSchema, issues);
+    if (schema != gatewayAgentReviewSchemaV1 &&
+        schema != gatewayAgentReviewSchemaV2) {
+      addParseIssue(issues, 'schema', schema);
+    }
     final model =
         GatewayAgentExecutionModel.fromRaw(json['model'], '$field.model');
     final budget =
         GatewayAgentExecutionBudget.fromRaw(json['budget'], '$field.budget');
     final capabilities = GatewayAgentExecutionCapabilities.fromRaw(
         json['capabilities'], '$field.capabilities');
+    final protocol = isV2
+        ? GatewayAgentToolProtocol.fromRaw(
+            json['tool_protocol'], '$field.tool_protocol')
+        : null;
+    protocol?.validateCapabilities(
+        capabilities, '$field.tool_protocol', issues);
     issues
       ..addAll(model.parseIssues)
       ..addAll(budget.parseIssues)
-      ..addAll(capabilities.parseIssues);
+      ..addAll(capabilities.parseIssues)
+      ..addAll(protocol?.parseIssues ?? const []);
     return GatewayAgentExecutionReview._(
         false,
         readText(json, 'binding_sha256', issues, pattern: sha256Pattern),
@@ -92,6 +114,7 @@ final class GatewayAgentExecutionReview extends DefensiveModel {
             pattern: sha256Pattern),
         budget,
         capabilities,
+        protocol,
         issues);
   }
 }
@@ -129,6 +152,35 @@ String? _readNullableModelReference(
   }
   addParseIssue(issues, field, raw);
   return null;
+}
+
+String? _readNullableText(
+    Map<String, Object?> json, String field, List<ParseIssue> issues) {
+  final raw = json[field];
+  if (raw == null) return null;
+  if (raw is String && raw.isNotEmpty && isSafePublicText(raw)) return raw;
+  addParseIssue(issues, field, raw);
+  return null;
+}
+
+String? _readNullableSha256(
+    Map<String, Object?> json, String field, List<ParseIssue> issues) {
+  final raw = json[field];
+  if (raw == null) return null;
+  if (raw is String && sha256Pattern.hasMatch(raw)) return raw;
+  addParseIssue(issues, field, raw);
+  return null;
+}
+
+List<String> _readToolNames(
+    Object? raw, String field, List<ParseIssue> issues) {
+  final values = readStringList(raw, field, issues);
+  if (values.any((value) => !_toolName.hasMatch(value)) ||
+      values.toSet().length != values.length) {
+    addParseIssue(issues, field, raw);
+    return const [];
+  }
+  return values;
 }
 
 String _readEndpointBaseUrl(
