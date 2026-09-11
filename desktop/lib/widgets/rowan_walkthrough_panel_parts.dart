@@ -3,6 +3,7 @@ part of 'rowan_walkthrough_panel.dart';
 typedef RowanWalkthroughCaptionBuilder = Widget Function(
   BuildContext context,
   RowanWalkthroughController controller,
+  RowanWalkthroughOperationHost operationHost,
 );
 typedef RowanWalkthroughFollowUpReviewer = Future<void> Function(
   OperationSnapshot snapshot,
@@ -10,17 +11,13 @@ typedef RowanWalkthroughFollowUpReviewer = Future<void> Function(
 );
 
 class _RowanWalkthroughSelectors extends StatelessWidget {
-  final GatewayClient client;
-  final RowanWalkthroughController controller;
-  final List<EndpointRow> endpoints;
+  final RowanWalkthroughOperationHost host;
   final GatewayJourneyBinding? binding;
   final bool alive;
   final TextEditingController root;
 
   const _RowanWalkthroughSelectors({
-    required this.client,
-    required this.controller,
-    required this.endpoints,
+    required this.host,
     required this.binding,
     required this.alive,
     required this.root,
@@ -33,22 +30,22 @@ class _RowanWalkthroughSelectors extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           DropdownButton<String>(
-            value: controller.endpoint,
+            value: host.endpoint,
             hint: const Text('endpoint'),
             items: [
-              for (final endpoint in endpoints)
+              for (final endpoint in host.endpoints)
                 DropdownMenuItem(
                   value: endpoint.name,
                   child: Text(endpoint.name),
                 ),
             ],
-            onChanged: controller.selectEndpoint,
+            onChanged: alive ? host.setEndpoint : null,
           ),
           ModelSelectorButton(
-            loadModels: () => client.models(controller.endpoint ?? ''),
-            current: controller.selectedModel,
-            onSelect: controller.selectModel,
-            enabled: alive && controller.endpoint != null,
+            loadModels: () => host.client.models(host.endpoint ?? ''),
+            current: host.selectedModel,
+            onSelect: host.setModel,
+            enabled: alive && host.endpoint != null,
           ),
           SizedBox(
             width: 260,
@@ -57,7 +54,7 @@ class _RowanWalkthroughSelectors extends StatelessWidget {
               controller: root,
               enabled: alive,
               decoration: const InputDecoration(labelText: 'Input repo root'),
-              onChanged: controller.setRoot,
+              onChanged: host.setWorkspaceRoot,
             ),
           ),
           Text(
@@ -73,7 +70,8 @@ class _RowanWalkthroughSelectors extends StatelessWidget {
 
 class _RowanWalkthroughChips extends StatelessWidget {
   final RowanWalkthroughController controller;
-  const _RowanWalkthroughChips({required this.controller});
+  final RowanWalkthroughOperationHost host;
+  const _RowanWalkthroughChips({required this.controller, required this.host});
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +80,8 @@ class _RowanWalkthroughChips extends StatelessWidget {
       _chip(t, 'scenario', controller.scenario.version),
       _chip(t, 'checkpoint', controller.checkpoint.name),
       _chip(t, 'oracle', controller.oracle.state.name),
-      _chip(t, 'model', controller.selectedModel ?? 'select model'),
+      _chip(t, 'model', host.selectedModel ?? 'select model'),
+      _chip(t, 'operation', host.snapshot?.state.name ?? 'not started'),
     ]);
   }
 
@@ -116,7 +115,12 @@ class _RowanGuidanceControl extends StatelessWidget {
 class _RowanCaptionSlot extends StatelessWidget {
   final RowanWalkthroughCaptionBuilder? builder;
   final RowanWalkthroughController controller;
-  const _RowanCaptionSlot({required this.builder, required this.controller});
+  final RowanWalkthroughOperationHost host;
+  const _RowanCaptionSlot({
+    required this.builder,
+    required this.controller,
+    required this.host,
+  });
 
   @override
   Widget build(BuildContext context) => Column(
@@ -127,7 +131,7 @@ class _RowanCaptionSlot extends StatelessWidget {
               'fabricated or exported by this panel.'),
           if (builder != null) ...[
             const SizedBox(height: FwLayout.s2),
-            builder!(context, controller),
+            builder!(context, controller, host),
           ],
         ],
       );
@@ -136,7 +140,7 @@ class _RowanCaptionSlot extends StatelessWidget {
 class _RowanTerminalActions extends StatelessWidget {
   final RowanWalkthroughController controller;
   final bool followUpAvailable;
-  final VoidCallback onReopen;
+  final VoidCallback? onReopen;
   final VoidCallback onReviewFollowUp;
 
   const _RowanTerminalActions({

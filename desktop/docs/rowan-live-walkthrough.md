@@ -1,44 +1,48 @@
 # Rowan live walkthrough
 
-The Studio view now mounts a guided Rowan walkthrough panel beside the Rowan
-presenter. It prepares one supervised `agent.run` operation for a read-only
-synthetic retry-policy review, watches the operation through the existing
-gateway operation stream, evaluates the terminal answer with a separate semantic
-oracle, and requires the same operation record to reopen before a bounded
-follow-up reviewer can attach.
+The Studio view includes the Rowan presenter and a draft guided walkthrough
+entry point. The walkthrough owns the versioned retry-policy scenario, guidance
+state, terminal semantic oracle, and operation locator checks. It no longer owns
+the native operation lifecycle.
+
+The live panel is mounted only when the shell passes a shared
+`RowanWalkthroughOperationHost`. That host is the seam for the native
+session-lived Rowan operation controller: endpoint/model/root selection,
+start-once approval, stop, reconnect, recovery, progress, snapshots, and terminal
+results all come from the shared controller. PR #193 should stay draft until the
+native operator UI commit provides that host or an adapter for it.
 
 The scenario is versioned as `rowan.retry-policy.read-only` /
-`2026-09-10.1`. The model input contains only the review goal, selected endpoint,
-selected model, input root, budgets, and read-only execution flags. The oracle
-expectation and defect label are intentionally not included in the operation
-body.
+`2026-09-10.1`. The goal asks for a read-only review of the synthetic retry
+policy task. The oracle expectation and defect label are kept outside the start
+request and run only against a terminal result returned by the shared host.
 
 Execution boundaries:
 
-- The panel uses the existing Journey-bound gateway approval scope and existing
-  `GatewayOperations` start/snapshot/cancel APIs. It does not create a runner,
-  direct POST path, task database, or grant database.
-- Readiness requires endpoint, explicit model, input root, and a current Journey
-  head. Missing Journey selection, denied approval, interrupted stream, missing
-  stored record, and wrong semantic answer remain visible.
+- The walkthrough panel does not create `GatewayOperations`,
+  `GatewayOperationController`, `OperationController`, grant storage, task
+  storage, direct POST paths, or an `agent.run` body.
+- Readiness requires endpoint, exact model, input root, and a current Journey
+  head before the panel asks the shared host to start. The host remains
+  responsible for canonical operation construction and Journey-bound approval.
 - Guidance pause only stops walkthrough guidance highlighting. It does not stop
-  an executing operation. The Stop button uses the existing approved cancel path.
-- Provider-visible reasoning captions attach through `captionBuilder`. The panel
-  always labels hidden internal chain-of-thought as unavailable and does not
-  persist or export caption originals.
-- Bounded follow-up is exposed through `onReviewFollowUp` after semantic oracle
-  pass and stored-record reopen. A continuation provider must attach there; the
-  panel does not fabricate private context.
+  an executing operation. The Stop button delegates to the shared host.
+- Provider-visible reasoning captions attach through `captionBuilder`, which is
+  passed the same operation host used by the walkthrough. Hidden internal
+  chain-of-thought is labelled unavailable and is not fabricated or exported.
+- Bounded follow-up is exposed through `onReviewFollowUp` only after the oracle
+  passes and the same terminal operation record is reopened through the host.
+- Offline host, denied approval, interrupted stream, missing stored record, and
+  wrong semantic answer remain visible as walkthrough outcomes.
 
 Verification in this branch:
 
-- `test/rowan_walkthrough_controller_test.dart` checks the scenario operation
-  body, denial handling, semantic oracle, and reopen gate.
-- `test/rowan_walkthrough_panel_test.dart` uses mocked gateway endpoints,
-  model roster, SSE terminal event, and snapshot lookup to exercise the UI
-  wiring. It verifies the dispatched supervised `agent.run` body and the
-  follow-up gate.
+- `test/rowan_walkthrough_controller_test.dart` checks denial handling,
+  semantic oracle behavior, and reopen locator matching without any operation
+  lifecycle state.
+- `test/rowan_walkthrough_panel_test.dart` uses a fake shared operation host to
+  verify host delegation, duplicate-submission blocking, reopen gating, caption
+  attachment, and the draft prelude state.
 
-Those widget tests simulate the gateway transport. They do not claim that a live
-model was run or that the backend enforced `model`, `max_tokens`, or `timeout_s`;
-that enforcement belongs to the native execution binding path.
+Those tests simulate the shared host. They do not claim that a live model ran or
+that the native controller commit has been composed into this branch.
