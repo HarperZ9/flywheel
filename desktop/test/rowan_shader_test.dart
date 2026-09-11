@@ -6,8 +6,8 @@ import 'package:flywheel_desktop/widgets/rowan_shader.dart';
 
 void main() {
   test('pose uniforms keep malformed values finite and bounded', () {
-    const pose =
-        RowanPose(gaze: Offset(double.nan, 5), yaw: -9, mouth: double.infinity);
+    const pose = RowanPose(
+        attention: Offset(double.nan, 5), yaw: -9, opening: double.infinity);
     expect(pose.uniforms, [0, 1, -0.6, 0]);
   });
 

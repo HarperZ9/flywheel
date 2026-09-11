@@ -14,16 +14,17 @@ class RowanShader {
 }
 
 class RowanPose {
-  const RowanPose({this.gaze = Offset.zero, this.yaw = 0, this.mouth = 0});
-  final Offset gaze;
+  const RowanPose(
+      {this.attention = Offset.zero, this.yaw = 0, this.opening = 0});
+  final Offset attention;
   final double yaw;
-  final double mouth;
+  final double opening;
 
   List<double> get uniforms => [
-        _finite(gaze.dx, -1, 1),
-        _finite(gaze.dy, -1, 1),
+        _finite(attention.dx, -1, 1),
+        _finite(attention.dy, -1, 1),
         _finite(yaw, -0.6, 0.6),
-        _finite(mouth, 0, 1),
+        _finite(opening, 0, 1),
       ];
 
   static double _finite(double value, double min, double max) =>
@@ -70,19 +71,27 @@ class RowanFallbackPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.shortestSide * .34;
     final stroke = Paint()
       ..color = ink
       ..style = PaintingStyle.stroke
-      ..strokeWidth = size.shortestSide * 0.04;
-    canvas.drawOval(
-        Rect.fromLTWH(size.width * .3, size.height * .12, size.width * .4,
-            size.height * .5),
-        stroke);
-    final shoulders = Path()
-      ..moveTo(size.width * .12, size.height * .9)
-      ..quadraticBezierTo(size.width * .5, size.height * .45, size.width * .88,
-          size.height * .9);
-    canvas.drawPath(shoulders, stroke);
+      ..strokeWidth = size.shortestSide * .025;
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(-.13);
+    final aperture = Rect.fromCenter(
+        center: Offset.zero, width: radius * 1.7, height: radius * 2);
+    canvas.drawOval(aperture, stroke);
+    canvas.drawOval(aperture.deflate(size.shortestSide * .06),
+        stroke..color = ink.withValues(alpha: .45));
+    canvas.restore();
+    canvas.drawCircle(
+        center,
+        radius * .62,
+        Paint()
+          ..shader = ui.Gradient.radial(center, radius * .62,
+              [ink.withValues(alpha: .55), ink.withValues(alpha: 0)]));
   }
 
   @override

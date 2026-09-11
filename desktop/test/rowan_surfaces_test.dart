@@ -14,7 +14,7 @@ Widget host(Widget child) =>
 
 void main() {
   testWidgets(
-      'short welcome keeps starters reachable without clipping portrait',
+      'short welcome keeps starters reachable without clipping companion',
       (tester) async {
     tester.view.physicalSize = const Size(320, 220);
     tester.view.devicePixelRatio = 1;
@@ -31,7 +31,7 @@ void main() {
     expect(selected, isNotEmpty);
   });
 
-  testWidgets('chat welcome introduces the same static Rowan portrait',
+  testWidgets('chat welcome introduces the same static Rowan companion',
       (tester) async {
     await tester.pumpWidget(host(const ChatWelcome()));
     await tester.pumpAndSettle();

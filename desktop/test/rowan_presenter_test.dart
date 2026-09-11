@@ -23,15 +23,24 @@ void main() {
     expect(tester.widget<RowanAvatar>(find.byType(RowanAvatar)).size, 320);
     expect(
         tester.widget<RowanAvatar>(find.byType(RowanAvatar)).animated, isFalse);
-    expect(tester.widget<Slider>(find.byType(Slider)).onChanged, isNotNull);
+    final turn = find.byKey(const ValueKey('rowan-turn'));
+    final opening = find.byKey(const ValueKey('rowan-opening'));
+    expect(tester.widget<Slider>(turn).onChanged, isNotNull);
     expect(find.bySemanticsLabel('Turn Rowan'), findsOneWidget);
-    tester.widget<Slider>(find.byType(Slider)).focusNode!.requestFocus();
+    tester.widget<Slider>(turn).focusNode!.requestFocus();
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await tester.pumpAndSettle();
-    expect(tester.widget<Slider>(find.byType(Slider)).value, greaterThan(0));
+    expect(tester.widget<Slider>(turn).value, greaterThan(0));
     expect(tester.widget<RowanAvatar>(find.byType(RowanAvatar)).pose.yaw,
-        tester.widget<Slider>(find.byType(Slider)).value);
+        tester.widget<Slider>(turn).value);
+    expect(find.bySemanticsLabel('Rowan aperture opening'), findsOneWidget);
+    tester.widget<Slider>(opening).focusNode!.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(tester.widget<RowanAvatar>(find.byType(RowanAvatar)).pose.opening,
+        greaterThan(0));
     await tester.ensureVisible(find.text('Motion'));
     await tester.tap(find.text('Motion'));
     await tester.pump();
@@ -52,14 +61,17 @@ void main() {
     final pending = Completer<ui.FragmentProgram>();
     await tester.pumpWidget(MaterialApp(
         theme: flywheelLightTheme(),
-        home:
-            Scaffold(body: RowanPresenter(loadProgram: () => pending.future))));
+        home: Scaffold(
+            body: SingleChildScrollView(
+                child: RowanPresenter(loadProgram: () => pending.future)))));
     await tester.pump();
     expect(
         find.textContaining('Loading the modeled renderer.'), findsOneWidget);
     expect(find.bySemanticsLabel('Rowan, loading modeled renderer'),
         findsOneWidget);
-    expect(tester.widget<Slider>(find.byType(Slider)).onChanged, isNull);
+    for (final slider in tester.widgetList<Slider>(find.byType(Slider))) {
+      expect(slider.onChanged, isNull);
+    }
     expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile)).onChanged,
         isNull);
     pending.completeError(UnsupportedError('private driver detail'));
@@ -86,6 +98,7 @@ void main() {
     expect(tester.widget<RowanAvatar>(find.byType(RowanAvatar)).size,
         lessThanOrEqualTo(320));
     expect(find.text('Turn'), findsOneWidget);
+    expect(find.text('Opening'), findsOneWidget);
     expect(find.text('Motion'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
