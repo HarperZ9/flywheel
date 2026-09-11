@@ -840,6 +840,11 @@ class _Handler(BaseHTTPRequestHandler):
     def _get(self):
         p = self.path.split("?", 1)[0]
         qs = self.path.split("?", 1)[1] if "?" in self.path else ""
+        if p == "/api/operations":  # discover owner/Journey operation metadata
+            from harness.gateway_operation_route import route_gateway_operation
+            service, factory = self._operation_components()
+            return self._operation_response(route_gateway_operation(
+                "GET", p, query=qs, owner_ref=self.owner_ref, service=service, process_factory=factory))
         if p in ("/openapi.json",  # OpenAPI 3.1 for every route, generated
                  "/llms.txt",  # the same inventory, in the llmstxt.org shape
                  "/.well-known/flywheel.json"):  # the card pointing at both

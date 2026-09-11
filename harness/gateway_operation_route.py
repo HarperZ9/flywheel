@@ -8,6 +8,7 @@ from urllib.parse import parse_qs
 from .evidence_json import canonical_bytes, canonical_sha256
 from .gateway_operation import AuthorizedOperation, GatewayOperationError
 from .gateway_operation_route_reads import read_snapshot_or_none, terminal_data
+from .gateway_operation_read_dispatch import _read
 from .journey_types import SHA256_PATTERN
 _OPERATION_PATH = re.compile(
     r"/api/operations/(op_[0-9a-f]{32})(?:/(events|result|trace))?\Z")
@@ -254,28 +255,6 @@ def _start(raw: bytes, owner_ref: str, service, process_factory) -> RouteRespons
     from .gateway_operation_route_reads import completed_result
     return RouteResponse(200, completed_result(service, owner_ref,
         snapshot.operation_ref, envelope.operation.operation.get("timeout_s", 300)))
-def _read(method: str, path: str, query: str, owner_ref: str,
-          service) -> RouteResponse:
-    match = _OPERATION_PATH.fullmatch(path)
-    if method != "GET" or match is None:
-        raise GatewayOperationError("INVALID_REQUEST")
-    ref, selector = match.groups()
-    if selector == "trace":
-        from .gateway_agent_trace_route import read_trace; return RouteResponse(200, read_trace(service, owner_ref, ref, query))
-    if selector == "events":
-        values = parse_qs(query, keep_blank_values=True, strict_parsing=True)
-        if set(values) - {"after"} or any(len(value) != 1 for value in values.values()):
-            raise GatewayOperationError("INVALID_REQUEST")
-        raw_after = values.get("after", ["0"])[0]
-        if (len(raw_after) > 18 or not raw_after.isascii()
-                or not raw_after.isdecimal()):
-            raise GatewayOperationError("INVALID_REQUEST")
-        return RouteResponse(200, stream=_stream(
-            service, owner_ref, ref, after=int(raw_after)))
-    if query: raise GatewayOperationError("INVALID_REQUEST")
-    value = service.result(owner_ref, ref) if selector == "result" else (
-        service.snapshot(owner_ref, ref).as_json())
-    return RouteResponse(200, value)
 def route_gateway_operation(
         method: str, path: str, *, owner_ref: str, service, process_factory,
         raw: bytes = b"", query: str = "", content_type: str = "") -> RouteResponse:
