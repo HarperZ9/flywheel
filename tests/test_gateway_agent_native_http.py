@@ -13,6 +13,18 @@ from tests.test_gateway_agent_native_tools import (
     native_binding,
 )
 
+# These tests run a real ThreadingHTTPServer on loopback and drive several
+# sequential HTTP round-trips through the native runtime. The aggregate deadline
+# is a safety ceiling on the whole run, not a latency assertion: every test here
+# checks transport behavior (request bodies, adjacency, ledger rows), never how
+# fast it completes. A slow Windows cold-start CI runner spends real wall-clock
+# on socket setup and the round-trips, so a tight budget fails there while the
+# identical code passes on a warm push runner. 120s clears that cold start with
+# room to spare and matches the cold-start hardening already on main (#217,
+# #218). The sibling suites that fake the transport in memory stay tight; only
+# the real-socket path needs this headroom.
+_HTTP_DEADLINE_BUDGET = 120
+
 
 def test_openai_native_http_accumulates_store_false_replay(tmp_path, monkeypatch):
     (tmp_path / "one.txt").write_text("ONE_HTTP_READBACK", encoding="utf-8")
@@ -40,7 +52,7 @@ def test_openai_native_http_accumulates_store_false_replay(tmp_path, monkeypatch
         trace = AgentTrace(tmp_path, OWNER, JOURNEY, OP, secrets=("OPENAI_KEY",))
         result = run_private_agent(op, {"OPENAI_API_KEY": "OPENAI_KEY"},
             tmp_path, trace, None, lambda event: None, binding=binding,
-            deadline=time.monotonic() + 15)
+            deadline=time.monotonic() + _HTTP_DEADLINE_BUDGET)
 
     bodies = [json.loads(row[2]) for row in requests]
     assert result["state"] == "completed"
@@ -85,7 +97,7 @@ def test_anthropic_native_http_preserves_tool_result_adjacency(tmp_path, monkeyp
         trace = AgentTrace(tmp_path, OWNER, JOURNEY, OP, secrets=("ANTHROPIC_KEY",))
         result = run_private_agent(op, {"ANTHROPIC_API_KEY": "ANTHROPIC_KEY"},
             tmp_path, trace, None, lambda event: None, binding=binding,
-            deadline=time.monotonic() + 15)
+            deadline=time.monotonic() + _HTTP_DEADLINE_BUDGET)
 
     bodies = [json.loads(row[2]) for row in requests]
     assert result["state"] == "completed"
@@ -116,7 +128,7 @@ def test_anthropic_native_http_marks_tool_result_error(tmp_path, monkeypatch):
         trace = AgentTrace(tmp_path, OWNER, JOURNEY, OP, secrets=("ANTHROPIC_KEY",))
         result = run_private_agent(op, {"ANTHROPIC_API_KEY": "ANTHROPIC_KEY"},
             tmp_path, trace, None, lambda event: None, binding=binding,
-            deadline=time.monotonic() + 15)
+            deadline=time.monotonic() + _HTTP_DEADLINE_BUDGET)
 
     bodies = [json.loads(row[2]) for row in requests]
     assert result["state"] == "completed"
