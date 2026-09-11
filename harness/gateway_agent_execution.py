@@ -38,15 +38,23 @@ def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
 
     try:
         with pinned_workspace(binding["workspace"]) as root:
-            proposer = BoundAgentProposer(binding, CredentialBindings(bindings), ledger, deadline)
-            result = run_router_agent(
-                materialize_goal(execution["goal"], source_context), binding["endpoint"]["name"],
-                root=str(root), allow_write=binding["capabilities"]["allow_write"],
-                allow_exec=binding["capabilities"]["allow_exec"], max_steps=binding["budget"]["max_steps"],
-                model=binding["model"]["model_id"], max_tokens=binding["budget"]["max_tokens"],
-                temperature=binding["sampling"]["temperature"], seed=binding["sampling"]["router_seed"],
-                proposer=proposer, test_cmd=execution.get("test_cmd"), credential_bindings=CredentialBindings(bindings),
-                on_event=progress, ledger=ledger, event_errors_fatal=True)
+            goal = materialize_goal(execution["goal"], source_context)
+            if binding.get("tool_protocol", {}).get("protocol") == "native":
+                from .gateway_agent_native_tools import run_native_tool_agent
+                result = run_native_tool_agent(goal, binding,
+                    CredentialBindings(bindings), root, ledger, deadline,
+                    on_event=progress, test_cmd=execution.get("test_cmd"))
+            else:
+                proposer = BoundAgentProposer(binding, CredentialBindings(bindings), ledger, deadline)
+                result = run_router_agent(
+                    goal, binding["endpoint"]["name"], root=str(root),
+                    allow_write=binding["capabilities"]["allow_write"],
+                    allow_exec=binding["capabilities"]["allow_exec"], max_steps=binding["budget"]["max_steps"],
+                    model=binding["model"]["model_id"], max_tokens=binding["budget"]["max_tokens"],
+                    temperature=binding["sampling"]["temperature"], seed=binding["sampling"]["router_seed"],
+                    proposer=proposer, test_cmd=execution.get("test_cmd"),
+                    credential_bindings=CredentialBindings(bindings),
+                    on_event=progress, ledger=ledger, event_errors_fatal=True)
             if time.monotonic() >= deadline:
                 raise GatewayOperationError("OPERATION_DEADLINE_EXCEEDED")
         if rejected:

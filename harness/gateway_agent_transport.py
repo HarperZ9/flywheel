@@ -75,7 +75,7 @@ class BoundAgentTransport:
 
     def __init__(self, *, base_url, adapter, model, deadline, max_tokens,
                  max_calls, clock=time.monotonic, opener=None,
-                 allow_omitted_temperature=False):
+                 allow_omitted_temperature=False, native_protocol=None):
         try:
             parts = urllib.parse.urlsplit(base_url)
             if (not isinstance(base_url, str) or len(base_url) > 2048 or
@@ -93,11 +93,19 @@ class BoundAgentTransport:
                     not 1 <= max_tokens <= 65536 or type(max_calls) is not int or
                     not 1 <= max_calls <= 12 or
                     type(allow_omitted_temperature) is not bool or
-                    (allow_omitted_temperature and adapter != 'anthropic')):
+                    (allow_omitted_temperature and adapter != 'anthropic') or
+                    native_protocol not in {None, 'openai_responses', 'anthropic_messages'} or
+                    (native_protocol == 'openai_responses' and adapter != 'openai') or
+                    (native_protocol == 'anthropic_messages' and adapter != 'anthropic')):
                 raise ValueError
-            suffix = {'openai': '/chat/completions', 'anthropic': '/v1/messages',
-                      'gemini': '/models/' + urllib.parse.quote(model, safe='') +
-                      ':generateContent'}[adapter]
+            if native_protocol == 'openai_responses':
+                suffix = '/responses'
+            elif native_protocol == 'anthropic_messages':
+                suffix = '/v1/messages'
+            else:
+                suffix = {'openai': '/chat/completions', 'anthropic': '/v1/messages',
+                          'gemini': '/models/' + urllib.parse.quote(model, safe='') +
+                          ':generateContent'}[adapter]
         except (ValueError, TypeError, KeyError, AttributeError, OverflowError):
             _fail()
         self._url, self._adapter, self._model = base_url + suffix, adapter, model
@@ -105,6 +113,7 @@ class BoundAgentTransport:
         self._max_calls, self._clock, self._calls = max_calls, clock, 0
         self._deadline_limited = False
         self._allow_omitted_temperature = allow_omitted_temperature
+        self._native_protocol = native_protocol
         self._opener = opener if opener is not None else urllib.request.build_opener(
             urllib.request.ProxyHandler({}), _NoRedirect())
 
@@ -148,6 +157,31 @@ class BoundAgentTransport:
             _fail()
 
     def _payload(self, payload):
+        if self._native_protocol == 'openai_responses':
+            required = {'model', 'input', 'max_output_tokens', 'store',
+                        'parallel_tool_calls', 'tools', 'stream', 'temperature'}
+            if (not required <= payload.keys() or payload.keys() - required or
+                    payload.get('model') != self._model or
+                    not isinstance(payload.get('input'), list) or
+                    not isinstance(payload.get('tools'), list) or
+                    payload.get('store') is not False or
+                    payload.get('parallel_tool_calls') is not False or
+                    payload.get('stream') is not False or
+                    payload.get('temperature') != 0 or
+                    payload.get('max_output_tokens') != self._max_tokens):
+                raise ValueError
+            return
+        if self._native_protocol == 'anthropic_messages':
+            required = {'model', 'messages', 'max_tokens', 'tools', 'stream'}
+            allowed = required | {'system'}
+            if (not required <= payload.keys() or payload.keys() - allowed or
+                    payload.get('model') != self._model or
+                    not isinstance(payload.get('messages'), list) or
+                    not isinstance(payload.get('tools'), list) or
+                    payload.get('stream') is not False or
+                    payload.get('max_tokens') != self._max_tokens):
+                raise ValueError
+            return
         if self._adapter == 'gemini':
             required = {'contents', 'generationConfig'}
             allowed = required | {'systemInstruction'}
