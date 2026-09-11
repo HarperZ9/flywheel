@@ -9,6 +9,7 @@ import tomllib
 from pathlib import Path
 
 from tests.enterprise_envs.package_helpers import PACKAGE_ROOT, ROOT, add_product_src, product_pythonpath
+from tests.enterprise_envs.service_desk_cli_diagnostics import run_e2e
 
 
 def test_product_metadata_requires_engine_release_that_contains_api():
@@ -74,15 +75,7 @@ def test_dedicated_product_api_and_cli_from_source(tmp_path):
     assert json.loads(descriptor.stdout)["environment_id"] == "service-desk-incident/v1"
 
     out = tmp_path / "source-cli"
-    e2e = subprocess.run(
-        [sys.executable, "-m", "service_desk_incident_env.cli", "e2e", "--out", str(out)],
-        cwd=ROOT,
-        env=env,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=30,
-    )
+    e2e = run_e2e(out, env)
     assert e2e.returncode == 0, e2e.stderr
     packet = json.loads(e2e.stdout)
     verify = product.verify_artifacts(Path(packet["artifact_dir"]))
