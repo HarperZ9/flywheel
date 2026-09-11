@@ -51,12 +51,7 @@ void main() {
     );
     expect(
       flywheelDestinations.map((item) => item.label).toSet(),
-      expectedDestinationTypes.keys
-          .map(
-            (id) => id == DestinationId.chat ? 'Rowan' :
-                id.name.substring(0, 1).toUpperCase() + id.name.substring(1),
-          )
-          .toSet(),
+      destinationCatalog.map((spec) => spec.label).toSet(),
     );
     for (final entry in expectedDestinationTypes.entries) {
       expect(
@@ -121,8 +116,18 @@ Future<void> scrollRailTo(WidgetTester tester, String label) async {
         matching: find.byType(ListView),
       )
       .first;
+  var secondaryExpanded = false;
   for (var i = 0; i < 60; i++) {
     if (find.text(label).evaluate().isNotEmpty) return;
+    final secondary = find.text('TOOLS & ADMIN');
+    if (!secondaryExpanded && secondary.evaluate().isNotEmpty) {
+      await tester.ensureVisible(secondary);
+      await tester.pumpAndSettle();
+      await tester.tap(secondary);
+      await tester.pumpAndSettle();
+      secondaryExpanded = true;
+      if (find.text(label).evaluate().isNotEmpty) return;
+    }
     await tester.drag(railList, const Offset(0, -60));
     await tester.pump();
   }

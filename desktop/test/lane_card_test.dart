@@ -35,29 +35,39 @@ Future<void> _pump(WidgetTester tester, Lane lane) => tester.pumpWidget(
       ),
     );
 
+Future<void> _expand(WidgetTester tester, String label) async {
+  await tester.tap(find.text(label));
+  await tester.pumpAndSettle();
+}
+
 void main() {
-  testWidgets('a blocked package distribution offers no install',
-      (tester) async {
+  testWidgets('a blocked package distribution offers no install', (
+    tester,
+  ) async {
     await _pump(
-        tester,
-        Lane.fromJson({
-          'name': 'relay',
-          'kind': 'pip',
-          'package_installable': false,
-          'detail': 'Package distribution disabled; use a source checkout.',
-        }));
+      tester,
+      Lane.fromJson({
+        'name': 'relay',
+        'kind': 'pip',
+        'package_installable': false,
+        'detail': 'Package distribution disabled; use a source checkout.',
+      }),
+    );
     expect(find.text('Install'), findsNothing);
+    await _expand(tester, 'Relay');
     expect(find.textContaining('use a source checkout'), findsOneWidget);
   });
 
-  testWidgets('a pip lane with nothing installed offers the install',
-      (tester) async {
+  testWidgets('a pip lane with nothing installed offers no public install', (
+    tester,
+  ) async {
     await _pump(tester, _lane('mneme', 'pip'));
-    expect(find.text('Install'), findsOneWidget);
+    expect(find.text('Install'), findsNothing);
   });
 
-  testWidgets('a remote lane never offers an install it cannot run',
-      (tester) async {
+  testWidgets('a remote lane never offers an install it cannot run', (
+    tester,
+  ) async {
     await _pump(tester, _lane('bulletin', 'http'));
     expect(find.text('Install'), findsNothing);
   });
@@ -70,18 +80,21 @@ void main() {
     expect(find.text('Install'), findsNothing);
   });
 
-  testWidgets('an installed pip lane has nothing left to install',
-      (tester) async {
+  testWidgets('an installed pip lane has nothing left to install', (
+    tester,
+  ) async {
     await _pump(tester, _lane('mneme', 'pip', installed: '0.2.0'));
     expect(find.text('Install'), findsNothing);
   });
 
-  testWidgets('a lane added to the engine renders in its own words',
-      (tester) async {
+  testWidgets('a lane added to the engine renders in its own words', (
+    tester,
+  ) async {
     // The card falls back to the raw lane name, so a missing identity entry
     // looks like a working card rather than like the gap it is.
     await _pump(tester, _lane('bulletin', 'http'));
     expect(find.text('Bulletin'), findsOneWidget);
+    await _expand(tester, 'Bulletin');
     expect(find.textContaining('accounts belong to agents'), findsOneWidget);
   });
 }
