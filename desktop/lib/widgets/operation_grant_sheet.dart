@@ -4,6 +4,7 @@ import '../controllers/gateway_operation_controller.dart';
 import '../controllers/journey_controller.dart';
 import '../models/bulletin_media_models.dart';
 import '../models/gateway_grant_models.dart';
+import 'agent_execution_grant_review.dart';
 export '../models/gateway_grant_models.dart'
     show GatewayDestination, GatewayOperation;
 
@@ -158,46 +159,60 @@ final class _OperationGrantSheetState<T>
     );
   }
 
-  Widget _content(GatewayGrantProposal proposal) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Approve one external operation',
-              style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 12),
-          _line('Operation', proposal.summary.action),
-          _line('Journey', proposal.summary.journeyRef),
-          _line('Head', proposal.summary.eventHead),
-          _line('Destination', _destinationText(proposal.summary.destination)),
-          _line('Tool', proposal.summary.tool),
-          _line('Operation digest', proposal.summary.operationSha256),
-          _line('Arguments', proposal.summary.argumentsSha256),
-          _refs('Data refs', proposal.summary.dataRefs),
-          _refs('Credential refs', proposal.summary.credentialRefs),
-          _line('Effect', proposal.summary.effect),
-          if (proposal.summary.bulletinMediaReview != null)
-            _bulletinReview(proposal.summary.bulletinMediaReview!),
-          _line('Expires', proposal.summary.expiresAt),
-          const SizedBox(height: 12),
-          Wrap(
-              spacing: 8,
-              children: proposal.summary.scopes
-                  .map((scope) => Chip(label: Text(scope)))
-                  .toList()),
-          const SizedBox(height: 20),
-          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-            TextButton(
-                onPressed: widget.controller.pending
-                    ? null
-                    : () => Navigator.pop(context),
-                child: const Text('Deny')),
-            const SizedBox(width: 12),
-            FilledButton(
-                onPressed: widget.controller.pending ? null : _approve,
-                child: const Text('Approve once')),
-          ]),
-        ],
-      );
+  Widget _content(GatewayGrantProposal proposal) {
+    final agentReview = proposal.summary.agentExecution;
+    final approvalBlocked = agentReview?.reprepareRequired ?? false;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Approve one external operation',
+            style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 12),
+        _line('Operation', proposal.summary.action),
+        _line('Journey', proposal.summary.journeyRef),
+        _line('Head', proposal.summary.eventHead),
+        _line('Destination', _destinationText(proposal.summary.destination)),
+        _line('Tool', proposal.summary.tool),
+        _line('Operation digest', proposal.summary.operationSha256),
+        _line('Arguments', proposal.summary.argumentsSha256),
+        _refs('Data refs', proposal.summary.dataRefs),
+        _refs('Credential refs', proposal.summary.credentialRefs),
+        _line('Effect', proposal.summary.effect),
+        if (agentReview != null) AgentExecutionGrantReview(review: agentReview),
+        if (approvalBlocked)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 6),
+            child: Text(
+                'Prepare a fresh agent proposal before approving this operation.'),
+          ),
+        if (proposal.summary.bulletinMediaReview != null)
+          _bulletinReview(proposal.summary.bulletinMediaReview!),
+        _line('Expires', proposal.summary.expiresAt),
+        const SizedBox(height: 12),
+        Wrap(
+            spacing: 8,
+            children: proposal.summary.scopes
+                .map((scope) => Chip(label: Text(scope)))
+                .toList()),
+        const SizedBox(height: 20),
+        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+          TextButton(
+              onPressed: widget.controller.pending
+                  ? null
+                  : () => Navigator.pop(context),
+              child: const Text('Deny')),
+          const SizedBox(width: 12),
+          FilledButton(
+              onPressed: widget.controller.pending || approvalBlocked
+                  ? null
+                  : _approve,
+              child: Text(
+                  approvalBlocked ? 'Prepare again required' : 'Approve once')),
+        ]),
+      ],
+    );
+  }
 
   Widget _refs(String label, List<String> values) =>
       _line(label, values.isEmpty ? 'None' : values.join(', '));
