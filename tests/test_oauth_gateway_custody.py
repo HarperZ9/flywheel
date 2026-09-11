@@ -1,13 +1,12 @@
 """Auth custody through the real local HTTP dispatcher; synthetic owner only."""
 import json
 import threading
-import urllib.error
-import urllib.request
 from http.server import ThreadingHTTPServer
 
 import pytest
 
 from harness import gateway, oauth_service
+from tests.http_fixture_client import request as local_request
 
 
 @pytest.fixture
@@ -31,15 +30,8 @@ def http_gateway(tmp_path, monkeypatch):
         headers = {'Content-Type': 'application/json'}
         if token:
             headers['Authorization'] = 'Bearer ' + token
-        req = urllib.request.Request(
-            f'http://127.0.0.1:{server.server_port}' + path, headers=headers,
+        return local_request(server.server_port, path, headers=headers,
             data=None if path.split('?')[0] in ('/api/auth', '/api/world') else b'{"provider":"openai"}')
-        try:
-            response = urllib.request.urlopen(req, timeout=3)
-        except urllib.error.HTTPError as exc:
-            response = exc
-        with response:
-            return response.status, response.read().decode()
     yield request, calls
     server.shutdown()
     thread.join(3)
