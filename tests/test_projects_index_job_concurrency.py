@@ -13,6 +13,7 @@ from pathlib import Path
 from harness import index_jobs
 from harness.index_job_registry import _lock_path
 from harness.journey_lock import ExclusiveJourneyLock
+from tests.index_job_concurrency_admission import marker_paths
 
 
 def test_threaded_duplicate_start_is_single_flight(tmp_path, monkeypatch):
@@ -68,24 +69,23 @@ def test_registry_lock_contention_returns_typed_busy(tmp_path, monkeypatch):
     assert out["job_id"] == ""
 
 
-def test_subprocess_start_same_root_is_single_flight(tmp_path):
+def test_subprocess_start_same_root_is_single_flight(tmp_path, text_once_written):
     root = tmp_path / "repo"
     root.mkdir()
     run_root = tmp_path / "run"
     fake_bin = _install_fake_index(tmp_path)
 
-    procs = [
-        _start_proc(root, run_root, fake_bin),
-        _start_proc(root, run_root, fake_bin),
-    ]
-    outputs = [_finish(proc) for proc in procs]
+    outputs = _contending_outputs(
+        [root, root], run_root, fake_bin, text_once_written)
 
-    assert [out.get("error_type") for out in outputs] == [None, None]
+    assert [out.get("error_type") for out in outputs] == [None, None], [
+        out["_process"] for out in outputs]
     assert {out["job_id"] for out in outputs} == {outputs[0]["job_id"]}
     assert _router_actions(run_root).count(["router-job", "start"]) == 1
 
 
-def test_subprocess_start_different_roots_preserves_both_registry_rows(tmp_path):
+def test_subprocess_start_different_roots_preserves_both_registry_rows(
+        tmp_path, text_once_written):
     root_a = tmp_path / "a"
     root_b = tmp_path / "b"
     root_a.mkdir()
@@ -93,20 +93,19 @@ def test_subprocess_start_different_roots_preserves_both_registry_rows(tmp_path)
     run_root = tmp_path / "run"
     fake_bin = _install_fake_index(tmp_path)
 
-    procs = [
-        _start_proc(root_a, run_root, fake_bin, save_sleep=0.2),
-        _start_proc(root_b, run_root, fake_bin, save_sleep=0.2),
-    ]
-    outputs = [_finish(proc) for proc in procs]
+    outputs = _contending_outputs(
+        [root_a, root_b], run_root, fake_bin, text_once_written, save_sleep=.2)
 
+    evidence = [out["_process"] for out in outputs]
+    assert [out.get("error_type") for out in outputs] == [None, None], evidence
     registry_doc = json.loads(
         (run_root / "index-workspace-map-jobs.json").read_text(
             encoding="utf-8"))
     registry = registry_doc["roots"]
-    assert set(registry) == {str(root_a.resolve()), str(root_b.resolve())}
+    assert set(registry) == {str(root_a.resolve()), str(root_b.resolve())}, evidence
     assert {row["job_id"] for row in registry.values()} == {
         out["job_id"] for out in outputs
-    }
+    }, evidence
 
 
 def _status(root: str, job_id: str, status: str) -> dict[str, object]:
@@ -152,13 +151,14 @@ def _repo_path() -> Path:
 
 
 def _start_proc(root: Path, run_root: Path, fake_bin: Path,
-                *, save_sleep: float = 0) -> subprocess.Popen:
+                *, save_sleep: float = 0, admission_role: str = "") -> subprocess.Popen:
     env = os.environ.copy()
     env["PATH"] = str(fake_bin) + os.pathsep + env.get("PATH", "")
     env["PYTHONPATH"] = (
         str(_repo_path()) + os.pathsep + env.get("PYTHONPATH", ""))
     env["FAKE_INDEX_START_SLEEP"] = "0.2"
     env["FAKE_SAVE_SLEEP"] = str(save_sleep)
+    env["INDEX_ADMISSION_ROLE"] = admission_role
     return subprocess.Popen(
         [sys.executable, "-c", _START_CODE, str(root), str(run_root)],
         stdout=subprocess.PIPE,
@@ -169,10 +169,39 @@ def _start_proc(root: Path, run_root: Path, fake_bin: Path,
     )
 
 
+def _contending_outputs(roots, run_root, fake_bin, read_text, *, save_sleep=0):
+    procs = [_start_proc(roots[0], run_root, fake_bin, save_sleep=save_sleep,
+                         admission_role="first")]
+    try:
+        read_text(marker_paths(run_root).first_save_ready, timeout=10)
+        procs.append(_start_proc(roots[1], run_root, fake_bin,
+                                 admission_role="second"))
+        return [_finish(proc) for proc in procs]
+    finally:
+        for proc in procs:
+            if proc.poll() is None:
+                proc.kill()
+                proc.communicate(timeout=10)
+
+
 def _finish(proc: subprocess.Popen) -> dict:
     stdout, stderr = proc.communicate(timeout=10)
-    assert proc.returncode == 0, stderr
-    return json.loads(stdout.splitlines()[-1])
+    evidence = {"returncode": proc.returncode, "stdout": stdout, "stderr": stderr}
+    for key in ("stdout", "stderr"):
+        for path, label in ((Path(proc.args[-1]).parent, "<synthetic>"),
+                            (_repo_path(), "<repo>"),
+                            (Path(sys.executable).parent, "<python>")):
+            for raw in (json.dumps(str(path))[1:-1], str(path)):
+                evidence[key] = evidence[key].replace(raw, label)
+    if proc.returncode != 0:
+        raise AssertionError(evidence)
+    try:
+        output = json.loads(stdout.splitlines()[-1])
+    except (ValueError, IndexError):
+        raise AssertionError(evidence) from None
+    if not isinstance(output, dict):
+        raise AssertionError(evidence)
+    return {**output, "_process": evidence}
 
 
 def _router_actions(run_root: Path) -> list[list[str]]:
@@ -204,6 +233,10 @@ if hasattr(target, "_save_registry"):
         return original(*args, **kwargs)
 
     target._save_registry = delayed_save
+
+if os.environ.get("INDEX_ADMISSION_ROLE"):
+    from tests.index_job_concurrency_admission import install_admission
+    install_admission(sys.argv[2], os.environ["INDEX_ADMISSION_ROLE"])
 
 print(json.dumps(index_jobs.start_workspace_map(sys.argv[1],
                                                 run_root=sys.argv[2])))

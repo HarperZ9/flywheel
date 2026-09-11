@@ -47,10 +47,12 @@ def _registry(run_root: Path | str) -> dict[str, dict[str, Any]]:
     path = registry_path(run_root)
     try:
         doc = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except FileNotFoundError:
         return {}
     rows = doc.get("roots") if isinstance(doc, dict) else None
-    return rows if isinstance(rows, dict) else {}
+    if not isinstance(rows, dict):
+        raise ValueError("invalid registry roots")
+    return rows
 
 
 def _retry_windows_permission(deadline: float) -> None:
