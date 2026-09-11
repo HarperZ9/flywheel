@@ -116,19 +116,35 @@ class _RowanCaptionSlot extends StatelessWidget {
   final RowanWalkthroughCaptionBuilder? builder;
   final RowanWalkthroughController controller;
   final RowanWalkthroughOperationHost host;
+  final OperationSnapshot? snapshot;
+  final OperationResult? result;
+  final List<Map<String, dynamic>> progress;
   const _RowanCaptionSlot({
     required this.builder,
     required this.controller,
     required this.host,
+    required this.snapshot,
+    required this.result,
+    required this.progress,
   });
 
   @override
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const HonestNull('Provider-visible reasoning captions attach here. '
-              'Hidden internal chain-of-thought is unavailable and is never '
-              'fabricated or exported by this panel.'),
+          const HonestNull('Private operation captions attach here. Inference '
+              'lifecycle records are provider-call metadata; hidden internal '
+              'chain-of-thought is unavailable and is never fabricated or '
+              'exported by this panel.'),
+          if (snapshot != null) ...[
+            const SizedBox(height: FwLayout.s2),
+            OperationCaptionEntry(
+              client: host.client,
+              snapshot: snapshot!,
+              result: result,
+              progress: progress,
+            ),
+          ],
           if (builder != null) ...[
             const SizedBox(height: FwLayout.s2),
             builder!(context, controller, host),

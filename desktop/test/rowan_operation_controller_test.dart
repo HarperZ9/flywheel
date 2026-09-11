@@ -92,6 +92,38 @@ void main() {
     client.close();
   });
 
+  testWidgets('denied Rowan approval leaves no pending request locator', (
+    tester,
+  ) async {
+    var posts = 0;
+    final directory = Directory.systemTemp.createTempSync('rowan-denied-');
+    addTearDown(() => directory.deleteSync(recursive: true));
+    final store = JourneySessionStore(
+      file: File('${directory.path}${Platform.pathSeparator}session.json'),
+    )..save(JourneySession(journeyRef: _journey, lens: JourneyLens.verify));
+    final client = GatewayClient(
+      baseUrl: 'https://rowan.invalid',
+      httpClient: MockClient((request) async {
+        if (request.url.path == '/api/agent') posts++;
+        return http.Response('{}', 500);
+      }),
+    );
+    final rowan = RowanOperationController(client, sessionStore: store)
+      ..setEndpoint('local');
+    addTearDown(rowan.dispose);
+    final context = await _mount(
+      tester,
+      (_, __, ___, ____) async => const GatewayAuthorizationOutcome.denied(),
+    );
+
+    final outcome = await rowan.start(context, 'inspect');
+    expect(outcome.denied, isTrue);
+    expect(posts, 0);
+    expect(rowan.snapshot, isNull);
+    expect(store.load()?.operationRequestSha256, isNull);
+    client.close();
+  });
+
   testWidgets('running operation suppresses duplicate start POST', (
     tester,
   ) async {

@@ -11,6 +11,7 @@ import '../models/rowan_walkthrough_models.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
 import 'model_selector.dart';
+import 'operation_caption_entry.dart';
 import 'operation_controls.dart';
 
 part 'rowan_walkthrough_panel_parts.dart';
@@ -195,7 +196,12 @@ class _RowanWalkthroughPanelState extends State<RowanWalkthroughPanel> {
       return;
     }
     try {
-      await _host.reconnect(snapshot);
+      final reopened = await _host.reconnect(snapshot);
+      if (!reopened) {
+        _controller.markInterrupted();
+        setState(() => _localError = 'Stored operation record unavailable.');
+        return;
+      }
       _controller.markReopened(_host.snapshot ?? snapshot);
     } catch (_) {
       _controller.markInterrupted();
@@ -265,12 +271,20 @@ class _RowanWalkthroughPanelState extends State<RowanWalkthroughPanel> {
         Kicker('live trace', hot: !_guidancePaused),
         const SizedBox(height: FwLayout.s2),
         LiveRunTail(
-            events: _host.progress, scroll: _scroll, client: _host.client),
+          events: _host.progress,
+          scroll: _scroll,
+          client: _host.client,
+          snapshot: _host.snapshot,
+          terminalResult: _host.terminalResult,
+        ),
         const SizedBox(height: FwLayout.s3),
         _RowanCaptionSlot(
           builder: widget.captionBuilder,
           controller: _controller,
           host: _host,
+          snapshot: _host.snapshot,
+          result: _host.terminalResult,
+          progress: _host.progress,
         ),
         const SizedBox(height: FwLayout.s3),
         _RowanTerminalActions(
