@@ -19,7 +19,10 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     tester.platformDispatcher.textScaleFactorTestValue = 2.0;
     addTearDown(() => tester.platformDispatcher.textScaleFactorTestValue = 1.0);
-    final settings = DesktopSettings()..uiScale = 1.2;
+    // firstRunSeen: true so the first-run walkthrough does not raise itself
+    // over this scale-composition assertion (and so the shell's save() cannot
+    // touch the real settings file); the tour has its own tests.
+    final settings = DesktopSettings(firstRunSeen: true)..uiScale = 1.2;
     await tester.pumpWidget(FlywheelApp(settings: settings));
     await tester.pump();
 

@@ -23,6 +23,7 @@ import '../widgets/flywheel_nav.dart';
 import '../widgets/mobile_nav_bar.dart';
 import '../widgets/sessions_panel.dart';
 import '../widgets/operation_grant_sheet.dart';
+import '../widgets/rowan_launch_tour.dart';
 import '../widgets/shell_rail.dart';
 import '../widgets/status_bar.dart';
 import 'flywheel_dependencies.dart';
@@ -98,6 +99,23 @@ class _FlywheelShellState extends State<FlywheelShell> {
     );
     _lifecycle = AppLifecycleListener(onExitRequested: _requestExit);
     _coordinator.beginPolling();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || widget.settings.firstRunSeen) return;
+      // Set the flag the moment the tour is shown, not on completion, so a
+      // force-quit mid-tour does not make it reappear every launch. Replay
+      // stays available from the rail.
+      widget.settings.firstRunSeen = true;
+      widget.settings.save();
+      _presentWalkthrough();
+    });
+  }
+
+  void _presentWalkthrough() {
+    if (!mounted) return;
+    unawaited(showRowanWalkthrough(
+      context,
+      onOpenStudio: () => _goTo(DestinationId.studio),
+    ));
   }
 
   @override
@@ -269,6 +287,12 @@ class _FlywheelShellState extends State<FlywheelShell> {
         onOpenAssistant: () =>
             openAssistant(context, _dependencies, _voiceInput, _voiceOutput),
         onOpenRecovery: () => openRecoveryCenter(context, _dependencies),
+        onOpenWalkthrough: inDrawer
+            ? () {
+                Navigator.of(context).maybePop();
+                _presentWalkthrough();
+              }
+            : _presentWalkthrough,
       ),
     );
   }
