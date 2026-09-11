@@ -29,6 +29,7 @@ from typing import Any
 
 from harness.gateway_custody import is_private
 from harness.route_inventory import PREFIX, Route, gateway_routes
+from harness.writing_operations import openapi_path_items
 
 SCHEMA = "flywheel.discovery/v1"
 OPENAPI_PATH = "/openapi.json"
@@ -116,12 +117,14 @@ def openapi_document(version: str = "") -> dict[str, Any]:
                 "description": "the rest of the path after the prefix",
                 "schema": {"type": "string"}}]
         paths[key] = entry
+    paths.update(openapi_path_items(_group))
     return {
         "openapi": "3.1.0",
         "info": {"title": "Flywheel gateway", "version": version,
                  "description": LOWER_BOUND},
         "components": {"securitySchemes": {"bearerAuth": {
             "type": "http", "scheme": "bearer"}}},
+        "x-flywheel-typed-route-scope": ["writing operations"],
         "paths": paths,
     }
 

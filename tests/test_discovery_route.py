@@ -21,6 +21,7 @@ from harness import discovery_route as disc  # noqa: E402
 from harness.gateway_custody import is_private  # noqa: E402
 from harness.route_inventory import (EXACT, PREFIX, gateway_routes,  # noqa: E402
                                      routes_in, undescribed)
+from harness.writing_operations import http_operations  # noqa: E402
 
 SYNTHETIC = '''
 class _Handler:
@@ -79,8 +80,10 @@ def test_the_document_never_claims_a_route_the_code_does_not_dispatch():
     they were told to expect.
     """
     served = {r.path for r in gateway_routes()}
+    descriptor_backed = {op.http_path for op in http_operations()}
     for path in disc.openapi_document()["paths"]:
-        assert path.removesuffix("{subpath}") in served, path
+        real = path.removesuffix("{subpath}")
+        assert real in served or real in descriptor_backed, path
 
 
 def test_private_custody_is_read_from_the_gateway_rule_not_restated():
