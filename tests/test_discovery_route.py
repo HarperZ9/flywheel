@@ -22,6 +22,10 @@ from harness.gateway_custody import is_private  # noqa: E402
 from harness.route_inventory import (EXACT, PREFIX, gateway_routes,  # noqa: E402
                                      routes_in, undescribed)
 from harness.writing_operations import http_operations  # noqa: E402
+from harness.writing_route import writing_get, writing_post  # noqa: E402
+
+NOW = "2026-09-10T12:00:00Z"
+OWNER = "owner_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 SYNTHETIC = '''
 class _Handler:
@@ -86,6 +90,24 @@ def test_the_document_never_claims_a_route_the_code_does_not_dispatch():
         assert real in served or real in descriptor_backed, path
 
 
+def test_descriptor_backed_writing_paths_reach_the_route_adapter(tmp_path):
+    """A Writing descriptor path only belongs in OpenAPI if the adapter knows it.
+
+    Incomplete requests are enough for this guard: a known route returns a
+    field/type error or a successful read, while an unhandled descriptor falls
+    through as NOT_FOUND.
+    """
+    for op in http_operations():
+        if op.http_method == "GET":
+            body, _status = writing_get(op.http_path, owner_ref=OWNER,
+                state_root=tmp_path / "state", clock=lambda: NOW)
+        else:
+            body, _status = writing_post(op.http_path, b"{}",
+                owner_ref=OWNER, state_root=tmp_path / "state",
+                clock=lambda: NOW)
+        assert body.get("error", {}).get("code") != "NOT_FOUND", op.http_path
+
+
 def test_private_custody_is_read_from_the_gateway_rule_not_restated():
     """One rule, two readers.
 
@@ -115,6 +137,8 @@ def test_each_document_carries_the_lower_bound_it_is_built_on():
     assert disc.LOWER_BOUND in disc.openapi_document()["info"]["description"]
     assert disc.LOWER_BOUND in disc.llms_txt()
     assert disc.LOWER_BOUND in disc.card()["note"]
+    assert "parsed gateway dispatchers plus descriptor-backed Writing" in (
+        disc.LOWER_BOUND)
 
 
 def test_the_discovery_paths_appear_in_their_own_documents():
@@ -189,15 +213,21 @@ def test_llms_txt_holds_every_route_in_the_llmstxt_shape():
     assert any(line.startswith("## ") for line in lines)
     for route in gateway_routes():
         assert f"]({route.path})" in text, route.path
+    assert "](/api/writing/init/prepare)" in text
+    assert "descriptor-backed Writing operation paths" in text
 
 
 def test_the_card_counts_what_it_points_at():
     """The card carries the numbers a caller would otherwise have to derive,
     and they have to be the same numbers the other documents were built from."""
     routes = gateway_routes()
+    descriptor_paths = {op.http_path for op in http_operations()}
     card = disc.card()
     assert card["schema"] == disc.SCHEMA
-    assert card["routes"] == len(routes)
+    assert card["routes"] == len(disc.openapi_document()["paths"])
+    assert card["dispatcher_routes"] == len(routes)
+    assert card["descriptor_backed_routes"] == len(descriptor_paths)
+    assert card["typed_route_scope"] == ["writing operations"]
     assert card["undescribed"] == len(undescribed(routes)) == 0
     assert card["discovery"]["openapi"] == disc.OPENAPI_PATH
     assert card["discovery"]["llms_txt"] == disc.LLMS_PATH
