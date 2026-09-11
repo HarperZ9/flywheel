@@ -1,0 +1,10 @@
+Learn Node lane payload notice
+
+Component: @harperz9/learn 1.6.0
+Parent release artifact: https://registry.npmjs.org/@harperz9/learn/-/learn-1.6.0.tgz
+Parent release gitHead: 9a27dba8c2e033bf002bbe4ea8e3b96fc57b0ad6
+Local source delta: e4ff959958bb390366f34e6504a6979c78b950ac
+License declaration: LicenseRef-fair-source
+Runtime: official Node v24.21.0 win-x64 zip, verified by SHA-256 before packaging
+
+This bundled payload is a local, build-time source bundle. It does not run npm install, npm lifecycle scripts, provider calls, browser automation, credential reads, or live course actions at app launch.

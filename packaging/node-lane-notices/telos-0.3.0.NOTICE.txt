@@ -1,0 +1,10 @@
+Telos Node lane payload notice
+
+Component: project-telos-mcp 0.3.0
+Source: https://github.com/HarperZ9/telos.git
+Source commit/tag: 344e6fd9c5a010b8e7375cb359920b1517faeb20 / v0.3.0
+Registry state: unpublished; bundled as an owned source archive rather than an npm package
+License declaration: FSL-1.1-ALv2
+Runtime: official Node v24.21.0 win-x64 zip, verified by SHA-256 before packaging
+
+This bundled payload is a local, build-time source bundle. UIA/device scripts are included only because the 0.3.0 package file list includes them; this payload does not admit native control or run device, browser, provider, account, or UI actions.
