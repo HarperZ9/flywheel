@@ -19,6 +19,7 @@ for import_root in (repo, relay_src):
 sys.path.insert(0, str(repo))
 sys.path.insert(0, str(relay_src))
 from scripts.check_bundled_lane_descriptors import check_lane_descriptor
+from scripts.frozen_gateway_metadata import flywheel_verify_metadata_datas
 import importlib.util
 
 descriptor_check = check_lane_descriptor(repo, "relay")
@@ -30,13 +31,8 @@ relay_import = importlib.util.find_spec("relay.local_mcp")
 relay_origin = Path(relay_import.origin).resolve() if relay_import and relay_import.origin else None
 if relay_origin is None or not relay_origin.is_relative_to(relay_src.resolve()):
     raise RuntimeError("bundled Relay import shadowed outside relay/src")
-# Keep version/license metadata without pip's local installation URL.
-distribution_data = [
-    (str(path), str(Path(destination) / path.relative_to(source).parent))
-    for source, destination in copy_metadata("flywheel-verify")
-    for path in sorted(Path(source).rglob("*"))
-    if path.is_file() and path.name != "direct_url.json"
-]
+# Keep version/license metadata under Flywheel's stable owned metadata root.
+distribution_data = flywheel_verify_metadata_datas(copy_metadata)
 
 a = Analysis(
     [str(repo / "packaging" / "gateway_entry.py")],

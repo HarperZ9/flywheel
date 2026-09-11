@@ -142,8 +142,11 @@ def test_desktop_freeze_carries_bulletin_identity_signing_backend():
 
 def test_frozen_discovery_keeps_source_and_distribution_metadata():
     spec = (PACKAGING / "flywheel-gateway.spec").read_text(encoding="utf-8")
-    assert 'copy_metadata("flywheel-verify")' in spec
-    assert 'path.name != "direct_url.json"' in spec
+    helper = Path("scripts/frozen_gateway_metadata.py").read_text(encoding="utf-8")
+    assert "flywheel_verify_metadata_datas(copy_metadata)" in spec
+    assert 'copy_metadata("flywheel-verify")' in helper
+    assert 'path.name == "direct_url.json"' in helper
+    assert 'Path("flywheel_verify.egg-info")' in helper
     assert '(str(repo / "harness" / "gateway.py"), "harness")' in spec
 
 

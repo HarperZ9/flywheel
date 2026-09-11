@@ -27,6 +27,8 @@
 #define MyAppPublisher "ZentropyLabs"
 #define MyAppExeName "flywheel_desktop.exe"
 
+#include "flywheel_metadata_cleanup.iss"
+
 [Setup]
 ; AppId stays fixed across versions so upgrades replace, never duplicate.
 AppId={{ecf4cc9b-8a7a-4de2-8e70-0f1ea0f17e5c}
