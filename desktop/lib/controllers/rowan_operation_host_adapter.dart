@@ -71,7 +71,7 @@ final class RowanOperationHostAdapter extends ChangeNotifier
   @override
   Future<void> stop(BuildContext context) => _controller.stop(context);
   @override
-  Future<void> reconnect(OperationSnapshot hint) => _controller.reconnect(hint);
+  Future<bool> reconnect(OperationSnapshot hint) => _controller.reconnect(hint);
 
   @override
   void dispose() {

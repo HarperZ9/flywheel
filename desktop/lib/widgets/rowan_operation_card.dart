@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../controllers/operation_controller.dart';
 import '../controllers/rowan_operation_controller.dart';
+import '../models/agent_tool_protocol.dart';
 import '../theme/flywheel_theme.dart';
 import 'effort_dial.dart';
 import 'fw.dart';
 import 'model_selector.dart';
 import 'operation_controls.dart';
+import 'operation_private_attachments.dart';
 
 final class RowanOperationCard extends StatelessWidget {
   const RowanOperationCard({
@@ -38,7 +40,7 @@ final class RowanOperationCard extends StatelessWidget {
               const Kicker('operation review'),
               const Spacer(),
               OperationControls(
-                alive: true,
+                alive: !rowan.recoveryBlocked,
                 authorizing: rowan.authorizing,
                 snapshot: snapshot,
                 onRun: onRun,
@@ -85,6 +87,24 @@ final class RowanOperationCard extends StatelessWidget {
                 rowan.allowExec,
                 rowan.active ? null : rowan.setAllowExec,
               ),
+              DropdownButton<AgentToolProtocol>(
+                key: const Key('assistant-rowan-tool-protocol'),
+                value: rowan.toolProtocol,
+                underline: const SizedBox(),
+                style: fwMono(t, size: 11.5, color: t.inkSoft),
+                items: [
+                  for (final value in AgentToolProtocol.values)
+                    DropdownMenuItem(
+                      value: value,
+                      child: Text(value.label),
+                    ),
+                ],
+                onChanged: rowan.active || rowan.authorizing
+                    ? null
+                    : (value) {
+                        if (value != null) rowan.setToolProtocol(value);
+                      },
+              ),
               EffortDial(
                 value: rowan.effort,
                 onChanged: rowan.setEffort,
@@ -102,10 +122,28 @@ final class RowanOperationCard extends StatelessWidget {
               style: fwMono(t, size: 10.5, color: t.inkFaint),
               overflow: TextOverflow.ellipsis,
             ),
+            OperationPrivateAttachments(
+              client: rowan.client,
+              snapshot: snapshot,
+              result: rowan.terminalResult,
+              progress: rowan.progress,
+            ),
+            if (!snapshot.isTerminal)
+              Text(
+                'Captions and trace follow accepted private metadata only.',
+                style: fwMono(t, size: 10, color: t.inkFaint),
+              ),
           ],
           if (rowan.error != null) ...[
             const SizedBox(height: FwLayout.s2),
             HonestNull(rowan.error!),
+          ],
+          if (rowan.recoveryBlocked) ...[
+            const SizedBox(height: FwLayout.s2),
+            TextButton(
+              onPressed: rowan.dismissRecoveryBlock,
+              child: const Text('Dismiss recovery blocker'),
+            ),
           ],
           if (snapshot != null &&
               !snapshot.isTerminal &&

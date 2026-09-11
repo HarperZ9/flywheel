@@ -19,22 +19,28 @@ The existing bounds remain: 2,048 records, 8 MiB per canonical record, 32 MiB pe
 trace and 36 MiB per response. No backend or public IPC content is added.
 
 Current caption sources are full `ledger.content` assistant output and tool
-records, reported budget progress, and retained `result.final` output. The short
-assistant and tool progress mirrors are omitted to avoid duplicate captions.
-Tool calls in this loop are recorded after execution, so the panel does not
-claim the tool is currently running. Unsupported records are counted separately
-from mapped captions. Original canonical records remain available for mapped
-captions, with sequence, owner, hashes and exact retained material; the private
-trace viewer remains the route to unmapped records.
+records, private `model_inference` lifecycle records, reported budget progress,
+and retained `result.final` output. The short assistant and tool progress
+mirrors are omitted to avoid duplicate captions. Tool calls in this loop are
+recorded after execution, so the panel does not claim the tool is currently
+running. Inference lifecycle captions are derived only from
+`flywheel.gateway-agent-inference/v1` metadata with bounded ordinal, binding
+hash, endpoint, model, phase, timestamp, elapsed time and failure reason fields;
+they summarize provider-call lifecycle, not hidden reasoning. Unsupported
+records are counted separately from mapped captions. Original canonical records
+remain available for mapped captions, with sequence, owner, hashes and exact
+retained material; the private trace viewer remains the route to unmapped
+records.
 
 Provider reasoning, provider summaries and generated summaries have separate
-reserved kinds. They are not inferred from assistant text or field names. The
-current native backend supplies no distinct supported summary channel, and the
-panel says it is unavailable. Supported Anthropic thinking output is a provider
-summary, not raw internal chain of thought; a future backend integration needs
-an explicit request option and authenticated trace fixtures before enabling its
-decoder. Opaque signatures and redacted data are never interpreted as caption
-text. See [Anthropic thinking documentation](https://platform.claude.com/docs/en/build-with-claude/thinking).
+reserved kinds. They are not inferred from assistant text, inference lifecycle
+metadata or field names. The current native backend supplies provider-call
+lifecycle records but no distinct supported provider-summary channel, and the
+panel says summaries are unavailable. Supported Anthropic thinking output is a
+provider summary, not raw internal chain of thought; a future backend
+integration needs an explicit request option and authenticated trace fixtures
+before enabling its decoder. Opaque signatures and redacted data are never
+interpreted as caption text. See [Anthropic thinking documentation](https://platform.claude.com/docs/en/build-with-claude/thinking).
 
 Records are ordered by verified trace sequence. The shown UTC receipt timestamp
 is observed locally when a record is read; it is not an inference start, provider

@@ -11,26 +11,20 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1000, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final host = FakeRowanOperationHost();
-    var captionAttached = false;
     var followUpReviewed = false;
 
     await tester.pumpWidget(wrapRowanTest(RowanWalkthroughPanel(
       alive: true,
       operationHost: host,
       currentBinding: rowanTestBinding,
-      captionBuilder: (_, __, operationHost) {
-        captionAttached = identical(operationHost, host);
-        return const Text('caption seam attached');
-      },
       onReviewFollowUp: (_, __) async => followUpReviewed = true,
     )));
     await tester.pumpAndSettle();
 
     expect(find.text('Rowan live walkthrough'), findsOneWidget);
     expect(find.textContaining(rowanTestBinding.journeyRef), findsOneWidget);
-    expect(find.text('caption seam attached'), findsOneWidget);
-    expect(captionAttached, isTrue);
-    expect(find.textContaining('Hidden internal chain-of-thought'),
+    expect(find.textContaining('Private operation captions'), findsOneWidget);
+    expect(find.textContaining('hidden internal chain-of-thought'),
         findsOneWidget);
     expect(find.textContaining('Guidance pause does not stop execution'),
         findsOneWidget);
@@ -66,6 +60,7 @@ void main() {
     host.complete(result);
     await tester.pumpAndSettle();
 
+    expect(find.text('Start private captions'), findsNothing);
     expect(find.textContaining('independent oracle matched'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, 'Review bounded follow-up'),
         findsNothing);
@@ -109,5 +104,34 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Run'));
     await tester.pumpAndSettle();
     expect(host.startCalls, 0);
+  });
+
+  testWidgets('failed reconnect keeps follow-up review disabled',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final host = FakeRowanOperationHost()..failReconnect = true;
+
+    await tester.pumpWidget(wrapRowanTest(RowanWalkthroughPanel(
+      alive: true,
+      operationHost: host,
+      currentBinding: rowanTestBinding,
+      onReviewFollowUp: (_, __) async {},
+    )));
+    await tester.pumpAndSettle();
+    host.complete(rowanTestResult(rowanTestAnswer));
+    await tester.pumpAndSettle();
+
+    await tester
+        .ensureVisible(find.widgetWithText(OutlinedButton, 'Reopen operation'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Reopen operation'));
+    await tester.pumpAndSettle();
+
+    expect(host.reconnectCalls, 1);
+    expect(find.textContaining('Stored operation record unavailable'),
+        findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Review bounded follow-up'),
+        findsNothing);
   });
 }

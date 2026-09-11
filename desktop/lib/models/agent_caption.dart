@@ -39,6 +39,8 @@ final class AgentCaption {
         case 'assistant':
           return caption(CaptionKind.assistantOutput, text, 'Assistant output',
               'ledger.content');
+        case 'model_inference':
+          return _inferenceCaption(record, receivedAt, meta);
         case 'tool_call':
           return caption(CaptionKind.toolActivity, text, 'Tool call recorded',
               'ledger.content · after execution');
@@ -81,4 +83,59 @@ final class AgentCaption {
     // are committed to the ledger before local_loop emits the short projection.
     return null;
   }
+}
+
+AgentCaption? _inferenceCaption(
+    TraceRecord record, DateTime receivedAt, Map meta) {
+  final schema = meta['schema'],
+      ordinal = meta['ordinal'],
+      binding = meta['binding_sha256'],
+      endpoint = meta['endpoint'],
+      model = meta['model_id'],
+      phase = meta['phase'],
+      observed = meta['observed_at_utc'],
+      elapsed = meta['elapsed_ms'],
+      reason = meta['reason'];
+  final safeRef = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:/@+\-]{0,159}$');
+  final reasonCode = RegExp(r'^[A-Z][A-Z0-9_]{0,63}$');
+  if (schema != 'flywheel.gateway-agent-inference/v1' ||
+      ordinal is! int ||
+      ordinal < 0 ||
+      binding is! String ||
+      !RegExp(r'^[0-9a-f]{64}$').hasMatch(binding) ||
+      endpoint is! String ||
+      !safeRef.hasMatch(endpoint) ||
+      model is! String ||
+      !safeRef.hasMatch(model) ||
+      phase is! String ||
+      !const {'started', 'response_received', 'failed'}.contains(phase) ||
+      observed is! String ||
+      !RegExp(r'^[0-9]{4}-[0-9]{2}-[0-9]{2}T').hasMatch(observed) ||
+      elapsed is! int ||
+      elapsed < 0) {
+    return null;
+  }
+  if (reason != null &&
+      (phase != 'failed' ||
+          reason is! String ||
+          !reasonCode.hasMatch(reason))) {
+    return null;
+  }
+  if (phase == 'failed' && reason == null) {
+    return null;
+  }
+  final phaseLabel = switch (phase) {
+    'started' => 'started',
+    'response_received' => 'response received',
+    'failed' => 'failed',
+    _ => phase,
+  };
+  final reasonText = reason == null ? '' : ' · $reason';
+  return AgentCaption._(
+      CaptionKind.inferenceActivity,
+      'Inference call $ordinal $phaseLabel · endpoint $endpoint · model $model · ${elapsed}ms$reasonText',
+      'Inference $phaseLabel',
+      'agent inference lifecycle',
+      record,
+      receivedAt.toUtc());
 }

@@ -4,6 +4,7 @@ import '../client/gateway_client.dart';
 import '../client/gateway_grants.dart';
 import '../controllers/gateway_operation_controller.dart';
 import '../controllers/operation_controller.dart';
+import '../models/agent_tool_protocol.dart';
 import '../models/gateway_models.dart';
 import '../models/operation_models.dart';
 import '../theme/flywheel_theme.dart';
@@ -50,6 +51,7 @@ class _AgentPanelState extends State<AgentPanel> {
   final _scroll = ScrollController();
   List<EndpointRow> _endpoints = [];
   String? _endpoint, _model, _error;
+  AgentToolProtocol _toolProtocol = AgentToolProtocol.compatibility;
   bool _allowWrite = false, _allowExec = false, _attachContext = true;
   EffortLevel _effort = EffortLevel.standard;
   bool _authorizing = false, _started = false, _pastOpen = false;
@@ -207,6 +209,14 @@ class _AgentPanelState extends State<AgentPanel> {
     }
   }
 
+  void _togglePastRuns() {
+    setState(() {
+      _pastOpen = !_pastOpen;
+      _stored = null;
+    });
+    if (_pastOpen) _loadPastRuns();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
@@ -220,7 +230,7 @@ class _AgentPanelState extends State<AgentPanel> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(t),
+          _agentHeader(this, t),
           const SizedBox(height: FwLayout.s2),
           if (_pastOpen)
             _agentPastSection(this)
@@ -241,11 +251,13 @@ class _AgentPanelState extends State<AgentPanel> {
               allowWrite: _allowWrite,
               allowExec: _allowExec,
               attachContext: _attachContext,
+              toolProtocol: _toolProtocol,
               onEndpoint: (v) => setState(() {
                 _endpoint = v;
                 _model = null;
               }),
               onModel: (v) => setState(() => _model = v.isEmpty ? null : v),
+              onToolProtocol: (v) => setState(() => _toolProtocol = v),
               loadModels: () => widget.client.models(_endpoint!),
               onWrite: (v) => setState(() => _allowWrite = v),
               onExec: (v) => setState(() => _allowExec = v),
@@ -275,27 +287,4 @@ class _AgentPanelState extends State<AgentPanel> {
       ),
     );
   }
-
-  Widget _header(FwTokens t) => Row(
-        children: [
-          Kicker('workspace agent', hot: !_pastOpen),
-          const Spacer(),
-          if (!widget.alive)
-            Text('engine offline', style: fwMono(t, size: 10.5, color: t.drift))
-          else
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _pastOpen = !_pastOpen;
-                  _stored = null;
-                });
-                if (_pastOpen) _loadPastRuns();
-              },
-              child: Text(
-                _pastOpen ? 'live' : 'past runs',
-                style: fwMono(t, size: 11, color: t.inkMuted),
-              ),
-            ),
-        ],
-      );
 }

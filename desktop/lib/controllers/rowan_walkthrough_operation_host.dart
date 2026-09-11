@@ -31,5 +31,5 @@ abstract interface class RowanWalkthroughOperationHost implements Listenable {
     Map<String, Object?>? continuation,
   });
   Future<void> stop(BuildContext context);
-  Future<void> reconnect(OperationSnapshot hint);
+  Future<bool> reconnect(OperationSnapshot hint);
 }

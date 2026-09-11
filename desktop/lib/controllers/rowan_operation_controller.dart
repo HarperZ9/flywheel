@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 import '../client/gateway_client.dart';
 import '../client/gateway_grants.dart';
 import '../models/evidence_state.dart';
+import '../models/agent_tool_protocol.dart';
 import '../models/gateway_models.dart';
 import '../models/operation_models.dart';
 import '../services/journey_session_store.dart';
@@ -16,6 +17,8 @@ import 'gateway_operation_controller.dart';
 import 'operation_controller.dart';
 
 part 'rowan_operation_controller_parts.dart';
+part 'rowan_operation_builder.dart';
+part 'rowan_session_locator.dart';
 
 final _modelId = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:/@+\-]{0,159}$');
 
@@ -36,9 +39,11 @@ final class RowanOperationController extends ChangeNotifier {
   List<EndpointRow> _endpoints = const [];
   String? _endpoint, _selectedModel, _workspaceRoot, _error;
   EffortLevel _effort = EffortLevel.standard;
+  AgentToolProtocol _toolProtocol = AgentToolProtocol.compatibility;
   int _maxTokens = 1024, _timeoutSeconds = 300;
   int? _maxStepsOverride;
   bool _allowWrite = false, _allowExec = false, _authorizing = false;
+  bool _recoveryBlocked = false;
   int _configGeneration = 0;
   String? _pendingRequestSha256;
   List<Map<String, dynamic>> _progress = const [];
@@ -48,12 +53,14 @@ final class RowanOperationController extends ChangeNotifier {
   String? get selectedModel => _selectedModel;
   String? get workspaceRoot => _workspaceRoot;
   EffortLevel get effort => _effort;
+  AgentToolProtocol get toolProtocol => _toolProtocol;
   int get maxSteps => _maxStepsOverride ?? _effort.maxSteps;
   int get maxTokens => _maxTokens;
   int get timeoutSeconds => _timeoutSeconds;
   bool get allowWrite => _allowWrite;
   bool get allowExec => _allowExec;
   bool get authorizing => _authorizing;
+  bool get recoveryBlocked => _recoveryBlocked;
   String? get error => _error;
   String? get pendingRequestSha256 => _pendingRequestSha256;
   List<Map<String, dynamic>> get progress => _progress;
@@ -109,6 +116,43 @@ final class RowanOperationController extends ChangeNotifier {
     _effort = value;
     _maxStepsOverride = null;
     _bump();
+  }
+
+  void setToolProtocol(AgentToolProtocol value) {
+    if (_toolProtocol == value) return;
+    _toolProtocol = value;
+    _bump();
+  }
+
+  void dismissRecoveryBlock() {
+    if (!_recoveryBlocked) return;
+    _recoveryBlocked = false;
+    _pendingRequestSha256 = null;
+    _error = null;
+    _clearPersistedPendingRecovery();
+    notifyListeners();
+  }
+
+  void _clearPersistedPendingRecovery() {
+    final store = _sessionStore;
+    if (store == null) return;
+    try {
+      final prior = store.load();
+      if (prior == null || prior.operationRequestSha256 == null) return;
+      store.save(
+        JourneySession(
+          journeyRef: prior.journeyRef,
+          lens: prior.lens,
+          selectionRef: prior.selectionRef,
+          operationRef: prior.operationRef,
+          operationEventHeadSha256: prior.operationEventHeadSha256,
+          detailsExpanded: prior.detailsExpanded,
+          recoveryVisible: prior.recoveryVisible,
+        ),
+      );
+    } on Object {
+      // Session locators are hints; duplicate suppression remains in memory.
+    }
   }
 
   void setMaxStepsOverride(int? value) {

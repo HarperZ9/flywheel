@@ -99,7 +99,8 @@ class _AgentCaptionPanelState extends State<AgentCaptionPanel> {
       const Kicker('Private captions'),
       const Text(
           'Provider summary unavailable: this trace has no supported summary channel. '
-          'Hidden provider reasoning is unavailable.'),
+          'Hidden provider reasoning is unavailable. Recorded inference lifecycle '
+          'events are shown when present.'),
       Text(
           'Original assistant output, tool activity and reported progress. '
           'Receipt time is local; event time is unavailable. Hashes establish bytes and bindings, not truth.',
