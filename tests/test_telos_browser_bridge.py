@@ -20,7 +20,10 @@ def test_synthetic_node_bridge_controls():
     node = shutil.which("node")
     if node is None:
         pytest.skip("optional Node runtime is unavailable; no bridge-runtime coverage")
+    # The synthetic run finishes in milliseconds; this bound only guards a true hang.
+    # A cold node launch on a busy Windows runner overruns a tight bound, so keep the
+    # budget generous. The pytest --timeout=300 wrapper remains the real hang backstop.
     result = subprocess.run([node, "--test", str(Path(__file__).with_name("telos_browser_bridge.test.mjs"))],
-        capture_output=True, text=True, timeout=15,
+        capture_output=True, text=True, timeout=120,
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     assert result.returncode == 0, result.stdout + result.stderr
