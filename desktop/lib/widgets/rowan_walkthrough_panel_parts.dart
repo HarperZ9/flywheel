@@ -24,48 +24,91 @@ class _RowanWalkthroughSelectors extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Wrap(
-        spacing: FwLayout.s3,
-        runSpacing: FwLayout.s3,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          DropdownButton<String>(
-            value: host.endpoint,
-            hint: const Text('endpoint'),
-            items: [
-              for (final endpoint in host.endpoints)
-                DropdownMenuItem(
-                  value: endpoint.name,
-                  child: Text(endpoint.name),
-                ),
-            ],
-            onChanged: alive ? host.setEndpoint : null,
-          ),
-          ModelSelectorButton(
-            loadModels: () => host.client.models(host.endpoint ?? ''),
-            current: host.selectedModel,
-            onSelect: host.setModel,
-            enabled: alive && host.endpoint != null,
-          ),
-          SizedBox(
-            width: 260,
-            child: TextField(
-              key: const Key('rowan-walkthrough-root'),
-              controller: root,
-              enabled: alive,
-              decoration: const InputDecoration(labelText: 'Input repo root'),
-              onChanged: host.setWorkspaceRoot,
-            ),
-          ),
+  Widget build(BuildContext context) {
+    final nativeCli = host.executionMode.isNativeCli;
+    final endpoints = nativeCli
+        ? host.endpoints
+            .where((endpoint) => endpoint.name == 'claude-cli')
+            .toList()
+        : host.endpoints;
+    final endpointValue =
+        endpoints.any((endpoint) => endpoint.name == host.endpoint)
+            ? host.endpoint
+            : null;
+    return Wrap(
+      spacing: FwLayout.s3,
+      runSpacing: FwLayout.s3,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        DropdownButton<AgentExecutionMode>(
+          key: const Key('rowan-walkthrough-execution-mode'),
+          value: host.executionMode,
+          items: [
+            for (final value in AgentExecutionMode.values)
+              DropdownMenuItem(value: value, child: Text(value.label)),
+          ],
+          onChanged: alive
+              ? (value) {
+                  if (value == null) return;
+                  host.setExecutionMode(value);
+                  if (value.isNativeCli &&
+                      !agentExecutionModeSupportsEndpoint(
+                          value, host.endpoint)) {
+                    String? claude;
+                    for (final endpoint in host.endpoints) {
+                      if (endpoint.name == 'claude-cli') {
+                        claude = endpoint.name;
+                        break;
+                      }
+                    }
+                    host.setEndpoint(claude);
+                  }
+                }
+              : null,
+        ),
+        DropdownButton<String>(
+          value: endpointValue,
+          hint: const Text('endpoint'),
+          items: [
+            for (final endpoint in endpoints)
+              DropdownMenuItem(
+                value: endpoint.name,
+                child: Text(endpoint.name),
+              ),
+          ],
+          onChanged: alive && endpoints.isNotEmpty ? host.setEndpoint : null,
+        ),
+        ModelSelectorButton(
+          loadModels: () => host.client.models(host.endpoint ?? ''),
+          current: host.selectedModel,
+          onSelect: host.setModel,
+          enabled: alive && endpointValue != null,
+        ),
+        if (nativeCli)
           Text(
-            binding == null
-                ? 'Journey not selected'
-                : 'Journey ${binding!.journeyRef} @ '
-                    '${binding!.eventHead.substring(0, 12)}',
+            'CLI-owned auth; output tokens unsupported; Codex CLI unavailable',
             style: Theme.of(context).textTheme.bodySmall,
           ),
-        ],
-      );
+        SizedBox(
+          width: 260,
+          child: TextField(
+            key: const Key('rowan-walkthrough-root'),
+            controller: root,
+            enabled: alive,
+            decoration: const InputDecoration(labelText: 'Input repo root'),
+            onChanged: host.setWorkspaceRoot,
+          ),
+        ),
+        Text(
+          binding == null
+              ? 'Journey not selected'
+              : 'Journey ${binding!.journeyRef} @ '
+                  '${binding!.eventHead.substring(0, 12)}',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
 }
 
 class _RowanWalkthroughChips extends StatelessWidget {

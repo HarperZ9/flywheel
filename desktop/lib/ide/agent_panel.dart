@@ -4,6 +4,8 @@ import '../client/gateway_client.dart';
 import '../client/gateway_grants.dart';
 import '../controllers/gateway_operation_controller.dart';
 import '../controllers/operation_controller.dart';
+import '../models/agent_execution_mode.dart';
+import '../models/agent_run_operation.dart';
 import '../models/agent_tool_protocol.dart';
 import '../models/gateway_models.dart';
 import '../models/operation_models.dart';
@@ -51,9 +53,11 @@ class _AgentPanelState extends State<AgentPanel> {
   final _scroll = ScrollController();
   List<EndpointRow> _endpoints = [];
   String? _endpoint, _model, _error;
+  AgentExecutionMode _executionMode = AgentExecutionMode.api;
   AgentToolProtocol _toolProtocol = AgentToolProtocol.compatibility;
   bool _allowWrite = false, _allowExec = false, _attachContext = true;
   EffortLevel _effort = EffortLevel.standard;
+  int _nativeCliMaxSteps = EffortLevel.low.maxSteps;
   bool _authorizing = false, _started = false, _pastOpen = false;
   List<Map<String, dynamic>> _events = [], _pastRuns = [];
   late final GatewayOperations _operations;
@@ -86,9 +90,34 @@ class _AgentPanelState extends State<AgentPanel> {
         setState(() {
           _endpoints = rows;
           _endpoint ??= rows.isNotEmpty ? rows.first.name : null;
+          if (_executionMode.isNativeCli &&
+              !agentExecutionModeSupportsEndpoint(_executionMode, _endpoint)) {
+            _endpoint = _nativeCliEndpoint(rows);
+          }
         });
       }
     } catch (_) {}
+  }
+
+  String? _nativeCliEndpoint(List<EndpointRow> rows) {
+    for (final row in rows) {
+      if (row.name == 'claude-cli') return row.name;
+    }
+    return null;
+  }
+
+  void _setExecutionMode(AgentExecutionMode value) {
+    setState(() {
+      _executionMode = value;
+      if (value.isNativeCli) {
+        _toolProtocol = AgentToolProtocol.compatibility;
+        _allowExec = false;
+        if (!agentExecutionModeSupportsEndpoint(value, _endpoint)) {
+          _endpoint = _nativeCliEndpoint(_endpoints);
+          _model = null;
+        }
+      }
+    });
   }
 
   OperationController _newOperationState() => OperationController(
@@ -251,19 +280,26 @@ class _AgentPanelState extends State<AgentPanel> {
               allowWrite: _allowWrite,
               allowExec: _allowExec,
               attachContext: _attachContext,
+              executionMode: _executionMode,
               toolProtocol: _toolProtocol,
               onEndpoint: (v) => setState(() {
                 _endpoint = v;
                 _model = null;
               }),
               onModel: (v) => setState(() => _model = v.isEmpty ? null : v),
+              onExecutionMode: _setExecutionMode,
               onToolProtocol: (v) => setState(() => _toolProtocol = v),
               loadModels: () => widget.client.models(_endpoint!),
               onWrite: (v) => setState(() => _allowWrite = v),
-              onExec: (v) => setState(() => _allowExec = v),
+              onExec: (v) => setState(
+                () => _allowExec = _executionMode.isNativeCli ? false : v,
+              ),
               onAttach: (v) => setState(() => _attachContext = v),
               effort: _effort,
               onEffort: (v) => setState(() => _effort = v),
+              nativeCliMaxSteps: _nativeCliMaxSteps,
+              onNativeCliMaxSteps: (v) =>
+                  setState(() => _nativeCliMaxSteps = v),
               // Changing the dial mid-run would describe a run that never
               // happened, so it locks while one is in flight.
               effortEnabled: !_started && !_authorizing,

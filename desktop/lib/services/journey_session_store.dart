@@ -45,6 +45,7 @@ class JourneySession {
     String? operationRef,
     String? operationEventHeadSha256,
     String? operationRequestSha256,
+    String? operationExecutionMode,
     bool detailsExpanded = false,
     bool recoveryVisible = false,
   }) {
@@ -61,6 +62,8 @@ class JourneySession {
       operationRequestSha256 == null ||
           sha256Pattern.hasMatch(operationRequestSha256),
     );
+    _valid(operationExecutionMode == null ||
+        operationExecutionMode == 'native_cli_session');
     return JourneySession._(
       journeyRef,
       lens,
@@ -68,6 +71,7 @@ class JourneySession {
       operationRef,
       operationEventHeadSha256,
       operationRequestSha256,
+      operationExecutionMode,
       detailsExpanded,
       recoveryVisible,
     );
@@ -80,6 +84,7 @@ class JourneySession {
     this.operationRef,
     this.operationEventHeadSha256,
     this.operationRequestSha256,
+    this.operationExecutionMode,
     this.detailsExpanded,
     this.recoveryVisible,
   );
@@ -89,6 +94,7 @@ class JourneySession {
   final String? operationRef;
   final String? operationEventHeadSha256;
   final String? operationRequestSha256;
+  final String? operationExecutionMode;
   final bool detailsExpanded;
   final bool recoveryVisible;
 }
@@ -125,6 +131,8 @@ class JourneySessionStore {
           'operation_event_head_sha256',
         if (value.containsKey('operation_request_sha256'))
           'operation_request_sha256',
+        if (value.containsKey('operation_execution_mode'))
+          'operation_execution_mode',
       };
       _valid(value.keys.toSet().containsAll(expected));
       _valid(
@@ -148,6 +156,10 @@ class JourneySessionStore {
         !value.containsKey('operation_request_sha256') ||
             value['operation_request_sha256'] is String,
       );
+      _valid(
+        !value.containsKey('operation_execution_mode') ||
+            value['operation_execution_mode'] is String,
+      );
       return JourneySession(
         journeyRef: value['journey_ref'] as String,
         lens: _parseLens(value['lens']),
@@ -156,6 +168,7 @@ class JourneySessionStore {
         operationEventHeadSha256:
             value['operation_event_head_sha256'] as String?,
         operationRequestSha256: value['operation_request_sha256'] as String?,
+        operationExecutionMode: value['operation_execution_mode'] as String?,
         detailsExpanded: value['details_expanded'] as bool,
         recoveryVisible: value['recovery_visible'] as bool,
       );
@@ -174,6 +187,8 @@ class JourneySessionStore {
         'operation_event_head_sha256': session.operationEventHeadSha256,
       if (session.operationRequestSha256 != null)
         'operation_request_sha256': session.operationRequestSha256,
+      if (session.operationExecutionMode != null)
+        'operation_execution_mode': session.operationExecutionMode,
       'recovery_visible': session.recoveryVisible,
       'schema': _sessionSchema,
       if (session.selectionRef != null) 'selection_ref': session.selectionRef,

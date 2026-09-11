@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../client/gateway_client.dart';
+import '../models/agent_execution_mode.dart';
 import '../models/gateway_models.dart';
 import '../models/operation_models.dart';
 import '../models/rowan_walkthrough_models.dart';
@@ -10,6 +11,7 @@ abstract interface class RowanWalkthroughOperationHost implements Listenable {
   GatewayClient get client;
   List<EndpointRow> get endpoints;
   String? get endpoint;
+  AgentExecutionMode get executionMode;
   String? get selectedModel;
   String? get workspaceRoot;
   bool get authorizing;
@@ -22,6 +24,7 @@ abstract interface class RowanWalkthroughOperationHost implements Listenable {
   Future<void> loadEndpoints();
   Future<bool> recoverFromSession();
   void setEndpoint(String? value);
+  void setExecutionMode(AgentExecutionMode value);
   void setModel(String value);
   void setWorkspaceRoot(String value);
   void configureScenario(RowanWalkthroughScenario scenario);
