@@ -31,10 +31,14 @@ def compare_binding(record, plan):
 def review_binding(record):
     binding = record.get("agent_binding")
     if binding is None: return {"status": "reprepare_required"}
-    return {"schema": "flywheel.gateway-agent-review/v1",
+    review = {"schema": ("flywheel.gateway-agent-review/v2"
+            if "tool_protocol" in binding else "flywheel.gateway-agent-review/v1"),
         "binding_sha256": freeze_json(binding).sha256,
         "endpoint": binding["endpoint"]["name"],
         "base_url": binding["endpoint"]["base_url"],
         "model": binding["model"], "root": binding["workspace"]["root"],
         "workspace_policy_sha256": binding["workspace"]["policy_sha256"],
         "budget": binding["budget"], "capabilities": binding["capabilities"]}
+    if "tool_protocol" in binding:
+        review["tool_protocol"] = binding["tool_protocol"]
+    return review

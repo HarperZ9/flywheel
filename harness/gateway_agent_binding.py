@@ -10,6 +10,7 @@ from .plan_run_snapshot import freeze_json, thaw_json
 from .gateway_agent_workspace import freeze_workspace, validate_workspace
 
 SCHEMA = "flywheel.gateway-agent-binding/v1"
+SCHEMA_V2 = "flywheel.gateway-agent-binding/v2"
 MODEL_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,159}")
 
 
@@ -63,22 +64,46 @@ def _budget(operation):
             "timeout_s": operation.get("timeout_s", 300)}
 
 
-def _sampling(endpoint):
+def _sampling(endpoint, protocol=None):
+    if protocol and protocol["native_api_route"] == "anthropic_messages":
+        return {"temperature": None, "router_seed": 0, "provider_seed": None,
+                "temperature_policy": "omitted"}
     return {"temperature": 0, "router_seed": 0, "provider_seed": None,
             "temperature_policy": "zero_or_omitted" if endpoint["adapter"] == "anthropic" else "zero"}
+
+
+def _capabilities(value):
+    return {"allow_write": value["allow_write"], "allow_exec": value["allow_exec"],
+            "allow_mcp": False}
+
+
+def _tool_protocol(value, endpoint, capabilities):
+    mode = value.get("tool_protocol")
+    if mode is None:
+        return None
+    from .gateway_agent_native_tools import native_tool_contract, text_tool_contract
+    if mode == "native":
+        return native_tool_contract(capabilities, endpoint)
+    if mode == "text":
+        return text_tool_contract()
+    raise GatewayOperationError("AGENT_BINDING_DRIFT")
 
 
 def freeze_agent_binding(operation, workspace_root: Path | None = None):
     value = operation.operation
     endpoint = _endpoint(value["endpoint"])
-    binding = {"schema": SCHEMA, "operation_sha256": operation.operation_sha256,
+    capabilities = _capabilities(value)
+    protocol = _tool_protocol(value, endpoint, capabilities)
+    binding = {"schema": SCHEMA_V2 if protocol else SCHEMA,
+        "operation_sha256": operation.operation_sha256,
         "endpoint": endpoint, "model": _model(value, endpoint),
         "workspace": freeze_workspace(value.get("root"), workspace_root or Path.cwd()),
-        "budget": _budget(value), "capabilities": {"allow_write": value["allow_write"],
-            "allow_exec": value["allow_exec"], "allow_mcp": False},
-        "sampling": _sampling(endpoint),
+        "budget": _budget(value), "capabilities": capabilities,
+        "sampling": _sampling(endpoint, protocol),
         "transport": {"redirects": False, "ambient_proxy": False, "fallback": False,
                       "max_requests": value["max_steps"]}}
+    if protocol:
+        binding["tool_protocol"] = protocol
     binding["model"]["profile"] = _profile(binding["model"]["model_id"], endpoint["name"])
     validate_agent_binding(binding, operation)
     return freeze_json(binding, max_bytes=32768)
@@ -88,9 +113,14 @@ def validate_agent_binding(binding, operation):
     """Validate the IPC snapshot without reloading registry, root policy or env."""
     try:
         value = operation.operation
-        if (type(binding) is not dict or set(binding) != {"schema", "operation_sha256",
-                "endpoint", "model", "workspace", "budget", "capabilities", "sampling", "transport"}
-                or binding["schema"] != SCHEMA or binding["operation_sha256"] != operation.operation_sha256):
+        expected_keys = {"schema", "operation_sha256", "endpoint", "model",
+            "workspace", "budget", "capabilities", "sampling", "transport"}
+        has_protocol = "tool_protocol" in value
+        if has_protocol:
+            expected_keys.add("tool_protocol")
+        if (type(binding) is not dict or set(binding) != expected_keys
+                or binding["schema"] != (SCHEMA_V2 if has_protocol else SCHEMA)
+                or binding["operation_sha256"] != operation.operation_sha256):
             raise ValueError
         endpoint = binding["endpoint"]
         if (set(endpoint) != {"name", "adapter", "base_url", "slot", "local", "default_model", "specification_sha256"}
@@ -109,12 +139,15 @@ def validate_agent_binding(binding, operation):
         model = binding["model"]
         # Profile pins are frozen catalog authority; never relabel them as observations.
         expected = _model(value, endpoint); expected["profile"] = model.get("profile")
+        capabilities = _capabilities(value)
+        protocol = _tool_protocol(value, endpoint, capabilities)
         if (freeze_json(model) != freeze_json(expected) or freeze_json(binding["budget"]) != freeze_json(_budget(value))
-                or freeze_json(binding["capabilities"]) != freeze_json({"allow_write": value["allow_write"],
-                    "allow_exec": value["allow_exec"], "allow_mcp": False})
-                or freeze_json(binding["sampling"]) != freeze_json(_sampling(endpoint))
+                or freeze_json(binding["capabilities"]) != freeze_json(capabilities)
+                or freeze_json(binding["sampling"]) != freeze_json(_sampling(endpoint, protocol))
                 or freeze_json(binding["transport"]) != freeze_json({"redirects": False, "ambient_proxy": False,
                     "fallback": False, "max_requests": value["max_steps"]})):
+            raise ValueError
+        if protocol and freeze_json(binding["tool_protocol"]) != freeze_json(protocol):
             raise ValueError
         validate_workspace(binding["workspace"])
         if model["profile"] is not None and (set(model["profile"]) != {

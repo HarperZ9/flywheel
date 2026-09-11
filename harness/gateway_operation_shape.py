@@ -22,7 +22,7 @@ def validate_operation_shape(action: str, value: dict) -> None:
                    "solution_sig", "intent_source",
                    "architecture_source", "prp_id", "code", "path", "kind",
                    "oracle_cmd", "fixtures_root", "governance_tier",
-                   "bulletin_access", "effort",
+                   "bulletin_access", "effort", "tool_protocol",
                    "reason", "authority_1", "authority_2", "mode"}
     if any(key in value and not _text(value[key]) for key in text_fields):
         raise ValueError
@@ -82,6 +82,8 @@ def validate_operation_shape(action: str, value: dict) -> None:
     if action == "agent.run":
         from .gateway_agent_binding import MODEL_PATTERN
         if "model" in value and MODEL_PATTERN.fullmatch(value["model"]) is None:
+            raise ValueError
+        if "tool_protocol" in value and value["tool_protocol"] not in {"text", "native"}:
             raise ValueError
         if "max_tokens" in value: _bounded_int(value["max_tokens"], 1, 32768)
         if "timeout_s" in value: _bounded_int(value["timeout_s"], 1, 1800)
