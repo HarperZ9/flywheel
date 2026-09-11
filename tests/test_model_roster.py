@@ -94,9 +94,9 @@ def test_list_models_unknown_endpoint_never_raises():
     assert out["models"] == [] and "unknown endpoint" in out["reason"]
 
 
-def test_list_models_native_endpoint_reports_roster_default():
-    out = MR.list_models("anthropic")
-    assert {"id": "claude-sonnet-5", "default": "true"} in out["models"]
+def test_list_models_native_endpoint_without_catalog_reports_roster_default():
+    out = MR.list_models("gemini")
+    assert {"id": "gemini-2.5-flash", "default": "true"} in out["models"]
     assert out["reason"].startswith("listing unavailable:")
 
 
