@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 import os
 import re
 import stat
-import subprocess
 
 import pytest
 
@@ -217,30 +216,57 @@ def _storage_receipts(tmp_path, monkeypatch, inspect):
     receipts["grant_record"] = inspect(next(grant_owner.glob("*.json")))
     return receipts
 
-
-def _windows_acl_entries(path):
-    result = subprocess.run(
-        ["icacls", str(path)], check=True, capture_output=True, text=True,
-        encoding="utf-8", errors="replace",
-    )
-    return tuple(line.strip() for line in result.stdout.splitlines() if ":(" in line)
-
+def _windows_acl_sddl(path):
+    import ctypes; from ctypes import wintypes
+    advapi = ctypes.WinDLL("advapi32", use_last_error=True); kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    get_security, render = advapi.GetFileSecurityW, advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW
+    get_security.argtypes = (wintypes.LPCWSTR, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD, ctypes.POINTER(wintypes.DWORD))
+    render.argtypes = (ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, ctypes.POINTER(wintypes.LPWSTR), ctypes.c_void_p)
+    needed = wintypes.DWORD(); get_security(str(path), 4, None, 0, ctypes.byref(needed))
+    descriptor = ctypes.create_string_buffer(needed.value); assert get_security(str(path), 4, descriptor, needed, ctypes.byref(needed))
+    text = wintypes.LPWSTR(); assert render(descriptor, 1, 4, ctypes.byref(text), None)
+    try: return text.value
+    finally: kernel.LocalFree(text)
+def _windows_sid(value):
+    import ctypes; from ctypes import wintypes
+    advapi = ctypes.WinDLL("advapi32", use_last_error=True); kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    convert, render = advapi.ConvertStringSidToSidW, advapi.ConvertSidToStringSidW
+    convert.argtypes = (wintypes.LPCWSTR, ctypes.POINTER(ctypes.c_void_p)); render.argtypes = (ctypes.c_void_p, ctypes.POINTER(wintypes.LPWSTR))
+    kernel.LocalFree.argtypes = (ctypes.c_void_p,); sid = ctypes.c_void_p(); text = wintypes.LPWSTR()
+    assert convert(value, ctypes.byref(sid)), value
+    try: assert render(sid, ctypes.byref(text)), value; return text.value
+    finally:
+        if text: kernel.LocalFree(text)
+        kernel.LocalFree(sid)
+def _assert_windows_owner_acl(label, sddl, user_sid, *, directory):
+    flags = "OICI" if directory else ""
+    match = re.fullmatch(r"D:P\(A;([^;]*);([^;]*);;;([^)]+)\)\(A;([^;]*);([^;]*);;;([^)]+)\)", sddl)
+    assert match is not None, (label, sddl)
+    groups = match.groups(); aces = [(groups[0], groups[1], _windows_sid(groups[2])), (groups[3], groups[4], _windows_sid(groups[5]))]
+    assert aces == [(flags, "FA", "S-1-3-4"), (flags, "FA", user_sid)], (label, sddl, aces)
+    assert {sid for *_unused, sid in aces}.isdisjoint({"S-1-1-0", "S-1-5-32-545"}), (label, sddl)
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows DACL semantics")
-def test_every_owner_artifact_has_one_protected_owner_only_windows_ace(tmp_path, monkeypatch):
-    """Inherited local-user ACLs would expose owner and grant state to other accounts."""
-    receipts = _storage_receipts(tmp_path, monkeypatch, _windows_acl_entries)
+def test_every_owner_artifact_has_protected_owner_and_user_windows_aces(tmp_path, monkeypatch):
+    """Protected owner and token-user ACLs keep state private after elevated creation."""
+    from harness.windows_owner_security import current_token_user_sid
+    user_sid = current_token_user_sid()
+    receipts = _storage_receipts(tmp_path, monkeypatch, _windows_acl_sddl)
     assert set(receipts) == {
         "owner_directory", "owner_ref", "journey_owner_directory",
         "grant_owner_directory", "grant_temp", "grant_record",
     }
     for label, entries in receipts.items():
         assert entries is not None, label
-        assert len(entries) == 1, (label, entries)
-        assert "OWNER RIGHTS:" in entries[0] and "(I)" not in entries[0], (label, entries)
-        assert "(F)" in entries[0], (label, entries)
-        inheritance = label.endswith("directory")
-        assert ("(OI)" in entries[0] and "(CI)" in entries[0]) is inheritance
+        _assert_windows_owner_acl(label, entries, user_sid, directory=label.endswith("directory"))
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows DACL semantics")
+def test_windows_acl_assertion_rejects_wrong_user_rights_and_inheritance():
+    from harness.windows_owner_security import current_token_user_sid
+    user_sid = current_token_user_sid(); base = f"D:P(A;OICI;FA;;;OW)(A;OICI;FA;;;{user_sid})"
+    bad = ["D:P(A;OICI;FA;;;OW)(A;OICI;FA;;;WD)", f"D:P(A;OICI;FR;;;OW)(A;OICI;FA;;;{user_sid})", f"D:P(A;;FA;;;OW)(A;OICI;FA;;;{user_sid})", base[2:], base + "(A;OICI;FA;;;WD)"]
+    for sddl in bad:
+        with pytest.raises(AssertionError): _assert_windows_owner_acl("control", sddl, user_sid, directory=True)
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows open-file deletion semantics")
