@@ -34,7 +34,7 @@ def _setup(root, *, stream=True, authorize_calls=None, lock_timeout_s=2.0):
         OWNER, JOURNEY, None, "genesis", "intake",
         {"legacy_label": None, "goal": "route", "intake": {},
          "occurred_at": NOW})).event_head_sha256
-    operation = {"goal": "inspect", "endpoint": "local", "max_steps": 2,
+    operation = {"goal": "inspect", "endpoint": "stub", "root": str(root), "max_steps": 2,
                  "allow_write": False, "allow_exec": False, "stream": stream,
                  "data_refs": [], "credential_refs": []}
     def authorize(action, raw, **_):
@@ -48,7 +48,7 @@ def _setup(root, *, stream=True, authorize_calls=None, lock_timeout_s=2.0):
             canonical.credential_refs, OWNER, JOURNEY,
             envelope.expected_event_head, envelope.client_request_id,
             envelope.grant_ref, "2026-08-16T12:02:00Z",
-            freeze_execution_plan(canonical), {})
+            freeze_execution_plan(canonical, workspace_root=root), {})
     service = GatewayOperations(
         root, clock=lambda: NOW, authorizer=authorize,
         credential_resolver=lambda value, _root: value,

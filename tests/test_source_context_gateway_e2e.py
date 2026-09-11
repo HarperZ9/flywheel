@@ -54,7 +54,7 @@ def test_real_gather_source_context_to_gateway_stub_provider_durable_trace(tmp_p
         OWNER, JOURNEY, None, "create", "intake",
         {"legacy_label": None, "goal": "source e2e", "intake": {},
          "occurred_at": NOW})).event_head_sha256
-    operation = {"goal": "answer from selected context", "endpoint": "stub",
+    operation = {"goal": "answer from selected context", "endpoint": "stub", "root": str(tmp_path),
         "max_steps": 1, "allow_write": False, "allow_exec": False,
         "stream": False, "data_refs": [ref], "credential_refs": []}
     proposal, p_status = gateway_grant_post(
@@ -160,7 +160,7 @@ def test_real_gather_source_context_to_owned_os_child_agent_stub_plumbing(
         OWNER, JOURNEY, None, "create", "intake",
         {"legacy_label": None, "goal": "source e2e", "intake": {},
          "occurred_at": NOW})).event_head_sha256
-    operation = {"goal": "answer from selected context", "endpoint": "stub",
+    operation = {"goal": "answer from selected context", "endpoint": "stub", "root": str(tmp_path),
         "max_steps": 1, "allow_write": False, "allow_exec": False,
         "stream": False, "data_refs": [ref], "credential_refs": []}
     proposal, p_status = gateway_grant_post(

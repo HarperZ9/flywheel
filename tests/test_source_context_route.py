@@ -103,7 +103,7 @@ def test_attach_route_publishes_ref_and_gateway_prepare_validates_same_owner(tmp
     proposal, p_status = gateway_grant_post("/api/gateway-grants/prepare/agent.run", json.dumps({
         "schema": "flywheel.gateway-operation/v1", "journey_ref": JOURNEY,
         "expected_event_head": head, "client_request_id": "request-1",
-        "operation": {"goal": "use source", "endpoint": "local", "max_steps": 1,
+        "operation": {"goal": "use source", "endpoint": "stub", "max_steps": 1,
             "allow_write": False, "allow_exec": False, "stream": True,
             "data_refs": [ref], "credential_refs": []},
     }).encode(), owner_ref=OWNER, state_root=tmp_path, clock=lambda: NOW)
@@ -118,7 +118,7 @@ def test_attach_route_publishes_ref_and_gateway_prepare_validates_same_owner(tmp
         "schema": "flywheel.gateway-operation/v1", "journey_ref": JOURNEY,
         "expected_event_head": head, "client_request_id": "request-1",
         "grant_ref": approved["grant_ref"], "goal": "use source",
-        "endpoint": "local", "max_steps": 1, "allow_write": False,
+        "endpoint": "stub", "max_steps": 1, "allow_write": False,
         "allow_exec": False, "stream": True, "data_refs": [ref],
         "credential_refs": []}).encode(), owner_ref=OWNER,
         state_root=tmp_path, clock=lambda: NOW)
@@ -139,7 +139,7 @@ def test_attach_route_publishes_ref_and_gateway_prepare_validates_same_owner(tmp
     other, other_status = gateway_grant_post("/api/gateway-grants/prepare/agent.run", json.dumps({
         "schema": "flywheel.gateway-operation/v1", "journey_ref": JOURNEY,
         "expected_event_head": head, "client_request_id": "request-2",
-        "operation": {"goal": "use source", "endpoint": "local", "max_steps": 1,
+        "operation": {"goal": "use source", "endpoint": "stub", "max_steps": 1,
             "allow_write": False, "allow_exec": False, "stream": True,
             "data_refs": [ref], "credential_refs": []},
     }).encode(), owner_ref="owner_" + "b" * 32, state_root=tmp_path, clock=lambda: NOW)
@@ -161,7 +161,7 @@ def test_source_context_grant_replay_rejects_dropped_data_ref(tmp_path):
         OWNER, JOURNEY, None, "create", "intake",
         {"legacy_label": None, "goal": "grant", "intake": {},
          "occurred_at": NOW})).event_head_sha256
-    operation = {"goal": "use source", "endpoint": "local", "max_steps": 1,
+    operation = {"goal": "use source", "endpoint": "stub", "max_steps": 1,
         "allow_write": False, "allow_exec": False, "stream": True,
         "data_refs": [ref], "credential_refs": []}
     proposal, p_status = gateway_grant_post(

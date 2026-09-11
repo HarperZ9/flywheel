@@ -12,6 +12,10 @@ dial says so instead of quietly reporting the nominal number.
 from __future__ import annotations
 
 from pathlib import Path
+import time
+from harness.gateway_agent_binding import freeze_agent_binding
+from harness.gateway_operation import canonicalize_operation
+from harness.plan_run_snapshot import thaw_json
 
 import pytest
 
@@ -21,7 +25,7 @@ from harness.gateway_operation_process import _run_agent
 
 
 def _operation(**over):
-    base = {"goal": "g", "endpoint": "e", "max_steps": 6, "allow_write": False,
+    base = {"goal": "g", "endpoint": "stub", "max_steps": 6, "allow_write": False,
             "allow_exec": False, "stream": False,
             "data_refs": [], "credential_refs": []}
     base.update(over)
@@ -44,7 +48,9 @@ def fake_loop(monkeypatch):
 def _run(operation, tmp_path):
     from harness.gateway_agent_trace import AgentTrace
     trace = AgentTrace(tmp_path, "owner_" + "a" * 32, "jrn_" + "b" * 32, "op_" + "c" * 32)
-    _run_agent(operation, {}, Path(tmp_path), Path(tmp_path) / "runs", trace=trace)
+    binding = thaw_json(freeze_agent_binding(canonicalize_operation("agent.run", operation), tmp_path))
+    _run_agent(operation, {}, Path(tmp_path), Path(tmp_path) / "runs", trace=trace,
+               binding=binding, deadline=time.monotonic() + binding["budget"]["timeout_s"])
     return trace.read()[-1]["payload"]
 
 

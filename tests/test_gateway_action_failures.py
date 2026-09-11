@@ -16,7 +16,7 @@ OPERATIONS = {
     "chat.complete": {"model": "local", "messages": [
         {"role": "user", "content": "hello"}], "stream": False,
         "data_refs": [], "credential_refs": []},
-    "agent.run": {"goal": "inspect", "endpoint": "local", "max_steps": 2,
+    "agent.run": {"goal": "inspect", "endpoint": "stub", "max_steps": 2,
         "allow_write": False, "allow_exec": False, "stream": False,
         "data_refs": [], "credential_refs": []},
     "workflow.run": {"workflow": "research-brief", "goal": "inspect",
@@ -227,18 +227,20 @@ def test_legacy_training_loop_failure_keeps_its_bounded_diagnostic(monkeypatch):
 
 def test_agent_worker_failure_is_fixed_without_raw_provider_text(monkeypatch):
     from harness import gateway_operation_process as process
-    marker, emitted = "synthetic-sse-marker-123456", []
+    from types import SimpleNamespace
+    marker, emitted, called = "synthetic-sse-marker-123456", [], []
     monkeypatch.setattr(process, "_worker_request",
-                        lambda: ({}, {}, None, None))
-    monkeypatch.setattr(
-        process, "_run_agent",
-        lambda *_args: (_ for _ in ()).throw(RuntimeError(marker)))
+                        lambda: ({}, {}, None, None, None, {}, None, None))
+    monkeypatch.setattr("harness.gateway_agent_execution.trace_from_request", lambda *a: SimpleNamespace(count=0))
+    def fail(*args, **kwargs):
+        called.append(True); raise RuntimeError(marker)
+    monkeypatch.setattr(process, "_run_agent", fail)
     monkeypatch.setattr(process, "_emit", emitted.append)
 
     assert process._main() == 1
     assert emitted == [{"type": "terminal", "state": "failed",
                         "result": {"reason": "EXTERNAL_ACTION_FAILED"}}]
-    assert marker not in repr(emitted)
+    assert marker not in repr(emitted) and called == [True]
 
 
 def test_persisted_plugin_and_marketplace_plans_refuse_raw_credentials(

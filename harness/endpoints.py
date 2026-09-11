@@ -223,7 +223,7 @@ class GeminiBackend:
                    "generationConfig": {"temperature": temperature, "maxOutputTokens": max_tokens}}
         if system:
             payload["systemInstruction"] = {"parts": [{"text": system}]}
-        url = f"{self.base_url}/models/{self.model}:generateContent"
+        url = f"{self.base_url}/models/{urllib.parse.quote(self.model, safe='')}:generateContent"
         headers = {"Content-Type": "application/json",
                    "x-goog-api-key": _credential(self.key_env, self.api_key)}
         status, obj = _guard(self.transport, "POST", url, headers,

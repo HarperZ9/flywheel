@@ -51,8 +51,7 @@ def replay_authorization_sha256(envelope, owner_ref: str,
         record = _validate_record(strict_load_json(path.read_bytes()), owner_ref)
         operation = envelope.operation
         plan = (ExecutionPlan(record["execution_plan_sha256"], (), ())
-            if _has_source_context_ref(operation.data_refs) else freeze_execution_plan(
-                operation, owner_ref=owner_ref, state_root=state_root))
+            if operation.action == "agent.run" or _has_source_context_ref(operation.data_refs) else freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root))
         if (record["state"] != "approved" or record["action"] != envelope.action
                 or record["journey_ref"] != envelope.journey_ref
                 or record["expected_event_head"] != envelope.expected_event_head
@@ -212,7 +211,7 @@ def _start_replay(service, owner_ref: str, envelope, journey):
         return None
     queued = history[0]["payload"]
     plan_digest = (queued.get("execution_plan_sha256")
-        if _has_source_context_ref(envelope.operation.data_refs) else
+        if envelope.action == "agent.run" or _has_source_context_ref(envelope.operation.data_refs) else
         freeze_execution_plan(envelope.operation, owner_ref=owner_ref,
                               state_root=service.state_root).digest)
     expected = {
@@ -241,7 +240,8 @@ def _start(raw: bytes, owner_ref: str, service, process_factory) -> RouteRespons
         if replay is None:
             authorized = service.authorizer(
                 "agent.run", raw, owner_ref=owner_ref,
-                state_root=service.state_root, clock=service.clock)
+                state_root=service.state_root, clock=service.clock, **(
+                    {"workspace_root": getattr(process_factory, "repo_root", None)} if getattr(service.authorizer, "__module__", "") == "harness.gateway_grant_route" else {}))
             authorized = service.credential_resolver(
                 authorized, service.state_root)
             snapshot = service.start(
@@ -251,11 +251,9 @@ def _start(raw: bytes, owner_ref: str, service, process_factory) -> RouteRespons
     if envelope.operation.operation["stream"]:
         return RouteResponse(200, stream=_stream(
             service, owner_ref, snapshot.operation_ref, snapshot))
-    terminal = service.wait_terminal(owner_ref, snapshot.operation_ref, 300)
-    if terminal.state != "completed":
-        raise GatewayOperationError("EXTERNAL_ACTION_FAILED")
-    return RouteResponse(200, service.result(
-        owner_ref, snapshot.operation_ref)["result"])
+    from .gateway_operation_route_reads import completed_result
+    return RouteResponse(200, completed_result(service, owner_ref,
+        snapshot.operation_ref, envelope.operation.operation.get("timeout_s", 300)))
 def _read(method: str, path: str, query: str, owner_ref: str,
           service) -> RouteResponse:
     match = _OPERATION_PATH.fullmatch(path)

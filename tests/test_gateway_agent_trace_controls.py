@@ -7,37 +7,39 @@ import subprocess
 import sys
 import threading
 import time
-from types import SimpleNamespace
 
 import pytest
 
 from harness.cross_harness_process import start_owned_process
-from harness.gateway_agent_execution import recovered_projection, run_private_agent
+from harness.gateway_agent_execution import recovered_projection
 from harness.gateway_agent_trace import AgentTrace, TraceError
 from harness.gateway_operation_process import GatewayWorker
-from tests.test_gateway_agent_execution import OWNER, JOURNEY, OP, MARKER, operation
+from tests.test_gateway_agent_execution import OWNER, JOURNEY, OP, MARKER, operation, run_bound
 
 
 @pytest.mark.parametrize("raises", [False, True])
 def test_actual_router_tool_result_and_exception_keep_marker_private(tmp_path, monkeypatch, raises):
     (tmp_path / "fixture.txt").write_text(MARKER + "x" * 1500 + "\nLAST-LINE")
-    class Proposer:
-        calls = 0
-        def generate(self, *args, **kwargs):
-            self.calls += 1
-            return SimpleNamespace(text=('TOOL read_file {"path":"fixture.txt"}'
-                if self.calls == 1 else MARKER), model_ref="fixture:model")
-    monkeypatch.setattr("harness.router_agent.make_authorized_endpoint_proposer", lambda *a, **kw: Proposer())
+    def transport_factory(**authority):
+        calls = []
+        def transport(method, url, headers, body, timeout):
+            calls.append(json.loads(body))
+            assert calls[-1]["model"] == authority["model"]
+            text = 'TOOL read_file {"path":"fixture.txt"}' if len(calls) == 1 else MARKER
+            return 200, {"model": authority["model"],
+                "choices": [{"message": {"content": text}}]}
+        return transport
+    monkeypatch.setattr("harness.gateway_agent_transport.BoundAgentTransport", transport_factory)
     if raises:
         def fail(*args, **kwargs): raise RuntimeError(MARKER)
         monkeypatch.setattr("harness.local_tools.ToolExecutor.execute", fail)
     writer, emitted = AgentTrace(tmp_path, OWNER, JOURNEY, OP), []
     if raises:
         with pytest.raises(RuntimeError):
-            run_private_agent(operation(tmp_path), {}, tmp_path, writer, None, emitted.append)
+            run_bound(operation(tmp_path), {}, tmp_path, writer, emitted.append)
         result = writer.projection("failed", reason="EXTERNAL_ACTION_FAILED")
     else:
-        result = run_private_agent(operation(tmp_path), {}, tmp_path, writer, None, emitted.append)
+        result = run_bound(operation(tmp_path), {}, tmp_path, writer, emitted.append)
         tools = [r["payload"]["content"] for r in writer.read()
                  if r["kind"] == "ledger" and r["payload"]["kind"] == "tool_result"]
         assert len(tools) == 1 and MARKER in tools[0] and "LAST-LINE" in tools[0]
@@ -46,10 +48,13 @@ def test_actual_router_tool_result_and_exception_keep_marker_private(tmp_path, m
 
 def test_progress_custody_failure_prevents_next_tool(tmp_path, monkeypatch):
     calls = []
-    class Proposer:
-        def generate(self, *args, **kwargs):
-            return SimpleNamespace(text='TOOL read_file {"path":"fixture.txt"}', model_ref="fixture:model")
-    monkeypatch.setattr("harness.router_agent.make_authorized_endpoint_proposer", lambda *a, **kw: Proposer())
+    def transport_factory(**authority):
+        def transport(method, url, headers, body, timeout):
+            assert json.loads(body)["model"] == authority["model"]
+            return 200, {"model": authority["model"], "choices": [{"message": {
+                "content": 'TOOL read_file {"path":"fixture.txt"}'}}]}
+        return transport
+    monkeypatch.setattr("harness.gateway_agent_transport.BoundAgentTransport", transport_factory)
     monkeypatch.setattr("harness.local_tools.ToolExecutor.execute", lambda *a, **kw: calls.append(True))
     writer = AgentTrace(tmp_path, OWNER, JOURNEY, OP)
     append = writer.append
@@ -58,7 +63,7 @@ def test_progress_custody_failure_prevents_next_tool(tmp_path, monkeypatch):
         return append(kind, payload)
     monkeypatch.setattr(writer, "append", reject_progress)
     with pytest.raises(TraceError):
-        run_private_agent(operation(tmp_path), {}, tmp_path, writer, None, lambda _: None)
+        run_bound(operation(tmp_path), {}, tmp_path, writer, lambda _: None)
     assert calls == []
 
 

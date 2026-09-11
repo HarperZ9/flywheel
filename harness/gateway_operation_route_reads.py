@@ -43,3 +43,14 @@ def terminal_data(service, owner_ref: str, operation_ref: str,
     result = read_after_store_busy(
         lambda: service.result(owner_ref, operation_ref), condition)
     return {"snapshot": snapshot.as_json(), "result": result}
+
+
+def completed_result(service, owner_ref, operation_ref, timeout_s):
+    """Wait within the admitted runtime plus a bounded terminal-commit window."""
+    from .gateway_agent_failures import AGENT_FAILURES
+    terminal = service.wait_terminal(owner_ref, operation_ref, timeout_s + 30)
+    result = service.result(owner_ref, operation_ref)["result"]
+    if terminal.state != "completed":
+        reason = result.get("reason")
+        raise GatewayOperationError(reason if reason in AGENT_FAILURES else "EXTERNAL_ACTION_FAILED")
+    return result

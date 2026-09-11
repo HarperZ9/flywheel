@@ -69,7 +69,7 @@ _FIELDS = {
     # stays the enforced budget and any divergence is stamped as an override.
     "agent.run": ({"goal", "endpoint", "max_steps", "allow_write",
                    "allow_exec", "stream"} | _REFS,
-                  {"root", "test_cmd", "attachment", "effort",
+                  {"root", "test_cmd", "attachment", "effort", "model", "max_tokens", "timeout_s",
                    "continuation"}),
     "workflow.run": ({"workflow", "goal", "endpoint", "allow_write",
                       "allow_exec"} | _REFS,

@@ -11,6 +11,9 @@ through the route a client actually posts to.
 from __future__ import annotations
 
 import json
+import time
+from harness.gateway_agent_binding import freeze_agent_binding
+from harness.plan_run_snapshot import thaw_json
 
 from harness.gateway_operation import canonicalize_operation
 from harness.gateway_operation_process import _run_agent
@@ -86,7 +89,10 @@ def test_agent_route_denied_permission_reaches_the_agent_call_unchanged(
     from harness.gateway_agent_trace import AgentTrace
     trace = AgentTrace(tmp_path, "owner_" + "a" * 32,
                        "jrn_" + "b" * 32, "op_" + "c" * 32)
-    _run_agent(dict(_OPERATION), {}, tmp_path, tmp_path, trace=trace)
+    operation = dict(_OPERATION, endpoint="stub", root=str(tmp_path))
+    binding = thaw_json(freeze_agent_binding(canonicalize_operation("agent.run", operation), tmp_path))
+    _run_agent(operation, {}, tmp_path, tmp_path, trace=trace, binding=binding,
+               deadline=time.monotonic() + binding["budget"]["timeout_s"])
     assert seen["allow_write"] is False
     assert seen["allow_exec"] is False
     assert seen["max_steps"] == 6
