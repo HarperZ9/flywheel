@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+from dataclasses import dataclass
 from pathlib import Path
 
 from .domain_packs import PACKS
@@ -12,6 +13,23 @@ class OutputCheckError(RuntimeError):
     def __init__(self, code: str) -> None:
         self.code = code
         super().__init__(code)
+
+
+@dataclass(frozen=True)
+class PinnedAuthoritySource:
+    data: bytes
+    mode: int
+    path: Path
+
+
+@dataclass(frozen=True)
+class PinnedAuthoritySources:
+    sources: dict[str, PinnedAuthoritySource]
+
+    @property
+    def bytes_by_declared(self) -> dict[str, bytes]:
+        return {declared: source.data
+                for declared, source in self.sources.items()}
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -85,14 +103,14 @@ def _maybe_authority_path(base_dir: Path, rel: object,
     return path if path is not None and path.is_file() else None
 
 
-def _authority_source_paths(contract_doc: dict, base_dir: Path,
-                            repo_root: Path) -> set[Path]:
-    paths: set[Path] = set()
+def _authority_source_bindings(contract_doc: dict, base_dir: Path,
+                               repo_root: Path) -> dict[str, Path]:
+    paths: dict[str, Path] = {}
     pack = contract_doc.get("pack", "")
     if type(pack) is str and pack and pack not in PACKS:
         pack_path = _maybe_authority_path(base_dir, pack, repo_root)
         if pack_path is not None:
-            paths.add(pack_path)
+            paths[pack] = pack_path
     authorities = contract_doc.get("authorities") or {}
     if type(authorities) is not dict:
         return paths
@@ -100,61 +118,67 @@ def _authority_source_paths(contract_doc: dict, base_dir: Path,
         if type(spec) is not dict:
             continue
         if spec.get("kind") == "table":
-            paths.add(_authority_path(base_dir, spec.get("path"), repo_root,
-                                      must_exist=True))
+            declared = spec.get("path")
+            paths[declared] = _authority_path(base_dir, declared, repo_root,
+                                              must_exist=True)
         if spec.get("kind") == "command":
             argv = spec.get("argv")
             if type(argv) is list:
                 for part in argv:
-                    path = _maybe_authority_path(base_dir, part, repo_root)
+                    path = (_maybe_authority_path(base_dir, part, repo_root)
+                            if type(part) is str else None)
                     if path is not None:
-                        paths.add(path)
+                        paths[part] = path
     return paths
 
 
 def pinned_authority_sources(operation: dict, contract_doc: dict,
                              *, base_dir: Path,
-                             repo_root: Path) -> dict[Path, bytes]:
-    supplied = operation.get("authority_sources")
-    if type(supplied) is not list:
+                             repo_root: Path) -> PinnedAuthoritySources:
+    supplied_refs = operation.get("authority_sources")
+    if type(supplied_refs) is not list:
         raise OutputCheckError("INVALID_REQUEST")
-    pinned: dict[Path, bytes] = {}
-    for source in supplied:
+    supplied_by_path: dict[Path, PinnedAuthoritySource] = {}
+    for source in supplied_refs:
         path, data = source_file(source, repo_root)
         resolved = path.resolve()
-        if resolved in pinned:
+        if resolved in supplied_by_path:
             raise OutputCheckError("INVALID_REQUEST")
-        pinned[resolved] = data
-    if set(pinned) != _authority_source_paths(contract_doc, base_dir, repo_root):
-        raise OutputCheckError("INVALID_REQUEST")
-    return pinned
+        supplied_by_path[resolved] = PinnedAuthoritySource(
+            data=data, mode=resolved.stat().st_mode & 0o777, path=resolved)
+    bindings = _authority_source_bindings(contract_doc, base_dir, repo_root)
+    if set(supplied_by_path) != set(bindings.values()):
+        raise OutputCheckError("SOURCE_DRIFT")
+    return PinnedAuthoritySources(
+        {declared: supplied_by_path[path]
+         for declared, path in bindings.items()})
 
 
 def command_custody_contract(contract_doc: dict, *, base_dir: Path,
                              repo_root: Path, run_root: Path,
                              operation_ref: str,
-                             pinned_sources: dict[Path, bytes]) -> dict:
+                             pinned_sources: PinnedAuthoritySources) -> dict:
     copied = copy.deepcopy(contract_doc)
     authorities = copied.get("authorities") or {}
     if type(authorities) is not dict:
         return copied
-    custody: dict[Path, Path] = {}
+    custody: dict[str, Path] = {}
 
-    def copy_source(path: Path) -> Path:
-        if path not in custody:
-            rel = path.relative_to(repo_root.resolve()).as_posix()
-            digest = sha256_bytes(pinned_sources[path])[:16]
+    def copy_source(declared: str, source: PinnedAuthoritySource) -> Path:
+        if declared not in custody:
+            rel = source.path.relative_to(repo_root.resolve()).as_posix()
+            digest = sha256_bytes(source.data)[:16]
             target = run_artifact({"kind": "run-artifact",
                                    "path": "output-check/"
                                    f"{operation_ref}/authority-sources/"
                                    f"{digest}/{rel}"}, run_root)
-            target.write_bytes(pinned_sources[path])
+            target.write_bytes(source.data)
             try:
-                target.chmod(path.stat().st_mode & 0o777)
+                target.chmod(source.mode)
             except OSError:
                 pass
-            custody[path] = target
-        return custody[path]
+            custody[declared] = target
+        return custody[declared]
 
     for spec in authorities.values():
         if type(spec) is not dict or spec.get("kind") != "command":
@@ -164,10 +188,9 @@ def command_custody_contract(contract_doc: dict, *, base_dir: Path,
             continue
         rewritten = []
         for part in argv:
-            path = (_authority_path(base_dir, part, repo_root,
-                                    must_exist=False)
-                    if type(part) is str else None)
-            rewritten.append(str(copy_source(path))
-                             if path in pinned_sources else str(part))
+            source = (pinned_sources.sources.get(part)
+                      if type(part) is str else None)
+            rewritten.append(str(copy_source(part, source))
+                             if source is not None else str(part))
         spec["argv"] = rewritten
     return copied

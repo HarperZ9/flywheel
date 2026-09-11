@@ -72,13 +72,20 @@ def _table_resolver(spec, base: Path, _allow, _timeout, pinned):
     rather than as a crash that discards every other field's verdict. The path
     and the parse error both survive into the report.
     """
-    path = base / spec["path"]
+    declared_path = spec["path"]
+    path = base / declared_path
     key_field = spec["key_field"]
     cache: dict = {}
 
     def resolve(answer):
         if not cache:
-            data = pinned.get(path.resolve()) if pinned else None
+            if pinned is not None:
+                if declared_path not in pinned:
+                    raise FileNotFoundError(
+                        f"pinned authority source missing for {declared_path}")
+                data = pinned[declared_path]
+            else:
+                data = None
             cache["rows"] = json.loads(
                 data.decode("utf-8") if data is not None
                 else path.read_text(encoding="utf-8"))
@@ -123,7 +130,7 @@ _REQUIRED = {CITATION: (), TABLE: ("path", "key_field"), COMMAND: ("argv",)}
 
 def build_authorities(declarations: dict, *, allow_commands: bool = False,
                       base_dir=None, timeout: float = DEFAULT_TIMEOUT_SECONDS,
-                      pinned_sources: dict[Path, bytes] | None = None) -> dict:
+                      pinned_sources: dict[str, bytes] | None = None) -> dict:
     """Declared authorities, as the callables `check_answer` expects.
 
     Structure is checked here and failures at that level raise, because a
@@ -133,8 +140,7 @@ def build_authorities(declarations: dict, *, allow_commands: bool = False,
     fails there instead and becomes an unchecked field.
     """
     base = Path(base_dir or ".").resolve()
-    pinned_sources = {Path(path).resolve(): data
-                      for path, data in (pinned_sources or {}).items()}
+    pinned_sources = (None if pinned_sources is None else dict(pinned_sources))
     resolvers = {}
     for source, spec in (declarations or {}).items():
         if not isinstance(spec, dict):

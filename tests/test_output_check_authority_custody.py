@@ -59,14 +59,15 @@ def _table_workspace(tmp_path: Path, *, row_value=4169,
     return contract, answer, rows
 
 
-def _command_workspace(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
+def _command_workspace(tmp_path: Path, *,
+                       helper_value=4169) -> tuple[Path, Path, Path, Path]:
     marker = tmp_path / "checker-ran.txt"
     checker = tmp_path / "tax_authority.py"
     checker.write_text(
         "import json, pathlib, sys\n"
         f"pathlib.Path({str(marker)!r}).write_text('ran', encoding='utf-8')\n"
         "json.load(sys.stdin)\n"
-        "print(json.dumps({'value': 4169}))\n",
+        f"print(json.dumps({{'value': {helper_value}}}))\n",
         encoding="utf-8")
     contract = tmp_path / "contract.json"
     contract.write_text(json.dumps({
@@ -104,6 +105,27 @@ def test_native_service_refuses_table_authority_source_drift_before_pass(tmp_pat
     assert exc.value.code == "SOURCE_DRIFT"
 
 
+def test_native_service_uses_pinned_table_after_path_replacement(
+        monkeypatch, tmp_path):
+    contract, answer, rows = _table_workspace(
+        tmp_path, row_value=0, answer_value=4169)
+    operation = _operation(tmp_path, contract, answer, [rows])
+    from harness import output_check_service as service
+    real_pin = service.pinned_authority_sources
+
+    def pin_then_replace(*args, **kwargs):
+        pinned = real_pin(*args, **kwargs)
+        rows.write_text(json.dumps({"36700": 4169}), encoding="utf-8")
+        return pinned
+
+    monkeypatch.setattr(service, "pinned_authority_sources", pin_then_replace)
+    result = run_output_check_operation(
+        operation, repo_root=tmp_path, run_root=tmp_path / "run",
+        state_root=tmp_path / "state", owner_ref="owner_" + "a" * 32)
+    assert result["verdict"] == "FAIL"
+    assert result["release"] == "HOLD"
+
+
 def test_native_service_refuses_command_authority_source_drift_before_run(tmp_path):
     contract, answer, checker, marker = _command_workspace(tmp_path)
     operation = _operation(
@@ -115,6 +137,34 @@ def test_native_service_refuses_command_authority_source_drift_before_run(tmp_pa
             state_root=tmp_path / "state", owner_ref="owner_" + "a" * 32)
     assert exc.value.code == "SOURCE_DRIFT"
     assert not marker.exists()
+
+
+def test_native_service_uses_pinned_command_helper_after_path_replacement(
+        monkeypatch, tmp_path):
+    contract, answer, checker, marker = _command_workspace(
+        tmp_path, helper_value=0)
+    operation = _operation(
+        tmp_path, contract, answer, [checker], allow_commands=True)
+    from harness import output_check_service as service
+    real_pin = service.pinned_authority_sources
+
+    def pin_then_replace(*args, **kwargs):
+        pinned = real_pin(*args, **kwargs)
+        checker.write_text(
+            "import json, pathlib, sys\n"
+            f"pathlib.Path({str(marker)!r}).write_text('new')\n"
+            "json.load(sys.stdin)\n"
+            "print(json.dumps({'value': 4169}))\n",
+            encoding="utf-8")
+        return pinned
+
+    monkeypatch.setattr(service, "pinned_authority_sources", pin_then_replace)
+    result = run_output_check_operation(
+        operation, repo_root=tmp_path, run_root=tmp_path / "run",
+        state_root=tmp_path / "state", owner_ref="owner_" + "a" * 32)
+    assert result["verdict"] == "FAIL"
+    assert result["release"] == "HOLD"
+    assert marker.read_text(encoding="utf-8") == "ran"
 
 
 def test_native_service_runs_command_authority_from_pinned_copy(

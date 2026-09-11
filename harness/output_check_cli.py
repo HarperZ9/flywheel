@@ -103,7 +103,7 @@ def pack_ref(name: str, base_dir) -> str:
 
 
 def specs(contract_doc: dict, *, base_dir=None,
-          pinned_sources: dict[Path, bytes] | None = None) -> list[dict]:
+          pinned_sources: dict[str, bytes] | None = None) -> list[dict]:
     """The field specs, with a named pack filling in what the domain decides.
 
     A field entry that names a `use` gets its authority kind, criticality and
@@ -115,9 +115,13 @@ def specs(contract_doc: dict, *, base_dir=None,
     if not name:
         return raw
     ref = pack_ref(name, base_dir)
-    pinned = (pinned_sources or {}).get(Path(ref).resolve())
-    pack = (declared_pack(json.loads(pinned.decode("utf-8")), shipped=PACKS)
-            if pinned is not None else load_pack(ref))
+    if pinned_sources is not None and name in pinned_sources:
+        pack = declared_pack(
+            json.loads(pinned_sources[name].decode("utf-8")), shipped=PACKS)
+    elif pinned_sources is not None and (ref != name or name.endswith(".json")):
+        raise FileNotFoundError(f"pinned domain pack missing for {name}")
+    else:
+        pack = load_pack(ref)
     built = []
     for spec in raw:
         spec = dict(spec)
@@ -127,7 +131,7 @@ def specs(contract_doc: dict, *, base_dir=None,
 
 
 def check(contract_doc: dict, answer: dict, *, base_dir, allow_commands: bool,
-          pinned_sources: dict[Path, bytes] | None = None) -> dict:
+          pinned_sources: dict[str, bytes] | None = None) -> dict:
     contract = new_contract(specs(contract_doc, base_dir=base_dir,
                                   pinned_sources=pinned_sources))
     authorities = build_authorities(contract_doc.get("authorities") or {},

@@ -78,7 +78,7 @@ def _exit(report: dict, *, strict: bool, verify_lean: bool) -> tuple[int, int]:
 def _proof(operation: dict, contract_doc: dict, report: dict, answer: dict,
            *, base_dir: Path, repo_root: Path, run_root: Path,
            operation_ref: str,
-           pinned_sources: dict[Path, bytes]) -> tuple[dict, dict]:
+           pinned_sources: dict[str, bytes]) -> tuple[dict, dict]:
     if not operation.get("lean") and not operation.get("verify_lean"):
         return {}, {}
     lean_path = (_artifact(operation["lean"], run_root)
@@ -130,12 +130,13 @@ def run_output_check_operation(operation: dict, *, repo_root: Path,
     progress({"phase": "checking"})
     report = check(check_contract, answer, base_dir=base_dir,
                    allow_commands=operation["allow_commands"],
-                   pinned_sources=pinned_sources)
+                   pinned_sources=pinned_sources.bytes_by_declared)
     _redact_command_diagnostics(report, check_contract)
     artifacts: dict[str, dict] = {}
     proof, proof_artifacts = _proof(operation, contract_doc, report, answer,
         base_dir=base_dir, repo_root=repo_root, run_root=run_root,
-        operation_ref=operation_ref, pinned_sources=pinned_sources)
+        operation_ref=operation_ref,
+        pinned_sources=pinned_sources.bytes_by_declared)
     if proof:
         report["proof"] = proof
         artifacts.update(proof_artifacts)
