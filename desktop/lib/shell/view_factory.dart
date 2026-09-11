@@ -231,6 +231,7 @@ Widget? _advanced(DestinationId id, DestinationInputs i) => switch (id) {
   DestinationId.studio => StudioView(
     world: i.world,
     roster: i.roster,
+    journey: i.journey,
     alive: i.alive,
     client: i.client,
   ),

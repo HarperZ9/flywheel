@@ -1,12 +1,9 @@
-// Studio combines seeded, reproducible art with live-state schematics.
-// Generative art is the surface where color is a subject, not a verdict.
-// The music lane keeps unavailable state visible.
-
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
+import '../controllers/journey_controller.dart';
 import '../models/gateway_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/aperture.dart';
@@ -23,15 +20,21 @@ import '../widgets/sound_panel.dart';
 import '../widgets/typeface_panel.dart';
 import '../widgets/face_gallery_card.dart';
 import '../widgets/variable_family_card.dart';
-import '../widgets/rowan_presenter.dart';
+import '../widgets/rowan_studio_prelude.dart';
 
 class StudioView extends StatefulWidget {
   final WorldDoc? world;
   final LaneRoster? roster;
+  final JourneyController? journey;
   final bool alive;
   final GatewayClient? client;
   const StudioView(
-      {super.key, this.world, this.roster, required this.alive, this.client});
+      {super.key,
+      this.world,
+      this.roster,
+      this.journey,
+      required this.alive,
+      this.client});
 
   @override
   State<StudioView> createState() => _StudioViewState();
@@ -39,8 +42,6 @@ class StudioView extends StatefulWidget {
 
 class _StudioViewState extends State<StudioView> {
   int _seed = kApertureSeed;
-
-  /// The last successful mint's params; poster and brand kit wear it.
   Map<String, dynamic>? _mintedFace;
 
   @override
@@ -58,8 +59,11 @@ class _StudioViewState extends State<StudioView> {
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: FwLayout.s4),
-        const RowanPresenter(),
-        const SizedBox(height: FwLayout.s4),
+        RowanStudioPrelude(
+          client: widget.client,
+          alive: widget.alive,
+          journey: widget.journey,
+        ),
         const Kicker('field plate · seeded kernel', hot: true),
         const SizedBox(height: FwLayout.s3),
         HairlineCard(
@@ -88,8 +92,8 @@ class _StudioViewState extends State<StudioView> {
                         style: fwMono(t, size: 11, color: t.inkMuted)),
                     const Spacer(),
                     OutlinedButton(
-                      onPressed: () => setState(() =>
-                          _seed = (_seed * 48271 + 11) % 100000),
+                      onPressed: () =>
+                          setState(() => _seed = (_seed * 48271 + 11) % 100000),
                       child: const Text('New seed'),
                     ),
                   ],
@@ -107,8 +111,7 @@ class _StudioViewState extends State<StudioView> {
           const Kicker('typeface forge · parametric type'),
           const SizedBox(height: FwLayout.s3),
           TypefacePanel(
-            onMint: (params, seed) =>
-                widget.client!.typefaceMint(params, seed),
+            onMint: (params, seed) => widget.client!.typefaceMint(params, seed),
             onMinted: (params) => setState(() => _mintedFace = params),
           ),
           const SizedBox(height: FwLayout.s3),
@@ -240,14 +243,11 @@ class _StudioViewState extends State<StudioView> {
   }
 }
 
-/// Plotter-thin flow-field arcs banded across the spectrum. Deterministic
-/// from the seed; the same seed always draws the same plate.
 class _FieldPainter extends CustomPainter {
   final int seed;
   final Color ground;
   _FieldPainter({required this.seed, required this.ground});
 
-  // The spectrum band from the inspiration corpus: art-only colors.
   static const _band = [
     Color(0xFFC2447F), // magenta
     Color(0xFFC96F3A), // ember
