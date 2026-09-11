@@ -34,6 +34,35 @@ Map<String, dynamic> _doc({bool store = true, bool present = false}) => {
       ],
     };
 
+Map<String, dynamic> _chatgptOfficial({bool present = false}) => {
+      'provider': 'openai',
+      'kind': 'official-app-server',
+      'kind_label': 'ChatGPT account',
+      'keychain_name': '',
+      'present': present,
+      'source': 'codex-app-server',
+      'sanction': 'Codex app-server owns ChatGPT account sign-in.',
+      'pending': false,
+      'last': '',
+      'last_error': '',
+      'official_app_server': {
+        'state': present ? 'authenticated' : 'not_authenticated',
+        'account_state': present ? 'authenticated' : 'not_authenticated',
+        'authenticated': present,
+        'source': 'codex-app-server',
+        'plan_type': present ? 'plus' : '',
+        'route_ready': false,
+        'run_ready': false,
+        'supervised_run_ready': false,
+      },
+    };
+
+Map<String, dynamic> _chatgptDoc({bool present = false}) => {
+      'credential_store': true,
+      'note': 'Values are never displayed.',
+      'providers': [_chatgptOfficial(present: present)],
+    };
+
 Map<String, dynamic> _anthropicOfficial({bool present = false}) => {
       'provider': 'anthropic',
       'kind': 'official-cli',
@@ -59,6 +88,8 @@ SigninPanel _panel(
   Future<Map<String, dynamic>> Function(String)? onLogin,
   Future<Map<String, dynamic>> Function(String, String)? onToken,
   Future<Map<String, dynamic>> Function(String)? onLogout,
+  Future<Map<String, dynamic>> Function(String)? onCancel,
+  Future<Map<String, dynamic>> Function(String)? onCheckExecution,
   Future<bool> Function(String)? onOpenUrl,
 }) =>
     SigninPanel(
@@ -66,6 +97,8 @@ SigninPanel _panel(
       onLogin: onLogin ?? (p) async => {'ok': true, 'mode': 'browser'},
       onToken: onToken ?? (p, t) async => {'ok': true, 'stored': 'X'},
       onLogout: onLogout ?? (p) async => {'ok': true},
+      onCancel: onCancel,
+      onCheckExecution: onCheckExecution,
       onOpenUrl: onOpenUrl,
       onChanged: () {},
     );
@@ -100,6 +133,80 @@ void main() {
     expect(find.byType(TextField), findsNothing);
     expect(find.textContaining('TEST_TOKEN'), findsNothing);
     expect(find.textContaining('finish Claude Code sign-in'), findsOneWidget);
+  });
+
+  testWidgets(
+      'official ChatGPT device-code sign-in shows code without token paste',
+      (tester) async {
+    final cancelled = <String>[];
+    await tester.pumpWidget(_wrap(_panel(
+      _chatgptDoc(),
+      onLogin: (p) async => {
+        'ok': true,
+        'provider': p,
+        'mode': 'device-code',
+        'verification_url': 'https://chatgpt.com/activate',
+        'user_code': 'ABCD-EFGH',
+      },
+      onCancel: (p) async {
+        cancelled.add(p);
+        return {'ok': true, 'state': 'cancelled'};
+      },
+      onOpenUrl: (_) async => true,
+    )));
+    await tester.tap(find.widgetWithText(FilledButton, 'Open sign-in'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('https://chatgpt.com/activate'), findsOneWidget);
+    expect(find.textContaining('ABCD-EFGH'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+    expect(cancelled, ['openai']);
+  });
+
+  testWidgets('official ChatGPT blocks untrusted returned login URLs',
+      (tester) async {
+    final opened = <String>[];
+    await tester.pumpWidget(_wrap(_panel(
+      _chatgptDoc(),
+      onLogin: (p) async => {
+        'ok': true,
+        'provider': p,
+        'mode': 'browser',
+        'authorize_url': 'https://evil.example/start',
+      },
+      onOpenUrl: (url) async {
+        opened.add(url);
+        return true;
+      },
+    )));
+    await tester.tap(find.widgetWithText(FilledButton, 'Open sign-in'));
+    await tester.pumpAndSettle();
+    expect(opened, isEmpty);
+    expect(find.textContaining('blocked an untrusted sign-in URL'),
+        findsOneWidget);
+  });
+
+  testWidgets('official ChatGPT connected account can run bounded route check',
+      (tester) async {
+    final doc = _chatgptDoc(present: true);
+    (((doc['providers'] as List).first as Map)['official_app_server']
+        as Map)['readiness_check_available'] = true;
+    var checked = false;
+    await tester.pumpWidget(_wrap(_panel(
+      doc,
+      onCheckExecution: (p) async {
+        checked = true;
+        return {'ok': true};
+      },
+    )));
+    expect(find.textContaining('plan: plus'), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'Check route'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Check route'));
+    await tester.pumpAndSettle();
+    expect(checked, isTrue);
+    expect(
+        find.textContaining('bounded Codex CLI route check'), findsOneWidget);
   });
 
   testWidgets('a browser sign-in starts without asking for a value',

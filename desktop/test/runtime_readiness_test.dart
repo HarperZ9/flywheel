@@ -94,6 +94,10 @@ void main() {
       'configured': true
     });
     expect(row.cliPresent, isTrue);
+    expect(row.cliAuthenticated, isFalse);
+    expect(row.usable, isFalse);
+    expect(row.routeReady, isFalse);
+    expect(row.supervisedRunReady, isFalse);
   });
 
   testWidgets('CLI presence is not rendered as verified authentication',
@@ -104,7 +108,7 @@ void main() {
             body: ProviderRoster(roster: [
           EndpointRow.fromJson({'name': 'codex-cli', 'credential': 'cli-auth'})
         ]))));
-    expect(find.text('CLI PRESENT'), findsOneWidget);
+    expect(find.text('SIGN-IN NEEDED'), findsOneWidget);
     expect(find.text('SUBSCRIPTION'), findsNothing);
   });
 

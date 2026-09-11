@@ -47,9 +47,10 @@ class _EndpointsViewState extends State<EndpointsView> {
   @override
   void initState() {
     super.initState();
-    _authStatus = OAuthStatus(read: widget.client.authStatus, onCompleted: _load)
-      ..addListener(_authUpdated)
-      ..configure(widget.client.authStatus, widget.alive);
+    _authStatus =
+        OAuthStatus(read: widget.client.authStatus, onCompleted: _load)
+          ..addListener(_authUpdated)
+          ..configure(widget.client.authStatus, widget.alive);
     _load();
   }
 
@@ -62,12 +63,27 @@ class _EndpointsViewState extends State<EndpointsView> {
     }
   }
 
-  void _authUpdated() { if (mounted) setState(() {}); }
+  void _authUpdated() {
+    if (mounted) setState(() {});
+  }
 
-  Future<Map<String, dynamic>> _authAction(String path, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> _authAction(
+      String path, Map<String, dynamic> body) async {
     _authStatus.suspend();
-    try { return await widget.client.postJson(path, body); }
-    finally { _authStatus.refresh(afterAction: true); }
+    try {
+      return await widget.client.postJson(path, body);
+    } finally {
+      _authStatus.refresh(afterAction: true);
+    }
+  }
+
+  Future<Map<String, dynamic>> _authExecutionCheck(String provider) async {
+    _authStatus.suspend();
+    try {
+      return await widget.client.authStatus(checkExecution: true);
+    } finally {
+      _authStatus.refresh(afterAction: true);
+    }
   }
 
   @override
@@ -91,8 +107,8 @@ class _EndpointsViewState extends State<EndpointsView> {
       ]);
       if (mounted) {
         setState(() {
-          _health = EndpointHealthDoc.fromJson(
-              results[0] as Map<String, dynamic>);
+          _health =
+              EndpointHealthDoc.fromJson(results[0] as Map<String, dynamic>);
           _roster = results[1] as List<EndpointRow>;
           _scores =
               ProviderScore.listFromStats(results[2] as Map<String, dynamic>);
@@ -133,7 +149,12 @@ class _EndpointsViewState extends State<EndpointsView> {
           'Endpoints',
           kicker: 'one request shape, every provider',
           trailing: OutlinedButton(
-            onPressed: _loading ? null : () { _authStatus.refresh(); _load(); },
+            onPressed: _loading
+                ? null
+                : () {
+                    _authStatus.refresh();
+                    _load();
+                  },
             child: Text(_loading ? 'Probing…' : 'Probe'),
           ),
         ),
@@ -145,8 +166,14 @@ class _EndpointsViewState extends State<EndpointsView> {
               status: fractionStatus(h.localHealthy, h.localTotal)),
           StatTile(
               label: 'Claude account ready',
+              value: _roster
+                      .any((r) => r.name == 'claude-cli' && r.cliAuthenticated)
+                  ? 'yes'
+                  : 'no'),
+          StatTile(
+              label: 'ChatGPT account connected',
               value: _roster.any(
-                      (r) => r.name == 'claude-cli' && r.cliAuthenticated)
+                      (r) => r.name == 'codex-cli' && r.accountAuthenticated)
                   ? 'yes'
                   : 'no'),
           StatTile(
@@ -178,18 +205,26 @@ class _EndpointsViewState extends State<EndpointsView> {
             doc: _authStatus.doc!,
             onLogin: (p) => _authAction('/api/auth/login', {
               'provider': p,
-              if (_mobile) 'callback_base': widget.client.baseUrl,
+              if (_mobile && p == 'openai') 'login_mode': 'device-code',
+              if (_mobile && p != 'openai')
+                'callback_base': widget.client.baseUrl,
             }),
-            onOpenUrl: _mobile ? _openSignInUrl : null,
-            onToken: (p, token) => _authAction('/api/auth/token', {'provider': p, 'token': token}),
+            onOpenUrl: _openSignInUrl,
+            onToken: (p, token) =>
+                _authAction('/api/auth/token', {'provider': p, 'token': token}),
             onLogout: (p) => _authAction('/api/auth/logout', {'provider': p}),
             onCancel: (p) => _authAction('/api/auth/cancel', {'provider': p}),
-            onChanged: () { _authStatus.refresh(); _load(); },
+            onCheckExecution: _authExecutionCheck,
+            onChanged: () {
+              _authStatus.refresh();
+              _load();
+            },
           ),
         ],
         if (_sessionTokens != null) ...[
           const SizedBox(height: FwLayout.s5),
-          const Kicker('session tokens · scoped, time-bounded agent credentials'),
+          const Kicker(
+              'session tokens · scoped, time-bounded agent credentials'),
           const SizedBox(height: FwLayout.s3),
           SessionTokensPanel(
             doc: _sessionTokens!,

@@ -30,9 +30,12 @@ class ProviderRoster extends StatelessWidget {
     final (label, status) = switch (r.credential) {
       'present' => ('key present', 'verified'),
       'cli-auth' when r.needsAccountAuth && r.accountAuthenticated => (
-          'account ready',
-          'verified'
+          r.needsRouteReady && !r.routeReady
+              ? 'connected; run check needed'
+              : 'account ready',
+          r.needsRouteReady && !r.routeReady ? 'declared' : 'verified'
         ),
+      'cli-auth' when r.needsAccountAuth => ('sign-in needed', 'declared'),
       'cli-auth' => ('CLI present', 'declared'),
       'local-none' => ('local', 'verified'),
       _ => ('no key', 'absent'),

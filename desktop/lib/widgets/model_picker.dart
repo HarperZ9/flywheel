@@ -29,8 +29,7 @@ class ModelPickerButton extends StatelessWidget {
       onPressed: (!enabled || endpoints.isEmpty)
           ? null
           : () async {
-              final picked =
-                  await showModelPicker(context, endpoints, current);
+              final picked = await showModelPicker(context, endpoints, current);
               if (picked != null) onSelect(picked);
             },
       style: OutlinedButton.styleFrom(
@@ -107,7 +106,8 @@ class _ModelPickerDialogState extends State<_ModelPickerDialog> {
               style: TextStyle(fontSize: 14, color: t.ink),
               decoration: InputDecoration(
                 isDense: true,
-                prefixIcon: Icon(Icons.search_rounded, size: 18, color: t.inkFaint),
+                prefixIcon:
+                    Icon(Icons.search_rounded, size: 18, color: t.inkFaint),
                 hintText: 'Search models…',
                 hintStyle: TextStyle(color: t.inkFaint, fontSize: 14),
                 border: OutlineInputBorder(
@@ -137,8 +137,8 @@ class _ModelPickerDialogState extends State<_ModelPickerDialog> {
 
   Widget _row(FwTokens t, EndpointRow e, bool selected) {
     final (label, color) = switch (e.credential) {
-      'cli-auth' when e.cliAuthenticated => ('subscription', t.verified),
-      'cli-auth' => ('sign-in needed', t.inkFaint),
+      'cli-auth' when e.routeAuthenticated => ('subscription', t.verified),
+      'cli-auth' => (e.subscriptionStatusLabel, t.inkFaint),
       'present' => ('ready', t.verified),
       'local-none' => ('local', t.verified),
       _ => ('no key', t.inkFaint),

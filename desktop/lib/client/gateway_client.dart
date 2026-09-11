@@ -165,8 +165,10 @@ class GatewayClient {
   }
 
   /// Auth polling retains this raw future after its separate UI deadline.
-  Future<Map<String, dynamic>> authStatus() async =>
-      _decode(await _http.get(Uri.parse('$baseUrl/api/auth')));
+  Future<Map<String, dynamic>> authStatus({bool checkExecution = false}) async {
+    final query = checkExecution ? '?check=execution' : '';
+    return _decode(await _http.get(Uri.parse('$baseUrl/api/auth$query')));
+  }
 
   /// Generic GET returning decoded JSON, for lightweight read-only routes.
   Future<Map<String, dynamic>> getJson(

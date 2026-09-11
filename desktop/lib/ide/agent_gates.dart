@@ -65,7 +65,7 @@ class AgentGates extends StatelessWidget {
             for (final e in endpoints)
               DropdownMenuItem(
                 value: e.name,
-                child: Text('${e.name}${e.hasCredential ? '' : ' (no key)'}'),
+                child: Text(e.gateLabel),
               ),
           ],
           onChanged: onEndpoint,

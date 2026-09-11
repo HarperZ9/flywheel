@@ -9,14 +9,17 @@ import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/fw.dart';
 import 'package:flywheel_desktop/widgets/keys_panel.dart';
 import 'package:flywheel_desktop/widgets/model_picker.dart';
+
 EndpointRow _row(String name, String credential,
-        {bool accountAuthenticated = false}) =>
+        {bool accountAuthenticated = false, bool routeReady = false}) =>
     EndpointRow.fromJson({
       'name': name,
       'backend': 'b',
       'credential': credential,
       if (accountAuthenticated) 'account_authenticated': true,
       if (accountAuthenticated) 'account_state': 'authenticated',
+      if (routeReady) 'route_ready': true,
+      if (routeReady) 'run_ready': true,
     });
 Widget _wrap(Widget child) => MaterialApp(
       theme: flywheelLightTheme(),
@@ -44,9 +47,24 @@ void main() {
       ];
       expect(defaultEndpoint(authed)?.name, 'claude-cli');
     });
+    test(
+        'requires Codex account auth and route readiness before preferring its CLI',
+        () {
+      final connectedOnly = [
+        _row('keyed', 'present'),
+        _row('codex-cli', 'cli-auth', accountAuthenticated: true),
+      ];
+      expect(defaultEndpoint(connectedOnly)?.name, 'keyed');
+      final ready = [
+        _row('keyed', 'present'),
+        _row('codex-cli', 'cli-auth',
+            accountAuthenticated: true, routeReady: true),
+      ];
+      expect(defaultEndpoint(ready)?.name, 'codex-cli');
+    });
     test('returns null when nothing on the roster can answer', () {
-      expect(defaultEndpoint([_row('a', 'absent'), _row('b', 'absent')]),
-          isNull);
+      expect(
+          defaultEndpoint([_row('a', 'absent'), _row('b', 'absent')]), isNull);
       expect(defaultEndpoint([]), isNull);
     });
     test('roster order breaks ties within a tier', () {
@@ -95,6 +113,39 @@ void main() {
       await tester.tap(find.text('alive'));
       await tester.pumpAndSettle();
       expect(picked, 'alive');
+    });
+    testWidgets(
+        'a connected Codex account needs route readiness before selection',
+        (tester) async {
+      String? picked;
+      await tester.pumpWidget(MaterialApp(
+        theme: flywheelLightTheme(),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: OutlinedButton(
+                onPressed: () async {
+                  picked = await showModelPicker(
+                      context,
+                      [
+                        _row('codex-cli', 'cli-auth',
+                            accountAuthenticated: true),
+                        _row('ready-key', 'present'),
+                      ],
+                      null);
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(find.text('connected; run check needed'), findsOneWidget);
+      await tester.tap(find.text('codex-cli'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(picked, isNull);
     });
   });
   group('keys panel first run', () {
