@@ -16,6 +16,7 @@ from harness.gateway_operation_process import (
 from harness.gateway_operation_route import operation_ref_for, route_gateway_operation
 from harness.gateway_operations import GatewayOperations
 from harness.journey_store import JourneyStore, MutationCommand
+from harness.output_check_gateway import authority_data_ref
 
 
 OWNER = "owner_" + "a" * 32
@@ -54,6 +55,8 @@ def _write_inputs(root: Path) -> dict:
                      "sha256": _sha(contract)},
         "answer": {"kind": "workspace-file", "path": "answer.json",
                    "sha256": _sha(answer)},
+        "authority_sources": [{"kind": "workspace-file", "path": "rows.json",
+                               "sha256": _sha(root / "rows.json")}],
     }
 
 
@@ -65,6 +68,7 @@ def _operation(root: Path) -> dict:
         "data_refs": [
             f"data_output_check.contract:{files['contract']['sha256'][:32]}",
             f"data_output_check.answer:{files['answer']['sha256'][:32]}",
+            authority_data_ref(files["authority_sources"][0], 0),
         ],
         "credential_refs": [],
     }
@@ -89,6 +93,8 @@ def test_output_check_route_uses_operation_lifecycle_and_seals_action(tmp_path):
         json.dumps({"proposal_ref": prepared["proposal_ref"]}).encode(),
         owner_ref=OWNER, state_root=tmp_path, clock=lambda: NOW)
     assert (p_status, a_status) == (200, 200)
+    assert prepared["data_refs"] == operation["data_refs"]
+    assert prepared["summary"]["data_refs"] == operation["data_refs"]
 
     captures = []
 

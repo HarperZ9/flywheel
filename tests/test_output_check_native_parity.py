@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from harness.gateway_operation import GatewayOperationError, canonicalize_operation
+from harness.output_check_gateway import authority_data_ref
 from harness.output_check_service import OutputCheckError, run_output_check_operation
 
 
@@ -40,7 +41,8 @@ def _workspace(tmp_path: Path, answer_value=4169) -> dict:
         "taxable_income": {"value": 36700, "source": "the return"},
         "tax": {"value": answer_value, "source": SOURCE},
     }), encoding="utf-8")
-    return {"contract": contract, "answer": answer, "marker": marker}
+    return {"contract": contract, "answer": answer, "checker": checker,
+            "marker": marker}
 
 
 def _file(path: Path, root: Path) -> dict:
@@ -52,9 +54,13 @@ def _file(path: Path, root: Path) -> dict:
 def _operation(root: Path, files: dict, **extra) -> dict:
     contract = _file(files["contract"], root)
     answer = _file(files["answer"], root)
+    source_paths = files["authority_sources"] if "authority_sources" in files else [
+        files["checker"]]
+    authority_sources = [_file(path, root) for path in source_paths]
     op = {
         "contract": contract,
         "answer": answer,
+        "authority_sources": authority_sources,
         "allow_commands": False,
         "strict": False,
         "json": True,
@@ -62,6 +68,8 @@ def _operation(root: Path, files: dict, **extra) -> dict:
         "data_refs": [
             f"data_output_check.contract:{contract['sha256'][:32]}",
             f"data_output_check.answer:{answer['sha256'][:32]}",
+            *(authority_data_ref(source, index)
+              for index, source in enumerate(authority_sources)),
         ],
         "credential_refs": [],
     }
@@ -84,6 +92,9 @@ def test_output_check_operation_shape_is_exact_and_scope_derived(tmp_path):
     with pytest.raises(GatewayOperationError):
         canonicalize_operation("output.check", {
             **_operation(tmp_path, files), "allow_command": True})
+    with pytest.raises(GatewayOperationError):
+        canonicalize_operation("output.check", {
+            **_operation(tmp_path, files), "authority_sources": []})
 
 
 def test_native_service_matches_cli_for_granted_command_authority(tmp_path):

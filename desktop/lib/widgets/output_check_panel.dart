@@ -19,6 +19,7 @@ class _OutputCheckPanelState extends State<OutputCheckPanel> {
   final _contractSha = TextEditingController();
   final _answerPath = TextEditingController();
   final _answerSha = TextEditingController();
+  final _authoritySources = TextEditingController();
   bool _allowCommands = false, _strict = false, _busy = false;
   OperationResult? _result;
   String? _error;
@@ -30,6 +31,7 @@ class _OutputCheckPanelState extends State<OutputCheckPanel> {
     _contractSha.dispose();
     _answerPath.dispose();
     _answerSha.dispose();
+    _authoritySources.dispose();
     super.dispose();
   }
 
@@ -72,9 +74,11 @@ class _OutputCheckPanelState extends State<OutputCheckPanel> {
   GatewayOperation _operation() {
     final contractSha = _sha(_contractSha.text);
     final answerSha = _sha(_answerSha.text);
+    final authoritySources = _authoritySourceRefs();
     final operation = <String, Object?>{
       'contract': _source(_contractPath.text, contractSha),
       'answer': _source(_answerPath.text, answerSha),
+      'authority_sources': authoritySources,
       'allow_commands': _allowCommands,
       'strict': _strict,
       'json': true,
@@ -87,9 +91,26 @@ class _OutputCheckPanelState extends State<OutputCheckPanel> {
       dataRefs: [
         'data_output_check.contract:${contractSha.substring(0, 32)}',
         'data_output_check.answer:${answerSha.substring(0, 32)}',
+        for (final item in authoritySources.indexed)
+          'data_output_check.authority.${item.$1}:'
+              '${(item.$2['sha256'] as String).substring(0, 32)}',
       ],
       credentialRefs: const [],
     );
+  }
+
+  List<Map<String, Object?>> _authoritySourceRefs() {
+    final sources = <Map<String, Object?>>[];
+    for (final raw in _authoritySources.text.split(RegExp(r'\r?\n'))) {
+      final line = raw.trim();
+      if (line.isEmpty) continue;
+      final parts = line.split(RegExp(r'\s+'));
+      if (parts.length != 2) {
+        throw ArgumentError('authority sources use: path sha256');
+      }
+      sources.add(_source(parts[0], _sha(parts[1])));
+    }
+    return sources;
   }
 
   Map<String, Object?> _source(String path, String sha) => {
@@ -132,6 +153,13 @@ class _OutputCheckPanelState extends State<OutputCheckPanel> {
             'output-check-answer-path'),
         const SizedBox(height: FwLayout.s2),
         _field(_answerSha, 'answer sha256', '', 'output-check-answer-sha'),
+        const SizedBox(height: FwLayout.s2),
+        _field(
+            _authoritySources,
+            'authority source refs',
+            'one per line: rows.json <sha256>',
+            'output-check-authority-sources',
+            maxLines: 3),
         const SizedBox(height: FwLayout.s3),
         Wrap(spacing: FwLayout.s3, runSpacing: FwLayout.s2, children: [
           FilterChip(
@@ -163,13 +191,14 @@ class _OutputCheckPanelState extends State<OutputCheckPanel> {
     );
   }
 
-  Widget _field(
-      TextEditingController c, String label, String hint, String key) {
+  Widget _field(TextEditingController c, String label, String hint, String key,
+      {int maxLines = 1}) {
     final t = context.fw;
     return TextField(
       key: ValueKey(key),
       controller: c,
       enabled: !_busy,
+      maxLines: maxLines,
       style: fwMono(t, size: 11.5, color: t.ink),
       decoration:
           InputDecoration(isDense: true, labelText: label, hintText: hint),

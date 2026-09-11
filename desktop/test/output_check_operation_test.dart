@@ -105,6 +105,10 @@ void main() {
       find.byKey(const ValueKey('output-check-answer-sha')),
       'b' * 64,
     );
+    await tester.enterText(
+      find.byKey(const ValueKey('output-check-authority-sources')),
+      'examples/output-validation/table.json ${'c' * 64}',
+    );
     await tester.tap(find.byKey(const ValueKey('output-check-allow-commands')));
     await tester.tap(find.text('Check output'));
     await tester.runAsync(
@@ -115,6 +119,18 @@ void main() {
     expect(seen.path, '/api/output/check');
     expect(captured?.action, 'output.check');
     expect(captured?.scopes, ['exec']);
+    expect(captured?.operation['authority_sources'], [
+      {
+        'kind': 'workspace-file',
+        'path': 'examples/output-validation/table.json',
+        'sha256': 'c' * 64,
+      }
+    ]);
+    expect(captured?.dataRefs, [
+      'data_output_check.contract:${'a' * 32}',
+      'data_output_check.answer:${'b' * 32}',
+      'data_output_check.authority.0:${'c' * 32}',
+    ]);
     expect(find.text('PASS'), findsOneWidget);
     client.close();
   });

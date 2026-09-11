@@ -55,6 +55,7 @@ void main() {
             'sha256':
                 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
           },
+          'authority_sources': <Object>[],
           'allow_commands': false,
           'strict': false,
           'json': true,
@@ -116,6 +117,7 @@ void main() {
           'sha256':
               'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         },
+        'authority_sources': <Object>[],
         'allow_commands': false,
         'strict': false,
         'json': true,
@@ -137,6 +139,7 @@ void main() {
           'sha256':
               'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         },
+        'authority_sources': <Object>[],
         'allow_commands': true,
         'strict': false,
         'json': true,
@@ -159,6 +162,7 @@ void main() {
           'sha256':
               'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
         },
+        'authority_sources': <Object>[],
         'allow_commands': false,
         'strict': false,
         'json': true,

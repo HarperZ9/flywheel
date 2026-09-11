@@ -18,6 +18,10 @@ def _ref(value: object, kind: str) -> dict:
     return value
 
 
+def authority_data_ref(source: dict, index: int) -> str:
+    return f"data_output_check.authority.{index}:{source['sha256'][:32]}"
+
+
 def _dir(value: object) -> None:
     if (type(value) is not dict or set(value) != {"kind", "path"}
             or value.get("kind") != "workspace-dir"
@@ -37,6 +41,13 @@ def _artifact(value: object) -> None:
 def validate_output_check_operation(value: dict) -> None:
     contract = _ref(value.get("contract"), "workspace-file")
     answer = _ref(value.get("answer"), "workspace-file")
+    sources = value.get("authority_sources")
+    if (type(sources) is not list or len(sources) > 64):
+        raise ValueError
+    authority_sources = [_ref(source, "workspace-file") for source in sources]
+    paths = [source["path"] for source in authority_sources]
+    if len(set(paths)) != len(paths):
+        raise ValueError
     for name in ("allow_commands", "strict", "json", "stream",
                  "verify_lean"):
         if name in value and type(value[name]) is not bool:
@@ -55,6 +66,8 @@ def validate_output_check_operation(value: dict) -> None:
         _ref(value["lean_bin"], "workspace-file")
     expected = [f"data_output_check.contract:{contract['sha256'][:32]}",
                 f"data_output_check.answer:{answer['sha256'][:32]}"]
+    expected.extend(authority_data_ref(source, index)
+                    for index, source in enumerate(authority_sources))
     if value.get("data_refs") != expected:
         raise ValueError
 

@@ -1,70 +1,26 @@
 """Shared native service for flywheel check-output."""
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 
 from .answer_docs import DocumentError, from_latex, from_markdown, from_pdf
 from .contract_terms import HOLD
 from .output_check_cli import EXIT, SEVERITY, check, specs
+from .output_check_sources import (
+    OutputCheckError,
+    command_custody_contract,
+    pinned_authority_sources,
+    run_artifact as _artifact,
+    sha256_bytes as _sha,
+    source_file as _source,
+    workspace_dir as _dir,
+)
 from .proof_lean import lean_source
 from .proof_relations import RelationError
 from .proof_run import prove
 from .report_docs import as_text, write_report
 from .validation_ledger import TASK, record
-
-
-class OutputCheckError(RuntimeError):
-    def __init__(self, code: str) -> None:
-        self.code = code
-        super().__init__(code)
-
-
-def _sha(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def _contained(root: Path, rel: str, *, must_exist: bool) -> Path:
-    if rel.startswith(("/", "\\")) or ":" in rel or "\\" in rel:
-        raise OutputCheckError("INVALID_REQUEST")
-    target = (root / rel).resolve()
-    basis = root.resolve()
-    if target != basis and basis not in target.parents:
-        raise OutputCheckError("INVALID_REQUEST")
-    if must_exist and not target.exists():
-        raise OutputCheckError("SOURCE_CONTEXT_FAILED")
-    return target
-
-
-def _source(spec: dict, root: Path) -> tuple[Path, bytes]:
-    if spec.get("kind") != "workspace-file":
-        raise OutputCheckError("INVALID_REQUEST")
-    path = _contained(root, spec.get("path", ""), must_exist=True)
-    try:
-        data = path.read_bytes()
-    except OSError:
-        raise OutputCheckError("SOURCE_CONTEXT_FAILED") from None
-    if not path.is_file() or _sha(data) != spec.get("sha256"):
-        raise OutputCheckError("SOURCE_DRIFT")
-    return path, data
-
-
-def _dir(spec: dict, root: Path) -> Path:
-    if spec.get("kind") != "workspace-dir":
-        raise OutputCheckError("INVALID_REQUEST")
-    path = _contained(root, spec.get("path", ""), must_exist=True)
-    if not path.is_dir():
-        raise OutputCheckError("SOURCE_CONTEXT_FAILED")
-    return path
-
-
-def _artifact(spec: dict, run_root: Path) -> Path:
-    if spec.get("kind") != "run-artifact":
-        raise OutputCheckError("INVALID_REQUEST")
-    path = _contained(run_root, spec.get("path", ""), must_exist=False)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return path
 
 
 def _artifact_doc(path: Path, run_root: Path) -> dict:
@@ -121,14 +77,16 @@ def _exit(report: dict, *, strict: bool, verify_lean: bool) -> tuple[int, int]:
 
 def _proof(operation: dict, contract_doc: dict, report: dict, answer: dict,
            *, base_dir: Path, repo_root: Path, run_root: Path,
-           operation_ref: str) -> tuple[dict, dict]:
+           operation_ref: str,
+           pinned_sources: dict[Path, bytes]) -> tuple[dict, dict]:
     if not operation.get("lean") and not operation.get("verify_lean"):
         return {}, {}
     lean_path = (_artifact(operation["lean"], run_root)
                  if operation.get("lean") else _default_artifact(
                      "Answer.lean", run_root, operation_ref))
     try:
-        source = lean_source(report, answer, specs(contract_doc, base_dir=base_dir),
+        source = lean_source(report, answer, specs(
+            contract_doc, base_dir=base_dir, pinned_sources=pinned_sources),
             relations=contract_doc.get("relations") or ())
     except RelationError as exc:
         raise OutputCheckError(f"INVALID_REQUEST:{exc}") from None
@@ -163,14 +121,21 @@ def run_output_check_operation(operation: dict, *, repo_root: Path,
         answer = _answer_from_bytes(answer_path, answer_bytes)
     except (DocumentError, ValueError, OSError, json.JSONDecodeError) as exc:
         raise OutputCheckError(f"INVALID_REQUEST:{type(exc).__name__}") from None
+    pinned_sources = pinned_authority_sources(
+        operation, contract_doc, base_dir=base_dir, repo_root=repo_root)
+    check_contract = command_custody_contract(
+        contract_doc, base_dir=base_dir, repo_root=repo_root,
+        run_root=run_root, operation_ref=operation_ref,
+        pinned_sources=pinned_sources)
     progress({"phase": "checking"})
-    report = check(contract_doc, answer, base_dir=base_dir,
-                   allow_commands=operation["allow_commands"])
-    _redact_command_diagnostics(report, contract_doc)
+    report = check(check_contract, answer, base_dir=base_dir,
+                   allow_commands=operation["allow_commands"],
+                   pinned_sources=pinned_sources)
+    _redact_command_diagnostics(report, check_contract)
     artifacts: dict[str, dict] = {}
     proof, proof_artifacts = _proof(operation, contract_doc, report, answer,
         base_dir=base_dir, repo_root=repo_root, run_root=run_root,
-        operation_ref=operation_ref)
+        operation_ref=operation_ref, pinned_sources=pinned_sources)
     if proof:
         report["proof"] = proof
         artifacts.update(proof_artifacts)

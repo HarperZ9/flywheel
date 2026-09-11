@@ -56,7 +56,7 @@ def _claimed(answer: dict, name: str):
     return ((answer or {}).get(name) or {}).get("value")
 
 
-def _citation_resolver(_spec, _base, _allow, _timeout):
+def _citation_resolver(_spec, _base, _allow, _timeout, _pinned):
     """Never consulted for a value. `output_contract` short-circuits a CITED
     field before it resolves anything, and this exists so the source still has
     to be declared rather than being implied by its absence."""
@@ -65,7 +65,7 @@ def _citation_resolver(_spec, _base, _allow, _timeout):
     return resolve
 
 
-def _table_resolver(spec, base: Path, _allow, _timeout):
+def _table_resolver(spec, base: Path, _allow, _timeout, pinned):
     """A JSON object of key to value, read on first use.
 
     Read lazily so a missing or malformed file lands as one unchecked field
@@ -78,7 +78,10 @@ def _table_resolver(spec, base: Path, _allow, _timeout):
 
     def resolve(answer):
         if not cache:
-            cache["rows"] = json.loads(path.read_text(encoding="utf-8"))
+            data = pinned.get(path.resolve()) if pinned else None
+            cache["rows"] = json.loads(
+                data.decode("utf-8") if data is not None
+                else path.read_text(encoding="utf-8"))
         key = _claimed(answer, key_field)
         if key is None:
             raise LookupError(f"the answer states no {key_field} to look up")
@@ -91,7 +94,7 @@ def _table_resolver(spec, base: Path, _allow, _timeout):
     return resolve
 
 
-def _command_resolver(spec, base: Path, allow: bool, timeout: float):
+def _command_resolver(spec, base: Path, allow: bool, timeout: float, _pinned):
     argv = [str(part) for part in spec["argv"]]
 
     def resolve(answer):
@@ -119,7 +122,8 @@ _REQUIRED = {CITATION: (), TABLE: ("path", "key_field"), COMMAND: ("argv",)}
 
 
 def build_authorities(declarations: dict, *, allow_commands: bool = False,
-                      base_dir=None, timeout: float = DEFAULT_TIMEOUT_SECONDS) -> dict:
+                      base_dir=None, timeout: float = DEFAULT_TIMEOUT_SECONDS,
+                      pinned_sources: dict[Path, bytes] | None = None) -> dict:
     """Declared authorities, as the callables `check_answer` expects.
 
     Structure is checked here and failures at that level raise, because a
@@ -129,6 +133,8 @@ def build_authorities(declarations: dict, *, allow_commands: bool = False,
     fails there instead and becomes an unchecked field.
     """
     base = Path(base_dir or ".").resolve()
+    pinned_sources = {Path(path).resolve(): data
+                      for path, data in (pinned_sources or {}).items()}
     resolvers = {}
     for source, spec in (declarations or {}).items():
         if not isinstance(spec, dict):
@@ -139,7 +145,8 @@ def build_authorities(declarations: dict, *, allow_commands: bool = False,
         missing = [key for key in _REQUIRED[kind] if not spec.get(key)]
         if missing:
             raise AuthorityError(f"{source}: {kind} needs {', '.join(missing)}")
-        resolvers[source] = _BUILDERS[kind](spec, base, allow_commands, timeout)
+        resolvers[source] = _BUILDERS[kind](
+            spec, base, allow_commands, timeout, pinned_sources)
     if not resolvers:
         raise AuthorityError("a contract with no authorities checks nothing")
     return resolvers
