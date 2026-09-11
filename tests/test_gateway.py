@@ -618,29 +618,52 @@ def test_openai_chat_default_does_not_touch_stats(monkeypatch):
     assert spy.ordered is None and spy.recorded == []   # explicit order honored, no side effect
 
 
-def test_gateway_agent_worker_persists_the_run_and_returns_run_id(
+def test_gateway_agent_worker_persists_private_trace_and_returns_projection(
         tmp_path, monkeypatch):
-    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))  # countersign store
+    # The retained answer/events move to private custody; the caller gets metadata.
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
     from harness import gateway_operation_process as process
+    from harness.gateway_agent_trace import AgentTrace
+    from harness.gateway_agent_projection import validate_projection
+    marker = "PRIVATE_WORKER_FIXTURE_73b9"
+    binding = ("owner_" + "a" * 32, "jrn_" + "b" * 32, "op_" + "c" * 32)
+    trace = AgentTrace(tmp_path, *binding)
+    emitted = []
 
     def fake_run(goal, endpoint, **kw):
-        emit = kw.get("on_event")
-        if emit:
-            emit({"type": "assistant", "step": 1, "text": "thinking"})
-        return {"final": "answered", "steps": 1, "verified": True,
+        assert goal == marker
+        kw["ledger"].append("assistant", marker)
+        kw["on_event"]({"type": "assistant", "step": 1, "text": marker})
+        return {"final": marker, "steps": 1, "verified": True,
                 "checkpoint": "abc", "endpoint": endpoint}
 
+    def forbidden(*args, **kwargs):
+        raise AssertionError("private worker reached a global content sink")
+    monkeypatch.setattr("harness.eval_store.save_agent_run", forbidden)
+    monkeypatch.setattr("harness.scaffold.scaffold_answer", forbidden)
+    monkeypatch.setattr(gateway, "_countersign_run", forbidden)
     monkeypatch.setattr("harness.router_agent.run_router_agent", fake_run)
-    monkeypatch.setattr(process, "_emit", lambda _event: None)
+    monkeypatch.setattr(process, "_emit", emitted.append)
     result = process._run_agent({
-        "goal": "g", "endpoint": "anthropic", "max_steps": 2,
+        "goal": marker, "endpoint": "anthropic", "max_steps": 2,
         "allow_write": False, "allow_exec": False,
-    }, {}, tmp_path, tmp_path)
-    from harness.eval_store import agent_run_detail
-    detail = agent_run_detail(tmp_path, result["run_id"])
-    assert detail["intact"] is True
-    assert detail["final"] == "answered"
-    assert [e["type"] for e in detail["events"]] == ["assistant"]
+    }, {}, tmp_path, tmp_path, trace=trace)
+    validate_projection(result, trace.binding)
+    assert result["state"] == "completed" and result["trace_ref"] == trace.ref
+    records = AgentTrace(tmp_path, *binding).read_reference(result["trace_ref"])
+    assert [r["kind"] for r in records] == ["request", "ledger", "progress", "result"]
+    assert result["record_count"] == len(records) == 4
+    assert result["trace_head_sha256"] == records[-1]["record_sha256"]
+    assert records[2]["payload"] == {"type": "assistant", "step": 1, "text": marker}
+    assert records[-1]["payload"]["final"] == marker
+    assert records[-1]["payload"]["verified"] is True
+    assert len(emitted) == 1 and emitted[0]["type"] == "progress"
+    progress = emitted[0]["event"]
+    validate_projection(progress, trace.binding)
+    assert progress["state"] == "running" and progress["record_count"] == 3
+    assert progress["trace_head_sha256"] == records[2]["record_sha256"]
+    assert marker not in json.dumps([result, emitted])
+    assert not (tmp_path / "agent_runs").exists()
 
 
 def test_workflow_run_is_countersigned_into_the_store(tmp_path, monkeypatch):
