@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 import os
 import re
 import stat
-import subprocess
 
 import pytest
 
@@ -218,29 +217,45 @@ def _storage_receipts(tmp_path, monkeypatch, inspect):
     return receipts
 
 
-def _windows_acl_entries(path):
-    result = subprocess.run(
-        ["icacls", str(path)], check=True, capture_output=True, text=True,
-        encoding="utf-8", errors="replace",
-    )
-    return tuple(line.strip() for line in result.stdout.splitlines() if ":(" in line)
+def _windows_acl_sddl(path):
+    import ctypes
+    from ctypes import wintypes
+    advapi = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    get_security = advapi.GetFileSecurityW
+    render = advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW
+    get_security.argtypes = (wintypes.LPCWSTR, wintypes.DWORD, ctypes.c_void_p,
+                             wintypes.DWORD, ctypes.POINTER(wintypes.DWORD))
+    render.argtypes = (ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD,
+                       ctypes.POINTER(wintypes.LPWSTR), ctypes.c_void_p)
+    needed = wintypes.DWORD(); get_security(str(path), 4, None, 0, ctypes.byref(needed))
+    descriptor = ctypes.create_string_buffer(needed.value)
+    assert get_security(str(path), 4, descriptor, needed, ctypes.byref(needed))
+    text = wintypes.LPWSTR()
+    assert render(descriptor, 1, 4, ctypes.byref(text), None)
+    try:
+        return text.value
+    finally:
+        kernel.LocalFree(text)
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows DACL semantics")
-def test_every_owner_artifact_has_one_protected_owner_only_windows_ace(tmp_path, monkeypatch):
-    """Inherited local-user ACLs would expose owner and grant state to other accounts."""
-    receipts = _storage_receipts(tmp_path, monkeypatch, _windows_acl_entries)
+def test_every_owner_artifact_has_protected_owner_and_user_windows_aces(tmp_path, monkeypatch):
+    """Protected owner and token-user ACLs keep state private after elevated creation."""
+    from harness.windows_owner_security import current_token_user_sid
+    user_sid = current_token_user_sid()
+    receipts = _storage_receipts(tmp_path, monkeypatch, _windows_acl_sddl)
     assert set(receipts) == {
         "owner_directory", "owner_ref", "journey_owner_directory",
         "grant_owner_directory", "grant_temp", "grant_record",
     }
     for label, entries in receipts.items():
         assert entries is not None, label
-        assert len(entries) == 1, (label, entries)
-        assert "OWNER RIGHTS:" in entries[0] and "(I)" not in entries[0], (label, entries)
-        assert "(F)" in entries[0], (label, entries)
+        assert entries.startswith("D:P"), (label, entries)
+        assert "WD" not in entries and "BU" not in entries, (label, entries)
         inheritance = label.endswith("directory")
-        assert ("(OI)" in entries[0] and "(CI)" in entries[0]) is inheritance
+        flags = "OICI" if inheritance else ""
+        assert entries == f"D:P(A;{flags};FA;;;OW)(A;{flags};FA;;;{user_sid})", (label, entries)
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows open-file deletion semantics")
