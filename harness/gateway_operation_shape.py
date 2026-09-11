@@ -1,11 +1,4 @@
-"""gateway_operation_shape.py -- per-action shape validation.
-
-Extracted from gateway_operation.py to keep that module under its
-ceiling. One function, pure: given an action and its canonical snapshot,
-raise ValueError on any shape this gateway refuses. Field-type rules
-live here so the canonicalization core stays about digests, refs, and
-scopes.
-"""
+"""gateway_operation_shape.py -- per-action shape validation."""
 from __future__ import annotations
 
 from .evidence_json import canonical_sha256
@@ -17,6 +10,9 @@ from .journey_types import SHA256_PATTERN
 
 
 def validate_operation_shape(action: str, value: dict) -> None:
+    if action == "output.check":
+        from .output_check_gateway import validate_output_check_operation as v
+        return v(value)
     text_fields = {"model", "goal", "endpoint", "workflow", "profile", "root",
                    "test_cmd", "name", "tool", "detail", "prompt",
                    "solution_sig", "intent_source",
@@ -199,6 +195,9 @@ def destination_for(action: str, value: dict) -> dict:
         return {"kind": "forge", "ref": "conjecture-forge"}
     if action == "lean.check":
         return {"kind": "oracle", "ref": "lean"}
+    if action == "output.check":
+        from .output_check_gateway import output_check_destination as d
+        return d(value)
     if action == "suite.audit":
         return {"kind": "suite", "ref": value["path"]}
     if action == "lane.call":
@@ -260,6 +259,9 @@ def derived_scopes(action: str, value: dict, secrets: bool) -> tuple:
     if action == "lean.check":
         # The Lean kernel is a subprocess and the verdict is stored.
         selected.update(("exec", "write"))
+    if action == "output.check":
+        from .output_check_gateway import output_check_scopes as scopes
+        selected.update(scopes(value))
     if action == "suite.audit":
         # Mutation audit runs the project's own test command repeatedly.
         selected.add("exec")

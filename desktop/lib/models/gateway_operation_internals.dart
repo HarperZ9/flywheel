@@ -88,6 +88,13 @@ GatewayDestination _destination(String action, Map<String, Object?> value) {
   if (action == 'packs.admit') {
     return GatewayDestination('pack', _packRef(value['manifest']));
   }
+  if (action == 'output.check') {
+    final contract = value['contract'];
+    final sha = contract is Map ? contract['sha256'] : null;
+    return sha is String && sha.length >= 16
+        ? GatewayDestination('output-check', sha.substring(0, 16))
+        : _invalid();
+  }
   if (action == 'embeddings.create') {
     final ref = value['model'];
     return GatewayDestination(
@@ -100,18 +107,18 @@ GatewayDestination _destination(String action, Map<String, Object?> value) {
   final field = plugin || market
       ? 'name'
       : action == 'chat.complete'
-      ? 'model'
-      : 'endpoint';
+          ? 'model'
+          : 'endpoint';
   final ref = value[field];
   return ref is String
       ? GatewayDestination(
           plugin
               ? 'plugin'
               : market
-              ? 'marketplace'
-              : action == 'chat.complete'
-              ? 'model'
-              : 'endpoint',
+                  ? 'marketplace'
+                  : action == 'chat.complete'
+                      ? 'model'
+                      : 'endpoint',
           ref,
         )
       : _invalid();
@@ -193,6 +200,19 @@ List<String> _scopes(String action, Map<String, Object?> value) {
   if (action == 'lean.check') {
     // The Lean kernel is a subprocess and the verdict is stored.
     selected.addAll(const ['exec', 'write']);
+  }
+  if (action == 'output.check') {
+    if (value['allow_commands'] == true || value['verify_lean'] == true) {
+      selected.add('exec');
+    }
+    if (value['verify_lean'] == true ||
+        const {'out', 'report', 'lean', 'ledger'}
+            .any((field) => value.containsKey(field))) {
+      selected.add('write');
+    }
+    if ('${value['scope'] ?? ''}${value['subject'] ?? ''}'.isNotEmpty) {
+      selected.add('write');
+    }
   }
   if (action == 'suite.audit') selected.add('exec');
   if (action == 'lane.call') {

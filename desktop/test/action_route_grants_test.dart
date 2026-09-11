@@ -41,6 +41,28 @@ void main() {
         'pack',
         'flywheel.finance.claims',
       ),
+      'output.check': (
+        {
+          'contract': {
+            'kind': 'workspace-file',
+            'path': 'examples/output-validation/form-1040.contract.json',
+            'sha256':
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          },
+          'answer': {
+            'kind': 'workspace-file',
+            'path': 'examples/output-validation/answer-from-the-table.json',
+            'sha256':
+                'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          },
+          'allow_commands': false,
+          'strict': false,
+          'json': true,
+          'stream': true,
+        },
+        'output-check',
+        'aaaaaaaaaaaaaaaa',
+      ),
       // A scan with no root reads the environment, and the sheet says so
       // rather than naming a directory nobody chose.
       'infra.credential_scan': (const {}, 'scan', 'environment'),
@@ -79,6 +101,71 @@ void main() {
         'manifest': {'pack_id': 'p'},
       }).scopes,
       ['write'],
+    );
+    expect(
+      _op('output.check', {
+        'contract': {
+          'kind': 'workspace-file',
+          'path': 'c.json',
+          'sha256':
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        },
+        'answer': {
+          'kind': 'workspace-file',
+          'path': 'a.json',
+          'sha256':
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        },
+        'allow_commands': false,
+        'strict': false,
+        'json': true,
+        'stream': true,
+      }).scopes,
+      [],
+    );
+    expect(
+      _op('output.check', {
+        'contract': {
+          'kind': 'workspace-file',
+          'path': 'c.json',
+          'sha256':
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        },
+        'answer': {
+          'kind': 'workspace-file',
+          'path': 'a.json',
+          'sha256':
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        },
+        'allow_commands': true,
+        'strict': false,
+        'json': true,
+        'stream': true,
+        'report': {'kind': 'run-artifact', 'path': 'reports/check.md'},
+      }).scopes,
+      ['write', 'exec'],
+    );
+    expect(
+      _op('output.check', {
+        'contract': {
+          'kind': 'workspace-file',
+          'path': 'c.json',
+          'sha256':
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        },
+        'answer': {
+          'kind': 'workspace-file',
+          'path': 'a.json',
+          'sha256':
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        },
+        'allow_commands': false,
+        'strict': false,
+        'json': true,
+        'stream': true,
+        'verify_lean': true,
+      }).scopes,
+      ['write', 'exec'],
     );
     expect(_op('infra.credential_scan', const {}).scopes, ['secrets']);
     expect(_op('infra.isolation', const {}).scopes, ['network']);

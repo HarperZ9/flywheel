@@ -152,8 +152,7 @@ def seal_result(state_root: Path, validate, owner_ref: str, operation_ref: str,
 
 
 def validate_history(history: list[dict], operation_ref: str) -> None:
-    if not history:
-        return
+    if not history: return
     queued = history[0]
     qkeys = {"operation_ref", "client_request_id", "action", "tool",
              "authorization_sha256", "operation_sha256", "arguments_sha256",
@@ -162,8 +161,9 @@ def validate_history(history: list[dict], operation_ref: str) -> None:
             or set(queued["payload"]) != qkeys
             or queued["payload"].get("operation_ref") != operation_ref
             or re.fullmatch(r"op_[0-9a-f]{32}\Z", operation_ref) is None
-            or queued["payload"].get("action") != "agent.run"
-            or queued["payload"].get("tool") != "agent.run"
+            or queued["payload"].get("action") not in {"agent.run", "output.check"}
+            or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z",
+                            queued["payload"].get("tool", "")) is None
             or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z",
                             queued["payload"].get("client_request_id", ""))
             is None

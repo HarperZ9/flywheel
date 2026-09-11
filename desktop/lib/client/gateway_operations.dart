@@ -22,15 +22,18 @@ final class GatewayOperations {
   final GatewayClient _client;
   const GatewayOperations(this._client);
 
-  Stream<GatewayOperationEvent> start(Map<String, dynamic> authorizedBody) {
+  Stream<GatewayOperationEvent> start(Map<String, dynamic> authorizedBody,
+      {String path = '/api/agent'}) {
+    if (path != '/api/agent' && path != '/api/output/check') {
+      return Stream.error(const GatewaySseException());
+    }
     final encoded = utf8.encode(jsonEncode(authorizedBody));
     if (encoded.length > 1048576) {
       return Stream.error(const GatewaySseException());
     }
-    final request =
-        http.Request('POST', Uri.parse('${_client.baseUrl}/api/agent'))
-          ..headers['Content-Type'] = 'application/json'
-          ..bodyBytes = encoded;
+    final request = http.Request('POST', Uri.parse('${_client.baseUrl}$path'))
+      ..headers['Content-Type'] = 'application/json'
+      ..bodyBytes = encoded;
     return _events(request);
   }
 

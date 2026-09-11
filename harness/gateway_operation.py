@@ -64,9 +64,6 @@ class AuthorizedOperation(CanonicalOperation):
 _REFS = {"data_refs", "credential_refs"}
 _FIELDS = {
     "chat.complete": ({"model", "messages", "stream"} | _REFS, set()),
-    # `effort` is optional so a client that predates the dial keeps working;
-    # when present it is the named dial the receipt reports, while max_steps
-    # stays the enforced budget and any divergence is stamped as an override.
     "agent.run": ({"goal", "endpoint", "max_steps", "allow_write",
                    "allow_exec", "stream"} | _REFS,
                   {"root", "test_cmd", "attachment", "effort", "model", "max_tokens", "timeout_s",
@@ -96,11 +93,13 @@ _FIELDS = {
                       "intent_source", "architecture_source"}),
     "forge.recheck": ({"prp_id"} | _REFS, set()),
     "embeddings.create": ({"input"} | _REFS, {"model"}),
-    # The action routes. Each reaches the network, spawns a process, or
-    # writes custody, so each is expressible only as a granted operation.
     "capability.probe": ({"endpoint"} | _REFS, {"disk_gb"}),
     "invent.round": ({"k"} | _REFS, {"offset"}),
     "lean.check": ({"code"} | _REFS, set()),
+    "output.check": ({"contract", "answer", "allow_commands", "strict",
+                      "json", "stream"} | _REFS,
+                     {"base_dir", "out", "report", "lean", "verify_lean",
+                      "lean_bin", "ledger", "scope", "subject"}),
     "suite.audit": ({"path"} | _REFS, {"oracle_cmd", "max_mutants"}),
     "lane.call": ({"name", "tool", "args"} | _REFS,
                   {"governance_tier", "timeout", "bulletin_access", "bulletin_base_url"}),
@@ -110,10 +109,6 @@ _FIELDS = {
     "hook.register": ({"event", "argv", "blocking", "hook_id"} | _REFS, set()), "hook.run": ({"event", "context", "registrations"} | _REFS, set()),
 }
 _FIELDS.update(INFRA_FIELDS)          # the infrastructure controls; one table
-# Every action the engine can canonicalize is an action the operator can be
-# asked to grant. Deriving the set here rather than restating it at the
-# prepare route means a new action cannot ship with a surface the grant sheet
-# refuses: the two cannot disagree because there is only one list.
 GRANTABLE_ACTIONS = frozenset(_FIELDS)
 LANE_CALL_PREFIX = "/api/lane/"
 def action_for_path(path: str) -> str | None:
@@ -140,6 +135,7 @@ def action_for_path(path: str) -> str | None:
         "/api/capability": "capability.probe",
         "/api/invent": "invent.round",
         "/api/lean": "lean.check",
+        "/api/output/check": "output.check",
         "/api/suite": "suite.audit",
         "/api/packs/admit": "packs.admit",
         "/api/store/entity": "store.put",
