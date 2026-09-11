@@ -54,17 +54,29 @@ License declarations are fair-source or FSL-to-MIT variants. The manifest record
 
 Build receipt: `D:/fw-ship-sweep-20260910/all-lanes-payloads/payload-build-20260910-225229/python-lane-payload-build-manifest.json`.
 
-Installed-wheel fixture receipt: `D:/fw-ship-sweep-20260910/all-lanes-payloads/fixture-run-20260910-225229d/python-lane-fixture-report.json`.
+Installed-wheel fixture receipt: `D:/fw-ship-sweep-20260910/all-lanes-payloads/fixture-run-20260910-225229f-netguard/python-lane-fixture-report.json`.
 
 | Lane | Wheel | Wheel SHA-256 | Source module files | Fixture |
 | --- | --- | --- | --- | --- |
-| gather | gather_engine-1.8.2-py3-none-any.whl | sha256:9b73e6db19c1bd888c508e42070b990f72e09789bff4390d7ed848894133daf8 | 64 | `gather.docs` verified one synthetic catalog row |
+| gather | gather_engine-1.8.2-py3-none-any.whl | sha256:9b73e6db19c1bd888c508e42070b990f72e09789bff4390d7ed848894133daf8 | 64 | `gather.docs` verified one synthetic catalog row under the network guard |
 | crucible | crucible_bench-1.2.0-py3-none-any.whl | sha256:eef8bbc7d2af2619567561012970c17161508d219c2b2a816e68ec69d8e51f14 | 42 | `crucible.assess` returned two synthetic verdicts |
 | index | index_graph-2.13.0-py3-none-any.whl | sha256:656cbac4bb0b95079ae09daf95d374e7ac318f213ddee61403b102b37d7bcdde | 117 | `index.map` mapped a tiny synthetic Python workspace |
 | forum | forum_engine-1.14.0-py3-none-any.whl | sha256:1f156f11904939dd38883e783492141a2a9af32f5073aa71a3d6fda0d5ac3b70 | 70 | `forum.route` routed a synthetic verification request under a D: fixture state root |
 | plexus | plexus_mesh-0.2.0-py3-none-any.whl | sha256:1c666d6ab5b404a70db51af436ec9ad05f94df1a4860c2008d79af2351d0d176 | 11 | `plexus_plan` planned the built-in `crucible` target |
 | mneme | mneme_memory-0.3.0-py3-none-any.whl | sha256:f697ff02a8af117ac712e2c995906b8b9b141c6014cae08f56a399b59ba3574f | 23 | `mneme.remember` plus `mneme.recall` stored and recalled a synthetic fact |
-| canon | canon-0.1.0-py3-none-any.whl | sha256:774327270e477f09eb42140f9d0fe516a9a4f48ca000a232b6de4aa7013ec8b6 | 84 | `canon.validate` accepted a synthetic canon record |
+| canon | canon-0.1.0-py3-none-any.whl | sha256:774327270e477f09eb42140f9d0fe516a9a4f48ca000a232b6de4aa7013ec8b6 | 84 | `canon.validate` accepted a synthetic canon record under the network guard |
+
+Fixture network policy: the runner injects `scripts/python_lane_fixture_netguard.py` through `sitecustomize`, blocks non-loopback Python socket attempts, proves the block before lane execution, and records `network_guard.enforced=true` in the fixture receipt. Loopback is allowed so Python's own asyncio socketpair setup can run.
+
+| Lane | Child entrypoint | Tool workflow | Semantic assertion |
+| --- | --- | --- | --- |
+| gather | `gather.mcp:serve` | `gather.docs` on a synthetic local text file | response schema is `gather.catalog-digest/v1`, digest verifies, and one catalog row is present |
+| crucible | `crucible.mcp:serve` | `crucible.assess` on synthetic thesis and measurements | assessment exists and two verdicts are returned |
+| index | `index_graph.mcp:serve` | `index.map` on a tiny synthetic Python workspace | output names `alpha.py` |
+| forum | `python -m forum.mcp_surface` / `serve_stdio` | `forum.route` on a synthetic verification request | JSON response includes routing keys such as candidates, confidence, frame, and needs_escalation |
+| plexus | `plexus.mcp:serve` | `plexus_plan` for built-in `crucible` target | output mentions the `crucible` goal and returns a non-empty order |
+| mneme | `mneme.mcp:serve` | `mneme.remember` then `mneme.recall` in a synthetic state DB | recall returns the synthetic `blue-otter` fact |
+| canon | `canon.local_mcp:serve` | `canon.validate` on a synthetic canon record | validation returns `ok=true` for `fixture-personality` |
 
 ## Version policy decision
 

@@ -10,25 +10,27 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
+from python_lane_fixture_netguard import (create_network_guard, guarded_env, prove_network_guard)
+
 SCHEMA = "flywheel.python-lane-fixtures/v1"
 PROTOCOL = "2025-06-18"
-
+NETWORK_GUARD_DIR: Path | None = None
 
 def fixture_catalog() -> list[dict[str, Any]]:
-    return [
-        {"lane": "gather", "tool": "gather.docs", "network": "none", "workflow": "read synthetic local document"},
-        {"lane": "crucible", "tool": "crucible.assess", "network": "none", "workflow": "assess synthetic thesis and measurements"},
-        {"lane": "index", "tool": "index.map", "network": "none", "workflow": "map a tiny synthetic Python workspace"},
-        {"lane": "forum", "tool": "forum.route", "network": "none", "workflow": "route a synthetic verification request"},
-        {"lane": "plexus", "tool": "plexus_plan", "network": "none", "workflow": "plan a built-in interop target"},
-        {"lane": "mneme", "tool": "mneme.remember+mneme.recall", "network": "none", "workflow": "store and recall synthetic memory"},
-        {"lane": "canon", "tool": "canon.validate", "network": "none", "workflow": "validate a synthetic canon record"},
+    rows = [
+        ("gather", "gather.docs", "read synthetic local document"),
+        ("crucible", "crucible.assess", "assess synthetic thesis and measurements"),
+        ("index", "index.map", "map a tiny synthetic Python workspace"),
+        ("forum", "forum.route", "route a synthetic verification request"),
+        ("plexus", "plexus_plan", "plan a built-in interop target"),
+        ("mneme", "mneme.remember+mneme.recall", "store and recall synthetic memory"),
+        ("canon", "canon.validate", "validate a synthetic canon record"),
     ]
-
+    return [{"lane": lane, "tool": tool, "network": "blocked", "workflow": workflow}
+            for lane, tool, workflow in rows]
 
 class FixtureError(RuntimeError):
     pass
-
 
 def _server_command(python: str, module: str, callable_name: str) -> list[str]:
     code = (
@@ -37,7 +39,6 @@ def _server_command(python: str, module: str, callable_name: str) -> list[str]:
         f"raise SystemExit(getattr(m, {callable_name!r})())"
     )
     return [python, "-c", code]
-
 
 def _call_tool(*, python: str, command: list[str], name: str, arguments: dict[str, Any],
                cwd: Path, env: dict[str, str] | None = None,
@@ -52,6 +53,8 @@ def _call_tool(*, python: str, command: list[str], name: str, arguments: dict[st
     child_env = os.environ.copy()
     if env:
         child_env.update(env)
+    if NETWORK_GUARD_DIR is not None:
+        child_env = guarded_env(child_env, NETWORK_GUARD_DIR)
     cwd.mkdir(parents=True, exist_ok=True)
     proc = subprocess.run(
         command, input="\n".join(json.dumps(msg, sort_keys=True) for msg in messages) + "\n",
@@ -74,7 +77,6 @@ def _call_tool(*, python: str, command: list[str], name: str, arguments: dict[st
         parsed = text
     return text, parsed
 
-
 def _receipt(lane: str, tool: str, parsed: Any, raw_text: str) -> dict[str, Any]:
     excerpt = raw_text[:700]
     return {
@@ -85,7 +87,6 @@ def _receipt(lane: str, tool: str, parsed: Any, raw_text: str) -> dict[str, Any]
         "evidence_excerpt": excerpt,
         "parsed_type": type(parsed).__name__,
     }
-
 
 def _run_gather(python: str, lane_dir: Path) -> dict[str, Any]:
     lane_dir.mkdir(parents=True, exist_ok=True)
@@ -103,7 +104,6 @@ def _run_gather(python: str, lane_dir: Path) -> dict[str, Any]:
     row = _receipt("gather", "gather.docs", parsed, text)
     row["assertions"] = {"schema": parsed["schema"], "catalog_rows": len(parsed.get("catalog", []))}
     return row
-
 
 def _run_crucible(python: str, lane_dir: Path) -> dict[str, Any]:
     lane_dir.mkdir(parents=True, exist_ok=True)
@@ -141,7 +141,6 @@ def _run_crucible(python: str, lane_dir: Path) -> dict[str, Any]:
     row["assertions"] = {"verdict_count": len(verdicts), "assessment": bool(parsed.get("assessment"))}
     return row
 
-
 def _run_index(python: str, lane_dir: Path) -> dict[str, Any]:
     workspace = lane_dir / "workspace"
     workspace.mkdir(parents=True, exist_ok=True)
@@ -159,7 +158,6 @@ def _run_index(python: str, lane_dir: Path) -> dict[str, Any]:
     row["assertions"] = {"mentions_alpha_py": True}
     return row
 
-
 def _run_forum(python: str, lane_dir: Path) -> dict[str, Any]:
     text, parsed = _call_tool(
         python=python,
@@ -174,7 +172,6 @@ def _run_forum(python: str, lane_dir: Path) -> dict[str, Any]:
     row["assertions"] = {"keys": sorted(parsed)[:8], "state_root": str(lane_dir.as_posix())}
     return row
 
-
 def _run_plexus(python: str, lane_dir: Path) -> dict[str, Any]:
     text, parsed = _call_tool(
         python=python,
@@ -188,7 +185,6 @@ def _run_plexus(python: str, lane_dir: Path) -> dict[str, Any]:
     row = _receipt("plexus", "plexus_plan", parsed, text)
     row["assertions"] = {"mentions_goal": True, "order_count": len(parsed.get("order", []))}
     return row
-
 
 def _run_mneme(python: str, lane_dir: Path) -> dict[str, Any]:
     env = {"MNEME_STATE": str((lane_dir / "mneme.db").as_posix())}
@@ -217,7 +213,6 @@ def _run_mneme(python: str, lane_dir: Path) -> dict[str, Any]:
     row = _receipt("mneme", "mneme.remember+mneme.recall", recall_parsed, combined)
     row["assertions"] = {"recall_mentions_fixture": True}
     return row
-
 
 def _run_canon(python: str, lane_dir: Path) -> dict[str, Any]:
     source_hash = sha256(b"canon payload fixture").hexdigest()
@@ -250,9 +245,14 @@ RUNNERS = {"gather": _run_gather, "crucible": _run_crucible, "index": _run_index
            "forum": _run_forum, "plexus": _run_plexus, "mneme": _run_mneme,
            "canon": _run_canon}
 
-
 def run_all(python: str, out: Path) -> dict[str, Any]:
+    global NETWORK_GUARD_DIR
     out.mkdir(parents=True, exist_ok=True)
+    guard = create_network_guard(out)
+    NETWORK_GUARD_DIR = Path(guard["path"])
+    guard_proof = prove_network_guard(python, NETWORK_GUARD_DIR, out)
+    if not guard_proof["enforced"]:
+        raise FixtureError(f"network guard proof failed: {guard_proof}")
     results = []
     for fixture in fixture_catalog():
         lane = fixture["lane"]
@@ -267,12 +267,11 @@ def run_all(python: str, out: Path) -> dict[str, Any]:
         results.append(result)
     verdict = "PASS" if all(row.get("ok") is True for row in results) else "FAIL"
     report = {"schema": SCHEMA, "verdict": verdict, "python": python,
-              "output_root": str(out.as_posix()), "fixtures": results}
+              "output_root": str(out.as_posix()), "network_guard": guard_proof, "fixtures": results}
     report_path = out / "python-lane-fixture-report.json"
     report["report_path"] = str(report_path.as_posix())
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return report
-
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()

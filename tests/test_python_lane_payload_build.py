@@ -1,4 +1,5 @@
 import json
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
@@ -63,5 +64,21 @@ def test_python_lane_fixture_script_lists_bounded_workflows():
     assert [row["lane"] for row in payload["fixtures"]] == [
         "gather", "crucible", "index", "forum", "plexus", "mneme", "canon"
     ]
-    assert all(row["network"] == "none" for row in payload["fixtures"])
+    assert all(row["network"] == "blocked" for row in payload["fixtures"])
     assert payload["fixtures"][0]["tool"] == "gather.docs"
+
+
+def test_python_lane_network_guard_blocks_socket(tmp_path):
+    spec = importlib.util.spec_from_file_location(
+        "python_lane_fixture_netguard",
+        Path("scripts/python_lane_fixture_netguard.py"),
+    )
+    assert spec and spec.loader
+    guard_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(guard_module)
+
+    guard = guard_module.create_network_guard(tmp_path)
+    proof = guard_module.prove_network_guard(sys.executable, Path(guard["path"]), tmp_path)
+
+    assert proof["enforced"] is True
+    assert "network disabled by flywheel python lane fixture" in proof["probe"]["blocked"]
