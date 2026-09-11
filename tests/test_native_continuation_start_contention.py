@@ -12,6 +12,7 @@ import pytest
 import harness.continuation_route as route
 import harness.journey_lock as locks
 from harness.evidence_json import canonical_sha256
+from continuation_contention_probe import AcquisitionClock, ContentionProbe, collect_results
 from test_native_continuation_agent_handoff import (
     OWNER, _continuation_post, _export, _git_root,
 )
@@ -19,26 +20,6 @@ from test_native_continuation_agent_handoff import (
 CALLERS = 12
 # Fixture liveness only; the production acquisition budget remains 2.0 seconds.
 WATCHDOG = 10
-
-
-class AcquisitionClock:
-    def __init__(self):
-        self.local = threading.local()
-
-    @contextmanager
-    def caller(self):
-        self.local.value = 0.0
-        try:
-            yield
-        finally:
-            del self.local.value
-
-    def monotonic(self):
-        return self.local.value if hasattr(self.local, "value") else time.monotonic()
-
-    def expire(self):
-        assert hasattr(self.local, "value")
-        self.local.value = 3.0
 
 
 def _durable_snapshot(state):
@@ -59,7 +40,9 @@ def _exercise(tmp_path, monkeypatch, *, different_ids, expires):
         "client_request_id": f"continuation-start-{index}" if different_ids
         else "continuation-start"} for index in range(CALLERS)]
     clock = AcquisitionClock()
+    probe = ContentionProbe()
     real_try_lock, real_run = locks._try_lock, route._grant_and_run
+    real_acquire = locks.ExclusiveJourneyLock.acquire
     real_time, real_thread = time.monotonic, threading.Thread
     release, owner_entered = threading.Event(), threading.Event()
     contended, refused = threading.Event(), threading.Event()
@@ -67,6 +50,17 @@ def _exercise(tmp_path, monkeypatch, *, different_ids, expires):
     callers_ready = threading.Barrier(CALLERS)
     contenders, early_results = set(), []
     creates = 0
+
+    @contextmanager
+    def observed_acquire(path, timeout_s=2.0):
+        lock = str(Path(path).relative_to(state))
+        probe.record("lock.waiting", lock=lock)
+        with clock.acquire(real_acquire, path, timeout_s, outer_path=outer_path):
+            probe.record("lock.acquired", lock=lock)
+            try:
+                yield
+            finally:
+                probe.record("lock.releasing", lock=lock)
 
     def observed_try_lock(stream):
         acquired = real_try_lock(stream)
@@ -85,13 +79,18 @@ def _exercise(tmp_path, monkeypatch, *, different_ids, expires):
             with guard:
                 creates += 1
             owner_entered.set()
+            probe.record("create.awaiting_release")
             assert release.wait(3 * WATCHDOG), "fixture owner was never released"
-        return real_run(action, request, **kwargs)
+        probe.record(action + ".running")
+        result = real_run(action, request, **kwargs)
+        probe.record(action + ".returned")
+        return result
 
     def start_one(index):
+        probe.record("caller.barrier", caller=index)
         callers_ready.wait(timeout=WATCHDOG)
-        with clock.caller():
-            result = _continuation_post("/api/continuation/start", requests[index], state)
+        result = _continuation_post("/api/continuation/start", requests[index], state)
+        probe.record("caller.returned", status=result[1])
         if not release.is_set():
             with guard:
                 early_results.append(result)
@@ -99,9 +98,10 @@ def _exercise(tmp_path, monkeypatch, *, different_ids, expires):
                     refused.set()
         return result
 
-    # Replace this module reference only; unrelated threads retain the real clock.
+    # Only a pending outer acquisition uses the controlled caller-local clock.
     monkeypatch.setattr(locks, "time", SimpleNamespace(
         monotonic=clock.monotonic, sleep=time.sleep))
+    monkeypatch.setattr(locks.ExclusiveJourneyLock, "acquire", observed_acquire)
     monkeypatch.setattr(locks, "_try_lock", observed_try_lock)
     monkeypatch.setattr(route, "_grant_and_run", held_create)
     with ThreadPoolExecutor(max_workers=CALLERS) as pool:
@@ -122,7 +122,7 @@ def _exercise(tmp_path, monkeypatch, *, different_ids, expires):
             assert not list((state / "continuation" / "starts").rglob("*.json"))
         finally:
             release.set()
-        results = [future.result(timeout=WATCHDOG) for future in futures]
+        results = collect_results(futures, timeout=WATCHDOG, probe=probe)
 
     assert time.monotonic is real_time and threading.Thread is real_thread
     accepted = [(index, body) for index, (body, status) in enumerate(results) if status == 200]

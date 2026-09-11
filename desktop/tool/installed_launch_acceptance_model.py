@@ -187,10 +187,10 @@ def verify_receipt_file(path: Path, run_id: str) -> dict:
 
 
 def build_child_environment(base: Mapping[str, str], isolated_root: Path) -> dict[str, str]:
-    allow = {"SystemRoot", "WINDIR", "COMSPEC", "PATHEXT", "OS",
+    allow = {"SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "OS",
              "PROCESSOR_ARCHITECTURE", "PROCESSOR_IDENTIFIER",
              "PROCESSOR_LEVEL", "PROCESSOR_REVISION", "NUMBER_OF_PROCESSORS"}
-    env = {k: v for k, v in base.items() if k in allow}
+    env = {k: v for k, v in base.items() if k.upper() in allow}
     root = full_path(isolated_root)
     env.update({"FLYWHEEL_HOME": str(root / "home"), "USERPROFILE": str(root / "user"),
                 "TEMP": str(root / "tmp"), "TMP": str(root / "tmp")})
