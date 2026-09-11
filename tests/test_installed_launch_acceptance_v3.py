@@ -146,9 +146,23 @@ def _reserve_port() -> int:
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows Job Object cleanup test")
-def test_job_cleanup_kills_child_created_after_initial_descendant_snapshot(tmp_path):
+@pytest.mark.parametrize("publication", ["direct", "gated"])
+def test_job_cleanup_kills_child_created_after_initial_descendant_snapshot(
+        tmp_path, monkeypatch, text_once_written, publication):
     marker = tmp_path / "spawn child.flag"
     child_pid = tmp_path / "child pid.txt"
+    publish = tmp_path / "publish pid.flag"
+    empty_reads = []
+    original_read = Path.read_text
+
+    def observe_pid_read(path, *args, **kwargs):
+        value = original_read(path, *args, **kwargs)
+        if path == child_pid and publication == "gated" and not value:
+            empty_reads.append(value)
+            publish.write_text("publish", encoding="utf-8")
+        return value
+
+    monkeypatch.setattr(Path, "read_text", observe_pid_read)
     stdout, stderr = tmp_path / "parent.out", tmp_path / "parent.err"
     child_code = "import time; time.sleep(60)"
     parent_code = textwrap.dedent("""
@@ -159,8 +173,16 @@ def test_job_cleanup_kills_child_created_after_initial_descendant_snapshot(tmp_p
         deadline = time.time() + 10
         while not marker.exists() and time.time() < deadline:
             time.sleep(0.02)
+        assert marker.exists(), "snapshot did not release child"
         child = subprocess.Popen([sys.executable, "-c", code])
-        pidfile.write_text(str(child.pid), encoding="utf-8")
+        with pidfile.open("w", encoding="utf-8") as stream:
+            if sys.argv[4] == "gated":
+                release = pathlib.Path(sys.argv[5])
+                deadline = time.monotonic() + 10
+                while not release.exists() and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                assert release.exists(), "PID publication was never released"
+            stream.write(str(child.pid))
         time.sleep(60)
     """)
 
@@ -168,16 +190,19 @@ def test_job_cleanup_kills_child_created_after_initial_descendant_snapshot(tmp_p
         def __init__(self):
             super().__init__()
             self.triggered = False
+            self.late_pid = None
 
         def descendant_processes(self, pid):
             rows = super().descendant_processes(pid)
             if not self.triggered:
                 self.triggered = True
                 marker.write_text("go", encoding="utf-8")
-                end = time.monotonic() + 5
-                while time.monotonic() < end and not child_pid.exists():
-                    time.sleep(0.02)
-                assert child_pid.exists(), "late child did not start"
+                self.late_pid = int(text_once_written(
+                    child_pid, timeout=5, why="late child did not publish its PID"))
+                assert self.late_pid > 0 and self.late_pid != pid
+                assert _pid_is_running(self.late_pid), "late child was not alive before cleanup"
+                active, query_error = handle.proc.active_pids()
+                assert not query_error and self.late_pid in active
                 return []
             return rows
 
@@ -186,17 +211,33 @@ def test_job_cleanup_kills_child_created_after_initial_descendant_snapshot(tmp_p
     env = {key: value for key, value in os.environ.items() if key in keep}
     handle = controller.start_engine(
         Path(sys.executable),
-        ["-c", parent_code, str(marker), str(child_pid), child_code],
+        ["-c", parent_code, str(marker), str(child_pid), child_code,
+         publication, str(publish)],
         env, tmp_path, stdout, stderr,
     )
-    assert handle.job_object_assigned, handle.job_error
     try:
+        assert handle.job_object_assigned, handle.job_error
         result = controller.cleanup(handle, _reserve_port())
+        pid = controller.late_pid
+        assert result["state"] == "PASS"
+        assert result["job_active_pids_after"] == []
+        assert result["job_handles_closed"] is True
+        assert not _pid_is_running(pid), "late child survived cleanup"
+        if publication == "gated":
+            assert empty_reads, "control did not observe the empty publication window"
     finally:
-        if handle.pid:
-            controller._stop_pids([handle.pid])
-    pid = int(child_pid.read_text(encoding="utf-8"))
-    assert result["state"] == "PASS"
-    assert result["job_active_pids_after"] == []
-    assert result["job_handles_closed"] is True
-    assert not _pid_is_running(pid)
+        if handle.proc is not None and not handle.proc.handles_closed:
+            handle.proc.terminate_and_verify()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows Job Object cleanup test")
+def test_late_child_fixture_rejects_forged_cleanup_success(
+        tmp_path, monkeypatch, text_once_written):
+    monkeypatch.setattr(platform.LocalProcessController, "_cleanup_job",
+                        lambda *args: {"state": "PASS", "job_active_pids_after": [],
+                                       "job_handles_closed": True})
+    with pytest.raises(AssertionError, match="late child survived cleanup"):
+        test_job_cleanup_kills_child_created_after_initial_descendant_snapshot(
+            tmp_path, monkeypatch, text_once_written, "gated")
+    pid = int((tmp_path / "child pid.txt").read_text(encoding="utf-8"))
+    assert not _pid_is_running(pid), "fallback did not clean up the negative control"
