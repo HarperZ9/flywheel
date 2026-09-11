@@ -17,7 +17,7 @@ $repoRoot = (Resolve-Path (Join-Path $desktopRoot "..")).Path
 
 function Resolve-Executable($ExplicitPath, [string[]]$Names, $ParameterName) {
   if (![string]::IsNullOrWhiteSpace($ExplicitPath)) {
-    $resolved = Resolve-Path -LiteralPath $ExplicitPath -ErrorAction Stop
+    $resolved = @(Resolve-Path -LiteralPath $ExplicitPath -ErrorAction Stop)
     if ($resolved.Count -ne 1) { throw "-$ParameterName resolved to $($resolved.Count) paths" }
     if ((Get-Item -LiteralPath $resolved[0].ProviderPath).PSIsContainer) { throw "-$ParameterName points to a directory: $ExplicitPath" }
     return $resolved[0].ProviderPath

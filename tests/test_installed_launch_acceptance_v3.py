@@ -101,6 +101,7 @@ def test_wrapper_preserves_spaced_paths_and_sanitizes_failure_stderr(tmp_path):
     completed = subprocess.run(
         [
             powershell, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script),
+            "-PythonPath", sys.executable,
             "-InstallRoot", str(install), "-ValidationDir", str(validation), "-Out", str(out),
             "-RunId", "space-run", "-SourceCommitExpected", COMMIT, "-ExpectedVersion", "0.6.1",
             "-ExpectedAppSha256", app_sha, "-ExpectedEngineSha256", engine_sha,
@@ -111,6 +112,9 @@ def test_wrapper_preserves_spaced_paths_and_sanitizes_failure_stderr(tmp_path):
 
     assert completed.returncode != 0
     assert out.exists()
+    receipt = json.loads(out.read_text(encoding="utf-8"))
+    assert receipt["source_commit_expected"] == COMMIT
+    assert ila.assertion_state(receipt, "H20_receipt_fresh_complete_and_source_bound") == "FAIL"
     child_stderr = validation / "installed-launch-acceptance.stderr.log"
     assert "unrecognized arguments" not in child_stderr.read_text(encoding="utf-8", errors="replace")
     assert str(repo) not in completed.stderr
