@@ -1,4 +1,4 @@
-﻿// shell_rail.dart -- the shell's navigation rail: search field, the five
+// shell_rail.dart -- the shell's navigation rail: search field, the five
 // catalog groups, theme and appearance actions, and the keyboard-adjustable
 // resize handle. The search query is rail-local state; typing re-filters
 // the groups immediately.
@@ -73,6 +73,8 @@ class _ShellRailState extends State<ShellRail> {
   Widget build(BuildContext context) {
     final t = context.fw;
     final q = _query.trim().toLowerCase();
+    final searching = q.isNotEmpty;
+    final advancedLabel = destinationGroupLabel(DestinationGroup.advanced);
     final groups = <String, List<DestinationSpec>>{};
     for (final spec in destinationCatalog) {
       if (destinationMatches(spec, q)) {
@@ -106,14 +108,18 @@ class _ShellRailState extends State<ShellRail> {
                     destinations: entry.value,
                     selected: widget.selected,
                     collapsed: widget.collapsed,
-                    foldable: widget.inDrawer,
+                    foldable: !searching &&
+                        (widget.inDrawer || entry.key == advancedLabel),
+                    initiallyFolded: !searching && entry.key == advancedLabel,
                     onSelect: widget.onGo,
                   ),
                 if (groups.isEmpty)
                   Padding(
                     padding: const EdgeInsets.all(12),
-                    child: Text('No destination matches.',
-                        style: TextStyle(fontSize: 12, color: t.inkFaint)),
+                    child: Text(
+                      'No destination matches.',
+                      style: TextStyle(fontSize: 12, color: t.inkFaint),
+                    ),
                   ),
               ],
             ),
@@ -123,25 +129,30 @@ class _ShellRailState extends State<ShellRail> {
       ),
     );
     if (widget.collapsed) return rail;
-    return Stack(children: [
-      rail,
-      Positioned(
-        right: 0,
-        top: 0,
-        bottom: 0,
-        width: 6,
-        child: RailResizer(
+    return Stack(
+      children: [
+        rail,
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: 6,
+          child: RailResizer(
             width: widget.width.clamp(148.0, 320.0),
-            onResize: widget.onResize),
-      ),
-    ]);
+            onResize: widget.onResize,
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _header(BuildContext context) {
     final t = context.fw;
     return Padding(
       padding: EdgeInsets.symmetric(
-          horizontal: widget.collapsed ? 8 : 12, vertical: 12),
+        horizontal: widget.collapsed ? 8 : 12,
+        vertical: 12,
+      ),
       child: Row(
         mainAxisAlignment: widget.collapsed
             ? MainAxisAlignment.center
@@ -149,12 +160,15 @@ class _ShellRailState extends State<ShellRail> {
         children: [
           if (!widget.collapsed) ...[
             Expanded(
-              child: Text('Flywheel',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      color: t.ink)),
+              child: Text(
+                'Flywheel',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: t.ink,
+                ),
+              ),
             ),
             AccessibleAction(
               semanticLabel: 'Collapse navigation rail',
@@ -178,42 +192,83 @@ class _ShellRailState extends State<ShellRail> {
     if (widget.collapsed) {
       return Padding(
         padding: const EdgeInsets.all(8),
-        child: Column(children: [
-          _footerIcon(t, Icons.contrast, 'Toggle theme',
-              widget.onToggleTheme),
-          const SizedBox(height: 8),
-          _footerIcon(t, Icons.restore_rounded, 'Open recovery center',
-              widget.onOpenRecovery),
-          if (widget.onOpenConnection != null) ...[
+        child: Column(
+          children: [
+            _footerIcon(
+              t,
+              Icons.contrast,
+              'Toggle theme',
+              widget.onToggleTheme,
+            ),
             const SizedBox(height: 8),
-            _footerIcon(t, Icons.devices_rounded,
-                'Pair a gateway connection', widget.onOpenConnection!),
+            _footerIcon(
+              t,
+              Icons.restore_rounded,
+              'Open recovery center',
+              widget.onOpenRecovery,
+            ),
+            if (widget.onOpenConnection != null) ...[
+              const SizedBox(height: 8),
+              _footerIcon(
+                t,
+                Icons.devices_rounded,
+                'Pair a gateway connection',
+                widget.onOpenConnection!,
+              ),
+            ],
+            const SizedBox(height: 8),
+            _footerIcon(
+              t,
+              Icons.tune,
+              'Open appearance settings',
+              widget.onOpenAppearance,
+            ),
           ],
-          const SizedBox(height: 8),
-          _footerIcon(t, Icons.tune, 'Open appearance settings',
-              widget.onOpenAppearance),
-        ]),
+        ),
       );
     }
     return Padding(
       padding: const EdgeInsets.all(8),
-      child: Wrap(spacing: 8, runSpacing: 4, children: [
-        _footerIcon(t, Icons.contrast, 'Toggle theme',
-            widget.onToggleTheme),
-        _footerIcon(t, Icons.restore_rounded, 'Open recovery center',
-            widget.onOpenRecovery),
-        if (widget.onOpenAssistant != null)
-          _footerIcon(t, Icons.assistant_rounded, AssistantIdentity.openLabel,
-              widget.onOpenAssistant!),
-        if (widget.onOpenSessions != null)
-          _footerIcon(t, Icons.history_rounded, 'Open sessions',
-              widget.onOpenSessions!),
-        if (widget.onOpenConnection != null)
-          _footerIcon(t, Icons.devices_rounded, 'Pair a gateway connection',
-              widget.onOpenConnection!),
-        _footerIcon(t, Icons.tune, 'Open appearance settings',
-            widget.onOpenAppearance),
-      ]),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          _footerIcon(t, Icons.contrast, 'Toggle theme', widget.onToggleTheme),
+          _footerIcon(
+            t,
+            Icons.restore_rounded,
+            'Open recovery center',
+            widget.onOpenRecovery,
+          ),
+          if (widget.onOpenAssistant != null)
+            _footerIcon(
+              t,
+              Icons.assistant_rounded,
+              AssistantIdentity.openLabel,
+              widget.onOpenAssistant!,
+            ),
+          if (widget.onOpenSessions != null)
+            _footerIcon(
+              t,
+              Icons.history_rounded,
+              'Open sessions',
+              widget.onOpenSessions!,
+            ),
+          if (widget.onOpenConnection != null)
+            _footerIcon(
+              t,
+              Icons.devices_rounded,
+              'Pair a gateway connection',
+              widget.onOpenConnection!,
+            ),
+          _footerIcon(
+            t,
+            Icons.tune,
+            'Open appearance settings',
+            widget.onOpenAppearance,
+          ),
+        ],
+      ),
     );
   }
 
@@ -225,31 +280,59 @@ class _ShellRailState extends State<ShellRail> {
         const SizedBox(height: FwLayout.s2),
         _footerKicker(t, 'TOOLS'),
         if (widget.onOpenAssistant != null)
-          _labeledAction(t, Icons.assistant_rounded, AssistantIdentity.name,
-              widget.onOpenAssistant!,
-              semantic: AssistantIdentity.openLabel),
+          _labeledAction(
+            t,
+            Icons.assistant_rounded,
+            AssistantIdentity.name,
+            widget.onOpenAssistant!,
+            semantic: AssistantIdentity.openLabel,
+          ),
         if (widget.onOpenSessions != null)
-          _labeledAction(t, Icons.history_rounded, 'Sessions',
-              widget.onOpenSessions!,
-              semantic: 'Open sessions'),
-        _labeledAction(t, Icons.restore_rounded, 'Recovery',
-            widget.onOpenRecovery,
-            semantic: 'Open recovery center'),
+          _labeledAction(
+            t,
+            Icons.history_rounded,
+            'Sessions',
+            widget.onOpenSessions!,
+            semantic: 'Open sessions',
+          ),
+        _labeledAction(
+          t,
+          Icons.restore_rounded,
+          'Recovery',
+          widget.onOpenRecovery,
+          semantic: 'Open recovery center',
+        ),
         Container(
           height: 1,
           margin: const EdgeInsets.symmetric(
-              horizontal: FwLayout.s3, vertical: FwLayout.s1),
+            horizontal: FwLayout.s3,
+            vertical: FwLayout.s1,
+          ),
           color: t.hairline,
         ),
         _footerKicker(t, 'SETTINGS'),
-        _labeledAction(t, Icons.contrast, 'Theme', widget.onToggleTheme,
-            semantic: 'Toggle theme'),
-        _labeledAction(t, Icons.tune, 'Appearance', widget.onOpenAppearance,
-            semantic: 'Open appearance settings'),
+        _labeledAction(
+          t,
+          Icons.contrast,
+          'Theme',
+          widget.onToggleTheme,
+          semantic: 'Toggle theme',
+        ),
+        _labeledAction(
+          t,
+          Icons.tune,
+          'Appearance',
+          widget.onOpenAppearance,
+          semantic: 'Open appearance settings',
+        ),
         if (widget.onOpenConnection != null)
-          _labeledAction(t, Icons.devices_rounded, 'Connection',
-              widget.onOpenConnection!,
-              semantic: 'Pair a gateway connection'),
+          _labeledAction(
+            t,
+            Icons.devices_rounded,
+            'Connection',
+            widget.onOpenConnection!,
+            semantic: 'Pair a gateway connection',
+          ),
         const SizedBox(height: FwLayout.s2),
       ],
     );
@@ -258,13 +341,16 @@ class _ShellRailState extends State<ShellRail> {
   Widget _footerKicker(FwTokens t, String text) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
-      child:
-          Text(text, style: fwKicker(t, size: 9, color: t.inkFaint)),
+      child: Text(text, style: fwKicker(t, size: 9, color: t.inkFaint)),
     );
   }
 
   Widget _footerIcon(
-      FwTokens t, IconData icon, String tip, VoidCallback onTap) {
+    FwTokens t,
+    IconData icon,
+    String tip,
+    VoidCallback onTap,
+  ) {
     return Tooltip(
       message: tip,
       child: AccessibleAction(
@@ -276,23 +362,31 @@ class _ShellRailState extends State<ShellRail> {
   }
 
   Widget _labeledAction(
-      FwTokens t, IconData icon, String label, VoidCallback onTap,
-      {String? semantic}) {
+    FwTokens t,
+    IconData icon,
+    String label,
+    VoidCallback onTap, {
+    String? semantic,
+  }) {
     return AccessibleAction(
       semanticLabel: semantic ?? label,
       onActivate: onTap,
       child: ExcludeSemantics(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          child: Row(children: [
-            Icon(icon, size: 17, color: t.inkMuted),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(label,
+          child: Row(
+            children: [
+              Icon(icon, size: 17, color: t.inkMuted),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 13, color: t.inkSoft)),
-            ),
-          ]),
+                  style: TextStyle(fontSize: 13, color: t.inkSoft),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
