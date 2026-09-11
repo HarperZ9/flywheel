@@ -2,9 +2,11 @@ import 'evidence_state.dart';
 
 part 'gateway_agent_execution_review_fields.dart';
 part 'gateway_agent_tool_protocol_review.dart';
+part 'gateway_agent_cli_session_review.dart';
 
 const gatewayAgentReviewSchemaV1 = 'flywheel.gateway-agent-review/v1';
 const gatewayAgentReviewSchemaV2 = 'flywheel.gateway-agent-review/v2';
+const gatewayAgentReviewSchemaV3 = 'flywheel.gateway-agent-review/v3';
 const gatewayAgentToolProtocolSchema =
     'flywheel.gateway-agent-tool-protocol/v1';
 const gatewayAgentReviewSchema = gatewayAgentReviewSchemaV1;
@@ -33,6 +35,8 @@ final class GatewayAgentExecutionReview extends DefensiveModel {
   final GatewayAgentExecutionBudget budget;
   final GatewayAgentExecutionCapabilities capabilities;
   final GatewayAgentToolProtocol? toolProtocol;
+  final String executionMode;
+  final GatewayAgentCliSession? cliSession;
 
   GatewayAgentExecutionReview._(
       this.reprepareRequired,
@@ -45,6 +49,8 @@ final class GatewayAgentExecutionReview extends DefensiveModel {
       this.budget,
       this.capabilities,
       this.toolProtocol,
+      this.executionMode,
+      this.cliSession,
       super.parseIssues);
 
   factory GatewayAgentExecutionReview.fromJson(
@@ -62,10 +68,13 @@ final class GatewayAgentExecutionReview extends DefensiveModel {
           GatewayAgentExecutionBudget.empty,
           GatewayAgentExecutionCapabilities.empty,
           null,
+          '',
+          null,
           issues);
     }
     final schema = json['schema'];
     final isV2 = schema == gatewayAgentReviewSchemaV2;
+    final isV3 = schema == gatewayAgentReviewSchemaV3;
     _exactFields(
         json,
         {
@@ -79,35 +88,48 @@ final class GatewayAgentExecutionReview extends DefensiveModel {
           'budget',
           'capabilities',
           if (isV2) 'tool_protocol',
+          if (isV3) ...{'execution_mode', 'cli_session'},
         },
         issues,
         field);
     if (schema != gatewayAgentReviewSchemaV1 &&
-        schema != gatewayAgentReviewSchemaV2) {
+        schema != gatewayAgentReviewSchemaV2 &&
+        schema != gatewayAgentReviewSchemaV3) {
       addParseIssue(issues, 'schema', schema);
     }
     final model =
         GatewayAgentExecutionModel.fromRaw(json['model'], '$field.model');
-    final budget =
-        GatewayAgentExecutionBudget.fromRaw(json['budget'], '$field.budget');
+    final budget = GatewayAgentExecutionBudget.fromRaw(
+        json['budget'], '$field.budget',
+        allowUnsupportedMaxTokens: isV3);
     final capabilities = GatewayAgentExecutionCapabilities.fromRaw(
         json['capabilities'], '$field.capabilities');
     final protocol = isV2
         ? GatewayAgentToolProtocol.fromRaw(
             json['tool_protocol'], '$field.tool_protocol')
         : null;
+    final cliSession = isV3
+        ? GatewayAgentCliSession.fromRaw(
+            json['cli_session'], '$field.cli_session')
+        : null;
     protocol?.validateCapabilities(
         capabilities, '$field.tool_protocol', issues);
+    cliSession?.validateReview(
+        endpoint: json['endpoint'],
+        capabilities: capabilities,
+        field: '$field.cli_session',
+        issues: issues);
     issues
       ..addAll(model.parseIssues)
       ..addAll(budget.parseIssues)
       ..addAll(capabilities.parseIssues)
-      ..addAll(protocol?.parseIssues ?? const []);
+      ..addAll(protocol?.parseIssues ?? const [])
+      ..addAll(cliSession?.parseIssues ?? const []);
     return GatewayAgentExecutionReview._(
         false,
         readText(json, 'binding_sha256', issues, pattern: sha256Pattern),
         readText(json, 'endpoint', issues),
-        _readEndpointBaseUrl(json, 'base_url', issues),
+        _readEndpointBaseUrl(json, 'base_url', issues, allowEmpty: isV3),
         model,
         _readLocalPath(json, 'root', issues),
         readText(json, 'workspace_policy_sha256', issues,
@@ -115,13 +137,19 @@ final class GatewayAgentExecutionReview extends DefensiveModel {
         budget,
         capabilities,
         protocol,
+        _readChoice(json, 'execution_mode',
+            isV3 ? const {'native_cli_session'} : const {}, issues,
+            optional: !isV3),
+        cliSession,
         issues);
   }
 }
 
 String _readChoice(Map<String, Object?> json, String field, Set<String> allowed,
-    List<ParseIssue> issues) {
+    List<ParseIssue> issues,
+    {bool optional = false}) {
   final raw = json[field];
+  if (optional && raw == null) return '';
   if (raw is String && allowed.contains(raw)) return raw;
   addParseIssue(issues, field, raw);
   return '';
@@ -184,8 +212,14 @@ List<String> _readToolNames(
 }
 
 String _readEndpointBaseUrl(
-    Map<String, Object?> json, String field, List<ParseIssue> issues) {
+    Map<String, Object?> json, String field, List<ParseIssue> issues,
+    {bool allowEmpty = false}) {
   final raw = json[field];
+  if (allowEmpty) {
+    if (raw == '') return '';
+    addParseIssue(issues, field, raw);
+    return '';
+  }
   final parsed = raw is String ? Uri.tryParse(raw) : null;
   if (raw is String &&
       raw.isNotEmpty &&
