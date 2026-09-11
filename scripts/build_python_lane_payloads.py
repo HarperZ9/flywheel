@@ -19,7 +19,12 @@ if str(ROOT) not in sys.path:
 from harness.evidence_json import canonical_sha256
 
 MANIFEST = ROOT / "packaging" / "python-lane-payloads.jsonl"
-DEFAULT_SOURCE_ROOT = Path("D:/fw-ship-sweep-20260910/all-lanes-payloads/sources")
+DEFAULT_SOURCE_ROOT = Path(
+    os.environ.get(
+        "FLYWHEEL_PYTHON_LANE_SOURCE_ROOT",
+        "D:/fw-ship-sweep-20260910/all-lanes-payloads/sources",
+    )
+)
 SCHEMA = "flywheel.python-lane-payload-build-manifest/v1"
 
 FIXTURES = {

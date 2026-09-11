@@ -277,7 +277,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--python", default=sys.executable)
-    parser.add_argument("--out", default="D:/fw-ship-sweep-20260910/all-lanes-payloads/fixture-run")
+    parser.add_argument(
+        "--out",
+        default=os.environ.get(
+            "FLYWHEEL_PYTHON_LANE_FIXTURE_OUT",
+            "D:/fw-ship-sweep-20260910/all-lanes-payloads/fixture-run",
+        ),
+    )
     args = parser.parse_args(argv)
     if args.list:
         print(json.dumps({"schema": SCHEMA, "fixtures": fixture_catalog()}, sort_keys=True))
