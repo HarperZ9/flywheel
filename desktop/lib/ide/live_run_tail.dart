@@ -7,24 +7,31 @@
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
+import '../models/agent_trace.dart';
+import '../models/operation_models.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/action_witness_line.dart';
 import '../widgets/agent_timeline.dart';
 import '../widgets/sign_run_panel.dart';
+import '../widgets/operation_trace_entry.dart';
 
 class LiveRunTail extends StatelessWidget {
   final List<Map<String, dynamic>> events;
   final ScrollController scroll;
   final GatewayClient client;
+  final OperationSnapshot? snapshot;
+  final OperationResult? terminalResult;
   const LiveRunTail(
       {super.key,
       required this.events,
       required this.scroll,
+      this.snapshot,
+      this.terminalResult,
       required this.client});
 
   Map<String, dynamic>? get _done {
     for (final e in events.reversed) {
-      if (e['type'] == 'done') return e;
+      if (e['type'] == 'done' && e['schema'] != traceProjectionSchema) return e;
     }
     return null;
   }
@@ -44,10 +51,19 @@ class LiveRunTail extends StatelessWidget {
         constraints: const BoxConstraints(maxHeight: 240),
         child: SingleChildScrollView(
           controller: scroll,
-          child: AgentTimeline(events: events),
+          child: AgentTimeline(
+              events: events
+                  .where((event) => event['schema'] != traceProjectionSchema)
+                  .toList()),
         ),
       ),
       if (_done != null) ActionWitnessLine(run: _done!),
+      if (snapshot != null)
+        OperationTraceEntry(
+            client: client,
+            snapshot: snapshot!,
+            result: terminalResult,
+            progress: events),
       if (_editedFiles)
         TextButton.icon(
           onPressed: () => showModalBottomSheet(

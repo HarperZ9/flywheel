@@ -292,6 +292,8 @@ class _AgentPanelState extends State<AgentPanel> {
                 events: _events,
                 scroll: _scroll,
                 client: widget.client,
+                snapshot: _operationState.execution,
+                terminalResult: _operationState.terminalResult,
               ),
             ],
           ],
