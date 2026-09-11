@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
 from harness.evidence_json import canonical_sha256
 
 EXPECTED_LANES = ("gather", "crucible", "index", "forum", "plexus", "mneme", "canon")
-VERSION_MISMATCHES = {"gather", "index", "forum", "mneme", "canon"}
+REGISTRY_UPDATES = {"gather", "index", "forum", "mneme", "canon"}
 ASYNC_BLOCKED = {"forum"}
 MANIFEST = Path("packaging/python-lane-payloads.jsonl")
 SOURCE_ALGORITHM = "sha256-canonical-source-manifest/v1"
@@ -51,7 +51,7 @@ def _digest(value: dict[str, Any] | list[Any]) -> str:
 def validate_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
     lanes = [str(row.get("lane")) for row in rows]
     _require(tuple(lanes) == EXPECTED_LANES, f"unexpected lane order/set: {lanes!r}")
-    seen_mismatches: set[str] = set()
+    seen_registry_updates: set[str] = set()
     seen_async: set[str] = set()
     descriptor_digests: dict[str, str] = {}
     source_digests: dict[str, str] = {}
@@ -95,16 +95,19 @@ def validate_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
         _require(bool(project.get("license_files")), f"{lane}: license file evidence missing")
         _require(mcp.get("module") in set(row.get("hidden_imports") or []), f"{lane}: mcp module absent from hidden imports")
         if row.get("owner_project", {}).get("version") != row.get("flywheel_registry_expected_version"):
-            seen_mismatches.add(lane)
+            seen_registry_updates.add(lane)
         descriptor_digests[lane] = str(row["component_descriptor_sha256"])
         source_digests[lane] = str(source["manifest_sha256"])
-    _require(seen_mismatches == VERSION_MISMATCHES, f"version mismatch set changed: {sorted(seen_mismatches)!r}")
+    _require(
+        seen_registry_updates == REGISTRY_UPDATES,
+        f"registry update set changed: {sorted(seen_registry_updates)!r}",
+    )
     _require(seen_async == ASYNC_BLOCKED, f"async blocker set changed: {sorted(seen_async)!r}")
     return {
         "schema": "flywheel.python-lane-payload-manifest-check/v1",
         "verdict": "PASS",
         "lanes": lanes,
-        "version_mismatches": sorted(seen_mismatches),
+        "registry_updates": sorted(seen_registry_updates),
         "async_blockers": sorted(seen_async),
         "descriptor_sha256": descriptor_digests,
         "source_manifest_sha256": source_digests,
