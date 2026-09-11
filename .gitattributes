@@ -42,3 +42,6 @@ docs/art/*.json text eol=lf
 desktop/release/FONT-PROVENANCE.json text eol=lf
 desktop/release/THIRD-PARTY-NOTICES.txt text eol=lf
 desktop/release/payload-policy.json text eol=lf
+
+# Shader capture receipts bind source bytes across host platforms.
+desktop/shaders/*.frag text eol=lf

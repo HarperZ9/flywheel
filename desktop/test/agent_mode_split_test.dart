@@ -16,7 +16,6 @@ import 'package:flywheel_desktop/views/compare_view.dart';
 import 'package:flywheel_desktop/widgets/chat_thread.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-
 Future<void> _pump(WidgetTester tester, Widget child) =>
     tester.pumpWidget(MaterialApp(
         theme: flywheelLightTheme(), home: Scaffold(body: _granted(child))));
@@ -147,7 +146,7 @@ void _historyAndAvatarTruthTests() {
     expect(store.load().single.messages.single.receiptState,
         ReceiptState.presentUnchecked);
   });
-  testWidgets('assistant avatar is green only for typed MATCH', (tester) async {
+  testWidgets('Rowan and verdict stay separate', (tester) async {
     for (final state in const [
       ReceiptState.missing,
       ReceiptState.presentUnchecked,
@@ -155,15 +154,15 @@ void _historyAndAvatarTruthTests() {
       ReceiptState.invalidResponse,
     ]) {
       await _pump(tester, _avatarThread(state));
-      expect(tester.widget<Text>(find.text('F')).style!.color,
-          FwTokens.light.inkMuted);
+      expect(find.bySemanticsLabel(RegExp(r'^Rowan\b')), findsOneWidget);
+      expect(find.text('MATCH'), findsNothing);
     }
     await _pump(tester, _avatarThread(ReceiptState.match));
-    expect(tester.widget<Text>(find.text('F')).style!.color,
+    expect(find.bySemanticsLabel(RegExp(r'^Rowan\b')), findsOneWidget);
+    expect(tester.widget<Text>(find.text('MATCH')).style!.color,
         FwTokens.light.verified);
   });
 }
-
 ChatThread _avatarThread(ReceiptState state) => ChatThread(messages: [
       ChatMessage(
           role: 'assistant',
