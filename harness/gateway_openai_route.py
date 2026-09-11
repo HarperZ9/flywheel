@@ -16,6 +16,23 @@ def _route_block(entry: dict, roster: dict, endpoint: str) -> tuple[dict, int] |
         return {"error": f"endpoint {endpoint!r} has no credential present; set its API "
                 f"key in the environment (presence only, never read here)",
                 "credential": "absent"}, 400
+    if endpoint == "codex-cli":
+        usable = roster.get("usable_names")
+        not_usable = isinstance(usable, list) and endpoint not in usable
+        if entry.get("account_authenticated") is not True:
+            return {"error": "ChatGPT account sign-in required before routing codex-cli",
+                    "credential": entry.get("credential", ""),
+                    "account_state": entry.get("account_state", "unknown")}, 403
+        if (entry.get("route_ready") is not True
+                or entry.get("receipt_capable") is not True or not_usable):
+            return {"error": "Codex CLI execution is not admitted for routing",
+                    "credential": entry.get("credential", ""),
+                    "account_state": entry.get("account_state", "unknown"),
+                    "route_ready": entry.get("route_ready") is True,
+                    "route_ready_reason": entry.get("route_ready_reason", ""),
+                    "run_ready": entry.get("run_ready") is True,
+                    "run_ready_reason": entry.get("run_ready_reason", "")}, 403
+        return None
     if endpoint != "claude-cli":
         return None
     usable = roster.get("usable_names")

@@ -4,6 +4,23 @@ import pytest
 from harness import endpoint_registry, endpoints
 
 
+@pytest.fixture(autouse=True)
+def codex_account_ready(monkeypatch):
+    ready = {
+        "ok": True,
+        "state": "authenticated",
+        "authenticated": True,
+        "run_ready": True,
+        "argv_prefix": ["codex"],
+        "identity": "same",
+    }
+    monkeypatch.setattr(endpoint_registry.codex_app_server_auth,
+                        "authenticated_resolution", lambda **_: ready)
+    monkeypatch.setattr(endpoint_registry.codex_app_server_auth,
+                        "verify_authenticated_identity",
+                        lambda identity, **_: ready)
+
+
 @pytest.fixture
 def ladder(monkeypatch):
     monkeypatch.delenv("CODEX_MODEL", raising=False)
@@ -46,7 +63,8 @@ def test_override_does_not_mutate_shared_backend(monkeypatch):
     other = endpoint_registry.make_endpoint_proposer("codex-cli", model="another-model")
     second = endpoint_registry.make_endpoint_proposer("codex-cli")
     assert first.backend.model == "gpt-6-astra"
-    assert second.backend is original and original.model == "original"
+    assert second.backend is not original and original.model == "original"
+    assert second.backend.model == "original"
     assert first.backend.argv == original.argv and first.backend.argv is not original.argv
     assert other.backend.model == "another-model" and first.backend.model == "gpt-6-astra"
 

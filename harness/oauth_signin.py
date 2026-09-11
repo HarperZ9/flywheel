@@ -18,12 +18,11 @@ import urllib.request
 import webbrowser
 from typing import Optional
 
-from . import claude_cli_auth, keychain
+from . import claude_cli_auth, codex_app_server_auth, keychain
 from .oauth_callback import CallbackServer
 from .oauth_profiles import (  # noqa: F401  (re-exported: the module API)
     PROFILES, WIRE_OAUTH2, WIRE_OPENROUTER, OAuthProfile,
 )
-
 
 def _pkce_pair() -> tuple[str, str]:
     """RFC 7636 S256: a high-entropy verifier and its base64url challenge."""
@@ -32,14 +31,11 @@ def _pkce_pair() -> tuple[str, str]:
     challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
     return verifier, challenge
 
-
 def _fingerprint(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
 
-
 def _fail(provider: str, error: str) -> dict:
     return {"provider": provider, "ok": False, "error": error}
-
 
 def _store(profile: OAuthProfile, value: str) -> dict:
     """Persist the token, and report the credential store's own verdict. A
@@ -53,7 +49,6 @@ def _store(profile: OAuthProfile, value: str) -> dict:
     return {"provider": profile.provider, "ok": True,
             "stored": profile.keychain_name, "sha256": _fingerprint(value)}
 
-
 def _preflight(profile: OAuthProfile) -> Optional[dict]:
     """Refuse before minting anything we could not keep. A token created and
     then dropped is a live credential stranded at the provider."""
@@ -63,7 +58,6 @@ def _preflight(profile: OAuthProfile) -> Optional[dict]:
                  "no OS credential store on this platform, so a token could "
                  "not be kept. Sign in with the provider's own tool and "
                  f"export the result as {profile.keychain_name} instead.")
-
 
 def _authorize_url(profile: OAuthProfile, callback: str, challenge: str,
                    state: str) -> str:
@@ -76,7 +70,6 @@ def _authorize_url(profile: OAuthProfile, callback: str, challenge: str,
                   "code_challenge_method": "S256"}
     joiner = "&" if "?" in profile.authorize_url else "?"
     return profile.authorize_url + joiner + urllib.parse.urlencode(params)
-
 
 def _exchange_request(profile: OAuthProfile, code: str, verifier: str,
                       callback: str) -> urllib.request.Request:
@@ -93,7 +86,6 @@ def _exchange_request(profile: OAuthProfile, code: str, verifier: str,
     return urllib.request.Request(profile.exchange_url, data=body,
                                   headers=headers)
 
-
 def _pkce_begin(profile: OAuthProfile, advertise_host=None):
     """Mint the PKCE pair and stand up the hardened callback listener, and
     return the authorize URL plus what redemption will need. No browser opens
@@ -107,7 +99,6 @@ def _pkce_begin(profile: OAuthProfile, advertise_host=None):
     callback = server.callback_url
     authorize_url = _authorize_url(profile, callback, challenge, state)
     return server, callback, verifier, authorize_url
-
 
 def _pkce_finish(profile: OAuthProfile, server, callback: str, verifier: str,
                  opener=None, timeout: float = 300, attempt=None) -> dict:
@@ -141,7 +132,6 @@ def _pkce_finish(profile: OAuthProfile, server, callback: str, verifier: str,
                      "the exchange response carried no token field")
     return attempt.commit(lambda: _store(profile, key), cancelled) if attempt else _store(profile, key)
 
-
 def _login_pkce(profile: OAuthProfile, opener=None, timeout: float = 300,
                 browser=None, attempt=None) -> dict:
     """Authorization-code + PKCE against a hardened loopback callback. The
@@ -164,7 +154,6 @@ def _login_pkce(profile: OAuthProfile, opener=None, timeout: float = 300,
     return _pkce_finish(profile, server, callback, verifier,
                         opener=opener, timeout=timeout, attempt=attempt)
 
-
 def _login_guided(profile: OAuthProfile, prompt=None, **_) -> dict:
     """Walk the official tool's flow and store the pasted result. The paste
     uses getpass so the value never echoes."""
@@ -181,7 +170,6 @@ def _login_guided(profile: OAuthProfile, prompt=None, **_) -> dict:
     if not value:
         return _fail(profile.provider, "nothing pasted; nothing stored")
     return _store(profile, value)
-
 
 def _registered_profile(profile: OAuthProfile):
     """A partner-program flow: honest refusal until the operator registers
@@ -202,11 +190,9 @@ def _registered_profile(profile: OAuthProfile):
         authorize_url=authorize, exchange_url=exchange,
         wire=WIRE_OAUTH2, client_id=client_id)
 
-
 def _login_registered(profile: OAuthProfile, **kwargs) -> dict:
     runtime = _registered_profile(profile)
     return runtime if isinstance(runtime, dict) else _login_pkce(runtime, **kwargs)
-
 
 def login(provider: str, **kwargs) -> dict:
     profile = PROFILES.get(provider)
@@ -219,8 +205,9 @@ def login(provider: str, **kwargs) -> dict:
         return _login_guided(profile, **kwargs)
     if profile.kind == "official-cli":
         return claude_cli_auth.begin_login(provider=provider)
+    if profile.kind == "official-app-server":
+        return codex_app_server_auth.begin_login(provider=provider)
     return _login_registered(profile, **kwargs)
-
 
 def logout(provider: str) -> dict:
     """Clear the stored token and report what actually happened, including a
@@ -230,6 +217,8 @@ def logout(provider: str) -> dict:
         return _fail(provider, "unknown provider")
     if profile.kind == "official-cli":
         return _fail(provider, "Claude Code owns sign-out; use Claude Code directly")
+    if profile.kind == "official-app-server":
+        return codex_app_server_auth.logout(provider=provider)
     result = keychain.keychain_delete(profile.keychain_name)
     still = keychain.credential_source(profile.keychain_name)
     out = {"provider": provider, "ok": "error" not in result,
@@ -241,7 +230,6 @@ def logout(provider: str) -> dict:
         out["error"] = (f"{profile.keychain_name} is still set in the "
                         "environment; unset it there to finish signing out")
     return out
-
 
 def status() -> list:
     """Presence and sanction per provider; labels only, never values."""
@@ -260,6 +248,14 @@ def status() -> list:
                          "sanction": profile.sanction,
                          "official_cli": account})
             continue
+        if profile.kind == "official-app-server":
+            account = codex_app_server_auth.public_status()
+            rows.append({"provider": name, "kind": profile.kind,
+                         "keychain_name": "", "source": account.get("source") or "codex-app-server",
+                         "present": account.get("authenticated") is True,
+                         "sanction": profile.sanction,
+                         "official_app_server": account})
+            continue
         rows.append({"provider": name, "kind": profile.kind,
                      "keychain_name": profile.keychain_name,
                      "present": bool(keychain.resolve_credential(profile.keychain_name)),
@@ -267,16 +263,19 @@ def status() -> list:
                      "sanction": profile.sanction})
     return rows
 
-
 def cli(argv: list) -> int:
     """`flywheel auth login|logout <provider>` and `flywheel auth status`."""
     args = [a for a in argv if not a.startswith("-")]
     verb = args[0] if args else "status"
     if verb == "status":
         for row in status():
-            mark = (claude_cli_auth.status_label(row.get("official_cli", {}))
-                    if row["kind"] == "official-cli" else
-                    "credential present; authentication unverified" if row["present"] else "absent")
+            if row["kind"] == "official-cli":
+                mark = claude_cli_auth.status_label(row.get("official_cli", {}))
+            elif row["kind"] == "official-app-server":
+                mark = codex_app_server_auth.status_label(row.get("official_app_server", {}))
+            else:
+                mark = ("credential present; authentication unverified"
+                        if row["present"] else "absent")
             print(f"  {row['provider']:<12} {mark}  [{row['kind']}] "
                   f"{row['sanction']}")
         return 0

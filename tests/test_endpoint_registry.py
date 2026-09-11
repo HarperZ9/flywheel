@@ -43,6 +43,15 @@ def _cli_on_path(monkeypatch):
         lambda: {"state": "authenticated", "authenticated": True,
                  "cli_present": True, "executable": "claude.exe"},
     )
+    monkeypatch.setattr(
+        endpoint_registry.codex_app_server_auth,
+        "public_status",
+        lambda: {"state": "authenticated", "account_state": "authenticated",
+                 "authenticated": True, "cli_present": True,
+                 "executable": "node.exe", "route_ready": True,
+                 "run_ready": True,
+                 "supervised_run_ready": False},
+    )
 
 
 def test_roster_enumerates_every_provider(monkeypatch):

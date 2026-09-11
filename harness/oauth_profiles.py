@@ -22,7 +22,7 @@ class OAuthProfile:
     lands, and what the honest sanction label is."""
 
     provider: str
-    kind: str                     # pkce | guided-cli | official-cli | registered
+    kind: str                     # pkce | guided-cli | official-cli | official-app-server | registered
     keychain_name: str            # where the token lands; the resolver reads it
     sanction: str                 # one honest sentence for status output
     authorize_url: str = ""
@@ -51,14 +51,10 @@ PROFILES = {
                  "Anthropic API keys separate",
     ),
     "openai": OAuthProfile(
-        provider="openai", kind="registered",
-        keychain_name="CHATGPT_OAUTH_TOKEN",
-        sanction="needs an app registration you own. Set "
-                 "FLYWHEEL_OPENAI_OAUTH_CLIENT_ID, "
-                 "FLYWHEEL_OPENAI_OAUTH_AUTHORIZE_URL, and "
-                 "FLYWHEEL_OPENAI_OAUTH_EXCHANGE_URL in the engine's "
-                 "environment to enable it",
-        client_id_env="FLYWHEEL_OPENAI_OAUTH_CLIENT_ID",
-        wire=WIRE_OAUTH2,
+        provider="openai", kind="official-app-server",
+        keychain_name="",
+        sanction="Codex app-server owns ChatGPT account sign-in. Flywheel "
+                 "starts only the official account flow, never reads Codex "
+                 "auth files, and keeps direct OpenAI API keys separate",
     ),
 }

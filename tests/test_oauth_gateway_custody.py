@@ -17,7 +17,8 @@ def http_gateway(tmp_path, monkeypatch):
             calls.append(_name)
             return {'ok': True}
         monkeypatch.setattr(oauth_service, name, action)
-    monkeypatch.setattr(oauth_service, 'auth_rows', lambda: calls.append('rows') or {'providers': []})
+    monkeypatch.setattr(oauth_service, 'auth_rows',
+                        lambda **kwargs: calls.append(('rows', kwargs)) or {'providers': []})
     monkeypatch.setattr(gateway, '_projected_world', lambda *a: {'public': True})
     monkeypatch.setattr(gateway._Handler, 'flywheel_home', tmp_path / 'home')
     monkeypatch.setattr(gateway._Handler, 'run_root', str(tmp_path / 'runs'))
@@ -66,3 +67,13 @@ def test_route_variants_never_reach_credential_action_without_owner(http_gateway
 def test_unrelated_public_auth_off_compatibility_remains(http_gateway):
     status, body = http_gateway[0]('/api/world')
     assert status == 200 and json.loads(body) == {'public': True}
+
+
+def test_auth_readiness_query_reaches_roster_without_new_route(http_gateway, monkeypatch):
+    request, calls = http_gateway
+    monkeypatch.setattr(gateway._Handler, 'auth_token', 'synthetic-owner')
+
+    status, body = request('/api/auth?check=execution', 'synthetic-owner')
+
+    assert status == 200, body
+    assert calls == [('rows', {'check_execution': True})]

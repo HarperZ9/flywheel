@@ -1180,7 +1180,8 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(marketplace_catalog())
         if p == "/api/auth":                         # subscription sign-in roster
             from harness import oauth_service
-            return self._json(oauth_service.auth_rows())
+            check_execution = any(part in {"check_execution=1", "readiness=1", "check=execution"} for part in qs.split("&"))
+            return self._json(oauth_service.auth_rows(check_execution=check_execution))
         if p == "/api/keychain":                     # credential names + presence, never values
             from harness.keychain_route import keychain_get
             return self._json(keychain_get())
@@ -1881,7 +1882,8 @@ class _Handler(BaseHTTPRequestHandler):
                 # callback the phone can deliver to. A local client omits it
                 # and the flow stays on loopback.
                 out = oauth_service.begin(
-                    provider, callback_base=(req.get("callback_base") or None))
+                    provider, callback_base=(req.get("callback_base") or None),
+                    login_mode=(req.get("login_mode") or req.get("mode") or "browser"))
             elif p == "/api/auth/token":
                 out = oauth_service.submit(provider, req.get("token") or "")
             elif p == "/api/auth/cancel":

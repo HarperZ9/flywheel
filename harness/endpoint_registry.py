@@ -11,7 +11,8 @@ import re
 import shutil
 from dataclasses import replace
 
-from . import claude_cli_auth, providers
+from . import claude_cli_auth, codex_app_server_auth, providers
+from .endpoint_account_status import native_account_extra
 from .proposer import Proposer, ProposerOutput, prompt_hash
 
 ProviderPermissionError = providers.ProviderPermissionError
@@ -85,6 +86,9 @@ def _host(url: str) -> str:
 def _row_usable(row: dict) -> bool:
     if row["name"] == "claude-cli" and row["credential"] == "cli-auth":
         return row.get("account_authenticated") is True
+    if row["name"] == "codex-cli" and row["credential"] == "cli-auth":
+        return (row.get("account_authenticated") is True
+                and row.get("route_ready") is True)
     return row["credential"] in ("present", "cli-auth", "local-none")
 
 
@@ -102,15 +106,14 @@ def unified_roster() -> dict:
                  "receipt_capable": True, "source": "builtin"})
     for name, kind, key_env, host, dm in _NATIVE:
         cred = _credential(key_env, local=False, kind=kind, name=name)
-        extra = {}
-        if name == "claude-cli":
-            account = claude_cli_auth.public_status()
-            extra = {"account_state": account.get("state", "unknown"),
-                     "account_authenticated": account.get("authenticated") is True,
-                     "account_executable": account.get("executable", "")}
+        extra = native_account_extra(
+            name, claude_cli_auth.public_status, codex_app_server_auth.public_status)
         capable = cred != "cli-absent"
         if name == "claude-cli":
             capable = capable and extra.get("account_authenticated") is True
+        if name == "codex-cli":
+            capable = (capable and extra.get("account_authenticated") is True
+                       and extra.get("route_ready") is True)
         # receipt_capable only if it can actually be built AND is reachable:
         # a cli whose binary is absent is advertised, but not as usable
         rows.append({"name": name, "kind": kind, "local": kind in ("cli", "opencode"),
@@ -288,5 +291,7 @@ def _build_endpoint_proposer(name: str, *, model: str | None, base_url: str | No
                 b = _cli_model_override(b, model, provider="Claude")
             if name == "claude-cli":
                 b = claude_cli_auth.bind_authenticated_backend(b)
+            elif name == "codex-cli":
+                b = codex_app_server_auth.bind_authenticated_backend(b)
             return BackendProposer(b, extract=extract)
     raise ValueError(f"unknown endpoint {name!r}; see unified_roster()['usable_names']")

@@ -27,7 +27,8 @@ def _no_keychain(monkeypatch):
     monkeypatch.setattr(keychain, "keychain_get", lambda name: None)
     for var in ("CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY",
                 "ANTHROPIC_AUTH_TOKEN", "DASHSCOPE_API_KEY",
-                "OPENROUTER_API_KEY", "MY_TOKEN"):
+                "OPENROUTER_API_KEY", "OPENAI_API_KEY",
+                "CHATGPT_OAUTH_TOKEN", "MY_TOKEN"):
         monkeypatch.delenv(var, raising=False)
 
 
@@ -243,5 +244,27 @@ def test_token_file_adapter_walks_dotted_fields(tmp_path):
 
 
 def test_openai_provider_is_wired_into_the_default_resolver():
-    """The sign-in seam stores CHATGPT_OAUTH_TOKEN; the resolver must read it."""
+    """OpenAI API mode remains available, but ChatGPT login is Codex-owned."""
     assert "openai" in default_auth_resolver().providers()
+
+
+def test_openai_provider_uses_api_key_not_chatgpt_oauth_token(monkeypatch):
+    monkeypatch.setenv("CHATGPT_OAUTH_TOKEN", "chatgpt-subscription-token")
+    monkeypatch.setenv("OPENAI_API_KEY", _SECRET)
+
+    tok = default_auth_resolver().resolve("openai")
+
+    assert tok is not None
+    assert tok.value == _SECRET
+    assert tok.source == "env:OPENAI_API_KEY"
+
+
+def test_openai_provider_does_not_read_codex_auth_json(monkeypatch, tmp_path):
+    home = tmp_path / "home"
+    auth = home / ".codex" / "auth.json"
+    auth.parent.mkdir(parents=True)
+    auth.write_text('{"tokens":{"access_token":"subscription-token"}}',
+                    encoding="utf-8")
+    monkeypatch.setattr(sa.Path, "home", lambda: home)
+
+    assert default_auth_resolver().resolve("openai") is None

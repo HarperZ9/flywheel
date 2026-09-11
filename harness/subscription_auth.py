@@ -218,8 +218,7 @@ def default_auth_resolver() -> AuthResolver:
     completed sign-in is visible here with no rewiring.
 
       anthropic      CLAUDE_CODE_OAUTH_TOKEN (bearer) -> ANTHROPIC_API_KEY
-      openai         CHATGPT_OAUTH_TOKEN (bearer)     -> Codex CLI auth.json
-                     -> OPENAI_API_KEY
+      openai         OPENAI_API_KEY (bearer direct API mode)
       qwen-anthropic ANTHROPIC_AUTH_TOKEN (bearer)    -> DASHSCOPE_API_KEY
       openrouter     OPENROUTER_API_KEY (bearer)
     """
@@ -229,9 +228,6 @@ def default_auth_resolver() -> AuthResolver:
             EnvTokenAdapter("ANTHROPIC_API_KEY", _X_API_KEY),
         ]),
         "openai": ChainAdapter([
-            EnvTokenAdapter("CHATGPT_OAUTH_TOKEN", _BEARER),
-            TokenFileAdapter(Path.home() / ".codex" / "auth.json",
-                             field="tokens.access_token"),
             EnvTokenAdapter("OPENAI_API_KEY", _BEARER),
         ]),
         "qwen-anthropic": ChainAdapter([

@@ -22,7 +22,7 @@ import threading
 import urllib.parse
 from typing import Optional
 
-from . import claude_cli_auth, keychain, oauth_signin
+from . import claude_cli_auth, codex_app_server_auth, keychain, oauth_signin
 from .oauth_profiles import PROFILES
 from .oauth_attempt import SigninAttempt
 
@@ -44,7 +44,7 @@ def _job(provider: str) -> dict:
         return dict(_JOBS.get(provider) or {})
 
 
-def auth_rows() -> dict:
+def auth_rows(*, check_execution: bool = False) -> dict:
     """The roster the surface renders: presence, source, terms, and whatever
     the last sign-in attempt did. Labels only; never a value."""
     # Read job state first: completion during credential presence reads must
@@ -54,11 +54,25 @@ def auth_rows() -> dict:
     rows = []
     for row in oauth_signin.status():
         job = jobs.get(row["provider"], {})
+        if (row.get("kind") == "official-app-server"
+                and job.get("state") == "running" and job.get("login_id")):
+            result = codex_app_server_auth.login_status(
+                provider=row["provider"], login_id=job["login_id"])
+            if result.get("state") != "running":
+                _set_job(row["provider"], result.get("state", "failed"),
+                         result.get("error"))
+                job = _job(row["provider"])
+        if check_execution and row.get("kind") == "official-app-server":
+            account = codex_app_server_auth.public_status(check_execution=True)
+            row = {**row, "present": account.get("authenticated") is True,
+                   "source": account.get("source") or "codex-app-server",
+                   "official_app_server": account}
         rows.append({**row,
                       "kind_label": {"pkce": "browser sign-in",
                                      "guided-cli": "provider tool",
-                                     "official-cli": "Claude Code account",
-                                     "registered": "needs registration"}
+                                      "official-cli": "Claude Code account",
+                                      "official-app-server": "ChatGPT account",
+                                      "registered": "needs registration"}
                      .get(row["kind"], row["kind"]),
                      "pending": job.get("state") == "running",
                      "last": job.get("state", ""),
@@ -69,7 +83,8 @@ def auth_rows() -> dict:
                     "Values and account metadata are never displayed."}
 
 
-def begin(provider: str, callback_base: Optional[str] = None) -> dict:
+def begin(provider: str, callback_base: Optional[str] = None,
+          login_mode: str = "browser") -> dict:
     """Start a sign-in. A browser flow runs in the background and the caller
     polls; a guided flow returns steps for the surface to render; a
     registered provider refuses until its operator-owned registration is configured.
@@ -88,6 +103,19 @@ def begin(provider: str, callback_base: Optional[str] = None) -> dict:
         _set_job(provider, "done" if result.get("ok") else "failed",
                  result.get("error"))
         return result
+    if profile.kind == "official-app-server":
+        result = codex_app_server_auth.begin_login(
+            provider=provider, mode=login_mode, include_login_id=True)
+        public = dict(result)
+        login_id = public.pop("login_id", "")
+        with _LOCK:
+            record = {"state": "running" if result.get("ok") else "failed"}
+            if login_id:
+                record["login_id"] = login_id
+            if result.get("error"):
+                record["error"] = result["error"]
+            _JOBS[provider] = record
+        return public
     if not keychain.keychain_available():
         return {"ok": False, "provider": provider, "mode": "unavailable",
                 "error": "no OS credential store on this platform, so a token "
@@ -169,6 +197,15 @@ def _complete(provider, attempt, result):
 def cancel(provider: str) -> dict:
     """Cancel local completion; an already committed store is not reversed."""
     with _LOCK:
+        profile = PROFILES.get(provider)
+        if profile is not None and profile.kind == "official-app-server":
+            login_id = (_JOBS.get(provider) or {}).get("login_id", "")
+            result = codex_app_server_auth.cancel_login(
+                provider=provider, login_id=login_id)
+            _JOBS[provider] = {"state": "cancelled" if result.get("ok") else "failed"}
+            if result.get("error"):
+                _JOBS[provider]["error"] = result["error"]
+            return result
         attempt = _ATTEMPTS.get(provider)
         if attempt is None or not attempt.cancel():
             return {"ok": False, "provider": provider, "state": "already_completed",
@@ -188,6 +225,9 @@ def submit(provider: str, token: str) -> dict:
     if profile.kind == "official-cli":
         return {"ok": False, "provider": provider,
                 "error": "Claude Code account sign-in does not accept token paste"}
+    if profile.kind == "official-app-server":
+        return {"ok": False, "provider": provider,
+                "error": "ChatGPT account sign-in does not accept token paste"}
     if profile.kind != "guided-cli":
         return {"ok": False, "provider": provider,
                 "error": f"{provider} signs in through its own flow, not a paste"}
@@ -207,7 +247,11 @@ def sign_out(provider: str) -> dict:
         attempt = _ATTEMPTS.get(provider)
         if attempt is not None:
             attempt.cancel()
-        result = oauth_signin.logout(provider)
+        profile = PROFILES.get(provider)
+        if profile is not None and profile.kind == "official-app-server":
+            result = codex_app_server_auth.logout(provider=provider)
+        else:
+            result = oauth_signin.logout(provider)
         _ATTEMPTS.pop(provider, None)
         _JOBS.pop(provider, None)
     return result

@@ -57,6 +57,81 @@ def test_official_provider_launches_cli_without_credential_store(monkeypatch):
     assert launched == ["anthropic"]
 
 
+def test_chatgpt_app_server_login_does_not_require_keychain(monkeypatch):
+    _clear_jobs()
+    monkeypatch.setattr(svc.keychain, "keychain_available", lambda: False)
+    monkeypatch.setattr(
+        svc.codex_app_server_auth,
+        "begin_login",
+        lambda **kwargs: {"ok": True, "provider": kwargs["provider"],
+                          "mode": "browser",
+                          "authorize_url": "https://auth.openai.com/start"},
+    )
+
+    out = svc.begin("openai")
+
+    assert out["ok"] is True
+    assert out["mode"] == "browser"
+    assert out["authorize_url"].startswith("https://auth.openai.com/")
+
+
+def test_chatgpt_device_code_login_is_a_supported_app_server_mode(monkeypatch):
+    _clear_jobs()
+    seen = {}
+    monkeypatch.setattr(
+        svc.codex_app_server_auth,
+        "begin_login",
+        lambda **kwargs: seen.update(kwargs) or {
+            "ok": True, "provider": kwargs["provider"],
+            "mode": "device-code",
+            "verification_url": "https://chatgpt.com/activate",
+            "user_code": "ABCD-EFGH",
+        },
+    )
+
+    out = svc.begin("openai", login_mode="device-code")
+
+    assert seen["mode"] == "device-code"
+    assert out["ok"] is True
+    assert out["mode"] == "device-code"
+    assert out["user_code"] == "ABCD-EFGH"
+
+
+def test_chatgpt_cancel_and_logout_use_app_server_not_keychain(monkeypatch):
+    _clear_jobs()
+    calls = []
+    monkeypatch.setattr(
+        svc.codex_app_server_auth,
+        "begin_login",
+        lambda **kwargs: {"ok": True, "provider": kwargs["provider"],
+                          "mode": "browser", "login_id": "login-123",
+                          "authorize_url": "https://auth.openai.com/start"},
+    )
+    monkeypatch.setattr(
+        svc.codex_app_server_auth,
+        "cancel_login",
+        lambda *, provider, login_id, **_: calls.append(("cancel", provider, login_id))
+        or {"ok": True, "provider": provider, "state": "cancelled"},
+    )
+    monkeypatch.setattr(
+        svc.codex_app_server_auth,
+        "logout",
+        lambda *, provider, **_: calls.append(("logout", provider))
+        or {"ok": True, "provider": provider, "state": "signed_out"},
+    )
+    monkeypatch.setattr(
+        svc.oauth_signin,
+        "logout",
+        lambda provider: (_ for _ in ()).throw(
+            AssertionError("ChatGPT logout must not delete local keychain tokens")),
+    )
+
+    svc.begin("openai")
+    assert svc.cancel("openai")["ok"] is True
+    assert svc.sign_out("openai")["ok"] is True
+    assert calls == [("cancel", "openai", "login-123"), ("logout", "openai")]
+
+
 def test_browser_flow_returns_at_once_and_reports_through_the_roster(monkeypatch):
     _clear_jobs()
     monkeypatch.setattr(svc.keychain, "keychain_available", lambda: True)
