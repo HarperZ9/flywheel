@@ -12,7 +12,8 @@ import sys
 import tomllib
 from typing import Callable, Mapping
 
-from .bundled_lane_expectations import expected_bundled_lane
+from .bundled_lane_expectations import expected_bundled_lane, EXPECTED_BUNDLED_LANES
+from .bundled_lane_core import manifest_file_row
 from .evidence_json import canonical_sha256, strict_load_json
 from .mcp_client import LaunchSpec
 
@@ -54,9 +55,9 @@ def bundled_child_environment(
     return env
 
 
-def default_descriptor_path() -> Path:
+def default_descriptor_path(name: str = 'relay') -> Path:
     base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
-    return base / "packaging" / "bundled-lanes" / "relay.json"
+    return base / "packaging" / "bundled-lanes" / (name + '.json')
 
 
 def admit_bundled_lane(
@@ -69,10 +70,17 @@ def admit_bundled_lane(
     expected: Mapping[str, object] | None = None,
 ) -> BundledLaneAdmission:
     """Admit one frozen bundled lane only when descriptor and module agree."""
-    if name != "relay":
+    if name not in EXPECTED_BUNDLED_LANES:
         return BundledLaneAdmission(None, None, ("bundled_lane_not_supported",))
+    child_env = bundled_child_environment(environ)
+    if name == 'writing':
+        home = environ.get('FLYWHEEL_HOME')
+        if not isinstance(home, str) or not home or not Path(home).is_absolute():
+            return BundledLaneAdmission(None, None, ('bundled_state_root_missing',))
+        child_env['FLYWHEEL_HOME'] = home
     expected_row = {**expected_bundled_lane(name), **dict(expected or {})}
-    path = Path(descriptor_path) if descriptor_path is not None else default_descriptor_path()
+    path = Path(descriptor_path) if descriptor_path is not None else (
+        default_descriptor_path() if name == 'relay' else default_descriptor_path(name))
     descriptor, load_codes = _load_descriptor(path)
     if descriptor is None:
         return BundledLaneAdmission(None, None, load_codes)
@@ -89,7 +97,7 @@ def admit_bundled_lane(
     component = _component_summary(descriptor, expected_row)
     launch = LaunchSpec(
         (executable, "--bundled-lane-mcp", name),
-        env_overrides=tuple(sorted(bundled_child_environment(environ).items())),
+        env_overrides=tuple(sorted(child_env.items())),
         inherit_env=False,
         hide_window=True,
         allowed_tools=tuple(expected_row["allowed_tools"]),
@@ -110,24 +118,30 @@ def dispatch_bundled_lane_mcp(
     args = list(sys.argv[1:] if argv is None else argv)
     if not args or args[0] != "--bundled-lane-mcp":
         return None
-    if args != ["--bundled-lane-mcp", "relay"]:
+    if len(args) != 2 or args[1] not in EXPECTED_BUNDLED_LANES:
         return 2
-    expected_row = {**expected_bundled_lane("relay"), **dict(expected or {})}
+    name = args[1]
+    expected_row = {**expected_bundled_lane(name), **dict(expected or {})}
     admission = admit_bundled_lane(
-        "relay",
+        name,
         executable=executable or sys.executable,
-        environ=environ or os.environ,
+        environ=os.environ if environ is None else environ,
         descriptor_path=descriptor_path,
         expected=expected_row,
     )
     if admission.blocking_codes:
         return 2
-    module = import_module_fn(str(expected_row["module"]))
-    serve = getattr(module, str(expected_row["callable"]), None)
-    if not callable(serve):
+    from .bundled_lane_stdio import admitted_stdio
+    try:
+        module = import_module_fn(str(expected_row["module"]))
+        serve = getattr(module, str(expected_row["callable"]), None)
+        if not callable(serve):
+            return 2
+        with admitted_stdio(expected_row['allowed_tools']):
+            result = serve()
+        return int(result or 0)
+    except Exception:
         return 2
-    result = serve()
-    return int(result or 0)
 
 
 def build_relay_descriptor(source_root: Path, *, commit: str) -> dict:
@@ -220,7 +234,7 @@ def _validate_descriptor(
         codes.append("bundled_source_algorithm_mismatch")
     files = source.get("files")
     if (not isinstance(files, list)
-            or any(not _manifest_file_row(row) for row in files)
+            or any(not manifest_file_row(row, str(expected['source_path'])) for row in files)
             or sorted(row["path"] for row in files) != [row["path"] for row in files]):
         codes.append("bundled_source_manifest_invalid")
     else:
@@ -233,7 +247,7 @@ def _validate_descriptor(
             codes.append("bundled_source_manifest_digest_invalid")
         if source.get("manifest_sha256") != expected.get("source_manifest_sha256"):
             codes.append("bundled_source_digest_mismatch")
-    if entrypoint.get("argv") != ["--bundled-lane-mcp", "relay"]:
+    if entrypoint.get("argv") != ["--bundled-lane-mcp", expected.get('name', 'relay')]:
         codes.append("bundled_entrypoint_invalid")
     if entrypoint.get("module") != expected.get("module"):
         codes.append("bundled_entrypoint_invalid")
@@ -265,22 +279,6 @@ def _component_summary(
         "allowed_tools": list(expected["allowed_tools"]),
         "does_not_prove": list(descriptor.get("does_not_prove", ())),
     }
-
-
-def _manifest_file_row(value: object) -> bool:
-    if not isinstance(value, dict):
-        return False
-    return (
-        set(value) == {"path", "bytes", "sha256"}
-        and isinstance(value.get("path"), str)
-        and value["path"].startswith("src/relay/")
-        and value["path"].endswith(".py")
-        and isinstance(value.get("bytes"), int)
-        and value["bytes"] >= 0
-        and isinstance(value.get("sha256"), str)
-        and len(value["sha256"]) == 71
-        and value["sha256"].startswith("sha256:")
-    )
 
 
 def _module_importable(name: str) -> bool:

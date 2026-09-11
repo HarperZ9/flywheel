@@ -1,5 +1,6 @@
 """Compiled expectations for lane components bundled into a frozen gateway."""
 from __future__ import annotations
+from .bundled_lane_core_expectations import CORE_BUNDLED_LANES
 
 
 EXPECTED_BUNDLED_LANES: dict[str, dict[str, object]] = {
@@ -29,3 +30,6 @@ EXPECTED_BUNDLED_LANES: dict[str, dict[str, object]] = {
 def expected_bundled_lane(name: str) -> dict[str, object]:
     value = EXPECTED_BUNDLED_LANES[name]
     return dict(value)
+
+
+EXPECTED_BUNDLED_LANES.update(CORE_BUNDLED_LANES)

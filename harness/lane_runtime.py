@@ -193,10 +193,11 @@ def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
                    extra_roots, importable_fn, runtime_python):
     if profile not in _VALID_PROFILES:
         return None, "invalid", None, ()
-    if lane.name == "relay" and is_frozen and profile == "auto":
+    from .bundled_lane_expectations import EXPECTED_BUNDLED_LANES
+    if lane.name in EXPECTED_BUNDLED_LANES and is_frozen and profile == "auto":
         from .bundled_lane_admission import admit_bundled_lane
         admission = admit_bundled_lane(
-            "relay", executable=python_executable, environ=environ,
+            lane.name, executable=python_executable, environ=environ,
             importable_fn=importable_fn)
         if not admission.blocking_codes:
             return admission.launch, "bundled", admission.component, ()
@@ -206,8 +207,7 @@ def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
     if lane.kind == "http":
         return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), "http", None, ()
     if is_frozen:
-        return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), (
-            "package" if lane.kind in {"pip", "npm"} else lane.kind), None, ()
+        return None, 'bundled', None, ('bundled_component_unavailable',)
     if lane.kind == "bundled":
         return (LaunchSpec((python_executable, *lane.mcp_args))
                 if lane.command == "python" else LaunchSpec(tuple(lane.mcp_command()))), "bundled", None, ()
@@ -233,12 +233,12 @@ def _blocking_codes(lane, profile, selected, source_available, package_available
         return ["package_distribution_disabled"]
     if profile == "source" and not source_available:
         return ["source_runtime_missing"]
-    if profile == "package" and lane.kind in {"pip", "npm"}:
+    if selected == "package" and lane.kind in {"pip", "npm"}:
         codes = [c for c in mismatch if c.startswith("runtime_python_")
                  or c in {"runtime_version_invalid", "installed_version_invalid"}]
         if not package_available:
             codes.append("package_runtime_missing")
-        if "installed_version_mismatch" in mismatch:
+        if profile == 'package' and "installed_version_mismatch" in mismatch:
             codes.append("installed_version_mismatch")
         return codes
     return []

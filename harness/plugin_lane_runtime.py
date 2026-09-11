@@ -16,12 +16,12 @@ def require_lane_launch(name, resolver):
 
 
 def lane_plugin_row(name, lane, command_resolver, runtime_resolver):
-    row = {"name": name, "kind": "lane", "enabled": True, "removable": False,
-           "detail": lane.role, "organ": lane.organ, "command": command_resolver(name)}
-    if lane.package_disabled_reason:
-        runtime = runtime_resolver(name)
-        row.update(enabled=runtime.present, command=[],
-                   status=(f"{runtime.selected_runtime}_selected"
-                           if runtime.present else "unavailable"),
-                   detail=f"{lane.role}. {lane.package_disabled_reason}")
+    runtime = runtime_resolver(name)
+    row = {"name": name, "kind": "lane", "enabled": runtime.present,
+           "removable": False, "detail": lane.role, "organ": lane.organ,
+           "command": [], "status": (f"{runtime.selected_runtime}_selected"
+                                      if runtime.present else "unavailable"),
+           "resolved_runtime": runtime.to_dict()}
+    if lane.package_disabled_reason and not runtime.present:
+        row['detail'] = f"{lane.role}. {lane.package_disabled_reason}"
     return row

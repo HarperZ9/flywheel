@@ -1,0 +1,39 @@
+{
+  "allowed_tools": [
+    "writing.status",
+    "writing.doctor"
+  ],
+  "does_not_prove": [
+    "NOT_PROVES_PAYLOAD_IDENTITY: entrypoint source bytes are witnessed; the separate release receipt binds the interpreter and dependency payload.",
+    "NOT_PROVES_WORKFLOW_SUCCESS: status and doctor do not execute a useful workflow.",
+    "NOT_PROVES_PROVIDER_READINESS: no account, network or model readiness is attested."
+  ],
+  "entrypoint": {
+    "argv": [
+      "--bundled-lane-mcp",
+      "writing"
+    ],
+    "callable": "serve",
+    "health_tool": "writing.status",
+    "module": "harness.writing_mcp"
+  },
+  "name": "writing",
+  "schema": "flywheel.bundled-lane-component/v1",
+  "source": {
+    "algorithm": "sha256-canonical-source-manifest/v1",
+    "bytes": 6311,
+    "commit": "b0fe0cea7f212ef385b8bb9eb7cf21ef1bc726e9",
+    "file_count": 1,
+    "files": [
+      {
+        "bytes": 6311,
+        "path": "harness/writing_mcp.py",
+        "sha256": "sha256:2f98fd574b7429b48f78033f1a2c01309d42dc5a2c211d214528bd88be2ed671"
+      }
+    ],
+    "manifest_sha256": "sha256:e4081887757df6a4db195b2cbb650eeec1169dbc0847762435de0636bd2d6f00",
+    "path": "harness",
+    "repo": "https://github.com/HarperZ9/flywheel"
+  },
+  "version": "0.1.0"
+}

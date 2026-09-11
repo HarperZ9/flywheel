@@ -1,0 +1,39 @@
+{
+  "allowed_tools": [
+    "local-model.status",
+    "local-model.doctor"
+  ],
+  "does_not_prove": [
+    "NOT_PROVES_PAYLOAD_IDENTITY: entrypoint source bytes are witnessed; the separate release receipt binds the interpreter and dependency payload.",
+    "NOT_PROVES_WORKFLOW_SUCCESS: status and doctor do not execute a useful workflow.",
+    "NOT_PROVES_PROVIDER_READINESS: no account, network or model readiness is attested."
+  ],
+  "entrypoint": {
+    "argv": [
+      "--bundled-lane-mcp",
+      "local-model"
+    ],
+    "callable": "serve",
+    "health_tool": "local-model.status",
+    "module": "harness.local_mcp"
+  },
+  "name": "local-model",
+  "schema": "flywheel.bundled-lane-component/v1",
+  "source": {
+    "algorithm": "sha256-canonical-source-manifest/v1",
+    "bytes": 7427,
+    "commit": "b0fe0cea7f212ef385b8bb9eb7cf21ef1bc726e9",
+    "file_count": 1,
+    "files": [
+      {
+        "bytes": 7427,
+        "path": "harness/local_mcp.py",
+        "sha256": "sha256:ce81a5a7f05d0d8668166487e97b5b03f8a7d07421bc2a1c45e10fc184d011e5"
+      }
+    ],
+    "manifest_sha256": "sha256:d9dcf738137f18bd3c83ab7bdf1a0f9d7d10e19707ca3c9c5e775155a5067640",
+    "path": "harness",
+    "repo": "https://github.com/HarperZ9/flywheel"
+  },
+  "version": "0.1.0"
+}
