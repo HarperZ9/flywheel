@@ -13,7 +13,7 @@ import pytest
 from desktop.tool import installed_launch_acceptance as ila
 from desktop.tool import installed_launch_acceptance_platform as platform
 from tests.installed_launch_acceptance_fixtures import (
-    COMMIT, build_manifest, make_install, run_harness, valid_receipt,
+    COMMIT, build_manifest, make_install, powershell_for_selftest, run_harness, valid_receipt,
 )
 
 
@@ -60,7 +60,7 @@ def test_wrapper_selftest_covers_json_valid_bad_rows_and_list_ids():
     repo = Path(__file__).parents[1]
     script = repo / "desktop" / "tool" / "run_installed_launch_acceptance.ps1"
     completed = subprocess.run(
-        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script), "-SelfTest"],
+        [powershell_for_selftest(), "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script), "-SelfTest"],
         cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
     )
     assert completed.returncode == 0, completed.stderr

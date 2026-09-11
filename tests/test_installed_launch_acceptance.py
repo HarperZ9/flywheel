@@ -7,7 +7,7 @@ from desktop.tool import installed_launch_acceptance as ila
 from desktop.tool import installed_launch_acceptance_platform as platform
 from tests.installed_launch_acceptance_fixtures import (
     COMMIT, TOKEN, FakeHttp, FakeProcess, FakeWindows, build_manifest,
-    make_install, row, run_harness, status_doc, valid_receipt, write_token,
+    make_install, powershell_for_selftest, row, run_harness, status_doc, valid_receipt, write_token,
 )
 def test_payload_preflight_requires_app_and_engine_under_same_install_root(tmp_path):
     install, app_sha, engine_sha = make_install(tmp_path)
@@ -289,7 +289,7 @@ def test_powershell_wrapper_selftest_rejects_bad_receipts():
     repo = Path(__file__).parents[1]
     script = repo / "desktop" / "tool" / "run_installed_launch_acceptance.ps1"
     completed = subprocess.run(
-        ["powershell", "-ExecutionPolicy", "Bypass", "-File", str(script), "-SelfTest"],
+        [powershell_for_selftest(), "-ExecutionPolicy", "Bypass", "-File", str(script), "-SelfTest"],
         cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
     )
     assert completed.returncode == 0, completed.stderr

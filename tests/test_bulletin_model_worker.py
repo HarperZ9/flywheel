@@ -238,47 +238,45 @@ def test_forged_pre_io_send_flag_is_not_recorded(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows owned-job component")
-def test_recorder_hang_kills_descendant_before_socket_send(tmp_path, fake_server):
+@pytest.mark.parametrize("startup_delay", [0, 3.4])
+def test_recorder_hang_kills_descendant_before_socket_send(tmp_path, fake_server, startup_delay, text_once_written):
     from harness.cross_harness_process import start_owned_process
-    import ctypes
+    from tests.process_startup_fixtures import ReadyOwnedProcess, windows_pid_is_running
     import time
     origin, calls = fake_server
     req = request("smoke", origin)
+    owned = []
     def launch(argv, **kwargs):
         # Trusted scripted instrumentation control; never enabled in production.
+        # 60s outlasts 30s readiness + 6s cleanup, excluding a natural-exit pass.
         code = '''import sys,time,subprocess
+time.sleep(float(sys.argv[2]))
 sys.path.insert(0,sys.argv[1])
 from harness.bulletin_model_exchange import PrivateExchange
 original=PrivateExchange.put
 def blocked(self,name,data,**kwargs):
     if name == 'transport-000.json':
-        child=subprocess.Popen([sys.executable,'-I','-S','-c','import time;time.sleep(30)'])
+        child=subprocess.Popen([sys.executable,'-I','-S','-c','import time;time.sleep(60)'])
         original(self,'descendant.pid',str(child.pid).encode(),max_bytes=64)
-        time.sleep(30)
+        time.sleep(60)
     return original(self,name,data,**kwargs)
 PrivateExchange.put=blocked
 from harness.bulletin_model_worker import main
 raise SystemExit(main())'''
-        return start_owned_process((str(sys.executable), "-I", "-S", "-c", code, str(Path.cwd())), **kwargs)
+        process = start_owned_process((str(sys.executable), "-I", "-S", "-c", code, str(Path.cwd()), str(startup_delay)), **kwargs)
+        wrapped = ReadyOwnedProcess(process, store.path / "descendant.pid", text_once_written, windows_pid_is_running)
+        owned.append(wrapped)
+        return wrapped
     with PrivateExchange.create(tmp_path / "ledger") as ledger, PrivateExchange.create(tmp_path / "call") as store:
         digest = ledger.put("ledger-0001.json", canonical_bytes(reservation(req)), max_bytes=8192)
-        started = time.monotonic()
         result = supervise_generation(req, exchange=store, ledger=ledger,
             reservation={"record_name": "ledger-0001.json", "sha256": digest},
             repository=Path.cwd(), python_executable=Path(sys.executable), timeout_seconds=2, launcher=launch)
+        # Startup is a separate bounded precondition. The real two-second wait
+        # and kill begin only after the descendant is observed alive.
+        assert owned[0].ready_at is not None, "descendant readiness was not established"
         assert result["outcome"] == "unknown" and result["failure"] == "worker_timeout"
-        assert time.monotonic() - started < 6
+        assert time.monotonic() - owned[0].ready_at < 6
         assert calls == []
         pid = int(store.read("descendant.pid", max_bytes=64))
-        api = ctypes.WinDLL("kernel32", use_last_error=True)
-        api.OpenProcess.restype = ctypes.c_void_p
-        api.OpenProcess.argtypes = [ctypes.c_uint32, ctypes.c_int, ctypes.c_uint32]
-        api.GetExitCodeProcess.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint32)]
-        api.CloseHandle.argtypes = [ctypes.c_void_p]
-        handle = api.OpenProcess(0x1000, 0, pid)
-        if handle:
-            code = ctypes.c_uint32()
-            try:
-                assert api.GetExitCodeProcess(handle, ctypes.byref(code)) and code.value != 259
-            finally:
-                api.CloseHandle(handle)
+        assert pid == owned[0].pid and not windows_pid_is_running(pid)

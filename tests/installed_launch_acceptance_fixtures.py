@@ -1,10 +1,20 @@
 import json
+import shutil
 from pathlib import Path
+
+import pytest
 
 from desktop.tool import installed_launch_acceptance as ila
 
 COMMIT = "276d399d37485ca63815cea1e629db06f123e839"
 TOKEN = "secret-token-that-must-never-appear"
+
+
+def powershell_for_selftest() -> str:
+    executable = shutil.which("powershell") or shutil.which("pwsh")
+    if executable is None:
+        pytest.skip("PowerShell runtime unavailable (powershell or pwsh)")
+    return executable
 
 
 def make_install(root: Path) -> tuple[Path, str, str]:
