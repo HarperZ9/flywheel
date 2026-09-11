@@ -1,6 +1,6 @@
 {
   "schema": "flywheel.gateway-agent-review/v3",
-  "binding_sha256": "d318501a666dbb1d0151e6f21d53053a8d29efb33199437ae5b253f877732e69",
+  "binding_sha256": "c02b08fc38ef9cb92a7f3fed80b2cd8044d49eb4311abdc84c0d114da1ae23e1",
   "execution_mode": "native_cli_session",
   "endpoint": "claude-cli",
   "base_url": "",
@@ -45,7 +45,9 @@
       "NO_OS_ADMINISTRATION",
       "NO_PROVIDER_RESUME",
       "PROVIDER_POLICY_APPLIES",
-      "NO_HARD_TOKEN_LIMIT"
+      "NO_HARD_TOKEN_LIMIT",
+      "HIDDEN_REASONING_UNAVAILABLE",
+      "CLAUDE_REASONING_NOT_RETAINED"
     ],
     "version": "2.1.251"
   }

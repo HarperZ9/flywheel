@@ -44,6 +44,7 @@ def _binding(operation, workspace, runtime):
 
 def freeze_cli_binding(operation, workspace_root):
     profile = _request(operation.operation)
+    check_configuration_boundary(operation.operation['endpoint'], workspace_root)
     runtime = freeze_runtime(operation.operation['endpoint'], profile)
     workspace = freeze_workspace(operation.operation.get('root'), workspace_root or Path.cwd())
     check_configuration_boundary(operation.operation['endpoint'], Path(workspace['root']))
@@ -58,6 +59,7 @@ def freeze_cli_binding(operation, workspace_root):
 
 def validate_cli_binding(binding, operation):
     try:
+        check_configuration_boundary(operation.operation['endpoint'], None)
         runtime = binding['cli_runtime']
         if set(runtime) != {'executable', 'identity', 'version', 'help_sha256',
                             'auth_directory', 'auth_directory_identity'}: raise ValueError

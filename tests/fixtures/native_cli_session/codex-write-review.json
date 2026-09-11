@@ -1,6 +1,6 @@
 {
   "schema": "flywheel.gateway-agent-review/v3",
-  "binding_sha256": "a25413c3851b0948b00a2d60596d48357eeab05765485df970a732c381f8c87f",
+  "binding_sha256": "395708dfb099843f3f793d7103c756869968ba9f182e1d8b74e796ac85c7a6c7",
   "execution_mode": "native_cli_session",
   "endpoint": "codex-cli",
   "base_url": "",
@@ -43,8 +43,10 @@
       "NO_PROVIDER_RESUME",
       "PROVIDER_POLICY_APPLIES",
       "NO_HARD_TOKEN_LIMIT",
+      "HIDDEN_REASONING_UNAVAILABLE",
       "NO_HARD_NATIVE_TURN_LIMIT",
-      "READ_SCOPE_NOT_WORKSPACE_CONFINED"
+      "READ_SCOPE_NOT_WORKSPACE_CONFINED",
+      "UNRECOGNIZED_SUMMARY_FIELDS_OMITTED"
     ],
     "version": "0.153.4"
   }

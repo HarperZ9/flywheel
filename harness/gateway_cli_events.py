@@ -1,5 +1,4 @@
-"""Bounded projection of documented CLI events, excluding reasoning blocks."""
-import json
+"""Private CLI events: documented visible summaries, never opaque reasoning."""
 from .evidence_json import strict_load_json
 from .gateway_operation import GatewayOperationError
 
@@ -14,6 +13,7 @@ class NativeEvents:
         self.max_steps, self.count, self.turns = max_steps, 0, 0
         self.terminal, self.final, self.model = False, '', None
         self.calls = set()
+        self.omissions = set()
 
     def feed(self, line):
         if not line.strip(): return
@@ -28,6 +28,11 @@ class NativeEvents:
 
     def _send(self, kind, **payload):
         self.emit({'type': kind, 'source': self.provider, **payload})
+
+    def _omit(self, reason):
+        if reason not in self.omissions:
+            self.omissions.add(reason)
+            self._send('cli_omission', reason=reason)
 
     def _tool(self, ident, name, arguments):
         if name not in self.tools: fail('AGENT_CLI_PERMISSION_UNSUPPORTED')
@@ -49,7 +54,9 @@ class NativeEvents:
                 elif block.get('type') == 'text':
                     if type(block.get('text')) is not str: fail()
                     self._send('cli_message', text=block['text'])
-                # Thinking, signatures and opaque continuation never enter trace.
+                elif block.get('type') in {'thinking', 'redacted_thinking'}:
+                    self._omit('PROVIDER_REASONING_NOT_RETAINED')
+                # Signatures and opaque continuation never enter trace.
         elif kind == 'user':
             msg = event.get('message', {})
             if type(msg) is not dict: fail()
@@ -88,6 +95,13 @@ class NativeEvents:
                 if kind == 'item.completed':
                     self._send('cli_tool_result', call_id=ident, content={key: item[key]
                         for key in ('aggregated_output', 'exit_code', 'status', 'changes') if key in item})
+            elif typ == 'reasoning' and kind == 'item.completed':
+                # Codex exec_events::ReasoningItem documents text as a summary.
+                # No other fields are mined or decoded for reasoning content.
+                if type(item.get('text')) is str and type(ident) is str:
+                    self._send('cli_reasoning_summary', item_id=ident, text=item['text'])
+                else:
+                    self._omit('PROVIDER_SUMMARY_SHAPE_UNSUPPORTED')
             elif typ not in {'reasoning', 'todo_list', 'agent_message'}: fail()
         elif kind not in {'thread.started', 'turn.started'}: fail()
 
@@ -96,4 +110,5 @@ class NativeEvents:
             fail('AGENT_CLI_INCOMPLETE')
         return {'final': self.final, 'model_observed': self.model,
             'execution_mode': 'native_cli_session', 'native_tool_calls': len(self.calls),
+            'omissions': sorted(self.omissions),
             'steps': [], 'does_not_prove': ['NOT_SEMANTIC_TRUTH', 'NOT_PROVIDER_SESSION_RESUME']}

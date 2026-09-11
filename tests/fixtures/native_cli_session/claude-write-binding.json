@@ -9,7 +9,7 @@
     "slot": "",
     "local": false,
     "default_model": "",
-    "specification_sha256": "688b269d6a1942b10a221680a2c6a61abc0768ed1fc5e8473341bd252b1c765f"
+    "specification_sha256": "c7c437bcbb46a2fa532e1b6aa47a9b1f57584f8cf96a3c55ae7b846cb72b9346"
   },
   "model": {
     "requested_model_reference": "fixture-model-exact",
@@ -72,7 +72,9 @@
       "NO_OS_ADMINISTRATION",
       "NO_PROVIDER_RESUME",
       "PROVIDER_POLICY_APPLIES",
-      "NO_HARD_TOKEN_LIMIT"
+      "NO_HARD_TOKEN_LIMIT",
+      "HIDDEN_REASONING_UNAVAILABLE",
+      "CLAUDE_REASONING_NOT_RETAINED"
     ]
   },
   "cli_runtime": {

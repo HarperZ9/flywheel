@@ -32,9 +32,10 @@ def session_profile(endpoint, *, allow_write, allow_exec):
             'max_steps': 'native_turn_limit' if endpoint == 'claude-cli' else 'unsupported',
             'max_tokens': 'unsupported', 'seed': 'unsupported'},
         'limitations': ['NO_OS_ADMINISTRATION', 'NO_PROVIDER_RESUME',
-            'PROVIDER_POLICY_APPLIES', 'NO_HARD_TOKEN_LIMIT'] + (
-                ['NO_HARD_NATIVE_TURN_LIMIT', 'READ_SCOPE_NOT_WORKSPACE_CONFINED']
-                if endpoint == 'codex-cli' else [])}
+            'PROVIDER_POLICY_APPLIES', 'NO_HARD_TOKEN_LIMIT', 'HIDDEN_REASONING_UNAVAILABLE'] + (
+                ['NO_HARD_NATIVE_TURN_LIMIT', 'READ_SCOPE_NOT_WORKSPACE_CONFINED',
+                 'UNRECOGNIZED_SUMMARY_FIELDS_OMITTED']
+                if endpoint == 'codex-cli' else ['CLAUDE_REASONING_NOT_RETAINED'])}
 
 
 def session_argv(executable, profile, model, root: Path, max_steps):

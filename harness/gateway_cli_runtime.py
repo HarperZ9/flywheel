@@ -29,6 +29,9 @@ def _probe(executable, args, env):
 def session_env(provider, auth_directory, synthetic_home):
     env = {k: v for k, v in os.environ.items() if k.upper() in _SYSTEM}
     env.update(HOME=str(synthetic_home), USERPROFILE=str(synthetic_home))
+    env.update(TEMP=str(Path(synthetic_home) / 'Temp'), TMP=str(Path(synthetic_home) / 'Temp'),
+        APPDATA=str(Path(synthetic_home) / 'AppData/Roaming'),
+        LOCALAPPDATA=str(Path(synthetic_home) / 'AppData/Local'))
     env['CLAUDE_CONFIG_DIR' if provider == 'claude-cli' else 'CODEX_HOME'] = auth_directory
     return env
 
@@ -109,11 +112,10 @@ def pin_runtime(runtime):
 
 
 def check_configuration_boundary(provider, root):
-    """Refuse unbound project config instead of interpreting private settings."""
-    if provider != 'codex-cli': return
-    try:
-        for parent in (Path(root), *Path(root).parents):
-            if (parent / '.codex').exists():
-                raise GatewayOperationError('AGENT_CLI_PROFILE_UNSUPPORTED')
-    except OSError:
-        raise GatewayOperationError('AGENT_CLI_PROFILE_UNSUPPORTED') from None
+    """Codex direct sessions lack an admitted project-config isolation control.
+
+    An absence check can race creation and is not authority. Keep the draft
+    profile unavailable until a documented control or sealed workspace exists.
+    """
+    if provider == 'codex-cli':
+        raise GatewayOperationError('AGENT_CLI_PROFILE_UNSUPPORTED')

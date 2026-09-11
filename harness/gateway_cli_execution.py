@@ -1,6 +1,4 @@
 """One native CLI session in the owned gateway worker, never a nested tool loop."""
-import os
-from pathlib import Path
 import time
 from .cross_harness_process import start_owned_process
 from .gateway_cli_events import NativeEvents
@@ -8,18 +6,18 @@ from .gateway_cli_profiles import session_argv
 from .gateway_cli_runtime import (verify_runtime, pin_runtime, session_env,
                                   check_configuration_boundary)
 from .gateway_operation import GatewayOperationError
+from .gateway_cli_profile_home import owned_profile_home
 
 
-def run_cli_session(goal, binding, root, deadline, emit, *, launcher=None):
+def run_cli_session(goal, binding, root, deadline, emit, *, launcher=None,
+                    state_root=None, state_identity=None):
     runtime, profile = binding['cli_runtime'], binding['cli_session']
-    verify_runtime(runtime)
     check_configuration_boundary(profile['provider'], root)
+    verify_runtime(runtime)
     argv = session_argv(runtime['executable'], profile, binding['model']['model_id'],
                         root, binding['budget']['max_steps'])
     if type(goal) is not str or len(goal.encode('utf-8')) > 1024 * 1024:
         raise GatewayOperationError('AGENT_CLI_PROTOCOL_ERROR')
-    env = session_env(profile['provider'], runtime['auth_directory'],
-                      Path(os.environ.get('HOME', root)))
     parser = NativeEvents(profile['provider'], profile['tools'], emit,
                            max_steps=binding['budget']['max_steps'])
     process, consumed = None, 0
@@ -31,7 +29,9 @@ def run_cli_session(goal, binding, root, deadline, emit, *, launcher=None):
         except UnicodeError: raise GatewayOperationError('AGENT_CLI_PROTOCOL_ERROR') from None
         for line in text.splitlines(): parser.feed(line)
         consumed = end
-    with pin_runtime(runtime):
+    with pin_runtime(runtime), owned_profile_home(
+            state_root=state_root, state_identity=state_identity) as profile_home:
+        env = session_env(profile['provider'], runtime['auth_directory'], profile_home)
         try:
             if time.monotonic() >= deadline:
                 raise GatewayOperationError('OPERATION_DEADLINE_EXCEEDED')
