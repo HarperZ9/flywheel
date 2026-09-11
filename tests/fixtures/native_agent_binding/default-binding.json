@@ -1,0 +1,57 @@
+{
+  "budget": {
+    "max_steps": 2,
+    "max_tokens": 1024,
+    "timeout_s": 300
+  },
+  "capabilities": {
+    "allow_exec": false,
+    "allow_mcp": false,
+    "allow_write": false
+  },
+  "endpoint": {
+    "adapter": "openai",
+    "base_url": "http://127.0.0.1:11434/v1",
+    "default_model": "telos-coder-14b",
+    "local": true,
+    "name": "ollama",
+    "slot": "",
+    "specification_sha256": "613c6e1acc35d646194734dbc6c430e392989003edd58accb328fa27df10f931"
+  },
+  "model": {
+    "model_id": "telos-coder-14b",
+    "observation_policy": "ollama_exact",
+    "profile": null,
+    "requested_model_reference": null,
+    "selection": "frozen_default"
+  },
+  "operation_sha256": "af03ba1599023eae94b0db041e9d245268b4e37a094b3d62de601eb9a9327455",
+  "sampling": {
+    "provider_seed": null,
+    "router_seed": 0,
+    "temperature": 0,
+    "temperature_policy": "zero"
+  },
+  "schema": "flywheel.gateway-agent-binding/v1",
+  "transport": {
+    "ambient_proxy": false,
+    "fallback": false,
+    "max_requests": 2,
+    "redirects": false
+  },
+  "workspace": {
+    "policy": {
+      "allowed_roots": [
+        "C:\\fixture"
+      ],
+      "mode": "configured"
+    },
+    "policy_sha256": "709271920c84a91aa06ffc9c9689d0334e5284a4cce7924d00887acc0c07f271",
+    "root": "C:\\fixture\\workspace",
+    "root_identity": {
+      "device": 1,
+      "inode": 2,
+      "platform": "windows"
+    }
+  }
+}

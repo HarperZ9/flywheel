@@ -1337,7 +1337,7 @@ class _Handler(BaseHTTPRequestHandler):
                 from harness.gateway_grant_route import gateway_grant_post
                 body, code = gateway_grant_post(
                     p, raw, owner_ref=self.owner_ref, run_root=Path(self.run_root),
-                    state_root=self.flywheel_home / "state", clock=self.clock)
+                    state_root=self.flywheel_home / "state", clock=self.clock, workspace_root=Path(self.root))
             else:
                 from harness.credential_handle_route import credential_handle_post
                 body, code = credential_handle_post(

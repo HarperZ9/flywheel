@@ -16,6 +16,11 @@ def gateway_error_response(exc: Exception) -> tuple[dict, int]:
         code = "PERMISSION_REQUIRED"
     errors = {
         "INVALID_REQUEST": (422, "gateway operation is invalid"),
+        "AGENT_BINDING_DRIFT": (409, "agent execution authority changed"),
+        "AGENT_REPREPARE_REQUIRED": (409, "agent execution requires a new proposal"),
+        "AGENT_MODEL_MISMATCH": (409, "provider reported a different model"),
+        "AGENT_ENDPOINT_UNSUPPORTED": (422, "endpoint does not support bound agent execution"),
+        "OPERATION_DEADLINE_EXCEEDED": (504, "agent execution budget expired"),
         "BULLETIN_ORIGIN_REQUIRED": (422, "Bulletin origin requires a new exact grant"),
         "BULLETIN_ORIGIN_INVALID": (422, "Bulletin origin is invalid"),
         "BULLETIN_ORIGIN_MISMATCH": (409, "Bulletin configured origin differs from approval"),

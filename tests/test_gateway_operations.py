@@ -23,7 +23,7 @@ def _events(root):
     return [json.loads(path.read_bytes()) for path in sorted(directory.glob("*.json"))]
 def _authorized(root, *, request="agent-1", operation=None):
     operation = operation or {
-        "goal": "inspect", "endpoint": "local", "max_steps": 2,
+        "goal": "inspect", "endpoint": "stub", "max_steps": 2,
         "allow_write": False, "allow_exec": False, "stream": True,
         "data_refs": [], "credential_refs": [],
     }

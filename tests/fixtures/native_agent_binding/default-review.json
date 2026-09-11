@@ -1,0 +1,25 @@
+{
+  "base_url": "http://127.0.0.1:11434/v1",
+  "binding_sha256": "3b76f5a55e3920324f354bd42c3d61f4997b6f327810663d5a4b6cb835a1a7e8",
+  "budget": {
+    "max_steps": 2,
+    "max_tokens": 1024,
+    "timeout_s": 300
+  },
+  "capabilities": {
+    "allow_exec": false,
+    "allow_mcp": false,
+    "allow_write": false
+  },
+  "endpoint": "ollama",
+  "model": {
+    "model_id": "telos-coder-14b",
+    "observation_policy": "ollama_exact",
+    "profile": null,
+    "requested_model_reference": null,
+    "selection": "frozen_default"
+  },
+  "root": "C:\\fixture\\workspace",
+  "schema": "flywheel.gateway-agent-review/v1",
+  "workspace_policy_sha256": "709271920c84a91aa06ffc9c9689d0334e5284a4cce7924d00887acc0c07f271"
+}

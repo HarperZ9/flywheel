@@ -79,6 +79,12 @@ def validate_operation_shape(action: str, value: dict) -> None:
             raise ValueError
     if action == "agent.run" and "continuation" in value:
         _continuation_agent_shape(value["continuation"])
+    if action == "agent.run":
+        from .gateway_agent_binding import MODEL_PATTERN
+        if "model" in value and MODEL_PATTERN.fullmatch(value["model"]) is None:
+            raise ValueError
+        if "max_tokens" in value: _bounded_int(value["max_tokens"], 1, 32768)
+        if "timeout_s" in value: _bounded_int(value["timeout_s"], 1, 1800)
     for name in ("stream", "allow_write", "allow_exec", "enabled"):
         if name in value and type(value[name]) is not bool:
             raise ValueError
