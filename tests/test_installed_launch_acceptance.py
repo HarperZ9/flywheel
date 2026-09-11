@@ -226,7 +226,8 @@ def test_captured_descendant_survivor_uses_creation_time_to_avoid_pid_reuse():
     captured = [{"pid": 55, "creation_time": "created-a"}]
     assert platform._surviving_captured_pids(captured, {55: "created-a"}) == [55]
     assert platform._surviving_captured_pids(captured, {55: "created-b"}) == []
-    assert platform._surviving_captured_pids(captured, {}) == [55]
+    assert platform._surviving_captured_pids(captured, {}) == []
+    assert platform._surviving_captured_pids(captured, None) == [55]
 
 def test_verify_receipt_rejects_missing_stale_incomplete_and_malformed(tmp_path):
     missing = tmp_path / "missing.json"

@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib import error, request
 
 try:
+    from .installed_launch_acceptance_census import process_rows
     from .installed_launch_acceptance_shortcuts import resolve_links
     from .installed_launch_acceptance_jobs import start_windows_job_process
     from .installed_launch_acceptance_model import (
@@ -16,6 +17,7 @@ try:
         registry_values,
     )
 except ImportError:
+    from installed_launch_acceptance_census import process_rows  # type: ignore
     from installed_launch_acceptance_shortcuts import resolve_links  # type: ignore
     from installed_launch_acceptance_jobs import start_windows_job_process  # type: ignore
     from installed_launch_acceptance_model import (  # type: ignore
@@ -197,6 +199,7 @@ class LocalProcessController(NullProcessController):
         listeners = self.listener_pids(port) if self.is_port_open(port) else []
         survivors = sorted(set(result["job_active_pids_after"] + captured_survivors + listeners))
         result.update({"job_object_assigned": True, "captured_descendants": captured,
+                       "captured_census_available": live_times is not None,
                        "captured_descendant_survivors": captured_survivors,
                        "listener_pids_after": listeners, "surviving_pids": survivors})
         if survivors:
@@ -207,7 +210,7 @@ class LocalProcessController(NullProcessController):
         return [row["pid"] for row in self.descendant_processes(pid)]
 
     def descendant_processes(self, pid: int) -> list[dict]:
-        rows = self._process_rows()
+        rows = self._process_rows() or []
         children: dict[int, list[dict]] = {}
         for row in rows:
             children.setdefault(row["parent_pid"], []).append(row)
@@ -219,29 +222,16 @@ class LocalProcessController(NullProcessController):
                 stack.extend(children.get(child["pid"], []))
         return found
 
-    def process_creation_times(self, pids: list[int]) -> dict[int, str]:
+    def process_creation_times(self, pids: list[int]) -> dict[int, str] | None:
         wanted = set(int(pid) for pid in pids)
-        return {row["pid"]: row["creation_time"] for row in self._process_rows()
+        rows = self._process_rows()
+        if rows is None:
+            return None
+        return {row["pid"]: row["creation_time"] for row in rows
                 if row["pid"] in wanted}
 
-    def _process_rows(self) -> list[dict]:
-        if os.name != "nt":
-            return []
-        script = ("Get-CimInstance Win32_Process | "
-                  "Select-Object ProcessId,ParentProcessId,CreationDate | ConvertTo-Json")
-        out = subprocess.run(["powershell", "-NoProfile", "-Command", script],
-                             text=True, stdout=subprocess.PIPE,
-                             stderr=subprocess.DEVNULL,
-                             creationflags=WINDOW_FLAGS)
-        if out.returncode != 0 or not out.stdout.strip():
-            return []
-        rows = json.loads(out.stdout)
-        out_rows = []
-        for row in (rows if isinstance(rows, list) else [rows]):
-            out_rows.append({"pid": int(row["ProcessId"]),
-                             "parent_pid": int(row["ParentProcessId"]),
-                             "creation_time": str(row.get("CreationDate", ""))})
-        return out_rows
+    def _process_rows(self) -> list[dict] | None:
+        return process_rows()
 
     def _stop_pids(self, pids: list[int]):
         if not pids or os.name != "nt":
@@ -279,8 +269,10 @@ def _entry_matches_install_root(install_root: Path, entry: dict) -> bool:
     return left == right
 
 
-def _surviving_captured_pids(captured: list[dict], live_creation_times: dict[int, str]) -> list[int]:
-    if captured and not live_creation_times:
+def _surviving_captured_pids(captured: list[dict], live_creation_times: dict[int, str] | None) -> list[int]:
+    if live_creation_times is None:
         return [int(row["pid"]) for row in captured]
     return [int(row["pid"]) for row in captured
-            if live_creation_times.get(int(row["pid"])) == row.get("creation_time")]
+            if int(row["pid"]) in live_creation_times and
+            (not row.get("creation_time") or not live_creation_times[int(row["pid"])] or
+             live_creation_times[int(row["pid"])] == row["creation_time"])]
