@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../client/gateway_client.dart';
+import '../models/agent_execution_mode.dart';
 import '../models/gateway_models.dart';
 import '../models/operation_models.dart';
 import '../models/rowan_walkthrough_models.dart';
@@ -22,6 +23,8 @@ final class RowanOperationHostAdapter extends ChangeNotifier
   List<EndpointRow> get endpoints => _controller.endpoints;
   @override
   String? get endpoint => _controller.endpoint;
+  @override
+  AgentExecutionMode get executionMode => _controller.executionMode;
   @override
   String? get selectedModel => _controller.selectedModel;
   @override
@@ -45,6 +48,9 @@ final class RowanOperationHostAdapter extends ChangeNotifier
   Future<bool> recoverFromSession() => _controller.recoverFromSession();
   @override
   void setEndpoint(String? value) => _controller.setEndpoint(value);
+  @override
+  void setExecutionMode(AgentExecutionMode value) =>
+      _controller.setExecutionMode(value);
   @override
   void setModel(String value) => _controller.setModel(value);
   @override

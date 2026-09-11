@@ -94,6 +94,26 @@ void _allowlistTests() {
     expect(loaded?.operationRequestSha256, _requestSha);
   });
 
+  test('operation locator persists execution mode without private inputs', () {
+    final file = _file(_temp());
+    JourneySessionStore(file: file).save(
+      JourneySession(
+        journeyRef: _journey,
+        lens: JourneyLens.verify,
+        operationExecutionMode: 'native_cli_session',
+      ),
+    );
+    final value = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+    expect(
+      value.keys.join(','),
+      'details_expanded,journey_ref,lens,operation_execution_mode,recovery_visible,schema',
+    );
+    expect(value['operation_execution_mode'], 'native_cli_session');
+    expect(_forbiddenSessionKeys.split(',').any(value.containsKey), isFalse);
+    expect(JourneySessionStore(file: file).load()?.operationExecutionMode,
+        'native_cli_session');
+  });
+
   test('invalid refs lens and unsafe selection fail before file creation', () {
     final invalid = <JourneySession Function()>[
       () => _session(journeyRef: '../journey'),
@@ -116,6 +136,11 @@ void _allowlistTests() {
             journeyRef: _journey,
             lens: JourneyLens.verify,
             operationRequestSha256: 'bad',
+          ),
+      () => JourneySession(
+            journeyRef: _journey,
+            lens: JourneyLens.verify,
+            operationExecutionMode: 'codex_cli',
           ),
     ];
     for (final build in invalid) {

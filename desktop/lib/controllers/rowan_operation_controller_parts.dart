@@ -30,6 +30,17 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
       _changed();
       return const GatewayAuthorizationOutcome.denied();
     }
+    if (_executionMode.isNativeCli &&
+        !agentExecutionModeSupportsEndpoint(_executionMode, endpoint)) {
+      _error = 'AGENT_CLI_PROFILE_UNSUPPORTED';
+      _changed();
+      return GatewayAuthorizationOutcome.failure(
+        const GatewayOperationFailure(
+          'AGENT_CLI_PROFILE_UNSUPPORTED',
+          'Codex CLI native sessions are unavailable',
+        ),
+      );
+    }
     final requestId = 'rowan-agent-${DateTime.now().microsecondsSinceEpoch}';
     final requestHash = rowanRequestIdSha256(requestId);
     final generation = _configGeneration;
@@ -41,6 +52,7 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
         endpoint: endpoint,
         model: _selectedModel,
         root: _workspaceRoot,
+        executionMode: _executionMode,
         effort: _effort,
         maxSteps: maxSteps,
         maxTokens: _maxTokens,
@@ -70,6 +82,7 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
             store: _sessionStore,
             requestSha256: requestHash,
             pendingRequestSha256: _pendingRequestSha256,
+            operationExecutionMode: _executionMode.wire,
           );
           _beginRowanRun(this);
           _operationState.observe(
@@ -129,6 +142,7 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
         store: _sessionStore,
         snapshot: fresh,
         pendingRequestSha256: _pendingRequestSha256,
+        operationExecutionMode: _executionMode.wire,
       );
       _recoveryBlocked = false;
       _changed();
@@ -145,6 +159,8 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
     if (session == null) return false;
     final direct = session.operationRef;
     final requestSha = session.operationRequestSha256;
+    _executionMode =
+        AgentExecutionMode.fromWire(session.operationExecutionMode);
     try {
       if (direct != null) {
         final snapshot = await _operations.snapshot(direct);
@@ -257,6 +273,7 @@ void _finishRowanOperation(
       store: owner._sessionStore,
       snapshot: snapshot,
       pendingRequestSha256: owner._pendingRequestSha256,
+      operationExecutionMode: owner._executionMode.wire,
     );
   }
   owner._progress = List<Map<String, dynamic>>.unmodifiable([
