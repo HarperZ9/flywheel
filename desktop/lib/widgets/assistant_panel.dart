@@ -3,8 +3,10 @@
 // A work request runs through the accountable agent sink and keeps its operation
 // receipts; music, navigation, and timers are quick device actions. The panel
 // shows a small trail of what it carried out, honest about each result: a started
-// operation id, or the deep link a device action opens. On the phone this is where
-// speech in and out plug in; typed input is the always-available fallback.
+// operation id, or the deep link a device action opens. Tasks already retained by
+// the gateway's Relay store are recovered and shown alongside, so a run started on
+// another device is visible here too. On the phone this is where speech in and out
+// plug in; typed input is the always-available fallback.
 
 import 'dart:async';
 
@@ -13,9 +15,11 @@ import 'package:flutter/material.dart';
 import '../assistant/assistant_executor.dart';
 import '../assistant/assistant_identity.dart';
 import '../assistant/assistant_intent.dart';
+import '../assistant/assistant_task_controller.dart';
 import '../assistant/voice.dart';
 import '../controllers/rowan_operation_controller.dart';
 import '../theme/flywheel_theme.dart';
+import 'assistant_task_list.dart';
 import 'fw.dart';
 import 'rowan_operation_card.dart';
 
@@ -69,6 +73,8 @@ class _AssistantPanelState extends State<AssistantPanel> {
   final _tokens = TextEditingController();
   final _timeout = TextEditingController();
   bool _busy = false;
+  Timer? _poll;
+  AssistantTaskController? get _tasks => widget.executor.tasks;
 
   @override
   void initState() {
@@ -82,11 +88,36 @@ class _AssistantPanelState extends State<AssistantPanel> {
       unawaited(rowan.loadEndpoints());
       unawaited(rowan.recoverFromSession().catchError((_) => false));
     }
+    _connectTasks();
+  }
+
+  void _connectTasks() {
+    _tasks?.addListener(_tasksChanged);
+    _tasks?.recover();
+    _poll = Timer.periodic(const Duration(seconds: 5), (_) {
+      _tasks?.refreshTracked();
+    });
+  }
+
+  void _tasksChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(AssistantPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.executor != widget.executor) {
+      oldWidget.executor.tasks?.removeListener(_tasksChanged);
+      _poll?.cancel();
+      _connectTasks();
+    }
   }
 
   @override
   void dispose() {
     widget.rowan?.removeListener(_rowanChanged);
+    _poll?.cancel();
+    _tasks?.removeListener(_tasksChanged);
     _input.dispose();
     _root.dispose();
     _tokens.dispose();
@@ -163,16 +194,20 @@ class _AssistantPanelState extends State<AssistantPanel> {
         ],
         const SizedBox(height: FwLayout.s4),
         Flexible(
-          child: log.isEmpty
+          child: log.isEmpty && _tasks == null
               ? const HonestNull(
                   'Nothing yet. Try "navigate to the airport" or "fix the failing test".',
                 )
-              : ListView.separated(
+              : ListView(
                   shrinkWrap: true,
-                  itemCount: log.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(height: FwLayout.s2),
-                  itemBuilder: (context, i) => _record(t, log[i]),
+                  children: [
+                    for (final record in log)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: FwLayout.s2),
+                        child: _record(t, record),
+                      ),
+                    if (_tasks != null) AssistantTaskList(controller: _tasks!),
+                  ],
                 ),
         ),
         const SizedBox(height: FwLayout.s3),
@@ -213,7 +248,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
   Widget _record(FwTokens t, AssistantRecord r) {
     final agentDetail = r.runId != null
         ? (_operationish(r.runId!) ? 'operation ${r.runId}' : 'run ${r.runId}')
-        : 'could not start the operation';
+        : 'submission outcome unknown';
     final detail = r.channel == AssistantChannel.agent
         ? agentDetail
         : (r.deepLink != null ? 'opens ${r.deepLink}' : '');
