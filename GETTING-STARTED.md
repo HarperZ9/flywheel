@@ -26,8 +26,8 @@ pip install flywheel-verify
 Zero runtime dependencies. Python 3.11+. Stdlib only. No model download is
 required: the engine works immediately against any hosted provider you hold a
 key for, and local models are an optional layer (ollama needs no extras; the
-published 14B/32B weights are separate downloads). Optional extras unlock the
-paths that need third-party packages, and are never required:
+published 14B/32B weights are separate downloads). Optional extras provide the
+third-party packages some paths need, and are never required:
 
 ```bash
 pip install "flywheel-verify[signing]"   # receipt signing (verification stays stdlib)
@@ -99,6 +99,24 @@ Roadmap), Chat (Chat, Compare, Models, Companion), Code (Code, Eval, Audit,
 Lint, Relay), Evidence (Receipts, Science, World, Memory, Governance,
 Usage), Advanced (Studio, Graph, Feeds, Discourse, Academy, Lessons,
 Instruments, Lanes, Train, Uplift, Family, Plugins).
+
+## Meet Rowan
+
+Rowan is the assistant that operates Flywheel, and the face and voice of the
+app. Open Chat and ask for work in plain words. Rowan turns the request into a
+task the app runs and keeps a record of. It can start a run for you and read
+back tasks the gateway already holds, so you can see where each one stands. You
+can also drive every surface yourself, and the run leaves the same record.
+
+Rowan runs on the model you choose, local or hosted, and it is openly an
+assistant. It does not present as a human or as a specific model, and the model
+selector always shows the one in use. If a submission gets lost, Rowan reports
+it and does not resend on its own. A result the recheck cannot confirm stays
+marked that way.
+
+The avatar beside the chat is drawn live on your machine. It is a rendered
+visual, and it makes no claim about any model. The first time you open the
+desktop client, a short walkthrough introduces Rowan and the rest of the app.
 
 ## Your first receipt
 
