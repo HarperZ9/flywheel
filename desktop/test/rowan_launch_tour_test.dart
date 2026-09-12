@@ -35,15 +35,15 @@ void main() {
     // Step one leads with the shader avatar, self-contained and engine-free.
     expect(find.byType(RowanPresenter), findsOneWidget);
     expect(find.text("I'm Rowan."), findsOneWidget);
-    expect(find.text('Step 1 of 5'), findsOneWidget);
+    expect(find.text('Step 1 of 9'), findsOneWidget);
     expect(find.text('Back'), findsNothing);
 
     // Walk to the end; the avatar only appears on the first step.
-    for (var i = 0; i < 4; i++) {
+    for (var i = 0; i < 8; i++) {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
     }
-    expect(find.text('Step 5 of 5'), findsOneWidget);
+    expect(find.text('Step 9 of 9'), findsOneWidget);
     expect(find.byType(RowanPresenter), findsNothing);
     expect(find.text('Next'), findsNothing);
     expect(find.text('Explore the Studio'), findsOneWidget);
@@ -55,7 +55,7 @@ void main() {
     await tester.pumpWidget(_host());
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 5; i++) {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
     }
@@ -70,7 +70,7 @@ void main() {
     await tester.pumpWidget(_host(onOpenStudio: () => studioOpened += 1));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    for (var i = 0; i < 4; i++) {
+    for (var i = 0; i < 8; i++) {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
     }
@@ -97,7 +97,7 @@ void main() {
     await tester.pumpWidget(_host());
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    for (var i = 0; i < 4; i++) {
+    for (var i = 0; i < 8; i++) {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
     }

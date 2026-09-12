@@ -16,58 +16,7 @@ import '../theme/flywheel_theme.dart';
 import 'fw.dart';
 import 'rowan_presenter.dart';
 
-/// One tour step. [body] is a plain description; [note] is an honest-null
-/// callout when a step names a boundary the app does not claim past.
-class _TourStep {
-  final String kicker;
-  final String title;
-  final String body;
-  final String? note;
-  const _TourStep(this.kicker, this.title, this.body, {this.note});
-}
-
-/// The steps, in order. Step 0 shows the avatar; the rest are copy cards. The
-/// wording stays feature-first and keeps its honest nulls: what is rechecked,
-/// what is not claimed, and that the avatar is a drawing rather than a model.
-const _steps = <_TourStep>[
-  _TourStep(
-    AssistantIdentity.name,
-    "I'm Rowan.",
-    "Flywheel's assistant, on the model you choose. This is a quick look at "
-        'what the app does. The avatar above is drawn live on your machine. It '
-        'is a rendered visual, not a claim about any model. Turn it, open it, '
-        'or switch motion on.',
-  ),
-  _TourStep(
-    'THE RUN',
-    'Run a task, keep the record',
-    'Flywheel runs an AI task with the model and tools you pick, local or '
-        'hosted. As it runs it writes a record of what happened, so someone who '
-        'was not there can check the run later.',
-  ),
-  _TourStep(
-    'RECEIPTS',
-    'Each reply shows its state',
-    'Every reply carries one of three states: verified, drift, or '
-        'unverifiable. The recheck reads a sealed chain of tool-call receipts '
-        'and needs no network and no model to run.',
-  ),
-  _TourStep(
-    'THE LIMIT',
-    'What the record does not claim',
-    'The record is honest about its own edges, and so is this tour.',
-    note: 'The map of command names is kept by hand, so a command Flywheel has '
-        'never seen is allowed and written down as unknown. An unchecked value '
-        'never reads as a confirmed one. The app is tested, not proven adopted.',
-  ),
-  _TourStep(
-    'NEXT',
-    'See a run in the Studio',
-    'The Studio runs a real walkthrough once the engine is up and a model is '
-        'chosen. Open it when you are ready, or close this and explore on your '
-        'own.',
-  ),
-];
+part 'rowan_launch_tour_steps.dart';
 
 /// Show the first-run walkthrough over the current screen. [onOpenStudio], when
 /// given, is called from the final step to take the user to the Studio; the

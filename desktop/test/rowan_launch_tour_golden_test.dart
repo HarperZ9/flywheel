@@ -9,7 +9,7 @@
 //
 //       flutter test --update-goldens test/rowan_launch_tour_golden_test.dart
 //
-//  2. Smoke test. On a normal run it walks all five steps and asserts the
+//  2. Smoke test. On a normal run it walks all nine steps and asserts the
 //     structure the frames depend on: the avatar leads step one, every step
 //     header renders, and nothing throws. These run on every OS.
 //
@@ -66,13 +66,17 @@ Widget _frame() => MaterialApp(
 
 void _noop() {}
 
-/// The five frames in step order, named by what each step shows.
+/// The nine frames in step order, named by what each step shows.
 const _frames = <String>[
   'goldens/tour_1_meet_rowan.png',
-  'goldens/tour_2_the_run.png',
-  'goldens/tour_3_receipts.png',
-  'goldens/tour_4_the_limit.png',
-  'goldens/tour_5_studio.png',
+  'goldens/tour_2_the_app.png',
+  'goldens/tour_3_together.png',
+  'goldens/tour_4_receipts.png',
+  'goldens/tour_5_today.png',
+  'goldens/tour_6_still_open.png',
+  'goldens/tour_7_the_idea.png',
+  'goldens/tour_8_whats_next.png',
+  'goldens/tour_9_your_turn.png',
 ];
 
 void main() {
