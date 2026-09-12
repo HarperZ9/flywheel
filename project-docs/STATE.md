@@ -18,10 +18,10 @@ picture; this entry is the cursor step.
 
 `main` is 0.6.2 (`pyproject` 0.6.2, desktop 0.6.2+17). Five releases have
 shipped since the last entry below: `v0.4.1`, `v0.5.0`, `v0.6.0`, `v0.6.1`,
-`v0.6.2`, each with a doc under `project-docs/releases/`. 137 commits separate
-`v0.4.0` from `origin/main`. This entry does not narrate all five. It records
-where we are now and what a 1.0.0 decision rests on. The per-release catch-up is
-still owed.
+`v0.6.2`, each with a doc under `docs/` (`docs/RELEASE-<version>.md`). 137 commits
+`v0.4.0` from `origin/main`. This entry records where we are now and what a
+1.0.0 decision rests on. The per-release catch-up for all five follows in the
+entries below.
 
 Rowan is in place on `main`: the nine-step first-run tour (#221, `f3450d70`), the
 spoken voice persona that matches the Codex spec (#222, `3dc5a0a6`), and the
@@ -49,6 +49,168 @@ bump to fix:
 The 1.0.0 cut stays gated on an explicit "yes, deploy". Attaching an installer
 to a release is a publish and is gated too. Readiness work continues as normal
 development on `main`.
+
+## 2026-09-11 -- 0.6.2: Rowan operates Flywheel, and native providers reach the workspace under grants
+
+`v0.6.2` (2026-09-11) is the release where Rowan begins operating Flywheel inside
+the native app, with native model providers reaching the workspace under explicit
+grants. Full notes: [docs/RELEASE-0.6.2.md](../docs/RELEASE-0.6.2.md).
+
+- **Rowan operates through a shared operation host.** The assistant is named
+  Rowan across the native surfaces, and its operation UI wires into the same host
+  a walkthrough uses, so a tour and a real operation take one admitted path
+  instead of two code routes. The companion beside the chat is a procedural
+  luminous visual rendered in the app, not a claim about model behavior.
+- **A bounded native provider tool bridge.** A provider's own tools can reach the
+  workspace under explicit grants that the desktop renders for review before they
+  run. Anthropic native models appear in the roster, native Codex model selection
+  is honored, and Claude execution binds to the operator's authenticated CLI
+  identity. Each supervised run is bound to a model workspace and an admitted
+  execution budget.
+- **Private, owner-bound agent traces.** Detail and history reads are
+  authenticated before any content returns, and a private trace reader with
+  trace-backed captions lets a run's owner inspect it without exposing it to
+  other readers.
+- **Bulletin task evaluation through an observed bridge.** Evaluation runs with
+  explicit evidence checks. Plaintext grants bind to the approved origin, native
+  replies bind to the approved parent, and the deadline controls are
+  deterministic.
+- **Journey recovery and distribution surfaces.** Journey startup recovery is
+  bounded, external captures import with explicit evidence limits, and the
+  release adds Writing API MCP contracts, bounded Relay and Telos integration,
+  and an opt-in bounded local HTTP transport.
+- **Windows stability.** The Index registry fails closed on unreadable state, and
+  Windows startup no longer leaves stray consoles or orphan gateways. Acceptance
+  paths, cleanup census, contention coverage, metadata cleanup, and owner ACL
+  grants are fixed.
+
+The merged-source CI passed across Ubuntu, Windows and macOS, with excluded cases
+recorded as skips. These are implementation and synthetic workflow results. They
+do not establish local-model uplift, live endpoint results, physical-device
+acceptance, or complete coverage of every product workflow. The Windows installer
+publish is separate from this Python release, and it is an open 1.0 item in the
+entry above.
+
+## 2026-09-09 -- 0.6.1: cached answers revalidate before reuse, and endpoint probes take an admitted budget
+
+`v0.6.1` (2026-09-09) focuses on three operator outcomes. Full notes:
+[docs/RELEASE-0.6.1.md](../docs/RELEASE-0.6.1.md).
+
+- **Safe cached-answer revalidation.** A run-loop cache hit is candidate
+  material. It re-enters the current policy, grounding, output-contract and
+  oracle checks before it can accept, so a cached candidate cannot override a
+  held current answer directly.
+- **Runnable independent-environment E2E.** The engine exposes
+  `flywheel e2e-journey` for manifest validation and execution, with
+  gather-context fixtures across CLI and MCP adapters under explicit runtime
+  admission and artifact receipts. The separate
+  `flywheel-env-service-desk-incident` package (0.1.0) adds deterministic Service
+  Desk incident cases with tamper verification, and requires `flywheel-verify`
+  0.6.1.
+- **Controlled local endpoint probes.** `flywheel endpoint-gate` accepts an exact
+  `--profile-id` and an admitted `--max-generation-calls` budget before any
+  endpoint I/O. Omitting the budget preserves the legacy unbounded path, so the
+  flag is opt-in.
+- **Private artifact roots.** `harness.private_artifact_fs` adds private
+  artifact-root controls and same-process borrowed descriptors scoped to their
+  context manager. On Linux it admits the opened filesystem before use, and it
+  refuses Windows-drive 9p/v9fs mounts under WSL with `UNSUPPORTED_FS`.
+
+The assembled Python and desktop suites passed, with excluded cases recorded as
+skips. These do not establish local-model uplift, live endpoint results,
+physical-device acceptance, or complete workflow coverage.
+
+## 2026-09-08 -- 0.6.0: imported context continues into an agent run, and mapping survives interruption
+
+`v0.6.0` (2026-09-08) connects imported context to an agent run and brings
+background repository mapping into Projects. Full notes:
+[docs/RELEASE-0.6.0.md](../docs/RELEASE-0.6.0.md).
+
+- **Continue an imported task with an agent.** In Projects, preview a supported
+  local continuation source, then choose **Continue with agent**; Flywheel starts
+  the Evidence Journey with the selected goal, files and workspace, and execution
+  still requires the normal operation approval. The handoff binds the preview to
+  the Journey created from it, so an unrelated Journey cannot reuse that context
+  and a preview alone does not authorize a run. Credentials stay outside the
+  handoff.
+- **Map a workspace without holding the request open.** Projects separates the
+  repository summary from a durable workspace-map job that reports phase and
+  progress and can be cancelled, retrieved, or resumed. Switching projects
+  detaches the view without cancelling the job, and a late response cannot
+  replace the current selection. This needs Index 2.12 or newer, installed
+  separately; a missing install reports unavailability.
+- **Coverage is bounded and stated.** The default context selection limit is 500
+  documents. A completed job does not imply every document was selected or that
+  the context is semantically complete, and background execution buys
+  observability and recovery rather than faster mapping.
+- **Preserve local usage when a task fails.** Nonstreaming Ollama calls retain
+  supported native token counts and durations, and benchmark traces identify each
+  attempted inner call including ones that fail before returning telemetry.
+  Missing fields stay unknown, and these counts do not establish cost or answer
+  quality.
+- **Distribution boundary.** Six lanes whose configured PyPI names or registry
+  entries point at other or unavailable projects are blocked from package install
+  and package-selected execution, including from the frozen client; their source
+  checkouts still run. A matching package version alone is not engine identity.
+
+The engine and native client share one version. Installer signing, clean-machine
+installation, physical Android acceptance, and provider-specific authentication
+remain separate acceptance checks, and this update does not establish model
+uplift.
+
+## 2026-09-08 -- 0.5.0: native continuation and workstation approvals land, with Bulletin identity in native custody
+
+`v0.5.0` (2026-09-08) connects continuation, workstation approvals, native
+Bulletin identity setup and bounded local execution to the existing surface. Full
+notes: [docs/RELEASE-0.5.0.md](../docs/RELEASE-0.5.0.md).
+
+- **Continue work with a preview.** Start a new Evidence Journey from a local
+  workspace and optional local export; the preview shows selected context,
+  repository state and omissions, and starting checks the source again and
+  refuses drift. This is portable context continuation, and it does not imply an
+  arbitrary ChatGPT or Claude web session resumes natively in another provider.
+- **Review workstation proposals.** The Approvals inbox shows bounded pages of
+  pending proposals. Approval binds the exact proposal and review content, and
+  rejection does not dispatch work. Interrupted index updates report recovery
+  rather than a false empty inbox. Loopback acceptance is distinct from
+  acceptance on a physical Android device.
+- **Bulletin identity in native custody.** The Keys panel separates Bulletin
+  identity setup from generic provider-key entry, storing an Ed25519 identity in
+  the OS keychain. Registration is a separate explicit action from storing the
+  key, and neither the key nor a pasted JWK is displayed. Publishing a post is a
+  further separate state from holding a registered identity.
+- **Bounded local execution.** Large local files read in pages with a checked
+  open-file identity, and compaction fits the configured token estimate or
+  reports the minimum it cannot fold. Package lane selection can pin the runtime
+  version and refuse a mismatch instead of silently taking a source checkout.
+  These controls do not establish improved model accuracy.
+
+The Python package and Windows installer use one version and tag. The installer
+is unsigned with a SHA-256 receipt, and release checks do not imply Authenticode
+signing, clean-VM installation, upgrade/rollback acceptance, or marketplace
+approval.
+
+## 2026-09-07 -- 0.4.1: hook approval binds the exact sealed commands, and evidence resources ship in the wheel
+
+`v0.4.1` (2026-09-07) ties hook approval to the exact sealed registrations
+selected for a run. Full notes: [docs/RELEASE-0.4.1.md](../docs/RELEASE-0.4.1.md).
+
+- **Approval binds the selected commands.** If the registry changes after
+  approval, the gateway refuses the run before it constructs a runner, and
+  registration itself never executes a hook. Reading the hook registry requires
+  gateway authentication. After a registry conflict, read the registry again and
+  prepare a new operation rather than reusing an approval for different commands.
+  These controls bind approved commands; they do not establish that an approved
+  command is harmless.
+- **Evidence skill resources in the packaged wheel.** The engine includes
+  versioned, hash-bound MCP resources for Flywheel Evidence Task 0.1.0, with
+  reads on a fixed allowlist. The standalone skill and the Codex/Claude Code
+  plugin stay as separate downloads. Package validation does not establish
+  installation in every host or approval by an external marketplace.
+
+The engine and desktop declare the same 0.4.1 version. The Windows installer is
+unsigned with a SHA-256 receipt, and build and publication status are reported by
+the release workflows rather than asserted here.
 
 ## 2026-09-06 -- 0.4.0: the harness speaks its peers' protocols, and a run is confined to what it was granted
 

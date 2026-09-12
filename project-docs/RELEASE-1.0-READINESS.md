@@ -26,13 +26,13 @@ publishing to PyPI are not, until the word is given.
 - Latest published GitHub release: Flywheel 0.6.2 (tag `v0.6.2`, 2026-09-11).
 - Release tags in order: `v0.4.1`, `v0.5.0`, `v0.6.0`, `v0.6.1`, `v0.6.2`.
 - 137 commits from `v0.4.0` to `origin/main`.
-- The STATE.md cursor last narrated `v0.4.0` (dated 2026-09-06) and lags five
-  releases. The entry added beside this file closes the newest step. A full
-  STATE.md catch-up across the five releases is separate work, still owed.
+- The STATE.md cursor now narrates all five releases from `v0.4.1` through
+  `v0.6.2`, each with a dated entry. The earlier five-release lag from `v0.4.0`
+  is closed.
 
 ## What shipped since 0.4.0
 
-Each release carries a doc under `project-docs/releases/`.
+Each engine release carries a doc under `docs/` (`docs/RELEASE-<version>.md`).
 
 | Tag | Date | Subject |
 |---|---|---|
@@ -65,7 +65,7 @@ Rowan reached `main` across three merges:
 | Rowan voice matches the Codex spec | DONE | #222 on `main` |
 | Windows installer on the latest release | OPEN | absent from v0.6.1 and v0.6.2; see below |
 | Chat draft store failure classification | OPEN | read failure labelled as a corrupt store; latent; see below |
-| STATE.md caught up to `main` | OPEN | lags five releases |
+| STATE.md caught up to `main` | DONE | five releases narrated, v0.4.1 through v0.6.2 |
 | The 1.0.0 cut | GATED | production deploy; needs explicit "yes, deploy" |
 | Attaching an installer to a release | GATED | a publish; needs the word |
 
@@ -161,7 +161,8 @@ They land as normal development on `main` and ship in a 0.6.x point release:
 - Installer-publish path wired, and an installer attached to the release the
   docs point at.
 - Chat draft store misclassification fixed and verified in a Flutter session.
-- STATE.md caught up across the five releases.
+
+The STATE.md catch-up across the five releases is done, landed with this update.
 
 When those are closed and the operator says deploy, the 1.0.0 cut is a clean
 promotion of what is already on `main`, not a scramble. The product is honest
