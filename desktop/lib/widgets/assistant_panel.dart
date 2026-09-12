@@ -248,7 +248,7 @@ class _AssistantPanelState extends State<AssistantPanel> {
   Widget _record(FwTokens t, AssistantRecord r) {
     final agentDetail = r.runId != null
         ? (_operationish(r.runId!) ? 'operation ${r.runId}' : 'run ${r.runId}')
-        : 'could not start the operation';
+        : 'submission outcome unknown';
     final detail = r.channel == AssistantChannel.agent
         ? agentDetail
         : (r.deepLink != null ? 'opens ${r.deepLink}' : '');
