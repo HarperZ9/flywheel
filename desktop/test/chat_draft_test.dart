@@ -49,6 +49,7 @@ Map<String, dynamic> _assistant(String key) =>
 void main() {
   _atomicFailureTests();
   _agentAdmissionTests();
+  _readFailureTests();
   test('canonical store keeps active and admitted custody independent', () {
     final file = File('${_temp('chat-draft-roundtrip-').path}/drafts.json');
     final store = ChatDraftStore(file: file);
@@ -175,6 +176,37 @@ void _atomicFailureTests() {
     expect(file.readAsBytesSync(), before);
     expect(normal.load().single.text, 'prior');
   });
+}
+
+void _readFailureTests() {
+  test('an unreadable store reports a read failure, not a corrupt store', () {
+    final store = ChatDraftStore(file: _UnreadableFile());
+    expect(
+        store.load,
+        throwsA(isA<ChatDraftStoreException>().having(
+            (e) => e.failure, 'failure', ChatDraftFailure.readFailed)));
+  });
+  test('corrupt bytes still report a corrupt store', () {
+    final file = File('${_temp('chat-draft-corrupt-').path}/drafts.json');
+    file.writeAsStringSync('this is not json {');
+    final store = ChatDraftStore(file: file);
+    expect(
+        store.load,
+        throwsA(isA<ChatDraftStoreException>().having(
+            (e) => e.failure, 'failure', ChatDraftFailure.corruptStore)));
+  });
+}
+
+class _UnreadableFile implements File {
+  @override
+  bool existsSync() => true;
+
+  @override
+  int lengthSync() => throw const FileSystemException('read blocked');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      super.noSuchMethod(invocation);
 }
 
 _fails(f) => expect(f, throwsA(isA<ChatDraftStoreException>()));

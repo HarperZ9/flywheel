@@ -35,6 +35,7 @@ enum ChatDraftFailure {
   writeFailed,
   notFound,
   digestMismatch,
+  readFailed,
 }
 
 final class ChatDraftStoreException implements Exception {
@@ -137,6 +138,8 @@ final class ChatDraftStore {
         drafts.add(draft);
       }
       return List.unmodifiable(drafts);
+    } on FileSystemException {
+      throw const ChatDraftStoreException(ChatDraftFailure.readFailed);
     } catch (_) {
       throw const ChatDraftStoreException(ChatDraftFailure.corruptStore);
     }
