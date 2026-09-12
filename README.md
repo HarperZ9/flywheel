@@ -147,7 +147,8 @@ This monorepo contains both halves of the platform:
   The installed runtime uses only the Python standard library.
 - **`desktop/`** is the Flutter client. It talks to the gateway over localhost
   and can launch the bundled engine on a Windows machine without a separate
-  Python installation.
+  Python installation. Its assistant, **Rowan**, runs on the model you choose
+  and turns a plain-words request into a task the app runs and records.
 - **`site/`** is the browser fallback used in development and CI.
 
 To run the native client from a development checkout:
