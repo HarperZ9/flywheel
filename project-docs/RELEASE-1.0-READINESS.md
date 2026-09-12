@@ -89,14 +89,19 @@ Mechanism. `.github/workflows/desktop-release.yml` triggers on `push` of a `v*`
 tag and on `workflow_dispatch`. It has one job, `installer`, on
 `windows-latest`. That job builds the installer, computes the SHA-256, writes
 `SHA256SUMS.txt`, and uploads all of it as a GitHub Actions artifact named
-`windows-installer-candidate` with a 14-day retention. It does not attach the
-installer to the GitHub Release. There is no `gh release upload` step and no
-release-attach action in the file.
+`windows-installer-candidate` with a 14-day retention. That job holds
+`contents: read` and never touches a GitHub Release. Its header says so
+outright: the build stages a candidate with a hash receipt, and publishing is a
+separate operation. There is no `gh release upload` step, and that absence is
+the design.
 
-`.github/workflows/windows-publish.yml` is the reusable workflow that would
-publish. It is `on: workflow_call:` only, and nothing in the repository calls
-it. The one reference in `desktop-release.yml` is a comment on line 6, not a
-`uses:` invocation.
+`.github/workflows/windows-publish.yml` is the only workflow that publishes, and
+it is deliberately hard to reach. It is `on: workflow_call:` only, its own
+repository permission is still `contents: read`, and the write capability
+arrives through an explicit `publish_token` secret the caller has to pass. An
+existing release or asset is a hard no-clobber failure. Nothing in the
+repository calls it today. The one reference in `desktop-release.yml` is a
+comment on line 6, not a `uses:` invocation.
 
 So attaching the `.exe` to a release is a manual step today: download the
 candidate artifact, attach it to the release. That happened for `v0.6.0`. It did
@@ -104,16 +109,25 @@ not happen for `v0.6.1` or `v0.6.2`. The 14-day artifact retention means the
 `v0.6.1` candidate is close to expiry or already gone, so the byte-identical
 artifact may need a rebuild rather than a re-attach.
 
-What to do, ranked:
+What to do, ranked. The split between the read-only builder and the write-only
+publisher is a deliberate control, so any wiring has to keep the two stages
+apart. Do not add a `gh release upload` step to the `installer` job: that job
+runs `contents: read` on purpose, and giving it release-write to reach the
+installer would fold the two stages into one and hand every tagged build the
+power to publish.
 
-1. Wire `desktop-release.yml` to attach the built installer and `SHA256SUMS.txt`
-   to the release, either by adding an attach step to the `installer` job or by
-   calling `windows-publish.yml` via `uses:` with the token it needs. This is a
-   release-path change and cannot be run to green in this environment. Land it,
-   then tag a point release to exercise it before relying on it for 1.0.0.
-2. Until the wiring lands, attach an installer to the release the docs point at
-   by hand, so the current instruction is not broken. This is a publish, so it
-   is gated.
+1. Wire the publish as its own gated step that calls `windows-publish.yml` via
+   `uses:`, passing the tag, the candidate's verified SHA-256, and a
+   fine-grained `publish_token`. Keep the trigger explicit, a
+   `workflow_dispatch` or a manual approval, so a tag push still only builds a
+   candidate and a person still authorizes the publish. This is a release-path
+   and security-posture change the operator owns, and it cannot be run to green
+   in this environment. Land it, then tag a point release to exercise it before
+   relying on it for 1.0.0.
+2. Until that wiring lands, attach an installer to the release the docs point at
+   by hand, so the current instruction is not broken. Download the candidate
+   artifact, verify its hash against `SHA256SUMS.txt`, and attach both. This is
+   a publish, so it is gated.
 
 ## Open item 2: the chat draft store labels a read failure as a corrupt store
 
