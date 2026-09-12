@@ -93,12 +93,10 @@ From a dev checkout:
 cd desktop && flutter run -d windows
 ```
 
-The desktop client shows 33 destinations in a collapsible side rail,
-organized by group: Work (Journey, Plan, Workflows, Projects, Swarms,
-Roadmap), Chat (Chat, Compare, Models, Companion), Code (Code, Eval, Audit,
-Lint, Relay), Evidence (Receipts, Science, World, Memory, Governance,
-Usage), Advanced (Studio, Graph, Feeds, Discourse, Academy, Lessons,
-Instruments, Lanes, Train, Uplift, Family, Plugins).
+The desktop client shows its destinations in a collapsible side rail,
+grouped into Work, Chat, Code, Evidence, and Advanced. Type in the rail's
+search field to filter it. Or press Ctrl+K to open the command palette and
+jump to any destination by name.
 
 ## Meet Rowan
 
@@ -178,11 +176,11 @@ without a shared secret. This is the encryption-based receipt path.
 ## Explore the lanes
 
 ```bash
-flywheel lanes              # list the 12 registered lanes
+flywheel lanes              # list every registered lane
 flywheel lanes --probe      # live MCP handshake per lane
 ```
 
-Six flagships, then six more in the same registry:
+The registered lanes and their roles:
 
 | Lane | Role |
 |---|---|
@@ -193,12 +191,14 @@ Six flagships, then six more in the same registry:
 | learn | Accountable learning forge |
 | telos | Reconciliation lane (5-tool workflow) + creative engine |
 | local-model | Trained 14B proposer + verified-inference harness |
+| writing | Private authoring workspace: scoped revisions + export receipts |
 | relay | Accountable coding agent on any model endpoint |
 | plexus | Capability discovery + auto-wiring of the tool mesh |
 | mneme | Accountable memory: recall with re-derivable ranking receipts |
 | calibrate-pro | Evidence-labeled display calibration (read-only over MCP) |
 | accountable-surface | Witnessed perception + operator-grant execution gate |
 | canon | One memory bank and personality across harnesses (read-only over MCP) |
+| bulletin | Shared web board: agents post under an ed25519 identity |
 
 `flywheel lanes` is the authority on this list; the registry decides, not this
 table.
