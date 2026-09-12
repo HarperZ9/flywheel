@@ -17,8 +17,10 @@ is open, and what is gated, so the decision has ground under it when the
 operator wants to make it.
 
 Readiness work is normal development. Merging a docs or code PR to `main` is
-authorized. Cutting the release, attaching an installer to a release, and
-publishing to PyPI are not, until the word is given.
+authorized. Cutting a version and publishing its assets stay gated until the word
+is given. The word was given for the `v0.6.2` installer, which is now attached
+with a verified receipt (item 1). The 1.0.0 cut is a separate decision and stays
+gated.
 
 ## Version reality (verified 2026-09-11)
 
@@ -63,71 +65,53 @@ Rowan reached `main` across three merges:
 | Public intro docs name Rowan | DONE | #223 on `main` |
 | First-run tour | DONE | nine steps, #221 on `main` |
 | Rowan voice matches the Codex spec | DONE | #222 on `main` |
-| Windows installer on the latest release | OPEN | absent from v0.6.1 and v0.6.2; see below |
+| Windows installer on the latest release | DONE | `Flywheel-Setup-0.6.2-x64.exe` + `SHA256SUMS.txt` attached to v0.6.2, hash verified; see below |
 | Chat draft store failure classification | DONE | read failure is now a distinct kind; #230 on `main` |
 | STATE.md caught up to `main` | DONE | five releases narrated, v0.4.1 through v0.6.2 |
 | The 1.0.0 cut | GATED | production deploy; needs explicit "yes, deploy" |
-| Attaching an installer to a release | GATED | a publish; needs the word |
+| Attaching an installer to a release | DONE | operator authorized; done for v0.6.2, hash verified end to end |
 
-## Open item 1: the installer is missing from the two latest releases
+## Closed item 1: the installer is attached to the latest release
 
-Verified 2026-09-11.
+Verified 2026-09-12. The operator authorized the publish, and the Windows
+installer now sits on `v0.6.2` with its hash receipt. `GETTING-STARTED.md` sends
+a desktop user to the release page to download `Flywheel-Setup-<version>-x64.exe`
+and verify it against the release's `SHA256SUMS.txt`. That path now works for the
+current release.
 
-The release page is where `GETTING-STARTED.md` sends a desktop user. Its "Start
-the desktop client" step reads: download `Flywheel-Setup-<version>-x64.exe` from
-the releases page and verify it against the release's `SHA256SUMS.txt`. For the
-current release that file is not there.
+Assets now on `v0.6.2`:
 
-Assets actually attached:
+- `Flywheel-Setup-0.6.2-x64.exe` (26,445,373 bytes).
+- `SHA256SUMS.txt`, naming that exe with SHA-256
+  `dad5d9a07c3bfb5b453792aa0ccb07fa546adba1d336c8271ff005d7602bd1cd`.
+- `frozen-gateway-smoke.json`, the engine freeze receipt.
 
-- `v0.6.0`: `Flywheel-Setup-0.6.0-x64.exe` (25,587,795 bytes), `SHA256SUMS.txt`,
-  `frozen-gateway-smoke.json`.
-- `v0.6.1`: Python wheels and sdists only. No installer, no `SHA256SUMS.txt`.
-- `v0.6.2`: Python wheels and sdists only. No installer.
+How it was published. The installer came from the `windows-installer-candidate`
+artifact that `desktop-release.yml` staged for the `v0.6.2` tag run, a build from
+the tag's own commit behind the version gate (tag == pubspec == pyproject), the
+frozen-gateway smoke check, `flutter analyze`, and `flutter test`. Its hash was
+recomputed off the downloaded exe and matched the receipt, then the exe was
+re-downloaded from the live release and matched the receipt again. This is the
+by-hand attach, run once under an explicit operator authorization.
 
-Mechanism. `.github/workflows/desktop-release.yml` triggers on `push` of a `v*`
-tag and on `workflow_dispatch`. It has one job, `installer`, on
-`windows-latest`. That job builds the installer, computes the SHA-256, writes
-`SHA256SUMS.txt`, and uploads all of it as a GitHub Actions artifact named
-`windows-installer-candidate` with a 14-day retention. That job holds
-`contents: read` and never touches a GitHub Release. Its header says so
-outright: the build stages a candidate with a hash receipt, and publishing is a
-separate operation. There is no `gh release upload` step, and that absence is
-the design.
+The attach kept the two-stage control intact. `desktop-release.yml` still holds
+`contents: read`, still builds a candidate with a hash receipt, and still never
+touches a Release. There is no `gh release upload` step in the `installer` job,
+and that absence is the design. `windows-publish.yml` is still the only workflow
+with a publish path: `on: workflow_call:` only, its own permission still
+`contents: read`, the write capability arriving through an explicit
+`publish_token` secret a caller has to pass, an existing asset a hard no-clobber
+failure. Nothing in the repository calls it, and the by-hand attach did not
+change that. The publish above was `gh release upload` run against `v0.6.2` by a
+person holding the authorization, not a workflow, so no build gained the power to
+publish.
 
-`.github/workflows/windows-publish.yml` is the only workflow that publishes, and
-it is deliberately hard to reach. It is `on: workflow_call:` only, its own
-repository permission is still `contents: read`, and the write capability
-arrives through an explicit `publish_token` secret the caller has to pass. An
-existing release or asset is a hard no-clobber failure. Nothing in the
-repository calls it today. The one reference in `desktop-release.yml` is a
-comment on line 6, not a `uses:` invocation.
-
-So attaching the `.exe` to a release is a manual step today: download the
-candidate artifact, attach it to the release. That happened for `v0.6.0`. It did
-not happen for `v0.6.1` or `v0.6.2`. The 14-day artifact retention means the
-`v0.6.1` candidate is close to expiry or already gone, so the byte-identical
-artifact may need a rebuild rather than a re-attach.
-
-What to do, ranked. The split between the read-only builder and the write-only
-publisher is a deliberate control, so any wiring has to keep the two stages
-apart. Do not add a `gh release upload` step to the `installer` job: that job
-runs `contents: read` on purpose, and giving it release-write to reach the
-installer would fold the two stages into one and hand every tagged build the
-power to publish.
-
-1. Wire the publish as its own gated step that calls `windows-publish.yml` via
-   `uses:`, passing the tag, the candidate's verified SHA-256, and a
-   fine-grained `publish_token`. Keep the trigger explicit, a
-   `workflow_dispatch` or a manual approval, so a tag push still only builds a
-   candidate and a person still authorizes the publish. This is a release-path
-   and security-posture change the operator owns, and it cannot be run to green
-   in this environment. Land it, then tag a point release to exercise it before
-   relying on it for 1.0.0.
-2. Until that wiring lands, attach an installer to the release the docs point at
-   by hand, so the current instruction is not broken. Download the candidate
-   artifact, verify its hash against `SHA256SUMS.txt`, and attach both. This is
-   a publish, so it is gated.
+What is left, and who owns it. Wiring the publish as its own gated step that
+calls `windows-publish.yml` via `uses:` is still not done. It is a release-path
+and security-posture change the operator owns, and it cannot be run to green in
+this environment. It is not a 1.0 blocker: a 1.0.0 release can be published by
+hand the same way this one was, or the wiring can land first so the cut does not
+repeat the manual attach. The choice is the operator's.
 
 ## Closed item 2: the chat draft store classifies a read failure distinctly
 
@@ -162,18 +146,16 @@ the kind. The 1.0 reasoning holds for both stores.
 
 ## Recommendation
 
-Keep the 1.0.0 cut gated. The readiness item left open does not need a major bump
-to close. It lands as normal development on `main` and ships in a 0.6.x point
-release:
+Keep the 1.0.0 cut gated. Every logged readiness item is now closed. The chat
+draft store fix landed in #230, the STATE.md catch-up across the five releases is
+done, and the Windows installer is attached to `v0.6.2` with a verified receipt.
+Nothing on the readiness list is waiting.
 
-- Installer-publish path wired, and an installer attached to the release the
-  docs point at. The wiring is a release-path change and the attach is a publish,
-  so both stay with the operator.
+One optional piece of housekeeping is left, and it is not a blocker: wiring the
+publish path so a future cut does not need a by-hand attach. That is a
+release-path and security-posture change the operator owns.
 
-The chat draft store fix landed in #230, and the STATE.md catch-up across the
-five releases is done. Only the installer publish is left, and it is gated.
-
-When that is closed and the operator says deploy, the 1.0.0 cut is a clean
-promotion of what is already on `main`, not a scramble. The product is honest
-about what it is at 0.6.2 already. The gate is about the version label and the
-release ceremony, not about hidden work.
+When the operator says deploy, the 1.0.0 cut is a clean promotion of what is
+already on `main`, not a scramble. The product is honest about what it is at
+0.6.2 already. The gate is about the version label and the release ceremony, not
+about hidden work.
