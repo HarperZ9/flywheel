@@ -23,6 +23,11 @@ bundled); this walkthrough tours the browser shell, the dev/CI fallback, at
 has, so it works before any model is running. When you start the local model, the
 live panels (router, world, companion, studio, training) appear.
 
+The desktop app is operated by **Rowan**, its assistant: you ask for work
+in plain words and Rowan turns it into a task the app runs and records.
+This tour stays in the browser shell and drives each surface by hand. For
+the desktop assistant, see [Meet Rowan](GETTING-STARTED.md#meet-rowan).
+
 ## 2. Bring a model
 
 Any of these works. Flywheel routes to whatever is reachable.
@@ -130,6 +135,7 @@ something because the check that produced it could have failed.
 
 ## Where to go next
 
+- **[GETTING-STARTED.md](GETTING-STARTED.md)**: install, sign in, and meet Rowan, the assistant.
 - **[README.md](README.md)**: the one-page overview.
 - **[SUPERAPP.md](project-docs/SUPERAPP.md)**: the full unification spec and the increment ladder.
 - **[docs/schematics/](docs/schematics/)**: the architecture and verified-loop diagrams.

@@ -26,6 +26,13 @@ For the native desktop app, download the Windows installer from
 engine, so the app runs on a clean machine with no Python installed, and it
 starts that engine itself.
 
+The app's assistant is **Rowan**. Open Chat and ask for work in plain
+words, and Rowan turns the request into a task the app runs and records.
+You can drive every surface yourself and the run leaves the same record.
+Rowan runs on the model you choose and is openly an assistant, never
+presented as a human or a specific model. See
+[Meet Rowan](GETTING-STARTED.md#meet-rowan).
+
 For the engine on its own:
 
 ```powershell
