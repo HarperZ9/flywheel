@@ -8,7 +8,47 @@
 > Update on every material step. If context is lost: read PROJECT.md, then
 > this. (`ROADMAP.md` is the original program framing, kept for history.)
 
-Last updated: 2026-09-06
+Last updated: 2026-09-11
+
+## 2026-09-11 -- 0.6.2 on main, Rowan in place, and an honest 1.0 readiness read
+
+New readiness register beside this file:
+[RELEASE-1.0-READINESS.md](RELEASE-1.0-READINESS.md). Read it for the full
+picture; this entry is the cursor step.
+
+`main` is 0.6.2 (`pyproject` 0.6.2, desktop 0.6.2+17). Five releases have
+shipped since the last entry below: `v0.4.1`, `v0.5.0`, `v0.6.0`, `v0.6.1`,
+`v0.6.2`, each with a doc under `project-docs/releases/`. 137 commits separate
+`v0.4.0` from `origin/main`. This entry does not narrate all five. It records
+where we are now and what a 1.0.0 decision rests on. The per-release catch-up is
+still owed.
+
+Rowan is in place on `main`: the nine-step first-run tour (#221, `f3450d70`), the
+spoken voice persona that matches the Codex spec (#222, `3dc5a0a6`), and the
+public intro docs that now name the assistant (#223, `9a74018d`). Spoken output
+is mobile-only, so it stays out of desktop-facing docs as an honest null.
+
+Two open items block a clean 1.0.0, both verified today, neither needing a major
+bump to fix:
+
+- The Windows installer is missing from `v0.6.1` and `v0.6.2`.
+  `GETTING-STARTED.md` tells a desktop user to download
+  `Flywheel-Setup-<version>-x64.exe` from the releases page, and for the current
+  release that file is not there. `desktop-release.yml` only uploads the
+  installer as a 14-day Actions artifact; it never attaches it to the release,
+  and the reusable `windows-publish.yml` has no caller. The `v0.6.0` release has
+  the `.exe`; it was attached by hand, and that hand step was skipped for the two
+  releases since.
+- `chat_draft_store.dart` `load()` (line 140) catches every failure and labels
+  it `corruptStore`, so a read that could not happen reads the same as corrupt
+  bytes. The wrong label is latent today because no chat consumer branches on
+  the failure kind. It would mislead the moment one does, the way
+  `code_draft_store.dart` already branches on its kind. Fix needs a
+  Flutter-capable session (Flutter is not on PATH here).
+
+The 1.0.0 cut stays gated on an explicit "yes, deploy". Attaching an installer
+to a release is a publish and is gated too. Readiness work continues as normal
+development on `main`.
 
 ## 2026-09-06 -- 0.4.0: the harness speaks its peers' protocols, and a run is confined to what it was granted
 
