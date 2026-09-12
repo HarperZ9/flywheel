@@ -27,8 +27,9 @@ const _steps = <_TourStep>[
   _TourStep(
     AssistantIdentity.name,
     "I'm Rowan.",
-    "Flywheel's assistant, on the model you choose. Ask for work in plain "
-        'words and I turn it into a task the app runs and keeps a record of. I '
+    "I'm the face and the voice of Flywheel, and I run on the model you "
+        'choose. Ask me for work in plain words and I turn it into a task the '
+        'app runs and keeps a record of. I '
         'can start a run and read back tasks the gateway already holds, then '
         'show you where each one stands. If a submission gets lost I tell you '
         'rather than sending it a second time. A result I cannot check stays '
