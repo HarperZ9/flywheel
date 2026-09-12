@@ -6,7 +6,7 @@
 > [PROJECT.md](../PROJECT.md) first for the whole picture, then
 > [STATE.md](STATE.md) for the running cursor.
 
-Last updated: 2026-09-11.
+Last updated: 2026-09-12.
 
 ## Where this stands
 
@@ -64,7 +64,7 @@ Rowan reached `main` across three merges:
 | First-run tour | DONE | nine steps, #221 on `main` |
 | Rowan voice matches the Codex spec | DONE | #222 on `main` |
 | Windows installer on the latest release | OPEN | absent from v0.6.1 and v0.6.2; see below |
-| Chat draft store failure classification | OPEN | read failure labelled as a corrupt store; latent; see below |
+| Chat draft store failure classification | DONE | read failure is now a distinct kind; #230 on `main` |
 | STATE.md caught up to `main` | DONE | five releases narrated, v0.4.1 through v0.6.2 |
 | The 1.0.0 cut | GATED | production deploy; needs explicit "yes, deploy" |
 | Attaching an installer to a release | GATED | a publish; needs the word |
@@ -129,56 +129,51 @@ power to publish.
    artifact, verify its hash against `SHA256SUMS.txt`, and attach both. This is
    a publish, so it is gated.
 
-## Open item 2: the chat draft store labels a read failure as a corrupt store
+## Closed item 2: the chat draft store classifies a read failure distinctly
 
-Verified 2026-09-11. Root cause found. Fix deferred to a Flutter-capable
-session, because Flutter is not on PATH here and the change cannot be run to
-green without `flutter analyze` and `flutter test`.
+Fixed in [#230](https://github.com/HarperZ9/flywheel/pull/230), merged
+`59581777`. Ran to green before merge: `flutter analyze` clean, and
+`flutter test test/chat_draft_test.dart` at 11 passing.
 
-`desktop/lib/services/chat_draft_store.dart`, `load()` at lines 117 to 142. The
-`try` block wraps two different kinds of work: the file read
-(`readJourneyLocalObject(storageFile)`) and the decode plus validation that
-follows it. The `catch (_)` on line 140 throws
-`ChatDraftStoreException(ChatDraftFailure.corruptStore)` for anything caught. So
-a read that could not happen, an OS or FFI error on bytes that are perfectly
-intact, is reported with the same failure kind as bytes that are actually
-corrupt.
+Root cause. `desktop/lib/services/chat_draft_store.dart`, `load()`. One `try`
+wrapped the file read (`readJourneyLocalObject(storageFile)`) and the decode and
+validation after it, and a single `catch (_)` mapped every failure to
+`ChatDraftFailure.corruptStore`. An OS or FFI read error on intact bytes got the
+same kind as bytes that were actually corrupt.
 
-Bound on the claim. The `.failure` value is not branched on by any chat
-consumer. `chat_admission_controller.dart` catches `ChatDraftStoreException` by
-type and falls back silently, with the current editor text staying
-authoritative. So the wrong label is latent in the chat path right now, not
-shown to the user. The earlier STATE.md note (from the 0.4.0 entry) said every
-recovery failure is labelled a local-store failure whatever its cause. That
-describes the misclassification correctly but over-states the user-facing
-reach, which is currently none in the chat path.
+The fix. `load()` now catches `on FileSystemException` first and throws a new
+`ChatDraftFailure.readFailed`, and it keeps `corruptStore` for a real decode or
+validation failure. The read primitive splits cleanly. `lengthSync()` and
+`readAsBytesSync()` are the points that throw `FileSystemException`, a bad record
+throws a domain exception, and malformed bytes throw `FormatException`, so the
+new clause catches read failures and nothing else. Two tests cover it: an
+unreadable store behind a failing `File` asserts `readFailed`, and corrupt bytes
+still assert `corruptStore`.
 
-Why it still matters. `code_draft_store.dart` does branch on its own failure
-kind (`error.failure == CodeDraftFailure.invalidRecord`, line 113), and
-`code_view.dart` surfaces recovery notices to the user. The surfacing pattern
-exists in the app. The moment the chat store's failure kind is read the same
-way, the wrong label misleads: a locked or unreadable file would tell the user
-their drafts are corrupt.
-
-Fix shape. In `load()`, catch the IO and file-system errors first and map them
-to a distinct kind, a read-failure, and keep `corruptStore` for a genuine decode
-or validation failure. Add a unit test that feeds an intact store behind a
-failing read and asserts the new kind, and one that feeds corrupt bytes and
-asserts `corruptStore`. Verify with `flutter analyze` and `flutter test` before
-merge.
+Scope, checked on both draft stores. The wrong label was latent, and it stays
+latent across the family. No consumer branches on the chat store's failure kind.
+The code draft store was read too. The only catcher of `CodeDraftStoreException`
+is `code_view.dart`, and both catch sites there use `catch (_)` and drop the
+kind, so its own read-against-corrupt lumping is latent as well and needs no
+change now. Its user-facing recovery notices come from a separate
+`recoveryOutcomes` path, not from the failure kind. This corrects the earlier
+note here, which had read the code store's internal remap as a live consumer of
+the kind. The 1.0 reasoning holds for both stores.
 
 ## Recommendation
 
-Keep the 1.0.0 cut gated. None of the open items needs a major bump to close.
-They land as normal development on `main` and ship in a 0.6.x point release:
+Keep the 1.0.0 cut gated. The readiness item left open does not need a major bump
+to close. It lands as normal development on `main` and ships in a 0.6.x point
+release:
 
 - Installer-publish path wired, and an installer attached to the release the
-  docs point at.
-- Chat draft store misclassification fixed and verified in a Flutter session.
+  docs point at. The wiring is a release-path change and the attach is a publish,
+  so both stay with the operator.
 
-The STATE.md catch-up across the five releases is done, landed with this update.
+The chat draft store fix landed in #230, and the STATE.md catch-up across the
+five releases is done. Only the installer publish is left, and it is gated.
 
-When those are closed and the operator says deploy, the 1.0.0 cut is a clean
+When that is closed and the operator says deploy, the 1.0.0 cut is a clean
 promotion of what is already on `main`, not a scramble. The product is honest
 about what it is at 0.6.2 already. The gate is about the version label and the
 release ceremony, not about hidden work.
