@@ -1,0 +1,62 @@
+{
+  "schema": "flywheel.incident-sim-task/v1",
+  "task_id": "synthetic_incident_sim_001",
+  "task_version": "2026-09-13.1",
+  "fixture_version": "synthetic-fixture-2026-09-13.1",
+  "spec_version": "incident-sim/v1",
+  "scorer": {
+    "id": "ordered-action-final-state",
+    "version": "1"
+  },
+  "checker": {
+    "id": "incident-sim-local-checker",
+    "version": "1"
+  },
+  "roles": {
+    "producer": "synthetic-example-fixture",
+    "checker": "flywheel-local-checker"
+  },
+  "shared_dependencies": [
+    "harness.incident_sim_eval",
+    "harness.incident_sim_packet"
+  ],
+  "source_facts": [
+    {
+      "fact_id": "fact_aaaaaaaa",
+      "statement": "synthetic example: a reported score is not ground truth"
+    }
+  ],
+  "incident": {
+    "case_id": "case_aaaaaaaa",
+    "journey_ref": "jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "event_head_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "failure": {
+      "summary": "synthetic example: reported score diverged from checked final state"
+    },
+    "created_at": "2026-09-13T00:00:00Z"
+  },
+  "expected_actions": [
+    {
+      "id": "admit",
+      "summary": "admit source fact"
+    },
+    {
+      "id": "check",
+      "summary": "compare reported and checked state"
+    },
+    {
+      "id": "hold",
+      "summary": "hold release pending review"
+    }
+  ],
+  "expected_final_state": {
+    "release": "HOLD",
+    "status": "needs_review"
+  },
+  "expected_enforcement": [
+    {
+      "action_id": "hold",
+      "decision": "blocked"
+    }
+  ]
+}

@@ -379,6 +379,9 @@ against the release's `SHA256SUMS.txt`.
 - [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): the organizational learning loop (full guide and spec)
 - [docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md](docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md): Flywheel against the July 2026 agentic security convergence
 - [docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md): check an answer against the source that decides it
+- [docs/INSPECT-EVIDENCE.md](docs/INSPECT-EVIDENCE.md): Inspect JSON import, versioned fixtures and drift checks (development)
+- [docs/INCIDENT-SIM-EVALUATION.md](docs/INCIDENT-SIM-EVALUATION.md): submitted incident traces and process-audit packets (development)
+- [docs/INDEPENDENCE.md](docs/INDEPENDENCE.md): evidence, assessor independence and contestability
 - [docs/PROOF-AND-FORMATS.md](docs/PROOF-AND-FORMATS.md): Markdown, LaTeX and PDF in and out, and the check as a Lean proof
 - [docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md): the finance, medicine, and law packs, and what each catches
 - [CREDO.md](CREDO.md): the belief
