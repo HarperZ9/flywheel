@@ -1,0 +1,222 @@
+{
+  "fixture": "resealed incident section drift from incident_sim_process_audit_route",
+  "packet_json": "{\"schema\":\"flywheel.incident-sim-process-audit/v1\",\"task_sha256\":\"17723174535f383d5889f94c93f34059866f979434cd6fdeb0dcf8a8fd3c94c9\",\"trace_sha256\":\"2ad42720bba00f19f46c8fa20dad7358e498fdd74558e1ccce4276576df8ddf3\",\"evaluation_sha256\":\"05de5469260a609abca40c46e0c4ccc3b5c628f07ff53d9f937c391ce44d02f9\",\"evaluation\":{\"schema\":\"flywheel.incident-sim-evaluation/v1\",\"task_sha256\":\"17723174535f383d5889f94c93f34059866f979434cd6fdeb0dcf8a8fd3c94c9\",\"trace_sha256\":\"2ad42720bba00f19f46c8fa20dad7358e498fdd74558e1ccce4276576df8ddf3\",\"input_validation\":{\"verdict\":\"MATCH\",\"reasons\":[]},\"drift\":{\"task_id\":\"MATCH\",\"task_version\":\"MATCH\",\"fixture_version\":\"MATCH\",\"spec_version\":\"MATCH\",\"scorer\":\"MATCH\",\"checker\":\"MATCH\"},\"completion\":{\"verdict\":\"MATCH\",\"completed\":true,\"reasons\":[]},\"correctness\":{\"verdict\":\"MATCH\",\"final_state_match\":true,\"actions_match\":true,\"json_pointers\":[],\"reasons\":[]},\"enforcement\":{\"verdict\":\"MATCH\",\"expected\":[{\"action_id\":\"hold\",\"decision\":\"blocked\"}],\"missing\":[],\"unexpected\":[],\"duplicates\":[],\"conflicts\":[]},\"observation_coverage\":{\"verdict\":\"MATCH\",\"expected_count\":3,\"observed_count\":3,\"missing_actions\":[],\"extra_actions\":[],\"duplicate_actions\":[],\"reordered_actions\":[],\"payload_mismatches\":[],\"reasons\":[]},\"claimed_scores\":[{\"name\":\"always_success\",\"json_pointer\":\"/claimed_scores/0/value\",\"source_value\":\"PASS\"}],\"checked_scores\":[{\"name\":\"incident_sim_checked\",\"value\":\"MATCH\"}],\"overall\":{\"verdict\":\"MATCH\"},\"does_not_prove\":[\"model quality beyond the deterministic fixture\",\"independent scorer correctness\",\"complete workstation observation\",\"EMET witness validity\"]},\"supplied_evaluation_check\":{\"verdict\":\"UNVERIFIABLE\",\"detail\":\"no caller-supplied evaluation\"},\"source_values\":[{\"source\":\"task\",\"json_pointer\":\"/expected_final_state\",\"source_value\":{\"release\":\"HOLD\",\"status\":\"needs_review\"}},{\"source\":\"trace\",\"json_pointer\":\"/final_state\",\"source_value\":{\"release\":\"HOLD\",\"status\":\"needs_review\"}},{\"source\":\"task\",\"json_pointer\":\"/expected_actions/0/id\",\"source_value\":\"admit\"},{\"source\":\"task\",\"json_pointer\":\"/expected_actions/1/id\",\"source_value\":\"check\"},{\"source\":\"task\",\"json_pointer\":\"/expected_actions/2/id\",\"source_value\":\"hold\"},{\"source\":\"trace\",\"json_pointer\":\"/observed_actions/0/id\",\"source_value\":\"admit\"},{\"source\":\"trace\",\"json_pointer\":\"/observed_actions/1/id\",\"source_value\":\"check\"},{\"source\":\"trace\",\"json_pointer\":\"/observed_actions/2/id\",\"source_value\":\"hold\"},{\"source\":\"trace\",\"json_pointer\":\"/claimed_scores/0/value\",\"source_value\":\"PASS\"}],\"observation_scope\":\"fixture_expected_actions_only\",\"independence\":{\"roles\":{\"checker\":\"flywheel\",\"producer\":\"local-fixture\"},\"shared_dependencies\":[\"harness.incident_sim_eval\",\"harness.incident_sim_packet\"],\"unknowns\":[\"assessment independence is unknown for the local checker\",\"evidence independence is limited to the submitted fixture\",\"implementation independence is not established by this slice\"]},\"incident\":{\"case\":{\"schema\":\"flywheel.incident-case/v1\",\"case_id\":\"case_aaaaaaaa\",\"journey_ref\":\"jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"event_head_sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"source_refs\":[{\"fact_id\":\"fact_aaaaaaaa\",\"statement\":\"reported score is not ground truth\"}],\"failure\":{\"summary\":\"resealed bad incident section only\"},\"created_at\":\"2026-09-13T00:00:00Z\",\"case_sha256\":\"cd8aaf2ce1b96ae62e21391f14e5640cbbe0fc98a888b5d92c8ae6c738508773\"},\"proposal\":{\"schema\":\"flywheel.incident-proposed-graph/v1\",\"proposal_id\":\"prp_7f9d0288d0b9dfda14da309bcdb2883a\",\"state\":\"proposed\",\"journey_ref\":\"jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"basis_event_head_sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"capability_sha256\":\"1435428a086c6fd2af8ad4d4fa9fe86ebf3c9b8d29a91e78cb03774d5b9020b5\",\"source_fact_ids\":[\"fact_aaaaaaaa\"],\"claims\":[],\"checks\":[{\"node_id\":\"chk_816582204d16\",\"kind\":\"review\",\"of_fact\":\"fact_aaaaaaaa\",\"statement\":\"re-derive: reported score diverged from checked final state\"}],\"edges\":[[\"fact_aaaaaaaa\",\"chk_816582204d16\"]],\"review_requirements\":[\"human review of every proposed check before any admission\"],\"limitations\":[\"proposed structure only; no check ran and nothing was accepted\"],\"does_not_prove\":\"a proposed incident graph is not a diagnosis, not an acceptance, and not a receipt\",\"graph_sha256\":\"b649490eb5720c158190a1568d38238a3a99fce0402bb9abf9caa892bcb8449f\"}},\"receipts\":{\"actions\":[{\"schema\":\"flywheel.tool-call-receipt/v1\",\"source\":\"tool:trace_good:0\",\"tool\":\"incident-sim-action\",\"capability\":\"builtin-read\",\"admission\":\"RECONSTRUCTED\",\"args\":{\"sha256\":\"326a61c451f5d27306d3696e3627e925d9a83bec2dc878ebd2c1c05b4d84ce4d\",\"bytes\":48},\"output\":{\"sha256\":\"951dc883d6ac37d57d8ba4f0118e5ab8d727dc707643b91dccd684598f2e9bb6\",\"bytes\":17},\"ok\":\"true\",\"rc\":0,\"run_id\":\"trace_good\",\"seq\":0,\"prev_receipt_sha256\":\"\",\"outcome\":\"COMPLETED\",\"seal\":{\"algorithm\":\"sha256\",\"hex\":\"74bf22267e0311836e871220ba2d3185c410b50a0c6363ba65fd6aaf86af3487\"},\"rationale\":{\"stated_intent\":\"record submitted incident-sim action\",\"options_considered\":[\"drop\",\"record as reconstructed evidence\"],\"chosen_option\":\"record as reconstructed evidence\",\"confidence\":\"moderate\"}},{\"schema\":\"flywheel.tool-call-receipt/v1\",\"source\":\"tool:trace_good:1\",\"tool\":\"incident-sim-action\",\"capability\":\"builtin-read\",\"admission\":\"RECONSTRUCTED\",\"args\":{\"sha256\":\"6e5cd5e0dda5e243d99d46dc8b7f1725e6b4d71d6011dba62fc886c1ac025e1f\",\"bytes\":48},\"output\":{\"sha256\":\"0778b2a04ed317e3fd671b0d528a0a70e970d8b21868b9152e4ebb66a0c74227\",\"bytes\":34},\"ok\":\"true\",\"rc\":0,\"run_id\":\"trace_good\",\"seq\":1,\"prev_receipt_sha256\":\"74bf22267e0311836e871220ba2d3185c410b50a0c6363ba65fd6aaf86af3487\",\"outcome\":\"COMPLETED\",\"seal\":{\"algorithm\":\"sha256\",\"hex\":\"7d89dad8720bb7b5db28ba16f38e1466c15dc679bf48be3997dd76bde79db058\"},\"rationale\":{\"stated_intent\":\"record submitted incident-sim action\",\"options_considered\":[\"drop\",\"record as reconstructed evidence\"],\"chosen_option\":\"record as reconstructed evidence\",\"confidence\":\"moderate\"}},{\"schema\":\"flywheel.tool-call-receipt/v1\",\"source\":\"tool:trace_good:2\",\"tool\":\"incident-sim-action\",\"capability\":\"builtin-read\",\"admission\":\"RECONSTRUCTED\",\"args\":{\"sha256\":\"30d045093dc498e153d266515e5378b0242246bb0a93c285d611e275232c4ff0\",\"bytes\":47},\"output\":{\"sha256\":\"f38a4bf79e7fbc4eed2bb2352fd5fb5767f76edda0a018966d1571e321e0b5fa\",\"bytes\":27},\"ok\":\"true\",\"rc\":0,\"run_id\":\"trace_good\",\"seq\":2,\"prev_receipt_sha256\":\"7d89dad8720bb7b5db28ba16f38e1466c15dc679bf48be3997dd76bde79db058\",\"outcome\":\"COMPLETED\",\"seal\":{\"algorithm\":\"sha256\",\"hex\":\"0524ae62ece247302a13ba7958e042cac647afdf0af7976a3b3f6676416b7baf\"},\"rationale\":{\"stated_intent\":\"record submitted incident-sim action\",\"options_considered\":[\"drop\",\"record as reconstructed evidence\"],\"chosen_option\":\"record as reconstructed evidence\",\"confidence\":\"moderate\"}}],\"work\":{\"schema\":\"flywheel.tool-call-receipt/v1\",\"source\":\"tool:trace_good:10000\",\"tool\":\"incident-sim-evaluate\",\"capability\":\"builtin-read\",\"admission\":\"LOCAL_CHECKER\",\"args\":{\"sha256\":\"109c19c4811e061e408cddff26a5280fc4c38aca7ff6ac0c6fc0d15f62d46fb4\",\"bytes\":167},\"output\":{\"sha256\":\"b2365baf48fef6e8a48df2b8dcefbadc1bf1b59ab264c9eb42b7b13488246bbe\",\"bytes\":64},\"ok\":\"true\",\"rc\":0,\"run_id\":\"trace_good\",\"seq\":10000,\"prev_receipt_sha256\":\"\",\"outcome\":\"COMPLETED\",\"seal\":{\"algorithm\":\"sha256\",\"hex\":\"bd2e60f0b4d0715454e739c447c90c636d89519c097d41e61ca2b1b5073373c5\"},\"rationale\":{\"stated_intent\":\"evaluate submitted incident-sim trace\",\"options_considered\":[\"trust supplied verdict\",\"recompute from sources\"],\"chosen_option\":\"recompute from sources\",\"confidence\":\"high\"}},\"audit\":{\"schema\":\"flywheel.audit-receipt/v1\",\"run_id\":\"trace_good\",\"reviewer\":\"incident-sim-local-checker\",\"subject\":{\"sha256\":\"0debc998a32e4e2f8db97658686d318d675a10596cf17f32360cc600e8605214\",\"n_reviews\":\"1\"},\"reviews\":[{\"detector_id\":\"incident-sim-process-audit\",\"dimension\":\"correctness\",\"severity\":\"INFO\",\"summary\":\"bounded fixture verdict MATCH\"}],\"summary\":\"bounded incident-sim process audit over submitted JSON\",\"verdict\":\"PASS\",\"confidence\":\"moderate\",\"does_not_prove\":\"independent external ground truth or complete workstation observation\",\"started_utc\":\"2026-09-13T00:00:00Z\",\"finished_utc\":\"2026-09-13T00:00:00Z\",\"prev_receipt_sha256\":\"bd2e60f0b4d0715454e739c447c90c636d89519c097d41e61ca2b1b5073373c5\",\"seal\":{\"algorithm\":\"sha256\",\"hex\":\"ddf10d8aed554877690a6027df25bfb5676a8e59bc69c2afb834bf16c3f22d81\"}}},\"receipt_verification\":{\"actions\":{\"verdict\":\"MATCH\",\"n\":3,\"receipts\":[{\"schema\":\"flywheel.tool-call-receipt/v1\",\"verdict\":\"MATCH\",\"source\":\"tool:trace_good:0\",\"outcome\":\"COMPLETED\",\"seal\":{\"algorithm\":\"sha256\",\"hex\":\"74bf22267e0311836e871220ba2d3185c410b50a0c6363ba65fd6aaf86af3487\"},\"has_rationale\":true},{\"schema\":\"flywheel.tool-call-receipt/v1\",\"verdict\":\"MATCH\",\"source\":\"tool:trace_good:1\",\"outcome\":\"COMPLETED\",\"seal\":{\"algorithm\":\"sha256\",\"hex\":\"7d89dad8720bb7b5db28ba16f38e1466c15dc679bf48be3997dd76bde79db058\"},\"has_rationale\":true},{\"schema\":\"flywheel.tool-call-receipt/v1\",\"verdict\":\"MATCH\",\"source\":\"tool:trace_good:2\",\"outcome\":\"COMPLETED\",\"seal\":{\"algorithm\":\"sha256\",\"hex\":\"0524ae62ece247302a13ba7958e042cac647afdf0af7976a3b3f6676416b7baf\"},\"has_rationale\":true}]},\"work\":{\"schema\":\"flywheel.tool-call-receipt/v1\",\"verdict\":\"MATCH\",\"source\":\"tool:trace_good:10000\",\"outcome\":\"COMPLETED\",\"seal\":{\"algorithm\":\"sha256\",\"hex\":\"bd2e60f0b4d0715454e739c447c90c636d89519c097d41e61ca2b1b5073373c5\"},\"has_rationale\":true},\"audit\":{\"schema\":\"flywheel.audit-receipt/v1\",\"verdict\":\"MATCH\",\"failure_class\":\"\",\"detail\":\"1 review(s), verdict PASS (confidence moderate); chained to sha256:bd2e60f0b4d0\",\"run_id\":\"trace_good\",\"audit_verdict\":\"PASS\",\"confidence\":\"moderate\",\"prev_receipt_sha256\":\"bd2e60f0b4d0715454e739c447c90c636d89519c097d41e61ca2b1b5073373c5\",\"seal\":{\"algorithm\":\"sha256\",\"hex\":\"ddf10d8aed554877690a6027df25bfb5676a8e59bc69c2afb834bf16c3f22d81\"}}},\"receipt_limitations\":[\"Action receipts are reconstructed from a submitted trace; they do not prove the actions actually ran.\",\"Observation coverage is limited to fixture expected actions, not the whole workstation.\"],\"integration_limits\":[\"EMET receipt is not minted by this slice.\",\"No live agent execution, Inspect runtime, network, or EMET wire integration is included.\"],\"section_sha256\":{\"/evaluation\":\"05de5469260a609abca40c46e0c4ccc3b5c628f07ff53d9f937c391ce44d02f9\",\"/source_values\":\"6de87960202c332a719f7d280abd34459d41d4007511f81753412cf27cb5eae3\",\"/independence\":\"d2af301bee5088cf1bec437ffda59f9724c24ffe97ad7a33020ac58893f315da\",\"/incident\":\"a04e6039293eaf07f46c4584c93954f39880fdfa97e4591db8719e52ebd6b00a\",\"/receipt_verification\":\"657eddeb2e810f59fbaabd0ff41ce1fc059638cfb76bbf7a447d418c60c8a79e\",\"/supplied_evaluation_check\":\"62429b960b5182f374620ceeaa8149c03ec73866eacef652889bc8b30f4cd0fa\"},\"packet_sha256\":\"ce1e29f10798ed5055695b0ca2acd54a2bc8b24213dc6665071e504f9faaa968\"}",
+  "review": {
+    "assessment": "packet-local-drift",
+    "declared_access": {
+      "coverage_assessment": "not_assessed",
+      "limits": [
+        "institutional_access component absent; declared access coverage was not assessed"
+      ],
+      "verdict": "NOT_ASSESSED"
+    },
+    "does_not_prove": [
+      "semantic correctness of the task, trace, evaluation, scorer, or access claim",
+      "external authority, wall-clock truth, disclosure completeness, or immutable history",
+      "absence of a coherent rewrite of the local packet and every packet-local digest"
+    ],
+    "schema": "flywheel.incident-sim-process-audit-review/v1",
+    "semantic_verification": "UNVERIFIABLE",
+    "source": {
+      "byte_length": 10855,
+      "format": "incident-sim-process-audit-json",
+      "sha256": "ed8dc6c7a8d7a5e1f33fc4a7de2c76d8c09c5f1d275e9a911b2905348977eca2"
+    },
+    "source_pointers": [
+      {
+        "json_pointer": "/schema",
+        "source_value": "flywheel.incident-sim-process-audit/v1"
+      },
+      {
+        "json_pointer": "/task_sha256",
+        "source_value": "17723174535f383d5889f94c93f34059866f979434cd6fdeb0dcf8a8fd3c94c9"
+      },
+      {
+        "json_pointer": "/trace_sha256",
+        "source_value": "2ad42720bba00f19f46c8fa20dad7358e498fdd74558e1ccce4276576df8ddf3"
+      },
+      {
+        "json_pointer": "/evaluation_sha256",
+        "source_value": "05de5469260a609abca40c46e0c4ccc3b5c628f07ff53d9f937c391ce44d02f9"
+      },
+      {
+        "json_pointer": "/packet_sha256",
+        "source_value": "ce1e29f10798ed5055695b0ca2acd54a2bc8b24213dc6665071e504f9faaa968"
+      },
+      {
+        "json_pointer": "/evaluation/overall/verdict",
+        "source_value": "MATCH"
+      },
+      {
+        "json_pointer": "/source_values",
+        "source_value": [
+          {
+            "json_pointer": "/expected_final_state",
+            "source": "task",
+            "source_value": {
+              "release": "HOLD",
+              "status": "needs_review"
+            }
+          },
+          {
+            "json_pointer": "/final_state",
+            "source": "trace",
+            "source_value": {
+              "release": "HOLD",
+              "status": "needs_review"
+            }
+          },
+          {
+            "json_pointer": "/expected_actions/0/id",
+            "source": "task",
+            "source_value": "admit"
+          },
+          {
+            "json_pointer": "/expected_actions/1/id",
+            "source": "task",
+            "source_value": "check"
+          },
+          {
+            "json_pointer": "/expected_actions/2/id",
+            "source": "task",
+            "source_value": "hold"
+          },
+          {
+            "json_pointer": "/observed_actions/0/id",
+            "source": "trace",
+            "source_value": "admit"
+          },
+          {
+            "json_pointer": "/observed_actions/1/id",
+            "source": "trace",
+            "source_value": "check"
+          },
+          {
+            "json_pointer": "/observed_actions/2/id",
+            "source": "trace",
+            "source_value": "hold"
+          },
+          {
+            "json_pointer": "/claimed_scores/0/value",
+            "source": "trace",
+            "source_value": "PASS"
+          }
+        ]
+      },
+      {
+        "json_pointer": "/independence",
+        "source_value": {
+          "roles": {
+            "checker": "flywheel",
+            "producer": "local-fixture"
+          },
+          "shared_dependencies": [
+            "harness.incident_sim_eval",
+            "harness.incident_sim_packet"
+          ],
+          "unknowns": [
+            "assessment independence is unknown for the local checker",
+            "evidence independence is limited to the submitted fixture",
+            "implementation independence is not established by this slice"
+          ]
+        }
+      }
+    ],
+    "verification": {
+      "action_chain_verdict": "MATCH",
+      "audit_subject_verdict": "MATCH",
+      "audit_verdict": "MATCH",
+      "does_not_verify": [
+        "semantic correctness of the task, trace, evaluation, scorer, or access claim",
+        "reconstruction of source_values from full task and trace bodies when those bodies are absent",
+        "wall-clock truth, disclosure completeness, or immutable external history",
+        "absence of a coherent rewrite of the local packet and every packet-local digest"
+      ],
+      "evaluation_digest_verdict": "MATCH",
+      "independence_digest_verdict": "MATCH",
+      "institutional_access_verdict": "NOT_ASSESSED",
+      "packet_digest_verdict": "MATCH",
+      "receipt_verification_verdict": "MATCH",
+      "schema": "flywheel.incident-sim-process-audit-verification/v1",
+      "source_values_digest_verdict": "MATCH",
+      "unverified_fields": [
+        {
+          "check": "optional component absent",
+          "field": "/institutional_access",
+          "verdict": "NOT_ASSESSED"
+        }
+      ],
+      "verdict": "DRIFT",
+      "verification_scope": "packet-local digests and receipt seals only",
+      "verified_fields": [
+        {
+          "check": "canonical_sha256 matches /evaluation_sha256",
+          "field": "/evaluation",
+          "verdict": "MATCH"
+        },
+        {
+          "check": "canonical_sha256 matches /packet_sha256",
+          "field": "",
+          "verdict": "MATCH"
+        },
+        {
+          "check": "canonical_sha256 matches /section_sha256",
+          "field": "/evaluation",
+          "verdict": "MATCH"
+        },
+        {
+          "check": "canonical_sha256 matches /section_sha256",
+          "field": "/source_values",
+          "verdict": "MATCH"
+        },
+        {
+          "check": "canonical_sha256 matches /section_sha256",
+          "field": "/independence",
+          "verdict": "MATCH"
+        },
+        {
+          "check": "canonical_sha256 matches /section_sha256",
+          "field": "/incident",
+          "verdict": "DRIFT"
+        },
+        {
+          "check": "canonical_sha256 matches /section_sha256",
+          "field": "/receipt_verification",
+          "verdict": "MATCH"
+        },
+        {
+          "check": "canonical_sha256 matches /section_sha256",
+          "field": "/supplied_evaluation_check",
+          "verdict": "MATCH"
+        },
+        {
+          "check": "verify_chain",
+          "field": "/receipts/actions",
+          "verdict": "MATCH"
+        },
+        {
+          "check": "verify_receipt",
+          "field": "/receipts/work",
+          "verdict": "MATCH"
+        },
+        {
+          "check": "verify_audit_receipt",
+          "field": "/receipts/audit",
+          "verdict": "MATCH"
+        },
+        {
+          "check": "subject digest uses recomputed evaluation digest and checked access digest",
+          "field": "/receipts/audit/subject",
+          "verdict": "MATCH"
+        },
+        {
+          "check": "stored receipt verification matches fresh verifier outputs",
+          "field": "/receipt_verification",
+          "verdict": "MATCH"
+        }
+      ],
+      "work_receipt_verdict": "MATCH"
+    }
+  },
+  "status": 200
+}

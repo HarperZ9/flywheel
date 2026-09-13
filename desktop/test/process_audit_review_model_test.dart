@@ -136,6 +136,26 @@ void main() {
     expect(result.verification.auditSubject, 'DRIFT');
   });
 
+  test('review result accepts backend drift carried only by verified fields',
+      () {
+    final fixture = _fixture('process_audit_resealed_incident_review.json');
+    final raw = fixture['packet_json']! as String;
+    final upload = ProcessAuditPacketUpload.fromPickedBytes(
+      Uint8List.fromList(utf8.encode(raw)),
+    );
+    final review = Map<String, Object?>.from(fixture['review']! as Map);
+
+    final result = ProcessAuditReviewResult.fromJson(review, upload);
+
+    expect(result.errorCode, isNull);
+    expect(result.verification.verdict, 'DRIFT');
+    expect(result.verification.packetDigest, 'MATCH');
+    expect(result.verification.independenceDigest, 'MATCH');
+    expect(result.verification.failedFields.single.field, '/incident');
+    expect(result.verification.failedFields.single.check,
+        'canonical_sha256 matches /section_sha256');
+  });
+
   test('review result rejects malformed overall and access coverage promotion',
       () {
     final upload = ProcessAuditPacketUpload.fromPickedBytes(
@@ -144,6 +164,13 @@ void main() {
       )),
     );
     final matchWithDrift = _reviewBody(upload, actionChain: 'DRIFT');
+    final matchWithVerifiedDrift = _reviewBody(upload, verifiedFields: [
+      {
+        'field': '/incident',
+        'verdict': 'DRIFT',
+        'check': 'canonical_sha256 matches /section_sha256',
+      },
+    ]);
     final completeDriftAccess = _reviewBody(
       upload,
       assessment: 'packet-local-drift',
@@ -162,6 +189,11 @@ void main() {
       'INVALID_RESPONSE',
     );
     expect(
+      ProcessAuditReviewResult.fromJson(matchWithVerifiedDrift, upload)
+          .errorCode,
+      'INVALID_RESPONSE',
+    );
+    expect(
       ProcessAuditReviewResult.fromJson(completeDriftAccess, upload).errorCode,
       'INVALID_RESPONSE',
     );
@@ -174,9 +206,7 @@ void main() {
       )),
     );
     final missing = _reviewBody(upload)..remove('verification');
-    final inconsistent = _reviewBody(upload);
-    (inconsistent['verification']! as Map<String, Object?>)['verdict'] =
-        'DRIFT';
+    final inconsistent = _reviewBody(upload, assessment: 'packet-local-drift');
 
     expect(
       ProcessAuditReviewResult.fromJson(missing, upload).errorCode,
@@ -204,6 +234,7 @@ Map<String, Object?> _reviewBody(
   String auditSubject = 'MATCH',
   String receiptVerification = 'MATCH',
   Map<String, Object?>? declaredAccess,
+  List<Map<String, Object?>>? verifiedFields,
 }) =>
     {
       'schema': ProcessAuditReviewResult.schemaName,
@@ -225,6 +256,7 @@ Map<String, Object?> _reviewBody(
         'audit_verdict': audit,
         'audit_subject_verdict': auditSubject,
         'receipt_verification_verdict': receiptVerification,
+        if (verifiedFields != null) 'verified_fields': verifiedFields,
       },
       'declared_access': declaredAccess ?? {'verdict': accessVerdict},
       'source_pointers': const [],

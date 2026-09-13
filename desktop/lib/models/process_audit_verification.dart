@@ -4,6 +4,7 @@ class ProcessAuditVerification {
   final String verdict, accessVerdict, packetDigest, evaluationDigest;
   final String sourceValuesDigest, independenceDigest, actionChain;
   final String workReceipt, audit, auditSubject, receiptVerification;
+  final List<ProcessAuditVerifiedField> verifiedFields;
   const ProcessAuditVerification({
     required this.verdict,
     required this.accessVerdict,
@@ -16,6 +17,7 @@ class ProcessAuditVerification {
     required this.audit,
     required this.auditSubject,
     required this.receiptVerification,
+    required this.verifiedFields,
   });
   const ProcessAuditVerification.empty()
       : this(
@@ -30,6 +32,7 @@ class ProcessAuditVerification {
           audit: 'unknown',
           auditSubject: 'unknown',
           receiptVerification: 'unknown',
+          verifiedFields: const [],
         );
   static ProcessAuditVerification? tryFromJson(Map<String, Object?> json) {
     final verdict = _packetVerdict(json['verdict']);
@@ -46,6 +49,7 @@ class ProcessAuditVerification {
     final auditSubject = _packetVerdict(json['audit_subject_verdict']);
     final receiptVerification =
         _packetVerdict(json['receipt_verification_verdict']);
+    final verifiedFields = _verifiedFields(json['verified_fields']);
     final components = [
       accessVerdict,
       packetDigest,
@@ -58,9 +62,12 @@ class ProcessAuditVerification {
       auditSubject,
       receiptVerification,
     ];
-    if (verdict == null ||
-        components.any((item) => item == null) ||
-        _overallVerdict(components.cast<String>()) != verdict) {
+    if (verdict == null || components.any((item) => item == null)) {
+      return null;
+    }
+    if (verdict == 'MATCH' &&
+        (components.contains('DRIFT') ||
+            verifiedFields.any((item) => item.verdict == 'DRIFT'))) {
       return null;
     }
     return ProcessAuditVerification(
@@ -75,8 +82,23 @@ class ProcessAuditVerification {
       audit: audit!,
       auditSubject: auditSubject!,
       receiptVerification: receiptVerification!,
+      verifiedFields: List.unmodifiable(verifiedFields),
     );
   }
+
+  List<ProcessAuditVerifiedField> get failedFields => [
+        for (final field in verifiedFields)
+          if (field.verdict == 'DRIFT') field,
+      ];
+}
+
+class ProcessAuditVerifiedField {
+  final String field, verdict, check;
+  const ProcessAuditVerifiedField({
+    required this.field,
+    required this.verdict,
+    required this.check,
+  });
 }
 
 class ProcessAuditDeclaredAccess {
@@ -136,7 +158,15 @@ String? _accessVerdict(Object? value) {
   return value is String && known.contains(value) ? value : null;
 }
 
-String _overallVerdict(List<String> components) =>
-    components.every((item) => item == 'MATCH' || item == 'NOT_ASSESSED')
-        ? 'MATCH'
-        : 'DRIFT';
+List<ProcessAuditVerifiedField> _verifiedFields(Object? value) {
+  if (value is! List) return const [];
+  return [
+    for (final item in value)
+      if (item is Map && _accessVerdict(item['verdict']) != null)
+        ProcessAuditVerifiedField(
+          field: _text(item['field'], fallback: '/unknown'),
+          verdict: _accessVerdict(item['verdict'])!,
+          check: _text(item['check'], fallback: 'reported by gateway'),
+        ),
+  ];
+}
