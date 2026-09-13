@@ -10,14 +10,20 @@ import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/models/process_audit_review.dart';
 
 void main() {
-  test('reviewProcessAuditPacket posts authenticated inner packet bytes', () async {
-    final packet = utf8.encode(
-      '{"schema":"flywheel.incident-sim-process-audit/v1",'
-      '"source_values":{"target_state":"closed"}}',
+  test('reviewProcessAuditPacket posts authenticated inner packet bytes',
+      () async {
+    const packetText = '{\n'
+        '  "schema" : "flywheel.incident-sim-process-audit/v1",\n'
+        '  "source_values" : {"target_state" : "closed"}\n'
+        '}';
+    final packet = utf8.encode(packetText);
+    final outer = utf8.encode(
+      '{"schema":"flywheel.incident-sim-command/v1",'
+      '"audit_packet":$packetText}',
     );
     final upload = ProcessAuditPacketUpload.fromPickedBytes(
-      Uint8List.fromList(packet),
-      filename: 'packet.json',
+      Uint8List.fromList(outer),
+      filename: 'command.json',
     );
     final spy = _ProcessAuditSpy((request) {
       expect(request.method, 'POST');
@@ -48,7 +54,9 @@ void main() {
   test('reviewProcessAuditPacket keeps transport errors as review results',
       () async {
     final upload = ProcessAuditPacketUpload.fromPickedBytes(
-      Uint8List.fromList(utf8.encode('{"schema":"nope"}')),
+      Uint8List.fromList(utf8.encode(
+        '{"schema":"flywheel.incident-sim-process-audit/v1"}',
+      )),
     );
     final client = GatewayClient(
       baseUrl: 'https://gateway.invalid',
@@ -97,7 +105,10 @@ Map<String, Object?> _reviewBody(String sha, int byteLength) => {
         ],
       },
       'source_pointers': [
-        {'json_pointer': '/source_values/target_state', 'source_value': 'closed'},
+        {
+          'json_pointer': '/source_values/target_state',
+          'source_value': 'closed'
+        },
       ],
       'does_not_prove': ['semantic correctness of the task or trace'],
     };

@@ -1,93 +1,10 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
-import 'package:crypto/crypto.dart' as crypto;
-
-import 'inspect_evidence_upload.dart' show inspectDisplayFilename;
 import 'json_pointer_locator.dart';
-
-const int maxProcessAuditPacketBytes = 1024 * 1024;
-const String processAuditPacketSchema =
-    'flywheel.incident-sim-process-audit/v1';
+import 'process_audit_packet_upload.dart';
+export 'process_audit_packet_upload.dart';
 
 final _sha256 = RegExp(r'^[0-9a-f]{64}$');
-
-class ProcessAuditReviewException implements Exception {
-  final String code, message;
-  const ProcessAuditReviewException(this.code, this.message);
-}
-
-class ProcessAuditPacketUpload {
-  final Uint8List bytes;
-  final String sha256, detectedFormat;
-  final int byteLength;
-  final String? filename;
-  final Map<String, JsonPointerLocation> _locations;
-
-  ProcessAuditPacketUpload._({
-    required this.bytes,
-    required this.sha256,
-    required this.byteLength,
-    required this.filename,
-    required this.detectedFormat,
-    required Map<String, JsonPointerLocation> locations,
-  }) : _locations = locations;
-
-  factory ProcessAuditPacketUpload.fromPickedBytes(
-    Uint8List picked, {
-    String? filename,
-  }) {
-    final selected = _innerPacketBytes(picked);
-    if (selected.bytes.isEmpty) {
-      throw const ProcessAuditReviewException(
-        'INVALID_LENGTH',
-        'Process-audit JSON must not be empty.',
-      );
-    }
-    if (selected.bytes.length > maxProcessAuditPacketBytes) {
-      throw const ProcessAuditReviewException(
-        'PAYLOAD_TOO_LARGE',
-        'Process-audit packet bytes are over 1 MiB.',
-      );
-    }
-    final bytes = Uint8List.fromList(selected.bytes);
-    return ProcessAuditPacketUpload._(
-      bytes: bytes,
-      sha256: crypto.sha256.convert(bytes).toString(),
-      byteLength: bytes.length,
-      filename: inspectDisplayFilename(filename),
-      detectedFormat: selected.format,
-      locations: locateJsonPointers(bytes),
-    );
-  }
-
-  JsonPointerLocation? locationFor(String pointer) => _locations[pointer];
-
-  String get preview {
-    try {
-      return utf8.decode(bytes);
-    } on Object {
-      return 'Raw bytes are not valid UTF-8.';
-    }
-  }
-}
-
-({List<int> bytes, String format}) _innerPacketBytes(Uint8List picked) {
-  try {
-    final decoded = jsonDecode(utf8.decode(picked));
-    if (decoded is Map && decoded['schema'] == processAuditPacketSchema) {
-      return (bytes: picked, format: 'process-audit-packet');
-    }
-    final auditPacket = decoded is Map ? decoded['audit_packet'] : null;
-    if (auditPacket is Map &&
-        auditPacket['schema'] == processAuditPacketSchema) {
-      return (bytes: utf8.encode(jsonEncode(auditPacket)), format: 'outer-command-report');
-    }
-  } on Object {
-    // Send malformed selections unchanged so the gateway returns INVALID_JSON.
-  }
-  return (bytes: picked, format: 'selected-json');
-}
 
 class ProcessAuditReviewResult {
   static const schemaName = 'flywheel.incident-sim-process-audit-review/v1';
@@ -134,11 +51,16 @@ class ProcessAuditReviewResult {
     }
     final source = ProcessAuditSource.tryFromJson(_map(json['source']));
     final assessment = _text(json['assessment']);
+    final verification =
+        ProcessAuditVerification.tryFromJson(_map(json['verification']));
+    final expectedAssessment =
+        _assessmentForPacketVerdict(verification?.verdict ?? '');
     if (json['schema'] != schemaName ||
         source == null ||
         source.sha256 != upload.sha256 ||
         source.byteLength != upload.byteLength ||
-        assessment.isEmpty) {
+        expectedAssessment == null ||
+        assessment != expectedAssessment) {
       return const ProcessAuditReviewResult.error(
         'INVALID_RESPONSE',
         'Gateway returned an incomplete process-audit review.',
@@ -152,7 +74,7 @@ class ProcessAuditReviewResult {
       source: source,
       assessment: assessment,
       semanticVerification: 'UNVERIFIABLE',
-      verification: ProcessAuditVerification.fromJson(_map(json['verification'])),
+      verification: verification!,
       declaredAccess:
           ProcessAuditDeclaredAccess.fromJson(_map(json['declared_access'])),
       sourcePointers: List.unmodifiable(pointers),
@@ -160,11 +82,10 @@ class ProcessAuditReviewResult {
     );
   }
 
-  String get packetIntegrityLabel =>
-      'Packet integrity ${verification.verdict.isEmpty ? assessment : verification.verdict}';
+  String get packetIntegrityLabel => 'Packet integrity ${verification.verdict}';
 
   String get packetIntegrityStatus =>
-      assessment == 'packet-local-match' ? 'verified' : 'drift';
+      verification.verdict == 'MATCH' ? 'verified' : 'drift';
 }
 
 class ProcessAuditSource {
@@ -206,19 +127,35 @@ class ProcessAuditVerification {
           sourceValuesDigest: 'unknown',
           independenceDigest: 'unknown',
         );
-  factory ProcessAuditVerification.fromJson(Map<String, Object?> json) =>
-      ProcessAuditVerification(
-        verdict: _text(json['verdict'], fallback: 'unknown'),
-        accessVerdict:
-            _text(json['institutional_access_verdict'], fallback: 'unknown'),
-        packetDigest: _text(json['packet_digest_verdict'], fallback: 'unknown'),
-        evaluationDigest:
-            _text(json['evaluation_digest_verdict'], fallback: 'unknown'),
-        sourceValuesDigest:
-            _text(json['source_values_digest_verdict'], fallback: 'unknown'),
-        independenceDigest:
-            _text(json['independence_digest_verdict'], fallback: 'unknown'),
-      );
+  static ProcessAuditVerification? tryFromJson(Map<String, Object?> json) {
+    final verdict = _packetVerdict(json['verdict']);
+    final packetDigest = _packetVerdict(json['packet_digest_verdict']);
+    final accessVerdict =
+        _componentVerdict(json['institutional_access_verdict']);
+    final evaluationDigest =
+        _componentVerdict(json['evaluation_digest_verdict']);
+    final sourceValuesDigest =
+        _componentVerdict(json['source_values_digest_verdict']);
+    final independenceDigest =
+        _componentVerdict(json['independence_digest_verdict']);
+    if (verdict == null ||
+        packetDigest == null ||
+        verdict != packetDigest ||
+        accessVerdict == null ||
+        evaluationDigest == null ||
+        sourceValuesDigest == null ||
+        independenceDigest == null) {
+      return null;
+    }
+    return ProcessAuditVerification(
+      verdict: verdict,
+      accessVerdict: accessVerdict,
+      packetDigest: packetDigest,
+      evaluationDigest: evaluationDigest,
+      sourceValuesDigest: sourceValuesDigest,
+      independenceDigest: independenceDigest,
+    );
+  }
 }
 
 class ProcessAuditDeclaredAccess {
@@ -242,8 +179,7 @@ class ProcessAuditDeclaredAccess {
         verdict: _text(json['verdict'], fallback: 'unknown'),
         coverageAssessment:
             _text(json['coverage_assessment'], fallback: 'unknown'),
-        reportedCoverageAssessment:
-            _text(json['reported_coverage_assessment']),
+        reportedCoverageAssessment: _text(json['reported_coverage_assessment']),
         limits: List.unmodifiable(_strings(json['limits'])),
       );
 }
@@ -269,8 +205,25 @@ class ProcessAuditSourcePointer {
       location: upload.locationFor(pointer),
     );
   }
-  String get preview =>
-      sourceValueText.length <= 96 ? sourceValueText : '${sourceValueText.substring(0, 96)}...';
+  String get preview => sourceValueText.length <= 96
+      ? sourceValueText
+      : '${sourceValueText.substring(0, 96)}...';
+}
+
+String? _assessmentForPacketVerdict(String verdict) {
+  if (verdict == 'MATCH') return 'packet-local-match';
+  if (verdict == 'DRIFT') return 'packet-local-drift';
+  return null;
+}
+
+String? _packetVerdict(Object? value) {
+  if (value == 'MATCH' || value == 'DRIFT') return value as String;
+  return null;
+}
+
+String? _componentVerdict(Object? value) {
+  const known = {'MATCH', 'DRIFT', 'NOT_ASSESSED', 'UNKNOWN', 'unknown'};
+  return value is String && known.contains(value) ? value : null;
 }
 
 Map<String, Object?> _map(Object? value) =>
@@ -284,7 +237,10 @@ List<Map<String, Object?>> _maps(Object? value) => value is List
     : const [];
 
 List<String> _strings(Object? value) => value is List
-    ? [for (final item in value) if (item != null) _displayValue(item)]
+    ? [
+        for (final item in value)
+          if (item != null) _displayValue(item)
+      ]
     : const [];
 
 String _text(Object? value, {String fallback = ''}) =>
