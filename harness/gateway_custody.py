@@ -21,6 +21,7 @@ PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
                     "/api/gateway-grants/", "/api/pm/",
                     "/api/enterprise-envs/",
                     "/api/lane/",
+                    "/api/import/inspect",
                     "/api/credential-handles", "/api/session-tokens",
                     "/api/bulletin-identity", "/api/operations/", "/api/hooks/")
 

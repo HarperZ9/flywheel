@@ -24,15 +24,15 @@ from pathlib import Path
 _GENESIS = "0" * 64
 
 
-def _db_path() -> Path:
-    home = os.environ.get("FLYWHEEL_HOME") or os.path.join(
+def _db_path(*, home: "str | os.PathLike[str] | None" = None) -> Path:
+    home = home or os.environ.get("FLYWHEEL_HOME") or os.path.join(
         os.path.expanduser("~"), ".flywheel")
     return Path(home) / "store.db"
 
 
 @contextmanager
-def _conn():
-    path = _db_path()
+def _conn(*, home: "str | os.PathLike[str] | None" = None):
+    path = _db_path(home=home)
     path.parent.mkdir(parents=True, exist_ok=True)
     c = sqlite3.connect(str(path), timeout=10)
     try:
@@ -76,7 +76,8 @@ def _append_audit(c: sqlite3.Connection, op: str, ref: str, sha: str) -> str:
 
 
 def put_entity(kind: str, data: dict, *, project: str = "",
-               eid: "str | None" = None) -> dict:
+               eid: "str | None" = None,
+               home: "str | os.PathLike[str] | None" = None) -> dict:
     """Store an entity. The receipt is its content hash; the same content
     under the same id re-derives the same hash."""
     kind = (kind or "").strip()
@@ -84,7 +85,7 @@ def put_entity(kind: str, data: dict, *, project: str = "",
         return {"error": "provide a non-empty 'kind'"}
     sha = _sha({"kind": kind, "project": project, "data": data})
     eid = (eid or sha[:24]).strip()
-    with _conn() as c:
+    with _conn(home=home) as c:
         c.execute("INSERT OR REPLACE INTO entities"
                   "(eid, kind, project, data, sha256, created) "
                   "VALUES(?,?,?,?,?,?)",
@@ -94,18 +95,36 @@ def put_entity(kind: str, data: dict, *, project: str = "",
     return {"eid": eid, "kind": kind, "sha256": sha, "chain_hash": chain}
 
 
-def get_entity(eid: str) -> "dict | None":
-    with _conn() as c:
+def get_entity(eid: str, *, home: "str | os.PathLike[str] | None" = None) -> "dict | None":
+    with _conn(home=home) as c:
         row = c.execute("SELECT eid, kind, project, data, sha256, created "
                         "FROM entities WHERE eid=?", (eid,)).fetchone()
+        chain = c.execute("SELECT chain_hash FROM audit WHERE op='put_entity' "
+                          "AND ref=? ORDER BY seq DESC LIMIT 1",
+                          (eid,)).fetchone()
     if not row:
         return None
     return {"eid": row[0], "kind": row[1], "project": row[2],
-            "data": json.loads(row[3]), "sha256": row[4], "created": row[5]}
+            "data": json.loads(row[3]), "sha256": row[4], "created": row[5],
+            "chain_hash": chain[0] if chain else ""}
+
+
+def latest_audit_for_ref(ref: str, *, home: "str | os.PathLike[str] | None" = None) -> "dict | None":
+    with _conn(home=home) as c:
+        row = c.execute("SELECT seq, op, ref, sha256, prev_hash, chain_hash "
+                        "FROM audit WHERE ref=? ORDER BY seq DESC LIMIT 1",
+                        (ref,)).fetchone()
+    if not row:
+        return None
+    expected = hashlib.sha256((row[4] + row[1] + row[2] + row[3]).encode()).hexdigest()
+    return {"seq": row[0], "op": row[1], "ref": row[2], "sha256": row[3],
+            "prev_hash": row[4], "chain_hash": row[5],
+            "chain_hash_ok": expected == row[5]}
 
 
 def query_entities(*, kind: "str | None" = None, project: "str | None" = None,
-                   limit: int = 200, offset: int = 0) -> list:
+                   limit: int = 200, offset: int = 0,
+                   home: "str | os.PathLike[str] | None" = None) -> list:
     clauses, params = [], []
     if kind:
         clauses.append("kind=?")
@@ -114,25 +133,28 @@ def query_entities(*, kind: "str | None" = None, project: "str | None" = None,
         clauses.append("project=?")
         params.append(project)
     where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
-    with _conn() as c:
+    with _conn(home=home) as c:
         rows = c.execute(
-            "SELECT eid, kind, project, sha256, created FROM entities" + where +
+            "SELECT eid, kind, project, sha256, created, "
+            "(SELECT chain_hash FROM audit WHERE op='put_entity' AND ref=entities.eid "
+            "ORDER BY seq DESC LIMIT 1) FROM entities" + where +
             " ORDER BY created DESC LIMIT ? OFFSET ?",
             params + [max(1, min(limit, 1000)), max(0, offset)]
         ).fetchall()
     return [{"eid": r[0], "kind": r[1], "project": r[2], "sha256": r[3],
-             "created": r[4]} for r in rows]
+             "created": r[4], "chain_hash": r[5] or ""} for r in rows]
 
 
 def query_all_entities(*, kind: "str | None" = None,
                        project: "str | None" = None,
-                       chunk: int = 500) -> list:
+                       chunk: int = 500,
+                       home: "str | os.PathLike[str] | None" = None) -> list:
     """Every matching entity, paged until exhausted, so a caller does not
     silently compute over only the newest page. Newest first."""
     out, offset = [], 0
     while True:
         page = query_entities(kind=kind, project=project, limit=chunk,
-                              offset=offset)
+                              offset=offset, home=home)
         out.extend(page)
         if len(page) < chunk:
             return out
@@ -170,10 +192,10 @@ def audit_tail(n: int = 50) -> list:
              "sha256": r[4], "chain_hash": r[5]} for r in rows]
 
 
-def verify_chain() -> dict:
+def verify_chain(*, home: "str | os.PathLike[str] | None" = None) -> dict:
     """Walk the audit ledger recomputing every chain hash. A tampered row or
     a deleted/inserted one breaks the recomputation at that seq."""
-    with _conn() as c:
+    with _conn(home=home) as c:
         rows = c.execute("SELECT seq, op, ref, sha256, prev_hash, chain_hash "
                          "FROM audit ORDER BY seq ASC").fetchall()
     prev = _GENESIS

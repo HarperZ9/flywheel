@@ -5,6 +5,7 @@ import 'plan_run_models.dart';
 export 'gateway_grant_summary.dart';
 
 part 'gateway_operation_internals.dart';
+part 'gateway_operation_inspect.dart';
 
 const gatewayOperationSchema = 'flywheel.gateway-operation/v1';
 final _credentialRef = RegExp(r'^cred_[0-9a-f]{32}$');
@@ -40,9 +41,8 @@ Object? _snapshot(Object? value, List<int> budget, int depth,
     return value;
   }
   if (value is List) {
-    return List.unmodifiable(
-        value.map((item) =>
-            _snapshot(item, budget, depth + 1, key: key, action: action)));
+    return List.unmodifiable(value.map((item) =>
+        _snapshot(item, budget, depth + 1, key: key, action: action)));
   }
   if (value is Map && value.keys.every((item) => item is String)) {
     final result = <String, Object?>{};
@@ -69,8 +69,8 @@ final class GatewayOperation {
 
   GatewayOperation._(this.action, this.clientRequestId, this.destination,
       this.tool, Map<String, Object?> raw)
-      : operation = _snapshot(raw, [4096], 0, action: action)
-            as Map<String, Object?>,
+      : operation =
+            _snapshot(raw, [4096], 0, action: action) as Map<String, Object?>,
         scopes = List<String>.unmodifiable(_scopes(action, raw)),
         dataRefs = List<String>.unmodifiable(raw['data_refs'] as List<String>),
         credentialRefs =
@@ -91,6 +91,7 @@ final class GatewayOperation {
     _validateBulletinOriginBinding(action, raw, destination);
     _validateAgentToolProtocol(action, raw);
     if (action == 'operation.cancel') _validateCancel(raw);
+    if (action == 'import.inspect') _validateImportInspect(raw, destination);
     if (action == 'plan.run') validatePlanRunOperation(raw);
   }
 
@@ -225,7 +226,11 @@ final class GatewayOperation {
   factory GatewayOperation._withRefs(String action, String request,
       GatewayDestination destination, String tool, Map<String, Object?> raw,
       {List<String>? dataRefs, List<String>? credentialRefs}) {
-    final data = _refs(raw, 'data_refs', dataRefs);
+    final inspectSha = action == 'import.inspect' ? _inspectSha256(raw) : null;
+    final inferredDataRefs = inspectSha == null
+        ? dataRefs
+        : dataRefs ?? ['data_inspect.source:${inspectSha.substring(0, 32)}'];
+    final data = _refs(raw, 'data_refs', inferredDataRefs);
     final credentials = _refs(raw, 'credential_refs', credentialRefs);
     return GatewayOperation._(action, request, destination, tool,
         {...raw, 'data_refs': data, 'credential_refs': credentials});
