@@ -6,6 +6,7 @@ credentials or external model calls. Output contains local evaluation metadata.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 from importlib.metadata import version
 import json
@@ -22,9 +23,9 @@ def main() -> int:
     args = parser.parse_args()
     from inspect_ai import Task, eval
     from inspect_ai.dataset import Sample
-    from inspect_ai.log import read_eval_log, write_eval_log
+    from inspect_ai.log import ProvenanceData, edit_score, read_eval_log, write_eval_log
     from inspect_ai.model import ModelOutput, get_model
-    from inspect_ai.scorer import match
+    from inspect_ai.scorer import ScoreEdit, match
     from inspect_ai.solver import generate
     from harness.inspect_evidence import import_inspect_log
     from harness.inspect_fixture_contract import INSPECT_VERSION
@@ -78,12 +79,46 @@ def main() -> int:
     assert invalidated_report['assessment'] == 'incomplete'
     assert invalidated_report['scoring_coverage']['coverage_complete'] is False
     assert {'json_pointer': '/invalidated', 'source_value': True} in invalidated_report['source_pointers']
+    edited_log = log.model_copy(deep=True)
+    provenance = ProvenanceData(
+        timestamp=datetime(2026, 9, 13, 15, 30, tzinfo=timezone.utc),
+        author='flywheel-acceptance',
+        reason='score edit provenance acceptance',
+    )
+    edit_score(edited_log, sample_id='correct', epoch=1, score_name='match',
+               edit=ScoreEdit(value='I', reason='manual_review',
+                              provenance=provenance))
+    edited_path = root / 'inspect-edited.json'
+    write_eval_log(edited_log, str(edited_path), format='json')
+    edited_report = import_inspect_log(edited_path.read_bytes())
+    edited_score = next(sample for sample in edited_report['samples']
+                        if sample['id'] == 'correct')['scores'][0]
+    assert edited_report['assessment'] == 'reported'
+    assert edited_score['value'] == 'I'
+    assert edited_score['score_history']['state'] == 'present'
+    assert edited_score['score_history']['events'][-1]['provenance'] == {
+        'timestamp': '2026-09-13T15:30:00Z',
+        'author': 'flywheel-acceptance',
+        'reason': 'score edit provenance acceptance',
+    }
+    edited_dump = json.dumps(edited_report, ensure_ascii=False)
+    assert 'four' not in edited_dump
+    assert '"answer":' not in edited_dump
+    assert '"explanation":' not in edited_dump
+    assert '"metadata":' not in edited_dump
+    edited_pointers = {
+        item['json_pointer']: item['source_value']
+        for item in edited_report['source_pointers']
+    }
+    assert edited_pointers['/samples/0/scores/match/history/1/provenance/author'] == 'flywheel-acceptance'
     (root / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     receipt = {'inspect_version': version('inspect-ai'),
                'source_sha256': hashlib.sha256(raw).hexdigest(),
                'reported_status': log.status, 'reported_scores': expected_scores,
                'epochs': args.epochs,
                'invalidated_control_assessment': invalidated_report['assessment'],
+               'score_edit_control_assessment': edited_report['assessment'],
+               'score_edit_history_state': edited_score['score_history']['state'],
                'semantic_verification': report['semantic_verification'],
                'does_not_prove': 'Model capability, independent scoring or governance compliance.'}
     (root / 'acceptance.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')

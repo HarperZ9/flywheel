@@ -34,6 +34,8 @@ class InspectEvidenceResultView extends StatelessWidget {
           ),
         if (report != null)
           VerdictPill(report.countsLabel, status: 'unverifiable'),
+        if (report != null)
+          VerdictPill(report.scoreHistory.label, status: 'unverifiable'),
         if (report?.invalidated == true)
           const VerdictPill('invalidated true', status: 'drift'),
         const VerdictPill('semantic UNVERIFIABLE', status: 'unverifiable'),
@@ -70,6 +72,7 @@ class InspectEvidenceResultView extends StatelessWidget {
               if (row.scorerName.isNotEmpty) row.scorerName,
               'reported ${row.reportedStatus}',
               'semantic UNVERIFIABLE',
+              if (row.scoreHistoryLabel.isNotEmpty) row.scoreHistoryLabel,
               row.preview,
             ].join(' · '),
             style: TextStyle(fontSize: 12, color: t.inkMuted),

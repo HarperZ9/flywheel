@@ -5,6 +5,8 @@ import 'inspect_evidence_upload.dart';
 export 'inspect_evidence_upload.dart';
 
 part 'inspect_evidence_list.dart';
+part 'inspect_evidence_rows.dart';
+part 'inspect_evidence_score_history.dart';
 
 final _sha256 = RegExp(r'^[0-9a-f]{64}$');
 
@@ -129,6 +131,7 @@ class InspectEvidenceReport {
   final bool invalidated;
   final bool? coverageComplete;
   final int? totalSamples, completedSamples, observedSamples;
+  final InspectScoreHistoryCoverage scoreHistory;
   final List<InspectEvidenceRow> rows;
 
   const InspectEvidenceReport._({
@@ -141,6 +144,7 @@ class InspectEvidenceReport {
     required this.totalSamples,
     required this.completedSamples,
     required this.observedSamples,
+    required this.scoreHistory,
     required this.rows,
   });
 
@@ -160,6 +164,15 @@ class InspectEvidenceReport {
     }
     final counts = _map(json['counts']);
     final coverage = _map(json['scoring_coverage']);
+    final rows = _evidenceRows(json);
+    final scoreHistory = coverage.containsKey('score_history')
+        ? InspectScoreHistoryCoverage.tryFromJson(coverage['score_history'])
+        : InspectScoreHistoryCoverage.unknown;
+    if (scoreHistory == null ||
+        rows.any((row) => row.scoreHistoryInvalid) ||
+        !scoreHistory.matches(rows)) {
+      return null;
+    }
     return InspectEvidenceReport._(
       reportedStatus: status,
       assessment: assessment,
@@ -172,7 +185,8 @@ class InspectEvidenceReport {
       totalSamples: _intOrNull(counts['total_samples']),
       completedSamples: _intOrNull(counts['completed_samples']),
       observedSamples: _intOrNull(counts['observed_samples']),
-      rows: _evidenceRows(json),
+      scoreHistory: scoreHistory,
+      rows: rows,
     );
   }
 
@@ -183,69 +197,6 @@ class InspectEvidenceReport {
     return 'samples $observed/$total · completed $completed';
   }
 }
-
-class InspectEvidenceRow {
-  final String pointer, sampleId, scorerName, reportedStatus, sourceValueText;
-  final String scoreValueText;
-  final List<String> errors;
-  const InspectEvidenceRow({
-    required this.pointer,
-    required this.sampleId,
-    required this.scorerName,
-    required this.reportedStatus,
-    required this.sourceValueText,
-    required this.scoreValueText,
-    required this.errors,
-  });
-  String get label =>
-      pointer.isNotEmpty ? pointer : [sampleId, scorerName].join(' ').trim();
-  String get preview {
-    if (sourceValueText.isEmpty) return 'no source value reported';
-    if (sourceValueText.length <= 96) return sourceValueText;
-    return '${sourceValueText.substring(0, 96)}... '
-        '(open for full ${sourceValueText.length} chars)';
-  }
-}
-
-List<InspectEvidenceRow> _evidenceRows(Map<String, Object?> report) {
-  final rows = <InspectEvidenceRow>[];
-  for (final item in _maps(report['source_pointers'])) {
-    rows.add(_row(item));
-  }
-  for (final sample in _maps(report['samples'])) {
-    final scores = _maps(sample['scores']);
-    if (scores.isEmpty) rows.add(_row(sample));
-    for (final score in scores) {
-      rows.add(_row({...sample, ...score}));
-    }
-  }
-  return List.unmodifiable(rows);
-}
-
-InspectEvidenceRow _row(Map<String, Object?> json) => InspectEvidenceRow(
-      pointer: _text(json['json_pointer'] ??
-          json['pointer'] ??
-          json['source_pointer'] ??
-          json['path']),
-      sampleId: _text(json['sample_id'] ?? json['id']),
-      scorerName: _text(json['scorer'] ??
-          json['scorer_name'] ??
-          json['score_name'] ??
-          json['name']),
-      reportedStatus: _text(
-        json['reported_status'] ?? json['status'],
-        fallback: 'reported',
-      ),
-      sourceValueText: json.containsKey('source_value')
-          ? _displayValue(json['source_value'])
-          : '',
-      scoreValueText: json.containsKey('score_value')
-          ? _displayValue(json['score_value'])
-          : json.containsKey('value')
-              ? _displayValue(json['value'])
-              : '',
-      errors: _strings(json['errors'] ?? json['error']),
-    );
 
 Map<String, Object?> _map(Object? value) =>
     value is Map ? Map<String, Object?>.from(value) : <String, Object?>{};
