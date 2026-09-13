@@ -54,8 +54,10 @@ void main() {
     expect(find.text('SEMANTIC UNVERIFIABLE'), findsOneWidget);
     expect(find.textContaining('Declared access coverage not assessed'),
         findsOneWidget);
-    expect(find.text('/source_values/target_state'), findsOneWidget);
-    await tester.tap(find.text('/source_values/target_state'));
+    final pointer = find.text('/source_values/target_state');
+    expect(pointer, findsOneWidget);
+    await tester.ensureVisible(pointer);
+    await tester.tap(pointer);
     await tester.pumpAndSettle();
     expect(find.text('closed'), findsWidgets);
     expect(find.textContaining('line 1'), findsWidgets);
@@ -97,18 +99,23 @@ void main() {
     expect(find.textContaining('Declared access coverage unknown'),
         findsOneWidget);
     expect(find.textContaining('Reported coverage complete'), findsOneWidget);
-    expect(find.textContaining('reported coverage is untrusted'), findsOneWidget);
+    expect(
+        find.textContaining('reported coverage is untrusted'), findsOneWidget);
   });
 
   testWidgets('empty and malformed selections fail closed', (tester) async {
+    var calls = 0;
     final client = GatewayClient(
-      httpClient: MockClient((_) async => http.Response(
-            jsonEncode({
-              'schema': 'flywheel.evidence-transport-error/v1',
-              'error': {'code': 'INVALID_JSON', 'message': 'strict JSON only'},
-            }),
-            400,
-          )),
+      httpClient: MockClient((_) async {
+        calls += 1;
+        return http.Response(
+          jsonEncode({
+            'schema': 'flywheel.evidence-transport-error/v1',
+            'error': {'code': 'INVALID_JSON', 'message': 'strict JSON only'},
+          }),
+          400,
+        );
+      }),
     );
 
     await tester.pumpWidget(_wrap(ProcessAuditReviewPanel(
@@ -126,10 +133,13 @@ void main() {
     )));
     await tester.tap(find.text('Select process-audit JSON'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Review packet'));
-    await tester.pumpAndSettle();
     expect(find.textContaining('INVALID_JSON'), findsOneWidget);
     expect(find.text('PACKET INTEGRITY MATCH'), findsNothing);
+    expect(calls, 0);
+    final reviewButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Review packet'),
+    );
+    expect(reviewButton.onPressed, isNull);
   });
 }
 
@@ -154,7 +164,8 @@ Map<String, Object?> _body(
         'schema': 'flywheel.incident-sim-process-audit-verification/v1',
         'verdict': assessment.endsWith('match') ? 'MATCH' : 'DRIFT',
         'institutional_access_verdict': declaredVerdict,
-        'packet_digest_verdict': assessment.endsWith('match') ? 'MATCH' : 'DRIFT',
+        'packet_digest_verdict':
+            assessment.endsWith('match') ? 'MATCH' : 'DRIFT',
         'evaluation_digest_verdict': 'MATCH',
         'source_values_digest_verdict': 'MATCH',
         'independence_digest_verdict': 'MATCH',
@@ -172,7 +183,10 @@ Map<String, Object?> _body(
         ],
       },
       'source_pointers': [
-        {'json_pointer': '/source_values/target_state', 'source_value': 'closed'},
+        {
+          'json_pointer': '/source_values/target_state',
+          'source_value': 'closed'
+        },
       ],
       'does_not_prove': ['semantic correctness or actual lab access'],
     };

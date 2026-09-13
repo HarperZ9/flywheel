@@ -6,26 +6,59 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/models/process_audit_review.dart';
 
 void main() {
-  test('upload detects an outer command report and sends only audit_packet', () {
-    final packet = {
-      'schema': 'flywheel.incident-sim-process-audit/v1',
-      'source_values': {'target_state': 'closed'},
-    };
-    final outer = {
-      'schema': 'flywheel.incident-sim-command/v1',
-      'audit_packet': packet,
-    };
+  test('upload detects an outer command report and sends exact audit_packet',
+      () {
+    const inner = '{\n'
+        '  "schema" : "flywheel.incident-sim-process-audit/v1",\n'
+        '  "source_values" : {"target_state" : "closed"}\n'
+        '}';
+    final outer = Uint8List.fromList(utf8.encode(
+      '{"schema":"flywheel.incident-sim-command/v1",'
+      '"audit_packet":$inner,"tail":1}',
+    ));
 
     final upload = ProcessAuditPacketUpload.fromPickedBytes(
-      Uint8List.fromList(utf8.encode(jsonEncode(outer))),
+      outer,
       filename: 'command.json',
     );
 
     expect(upload.detectedFormat, 'outer-command-report');
-    expect(utf8.decode(upload.bytes), jsonEncode(packet));
+    expect(utf8.decode(upload.bytes), inner);
+    expect(upload.byteLength, utf8.encode(inner).length);
     expect(upload.filename, 'command.json');
-    expect(upload.locationFor('/source_values/target_state')?.line, 1);
-    expect(upload.locationFor('/source_values/target_state')?.context, '"closed"');
+    expect(
+        upload.locationFor('/source_values/target_state')?.context, '"closed"');
+    expect(upload.locationFor('/source_values/target_state')?.line, 3);
+  });
+
+  test('upload rejects duplicate keys before JSON maps can collapse them', () {
+    const schema = 'flywheel.incident-sim-process-audit/v1';
+    final nestedDuplicate = Uint8List.fromList(utf8.encode(
+      '{"audit_packet":{"schema":"$schema","schema":"$schema"}}',
+    ));
+    final wrapperDuplicate = Uint8List.fromList(utf8.encode(
+      '{"audit_packet":{"schema":"$schema"},'
+      '"audit_packet":{"schema":"$schema"}}',
+    ));
+
+    void expectDuplicate(Uint8List bytes) => expect(
+          () => ProcessAuditPacketUpload.fromPickedBytes(bytes),
+          throwsA(isA<ProcessAuditReviewException>()
+              .having((error) => error.code, 'code', 'DUPLICATE_KEYS')),
+        );
+
+    expectDuplicate(nestedDuplicate);
+    expectDuplicate(wrapperDuplicate);
+  });
+
+  test('upload bounds selected bytes before UTF-8 or JSON decoding', () {
+    expect(
+      () => ProcessAuditPacketUpload.fromPickedBytes(
+        Uint8List(maxProcessAuditPacketBytes + 1),
+      ),
+      throwsA(isA<ProcessAuditReviewException>()
+          .having((error) => error.code, 'code', 'PAYLOAD_TOO_LARGE')),
+    );
   });
 
   test('review result separates packet integrity from declared access coverage',
@@ -78,4 +111,46 @@ void main() {
     expect(result.sourcePointers.single.location?.offset, isNonNegative);
     expect(result.sourcePointers.single.sourceValueText, 'closed');
   });
+
+  test('review result rejects missing or inconsistent verification', () {
+    final upload = ProcessAuditPacketUpload.fromPickedBytes(
+      Uint8List.fromList(utf8.encode(
+        '{"schema":"flywheel.incident-sim-process-audit/v1"}',
+      )),
+    );
+    final missing = _reviewBody(upload)..remove('verification');
+    final inconsistent = _reviewBody(upload);
+    (inconsistent['verification']! as Map<String, Object?>)['verdict'] =
+        'DRIFT';
+
+    expect(
+      ProcessAuditReviewResult.fromJson(missing, upload).errorCode,
+      'INVALID_RESPONSE',
+    );
+    expect(
+      ProcessAuditReviewResult.fromJson(inconsistent, upload).errorCode,
+      'INVALID_RESPONSE',
+    );
+  });
 }
+
+Map<String, Object?> _reviewBody(ProcessAuditPacketUpload upload) => {
+      'schema': ProcessAuditReviewResult.schemaName,
+      'source': {
+        'format': 'incident-sim-process-audit-json',
+        'sha256': upload.sha256,
+        'byte_length': upload.byteLength,
+      },
+      'assessment': 'packet-local-match',
+      'verification': {
+        'verdict': 'MATCH',
+        'institutional_access_verdict': 'NOT_ASSESSED',
+        'packet_digest_verdict': 'MATCH',
+        'evaluation_digest_verdict': 'MATCH',
+        'source_values_digest_verdict': 'MATCH',
+        'independence_digest_verdict': 'MATCH',
+      },
+      'declared_access': {'verdict': 'NOT_ASSESSED'},
+      'source_pointers': const [],
+      'does_not_prove': const [],
+    };
