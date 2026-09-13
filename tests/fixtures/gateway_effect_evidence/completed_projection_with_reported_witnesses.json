@@ -1,0 +1,75 @@
+{
+  "does_not_prove": [
+    "NOT_SEMANTIC_TRUTH",
+    "NOT_UNLIMITED_TOOL_OUTPUT",
+    "ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED"
+  ],
+  "effect_evidence": {
+    "action_witness": {
+      "count": 2,
+      "head_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "json_pointer": "/payload/action_witness",
+      "kind": "reported_action_witness_summary",
+      "payload_kind": "result",
+      "record_kind": "result",
+      "record_sha256": "106d1a46241293149967e8a275391063a5fbe1594facde267de9a7e38290ee97",
+      "status": "present",
+      "trace_sequence": 0,
+      "value_sha256": "2af43da6c3d2f011596577d06fa9be550219f003558985213d785a03ab67d06a"
+    },
+    "basis": {
+      "record_count": 1,
+      "terminal_basis_event_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "terminal_basis_event_type": "operation_started",
+      "terminal_state": "completed",
+      "trace_head_sha256": "106d1a46241293149967e8a275391063a5fbe1594facde267de9a7e38290ee97",
+      "trace_ref": "agt_3e2197a3f63109a97f701d387b758689"
+    },
+    "does_not_prove": [
+      "semantic correctness",
+      "complete workstation observation",
+      "current filesystem state",
+      "absence of effects outside the accepted trace prefix",
+      "rollback or remote cancellation"
+    ],
+    "known_observation_count": 0,
+    "known_observations": [],
+    "known_observations_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "known_observations_omitted": 0,
+    "schema": "flywheel.gateway-effect-evidence/v1",
+    "scope": "owner_private_trace_prefix",
+    "tool_call_receipts": {
+      "chain_head_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "count": 3,
+      "json_pointer": "/payload/tool_call_receipts",
+      "kind": "reported_tool_call_receipts_summary",
+      "payload_kind": "result",
+      "record_kind": "result",
+      "record_sha256": "106d1a46241293149967e8a275391063a5fbe1594facde267de9a7e38290ee97",
+      "status": "present",
+      "trace_sequence": 0,
+      "value_sha256": "b051b68e5b2468b6a8f2e13d715f16403c148dfa4c22ff0e31dfaa8239c029fe"
+    },
+    "unknown_effect_scope": [
+      "NOT_ROLLBACK",
+      "NOT_EFFECT_ABSENCE",
+      "NOT_CURRENT_FILESYSTEM_STATE",
+      "UNRECORDED_ACTIONS_NOT_EXCLUDED",
+      "TOOLS_WITHOUT_POST_EFFECT_FINGERPRINTS_REMAIN_UNKNOWN",
+      "EFFECTS_AFTER_TRACE_HEAD_REMAIN_UNKNOWN"
+    ]
+  },
+  "journey_ref": "jrn_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "omissions": [
+    "PRIVATE_CONTENT",
+    "CREDENTIAL_VALUES",
+    "UPSTREAM_OUTPUT_LIMITS"
+  ],
+  "operation_ref": "op_cccccccccccccccccccccccccccccccc",
+  "projection_sha256": "d0a57769e758f7d1902cda4e18d9c6e5cda16a9840052de83b6338673ffb5ec9",
+  "record_count": 1,
+  "schema": "flywheel.gateway-agent-projection/v1",
+  "state": "completed",
+  "trace_head_sha256": "106d1a46241293149967e8a275391063a5fbe1594facde267de9a7e38290ee97",
+  "trace_ref": "agt_3e2197a3f63109a97f701d387b758689"
+}

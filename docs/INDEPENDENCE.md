@@ -14,11 +14,18 @@ those differences through import, evaluation, and publication.
 | Inspect scorer values | Selected values are copied with exact JSON pointers | What the source log reports | Independent semantic verification; reports explicitly retain `UNVERIFIABLE` |
 | Existing envelope rewitness | `harness/witness.py` reruns the envelope's oracle command and compares its canonical output hash | Reproduction of that oracle's recorded result in the rerun environment | A separately implemented checker or independent ground truth; the same defective oracle can reproduce the same error |
 | Tool-call receipt chain | `harness/tool_call_receipt.py` binds reported arguments/output digests, admission, outcome and chain links | Integrity of the sealed record under its verification rules | A complete observation of the workstation, unrecorded actions, or correctness of the task result |
+| Terminal effect evidence | `harness/gateway_effect_binding.py` recomputes observations from the accepted private trace and binds them to the terminal operation and Journey | Which recognized post-tool fingerprints the retained trace contains; authorized reviewers can inspect their exact source values | Rollback, current filesystem state, unrecorded effects, independent producer authentication, or semantic correctness |
 
 The Inspect importer does not execute commands, import scorers, call a model, or
 rerun an evaluation from a log. A command embedded in a source log is data.
 Its `assessment: reported` and exit code zero describe the import, not approval
 of the model or score. See [Inspect evidence import](INSPECT-EVIDENCE.md).
+
+The existing private trace viewer presents terminal effect evidence beside its
+source records. A cancelled run can retain observed effects, and a legacy result
+without the optional summary does not establish zero effects. See
+[Gateway effect evidence](GATEWAY-EFFECT-EVIDENCE.md) for the record contract and
+the separate trusted checkpoint required for a continuity claim.
 
 ## Independence must name a boundary
 
