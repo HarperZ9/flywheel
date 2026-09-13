@@ -32,6 +32,7 @@ TOKEN_NAME = "gateway.token"
 DOES_NOT_PROVE = [
     "full installer execution unless a release runner attaches that receipt",
     "native UI rendering or CUA-observed user journey",
+    "desktop file-picker behavior; Inspect acceptance uses backend API upload",
     "provider OAuth success",
     "model endpoint readiness or quality",
     "Relay worker readiness until separately checked",
@@ -61,6 +62,8 @@ class HarnessConfig:
     before_receipt: Path | None = None
     after_receipt: Path | None = None
     port: int = 0
+    inspect_import: bool = False
+    inspect_fixture: Path | None = None
 
 
 @dataclass
@@ -125,6 +128,10 @@ class NullHttpClient:
         return 0, {"error": "not_started"}
 
     def post_json(self, url: str, payload: Any, token: str | None = None, timeout: float = 2.0):
+        return 0, {"error": "not_started"}
+
+    def post_bytes(self, url: str, raw: bytes, headers: Mapping[str, str],
+                   token: str | None = None, timeout: float = 20.0):
         return 0, {"error": "not_started"}
 
 

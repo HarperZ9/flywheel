@@ -19,6 +19,7 @@ try:
         display_path, full_path, inside, read_json, redact_token_body,
         reserve_port, same_path, sha256_file, status_state,
     )
+    from .installed_launch_inspect import inspect_after_restart, inspect_before_restart, inspect_not_checked
 except ImportError:
     from installed_launch_acceptance_contract import (  # type: ignore
         completion_from_rows, evaluate_build_binding, phase_results,
@@ -30,7 +31,7 @@ except ImportError:
         display_path, full_path, inside, read_json, redact_token_body,
         reserve_port, same_path, sha256_file, status_state,
     )
-
+    from installed_launch_inspect import inspect_after_restart, inspect_before_restart, inspect_not_checked  # type: ignore
 class AcceptanceHarness:
     def __init__(self, config: HarnessConfig, *, fs, windows, http, process, clock=None):
         self.c = config
@@ -42,7 +43,6 @@ class AcceptanceHarness:
         self.rows: list[dict] = []
         self.artifacts: dict[str, Any] = {"app_id": APP_ID}
         self.installed_version = ""
-
     def run(self) -> dict:
         started = self.clock.now()
         run_id = self.c.run_id or "installed_launch_" + uuid.uuid4().hex
@@ -54,16 +54,15 @@ class AcceptanceHarness:
         engine_ok = self._file_row("H02_engine_exe_exists_under_install_root", engine, "installed engine exe")
         self._payload_files(root)
         self._metadata(app)
+        inspect_rows = False
         if self.c.start_engine and engine_ok:
-            self._engine(engine, root, run_id)
+            inspect_rows = self._engine(engine, root, run_id)
         else:
-            severity = "critical" if self.c.mode in ("engine", "full") else "info"
-            for aid in ("H08_port_precheck_refuses_foreign_gateway", "H09_installed_engine_owned_start",
-                        "H10_desktop_status_schema_required", "H11_token_used_but_redacted",
-                        "H12_owned_process_cleanup_no_survivors", "H13_hidden_gateway_visible_window_count_when_observer_available",
-                        "H14_journey_read_only_availability_or_typed_unavailable",
-                        "H15_offline_to_ready_status_transition", "H16_restart_same_isolated_profile"):
-                self._add(aid, "NOT_CHECKED", "info" if aid.endswith("observer_available") else severity)
+            self._add("H08_port_precheck_refuses_foreign_gateway", "NOT_CHECKED",
+                      "critical" if self.c.mode in ("engine", "full", "inspect") else "info")
+            self._mark_engine_rows_not_checked()
+        if not inspect_rows:
+            inspect_not_checked(self)
         self._upgrade()
         self._add("H18_known_unavailable_lanes_not_live", "PASS", "info",
                   observed={"planned_lanes_count_as_live": False})
@@ -91,7 +90,6 @@ class AcceptanceHarness:
         self.c.out.parent.mkdir(parents=True, exist_ok=True)
         self.c.out.write_text(json.dumps(receipt, indent=2, sort_keys=True), encoding="utf-8")
         return receipt
-
     def _file_row(self, aid: str, path: Path, label: str) -> bool:
         ok = inside(path, self.c.install_root) and self.fs.is_file(path)
         observed = {"path": self._path(path), "exists": ok,
@@ -100,7 +98,6 @@ class AcceptanceHarness:
             observed["sha256"] = sha256_file(path)
         self._add(aid, "PASS" if ok else "FAIL", expected=label, observed=observed)
         return ok
-
     def _payload_files(self, root: Path):
         names = ["flutter_windows.dll", "data", "msvcp140.dll",
                  "vcruntime140.dll", "vcruntime140_1.dll"]
@@ -112,7 +109,6 @@ class AcceptanceHarness:
         self._add("H03_installer_payload_files_when_expected",
                   "PASS" if all(present.values()) else "FAIL",
                   observed=present, expected="Flutter bundle and CRT payload files")
-
     def _source_bound(self, app: Path | None, engine: Path | None):
         app_sha = sha256_file(app) if app else ""
         engine_sha = sha256_file(engine) if engine else ""
@@ -131,7 +127,6 @@ class AcceptanceHarness:
         self._add("H20_receipt_fresh_complete_and_source_bound", "PASS" if ok else "FAIL",
                   expected="operator manifest binds source, version, app hash, engine hash, and installed version",
                   observed=observed)
-
     def _metadata(self, app: Path):
         crit = "critical" if self.c.mode in ("metadata", "full") else "info"
         shortcuts = self.windows.start_menu_shortcuts()
@@ -180,8 +175,8 @@ class AcceptanceHarness:
             self._add("H15_offline_to_ready_status_transition", "FAIL",
                       observed={"pre_start_status": "not_foreign", "post_start_typed": False})
             self._add("H16_restart_same_isolated_profile", "NOT_CHECKED",
-                      "critical" if self.c.mode == "full" else "info")
-            return
+                      "critical" if self.c.mode in ("full", "inspect") else "info")
+            return False
         owned = handle.pid in self.process.listener_pids(port)
         self._add("H09_installed_engine_owned_start", "PASS" if owned else "FAIL",
                   observed={"pid": handle.pid, "listener_owned": owned,
@@ -193,6 +188,8 @@ class AcceptanceHarness:
         self._add("H11_token_used_but_redacted", "PASS" if token else "AUTH_TOKEN_UNAVAILABLE",
                   observed={"token_present": bool(token), "source": "isolated_flywheel_home"})
         status_ok = self._status(port, token)
+        inspect_attempted = bool(getattr(self.c, "inspect_import", False))
+        inspect_ctx = inspect_before_restart(self, port, token, env) if inspect_attempted else None
         self._journey(port, token) if self.c.mode == "full" else self._add(
             "H14_journey_read_only_availability_or_typed_unavailable", "NOT_CHECKED", "info")
         cleanup = self.process.cleanup(handle, port)
@@ -210,9 +207,10 @@ class AcceptanceHarness:
                   observed=cleanup_observed)
         self._add("H15_offline_to_ready_status_transition", "PASS" if status_ok else "FAIL",
                   observed={"pre_start_status": "not_foreign", "post_start_typed": status_ok})
-        if self.c.mode == "full":
+        if self.c.mode in ("full", "inspect"):
             handle2 = self.process.start_engine(engine, args, env, engine.parent, stdout, stderr)
             second = False if getattr(handle2, "job_error", "") else self._status(port, token, row=False)
+            inspect_after_restart(self, port, token, inspect_ctx)
             self.process.cleanup(handle2, port)
             self._add("H16_restart_same_isolated_profile", "PASS" if second else "FAIL",
                       observed={"same_flywheel_home": self._path(token_path.parent),
@@ -220,6 +218,7 @@ class AcceptanceHarness:
                                 "job_error": getattr(handle2, "job_error", "")})
         else:
             self._add("H16_restart_same_isolated_profile", "NOT_CHECKED", "info")
+        return inspect_attempted
     def _status(self, port: int, token: str | None, row: bool = True) -> bool:
         code, body = self.http.get_json(f"http://127.0.0.1:{port}/api/desktop/status", token)
         state, ok = status_state(code, body, self.c.expected_api_version)
@@ -256,7 +255,7 @@ class AcceptanceHarness:
         severity = "critical" if self.c.before_receipt and self.c.after_receipt else "info"
         self._add("H17_upgrade_before_after_snapshot_compare", state, severity, observed=observed)
     def _mark_engine_rows_not_checked(self):
-        severity = "critical" if self.c.mode in ("engine", "full") else "info"
+        severity = "critical" if self.c.mode in ("engine", "full", "inspect") else "info"
         for aid in ("H09_installed_engine_owned_start", "H10_desktop_status_schema_required",
                     "H11_token_used_but_redacted", "H12_owned_process_cleanup_no_survivors",
                     "H13_hidden_gateway_visible_window_count_when_observer_available",
