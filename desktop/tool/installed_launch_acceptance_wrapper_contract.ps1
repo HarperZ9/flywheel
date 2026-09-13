@@ -4,7 +4,10 @@ $assertionIds = @(
   "H05_desktop_shortcut_optional_or_targets_app_exe", "H06_uninstall_registry_appid_singleton_or_access_denied", "H07_protocol_registration_supported_or_explicit_unsupported", "H08_port_precheck_refuses_foreign_gateway",
   "H09_installed_engine_owned_start", "H10_desktop_status_schema_required", "H11_token_used_but_redacted", "H12_owned_process_cleanup_no_survivors",
   "H13_hidden_gateway_visible_window_count_when_observer_available", "H14_journey_read_only_availability_or_typed_unavailable", "H15_offline_to_ready_status_transition", "H16_restart_same_isolated_profile",
-  "H17_upgrade_before_after_snapshot_compare", "H18_known_unavailable_lanes_not_live", "H19_standalone_cli_separated_from_installed_engine", "H20_receipt_fresh_complete_and_source_bound"
+  "H17_upgrade_before_after_snapshot_compare", "H18_known_unavailable_lanes_not_live", "H19_standalone_cli_separated_from_installed_engine", "H20_receipt_fresh_complete_and_source_bound",
+  "H21_inspect_fixture_hash_bound", "H22_inspect_journey_seeded_in_isolated_profile", "H23_inspect_grant_prepare_approve_bound_to_upload", "H24_inspect_upload_exact_bytes_accepted",
+  "H25_inspect_false_success_controls_rejected", "H26_inspect_reopen_after_engine_restart_matches_upload", "H27_inspect_list_redacts_report_and_names_eid", "H28_inspect_store_tamper_detected",
+  "H29_inspect_api_receipt_does_not_claim_desktop_ui"
 )
 $phaseAssertions = [ordered]@{
   "P0_payload_manifest_preflight" = @("H01_app_exe_exists", "H02_engine_exe_exists_under_install_root", "H03_installer_payload_files_when_expected", "H20_receipt_fresh_complete_and_source_bound")
@@ -14,12 +17,14 @@ $phaseAssertions = [ordered]@{
   "P4_restart_and_recovery_snapshot" = @("H16_restart_same_isolated_profile")
   "P5_upgrade_snapshot_compare" = @("H17_upgrade_before_after_snapshot_compare")
   "P6_explicit_unavailable_lanes" = @("H18_known_unavailable_lanes_not_live", "H19_standalone_cli_separated_from_installed_engine")
+  "P7_installed_inspect_import_reopen_api" = @("H21_inspect_fixture_hash_bound", "H22_inspect_journey_seeded_in_isolated_profile", "H23_inspect_grant_prepare_approve_bound_to_upload", "H24_inspect_upload_exact_bytes_accepted", "H25_inspect_false_success_controls_rejected", "H26_inspect_reopen_after_engine_restart_matches_upload", "H27_inspect_list_redacts_report_and_names_eid", "H28_inspect_store_tamper_detected", "H29_inspect_api_receipt_does_not_claim_desktop_ui")
 }
 $modeRequired = @{
   "preflight" = @("H01_app_exe_exists", "H02_engine_exe_exists_under_install_root", "H20_receipt_fresh_complete_and_source_bound")
   "metadata" = @("H01_app_exe_exists", "H02_engine_exe_exists_under_install_root", "H04_start_menu_shortcut_targets_app_exe", "H06_uninstall_registry_appid_singleton_or_access_denied", "H20_receipt_fresh_complete_and_source_bound")
   "engine" = @("H01_app_exe_exists", "H02_engine_exe_exists_under_install_root", "H08_port_precheck_refuses_foreign_gateway", "H09_installed_engine_owned_start", "H10_desktop_status_schema_required", "H11_token_used_but_redacted", "H12_owned_process_cleanup_no_survivors", "H15_offline_to_ready_status_transition", "H20_receipt_fresh_complete_and_source_bound")
   "full" = @("H01_app_exe_exists", "H02_engine_exe_exists_under_install_root", "H04_start_menu_shortcut_targets_app_exe", "H06_uninstall_registry_appid_singleton_or_access_denied", "H08_port_precheck_refuses_foreign_gateway", "H09_installed_engine_owned_start", "H10_desktop_status_schema_required", "H11_token_used_but_redacted", "H12_owned_process_cleanup_no_survivors", "H14_journey_read_only_availability_or_typed_unavailable", "H15_offline_to_ready_status_transition", "H16_restart_same_isolated_profile", "H20_receipt_fresh_complete_and_source_bound")
+  "inspect" = @("H01_app_exe_exists", "H02_engine_exe_exists_under_install_root", "H08_port_precheck_refuses_foreign_gateway", "H09_installed_engine_owned_start", "H10_desktop_status_schema_required", "H11_token_used_but_redacted", "H12_owned_process_cleanup_no_survivors", "H15_offline_to_ready_status_transition", "H16_restart_same_isolated_profile", "H20_receipt_fresh_complete_and_source_bound", "H21_inspect_fixture_hash_bound", "H22_inspect_journey_seeded_in_isolated_profile", "H23_inspect_grant_prepare_approve_bound_to_upload", "H24_inspect_upload_exact_bytes_accepted", "H25_inspect_false_success_controls_rejected", "H26_inspect_reopen_after_engine_restart_matches_upload", "H27_inspect_list_redacts_report_and_names_eid", "H28_inspect_store_tamper_detected", "H29_inspect_api_receipt_does_not_claim_desktop_ui")
 }
 $validStates = @("PASS", "FAIL", "NOT_CHECKED", "UNTESTED", "UNSUPPORTED", "SKIP", "ACCESS_DENIED", "UNAVAILABLE", "READY_EMPTY", "UPGRADE_NOT_CHECKED", "PORT_OCCUPIED_PRECHECK", "AUTH_TOKEN_UNAVAILABLE", "STATUS_CONTRACT_MISSING", "STATUS_SCHEMA_INVALID", "STATUS_VERSION_MISMATCH", "JOURNEY_SCHEMA_INVALID")
 
@@ -110,8 +115,9 @@ function Invoke-SelfTest {
   Run-Case "zero-exit-malformed-receipt" $false { param($p) Set-Content -LiteralPath $p -Encoding UTF8 -Value "{" }
   Run-Case "zero-exit-incomplete-receipt" $false { param($p) $copy = $valid.Clone(); $copy.complete = $false; Write-JsonFile $p $copy }
   Run-Case "zero-exit-missing-h20" $false { param($p) $copy = Copy-Receipt $valid; $copy.assertions = @($copy.assertions | Where-Object { $_.id -ne "H20_receipt_fresh_complete_and_source_bound" }); Write-JsonFile $p $copy }
-  Run-Case "zero-exit-duplicate-h20" $false { param($p) $copy = Copy-Receipt $valid; $copy.assertions += @($copy.assertions[-1]); Write-JsonFile $p $copy }
-  Run-Case "zero-exit-missing-phase" $false { param($p) $copy = Copy-Receipt $valid; $copy.phase_results = @($copy.phase_results | Select-Object -First 6); Write-JsonFile $p $copy }
+  Run-Case "zero-exit-duplicate-h20" $false { param($p) $copy = Copy-Receipt $valid; $copy.assertions += @($copy.assertions | Where-Object { $_.id -eq "H20_receipt_fresh_complete_and_source_bound" } | Select-Object -First 1); Write-JsonFile $p $copy }
+  Run-Case "zero-exit-missing-inspect-api-label" $false { param($p) $copy = Copy-Receipt $valid; $copy.assertions = @($copy.assertions | Where-Object { $_.id -ne "H29_inspect_api_receipt_does_not_claim_desktop_ui" }); Write-JsonFile $p $copy }
+  Run-Case "zero-exit-missing-phase" $false { param($p) $copy = Copy-Receipt $valid; $copy.phase_results = @($copy.phase_results | Select-Object -First 7); Write-JsonFile $p $copy }
   Run-Case "zero-exit-critical-untested" $false { param($p) $copy = Copy-Receipt $valid; $copy.assertions[0].state = "UNTESTED"; Write-JsonFile $p $copy }
   Run-Case "zero-exit-nonobject-assertion-row" $false { param($p) $copy = Copy-Receipt $valid; $copy.assertions[0] = "bad-row"; Write-JsonFile $p $copy }
   Run-Case "zero-exit-list-assertion-id" $false { param($p) $copy = Copy-Receipt $valid; $copy.assertions[0].id = @("H01", "H02"); Write-JsonFile $p $copy }
