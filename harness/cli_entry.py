@@ -45,9 +45,6 @@ def find_repo_root() -> Path:
         "could not locate the flywheel repo root; set FLYWHEEL_REPO to the "
         "checkout containing scripts/run_harness_cli.py and harness/"
     )
-
-
-
 def _parse_lane_args(argv: list[str]) -> tuple[str, str]:
     """Parse --lanes <list|all> and --profile <source|package> from argv.
     Defaults: all lanes, package profile."""
@@ -223,6 +220,8 @@ _PACKAGED = {"acp": "harness.acp_cli", "dap": "harness.dap_cli",
              "evidence": "harness.evidence_cli", "import-norvane": "harness.norvane_capture_cli",
              "bulletin-identity": "harness.bulletin_identity_cli",
              "check-output": "harness.output_check_cli",
+             "import-inspect": "harness.inspect_evidence_cli",
+             "incident-sim": "harness.incident_sim_cli",
              "cross-harness-execute": "harness.cross_harness_cli",
              "workstream": "harness.workstream_cli",
              "journey": "harness.journey_cli", "grant": "harness.journey_cli",
@@ -276,7 +275,7 @@ def main(argv: list[str] | None = None) -> int:
                   "loop-status, install, corpus-export, gate, why, down, "
                   "remote, relay, grant, journey, evidence, bulletin-identity,\n"
                   "cross-harness-execute, check-output, packs, workstream, "
-                  "endpoint-gate, writing\n"
+                  "endpoint-gate, writing, import-inspect, incident-sim\n"
                   "Passthrough commands need a source checkout "
                   "(scripts/run_harness_cli.py).",
                   file=sys.stdout if wants_help else sys.stderr)

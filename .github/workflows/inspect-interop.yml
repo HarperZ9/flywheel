@@ -1,0 +1,68 @@
+name: Inspect JSON interoperability
+
+on:
+  pull_request:
+    paths:
+      - 'harness/inspect_evidence*.py'
+      - 'harness/inspect_fixture_contract.py'
+      - 'harness/evidence_json.py'
+      - 'harness/private_artifact*.py'
+      - 'harness/cli_entry.py'
+      - 'scripts/run_inspect_import_acceptance.py'
+      - 'scripts/check_inspect_fixtures.py'
+      - 'tests/test_inspect_evidence*.py'
+      - 'tests/test_inspect_fixture_contract.py'
+      - 'tests/fixtures/inspect/**'
+      - '.github/workflows/inspect-interop.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'harness/inspect_evidence*.py'
+      - 'harness/inspect_fixture_contract.py'
+      - 'harness/evidence_json.py'
+      - 'harness/private_artifact*.py'
+      - 'harness/cli_entry.py'
+      - 'scripts/run_inspect_import_acceptance.py'
+      - 'scripts/check_inspect_fixtures.py'
+      - 'tests/test_inspect_evidence*.py'
+      - 'tests/test_inspect_fixture_contract.py'
+      - 'tests/fixtures/inspect/**'
+      - '.github/workflows/inspect-interop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inspect-interop-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  real-format:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: '3.12'
+      - name: Install optional producer for contract check
+        run: python -m pip install inspect-ai==0.3.263
+      - name: Check versioned fixtures without refreshing the baseline
+        run: python scripts/check_inspect_fixtures.py --root tests/fixtures/inspect/v1
+      - name: Exercise real serialization and reported scores
+        run: python scripts/run_inspect_import_acceptance.py --out "${{ runner.temp }}/inspect-single"
+      - name: Preserve epoch reduction denominators
+        run: python scripts/run_inspect_import_acceptance.py --epochs 2 --out "${{ runner.temp }}/inspect-epochs"
+      - name: Retain generated mock evidence
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: inspect-json-${{ matrix.os }}
+          retention-days: 14
+          path: |
+            ${{ runner.temp }}/inspect-single/*.json
+            ${{ runner.temp }}/inspect-epochs/*.json
