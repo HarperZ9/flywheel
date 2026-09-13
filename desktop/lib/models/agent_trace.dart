@@ -1,4 +1,5 @@
 import 'canonical_json.dart';
+import 'effect_evidence.dart';
 
 const traceProjectionSchema = 'flywheel.gateway-agent-projection/v1';
 const traceMaxRecords = 2048;
@@ -55,6 +56,7 @@ final class TraceProjection {
   final List<String> omissions, doesNotProve;
   final String? reason;
   final Map<String, String?>? runtime;
+  final EffectEvidence? effectEvidence;
 
   const TraceProjection._(
       this.operationRef,
@@ -67,7 +69,8 @@ final class TraceProjection {
       this.omissions,
       this.doesNotProve,
       this.reason,
-      this.runtime);
+      this.runtime,
+      this.effectEvidence);
 
   factory TraceProjection.fromJson(Map<String, dynamic> value,
       {required String operationRef, required String journeyRef}) {
@@ -85,6 +88,7 @@ final class TraceProjection {
       'does_not_prove',
       if (state == 'failed') 'reason',
       if (value.containsKey('runtime')) 'runtime',
+      if (value.containsKey('effect_evidence')) 'effect_evidence',
     });
     if (value['schema'] != traceProjectionSchema ||
         !const {'running', 'completed', 'failed', 'cancelled'}
@@ -107,11 +111,20 @@ final class TraceProjection {
             !RegExp(r'^[A-Z][A-Z0-9_]{0,63}$').hasMatch(reason))) {
       invalidTrace();
     }
+    final terminalState = state as String;
+    final effectEvidence = value.containsKey('effect_evidence')
+        ? EffectEvidence.fromJson(value['effect_evidence'],
+            traceRef: traceReference(value['trace_ref'], 'agt'),
+            recordCount: count,
+            traceHeadSha256: head,
+            terminalState: terminalState)
+        : null;
+    if (effectEvidence != null && terminalState == 'running') invalidTrace();
     return TraceProjection._(
         operationRef,
         journeyRef,
         traceReference(value['trace_ref'], 'agt'),
-        state as String,
+        terminalState,
         head,
         digest,
         count,
@@ -126,7 +139,8 @@ final class TraceProjection {
           'ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED',
         }),
         reason as String?,
-        value.containsKey('runtime') ? _runtime(value['runtime']) : null);
+        value.containsKey('runtime') ? _runtime(value['runtime']) : null,
+        effectEvidence);
   }
 
   bool get isRunning => state == 'running';

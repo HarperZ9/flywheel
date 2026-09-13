@@ -6,6 +6,7 @@ import threading
 from pathlib import Path
 from typing import Callable, Iterator
 from .evidence_json import canonical_sha256
+from .gateway_effect_binding import attach_terminal_effect_evidence, validate_terminal_effect_evidence
 from .gateway_envelope import parse_gateway_envelope
 from .gateway_operation import AuthorizedOperation, GatewayOperationError, OPERATION_REF_PATTERN
 from .gateway_operation_process import MAX_RESULT_BYTES, OperationProcessFactory, WorkerOutcome
@@ -170,6 +171,7 @@ class GatewayOperations:
                 raise ValueError
             validate_result(value, ref, history[0]["payload"]["action"],
                             snapshot.state)
+            validate_terminal_effect_evidence(self.state_root, owner_ref, snapshot.journey_ref, ref, value["result"], history)
             return value
         except (OSError, TypeError, ValueError):
             raise GatewayOperationError("STORE_COMMIT_FAILED") from None
@@ -250,6 +252,10 @@ class GatewayOperations:
                         current.journey_ref, ref, state, result.get("reason")) or result
                 except Exception:
                     pass  # retain fixed failure, never claim an unverified prefix
+            try:
+                result = attach_terminal_effect_evidence(self.state_root, owner_ref,
+                    current.journey_ref, ref, result, state, history[-1])
+            except ValueError: state, result = "failed", {"reason": "EXTERNAL_ACTION_FAILED"}
             state, result, digest = seal_outcome(
                 self._seal, owner_ref, ref, history[0]["payload"]["action"],
                 state, result)
