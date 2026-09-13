@@ -111,7 +111,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker run -d --restart=never -p 127.0.0.1:5000:5000 --name metr-local-registry registry:3
+          docker run -d --restart=no -p 127.0.0.1:5000:5000 --name metr-local-registry registry:3
           for i in {1..30}; do
             if curl -fsS http://localhost:5000/v2/ >/dev/null; then
               break
