@@ -7,7 +7,7 @@ from urllib.parse import parse_qs
 
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .gateway_operation import GatewayOperationError
-from .gateway_operation_recovery import LIFECYCLE, history_state, validate_history
+from .gateway_operation_validation import LIFECYCLE, history_state, validate_history
 from .journey_projection import reduce_events
 from .journey_store import HEAD_SCHEMA
 from .journey_types import JOURNEY_REF_PATTERN, SHA256_PATTERN, validate_event

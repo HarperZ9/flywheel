@@ -10,7 +10,7 @@ from .gateway_effect_evidence import (
     derive_effect_evidence,
     validate_effect_evidence,
 )
-from .gateway_operation_recovery import TERMINAL_EVENTS
+from .gateway_operation_validation import TERMINAL_EVENTS
 
 
 def _is_agent_projection(value: object) -> bool:

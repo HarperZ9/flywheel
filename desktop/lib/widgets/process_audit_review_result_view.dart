@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/process_audit_review.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
+import 'process_audit_gateway_effect_view.dart';
 
 class ProcessAuditReviewResultView extends StatelessWidget {
   final ProcessAuditReviewResult result;
@@ -30,6 +31,10 @@ class ProcessAuditReviewResultView extends StatelessWidget {
           Text('${source.byteLength} bytes',
               style: fwMono(t, size: 11.5, color: t.inkMuted)),
         ]),
+      ],
+      if (result.gatewayEffect != null) ...[
+        const SizedBox(height: FwLayout.s3),
+        ProcessAuditGatewayEffectView(review: result.gatewayEffect!),
       ],
       const SizedBox(height: FwLayout.s3),
       Text(
@@ -104,18 +109,31 @@ class ProcessAuditReviewResultView extends StatelessWidget {
                 style: fwMono(t, size: 11.5, color: t.ink)),
             subtitle: Text(
               [
+                if (pointer.isDerived) 'DERIVED',
+                if (pointer.source.isNotEmpty) pointer.source,
+                if (pointer.privacy.isNotEmpty) pointer.privacy,
+                if (pointer.sourcePointer != pointer.pointer)
+                  'source ${pointer.sourcePointer}',
                 if (pointer.location != null) pointer.location!.label,
                 pointer.preview,
+                ...pointer.limits,
               ].join(' · '),
               style: TextStyle(fontSize: 12, color: t.inkMuted),
             ),
             children: [
+              if (pointer.source.isNotEmpty ||
+                  pointer.privacy.isNotEmpty ||
+                  pointer.limits.isNotEmpty)
+                _block(t, 'source metadata', _metadata(pointer)),
               _block(t, 'source value', pointer.sourceValueText),
-              _block(
-                t,
-                'local context',
-                pointer.location?.context ?? 'offset unavailable locally',
-              ),
+              if (pointer.isDerived)
+                _PrivateSourceContext(pointer: pointer)
+              else
+                _block(
+                  t,
+                  'local context',
+                  pointer.location?.context ?? 'offset unavailable locally',
+                ),
             ],
           ),
         ),
@@ -130,6 +148,15 @@ class ProcessAuditReviewResultView extends StatelessWidget {
           SelectableText(value, style: fwMono(t, size: 11, color: t.inkSoft)),
         ]),
       );
+
+  String _metadata(ProcessAuditSourcePointer pointer) => [
+        if (pointer.isDerived) 'DERIVED',
+        if (pointer.source.isNotEmpty) 'source: ${pointer.source}',
+        if (pointer.privacy.isNotEmpty) 'privacy: ${pointer.privacy}',
+        if (pointer.sourcePointer != pointer.pointer)
+          'source pointer: ${pointer.sourcePointer}',
+        for (final limit in pointer.limits) 'limit: $limit',
+      ].join('\n');
 
   Widget _limits() {
     final limits = [
@@ -154,4 +181,41 @@ class ProcessAuditReviewResultView extends StatelessWidget {
         'DRIFT' => 'drift',
         _ => 'unverifiable',
       };
+}
+
+class _PrivateSourceContext extends StatefulWidget {
+  final ProcessAuditSourcePointer pointer;
+  const _PrivateSourceContext({required this.pointer});
+
+  @override
+  State<_PrivateSourceContext> createState() => _PrivateSourceContextState();
+}
+
+class _PrivateSourceContextState extends State<_PrivateSourceContext> {
+  bool _shown = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.fw;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        TextButton.icon(
+          onPressed: () => setState(() => _shown = !_shown),
+          icon: const Icon(Icons.lock_open_outlined, size: 16),
+          label: Text(_shown
+              ? 'Hide private source context'
+              : 'Show private source context'),
+        ),
+        if (_shown) ...[
+          const Kicker('private source context'),
+          const SizedBox(height: FwLayout.s1),
+          SelectableText(
+            widget.pointer.location?.context ?? 'offset unavailable locally',
+            style: fwMono(t, size: 11, color: t.inkSoft),
+          ),
+        ],
+      ]),
+    );
+  }
 }

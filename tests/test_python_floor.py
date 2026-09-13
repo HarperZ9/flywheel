@@ -18,6 +18,8 @@ import importlib.util
 import re
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
 
 # Stdlib names that raise the floor, with the version that introduced them.
@@ -100,6 +102,42 @@ def test_the_ci_matrix_does_not_test_below_the_floor():
         "interpreter is exactly the one most likely to break")
 
 
+def _verifier_closure_sources(vs):
+    reached, _ = vs.closure(vs.VERIFIER_ENTRY_POINTS)
+    paths, unresolved = [], []
+    for mod in sorted(reached):
+        path = vs._module_path(mod)
+        if path is None:
+            unresolved.append(mod)
+        else:
+            paths.append(path)
+    assert not unresolved, f"closure names did not resolve to files: {unresolved}"
+    assert len(paths) == len(reached)
+    return paths
+
+
+def test_the_verifier_floor_check_fails_on_unresolved_closure_names(tmp_path):
+    watched = tmp_path / "watched.py"
+    watched.write_text("from pathlib import Path\n", encoding="utf-8")
+
+    class FakeVerifierStdlib:
+        VERIFIER_ENTRY_POINTS = ["watched"]
+
+        @staticmethod
+        def closure(entry_points):
+            assert entry_points == ["watched"]
+            return {"watched", "missing.child"}, []
+
+        @staticmethod
+        def _module_path(name):
+            if name == "watched":
+                return watched
+            return None
+
+    with pytest.raises(AssertionError, match="missing.child"):
+        _verifier_closure_sources(FakeVerifierStdlib)
+
+
 def test_the_verifier_closure_stays_on_the_lowest_interpreter_it_needs():
     """The claim in pyproject.toml: a stranger checking a receipt is not bound by
     the package floor. That only stays true if the closure stays clean."""
@@ -107,22 +145,7 @@ def test_the_verifier_closure_stays_on_the_lowest_interpreter_it_needs():
         "vs", ROOT / "scripts" / "check_verifier_stdlib.py")
     vs = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(vs)
-    reached, _ = vs.closure(vs.VERIFIER_ENTRY_POINTS)
-    # The closure yields relative-import names like "..merkle" or
-    # "..certificates.crossing". Every one must resolve to a file: a name that
-    # quietly failed to resolve would shrink what this test examines while it
-    # still reported success.
-    paths, unresolved = [], []
-    for mod in sorted(reached):
-        rel = mod.lstrip(".").replace(".", "/")
-        for cand in (ROOT / "harness" / f"{rel}.py", ROOT / f"{rel}.py"):
-            if cand.is_file():
-                paths.append(cand)
-                break
-        else:
-            unresolved.append(mod)
-    assert not unresolved, f"closure names did not resolve to files: {unresolved}"
-    assert len(paths) == len(reached)
+    paths = _verifier_closure_sources(vs)
     used = features_used(paths)
     assert used == {}, (
         "the verifier closure now needs a newer interpreter: "

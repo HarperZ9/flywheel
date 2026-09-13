@@ -3,13 +3,16 @@ from __future__ import annotations
 
 from pathlib import Path
 import os
-import re
 
 from .evidence_json import canonical_bytes, canonical_sha256
+from .gateway_operation_validation import (
+    FAILURE_REASONS, LIFECYCLE, RESULT_SCHEMA, TERMINAL_EVENTS, history_state,
+    normalize_outcome, started_event, validate_history,
+    validate_operation_value, validate_result,
+)
 from .gateway_operation import GatewayOperationError
 from .journey_service import JourneyService
 from .journey_store import JourneyStore, JourneyStoreError
-from .journey_types import SHA256_PATTERN
 from .operation_grants import GrantStore, OWNER_REF_PATTERN, _secure_owner_only
 from .recovery_limited import safe_dirs, state_ref
 
@@ -150,96 +153,6 @@ def seal_result(state_root: Path, validate, owner_ref: str, operation_ref: str,
         raise GatewayOperationError("STORE_COMMIT_FAILED") from None
     return digest
 
-
-def validate_history(history: list[dict], operation_ref: str) -> None:
-    if not history: return
-    queued = history[0]
-    qkeys = {"operation_ref", "client_request_id", "action", "tool",
-             "authorization_sha256", "operation_sha256", "arguments_sha256",
-             "grant_ref_sha256", "execution_plan_sha256"}
-    if (queued["event_type"] != "operation_queued"
-            or set(queued["payload"]) != qkeys
-            or queued["payload"].get("operation_ref") != operation_ref
-            or re.fullmatch(r"op_[0-9a-f]{32}\Z", operation_ref) is None
-            or queued["payload"].get("action") not in {"agent.run", "output.check"}
-            or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z",
-                            queued["payload"].get("tool", "")) is None
-            or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z",
-                            queued["payload"].get("client_request_id", ""))
-            is None
-            or any(SHA256_PATTERN.fullmatch(queued["payload"].get(key, ""))
-                   is None for key in qkeys if key.endswith("sha256"))):
-        raise ValueError("ambiguous gateway operation history")
-    kinds = [event["event_type"] for event in history]
-    if (kinds.count("operation_queued") != 1
-            or kinds.count("operation_started") > 1
-            or kinds.count("cancel_requested") > 1
-            or sum(kind in TERMINAL_EVENTS for kind in kinds) > 1):
-        raise ValueError("ambiguous gateway operation history")
-    started = next((event for event in history
-                    if event["event_type"] == "operation_started"), None)
-    cancel = next((event for event in history
-                   if event["event_type"] == "cancel_requested"), None)
-    terminal = _terminal(history)
-    _validate_started(started, queued)
-    _validate_cancel(cancel, started)
-    _validate_terminal(terminal, cancel or started or queued)
-    positions = {kind: kinds.index(kind) for kind in set(kinds)}
-    if (started and positions["operation_started"] < 1
-            or cancel and positions["cancel_requested"]
-            < positions["operation_started"]
-            or terminal and positions[terminal["event_type"]]
-            < positions[(cancel or started or queued)["event_type"]]):
-        raise ValueError("ambiguous gateway operation history")
-
-
-def _validate_started(started: dict | None, queued: dict) -> None:
-    if started is None:
-        return
-    payload = started["payload"]
-    if (set(payload) != {"operation_ref", "queued_event_sha256", "control_class"}
-            or payload.get("operation_ref") != queued["payload"]["operation_ref"]
-            or payload.get("queued_event_sha256") != queued["event_sha256"]
-            or payload.get("control_class") != "windows_job_v1"):
-        raise ValueError("ambiguous gateway operation history")
-
-
-def _validate_cancel(cancel: dict | None, started: dict | None) -> None:
-    if cancel is None:
-        return
-    payload = cancel["payload"]
-    keys = {"operation_ref", "started_event_sha256", "client_request_id",
-            "authorization_sha256", "timeout_ms"}
-    if (started is None or set(payload) != keys
-            or payload.get("operation_ref") != started["payload"]["operation_ref"]
-            or payload.get("started_event_sha256") != started["event_sha256"]
-            or SHA256_PATTERN.fullmatch(payload.get("authorization_sha256", ""))
-            is None or type(payload.get("timeout_ms")) is not int
-            or not 1 <= payload["timeout_ms"] <= 30_000):
-        raise ValueError("ambiguous gateway operation history")
-
-
-def _validate_terminal(terminal: dict | None, basis: dict) -> None:
-    if terminal is None:
-        return
-    payload = terminal["payload"]
-    common = {"operation_ref", "basis_event_sha256", "result_sha256"}
-    allowed = {
-        "operation_queued": {"operation_failed"},
-        "operation_started": {"operation_completed", "operation_failed"},
-        "cancel_requested": TERMINAL_EVENTS,
-    }
-    expected = common | ({"reason"}
-                         if terminal["event_type"] == "operation_failed"
-                         else set())
-    if (set(payload) != expected
-            or payload.get("operation_ref") != basis["payload"]["operation_ref"]
-            or payload.get("basis_event_sha256") != basis["event_sha256"]
-            or SHA256_PATTERN.fullmatch(payload.get("result_sha256", "")) is None
-            or terminal["event_type"] not in allowed.get(basis["event_type"], set())
-            or terminal["event_type"] == "operation_failed"
-            and payload.get("reason") not in FAILURE_REASONS):
-        raise ValueError("ambiguous gateway operation history")
 
 
 def _groups(service: JourneyService) -> list[tuple[str, list[dict]]]:

@@ -9,6 +9,8 @@ import 'json_pointer_locator.dart';
 const int maxProcessAuditPacketBytes = 1024 * 1024;
 const String processAuditPacketSchema =
     'flywheel.incident-sim-process-audit/v1';
+const String processAuditReviewRequestSchema =
+    'flywheel.incident-sim-process-audit-review-request/v1';
 
 class ProcessAuditReviewException implements Exception {
   final String code, message;
@@ -65,7 +67,15 @@ class ProcessAuditPacketUpload {
     );
   }
 
-  JsonPointerLocation? locationFor(String pointer) => _locations[pointer];
+  JsonPointerLocation? locationFor(String pointer) {
+    final direct = _locations[pointer];
+    if (direct != null) return direct;
+    if (detectedFormat == 'process-audit-review-request' &&
+        pointer.startsWith('/')) {
+      return _locations['/packet$pointer'];
+    }
+    return null;
+  }
 
   String get preview {
     try {
@@ -85,6 +95,19 @@ class ProcessAuditPacketUpload {
       return (
         bytes: picked,
         format: 'process-audit-packet',
+        locations: scan.locations,
+      );
+    }
+    final requestPacket = decoded is Map ? decoded['packet'] : null;
+    final expectedHashes = decoded is Map ? decoded['expected_hashes'] : null;
+    if (decoded is Map &&
+        decoded['schema'] == processAuditReviewRequestSchema &&
+        requestPacket is Map &&
+        requestPacket['schema'] == processAuditPacketSchema &&
+        (expectedHashes == null || expectedHashes is Map)) {
+      return (
+        bytes: picked,
+        format: 'process-audit-review-request',
         locations: scan.locations,
       );
     }
