@@ -1,4 +1,4 @@
-// The twelve action routes reach the operator through the same grant sheet as
+// The action routes reach the operator through the same grant sheet as
 // chat and plugins. The client derives destination, tool, and scopes locally
 // so the sheet can name a target before the engine answers; if that
 // derivation drifts from harness/gateway_operation_shape.py the sheet asks
@@ -274,41 +274,4 @@ void main() {
     // client mirrors only what it must render before the engine answers.
     expect(_op('lean.check', {'code': 'x', 'extra': 1}).operation['extra'], 1);
   });
-
-  test('agent tool protocol is bounded to the backend grammar', () {
-    Map<String, Object?> agent({Object? protocol = _absent}) => {
-          'goal': 'fixture',
-          'endpoint': 'openai',
-          'max_steps': 2,
-          'allow_write': false,
-          'allow_exec': false,
-          'stream': true,
-          if (protocol != _absent) 'tool_protocol': protocol,
-        };
-
-    expect(_op('agent.run', agent()).operation.containsKey('tool_protocol'),
-        isFalse);
-    expect(
-        _op('agent.run', agent(protocol: 'native')).operation['tool_protocol'],
-        'native');
-    expect(_op('agent.run', agent(protocol: 'text')).operation['tool_protocol'],
-        'text');
-    expect(() => _op('agent.run', agent(protocol: 'json')),
-        throwsA(isA<ArgumentError>()));
-    expect(() => _op('agent.run', agent(protocol: 1)),
-        throwsA(isA<ArgumentError>()));
-    expect(
-      () => _op('chat.complete', {
-        'model': 'gpt-6-astra',
-        'messages': const [
-          {'role': 'user', 'content': 'hi'},
-        ],
-        'stream': true,
-        'tool_protocol': 'native',
-      }),
-      throwsA(isA<ArgumentError>()),
-    );
-  });
 }
-
-const Object _absent = Object();

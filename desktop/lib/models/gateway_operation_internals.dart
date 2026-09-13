@@ -95,6 +95,12 @@ GatewayDestination _destination(String action, Map<String, Object?> value) {
         ? GatewayDestination('output-check', sha.substring(0, 16))
         : _invalid();
   }
+  if (action == 'import.inspect') {
+    final sha = _inspectSha256(value);
+    return sha == null
+        ? _invalid()
+        : GatewayDestination('import', 'inspect-json:${sha.substring(0, 16)}');
+  }
   if (action == 'embeddings.create') {
     final ref = value['model'];
     return GatewayDestination(
@@ -218,7 +224,12 @@ List<String> _scopes(String action, Map<String, Object?> value) {
   if (action == 'lane.call') {
     selected.addAll(const ['exec', 'network', 'plugin']);
   }
-  if (const {'packs.admit', 'store.put', 'import.config'}.contains(action)) {
+  if (const {
+    'packs.admit',
+    'store.put',
+    'import.config',
+    'import.inspect',
+  }.contains(action)) {
     selected.add('write');
   }
   // It reads the files and variables where credentials live. It records a

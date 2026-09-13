@@ -11,6 +11,7 @@ import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/action_witness_panel.dart';
 import '../widgets/fw.dart';
+import '../widgets/inspect_evidence_import_panel.dart';
 import '../widgets/packet_recheck_panel.dart';
 import '../widgets/output_check_panel.dart';
 import '../widgets/receipt_proof_panel.dart';
@@ -211,6 +212,8 @@ class _ReceiptsViewState extends State<ReceiptsView> {
         const ActionWitnessPanel(),
         const SizedBox(height: FwLayout.s4),
         ServiceDeskReviewPanel(client: widget.client),
+        const SizedBox(height: FwLayout.s4),
+        InspectEvidenceImportPanel(client: widget.client),
         const SizedBox(height: FwLayout.s4),
         PacketRecheckPanel(client: widget.client),
         const SizedBox(height: FwLayout.s4),
