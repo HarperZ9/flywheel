@@ -76,6 +76,14 @@ class ProcessAuditReviewResultView extends StatelessWidget {
           VerdictPill('${entry.key} ${entry.value}',
               status: _status(entry.value)),
       ]),
+      if (v.failedFields.isNotEmpty) ...[
+        const SizedBox(height: FwLayout.s2),
+        const Kicker('checked fields with drift'),
+        const SizedBox(height: FwLayout.s1),
+        for (final field in v.failedFields.take(4))
+          Text('${field.field} ${field.check}',
+              style: fwMono(t, size: 11, color: t.inkMuted)),
+      ],
     ]);
   }
 

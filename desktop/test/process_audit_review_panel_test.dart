@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -103,6 +104,32 @@ void main() {
         find.textContaining('reported coverage is untrusted'), findsOneWidget);
   });
 
+  testWidgets('verified field drift names the checked source field',
+      (tester) async {
+    final fixture = _fixture('process_audit_resealed_incident_review.json');
+    final packet = Uint8List.fromList(
+      utf8.encode(fixture['packet_json']! as String),
+    );
+    final review = Map<String, Object?>.from(fixture['review']! as Map);
+    final client = GatewayClient(
+      httpClient:
+          MockClient((_) async => http.Response(jsonEncode(review), 200)),
+    );
+
+    await tester.pumpWidget(_wrap(ProcessAuditReviewPanel(
+      client: client,
+      picker: _Picker(packet),
+    )));
+    await tester.tap(find.text('Select process-audit JSON'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Review packet'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('PACKET INTEGRITY DRIFT'), findsOneWidget);
+    expect(find.text('INDEPENDENCE MATCH'), findsOneWidget);
+    expect(find.textContaining('/incident canonical_sha256'), findsOneWidget);
+  });
+
   testWidgets('empty and malformed selections fail closed', (tester) async {
     var calls = 0;
     final client = GatewayClient(
@@ -195,6 +222,10 @@ Map<String, Object?> _body(
       ],
       'does_not_prove': ['semantic correctness or actual lab access'],
     };
+
+Map<String, Object?> _fixture(String name) => Map<String, Object?>.from(
+      jsonDecode(File('test/fixtures/$name').readAsStringSync()) as Map,
+    );
 
 class _Picker implements InspectFilePicker {
   const _Picker(this.bytes, {this.filename});
