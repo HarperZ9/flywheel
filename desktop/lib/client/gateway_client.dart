@@ -12,6 +12,7 @@ import '../models/evidence_state.dart' show isSafePublicText;
 import '../models/gateway_grant_models.dart';
 import '../models/inspect_evidence_models.dart';
 import '../models/operation_models.dart';
+import '../models/process_audit_review.dart';
 import '../models/service_desk_review.dart';
 import '../models/workflow_models.dart';
 import 'gateway_auth.dart';
@@ -28,6 +29,7 @@ part 'gateway_creative.dart';
 part 'gateway_discovery.dart';
 part 'gateway_identity.dart';
 part 'gateway_inspect.dart';
+part 'gateway_process_audit.dart';
 
 class GatewayClient {
   static const String loopback = 'http://127.0.0.1:8799';

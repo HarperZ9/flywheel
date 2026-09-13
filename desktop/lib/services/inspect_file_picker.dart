@@ -15,16 +15,17 @@ abstract interface class InspectFilePicker {
 }
 
 final class FileSelectorInspectPicker implements InspectFilePicker {
-  const FileSelectorInspectPicker();
+  final String label;
+  const FileSelectorInspectPicker({this.label = 'Inspect JSON'});
 
   @override
   Future<PickedInspectFile?> pick() async {
-    const jsonType = XTypeGroup(
-      label: 'Inspect JSON',
+    final jsonType = XTypeGroup(
+      label: label,
       extensions: ['json'],
       mimeTypes: ['application/json'],
     );
-    final file = await openFile(acceptedTypeGroups: const [jsonType]);
+    final file = await openFile(acceptedTypeGroups: [jsonType]);
     if (file == null) return null;
     return PickedInspectFile(
       Uint8List.fromList(await file.readAsBytes()),
