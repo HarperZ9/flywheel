@@ -1,0 +1,332 @@
+name: METR task bridge interoperability
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/metr-task-interop.yml'
+      - 'scripts/metr_bridge_acceptance/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BRIDGE_REPO: https://github.com/METR/inspect-metr-task-bridge.git
+  BRIDGE_REV: 20a430cc59283c8b463e526e77f8d040509457ec
+  TASK_STANDARD_REV: 03236e9a1a0d3c9f9d63f6c9e60a9278a59d22ff
+  VIVARIA_REVIEWED_REV: 20a6c290c3c11f701af95a559d9d0c64dd6105d4
+  LOCKED_METR_TASK_STANDARD_VIVARIA_REV: 7d9805ed4f8269773a81e9abbdaa7020d28be5c9
+  INSPECT_AI_REVIEWED_SOURCE_REV: 8ebe620d74c1eb679438db1b65324e30e2306092
+  INSPECT_AI_LOCK_VERSION: 0.3.189
+  INSPECT_AI_PYPI_WHEEL_SHA256: 4689eff2c629adf0735b5e74c48e829c67790b2452667c54232bf08a69b44528
+  MTB_LOCK_VERSION: 0.5.24
+  UV_VERSION: 0.8.12
+  LOCAL_REPOSITORY: localhost:5000/inspect-ai/tasks
+  IMAGE_TAG: localhost:5000/inspect-ai/tasks:count_odds-0.0.1
+  INFO_TAG: localhost:5000/inspect-ai/tasks:count_odds-info-0.0.1
+  FLYWHEEL_REPO: https://github.com/HarperZ9/flywheel.git
+  FLYWHEEL_REV: b3ec822b4c1a942697f1370383c83beac339155e
+
+jobs:
+  metr-count-odds:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - name: Check out owned repository without persisted credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.13"
+
+      - name: Test control classification
+        run: python -m unittest discover -s scripts/metr_bridge_acceptance -p 'test_*.py'
+
+      - name: Prepare receipt directories and record runner surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p receipts/{source,docker,build,logs/eval,logs/json,summary,flywheel-import}
+          date -u +"%Y-%m-%dT%H:%M:%SZ" | tee receipts/runner-started-at.txt
+          uname -a | tee receipts/runner-uname.txt
+          python --version 2>&1 | tee receipts/python-version.txt
+          docker version 2>&1 | tee receipts/docker/docker-version.txt
+          docker buildx version 2>&1 | tee receipts/docker/docker-buildx-version.txt
+
+      - name: Install pinned uv
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check "uv==${UV_VERSION}"
+          uv --version | tee receipts/uv-version.txt
+
+      - name: Clone and pin official METR bridge source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none "${BRIDGE_REPO}" bridge
+          git -C bridge checkout --detach "${BRIDGE_REV}"
+          git -C bridge rev-parse HEAD | tee receipts/source/bridge-head.txt
+          test "$(git -C bridge rev-parse HEAD)" = "${BRIDGE_REV}"
+          git -C bridge ls-tree -r --name-only HEAD | tee receipts/source/bridge-tree.txt
+          : > receipts/source/source-sha256.txt
+          : > receipts/source/source-urls.tsv
+          for path in README.md pyproject.toml uv.lock mtb/docker/Dockerfile mtb/docker/builder.py mtb/bridge.py mtb/scorer.py mtb/solvers.py mtb/registry/registry.py tests/examples/count_odds/count_odds.py tests/examples/count_odds/manifest.yaml tests/conftest.py; do
+            hash="$(git -C bridge show "HEAD:${path}" | sha256sum | awk '{print $1}')"
+            printf '%s  %s  %s\n' "$hash" "${BRIDGE_REV}" "$path" | tee -a receipts/source/source-sha256.txt
+            printf 'https://raw.githubusercontent.com/METR/inspect-metr-task-bridge/%s/%s\t%s\n' "${BRIDGE_REV}" "$path" "$hash" | tee -a receipts/source/source-urls.tsv
+          done
+          if git -C bridge cat-file -e HEAD:LICENSE 2>/dev/null; then
+            git -C bridge show HEAD:LICENSE | sha256sum | awk '{print "LICENSE sha256 " $1}' | tee receipts/source/bridge-license-status.txt
+          else
+            echo "NO LICENSE FILE AT ${BRIDGE_REV}; do not redistribute bridge code or built images without separate license clearance." | tee receipts/source/bridge-license-status.txt
+          fi
+          grep -F "ARG TASK_STANDARD_VERSION=${TASK_STANDARD_REV}" bridge/mtb/docker/Dockerfile | tee receipts/source/task-standard-dockerfile-pin.txt
+          grep -F "name = \"inspect-ai\"" -A2 bridge/uv.lock | tee receipts/source/inspect-ai-lock-entry.txt
+          grep -F "version = \"${INSPECT_AI_LOCK_VERSION}\"" receipts/source/inspect-ai-lock-entry.txt
+          grep -F "https://github.com/METR/vivaria?subdirectory=python-package#${LOCKED_METR_TASK_STANDARD_VIVARIA_REV}" bridge/uv.lock | tee receipts/source/metr-task-standard-lock-entry.txt
+
+      - name: Clone and pin Flywheel importer source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none "${FLYWHEEL_REPO}" flywheel
+          git -C flywheel checkout --detach "${FLYWHEEL_REV}"
+          git -C flywheel rev-parse HEAD | tee receipts/source/flywheel-head.txt
+          test "$(git -C flywheel rev-parse HEAD)" = "${FLYWHEEL_REV}"
+          git -C flywheel ls-tree -r --name-only HEAD | tee receipts/source/flywheel-tree.txt
+          : > receipts/source/flywheel-importer-source-sha256.txt
+          : > receipts/source/flywheel-importer-source-urls.tsv
+          for path in harness/cli_entry.py harness/inspect_evidence_cli.py harness/inspect_evidence.py harness/private_artifact_fs.py docs/INSPECT-EVIDENCE.md tests/test_inspect_evidence_cli.py; do
+            hash="$(git -C flywheel show "HEAD:${path}" | sha256sum | awk '{print $1}')"
+            printf '%s  %s  %s\n' "$hash" "${FLYWHEEL_REV}" "$path" | tee -a receipts/source/flywheel-importer-source-sha256.txt
+            printf 'https://raw.githubusercontent.com/HarperZ9/flywheel/%s/%s\t%s\n' "${FLYWHEEL_REV}" "$path" "$hash" | tee -a receipts/source/flywheel-importer-source-urls.tsv
+          done
+          git -C flywheel show HEAD:harness/cli_entry.py | grep -F '"import-inspect": "harness.inspect_evidence_cli"' | tee receipts/source/flywheel-importer-cli-mapping.txt
+          git -C flywheel show HEAD:harness/inspect_evidence_cli.py | grep -F "parser.add_argument('source'" | tee receipts/source/flywheel-importer-source-arg.txt
+      - name: Start local OCI registry only
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --restart=no -p 127.0.0.1:5000:5000 --name metr-local-registry registry:3
+          for i in {1..30}; do
+            if curl -fsS http://localhost:5000/v2/ >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -fsS http://localhost:5000/v2/ | tee receipts/docker/local-registry-v2.txt
+
+      - name: Install bridge dependencies from uv.lock
+        shell: bash
+        working-directory: bridge
+        run: |
+          set -euo pipefail
+          uv sync --frozen
+          uv run python - <<'PY' > ../receipts/source/runtime-versions.json
+          import importlib.metadata as md
+          import json
+          packages = ["inspect-ai", "mtb", "metr-task-standard", "oras", "docker"]
+          print(json.dumps({name: md.version(name) for name in packages}, indent=2, sort_keys=True))
+          PY
+          cat ../receipts/source/runtime-versions.json
+          grep -F "\"inspect-ai\": \"${INSPECT_AI_LOCK_VERSION}\"" ../receipts/source/runtime-versions.json
+          grep -F "\"mtb\": \"${MTB_LOCK_VERSION}\"" ../receipts/source/runtime-versions.json
+          uv run python - <<'PY' > ../receipts/source/inspect-ai-no-model-runtime.json
+          import hashlib
+          import importlib.metadata as md
+          import json
+          import pathlib
+          import inspect_ai._eval.eval as eval_mod
+          import inspect_ai._eval.task.log as task_log_mod
+          import inspect_ai.model._model as model_mod
+          import inspect_ai.model._providers.none as none_mod
+          import inspect_ai.scorer._scorer as scorer_mod
+          from inspect_ai.model._model import ModelName, get_model, resolve_models
+          modules = {
+              "inspect_ai._eval.eval": eval_mod,
+              "inspect_ai._eval.task.log": task_log_mod,
+              "inspect_ai.model._model": model_mod,
+              "inspect_ai.model._providers.none": none_mod,
+              "inspect_ai.scorer._scorer": scorer_mod,
+          }
+          module_hashes = {}
+          for name, module in modules.items():
+              path = pathlib.Path(module.__file__).resolve()
+              module_hashes[name] = {
+                  "path": str(path),
+                  "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+              }
+          resolved = resolve_models(None)
+          none_model = resolved[0]
+          explicit_none_model = get_model("none")
+          result = {
+              "inspect_ai_version": md.version("inspect-ai"),
+              "expected_version": "0.3.189",
+              "pypi_wheel_sha256_reviewed": "4689eff2c629adf0735b5e74c48e829c67790b2452667c54232bf08a69b44528",
+              "resolve_models_none_count": len(resolved),
+              "resolve_models_none_model": str(ModelName(none_model)),
+              "resolve_models_none_api_class": type(none_model.api).__name__,
+              "explicit_get_model_none_model": str(ModelName(explicit_none_model)),
+              "explicit_get_model_none_api_class": type(explicit_none_model.api).__name__,
+              "module_hashes": module_hashes,
+          }
+          print(json.dumps(result, indent=2, sort_keys=True), flush=True)
+          assert result["inspect_ai_version"] == result["expected_version"], result
+          assert result["resolve_models_none_count"] == 1, result
+          assert result["resolve_models_none_model"] == "none/none", result
+          assert result["resolve_models_none_api_class"] == "NoModel", result
+          assert result["explicit_get_model_none_model"] == "none/none", result
+          assert result["explicit_get_model_none_api_class"] == "NoModel", result
+          PY
+          cat ../receipts/source/inspect-ai-no-model-runtime.json
+          python - <<'PY' > ../receipts/source/reviewed-vs-installed.json
+          import json, os
+          print(json.dumps({
+            "inspect_ai_reviewed_source_rev": os.environ["INSPECT_AI_REVIEWED_SOURCE_REV"],
+            "inspect_ai_installed_from_uv_lock_version": os.environ["INSPECT_AI_LOCK_VERSION"],
+            "note": "The executable Inspect runtime is the uv.lock-resolved inspect-ai package version recorded in runtime-versions.json. The no-model path is checked against the installed runtime in inspect-ai-no-model-runtime.json; the newer source revision remains only an API/source review reference."
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Build and push genuine count_odds task image to local registry
+        shell: bash
+        working-directory: bridge
+        env:
+          INSPECT_METR_TASK_BRIDGE_REPOSITORY: ${{ env.LOCAL_REPOSITORY }}
+        run: |
+          set -euo pipefail
+          uv run mtb-build \
+            --repository "${LOCAL_REPOSITORY}" \
+            --platform linux/amd64 \
+            --push \
+            --progress plain \
+            tests/examples/count_odds 2>&1 | tee ../receipts/build/mtb-build.log
+          docker buildx imagetools inspect "${IMAGE_TAG}" 2>&1 | tee ../receipts/docker/count_odds-image-imagetools.txt
+          docker buildx imagetools inspect --raw "${IMAGE_TAG}" > ../receipts/docker/count_odds-image-manifest.raw.json
+          docker buildx imagetools inspect "${INFO_TAG}" 2>&1 | tee ../receipts/docker/count_odds-info-imagetools.txt
+          docker buildx imagetools inspect --raw "${INFO_TAG}" > ../receipts/docker/count_odds-info-manifest.raw.json
+          docker pull "${IMAGE_TAG}"
+          docker image inspect "${IMAGE_TAG}" > ../receipts/docker/count_odds-image-inspect.json
+          sha256sum ../receipts/docker/count_odds-* | tee ../receipts/docker/docker-receipt-sha256.txt
+
+      - name: Capture task-info metadata from bridge registry reader
+        shell: bash
+        working-directory: bridge
+        run: |
+          set -euo pipefail
+          uv run python - <<'PY' > ../receipts/source/count_odds-task-info.json
+          import json
+          import os
+          import mtb.registry
+          info = mtb.registry.get_task_info_from_registry(os.environ["IMAGE_TAG"])
+          print(json.dumps(info, indent=2, sort_keys=True))
+          PY
+          sha256sum ../receipts/source/count_odds-task-info.json | tee ../receipts/source/task-info-sha256.txt
+
+      - name: Run deterministic no-paid-model bridge controls
+        shell: bash
+        working-directory: bridge
+        env:
+          RECEIPTS_DIR: ${{ github.workspace }}/receipts
+        run: |
+          set -euo pipefail
+          uv run python "${GITHUB_WORKSPACE}/scripts/metr_bridge_acceptance/run_count_odds_controls.py" 2>&1 | tee ../receipts/summary/control-run.log
+
+      - name: Dump Inspect logs to JSON
+        if: always()
+        shell: bash
+        working-directory: bridge
+        run: |
+          set -euo pipefail
+          find ../receipts/logs/eval -type f \( -name '*.eval' -o -name '*.json' \) -print0 | while IFS= read -r -d '' log; do
+            rel="${log#../receipts/logs/eval/}"
+            control="${rel%%/*}"
+            mkdir -p "../receipts/logs/json/${control}"
+            base="$(basename "$log")"
+            uv run inspect log dump "$log" > "../receipts/logs/json/${control}/${base}.json"
+          done
+
+      - name: Import exported Inspect JSON with pinned Flywheel source and retain typed outcomes
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          status=0
+          flywheel_dir="${GITHUB_WORKSPACE}/flywheel"
+          test "$(git -C "$flywheel_dir" rev-parse HEAD)" = "${FLYWHEEL_REV}"
+          json_files=(receipts/logs/json/*/*.json)
+          if [ "${#json_files[@]}" -eq 0 ]; then
+            echo "No exported Inspect JSON files found" | tee receipts/flywheel-import/no-json-files.txt
+            exit 1
+          fi
+          for json_file in "${json_files[@]}"; do
+            control="$(basename "$(dirname "$json_file")")"
+            base="$(basename "$json_file")"
+            out="receipts/flywheel-import/${control}-${base}.stdout.txt"
+            err="receipts/flywheel-import/${control}-${base}.stderr.txt"
+            outcome="receipts/flywheel-import/${control}-${base}.outcome.json"
+            source_sha256="$(sha256sum "$json_file" | awk '{print $1}')"
+            abs_json="${GITHUB_WORKSPACE}/${json_file}"
+            set +e
+            (
+              cd "$flywheel_dir"
+              python -m harness.cli_entry import-inspect "$abs_json" --expected-sha256 "$source_sha256"
+            ) > "$out" 2> "$err"
+            rc=$?
+            set -e
+            python - "$json_file" "$control" "$rc" "$out" "$err" "$source_sha256" "${FLYWHEEL_REV}" > "$outcome" <<'PY'
+          import json, sys
+          json_file, control, rc, out, err, source_sha256, flywheel_rev = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7]
+          if rc == 0:
+              kind = "complete_structural_import"
+          elif rc == 3:
+              kind = "retained_incomplete_or_failed_run"
+          elif rc == 2:
+              kind = "rejected_malformed_unsupported_or_changed_input"
+          else:
+              kind = "import_tool_error"
+          print(json.dumps({
+              "control": control,
+              "json_file": json_file,
+              "source_sha256": source_sha256,
+              "flywheel_rev": flywheel_rev,
+              "invocation": "python -m harness.cli_entry import-inspect <json> --expected-sha256 <sha256>",
+              "exit_code": rc,
+              "typed_outcome": kind,
+              "stdout_path": out,
+              "stderr_path": err,
+          }, indent=2, sort_keys=True))
+          PY
+            cat "$outcome"
+            if [ "$rc" -ne 0 ] && [ "$rc" -ne 3 ]; then
+              status=1
+            fi
+          done
+          exit "$status"
+
+      - name: Hash receipts
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          find receipts -type f ! -name all-receipts-sha256.txt -print0 | sort -z | xargs -0 sha256sum > receipts/all-receipts-sha256.txt
+
+      - name: Upload receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: metr-count-odds-bridge-receipts
+          path: receipts/**
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Stop local registry
+        if: always()
+        shell: bash
+        run: |
+          docker rm -f metr-local-registry || true
