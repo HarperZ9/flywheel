@@ -13,7 +13,10 @@ class ProcessAuditReviewPanel extends StatefulWidget {
   const ProcessAuditReviewPanel({
     super.key,
     required this.client,
-    this.picker = const FileSelectorInspectPicker(label: 'Process audit JSON'),
+    this.picker = const FileSelectorInspectPicker(
+      label: 'Process audit JSON',
+      maxBytes: maxProcessAuditPacketBytes,
+    ),
   });
 
   @override

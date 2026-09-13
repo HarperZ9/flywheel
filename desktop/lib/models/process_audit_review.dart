@@ -4,6 +4,8 @@ import 'json_pointer_locator.dart';
 import 'process_audit_packet_upload.dart';
 export 'process_audit_packet_upload.dart';
 
+part 'process_audit_verification.dart';
+
 final _sha256 = RegExp(r'^[0-9a-f]{64}$');
 
 class ProcessAuditReviewResult {
@@ -55,12 +57,17 @@ class ProcessAuditReviewResult {
         ProcessAuditVerification.tryFromJson(_map(json['verification']));
     final expectedAssessment =
         _assessmentForPacketVerdict(verification?.verdict ?? '');
+    final declaredAccess = ProcessAuditDeclaredAccess.tryFromJson(
+      _map(json['declared_access']),
+      verification?.accessVerdict ?? '',
+    );
     if (json['schema'] != schemaName ||
         source == null ||
         source.sha256 != upload.sha256 ||
         source.byteLength != upload.byteLength ||
         expectedAssessment == null ||
-        assessment != expectedAssessment) {
+        assessment != expectedAssessment ||
+        declaredAccess == null) {
       return const ProcessAuditReviewResult.error(
         'INVALID_RESPONSE',
         'Gateway returned an incomplete process-audit review.',
@@ -75,8 +82,7 @@ class ProcessAuditReviewResult {
       assessment: assessment,
       semanticVerification: 'UNVERIFIABLE',
       verification: verification!,
-      declaredAccess:
-          ProcessAuditDeclaredAccess.fromJson(_map(json['declared_access'])),
+      declaredAccess: declaredAccess,
       sourcePointers: List.unmodifiable(pointers),
       limitations: List.unmodifiable(_strings(json['does_not_prove'])),
     );
@@ -107,83 +113,6 @@ class ProcessAuditSource {
   }
 }
 
-class ProcessAuditVerification {
-  final String verdict, accessVerdict, packetDigest, evaluationDigest;
-  final String sourceValuesDigest, independenceDigest;
-  const ProcessAuditVerification({
-    required this.verdict,
-    required this.accessVerdict,
-    required this.packetDigest,
-    required this.evaluationDigest,
-    required this.sourceValuesDigest,
-    required this.independenceDigest,
-  });
-  const ProcessAuditVerification.empty()
-      : this(
-          verdict: '',
-          accessVerdict: 'unknown',
-          packetDigest: 'unknown',
-          evaluationDigest: 'unknown',
-          sourceValuesDigest: 'unknown',
-          independenceDigest: 'unknown',
-        );
-  static ProcessAuditVerification? tryFromJson(Map<String, Object?> json) {
-    final verdict = _packetVerdict(json['verdict']);
-    final packetDigest = _packetVerdict(json['packet_digest_verdict']);
-    final accessVerdict =
-        _componentVerdict(json['institutional_access_verdict']);
-    final evaluationDigest =
-        _componentVerdict(json['evaluation_digest_verdict']);
-    final sourceValuesDigest =
-        _componentVerdict(json['source_values_digest_verdict']);
-    final independenceDigest =
-        _componentVerdict(json['independence_digest_verdict']);
-    if (verdict == null ||
-        packetDigest == null ||
-        verdict != packetDigest ||
-        accessVerdict == null ||
-        evaluationDigest == null ||
-        sourceValuesDigest == null ||
-        independenceDigest == null) {
-      return null;
-    }
-    return ProcessAuditVerification(
-      verdict: verdict,
-      accessVerdict: accessVerdict,
-      packetDigest: packetDigest,
-      evaluationDigest: evaluationDigest,
-      sourceValuesDigest: sourceValuesDigest,
-      independenceDigest: independenceDigest,
-    );
-  }
-}
-
-class ProcessAuditDeclaredAccess {
-  final String verdict, coverageAssessment, reportedCoverageAssessment;
-  final List<String> limits;
-  const ProcessAuditDeclaredAccess({
-    required this.verdict,
-    required this.coverageAssessment,
-    required this.reportedCoverageAssessment,
-    required this.limits,
-  });
-  const ProcessAuditDeclaredAccess.unknown()
-      : this(
-          verdict: 'unknown',
-          coverageAssessment: 'unknown',
-          reportedCoverageAssessment: '',
-          limits: const [],
-        );
-  factory ProcessAuditDeclaredAccess.fromJson(Map<String, Object?> json) =>
-      ProcessAuditDeclaredAccess(
-        verdict: _text(json['verdict'], fallback: 'unknown'),
-        coverageAssessment:
-            _text(json['coverage_assessment'], fallback: 'unknown'),
-        reportedCoverageAssessment: _text(json['reported_coverage_assessment']),
-        limits: List.unmodifiable(_strings(json['limits'])),
-      );
-}
-
 class ProcessAuditSourcePointer {
   final String pointer, sourceValueText;
   final JsonPointerLocation? location;
@@ -208,22 +137,6 @@ class ProcessAuditSourcePointer {
   String get preview => sourceValueText.length <= 96
       ? sourceValueText
       : '${sourceValueText.substring(0, 96)}...';
-}
-
-String? _assessmentForPacketVerdict(String verdict) {
-  if (verdict == 'MATCH') return 'packet-local-match';
-  if (verdict == 'DRIFT') return 'packet-local-drift';
-  return null;
-}
-
-String? _packetVerdict(Object? value) {
-  if (value == 'MATCH' || value == 'DRIFT') return value as String;
-  return null;
-}
-
-String? _componentVerdict(Object? value) {
-  const known = {'MATCH', 'DRIFT', 'NOT_ASSESSED', 'UNKNOWN', 'unknown'};
-  return value is String && known.contains(value) ? value : null;
 }
 
 Map<String, Object?> _map(Object? value) =>
