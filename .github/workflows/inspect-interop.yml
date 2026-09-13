@@ -4,28 +4,26 @@ on:
   pull_request:
     paths:
       - 'harness/inspect_evidence*.py'
-      - 'harness/inspect_fixture_contract.py'
+      - 'harness/inspect_fixture*.py'
       - 'harness/evidence_json.py'
       - 'harness/private_artifact*.py'
       - 'harness/cli_entry.py'
       - 'scripts/run_inspect_import_acceptance.py'
       - 'scripts/check_inspect_fixtures.py'
-      - 'tests/test_inspect_evidence*.py'
-      - 'tests/test_inspect_fixture_contract.py'
+      - 'tests/test_inspect*.py'
       - 'tests/fixtures/inspect/**'
       - '.github/workflows/inspect-interop.yml'
   push:
     branches: [main]
     paths:
       - 'harness/inspect_evidence*.py'
-      - 'harness/inspect_fixture_contract.py'
+      - 'harness/inspect_fixture*.py'
       - 'harness/evidence_json.py'
       - 'harness/private_artifact*.py'
       - 'harness/cli_entry.py'
       - 'scripts/run_inspect_import_acceptance.py'
       - 'scripts/check_inspect_fixtures.py'
-      - 'tests/test_inspect_evidence*.py'
-      - 'tests/test_inspect_fixture_contract.py'
+      - 'tests/test_inspect*.py'
       - 'tests/fixtures/inspect/**'
       - '.github/workflows/inspect-interop.yml'
   workflow_dispatch:

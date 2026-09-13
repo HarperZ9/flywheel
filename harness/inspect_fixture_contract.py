@@ -6,12 +6,17 @@ from typing import Any
 
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .inspect_evidence import import_inspect_log
+from .inspect_fixture_projection import (
+    PROJECTION_ALLOWLIST,
+    PROJECTION_DESCRIPTION,
+    PROJECTION_PROFILE,
+    project_inspect_log,
+)
 from .private_artifact_fs import open_artifact_root, root_identity, supported
 
 FIXTURE_SCHEMA = "flywheel.inspect-contract-fixture/v1"
 MANIFEST_SCHEMA = "flywheel.inspect-fixture-manifest/v1"
 REPORT_SCHEMA = "flywheel.inspect-fixture-drift-report/v1"
-PROJECTION = "DERIVED allowlisted Inspect JSON: version/status/invalidated, eval task/model/config.limit, results counts/scorer coverage, sample id/epoch/status/error/score values only; no prompts, messages, outputs, paths, timestamps, metrics, run IDs, or local metadata."
 INSPECT_VERSION = "0.3.263"
 INSPECT_SCHEMA_VERSION = 2
 MAX_BYTES = 1_048_576
@@ -28,7 +33,7 @@ def fixture_bytes_name(fixture_id: str) -> str:
 
 def build_contract_fixture(fixture_id: str, raw: bytes, *, producer_version: str = INSPECT_VERSION) -> dict:
     source = strict_load_json(raw, max_bytes=MAX_BYTES, max_depth=32)
-    projected = _project(source)
+    projected = project_inspect_log(source)
     fixture = {
         "schema": FIXTURE_SCHEMA,
         "id": fixture_id,
@@ -39,14 +44,9 @@ def build_contract_fixture(fixture_id: str, raw: bytes, *, producer_version: str
             "inspect_schema_version": projected.get("version"),
         },
         "projection": {
-            "description": PROJECTION,
-            "allowlist": [
-                "/version", "/status", "/invalidated", "/eval/task", "/eval/model",
-                "/eval/config/limit", "/results/total_samples",
-                "/results/completed_samples", "/results/scores/*",
-                "/samples/*/id", "/samples/*/epoch", "/samples/*/status",
-                "/samples/*/error", "/samples/*/scores/*/value",
-            ],
+            "profile": PROJECTION_PROFILE,
+            "description": PROJECTION_DESCRIPTION,
+            "allowlist": PROJECTION_ALLOWLIST,
         },
         "source": {
             "original_sha256": hashlib.sha256(raw).hexdigest(),
@@ -233,30 +233,6 @@ def _check_importer(fixture: dict, expected: dict, out: dict) -> None:
             out["problems"].append(_problem("importer_count_disagreement", key))
     if _expected_scores(imported) != expected.get("scores", []):
         out["problems"].append(_problem("importer_score_disagreement"))
-
-
-def _project(source: dict) -> dict:
-    projected = {k: source[k] for k in ("version", "status", "invalidated") if k in source}
-    eval_obj = source.get("eval", {})
-    projected["eval"] = {k: eval_obj[k] for k in ("task", "model") if k in eval_obj}
-    if isinstance(eval_obj.get("config"), dict) and "limit" in eval_obj["config"]:
-        projected["eval"]["config"] = {"limit": eval_obj["config"]["limit"]}
-    results = source.get("results", {})
-    projected["results"] = {k: results[k] for k in ("total_samples", "completed_samples") if k in results}
-    if isinstance(results.get("scores"), list):
-        projected["results"]["scores"] = [_project_result_score(item) for item in results["scores"]]
-    projected["samples"] = [_project_sample(sample) for sample in source.get("samples", [])]
-    return projected
-
-
-def _project_result_score(item: dict) -> dict:
-    return {k: item[k] for k in ("name", "scorer", "scored_samples", "unscored_samples") if k in item}
-
-
-def _project_sample(sample: dict) -> dict:
-    out = {k: sample[k] for k in ("id", "epoch", "status", "error") if k in sample}
-    out["scores"] = {name: {"value": score["value"]} for name, score in sample.get("scores", {}).items() if isinstance(score, dict) and "value" in score}
-    return out
 
 
 def _expected_scores(imported: dict) -> list:

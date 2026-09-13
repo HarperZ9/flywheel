@@ -11,8 +11,9 @@ The [METR interoperability reference](METR-INTEROP.md) describes the execution
 route and the additional evidence needed beyond log import.
 
 This is an evidence import. It is not a METR Task Standard executor or a
-replacement for Inspect's evaluator and sandbox. It currently runs through the
-packaged CLI; a dedicated desktop import panel is not included.
+replacement for Inspect's evaluator and sandbox. The CLI and native desktop
+import panel both review exported Inspect JSON; neither reruns Inspect or unpacks
+native `.eval` archives.
 
 ## Use
 
@@ -48,6 +49,19 @@ redactor.
   source value is attached so a reviewer can compare it with the retained file.
 - Scorer values remain reported values. For example, a successful run can contain
   both a correct (`C`) and incorrect (`I`) result. Run completion is not accuracy.
+- If an Inspect score carries edit history, the per-score `score_history` field
+  reports only safe history fields: score `value`, edit `reason`, and provenance
+  `author`, `reason` and `timestamp`. Raw score answers, explanations and
+  metadata are not copied; `redacted_fields` names omitted fields when present.
+  A legitimate score edit does not make the run incomplete by itself. The edit
+  history is reported provenance, not proof of fraud, author identity,
+  wall-clock truth or disclosure completeness.
+- When any score history field is observed, `scoring_coverage.score_history`
+  distinguishes `present`, `empty` and `missing` for that import. Empty means
+  the imported log explicitly carried an empty history array. Missing means this
+  importer did not observe a history field for that score, not that no edit ever
+  happened. Legacy logs with no score history fields keep their earlier coverage
+  shape.
 
 The report selects per-sample scores and reported coverage counts. Aggregate
 metric values, scorer configuration, and transcripts remain in the original
@@ -66,6 +80,11 @@ or infinity in some logs; those exports currently need a separate explicit
 normalization with retained provenance, not silent value replacement. Unknown
 future log versions fail closed.
 
+Score edit history is bounded for reviewability. A score history longer than 128
+events, or provenance text fields longer than 4096 characters, is rejected as
+outside the supported import size for this evidence view. That limit is not an
+Inspect schema claim.
+
 Source: [Inspect log documentation](https://inspect.aisi.org.uk/eval-logs.html).
 
 ## Reproduce the integration check
@@ -77,11 +96,10 @@ python scripts/run_inspect_import_acceptance.py --out <new-empty-directory>
 python scripts/run_inspect_import_acceptance.py --epochs 2 --out <another-empty-directory>
 ```
 
-The check uses real
-Inspect evaluation, scoring, `.eval` serialization and JSON export with a mock
-model returning deterministic text. It exercises format interoperability; it
-does not measure a frontier model, certify governance compliance, or establish
-production-scale performance.
+The check uses real Inspect evaluation, scoring, score editing, `.eval`
+serialization and JSON export with a mock model returning deterministic text. It
+exercises format interoperability; it does not measure a frontier model, certify
+governance compliance, or establish production-scale performance.
 
 The Inspect JSON interoperability workflow repeats these checks on Linux and
 Windows using the pinned producer version. Its artifacts contain generated mock
@@ -92,6 +110,10 @@ with this producer version and these cases, not every possible Inspect task.
 
 The repository retains reviewed, derived fixtures in `tests/fixtures/inspect/v1`.
 They cover single and repeated samples, with both ordinary and invalidated logs.
+Those checked-in v1 files are historical fixtures for the original score-value
+projection and are not silently rewritten when the importer learns a new
+allowlisted field. Newly generated fixtures record the additive score-history
+projection profile when score history is included.
 Run the offline check without installing Inspect:
 
 ```text

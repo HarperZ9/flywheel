@@ -5,7 +5,6 @@ from .evidence_json import strict_load_json
 from .inspect_evidence_fields import (
     InspectImportError,
     _add,
-    _escape,
     _exact_bool,
     _exact_int,
     _exact_str,
@@ -15,7 +14,12 @@ from .inspect_evidence_fields import (
     _optional_object,
     _optional_str,
     _sample_id,
-    _score_value,
+)
+from .inspect_evidence_scores import (
+    _result_score_gap,
+    _result_scores,
+    _sample_scores,
+    new_score_history_counts,
 )
 
 SCHEMA = "flywheel.inspect-evidence/v1"
@@ -75,7 +79,7 @@ def _import_root(root: dict, source: dict) -> dict:
     if type(samples_source) is not list:
         raise InspectImportError("samples must be an array")
 
-    samples, sample_records, samples_with_scores, sample_error = _samples(
+    samples, sample_records, samples_with_scores, sample_error, score_history = _samples(
         samples_source, pointers)
     observed = len(samples)
     if total is not None and observed > total:
@@ -103,6 +107,8 @@ def _import_root(root: dict, source: dict) -> dict:
         "sample_score_records": sample_records,
         "result_scores": result_scores,
     }
+    if score_history["present"] or score_history["empty"]:
+        scoring_coverage["score_history"] = score_history
     return {
         "schema": SCHEMA,
         "source": source,
@@ -116,15 +122,18 @@ def _import_root(root: dict, source: dict) -> dict:
         "reported_error": reported_error,
         "samples": samples,
         "source_pointers": pointers,
-        "does_not_prove": _does_not_prove(assessment, invalidated=invalidated),
+        "does_not_prove": _does_not_prove(
+            assessment, invalidated=invalidated,
+            score_history_present=score_history["present"] > 0),
     }
 
-def _samples(items: list, pointers: list[dict[str, Any]]) -> tuple[list, int, int, bool]:
+def _samples(items: list, pointers: list[dict[str, Any]]) -> tuple[list, int, int, bool, dict[str, int]]:
     seen = set()
     sanitized = []
     score_records = 0
     with_scores = 0
     has_error = False
+    score_history = new_score_history_counts()
     for index, item in enumerate(items):
         pointer = f"/samples/{index}"
         if type(item) is not dict:
@@ -143,7 +152,8 @@ def _samples(items: list, pointers: list[dict[str, Any]]) -> tuple[list, int, in
             _add(pointers, f"{pointer}/status", status)
         error_present = "error" in item and item.get("error") is not None
         error = _error_summary(item.get("error"), f"{pointer}/error", pointers)
-        sample_scores = _sample_scores(item.get("scores"), f"{pointer}/scores", pointers)
+        sample_scores = _sample_scores(
+            item.get("scores"), f"{pointer}/scores", pointers, score_history)
         if sample_scores:
             with_scores += 1
             score_records += len(sample_scores)
@@ -155,58 +165,7 @@ def _samples(items: list, pointers: list[dict[str, Any]]) -> tuple[list, int, in
             "error": error,
             "scores": sample_scores,
         })
-    return sanitized, score_records, with_scores, has_error
-
-def _sample_scores(value: object, base: str, pointers: list[dict[str, Any]]) -> list:
-    if value is None:
-        return []
-    if type(value) is not dict:
-        raise InspectImportError("sample scores must be an object")
-    scores = []
-    for scorer, score in value.items():
-        if type(scorer) is not str:
-            raise InspectImportError("score names must be strings")
-        if type(score) is not dict:
-            raise InspectImportError("score entries must be objects")
-        if "value" not in score:
-            raise InspectImportError("score entries require value")
-        reported = score["value"]
-        if not _score_value(reported):
-            raise InspectImportError("score value has unsupported structure")
-        _add(pointers, f"{base}/{_escape(scorer)}/value", reported)
-        scores.append({"scorer": scorer, "value": reported})
-    return scores
-
-def _result_scores(results: dict, pointers: list[dict[str, Any]], total: int | None) -> list:
-    value = results.get("scores")
-    if value is None:
-        return []
-    if type(value) is not list:
-        raise InspectImportError("results scores must be an array")
-    coverage = []
-    for index, item in enumerate(value):
-        pointer = f"/results/scores/{index}"
-        if type(item) is not dict:
-            raise InspectImportError("results score entries must be objects")
-        entry: dict[str, Any] = {}
-        for key in ("name", "scorer"):
-            if key in item:
-                entry[key] = _optional_str(item[key], f"{pointer}/{key}")
-                _add(pointers, f"{pointer}/{key}", entry[key])
-        for key in ("scored_samples", "unscored_samples"):
-            if key in item:
-                entry[key] = _optional_int(item[key], f"{pointer}/{key}")
-                if entry[key] is not None and entry[key] < 0: raise InspectImportError("negative score count")
-                _add(pointers, f"{pointer}/{key}", entry[key])
-        scored, unscored = entry.get("scored_samples"), entry.get("unscored_samples")
-        if total is not None and (
-            (scored is not None and scored > total)
-            or (unscored is not None and unscored > total)
-            or (scored is not None and unscored is not None and scored + unscored > total)
-        ):
-            raise InspectImportError("score coverage exceeds total_samples")
-        coverage.append(entry)
-    return coverage
+    return sanitized, score_records, with_scores, has_error, score_history
 
 def _config_limit(eval_obj: dict, pointers: list[dict[str, Any]]) -> tuple[object, str | None]:
     config = eval_obj.get("config")
@@ -220,31 +179,6 @@ def _config_limit(eval_obj: dict, pointers: list[dict[str, Any]]) -> tuple[objec
         raise InspectImportError("eval config limit must be integer or two-integer range")
     _add(pointers, "/eval/config/limit", limit)
     return limit, "/eval/config/limit"
-
-def _result_score_gap(samples: list, result_scores: list) -> bool:
-    gap = False
-    for result in result_scores:
-        scorer = result.get("scorer")
-        if scorer is None:
-            continue
-        raw_count = 0
-        distinct_ids = set()
-        for sample in samples:
-            matched = any(score["scorer"] == scorer for score in sample["scores"])
-            raw_count += 1 if matched else 0
-            if matched:
-                distinct_ids.add((type(sample["id"]).__name__, str(sample["id"])))
-            else:
-                gap = True
-        scored, unscored = result.get("scored_samples"), result.get("unscored_samples")
-        if unscored not in (None, 0):
-            gap = True
-        allowed = {raw_count, len(distinct_ids)}
-        if scored is not None and unscored is not None and scored + unscored not in allowed:
-            raise InspectImportError("result score coverage contradicts sample scores")
-        if scored is None or scored not in allowed:
-            gap = True
-    return gap
 
 def _coverage_complete(status: str, total: int | None, completed: int | None,
                        observed: int, with_scores: int, sample_error: bool,
@@ -268,7 +202,8 @@ def _invalidated(root: dict, pointers: list[dict[str, Any]]) -> bool:
     _add(pointers, "/invalidated", invalidated)
     return invalidated
 
-def _does_not_prove(assessment: str, *, invalidated: bool = False) -> list[str]:
+def _does_not_prove(assessment: str, *, invalidated: bool = False,
+                    score_history_present: bool = False) -> list[str]:
     reasons = [
         "Inspect status and scorer values are reported by the source log only.",
         "This import does not independently rerun the task, scorer, model, or dataset.",
@@ -276,6 +211,8 @@ def _does_not_prove(assessment: str, *, invalidated: bool = False) -> list[str]:
     ]
     if invalidated:
         reasons.append("The source log is marked invalidated.")
+    if score_history_present:
+        reasons.append("Inspect score edit history author, reason, and timestamp are reported by the source log only.")
     if assessment in {"incomplete", "error"}:
         reasons.append("The source log reports incomplete or error coverage.")
     return reasons
