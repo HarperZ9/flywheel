@@ -23,4 +23,3 @@ Client error codes:
 - `PAYLOAD_TOO_LARGE` when the body is over 1 MiB.
 - `INVALID_JSON` for invalid UTF-8, duplicate keys, non-finite values, or other strict JSON failures.
 - `INVALID_PACKET` when strict JSON is valid but the packet schema is not `flywheel.incident-sim-process-audit/v1`.
-
