@@ -7,7 +7,7 @@ from typing import Callable, Mapping, Protocol
 from .cross_harness_process import OwnedProcess, ProcessLaunch, ProcessOutcome, start_owned_process
 from .evidence_json import canonical_bytes, strict_load_json
 from .gateway_operation import AuthorizedOperation, canonicalize_operation, thaw_operation
-from .gateway_operation_recovery import validate_operation_value
+from .gateway_operation_validation import validate_operation_value
 from .gateway_secret_boundary import validate_no_raw_secrets
 from .gateway_worker_env import minimal_worker_env
 _PRIVATE_SCHEMA = "flywheel.gateway-operation-worker/v3"
@@ -207,7 +207,7 @@ def supervise_gateway_operation(service, authorized: AuthorizedOperation, operat
                                 factory: OperationProcessFactory) -> None:
     """Bind generic process supervision to durable lifecycle callbacks."""
     from .gateway_operation import GatewayOperationError
-    from .gateway_operation_recovery import history_state
+    from .gateway_operation_validation import history_state
     owner = authorized.owner_ref
     def started(control: str) -> None:
         journey = service._journey(owner)

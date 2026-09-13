@@ -1,12 +1,15 @@
 part of 'process_audit_review.dart';
 
 class ProcessAuditVerification {
-  final String verdict, accessVerdict, packetDigest, evaluationDigest;
+  final String verdict, packetLocalVerdict, accessVerdict, packetDigest;
+  final String evaluationDigest;
   final String sourceValuesDigest, independenceDigest, actionChain;
   final String workReceipt, audit, auditSubject, receiptVerification;
+  final String gatewayEffectVerdict;
   final List<ProcessAuditVerifiedField> verifiedFields;
   const ProcessAuditVerification({
     required this.verdict,
+    required this.packetLocalVerdict,
     required this.accessVerdict,
     required this.packetDigest,
     required this.evaluationDigest,
@@ -17,11 +20,13 @@ class ProcessAuditVerification {
     required this.audit,
     required this.auditSubject,
     required this.receiptVerification,
+    required this.gatewayEffectVerdict,
     required this.verifiedFields,
   });
   const ProcessAuditVerification.empty()
       : this(
           verdict: '',
+          packetLocalVerdict: '',
           accessVerdict: 'unknown',
           packetDigest: 'unknown',
           evaluationDigest: 'unknown',
@@ -32,10 +37,13 @@ class ProcessAuditVerification {
           audit: 'unknown',
           auditSubject: 'unknown',
           receiptVerification: 'unknown',
+          gatewayEffectVerdict: 'unknown',
           verifiedFields: const [],
         );
   static ProcessAuditVerification? tryFromJson(Map<String, Object?> json) {
     final verdict = _packetVerdict(json['verdict']);
+    final packetLocalVerdict =
+        _packetVerdict(json['packet_local_verdict']) ?? verdict;
     final accessVerdict = _accessVerdict(json['institutional_access_verdict']);
     final packetDigest = _packetVerdict(json['packet_digest_verdict']);
     final evaluationDigest = _packetVerdict(json['evaluation_digest_verdict']);
@@ -49,6 +57,9 @@ class ProcessAuditVerification {
     final auditSubject = _packetVerdict(json['audit_subject_verdict']);
     final receiptVerification =
         _packetVerdict(json['receipt_verification_verdict']);
+    final gatewayEffectVerdict = json.containsKey('gateway_effect_verdict')
+        ? _gatewayEffectVerdict(json['gateway_effect_verdict'])
+        : 'UNAVAILABLE';
     final verifiedFields = _verifiedFields(json['verified_fields']);
     final components = [
       accessVerdict,
@@ -62,16 +73,26 @@ class ProcessAuditVerification {
       auditSubject,
       receiptVerification,
     ];
-    if (verdict == null || components.any((item) => item == null)) {
+    if (verdict == null ||
+        packetLocalVerdict == null ||
+        gatewayEffectVerdict == null ||
+        components.any((item) => item == null)) {
       return null;
     }
     if (verdict == 'MATCH' &&
+        (packetLocalVerdict == 'DRIFT' ||
+            components.contains('DRIFT') ||
+            verifiedFields.any((item) => item.verdict == 'DRIFT'))) {
+      return null;
+    }
+    if (packetLocalVerdict == 'MATCH' &&
         (components.contains('DRIFT') ||
             verifiedFields.any((item) => item.verdict == 'DRIFT'))) {
       return null;
     }
     return ProcessAuditVerification(
       verdict: verdict,
+      packetLocalVerdict: packetLocalVerdict,
       accessVerdict: accessVerdict!,
       packetDigest: packetDigest!,
       evaluationDigest: evaluationDigest!,
@@ -82,6 +103,7 @@ class ProcessAuditVerification {
       audit: audit!,
       auditSubject: auditSubject!,
       receiptVerification: receiptVerification!,
+      gatewayEffectVerdict: gatewayEffectVerdict,
       verifiedFields: List.unmodifiable(verifiedFields),
     );
   }
@@ -150,6 +172,13 @@ String? _assessmentForPacketVerdict(String verdict) {
 
 String? _packetVerdict(Object? value) {
   if (value == 'MATCH' || value == 'DRIFT') return value as String;
+  return null;
+}
+
+String? _gatewayEffectVerdict(Object? value) {
+  if (value == 'MATCH' || value == 'DRIFT' || value == 'UNAVAILABLE') {
+    return value as String;
+  }
   return null;
 }
 

@@ -8,13 +8,13 @@ from typing import Mapping
 from urllib.parse import unquote
 from .evidence_json import canonical_sha256
 from .gateway_operation_infra import INFRA_FIELDS, INFRA_PATHS
+from .gateway_operation_validation import OPERATION_REF_PATTERN
 from .gateway_secret_boundary import validate_no_raw_secrets
 REQUEST_SCHEMA = "flywheel.gateway-operation/v1"
 PROPOSAL_SCHEMA = "flywheel.gateway-grant-proposal/v1"
 PROPOSAL_REF_PATTERN = re.compile(r"prp_[0-9a-f]{32}\Z")
 CREDENTIAL_REF_PATTERN = re.compile(r"cred_[0-9a-f]{32}\Z")
 _SCOPES = ("write", "exec", "network", "plugin", "secrets")
-OPERATION_REF_PATTERN = re.compile(r"op_[0-9a-f]{32}\Z")
 _SECRET_NAMES = frozenset(("api_key", "access_token", "refresh_token", "token",
     "password", "secret", "credential", "credentials", "private_key",
     "authorization", "cookie", "environment", "env"))

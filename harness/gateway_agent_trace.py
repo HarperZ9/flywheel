@@ -8,9 +8,8 @@ import re
 
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .gateway_agent_projection import projection
-from .gateway_operation import OPERATION_REF_PATTERN
-from .gateway_operation_recovery import validate_operation_value
-from .gateway_secret_boundary import validate_no_raw_secrets
+from .gateway_operation_validation import OPERATION_REF_PATTERN, validate_operation_value
+from .gateway_secret_validation import validate_no_raw_secrets
 from .journey_types import JOURNEY_REF_PATTERN
 from .local_session import SessionLedger
 from .operation_grants import OWNER_REF_PATTERN, _secure_owner_only

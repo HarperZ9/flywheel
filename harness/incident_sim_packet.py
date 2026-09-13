@@ -20,6 +20,7 @@ from .incident_sim_packet_verify import (
     packet_section_hashes,
     verify_process_audit_packet,
 )
+from .gateway_effect_offline import SCHEMA as GATEWAY_EFFECT_SCHEMA
 from .tool_call_receipt import build_receipt, verify_chain, verify_receipt
 
 SCHEMA = "flywheel.incident-sim-process-audit/v1"
@@ -180,11 +181,14 @@ def _access_component(task: dict[str, Any], trace: dict[str, Any],
 
 
 def _subject_digest(task_sha: str, trace_sha: str, eval_sha: str, work_sha: str,
-                    access_sha: str | None = None) -> str:
+                    access_sha: str | None = None,
+                    gateway_effect_sha: str | None = None) -> str:
     body = {"task_sha256": task_sha, "trace_sha256": trace_sha,
             "evaluation_sha256": eval_sha, "work_receipt_sha256": work_sha}
     if access_sha is not None:
         body["institutional_access_sha256"] = access_sha
+    if gateway_effect_sha is not None:
+        body["gateway_effect_sha256"] = gateway_effect_sha
     return canonical_sha256(body)
 
 
@@ -195,6 +199,7 @@ def build_process_audit_packet(
     supplied_evaluation: dict[str, Any] | None = None,
     institutional_access: dict[str, Any] | None = None,
     institutional_access_scope: dict[str, Any] | None = None,
+    gateway_effect: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the bounded process-audit packet for one incident-sim trace."""
     task = _snapshot(task)
@@ -215,8 +220,16 @@ def build_process_audit_packet(
             raise IncidentSimValidationError("institutional_access requires institutional_access_scope")
         access_component = _access_component(
             task, trace, institutional_access, institutional_access_scope)
+    gateway_effect_component = None
+    if gateway_effect is not None:
+        gateway_effect_component = _snapshot(gateway_effect)
+        if (type(gateway_effect_component) is not dict
+                or gateway_effect_component.get("schema") != GATEWAY_EFFECT_SCHEMA):
+            raise IncidentSimValidationError("gateway_effect_invalid")
     subject = _subject_digest(task_sha, trace_sha, eval_sha, work["seal"]["hex"],
-                              None if access_component is None else access_component["component_sha256"])
+                              None if access_component is None else access_component["component_sha256"],
+                              None if gateway_effect_component is None
+                              else gateway_effect_component.get("component_sha256"))
     audit = _audit_receipt(evaluation, work, subject, trace)
     source_values = _source_values(task, trace)
     independence = {
@@ -259,6 +272,8 @@ def build_process_audit_packet(
     }
     if access_component is not None:
         packet["institutional_access"] = access_component
+    if gateway_effect_component is not None:
+        packet["gateway_effect"] = gateway_effect_component
     packet["section_sha256"] = packet_section_hashes({
         "evaluation": evaluation,
         "supplied_evaluation_check": supplied_check,
@@ -266,6 +281,7 @@ def build_process_audit_packet(
         "independence": independence,
         "incident": incident,
         "receipt_verification": receipt_verification,
+        "gateway_effect": gateway_effect_component,
     })
     packet["packet_sha256"] = packet_body_sha256(packet)
     return packet

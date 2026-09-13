@@ -10,6 +10,10 @@ So this does not scan harness/ blindly. It walks the transitive import closure
 of the verifier entry points and asserts that nothing reachable from them
 imports a third-party package. That is the actual property, and it fails the
 moment somebody adds `import torch` to a module the gate happens to reach.
+
+This is static import analysis against the known THIRD_PARTY set, not a proof
+that arbitrary initializer code executes successfully. Dynamic import strings
+and runtime attribute mutation require separate execution checks.
 """
 from __future__ import annotations
 
@@ -70,8 +74,33 @@ THIRD_PARTY = {
 
 def _module_path(name: str) -> Path | None:
     """Resolve a dotted local name to a file under harness/."""
-    p = HARNESS.joinpath(*name.split(".")).with_suffix(".py")
-    return p if p.exists() else None
+    if not name or any(not part.isidentifier() for part in name.split(".")):
+        return None
+    base = HARNESS.joinpath(*name.split("."))
+    package = base / "__init__.py"
+    module = base.with_suffix(".py")
+    return package if package.is_file() else module if module.is_file() else None
+
+
+def _package_bindings(path: Path, excluded_line: int | None) -> set[str]:
+    """Recognize unconditional declarations, without executing an initializer."""
+    names: set[str] = set()
+    pending = list(ast.parse(path.read_text(encoding="utf-8")).body)
+    while pending:
+        node = pending.pop()
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names.add(node.name)
+            continue
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            if node.lineno != excluded_line:
+                names.update(alias.asname or alias.name.split(".")[0]
+                             for alias in node.names if alias.name != "*")
+            continue
+        if isinstance(node, (ast.Assign, ast.AnnAssign)) and node.value is not None:
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            names.update(part.id for target in targets for part in ast.walk(target)
+                         if isinstance(part, ast.Name) and isinstance(part.ctx, ast.Store))
+    return names
 
 
 def _imports_of(path: Path) -> tuple[set[str], set[str]]:
@@ -83,35 +112,51 @@ def _imports_of(path: Path) -> tuple[set[str], set[str]]:
     """
     local: set[str] = set()
     third: set[str] = set()
-    pkg = path.parent.relative_to(HARNESS).as_posix().replace("/", ".")
+    package_parts = list(path.parent.relative_to(HARNESS).parts)
+
+    def add_from(base: str, node: ast.ImportFrom) -> None:
+        if base:
+            local.add(base)
+        elif (HARNESS / "__init__.py").is_file():
+            local.add("__init__")
+        source = _module_path(base or "__init__")
+        package = source is not None and source.name == "__init__.py"
+        bindings = (_package_bindings(source, node.lineno if source == path else None)
+                    if package else set())
+        for alias in node.names:
+            if alias.name == "*":
+                continue
+            child = ".".join(filter(None, (base, alias.name)))
+            # Unknown package aliases must remain visible as unresolved names.
+            # Declared values/functions are attributes, not missing child modules.
+            if (_module_path(child) is not None or
+                    (package or not base) and alias.name not in bindings):
+                local.add(child)
+
     tree = ast.parse(path.read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom):
             if node.level and node.level > 0:                 # from .x import y
-                if node.module:
-                    # level 1 is this package, level 2 is its parent, and so on.
-                    base = pkg.split(".") if pkg else []
-                    up = node.level - 1
-                    scope = base[:len(base) - up] if up else base
-                    local.add(".".join([*scope, node.module]) if scope
-                              else node.module)
+                up = node.level - 1
+                if up > len(package_parts):
+                    local.add("<invalid-relative-import>")
+                    continue
+                scope = package_parts[:len(package_parts) - up] if up else package_parts
+                base = ".".join([*scope, *([node.module] if node.module else [])])
+                add_from(base, node)
                 continue
             if not node.module:
                 continue
             head = node.module.split(".")[0]
             if head == "harness":
-                parts = node.module.split(".")
-                if len(parts) > 1:
-                    local.add(parts[1])
+                add_from(node.module.partition(".")[2], node)
             elif head in THIRD_PARTY:
                 third.add(f"{path.name}:{node.lineno} {head}")
         elif isinstance(node, ast.Import):
             for a in node.names:
                 head = a.name.split(".")[0]
                 if head == "harness":
-                    parts = a.name.split(".")
-                    if len(parts) > 1:
-                        local.add(parts[1])
+                    local.add(a.name.partition(".")[2] or "__init__")
                 elif head in THIRD_PARTY:
                     third.add(f"{path.name}:{node.lineno} {head}")
     return local, third
@@ -127,6 +172,11 @@ def closure(entry_points: list[str]) -> tuple[set[str], list[str]]:
         if name in seen:
             continue
         seen.add(name)
+        # Python executes each parent package initializer before its submodule.
+        parents = ["__init__"] + [".".join(name.split(".")[:i])
+                                   for i in range(1, len(name.split(".")))]
+        stack.extend(parent for parent in parents if parent not in seen
+                     and _module_path(parent) is not None)
         p = _module_path(name)
         if p is None:
             continue
@@ -140,10 +190,16 @@ def main() -> int:
     reached, hits = closure(VERIFIER_ENTRY_POINTS)
     print(f"verifier closure: {len(reached)} modules reachable from "
           f"{len(VERIFIER_ENTRY_POINTS)} entry points")
+    missing = sorted(name for name in reached if _module_path(name) is None)
+    if missing:
+        print("UNRESOLVED LOCAL IMPORT ON THE VERIFIER PATH:")
+        for name in missing:
+            print("  " + name)
     if hits:
         print("THIRD-PARTY IMPORT ON THE VERIFIER PATH:")
         for h in hits:
             print("  " + h)
+    if hits or missing:
         return 1
     print("verifier path is stdlib-only: clean")
     return 0

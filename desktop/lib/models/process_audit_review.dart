@@ -5,6 +5,8 @@ import 'process_audit_packet_upload.dart';
 export 'process_audit_packet_upload.dart';
 
 part 'process_audit_verification.dart';
+part 'process_audit_gateway_effect.dart';
+part 'process_audit_gateway_effect_coverage.dart';
 
 final _sha256 = RegExp(r'^[0-9a-f]{64}$');
 
@@ -13,6 +15,7 @@ class ProcessAuditReviewResult {
   final ProcessAuditSource? source;
   final ProcessAuditVerification verification;
   final ProcessAuditDeclaredAccess declaredAccess;
+  final GatewayEffectOfflineReview? gatewayEffect;
   final List<ProcessAuditSourcePointer> sourcePointers;
   final List<String> limitations;
   final String assessment, semanticVerification;
@@ -22,6 +25,7 @@ class ProcessAuditReviewResult {
     this.source,
     required this.verification,
     required this.declaredAccess,
+    this.gatewayEffect,
     required this.sourcePointers,
     required this.limitations,
     this.assessment = '',
@@ -56,7 +60,11 @@ class ProcessAuditReviewResult {
     final verification =
         ProcessAuditVerification.tryFromJson(_map(json['verification']));
     final expectedAssessment =
-        _assessmentForPacketVerdict(verification?.verdict ?? '');
+        _assessmentForPacketVerdict(verification?.packetLocalVerdict ?? '');
+    final gatewayEffect = json.containsKey('gateway_effect_verification')
+        ? GatewayEffectOfflineReview.tryFromJson(
+            _map(json['gateway_effect_verification']))
+        : null;
     final declaredAccess = ProcessAuditDeclaredAccess.tryFromJson(
       _map(json['declared_access']),
       verification?.accessVerdict ?? '',
@@ -67,6 +75,9 @@ class ProcessAuditReviewResult {
         source.byteLength != upload.byteLength ||
         expectedAssessment == null ||
         assessment != expectedAssessment ||
+        (json.containsKey('gateway_effect_verification') &&
+            gatewayEffect == null) ||
+        !_gatewayConsistent(verification, gatewayEffect) ||
         declaredAccess == null) {
       return const ProcessAuditReviewResult.error(
         'INVALID_RESPONSE',
@@ -83,15 +94,37 @@ class ProcessAuditReviewResult {
       semanticVerification: 'UNVERIFIABLE',
       verification: verification!,
       declaredAccess: declaredAccess,
+      gatewayEffect: gatewayEffect,
       sourcePointers: List.unmodifiable(pointers),
       limitations: List.unmodifiable(_strings(json['does_not_prove'])),
     );
   }
 
-  String get packetIntegrityLabel => 'Packet integrity ${verification.verdict}';
+  String get packetIntegrityLabel =>
+      'Packet integrity ${verification.packetLocalVerdict}';
 
   String get packetIntegrityStatus =>
-      verification.verdict == 'MATCH' ? 'verified' : 'drift';
+      verification.packetLocalVerdict == 'MATCH' ? 'verified' : 'drift';
+}
+
+bool _gatewayConsistent(
+  ProcessAuditVerification? verification,
+  GatewayEffectOfflineReview? gatewayEffect,
+) {
+  if (verification == null || gatewayEffect == null) return true;
+  final internal = gatewayEffect.internalConsistency.verdict;
+  final expected = gatewayEffect.expectedCorrespondence.verdict;
+  final calculatedGateway =
+      internal == 'DRIFT' || expected == 'DRIFT' ? 'DRIFT' : internal;
+  if (verification.gatewayEffectVerdict != internal) return false;
+  if (verification.packetLocalVerdict == 'MATCH' && internal == 'DRIFT') {
+    return false;
+  }
+  if (verification.verdict == 'MATCH' &&
+      (verification.packetLocalVerdict == 'DRIFT' || expected == 'DRIFT')) {
+    return false;
+  }
+  return gatewayEffect.verdict == calculatedGateway;
 }
 
 class ProcessAuditSource {
@@ -103,7 +136,10 @@ class ProcessAuditSource {
     final format = _text(json['format']);
     final sha = _text(json['sha256']);
     final length = _int(json['byte_length']);
-    if (format != 'incident-sim-process-audit-json' ||
+    if (!const {
+          'incident-sim-process-audit-json',
+          'incident-sim-process-audit-review-request-json',
+        }.contains(format) ||
         !_sha256.hasMatch(sha) ||
         length < 1 ||
         length > maxProcessAuditPacketBytes) {
@@ -114,11 +150,16 @@ class ProcessAuditSource {
 }
 
 class ProcessAuditSourcePointer {
-  final String pointer, sourceValueText;
+  final String pointer, sourcePointer, source, privacy, sourceValueText;
+  final List<String> limits;
   final JsonPointerLocation? location;
   const ProcessAuditSourcePointer({
     required this.pointer,
+    required this.sourcePointer,
+    required this.source,
+    required this.privacy,
     required this.sourceValueText,
+    required this.limits,
     this.location,
   });
   factory ProcessAuditSourcePointer.fromJson(
@@ -126,18 +167,31 @@ class ProcessAuditSourcePointer {
     ProcessAuditPacketUpload upload,
   ) {
     final pointer = _text(json['json_pointer'] ?? json['pointer']);
+    final source = _text(json['source']);
+    final sourcePointer = _sourcePointer(pointer, source);
     return ProcessAuditSourcePointer(
       pointer: pointer,
+      sourcePointer: sourcePointer,
+      source: source,
+      privacy: _text(json['privacy']),
       sourceValueText: json.containsKey('source_value')
           ? _displayValue(json['source_value'])
           : '',
-      location: upload.locationFor(pointer),
+      limits: List.unmodifiable(_strings(json['limits'])),
+      location: upload.locationFor(sourcePointer),
     );
   }
+  bool get isDerived => source == 'derived_from_submitted_trace_records';
   String get preview => sourceValueText.length <= 96
       ? sourceValueText
       : '${sourceValueText.substring(0, 96)}...';
 }
+
+String _sourcePointer(String pointer, String source) =>
+    source == 'derived_from_submitted_trace_records' &&
+            pointer == '/gateway_effect/trace_preview'
+        ? '/gateway_effect/trace_records'
+        : pointer;
 
 Map<String, Object?> _map(Object? value) =>
     value is Map ? Map<String, Object?>.from(value) : <String, Object?>{};

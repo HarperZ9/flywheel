@@ -7,6 +7,7 @@ from typing import Any
 
 from harness.evidence_json import strict_load_json
 from harness.evidence_public import ERROR_SCHEMA, TransportError, error_response
+from harness.gateway_effect_offline import trace_export_preview
 from harness.incident_sim_packet import SCHEMA as PACKET_SCHEMA
 from harness.incident_sim_packet_verify import (
     MATCH,
@@ -16,6 +17,7 @@ from harness.incident_sim_packet_verify import (
 
 PATH = "/api/incident-sim/process-audit/review"
 REVIEW_SCHEMA = "flywheel.incident-sim-process-audit-review/v1"
+REVIEW_REQUEST_SCHEMA = "flywheel.incident-sim-process-audit-review-request/v1"
 MAX_PACKET_BYTES = 1_048_576
 
 _DOES_NOT_PROVE = [
@@ -63,19 +65,21 @@ def process_audit_review_post(
             raise TransportError("INVALID_JSON", "request body is not strict JSON")
         if len(data) > MAX_PACKET_BYTES:
             return payload_too_large_response()
-        packet = strict_load_json(data, max_bytes=MAX_PACKET_BYTES, max_depth=64)
+        request = strict_load_json(data, max_bytes=MAX_PACKET_BYTES, max_depth=64)
+        packet, expected_hashes, source_format = _review_input(request)
         if packet.get("schema") != PACKET_SCHEMA:
             raise TransportError(
                 "INVALID_PACKET",
                 "request body is not an incident-sim process-audit packet",
                 422,
             )
-        verification = verify_process_audit_packet(packet)
-        verdict = verification.get("verdict")
+        verification = verify_process_audit_packet(
+            packet, expected_hashes=expected_hashes)
+        verdict = verification.get("packet_local_verdict", verification.get("verdict"))
         body = {
             "schema": REVIEW_SCHEMA,
             "source": {
-                "format": "incident-sim-process-audit-json",
+                "format": source_format,
                 "sha256": hashlib.sha256(data).hexdigest(),
                 "byte_length": len(data),
             },
@@ -85,6 +89,7 @@ def process_audit_review_post(
             ),
             "semantic_verification": "UNVERIFIABLE",
             "verification": verification,
+            "gateway_effect_verification": verification["gateway_effect_verification"],
             "declared_access": _declared_access(packet, verification),
             "source_pointers": _source_pointers(packet),
             "does_not_prove": list(_DOES_NOT_PROVE),
@@ -102,6 +107,16 @@ def _snapshot(value: Any) -> Any:
     return json.loads(json.dumps(value, ensure_ascii=False, allow_nan=False))
 
 
+def _review_input(request: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any] | None, str]:
+    if request.get("schema") == REVIEW_REQUEST_SCHEMA:
+        packet = request.get("packet")
+        expected = request.get("expected_hashes")
+        if type(packet) is not dict or (expected is not None and type(expected) is not dict):
+            raise TransportError("INVALID_PACKET", "review request is malformed", 422)
+        return packet, expected, "incident-sim-process-audit-review-request-json"
+    return request, None, "incident-sim-process-audit-json"
+
+
 def _add(rows: list[dict[str, Any]], packet: dict[str, Any],
          pointer: str, *keys: str) -> None:
     node: Any = packet
@@ -110,6 +125,19 @@ def _add(rows: list[dict[str, Any]], packet: dict[str, Any],
             return
         node = node[key]
     rows.append({"json_pointer": pointer, "source_value": _snapshot(node)})
+
+
+def _add_gateway_preview(rows: list[dict[str, Any]], packet: dict[str, Any]) -> None:
+    component = packet.get("gateway_effect")
+    if type(component) is not dict:
+        return
+    rows.append({
+        "json_pointer": "/gateway_effect/trace_preview",
+        "source": "derived_from_submitted_trace_records",
+        "privacy": "content_free_preview",
+        "source_value": trace_export_preview(component.get("trace_records")),
+        "limits": ["full trace_records are private exact-review input"],
+    })
 
 
 def _source_pointers(packet: dict[str, Any]) -> list[dict[str, Any]]:
@@ -121,6 +149,11 @@ def _source_pointers(packet: dict[str, Any]) -> list[dict[str, Any]]:
          "evaluation", "overall", "verdict")
     _add(rows, packet, "/source_values", "source_values")
     _add(rows, packet, "/independence", "independence")
+    _add_gateway_preview(rows, packet)
+    _add(rows, packet, "/gateway_effect/packet_local_sha256",
+         "gateway_effect", "packet_local_sha256")
+    _add(rows, packet, "/gateway_effect/terminal_result/state",
+         "gateway_effect", "terminal_result", "state")
     _add(rows, packet, "/institutional_access/assessment/coverage_assessment",
          "institutional_access", "assessment", "coverage_assessment")
     _add(rows, packet, "/institutional_access/assessment/claims",
