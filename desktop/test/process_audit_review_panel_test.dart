@@ -169,6 +169,11 @@ Map<String, Object?> _body(
         'evaluation_digest_verdict': 'MATCH',
         'source_values_digest_verdict': 'MATCH',
         'independence_digest_verdict': 'MATCH',
+        'action_chain_verdict': 'MATCH',
+        'work_receipt_verdict': 'MATCH',
+        'audit_verdict': 'MATCH',
+        'audit_subject_verdict': 'MATCH',
+        'receipt_verification_verdict': 'MATCH',
       },
       'declared_access': {
         'verdict': declaredVerdict,

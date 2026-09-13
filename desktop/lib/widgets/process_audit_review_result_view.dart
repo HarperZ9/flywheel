@@ -61,6 +61,11 @@ class ProcessAuditReviewResultView extends StatelessWidget {
       'evaluation': v.evaluationDigest,
       'source values': v.sourceValuesDigest,
       'independence': v.independenceDigest,
+      'actions': v.actionChain,
+      'work receipt': v.workReceipt,
+      'audit receipt': v.audit,
+      'audit subject': v.auditSubject,
+      'receipt verification': v.receiptVerification,
       'declared access': v.accessVerdict,
     };
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -87,6 +88,11 @@ void main() {
         'evaluation_digest_verdict': 'MATCH',
         'source_values_digest_verdict': 'MATCH',
         'independence_digest_verdict': 'MATCH',
+        'action_chain_verdict': 'MATCH',
+        'work_receipt_verdict': 'MATCH',
+        'audit_verdict': 'MATCH',
+        'audit_subject_verdict': 'MATCH',
+        'receipt_verification_verdict': 'MATCH',
       },
       'declared_access': {
         'verdict': 'DRIFT',
@@ -112,6 +118,55 @@ void main() {
     expect(result.sourcePointers.single.sourceValueText, 'closed');
   });
 
+  test('review result accepts backend drift with a matching packet digest', () {
+    final fixture = _fixture('process_audit_resealed_component_review.json');
+    final raw = fixture['packet_json']! as String;
+    final upload = ProcessAuditPacketUpload.fromPickedBytes(
+      Uint8List.fromList(utf8.encode(raw)),
+    );
+    final review = Map<String, Object?>.from(fixture['review']! as Map);
+
+    final result = ProcessAuditReviewResult.fromJson(review, upload);
+
+    expect(result.errorCode, isNull);
+    expect(result.packetIntegrityStatus, 'drift');
+    expect(result.verification.verdict, 'DRIFT');
+    expect(result.verification.packetDigest, 'MATCH');
+    expect(result.verification.evaluationDigest, 'DRIFT');
+    expect(result.verification.auditSubject, 'DRIFT');
+  });
+
+  test('review result rejects malformed overall and access coverage promotion',
+      () {
+    final upload = ProcessAuditPacketUpload.fromPickedBytes(
+      Uint8List.fromList(utf8.encode(
+        '{"schema":"flywheel.incident-sim-process-audit/v1"}',
+      )),
+    );
+    final matchWithDrift = _reviewBody(upload, actionChain: 'DRIFT');
+    final completeDriftAccess = _reviewBody(
+      upload,
+      assessment: 'packet-local-drift',
+      verdict: 'DRIFT',
+      accessVerdict: 'DRIFT',
+      declaredAccess: {
+        'verdict': 'DRIFT',
+        'coverage_assessment': 'complete',
+        'reported_coverage_assessment': 'complete',
+        'limits': ['reported coverage is untrusted'],
+      },
+    );
+
+    expect(
+      ProcessAuditReviewResult.fromJson(matchWithDrift, upload).errorCode,
+      'INVALID_RESPONSE',
+    );
+    expect(
+      ProcessAuditReviewResult.fromJson(completeDriftAccess, upload).errorCode,
+      'INVALID_RESPONSE',
+    );
+  });
+
   test('review result rejects missing or inconsistent verification', () {
     final upload = ProcessAuditPacketUpload.fromPickedBytes(
       Uint8List.fromList(utf8.encode(
@@ -134,23 +189,48 @@ void main() {
   });
 }
 
-Map<String, Object?> _reviewBody(ProcessAuditPacketUpload upload) => {
+Map<String, Object?> _reviewBody(
+  ProcessAuditPacketUpload upload, {
+  String assessment = 'packet-local-match',
+  String verdict = 'MATCH',
+  String accessVerdict = 'NOT_ASSESSED',
+  String packetDigest = 'MATCH',
+  String evaluationDigest = 'MATCH',
+  String sourceValuesDigest = 'MATCH',
+  String independenceDigest = 'MATCH',
+  String actionChain = 'MATCH',
+  String workReceipt = 'MATCH',
+  String audit = 'MATCH',
+  String auditSubject = 'MATCH',
+  String receiptVerification = 'MATCH',
+  Map<String, Object?>? declaredAccess,
+}) =>
+    {
       'schema': ProcessAuditReviewResult.schemaName,
       'source': {
         'format': 'incident-sim-process-audit-json',
         'sha256': upload.sha256,
         'byte_length': upload.byteLength,
       },
-      'assessment': 'packet-local-match',
+      'assessment': assessment,
       'verification': {
-        'verdict': 'MATCH',
-        'institutional_access_verdict': 'NOT_ASSESSED',
-        'packet_digest_verdict': 'MATCH',
-        'evaluation_digest_verdict': 'MATCH',
-        'source_values_digest_verdict': 'MATCH',
-        'independence_digest_verdict': 'MATCH',
+        'verdict': verdict,
+        'institutional_access_verdict': accessVerdict,
+        'packet_digest_verdict': packetDigest,
+        'evaluation_digest_verdict': evaluationDigest,
+        'source_values_digest_verdict': sourceValuesDigest,
+        'independence_digest_verdict': independenceDigest,
+        'action_chain_verdict': actionChain,
+        'work_receipt_verdict': workReceipt,
+        'audit_verdict': audit,
+        'audit_subject_verdict': auditSubject,
+        'receipt_verification_verdict': receiptVerification,
       },
-      'declared_access': {'verdict': 'NOT_ASSESSED'},
+      'declared_access': declaredAccess ?? {'verdict': accessVerdict},
       'source_pointers': const [],
       'does_not_prove': const [],
     };
+
+Map<String, Object?> _fixture(String name) => Map<String, Object?>.from(
+      jsonDecode(File('test/fixtures/$name').readAsStringSync()) as Map,
+    );
