@@ -1249,6 +1249,14 @@ class _Handler(BaseHTTPRequestHandler):
             if length is None: return self._json({"schema": "flywheel.evidence-transport-error/v1",
                 "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
             from harness.enterprise_envs.service_desk_review_route import service_desk_review_post; return self._json(*service_desk_review_post(p, self.rfile.read(length), run_root=Path(self.run_root)))
+        if p == "/api/incident-sim/process-audit/review":  # review incident-sim process-audit packet
+            from harness.incident_sim_process_audit_route import (MAX_PACKET_BYTES, is_json_content_type, payload_too_large_response, process_audit_review_post, unsupported_media_type_response)
+            length = self._content_length()
+            if length is None: return self._json({"schema": "flywheel.evidence-transport-error/v1", "error": {"code": "INVALID_LENGTH", "message": "request length is invalid"}}, 400)
+            content_type = self.headers.get("Content-Type", "")
+            if not is_json_content_type(content_type): return self._json(*unsupported_media_type_response())
+            if length > MAX_PACKET_BYTES: return self._json(*payload_too_large_response())
+            return self._json(*process_audit_review_post(p, self.rfile.read(length), content_type=content_type))
         if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
                          "/api/continuation/", "/api/writing/",
                          "/api/source-context/", "/api/gateway-grants/",
