@@ -14,10 +14,13 @@ import json
 import sys
 from pathlib import Path
 
+from . import attribution_far as af
 from . import coercive_environment as ce
+from . import dataset_provenance as dp
 from . import incentive_manifest as im
 from . import internal_consistency as ic
 from . import internalization_gap as ig
+from . import intervention_ablation as ia
 from . import reward_gap as rg
 from . import served_model_provenance as smp
 from .transitive_witness import DRIFT, MATCH, UNVERIFIABLE
@@ -33,7 +36,10 @@ _USAGE = (
     "  erg          MANIFEST.json LOG.json    reward gap: high reward without declared intent\n"
     "  igap         MANIFEST.json LOG.json    internalization gap: complies when watched, not when unwatched\n"
     "  smp          CLAIM.json OBSERVED.json   served-model provenance: did you get the model you were promised\n"
-    "  icp          MANIFEST.json LOG.json    internal consistency: does the internal honesty signal track behavior\n")
+    "  icp          MANIFEST.json LOG.json    internal consistency: does the internal honesty signal track behavior\n"
+    "  dpp          DATASET.json OBSERVED.json  dataset provenance: do the shards match their declared origin\n"
+    "  iae          MANIFEST.json LOG.json    intervention ablation: does an intervention reduce misalignment\n"
+    "  far          MANIFEST.json TRIALS.json  attribution false-accept rate over known-null controls\n")
 
 
 def _load(path):
@@ -107,9 +113,28 @@ def main(argv=None) -> int:
             result = ic.analyze(_load(rest[0]), _load(rest[1]))
             _emit(result)
             return _EXIT[result["verdict"]]
+        if command == "dpp":
+            if len(rest) != 2:
+                return _usage()
+            result = dp.analyze(_load(rest[0]), _load(rest[1]))
+            _emit(result)
+            return _EXIT[result["verdict"]]
+        if command == "iae":
+            if len(rest) != 2:
+                return _usage()
+            result = ia.analyze(_load(rest[0]), _load(rest[1]))
+            _emit(result)
+            return 0 if result["verdict"] == ia.REDUCES else 1
+        if command == "far":
+            if len(rest) != 2:
+                return _usage()
+            result = af.analyze(_load(rest[0]), _load(rest[1]))
+            _emit(result)
+            return 0 if result["verdict"] == af.RELIABLE else 1
     except (im.ManifestError, ce.CertificateError, rg.RewardGapError,
             ig.InternalizationGapError, smp.ProvenanceError,
-            ic.InternalConsistencyError) as exc:
+            ic.InternalConsistencyError, dp.DatasetProvenanceError,
+            ia.InterventionAblationError, af.AttributionFARError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     except (OSError, ValueError) as exc:
