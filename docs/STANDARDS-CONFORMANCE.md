@@ -131,11 +131,16 @@ throughline:
 - The checker: the false-accept corpus measures how often the verifier accepts a
   result it should reject.
 
-The one layer this set does not open is the model's internals; that is the
-interpretability problem, and the honest position is that behavioral and
-environmental evidence has a ceiling a transcript cannot cross. The instruments
-here attribute a behavior to the environment that produced it; they do not read an
-internal state, and each says so.
+The internals layer is the hardest, and the honest position is that behavioral and
+environmental evidence has a ceiling a transcript cannot cross. The first step
+into it is the Internal Consistency Probe, which does not read an internal state
+directly; it checks whether an internal honesty signal from an interpretation
+setup tracks behavior, and flags the trajectories that looked honest inside but
+acted deceptively. That is check-the-checker for interpretability, and it is
+bounded on purpose: the signal is reference-dependent on one interpretation setup,
+so it does not transfer across setups or prove an internal state. The other
+instruments attribute a behavior to the environment that produced it; none claims
+to read a mind, and each says so.
 
 ## Status
 

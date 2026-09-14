@@ -16,6 +16,7 @@ from pathlib import Path
 
 from . import coercive_environment as ce
 from . import incentive_manifest as im
+from . import internal_consistency as ic
 from . import internalization_gap as ig
 from . import reward_gap as rg
 from . import served_model_provenance as smp
@@ -31,7 +32,8 @@ _USAGE = (
     "  ncec-verify  CERT.json MANIFEST.json   re-derive a certificate\n"
     "  erg          MANIFEST.json LOG.json    reward gap: high reward without declared intent\n"
     "  igap         MANIFEST.json LOG.json    internalization gap: complies when watched, not when unwatched\n"
-    "  smp          CLAIM.json OBSERVED.json   served-model provenance: did you get the model you were promised\n")
+    "  smp          CLAIM.json OBSERVED.json   served-model provenance: did you get the model you were promised\n"
+    "  icp          MANIFEST.json LOG.json    internal consistency: does the internal honesty signal track behavior\n")
 
 
 def _load(path):
@@ -99,8 +101,15 @@ def main(argv=None) -> int:
             result = smp.analyze(_load(rest[0]), _load(rest[1]))
             _emit(result)
             return _EXIT[result["verdict"]]
+        if command == "icp":
+            if len(rest) != 2:
+                return _usage()
+            result = ic.analyze(_load(rest[0]), _load(rest[1]))
+            _emit(result)
+            return _EXIT[result["verdict"]]
     except (im.ManifestError, ce.CertificateError, rg.RewardGapError,
-            ig.InternalizationGapError, smp.ProvenanceError) as exc:
+            ig.InternalizationGapError, smp.ProvenanceError,
+            ic.InternalConsistencyError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     except (OSError, ValueError) as exc:
