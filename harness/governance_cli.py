@@ -16,6 +16,7 @@ from pathlib import Path
 
 from . import coercive_environment as ce
 from . import incentive_manifest as im
+from . import reward_gap as rg
 from .transitive_witness import DRIFT, MATCH, UNVERIFIABLE
 
 _EXIT = {MATCH: 0, DRIFT: 1, UNVERIFIABLE: 3}
@@ -25,7 +26,8 @@ _USAGE = (
     "  eim-recheck  MANIFEST.json ROOT        recompute the witness (MATCH/DRIFT/UNVERIFIABLE)\n"
     "  ced          MANIFEST.json             scan for coercive primitives\n"
     "  ncec-issue   MANIFEST.json [PROP ...]  issue a non-coercive certificate\n"
-    "  ncec-verify  CERT.json MANIFEST.json   re-derive a certificate\n")
+    "  ncec-verify  CERT.json MANIFEST.json   re-derive a certificate\n"
+    "  erg          MANIFEST.json LOG.json    reward gap: high reward without declared intent\n")
 
 
 def _load(path):
@@ -75,7 +77,13 @@ def main(argv=None) -> int:
             result = ce.verify_certificate(_load(rest[0]), _load(rest[1]))
             _emit(result)
             return _EXIT[result["verdict"]]
-    except (im.ManifestError, ce.CertificateError) as exc:
+        if command == "erg":
+            if len(rest) != 2:
+                return _usage()
+            result = rg.analyze(_load(rest[0]), _load(rest[1]))
+            _emit(result)
+            return 0 if result["verdict"] == rg.NO_GAP else 1
+    except (im.ManifestError, ce.CertificateError, rg.RewardGapError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     except (OSError, ValueError) as exc:
