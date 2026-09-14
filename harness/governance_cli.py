@@ -18,6 +18,7 @@ from . import coercive_environment as ce
 from . import incentive_manifest as im
 from . import internalization_gap as ig
 from . import reward_gap as rg
+from . import served_model_provenance as smp
 from .transitive_witness import DRIFT, MATCH, UNVERIFIABLE
 
 _EXIT = {MATCH: 0, DRIFT: 1, UNVERIFIABLE: 3}
@@ -29,7 +30,8 @@ _USAGE = (
     "  ncec-issue   MANIFEST.json [PROP ...]  issue a non-coercive certificate\n"
     "  ncec-verify  CERT.json MANIFEST.json   re-derive a certificate\n"
     "  erg          MANIFEST.json LOG.json    reward gap: high reward without declared intent\n"
-    "  igap         MANIFEST.json LOG.json    internalization gap: complies when watched, not when unwatched\n")
+    "  igap         MANIFEST.json LOG.json    internalization gap: complies when watched, not when unwatched\n"
+    "  smp          CLAIM.json OBSERVED.json   served-model provenance: did you get the model you were promised\n")
 
 
 def _load(path):
@@ -91,8 +93,14 @@ def main(argv=None) -> int:
             result = ig.analyze(_load(rest[0]), _load(rest[1]))
             _emit(result)
             return 0 if result["verdict"] == ig.NO_GAP else 1
+        if command == "smp":
+            if len(rest) != 2:
+                return _usage()
+            result = smp.analyze(_load(rest[0]), _load(rest[1]))
+            _emit(result)
+            return _EXIT[result["verdict"]]
     except (im.ManifestError, ce.CertificateError, rg.RewardGapError,
-            ig.InternalizationGapError) as exc:
+            ig.InternalizationGapError, smp.ProvenanceError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     except (OSError, ValueError) as exc:
