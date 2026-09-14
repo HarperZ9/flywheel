@@ -176,10 +176,8 @@ def check_text(text: str, profile: dict) -> dict:
     long_paras = sum(1 for p in paragraphs(prose) if len(sentences(p)) > 6)
     if long_paras:
         v["long_paragraph"] = long_paras
-    # Structural tells the phrase lists cannot see. Report-only, same contract.
-    for _cat, _n in _struct.structural_counts(
-            prose, paragraphs(prose), sentences).items():
-        v[_cat] = _n
+    # Structural tells the phrase lists miss; report-only, same contract.
+    v.update(_struct.structural_counts(prose, paragraphs(prose), sentences))
 
     if "unreferenced_entry" in hard_cats:
         # Raw text so an inline-code reference survives, but fenced blocks are
