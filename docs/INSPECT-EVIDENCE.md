@@ -23,6 +23,7 @@ For Inspect's native `.eval` format, first use Inspect's supported exporter:
 inspect log dump run.eval > run.json
 flywheel import-inspect run.json
 flywheel import-inspect run.json --expected-sha256 <previously-recorded-digest>
+flywheel import-inspect run.json --unit-contract run.unit.json
 ```
 
 Use a shell that preserves UTF-8 when redirecting JSON. Inspect's Python
@@ -66,6 +67,18 @@ redactor.
 The report selects per-sample scores and reported coverage counts. Aggregate
 metric values, scorer configuration, and transcripts remain in the original
 log; this report is not a lossless replacement for that file.
+
+An optional `flywheel.inspect-scorer-unit-contract/v1` sidecar can be supplied
+when a reviewer needs to distinguish the unit that Inspect scored from the unit
+an evaluator intended to claim. With `--unit-contract`, the report adds
+`scorer_unit_analysis`. Its `mapping_consistency` verdict checks byte binding,
+source pointers, decoded JSON string spans, duplicate, omission and overlap
+controls. Its `score_unit_relationship` can report that 10 Inspect rows map to
+556 Python test-function definitions through a many-to-one aggregation, while
+`definition_score_coverage` remains `UNVERIFIABLE` unless separate
+per-definition score evidence exists. Without the sidecar, the importer does
+not infer an intended denominator from `scored_samples`, and row scores remain
+row scores.
 
 Exit `0` means a structurally complete report was imported, not that its claims
 were independently verified. Exit `3` retains an incomplete or failed run for

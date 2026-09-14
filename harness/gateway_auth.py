@@ -29,6 +29,10 @@ from .operation_grants import load_or_create_owner_ref
 TOKEN_FILENAME = "gateway.token"
 DEFAULT_HOSTS = frozenset({"127.0.0.1", "localhost", "[::1]"})
 STATE_CHANGING = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+JSON_CONTENT_TYPES = frozenset({
+    "application/json",
+    "application/vnd.flywheel.inspect-import-with-unit-contract+json",
+})
 
 
 def load_or_create_token(home: Path) -> str:
@@ -65,8 +69,8 @@ def check(headers: Mapping, method: str, token: str, *,
     if not compare_digest(auth[7:], token):
         return False, "bad_token"
     if method.upper() in STATE_CHANGING:
-        ctype = (headers.get("Content-Type", "") or "").split(";", 1)[0].strip()
-        if ctype != "application/json":
+        ctype = (headers.get("Content-Type", "") or "").split(";", 1)[0].strip().lower()
+        if ctype not in JSON_CONTENT_TYPES:
             return False, "bad_content_type"
     return True, "ok"
 

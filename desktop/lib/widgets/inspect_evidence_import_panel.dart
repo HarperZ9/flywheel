@@ -7,15 +7,20 @@ import '../services/inspect_file_picker.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
 import 'inspect_evidence_result_view.dart';
+import 'inspect_evidence_upload_summary.dart';
 import 'operation_grant_sheet.dart';
 
 class InspectEvidenceImportPanel extends StatefulWidget {
   final GatewayClient client;
-  final InspectFilePicker picker;
+  final InspectFilePicker picker, unitContractPicker;
   const InspectEvidenceImportPanel({
     super.key,
     required this.client,
     this.picker = const FileSelectorInspectPicker(),
+    this.unitContractPicker = const FileSelectorInspectPicker(
+      label: 'Inspect scorer unit sidecar',
+      maxBytes: maxInspectUnitContractUploadBytes,
+    ),
   });
 
   @override
@@ -78,6 +83,32 @@ class _InspectEvidenceImportPanelState
           _activeOperation = null;
           _result = null;
         });
+      }
+    } on InspectEvidenceUploadException catch (error) {
+      if (mounted) _fail(error.code, error.message);
+    } catch (error) {
+      if (mounted) _fail('INVALID_REQUEST', '$error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _pickUnitContract() async {
+    final upload = _upload;
+    if (_busy || upload == null) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final picked = await widget.unitContractPicker.pick();
+      if (picked != null && mounted) {
+        setState(() => _upload = upload.withUnitContract(
+              InspectUnitContractUpload.fromBytes(
+                picked.bytes,
+                filename: picked.filename,
+              ),
+            ));
       }
     } on InspectEvidenceUploadException catch (error) {
       if (mounted) _fail(error.code, error.message);
@@ -191,6 +222,10 @@ class _InspectEvidenceImportPanelState
               onPressed: _busy ? null : _pick,
               child: Text(_busy ? 'Working...' : 'Select Inspect JSON'),
             ),
+            OutlinedButton(
+              onPressed: _busy || upload == null ? null : _pickUnitContract,
+              child: const Text('Select scorer unit sidecar'),
+            ),
             FilledButton(
               onPressed: _busy || upload == null ? null : _requestApproval,
               child: const Text('Request approval'),
@@ -201,7 +236,7 @@ class _InspectEvidenceImportPanelState
             const HonestNull('No Inspect JSON has been selected.'),
           ] else ...[
             const SizedBox(height: FwLayout.s3),
-            _uploadSummary(t, upload),
+            InspectEvidenceUploadSummary(upload: upload),
           ],
           if (_error != null) ...[
             const SizedBox(height: FwLayout.s3),
@@ -217,22 +252,6 @@ class _InspectEvidenceImportPanelState
       ),
     );
   }
-
-  Widget _uploadSummary(FwTokens t, InspectEvidenceUpload upload) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(spacing: FwLayout.s3, runSpacing: FwLayout.s2, children: [
-            HashText('source', upload.sha256, keep: 24),
-            Text('${upload.byteLength} bytes',
-                style: fwMono(t, size: 11.5, color: t.inkMuted)),
-            if (upload.filename != null)
-              Text(upload.filename!,
-                  style: fwMono(t, size: 11.5, color: t.inkMuted)),
-          ]),
-          const SizedBox(height: FwLayout.s2),
-          Text(upload.dataRef, style: fwMono(t, size: 11, color: t.inkFaint)),
-        ],
-      );
 
   Widget _recentBlock(FwTokens t) {
     final list = _recent;

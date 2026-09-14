@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart' as crypto;
 import 'gateway_grant_models.dart';
 
 const int maxInspectEvidenceUploadBytes = 16 * 1024 * 1024;
+const int maxInspectUnitContractUploadBytes = 8 * 1024 * 1024;
 
 final _asciiBasename = RegExp(r'^[A-Za-z0-9._ -]{1,120}$');
 
@@ -13,12 +14,51 @@ class InspectEvidenceUploadException implements Exception {
   const InspectEvidenceUploadException(this.code, this.message);
 }
 
+class InspectUnitContractUpload {
+  final Uint8List bytes;
+  final String sha256;
+  final int byteLength;
+  final String? filename;
+
+  InspectUnitContractUpload._({
+    required this.bytes,
+    required this.sha256,
+    required this.byteLength,
+    required this.filename,
+  });
+
+  factory InspectUnitContractUpload.fromBytes(
+    Uint8List bytes, {
+    String? filename,
+  }) {
+    if (bytes.isEmpty) {
+      throw const InspectEvidenceUploadException(
+        'INVALID_LENGTH',
+        'Inspect scorer-unit sidecar must not be empty',
+      );
+    }
+    if (bytes.length > maxInspectUnitContractUploadBytes) {
+      throw const InspectEvidenceUploadException(
+        'PAYLOAD_TOO_LARGE',
+        'Inspect scorer-unit sidecar is over 8 MiB',
+      );
+    }
+    return InspectUnitContractUpload._(
+      bytes: Uint8List.fromList(bytes),
+      sha256: crypto.sha256.convert(bytes).toString(),
+      byteLength: bytes.length,
+      filename: inspectDisplayFilename(filename),
+    );
+  }
+}
+
 class InspectEvidenceUpload {
   final Uint8List bytes;
   final String sha256;
   final int byteLength;
   final String? filename;
   final String clientRequestId;
+  final InspectUnitContractUpload? unitContract;
 
   InspectEvidenceUpload._({
     required this.bytes,
@@ -26,12 +66,14 @@ class InspectEvidenceUpload {
     required this.byteLength,
     required this.filename,
     required this.clientRequestId,
+    required this.unitContract,
   });
 
   factory InspectEvidenceUpload.fromBytes(
     Uint8List bytes, {
     String? filename,
     String? clientRequestId,
+    InspectUnitContractUpload? unitContract,
   }) {
     if (bytes.isEmpty) {
       throw const InspectEvidenceUploadException(
@@ -53,6 +95,7 @@ class InspectEvidenceUpload {
       filename: inspectDisplayFilename(filename),
       clientRequestId:
           clientRequestId ?? 'inspect-${DateTime.now().microsecondsSinceEpoch}',
+      unitContract: unitContract,
     );
   }
 
@@ -62,6 +105,7 @@ class InspectEvidenceUpload {
     required int byteLength,
     required String clientRequestId,
     String? filename,
+    InspectUnitContractUpload? unitContract,
   }) =>
       InspectEvidenceUpload._(
         bytes: bytes,
@@ -69,6 +113,19 @@ class InspectEvidenceUpload {
         byteLength: byteLength,
         filename: inspectDisplayFilename(filename),
         clientRequestId: clientRequestId,
+        unitContract: unitContract,
+      );
+
+  InspectEvidenceUpload withUnitContract(
+    InspectUnitContractUpload unitContract,
+  ) =>
+      InspectEvidenceUpload._(
+        bytes: Uint8List.fromList(bytes),
+        sha256: sha256,
+        byteLength: byteLength,
+        filename: filename,
+        clientRequestId: clientRequestId,
+        unitContract: unitContract,
       );
 
   String get dataRef => inspectEvidenceDataRef(sha256);

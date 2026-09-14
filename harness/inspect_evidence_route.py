@@ -15,6 +15,10 @@ from .inspect_upload_metadata import (
     inspect_operation, sanitize_inspect_filename, valid_inspect_sha256,
     validate_inspect_operation,
 )
+from .inspect_unit_contract_route import (
+    UNIT_CONTRACT_UPLOAD_MEDIA_TYPE,
+    read_unit_contract_upload,
+)
 from .operation_grants import _validate_owner_ref
 from .store import (
     _sha as _store_sha, get_entity, latest_audit_for_ref, put_entity,
@@ -80,6 +84,12 @@ def _declared_headers(handler) -> tuple[dict, tuple[dict, int] | None]:
 
 
 def handle_inspect_upload(handler) -> tuple[dict, int]:
+    content_type = (_header(handler.headers, "Content-Type").split(";", 1)[0].strip().lower())
+    if content_type == UNIT_CONTRACT_UPLOAD_MEDIA_TYPE:
+        declared, raw, unit_raw, fault = read_unit_contract_upload(handler)
+        if fault:
+            return _error(fault)
+        return _finish_upload(handler, declared, raw, unit_raw)
     declared, fault = _declared_headers(handler)
     if fault:
         return fault
@@ -87,6 +97,12 @@ def handle_inspect_upload(handler) -> tuple[dict, int]:
     actual = hashlib.sha256(raw).hexdigest()
     if len(raw) != declared["length"] or actual != declared["digest"]:
         return _error("SOURCE_DIGEST_MISMATCH")
+    return _finish_upload(handler, declared, raw, None)
+
+
+def _finish_upload(handler, declared: dict, raw: bytes,
+                   unit_contract_raw: bytes | None) -> tuple[dict, int]:
+    actual = declared["digest"]
     operation = inspect_operation(actual, len(raw), declared["filename"])
     envelope = {
         "schema": REQUEST_SCHEMA,
@@ -107,7 +123,8 @@ def handle_inspect_upload(handler) -> tuple[dict, int]:
     if raw.startswith((b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08")) or declared["filename"].lower().endswith(".eval"):
         return _error("INSPECT_JSON_REQUIRED")
     try:
-        report = _import_inspect_log(raw)
+        report = (_import_inspect_log(raw) if unit_contract_raw is None
+                  else _import_inspect_log(raw, unit_contract_raw))
     except Exception:
         return _error("INSPECT_INPUT_REJECTED")
     if not _report_matches_upload(report, actual, len(raw)):
@@ -238,6 +255,8 @@ def _list_imports(handler, query: str) -> tuple[dict, int]:
             "items": items, "limit": limit, "offset": offset}, 200
 
 
-def _import_inspect_log(raw: bytes) -> dict:
-    from .inspect_evidence import import_inspect_log
-    return import_inspect_log(raw)
+def _import_inspect_log(raw: bytes, unit_contract_raw: bytes | None = None) -> dict:
+    from .inspect_evidence import import_inspect_log, import_inspect_log_with_unit_contract
+    if unit_contract_raw is None:
+        return import_inspect_log(raw)
+    return import_inspect_log_with_unit_contract(raw, unit_contract_raw)

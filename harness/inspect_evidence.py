@@ -40,6 +40,20 @@ def import_inspect_log(raw: bytes) -> dict:
     except (TypeError, ValueError) as exc:
         raise InspectImportError(str(exc)) from exc
 
+
+def import_inspect_log_with_unit_contract(raw: bytes,
+                                          unit_contract_raw: bytes | None = None,
+                                          *,
+                                          include_unverifiable_unit: bool = False) -> dict:
+    report = import_inspect_log(raw)
+    if unit_contract_raw is not None or include_unverifiable_unit:
+        from .inspect_unit_contract import no_unit_contract, verify_unit_contract
+        report["scorer_unit_analysis"] = (
+            no_unit_contract() if unit_contract_raw is None
+            else verify_unit_contract(raw, unit_contract_raw)
+        )
+    return report
+
 def _import_root(root: dict, source: dict) -> dict:
     pointers: list[dict[str, Any]] = []
     version = _exact_int(root.get("version"), "/version")
