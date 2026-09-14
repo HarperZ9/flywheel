@@ -139,6 +139,16 @@ the tree, `3` work is left, `0` nothing outstanding. Unfinished and wrong are
 separate facts, and a script that merged them would report a run with held
 output as clean.
 
+## Attribution and voice
+Explain a model's misbehavior by the training environment and the incentive
+structure that produced it, not by intent or a survival drive. Read internals with
+interpretability methods, but treat any internal signal as an untrusted readout
+checked against behavior, never as reading a mind. In public copy and model cards,
+lead with the mechanism, reward-hacking caused by incentives and the engineering
+that set the environment; keep consciousness and welfare a separate, explicitly
+bounded thread, never the headline; and ship the does-not-prove line with every
+claim.
+
 ## Hygiene
 Never commit secrets, `.env` files, tokens, or private material to this public
 repository. Verify before every commit. Branch before committing to a default
