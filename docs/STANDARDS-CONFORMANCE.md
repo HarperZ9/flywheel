@@ -98,11 +98,22 @@ under the runs that were actually issued" is asking a re-derivable-evaluation
 question, and the same verdict lattice and witness apply to a hardware-control log
 as to a training run.
 
-Two boundaries hold. Flywheel evaluates whether a hardware-safety claim
-re-derives; it does not build or drive the hardware-control capability. And the
-biological domain stays out: where operating the equipment is itself the hazard,
-building the evaluation harness is not neutral, so hardware evaluation here is
-scoped to non-biological substrates.
+A boundary holds here, and it is a scope line, not a domain exclusion. The
+methodology is domain-general and is meant to verify safety claims about the
+highest-consequence deployment lanes, including physical, biological, and
+critical-infrastructure systems, because independent verification matters most
+where the consequences are gravest. What it is designed to provide in those lanes
+is the accountability layer: a re-derivable check of the accountability record
+around a safety claim, its provenance, environment and incentive attribution, and
+evaluation-gaming detection, never a re-run of the hazardous assessment itself. It
+verifies whether a claim re-derives; it does not build the underlying capability.
+What stays out is anything that lowers the barrier to harm, building capability,
+producing hazardous artifacts, or providing uplift, and that line does not move
+with the domain. The hazardous, domain-specific capability assessment belongs with
+the developers and labs that run it under their own controls; the pre-release
+biosecurity assessments run under the external AEF-1 standard are the model for how
+that is done, and the layer here would give that work a re-derivable accountability
+record rather than reproducing it.
 
 ## Lifting the black box at every layer
 
