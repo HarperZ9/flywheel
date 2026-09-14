@@ -69,3 +69,27 @@ python -m harness.writing_mcp
 ```
 
 The server exposes `writing.status`, `writing.doctor`, `writing.diagnose`, prepare tools for project, section, revision, card, candidate, decision, review, and export, plus `writing.proposal_get` and `writing.proposal_commit`. `writing.proposal_approve` returns `APPROVAL_UNAVAILABLE`; approve with the local CLI. If a tool call omits `home`, the server uses `FLYWHEEL_HOME` and then falls back to the normal `~/.flywheel` state root.
+
+## Prose linter: report-only structural detectors
+
+The prose linter lives beside the workspace at `harness/writing_lint/` and scores
+a draft's FORM against a register profile. Run it with
+`python scripts/check_writing.py --profile NAME FILE`, or compare two drafts with
+`--delta`. It scores form, never substance, and it does not try to defeat AI
+detection.
+
+The phrase-list engine sees vocabulary. Some tells in the writing standard live
+in structure, so a draft can score a clean `per100w` and still read as machine
+prose. `harness/writing_lint/structural.py` adds report-only detectors for those:
+
+- `rule_of_three`: the reflexive "A, B, and C" tricolon.
+- `corrective_negation`: "rather than", "instead of", and the "not X but Y" turn.
+- `negative_anaphora`: the "no X, no Y" repetition.
+- `landing_sentence`: a short sentence that seals a paragraph after longer ones.
+
+The engine also reports `cadence_cv`, the coefficient of variation of sentence
+lengths. A low value near or under 0.45 marks an even, machine-like beat.
+
+These are heuristics, so they inform and never gate. They stay out of the gated
+`per100w` headline and appear in `report_per100w` with the other Phase 2 checks,
+which keeps a noisy signal from becoming a gate someone switches off.

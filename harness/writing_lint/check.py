@@ -21,6 +21,7 @@ from pathlib import Path
 from . import lists as writing_lists
 from . import profiles as _wp
 from . import pysource as _ps
+from . import structural as _struct
 from .lists import (
     BANNED, BE, HARD_DEFAULTS, HEDGE_WORDS, KNOWN_CATEGORIES, MARKETING,
     MODAL_HEDGE, PHRASAL, ING_MAIN as _ING_MAIN, NOMINAL as _NOMINAL,
@@ -175,6 +176,10 @@ def check_text(text: str, profile: dict) -> dict:
     long_paras = sum(1 for p in paragraphs(prose) if len(sentences(p)) > 6)
     if long_paras:
         v["long_paragraph"] = long_paras
+    # Structural tells the phrase lists cannot see. Report-only, same contract.
+    for _cat, _n in _struct.structural_counts(
+            prose, paragraphs(prose), sentences).items():
+        v[_cat] = _n
 
     if "unreferenced_entry" in hard_cats:
         # Raw text so an inline-code reference survives, but fenced blocks are
@@ -201,13 +206,14 @@ def check_text(text: str, profile: dict) -> dict:
     ease = reading_ease(prose)
     band = profile.get("readability_band") or (0, 100)
     in_band = None if ease is None else bool(band[0] <= ease <= band[1])
+    cadence = _struct.cadence_cv(sents)
 
     return {
         "words": words, "sentences": len(sents), "violations": v,
         "total": total, "per100w": per100w,
         "report_total": report_total, "report_per100w": report_per100w,
         "em_dash": em, "hard": hard,
-        "reading_ease": ease, "in_band": in_band,
+        "reading_ease": ease, "in_band": in_band, "cadence_cv": cadence,
     }
 
 
@@ -285,6 +291,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{r['path']}  profile={prof_name} words={r['words']} "
                   f"total={r['total']} per100w={r['per100w']} "
                   f"report_per100w={r['report_per100w']} "
+                  f"cadence={r.get('cadence_cv')} "
                   f"em_dash={r['em_dash']} hard={','.join(r['hard']) or '-'}")
         print(DOES_NOT_PROVE)
     return 1 if (args.gate and any_hard) else 0

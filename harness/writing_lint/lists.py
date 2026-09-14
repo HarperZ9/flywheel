@@ -73,7 +73,9 @@ HARD_DEFAULTS = {
     "off": (),
 }
 REPORT_ONLY_CATEGORIES = ("passive_voice", "ing_main_verb", "nominalization",
-                          "long_paragraph", "be_verb")
+                          "long_paragraph", "be_verb", "rule_of_three",
+                          "corrective_negation", "negative_anaphora",
+                          "landing_sentence")
 KNOWN_CATEGORIES = frozenset(
     ("em_dash", "marketing_adjective", "banned_word", "phrasal_verb",
      "modal_hedge", "contraction", "semicolon", "long_sentence",
