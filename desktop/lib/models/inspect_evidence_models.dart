@@ -7,6 +7,7 @@ export 'inspect_evidence_upload.dart';
 part 'inspect_evidence_list.dart';
 part 'inspect_evidence_rows.dart';
 part 'inspect_evidence_score_history.dart';
+part 'inspect_scorer_unit_analysis.dart';
 
 final _sha256 = RegExp(r'^[0-9a-f]{64}$');
 
@@ -132,6 +133,7 @@ class InspectEvidenceReport {
   final bool? coverageComplete;
   final int? totalSamples, completedSamples, observedSamples;
   final InspectScoreHistoryCoverage scoreHistory;
+  final InspectMeasurementUnitVerification? measurementUnit;
   final List<InspectEvidenceRow> rows;
 
   const InspectEvidenceReport._({
@@ -145,6 +147,7 @@ class InspectEvidenceReport {
     required this.completedSamples,
     required this.observedSamples,
     required this.scoreHistory,
+    required this.measurementUnit,
     required this.rows,
   });
 
@@ -168,7 +171,16 @@ class InspectEvidenceReport {
     final scoreHistory = coverage.containsKey('score_history')
         ? InspectScoreHistoryCoverage.tryFromJson(coverage['score_history'])
         : InspectScoreHistoryCoverage.unknown;
-    if (scoreHistory == null ||
+    final rawUnit = json.containsKey('scorer_unit_analysis')
+        ? json['scorer_unit_analysis']
+        : json['measurement_unit_verification'];
+    final hasUnit = json.containsKey('scorer_unit_analysis') ||
+        json.containsKey('measurement_unit_verification');
+    final unit = hasUnit
+        ? InspectMeasurementUnitVerification.tryFromJson(rawUnit)
+        : null;
+    if ((hasUnit && unit == null) ||
+        scoreHistory == null ||
         rows.any((row) => row.scoreHistoryInvalid) ||
         !scoreHistory.matches(rows)) {
       return null;
@@ -186,6 +198,7 @@ class InspectEvidenceReport {
       completedSamples: _intOrNull(counts['completed_samples']),
       observedSamples: _intOrNull(counts['observed_samples']),
       scoreHistory: scoreHistory,
+      measurementUnit: unit,
       rows: rows,
     );
   }

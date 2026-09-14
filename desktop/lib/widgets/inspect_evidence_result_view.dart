@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/inspect_evidence_models.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
+import 'inspect_scorer_unit_analysis_view.dart';
 
 class InspectEvidenceResultView extends StatelessWidget {
   final InspectImportResult result;
@@ -51,6 +52,12 @@ class InspectEvidenceResultView extends StatelessWidget {
           if (stored.sha256.isNotEmpty) HashText('stored', stored.sha256),
           if (stored.chainHash.isNotEmpty) HashText('chain', stored.chainHash),
         ]),
+      ],
+      if (report?.measurementUnit != null) ...[
+        const SizedBox(height: FwLayout.s3),
+        InspectScorerUnitAnalysisView(
+          verification: report!.measurementUnit!,
+        ),
       ],
       const SizedBox(height: FwLayout.s3),
       if (report == null || report.rows.isEmpty)

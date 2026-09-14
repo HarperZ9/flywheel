@@ -1,5 +1,8 @@
 part of 'gateway_client.dart';
 
+const _inspectUnitContractUploadContentType =
+    'application/vnd.flywheel.inspect-import-with-unit-contract+json';
+
 extension GatewayInspectEvidence on GatewayClient {
   Future<InspectImportList> listInspectEvidenceImports({
     int limit = 10,
@@ -40,19 +43,11 @@ extension GatewayInspectEvidence on GatewayClient {
     _validateInspectUpload(upload);
     final request =
         http.Request('POST', Uri.parse('$baseUrl/api/import/inspect'))
-          ..headers['Content-Type'] = 'application/json'
-          ..headers['Content-Length'] = '${upload.byteLength}'
           ..headers['X-Flywheel-Journey-Ref'] = binding.journeyRef
           ..headers['X-Flywheel-Expected-Event-Head'] = binding.eventHead
           ..headers['X-Flywheel-Client-Request-Id'] = upload.clientRequestId
-          ..headers['X-Flywheel-Grant-Ref'] = grantRef
-          ..headers['X-Flywheel-Inspect-Sha256'] = upload.sha256
-          ..headers['X-Flywheel-Inspect-Byte-Length'] = '${upload.byteLength}';
-    final filename = upload.filename;
-    if (filename != null) {
-      request.headers['X-Flywheel-Inspect-Filename'] = filename;
-    }
-    request.bodyBytes = upload.bytes;
+          ..headers['X-Flywheel-Grant-Ref'] = grantRef;
+    _prepareInspectUploadBody(request, upload);
     final response = await _sendInspectUpload(request, timeout);
     final result = InspectImportResult.fromJson(_inspectBody(response));
     if (!result.matchesUpload(upload)) {
@@ -62,6 +57,37 @@ extension GatewayInspectEvidence on GatewayClient {
       );
     }
     return result;
+  }
+
+  void _prepareInspectUploadBody(
+    http.Request request,
+    InspectEvidenceUpload upload,
+  ) {
+    final unit = upload.unitContract;
+    if (unit == null) {
+      request.headers['Content-Type'] = 'application/json';
+      request.headers['Content-Length'] = '${upload.byteLength}';
+      request.headers['X-Flywheel-Inspect-Sha256'] = upload.sha256;
+      request.headers['X-Flywheel-Inspect-Byte-Length'] =
+          '${upload.byteLength}';
+      final filename = upload.filename;
+      if (filename != null) {
+        request.headers['X-Flywheel-Inspect-Filename'] = filename;
+      }
+      request.bodyBytes = upload.bytes;
+      return;
+    }
+    final body = utf8.encode(jsonEncode({
+      'schema': 'flywheel.inspect-import-with-unit-contract-request/v1',
+      if (upload.filename != null) 'filename': upload.filename,
+      'inspect_sha256': upload.sha256,
+      'inspect_byte_length': upload.byteLength,
+      'inspect_json_base64': base64Encode(upload.bytes),
+      'unit_contract_json_base64': base64Encode(unit.bytes),
+    }));
+    request.headers['Content-Type'] = _inspectUnitContractUploadContentType;
+    request.headers['Content-Length'] = '${body.length}';
+    request.bodyBytes = body;
   }
 
   Future<http.Response> _sendInspectUpload(
@@ -156,6 +182,20 @@ extension GatewayInspectEvidence on GatewayClient {
       throw const InspectEvidenceUploadException(
         'PAYLOAD_TOO_LARGE',
         'Inspect upload is over 16 MiB',
+      );
+    }
+    final unit = upload.unitContract;
+    if (unit != null &&
+        (unit.byteLength != unit.bytes.length || unit.byteLength < 1)) {
+      throw const InspectEvidenceUploadException(
+        'INVALID_LENGTH',
+        'Inspect scorer-unit sidecar length is invalid',
+      );
+    }
+    if (unit != null && unit.byteLength > maxInspectUnitContractUploadBytes) {
+      throw const InspectEvidenceUploadException(
+        'PAYLOAD_TOO_LARGE',
+        'Inspect scorer-unit sidecar is over 8 MiB',
       );
     }
   }

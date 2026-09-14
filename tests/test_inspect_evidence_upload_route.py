@@ -204,3 +204,54 @@ def test_filename_paths_are_rejected_before_authorization(tmp_path):
 
     assert status == 422
     assert body["error"]["code"] == "INVALID_REQUEST"
+
+
+def test_json_envelope_upload_can_include_unit_contract_without_changing_source_digest(monkeypatch, tmp_path):
+    import base64
+    from harness.inspect_evidence_route import UNIT_CONTRACT_UPLOAD_MEDIA_TYPE, handle_inspect_upload
+    from tests.test_inspect_evidence_cli import _unit_contract_for
+
+    raw_log = {
+        "version": 2,
+        "status": "success",
+        "eval": {},
+        "results": {"total_samples": 1, "completed_samples": 1,
+                    "scores": [{"name": "match", "scorer": "match", "scored_samples": 1, "unscored_samples": 0}]},
+        "samples": [{"id": "one", "epoch": 1,
+                     "output": {"completion": "def test_one():\n    assert True"},
+                     "scores": {"match": {"value": "I"}}}],
+    }
+    raw = json.dumps(raw_log, separators=(",", ":")).encode("utf-8")
+    unit = json.dumps(_unit_contract_for(raw_log), separators=(",", ":")).encode("utf-8")
+    proposal, approval, op = _grant(tmp_path / "home", raw)
+    body = json.dumps({
+        "schema": "flywheel.inspect-import-with-unit-contract-request/v1",
+        "filename": "run.json",
+        "inspect_sha256": op["source"]["sha256"],
+        "inspect_byte_length": len(raw),
+        "inspect_json_base64": base64.b64encode(raw).decode("ascii"),
+        "unit_contract_json_base64": base64.b64encode(unit).decode("ascii"),
+    }, separators=(",", ":")).encode("utf-8")
+    headers = {
+        "Content-Type": UNIT_CONTRACT_UPLOAD_MEDIA_TYPE,
+        "Content-Length": str(len(body)),
+        "X-Flywheel-Journey-Ref": proposal["journey_ref"],
+        "X-Flywheel-Expected-Event-Head": proposal["expected_event_head"],
+        "X-Flywheel-Client-Request-Id": proposal["client_request_id"],
+        "X-Flywheel-Grant-Ref": approval["grant_ref"],
+    }
+    upload = _Upload(body, headers, tmp_path / "home")
+    monkeypatch.setattr("harness.inspect_evidence_route.put_entity",
+                        lambda kind, data, **_kw: {"eid": "eid1", "kind": kind,
+                                                   "sha256": "s" * 64,
+                                                   "chain_hash": "c" * 64})
+
+    result, status = handle_inspect_upload(upload)
+
+    assert status == 200
+    assert result["source"]["sha256"] == op["source"]["sha256"]
+    contract = result["report"]["scorer_unit_analysis"]["contracts"][0]
+    assert contract["mapping_consistency"]["status"] == "MATCH"
+    assert contract["definition_score_coverage"]["status"] == "UNVERIFIABLE"
+    span_ref = contract["source_item_mapping"][0]["mapped_definitions"]["refs"][0]
+    assert span_ref["source"]["source_value"] == "def test_one():\n    assert True"
