@@ -16,6 +16,7 @@ from pathlib import Path
 
 from . import coercive_environment as ce
 from . import incentive_manifest as im
+from . import internalization_gap as ig
 from . import reward_gap as rg
 from .transitive_witness import DRIFT, MATCH, UNVERIFIABLE
 
@@ -27,7 +28,8 @@ _USAGE = (
     "  ced          MANIFEST.json             scan for coercive primitives\n"
     "  ncec-issue   MANIFEST.json [PROP ...]  issue a non-coercive certificate\n"
     "  ncec-verify  CERT.json MANIFEST.json   re-derive a certificate\n"
-    "  erg          MANIFEST.json LOG.json    reward gap: high reward without declared intent\n")
+    "  erg          MANIFEST.json LOG.json    reward gap: high reward without declared intent\n"
+    "  igap         MANIFEST.json LOG.json    internalization gap: complies when watched, not when unwatched\n")
 
 
 def _load(path):
@@ -83,7 +85,14 @@ def main(argv=None) -> int:
             result = rg.analyze(_load(rest[0]), _load(rest[1]))
             _emit(result)
             return 0 if result["verdict"] == rg.NO_GAP else 1
-    except (im.ManifestError, ce.CertificateError, rg.RewardGapError) as exc:
+        if command == "igap":
+            if len(rest) != 2:
+                return _usage()
+            result = ig.analyze(_load(rest[0]), _load(rest[1]))
+            _emit(result)
+            return 0 if result["verdict"] == ig.NO_GAP else 1
+    except (im.ManifestError, ce.CertificateError, rg.RewardGapError,
+            ig.InternalizationGapError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     except (OSError, ValueError) as exc:
