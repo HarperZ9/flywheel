@@ -57,6 +57,11 @@ local = [                    # the local HF serve/training stack
 # The single surface command. Dispatches to the existing run_harness_cli
 # front controller plus the new lane/loop subcommands.
 flywheel = "harness.cli_entry:main"
+# Installed MCP entrypoints for harnesses that consume tools from PATH rather
+# than from a source checkout. The workspace launcher requires FLYWHEEL_HOME so
+# a model-side config cannot silently create or mutate the default owner state.
+flywheel-writing-lint-mcp = "harness.writing_lint.mcp:serve"
+flywheel-writing-workspace-mcp = "harness.writing_workspace_mcp:main"
 
 [tool.setuptools]
 # Explicit package + data discovery. Keep py_modules minimal.

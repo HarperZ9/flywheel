@@ -1,9 +1,7 @@
 """Emit the packaged integration contract for Flywheel/Codex local tools."""
 from __future__ import annotations
 
-import argparse
-import json
-import sys
+import argparse, json, sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -15,6 +13,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 from run_mcp_tool_health_receipts import DEFAULT_TOOLS as MCP_TOOLS  # noqa: E402
+from tool_contract_metadata import cli_entrypoint_view  # noqa: E402
 from run_tool_readiness_receipts import profile_tool, split_names  # noqa: E402
 
 DEFAULT_TOOL_SET = "index,forum,gather,crucible,telos,aleph,mneme,relay,plexus,pubscan,local-model"
@@ -78,7 +77,7 @@ INTERFACES: dict[str, dict[str, Any]] = {
     },
     "relay": {
         "packaged_mode": "external_repo_sidecar",
-        "cli": ["python serve.py"],
+        "cli": [],
         "mcp": [],
         "harness_commands": ["readiness tools", "tool-hardening", "tool-contract"],
         "state_contracts": ["event transport envelope", "Codex/Claude/OpenCode bridge docs"],
@@ -113,13 +112,8 @@ INTERFACES: dict[str, dict[str, Any]] = {
 LOCAL_MODEL_PROFILE = {
     "core": ["harness", "scripts/run_harness_cli.py", "scripts/local_harness_entry.py", "harness.cmd"],
     "enterprise": ["project-docs/HARNESS-PACKAGING.md", ".gitignore"],
-    "integration": [
-        "scripts/build_local_harness_exes.py",
-        "scripts/package_local_harness_release.py",
-        "scripts/run_model_endpoint_profiles.py",
-    ],
+    "integration": ["scripts/build_local_harness_exes.py", "scripts/package_local_harness_release.py", "scripts/run_model_endpoint_profiles.py"],
 }
-
 
 def now_utc() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
@@ -206,6 +200,7 @@ def contract_row(tool: str, *, base_root: Path, explicit_roots: dict[str, Path],
         "state_contracts": ["metadata-only root contract"],
         "required_for": ["custom tool integration"],
     })
+    cli, entrypoint_metadata = cli_entrypoint_view(root, interface["cli"])
     role = MCP_TOOLS.get(tool, {}).get("role", "custom")
     return {
         "schema": "harness.tool-integration-contract.tool/v1",
@@ -216,10 +211,11 @@ def contract_row(tool: str, *, base_root: Path, explicit_roots: dict[str, Path],
         "packaged_mode": interface["packaged_mode"],
         "package_root": str(package_root),
         "entrypoints": {
-            "cli": interface["cli"],
+            "cli": cli,
             "mcp": interface["mcp"],
             "harness_commands": interface["harness_commands"],
         },
+        "entrypoint_metadata": entrypoint_metadata,
         "state_contracts": interface["state_contracts"],
         "required_for": interface["required_for"],
         "readiness": {
@@ -248,8 +244,8 @@ def build_contract(*, tools: list[str], base_root: Path, explicit_roots: dict[st
         "created_utc": now_utc(),
         "base_root": str(base_root),
         "package_root": str(package_root),
-        "dependency_posture": "metadata-only architecture contract; does not call tools, providers, endpoints, token stores, or model weights",
-        "secret_policy": "tool source bodies, .env values, credentials, tokens, private keys, and model weights are not read or packaged",
+        "dependency_posture": "metadata-only architecture contract; reads selected root pyproject.toml [project.scripts] declarations; does not call tools, providers, endpoints, token stores, or model weights",
+        "secret_policy": "tool source bodies, .env values, credentials, tokens, private keys, arbitrary target paths, and model weights are not read or packaged",
         "tools": rows,
         "summary": {
             "tools": len(rows),
@@ -271,17 +267,21 @@ def render_markdown(contract: dict[str, Any]) -> str:
         f"- Created UTC: `{contract['created_utc']}`",
         f"- Dependency posture: {contract['dependency_posture']}",
         f"- Secret policy: {contract['secret_policy']}",
+        "- CLI declarations: metadata-only; a declared script is not evidence of installation, execution, transport health, release, or adoption.",
         f"- Roots existing: `{summary['roots_existing']}` / `{summary['tools']}`",
         f"- Bundled core tools: `{summary['bundled_core_tools']}`",
         f"- Sidecar tools: `{summary['sidecar_tools']}`",
         "",
-        "| Tool | Role | Mode | Root exists | Readiness | Harness commands |",
-        "|---|---|---|---:|---|---|",
+        "| Tool | Role | Mode | Root exists | CLI source | Metadata status | Readiness | Harness commands |",
+        "|---|---|---|---:|---|---|---|---|",
     ]
     for row in contract["tools"]:
         commands = ", ".join(row["entrypoints"]["harness_commands"])
+        meta = row["entrypoint_metadata"]
+        scripts = meta["project_scripts"]
         lines.append(
             f"| {row['tool']} | {row['role']} | {row['packaged_mode']} | {str(row['root_exists']).lower()} | "
+            f"{meta['cli_source']} | {scripts['status']} via {scripts['source']['filename']} | "
             f"{row['readiness']['verdict']} ({row['readiness']['score']}) | {commands} |"
         )
     return "\n".join(lines) + "\n"
