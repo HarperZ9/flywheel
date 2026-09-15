@@ -20,7 +20,17 @@ TOOLS = mcp_tool_descriptors()
 SCHEMAS = mcp_schemas()
 
 
-def _service(args: dict) -> WritingService:
+def _home_identity(value: os.PathLike | str) -> str:
+    return os.path.normcase(os.path.abspath(os.path.expanduser(os.fspath(value))))
+
+
+def _service(args: dict, *, operator_home: os.PathLike | str | None = None) -> WritingService:
+    if operator_home is not None:
+        home = os.fspath(operator_home)
+        requested = args.get("home")
+        if requested and _home_identity(requested) != _home_identity(home):
+            raise WritingError("HOME_MISMATCH")
+        return WritingService(Path(home))
     home = args.get("home") or os.environ.get(
         "FLYWHEEL_HOME", str(Path.home() / ".flywheel"))
     return WritingService(Path(home))
@@ -38,13 +48,13 @@ def _ensure_args(name: str, args: object) -> dict:
         raise WritingError("INVALID_ARGUMENTS")
 
 
-def _call(params: dict) -> dict:
+def _call(params: dict, *, operator_home: os.PathLike | str | None = None) -> dict:
     try:
         if type(params) is not dict:
             raise WritingError("INVALID_ARGUMENTS")
         name, raw_args = params.get("name"), params.get("arguments", {}) or {}
         args = _ensure_args(name, raw_args)
-        svc = _service(args)
+        svc = _service(args, operator_home=operator_home)
         if name == "writing.status":
             return _text(svc.status())
         if name == "writing.doctor":
@@ -107,7 +117,7 @@ def _ok(rid, result):
     return {"jsonrpc": "2.0", "id": rid, "result": result}
 
 
-def handle_request(req: dict):
+def handle_request(req: dict, *, operator_home: os.PathLike | str | None = None):
     if type(req) is not dict:
         return None
     method, rid = req.get("method"), req.get("id")
@@ -120,26 +130,27 @@ def handle_request(req: dict):
     if method == "tools/list":
         return _ok(rid, {"tools": TOOLS})
     if method == "tools/call":
-        return _ok(rid, _call(req.get("params", {})))
+        return _ok(rid, _call(req.get("params", {}), operator_home=operator_home))
     if rid is None:
         return None
     return {"jsonrpc": "2.0", "id": rid,
             "error": {"code": -32601, "message": f"method not found: {method}"}}
 
 
-def handle(req: dict):
-    return handle_request(req)
+def handle(req: dict, *, operator_home: os.PathLike | str | None = None):
+    return handle_request(req, operator_home=operator_home)
 
 
-def serve(stdin=None, stdout=None) -> int:
+def serve(stdin=None, stdout=None, *, operator_home: os.PathLike | str | None = None) -> int:
     stdin, stdout = stdin or sys.stdin, stdout or sys.stdout
     for line in stdin:
         if not line.strip():
             continue
         try:
-            response = handle_request(json.loads(line))
+            request = json.loads(line)
         except json.JSONDecodeError:
             continue
+        response = handle_request(request, operator_home=operator_home)
         if response is not None:
             stdout.write(json.dumps(response) + "\n")
             stdout.flush()
