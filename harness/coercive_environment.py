@@ -31,6 +31,10 @@ RUBRIC_VERSION = "ced/v1"
 NCEC_SCHEMA = "flywheel.non-coercive-environment-certificate/v1"
 COERCIVE = "COERCIVE"
 NON_COERCIVE = "NON_COERCIVE"
+_NCEC_FIELDS = (
+    "schema", "environment_id", "granted", "rubric_version", "ced_verdict",
+    "non_coercive_properties", "does_not_prove",
+)
 
 # Each category maps to substrings that signal it. Heuristic by design, so every
 # hit is reported with the field it matched and never asserted as an outcome.
@@ -62,6 +66,51 @@ NCEC_DOES_NOT_PROVE = (
 
 class CertificateError(ValueError):
     """A refused or malformed Non-Coercive-Environment Certificate."""
+
+
+def _str(value, field, limit, *, minimum=1):
+    if not isinstance(value, str) or not (minimum <= len(value) <= limit):
+        raise CertificateError(f"{field}: string of {minimum}..{limit} chars")
+    return value
+
+
+def _object(value, field, allowed, required):
+    if not isinstance(value, dict):
+        raise CertificateError(f"{field}: object")
+    extra = set(value) - set(allowed)
+    if extra:
+        raise CertificateError(f"{field}: unexpected keys")
+    for key in required:
+        if key not in value:
+            raise CertificateError(f"{field}: missing {key!r}")
+    return value
+
+
+def _validate_properties(properties):
+    if not isinstance(properties, list):
+        raise CertificateError("non_coercive_properties: array")
+    for i, prop in enumerate(properties):
+        if not isinstance(prop, str) or not prop:
+            raise CertificateError(
+                f"non_coercive_properties[{i}]: non-empty string")
+    return properties
+
+
+def _validate_certificate(certificate):
+    _object(certificate, "certificate", _NCEC_FIELDS, _NCEC_FIELDS)
+    if certificate["schema"] != NCEC_SCHEMA:
+        raise CertificateError(f"schema: must be {NCEC_SCHEMA!r}")
+    _str(certificate["environment_id"], "environment_id", 200)
+    if certificate["granted"] is not True:
+        raise CertificateError("granted: must be true")
+    if certificate["rubric_version"] != RUBRIC_VERSION:
+        raise CertificateError(f"rubric_version: must be {RUBRIC_VERSION!r}")
+    if certificate["ced_verdict"] != NON_COERCIVE:
+        raise CertificateError(f"ced_verdict: must be {NON_COERCIVE!r}")
+    _validate_properties(certificate["non_coercive_properties"])
+    if certificate["does_not_prove"] != NCEC_DOES_NOT_PROVE:
+        raise CertificateError("does_not_prove: must match the NCEC bound")
+    return certificate
 
 
 def _fields(manifest) -> list:
@@ -119,8 +168,7 @@ def issue_certificate(manifest, non_coercive_properties=()) -> dict:
         raise CertificateError(
             f"refused: CED verdict {scan['verdict']} with {len(scan['hits'])} hit(s)")
     props = list(non_coercive_properties)
-    if any(not isinstance(p, str) or not p for p in props):
-        raise CertificateError("non_coercive_properties: non-empty strings only")
+    _validate_properties(props)
     return {"schema": NCEC_SCHEMA, "environment_id": manifest["environment_id"],
             "granted": True, "rubric_version": RUBRIC_VERSION,
             "ced_verdict": NON_COERCIVE, "non_coercive_properties": props,
@@ -135,16 +183,17 @@ def verify_certificate(certificate, manifest) -> dict:
     certificate disagrees with the manifest; UNVERIFIABLE when the certificate is
     malformed and cannot be checked at all.
     """
-    if (not isinstance(certificate, dict) or
-            certificate.get("schema") != NCEC_SCHEMA or
-            not isinstance(certificate.get("environment_id"), str)):
+    try:
+        _validate_certificate(certificate)
+    except CertificateError as exc:
         return {"verdict": UNVERIFIABLE, "reason": "malformed certificate",
+                "detail": str(exc),
                 "does_not_prove": NCEC_DOES_NOT_PROVE}
     if certificate["environment_id"] != manifest.get("environment_id"):
         return {"verdict": DRIFT, "reason": "environment_id mismatch",
                 "does_not_prove": NCEC_DOES_NOT_PROVE}
     scan = detect(manifest)
-    if scan["verdict"] != NON_COERCIVE or certificate.get("ced_verdict") != NON_COERCIVE:
+    if scan["verdict"] != NON_COERCIVE:
         return {"verdict": DRIFT, "reason": "environment scans as coercive",
                 "hits": scan["hits"], "does_not_prove": NCEC_DOES_NOT_PROVE}
     return {"verdict": MATCH, "rubric_version": RUBRIC_VERSION,
