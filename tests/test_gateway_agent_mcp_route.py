@@ -1,5 +1,4 @@
 import json
-import sys
 import time
 
 from harness.gateway_agent_binding import freeze_agent_binding
@@ -12,6 +11,7 @@ from tests.test_gateway_agent_mcp_admission import (
     allow_synthetic_catalog,
     selection_admission,
 )
+from tests.test_gateway_agent_mcp_runtime_boundaries import pin_registered_index_workspace
 
 
 def _error_code(body):
@@ -20,7 +20,7 @@ def _error_code(body):
 
 def test_catalog_route_lists_trusted_tools_without_starting_server(tmp_path, monkeypatch):
     """Catches a selector catalog GET that launches MCP before explicit discovery approval."""
-    monkeypatch.setenv("FLYWHEEL_WORKSPACE_ROOT", "C:/dev")
+    pin_registered_index_workspace(monkeypatch)
     started = []
 
     class Client:
@@ -47,6 +47,24 @@ def test_catalog_route_lists_trusted_tools_without_starting_server(tmp_path, mon
         "network": False,
     }
     assert index["availability"]["status"] == "available"
+    assert not (tmp_path / "state" / "gateway-mcp-discovery-cache").exists()
+
+
+def test_catalog_route_reports_unavailable_without_explicit_workspace_root(tmp_path, monkeypatch):
+    """Catches route catalog tests that pass only because a host ambient root exists."""
+    monkeypatch.delenv("FLYWHEEL_WORKSPACE_ROOT", raising=False)
+    from harness.gateway_agent_mcp_route import agent_mcp_get
+
+    body, status = agent_mcp_get(
+        "/api/agent/mcp/catalog", owner_ref=OWNER, state_root=tmp_path / "state")
+
+    assert status == 200
+    index = next(row for row in body["servers"] if row["catalog_ref"] == "index")
+    assert index["availability"] == {
+        "status": "unavailable",
+        "code": "MCP_CATALOG_LAUNCH_UNAVAILABLE",
+    }
+    assert "launch" not in index
     assert not (tmp_path / "state" / "gateway-mcp-discovery-cache").exists()
 
 
@@ -116,7 +134,7 @@ def test_discovery_route_returns_selection_only_admission_and_freezes(tmp_path, 
 
 def test_real_index_doctor_route_roundtrip_uses_backend_receipt_lookup(tmp_path, monkeypatch):
     """Catches a UI route that is fixture-only and never proves a registered tool path."""
-    monkeypatch.setenv("FLYWHEEL_WORKSPACE_ROOT", "C:/dev")
+    workspace_root = pin_registered_index_workspace(monkeypatch)
     from harness.gateway_agent_mcp_admission import open_mcp_runtime
     from harness.gateway_agent_mcp_route import agent_mcp_post
 
@@ -142,6 +160,7 @@ def test_real_index_doctor_route_roundtrip_uses_backend_receipt_lookup(tmp_path,
     binding = thaw_json(freeze_agent_binding(
         canonicalize_operation("agent.run", agent_op(tmp_path, body["mcp_admission"])),
         tmp_path / "workspace", owner_ref=OWNER, state_root=tmp_path / "state"))
+    assert binding["mcp_admission"]["servers"][0]["launch"]["cwd"] == workspace_root
     with open_mcp_runtime(binding["mcp_admission"], root=tmp_path / "workspace",
                           deadline=time.monotonic() + 20) as runtime:
         ok, text = runtime["external"]["mcp_index__index_doctor"]["fn"]({})

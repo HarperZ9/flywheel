@@ -15,6 +15,15 @@ REPO = Path(__file__).resolve().parents[1]
 POLICY = {"reason": "test bounded discovery", "timeout_s": 10, "network": False}
 
 
+def pin_registered_index_workspace(monkeypatch):
+    """Use an explicit, existing workspace root for registered package-lane tests."""
+    monkeypatch.delenv("FLYWHEEL_WORKSPACE_ROOT", raising=False)
+    assert REPO.is_absolute() and REPO.is_dir()
+    root = str(REPO.resolve())
+    monkeypatch.setenv("FLYWHEEL_WORKSPACE_ROOT", root)
+    return root
+
+
 def _echo_schema(*, additional_properties=False, top_level_array=False):
     if top_level_array:
         return {"type": "array", "items": {"type": "string"}}
@@ -261,13 +270,14 @@ def test_real_registered_index_doctor_roundtrip_uses_restricted_catalog_launch(t
     from harness.gateway_agent_mcp_cache import cache_mcp_discovery_receipt
     from harness.gateway_agent_mcp_admission import open_mcp_runtime
 
-    monkeypatch.setenv("FLYWHEEL_WORKSPACE_ROOT", "C:/dev")
+    workspace_root = pin_registered_index_workspace(monkeypatch)
     receipt = cache_mcp_discovery_receipt(
         "index", server_id="index", owner_ref=OWNER,
         state_root=tmp_path / "state", tools=["index.doctor"], timeout_s=10,
         discovery_authorization=POLICY)
     binding = freeze_bound(agent_op(tmp_path, selection_admission(receipt)), tmp_path)
     server = binding["mcp_admission"]["servers"][0]
+    assert server["launch"]["cwd"] == workspace_root
     assert server["launch"]["inherit_env"] is False
     assert server["launch"]["allowed_tools"] == ["index.doctor"]
     assert "SYSTEMROOT" in dict(server["launch"]["env_overrides"]) or sys.platform != "win32"
