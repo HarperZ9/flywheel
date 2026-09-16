@@ -30,6 +30,7 @@ part 'gateway_agent_trace.dart';
 part 'gateway_plan_transport.dart';
 part 'gateway_creative.dart';
 part 'gateway_discovery.dart';
+part 'gateway_context_memory.dart';
 part 'gateway_identity.dart';
 part 'gateway_inspect.dart';
 part 'gateway_process_audit.dart';
