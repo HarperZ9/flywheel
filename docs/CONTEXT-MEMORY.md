@@ -8,8 +8,14 @@ original submitted text as a submission attempt, and then dispatches the
 provider request with bounded cited reference context when search succeeds.
 
 Other surfaces remain pending: Compare view, Rowan panel and voice flows,
-attachment extraction, live screen ingestion, ChatGPT or Claude app capture,
-and compiled Canon packaging are not wired by this desktop slice.
+attachment extraction, live screen ingestion, and ChatGPT or Claude app capture
+are not wired by this desktop slice.
+
+The Windows gateway packaging stages the pinned Canon source and launches it
+through a dedicated private child mode. The frozen smoke checks capture,
+retrieval, owner/project denial, and tamper handling. Installed acceptance must
+still be checked against the exact built candidate; this source support does
+not establish native UI behavior or capture on other clients.
 
 ## Configuration
 
