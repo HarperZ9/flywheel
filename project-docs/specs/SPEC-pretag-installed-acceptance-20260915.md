@@ -40,3 +40,16 @@ Create `.github/workflows/windows-installed-acceptance.yml` as a manual, read-on
 
 ## Status: IMPLEMENTED
 
+## Post-install Canon context extension
+
+After full and Inspect acceptance, the CI runner invokes the existing frozen
+gateway checks again against the engine under the registry-validated installation
+root. A bounded wrapper checks its expected hash before and after execution,
+requires Canon capture, preflight, scope-denial and tamper results, and records a
+separate `installed-canon-context.json` receipt. Any failure stops the success
+summary. The existing narrow JSON artifact allowlist covers this receipt.
+
+This probe uses a new temporary profile and Canon database, never the operator's
+store. It establishes the installed engine's tested HTTP behavior, not native UI
+rendering, chat interaction, model quality, or restart-safe client capture.
+

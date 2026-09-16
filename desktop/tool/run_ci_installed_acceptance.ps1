@@ -7,15 +7,7 @@ $repoRoot = (Resolve-Path (Join-Path $desktopRoot "..")).Path
 $installerDir = Join-Path $desktopRoot "build\installer"
 $acceptanceDir = Join-Path $installerDir "installed-acceptance"
 $appId = "ecf4cc9b-8a7a-4de2-8e70-0f1ea0f17e5c"
-function Invoke-Checked([string]$Label, [string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory = $repoRoot) {
-  Push-Location $WorkingDirectory
-  try {
-    & $FilePath @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "$Label failed with exit $LASTEXITCODE" }
-  } finally {
-    Pop-Location
-  }
-}
+. (Join-Path $scriptRoot "installed_acceptance_commands.ps1")
 function Assert-ExactCommit([string]$Value) {
   if ([string]::IsNullOrWhiteSpace($Value)) { throw "ACCEPTANCE_COMMIT is required" }
   if ($Value -cnotmatch "^[0-9a-f]{40}$") {
@@ -57,10 +49,12 @@ function Assert-RequiredTargetFiles() {
   $required = @(
     "desktop\tool\run_installed_launch_acceptance.ps1",
     "desktop\tool\installed_payload_binding.py",
+    "desktop\tool\installed_acceptance_commands.ps1",
     "desktop\scripts\build_installer.ps1",
     "scripts\studio_runtime_packaging.py",
     "scripts\stage_python_lane_sources.py",
     "scripts\check_frozen_gateway.py",
+    "scripts\check_installed_canon_context.py",
     "packaging\flywheel-gateway.spec",
     "tests\fixtures\inspect\v1\single-success.fixture.json"
   )
@@ -200,14 +194,6 @@ function New-InstalledAcceptanceCommandArgs(
   if (![string]::IsNullOrWhiteSpace($InspectFixture)) { $args += @("-InspectFixture", $InspectFixture) }
   return [string[]]$args
 }
-function Read-Version() {
-  $line = Get-Content -LiteralPath (Join-Path $desktopRoot "pubspec.yaml") | Where-Object { $_ -match '^version:' } | Select-Object -First 1
-  if ($null -eq $line) { throw "could not read desktop pubspec version" }
-  return (($line -replace 'version:\s*', '') -split '\+')[0].Trim()
-}
-function Assert-Sha256([string]$Name, [string]$Value) {
-  if ($Value -notmatch '^[0-9a-f]{64}$') { throw "$Name is not a lowercase SHA-256" }
-}
 if ($DefineOnly) { return }
 $targetCommit = [string]$env:ACCEPTANCE_COMMIT
 Assert-ExactCommit $targetCommit
@@ -279,12 +265,14 @@ New-Item -ItemType Directory -Force -Path $fullDir, $inspectDir | Out-Null
 $runner = Join-Path $desktopRoot "tool\run_installed_launch_acceptance.ps1"
 $fullReceipt = Join-Path $acceptanceDir "installed-launch-full.json"
 $inspectReceipt = Join-Path $acceptanceDir "installed-launch-inspect.json"
+$canonReceipt = Join-Path $acceptanceDir "installed-canon-context.json"
 $inspectFixture = Join-Path $repoRoot "tests\fixtures\inspect\v1\single-success.fixture.json"
 $common = @("-InstallRoot", $requestedInstallRoot, "-BuildManifest", $buildManifest, "-SourceCommitExpected", $targetCommit, "-ExpectedVersion", $version, "-ExpectedAppSha256", $appHash, "-ExpectedEngineSha256", $engineHash, "-ExpectInstallerPayload")
 $fullArgs = New-InstalledAcceptanceCommandArgs $runner $common $fullDir $fullReceipt "full" -StartEngine
 $inspectArgs = New-InstalledAcceptanceCommandArgs $runner $common $inspectDir $inspectReceipt "inspect" -InspectImport -InspectFixture $inspectFixture
 Invoke-Checked "full installed acceptance" "powershell" $fullArgs
 Invoke-Checked "inspect installed acceptance" "powershell" $inspectArgs
+Invoke-Checked "installed Canon context acceptance" "python" @("scripts/check_installed_canon_context.py", "--install-root", $requestedInstallRoot, "--expected-engine-sha256", $engineHash, "--expected-version", $version, "--source-commit", $targetCommit, "--receipt", $canonReceipt)
 Assert-TrackedAndSubmodulesUnchanged "after acceptance"
 $summary = [ordered]@{
   schema = "flywheel.windows-installed-acceptance-ci/v1"
@@ -295,7 +283,7 @@ $summary = [ordered]@{
   app_sha256 = $appHash
   engine_sha256 = $engineHash
   payload_sha256 = $payloadHash
-  receipts = [ordered]@{ full = "installed-acceptance/installed-launch-full.json"; inspect = "installed-acceptance/installed-launch-inspect.json" }
+  receipts = [ordered]@{ full = "installed-acceptance/installed-launch-full.json"; inspect = "installed-acceptance/installed-launch-inspect.json"; canon_context = "installed-acceptance/installed-canon-context.json" }
   limits = @("rebuilt CI candidate only", "native UI not launched", "device, signing, provider, and publication acceptance not claimed")
 }
 $summary | ConvertTo-Json -Depth 12 | Out-File -LiteralPath (Join-Path $installerDir "ci-installed-acceptance-summary.json") -Encoding utf8
