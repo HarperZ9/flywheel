@@ -114,6 +114,130 @@ def test_collection_artifact_fails_closed_for_duplicate_plan_rows():
         )
 
 
+def test_collection_artifact_fails_closed_for_missing_report_task():
+    rc = _routing_collection()
+    split_plan = rc.build_builtin_split_plan(
+        tier="easy",
+        task_ids=["add_two", "max_of_three"],
+        split_id="routing-test",
+    )
+    reports = {
+        "single_shot": {
+            "per_task_detail": [{
+                "task_id": "add_two",
+                "arm_name": "single_shot",
+            }]
+        }
+    }
+
+    with pytest.raises(ValueError, match="max_of_three"):
+        rc.build_collection_artifact(
+            run_id="run-x",
+            tier="easy",
+            source_commit="abc123",
+            split_plan=split_plan,
+            split_plan_sha256=rc.canonical_sha256(split_plan),
+            split_plan_path="split.json",
+            reports=reports,
+        )
+
+
+def test_collection_artifact_fails_closed_for_duplicate_report_task():
+    rc = _routing_collection()
+    split_plan = rc.build_builtin_split_plan(
+        tier="easy",
+        task_ids=["add_two"],
+        split_id="routing-test",
+    )
+    reports = {
+        "single_shot": {
+            "per_task_detail": [
+                {"task_id": "add_two", "arm_name": "single_shot"},
+                {"task_id": "add_two", "arm_name": "single_shot"},
+            ]
+        }
+    }
+
+    with pytest.raises(ValueError, match="duplicate"):
+        rc.build_collection_artifact(
+            run_id="run-x",
+            tier="easy",
+            source_commit="abc123",
+            split_plan=split_plan,
+            split_plan_sha256=rc.canonical_sha256(split_plan),
+            split_plan_path="split.json",
+            reports=reports,
+        )
+
+
+def test_collection_artifact_fails_closed_for_arm_name_mismatch():
+    rc = _routing_collection()
+    split_plan = rc.build_builtin_split_plan(
+        tier="easy",
+        task_ids=["add_two"],
+        split_id="routing-test",
+    )
+    reports = {
+        "single_shot": {
+            "per_task_detail": [{
+                "task_id": "add_two",
+                "arm_name": "invented_arm",
+            }]
+        }
+    }
+
+    with pytest.raises(ValueError, match="invented_arm"):
+        rc.build_collection_artifact(
+            run_id="run-x",
+            tier="easy",
+            source_commit="abc123",
+            split_plan=split_plan,
+            split_plan_sha256=rc.canonical_sha256(split_plan),
+            split_plan_path="split.json",
+            reports=reports,
+        )
+
+
+def test_collection_artifact_fails_closed_for_empty_report_details():
+    rc = _routing_collection()
+    split_plan = rc.build_builtin_split_plan(
+        tier="easy",
+        task_ids=["add_two"],
+        split_id="routing-test",
+    )
+    reports = {"single_shot": {"per_task_detail": []}}
+
+    with pytest.raises(ValueError, match="single_shot"):
+        rc.build_collection_artifact(
+            run_id="run-x",
+            tier="easy",
+            source_commit="abc123",
+            split_plan=split_plan,
+            split_plan_sha256=rc.canonical_sha256(split_plan),
+            split_plan_path="split.json",
+            reports=reports,
+        )
+
+
+def test_prepare_m7_collection_rejects_output_path_collisions(tmp_path):
+    rc = _routing_collection()
+
+    class Args:
+        out = str(tmp_path / "scorecard.json")
+        routing_collection_out = str(tmp_path / "scorecard.json")
+        routing_split_plan_out = str(tmp_path / "split.json")
+        routing_split_id = "unit-routing"
+        run_id = ""
+
+    with pytest.raises(ValueError, match="routing collection output"):
+        rc.prepare_m7_collection(Args, tier="easy", task_set=[])
+
+    Args.routing_collection_out = str(tmp_path / "routing.json")
+    Args.routing_split_plan_out = str(tmp_path / "routing.json")
+    with pytest.raises(ValueError, match="routing split-plan output"):
+        rc.prepare_m7_collection(Args, tier="easy", task_set=[])
+
+
 def test_run_m7_eval_dry_run_writes_opt_in_routing_collection(tmp_path):
     repo = Path(__file__).resolve().parents[1]
     scorecard = tmp_path / "m7.json"

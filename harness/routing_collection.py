@@ -1,11 +1,6 @@
-"""Opt-in M7 routing collection helpers.
-The built-in M7 task sets are retrospective diagnostics. A split-plan file here
-proves collection ordering only; it does not make a historical task family fresh
-or independent.
-"""
+"""Opt-in M7 routing collection helpers for retrospective M7 diagnostics."""
 from __future__ import annotations
-import json
-import subprocess
+import json, subprocess
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -29,10 +24,7 @@ def file_tree_sha256(root: Path) -> str | None:
         return None
     rows = []
     for path in sorted(p for p in root.rglob("*") if p.is_file()):
-        rows.append({
-            "path": path.relative_to(root).as_posix(),
-            "sha256": file_sha256(path),
-        })
+        rows.append({"path": path.relative_to(root).as_posix(), "sha256": file_sha256(path)})
     return canonical_sha256(rows)
 def utc_now() -> str:
     return datetime.now(UTC).isoformat().replace("+00:00", "Z")
@@ -71,30 +63,17 @@ def _oracle_receipt(oracle_result) -> dict[str, Any]:
         "output_hash": getattr(oracle_result, "output_hash", ""),
         "rc": getattr(oracle_result, "rc", None),
         "verdict": oracle_result.verdict(),
-        "execution": getattr(getattr(oracle_result, "execution", ""), "value",
-                             getattr(oracle_result, "execution", "")),
-        "attribution": getattr(getattr(oracle_result, "attribution", ""), "value",
-                               getattr(oracle_result, "attribution", "")),
+        "execution": getattr(getattr(oracle_result, "execution", ""), "value", getattr(oracle_result, "execution", "")),
+        "attribution": getattr(getattr(oracle_result, "attribution", ""), "value", getattr(oracle_result, "attribution", "")),
         "stdout_excerpt_sha256": text_sha256(stdout),
         "raw_stdout_sha256": getattr(oracle_result, "raw_stdout_sha256", "") or None,
         "duration_ns": getattr(oracle_result, "duration_ns", 0) or None,
     }
-def candidate_row(
-    *,
-    candidate_index: int,
-    text: str,
-    model_ref_requested: str,
-    model_ref_observed: str,
-    served_model: str = "",
-    seed: int,
-    temperature: float,
-    prompt_hash_provider: str,
-    usage: Any,
-    cache: str,
-    oracle_result,
-    generation_duration_ns: int | None,
-    oracle_duration_ns: int | None,
-) -> dict[str, Any]:
+def candidate_row(*, candidate_index: int, text: str, model_ref_requested: str,
+                  model_ref_observed: str, served_model: str = "", seed: int,
+                  temperature: float, prompt_hash_provider: str, usage: Any,
+                  cache: str, oracle_result, generation_duration_ns: int | None,
+                  oracle_duration_ns: int | None) -> dict[str, Any]:
     identity_status = (
         "reported_unverified"
         if model_ref_observed or served_model
@@ -170,6 +149,39 @@ def _split_assignments(split_plan: dict[str, Any]) -> dict[str, dict[str, Any]]:
             raise ValueError(f"duplicate routing split plan task_id: {task_id}")
         assignments[task_id] = row
     return assignments
+def _resolved_key(path: str | Path) -> str:
+    return str(Path(path).expanduser().resolve(strict=False)).casefold()
+def _guard_distinct_outputs(*, scorecard: str, collection: str, split_plan: str) -> None:
+    seen: dict[str, str] = {}
+    for name, path in [("scorecard", scorecard), ("collection", collection),
+                       ("split-plan", split_plan)]:
+        if not path:
+            continue
+        key = _resolved_key(path)
+        if key in seen:
+            raise ValueError(f"routing {name} output collides with {seen[key]} output: {path}")
+        seen[key] = name
+def _arm_rows(arm_name: str, report: Any, assignments: dict[str, dict[str, Any]]
+              ) -> list[dict[str, Any]]:
+    expected, seen, rows = set(assignments), set(), []
+    details = _report_details(report)
+    if not details:
+        raise ValueError(f"routing report arm {arm_name} has no per_task_detail")
+    for detail in details:
+        row = dict(detail)
+        if str(row.get("arm_name", arm_name)) != arm_name:
+            raise ValueError(f"routing report arm_name mismatch: {row.get('arm_name')} in {arm_name}")
+        row["arm_name"] = arm_name
+        task_id = str(row.get("task_id", ""))
+        if task_id not in assignments:
+            raise ValueError(f"routing split plan missing task_id: {task_id}")
+        if task_id in seen:
+            raise ValueError(f"duplicate routing report task_id for {arm_name}: {task_id}")
+        seen.add(task_id); row["split_assignment"] = assignments[task_id]; rows.append(row)
+    missing = sorted(expected - seen)
+    if missing:
+        raise ValueError(f"routing report arm {arm_name} missing task_id(s): {', '.join(missing)}")
+    return rows
 def measurement_denominators() -> dict[str, str]:
     return {
         "timer": "time.perf_counter_ns in runner process",
@@ -183,27 +195,15 @@ def measurement_denominators() -> dict[str, str]:
         "candidate_total_latency_ms": "generation_latency_ms plus oracle_latency_ms",
         "task_arm_total_latency_ms": "time.perf_counter_ns around complete arm execution",
     }
-def build_collection_artifact(
-    *,
-    run_id: str,
-    tier: str,
-    source_commit: str,
-    split_plan: dict[str, Any],
-    split_plan_sha256: str,
-    split_plan_path: str,
-    reports: dict[str, Any],
-) -> dict[str, Any]:
+def build_collection_artifact(*, run_id: str, tier: str, source_commit: str,
+                              split_plan: dict[str, Any], split_plan_sha256: str,
+                              split_plan_path: str, reports: dict[str, Any]) -> dict[str, Any]:
     assignments = _split_assignments(split_plan)
     rows: list[dict[str, Any]] = []
+    if not reports:
+        raise ValueError("routing collection requires at least one report arm")
     for arm_name, report in reports.items():
-        for detail in _report_details(report):
-            row = dict(detail)
-            row.setdefault("arm_name", arm_name)
-            task_id = str(row.get("task_id", ""))
-            if task_id not in assignments:
-                raise ValueError(f"routing split plan missing task_id: {task_id}")
-            row["split_assignment"] = assignments[task_id]
-            rows.append(row)
+        rows.extend(_arm_rows(arm_name, report, assignments))
     return {
         "schema": "m7-routing-collection/v1",
         "created_utc": utc_now(),
@@ -241,6 +241,8 @@ def prepare_m7_collection(args: Any, *, tier: str, task_set: list[Any]) -> dict[
         return {"enabled": False}
     out = Path(getattr(args, "routing_collection_out"))
     split_path = Path(getattr(args, "routing_split_plan_out", "") or out.with_suffix(".split-plan.json"))
+    _guard_distinct_outputs(scorecard=getattr(args, "out", ""),
+                            collection=str(out), split_plan=str(split_path))
     split_id = (
         getattr(args, "routing_split_id", "")
         or getattr(args, "run_id", "")
@@ -255,12 +257,13 @@ def prepare_m7_collection(args: Any, *, tier: str, task_set: list[Any]) -> dict[
         "split_plan": plan,
         "split_plan_sha256": write_json_with_hash(split_path, plan),
     }
-def finalize_m7_collection(
-    state: dict[str, Any], *, reports: dict[str, Any], meta: dict[str, Any],
-    artifact_paths: list[tuple[str, str]], tier: str, run_id: str, repo_root: Path
-) -> None:
+def finalize_m7_collection(state: dict[str, Any], *, reports: dict[str, Any],
+                            meta: dict[str, Any], artifact_paths: list[tuple[str, str]],
+                            tier: str, run_id: str, repo_root: Path) -> None:
     if not state.get("enabled"):
         return
+    if _resolved_key(state["collection_path"]) == _resolved_key(state["split_plan_path"]):
+        raise ValueError("routing collection output collides with split-plan output")
     collection = build_collection_artifact(
         run_id=run_id,
         tier=tier,

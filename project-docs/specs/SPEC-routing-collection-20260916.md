@@ -14,7 +14,9 @@ Collect matched per-task routing evidence from the existing M7/local generation 
 - [x] Record tokens only when a provider returned usage; otherwise null with `not_returned` provenance.
 - [x] Record server-only time, dollar cost, and model digest as null when unavailable, never zero.
 - [x] Use the existing artifact/store path; no new platform.
-- [x] Fail closed when collection rows do not match the written split plan, including missing or duplicate task ids.
+- [x] Fail closed when collection rows do not match the written split plan, including unknown, missing, or duplicate task ids per arm.
+- [x] Fail closed when a row's `arm_name` conflicts with the report arm key.
+- [x] Reject routing collection, split-plan, and scorecard output path collisions before writing receipts.
 
 ## Technical approach
 - Add `harness/routing_collection.py` for full SHA-256 helpers, task/oracle identity hashing, split-plan construction, and collection artifact construction.
@@ -35,7 +37,8 @@ Collect matched per-task routing evidence from the existing M7/local generation 
 - [x] Focused tests prove default scorecard compatibility.
 - [x] Focused tests prove collection rows contain prompt/completion/task/oracle hashes and timing denominator labels.
 - [x] Focused tests prove built-in split assignment is retrospective diagnostic and future fresh task-family manifest is unavailable.
-- [x] Focused tests prove split/report consistency fails closed instead of assigning fallback metadata.
+- [x] Focused tests prove split/report consistency fails closed instead of assigning fallback metadata, accepting duplicate report rows, or accepting incomplete report arms.
+- [x] Focused tests prove output path collisions are rejected before routing receipt writes.
 - [x] No endpoint, training, download, or source-changing benchmark execution was required for the instrumentation implementation.
 
 ## Verification performed
