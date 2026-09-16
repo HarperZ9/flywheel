@@ -162,7 +162,7 @@ void main() {
     await _startLocalShare(localSharing);
 
     expect(localPlayer.played.map((p) => p.recordedClip!.eventId),
-        ['screen_sharing.started']);
+        ['privacy.live_screen_on']);
     await localCues.dispose();
     localSharing.dispose();
     localHost.dispose();

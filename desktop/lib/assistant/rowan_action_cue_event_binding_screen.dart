@@ -47,6 +47,7 @@ final class RowanActionCueScreenSharingSnapshot {
     required this.state,
     this.sessionRef,
     this.error,
+    this.providerReceiptRef,
     this.uncertainOpen = false,
     this.busy = false,
     this.origin = RowanActionCueObservationOrigin.observed,
@@ -75,11 +76,13 @@ final class RowanActionCueScreenSharingSnapshot {
 
   const RowanActionCueScreenSharingSnapshot.running({
     required String sessionRef,
+    String? providerReceiptRef,
     RowanActionCueObservationOrigin origin =
         RowanActionCueObservationOrigin.observed,
   }) : this._(
           state: RowanActionCueScreenSharingState.running,
           sessionRef: sessionRef,
+          providerReceiptRef: providerReceiptRef,
           origin: origin,
         );
 
@@ -137,6 +140,7 @@ final class RowanActionCueScreenSharingSnapshot {
       final error = sharing.error is String ? sharing.error as String : null;
       final busy = sharing.busy == true;
       final uncertainOpen = sharing.uncertainOpen == true;
+      final providerReceiptRef = _providerReceiptRef(feed);
       if (uncertainOpen && sessionRef == null) {
         return RowanActionCueScreenSharingSnapshot._(
           state: RowanActionCueScreenSharingState.starting,
@@ -150,6 +154,9 @@ final class RowanActionCueScreenSharingSnapshot {
         state: state ?? RowanActionCueScreenSharingState.unavailable,
         sessionRef: sessionRef,
         error: error,
+        providerReceiptRef: state == RowanActionCueScreenSharingState.running
+            ? providerReceiptRef
+            : null,
         uncertainOpen: uncertainOpen,
         busy: busy,
         origin: origin,
@@ -163,7 +170,7 @@ final class RowanActionCueScreenSharingSnapshot {
   }
 
   final RowanActionCueScreenSharingState state;
-  final String? sessionRef, error;
+  final String? sessionRef, error, providerReceiptRef;
   final bool uncertainOpen, busy;
   final RowanActionCueObservationOrigin origin;
 
@@ -175,13 +182,32 @@ final class RowanActionCueScreenSharingSnapshot {
       state == other.state &&
       sessionRef == other.sessionRef &&
       error == other.error &&
+      providerReceiptRef == other.providerReceiptRef &&
       uncertainOpen == other.uncertainOpen &&
       busy == other.busy &&
       origin == other.origin;
 
   @override
-  int get hashCode =>
-      Object.hash(state, sessionRef, error, uncertainOpen, busy, origin);
+  int get hashCode => Object.hash(
+        state,
+        sessionRef,
+        error,
+        providerReceiptRef,
+        uncertainOpen,
+        busy,
+        origin,
+      );
+}
+
+String? _providerReceiptRef(dynamic feed) {
+  try {
+    final delivery = feed.delivery;
+    if (delivery == null || delivery.hasDeliveryReceiptRef != true) return null;
+    final ref = delivery.deliveryRef;
+    return ref is String && ref.isNotEmpty ? ref : null;
+  } on Object {
+    return null;
+  }
 }
 
 String _enumWire(dynamic value) {

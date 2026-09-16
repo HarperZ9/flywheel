@@ -160,10 +160,10 @@ void main() {
     await flushCueBinding();
 
     expect(player.played.map((p) => p.recordedClip!.eventId), [
-      'screen_sharing.started',
+      'privacy.live_screen_on',
       'connection.reconnecting',
       'connection.restored',
-      'screen_sharing.stopped',
+      'privacy.live_screen_off',
     ]);
     expect(
         controller.telemetry.map((t) => t.operationRef), everyElement(isNull));
