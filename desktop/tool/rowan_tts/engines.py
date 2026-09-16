@@ -14,6 +14,8 @@ from .provenance import (
     DEFAULT_MODEL_REVISION,
     verify_model_dir_identity,
 )
+from .base_engine import FakeBasePromptEngine, QwenBaseVoiceCloneEngine
+from .base_profiles import BaseVoiceProfile, load_base_voice_profiles
 
 
 class FakeWavEngine:
@@ -39,6 +41,7 @@ class FakeWavEngine:
         *,
         text: str,
         voice_prompt: str,
+        profile: str,
         seed: int,
         generation: dict[str, Any],
         output_path: Path,
@@ -164,6 +167,7 @@ class QwenVoiceDesignEngine:
         *,
         text: str,
         voice_prompt: str,
+        profile: str,
         seed: int,
         generation: dict[str, Any],
         output_path: Path,

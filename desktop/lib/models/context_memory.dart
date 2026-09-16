@@ -3,6 +3,8 @@ import 'evidence_state.dart';
 part 'context_memory_canon.dart';
 
 const contextMemoryStatusSchema = 'flywheel.context-memory-status/v1';
+const contextMemoryDestinationBindingSchema =
+    'flywheel.context-memory-destination-binding/v1';
 const contextMemoryPreflightResultSchema =
     'flywheel.context-memory-preflight/v1';
 const contextMemoryCaptureResultSchema = 'flywheel.context-memory-capture/v1';
@@ -15,17 +17,47 @@ const _validPreflightStatuses = {
 const _validCaptureStatuses = {'stored', 'already_present'};
 
 final _projectRef = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$');
+final _canonStoreId = RegExp(r'^ctxstore_[0-9a-f]{32}$');
+
+final class ContextMemoryDestinationBinding extends DefensiveModel {
+  ContextMemoryDestinationBinding._(
+      {required this.configGeneration,
+      required this.canonStoreId,
+      required List<ParseIssue> parseIssues})
+      : super(parseIssues);
+
+  final String configGeneration, canonStoreId;
+
+  factory ContextMemoryDestinationBinding.fromJson(
+      Map<String, Object?> json, List<ParseIssue> issues) {
+    expectSchema(json, contextMemoryDestinationBindingSchema, issues);
+    final configGeneration =
+        readText(json, 'config_generation', issues, pattern: sha256Pattern);
+    final canonStoreId =
+        readText(json, 'canon_store_id', issues, pattern: _canonStoreId);
+    final check = readText(json, 'same_store_check', issues);
+    if (check != 'canon.expected_store_id.transaction/v1') {
+      addParseIssue(issues, 'same_store_check', check);
+    }
+    return ContextMemoryDestinationBinding._(
+        configGeneration: configGeneration,
+        canonStoreId: canonStoreId,
+        parseIssues: issues);
+  }
+}
 
 final class ContextMemoryStatus extends DefensiveModel {
   ContextMemoryStatus._(
       {required this.configured,
       required this.projectRef,
+      required this.destinationBinding,
       required this.message,
       required List<ParseIssue> parseIssues})
       : super(parseIssues);
 
   final bool configured;
   final String projectRef, message;
+  final ContextMemoryDestinationBinding? destinationBinding;
 
   factory ContextMemoryStatus.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
@@ -40,10 +72,32 @@ final class ContextMemoryStatus extends DefensiveModel {
     if (scope && owner && project.isEmpty) {
       addParseIssue(issues, 'canonical_project_id', rawProject);
     }
+    final destinationConfigured =
+        readValue<bool>(json, 'destination_binding_configured', issues, false);
+    ContextMemoryDestinationBinding? binding;
+    if (destinationConfigured) {
+      final rawBinding = json['destination_binding'];
+      if (rawBinding is Map<String, Object?>) {
+        binding = ContextMemoryDestinationBinding.fromJson(rawBinding, issues);
+      } else {
+        addParseIssue(issues, 'destination_binding', rawBinding);
+      }
+    }
+    final ready = scope &&
+        owner &&
+        project.isNotEmpty &&
+        destinationConfigured &&
+        binding != null &&
+        !binding.invalidResponse;
     return ContextMemoryStatus._(
-        configured: scope && owner && project.isNotEmpty,
+        configured: ready,
         projectRef: project,
-        message: scope && owner ? 'Canon context configured' : 'not configured',
+        destinationBinding: binding,
+        message: ready
+            ? 'configured'
+            : scope && owner
+                ? 'binding unavailable'
+                : 'not configured',
         parseIssues: issues);
   }
 }

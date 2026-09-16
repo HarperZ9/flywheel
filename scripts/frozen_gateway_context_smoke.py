@@ -9,7 +9,7 @@ from typing import Callable
 
 from harness.context_memory_bridge import (
     CAPTURE_RESULT_SCHEMA, CAPTURE_SCHEMA, PREFLIGHT_RESULT_SCHEMA,
-    PREFLIGHT_SCHEMA)
+    PREFLIGHT_SCHEMA, STATUS_SCHEMA)
 
 
 WORKSPACE = "cdev"
@@ -32,9 +32,13 @@ def run_context_memory_smoke(
         base: str, token: str, home: Path, owner_ref: str,
         secret_values: tuple[str, ...], request_fn: Callable,
         require: Callable[[bool, str], None]) -> dict:
+    binding = _status_destination_binding(
+        request_fn, base, token, secret_values, require)
     capture_request = {
         "schema": CAPTURE_SCHEMA,
         "project_ref": ALIAS,
+        "config_generation": binding["config_generation"],
+        "canon_store_id": binding["canon_store_id"],
         "event": {
             "event_id": "frozen-context-smoke-1",
             "source_app": "flywheel",
@@ -56,6 +60,8 @@ def run_context_memory_smoke(
     status, preflight = _post_json(
         request_fn, base, "/api/context-memory/preflight", token,
         body={"schema": PREFLIGHT_SCHEMA, "project_ref": ALIAS,
+              "config_generation": binding["config_generation"],
+              "canon_store_id": binding["canon_store_id"],
               "query": "canonical context"},
         secret_values=secret_values)
     require(status == 200 and preflight.get("status") == "found_in_searched_sources"
@@ -64,6 +70,8 @@ def run_context_memory_smoke(
     status, denied = _post_json(
         request_fn, base, "/api/context-memory/preflight", token,
         body={"schema": PREFLIGHT_SCHEMA, "project_ref": "other-project",
+              "config_generation": binding["config_generation"],
+              "canon_store_id": binding["canon_store_id"],
               "query": "canonical context"}, secret_values=secret_values)
     require(status == 403 and denied.get("error", {}).get("code")
             == "CONTEXT_SCOPE_NOT_BOUND", "CONTEXT_DENIAL_PROMOTED")
@@ -73,6 +81,8 @@ def run_context_memory_smoke(
     status, tampered = _post_json(
         request_fn, base, "/api/context-memory/preflight", token,
         body={"schema": PREFLIGHT_SCHEMA, "project_ref": ALIAS,
+              "config_generation": binding["config_generation"],
+              "canon_store_id": binding["canon_store_id"],
               "query": "tampered evidence"}, secret_values=secret_values)
     require(status == 502 and tampered.get("error", {}).get("code")
             == "CANON_CONTEXT_TOOL_ERROR", "CONTEXT_TAMPER_ACCEPTED")
@@ -87,6 +97,8 @@ def run_context_memory_smoke(
         "event_record_id": capture.get("canon", {}).get("event_record_id"),
         "source_hash": expected_hash,
         "owner_ref_bound": owner_ref,
+        "destination_binding_checked": True,
+        "canon_store_id_bound": binding["canon_store_id"],
     }
 
 
@@ -98,6 +110,26 @@ def _post_json(request_fn, base: str, path: str, token: str, *,
         return status, json.loads(text)
     except json.JSONDecodeError as exc:
         raise RuntimeError("CONTEXT_JSON_RESPONSE") from exc
+
+
+def _status_destination_binding(request_fn, base: str, token: str,
+                                secret_values: tuple[str, ...], require) -> dict:
+    status, body = _post_json(
+        request_fn, base, "/api/context-memory/status", token,
+        body={}, secret_values=secret_values)
+    require(status == 200 and body.get("schema") == STATUS_SCHEMA,
+            "CONTEXT_STATUS_HTTP")
+    require(body.get("destination_binding_configured") is True,
+            "CONTEXT_DESTINATION_BINDING_MISSING")
+    binding = body.get("destination_binding")
+    require(isinstance(binding, dict), "CONTEXT_DESTINATION_BINDING_SHAPE")
+    require(re.fullmatch(r"[0-9a-f]{64}", str(binding.get("config_generation") or "")),
+            "CONTEXT_CONFIG_GENERATION_MISSING")
+    require(re.fullmatch(r"ctxstore_[0-9a-f]{32}", str(binding.get("canon_store_id") or "")),
+            "CONTEXT_STORE_ID_MISSING")
+    require(binding.get("same_store_check") == "canon.expected_store_id.transaction/v1",
+            "CONTEXT_STORE_CHECK_MISSING")
+    return binding
 
 
 def _validate_capture_receipt(capture: dict, request: dict, owner_ref: str,

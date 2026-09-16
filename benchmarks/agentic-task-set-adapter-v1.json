@@ -36,6 +36,7 @@
     "agt-001-index-fallback-integrity": "toolchain_failure_recovery_matrix",
     "agt-002-forum-deep-verify-scale": "forum_ledger_deep_verify_scaling",
     "agt-003-codex-flywheel-shared-task": "cross_harness_reproducibility_matrix",
+    "agt-003-shared-task-artifact-v2-diagnostic": "cross_harness_reproducibility_matrix",
     "agt-004-local-14b-endpoint-gate": "local_resource_pressure_14b_32b",
     "agt-005-local-32b-endpoint-gate": "local_resource_pressure_14b_32b",
     "agt-006-mneme-enterprise-readiness": "tool_enterprise_readiness_matrix",

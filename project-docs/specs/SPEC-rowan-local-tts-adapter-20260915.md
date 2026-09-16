@@ -5,6 +5,8 @@
 Build a private, optional Rowan text-to-speech prototype that can render local
 Qwen3-TTS VoiceDesign WAV files behind Flywheel's existing `VoiceOutput`
 interface, without touching the verifier accept path or wiring the desktop shell.
+The prototype also supports an explicit optional Qwen Base backend that reuses a
+pinned local reference profile and bounded in-process prompt cache.
 
 ## Requirements
 
@@ -24,6 +26,9 @@ interface, without touching the verifier accept path or wiring the desktop shell
   the user is still choosing an accent direction.
 - [x] Add a Dart `VoiceOutput` adapter that can submit to the local service later
   without changing shell composition now.
+- [x] Add an explicit `qwen-base` backend that requires a caller-supplied profile
+  config, verifies the pinned reference audio and transcript hashes, and reuses
+  a bounded prompt cache by configured profile id only.
 - [x] Test auth, loopback checks, queue bounds, queued cancellation, stop behavior,
   and Dart request construction.
 
@@ -35,6 +40,13 @@ offers `/v1/health`, `/v1/speak`, `/v1/jobs/<id>`, `/v1/jobs/<id>/audio`,
 tests. The Qwen backend imports torch and qwen_tts only when selected and loads
 from a caller-supplied local model directory with Hugging Face offline flags and
 `local_files_only=True`.
+
+The optional Base backend requires `--profile-config`; source code does not carry
+private reference paths as defaults. The config defines allowed profile ids,
+reference WAV hash, reference transcript hash, source model/revision metadata,
+and whether the prompt uses `x_vector_only_mode`. The prompt cache is bounded and
+keyed only by configured profile ids, so arbitrary request profile strings cannot
+grow the cache.
 
 Add `desktop/lib/assistant/local_tts_voice.dart`, an optional `VoiceOutput`
 implementation that enforces loopback base URLs, sends bearer auth, submits text
@@ -60,6 +72,7 @@ will not be modified.
 - [x] A missing-job cancel reports failure without crashing.
 - [x] A delayed `/v1/speak` request that finishes validation after `/v1/stop`
   returns `503 SERVICE_STOPPING` rather than `202` with a queued orphan.
+- [x] Base profile config and fake prompt-cache tests pass without loading Qwen.
 - [x] Final report states that generated WAVs are full-buffer outputs, not
   streaming or real-time speech.
 

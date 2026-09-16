@@ -101,6 +101,14 @@ Map<String, dynamic> _status({bool configured = true}) => {
       'canonical_project_id': configured ? 'mission-memory' : '',
       'scope_configured': configured,
       'owner_binding_configured': configured,
+      'destination_binding_configured': configured,
+      if (configured)
+        'destination_binding': {
+          'schema': 'flywheel.context-memory-destination-binding/v1',
+          'config_generation': _generation,
+          'canon_store_id': _storeId,
+          'same_store_check': 'canon.expected_store_id.transaction/v1',
+        },
       'canon': {'ok': configured, 'configured': configured},
       'current_limits': ['not_found does not mean never discussed'],
     };

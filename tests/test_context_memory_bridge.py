@@ -2,7 +2,6 @@ import json
 import os
 import subprocess
 import sys
-from pathlib import Path
 
 import pytest
 
@@ -17,7 +16,7 @@ from harness.context_memory_bridge import (
 
 OWNER = "owner_" + "a" * 32
 OTHER = "owner_" + "b" * 32
-CANON_SRC = Path("C:/dev/worktrees/canon-shared-context-20260916/src")
+STORE_ID = "ctxstore_" + "1" * 32
 
 
 class FakeCanonClient:
@@ -25,7 +24,7 @@ class FakeCanonClient:
         self.calls = []
 
     def health(self):
-        return {"ok": True, "configured": True}
+        return {"ok": True, "configured": True, "store_id": STORE_ID}
 
     def ingest(self, args):
         self.calls.append(("ingest", args))
@@ -44,7 +43,9 @@ def _bridge(client):
         client=client,
         config=ContextMemoryConfig(workspace_id="cdev", project_id="flywheel-mission",
                                    project_aliases=("mission-memory",),
-                                   owner_refs=(OWNER,)),
+                                   owner_refs=(OWNER,),
+                                   container_id="flywheel-desktop",
+                                   db_path_sha256="d" * 64),
     )
 
 
@@ -261,33 +262,3 @@ def test_context_mcp_command_uses_source_module_until_frozen(tmp_path, monkeypat
     monkeypatch.setattr(sys, "executable", "D:/app/flywheel-gateway.exe")
     frozen = CanonContextMcpClient.from_environment(env)
     assert frozen.command == ["D:/app/flywheel-gateway.exe", "--canon-context-mcp"]
-
-
-def test_actual_canon_context_mcp_roundtrip_when_available(tmp_path):
-    if not (CANON_SRC / "canon" / "context_mcp.py").exists():
-        pytest.skip("Canon context MCP worktree source is unavailable")
-
-    db = tmp_path / "context.sqlite"
-    client = CanonContextMcpClient(env={**os.environ, "CANON_CONTEXT_DB": str(db),
-                                        "PYTHONPATH": str(CANON_SRC)})
-    bridge = ContextMemoryBridge(
-        client=client,
-        config=ContextMemoryConfig(workspace_id="cdev", project_id="flywheel-mission",
-                                   project_aliases=("mission-memory",), owner_refs=(OWNER,)),
-    )
-    captured = bridge.capture(OWNER, {
-        "schema": CAPTURE_SCHEMA,
-        "project_ref": "mission-memory",
-        "event": {"event_id": "turn-1", "source_app": "flywheel",
-                  "message_text": "Actual cross-process Canon bridge",
-                  "extractions": [{"source_id": "message",
-                                   "text": "Actual cross-process Canon bridge"}]},
-    })
-    preflight = bridge.preflight(OWNER, {
-        "schema": PREFLIGHT_SCHEMA,
-        "project_ref": "mission-memory",
-        "query": "cross-process Canon",
-    })
-
-    assert captured["status"] in {"stored", "already_present"}
-    assert preflight["status"] == "found_in_searched_sources"

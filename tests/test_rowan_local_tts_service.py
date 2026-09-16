@@ -102,6 +102,9 @@ def test_speak_wait_writes_wav_and_manifest(tmp_path: Path):
         assert payload["text"] == "Hello Rowan."
         assert payload["job"]["seed"] == 7
         assert payload["wav"]["nonsilent"] is True
+        assert payload["model"]["backend"] == "fake-wav"
+        assert payload["model_observed"] is True
+        assert payload["model_observation_basis"] == "engine_metadata"
         assert payload["boundary"] == "full-buffer WAV generation; not streaming or real-time speech"
 
 
@@ -137,6 +140,9 @@ def test_stop_cancels_accepted_queued_jobs_with_manifests(tmp_path: Path):
         payload = json.loads(manifest.read_text(encoding="utf-8"))
         assert payload["reason"] == "service_stopping"
         assert payload["text"] == "queued"
+        assert payload["model"] is None
+        assert payload["model_observed"] is False
+        assert payload["model_observation_basis"] == "unobserved_engine_metadata"
 
 
 def test_pending_speak_after_stop_returns_503_without_orphan(
