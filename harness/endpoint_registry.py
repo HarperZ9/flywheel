@@ -50,7 +50,7 @@ _NATIVE = [
 
 
 _CLI_BINARY = {"claude-cli": "claude", "codex-cli": "codex", "opencode": "opencode"}
-_BUILD_ALIAS = {"claude-cli": "claude-plan", "codex-cli": "codex-plan"}
+_BUILD_ALIAS = {"claude-cli": "claude-plan", "codex-cli": "codex-plan", "opencode": "opencode-plan"}
 _LOCAL_ALIASES = frozenset(("local", "default", "auto", "flywheel", "flywheel-serve"))
 
 
