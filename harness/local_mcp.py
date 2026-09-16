@@ -23,6 +23,9 @@ from .receipt_operations import (
 from .run_paths import run_root_default
 from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
 from .skill_resources import list_resources, read_resource
+from .context_memory_bridge import (
+    ContextMemoryBridge, ContextMemoryError, context_memory_tool_descriptors,
+)
 
 PROTOCOL = "2025-06-18"
 __version__ = "0.1.0"
@@ -50,7 +53,7 @@ TOOLS = [
     {"name": "local-model.doctor",
      "description": "Readiness diagnostic: identity plus the tiers this lane would try and the tools it exposes. Network-free, so it reports no reachability; local_agent_health is the tool that pings a tier.",
      "inputSchema": {"type": "object", "properties": {}}},
-] + receipt_mcp_tool_descriptors()
+] + context_memory_tool_descriptors() + receipt_mcp_tool_descriptors()
 
 
 def _backends(args: dict) -> list:
@@ -113,6 +116,10 @@ def _receipt_reader(root, run_root):
     return lambda: _receipt_ledger(root, run_root)
 
 
+def _context_memory_bridge() -> ContextMemoryBridge:
+    return ContextMemoryBridge()
+
+
 def _call(params: dict, *, root=None, run_root=None) -> dict:
     name, args = params.get("name"), params.get("arguments", {}) or {}
     try:
@@ -137,11 +144,23 @@ def _call(params: dict, *, root=None, run_root=None) -> dict:
                           "verified": r["verified"], "checkpoint": r["checkpoint"]})
         if name in ("local-model.status", "local-model.doctor"):
             return _text(_lane_health(name == "local-model.doctor"))
+        if name == "flywheel.context.health":
+            return _text(_context_memory_bridge().health())
+        if name == "flywheel.context.capture":
+            owner_ref = args.get("owner_ref")
+            request = {k: v for k, v in args.items() if k != "owner_ref"}
+            return _text(_context_memory_bridge().capture(owner_ref, request))
+        if name == "flywheel.context.preflight":
+            owner_ref = args.get("owner_ref")
+            request = {k: v for k, v in args.items() if k != "owner_ref"}
+            return _text(_context_memory_bridge().preflight(owner_ref, request))
         if name == "receipt.verify_inclusion":
             return _structured(verify_receipt_inclusion(
                 args, ledger=_receipt_reader(root, run_root)))
         return {"content": [{"type": "text", "text": f"unknown tool {name!r}"}], "isError": True}
     except ReceiptOperationError as e:
+        return _error(e.code, e.message)
+    except ContextMemoryError as e:
         return _error(e.code, e.message)
     except Exception as e:
         if name == "receipt.verify_inclusion":
