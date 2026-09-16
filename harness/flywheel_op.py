@@ -31,6 +31,8 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping
 
+from .gateway_operation import _SCOPES
+
 # The gateway actions OP rides. Each is a real, wired, grant-gated action.
 REGISTER_ACTION = "plugin.register"
 PROBE_ACTION = "plugin.probe"
@@ -43,8 +45,7 @@ OP_NAME_PREFIX = "op-"
 # The scopes an OP operation may request, kept equal to the gateway's own
 # operation scopes. test_flywheel_op asserts this set matches, so a change to the
 # gateway scope vocabulary fails the OP contract test rather than drifting.
-ALLOWED_SCOPES: frozenset[str] = frozenset(
-    ("write", "exec", "network", "plugin", "secrets"))
+ALLOWED_SCOPES: frozenset[str] = frozenset(_SCOPES)
 
 # OP connectors are proprietary and never convert to open, unlike the public
 # domain packs. This is a declaration the build layer enforces, not a license.

@@ -27,6 +27,7 @@ from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_serving import context_argument
 from .local_tools import ToolExecutor, ToolGate
+from .run_paths import run_root_default
 from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
 
 
@@ -180,7 +181,9 @@ def main(argv: list[str] | None = None) -> int:
     # agentic mode
     ap.add_argument("--agent", action="store_true",
                     help="run the prompt as an agentic task with gated tools + a witnessed ledger")
-    ap.add_argument("--root", default=".", help="sandbox root for file/exec tools (--agent)")
+    ap.add_argument("--root", default=".",
+                    help=("sandbox root for file/exec tools (--agent); "
+                          "repo root for receipt tools (--mcp)"))
     ap.add_argument("--allow-write", action="store_true", dest="allow_write")
     ap.add_argument("--allow-exec", action="store_true", dest="allow_exec")
     ap.add_argument("--isolate", action="store_true",
@@ -197,6 +200,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--providers", default="",
                     help="comma list to restrict online providers (default: all configured)")
     ap.add_argument("--mcp", action="store_true", help="run as a stdio MCP server")
+    ap.add_argument("--run-root", default=run_root_default(), dest="run_root",
+                    help="receipts run root for --mcp")
     args = ap.parse_args(argv)
 
     if args.isolate and args.auto_commit:
@@ -206,7 +211,7 @@ def main(argv: list[str] | None = None) -> int:
                  "a disposable copy is not reachable from the original tree")
     if args.mcp:
         from .local_mcp import serve
-        return serve()
+        return serve(root=args.root, run_root=args.run_root)
     if args.agent:
         return _run_agentic(args)
     if args.health:

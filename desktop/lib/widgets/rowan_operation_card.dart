@@ -181,6 +181,10 @@ final class RowanOperationCard extends StatelessWidget {
                 ),
             ],
           ),
+          if (!nativeCli) ...[
+            const SizedBox(height: FwLayout.s2),
+            _RowanMcpSelector(rowan: rowan),
+          ],
           const SizedBox(height: FwLayout.s2),
           _BudgetRow(
             rowan: rowan,
@@ -260,6 +264,72 @@ final class RowanOperationCard extends StatelessWidget {
           Text(label, style: fwMono(t, size: 11, color: t.inkMuted)),
         ],
       );
+}
+
+final class _RowanMcpSelector extends StatelessWidget {
+  const _RowanMcpSelector({required this.rowan});
+
+  final RowanOperationController rowan;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.fw;
+    final options = rowan.mcpOptions;
+    final selected = options.any(
+      (option) => option.key == rowan.selectedMcpOption?.key,
+    )
+        ? rowan.selectedMcpOption?.key
+        : null;
+    final busy = rowan.active ||
+        rowan.authorizing ||
+        rowan.mcpCatalogLoading ||
+        rowan.mcpDiscoveryRunning;
+    return Wrap(
+      spacing: FwLayout.s2,
+      runSpacing: FwLayout.s1,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        OutlinedButton(
+          key: const Key('assistant-rowan-mcp-refresh'),
+          onPressed: busy ? null : () => unawaited(rowan.loadMcpCatalog()),
+          child: Text(rowan.mcpCatalogLoading ? 'Checking MCP' : 'Find MCP'),
+        ),
+        if (options.isNotEmpty)
+          DropdownButton<String>(
+            key: const Key('assistant-rowan-mcp-option'),
+            value: selected,
+            underline: const SizedBox(),
+            style: fwMono(t, size: 11.5, color: t.inkSoft),
+            items: [
+              for (final option in options)
+                DropdownMenuItem(
+                  value: option.key,
+                  child: Text(option.label),
+                ),
+            ],
+            onChanged: busy ? null : rowan.selectMcpOption,
+          )
+        else
+          Text(
+            'No admitted MCP tool selected',
+            style: fwMono(t, size: 10.5, color: t.inkFaint),
+          ),
+        OutlinedButton(
+          key: const Key('assistant-rowan-mcp-admit'),
+          onPressed: busy || selected == null
+              ? null
+              : () => unawaited(rowan.admitSelectedMcpTool()),
+          child:
+              Text(rowan.mcpDiscoveryRunning ? 'Reviewing MCP' : 'Admit MCP'),
+        ),
+        if (rowan.mcpAdmission != null)
+          Text(
+            'MCP receipt selected',
+            style: fwMono(t, size: 10.5, color: t.inkFaint),
+          ),
+      ],
+    );
+  }
 }
 
 final class _BudgetRow extends StatelessWidget {

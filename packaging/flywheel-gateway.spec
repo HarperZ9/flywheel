@@ -1,14 +1,25 @@
 # PyInstaller spec for the frozen Flywheel gateway (onedir).
 #
 # Build (from the repo root):
+#   python -m scripts.studio_runtime_packaging stage-pinned-payload
+#     --sources packaging/studio-runtime-sources.json --work-root SOURCES
+#     --manifest MANIFEST --payload-root PAYLOAD
+#   $env:FLYWHEEL_STUDIO_BODY_RUNTIME_MANIFEST="PATH"
+#   $env:FLYWHEEL_STUDIO_BODY_RUNTIME_PAYLOAD="PATH"
 #   python -m PyInstaller packaging/flywheel-gateway.spec --noconfirm
 # Output: dist/flywheel-gateway/ — the folder the desktop installer ships
 # as its engine/ payload. Includes the relay submodule so `flywheel remote`
 # and `flywheel relay` work from a frozen build.
 
+import os
 import sys
 from pathlib import Path
 from PyInstaller.utils.hooks import copy_metadata
+
+# Discovery imports must not write cache files into the pinned staging payload.
+# Child discovery processes inherit the same rule. Recheck the payload below.
+sys.dont_write_bytecode = True
+os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
 repo = Path(SPECPATH).parent
 relay_src = repo / "relay" / "src"
@@ -20,6 +31,7 @@ sys.path.insert(0, str(repo))
 sys.path.insert(0, str(relay_src))
 from scripts.check_bundled_lane_descriptors import check_lane_descriptor
 from scripts.frozen_gateway_metadata import flywheel_verify_metadata_datas
+from scripts.studio_runtime_packaging import pyinstaller_studio_runtime_inputs
 import importlib.util
 
 descriptor_check = check_lane_descriptor(repo, "relay")
@@ -31,16 +43,22 @@ relay_import = importlib.util.find_spec("relay.local_mcp")
 relay_origin = Path(relay_import.origin).resolve() if relay_import and relay_import.origin else None
 if relay_origin is None or not relay_origin.is_relative_to(relay_src.resolve()):
     raise RuntimeError("bundled Relay import shadowed outside relay/src")
+mcp_import = importlib.util.find_spec("harness.local_mcp")
+mcp_origin = Path(mcp_import.origin).resolve() if mcp_import and mcp_import.origin else None
+if mcp_origin is None or not mcp_origin.is_relative_to((repo / "harness").resolve()):
+    raise RuntimeError("frozen MCP import shadowed outside harness")
 # Keep version/license metadata under Flywheel's stable owned metadata root.
 distribution_data = flywheel_verify_metadata_datas(copy_metadata)
+studio_runtime = pyinstaller_studio_runtime_inputs(repo)
 
 a = Analysis(
     [str(repo / "packaging" / "gateway_entry.py")],
-    pathex=[str(relay_src), str(repo)],
+    pathex=[str(relay_src), str(repo), *studio_runtime.pathex],
     datas=[(str(repo / "site"), "site"),
            (str(repo / "harness" / "gateway.py"), "harness"),
            (str(repo / "packaging" / "bundled-lanes" / "relay.json"),
             "packaging/bundled-lanes"),
+           *studio_runtime.datas,
            *distribution_data],
     hiddenimports=[
         "relay", "relay.remote_cli", "relay.remote_mcp", "relay.remote_oauth",
@@ -56,6 +74,8 @@ a = Analysis(
         "relay.injection_probe", "relay.intent_audit", "relay.hashline",
         "relay.remote_state", "harness.bundled_lane_admission",
         "harness.bundled_lane_expectations",
+        "harness.local_agent_cli", "harness.local_mcp",
+        "harness.receipt_operations",
         # Desktop Bulletin identity setup is served through the frozen gateway.
         # The source package keeps cryptography optional; the Windows freeze
         # installs .[signing] and must carry the lazy route/import graph.
@@ -67,6 +87,7 @@ a = Analysis(
         "harness.key_roster", "harness.keychain", "harness.keychain_route",
         "cryptography.hazmat.primitives.asymmetric.ed25519",
         "cryptography.hazmat.primitives.serialization",
+        *studio_runtime.hiddenimports,
     ],
     excludes=["tkinter", "matplotlib", "numpy", "PIL"],
     noarchive=False,
@@ -89,3 +110,6 @@ coll = COLLECT(
     a.datas,
     name="flywheel-gateway",
 )
+
+# A successful freeze must leave the source payload reusable byte-for-byte.
+pyinstaller_studio_runtime_inputs(repo)

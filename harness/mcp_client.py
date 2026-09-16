@@ -181,6 +181,7 @@ class MCPClient:
         self.client_name = client_name
         self.server_info: dict = {}
         self.tools: list = []
+        self.protocol_version = ""
         self.started = False
 
     def _request(self, method: str, params: "dict | None" = None) -> dict:
@@ -206,6 +207,7 @@ class MCPClient:
             "capabilities": {},
             "clientInfo": {"name": self.client_name, "version": "1"}})
         self.server_info = res.get("serverInfo", {})
+        self.protocol_version = str(res.get("protocolVersion", ""))
         self._notify("notifications/initialized")
         self.started = True
         return self

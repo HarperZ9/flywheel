@@ -20,6 +20,36 @@ def gateway_error_response(exc: Exception) -> tuple[dict, int]:
         "AGENT_REPREPARE_REQUIRED": (409, "agent execution requires a new proposal"),
         "AGENT_MODEL_MISMATCH": (409, "provider reported a different model"),
         "AGENT_ENDPOINT_UNSUPPORTED": (422, "endpoint does not support bound agent execution"),
+        "AGENT_MCP_RUNTIME_DRIFT": (
+            409, "admitted MCP runtime changed before execution"),
+        "AGENT_MCP_TOOL_COLLISION": (
+            422, "admitted MCP tool names collide"),
+        "AGENT_MCP_TOOL_SHADOWS_BUILTIN": (
+            422, "admitted MCP tool shadows a builtin tool"),
+        "AGENT_MCP_SCHEMA_UNSUPPORTED": (
+            422, "admitted MCP tool schema is unsupported by the native route"),
+        "MCP_DISCOVERY_STARTUP_NOT_AUTHORIZED": (
+            403, "MCP discovery startup requires explicit approval"),
+        "MCP_DISCOVERY_RECEIPT_UNAVAILABLE": (
+            409, "MCP discovery receipt is unavailable"),
+        "MCP_DISCOVERY_RECEIPT_STALE": (
+            409, "MCP discovery receipt is stale"),
+        "MCP_DISCOVERY_CONFIG_DRIFT": (
+            409, "MCP catalog launch changed since discovery"),
+        "MCP_CACHE_UNAVAILABLE": (
+            503, "MCP discovery cache is unavailable"),
+        "MCP_CATALOG_LAUNCH_UNAVAILABLE": (
+            503, "MCP catalog launch is unavailable"),
+        "MCP_CREDENTIAL_VERSION_UNAVAILABLE": (
+            422, "MCP credential version pinning is unavailable"),
+        "MCP_AUTHORITY_UNAVAILABLE": (
+            422, "MCP tool authority is unavailable"),
+        "MCP_AMBIENT_ENV_UNSUPPORTED": (
+            422, "MCP ambient environment launch is unsupported"),
+        "MCP_HTTP_TRANSPORT_UNSUPPORTED": (
+            422, "MCP HTTP transport admission is unsupported"),
+        "MCP_CRITICAL_TOOL_UNSUPPORTED": (
+            422, "critical MCP tool authority is unsupported"),
         "OPERATION_DEADLINE_EXCEEDED": (504, "agent execution budget expired"),
         "BULLETIN_ORIGIN_REQUIRED": (422, "Bulletin origin requires a new exact grant"),
         "BULLETIN_ORIGIN_INVALID": (422, "Bulletin origin is invalid"),

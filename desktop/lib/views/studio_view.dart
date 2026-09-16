@@ -8,8 +8,10 @@ import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../controllers/journey_controller.dart';
+import '../controllers/live_screen_sharing.dart';
 import '../controllers/rowan_walkthrough_operation_host.dart';
 import '../models/gateway_models.dart';
+import '../shell/shell_rowan_cues.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/aperture.dart';
 import '../widgets/brand_kit_panel.dart';
@@ -22,6 +24,8 @@ import '../widgets/pipeline_panel.dart';
 import '../widgets/poster_panel.dart';
 import '../widgets/raster_fx_panel.dart';
 import '../widgets/sound_panel.dart';
+import '../widgets/studio_body_panel.dart';
+import '../widgets/screen_sharing_surface.dart';
 import '../widgets/typeface_panel.dart';
 import '../widgets/face_gallery_card.dart';
 import '../widgets/variable_family_card.dart';
@@ -36,6 +40,7 @@ class StudioView extends StatefulWidget {
   final bool alive;
   final GatewayClient? client;
   final RowanWalkthroughOperationHost? rowanOperationHost;
+  final LiveScreenSharing? screenSharing;
   const StudioView({
     super.key,
     this.world,
@@ -44,6 +49,7 @@ class StudioView extends StatefulWidget {
     required this.alive,
     this.client,
     this.rowanOperationHost,
+    this.screenSharing,
   });
 
   @override
@@ -59,15 +65,16 @@ class _StudioViewState extends State<StudioView> {
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
+    final rowanCues = ShellRowanCues.maybeOf(context);
     return ViewScroll(
       storageKey: 'studio',
       children: [
         const SectionHeader('Studio', kicker: 'creation with provenance'),
         const SizedBox(height: FwLayout.s3),
         Text(
-          'Every plate is seeded and reproducible: the seed on the mark IS '
-          'the provenance. Schematics draw from live state, never from a '
-          'stale diagram.',
+          'Share a screen with Rowan, create with visual and sound instruments, '
+          'and inspect the evidence behind each result. Seeds and receipts '
+          'help you reproduce the work.',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: FwLayout.s4),
@@ -77,6 +84,20 @@ class _StudioViewState extends State<StudioView> {
           journey: widget.journey,
           operationHost: widget.rowanOperationHost,
         ),
+        if (widget.screenSharing != null) ...[
+          ScreenSharingSurface(
+              sharing: widget.screenSharing!,
+              modelHost: widget.rowanOperationHost),
+          const SizedBox(height: FwLayout.s4),
+        ],
+        if (widget.client != null && widget.alive) ...[
+          StudioBodyPanel(
+              client: widget.client!,
+              liveScreenSharing: widget.screenSharing,
+              rowanHost: widget.rowanOperationHost,
+              rowanCueDispatch: rowanCues?.dispatch),
+          const SizedBox(height: FwLayout.s4),
+        ],
         const Kicker('field plate · seeded kernel', hot: true),
         const SizedBox(height: FwLayout.s3),
         HairlineCard(

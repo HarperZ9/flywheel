@@ -11,6 +11,7 @@ from .gateway_agent_workspace import freeze_workspace, validate_workspace
 
 SCHEMA = "flywheel.gateway-agent-binding/v1"
 SCHEMA_V2 = "flywheel.gateway-agent-binding/v2"
+SCHEMA_V3 = "flywheel.gateway-agent-binding/v3"
 MODEL_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,159}")
 
 
@@ -72,32 +73,38 @@ def _sampling(endpoint, protocol=None):
             "temperature_policy": "zero_or_omitted" if endpoint["adapter"] == "anthropic" else "zero"}
 
 
-def _capabilities(value):
+def _capabilities(value, mcp=None):
     return {"allow_write": value["allow_write"], "allow_exec": value["allow_exec"],
-            "allow_mcp": False}
+            "allow_mcp": mcp is not None}
 
 
-def _tool_protocol(value, endpoint, capabilities):
+def _tool_protocol(value, endpoint, capabilities, mcp=None):
     mode = value.get("tool_protocol")
     if mode is None:
         return None
     from .gateway_agent_native_tools import native_tool_contract, text_tool_contract
     if mode == "native":
-        return native_tool_contract(capabilities, endpoint)
+        return native_tool_contract(capabilities, endpoint, mcp)
     if mode == "text":
         return text_tool_contract()
     raise GatewayOperationError("AGENT_BINDING_DRIFT")
 
 
-def freeze_agent_binding(operation, workspace_root: Path | None = None):
+def freeze_agent_binding(operation, workspace_root: Path | None = None, *,
+                         owner_ref: str | None = None,
+                         state_root: Path | None = None):
     value = operation.operation
     if value.get('execution_mode') == 'native_cli_session':
         from .gateway_cli_binding import freeze_cli_binding
         return freeze_cli_binding(operation, workspace_root)
     endpoint = _endpoint(value["endpoint"])
-    capabilities = _capabilities(value)
-    protocol = _tool_protocol(value, endpoint, capabilities)
-    binding = {"schema": SCHEMA_V2 if protocol else SCHEMA,
+    from .gateway_agent_mcp_admission import freeze_mcp_admission
+    mcp = freeze_mcp_admission(
+        value.get("mcp_admission"), workspace_root or Path.cwd(),
+        owner_ref=owner_ref, state_root=state_root, operation=operation)
+    capabilities = _capabilities(value, mcp)
+    protocol = _tool_protocol(value, endpoint, capabilities, mcp)
+    binding = {"schema": SCHEMA_V3 if mcp else SCHEMA_V2 if protocol else SCHEMA,
         "operation_sha256": operation.operation_sha256,
         "endpoint": endpoint, "model": _model(value, endpoint),
         "workspace": freeze_workspace(value.get("root"), workspace_root or Path.cwd()),
@@ -107,6 +114,8 @@ def freeze_agent_binding(operation, workspace_root: Path | None = None):
                       "max_requests": value["max_steps"]}}
     if protocol:
         binding["tool_protocol"] = protocol
+    if mcp:
+        binding["mcp_admission"] = mcp
     binding["model"]["profile"] = _profile(binding["model"]["model_id"], endpoint["name"])
     validate_agent_binding(binding, operation)
     return freeze_json(binding, max_bytes=32768)
@@ -122,10 +131,13 @@ def validate_agent_binding(binding, operation):
         expected_keys = {"schema", "operation_sha256", "endpoint", "model",
             "workspace", "budget", "capabilities", "sampling", "transport"}
         has_protocol = "tool_protocol" in value
+        has_mcp = "mcp_admission" in value
         if has_protocol:
             expected_keys.add("tool_protocol")
+        if has_mcp:
+            expected_keys.add("mcp_admission")
         if (type(binding) is not dict or set(binding) != expected_keys
-                or binding["schema"] != (SCHEMA_V2 if has_protocol else SCHEMA)
+                or binding["schema"] != (SCHEMA_V3 if has_mcp else SCHEMA_V2 if has_protocol else SCHEMA)
                 or binding["operation_sha256"] != operation.operation_sha256):
             raise ValueError
         endpoint = binding["endpoint"]
@@ -145,8 +157,13 @@ def validate_agent_binding(binding, operation):
         model = binding["model"]
         # Profile pins are frozen catalog authority; never relabel them as observations.
         expected = _model(value, endpoint); expected["profile"] = model.get("profile")
-        capabilities = _capabilities(value)
-        protocol = _tool_protocol(value, endpoint, capabilities)
+        mcp = None
+        if has_mcp:
+            from .gateway_agent_mcp_admission import validate_mcp_admission_plan
+            mcp = binding["mcp_admission"]
+            validate_mcp_admission_plan(mcp, value.get("mcp_admission"))
+        capabilities = _capabilities(value, mcp)
+        protocol = _tool_protocol(value, endpoint, capabilities, mcp)
         if (freeze_json(model) != freeze_json(expected) or freeze_json(binding["budget"]) != freeze_json(_budget(value))
                 or freeze_json(binding["capabilities"]) != freeze_json(capabilities)
                 or freeze_json(binding["sampling"]) != freeze_json(_sampling(endpoint, protocol))
@@ -155,6 +172,8 @@ def validate_agent_binding(binding, operation):
             raise ValueError
         if protocol and freeze_json(binding["tool_protocol"]) != freeze_json(protocol):
             raise ValueError
+        if mcp and freeze_json(binding["mcp_admission"]) != freeze_json(mcp):
+            raise ValueError
         validate_workspace(binding["workspace"])
         if model["profile"] is not None and (set(model["profile"]) != {
                 "profile", "expected_manifest_sha256", "expected_artifact_sha256"}
@@ -162,7 +181,7 @@ def validate_agent_binding(binding, operation):
                 or any(re.fullmatch(r"[a-f0-9]{64}", model["profile"][k]) is None
                     for k in ("expected_manifest_sha256", "expected_artifact_sha256"))):
             raise ValueError
-        freeze_json(binding, max_bytes=32768)
+        freeze_json(binding, max_bytes=65536)
     except Exception:
         raise GatewayOperationError("AGENT_BINDING_DRIFT") from None
 

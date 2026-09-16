@@ -94,7 +94,7 @@ void _receiptLabelWidgetTests() {
               receipt: {'verified': true, 'hash': 'a' * 64}),
         ], controller: ScrollController()));
     expect(find.text('missing'), findsOneWidget);
-    expect(find.text('present_unchecked'), findsOneWidget);
+    expect(find.text('Receipt not checked'), findsOneWidget);
     expect(find.text('verified'), findsNothing);
     expect(find.text('MATCH'), findsNothing);
     expect(find.byKey(const ValueKey('chat-receipt-control')), findsOneWidget);
@@ -130,7 +130,7 @@ void _receiptControlWidgetTests() {
     expect(
         tester.getSemantics(control),
         matchesSemantics(
-            label: 'Receipt state present_unchecked',
+            label: 'Receipt state Receipt not checked',
             isButton: true,
             hasEnabledState: true,
             isEnabled: true,

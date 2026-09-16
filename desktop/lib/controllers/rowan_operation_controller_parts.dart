@@ -60,6 +60,7 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
         allowWrite: _allowWrite,
         allowExec: _allowExec,
         toolProtocol: _toolProtocol,
+        mcpAdmission: _mcpAdmission,
         continuation: continuation,
       );
     } on Object {
@@ -150,53 +151,6 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
     } catch (error) {
       _error = '$error';
       _changed();
-      return false;
-    }
-  }
-
-  Future<bool> recoverFromSession() async {
-    final session = _sessionStore?.load();
-    if (session == null) return false;
-    final direct = session.operationRef;
-    final requestSha = session.operationRequestSha256;
-    _executionMode =
-        AgentExecutionMode.fromWire(session.operationExecutionMode);
-    try {
-      if (direct != null) {
-        final snapshot = await _operations.snapshot(direct);
-        if (snapshot.journeyRef == session.journeyRef) {
-          final recovered = await reconnect(snapshot);
-          if (!recovered && requestSha != null) {
-            _blockRowanRecovery(this, requestSha);
-          }
-          return recovered;
-        }
-        if (requestSha == null) return false;
-      }
-      if (requestSha == null) return false;
-      _pendingRequestSha256 = requestSha;
-      String? cursor;
-      for (var pageIndex = 0; pageIndex < 10; pageIndex++) {
-        final page = await _operations.listByJourney(
-          session.journeyRef,
-          limit: 50,
-          cursor: cursor,
-        );
-        for (final snapshot in page.operations) {
-          if (page.requestSha256ByOperation[snapshot.operationRef] ==
-              requestSha) {
-            final recovered = await reconnect(snapshot);
-            if (!recovered) _blockRowanRecovery(this, requestSha);
-            return recovered;
-          }
-        }
-        cursor = page.nextCursor;
-        if (cursor == null) break;
-      }
-      _blockRowanRecovery(this, requestSha);
-      return false;
-    } catch (_) {
-      if (requestSha != null) _blockRowanRecovery(this, requestSha);
       return false;
     }
   }

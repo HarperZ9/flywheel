@@ -17,11 +17,15 @@ GatewayOperation agentRunOperation({
   required bool allowWrite,
   required bool allowExec,
   required AgentToolProtocol toolProtocol,
+  Map<String, Object?>? mcpAdmission,
   Map<String, Object?>? attachment,
   Map<String, Object?>? continuation,
 }) {
   final input = goal.trim();
   if (input.isEmpty || endpoint.isEmpty) throw ArgumentError('invalid agent');
+  if (mcpAdmission != null && executionMode.isNativeCli) {
+    throw ArgumentError('MCP admission is not supported for native CLI agents');
+  }
   if (executionMode.isNativeCli) {
     if (!agentExecutionModeSupportsEndpoint(executionMode, endpoint) ||
         model == null ||
@@ -57,6 +61,7 @@ GatewayOperation agentRunOperation({
       'endpoint': endpoint,
       if (model != null && model.isNotEmpty) 'model': model,
       if (toolProtocol.wire != null) 'tool_protocol': toolProtocol.wire,
+      if (mcpAdmission != null) 'mcp_admission': mcpAdmission,
       'effort': effort.wire,
       'max_steps': maxSteps,
       if (maxTokens != null) 'max_tokens': maxTokens,

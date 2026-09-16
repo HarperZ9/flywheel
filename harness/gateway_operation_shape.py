@@ -12,6 +12,8 @@ def validate_operation_shape(action: str, value: dict) -> None:
     if action == "output.check":
         from .output_check_gateway import validate_output_check_operation as v
         return v(value)
+    if action == "live_screen.control": from .live_screen_gateway_mount import validate_live_screen_operation as v; return v(value)
+    if action == "live_screen.deliver": from .live_screen_gateway_contract import validate_live_screen_delivery_operation as v; return v(value)
     text_fields = {"model", "goal", "endpoint", "workflow", "profile", "root",
                    "test_cmd", "name", "tool", "detail", "prompt",
                    "solution_sig", "intent_source",
@@ -79,10 +81,11 @@ def validate_operation_shape(action: str, value: dict) -> None:
         if "model" in value and MODEL_PATTERN.fullmatch(value["model"]) is None:
             raise ValueError
         if (value.get('execution_mode', 'native_cli_session') != 'native_cli_session'
-            or 'execution_mode' in value and ('tool_protocol' in value or value['endpoint'] not in {'claude-cli', 'codex-cli'})
+            or 'execution_mode' in value and ('tool_protocol' in value or 'mcp_admission' in value or value['endpoint'] not in {'claude-cli', 'codex-cli'})
             or 'tool_protocol' in value and value['tool_protocol'] not in {'text', 'native'}): raise ValueError
         if "max_tokens" in value: _bounded_int(value["max_tokens"], 1, 32768)
         if "timeout_s" in value: _bounded_int(value["timeout_s"], 1, 1800)
+        if "mcp_admission" in value: from .gateway_agent_mcp_admission import validate_mcp_admission_request as v; v(value["mcp_admission"])
     for name in ("stream", "allow_write", "allow_exec", "enabled"):
         if name in value and type(value[name]) is not bool:
             raise ValueError
@@ -131,8 +134,6 @@ def validate_operation_shape(action: str, value: dict) -> None:
         _kill_shape(value)
     if action == "import.inspect":
         from .inspect_upload_metadata import validate_inspect_operation as v; v(value)
-
-
 def _kill_shape(value: dict) -> None:
     """The kill switch refuses a request it cannot name in full.
 
@@ -152,7 +153,6 @@ def _kill_shape(value: dict) -> None:
                 or any(name not in ACTIONS for name in wanted)
                 or len(set(wanted)) != len(wanted)):
             raise ValueError
-
 def _bounded_int(value: object, low: int, high: int) -> None:
     if type(value) is not int or not low <= value <= high:
         raise ValueError
@@ -172,8 +172,9 @@ def _continuation_agent_shape(value: object) -> None:
             or len(set(files)) != len(files)
             or any(not _relative_path(item) for item in files)):
         raise ValueError
-
 def destination_for(action: str, value: dict) -> dict:
+    if action == "live_screen.control": return {"kind": "live-screen", "ref": (f"session:{value['session_id']}:{value['control']}" if value.get("session_id") else f"{value['control']}:{value.get('destination', '')}:{value.get('model', '')}")}
+    if action == "live_screen.deliver": return {"kind": "live-screen-delivery", "ref": f"deliver:{value['session_id']}:{value['model']}"}
     if action == "operation.cancel":
         return {"kind": "operation", "ref": value["operation_ref"]}
     if action == "chat.complete":
@@ -234,16 +235,15 @@ def destination_for(action: str, value: dict) -> dict:
     if action.startswith("plugin."):
         return {"kind": "plugin", "ref": value["name"]}
     return {"kind": "marketplace", "ref": value["name"]}
-
-
 def _pack_ref(manifest: dict) -> str:
     """Use a declared pack name; never invent one for an unnamed manifest."""
     ref = manifest.get("pack_id") or manifest.get("name")
     return ref if type(ref) is str and ref.strip() else "unnamed-pack"
 
-
 def derived_scopes(action: str, value: dict, secrets: bool) -> tuple:
     selected = set()
+    if action == "live_screen.control": selected.add("write")
+    if action == "live_screen.deliver": selected.add("network")
     if action == "operation.cancel":
         selected.add("exec")
     if action in {"chat.complete", "agent.run", "workflow.run", "plan.run",
@@ -294,7 +294,7 @@ def derived_scopes(action: str, value: dict, secrets: bool) -> tuple:
     if action in {"agent.run", "workflow.run", "plan.run"}:
         if value.get("allow_write") is True: selected.add("write")
         if value.get("allow_exec") is True: selected.add("exec")
+    if action == "agent.run" and value.get("mcp_admission") is not None: _add_mcp_scopes(selected, value)
     if secrets: selected.add("secrets")
-    return tuple(scope for scope in
-                 ("write", "exec", "network", "plugin", "secrets")
-                 if scope in selected)
+    return tuple(scope for scope in ("write", "exec", "network", "plugin", "mcp", "secrets") if scope in selected)
+def _add_mcp_scopes(selected: set, value: dict) -> None: selected.add("mcp"); from .gateway_agent_mcp_admission import mcp_admission_request_scopes; selected.update(scope for scope in mcp_admission_request_scopes(value["mcp_admission"]) if scope != "critical")

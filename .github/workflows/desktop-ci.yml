@@ -56,6 +56,15 @@ jobs:
       - run: flutter analyze
       - run: flutter test
 
+      - name: Preserve failed golden comparisons
+        if: failure()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: flutter-golden-failures-${{ matrix.os }}-${{ github.sha }}
+          path: desktop/test/failures/
+          if-no-files-found: ignore
+          retention-days: 7
+
   windows-build:
     # The Windows release exe actually compiles: CMake, plugin registrants,
     # and the runner project are invisible to the ubuntu job.

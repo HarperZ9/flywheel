@@ -20,6 +20,21 @@ const _journey = 'jrn_$_a';
 const _operation = 'op_$_a';
 const _head = '$_a$_a';
 const _grant = 'gnt_$_a';
+const _mcpAdmission = {
+  'schema': 'flywheel.agent-run-mcp-admission-request/v1',
+  'servers': [
+    {
+      'server_id': 'synthetic',
+      'catalog_ref': 'synthetic',
+      'receipt_sha256': _head,
+      'tools': ['echo'],
+      'timeout_s': 5,
+    },
+  ],
+};
+
+Map<String, Object?> _mutableMcpAdmission() =>
+    Map<String, Object?>.from(jsonDecode(jsonEncode(_mcpAdmission)) as Map);
 
 Future<BuildContext> _mount(
   WidgetTester tester,
@@ -112,6 +127,100 @@ void main() {
       expect(body.containsKey('effort'), isFalse);
     }
     expect(store.load()?.operationExecutionMode, 'native_cli_session');
+    client.close();
+  });
+
+  testWidgets('API mode carries selected MCP admission through approval',
+      (tester) async {
+    Map<String, Object?>? prepared;
+    Map<String, dynamic>? dispatched;
+    final client = GatewayClient(
+      baseUrl: 'https://rowan.invalid',
+      httpClient: MockClient((request) async {
+        if (request.url.path == '/api/agent') {
+          dispatched = jsonDecode(request.body) as Map<String, dynamic>;
+          return http.Response(
+              'id: 1\nevent: snapshot\ndata: ${jsonEncode(_snapshot('running'))}\n\n',
+              200);
+        }
+        return http.Response('{}', 404);
+      }),
+    );
+    final rowan = RowanOperationController(client)
+      ..setEndpoint('openai')
+      ..setWorkspaceRoot(r'C:\fixture\workspace')
+      ..setToolProtocol(AgentToolProtocol.native)
+      ..setMcpAdmission(_mcpAdmission);
+    addTearDown(rowan.dispose);
+    final context = await _mount(tester, (_, operation, __, dispatch) async {
+      prepared = Map<String, Object?>.from(operation.operation);
+      expect(operation.scopes, contains('mcp'));
+      return dispatch(operation.finalBody(
+          const GatewayJourneyBinding(_journey, _head), _grant));
+    });
+
+    expect((await rowan.start(context, 'Use synthetic MCP')).value, isTrue);
+    await tester.pump();
+
+    expect(prepared?['mcp_admission'], _mcpAdmission);
+    expect(dispatched?['mcp_admission'], _mcpAdmission);
+    rowan.setExecutionMode(AgentExecutionMode.nativeCliSession);
+    expect(rowan.mcpAdmission, isNull);
+    rowan.setMcpAdmission(_mcpAdmission);
+    expect(rowan.mcpAdmission, isNull);
+    expect(rowan.error, 'AGENT_NATIVE_CLI_MCP_UNSUPPORTED');
+    client.close();
+  });
+
+  testWidgets(
+      'MCP admission cannot be changed by nested input or getter mutation',
+      (tester) async {
+    Map<String, Object?>? prepared;
+    Map<String, dynamic>? dispatched;
+    final mutableAdmission = _mutableMcpAdmission();
+    final client = GatewayClient(
+      baseUrl: 'https://rowan.invalid',
+      httpClient: MockClient((request) async {
+        if (request.url.path == '/api/agent') {
+          dispatched = jsonDecode(request.body) as Map<String, dynamic>;
+          return http.Response(
+              'id: 1\nevent: snapshot\ndata: ${jsonEncode(_snapshot('running'))}\n\n',
+              200);
+        }
+        return http.Response('{}', 404);
+      }),
+    );
+    final rowan = RowanOperationController(client)
+      ..setEndpoint('openai')
+      ..setWorkspaceRoot(r'C:\fixture\workspace')
+      ..setToolProtocol(AgentToolProtocol.native)
+      ..setMcpAdmission(mutableAdmission);
+    addTearDown(rowan.dispose);
+
+    ((mutableAdmission['servers'] as List).first as Map)['server_id'] =
+        'mutated-original';
+    expect(rowan.mcpAdmission, _mcpAdmission);
+
+    final exposed = rowan.mcpAdmission!;
+    try {
+      ((((exposed['servers'] as List).first as Map)['tools'] as List))[0] =
+          'mutated-getter';
+    } on UnsupportedError {
+      // Deep-frozen getters may refuse mutation instead of returning a mutable
+      // defensive copy. Either behavior protects retained operation state.
+    }
+
+    final context = await _mount(tester, (_, operation, __, dispatch) async {
+      prepared = Map<String, Object?>.from(operation.operation);
+      return dispatch(operation.finalBody(
+          const GatewayJourneyBinding(_journey, _head), _grant));
+    });
+
+    expect((await rowan.start(context, 'Use synthetic MCP')).value, isTrue);
+    await tester.pump();
+
+    expect(prepared?['mcp_admission'], _mcpAdmission);
+    expect(dispatched?['mcp_admission'], _mcpAdmission);
     client.close();
   });
 

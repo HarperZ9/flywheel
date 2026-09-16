@@ -1,21 +1,27 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-
+import '../assistant/rowan_action_cue_controller.dart';
 import '../client/gateway_client.dart';
 import '../controllers/chat_admission_controller.dart';
 import '../models/chat.dart';
 import '../models/gateway_models.dart';
+import '../navigation/app_route.dart';
 import '../services/chat_draft_store.dart';
 import '../services/chat_store.dart';
 import '../services/settings.dart';
 import '../widgets/chat_composer.dart';
+import '../widgets/chat_conversation_sheet.dart';
 import '../widgets/chat_header.dart';
 import '../widgets/chat_sidebar.dart';
-import '../widgets/chat_thread.dart';
+import '../widgets/chat_workspace.dart';
 import '../widgets/chat_welcome.dart';
+import '../widgets/flywheel_nav.dart';
 import '../widgets/fw.dart';
 import '../widgets/operation_grant_sheet.dart';
+import '../widgets/start_task_prelude.dart';
 import 'agent_mode_pane.dart';
+
+part 'agent_view_layout.dart';
 
 class AgentView extends StatefulWidget {
   const AgentView({
@@ -25,18 +31,22 @@ class AgentView extends StatefulWidget {
     required this.settings,
     this.chatStore,
     this.draftStore,
+    this.startTaskHandoff,
+    this.actionCueController,
   });
   final GatewayClient client;
   final bool alive;
   final DesktopSettings settings;
   final ChatStore? chatStore;
   final ChatDraftStore? draftStore;
+  final StartTaskHandoff? startTaskHandoff;
+  final RowanActionCueController? actionCueController;
   @override
   State<AgentView> createState() => _AgentViewState();
 }
 
 class _AgentViewState extends State<AgentView> {
-  final _scroll = ScrollController();
+  final _workspace = ChatWorkspaceController();
   final _chosenModels = <String, String>{};
   late final ChatAdmissionController _admission;
   late Conversation _current;
@@ -48,7 +58,8 @@ class _AgentViewState extends State<AgentView> {
   ChatMessage? _assistant;
   bool _admitting = false, _accepted = false, _streaming = false;
   bool _agentMode = false;
-  int _generation = 0, _starterSeq = 0;
+  String? _agentSeedGoal;
+  int _generation = 0;
   bool get _busy => _admitting || _streaming;
   List<Conversation> get _conversations => _admission.conversations;
   @override
@@ -58,9 +69,11 @@ class _AgentViewState extends State<AgentView> {
         widget.chatStore ?? ChatStore(), widget.draftStore ?? ChatDraftStore())
       ..restore();
     _current = _conversations.isEmpty
-        ? _admission.blankConversation(null) : _conversations.first;
+        ? _admission.blankConversation(null)
+        : _conversations.first;
     if (_conversations.isEmpty) _conversations.add(_current);
     _model = _current.model;
+    _applyStartTaskHandoff(widget.startTaskHandoff, notify: false);
     _loadEndpoints();
   }
 
@@ -68,6 +81,9 @@ class _AgentViewState extends State<AgentView> {
   void didUpdateWidget(AgentView old) {
     super.didUpdateWidget(old);
     if (!old.alive && widget.alive) _loadEndpoints();
+    if (widget.startTaskHandoff != old.startTaskHandoff) {
+      _applyStartTaskHandoff(widget.startTaskHandoff, notify: true);
+    }
   }
 
   @override
@@ -77,7 +93,7 @@ class _AgentViewState extends State<AgentView> {
     if (!(_disposition?.isCompleted ?? true)) {
       _disposition!.complete(PromptDisposition.retained);
     }
-    _scroll.dispose();
+    _workspace.dispose();
     super.dispose();
   }
 
@@ -105,7 +121,10 @@ class _AgentViewState extends State<AgentView> {
 
   void _select(Conversation c) {
     if (identical(c, _current) || _busy) return;
-    setState(() { _current = c; _model = c.model ?? _model; });
+    setState(() {
+      _current = c;
+      _model = c.model ?? _model;
+    });
   }
 
   void _delete(Conversation c) {
@@ -114,7 +133,8 @@ class _AgentViewState extends State<AgentView> {
       _conversations.remove(c);
       if (identical(c, _current)) {
         _current = _conversations.isEmpty
-            ? _admission.blankConversation(_model) : _conversations.first;
+            ? _admission.blankConversation(_model)
+            : _conversations.first;
         if (_conversations.isEmpty) _conversations.add(_current);
       }
     });
@@ -122,12 +142,40 @@ class _AgentViewState extends State<AgentView> {
   }
 
   void _draftChanged(String text) => _admission.changeDraft(_current, text);
-  void _useStarter(String t) { _admission.changeDraft(_current, t); setState(() => _starterSeq++); }
+
+  void _refresh(VoidCallback fn) => setState(fn);
+
+  void _applyStartTaskHandoff(StartTaskHandoff? handoff,
+      {required bool notify}) {
+    final text = handoff?.text.trim();
+    if (text == null || text.isEmpty || _busy) return;
+    final existingDraft = _admission.draftText(_current).trim();
+    if (_current.isEmpty && existingDraft == text) return;
+    void apply() {
+      if (!_current.isEmpty || existingDraft.isNotEmpty) {
+        _current = _admission.blankConversation(_model);
+        _conversations.insert(0, _current);
+      }
+      _admission.changeDraft(_current, text);
+      _agentMode = false;
+      _agentSeedGoal = null;
+    }
+
+    if (notify && mounted) {
+      setState(apply);
+    } else {
+      apply();
+    }
+  }
+
   Future<PromptDisposition> _send(String text) {
     const retained = PromptDisposition.retained;
     if (_busy) return Future.value(retained);
     final reconciled = _admission.reconcileAdmitted(_current, text);
-    if (reconciled != null) { setState(() {}); return Future.value(reconciled); }
+    if (reconciled != null) {
+      setState(() {});
+      return Future.value(reconciled);
+    }
     if (_model == null) return Future.value(retained);
     final submitted = _admission.prepare(_current, text);
     if (submitted == null) return Future.value(retained);
@@ -222,26 +270,6 @@ class _AgentViewState extends State<AgentView> {
     if (mounted) setState(() {});
   }
 
-  void _scrollToEnd() => WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
-      });
-  void _showConversations() => showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        constraints: const BoxConstraints(maxWidth: 400),
-        builder: (_) => DraggableScrollableSheet(
-          initialChildSize: 0.55, minChildSize: 0.3, maxChildSize: 0.85,
-          expand: false,
-          builder: (sc, ctrl) => ChatSidebar(
-            conversations: _conversations,
-            current: _current, streaming: _busy, scrollController: ctrl,
-            onNew: () { _newChat(); Navigator.of(sc).pop(); },
-            onSelect: (c) { _select(c); Navigator.of(sc).pop(); },
-            onDelete: _delete,
-          ),
-        ),
-      );
-
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
@@ -262,39 +290,9 @@ class _AgentViewState extends State<AgentView> {
             child: Column(children: [
           _header(showConversations: narrow && !_agentMode),
           Expanded(child: _body()),
-          if (!_agentMode) _composer(),
+          if (!_agentMode && !_current.isEmpty) _composer(),
         ])),
       ]);
     });
   }
-
-  Widget _header({bool showConversations = false}) => ChatHeader(
-      agentMode: _agentMode, streaming: _busy, endpoints: _endpoints,
-      endpoint: _model, chosenModel: _chosenModels[_model],
-      onMode: (v) => setState(() => _agentMode = v),
-      onEndpoint: (v) => setState(() => _model = v),
-      onModel: (v) => setState(() => v.isEmpty
-          ? _chosenModels.remove(_model) : _chosenModels[_model!] = v),
-      onShowConversations: showConversations ? _showConversations : null,
-      loadModels: () => widget.client.models(_model ?? ''));
-  Widget _body() => _agentMode
-      ? AgentModePane(
-          client: widget.client, alive: widget.alive, settings: widget.settings)
-      : _current.isEmpty
-          ? ChatWelcome(onStarter: _useStarter)
-          : ChatThread(messages: _current.messages, controller: _scroll);
-
-  Widget _composer() => ChatComposer(
-      key: ValueKey('${_current.id}:$_starterSeq'),
-      streaming: _streaming,
-      initialText: _admission.draftText(_current),
-      onDraftChanged: _draftChanged,
-      onSend: _send,
-      savedPrompts: widget.settings.savedPrompts,
-      onSavePrompt: (text) => setState(() => widget.settings.savePrompt(text)));
 }
-bool _validEvent(Map<String, dynamic> event) => switch (event) {
-      {'type': 'delta', 'content': final String value} => value.isNotEmpty,
-      {'type': 'done', 'receipt': final Map<String, dynamic> _} => true,
-      _ => false,
-    };

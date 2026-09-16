@@ -1,7 +1,5 @@
-"""gateway.py — the superapp's one origin (SUPERAPP.md increment 2, zero-dep).
-
+"""gateway.py â€” the superapp's one origin (SUPERAPP.md increment 2, zero-dep).
 A single stdlib HTTP server that unifies the shell and its live state:
-
   static           the showcase shell + demos + artifacts, one origin, so the
                    page's fetches (increment 1) hit same-origin paths.
   /api/endpoints/health   the unified endpoint roster. LOCAL tiers (serve.py,
@@ -15,18 +13,15 @@ A single stdlib HTTP server that unifies the shell and its live state:
                    the root hash moves.
   /v1/*, /generate proxied to serve.py so the local model is reachable through
                    the same origin.
-
 Two falsifiers (the verifier must be able to fail):
   - kill serve.py: the local 14B tier in /api/endpoints/health must flip to
     unhealthy on the next request. If it stays healthy, the probe is fake.
   - touch a cataloged receipt: /api/world root_hash must change. If it does
     not, the catalog is not actually reading the files.
-
 Usage:
   python harness/gateway.py --port 8799 --root .   # serve the repo
 """
 from __future__ import annotations
-
 import argparse
 from datetime import datetime, timezone
 import hashlib
@@ -66,14 +61,13 @@ RECEIPT_CATALOG = (
     "tasks/curated/hard_v2.jsonl",
     "demos/index.json",
 )
-
 # The flagship spine. Flywheel is the platform; the rest are lanes inside it
 # (organs of the reconcile), not peers. local-model is the trained-model lane.
 SPINE = ("flywheel", "local-model", "telos", "index", "forum", "gather",
          "crucible", "learn", "mneme", "relay", "plexus")
 def _probe(url: str, timeout: float = 2.0) -> tuple[bool, dict]:
     """GET a local health URL. Returns (healthy, parsed_json_or_empty).
-    Any error is unhealthy — a down endpoint must read as down."""
+    Any error is unhealthy â€” a down endpoint must read as down."""
     try:
         with urllib.request.urlopen(url, timeout=timeout) as r:
             body = r.read().decode("utf-8", "replace")
@@ -140,7 +134,7 @@ def world_state(root: Path, catalog=RECEIPT_CATALOG) -> dict:
 def receipts_ledger(root: Path, run_root: Path | str) -> dict:
     """The receipts ledger: the in-repo receipt catalog (re-hashed on every
     read) plus the accepted proof envelopes under the run root. Every entry
-    is re-checkable — catalog entries by re-hashing the file, envelopes by
+    is re-checkable â€” catalog entries by re-hashing the file, envelopes by
     their recorded content hash. An unreadable envelope is reported as
     UNREADABLE, never dropped."""
     catalog = world_state(root)["receipts"]
@@ -202,7 +196,6 @@ def _qs_int(qs: str, key: str, default: int) -> int:
     except ValueError:
         return default
 
-
 def _resolve_workspace_root(requested, default: Path) -> "tuple[Path, str | None]":
     """Resolve the workspace root an agent run operates in. The caller may
     name any EXISTING directory (the desktop IDE points at an open project);
@@ -227,7 +220,6 @@ def _resolve_workspace_root(requested, default: Path) -> "tuple[Path, str | None
             return default, (f"root is not under an allowlisted workspace "
                              f"prefix: {requested}")
     return p, None
-
 
 def _unified_roster() -> dict:
     """The full universal-router roster (endpoint_registry): every provider,
@@ -606,11 +598,11 @@ class _Handler(BaseHTTPRequestHandler):
         except Exception:
             return {}, None
 
-    def _raw(self, body: bytes, content_type: str, code: int = 200):
+    def _raw(self, body: bytes, content_type: str, code: int = 200, extra_headers=None):
         """Send an already-encoded body. For the one surface that is not JSON."""
         self.send_response(code)
         self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(body)))
+        for key, value in {"Content-Length": str(len(body)), **(extra_headers or {})}.items(): self.send_header(key, str(value))
         self._cors()
         self.end_headers()
         if getattr(self, "command", "") != "HEAD": self.wfile.write(body)
@@ -840,6 +832,7 @@ class _Handler(BaseHTTPRequestHandler):
     def _get(self):
         p = self.path.split("?", 1)[0]
         qs = self.path.split("?", 1)[1] if "?" in self.path else ""
+        if p.startswith("/api/codex/"): from harness.codex_account_gateway_mount import account_get; return account_get(self, p)  # Private Codex account status and login result
         if p == "/api/import/inspect" or p.startswith("/api/import/inspect/"):  # list or reopen owner-bound Inspect evidence
             from harness.import_route import handle_import_get
             return self._json(*handle_import_get(p, self, qs))
@@ -911,10 +904,9 @@ class _Handler(BaseHTTPRequestHandler):
             from harness.lanes import lane_roster
             probe = "probe=true" in qs or "probe=1" in qs
             return self._json(lane_roster(probe=probe))
-        if p == "/api/desktop/status":               # read-only connection facts
-            from harness.desktop_status import desktop_status
-            from harness.lanes import lane_roster
-            return self._json(desktop_status(lane_roster(), startup_recovery=getattr(self, "startup_recovery", None)))
+        if p == "/api/desktop/status": from harness.desktop_status import desktop_status; from harness.lanes import lane_roster; return self._json(desktop_status(lane_roster(), startup_recovery=getattr(self, "startup_recovery", None)))  # read-only connection facts
+        if p.startswith("/api/studio/body/"): from harness.studio_body_route import handle_body_get; return self._json(*handle_body_get(p))  # Studio body status and delivery refs
+        if p.startswith("/api/live-screen/"): from harness.live_screen_gateway_mount import live_screen_get; return live_screen_get(self, p)  # native live-screen status, sources, events, preview bytes
         if p == "/api/forum/status":                  # forum lane status (via MCP)
             return self._json(_forum_mcp_call("forum.status", {}))
         if p == "/api/forum/ledger":                  # forum ledger summary
@@ -1143,6 +1135,7 @@ class _Handler(BaseHTTPRequestHandler):
                     except ValueError:
                         limit = 20
             return self._json(memory_list(self.run_root, limit=limit))
+        if p.startswith("/api/agent/mcp/"): from harness.gateway_agent_mcp_route import agent_mcp_get; return self._json(*agent_mcp_get(p, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state"))  # Registered MCP tools and owner-scoped discovery receipts
         if p == "/api/plugins":                      # every mounted capability, one manifest shape
             from harness.plugins import plugin_roster
             return self._json(plugin_roster())
@@ -1215,18 +1208,12 @@ class _Handler(BaseHTTPRequestHandler):
             return self._proxy(self.serve_url.rstrip("/") + p)
         return self._static(p)
     def _plan_request(self, path):
-        length = self._content_length()
-        if length is None:
-            return self._json({"schema": "flywheel.evidence-transport-error/v1",
-                "error": {"code": "INVALID_REQUEST",
-                          "message": "gateway operation is invalid"}}, 422)
-        from harness.plan_run_route import plan_post
-        body, code = plan_post(path, self.rfile.read(length), owner_ref=self.owner_ref, state_root=self.flywheel_home / "state",
-            default_root=self.root, run_root=self.run_root, clock=self.clock, resolve_root=_resolve_workspace_root,
-            countersign=_countersign_workflow)
-        return self._json(body, code)
+        from harness.plan_run_route import gateway_plan_request
+        return gateway_plan_request(self, path, resolve_root=_resolve_workspace_root,
+                                    countersign=_countersign_workflow)
     def _post(self):
         p = self.path.split("?", 1)[0]
+        if p.startswith("/api/codex/"): from harness.codex_account_gateway_mount import account_post; return account_post(self, p)  # Explicit Codex login, cancellation, and logout requests
         if p == "/api/import/inspect":              # raw exact-byte Inspect upload
             from harness.import_route import handle_import_post
             return self._json(*handle_import_post(p, self))
@@ -1259,7 +1246,7 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(*process_audit_review_post(p, self.rfile.read(length), content_type=content_type))
         if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
                          "/api/continuation/", "/api/writing/",
-                         "/api/source-context/", "/api/gateway-grants/",
+                         "/api/source-context/", "/api/gateway-grants/", "/api/agent/mcp/",
                          "/api/credential-handles/")):  # bind a handle, presence only
             length = self._content_length()
             if length is None:
@@ -1325,6 +1312,7 @@ class _Handler(BaseHTTPRequestHandler):
             elif p.startswith("/api/source-context/"):  # attach readable selected context
                 from harness.source_context_route import source_context_post
                 body, code = source_context_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state", clock=self.clock)
+            elif p.startswith("/api/agent/mcp/"): from harness.gateway_agent_mcp_route import agent_mcp_post; body, code = agent_mcp_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state")  # Admit owner-bound MCP discovery receipts
             elif p.startswith("/api/continuation/"):  # preview/import health, then start a Journey
                 from harness.continuation_route import handle_continuation_post
                 resolved_root = None
@@ -1381,8 +1369,14 @@ class _Handler(BaseHTTPRequestHandler):
             req, fault = self._json_req()
             if fault:
                 return self._json(*fault)
+            service, factory = self._operation_components()
             body, code = handle_subagents_post(
-                p, req, run_root=self.run_root, clock=self.clock)
+                p, req, run_root=self.run_root, clock=self.clock,
+                owner_ref=self.owner_ref,
+                state_root=self.flywheel_home / "state",
+                operation_service=service,
+                process_factory=factory,
+                workspace_root=Path(self.root))
             return self._json(body, code)
         if p.startswith("/api/schedule/"):         # define a schedule, or tick the clock
             from harness.schedule_route import handle_schedule_post
@@ -2125,6 +2119,8 @@ class _Handler(BaseHTTPRequestHandler):
                                 duration=_num("duration", 24.0),
                                 root=_num("root", 220.0))
             return self._json(out, 400 if out.get("refused") else 200)
+        if p.startswith("/api/live-screen/"): from harness.live_screen_gateway_mount import live_screen_post; return live_screen_post(self, p)  # authority-bound live-screen lifecycle and event polling
+        if p.startswith("/api/studio/body/"): req, bad = self._req_json(); from harness.studio_body_route import handle_body_gateway_post; return bad if bad else self._json(*handle_body_gateway_post(p, req, self))  # Studio body snapshots and authority-gated actions
         if p == "/api/lsp":                            # editor intelligence over any LSP server
             req, bad = self._req_json()
             if bad:
@@ -2361,7 +2357,6 @@ def main(argv=None) -> int:
     print(f"  openai    POST /v1/chat/completions  +  GET /v1/models  (drop-in, model=any provider, stream ok)")
     _serve_all(servers)
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
