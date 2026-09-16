@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
+import '../controllers/journey_controller.dart';
 import '../models/gateway_grant_models.dart';
 import '../models/inspect_evidence_models.dart';
 import '../services/inspect_file_picker.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
+import 'inspect_import_approval_controls.dart';
 import 'inspect_evidence_result_view.dart';
 import 'inspect_evidence_upload_summary.dart';
 import 'operation_grant_sheet.dart';
 
 class InspectEvidenceImportPanel extends StatefulWidget {
   final GatewayClient client;
+  final JourneyController? journey;
   final InspectFilePicker picker, unitContractPicker;
   const InspectEvidenceImportPanel({
     super.key,
     required this.client,
+    this.journey,
     this.picker = const FileSelectorInspectPicker(),
     this.unitContractPicker = const FileSelectorInspectPicker(
       label: 'Inspect scorer unit sidecar',
@@ -217,20 +221,14 @@ class _InspectEvidenceImportPanelState
             style: TextStyle(fontSize: 12.5, color: t.inkMuted),
           ),
           const SizedBox(height: FwLayout.s3),
-          Wrap(spacing: FwLayout.s2, runSpacing: FwLayout.s2, children: [
-            OutlinedButton(
-              onPressed: _busy ? null : _pick,
-              child: Text(_busy ? 'Working...' : 'Select Inspect JSON'),
-            ),
-            OutlinedButton(
-              onPressed: _busy || upload == null ? null : _pickUnitContract,
-              child: const Text('Select scorer unit sidecar'),
-            ),
-            FilledButton(
-              onPressed: _busy || upload == null ? null : _requestApproval,
-              child: const Text('Request approval'),
-            ),
-          ]),
+          InspectImportApprovalControls(
+            busy: _busy,
+            upload: upload,
+            journey: widget.journey,
+            onPick: _pick,
+            onPickUnitContract: _pickUnitContract,
+            onRequestApproval: _requestApproval,
+          ),
           if (upload == null) ...[
             const SizedBox(height: FwLayout.s3),
             const HonestNull('No Inspect JSON has been selected.'),
