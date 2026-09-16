@@ -120,6 +120,46 @@ def test_helper_verifies_target_tools_and_tracked_source_identity():
     assert "Assert-TrackedAndSubmodulesUnchanged \"after acceptance\"" in text
     assert "git -C $Root status --porcelain=v1 --untracked-files=all --ignore-submodules=none" in text
     assert "git -C $Root submodule status --recursive" in text
+    assert "Write-SourceDriftDiagnostics $Label $Root" in text
+    assert "git -C $Root diff --name-status --ignore-submodules" in text
+    assert "git -C $Root ls-files --eol -- $paths" in text
+    assert "git -C $Root hash-object --no-filters -- $path" in text
+
+
+def test_flutter_generated_plugin_registrants_are_lf_pinned():
+    text = Path(".gitattributes").read_text(encoding="utf-8")
+
+    for expected in (
+        "desktop/linux/flutter/generated_plugin_registrant.* text eol=lf",
+        "desktop/linux/flutter/generated_plugins.cmake text eol=lf",
+        "desktop/macos/Flutter/GeneratedPluginRegistrant.swift text eol=lf",
+        "desktop/windows/flutter/generated_plugin_registrant.* text eol=lf",
+        "desktop/windows/flutter/generated_plugins.cmake text eol=lf",
+    ):
+        assert expected in text
+
+
+def test_helper_source_drift_diagnostics_keep_real_edits_blocking(tmp_path):
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    source = tmp_path / "source.txt"
+    source.write_text("before\n", encoding="utf-8", newline="\n")
+    subprocess.run(["git", "add", "source.txt"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "init"], cwd=tmp_path, check=True)
+    source.write_text("after\n", encoding="utf-8", newline="\n")
+    root = _ps_literal(tmp_path)
+
+    out = _run_helper_ps(f"""
+try {{ Assert-TrackedAndSubmodulesUnchanged 'dirty' -Root {root}; throw 'expected failure' }}
+catch {{ if ($_.Exception.Message -notmatch 'changed tracked source files') {{ throw }} }}
+'OK'
+""")
+
+    assert "dirty git status porcelain:  M source.txt" in out
+    assert "dirty git diff --name-status: M\tsource.txt" in out
+    assert "dirty byte hash source.txt head=" in out
+    assert "OK" in out
 
 
 def test_helper_rejects_dispatch_sha_mismatch_before_checkout():
