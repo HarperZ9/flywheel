@@ -22,7 +22,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from harness.endpoints import build_endpoints  # noqa: E402
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 from scripts.endpoint_auth_lanes import LANES  # noqa: E402
 
@@ -103,27 +102,26 @@ def _lane_status(lane: dict) -> dict:
     }
 
 
-def _endpoint_ladder_snapshot() -> list[dict]:
+def _presence_basis(lane: dict) -> str:
+    return "cli_path" if lane["kind"] == "subscription_cli" else "environment_presence"
+
+
+def _endpoint_ladder_snapshot(lanes: list[dict]) -> list[dict]:
     rows = []
-    for lane in LANES:
-        backends = build_endpoints(
-            providers=[lane["provider"]],
-            modes=(lane["mode"],),
-            only_configured=True,
-        )
+    for lane in lanes:
         rows.append({
             "lane_id": lane["id"],
             "provider": lane["provider"],
             "mode": lane["mode"],
-            "backend_count": len(backends),
-            "backends": [
-                {
-                    "name": getattr(backend, "name", ""),
-                    "class": backend.__class__.__name__,
-                    "model": getattr(backend, "model", ""),
-                }
-                for backend in backends
-            ],
+            "kind": lane["kind"],
+            "configured": lane["configured"],
+            "presence_basis": _presence_basis(lane),
+            "backend_count": 0,
+            "backends": [],
+            "does_not_prove": (
+                "account authentication, provider dispatch, model quality, or "
+                "route execution"
+            ),
         })
     return rows
 
@@ -134,9 +132,12 @@ def build_status() -> dict:
     return {
         "schema": "harness.endpoint-auth-status/v1",
         "timestamp_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
-        "secret_policy": "presence-only; no token, key, or credential values emitted",
+        "secret_policy": (
+            "presence-only; no token-store reads, credential resolver calls, "
+            "provider CLI invocation, backend construction, or secret values"
+        ),
         "lanes": lanes,
-        "endpoint_ladder": _endpoint_ladder_snapshot(),
+        "endpoint_ladder": _endpoint_ladder_snapshot(lanes),
         "summary": {
             "lanes": len(lanes),
             "configured_lanes": len(configured),
