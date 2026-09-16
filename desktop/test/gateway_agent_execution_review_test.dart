@@ -78,6 +78,20 @@ void main() {
     expect(parsed.summary.agentExecution?.reprepareRequired, isTrue);
   });
 
+  test('agent execution summary accepts v4 MCP admission review', () {
+    final parsed = GatewayGrantProposal.fromJson(
+        gatewayAgentProposal(agentExecution: gatewayMcpAgentExecutionReview));
+
+    expect(parsed.invalidResponse, isFalse);
+    final review = parsed.summary.agentExecution!;
+    expect(review.capabilities.allowMcp, isTrue);
+    expect(review.toolProtocol?.protocol, 'text');
+    expect(review.mcpAdmission?.admissionSha256, gatewayMcpAdmissionHash);
+    expect(review.mcpAdmission?.serverLabel, '1 catalog server');
+    expect(
+        review.mcpAdmission?.runtimeToolNames, const ['mcp_synthetic__echo']);
+  });
+
   test('agent execution summary rejects unknown or malformed fields', () {
     for (final bad in [
       {...gatewayAgentExecutionReview, 'extra': 'field'},
@@ -167,5 +181,30 @@ void main() {
 
     expect(find.text('Binding'), findsOneWidget);
     expect(find.text('Workspace policy'), findsOneWidget);
+  });
+
+  testWidgets('agent grant sheet renders MCP admission receipts',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(900, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final controller = await preparedAgentGrantController(
+        agentExecution: gatewayMcpAgentExecutionReview);
+    await openGatewayGrantSheet(tester, controller);
+
+    expect(
+        find.textContaining('MCP admission: 1 catalog server'), findsOneWidget);
+    expect(
+        find.textContaining('MCP tools: mcp_synthetic__echo'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Receipts and policy'));
+    await tester.tap(find.text('Receipts and policy'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('MCP admission'), findsOneWidget);
+    expect(find.textContaining(gatewayMcpAdmissionHash.substring(0, 24)),
+        findsOneWidget);
+    expect(find.textContaining('synthetic / synthetic'), findsOneWidget);
+    expect(find.textContaining('declared read-only does not prove'),
+        findsOneWidget);
   });
 }

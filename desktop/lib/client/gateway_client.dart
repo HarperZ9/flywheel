@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:crypto/crypto.dart' as crypto;
 
 import '../models/gateway_models.dart';
 import '../models/agent_trace.dart';
@@ -13,8 +14,10 @@ import '../models/gateway_grant_models.dart';
 import '../models/inspect_evidence_models.dart';
 import '../models/operation_models.dart';
 import '../models/process_audit_review.dart';
+import '../models/rowan_mcp_catalog.dart';
 import '../models/service_desk_review.dart';
 import '../models/workflow_models.dart';
+import '../models/live_screen_models.dart';
 import 'gateway_auth.dart';
 import 'gateway_error.dart';
 import 'gateway_sse_decoder.dart';
@@ -30,6 +33,8 @@ part 'gateway_discovery.dart';
 part 'gateway_identity.dart';
 part 'gateway_inspect.dart';
 part 'gateway_process_audit.dart';
+part 'gateway_live_screen.dart';
+part 'gateway_live_screen_controls.dart';
 
 class GatewayClient {
   static const String loopback = 'http://127.0.0.1:8799';
@@ -177,9 +182,10 @@ class GatewayClient {
   Future<Map<String, dynamic>> getJson(
     String path, {
     Duration timeout = const Duration(seconds: 15),
+    Set<int> acceptedStatuses = const {200},
   }) async {
     final r = await _http.get(Uri.parse('$baseUrl$path')).timeout(timeout);
-    return _decode(r);
+    return _decode(r, acceptedStatuses);
   }
 
   /// Generic POST returning decoded JSON, for small parameterless verbs.
@@ -203,6 +209,7 @@ class GatewayClient {
     String path,
     Map<String, dynamic> body, {
     Duration timeout = const Duration(seconds: 15),
+    Set<int> acceptedStatuses = const {200},
   }) async {
     final request = http.Request('POST', Uri.parse('$baseUrl$path'))
       ..followRedirects = false
@@ -210,7 +217,7 @@ class GatewayClient {
       ..body = jsonEncode(body);
     final streamed = await _http.send(request).timeout(timeout);
     final response = await http.Response.fromStream(streamed);
-    return _decode(response);
+    return _decode(response, acceptedStatuses);
   }
 
   /// POST returning the decoded body whatever the status came back as.
@@ -233,6 +240,37 @@ class GatewayClient {
     return _decodeLenient(r);
   }
 
+  Future<RowanMcpCatalog> agentMcpCatalog({
+    Duration timeout = const Duration(seconds: 10),
+  }) async =>
+      RowanMcpCatalog.fromJson(
+        await getJson('/api/agent/mcp/catalog', timeout: timeout),
+      );
+
+  Future<RowanMcpDiscoveryResponse> discoverAgentMcp({
+    required RowanMcpOption option,
+    int timeoutSeconds = 10,
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    final response = await postJsonNoRedirect(
+      '/api/agent/mcp/discovery-receipts',
+      {
+        'schema': rowanMcpDiscoveryRequestSchema,
+        'server_id': option.serverId,
+        'catalog_ref': option.catalogRef,
+        'tools': [option.sourceToolName],
+        'timeout_s': timeoutSeconds,
+        'discovery_authorization': {
+          'reason': 'Rowan MCP selector requested ${option.label}',
+          'timeout_s': timeoutSeconds,
+          'network': false,
+        },
+      },
+      timeout: timeout,
+    );
+    return RowanMcpDiscoveryResponse.fromJson(response);
+  }
+
   Future<ServiceDeskReviewResult> serviceDeskIncidentReview(
     String artifactDirRef, {
     Duration timeout = const Duration(seconds: 60),
@@ -245,8 +283,9 @@ class GatewayClient {
     return ServiceDeskReviewResult.fromJson(body);
   }
 
-  Map<String, dynamic> _decode(http.Response r) {
-    if (r.statusCode != 200) {
+  Map<String, dynamic> _decode(http.Response r,
+      [Set<int> acceptedStatuses = const {200}]) {
+    if (!acceptedStatuses.contains(r.statusCode)) {
       throw GatewayException.fromResponse(r.statusCode, r.body);
     }
     return jsonDecode(r.body) as Map<String, dynamic>;

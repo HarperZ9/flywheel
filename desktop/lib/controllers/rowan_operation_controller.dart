@@ -12,6 +12,7 @@ import '../models/evidence_state.dart';
 import '../models/agent_tool_protocol.dart';
 import '../models/gateway_models.dart';
 import '../models/operation_models.dart';
+import '../models/rowan_mcp_catalog.dart';
 import '../services/journey_session_store.dart';
 import '../widgets/effort_dial.dart';
 import '../widgets/operation_grant_sheet.dart';
@@ -19,6 +20,7 @@ import 'gateway_operation_controller.dart';
 import 'operation_controller.dart';
 
 part 'rowan_operation_controller_parts.dart';
+part 'rowan_operation_controller_private.dart';
 part 'rowan_operation_builder.dart';
 part 'rowan_session_locator.dart';
 
@@ -40,21 +42,31 @@ final class RowanOperationController extends ChangeNotifier {
 
   List<EndpointRow> _endpoints = const [];
   String? _endpoint, _selectedModel, _workspaceRoot, _error;
+  Map<String, Object?>? _mcpAdmission;
+  RowanMcpCatalog? _mcpCatalog;
+  RowanMcpOption? _selectedMcpOption;
   AgentExecutionMode _executionMode = AgentExecutionMode.api;
   EffortLevel _effort = EffortLevel.standard;
   AgentToolProtocol _toolProtocol = AgentToolProtocol.compatibility;
   int _maxTokens = 1024, _timeoutSeconds = 300;
   int? _maxStepsOverride;
   bool _allowWrite = false, _allowExec = false, _authorizing = false;
+  bool _recovering = false;
+  bool _mcpCatalogLoading = false, _mcpDiscoveryRunning = false;
   bool _recoveryBlocked = false;
-  int _configGeneration = 0;
+  int _configGeneration = 0, _mcpAdmissionGeneration = 0;
   String? _pendingRequestSha256;
+  Future<bool>? _recoveryFuture;
   List<Map<String, dynamic>> _progress = const [];
 
   List<EndpointRow> get endpoints => _endpoints;
   String? get endpoint => _endpoint;
   String? get selectedModel => _selectedModel;
   String? get workspaceRoot => _workspaceRoot;
+  Map<String, Object?>? get mcpAdmission => _mcpAdmission;
+  RowanMcpCatalog? get mcpCatalog => _mcpCatalog;
+  List<RowanMcpOption> get mcpOptions => _mcpCatalog?.options ?? const [];
+  RowanMcpOption? get selectedMcpOption => _selectedMcpOption;
   AgentExecutionMode get executionMode => _executionMode;
   EffortLevel get effort => _effort;
   AgentToolProtocol get toolProtocol => _toolProtocol;
@@ -64,6 +76,8 @@ final class RowanOperationController extends ChangeNotifier {
   bool get allowWrite => _allowWrite;
   bool get allowExec => _allowExec;
   bool get authorizing => _authorizing;
+  bool get mcpCatalogLoading => _mcpCatalogLoading;
+  bool get mcpDiscoveryRunning => _mcpDiscoveryRunning;
   bool get recoveryBlocked => _recoveryBlocked;
   String? get error => _error;
   String? get pendingRequestSha256 => _pendingRequestSha256;
@@ -73,6 +87,7 @@ final class RowanOperationController extends ChangeNotifier {
   OperationResult? get terminalResult => _operationState.terminalResult;
   bool get active =>
       _authorizing ||
+      _recovering ||
       _operationState.observerState == OperationObserverState.connecting ||
       _operationState.observerState == OperationObserverState.observing ||
       (snapshot != null && snapshot!.state.isTerminal == false);
@@ -106,6 +121,7 @@ final class RowanOperationController extends ChangeNotifier {
     _executionMode = value;
     if (value.isNativeCli) {
       _toolProtocol = AgentToolProtocol.compatibility;
+      _selectedMcpOption = null;
       _allowExec = false;
       if (!agentExecutionModeSupportsEndpoint(value, _endpoint)) {
         _endpoint = _nativeCliEndpoint(_endpoints);
@@ -149,6 +165,103 @@ final class RowanOperationController extends ChangeNotifier {
     if (_toolProtocol == value) return;
     _toolProtocol = value;
     _bump();
+  }
+
+  void setMcpAdmission(Map<String, Object?>? value) {
+    final next = value == null ? null : _jsonObjectCopy(value);
+    if (jsonEncode(_mcpAdmission) == jsonEncode(next)) return;
+    if (next != null && _executionMode.isNativeCli) {
+      _invalidateMcpAdmission();
+      _error = 'AGENT_NATIVE_CLI_MCP_UNSUPPORTED';
+      _changed();
+      return;
+    }
+    _mcpAdmission = next;
+    _mcpAdmissionGeneration++;
+    _mcpDiscoveryRunning = false;
+    _bump(invalidateMcpAdmission: false);
+  }
+
+  Future<void> loadMcpCatalog() async {
+    if (_executionMode.isNativeCli) {
+      _error = 'AGENT_NATIVE_CLI_MCP_UNSUPPORTED';
+      _changed();
+      return;
+    }
+    _mcpCatalogLoading = true;
+    _error = null;
+    _changed();
+    try {
+      final catalog = await client.agentMcpCatalog();
+      final options = catalog.options;
+      _invalidateMcpAdmission();
+      _mcpCatalog = catalog;
+      if (_selectedMcpOption == null ||
+          !options.any((option) => option.key == _selectedMcpOption!.key)) {
+        _selectedMcpOption = options.isEmpty ? null : options.first;
+      }
+    } on Object catch (error) {
+      _invalidateMcpAdmission();
+      _error = '$error';
+    } finally {
+      _mcpCatalogLoading = false;
+      _changed();
+    }
+  }
+
+  void selectMcpOption(String? key) {
+    if (key == null) return;
+    RowanMcpOption? match;
+    for (final option in mcpOptions) {
+      if (option.key == key) {
+        match = option;
+        break;
+      }
+    }
+    if (match == null || _selectedMcpOption?.key == match.key) return;
+    _selectedMcpOption = match;
+    _bump();
+  }
+
+  Future<void> admitSelectedMcpTool() async {
+    if (_executionMode.isNativeCli) {
+      _error = 'AGENT_NATIVE_CLI_MCP_UNSUPPORTED';
+      _changed();
+      return;
+    }
+    final option =
+        _selectedMcpOption ?? (mcpOptions.isEmpty ? null : mcpOptions.first);
+    if (option == null) {
+      _invalidateMcpAdmission();
+      _error = 'AGENT_MCP_SELECTION_REQUIRED';
+      _changed();
+      return;
+    }
+    final admissionGeneration = _invalidateMcpAdmission();
+    _mcpDiscoveryRunning = true;
+    _error = null;
+    _configGeneration++;
+    _changed();
+    try {
+      final response = await client.discoverAgentMcp(option: option);
+      if (admissionGeneration == _mcpAdmissionGeneration &&
+          _selectedMcpOption?.key == option.key) {
+        _mcpAdmission = _jsonObjectCopy(response.mcpAdmission);
+        _toolProtocol = AgentToolProtocol.native;
+        _bump(invalidateMcpAdmission: false);
+      }
+    } on Object catch (error) {
+      if (admissionGeneration == _mcpAdmissionGeneration) {
+        _mcpAdmission = null;
+        _error = '$error';
+        _changed();
+      }
+    } finally {
+      if (admissionGeneration == _mcpAdmissionGeneration) {
+        _mcpDiscoveryRunning = false;
+        _changed();
+      }
+    }
   }
 
   String? _nativeCliEndpoint(List<EndpointRow> rows) {
@@ -242,10 +355,17 @@ final class RowanOperationController extends ChangeNotifier {
     _bump();
   }
 
-  void _bump() {
+  void _bump({bool invalidateMcpAdmission = true}) {
     _configGeneration++;
+    if (invalidateMcpAdmission) _invalidateMcpAdmission();
     _error = null;
     notifyListeners();
+  }
+
+  int _invalidateMcpAdmission() {
+    _mcpAdmission = null;
+    _mcpDiscoveryRunning = false;
+    return ++_mcpAdmissionGeneration;
   }
 
   void _changed() => notifyListeners();

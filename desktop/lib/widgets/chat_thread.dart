@@ -1,285 +1,170 @@
 // chat_thread.dart — the conversation thread: user and assistant turns as
-// bubbles, streaming text as it arrives, fenced code rendered in a mono card
-// with copy and an explicit receipt state. Accountability is present but small;
-// the conversation is the subject.
+// source-addressable cards, streaming text as it arrives, fenced code rendered
+// in mono cards, and receipt state preserved beside copy/bookmark actions.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../models/chat.dart';
-import '../models/evidence_state.dart';
 import '../theme/flywheel_theme.dart';
-import 'turn_receipt.dart';
-import 'rowan_avatar.dart';
+import 'chat_bubble.dart';
+import 'chat_navigation_types.dart';
 
-class ChatThread extends StatelessWidget {
-  final List<ChatMessage> messages;
-  final ScrollController controller;
-  const ChatThread(
-      {super.key, required this.messages, required this.controller});
+class ChatThreadJumpController extends ChangeNotifier {
+  ChatNavTarget? _target;
+  int _serial = 0;
 
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      controller: controller,
-      padding: const EdgeInsets.symmetric(
-          horizontal: FwLayout.s5, vertical: FwLayout.s5),
-      itemCount: messages.length,
-      itemBuilder: (context, i) => _Bubble(message: messages[i]),
-    );
+  void jumpTo(ChatNavTarget target) {
+    _target = target;
+    _serial++;
+    notifyListeners();
   }
 }
 
-class _Bubble extends StatefulWidget {
-  final ChatMessage message;
-  const _Bubble({required this.message});
+class ChatThread extends StatefulWidget {
+  final List<ChatMessage> messages;
+  final ScrollController controller;
+  final String conversationId;
+  final List<String>? messageIds;
+  final ChatThreadJumpController? jumpController;
+  final ValueChanged<String>? onOpenUrl;
+  final ValueChanged<ChatNavTarget>? onOpenLocalTarget;
+  final ValueChanged<ChatNavTarget>? onBookmark;
+  final Set<String> bookmarkedMessageIds;
+
+  const ChatThread({
+    super.key,
+    required this.messages,
+    required this.controller,
+    this.conversationId = '',
+    this.messageIds,
+    this.jumpController,
+    this.onOpenUrl,
+    this.onOpenLocalTarget,
+    this.onBookmark,
+    this.bookmarkedMessageIds = const {},
+  });
 
   @override
-  State<_Bubble> createState() => _BubbleState();
+  State<ChatThread> createState() => _ChatThreadState();
 }
 
-class _BubbleState extends State<_Bubble> {
-  bool _receiptOpen = false;
-  final _receiptFocus = FocusNode();
-  ChatMessage get message => widget.message;
+class _ChatThreadState extends State<ChatThread> {
+  final _messageKeys = <String, GlobalKey<ChatBubbleState>>{};
+  int _lastJumpSerial = 0;
+  String? _highlightedMessageId;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.jumpController?.addListener(_handleJump);
+  }
+
+  @override
+  void didUpdateWidget(ChatThread oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.jumpController, widget.jumpController)) {
+      oldWidget.jumpController?.removeListener(_handleJump);
+      widget.jumpController?.addListener(_handleJump);
+    }
+    _pruneKeys();
+  }
 
   @override
   void dispose() {
-    _receiptFocus.dispose();
+    widget.jumpController?.removeListener(_handleJump);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final t = context.fw;
-    final isUser = message.isUser;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: FwLayout.s5),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        children: [
-          if (!isUser) const RowanAvatar(),
-          if (!isUser) const SizedBox(width: FwLayout.s3),
-          Flexible(
-            child: Column(
-              crossAxisAlignment:
-                  isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                Container(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: FwLayout.s4, vertical: FwLayout.s3),
-                  decoration: BoxDecoration(
-                    color: isUser ? t.ground2 : t.panel,
-                    borderRadius: BorderRadius.circular(FwLayout.radius),
-                    border: Border.all(
-                        color: isUser ? Colors.transparent : t.hairline),
-                  ),
-                  child: _MessageBody(message: message),
-                ),
-                if (!isUser && !message.streaming) _footer(context, t),
-                if (_receiptOpen && message.receipt != null)
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 640),
-                    padding: const EdgeInsets.only(top: FwLayout.s2),
-                    child: TurnReceiptCard(receipt: message.receipt!),
-                  ),
-              ],
-            ),
-          ),
-          if (isUser) const SizedBox(width: FwLayout.s3),
-          if (isUser) _avatar(t, 'You', t.inkMuted),
-        ],
-      ),
-    );
-  }
-
-  Widget _avatar(FwTokens t, String label, Color color) => Container(
-        width: 30,
-        height: 30,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(9),
-        ),
-        child: Text(label == 'You' ? 'Y' : 'F',
-            style: fwMono(t, size: 12, color: color)),
-      );
-
-  Widget _footer(BuildContext context, FwTokens t) {
-    final receipt = message.receipt;
-    final label = _receiptLabel(message.receiptState);
-    return Padding(
-      padding: const EdgeInsets.only(top: 6, left: 4),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        IconButton(
-          onPressed: message.text.isEmpty
-              ? null
-              : () => Clipboard.setData(ClipboardData(text: message.text)),
-          icon: const Icon(Icons.copy_rounded, size: 14),
-          visualDensity: VisualDensity.compact,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 26, minHeight: 20),
-          color: t.inkFaint,
-          tooltip: 'Copy',
-        ),
-        const SizedBox(width: 6),
-        if (receipt == null)
-          Text(label, style: fwMono(t, size: 10.5, color: t.inkFaint))
-        else
-          Semantics(
-            container: true,
-            label: 'Receipt state $label',
-            button: true,
-            enabled: true,
-            expanded: _receiptOpen,
-            onTap: _toggleReceipt,
-            excludeSemantics: true,
-            child: TextButton(
-              key: const ValueKey('chat-receipt-control'),
-              focusNode: _receiptFocus,
-              onPressed: _toggleReceipt,
-              style: ButtonStyle(
-                minimumSize: const WidgetStatePropertyAll(Size(44, 44)),
-                side: WidgetStateProperty.resolveWith((states) => BorderSide(
-                    color: states.contains(WidgetState.focused)
-                        ? t.ink
-                        : Colors.transparent,
-                    width: states.contains(WidgetState.focused) ? 2 : 1)),
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text(label,
-                    style: fwMono(t,
-                        size: 10.5,
-                        color: _receiptColor(t, message.receiptState))),
-                AnimatedRotation(
-                    turns: _receiptOpen ? 0.5 : 0,
-                    duration: MediaQuery.of(context).disableAnimations
-                        ? Duration.zero
-                        : const Duration(milliseconds: 180),
-                    child:
-                        Icon(Icons.expand_more, size: 12, color: t.inkFaint)),
-              ]),
-            ),
-          ),
-      ]),
-    );
-  }
-
-  void _toggleReceipt() => setState(() => _receiptOpen = !_receiptOpen);
-}
-
-String _receiptLabel(ReceiptState state) => switch (state) {
-      ReceiptState.missing => 'missing',
-      ReceiptState.presentUnchecked => 'present_unchecked',
-      ReceiptState.match => 'MATCH',
-      ReceiptState.drift => 'DRIFT',
-      ReceiptState.tampered => 'TAMPERED',
-      ReceiptState.unverifiable => 'UNVERIFIABLE',
-      ReceiptState.invalidResponse => 'invalid response',
-    };
-
-Color _receiptColor(FwTokens tokens, ReceiptState state) => switch (state) {
-      ReceiptState.match => tokens.verified,
-      ReceiptState.drift || ReceiptState.tampered => tokens.drift,
-      ReceiptState.unverifiable => tokens.unverifiable,
-      _ => tokens.inkFaint,
-    };
-
-/// Renders message text with fenced ``` code ``` blocks as mono cards; the rest
-/// is selectable body text. A streaming turn shows a caret while it grows.
-class _MessageBody extends StatelessWidget {
-  final ChatMessage message;
-  const _MessageBody({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.fw;
-    if (message.text.isEmpty && message.streaming) {
-      return Text('…', style: fwMono(t, size: 14, color: t.inkFaint));
-    }
-    final parts = _split(message.text);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final part in parts)
-          part.code
-              ? _CodeCard(code: part.text)
-              : Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 1),
-                  child: SelectableText(
-                    part.text +
-                        (message.streaming && part == parts.last ? '▍' : ''),
-                    style:
-                        TextStyle(fontSize: 14, height: 1.5, color: t.inkSoft),
-                  ),
-                ),
-      ],
-    );
-  }
-
-  static List<_Part> _split(String text) {
-    final parts = <_Part>[];
-    final re = RegExp(r'```[\w-]*\n?([\s\S]*?)```', multiLine: true);
-    var last = 0;
-    for (final m in re.allMatches(text)) {
-      if (m.start > last) {
-        parts.add(_Part(text.substring(last, m.start).trim(), false));
-      }
-      parts.add(_Part((m.group(1) ?? '').trimRight(), true));
-      last = m.end;
-    }
-    if (last < text.length) {
-      parts.add(_Part(text.substring(last).trim(), false));
-    }
-    return parts.where((p) => p.text.isNotEmpty || p.code).toList();
-  }
-}
-
-class _Part {
-  final String text;
-  final bool code;
-  const _Part(this.text, this.code);
-}
-
-class _CodeCard extends StatelessWidget {
-  final String code;
-  const _CodeCard({required this.code});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.fw;
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(
-        color: t.ground2,
-        borderRadius: BorderRadius.circular(FwLayout.radiusSmall),
-        border: Border.all(color: t.hairline),
-      ),
+    _pruneKeys();
+    return SingleChildScrollView(
+      controller: widget.controller,
+      padding: const EdgeInsets.symmetric(
+          horizontal: FwLayout.s5, vertical: FwLayout.s5),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: IconButton(
-            onPressed: () => Clipboard.setData(ClipboardData(text: code)),
-            icon: const Icon(Icons.copy_rounded, size: 13),
-            visualDensity: VisualDensity.compact,
-            color: t.inkFaint,
-            tooltip: 'Copy code',
+        for (final (index, message) in widget.messages.indexed)
+          ChatBubble(
+            key: _keyFor(_messageId(index)),
+            conversationId: widget.conversationId,
+            message: message,
+            messageId: _messageId(index),
+            highlighted: _highlightedMessageId == _messageId(index),
+            bookmarked: widget.bookmarkedMessageIds.contains(_messageId(index)),
+            onOpenUrl: widget.onOpenUrl,
+            onOpenLocalTarget: widget.onOpenLocalTarget,
+            onBookmark: widget.onBookmark,
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-              FwLayout.s3, 0, FwLayout.s3, FwLayout.s3),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SelectableText(code,
-                style: fwMono(t, size: 12.5, color: t.ink)),
-          ),
-        ),
       ]),
     );
+  }
+
+  void _handleJump() {
+    final controller = widget.jumpController;
+    if (controller == null || controller._serial == _lastJumpSerial) return;
+    _lastJumpSerial = controller._serial;
+    final target = controller._target;
+    if (target == null) return;
+    setState(() => _highlightedMessageId = target.messageId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final state = _messageKeys[target.messageId]?.currentState;
+      if (state == null) return;
+      Scrollable.ensureVisible(
+        state.context,
+        alignment: 0.08,
+        duration: Duration.zero,
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToAnchor(target));
+    });
+  }
+
+  void _scrollToAnchor(ChatNavTarget target) {
+    if (!mounted || target.offset == null || !widget.controller.hasClients) {
+      return;
+    }
+    final anchor =
+        _messageKeys[target.messageId]?.currentState?.sourceAnchorForOffset(target.offset);
+    if (anchor == null) return;
+    Scrollable.ensureVisible(
+      anchor.context,
+      alignment: 0.16,
+      duration: Duration.zero,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fineTuneAnchor(target));
+  }
+
+  void _fineTuneAnchor(ChatNavTarget target) {
+    if (!mounted || target.offset == null || !widget.controller.hasClients) {
+      return;
+    }
+    final anchor =
+        _messageKeys[target.messageId]?.currentState?.sourceAnchorForOffset(target.offset);
+    if (anchor == null) return;
+    final scrollable = Scrollable.maybeOf(anchor.context);
+    final viewportBox = scrollable?.context.findRenderObject() as RenderBox?;
+    final anchorBox = anchor.context.findRenderObject() as RenderBox?;
+    if (viewportBox == null || anchorBox == null) return;
+    if (!viewportBox.hasSize || !anchorBox.hasSize) return;
+    final position = widget.controller.position;
+    final anchorTop = anchorBox.localToGlobal(Offset.zero, ancestor: viewportBox).dy;
+    final desired = position.pixels + anchorTop +
+        anchorBox.size.height * anchor.fraction -
+        position.viewportDimension * 0.16;
+    widget.controller.jumpTo(desired.clamp(0.0, position.maxScrollExtent));
+  }
+
+  String _messageId(int index) => index < (widget.messageIds?.length ?? 0)
+      ? widget.messageIds![index]
+      : widget.messages[index].id;
+
+  GlobalKey<ChatBubbleState> _keyFor(String id) =>
+      _messageKeys.putIfAbsent(id, GlobalKey<ChatBubbleState>.new);
+
+  void _pruneKeys() {
+    final live = {
+      for (var i = 0; i < widget.messages.length; i++) _messageId(i)
+    };
+    _messageKeys.removeWhere((id, _) => !live.contains(id));
   }
 }

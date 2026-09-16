@@ -5,6 +5,7 @@ import 'plan_run_models.dart';
 export 'gateway_grant_summary.dart';
 
 part 'gateway_operation_internals.dart';
+part 'gateway_operation_agent_mcp.dart';
 part 'gateway_operation_inspect.dart';
 
 const gatewayOperationSchema = 'flywheel.gateway-operation/v1';
@@ -90,6 +91,7 @@ final class GatewayOperation {
     }
     _validateBulletinOriginBinding(action, raw, destination);
     _validateAgentToolProtocol(action, raw);
+    _validateAgentMcpAdmission(action, raw);
     if (action == 'operation.cancel') _validateCancel(raw);
     if (action == 'import.inspect') _validateImportInspect(raw, destination);
     if (action == 'plan.run') validatePlanRunOperation(raw);

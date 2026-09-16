@@ -12,7 +12,7 @@ import tempfile
 import threading
 from contextlib import contextmanager
 from pathlib import Path
-from time import monotonic
+from time import monotonic, sleep
 
 
 TIMEOUT_EXIT_CODE = 124
@@ -286,7 +286,14 @@ def staged_receipt_directory(final: Path):
         yield stage
         if final.exists():
             raise FileExistsError(f"receipt already exists: {final}")
-        os.rename(stage, final)
+        deadline = monotonic() + 1.0
+        while True:
+            try:
+                os.rename(stage, final); break
+            except PermissionError:
+                if final.exists(): raise FileExistsError(f"receipt already exists: {final}") from None
+                if os.name != "nt" or monotonic() >= deadline: raise
+                sleep(0.01)
         published = True
     finally:
         if not published and stage.exists():

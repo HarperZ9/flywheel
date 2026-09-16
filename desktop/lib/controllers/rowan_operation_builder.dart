@@ -14,6 +14,7 @@ GatewayOperation _rowanOperation({
   required bool allowWrite,
   required bool allowExec,
   required AgentToolProtocol toolProtocol,
+  Map<String, Object?>? mcpAdmission,
   Map<String, Object?>? continuation,
 }) =>
     agentRunOperation(
@@ -30,5 +31,6 @@ GatewayOperation _rowanOperation({
       allowWrite: allowWrite,
       allowExec: allowExec,
       toolProtocol: toolProtocol,
+      mcpAdmission: mcpAdmission,
       continuation: continuation,
     );

@@ -9,11 +9,18 @@ from __future__ import annotations
 
 import json
 import sys
+from pathlib import Path
 
 from .local_agent import LocalAgent, available_backends, health_report
 from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import ToolExecutor, ToolGate
+from .receipt_operations import (
+    ReceiptOperationError,
+    mcp_tool_descriptors as receipt_mcp_tool_descriptors,
+    verify_receipt_inclusion,
+)
+from .run_paths import run_root_default
 from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
 from .skill_resources import list_resources, read_resource
 
@@ -43,7 +50,7 @@ TOOLS = [
     {"name": "local-model.doctor",
      "description": "Readiness diagnostic: identity plus the tiers this lane would try and the tools it exposes. Network-free, so it reports no reachability; local_agent_health is the tool that pings a tier.",
      "inputSchema": {"type": "object", "properties": {}}},
-]
+] + receipt_mcp_tool_descriptors()
 
 
 def _backends(args: dict) -> list:
@@ -81,7 +88,32 @@ def _text(obj) -> dict:
     return {"content": [{"type": "text", "text": json.dumps(obj, indent=2)}]}
 
 
-def _call(params: dict) -> dict:
+def _structured(obj: dict) -> dict:
+    result = _text(obj)
+    result["structuredContent"] = obj
+    return result
+
+
+def _error(code: str, message: str) -> dict:
+    result = _structured({"error": {"code": code, "message": message}})
+    result["isError"] = True
+    return result
+
+
+def _receipt_ledger(root=None, run_root=None) -> dict:
+    from . import gateway as _gateway
+    repo_root = Path(root) if root is not None else _gateway.REPO
+    receipts_root = Path(run_root) if run_root is not None else run_root_default()
+    return _gateway.receipts_ledger(repo_root, receipts_root)
+
+
+def _receipt_reader(root, run_root):
+    if root is None and run_root is None:
+        return _receipt_ledger
+    return lambda: _receipt_ledger(root, run_root)
+
+
+def _call(params: dict, *, root=None, run_root=None) -> dict:
     name, args = params.get("name"), params.get("arguments", {}) or {}
     try:
         if name == "local_agent_health":
@@ -105,8 +137,16 @@ def _call(params: dict) -> dict:
                           "verified": r["verified"], "checkpoint": r["checkpoint"]})
         if name in ("local-model.status", "local-model.doctor"):
             return _text(_lane_health(name == "local-model.doctor"))
+        if name == "receipt.verify_inclusion":
+            return _structured(verify_receipt_inclusion(
+                args, ledger=_receipt_reader(root, run_root)))
         return {"content": [{"type": "text", "text": f"unknown tool {name!r}"}], "isError": True}
+    except ReceiptOperationError as e:
+        return _error(e.code, e.message)
     except Exception as e:
+        if name == "receipt.verify_inclusion":
+            return _error("RECEIPTS_LEDGER_UNAVAILABLE",
+                          "the receipts ledger could not be read")
         return {"content": [{"type": "text", "text": f"[error] {type(e).__name__}: {e}"}],
                 "isError": True}
 
@@ -115,7 +155,7 @@ def _ok(rid, result):
     return {"jsonrpc": "2.0", "id": rid, "result": result}
 
 
-def handle(req: dict):
+def handle(req: dict, *, root=None, run_root=None):
     method, rid = req.get("method"), req.get("id")
     if method == "initialize":
         return _ok(rid, {"protocolVersion": PROTOCOL,
@@ -124,7 +164,8 @@ def handle(req: dict):
     if method == "tools/list":
         return _ok(rid, {"tools": TOOLS})
     if method == "tools/call":
-        return _ok(rid, _call(req.get("params", {})))
+        return _ok(rid, _call(req.get("params", {}),
+                              root=root, run_root=run_root))
     if method == "resources/list":
         return _ok(rid, list_resources())
     if method == "resources/read":
@@ -142,7 +183,7 @@ def handle(req: dict):
     return {"jsonrpc": "2.0", "id": rid, "error": {"code": -32601, "message": f"method not found: {method}"}}
 
 
-def serve(stdin=None, stdout=None) -> int:
+def serve(stdin=None, stdout=None, *, root=None, run_root=None) -> int:
     stdin, stdout = stdin or sys.stdin, stdout or sys.stdout
     for line in stdin:
         line = line.strip()
@@ -152,7 +193,7 @@ def serve(stdin=None, stdout=None) -> int:
             req = json.loads(line)
         except json.JSONDecodeError:
             continue
-        resp = handle(req)
+        resp = handle(req, root=root, run_root=run_root)
         if resp is not None:
             stdout.write(json.dumps(resp) + "\n")
             stdout.flush()

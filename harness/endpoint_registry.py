@@ -18,12 +18,7 @@ ProviderPermissionError = providers.ProviderPermissionError
 
 
 class BackendProposer:
-    """Adapt an endpoints.py backend (`.chat(messages, *, system, max_tokens,
-    temperature, seed) -> {text, model_ref, seed}`) to the Proposer protocol, so a
-    native Anthropic/Gemini/CLI/OpenCode backend feeds the same accept path the
-    OpenAI-shaped proposers reach. `extract` strips code fences for the code loop
-    (default); set False for general routing where prose must survive. A backend
-    usage dict is retained verbatim; missing or non-object telemetry stays None."""
+    """Bridge a native endpoint backend into the verified Proposer protocol."""
 
     def __init__(self, backend, *, model_ref: str | None = None, extract: bool = True):
         self.backend = backend
@@ -60,9 +55,7 @@ _LOCAL_ALIASES = frozenset(("local", "default", "auto", "flywheel", "flywheel-se
 
 
 def _credential(key_env: str, *, local: bool, kind: str = "", name: str = "") -> str:
-    """PRESENCE only -- never the value. local -> 'local-none'; cli -> present
-    only when its binary is on PATH ('cli-auth'), else 'cli-absent'; else
-    present/absent by whether the env var is set."""
+    """PRESENCE only: local-none, cli-auth/cli-absent, present/absent."""
     if kind == "cli":
         binary = _CLI_BINARY.get(name, name)
         return "cli-auth" if shutil.which(binary) else "cli-absent"
@@ -82,37 +75,55 @@ def _host(url: str) -> str:
     return url.split("://", 1)[-1].split("/", 1)[0]
 
 
+def _registry_base_url(name: str, spec: providers.ProviderSpec) -> str:
+    if spec.base_url:
+        return providers.safe_base_url(spec.base_url)
+    if name == "openai-compatible":
+        return providers.safe_base_url(os.environ.get("OPENAI_BASE_URL", ""))
+    return ""
+
+
 def _row_usable(row: dict) -> bool:
-    if row["name"] == "claude-cli" and row["credential"] == "cli-auth":
+    if row.get("receipt_capable") is False:
+        return False
+    if row.get("account_required") and row["credential"] == "cli-auth":
         return row.get("account_authenticated") is True
     return row["credential"] in ("present", "cli-auth", "local-none")
 
 
 def unified_roster() -> dict:
-    """Every endpoint in one list, with credential-presence (never a value). Every
-    entry is receipt_capable: it can be turned into a verified Proposer."""
+    """Every endpoint in one credential-presence roster."""
     rows = []
     for name, spec in sorted(providers.REGISTRY.items()):
+        base_url = _registry_base_url(name, spec)
+        configured = bool(base_url)
         rows.append({"name": name, "kind": "openai-compat", "local": bool(spec.local),
                      "credential": _credential(spec.api_key_env, local=bool(spec.local)),
-                     "host": _host(spec.base_url), "default_model": spec.default_model,
-                     "receipt_capable": True, "source": "providers"})
+                     "host": _host(base_url), "default_model": spec.default_model,
+                     "configured": configured, "receipt_capable": configured,
+                     "source": "providers"})
     rows.append({"name": "serve", "kind": "serve", "local": True, "credential": "local-none",
                  "host": "127.0.0.1:8765", "default_model": "14b-cpt",
-                 "receipt_capable": True, "source": "builtin"})
+                 "configured": True, "receipt_capable": True, "source": "builtin"})
     for name, kind, key_env, host, dm in _NATIVE:
         cred = _credential(key_env, local=False, kind=kind, name=name)
-        extra = {}
+        extra = {"configured": True}
         if name == "claude-cli":
             account = claude_cli_auth.public_status()
-            extra = {"account_state": account.get("state", "unknown"),
-                     "account_authenticated": account.get("authenticated") is True,
-                     "account_executable": account.get("executable", "")}
+            extra.update({"account_required": True,
+                          "account_state": account.get("state", "unknown"),
+                          "account_authenticated": account.get("authenticated") is True,
+                          "account_executable": account.get("executable", "")})
+        elif name == "codex-cli":
+            extra.update({"account_required": True,
+                          "account_state": "unknown" if cred == "cli-auth" else "cli_absent",
+                          "account_authenticated": False,
+                          "account_executable": ""})
         capable = cred != "cli-absent"
         if name == "claude-cli":
             capable = capable and extra.get("account_authenticated") is True
-        # receipt_capable only if it can actually be built AND is reachable:
-        # a cli whose binary is absent is advertised, but not as usable
+        elif name == "codex-cli":
+            capable = False
         rows.append({"name": name, "kind": kind, "local": kind in ("cli", "opencode"),
                       "credential": cred,
                       "host": host, "default_model": dm,
@@ -138,16 +149,7 @@ def unified_roster() -> dict:
 
 
 class LedgeredProposer:
-    """Wrap ANY Proposer -- serve, OpenAI-compat, native Anthropic/Gemini, CLI, or
-    the enterprise bridge -- so every generate() appends a tamper-evident entry to a
-    SessionLedger. This is the increment-3 'chain every endpoint call' mechanism:
-    ONE chain over calls to every endpoint, in order, provably un-reordered.
-
-    The entry records provenance and content COMMITMENTS only -- the prompt hash,
-    the model_ref (provider:model, the provenance that rides into the receipt), the
-    seed, and the response hash. Never the prompt or response TEXT (a ledger is not
-    a transcript store), and never a key (model_ref is not a secret). Flip one byte
-    of a stored entry and `ledger.verify()` fails -- the falsifier has teeth."""
+    """Append tamper-evident endpoint-call commitments to one SessionLedger."""
 
     def __init__(self, inner: Proposer, ledger, *, endpoint: str | None = None):
         self.inner = inner
@@ -173,10 +175,7 @@ class LedgeredProposer:
 def make_endpoint_proposer(name: str, *, model: str | None = None,
                            base_url: str | None = None, extract: bool = True,
                            ledger=None) -> Proposer:
-    """A verified Proposer for ANY endpoint. OpenAI-shaped + serve/stub go through
-    providers.make_proposer; native Anthropic/Gemini are constructed and bridged;
-    CLI/OpenCode come from the endpoints ladder (their own construction). When a
-    `ledger` is given, the proposer is wrapped so every call chains into it."""
+    """Build a verified Proposer for any registered endpoint."""
     prop = _build_endpoint_proposer(name, model=model, base_url=base_url, extract=extract)
     return LedgeredProposer(prop, ledger, endpoint=name) if ledger is not None else prop
 
@@ -233,10 +232,6 @@ def make_authorized_endpoint_proposer(
             if ledger is not None else prop)
 
 
-def _codex_model_override(backend, model):
-    return _cli_model_override(backend, model, provider="Codex")
-
-
 def _cli_model_override(backend, model, *, provider):
     """Bind a requested ID to a supported CLI option, not served-model proof."""
     from .endpoints import CliBackend
@@ -276,14 +271,12 @@ def _build_endpoint_proposer(name: str, *, model: str | None, base_url: str | No
                                     base_url=base_url or "https://generativelanguage.googleapis.com/v1beta",
                                     model=model or "gemini-2.5-flash")
         return BackendProposer(b, extract=extract)
-    # cli / opencode: pull the configured backend from the endpoints ladder.
-    # the roster name may differ from the built backend name (roster
-    # 'claude-cli' -> backend 'claude-plan'), so resolve the alias first
+    # CLI/OpenCode use the endpoints ladder; resolve roster aliases first.
     target = _BUILD_ALIAS.get(name, name)
     for b in endpoints.build_endpoints(only_configured=False):
         if getattr(b, "name", None) == target:
             if name == "codex-cli" and model is not None and model != "":
-                b = _codex_model_override(b, model)
+                b = _cli_model_override(b, model, provider="Codex")
             elif name == "claude-cli" and model is not None and model != "":
                 b = _cli_model_override(b, model, provider="Claude")
             if name == "claude-cli":

@@ -27,16 +27,27 @@ class ProviderRoster extends StatelessWidget {
   }
 
   Widget _row(FwTokens t, EndpointRow r) {
-    final (label, status) = switch (r.credential) {
+    final (label, status) = !r.receiptCapable
+        ? (r.needsAccountAuth ? 'account unknown' : 'not configured', 'absent')
+        : switch (r.credential) {
       'present' => ('key present', 'verified'),
       'cli-auth' when r.needsAccountAuth && r.accountAuthenticated => (
           'account ready',
           'verified'
         ),
+      'cli-auth' when r.needsAccountAuth => ('account unknown', 'absent'),
       'cli-auth' => ('CLI present', 'declared'),
       'local-none' => ('local', 'verified'),
       _ => ('no key', 'absent'),
     };
+    final endpointKind = r.providerRole.isNotEmpty
+        ? r.providerRole
+        : (r.kind.isNotEmpty ? r.kind : r.backend);
+    final detail = [
+      endpointKind,
+      if (r.defaultModel.isNotEmpty) r.defaultModel,
+      if (r.host.isNotEmpty) r.host,
+    ].join(' / ');
     return Container(
       padding: const EdgeInsets.symmetric(vertical: FwLayout.s2 + 2),
       decoration:
@@ -52,7 +63,7 @@ class ProviderRoster extends StatelessWidget {
           const SizedBox(width: FwLayout.s3),
           Expanded(
             flex: 4,
-            child: Text(r.providerRole.isNotEmpty ? r.providerRole : r.backend,
+            child: Text(detail,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontSize: 12, color: t.inkMuted)),
           ),

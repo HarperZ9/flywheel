@@ -179,6 +179,7 @@ String _tool(String action, Map<String, Object?> value) {
 }
 
 List<String> _scopes(String action, Map<String, Object?> value) {
+  if (action == 'live_screen.control') return const ['write'];
   if (action == 'operation.cancel') return const ['exec'];
   final selected = <String>{};
   if (const {
@@ -256,16 +257,15 @@ List<String> _scopes(String action, Map<String, Object?> value) {
       selected.add('exec');
     }
   }
+  if (action == 'agent.run' && value['mcp_admission'] != null) {
+    selected.add('mcp');
+  }
   if ((value['credential_refs'] as List).isNotEmpty) {
     selected.add('secrets');
   }
-  return const [
-    'write',
-    'exec',
-    'network',
-    'plugin',
-    'secrets',
-  ].where(selected.contains).toList();
+  return const ['write', 'exec', 'network', 'plugin', 'mcp', 'secrets']
+      .where(selected.contains)
+      .toList();
 }
 
 void _validateCancel(Map<String, Object?> value) {
@@ -273,7 +273,7 @@ void _validateCancel(Map<String, Object?> value) {
     'operation_ref',
     'timeout_ms',
     'data_refs',
-    'credential_refs',
+    'credential_refs'
   };
   final reference = value['operation_ref'];
   final timeout = value['timeout_ms'];

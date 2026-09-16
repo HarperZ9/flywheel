@@ -24,6 +24,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 from scripts.frozen_gateway_relay_smoke import relay_status_smoke
+from scripts.frozen_gateway_studio_smoke import (
+    prepare_studio_smoke_fixture, run_studio_acceptance_smoke)
+from scripts.frozen_gateway_receipt_smoke import (
+    prepare_receipt_smoke_fixture, run_receipt_acceptance_smoke)
 
 NATIVE_ROUTES = {
     "/api/bulletin-identity": "get",
@@ -126,12 +130,15 @@ def check(executable: Path, expected_version: str, receipt: dict) -> None:
     with tempfile.TemporaryDirectory(prefix="flywheel-frozen-smoke-") as directory:
         home = Path(directory).resolve()
         fixture = prepare_native_smoke_fixture(home, home / "runs")
+        receipt_leaf = prepare_receipt_smoke_fixture(home)
         secret_values = (fixture.key_json,)
         with socket.socket() as sock:
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
         env = _environment(
             home, bulletin_key=fixture.key_json, bulletin_base_url=fixture.board.url)
+        studio_fixture = prepare_studio_smoke_fixture(home)
+        env.update(studio_fixture.env)
         process = None
         try:
             process = subprocess.Popen([
@@ -172,6 +179,10 @@ def check(executable: Path, expected_version: str, receipt: dict) -> None:
                 docs.append(body if path == "/llms.txt" else json.loads(body))
             validate_documents(*docs, expected_version=expected_version)
             native_acceptance = run_native_acceptance_smoke(base, token, fixture)
+            receipt["receipt_transport_parity"] = run_receipt_acceptance_smoke(
+                executable, home, env, base, token, receipt_leaf, _request)
+            receipt["studio_acceptance"] = run_studio_acceptance_smoke(
+                base, token, studio_fixture)
             from harness.gateway_auth import load_or_create_owner_ref
             owner_ref = load_or_create_owner_ref(home)
             relay_acceptance = relay_status_smoke(
@@ -207,6 +218,8 @@ def main() -> int:
                "does_not_prove": ["installer integration", "clean OS compatibility",
                                   "Flutter UI rendering", "native identity registration",
                                   "Relay model-backed task execution",
+                                  "live screen capture or model perception",
+                                  "Studio semantic correctness or hardware playback",
                                   "production Bulletin posting"]}
     try:
         check(args.executable.resolve(), args.expected_version, receipt)
