@@ -177,6 +177,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
           child: GatewayOperationScope(
             authorize:
                 journeyGatewayAuthorizer(_operations, _dependencies.journey),
+            journey: _dependencies.journey,
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final narrow = constraints.maxWidth < narrowBreakpoint;

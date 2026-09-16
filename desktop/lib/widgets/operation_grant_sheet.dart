@@ -72,7 +72,10 @@ Future<Object?> _authorizeJourneyOperation(
   }
 
   final binding = currentBinding();
-  if (binding == null) return const GatewayAuthorizationOutcome.denied();
+  if (binding == null) {
+    return const GatewayAuthorizationOutcome.failure(GatewayOperationFailure(
+        'JOURNEY_REQUIRED', 'Select or create a Journey before approval.'));
+  }
   final prepared = await controller.prepare(operation,
       binding: binding,
       currentOperation: currentOperation,
