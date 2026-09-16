@@ -1,5 +1,7 @@
 import importlib.util
 from pathlib import Path
+import sys
+from types import ModuleType
 
 
 def _load_gateway_entry():
@@ -50,6 +52,44 @@ def test_gateway_entry_rejects_ambiguous_mcp_modes(monkeypatch):
         ["--mcp", "--root", "R", "--root", "R2"],
     ]
     for argv in cases:
+        assert module.main(argv) == 2
+
+
+def test_gateway_entry_dispatches_only_exact_canon_context_child(monkeypatch):
+    import harness.bundled_lane_admission as bundled
+    import harness.gateway as gateway
+
+    calls = []
+    package = ModuleType("canon")
+    package.__path__ = []
+    child = ModuleType("canon.context_mcp")
+    child.serve = lambda: calls.append("serve") or 41
+    monkeypatch.setitem(sys.modules, "canon", package)
+    monkeypatch.setitem(sys.modules, "canon.context_mcp", child)
+    monkeypatch.setattr(bundled, "dispatch_bundled_lane_mcp", lambda argv: None)
+    monkeypatch.setattr(gateway, "main", lambda argv: (_ for _ in ()).throw(
+        AssertionError("canon context child reached gateway")))
+    module = _load_gateway_entry()
+
+    assert module.main(["--canon-context-mcp"]) == 41
+    assert calls == ["serve"]
+
+
+def test_gateway_entry_rejects_canon_context_selector_args(monkeypatch):
+    import harness.bundled_lane_admission as bundled
+    import harness.gateway as gateway
+
+    monkeypatch.setattr(bundled, "dispatch_bundled_lane_mcp", lambda argv: None)
+    monkeypatch.setattr(gateway, "main", lambda argv: (_ for _ in ()).throw(
+        AssertionError("malformed canon context child reached gateway")))
+    module = _load_gateway_entry()
+
+    for argv in (
+        ["--canon-context-mcp", "--module", "os"],
+        ["--canon-context-mcp", "-m", "canon.context_mcp"],
+        ["-m", "canon.context_mcp"],
+        ["--mcp", "--canon-context-mcp"],
+    ):
         assert module.main(argv) == 2
 
 

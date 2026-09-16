@@ -155,7 +155,27 @@ def test_frozen_gateway_spec_pins_owned_relay_submodule_before_analysis():
     assert "check_lane_descriptor(repo, \"relay\")" in spec
     assert "bundled Relay import shadowed outside relay/src" in spec
     assert "find_spec(\"relay.local_mcp\")" in spec
-    assert "pathex=[str(relay_src), str(repo), *studio_runtime.pathex]" in spec
+    assert "pathex=[str(canon_src), str(relay_src), str(repo), *studio_runtime.pathex]" in spec
+
+
+def test_frozen_gateway_spec_pins_canon_context_import_to_staged_source():
+    spec = (PACKAGING / "flywheel-gateway.spec").read_text(encoding="utf-8")
+    assert 'python_lane_source_root(repo, "canon")' in spec
+    assert "FLYWHEEL_PYTHON_LANE_SOURCE_ROOT must point to staged Python lane sources" in spec
+    assert "D:/fw-ship-sweep-20260910" not in spec
+    assert "sys.path.insert(0, str(canon_src))" in spec
+    assert "verify_python_lane_source_files" in spec
+    assert "canon_context_payload_datas" in spec
+    assert "python-lane-payloads/canon/licenses" in spec
+    assert 'find_spec("canon.context_mcp")' in spec
+    assert "bundled Canon context import shadowed outside canon/src" in spec
+    for module in (
+        "canon.context_mcp",
+        "canon.context_store",
+        "canon.context_query",
+        "canon.context_records",
+    ):
+        assert f'"{module}"' in spec
 
 
 def test_candidate_checks_the_actual_frozen_engine_before_installer():
@@ -167,6 +187,16 @@ def test_candidate_checks_the_actual_frozen_engine_before_installer():
     assert "--expected-version" in text
     assert "frozen gateway smoke failed" in text
     assert "frozen-gateway-smoke.json" in text
+
+
+def test_candidate_stages_canon_python_lane_source_before_freeze():
+    text = _text("desktop-release.yml")
+    stage = text.index("python scripts/stage_python_lane_sources.py")
+    env = text.index("FLYWHEEL_PYTHON_LANE_SOURCE_ROOT")
+    freeze = text.index("python -m PyInstaller")
+    assert stage < env < freeze
+    assert "--lane canon" in text
+    assert "Python lane source staging failed" in text
 
 
 def _frozen_checker():

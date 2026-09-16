@@ -75,6 +75,7 @@ def test_workflow_uploads_only_allowlisted_sanitized_artifacts():
         "desktop/build/installer/SHA256SUMS.txt",
         "desktop/build/installer/installed-build-manifest.json",
         "desktop/build/installer/ci-installed-acceptance-summary.json",
+        "desktop/build/installer/python-lane-source-stage.json",
         "desktop/build/installer/frozen-gateway-smoke.json",
         "desktop/build/installer/installed-acceptance/*.json",
     ):
@@ -112,6 +113,7 @@ def test_helper_verifies_target_tools_and_tracked_source_identity():
         "desktop\\tool\\installed_payload_binding.py",
         "desktop\\scripts\\build_installer.ps1",
         "scripts\\studio_runtime_packaging.py",
+        "scripts\\stage_python_lane_sources.py",
         "packaging\\flywheel-gateway.spec",
     ):
         assert expected in text
@@ -120,6 +122,20 @@ def test_helper_verifies_target_tools_and_tracked_source_identity():
     assert "Assert-TrackedAndSubmodulesUnchanged \"after acceptance\"" in text
     assert "git -C $Root status --porcelain=v1 --untracked-files=all --ignore-submodules=none" in text
     assert "git -C $Root submodule status --recursive" in text
+
+
+def test_helper_stages_canon_source_before_installed_freeze_with_bounded_receipt():
+    text = _helper()
+
+    studio = _index(text, "stage pinned Studio runtime")
+    stage = _index(text, "stage Canon Python lane source")
+    env = _index(text, "FLYWHEEL_PYTHON_LANE_SOURCE_ROOT")
+    freeze = _index(text, "freeze gateway")
+    assert studio < stage < env < freeze
+    assert 'Join-Path $env:RUNNER_TEMP "flywheel-python-lane-sources"' in text
+    assert "--lane\", \"canon\"" in text
+    assert "--bounded-receipt\", $pythonLaneBoundedReceipt" in text
+    assert 'Join-Path $installerDir "python-lane-source-stage.json"' in text
 
 
 def test_helper_rejects_dispatch_sha_mismatch_before_checkout():

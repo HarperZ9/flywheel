@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../assistant/rowan_action_cue_controller.dart';
 import '../client/gateway_client.dart';
 import '../controllers/chat_admission_controller.dart';
+import '../controllers/chat_context_controller.dart';
 import '../models/chat.dart';
 import '../models/gateway_models.dart';
 import '../navigation/app_route.dart';
@@ -10,6 +11,7 @@ import '../services/chat_draft_store.dart';
 import '../services/chat_store.dart';
 import '../services/settings.dart';
 import '../widgets/chat_composer.dart';
+import '../widgets/chat_context_status.dart';
 import '../widgets/chat_conversation_sheet.dart';
 import '../widgets/chat_header.dart';
 import '../widgets/chat_sidebar.dart';
@@ -22,6 +24,7 @@ import '../widgets/start_task_prelude.dart';
 import 'agent_mode_pane.dart';
 
 part 'agent_view_layout.dart';
+part 'agent_view_admission.dart';
 
 class AgentView extends StatefulWidget {
   const AgentView({
@@ -56,7 +59,9 @@ class _AgentViewState extends State<AgentView> {
   Completer<PromptDisposition>? _disposition;
   ChatDraft? _submittedDraft;
   ChatMessage? _assistant;
+  final _contextStatus = <String, ChatContextOutcome>{};
   bool _admitting = false, _accepted = false, _streaming = false;
+  bool _providerDispatchStarted = false;
   bool _agentMode = false;
   String? _agentSeedGoal;
   int _generation = 0;
@@ -90,6 +95,9 @@ class _AgentViewState extends State<AgentView> {
   void dispose() {
     _generation++;
     _sub?.cancel();
+    if (!_providerDispatchStarted && _submittedDraft != null) {
+      _admission.retain(_submittedDraft!);
+    }
     if (!(_disposition?.isCompleted ?? true)) {
       _disposition!.complete(PromptDisposition.retained);
     }
@@ -183,93 +191,6 @@ class _AgentViewState extends State<AgentView> {
     return _disposition!.future;
   }
 
-  Future<void> _beginAdmission(ChatDraft submitted) async {
-    final generation = ++_generation;
-    _submittedDraft = submitted;
-    _assistant = null;
-    _accepted = false;
-    _admitting = true;
-    _disposition = Completer<PromptDisposition>();
-    setState(() {});
-    final endpoint = _model!;
-    final chosen = _chosenModels[endpoint];
-    final model = chosen == null ? endpoint : '$endpoint:$chosen';
-    final wire = _current.messages.map((message) => message.toWire()).toList();
-    wire.add({'role': 'user', 'content': submitted.text});
-    final operation = GatewayOperation.chat(submitted.attemptRef!, model, wire,
-        dataRefs: const [], credentialRefs: const []);
-    await authorizeGatewayStream(context, operation, (body) {
-      _sub = widget.client.chatStream(wire, model, authorizedBody: body).listen(
-          (event) => _onEvent(generation, event),
-          onError: (_) => _onObservationClosed(generation),
-          onDone: () => _onObservationClosed(generation));
-    }, () => _onObservationClosed(generation),
-        currentOperation: () => _model == endpoint &&
-                _chosenModels[endpoint] == chosen &&
-                _admission.draftText(_current) == submitted.text
-            ? operation
-            : null);
-  }
-
-  void _onEvent(int generation, Map<String, dynamic> event) {
-    if (!mounted || generation != _generation || !_validEvent(event)) return;
-    if (_assistant == null) {
-      _acceptFirstEvent(event);
-    } else if (_accepted) {
-      _applyEvent(_assistant!, event);
-    }
-    if (_accepted) _scrollToEnd();
-  }
-
-  void _acceptFirstEvent(Map<String, dynamic> event) {
-    final assistant = ChatMessage(
-        role: 'assistant',
-        streaming: true,
-        attemptRef: _submittedDraft!.attemptRef);
-    _applyEvent(assistant, event);
-    final decision =
-        _admission.acceptFirst(_current, _submittedDraft!, assistant);
-    _accepted = decision.visible;
-    _assistant = assistant;
-    _streaming = decision.visible;
-    _finishDisposition(decision.disposition);
-  }
-
-  void _applyEvent(ChatMessage assistant, Map<String, dynamic> event) {
-    if (event['type'] == 'delta') {
-      assistant.text += event['content'] as String;
-    } else {
-      assistant.setReceipt(event['receipt'] as Map<String, dynamic>?);
-    }
-  }
-
-  void _onObservationClosed(int generation) {
-    if (!mounted || generation != _generation) return;
-    if (_assistant == null) {
-      _admission.retain(_submittedDraft!);
-      _finishDisposition(PromptDisposition.retained);
-      return;
-    }
-    if (!_accepted) return;
-    setState(() {
-      _assistant!.streaming = false;
-      if (_assistant!.receipt == null) {
-        const unknown = 'Reply interrupted; completion is unknown.';
-        _assistant!.text = _assistant!.text.isEmpty
-            ? unknown
-            : '${_assistant!.text}\n\n$unknown';
-      }
-      _streaming = false;
-    });
-    _admission.persistHistory();
-  }
-
-  void _finishDisposition(PromptDisposition result) {
-    _admitting = false;
-    if (!(_disposition?.isCompleted ?? true)) _disposition!.complete(result);
-    if (mounted) setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
@@ -290,6 +211,8 @@ class _AgentViewState extends State<AgentView> {
             child: Column(children: [
           _header(showConversations: narrow && !_agentMode),
           Expanded(child: _body()),
+          if (!_agentMode)
+            ChatContextStatus(outcome: _contextStatus[_current.id]),
           if (!_agentMode && !_current.isEmpty) _composer(),
         ])),
       ]);

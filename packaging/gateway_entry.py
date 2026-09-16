@@ -10,6 +10,8 @@ import multiprocessing
 import sys
 
 _MCP_VALUE_FLAGS = {"--root", "--run-root"}
+_CANON_CONTEXT_ARGV = ["--canon-context-mcp"]
+_MODULE_SELECTOR_ARGS = {"-m", "--module"}
 
 
 def _valid_frozen_mcp_args(args: list[str]) -> bool:
@@ -45,6 +47,17 @@ def _dispatch_frozen_mcp(argv: list[str]) -> int | None:
     return local_agent_main(argv)
 
 
+def _dispatch_canon_context_mcp(argv: list[str]) -> int | None:
+    if "--canon-context-mcp" not in argv:
+        if argv and argv[0] in _MODULE_SELECTOR_ARGS:
+            return 2
+        return None
+    if argv != _CANON_CONTEXT_ARGV:
+        return 2
+    from canon.context_mcp import serve
+    return int(serve() or 0)
+
+
 def main(argv=None) -> int:
     multiprocessing.freeze_support()
     args = list(sys.argv[1:] if argv is None else argv)
@@ -52,6 +65,9 @@ def main(argv=None) -> int:
     bundled = dispatch_bundled_lane_mcp(args)
     if bundled is not None:
         return bundled
+    canon_context = _dispatch_canon_context_mcp(args)
+    if canon_context is not None:
+        return canon_context
     frozen_mcp = _dispatch_frozen_mcp(args)
     if frozen_mcp is not None:
         return frozen_mcp

@@ -111,6 +111,18 @@ jobs:
           "FLYWHEEL_STUDIO_BODY_RUNTIME_MANIFEST=$manifest" | Out-File -Append $env:GITHUB_ENV -Encoding ascii
           "FLYWHEEL_STUDIO_BODY_RUNTIME_PAYLOAD=$payload" | Out-File -Append $env:GITHUB_ENV -Encoding ascii
 
+      - name: Stage Python lane source payloads
+        shell: pwsh
+        run: |
+          $sourceRoot = Join-Path $env:RUNNER_TEMP "flywheel-python-lane-sources"
+          $receipt = Join-Path $env:RUNNER_TEMP "python-lane-source-stage.json"
+          python scripts/stage_python_lane_sources.py `
+            --lane canon `
+            --source-root $sourceRoot `
+            --receipt $receipt
+          if ($LASTEXITCODE -ne 0) { throw "Python lane source staging failed" }
+          "FLYWHEEL_PYTHON_LANE_SOURCE_ROOT=$sourceRoot" | Out-File -Append $env:GITHUB_ENV -Encoding ascii
+
       - name: Ensure Inno Setup
         shell: pwsh
         run: |

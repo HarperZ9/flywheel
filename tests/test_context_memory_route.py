@@ -4,6 +4,8 @@ import json
 import harness.context_memory_route as route
 import harness.gateway as gateway
 from harness.context_memory_bridge import CAPTURE_SCHEMA, PREFLIGHT_SCHEMA
+from harness.gateway_auth import load_or_create_token
+from harness.gateway_custody import is_private
 
 OWNER = "owner_" + "a" * 32
 NOW = "2026-09-16T00:00:00Z"
@@ -92,3 +94,22 @@ def test_gateway_handler_dispatches_context_memory_post(monkeypatch, tmp_path):
     assert sent == {"body": {"ok": True}, "code": 200}
     assert calls[0][0] == "/api/context-memory/preflight"
     assert calls[0][2] == OWNER
+
+
+def test_context_memory_http_auth_binds_private_owner(tmp_path):
+    token = load_or_create_token(tmp_path)
+    handler = gateway._Handler.__new__(gateway._Handler)
+    handler.path = "/api/context-memory/capture"
+    handler.command = "POST"
+    handler.auth_token = token
+    handler.allowed_hosts = gateway.DEFAULT_HOSTS
+    handler.flywheel_home = tmp_path
+    handler.headers = {
+        "Host": "localhost",
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+
+    assert is_private(handler.path)
+    assert handler._authorized() is True
+    assert handler.owner_ref.startswith("owner_")

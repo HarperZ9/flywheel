@@ -34,3 +34,27 @@ def test_python_lane_payload_manifest_rejects_descriptor_tamper(tmp_path):
 
     assert result.returncode == 1
     assert "descriptor digest mismatch" in result.stdout
+
+
+def test_canon_payload_pins_context_source_without_expanding_public_tools():
+    rows = [json.loads(line) for line in Path(
+        "packaging/python-lane-payloads.jsonl"
+    ).read_text(encoding="utf-8").splitlines() if line]
+    canon = next(row for row in rows if row["lane"] == "canon")
+
+    assert canon["owner_commit"] == "ba13fc3fc7582fbc1ae1a720e5cd86ea124d7675"
+    assert canon["component_descriptor"]["source"]["commit"] == canon["owner_commit"]
+    assert canon["component_descriptor"]["entrypoint"]["module"] == "canon.local_mcp"
+    assert canon["component_descriptor"]["allowed_tools"] == [
+        "canon.status", "canon.doctor"]
+    assert canon["mcp"]["static_tool_names"] == [
+        "canon.status", "canon.doctor", "canon.blocks",
+        "canon.render", "canon.validate", "canon.check"]
+    for module in ("canon.context_mcp", "canon.context_store",
+                   "canon.context_query", "canon.context_records"):
+        assert module in canon["hidden_imports"]
+    assert canon["owner_project"]["license_files"] == [{
+        "bytes": 4216,
+        "path": "LICENSE",
+        "sha256": "sha256:5d4abfef8a42cb0b1762662ae9745b01cd729991e60c2fee83d6ea8ee752cb6d",
+    }]

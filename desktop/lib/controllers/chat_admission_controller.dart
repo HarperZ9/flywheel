@@ -79,7 +79,13 @@ final class ChatAdmissionController {
       if (_admittedFor(conversation.id, candidate.textSha256) != null) {
         return null;
       }
-      final attemptRef = _newAttemptRef();
+      final retained = _drafts[conversation.id];
+      final retry = retained?.state == ChatDraftState.retained &&
+              retained?.textSha256 == candidate.textSha256 &&
+              retained?.attemptRef != null
+          ? retained!.attemptRef
+          : null;
+      final attemptRef = retry ?? _newAttemptRef();
       if (_admitted.containsKey(attemptRef)) return null;
       final draft = _draft(conversation, text, ChatDraftState.submitting,
           attemptRef: attemptRef, draftRef: _attemptReference(attemptRef));

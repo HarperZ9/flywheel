@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -223,6 +224,43 @@ def test_canon_mcp_client_rejects_tool_errors():
                        "project_id": "p", "event": {"event_id": "t"}})
 
     assert exc.value.code == "CANON_CONTEXT_TOOL_ERROR"
+
+
+def test_canon_mcp_client_hides_windows_child_console(monkeypatch):
+    calls = []
+
+    class Done:
+        returncode = 0
+        stdout = json.dumps({"jsonrpc": "2.0", "id": 1, "result": {
+            "content": [{"text": "{}"}]}}) + "\n"
+        stderr = ""
+
+    def fake_run(*args, **kwargs):
+        calls.append((args, kwargs))
+        return Done()
+
+    monkeypatch.setattr("harness.context_memory_bridge.subprocess.run", fake_run)
+    client = CanonContextMcpClient(command=["gateway.exe", "--canon-context-mcp"],
+                                   env=dict(os.environ), timeout_s=1)
+
+    client.health()
+
+    assert calls[0][1]["creationflags"] == (
+        subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+
+
+def test_context_mcp_command_uses_source_module_until_frozen(tmp_path, monkeypatch):
+    db = tmp_path / "context.sqlite"
+    env = {**os.environ, "FLYWHEEL_CANON_CONTEXT_DB": str(db)}
+    source = CanonContextMcpClient.from_environment(env)
+    assert source.command == [sys.executable, "-m", "canon.context_mcp"]
+    assert source.env["CANON_CONTEXT_DB"] == str(db)
+    assert source.env["CANON_CONTEXT_SCOPE"] == "trusted-local-process"
+
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", "D:/app/flywheel-gateway.exe")
+    frozen = CanonContextMcpClient.from_environment(env)
+    assert frozen.command == ["D:/app/flywheel-gateway.exe", "--canon-context-mcp"]
 
 
 def test_actual_canon_context_mcp_roundtrip_when_available(tmp_path):

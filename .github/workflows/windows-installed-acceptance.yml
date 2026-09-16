@@ -52,6 +52,7 @@ jobs:
             desktop/build/installer/SHA256SUMS.txt
             desktop/build/installer/installed-build-manifest.json
             desktop/build/installer/ci-installed-acceptance-summary.json
+            desktop/build/installer/python-lane-source-stage.json
             desktop/build/installer/frozen-gateway-smoke.json
             desktop/build/installer/installed-acceptance/*.json
           if-no-files-found: error
