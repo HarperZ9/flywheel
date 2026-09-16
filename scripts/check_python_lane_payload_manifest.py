@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 from typing import Any
 import sys
 
@@ -18,6 +19,7 @@ REGISTRY_UPDATES = {"gather", "index", "forum", "mneme", "canon"}
 ASYNC_BLOCKED = {"forum"}
 MANIFEST = Path("packaging/python-lane-payloads.jsonl")
 SOURCE_ALGORITHM = "sha256-canonical-source-manifest/v1"
+SHA256_URI = re.compile(r"sha256:[0-9a-f]{64}\Z")
 
 
 class ManifestError(RuntimeError):
@@ -92,7 +94,18 @@ def validate_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
         project = row.get("owner_project")
         _require(isinstance(project, dict), f"{lane}: project block missing")
         _require(project.get("runtime_dependencies") == [], f"{lane}: runtime dependencies must be explicit and empty")
-        _require(bool(project.get("license_files")), f"{lane}: license file evidence missing")
+        license_files = project.get("license_files")
+        _require(isinstance(license_files, list) and bool(license_files),
+                 f"{lane}: license file evidence missing")
+        for notice in license_files:
+            _require(isinstance(notice, dict), f"{lane}: license notice shape")
+            _require(isinstance(notice.get("path"), str) and notice["path"],
+                     f"{lane}: license notice path missing")
+            _require(isinstance(notice.get("bytes"), int) and notice["bytes"] > 0,
+                     f"{lane}: license notice bytes missing")
+            _require(isinstance(notice.get("sha256"), str)
+                     and SHA256_URI.fullmatch(notice["sha256"]),
+                     f"{lane}: license notice hash invalid")
         _require(mcp.get("module") in set(row.get("hidden_imports") or []), f"{lane}: mcp module absent from hidden imports")
         if row.get("owner_project", {}).get("version") != row.get("flywheel_registry_expected_version"):
             seen_registry_updates.add(lane)

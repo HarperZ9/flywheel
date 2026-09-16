@@ -6,10 +6,12 @@ import json
 import os
 import re
 import subprocess
-import sys
 from typing import Any
 
+from .canon_context_runtime import (
+    context_db_configured, context_mcp_command, context_mcp_environment)
 from .operation_grants import OWNER_REF_PATTERN
+_NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 
 CAPTURE_SCHEMA = "flywheel.context-memory-capture-request/v1"
 PREFLIGHT_SCHEMA = "flywheel.context-memory-preflight-request/v1"
@@ -89,7 +91,7 @@ class CanonContextMcpClient:
 
     def __init__(self, *, command: list[str] | None = None,
                  env: dict[str, str] | None = None, timeout_s: float = 5.0) -> None:
-        self.command = list(command or [sys.executable, "-m", "canon.context_mcp"])
+        self.command = list(command or context_mcp_command())
         self.env = dict(env or os.environ)
         self.timeout_s = timeout_s
 
@@ -97,12 +99,11 @@ class CanonContextMcpClient:
     def from_environment(cls, env: dict[str, str] | None = None):
         env = dict(env or os.environ)
         db = env.get(ENV_CONTEXT_DB)
-        if not db:
+        if not context_db_configured(db):
             return UnconfiguredCanonContextClient()
         timeout_ms = _int(env.get(ENV_CONTEXT_TIMEOUT_MS), 5000)
         timeout_s = max(0.1, min(timeout_ms / 1000.0, 30.0))
-        canon_env = dict(env)
-        canon_env["CANON_CONTEXT_DB"] = db
+        canon_env = context_mcp_environment(env, db)
         return cls(env=canon_env, timeout_s=timeout_s)
 
     def health(self) -> dict:
@@ -125,7 +126,7 @@ class CanonContextMcpClient:
             done = subprocess.run(
                 self.command, input=json.dumps(req) + "\n", text=True,
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                timeout=self.timeout_s, env=self.env)
+                timeout=self.timeout_s, env=self.env, creationflags=_NO_WINDOW)
         except subprocess.TimeoutExpired as exc:
             raise ContextMemoryError("CANON_CONTEXT_TIMEOUT",
                                      "Canon context MCP timed out", 504) from exc

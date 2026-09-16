@@ -14,7 +14,6 @@ import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/views/agent_view.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-
 const _a = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const _ref = 'chd_$_a';
 const _done = ChatDraftState.admittedPendingCleanup,
@@ -28,7 +27,6 @@ Directory _temp(String name) {
   addTearDown(() => result.deleteSync(recursive: true));
   return result;
 }
-
 ChatDraft _draft(String text) => ChatDraft(
     draftRef: _ref,
     conversationRef: 'c0',
@@ -112,7 +110,6 @@ void main() {
     expect(_texts(store), {'newer draft', 'other prompt'});
   });
 }
-
 void _writeDrafts(File file, List<(String, String, String, String)> rows) {
   file.writeAsStringSync(jsonEncode({
     'drafts': [
@@ -130,7 +127,6 @@ void _writeDrafts(File file, List<(String, String, String, String)> rows) {
     'schema': 'flywheel.desktop-chat-drafts/v1'
   }));
 }
-
 void _atomicFailureTests() {
   test('temp collision and pre-rename failures preserve prior bytes', () {
     final directory = _temp('chat-draft-atomic-');
@@ -177,14 +173,13 @@ void _atomicFailureTests() {
     expect(normal.load().single.text, 'prior');
   });
 }
-
 void _readFailureTests() {
   test('an unreadable store reports a read failure, not a corrupt store', () {
     final store = ChatDraftStore(file: _UnreadableFile());
     expect(
         store.load,
-        throwsA(isA<ChatDraftStoreException>().having(
-            (e) => e.failure, 'failure', ChatDraftFailure.readFailed)));
+        throwsA(isA<ChatDraftStoreException>()
+            .having((e) => e.failure, 'failure', ChatDraftFailure.readFailed)));
   });
   test('corrupt bytes still report a corrupt store', () {
     final file = File('${_temp('chat-draft-corrupt-').path}/drafts.json');
@@ -196,23 +191,17 @@ void _readFailureTests() {
             (e) => e.failure, 'failure', ChatDraftFailure.corruptStore)));
   });
 }
-
 class _UnreadableFile implements File {
   @override
   bool existsSync() => true;
-
   @override
   int lengthSync() => throw const FileSystemException('read blocked');
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
-
 _fails(f) => expect(f, throwsA(isA<ChatDraftStoreException>()));
 Set<String> _texts(ChatDraftStore s) => s.load().map((d) => d.text).toSet();
 _states(ChatDraftStore s) => s.load().map((d) => d.state).toSet();
-
 class _AgentHarness {
   _AgentHarness({_Reply? delayed, bool empty = false, int? failWrite}) {
     final directory = _temp('chat-agent-');
@@ -225,6 +214,11 @@ class _AgentHarness {
     client = GatewayClient(httpClient: MockClient((request) async {
       if (request.url.path == '/api/endpoints') {
         return http.Response(_roster, 200);
+      }
+      if (request.url.path.startsWith('/api/context-memory/')) {
+        return http.Response(
+            '{"schema":"flywheel.context-memory-status/v1","scope_configured":false,"owner_binding_configured":false}',
+            200);
       }
       chatCalls++;
       return delayed?.future ??
@@ -245,13 +239,11 @@ class _AgentHarness {
       chatStore: history,
       draftStore: draftStore ?? drafts);
 }
-
 Future<void> _pumpAgent(WidgetTester tester, AgentView view) async {
   await tester.pumpWidget(MaterialApp(
       theme: flywheelLightTheme(), home: Scaffold(body: _granted(view))));
   await tester.pumpAndSettle();
 }
-
 Widget _granted(Widget child) => GatewayOperationScope(
     authorize: (_, operation, currentOperation, dispatch) =>
         currentOperation() != operation
@@ -259,7 +251,6 @@ Widget _granted(Widget child) => GatewayOperationScope(
             : dispatch(operation.finalBody(_binding, 'gnt_$_a')),
     child: child);
 const _binding = GatewayJourneyBinding('jrn_$_a', '$_a$_a');
-
 Future<(_AgentHarness, _Reply)> _p(WidgetTester t, String s, int? fail) async {
   final reply = _Reply();
   final harness = _AgentHarness(delayed: reply, failWrite: fail);
@@ -270,7 +261,6 @@ Future<(_AgentHarness, _Reply)> _p(WidgetTester t, String s, int? fail) async {
   await t.pump();
   return (harness, reply);
 }
-
 void _agentAdmissionTests() {
   testWidgets('new edit keeps an ambiguous attempt', (tester) async {
     final (agent, reply) = await _p(tester, 'old prompt', 4);
@@ -328,5 +318,4 @@ void _agentAdmissionTests() {
     expect(_states(agent.drafts), {_dirty, _submitting});
   });
 }
-
 _editorText(t) => t.widget<TextField>(find.byType(TextField)).controller!.text;

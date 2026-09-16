@@ -59,6 +59,7 @@ function Assert-RequiredTargetFiles() {
     "desktop\tool\installed_payload_binding.py",
     "desktop\scripts\build_installer.ps1",
     "scripts\studio_runtime_packaging.py",
+    "scripts\stage_python_lane_sources.py",
     "scripts\check_frozen_gateway.py",
     "packaging\flywheel-gateway.spec",
     "tests\fixtures\inspect\v1\single-success.fixture.json"
@@ -226,6 +227,12 @@ $runtimePayload = Join-Path $env:RUNNER_TEMP "flywheel-studio-runtime-payload"
 Invoke-Checked "stage pinned Studio runtime" "python" @("-m", "scripts.studio_runtime_packaging", "stage-pinned-payload", "--sources", $runtimeSources, "--work-root", $runtimeWork, "--manifest", $runtimeManifest, "--payload-root", $runtimePayload)
 $env:FLYWHEEL_STUDIO_BODY_RUNTIME_MANIFEST = $runtimeManifest
 $env:FLYWHEEL_STUDIO_BODY_RUNTIME_PAYLOAD = $runtimePayload
+$pythonLaneSourceRoot = Join-Path $env:RUNNER_TEMP "flywheel-python-lane-sources"
+$pythonLaneStageReceipt = Join-Path $env:RUNNER_TEMP "python-lane-source-stage.full.json"
+$pythonLaneBoundedReceipt = Join-Path $installerDir "python-lane-source-stage.json"
+New-Item -ItemType Directory -Force -Path $installerDir | Out-Null
+Invoke-Checked "stage Canon Python lane source" "python" @("scripts/stage_python_lane_sources.py", "--lane", "canon", "--source-root", $pythonLaneSourceRoot, "--receipt", $pythonLaneStageReceipt, "--bounded-receipt", $pythonLaneBoundedReceipt)
+$env:FLYWHEEL_PYTHON_LANE_SOURCE_ROOT = $pythonLaneSourceRoot
 Find-InnoSetup
 Assert-CleanWorkspaceNoUntracked "before build"
 New-Item -ItemType Directory -Force -Path $installerDir, $acceptanceDir | Out-Null

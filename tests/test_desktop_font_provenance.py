@@ -220,3 +220,16 @@ def test_installer_build_stages_font_notices_before_iscc():
     assert text.index("check_font_provenance.py staging") < text.index(
         "& $Iscc"
     )
+
+
+def test_installer_build_stages_canon_source_before_engine_freeze():
+    text = (DESKTOP / "scripts" / "build_installer.ps1").read_text(
+        encoding="utf-8"
+    )
+    stage = text.index("scripts\\stage_python_lane_sources.py")
+    env = text.index("FLYWHEEL_PYTHON_LANE_SOURCE_ROOT")
+    freeze = text.index("python -m PyInstaller")
+    assert stage < env < freeze
+    assert "--lane canon" in text
+    assert "--bounded-receipt $pythonLaneBoundedReceipt" in text
+    assert "python-lane-source-stage.json" in text
