@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/models/chat.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/chat_workspace.dart';
+import 'platform_golden.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +17,7 @@ void main() {
     expect(find.text('Outline'), findsOneWidget);
     expect(find.text('Links'), findsOneWidget);
     await expectLater(find.byKey(const ValueKey('chat-nav-capture')),
-        matchesGoldenFile('goldens/chat_navigation_wide.png'));
+        matchesGoldenFile(platformGolden('chat_navigation_wide')));
   });
 
   testWidgets('chat navigation renders a narrow sheet frame', (tester) async {
@@ -27,14 +28,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 380));
     expect(find.text('Outline'), findsOneWidget);
     await expectLater(find.byType(BottomSheet),
-        matchesGoldenFile('goldens/chat_navigation_narrow_sheet.png'));
+        matchesGoldenFile(platformGolden('chat_navigation_narrow_sheet')));
   });
 
   testWidgets('chat navigation renders a large text frame', (tester) async {
     await _pumpFrame(tester, const Size(1180, 760), 1.35);
     expect(find.text('Outline'), findsOneWidget);
     await expectLater(find.byKey(const ValueKey('chat-nav-capture')),
-        matchesGoldenFile('goldens/chat_navigation_large_text.png'));
+        matchesGoldenFile(platformGolden('chat_navigation_large_text')));
   });
 }
 

@@ -8,6 +8,7 @@ import 'package:flywheel_desktop/models/live_screen_models.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/live_screen_panel.dart';
 import 'screen_capture_fonts.dart';
+import 'platform_golden.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -91,7 +92,7 @@ void main() {
       expect(find.text('Pause').hitTestable(), findsOneWidget);
       expect(find.text('Stop sharing').hitTestable(), findsOneWidget);
       await expectLater(find.byKey(const ValueKey('screen-capture')),
-          matchesGoldenFile('goldens/live_screen_${scenario.$1}.png'));
+          matchesGoldenFile(platformGolden('live_screen_${scenario.$1}')));
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
