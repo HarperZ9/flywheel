@@ -10,10 +10,15 @@ def test_build_status_does_not_resolve_credentials_or_construct_backends(monkeyp
     def forbidden(*_args, **_kwargs):
         raise AssertionError("credential resolver or backend construction was invoked")
 
+    visible_commands = {"claude.exe", "claude", "codex.cmd", "codex"}
     monkeypatch.setattr(harness.endpoints, "_k", forbidden)
     if hasattr(endpoint_status, "build_endpoints"):
         monkeypatch.setattr(endpoint_status, "build_endpoints", forbidden)
-    monkeypatch.setattr(shutil, "which", lambda name: f"C:/tools/{name}" if name in {"claude.exe", "codex.cmd"} else None)
+    monkeypatch.setattr(
+        shutil,
+        "which",
+        lambda name: f"C:/tools/{name}" if name in visible_commands else None,
+    )
     for name in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "CURSOR_CLI", "CLAUDE_CLI", "CODEX_CLI"):
         monkeypatch.delenv(name, raising=False)
 
