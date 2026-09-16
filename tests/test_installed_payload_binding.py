@@ -233,15 +233,17 @@ def test_installed_payload_rejects_linked_install_root_ancestor(tmp_path):
 
 def test_payload_hash_rejects_static_file_swap_during_read(tmp_path, monkeypatch):
     install, _, _ = make_install(tmp_path)
-    _add_flutter_payload(install)
+    app_so = _add_flutter_payload(install)
     manifest = json.loads(_manifest_with_payload(tmp_path / "build-manifest.json", install).read_text())
     original_open = Path.open
+    replacement = b"swapped during verification with stat-visible extra bytes"
+    assert len(replacement) != app_so.stat().st_size
 
     def swapping_open(path, *args, **kwargs):
         handle = original_open(path, *args, **kwargs)
         if Path(path).name == "app.so":
-            with original_open(path, "wb") as replacement:
-                replacement.write(b"swapped during verification")
+            with original_open(path, "wb") as replacement_file:
+                replacement_file.write(replacement)
         return handle
 
     monkeypatch.setattr(Path, "open", swapping_open)
