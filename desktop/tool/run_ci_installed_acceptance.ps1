@@ -75,18 +75,46 @@ function Assert-CleanWorkspaceNoUntracked([string]$Label, [string]$Root = $repoR
   if ($LASTEXITCODE -ne 0) { throw "$Label could not read git status" }
   if ($status.Count -ne 0) { throw "$Label workspace is not clean before build" }
 }
+function Write-SourceDriftDiagnostics([string]$Label, [string]$Root = $repoRoot) {
+  $status = @(& git -C $Root status --porcelain=v1 --untracked-files=no --ignore-submodules=none)
+  if ($LASTEXITCODE -eq 0 -and $status.Count -ne 0) {
+    Write-Output "$Label git status porcelain: $($status -join '; ')"
+    $paths = @()
+    foreach ($line in $status) {
+      if ($line.Length -ge 4) {
+        $path = $line.Substring(3)
+        if ($path -match ' -> ') { $path = ($path -split ' -> ', 2)[1] }
+        if ($path -and -not $path.Contains('"')) { $paths += $path }
+      }
+    }
+    if ($paths.Count -ne 0) {
+      $eol = @(& git -C $Root ls-files --eol -- $paths)
+      if ($LASTEXITCODE -eq 0 -and $eol.Count -ne 0) { Write-Output "$Label git ls-files --eol: $($eol -join '; ')" }
+      foreach ($path in $paths) {
+        if (-not (Test-Path -LiteralPath (Join-Path $Root $path))) { continue }
+        $headHash = (& git -C $Root rev-parse "HEAD:$path" 2>$null)
+        $workHash = (& git -C $Root hash-object --no-filters -- $path 2>$null)
+        if ($headHash -and $workHash) { Write-Output "$Label byte hash $path head=$($headHash.Trim()) worktree=$($workHash.Trim())" }
+      }
+    }
+  }
+  $diff = @(& git -C $Root diff --name-status --ignore-submodules)
+  if ($LASTEXITCODE -eq 0 -and $diff.Count -ne 0) { Write-Output "$Label git diff --name-status: $($diff -join '; ')" }
+  $cached = @(& git -C $Root diff --cached --name-status --ignore-submodules)
+  if ($LASTEXITCODE -eq 0 -and $cached.Count -ne 0) { Write-Output "$Label git diff --cached --name-status: $($cached -join '; ')" }
+}
 function Assert-TrackedAndSubmodulesUnchanged([string]$Label, [string]$Root = $repoRoot) {
   & git -C $Root diff --quiet --ignore-submodules
-  if ($LASTEXITCODE -ne 0) { throw "$Label changed tracked source files" }
+  if ($LASTEXITCODE -ne 0) { Write-SourceDriftDiagnostics $Label $Root; throw "$Label changed tracked source files" }
   & git -C $Root diff --cached --quiet --ignore-submodules
-  if ($LASTEXITCODE -ne 0) { throw "$Label changed staged source files" }
+  if ($LASTEXITCODE -ne 0) { Write-SourceDriftDiagnostics $Label $Root; throw "$Label changed staged source files" }
   $status = @(& git -C $Root status --porcelain=v1 --untracked-files=no --ignore-submodules=none)
   if ($LASTEXITCODE -ne 0) { throw "$Label could not read git status" }
-  if ($status.Count -ne 0) { throw "$Label changed tracked source or submodule state" }
+  if ($status.Count -ne 0) { Write-SourceDriftDiagnostics $Label $Root; throw "$Label changed tracked source or submodule state" }
   $submodules = @(& git -C $Root submodule status --recursive)
   if ($LASTEXITCODE -ne 0) { throw "$Label could not read submodule status" }
   foreach ($line in $submodules) {
-    if ($line -match '^[+\\-U]') { throw "$Label changed submodule checkout: $line" }
+    if ($line -match '^[-+U]') { throw "$Label changed submodule checkout: $line" }
   }
 }
 function Quote-WindowsArgument([string]$Value) {
