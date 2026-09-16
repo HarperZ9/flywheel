@@ -78,3 +78,24 @@ def test_eol_lf_pin_keeps_flutter_style_lf_rewrite_clean(tmp_path):
     root = _ps_literal(tmp_path)
     out = _run_helper_ps(f"Assert-TrackedAndSubmodulesUnchanged 'pinned' -Root {root}\n'OK'")
     assert "OK" in out
+
+
+@pytest.mark.parametrize("prefix,rejected", [(" ", False), ("+", True), ("-", True), ("U", True)])
+def test_submodule_status_prefixes_are_checked_without_regex_failure(prefix, rejected):
+    # Reach the real helper's submodule branch without changing a real checkout.
+    line = prefix + "a" * 40 + " fixtures/child (heads/main)"
+    body = f"""
+function git {{
+  $global:LASTEXITCODE = 0
+  if ($args -contains 'submodule') {{ {_ps_literal(line)} }}
+}}
+$rejected = $false
+try {{ Assert-TrackedAndSubmodulesUnchanged 'submodule-fixture' }}
+catch {{
+  if ($_.Exception.Message -notlike 'submodule-fixture changed submodule checkout:*') {{ throw }}
+  $rejected = $true
+}}
+if ($rejected -ne ${str(rejected).lower()}) {{ throw 'unexpected submodule disposition' }}
+'OK'
+"""
+    assert "OK" in _run_helper_ps(body)

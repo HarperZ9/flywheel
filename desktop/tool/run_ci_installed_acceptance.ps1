@@ -113,7 +113,7 @@ function Assert-TrackedAndSubmodulesUnchanged([string]$Label, [string]$Root = $r
   $submodules = @(& git -C $Root submodule status --recursive)
   if ($LASTEXITCODE -ne 0) { throw "$Label could not read submodule status" }
   foreach ($line in $submodules) {
-    if ($line -match '^[+\\-U]') { throw "$Label changed submodule checkout: $line" }
+    if ($line -match '^[-+U]') { throw "$Label changed submodule checkout: $line" }
   }
 }
 function Quote-WindowsArgument([string]$Value) {
