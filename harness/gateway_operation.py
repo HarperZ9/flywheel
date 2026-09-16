@@ -14,7 +14,7 @@ REQUEST_SCHEMA = "flywheel.gateway-operation/v1"
 PROPOSAL_SCHEMA = "flywheel.gateway-grant-proposal/v1"
 PROPOSAL_REF_PATTERN = re.compile(r"prp_[0-9a-f]{32}\Z")
 CREDENTIAL_REF_PATTERN = re.compile(r"cred_[0-9a-f]{32}\Z")
-_SCOPES = ("write", "exec", "network", "plugin", "secrets")
+_SCOPES = ("write", "exec", "network", "plugin", "mcp", "secrets")
 _SECRET_NAMES = frozenset(("api_key", "access_token", "refresh_token", "token",
     "password", "secret", "credential", "credentials", "private_key",
     "authorization", "cookie", "environment", "env"))
@@ -67,7 +67,7 @@ _FIELDS = {
     "agent.run": ({"goal", "endpoint", "max_steps", "allow_write",
                    "allow_exec", "stream"} | _REFS,
                   {"root", "test_cmd", "attachment", "effort", "model", "max_tokens", "timeout_s",
-                   "tool_protocol", "continuation", "execution_mode"}),
+                   "tool_protocol", "continuation", "execution_mode", "mcp_admission"}),
     "workflow.run": ({"workflow", "goal", "endpoint", "allow_write",
                       "allow_exec"} | _REFS,
                      {"profile", "root", "test_cmd"}),
@@ -109,6 +109,8 @@ _FIELDS = {
     "import.inspect": ({"source"} | _REFS, set()),
     "hook.register": ({"event", "argv", "blocking", "hook_id"} | _REFS, set()), "hook.run": ({"event", "context", "registrations"} | _REFS, set()),
 }
+_FIELDS["live_screen.control"] = ({"control", "data_refs", "credential_refs"}, {"session_id", "body_session_ref", "instrument_ref", "sources", "destination", "model", "delivery_mode", "expires_after_ms", "buffer_frames_per_source", "max_frame_bytes", "start_immediately"})
+_FIELDS["live_screen.deliver"] = ({"session_id", "source_id", "destination", "model", "delivery_mode", "prompt", "max_output_tokens", "timeout_s", "data_refs", "credential_refs"}, {"max_age_ms"})
 _FIELDS.update(INFRA_FIELDS)          # the infrastructure controls; one table
 GRANTABLE_ACTIONS = frozenset(_FIELDS)
 LANE_CALL_PREFIX = "/api/lane/"

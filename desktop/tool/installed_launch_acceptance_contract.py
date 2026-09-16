@@ -10,13 +10,15 @@ from typing import Any, Mapping
 
 try:
     from .installed_launch_inspect_contract import INSPECT_ASSERTION_IDS, INSPECT_PHASE_ASSERTIONS, INSPECT_REQUIRED_ASSERTIONS
+    from .installed_payload_binding import TRUST_BOUNDARY as PAYLOAD_TRUST_BOUNDARY
+    from .installed_payload_binding import verify_installed_payload
 except ImportError:
     from installed_launch_inspect_contract import INSPECT_ASSERTION_IDS, INSPECT_PHASE_ASSERTIONS, INSPECT_REQUIRED_ASSERTIONS  # type: ignore
+    from installed_payload_binding import TRUST_BOUNDARY as PAYLOAD_TRUST_BOUNDARY  # type: ignore
+    from installed_payload_binding import verify_installed_payload  # type: ignore
 
 BUILD_MANIFEST_SCHEMA = "flywheel.installed-build-manifest/v1"
-BUILD_MANIFEST_TRUST_BOUNDARY = (
-    "operator-supplied integrity binding; not external attestation"
-)
+BUILD_MANIFEST_TRUST_BOUNDARY = PAYLOAD_TRUST_BOUNDARY
 
 ASSERTION_IDS = (
     "H01_app_exe_exists",
@@ -212,6 +214,7 @@ def _check_exact_ids(errors: list[str], rows: list[Any], expected: tuple[str, ..
 def evaluate_build_binding(
     *,
     manifest_path: Path | None,
+    install_root: Path | None = None,
     expected_source: str,
     expected_version: str,
     expected_app_sha256: str,
@@ -238,6 +241,12 @@ def evaluate_build_binding(
     _expect_equal(failures, observed_installed_version, expected_version, "installed_version")
     _expect_hash(failures, binding["app_sha256"], observed_app_sha256, "app_sha256")
     _expect_hash(failures, binding["engine_sha256"], observed_engine_sha256, "engine_sha256")
+    if install_root is None:
+        failures.append("install_root_missing_for_payload_binding")
+    else:
+        payload_report = verify_installed_payload(install_root, manifest)
+        observed["payload_binding"] = payload_report
+        failures.extend(payload_report["failures"])
     if expected_app_sha256:
         _expect_hash(failures, expected_app_sha256, observed_app_sha256, "expected_app_sha256")
     if expected_engine_sha256:

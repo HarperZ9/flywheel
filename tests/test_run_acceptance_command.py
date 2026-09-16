@@ -2,15 +2,18 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
+import os as global_os
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
 
 from scripts import run_acceptance_command as recorder
 
-
+capture = sys.modules[recorder.staged_receipt_directory.__module__]
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -42,6 +45,8 @@ def _git(*args: str) -> str:
         ["git", "-C", str(REPO_ROOT), *args], text=True, encoding="utf-8"
     ).strip()
 
+def _windows_os_proxy(rename):
+    return SimpleNamespace(**(vars(capture.os) | {"name": "nt", "rename": rename}))
 
 def test_json_argv_records_success_and_repository_identity(tmp_path):
     args, receipt_dir = _base_args(tmp_path, "json-success")
@@ -139,6 +144,44 @@ def test_secret_child_flag_value_is_redacted_from_argv_and_output(tmp_path):
     assert receipt["command"]["argv"][-2:] == ["--token", "<redacted>"]
     assert stdout.decode().splitlines() == ["<redacted>"]
 
+def test_transient_windows_stage_publish_denial_keeps_complete_receipt(tmp_path, monkeypatch):
+    attempts = 0
+    real_name = global_os.name
+    real_rename = capture.os.rename
+    def deny_once(source, destination):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1: raise PermissionError(5, "Access is denied", str(source))
+        real_rename(source, destination)
+    monkeypatch.setattr(capture, "os", _windows_os_proxy(deny_once))
+    monkeypatch.setattr(capture, "sleep", lambda _seconds: None, raising=False)
+    final = tmp_path / "transient-publish"
+    with capture.staged_receipt_directory(final) as stage:
+        (stage / "receipt.json").write_text("ok", encoding="utf-8")
+
+    assert attempts == 2
+    assert (final / "receipt.json").read_text(encoding="utf-8") == "ok"
+    assert global_os.name == real_name
+
+def test_persistent_windows_stage_publish_denial_stays_failed(tmp_path, monkeypatch):
+    attempts = 0
+    real_name = global_os.name
+    def deny_always(source, _destination):
+        nonlocal attempts
+        attempts += 1
+        raise PermissionError(5, "Access is denied", str(source))
+    times = iter([0.0, 2.0])
+    monkeypatch.setattr(capture, "os", _windows_os_proxy(deny_always))
+    monkeypatch.setattr(capture, "monotonic", lambda: next(times, 2.0))
+    monkeypatch.setattr(capture, "sleep", lambda _seconds: None, raising=False)
+    final = tmp_path / "persistent-publish"
+
+    with pytest.raises(PermissionError):
+        with capture.staged_receipt_directory(final) as stage:
+            (stage / "receipt.json").write_text("ok", encoding="utf-8")
+    assert attempts == 1
+    assert not final.exists()
+    assert global_os.name == real_name
 
 def test_streams_are_bounded_and_report_observed_size(tmp_path):
     args, receipt_dir = _base_args(tmp_path, "bounded")

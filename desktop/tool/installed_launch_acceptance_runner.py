@@ -114,6 +114,7 @@ class AcceptanceHarness:
         engine_sha = sha256_file(engine) if engine else ""
         ok, observed = evaluate_build_binding(
             manifest_path=self.c.build_manifest,
+            install_root=self.c.install_root,
             expected_source=self.c.source_commit_expected,
             expected_version=self.c.expected_version,
             expected_app_sha256=self.c.expected_app_sha256,
@@ -125,7 +126,7 @@ class AcceptanceHarness:
         if self.c.build_manifest:
             observed["build_manifest_path"] = self._path(self.c.build_manifest)
         self._add("H20_receipt_fresh_complete_and_source_bound", "PASS" if ok else "FAIL",
-                  expected="operator manifest binds source, version, app hash, engine hash, and installed version",
+                  expected="operator manifest binds source, version, app hash, engine hash, installed version, and full installed payload",
                   observed=observed)
     def _metadata(self, app: Path):
         crit = "critical" if self.c.mode in ("metadata", "full") else "info"

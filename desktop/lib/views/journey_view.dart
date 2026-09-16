@@ -9,6 +9,7 @@ import '../widgets/flywheel_nav.dart';
 import '../widgets/fw.dart';
 import '../widgets/journey_cards.dart';
 import '../widgets/journey_lenses.dart';
+import '../widgets/journey_start_task_entry.dart';
 
 class JourneyView extends StatelessWidget {
   const JourneyView({
@@ -53,7 +54,9 @@ class _JourneyBody extends StatelessWidget {
     final projection = state.projection;
     if (projection == null) {
       return _EmptyJourney(
-          state: state, alive: alive, onStartEngine: onStartEngine,
+          state: state,
+          alive: alive,
+          onStartEngine: onStartEngine,
           onRetryRead: onRetryRead);
     }
     return ViewScroll(storageKey: 'journey', children: [
@@ -148,8 +151,9 @@ class _EmptyJourney extends StatelessWidget {
       const SizedBox(height: FwLayout.s4),
       JourneyStartCard(alive: alive, onStartEngine: onStartEngine),
       if (state.remoteFailure != null && alive)
-        OutlinedButton(onPressed: _busy(state.phase) ? null : onRetryRead,
-          child: const Text('Retry Journey read')),
+        OutlinedButton(
+            onPressed: _busy(state.phase) ? null : onRetryRead,
+            child: const Text('Retry Journey read')),
     ]);
   }
 }
@@ -170,14 +174,17 @@ class JourneyStartCard extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Kicker('start here', hot: true),
         const SizedBox(height: FwLayout.s2),
-        Text('Get to the first verified run',
+        Text('Start with the task',
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: FwLayout.s2),
         Text(
-          'Connect the engine, choose a model, register work, then run '
-          'through ${AssistantIdentity.name}, Plan, or Code. Receipts keep the proof.',
+          'Say what you want done first. ${AssistantIdentity.name} keeps the '
+          'model route, workspace choice, and receipt trail visible before a '
+          'run leaves this app.',
           style: TextStyle(fontSize: 12.5, height: 1.45, color: t.inkMuted),
         ),
+        const SizedBox(height: FwLayout.s3),
+        const JourneyStartTaskEntry(),
         const SizedBox(height: FwLayout.s3),
         Wrap(spacing: FwLayout.s2, runSpacing: FwLayout.s2, children: [
           if (!alive && onStartEngine != null)
@@ -187,7 +194,6 @@ class JourneyStartCard extends StatelessWidget {
             ),
           _route(context, 'Models setup', DestinationId.models),
           _route(context, 'Projects', DestinationId.projects),
-          _route(context, AssistantIdentity.name, DestinationId.chat),
           _route(context, 'Plan', DestinationId.plan),
           _route(context, 'Code', DestinationId.code),
           _route(context, 'Receipts', DestinationId.receipts),

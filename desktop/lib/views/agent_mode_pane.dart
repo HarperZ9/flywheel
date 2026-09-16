@@ -18,11 +18,13 @@ class AgentModePane extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
   final DesktopSettings settings;
+  final String? initialGoal;
   const AgentModePane(
       {super.key,
       required this.client,
       required this.alive,
-      required this.settings});
+      required this.settings,
+      this.initialGoal});
 
   @override
   State<AgentModePane> createState() => _AgentModePaneState();
@@ -31,10 +33,25 @@ class AgentModePane extends StatefulWidget {
 class _AgentModePaneState extends State<AgentModePane> {
   String? _root;
   final _rootField = TextEditingController();
+  late final TextEditingController _goalField =
+      TextEditingController(text: widget.initialGoal ?? '');
+
+  @override
+  void didUpdateWidget(AgentModePane oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.initialGoal;
+    if (next != oldWidget.initialGoal &&
+        next != null &&
+        _goalField.text.trim().isEmpty) {
+      _goalField.text = next;
+      _goalField.selection = TextSelection.collapsed(offset: next.length);
+    }
+  }
 
   @override
   void dispose() {
     _rootField.dispose();
+    _goalField.dispose();
     super.dispose();
   }
 
@@ -43,8 +60,8 @@ class _AgentModePaneState extends State<AgentModePane> {
     if (dir.isEmpty) return;
     if (!Directory(dir).existsSync()) {
       setState(() => _root = null);
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No such folder: $dir')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('No such folder: $dir')));
       return;
     }
     widget.settings.rememberWorkspace(dir);
@@ -81,6 +98,7 @@ class _AgentModePaneState extends State<AgentModePane> {
           client: widget.client,
           alive: widget.alive,
           workspaceRoot: root,
+          goalController: _goalField,
           onRunStarted: () {},
           onRunFinished: () {},
         ),
@@ -110,6 +128,7 @@ class _AgentModePaneState extends State<AgentModePane> {
               Row(children: [
                 Expanded(
                   child: TextField(
+                    key: const Key('agent-mode-root-field'),
                     controller: _rootField,
                     style: fwMono(t, size: 12.5),
                     onSubmitted: _use,
@@ -119,6 +138,7 @@ class _AgentModePaneState extends State<AgentModePane> {
                 ),
                 const SizedBox(width: FwLayout.s3),
                 FilledButton(
+                  key: const Key('agent-mode-use-root'),
                   onPressed: () => _use(_rootField.text),
                   child: const Text('Use it'),
                 ),
@@ -133,8 +153,7 @@ class _AgentModePaneState extends State<AgentModePane> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 3),
                       child: Text(r,
-                          style: fwMono(t, size: 11.5)
-                              .copyWith(color: t.drift),
+                          style: fwMono(t, size: 11.5).copyWith(color: t.drift),
                           overflow: TextOverflow.ellipsis),
                     ),
                   ),

@@ -155,7 +155,7 @@ def test_frozen_gateway_spec_pins_owned_relay_submodule_before_analysis():
     assert "check_lane_descriptor(repo, \"relay\")" in spec
     assert "bundled Relay import shadowed outside relay/src" in spec
     assert "find_spec(\"relay.local_mcp\")" in spec
-    assert "pathex=[str(relay_src), str(repo)]" in spec
+    assert "pathex=[str(relay_src), str(repo), *studio_runtime.pathex]" in spec
 
 
 def test_candidate_checks_the_actual_frozen_engine_before_installer():

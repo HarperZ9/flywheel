@@ -96,6 +96,45 @@ void main() {
     expect(row.cliPresent, isTrue);
   });
 
+  test('endpoint row reads current backend wire fields and gates BYO config', () {
+    final row = EndpointRow.fromJson({
+      'name': 'openai-compatible',
+      'kind': 'openai-compat',
+      'local': false,
+      'credential': 'present',
+      'host': 'api.example.test',
+      'default_model': 'remote-model',
+      'receipt_capable': false,
+      'source': 'providers',
+      'configured': false,
+    });
+    expect(row.kind, 'openai-compat');
+    expect(row.backend, 'openai-compat');
+    expect(row.host, 'api.example.test');
+    expect(row.defaultModel, 'remote-model');
+    expect(row.receiptCapable, isFalse);
+    expect(row.configured, isFalse);
+    expect(row.usable, isFalse);
+  });
+
+  test('codex CLI binary-only account state is unknown and not usable', () {
+    final row = EndpointRow.fromJson({
+      'name': 'codex-cli',
+      'kind': 'cli',
+      'credential': 'cli-auth',
+      'account_required': true,
+      'account_state': 'unknown',
+      'account_authenticated': false,
+      'receipt_capable': false,
+    });
+    expect(row.cliPresent, isTrue);
+    expect(row.needsAccountAuth, isTrue);
+    expect(row.accountState, 'unknown');
+    expect(row.accountAuthenticated, isFalse);
+    expect(row.usable, isFalse);
+    expect(endpointRank(row), 2);
+  });
+
   testWidgets('CLI presence is not rendered as verified authentication',
       (t) async {
     await t.pumpWidget(MaterialApp(
@@ -104,7 +143,7 @@ void main() {
             body: ProviderRoster(roster: [
           EndpointRow.fromJson({'name': 'codex-cli', 'credential': 'cli-auth'})
         ]))));
-    expect(find.text('CLI PRESENT'), findsOneWidget);
+    expect(find.text('ACCOUNT UNKNOWN'), findsOneWidget);
     expect(find.text('SUBSCRIPTION'), findsNothing);
   });
 

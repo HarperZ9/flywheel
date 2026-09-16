@@ -53,7 +53,9 @@ def test_roster_enumerates_every_provider(monkeypatch):
         assert p in names
     assert "serve" in names                    # local 14B
     assert {"anthropic", "gemini"} <= names    # native, not just OpenAI-shaped
-    assert all(e["receipt_capable"] for e in r["endpoints"])
+    assert all(isinstance(e["receipt_capable"], bool) for e in r["endpoints"])
+    assert all(e["receipt_capable"] for e in r["endpoints"]
+               if e["name"] in r["usable_names"])
 
 
 def test_credential_is_presence_only_never_value(monkeypatch):

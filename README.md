@@ -17,6 +17,12 @@ Flywheel has two parts. The Python engine routes tasks, checks tool requests,
 runs verification, writes the run ledger, and serves a local gateway. The
 Flutter client provides the native desktop interface.
 
+The [architectural mission](docs/ARCHITECTURAL-MISSION.md) is to make consequential
+AI claims independently checkable, with usable tools for evaluators and everyday
+tasks. A reproducible check still needs an appropriate criterion and sufficient
+evidence; replay alone does not establish safety. The expanded native application
+scope is tracked in the [unreleased 1.0 candidate](docs/RELEASE-1.0.0.md).
+
 [Project Telos](https://harperz9.github.io) | [gather](https://github.com/HarperZ9/gather) | [crucible](https://github.com/HarperZ9/crucible) | [index](https://github.com/HarperZ9/index) | [forum](https://github.com/HarperZ9/forum) | [telos](https://github.com/HarperZ9/telos) | [learn](https://github.com/HarperZ9/learn) | [relay](https://github.com/HarperZ9/relay) | [mneme](https://github.com/HarperZ9/mneme)
 
 ## Try it
@@ -371,6 +377,7 @@ against the release's `SHA256SUMS.txt`.
 
 ## Documentation
 
+- [docs/ARCHITECTURAL-MISSION.md](docs/ARCHITECTURAL-MISSION.md): re-derivable evaluation, six-layer research scope, and MCP/API integration direction
 - [QUICKSTART.md](QUICKSTART.md): first ten minutes
 - [GETTING-STARTED.md](GETTING-STARTED.md): install, sign in, first run
 - [WALKTHROUGH.md](WALKTHROUGH.md): guided tour

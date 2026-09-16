@@ -21,6 +21,16 @@ const gatewayNativeBindingHash =
     'ee09a032db61c34f7a59f3386cd0bf4e115d3034b4718eae8a43d471695ff6cd';
 const gatewayNativeToolSchemaHash =
     '8ebf974e7819a1e22bac1b725f2bed185d896b8fff90c7da212561e2a8b343a3';
+const gatewayMcpAdmissionHash =
+    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const gatewayMcpDescriptorHash =
+    'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+const gatewayMcpConfigHash =
+    'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+const gatewayMcpToolsHash =
+    'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+const gatewayMcpCacheScopeHash =
+    'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 const gatewayWorkspacePolicyHash =
     '709271920c84a91aa06ffc9c9689d0334e5284a4cce7924d00887acc0c07f271';
 const gatewayNativeWorkspacePolicyHash =
@@ -89,6 +99,59 @@ const gatewayTextToolProtocol = {
   'result_order_policy': 'text_tool_loop',
 };
 
+final gatewayMcpAdmissionReview = {
+  'schema': 'flywheel.gateway-agent-mcp-admission-review/v1',
+  'admission_sha256': gatewayMcpAdmissionHash,
+  'servers': [
+    {
+      'server_id': 'synthetic',
+      'catalog_ref': 'synthetic',
+      'timeout_s': 5,
+      'descriptor_sha256': gatewayMcpDescriptorHash,
+      'config_sha256': gatewayMcpConfigHash,
+      'tools_list_sha256': gatewayMcpToolsHash,
+      'discovery_receipt_sha256': gatewayAgentTestHash,
+      'cache_scope_sha256': gatewayMcpCacheScopeHash,
+      'launch': const {
+        'transport': 'catalog',
+        'inherit_env': false,
+        'url_selected': false,
+        'hide_window': true,
+        'env_override_keys': ['PYTHONPATH'],
+        'allowed_tools': ['echo'],
+      },
+      'tools': const [
+        {
+          'source_tool_name': 'echo',
+          'runtime_tool_name': 'mcp_synthetic__echo',
+          'input_schema_sha256':
+              '9999999999999999999999999999999999999999999999999999999999999999',
+          'descriptor_sha256':
+              '8888888888888888888888888888888888888888888888888888888888888888',
+          'declared_authority': {
+            'read': true,
+            'write': false,
+            'execute': false,
+            'critical': false,
+            'network': false,
+          },
+          'authority_source': 'gateway_catalog_metadata:v1',
+          'enforced_limits': {
+            'no_shell': true,
+            'pinned_cwd': true,
+            'inherit_env': false,
+            'network_sandbox': false,
+            'filesystem_sandbox': false,
+          },
+          'does_not_prove': [
+            'declared read-only does not prove server cannot write'
+          ],
+        },
+      ],
+    },
+  ],
+};
+
 final gatewayNativeAgentExecutionReview = {
   'schema': 'flywheel.gateway-agent-review/v2',
   'binding_sha256': gatewayNativeBindingHash,
@@ -121,6 +184,35 @@ final gatewayTextAgentExecutionReview = {
   ...gatewayAgentExecutionReview,
   'schema': 'flywheel.gateway-agent-review/v2',
   'tool_protocol': gatewayTextToolProtocol,
+};
+
+final gatewayMcpAgentExecutionReview = {
+  ...gatewayTextAgentExecutionReview,
+  'schema': 'flywheel.gateway-agent-review/v4',
+  'capabilities': const {
+    'allow_exec': false,
+    'allow_mcp': true,
+    'allow_write': false,
+  },
+  'mcp_admission': gatewayMcpAdmissionReview,
+};
+
+final gatewayNativeMcpToolProtocol = {
+  ...gatewayOpenAiNativeToolProtocol,
+  'mcp_admission_sha256': gatewayMcpAdmissionHash,
+  'tool_names': const ['read_file', 'list_dir', 'grep', 'mcp_synthetic__echo'],
+};
+
+final gatewayNativeMcpAgentExecutionReview = {
+  ...gatewayNativeAgentExecutionReview,
+  'schema': 'flywheel.gateway-agent-review/v4',
+  'capabilities': const {
+    'allow_exec': false,
+    'allow_mcp': true,
+    'allow_write': false,
+  },
+  'tool_protocol': gatewayNativeMcpToolProtocol,
+  'mcp_admission': gatewayMcpAdmissionReview,
 };
 
 GatewayOperation gatewayAgentRunOperation() => GatewayOperation.exact(

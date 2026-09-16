@@ -6,6 +6,8 @@ import 'package:crypto/crypto.dart';
 import '../models/chat.dart';
 import 'journey_session_store.dart';
 
+part 'chat_draft_assistant_event.dart';
+
 const _schema = 'flywheel.desktop-chat-drafts/v1';
 final _draftRef = RegExp(r'^chd_[0-9a-f]{32}$');
 final _conversationRef = RegExp(r'^c[0-9]+$');
@@ -258,22 +260,6 @@ Map<String, dynamic> _encode(ChatDraft draft) => {
       'text_sha256': draft.textSha256,
       'updated_at': draft.updatedAt.toIso8601String(),
     };
-
-Map<String, dynamic> _validAssistant(Object? value, String? attemptRef) {
-  _require(value is Map<String, dynamic>);
-  final assistant = value as Map<String, dynamic>;
-  final expected = <String>{'role', 'text'};
-  if (assistant.containsKey('receipt')) expected.add('receipt');
-  if (assistant.containsKey('attempt_ref')) expected.add('attempt_ref');
-  _exactKeys(assistant, expected);
-  _require(assistant['role'] == 'assistant' && assistant['text'] is String);
-  _require(!assistant.containsKey('receipt') ||
-      assistant['receipt'] is Map<String, dynamic>);
-  _require((assistant['text'] as String).isNotEmpty ||
-      assistant.containsKey('receipt'));
-  _require(assistant['attempt_ref'] == attemptRef);
-  return assistant;
-}
 
 ChatDraftState _parseState(Object? raw) {
   for (final state in ChatDraftState.values) {

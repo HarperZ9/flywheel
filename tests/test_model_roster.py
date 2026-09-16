@@ -89,6 +89,60 @@ def test_list_models_listing_failure_keeps_flagged_default(monkeypatch):
     assert out["reason"].startswith("listing unavailable:")
 
 
+def test_list_models_listing_failure_reason_is_sanitized(monkeypatch):
+    from harness import providers
+    monkeypatch.setitem(providers.REGISTRY, "xprov", _fake_spec())
+    monkeypatch.setattr(MR, "_credential", lambda k: "synthetic-key")
+
+    def boom(req, timeout=3.0):
+        raise OSError(
+            "proxy leaked sk-secret-value at https://user:pass@example.test")
+
+    monkeypatch.setattr(MR.urllib.request, "urlopen", boom)
+    out = MR.list_models("xprov")
+    assert out["reason"] == "listing unavailable: OSError"
+    assert "secret" not in out["reason"]
+    assert "pass" not in out["reason"]
+
+
+def test_openai_compatible_uses_safe_configured_base_url_for_listing(monkeypatch):
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://api.example.test/v1")
+    monkeypatch.setattr(MR, "_credential", lambda k: "synthetic-key")
+    captured = {}
+
+    def fake_urlopen(req, timeout=3.0):
+        captured["url"] = req.full_url
+        return _Resp({"data": [{"id": "remote-model"}]})
+
+    monkeypatch.setattr(MR.urllib.request, "urlopen", fake_urlopen)
+    out = MR.list_models("openai-compatible")
+    assert captured["url"] == "https://api.example.test/v1/models"
+    assert out["models"] == [{"id": "remote-model", "default": "false"}]
+    assert out["reason"] == ""
+
+
+def test_openai_compatible_rejects_unsafe_listing_base_url(monkeypatch):
+    monkeypatch.setattr(MR, "_credential", lambda k: "synthetic-key")
+    bad_urls = (
+        "https://user:pass@example.test/v1",
+        "http://[",
+        "http://example.test:99999/v1",
+        "http://example.test:abc/v1",
+        "https://api.example.test/v 1",
+        "https://api.example.test/\n/v1",
+        "https://api.example.test/\x1b/v1",
+        r"https://api.example.test\v1",
+        "http:///v1",
+    )
+    for url in bad_urls:
+        monkeypatch.setenv("OPENAI_BASE_URL", url)
+        out = MR.list_models("openai-compatible")
+        assert out["models"] == []
+        assert out["reason"] == "listing unavailable: invalid base_url configured"
+        assert "pass" not in json.dumps(out)
+        assert url not in json.dumps(out)
+
+
 def test_list_models_unknown_endpoint_never_raises():
     out = MR.list_models("no-such-endpoint")
     assert out["models"] == [] and "unknown endpoint" in out["reason"]
