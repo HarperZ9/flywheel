@@ -106,8 +106,45 @@ void main() {
     await flushCueBinding();
 
     expect(
-        player.played.single.recordedClip!.eventId, 'screen_sharing.started');
+        player.played.single.recordedClip!.eventId, 'privacy.live_screen_on');
     expect(controller.telemetry.single.operationRef, isNull);
+    await binding.dispose();
+    await controller.dispose();
+    screen.dispose();
+  });
+
+  test('provider receipt for recovered screen session stays silent', () async {
+    final screen = BindingScreenSharingSource(
+      const RowanActionCueScreenSharingSnapshot.stopped(),
+    );
+    final player = FakeActionCuePlayer();
+    final controller = RowanActionCueController(
+      player: player,
+      settings: const RowanActionCueSettings(enabled: true),
+    );
+    final binding = RowanActionCueEventBinding(
+      operationHost: BindingOperationHost(),
+      screenSharing: screen,
+      controller: controller,
+    );
+
+    screen.observe(const RowanActionCueScreenSharingSnapshot.running(
+      sessionRef: 'screen-session-recovered-receipt',
+      origin: RowanActionCueObservationOrigin.recovered,
+    ));
+    await flushCueBinding();
+    screen.observe(const RowanActionCueScreenSharingSnapshot.running(
+      sessionRef: 'screen-session-recovered-receipt',
+      providerReceiptRef: 'dlv_33333333333333333333333333333333',
+    ));
+    await flushCueBinding();
+    screen.observe(const RowanActionCueScreenSharingSnapshot.stopped(
+      sessionRef: 'screen-session-recovered-receipt',
+    ));
+    await flushCueBinding();
+
+    expect(player.played, isEmpty);
+    expect(controller.telemetry, isEmpty);
     await binding.dispose();
     await controller.dispose();
     screen.dispose();

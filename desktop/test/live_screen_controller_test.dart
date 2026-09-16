@@ -44,7 +44,9 @@ void main() {
     final pending = Completer<http.Response>();
     final requested = <String>[];
     final client = GatewayClient(httpClient: MockClient((req) async {
-      if (!req.url.path.endsWith('/preview')) return http.Response(status, 200);
+      if (!req.url.path.endsWith('/preview')) {
+        return http.Response(status, 200);
+      }
       requested.add(req.url.path);
       return requested.length == 1 ? pending.future : imageResponse();
     }));
@@ -80,7 +82,9 @@ void main() {
     var previewRequests = 0;
     final controller =
         LiveScreenController(GatewayClient(httpClient: MockClient((req) async {
-      if (!req.url.path.endsWith('/preview')) return http.Response(status, 200);
+      if (!req.url.path.endsWith('/preview')) {
+        return http.Response(status, 200);
+      }
       previewRequests++;
       return pending.future;
     })));
@@ -143,6 +147,9 @@ void main() {
       'model_route': 'selected-route',
       'model': 'vision-model',
       'delivery_mode': 'sampled_image',
+      'delivery_ref': 'dlv_11111111111111111111111111111111',
+      'delivery_receipt_sha256':
+          '2222222222222222222222222222222222222222222222222222222222222222',
       'delivered_at_utc': '2026-09-15T11:00:01Z',
       'frame_age_ms': 1000,
       'stale': false,
@@ -164,6 +171,7 @@ void main() {
     events.add(receipt);
     await flush();
     expect(controller.delivery?.model, 'vision-model');
+    expect(controller.delivery?.hasDeliveryReceiptRef, isTrue);
     expect(controller.deliveredFrame?.sequence, 1);
     controller.dispose();
     await events.close();

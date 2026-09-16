@@ -2,10 +2,11 @@ import 'dart:async';
 
 import '../controllers/rowan_walkthrough_operation_host.dart';
 import '../models/operation_models.dart';
+import 'rowan_action_cue_complete_ids.dart';
 import 'rowan_action_cue_controller.dart';
 import 'rowan_action_cue_event_binding_screen.dart';
-import 'rowan_action_cue_hash.dart';
 import 'rowan_action_cue_models.dart';
+import 'rowan_action_cue_screen_event_policy.dart';
 
 export 'rowan_action_cue_event_binding_screen.dart';
 
@@ -48,6 +49,7 @@ final class RowanActionCueEventBinding {
 
   _OperationCueObservation? _lastOperation;
   RowanActionCueScreenSharingSnapshot? _lastScreen;
+  final _screenPolicy = RowanActionCueScreenEventPolicy();
   var _operationLocalStartPending = false;
   var _disposed = false;
 
@@ -84,9 +86,9 @@ final class RowanActionCueEventBinding {
     if (_disposed) return;
     try {
       final next = _readScreen();
-      final event = _screenEvent(_lastScreen, next);
+      final events = _screenPolicy.events(_lastScreen, next);
       _lastScreen = next;
-      if (event != null) _schedule(event);
+      _scheduleScreenInOrder(events, next);
     } on Object catch (error, stackTrace) {
       _report(error, stackTrace);
     }
@@ -147,71 +149,56 @@ final class RowanActionCueEventBinding {
     return null;
   }
 
-  RowanActionCueEvent? _screenEvent(
-    RowanActionCueScreenSharingSnapshot? prior,
-    RowanActionCueScreenSharingSnapshot? current,
-  ) {
-    if (prior == null || current == null || prior == current) return null;
-    if (current.origin == RowanActionCueObservationOrigin.recovered) {
-      return null;
-    }
-    final priorState = prior.state;
-    final nextState = current.state;
-    if (nextState == RowanActionCueScreenSharingState.paused) return null;
-    final sessionChanged =
-        current.sessionRef != null && prior.sessionRef != current.sessionRef;
-    final kind = switch (nextState) {
-      RowanActionCueScreenSharingState.running
-          when priorState == RowanActionCueScreenSharingState.disconnected ||
-              priorState == RowanActionCueScreenSharingState.unavailable =>
-        RowanActionCueKind.connectionRestored,
-      RowanActionCueScreenSharingState.running
-          when current.origin == RowanActionCueObservationOrigin.localStart ||
-              prior.origin == RowanActionCueObservationOrigin.localStart &&
-                  (sessionChanged ||
-                      priorState == RowanActionCueScreenSharingState.stopped ||
-                      priorState ==
-                          RowanActionCueScreenSharingState.starting) =>
-        RowanActionCueKind.screenSharingStarted,
-      RowanActionCueScreenSharingState.stopped
-          when prior.hasSession ||
-              priorState == RowanActionCueScreenSharingState.running ||
-              priorState == RowanActionCueScreenSharingState.paused ||
-              priorState == RowanActionCueScreenSharingState.disconnected =>
-        RowanActionCueKind.screenSharingStopped,
-      RowanActionCueScreenSharingState.disconnected when prior.hasSession =>
-        RowanActionCueKind.connectionReconnecting,
-      RowanActionCueScreenSharingState.unavailable when prior.hasSession =>
-        RowanActionCueKind.connectionReconnecting,
-      _ => null,
-    };
-    if (kind == null) return null;
-    return RowanActionCueEvent.fromStableEvent(
-      kind: kind,
-      eventRef: _screenEventRef(kind, current),
-    );
-  }
-
-  String _screenEventRef(
-    RowanActionCueKind kind,
-    RowanActionCueScreenSharingSnapshot snapshot,
-  ) {
-    final digest = rowanActionCueSha256({
-      'kind': kind.wire,
-      'session_ref': snapshot.sessionRef,
-      'state': snapshot.state.name,
-      'uncertain_open': snapshot.uncertainOpen,
-      'origin': snapshot.origin.name,
-    });
-    return 'screen_${digest.substring(0, 32)}';
-  }
-
   void _schedule(RowanActionCueEvent event) {
     if (!_remember(event.dedupeKey)) return;
     scheduleMicrotask(() {
       if (_disposed) return;
       unawaited(_dispatchEvent(event));
     });
+  }
+
+  void _scheduleScreenInOrder(
+    List<RowanActionCueEvent> events,
+    RowanActionCueScreenSharingSnapshot? snapshot,
+  ) {
+    final pending = [
+      for (final event in events)
+        if (_remember(event.dedupeKey))
+          _PendingScreenCue(
+            event: event,
+            sessionRef: snapshot?.sessionRef,
+          ),
+    ];
+    if (pending.isEmpty) return;
+    scheduleMicrotask(() async {
+      for (final pendingCue in pending) {
+        if (_disposed) return;
+        if (!_screenCueStillCurrent(pendingCue)) {
+          _forget(pendingCue.event.dedupeKey);
+          continue;
+        }
+        await _dispatchEvent(pendingCue.event);
+      }
+    });
+  }
+
+  bool _screenCueStillCurrent(_PendingScreenCue pending) {
+    final current = _lastScreen;
+    final kind = pending.event.kind;
+    if (kind == RowanCompleteActionCueEvents.modelProviderReceipt ||
+        kind == RowanCompleteActionCueEvents.privacyLiveScreenOn) {
+      return current?.state == RowanActionCueScreenSharingState.running &&
+          current?.sessionRef == pending.sessionRef;
+    }
+    if (kind == RowanCompleteActionCueEvents.privacyLiveScreenOff) {
+      final sessionRef = pending.sessionRef;
+      if (sessionRef == null) return false;
+      return current == null ||
+          current.sessionRef != sessionRef ||
+          current.state == RowanActionCueScreenSharingState.stopped ||
+          current.state == RowanActionCueScreenSharingState.unavailable;
+    }
+    return true;
   }
 
   Future<void> _dispatchEvent(RowanActionCueEvent event) async {
@@ -233,6 +220,11 @@ final class RowanActionCueEventBinding {
     return true;
   }
 
+  void _forget(String key) {
+    if (!_emittedKeys.remove(key)) return;
+    _emittedOrder.remove(key);
+  }
+
   void _report(Object error, StackTrace stackTrace) {
     try {
       _onError?.call(error, stackTrace);
@@ -240,6 +232,16 @@ final class RowanActionCueEventBinding {
       // Cue binding diagnostics must not break the UI listener dispatch path.
     }
   }
+}
+
+final class _PendingScreenCue {
+  const _PendingScreenCue({
+    required this.event,
+    required this.sessionRef,
+  });
+
+  final RowanActionCueEvent event;
+  final String? sessionRef;
 }
 
 final class _OperationCueObservation {
