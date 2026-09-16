@@ -1247,7 +1247,7 @@ class _Handler(BaseHTTPRequestHandler):
         if p.startswith(("/api/evidence/", "/api/journeys/", "/api/grants/",
                          "/api/continuation/", "/api/writing/",
                          "/api/source-context/", "/api/gateway-grants/", "/api/agent/mcp/",
-                         "/api/credential-handles/")):  # bind a handle, presence only
+                         "/api/context-memory/", "/api/credential-handles/")):  # bind a handle, presence only
             length = self._content_length()
             if length is None:
                 return self._json({"schema": "flywheel.evidence-transport-error/v1",
@@ -1312,6 +1312,9 @@ class _Handler(BaseHTTPRequestHandler):
             elif p.startswith("/api/source-context/"):  # attach readable selected context
                 from harness.source_context_route import source_context_post
                 body, code = source_context_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state", clock=self.clock)
+            elif p.startswith("/api/context-memory/"):  # capture/preflight against the configured Canon context store
+                from harness.context_memory_route import context_memory_post
+                body, code = context_memory_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state", clock=self.clock)
             elif p.startswith("/api/agent/mcp/"): from harness.gateway_agent_mcp_route import agent_mcp_post; body, code = agent_mcp_post(p, raw, owner_ref=self.owner_ref, state_root=self.flywheel_home / "state")  # Admit owner-bound MCP discovery receipts
             elif p.startswith("/api/continuation/"):  # preview/import health, then start a Journey
                 from harness.continuation_route import handle_continuation_post

@@ -36,8 +36,8 @@ def test_initialize_and_tools_list():
     assert handle(_req("initialize"))["result"]["serverInfo"]["name"] == "local-agent"
     tools = {t["name"] for t in handle(_req("tools/list"))["result"]["tools"]}
     assert tools == {"local_agent_health", "local_agent_chat", "local_agent_run",
-                     "local-model.status", "local-model.doctor",
-                     "receipt.verify_inclusion"}
+                     "local-model.status", "local-model.doctor", "receipt.verify_inclusion",
+                     "flywheel.context.health", "flywheel.context.capture", "flywheel.context.preflight"}
 
 
 def test_lane_probe_finds_a_status_tool():
