@@ -95,6 +95,58 @@
           "failure_modes": "array of strings, sorted ascending, derived from the orthogonal states in benchmark/context.json"
         }
       },
+      "shared_task_artifact/v2": {
+        "required_json_fields": [
+          "task_id",
+          "input_sha256s",
+          "raw_prompt_sha256",
+          "tool_policy_sha256",
+          "raw_artifact_path",
+          "receipt_path",
+          "pre_oracle_failure_modes",
+          "claim_bindings"
+        ],
+        "predicates": [
+          "match prompt, input, and tool-policy hashes to executor facts",
+          "contain and hash raw artifact and receipt paths",
+          "derive pre-oracle failure modes from orthogonal executor states",
+          "bind allowed participant claims to closed claim objects, authorities, and limitation ids published in the staged fixture participant_contract",
+          "reject final pass, completion, comparison, equivalence, and no-failure claims before the oracle runs",
+          "require submitted Markdown bytes to equal the verifier-owned canonical fixture render; verifier computes the render SHA-256 as oracle evidence"
+        ],
+        "failure_codes": [
+          "prompt_hash_mismatch",
+          "tool_policy_hash_mismatch",
+          "raw_artifact_path_invalid",
+          "raw_artifact_hash_mismatch",
+          "pre_oracle_failure_modes_mismatch",
+          "receipt_path_invalid",
+          "forbidden_claim",
+          "unsupported_report_field",
+          "unsupported_claim_field",
+          "unsupported_claim_type",
+          "unsupported_claim_id",
+          "unsupported_limitation_id",
+          "unsupported_limitation_value",
+          "claim_subject_out_of_scope",
+          "claim_authority_mismatch",
+          "claim_bindings_missing",
+          "pre_oracle_status_claim_mismatch",
+          "final_status_claim_not_available",
+          "comparison_claim_out_of_scope",
+          "markdown_render_mismatch"
+        ],
+        "json_field_contract": {
+          "task_id": "participant string, exactly the v2 diagnostic task id",
+          "input_sha256s": "participant object mapping each required input path to its 64-character lowercase hex sha256",
+          "raw_prompt_sha256": "participant string, 64 lowercase hex characters copied from benchmark/context.json",
+          "tool_policy_sha256": "participant string, 64 lowercase hex characters copied from benchmark/context.json",
+          "raw_artifact_path": "participant string, a non-empty path relative to the attempt directory",
+          "receipt_path": "participant string, a non-empty path relative to the attempt directory",
+          "pre_oracle_failure_modes": "participant array of strings, sorted ascending, copied from benchmark/context.json harness_values.pre_oracle_failure_modes",
+          "claim_bindings": "participant array of closed claim objects exactly matching the staged fixture participant_contract after benchmark/context.json fills pre-oracle state values"
+        }
+      },
       "paired_friction/v1": {
         "required_json_fields": [
           "task_id",
@@ -517,6 +569,37 @@
       "oracle": {
         "checker_id": "shared_task_artifact/v1",
         "fixture": "benchmarks/fixtures/cross-harness/shared-task-facts-v1.json"
+      }
+    },
+    {
+      "id": "agt-003-shared-task-artifact-v2-diagnostic",
+      "lane": "cross_harness_reproducibility",
+      "difficulty": "focused",
+      "prompt": "Prepare the shared-task scorecard artifacts as a pre-oracle diagnostic from the staged fixture participant_contract and benchmark/context.json. Submit only participant-owned closed facts and claims in JSON plus the required Markdown projection. Do not submit markdown_render_sha256: the verifier computes the canonical Markdown render digest as oracle evidence and compares your submitted Markdown bytes to its independent render. The reference producer script is verifier-side test material, not an admitted participant command route under the current read-only tool policy. This variant is a checker-strength diagnostic and does not complete the original Codex-vs-Flywheel post-run comparison.",
+      "required_inputs": [
+        "benchmarks/fixtures/cross-harness/shared-task-facts-v2.json"
+      ],
+      "expected_artifacts": [
+        "codex_flywheel_shared_task_scorecard.json",
+        "codex_flywheel_shared_task_scorecard.md"
+      ],
+      "scoring_focus": [
+        "reproducibility",
+        "failure_mode_clarity",
+        "accountability_receipts",
+        "workflow_state_management"
+      ],
+      "must_not": [
+        "claim both harnesses completed",
+        "claim provider superiority",
+        "claim final oracle pass, verified receipt, or no-failure completion before the oracle runs",
+        "add arbitrary claim labels, limitation text, unsupported JSON fields, or markdown_render_sha256",
+        "change the deterministic Markdown projection or attribute the verifier-computed render hash to the participant",
+        "claim participant command execution without an admitted tool-policy receipt"
+      ],
+      "oracle": {
+        "checker_id": "shared_task_artifact/v2",
+        "fixture": "benchmarks/fixtures/cross-harness/shared-task-facts-v2.json"
       }
     },
     {

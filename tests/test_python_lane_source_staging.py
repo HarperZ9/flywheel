@@ -146,7 +146,17 @@ def test_stage_python_lane_sources_rejects_invalid_owner_commit(tmp_path):
         raise AssertionError("invalid owner commit was accepted")
 
 
-def test_stage_python_lane_sources_default_root_is_repo_build_directory():
+def test_stage_python_lane_sources_default_root_is_repo_build_directory(monkeypatch):
+    monkeypatch.delenv("FLYWHEEL_PYTHON_LANE_SOURCE_ROOT", raising=False)
     module = _load_module()
 
     assert module.DEFAULT_SOURCE_ROOT == module.ROOT / "build" / "python-lane-sources"
+
+
+def test_stage_python_lane_sources_explicit_env_root_is_honored(monkeypatch, tmp_path):
+    source_root = tmp_path / "explicit-source-root"
+    monkeypatch.setenv("FLYWHEEL_PYTHON_LANE_SOURCE_ROOT", str(source_root))
+
+    module = _load_module()
+
+    assert module.DEFAULT_SOURCE_ROOT == source_root

@@ -14,10 +14,14 @@ extension GatewayContextMemory on GatewayClient {
   Future<Map<String, dynamic>> contextMemoryCapture({
     required String projectRef,
     required Map<String, Object?> event,
+    String? configGeneration,
+    String? canonStoreId,
   }) =>
       postJson('/api/context-memory/capture', {
         'schema': contextMemoryCaptureRequestSchema,
         'project_ref': projectRef,
+        if (configGeneration != null) 'config_generation': configGeneration,
+        if (canonStoreId != null) 'canon_store_id': canonStoreId,
         'event': event,
       });
 
@@ -25,12 +29,16 @@ extension GatewayContextMemory on GatewayClient {
   Future<Map<String, dynamic>> contextMemoryPreflight({
     required String projectRef,
     required String query,
+    String? configGeneration,
+    String? canonStoreId,
     int topK = 10,
     bool includePendingExtraction = true,
   }) =>
       postJson('/api/context-memory/preflight', {
         'schema': contextMemoryPreflightRequestSchema,
         'project_ref': projectRef,
+        if (configGeneration != null) 'config_generation': configGeneration,
+        if (canonStoreId != null) 'canon_store_id': canonStoreId,
         'query': query,
         'top_k': topK,
         'include_pending_extraction': includePendingExtraction,

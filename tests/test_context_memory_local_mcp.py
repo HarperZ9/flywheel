@@ -17,8 +17,8 @@ def _payload(response):
 
 
 class FakeBridge:
-    def health(self):
-        return {"ok": True, "configured": True}
+    def health(self, owner_ref=None):
+        return {"ok": True, "configured": True, "owner_ref": owner_ref}
 
     def capture(self, owner_ref, req):
         return {"schema": "flywheel.context-memory-capture/v1",
