@@ -13,9 +13,15 @@ checkout for capacity and privacy. They remain artifacts of the Flywheel program
 
 The objective is progressively smaller-footprint local systems that can rival
 or surpass existing competitors on useful completed work, including the operator's
-requested Astra and Fable 5.1 comparisons. Smaller footprint can mean fewer
-parameters, lower precision, reduced working memory or less computation; report
+requested Astra, Fable 5.1 and Mythos 5.1-class comparisons. Smaller footprint can
+mean fewer parameters, lower precision, reduced working memory or less computation; report
 these separately. Pin actual competitor versions and access when running a test.
+
+There are two distinct deployment targets: compressing accessible, licensed
+weights and matching frontier-class outcomes with a different local model plus
+the harness. A named comparison target does not establish access to its weights
+or permission to reproduce them. Evaluate whichever route is actually available;
+do not equate a compact open model with a compressed copy of a proprietary model.
 
 Two forms of uplift matter. **Model uplift** changes capabilities of the weights
 under a fixed harness. **System uplift** improves completed work through selection,
@@ -70,6 +76,14 @@ does not make an incorrect criterion true.
   improvement in behavior.
 
 ## Competitive standard and release boundary
+
+The objective is leadership across every relevant aspect, including common
+features where competitors currently lead. Re-derivability and verification are
+strengths to develop alongside capability, speed, cost, reliability and usability.
+They do not define the limit of our competition. A deficit creates an improvement
+target; priority determines sequence, not permanent concession. The
+[post-1.0.0 plan](project-docs/plans/POST-1.0.0-COMPETITIVE-LEADERSHIP.md)
+applies this method across the product and the tools that build it.
 
 Use relevant strong competitors under the same task evidence, tool access and
 budgets. Give a frontier comparator equivalent harness support as well as retaining

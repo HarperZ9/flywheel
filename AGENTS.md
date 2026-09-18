@@ -58,6 +58,21 @@ archived and read-only; nothing lands there.
   labelled unchecked. Agreement with no source named is `UNVERIFIABLE`, not a
   pass. Rechecking your own arithmetic is not a check.
 
+## Compete to win across all relevant features
+
+Apply this to all development, research and task work. Aim for leadership across
+every relevant feature and aspect, not only a distinctive property competitors
+lack. Preserve our strengths while competing on capability, quality, speed,
+efficiency, reliability, usability, integration, portability, privacy, security
+and operations. A competitor's advantage is a research and improvement target.
+
+Compare strong alternatives, expose deficits, set measurable targets, test
+competing approaches, ship checked improvements and repeat. Prioritization
+sequences work; it does not concede deferred features. Keep a revisit trigger
+for deferred gaps. Current superiority claims still require evidence. Complete
+the 1.0.0 release gates, then execute the
+[competitive leadership plan](project-docs/plans/POST-1.0.0-COMPETITIVE-LEADERSHIP.md).
+
 ## Evaluation value and neutrality
 
 An evaluation is useful only if it changes a decision or leads to a checked
