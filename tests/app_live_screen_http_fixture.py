@@ -23,6 +23,7 @@ JOURNEY = "jrn_" + "a" * 32
 SOURCE = "display:primary"
 BODY_SESSION = "body-session-http"
 INSTRUMENT = "screen-http"
+READY_TIMEOUT_S = 5.0
 
 
 def json_bytes(data: dict) -> bytes:
@@ -95,6 +96,21 @@ class DeterministicScheduler(LiveScreenProducerScheduler):
         pass
 
 
+class _ReadyHTTPServer(ThreadingHTTPServer):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.started = threading.Event()
+        self.ready = threading.Event()
+
+    def serve_forever(self, poll_interval: float = 0.5) -> None:
+        self.started.set()
+        super().serve_forever(poll_interval)
+
+    def service_actions(self) -> None:
+        self.ready.set()
+        super().service_actions()
+
+
 class LiveGateway:
     def __init__(
         self,
@@ -128,13 +144,16 @@ class LiveGateway:
                 pass
 
         self.handler = Handler
-        self.http = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.http = _ReadyHTTPServer(("127.0.0.1", 0), Handler)
         self.thread = threading.Thread(
             target=self.http.serve_forever,
             kwargs={"poll_interval": 0.01},
             daemon=True,
         )
         self.thread.start()
+        if not self.http.ready.wait(READY_TIMEOUT_S):
+            self.close()
+            raise TimeoutError("live gateway fixture did not start serving")
 
     @property
     def port(self) -> int:
@@ -160,7 +179,8 @@ class LiveGateway:
         return status, json.loads(text)
 
     def close(self) -> None:
-        self.http.shutdown()
+        if self.http.started.is_set():
+            self.http.shutdown()
         self.http.server_close()
         self.thread.join(5)
 

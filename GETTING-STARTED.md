@@ -14,14 +14,22 @@ conferred by something outside the thing itself, witnessed, coverage-accounted,
 stamped MATCH / DRIFT / UNVERIFIABLE. This is the witnessing spine, and it
 holds across every layer of the platform.
 
+## Release status
+
+Use [v0.6.2](https://github.com/HarperZ9/flywheel/releases/tag/v0.6.2) for the
+currently published install path. This source checkout now declares
+`1.0.0` for the candidate line, and [docs/RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md)
+lists the remaining release holds. A source checkout is a development path, not
+a published 1.0 artifact.
+
 ## Install
 
 ```bash
-pip install flywheel-verify
+python -m pip install flywheel-verify==0.6.2
 ```
 
 (`flywheel-verify` is the PyPI distribution name; the installed command is
-`flywheel`. From a source checkout: `pip install -e .`.)
+`flywheel`. From a source checkout for candidate development: `pip install -e .`.)
 
 Zero runtime dependencies. Python 3.11+. Stdlib only. No model download is
 required: the engine works immediately against any hosted provider you hold a
@@ -84,10 +92,11 @@ desktop client connects automatically when launched.
 
 ## Start the desktop client
 
-Download `Flywheel-Setup-<version>-x64.exe` from the
-[releases page](https://github.com/HarperZ9/flywheel/releases) and verify it
-against the release's `SHA256SUMS.txt` (engine bundled, no Python needed).
-From a dev checkout:
+Download the current published installer,
+[Flywheel-Setup-0.6.2-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/Flywheel-Setup-0.6.2-x64.exe),
+and verify it against the release
+[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/SHA256SUMS.txt)
+(engine bundled, no Python needed). From a candidate source checkout:
 
 ```bash
 cd desktop && flutter run -d windows
@@ -97,6 +106,36 @@ The desktop client shows its destinations in a collapsible side rail,
 grouped into Work, Chat, Code, Evidence, and Advanced. Type in the rail's
 search field to filter it. Or press Ctrl+K to open the command palette and
 jump to any destination by name.
+
+## Ownership, profiles, memory, and sessions
+
+This section describes behavior in the current candidate source unless a release
+note says otherwise. The published 0.6.2 installer remains the install target
+above, and not every native candidate behavior described here ships in 0.6.2.
+
+Flywheel binds native state to configured local ownership, project, workspace,
+and session facts instead of a display name. The desktop asks the local gateway
+which Canon project and workspace are configured, then uses that binding for
+context memory. Retrieved memory is input data; the run still needs its own
+receipts and evidence before a result is accepted.
+
+Native provider sessions are scoped to one run and one reviewed profile. The
+restricted-files direct CLI adapter binds the selected provider profile,
+workspace, account readiness, tool grants, and budget before launch; the exact
+limits are documented in
+[docs/native-cli-session-contract.md](docs/native-cli-session-contract.md). That
+contract refuses the older direct Codex CLI path because it lacked an admitted
+project-isolation control. It does not rule out separate managed provider-session
+candidate work on the 1.0 line.
+
+Continuation starts a fresh Evidence Journey from a source-bound workspace or
+export preview and refuses source drift; it does not resume a provider-native
+web session. Writing Workspace binds author state to the configured Flywheel
+home and keeps proposal approval on an operator-controlled surface. The detailed
+native feature docs are [desktop/README.md](desktop/README.md),
+[docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md),
+[docs/native-continuation.md](docs/native-continuation.md), and
+[docs/writing-workspace.md](docs/writing-workspace.md).
 
 ## Meet Rowan
 
@@ -248,6 +287,12 @@ print(f"verify: {store.verify()['verdict']}")  # MATCH
 
 ## Read more
 
+- [docs/RELEASE-0.6.2.md](docs/RELEASE-0.6.2.md): current published release notes
+- [docs/RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md): unreleased candidate scope and holds
+- [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory owner/project binding
+- [docs/native-cli-session-contract.md](docs/native-cli-session-contract.md): native CLI profile and session contract
+- [docs/native-continuation.md](docs/native-continuation.md): source-bound continuation preview and limits
+- [docs/writing-workspace.md](docs/writing-workspace.md): Writing Workspace custody and MCP launcher rules
 - [docs/LESSON-LOOP.md](docs/LESSON-LOOP.md): the learning loop architecture
 - [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): full guide and spec
 - [docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md](docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md): security assessment

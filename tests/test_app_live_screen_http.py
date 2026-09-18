@@ -6,6 +6,7 @@ import json
 
 import pytest
 
+from tests import app_live_screen_http_fixture
 from tests.app_live_screen_http_fixture import (
     BODY_SESSION,
     DeterministicScheduler,
@@ -20,6 +21,31 @@ from tests.app_live_screen_http_fixture import (
     live_manager,
     open_operation,
 )
+
+
+def test_live_gateway_fixture_fails_fast_when_server_loop_never_becomes_ready(
+    tmp_path, monkeypatch
+):
+    def do_not_mark_ready(self) -> None:
+        pass
+
+    monkeypatch.setattr(
+        app_live_screen_http_fixture._ReadyHTTPServer,
+        "service_actions",
+        do_not_mark_ready,
+    )
+    monkeypatch.setattr(app_live_screen_http_fixture, "READY_TIMEOUT_S", 0.05)
+
+    manager = live_manager()
+    scheduler = DeterministicScheduler(manager, tick_interval_ms=60_000)
+
+    with pytest.raises(TimeoutError, match="did not start serving"):
+        LiveGateway(
+            tmp_path / "owner-a",
+            owner_ref=OWNER,
+            manager=manager,
+            scheduler=scheduler,
+        )
 
 
 @pytest.fixture
