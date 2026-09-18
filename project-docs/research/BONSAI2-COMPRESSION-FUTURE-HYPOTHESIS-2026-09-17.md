@@ -20,9 +20,18 @@ search-and-verification lift is not a frontier comparison; prior continued
 pretraining did not establish improved model reasoning under the fixed harness.
 
 The new target includes exceeding, not merely matching, frontier workflow
-performance. Astra and Fable 5.1 are requested comparison targets. Exact provider
-model IDs, versions, settings and access must be established at execution time;
+performance. Astra, Fable 5.1 and Mythos 5.1-class models are requested comparison
+targets. Exact provider model IDs, versions, settings and access must be established at execution time;
 their availability and performance are not asserted here.
+
+The consumer-GPU objective includes sustained useful work within a declared
+memory budget. Allocating a large context window does not establish retrieval,
+reasoning or tool-use reliability across that window. Test increasing occupied
+context lengths, delayed dependencies and multi-step workflows; report memory
+pressure, prefill time and time to a checked result alongside decode throughput.
+Assess direct weight compression only where artifacts and rights permit it.
+Otherwise the target is comparable local-system outcomes, not reproducing the
+named frontier model's weights.
 
 ## Release source map
 
@@ -31,6 +40,7 @@ The supplied links resolve to:
 - [Bonsai 2 release](https://prismml.com/news/bonsai-2-27b)
 - [Whitepaper](https://github.com/PrismML-Eng/Bonsai-demo/blob/main/bonsai-2-27b-whitepaper.pdf)
 - [Model collection](https://huggingface.co/collections/prism-ml/bonsai-2)
+- [GGUF model card](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf)
 - [WebGPU kernel demonstration](https://huggingface.co/spaces/webml-community/ternary-bonsai-2-webgpu-kernels)
 - [Demonstration repository](https://github.com/PrismML-Eng/Bonsai-demo/)
 - [Runtime documentation](https://docs.prismml.com/get-started/introduction)
