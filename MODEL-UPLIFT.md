@@ -77,6 +77,14 @@ does not make an incorrect criterion true.
 
 ## Competitive standard and release boundary
 
+The objective is leadership across every relevant aspect, including common
+features where competitors currently lead. Re-derivability and verification are
+strengths to develop alongside capability, speed, cost, reliability and usability.
+They do not define the limit of our competition. A deficit creates an improvement
+target; priority determines sequence, not permanent concession. The
+[post-1.0.0 plan](project-docs/plans/POST-1.0.0-COMPETITIVE-LEADERSHIP.md)
+applies this method across the product and the tools that build it.
+
 Use relevant strong competitors under the same task evidence, tool access and
 budgets. Give a frontier comparator equivalent harness support as well as retaining
 the original single-shot reference. Compare specialists only on supported tasks.
