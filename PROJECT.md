@@ -3,9 +3,15 @@
 *The one local surface that replaces the category — routers, agents, harnesses,
 apps, and the tool family — and closes the verified-inference loop: propose
 cheaply, verify with real oracles, ship a re-checkable receipt for every
-accept, and feed it back as memory, context, and catalog. `local-model` (the
-trained 14B) is one lane inside it; the flagship tools are lanes too. This
+accept, and feed it back as memory, context, and catalog. Locally trained models
+(including the 14B proposer) are lanes inside it; the flagship tools are lanes too. This
 document covers the verified-inference harness architecture (Layer B).*
+
+The former `local-model` and pre-Flywheel repositories are archived. Their active
+model and harness work is consolidated here. The continuing model-uplift thesis,
+candidate techniques, competitive comparisons and experiment decisions live in
+[MODEL-UPLIFT.md](MODEL-UPLIFT.md). Historical names and external artifact paths
+do not identify a separate active project.
 
 ---
 

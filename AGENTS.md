@@ -58,6 +58,24 @@ archived and read-only; nothing lands there.
   labelled unchecked. Agreement with no source named is `UNVERIFIABLE`, not a
   pass. Rechecking your own arithmetic is not a check.
 
+## Evaluation value and neutrality
+
+An evaluation is useful only if it changes a decision or leads to a checked
+improvement. Before testing, name the decision, accountable owner, baseline,
+criterion and evidence that would change the decision. After testing, record
+the finding, decision, action or justified retention, independent recheck and
+remaining uncertainty. Preserve negative results; an unused report is available
+evidence, not demonstrated impact. Do not manufacture changes to claim value.
+
+Evaluate both models and the organizations that train and deploy them, including
+our own, neutrally. Apply consistent relevant criteria across providers, nations,
+affiliations, customers and potential partners. Neutrality means conclusions
+proportional to evidence, not equal verdicts. Keep model behavior, organizational
+practices, causal hypotheses and normative choices separate. Missing evidence
+stays unknown. Disclose criterion ownership, access limits and conflicts; retain
+counterevidence and correction paths. A policy or mitigation's existence does
+not establish effectiveness, and a receipt's integrity does not establish truth.
+
 ## Validating an answer before it reaches a reader
 A model that rechecks its own work re-derives the same wrong number. The case
 this was built from is public: a frontier demo filled out a Form 1040 and took

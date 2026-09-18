@@ -2,8 +2,8 @@
 #
 # Flywheel is the umbrella surface that encompasses routing, verification,
 # the lane layer (the flagship tool family), memory/context/catalog, and the
-# closed verified-inference loop. `local-model` is the trained-model lane
-# inside it. See README.md and PROJECT.md.
+# closed verified-inference loop. The archived `local-model` predecessor is
+# consolidated here; model uplift lives in Flywheel. See MODEL-UPLIFT.md.
 #
 # Zero runtime dependencies is a load-bearing invariant (mirrors the flagship
 # tools and project-docs/SUPERAPP.md "stdlib only"). The heavy optional backends -- torch,

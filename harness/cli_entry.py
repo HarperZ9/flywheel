@@ -175,9 +175,8 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
         # The Phase 0 disproof gate: oracle -> group -> receipt -> re-witness,
         # end to end, with no model and no candidate code executed. Exit 0 only
         # on MATCH.
-        from harness.gate import run_gate
-        out = Path(argv[0]) if argv and not argv[0].startswith("-") else (
-            find_repo_root() / "artifacts" / "gate")
+        from harness.gate import run_gate, gate_output_directory
+        out = gate_output_directory(argv, find_repo_root)
         report = run_gate(out)
         for s in report.steps:
             detail = ", ".join(f"{k}={v}" for k, v in s.items() if k != "step")
