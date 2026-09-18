@@ -1,37 +1,41 @@
-# Flywheel Superapp: Quickstart
+# Flywheel Quickstart
 
-One local program that routes to any model, local or hosted, online or offline.
-It answers what it can verify locally for near-zero cost, escalates only the
-genuinely hard part to a stronger model, and hands you a **receipt you can
-re-check yourself** for every accepted answer. It does what every router and
-runner does, plus the one thing none of them do: it checks the work. One browser
-surface shows all of it. Python standard library only, zero dependencies.
+Flywheel routes a task to the local or hosted model and tools you choose, then
+keeps a **receipt you can re-check yourself** for every accepted answer. The
+current published release is `0.6.2`; this source branch is the
+`1.0.0` candidate line and is not evidence of a published 1.0 artifact. The
+browser shell below is the fallback surface, and the native Windows app is the
+current user-facing client.
 
 ## Run it now
 
 ```
-pip install flywheel-verify
+python -m pip install flywheel-verify==0.6.2
 flywheel app --port 8799
 ```
 
-(From a source checkout: `python scripts/run_harness_cli.py app --port 8799`.)
+(From a source checkout for candidate development:
+`python scripts/run_harness_cli.py app --port 8799`.)
 
-The native surface is **Flywheel Desktop**: the Windows installer on the
-[releases page](https://github.com/HarperZ9/flywheel/releases) ships the app
-with the engine bundled. The browser shell toured below is the dev/CI
-fallback: open **http://127.0.0.1:8799/site/index.html**.
+The native surface is **Flywheel Desktop**. For the current published release,
+install
+[Flywheel-Setup-0.6.2-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/Flywheel-Setup-0.6.2-x64.exe)
+and verify it against
+[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/SHA256SUMS.txt).
+The browser shell toured below is the dev/CI fallback: open
+**http://127.0.0.1:8799/site/index.html**.
 
 That starts one process, the gateway, on one origin. It serves the shell and
 proxies your local model when it is up; nothing else needs to be running for the
 surface to load.
 
-## The one surface
+## The localhost surface
 
 Every route is same-origin JSON you can also `curl`:
 
 | Route | What it gives you |
 |---|---|
-| `/site/index.html` | The shell: router, world, companion, studio, receipts, one UI |
+| `/site/index.html` | The fallback shell: router, world, companion, studio, receipts |
 | `GET /api/endpoints` | Every provider in one roster (local and hosted), credential *presence* only, never a value |
 | `GET /api/endpoints/health` | Live health of your local tiers; hosted tiers report configured-or-not |
 | `POST /api/route` | Route to any provider and get a receipt with the answer |

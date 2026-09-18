@@ -20,17 +20,24 @@ Flutter client provides the native desktop interface.
 The [architectural mission](docs/ARCHITECTURAL-MISSION.md) is to make consequential
 AI claims independently checkable, with usable tools for evaluators and everyday
 tasks. A reproducible check still needs an appropriate criterion and sufficient
-evidence; replay alone does not establish safety. The expanded native application
-scope is tracked in the [unreleased 1.0 candidate](docs/RELEASE-1.0.0.md).
+evidence; replay alone does not establish safety.
+
+The current published release is [v0.6.2](https://github.com/HarperZ9/flywheel/releases/tag/v0.6.2).
+It publishes `flywheel-verify==0.6.2` and the Windows installer
+`Flywheel-Setup-0.6.2-x64.exe`. This source branch declares `1.0.0` for the
+candidate source line; treat [the 1.0.0 release note](docs/RELEASE-1.0.0.md)
+as candidate scope and holds, not as evidence of a published 1.0 artifact.
 
 [Project Telos](https://harperz9.github.io) | [gather](https://github.com/HarperZ9/gather) | [crucible](https://github.com/HarperZ9/crucible) | [index](https://github.com/HarperZ9/index) | [forum](https://github.com/HarperZ9/forum) | [telos](https://github.com/HarperZ9/telos) | [learn](https://github.com/HarperZ9/learn) | [relay](https://github.com/HarperZ9/relay) | [mneme](https://github.com/HarperZ9/mneme)
 
 ## Try it
 
-For the native desktop app, download the Windows installer from
-[Releases](https://github.com/HarperZ9/flywheel/releases). It carries its own
-engine, so the app runs on a clean machine with no Python installed, and it
-starts that engine itself.
+For the current published native desktop app, download
+[Flywheel-Setup-0.6.2-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/Flywheel-Setup-0.6.2-x64.exe)
+and verify it against the release
+[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/SHA256SUMS.txt).
+It carries its own engine, so the app runs on a clean machine with no Python
+installed, and it starts that engine itself.
 
 The app's assistant is **Rowan**. Open Chat and ask for work in plain
 words, and Rowan turns the request into a task the app runs and records.
@@ -42,7 +49,7 @@ presented as a human or a specific model. See
 For the engine on its own:
 
 ```powershell
-python -m pip install flywheel-verify
+python -m pip install flywheel-verify==0.6.2
 flywheel up
 ```
 
@@ -289,8 +296,10 @@ failure classes they catch.
 
 ## What landed recently
 
-Four capabilities added since the last release, each reachable from the desktop
-app and over the localhost API.
+Four capabilities are visible in the current source candidate, each reachable
+from the desktop app and over the localhost API in that source line. They are
+not claims about the published 0.6.2 installer until release receipts and
+installed acceptance cover the final 1.0 bytes.
 
 **A signature on what a run cites.** A hash binds a receipt to its own contents
 and cannot bind it to an author, so an editor who rewrites a whole citation cone
@@ -335,7 +344,7 @@ GUI. The gateway serves `/api/*` and the UI on `http://127.0.0.1:8799`.
 ## Install
 
 ```
-pip install flywheel-verify
+pip install flywheel-verify==0.6.2
 flywheel up
 ```
 
@@ -361,7 +370,7 @@ provider's own official tool where it does not), stores the token in the OS
 credential store, and the router picks it up with no further setup. See
 [GETTING-STARTED.md](GETTING-STARTED.md).
 
-Or from source:
+Or from source, for development against the current candidate branch:
 
 ```
 git clone https://github.com/HarperZ9/flywheel.git
@@ -371,16 +380,24 @@ python scripts/run_harness_cli.py app --port 8799
 ```
 
 The native desktop app ships as a Windows installer with the engine bundled
-(no Python needed): download `Flywheel-Setup-<version>-x64.exe` from the
-[releases page](https://github.com/HarperZ9/flywheel/releases) and verify it
-against the release's `SHA256SUMS.txt`.
+(no Python needed). For the current published release, download
+[Flywheel-Setup-0.6.2-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/Flywheel-Setup-0.6.2-x64.exe)
+and verify it against
+[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/SHA256SUMS.txt).
 
 ## Documentation
 
 - [docs/ARCHITECTURAL-MISSION.md](docs/ARCHITECTURAL-MISSION.md): re-derivable evaluation, six-layer research scope, and MCP/API integration direction
 - [QUICKSTART.md](QUICKSTART.md): first ten minutes
-- [GETTING-STARTED.md](GETTING-STARTED.md): install, sign in, first run
+- [GETTING-STARTED.md](GETTING-STARTED.md): install, sign in, first run, and the owner-bound state model
+- [docs/RELEASE-0.6.2.md](docs/RELEASE-0.6.2.md): current published release notes
+- [docs/RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md): unreleased candidate scope and release holds
 - [WALKTHROUGH.md](WALKTHROUGH.md): guided tour
+- [desktop/README.md](desktop/README.md): native desktop development and packaging notes
+- [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory owner/project binding
+- [docs/native-cli-session-contract.md](docs/native-cli-session-contract.md): native CLI session profiles and private profile binding
+- [docs/native-continuation.md](docs/native-continuation.md): source-bound continuation preview and limits
+- [docs/writing-workspace.md](docs/writing-workspace.md): Writing Workspace custody and installed MCP launcher rules
 - [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md): drive the same loop from your phone
 - [docs/LESSON-LOOP.md](docs/LESSON-LOOP.md): the organizational learning loop (architecture)
 - [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): the organizational learning loop (full guide and spec)
