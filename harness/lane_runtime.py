@@ -237,9 +237,9 @@ def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
     frozen, disabled package, http, other frozen build, bundled, then the profiles."""
     if profile not in _VALID_PROFILES:
         return None, "invalid", None, ()
-    # Any payload-manifest lane admits from the frozen payload by relay's same
-    # validated, status/doctor-only path; others fall through as package or http.
-    if is_frozen and profile == "auto" and lane.name in bundled_payload_lane_names():
+    # In a frozen build the vendored payload is the only source, so every payload
+    # lane admits from it whatever its dev profile; others fall through below.
+    if is_frozen and lane.name in bundled_payload_lane_names():
         from .bundled_lane_admission import admit_bundled_lane
         admission = admit_bundled_lane(
             lane.name, executable=python_executable, environ=environ,

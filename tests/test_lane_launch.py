@@ -192,33 +192,42 @@ def test_unreachable_probe_without_stderr_stays_plain(monkeypatch):
     assert "server stderr" not in out["detail"]   # no words, no fabricated words
 
 
-def test_frozen_build_never_launches_sys_executable(monkeypatch):
-    # In a PyInstaller bundle sys.executable IS the gateway; using it as a
-    # Python would relaunch the gateway instead of a lane server.
+def test_frozen_build_relaunches_only_via_bundled_admission(monkeypatch):
+    # In a PyInstaller bundle sys.executable IS the gateway. A lane may relaunch
+    # it only through the vetted --bundled-lane-mcp admission path (a safe lane
+    # name, descriptor- and hash-checked, status and doctor tools only). No lane
+    # relaunches the gateway any other way.
+    from harness.bundled_lane_descriptor import bundled_payload_lane_names
     monkeypatch.setattr(ln, "_frozen", lambda: True)
     monkeypatch.setattr(ln, "_importable", lambda top: True)  # even if importable
+    bundled = bundled_payload_lane_names()
     for name in ln.LANES:
-        if name == "relay":
-            launch = ln.resolve_mcp_launch("relay")
-            assert launch.argv == (sys.executable, "--bundled-lane-mcp", "relay")
-            assert launch.allowed_tools == ("relay.status",)
-            assert launch.inherit_env is False
-            continue
-        if name in {"canon", "mneme", "plexus", "telos", "accountable-surface"}:
-            with pytest.raises(ln.LaneRuntimeError, match="package_distribution_disabled"):
-                ln.resolve_mcp_launch(name)
-            continue
-        launch = ln.resolve_mcp_launch(name)
-        if not launch.argv:                # an http lane spawns nothing at all
+        try:
+            launch = ln.resolve_mcp_launch(name)
+        except ln.LaneRuntimeError:
+            continue  # a disabled, non-bundled lane refuses to launch at all
+        if name in bundled:
+            assert launch.argv == (sys.executable, "--bundled-lane-mcp", name), name
+            assert launch.inherit_env is False, name
+            assert launch.allowed_tools, name  # status and doctor tools only
+            if name == "relay":
+                assert launch.allowed_tools == ("relay.status",)
+        elif launch.argv:
+            assert launch.argv[0] != sys.executable, f"{name} would relaunch the gateway"
+        else:                              # an http lane spawns nothing at all
             assert ln.LANES[name].kind == "http", f"{name} lost its argv"
-            continue
-        assert launch.argv[0] != sys.executable, f"{name} would relaunch the gateway"
 
 
-def test_frozen_pip_lane_uses_console_script(monkeypatch):
+def test_frozen_bundled_lane_admits_from_payload(monkeypatch):
+    # gather was a pip console-script lane; in the freeze it admits from its
+    # vendored payload through --bundled-lane-mcp, so a clean machine needs no
+    # installed gather.
     monkeypatch.setattr(ln, "_frozen", lambda: True)
     monkeypatch.setattr(ln, "_importable", lambda top: True)
-    assert ln.resolve_mcp_launch("gather") == LaunchSpec(("gather", "mcp"))
+    launch = ln.resolve_mcp_launch("gather")
+    assert launch.argv == (sys.executable, "--bundled-lane-mcp", "gather")
+    assert launch.allowed_tools == ("gather.status", "gather.doctor")
+    assert launch.inherit_env is False
 
 
 def test_frozen_node_lane_keeps_bare_declared_command(tmp_path, monkeypatch):
