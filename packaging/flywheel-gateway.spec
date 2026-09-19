@@ -108,6 +108,13 @@ if canon_context_origin is None or not canon_context_origin.is_relative_to(canon
 distribution_data = flywheel_verify_metadata_datas(copy_metadata)
 canon_context_datas = canon_context_payload_datas(repo, canon_src)
 studio_runtime = pyinstaller_studio_runtime_inputs(repo)
+# accountable_surface imports its siblings coherence_membrane and proof_surface,
+# which the studio runtime payload stages. Put that payload on sys.path, after the
+# lane sources the helper inserts at the front, so importing each lane to resolve
+# its entrypoint finds those siblings without shadowing a lane's own source.
+for _studio_root in studio_runtime.pathex:
+    if _studio_root not in sys.path:
+        sys.path.append(_studio_root)
 # Every other manifest lane (relay is the submodule, Canon is wired above) bundles
 # from its staged, hash-pinned source. The helper verifies each staged source
 # manifest hash against its pin and that each entrypoint resolves from its own src
