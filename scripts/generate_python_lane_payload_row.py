@@ -7,9 +7,13 @@ structure matches the rows already committed to that manifest and is validated b
 
 Source facts are read from the git object store at a pinned revision, not from the
 working tree, so a dirty or advanced checkout does not perturb the evidence. File
-bytes are read through the repo's checkout filters (``git cat-file --filters``) so
-the recorded byte counts and hashes match a real on-disk checkout (autocrlf and
-``.gitattributes`` applied), which is how the committed rows were built.
+bytes are read through ``git cat-file --filters`` under ``core.autocrlf=false`` and
+``core.eol=lf``, the same config ``stage_python_lane_sources.py`` clones each
+staged source with before it re-hashes them. Reading under that config (rather than
+blindly rewriting CRLF to LF) keeps the recorded byte counts and hashes identical
+whether the row is generated on Windows or Linux, honors ``.gitattributes`` so
+``-text`` byte-pinned files keep their exact bytes, and makes every row stage
+cleanly on both platforms.
 
 Reproduction: run this for ``gather`` at ``v1.8.2`` and ``crucible`` at ``v1.2.0``
 (the revisions their committed rows pin) and the output is byte-identical to the

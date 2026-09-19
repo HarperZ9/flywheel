@@ -65,8 +65,25 @@ def _hash_bytes(data: bytes) -> str:
 
 
 def _filtered_bytes(checkout: Path, rev: str, path: str) -> bytes:
-    """The bytes a checkout would write for ``path`` (autocrlf/.gitattributes)."""
-    return _git(checkout, "cat-file", "--filters", f"{rev}:{path}")
+    """The bytes a reproducible cross-platform checkout writes for ``path``.
+
+    ``stage_python_lane_sources.py`` clones each pinned source with
+    ``core.autocrlf=false`` and ``core.eol=lf`` and then re-hashes the on-disk
+    bytes, so its verification runs against the working tree those exact settings
+    produce on every platform. This generator reads the same bytes by asking
+    ``git cat-file --filters`` to apply that identical config. A plain
+    ``cat-file --filters`` would instead use the current repo's config, which
+    under ``core.autocrlf=true`` (the Windows default) yields CRLF and makes the
+    recorded hash fail closed when the lane is staged. Pinning the config here,
+    rather than blindly rewriting CRLF to LF, is what mirrors staging: it honors
+    ``.gitattributes``, so a file marked ``-text`` (byte-pinned release material)
+    keeps its exact bytes instead of being corrupted by line-ending
+    normalization. A row is therefore byte-identical whether it is generated on a
+    Windows checkout or a Linux one, and stages cleanly on both.
+    """
+    return _git(
+        checkout, "-c", "core.autocrlf=false", "-c", "core.eol=lf",
+        "cat-file", "--filters", f"{rev}:{path}")
 
 
 def _blob_bytes(checkout: Path, rev: str, path: str) -> bytes:
