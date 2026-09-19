@@ -32,6 +32,15 @@ const Map<String, LaneIdentity> laneIdentities = {
         'experiment can conclude UNVERIFIABLE instead of overclaiming.',
     surface: 'experiment bench + verdict matrix',
   ),
+  'chorus': LaneIdentity(
+    title: 'Chorus',
+    identity:
+        'Reads a gathered corpus of comments and posts into a deterministic, '
+        're-checkable digest: ranked themes, where the crowd splits, and the '
+        'sharpest dissent. Sentiment is a weight, never a verdict, and every '
+        'digest carries a receipt that re-derives from the raw text.',
+    surface: 'discourse digest + dissent',
+  ),
   'index': LaneIdentity(
     title: 'Index',
     identity:
