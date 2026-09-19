@@ -186,7 +186,8 @@ def stage_sources(args: argparse.Namespace) -> dict[str, Any]:
     rows = _load_rows(Path(args.manifest))
     overrides = _parse_repo_overrides(args.source_repo or [])
     staged = []
-    for lane in args.lane or ["canon"]:
+    lanes = sorted(rows) if getattr(args, "all", False) else (args.lane or ["canon"])
+    for lane in lanes:
         if lane not in rows:
             raise StageError(f"unknown lane: {lane}")
         row = rows[lane]
@@ -215,6 +216,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manifest", default=str(MANIFEST))
     parser.add_argument("--source-root", default=str(DEFAULT_SOURCE_ROOT))
     parser.add_argument("--lane", action="append")
+    parser.add_argument("--all", action="store_true",
+                        help="stage every manifest lane, not just --lane")
     parser.add_argument("--source-repo", action="append")
     parser.add_argument("--receipt")
     parser.add_argument("--bounded-receipt")
