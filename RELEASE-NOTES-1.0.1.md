@@ -33,6 +33,15 @@ DRIFT, or UNVERIFIABLE verdict. A third party reproduces the verdict without you
   through the engine and its lanes, dated from the repositories themselves.
 - The README is model-agnostic across frontier and local providers, with the full lane
   roster and links to the overview and the feature docs.
+- Native lane bundling is generalized. Lane staging and runtime admission now work for any
+  lane in the payload manifest, not for the relay lane alone. Ten Python lanes (gather,
+  crucible, index, forum, plexus, mneme, canon, chorus, relay, accountable-surface) carry a
+  hash-pinned source payload and launch from vendored source on a clean machine. The staged
+  source is hash-checked before launch, each admission exposes only that lane's status and
+  doctor health tools, and the accept path is untouched.
+- articulate ships at 0.2.0 on PyPI, and its AI-tell detector now spans lexical,
+  structural, cadence, delivery, and formatting tells, so every product surface here was
+  measured against a stricter bar.
 
 ## Install
 
@@ -50,5 +59,11 @@ DRIFT, or UNVERIFIABLE verdict. A third party reproduces the verdict without you
   accept path by design.
 - Every former standalone flagship is now a documented native feature that stands alone and
   composes through published seams.
+- Native coverage on a clean machine, stated plainly: ten Python lanes bundle from
+  hash-pinned vendored source; local-model and writing ship inside the harness; articulate
+  installs from PyPI (articulate-writing 0.2.0). bulletin is a remote board over HTTP. The
+  node lanes learn and telos, and calibrate-pro (which carries numpy and scipy), resolve from
+  a source checkout today; native bundling for the node lanes, and the desktop font swap to
+  the Zentropy faces, are the next steps and are not claimed as shipped here.
 - A receipt proves a check reproduces. It does not prove the answer is true of the world.
 - This is an independent project, built in the open, with the honest nulls left in.

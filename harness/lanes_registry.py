@@ -71,7 +71,7 @@ LANES: dict[str, Lane] = {
         "synthesis", source_repo="public/chorus", py_module="chorus.cli"),
     "articulate": Lane(
         "articulate", "articulate-writing", "python", ("-m", "articulate.mcp_server"),
-        "pip", "0.1.0",
+        "pip", "0.2.0",
         "writing-quality + AI-tell detector and editor with content-free audit receipts (the MCP surface needs the [mcp] extra)",
         "authoring", source_repo="articulate", py_module="articulate.mcp_server"),
     "index": Lane(
