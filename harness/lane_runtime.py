@@ -237,13 +237,13 @@ def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
     frozen, disabled package, http, other frozen build, bundled, then the profiles."""
     if profile not in _VALID_PROFILES:
         return None, "invalid", None, ()
-    # In a frozen build the vendored payload is the only source, so every payload
-    # lane admits from it whatever its dev profile; others fall through below.
-    if is_frozen and lane.name in bundled_payload_lane_names():
+    # A payload lane admits from the frozen payload, unless it is package-disabled
+    # and forced off the auto profile (which stays a refusal below).
+    if is_frozen and lane.name in bundled_payload_lane_names() and (
+            profile == "auto" or not lane.package_disabled_reason):
         from .bundled_lane_admission import admit_bundled_lane
-        admission = admit_bundled_lane(
-            lane.name, executable=python_executable, environ=environ,
-            importable_fn=importable_fn)
+        admission = admit_bundled_lane(lane.name, executable=python_executable,
+                                       environ=environ, importable_fn=importable_fn)
         if not admission.blocking_codes:
             return admission.launch, "bundled", admission.component, ()
         return None, "bundled", admission.component, admission.blocking_codes
