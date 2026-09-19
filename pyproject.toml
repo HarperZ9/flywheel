@@ -81,7 +81,7 @@ harness = [
 
 [tool.pytest.ini_options]
 # Phase 0: a per-test timeout so no single test can wedge the suite. The full
-# collection is 6908 tests; 60s is generous for a unit test and surfaces any
-# smoke/integration test that should be marked and split out.
+# collection is 11,212 tests across 969 files; 60s is generous for a unit test
+# and surfaces any smoke/integration test that should be marked and split out.
 addopts = "--timeout=60 --timeout-method=thread -q"
 testpaths = ["tests"]

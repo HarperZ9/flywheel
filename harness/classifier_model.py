@@ -1,4 +1,29 @@
-"""Strict JSON CPU baseline model for decision candidate scoring."""
+"""classifier_model.py -- a deliberately weak, uncalibrated candidate scorer.
+
+LinearClassifierModel is a strict-JSON, stdlib-only linear model: one weight
+vector per task family, scored over a bucketed feature vector. It is a BASELINE,
+not a decision-maker. Its scores are raw dot products with no calibration, so
+they are not probabilities and carry no threshold that means "good enough". Do
+not read more into a high score than "this candidate ranked above that one".
+
+It is fenced OUT of the automatic accept path on purpose. oracle.py states the
+C2 invariant plainly: the oracle is the only thing that accepts, and no learned
+model sits on the accept path. tests/test_accept_path_purity.py enforces that by
+walking the verifier's import closure and asserting no model runtime is reachable
+from it. A learned scorer on the accept path is exactly the preference economy
+the verifier is built to refuse, and this scorer is the kind the invariant keeps
+out.
+
+So the outputs are shaped to prevent misuse as a gate. Every score envelope
+records calibration.status "uncalibrated" and selection.automatic_selection_
+enabled False, and proposal_from_score_envelope returns an explicit abstention
+(choice_id None) rather than a pick. The DOES_NOT_PROVE constant carries the
+three standing limits on every artifact and envelope: raw scores are not
+probabilities; a score authorizes neither execution nor a correctness
+certificate; synthetic diagnostic training does not prove generalization. The
+model can rank candidates for a human or a downstream calibrated policy; it
+cannot accept one.
+"""
 from __future__ import annotations
 
 import json
