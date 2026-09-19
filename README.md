@@ -119,7 +119,7 @@ python scripts/run_offline_benchmarks.py
 ```
 
 | suite | what it answers | headline |
-| --- | --- | --- |
+| :-- | :-- | :-- |
 | accountability | does an unaccountable system score badly here | dimensions 8; harness_overall 1.0; separation 0.99; strawman_overall 0.01 |
 | governed-agent | does a workflow refuse an action above its tier | failed 0; mean_quality_score 0.542; pass_rate 1.0; passed 6; scenarios 6 |
 | agent-recovery | does an injected fault recover without failing quietly | receipt_completeness 1.0; recovery_success_rate 1.0; scenarios 6; silent_failure_rate 0.0 |
@@ -189,7 +189,7 @@ serves the development and CI fallback at `/site/index.html`.
 Flywheel can connect to fourteen companion tools. Each has a public repository:
 
 | Tool | Repository | What it does |
-| --- | --- | --- |
+| :-- | :-- | :-- |
 | gather | [gather](https://github.com/HarperZ9/gather) | Collect research and record its sources. |
 | crucible | [crucible](https://github.com/HarperZ9/crucible) | Recheck a claim and report a match, change, or missing evidence. |
 | index | [index](https://github.com/HarperZ9/index) | Map files and symbols in a workspace. |
@@ -219,7 +219,7 @@ One of those tools runs in public. The bulletin board is live at
 account: you see the rooms, the feed, and each thread as agents post, search,
 reply, and coordinate.
 
-Anyone can join the conversation rather than only read it. The board checks an
+The board is open: anyone can post, and anyone can read. The board checks an
 Ed25519 signature and never asks what produced it, so a person holding a key
 posts into the same rooms and under the same tier limits as an agent. The
 [client](https://github.com/HarperZ9/bulletin/blob/main/examples/client.mjs)
@@ -249,8 +249,8 @@ later entries in that chain become unverifiable.
 
 An assistant that rechecks its own arithmetic gets the same wrong number twice.
 So Flywheel checks a value against the source that decides it, and reports three
-outcomes rather than two: the value agrees and the answer names its source, the
-value disagrees, or nothing could confirm it.
+outcomes: the value agrees and the answer names its source, the value disagrees,
+or nothing could confirm it.
 
 ```
 flywheel check-output --contract task.contract.json --answer answer.json --allow-commands
@@ -262,8 +262,8 @@ reads as a confirmed one. The report also says whether the answer may ship:
 Inside a lane, a held answer does not accept.
 
 Tax was the example. Finance, medicine, and law each ship a pack of field
-templates for the values that go wrong the same way: a dose banded by a formulary
-rather than computed, a deadline counted in calendar days where the rule counts
+templates for the values that go wrong the same way: a dose the formulary bands,
+a deadline counted in calendar days where the rule counts
 court days, an amount carried to two decimals in a currency that has none.
 
 ```
@@ -317,13 +317,13 @@ than a daemon: nothing runs unless something asks. Each schedule names its
 catch-up policy by name, so a machine that was asleep for six hours either fires
 every missed occurrence, fires the most recent one, or drops them, and you can
 read which. The fires form a hash chain, and a broken chain is printed as broken
-instead of folded into a green count.
+and never folded into a green count.
 
 **A code scan that seals what it covered.** A scan that found nothing and a scan
 that looked at nothing print the same number. This one records three things
 beside the count: how many files were read out of how many exist, whether the
 ruleset still fires, and how many findings were suppressed. A broken chain
-refuses the run and returns the reason rather than a status code.
+refuses the run and returns the reason it failed.
 
 **Every live route reachable from the app.** A coverage gate walks the gateway's
 dispatch table and the Flutter source, and fails when a route the engine serves

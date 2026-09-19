@@ -10,7 +10,7 @@ Integration status: **native lane**. `index` is registered in `harness/lanes_reg
 
 **One sentence.** `index` is Flywheel's structure lane: it reads a repository or a whole workspace from files, manifests, and real imports, and emits maps, dependency and symbol graphs, budgeted context envelopes, and verified single-repo wikis, where every edge and page carries the file, line, and hash that lets a stranger re-derive it.
 
-**One paragraph.** Inside Flywheel, `index` is the lane that answers "what is the shape of this code, and what should an agent actually load." It scans nine language ecosystems (Python, JavaScript and TypeScript, Rust, Go, Java, C#, Ruby, PHP, C and C++) through `src/index_graph/graph/resolvers/`, records each dependency edge with the file and line behind it, and grades edges by whether a manifest and an observed import agree. On top of the graph it derives four kinds of artifact: an inventory map, a dependency and symbol graph, a budget-bounded context envelope with typed omission codes, and a commit-pinned verified wiki that a `--verify` pass re-checks as MATCH, DRIFT, or UNVERIFIABLE. It ships as pure Python 3.11 standard library with an empty `dependencies` list in `pyproject.toml`, writes self-contained offline HTML, and never calls a model or the network to reach its verdicts. Flywheel consumes it two ways: as an MCP satellite in the lane roster, and as a synchronous desktop bridge that shells the CLI and returns its JSON verbatim so the app reads the engine's own answer rather than a reconstruction.
+**One paragraph.** Inside Flywheel, `index` is the lane that answers "what is the shape of this code, and what an agent should load." It scans nine language ecosystems (Python, JavaScript and TypeScript, Rust, Go, Java, C#, Ruby, PHP, C and C++) through `src/index_graph/graph/resolvers/`, records each dependency edge with the file and line behind it, and grades edges by whether a manifest and an observed import agree. On top of the graph it derives four kinds of artifact: an inventory map, a dependency and symbol graph, a budget-bounded context envelope with typed omission codes, and a commit-pinned verified wiki that a `--verify` pass re-checks as MATCH, DRIFT, or UNVERIFIABLE. It ships as pure Python 3.11 standard library with an empty `dependencies` list in `pyproject.toml`, writes self-contained offline HTML, and never calls a model or the network to reach its verdicts. Flywheel consumes it two ways: as an MCP satellite in the lane roster, and as a synchronous desktop bridge that shells the CLI and returns its JSON verbatim, so the app reads the engine's own answer.
 
 ---
 
@@ -22,7 +22,7 @@ Integration status: **native lane**. `index` is registered in `harness/lanes_reg
 - **Single-page workbench.** `index workbench` renders map, rendered docs, context lens, and a health panel into one offline HTML file, with page-weight budgets that print what they dropped as "N of M" and are overridable (`--max-doc-bodies`).
 - **Single-repo verified wiki.** `index wiki` derives one repo's wiki from the module and symbol graph and generates no prose. It seals a commit-pinned manifest; `index wiki --verify` re-checks it and returns MATCH, DRIFT, or UNVERIFIABLE with exit codes 0, 1, 2. A git URL is shallow-cloned, derived, and cleaned up. MCP tool `index.wiki`.
 - **Context lens and context envelope.** `index lens` replays the greedy budget rule live in the browser; `index context` packs repo-level dependency context; `index context-envelope` mints a budgeted packet where each retained repo carries hashed source references and each omission carries a typed code such as `budget_exceeded`, and `--verify` re-fingerprints a cached envelope and exits non-zero if the map drifted. Code in `src/index_graph/context/lens.py`, `context/envelope.py`, `context/pack.py`, `context/select.py`; MCP tools `index.context`, `index.context.envelope`, `index.select`.
-- **Symbol navigation and LSP.** `index symbols` gives go-to-definition, find-references, and find-implementations with `file:line` on every hop, from the CLI or over a hand-rolled stdio LSP server (`index lsp`) with no new dependencies. An unresolved reference returns empty rather than a guessed jump. Code in `src/index_graph/cli_handlers/symbols.py`, `cli_handlers/lsp.py`, `internals/`; MCP tools `index.symbol-graph`, `index.symbol-definition`, `index.symbol-references`, `index.symbol-implementations`, `index_internals`, `index_focus`.
+- **Symbol navigation and LSP.** `index symbols` gives go-to-definition, find-references, and find-implementations with `file:line` on every hop, from the CLI or over a hand-rolled stdio LSP server (`index lsp`) with no new dependencies. An unresolved reference returns empty and never guesses a jump. Code in `src/index_graph/cli_handlers/symbols.py`, `cli_handlers/lsp.py`, `internals/`; MCP tools `index.symbol-graph`, `index.symbol-definition`, `index.symbol-references`, `index.symbol-implementations`, `index_internals`, `index_focus`.
 - **Architecture as a testable rule.** `index check` measures the real graph against layer, forbid, require, and `max_cycles` rules declared in `.index.toml`, reports each breach with file and line, and exits non-zero for CI. Code in `src/index_graph/arch/check.py`, `arch/criteria.py`.
 - **Drift, freshness, and invalidation.** `index snapshot` then `index drift` diff the shape over time; `index check --freshness` stamps a workspace-fingerprint certificate that `index freshness` later answers FRESH or STALE; `index invalidate` names exactly which artifacts a change invalidated with typed reasons (schema `index.invalidation/1`). Code in `src/index_graph/drift/`, `freshness/`, `certify/`; MCP tools `index.invalidate`, `index_verify`.
 - **Router doc.** `index router` derives a deterministic `CLAUDE.md`/`AGENTS.md` workspace map from the graph and docs. MCP tool `index_router`.
@@ -75,7 +75,7 @@ index context-envelope --verify envelope.json --root path/to/workspace   # exit 
 index check --root path/to/workspace   # non-zero on any breach, with file:line
 ```
 
-**Inside Flywheel.** The lane is launched by the roster, not by hand. Its status is read through the lane layer:
+**Inside Flywheel.** The roster launches the lane. Its status is read through the lane layer:
 
 ```bash
 python -m harness.lanes            # prints the lane roster
@@ -95,7 +95,7 @@ curl -s localhost:PORT/api/index/summary -d '{"root":"path/to/workspace"}'
 **CLI commands** (full flag reference in `USAGE.md`, artifact schemas in `docs/PROTOCOL.md`):
 
 | Command | What it does |
-| --- | --- |
+| - | - |
 | `index` | Bare run writes `INDEX.json` and prints its path first. |
 | `index map` | Repository inventory: repos, file and class counts, dirty state, root fingerprint. |
 | `index graph` | Dependency and knowledge graph: relations, roles, salience, cycles. |
@@ -141,21 +141,21 @@ curl -s localhost:PORT/api/index/summary -d '{"root":"path/to/workspace"}'
 
 So the lane's organ is `structure` and its role is the catalog lane. It is a `pip` lane whose distribution name (`index-graph`) differs from its command (`index`), an asymmetry the roster maps explicitly and the expected-set test pins (`tests/test_lanes.py:30-38`). Because index is read-only over MCP (map, graph, wiki, verify), it sits below the T2 actuation gate that `harness/lane_caller.py` enforces; a T1-classified run can call its tools, unlike the `accountable-surface` lane.
 
-**What it consumes from peers.** A filesystem root: one repo, or a workspace directory of repos. It reads manifests and real imports; it does not require another lane's output to run. It optionally reads an `.index.toml` for classification, scan tuning, privacy rules, and the architecture block. It can map any directory tree, including a `gather` corpus directory.
+**What it consumes from peers.** A filesystem root: one repo, or a workspace directory of repos. It reads manifests and real imports. A run needs no other lane's output. An `.index.toml` is optional input for classification, scan tuning, privacy rules, and the architecture block. It can map any directory tree, including a `gather` corpus directory.
 
 **What it emits for peers.** Deterministic, evidence-backed artifacts other lanes and the desktop consume:
 
 - The map and summary that `harness/knowledge_graph.py` folds into the workspace knowledge graph and the desktop project card.
 - The graph and symbol surfaces that the desktop bridge and HTTP route serve.
-- A budgeted `context.envelope` with hashed source references and typed omission codes, which an execution lane loads instead of a blind file dump.
+- A budgeted `context.envelope` with hashed source references and typed omission codes that an execution lane loads as its context.
 - A sealed, commit-pinned wiki and a set of verdict artifacts (`index.invalidation/1`, freshness certificates) that a downstream check re-runs.
 
 **Worked example: index + gather + an execution lane.** A concrete flow that uses only real tool names:
 
 1. The `gather` lane (organ `perception`) runs an intake and writes a corpus with provenance receipts under a run root.
-2. `index context-envelope --root workspace --budget 8000 --focus target-repo --json > envelope.json` mints a budgeted packet. Retained repos carry hashed source references; anything dropped carries a code such as `budget_exceeded`, so a reader can ask for more rather than inherit confidence from a missing file.
+2. `index context-envelope --root workspace --budget 8000 --focus target-repo --json > envelope.json` mints a budgeted packet. Retained repos carry hashed source references; anything dropped carries a code such as `budget_exceeded`, so a reader can ask for the dropped file. A missing file never passes as verified content.
 3. An execution lane (the bundled `local-model` engine, or the `relay` agent) receives that envelope as its context, so its run starts from a bounded, receipt-backed view of the workspace.
-4. Before the run acts, `index context-envelope --verify envelope.json --root workspace` re-fingerprints the repos and exits non-zero if the map moved under the envelope. Stale context is caught by a check instead of acted on by mistake.
+4. Before the run acts, `index context-envelope --verify envelope.json --root workspace` re-fingerprints the repos and exits non-zero if the map moved under the envelope. A non-zero exit stops the run before it acts on a stale map.
 
 The same seam works over MCP: a host calls `call_lane_tool("index", "index.context.envelope", {...})` (`harness/lane_caller.py`) and gets the identical envelope the CLI produces.
 

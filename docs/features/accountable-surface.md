@@ -20,8 +20,8 @@ Most Flywheel lanes perceive, verify, or remember; this is the lane that acts on
 - **OS command actuation, allowlist only.** `CommandEffector` (`src/accountable_surface/os_effector.py`) runs allowlisted commands as argv with `shell=False` in a bounded working directory; an irreversible command escalates to needs-human.
 - **Native web actuation without a browser.** `WebEffector` over `HttpDriver` (`src/accountable_surface/web_effector.py`, `http_driver.py`) navigates, fills fields by visible label, and submits forms on server-rendered pages using a stdlib HTTP and HTML backend, origin-bounded by construction.
 - **JS-capable browser actuation, optional.** `BrowserEffector` (`src/accountable_surface/browser_effector.py`) clicks by accessible label and runs JavaScript; tests and offline demos use `FakeBrowserDriver`, and production can inject `PlaywrightDriver` through the lazily-imported `[browser]` extra (never a hard dependency).
-- **Effector construction-bound as a second gate.** `RefusedActuation` (`effector.py`) is raised when a receipt does not match the plan, content does not match the preview, or the target sits outside the bound, even on a gate `allow`; the surface catches it and records `refused-by-effector` rather than crashing.
-- **Grounding cortex with honest "ungrounded".** `ReferenceCortex` and `ArxivSource` (`src/accountable_surface/reference.py`) score reference relevance for a subject and report `grounded` / `weak` / `ungrounded`; in `AccountableSurface.actuate` an ungrounded premise escalates to needs-human instead of acting.
+- **Effector construction-bound as a second gate.** `RefusedActuation` (`effector.py`) is raised when a receipt does not match the plan, content does not match the preview, or the target sits outside the bound, even on a gate `allow`; the surface catches it and records `refused-by-effector` so the process keeps running.
+- **Grounding cortex with honest "ungrounded".** `ReferenceCortex` and `ArxivSource` (`src/accountable_surface/reference.py`) score reference relevance for a subject and report `grounded` / `weak` / `ungrounded`; in `AccountableSurface.actuate` an ungrounded premise escalates to needs-human and holds the action.
 - **Bounded autonomy under one grant.** `AccountableSurface.pursue` (`surface.py`) runs a sequence of `Step`s inside one grant envelope with no per-step prompt, and halts on the first step that is denied, escalated, refused, or fails verification.
 - **Composed action certificate.** `action_certificate` (`src/accountable_surface/certify.py`) combines the gate, effect, and grounding verdicts through the coherence-membrane lattice meet: `REFUTED` absorbs, `UNVERIFIABLE` attenuates, and an unrecognized verdict maps to `UNVERIFIABLE` and never rounds up to a pass.
 - **Tamper-evident durable journal.** `journal_chain.py` hash-chains each entry; `_replay` and `verify_journal` (`surface.py`) count parse failures (`replay_errors`) and chain breaks from edit, delete, or reorder (`journal_tamper`) separately and never conflate them.
@@ -83,7 +83,7 @@ With `authorization={}` the same call returns `acted=False, decision="deny"` and
 ## Piecewise reference (each capability, what it does)
 
 | Capability | Entry point | What it does |
-| --- | --- | --- |
+| - | - | - |
 | Perceive | `AccountableSurface.perceive` | Reads a URL, path, or bytes into a witnessed `Observation` and journals it. |
 | Propose | `AccountableSurface.propose` | Routes a proposed action through the gate and returns an advisory `ActionOutcome`; `executed` is always `False`. |
 | Actuate | `AccountableSurface.actuate` | Runs perceive to preview to gate to act to re-perceive to verify, rolling back a failed reversible act. Returns `ActuationOutcome`. |
@@ -126,7 +126,7 @@ The concrete cross-lane seam in the code is the Flywheel organizational learning
 
 End to end:
 
-1. An agent (or the `relay` lane) drives accountable-surface through the gateway to actuate a plan under an operator grant.
+1. An agent (or the `relay` lane) drives accountable-surface through the gateway and actuates a plan under an operator grant.
 2. The surface returns an `ActuationOutcome`. A clean run produces no divergence; a run where the gate allowed the action but the re-perceived effect did not match, or the action was rolled back, is a divergence.
 3. The loop passes a batch of these outcomes to `append_intent_outcome_lessons(store, outcomes)`. For each divergence it seals a `KIND_INTENT_OUTCOME` lesson whose `source_refs` carry the outcome's `after_digest` (falling back to `before_digest`), so the lesson is bound to its evidence by hash. An outcome with no witnessed digest is skipped honestly.
 4. The lesson lands in the `LessonStore`, where the pattern detector lifts confidence when the same class of divergence recurs. The mapper imports nothing from accountable-surface; it reads the dict shape as an adapter, so if the shape shifts the projection shifts with it.
@@ -135,14 +135,14 @@ This mapper sits beside two peers in the same file: `drift_lessons` reads `mneme
 
 ### A note on the registration model
 
-This lane is wired more deeply than a bridge satellite such as `chorus` (`harness/chorus_bridge.py`), which the desktop drives as an external CLI and reads verbatim without a `LANES` entry. accountable-surface is a full roster lane: it carries a registry `Lane`, a tier floor, an expected-set assertion, a desktop identity card, and a downstream consumer. The apt in-family comparison is the other source-checkout lanes such as `mneme` and `relay`, which also set `package_disabled_reason` and resolve live from a source checkout rather than a package.
+This lane is wired more deeply than a bridge satellite such as `chorus` (`harness/chorus_bridge.py`), which the desktop drives as an external CLI and reads verbatim without a `LANES` entry. accountable-surface is a full roster lane: it carries a registry `Lane`, a tier floor, an expected-set assertion, a desktop identity card, and a downstream consumer. The apt in-family comparison is the other source-checkout lanes such as `mneme` and `relay`, which also set `package_disabled_reason` and resolve live from a source checkout.
 
 ## Honest limits
 
 - **Source-checkout only.** There is no admitted PyPI distribution; from a package-only workstation the roster reports the lane `MISSING`. It runs live only from a source checkout with both sibling repos present.
-- **Advisory over the MCP surface.** The MCP `propose` tool returns a gate decision for the operator to enforce; the effector-driven `actuate` loop is the Python API path, not an MCP tool. The world server runs the real loop within its own grant.
+- **Advisory over the MCP surface.** The MCP `propose` tool returns a gate decision for the operator to enforce; the effector-driven `actuate` loop runs on the Python API path only. The world server runs the real loop within its own grant.
 - **No static tool manifest.** The exposed tool set is declared by decorators and discovered at probe time, not asserted by a committed manifest.
-- **Grounding is relevance scoring, not proof.** The cortex reports `ungrounded` rather than guessing, but a `grounded` verdict is a relevance judgment, not a correctness proof of the premise.
+- **Grounding is relevance scoring.** The cortex reports `ungrounded` when relevance is low, so it stays honest under weak evidence. A `grounded` verdict is a relevance judgment. It does not prove the premise is correct.
 
 ## License and provenance
 

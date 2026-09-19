@@ -4,11 +4,11 @@
 
 ## One-sentence description
 
-Coherence Membrane is the read-gate perception feature: it turns real local artifacts (files, PNGs, live screen captures, JSON, context records) into inert, re-derivable Observations carrying exact SHA-256 identity, dimensions, and a perceptual fingerprint, so an agent can ground on what actually happened instead of on its prior.
+Coherence Membrane is the read-gate perception feature: it turns real local artifacts (files, PNGs, live screen captures, JSON, context records) into inert, re-derivable Observations carrying exact SHA-256 identity, dimensions, and a perceptual fingerprint, so an agent grounds on what the artifact in front of it shows. Its prior stops driving the answer.
 
 ## One-paragraph description
 
-A model's structural weakness is state-blindness: it reasons on source text and on its prior, not on the artifact in front of it. Coherence Membrane closes that gap on the read side. It perceives an artifact into a structured Observation with a full-width `identity_sha256`, witnessed dimensions, and a 64-bit perceptual hash, then compares a later observation against an operator-pinned baseline and returns a closed verdict of MATCH, DRIFT, or UNVERIFIABLE that never silently matches on difference. Live screen capture reaches the OS compositor through the Python standard library alone (`ctypes`), so it works across D3D, Vulkan, OpenGL, Metal, and software renderers with no third-party graphics stack. Every organ ships a self-test that re-derives its own claims and can fail, and machine-checked lattice proofs run on every test invocation to keep each adjudicator inside its verdict set. The package has zero runtime dependencies; the trust path is stdlib only (confirmed: `dependencies = []` in `pyproject.toml`). Inside Flywheel it is the perception seam consumed by the `accountable-surface` actuation lane, and it composes with the `proof-surface` write-gate through a shared JSON shape rather than a code dependency.
+A model's structural weakness is state-blindness: it reasons on source text and on its prior, not on the artifact in front of it. Coherence Membrane closes that gap on the read side. It perceives an artifact into a structured Observation with a full-width `identity_sha256`, witnessed dimensions, and a 64-bit perceptual hash, then compares a later observation against an operator-pinned baseline and returns a closed verdict of MATCH, DRIFT, or UNVERIFIABLE that never silently matches on difference. Live screen capture reaches the OS compositor through the Python standard library alone (`ctypes`), so it works across D3D, Vulkan, OpenGL, Metal, and software renderers with no third-party graphics stack. Every organ ships a self-test that re-derives its own claims and can fail, and machine-checked lattice proofs run on every test invocation to keep each adjudicator inside its verdict set. The package has zero runtime dependencies; the trust path is stdlib only (confirmed: `dependencies = []` in `pyproject.toml`). Inside Flywheel it is the perception seam consumed by the `accountable-surface` actuation lane, and it composes with the `proof-surface` write-gate through a shared JSON shape, with no code dependency between them.
 
 ## Where it sits inside Flywheel (integration status)
 
@@ -18,7 +18,7 @@ A model's structural weakness is state-blindness: it reasons on source text and 
 - `surface.py` imports `membrane.build_gate_request/decide`, `observation.Observation/Provenance/Status/sha256_hex`, and `organs.web.WebDocumentOrgan`.
 - `reference.py` imports `observation.sha256_hex`.
 
-**Bound limit.** It has no entry in the `LANES` dict and no row in `tests/test_lanes.py::test_registry_covers_the_expected_lanes`. It is therefore a native feature library reached through the accountable-surface lane, not a directly addressable Flywheel lane. The "become a native lane" wiring is in the composition section below, kept explicitly as proposed.
+**Bound limit.** It has no entry in the `LANES` dict and no row in `tests/test_lanes.py::test_registry_covers_the_expected_lanes`. It is therefore a native feature library reached through the accountable-surface lane. A direct Flywheel lane address does not reach it. The "become a native lane" wiring is in the composition section below, kept explicitly as proposed.
 
 ## Feature list (each item bound to code)
 
@@ -77,9 +77,9 @@ b.save("baseline.json")               # drift persists across runs
 ## Piecewise reference (each capability, what it does)
 
 | Capability | Entry point | What it does |
-| --- | --- | --- |
+| - | - | - |
 | Read API | `perceive`, `PerceptionSnapshot`, `default_organs`, `all_organs` (`perception.py`) | Reads paths or bytes into a snapshot of Observations. Inert: a test asserts the source bytes are unchanged. |
-| Observation contract | `Observation`, `Provenance`, `Status`, `sha256_hex` (`observation.py`) | The witnessed record and its status enum. `UNVERIFIED` is a first-class outcome. |
+| Observation contract | `Observation`, `Provenance`, `Status`, `sha256_hex` (`observation.py`) | The witnessed record and its status enum. `UNVERIFIED` is a valid outcome. |
 | Perceptual hashing | `perceptual_hash`, `perceptual_hash_raw`, `hamming`, `compare_drift`, `DriftVerdict`, `MATCH`/`DRIFT`/`UNVERIFIABLE` (`phash.py`) | 64-bit dHash and the closed drift comparison. |
 | PNG decode | `decode_png`, `is_png`, `read_ihdr`, `DecodedImage`, `PngDecodeError` (`pngview.py`); `encode_png` (`pngencode.py`) | Stdlib PNG decode/encode with fail-closed errors. |
 | Baseline ladder | `Baseline`, `BaselineEntry`, `BaselineVerdict` (`baseline.py`) | Byte, canonical, then perceptual comparison against a pinned state. |
@@ -118,7 +118,7 @@ Coherence Membrane is the **perception seam** on the read side. Its natural role
 - WitnessReceipt with an operator-pinnable anchor.
 - Gate requests via `build_gate_request` for a write-gate to adjudicate.
 
-The seam is a shared JSON shape, not a package dependency. A read-gate is useful to specs that never act, and a write-gate is useful to agents with no eyes, so the two stay decoupled.
+The seam is a shared JSON shape. Neither tool imports the other. A read-gate is useful to specs that never act, and a write-gate is useful to agents with no eyes, so the two stay decoupled.
 
 ### Worked example: read-gate to write-gate inside accountable-surface
 
@@ -145,13 +145,13 @@ Inside Flywheel, accountable-surface composes exactly this: `world/sight.py` use
 
 The observed status is `extra_source_repo`, so the following is the gap to promote it to a directly addressable lane. It is modeled on the two registration patterns already in the tree.
 
-**Pattern A, the chorus/satellite path (no MCP server required).** chorus is not a `LANES` entry either; it is surfaced through a bridge. To follow it:
+**Pattern A, the chorus/satellite path (no MCP server required).** chorus has no `LANES` entry either; a bridge surfaces it. To follow it:
 
 1. Add `harness/coherence_bridge.py` that shells `python -m coherence_membrane` (for example `selftest`, `perceive`, `watch`) and returns the CLI JSON verbatim, with a named error when the CLI is absent, exactly as `harness/chorus_bridge.py` shells `chorus` and returns its digest.
 2. Add gateway HTTP endpoints (for example `/api/perceive`, `/api/observe`) in `harness/gateway.py`, matching the `/api/discourse` handlers that dispatch into `chorus_bridge`.
 3. Add a `LaneIdentity` card in `desktop/lib/models/lane_identity.dart` (title, identity, surface), matching the existing `accountable-surface` card.
 
-**Pattern B, a full `LANES` lane (MCP server required).** The repo ships a CLI, not an MCP stdio server, so this path needs a new server module first:
+**Pattern B, a full `LANES` lane (MCP server required).** The repo ships a CLI. It has no MCP stdio server, so this path needs a new server module first:
 
 1. Add a `Lane("coherence-membrane", ...)` to `LANES` in `harness/lanes_registry.py` with `role="perception"`, an `organ`, `source_repo="public/coherence-membrane"`, a `py_module` for the new MCP entry, and a `package_disabled_reason` (it is not on PyPI).
 2. Update `tests/test_lanes.py::test_registry_covers_the_expected_lanes`, which asserts the exact lane set; without the new name the test fails.
@@ -167,8 +167,8 @@ Pattern A is the lighter change and reuses the CLI as-is. Pattern B makes the la
 - Capture reads the composited display output the operator can already see. It does not inject into, hook, or read another process's memory.
 - Non-Windows capture backends are implemented to the API but unvalidated (repo-reported: Windows GDI validated live; macOS CoreGraphics and Linux/X11 unvalidated). Moderate confidence.
 - This is a 0.1.0 alpha and is not on PyPI. The stated test and conformance counts are repo-reported and were not re-run for this document.
-- Integration status is `extra_source_repo`, not a standalone lane. It is reachable through the accountable-surface lane, not by direct lane address.
+- Integration status is `extra_source_repo`. It is reachable through the accountable-surface lane by that route, and has no direct lane address.
 
 ---
 
-*Coherence Membrane is one lane of an independent, evidence-first toolkit. Everything above is meant to be re-derivable from the repo rather than asserted; if a claim cannot be reproduced, that is a defect worth an issue.*
+*Coherence Membrane is one lane of an independent, evidence-first toolkit. Everything above is meant to be re-derivable from the repo; a reader can reproduce it. If a claim cannot be reproduced, that is a defect worth an issue.*

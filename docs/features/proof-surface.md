@@ -1,17 +1,17 @@
 # Proof Surface (native feature inside Flywheel)
 
-One proof packet per agent action, with a verdict a checker re-derives from the evidence instead of reading it out of the record.
+One proof packet per agent action. A checker re-derives the verdict from the evidence and does not read a stored verdict out of the record.
 
 Proof Surface is a stdlib-only Python contract library (repo `public/proof-surface`, package `proof-surface`, MIT). It gives Flywheel two things: nine base validators for AI-workflow records (evidence packets, work-record receipts, authorization receipts, a witness-receipt mirror, a pre-execution gate, an evaluation contract, a claim ledger, a delegation chain, and an organ-receipt bundle), and eleven domain proof-packet wedges reachable through one CLI seam, `telos-proof <domain>`. Each wedge takes evidence a tool already produces and turns it into a validated, content-addressed packet carrying a `MATCH` / `DRIFT` / `UNVERIFIABLE` verdict plus a reviewer report, so a stranger can recompute the verdict from the same evidence. Inside Flywheel today it is not a standalone lane. It is the decision core behind the `accountable-surface` actuation lane and the schema behind Flywheel's organ-receipt handoffs, wired in as a runtime source sibling.
 
 ## Integration status (observed)
 
-- Proof Surface has no entry in `harness/lanes_registry.py` `LANES`. It is not a probeable MCP lane.
+- Proof Surface has no entry in `harness/lanes_registry.py` `LANES`, so it is not a probeable MCP lane.
 - It rides in as `extra_source_repos=("public/coherence-membrane", "public/proof-surface")` on the `accountable-surface` lane (`harness/lanes_registry.py`). `harness/lane_runtime_support.py::extra_import_roots` adds `public/proof-surface/src` to the lane child's `PYTHONPATH`, so the lane imports Proof Surface live even when nothing is pip-installed.
 - Runtime coupling is confirmed in code: `accountable-surface` routes every proposed action through `coherence_membrane.membrane.decide`, and `coherence_membrane/membrane.py` calls `from proof_surface import evaluate_gate` and returns `evaluate_gate(request)` (lines 81 and 91). Proof Surface's pre-execution gate is the allow / deny / needs-human logic under the surface's operator-grant seam.
 - `harness/lesson_interop.py::lesson_bundle` builds an organ-receipt bundle whose shape is validated by `proof_surface.validate_organ_receipt_bundle`, so Flywheel's organizational-learning-loop handoff is a Proof Surface contract instance.
 - `harness/superproject.py` lists it in the `EXTENDED` flagship roster as `Flagship("proof-surface", "agent-action proof packets", "public/proof-surface")` at `tier="declared"` (present in repo, not MCP-probed).
-- `harness/classifier_friction_bench.py` uses a `proof_surface_score` text metric. That is a friction-bench scoring term, not an import of this library; do not read it as runtime integration.
+- `harness/classifier_friction_bench.py` uses a `proof_surface_score` text metric. That is a friction-bench scoring term. It does not import this library; do not read it as runtime integration.
 
 Version note (observed): package metadata and the README state `0.2.0`; the in-package constant `proof_surface.__version__` reads `0.1.0`; the contracts themselves are versioned `v0.1`. Treat contract shapes as `v0.1` and subject to change (the repo status says alpha).
 
@@ -71,7 +71,7 @@ Inside a Flywheel checkout, Proof Surface sits at `public/proof-surface`.
 ### Base contracts (`proof_surface`)
 
 | Capability | Entry point | What it does |
-| --- | --- | --- |
+| - | - | - |
 | Proof-surface packet | `validate_packet`, `PACKET_VERSION` | Validates the neutral evidence/index packet a proof-index consumes. |
 | Work-record receipt | `validate_work_record`, `WORK_RECORD_VERSION` | Validates an outward-flowing record of agent work; `additionalProperties: false` at every level; never read back as model state. |
 | Authorization receipt v0.1 | `validate_authorization_receipt`, `check_action` | Validates an explicit, least-privilege, expiring, revocable human-to-agent grant; `check_action` is default-deny against action and target. |
@@ -86,14 +86,14 @@ Inside a Flywheel checkout, Proof Surface sits at `public/proof-surface`.
 ### Domain wedges (`telos-proof <domain>`)
 
 | Wedge | Turns this into a packet | Load-bearing honesty gate |
-| --- | --- | --- |
+| - | - | - |
 | `agent-action` | an agent trace | admission / side-effects / evidence refs / typed failures / compute leases |
 | `visual-measurement` | a read-only color / display measurement | no physical-calibration claim without hardware and mutation evidence |
 | `research-claim` | a math / formal proof attempt | a passed kernel replay must disclose axioms, toolchain, source; never a promoted law from one packet |
 | `model-eval` | a model + eval set + directional metrics | default-deny promotion; promote only on overall `MATCH` |
 | `optimization-workflow` | a solver run vs an exact baseline | a non-executed branch claims no coverage; a surrogate may not self-certify feasibility |
 | `rollout-receipt` | an RL / post-training run | reward, verifier, admission, and promotion stay separate |
-| `eval-attempt` | a single benchmark attempt | `correct` with ground-truth access is contamination, not a pass |
+| `eval-attempt` | a single benchmark attempt | `correct` with ground-truth access is contamination and never a pass |
 | `ai4science` | a claim-to-experiment run | no unmeasured discovery claims; independent reproduction required |
 | `conservation` | a transformation + declared invariant | the check must carry a negative fixture that provably breaks the invariant |
 | `control-certificate` | a stability / feasibility claim | hardware validity is never claimable from simulation-only evidence |
@@ -107,13 +107,13 @@ Inside a Flywheel checkout, Proof Surface sits at `public/proof-surface`.
 
 ### Trace adapters (`proof_surface.trace_adapters`)
 
-Normalizes OpenTelemetry and LangSmith / Langfuse traces and imports evidence from MLflow, Weights & Biases, Braintrust, Arize Phoenix, promptfoo, Helicone, DVC, and SLSA / in-toto. Each adapter declares via `NON_INFERABLE` what its source export cannot supply, so a missing field stays an honest null rather than a guessed value.
+Normalizes OpenTelemetry and LangSmith / Langfuse traces and imports evidence from MLflow, Weights & Biases, Braintrust, Arize Phoenix, promptfoo, Helicone, DVC, and SLSA / in-toto. Each adapter declares via `NON_INFERABLE` what its source export cannot supply, so a missing field stays an honest null. The adapter never guesses a value.
 
 ## Composition tutorial: how it plugs into Flywheel
 
 ### Which seam it is
 
-Proof Surface is the **verification-contract layer** other lanes borrow, not an orchestration lane of its own. Map it against the `superproject.py` organ model: it is not one of the five spine organs and not a probed lane. It is a source sibling that supplies decision logic and record schemas to lanes that do actuate and orchestrate. Its natural organ neighbor is `verification` (the crucible organ), because a wedge run emits crucible-shaped `thesis` / `measurements` / `assessment` files an independent checker consumes.
+Proof Surface is the **verification-contract layer** other lanes borrow. It runs no orchestration lane of its own. Map it against the `superproject.py` organ model: it is not one of the five spine organs and not a probed lane. It is a source sibling that supplies decision logic and record schemas to lanes that do actuate and orchestrate. Its natural organ neighbor is `verification` (the crucible organ), because a wedge run emits crucible-shaped `thesis` / `measurements` / `assessment` files an independent checker consumes.
 
 ### What it consumes from peers
 
@@ -139,16 +139,16 @@ Because the `accountable-surface` lane declares `extra_source_repos=("public/coh
 
 ### Worked example: the learning-loop handoff
 
-`harness/lesson_interop.py::lesson_bundle` takes a list of lessons from Flywheel's organizational-learning loop, builds an `organ_bundle_version: "0.1"` document with entries tied by digest and derivation edges, and that document is validated by `proof_surface.validate_organ_receipt_bundle`. Any tool downstream can re-validate the bundle without importing Flywheel, because the contract is a Proof Surface schema, not a Flywheel-internal shape.
+`harness/lesson_interop.py::lesson_bundle` takes a list of lessons from Flywheel's organizational-learning loop, builds an `organ_bundle_version: "0.1"` document with entries tied by digest and derivation edges, and that document is validated by `proof_surface.validate_organ_receipt_bundle`. Any tool downstream can re-validate the bundle without importing Flywheel, because the contract is a Proof Surface schema that carries no Flywheel-internal shape.
 
 ## What it would take to become a native lane
 
-Proof Surface is a CLI and library; it ships no MCP server (its `[project.scripts]` are all CLI entry points, and there is no `serve`/`mcp` callable). So the honest native-lane path is the **satellite bridge model that `chorus` uses**, not a direct `LANES` MCP entry. Chorus is likewise absent from `LANES`: it is wired through `harness/chorus_bridge.py`, which shells the installed CLI and returns its JSON verbatim, and `gateway.py` exposes it at `/api/discourse*`. Proposed steps, modeled on that:
+Proof Surface is a CLI and library; it ships no MCP server (its `[project.scripts]` are all CLI entry points, and there is no `serve`/`mcp` callable). So the honest native-lane path is the **satellite bridge model that `chorus` uses**. A direct `LANES` MCP entry is ruled out. Chorus is likewise absent from `LANES`: it is wired through `harness/chorus_bridge.py`, which shells the installed CLI and returns its JSON verbatim, and `gateway.py` exposes it at `/api/discourse*`. Proposed steps, modeled on that:
 
 1. **Bridge module** (proposed) `harness/proof_surface_bridge.py`: resolve the `telos-proof` argv (console script on PATH, else `python -m proof_surface` when importable), shell it with an injectable `runner` for tests, and return its packet JSON verbatim with a `flywheel.proof-packet/v1` schema wrapper and a named error on a missing CLI or bad input. Copy the `chorus_bridge.py` shape one for one, including the install-gate-behind-runner rule so the seam is testable in CI without the CLI installed.
 2. **Gateway route** (proposed): add `/api/proof/<domain>` (and `/api/proof/verify`) handlers in `gateway.py` next to the discourse routes, delegating to the bridge and returning `400` on `error`.
 3. **Desktop app card** (proposed): add a Proof Surface card to the desktop lane surface under `desktop/lib`, calling the new gateway routes, matching how the discourse and other lane cards are wired. Honest null: I did not locate a single lane-card registry file in `desktop/lib` during this pass, so the exact card wiring point is unverified and needs a read of the desktop lane-card source before implementing.
-4. **Expected-set test** (required if it becomes a `LANES` entry): `tests/test_lanes.py::test_registry_covers_the_expected_lanes` asserts the exact `set(LANES)`. That frozenset is a coordinated invariant. Adding a `LANES` entry means updating that assertion (and `SUPERPROJECT.md` and the portfolio-site count, per the note in `superproject.py`). A bridge-only integration does not touch `LANES`, so it needs a bridge test (`tests/test_proof_surface_bridge.py`, proposed) plus a gateway-route test, not the lane-set edit.
+4. **Expected-set test** (required if it becomes a `LANES` entry): `tests/test_lanes.py::test_registry_covers_the_expected_lanes` asserts the exact `set(LANES)`. That frozenset is a coordinated invariant. Adding a `LANES` entry means updating that assertion (and `SUPERPROJECT.md` and the portfolio-site count, per the note in `superproject.py`). A bridge-only integration does not touch `LANES`, so it needs a bridge test (`tests/test_proof_surface_bridge.py`, proposed) plus a gateway-route test. The lane-set edit stays untouched.
 5. **Payload manifest** (required only if bundled into a frozen gateway): `harness/bundled_lane_expectations.py::EXPECTED_BUNDLED_LANES` pins `source_commit`, `source_manifest_sha256`, `descriptor_sha256`, `module`, and `callable` for a `kind="bundled"` lane. Proof Surface as a source sibling or a shell bridge does not need this. It would only apply if a future step froze Proof Surface into the packaged gateway with its own MCP callable, which does not exist yet.
 
 Boundary held throughout: Proof Surface validates records. It does not grant authority, execute actions, or store private payloads. Promoting it to a lane changes how Flywheel reaches it, not what it is allowed to assert.

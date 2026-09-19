@@ -5,7 +5,7 @@
 > registry entry, no desktop card, no expected-set test, and no admitted-tool
 > manifest exist yet. Every claim in "What it is" and "Feature reference" below
 > is observed from the repo source. Every claim under "How it composes" and
-> "Wiring it needs" is **proposed** and labeled as such.
+> "Wiring it needs" is **proposed** and carries that label.
 
 ## One sentence
 
@@ -146,8 +146,9 @@ Each item names the capability and the source that implements it.
   flagged in place (`detector.py` `analyze_blocks`/`segment_blocks`,
   `tests/test_spans.py`).
 - **Sub-threshold abstention.** Below a 30-word floor a device-clean text reads
-  `unverifiable` rather than a confident clean verdict. A banned device still
-  reads flagged at any length (`detector.py`, `tests/test_thresholds.py`).
+  `unverifiable`; the tool withholds a confident clean verdict there. A banned
+  device still reads flagged at any length (`detector.py`,
+  `tests/test_thresholds.py`).
 - **Binary fail-closed guard.** A binary or unsupported document (`.docx`, PDF,
   image) is refused with an explicit reason, so the tool never returns a
   spurious clean scan of a lossy decode (`detector.binary_reason`,
@@ -249,8 +250,8 @@ Proposed lane identity: role `re-derivable prose screening and AI-tell
 detection (register profiles, writing modes, receipts)`. Organ is an open
 question. The existing `writing` lane holds `authoring` and `crucible` holds
 `verification`. Articulate screens and verifies prose, so `verification` is the
-closest existing family; a distinct `expression` organ is the alternative. This
-is a naming decision for the operator, not a settled fact.
+closest existing family; a distinct `expression` organ is the alternative. The
+operator makes this naming decision, and it stays open.
 
 ### What it consumes from peers
 
@@ -306,9 +307,9 @@ Add one `Lane` to `LANES` in `harness/lanes_registry.py`. The
 install-name-to-command asymmetry and the `python -m` module entry follow the
 existing rows (for example `index` installs as `index-graph` and runs as
 `index`). Articulate diverges in one way that must be stated: its console script
-is `articulate`, and it has no `articulate mcp` subcommand, so the MCP launch is
-the module entry, not the console-script-plus-`mcp` convention that pip lanes
-like `gather` use.
+is `articulate`, and it has no `articulate mcp` subcommand, so the MCP launch uses
+the module entry. Pip lanes like `gather` reach their MCP server through the
+console-script-plus-`mcp` convention that Articulate lacks.
 
 Proposed entry (illustrative, not committed):
 
@@ -411,8 +412,9 @@ CLI's JSON verbatim, with a 400 when the payload carries an `error`.
 - Exposition quality is not correctness. A clean gate on a proof or a paper says
   the prose was screened. Correctness comes from referees and proof assistants
   (Lean, Coq, Isabelle), never from this tool.
-- A receipt attests a screening, not compliance. It is not a provenance
-  attestation, not an EU AI Act Article 50 marking, and not a C2PA credential.
+- A receipt attests that a screening ran. It carries no claim about compliance,
+  and it does not stand in for a provenance attestation, an EU AI Act Article 50
+  marking, or a C2PA credential.
 - Content-free is not zero-leakage. The residual is the rule and the line. For a
   closed-vocabulary rule that narrows the flagged word to a small public
   candidate set. `--redact hash` keeps a dictionary-reversible sha256; use
@@ -428,7 +430,7 @@ CLI's JSON verbatim, with a 400 when the payload carries an `error`.
 - Articulate is not wired into Flywheel. No lane entry, desktop card,
   expected-set test, bridge, or gateway route exists yet.
 - The MCP server carries no `receipt`, `verify`, or `audit` tool; those are
-  CLI-only, which is why a bridge is proposed rather than a lane alone.
+  CLI-only, so the proposal pairs a bridge with a lane to reach them.
 - The organ assignment (`verification` versus a new `expression`) is unresolved.
 - The `source_repo` path convention for a lane assumes a `public/articulate`
   checkout location the repo does not occupy today.

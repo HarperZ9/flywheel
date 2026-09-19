@@ -54,7 +54,7 @@ authored blocks, and both are reached through injected, duck-typed handles.
   adapters import no engine package.
 - **A byte-exact region boundary.** `src/canon/region.py` partitions a managed
   file into `prefix + inner + suffix`; canon rewrites only `inner`, and a file
-  with no canon marker is off-limits rather than an error.
+  with no canon marker is off-limits, and canon skips it and raises no error.
 - **A record-to-text codec and its inverse.** `src/canon/textblock.py`
   (`render_region`, `ingest_region`) projects a scope-homogeneous block set into
   the region interior and reads records back; render's refusal set is a strict
@@ -80,7 +80,7 @@ authored blocks, and both are reached through injected, duck-typed handles.
   markers is never flagged as drift.
 - **An injected writing gate.** `src/canon/writing_gate.py` owns the
   per-surface profile register and the `gate_text` pipeline; canon is stdlib-only,
-  so the external writing linter is wired in by the caller rather than imported.
+  so the caller wires in the external writing linter and canon imports no linter package.
 - **A persona basis check.** `src/canon/persona_thesis.py` measures whether the
   source memories behind a `synthesized-persona-l3` record still resolve and are
   current, framed as falsifiable claims handed to an injected assessor.
@@ -191,10 +191,11 @@ build gate and a harness question cannot disagree.
 **Which lane/seam it is.** Canon is the `continuity` organ in Flywheel's lane
 layer. Structurally it is a standard MCP lane: a registry entry, an
 install/probe/roster path, a desktop card, and a governance-gated generic caller.
-It is not a bundled/frozen gateway lane (only relay is), and it is not a bridged
-satellite like chorus. Chorus is driven by `harness/chorus_bridge.py`, exposed at
-`/api/discourse`, and rendered by a dedicated `DiscourseView`; canon instead uses
-the fuller lane pattern and is reached through the shared lane machinery.
+Flywheel keeps two other lane shapes that canon does not use. Relay alone takes
+the bundled/frozen gateway shape. Chorus runs as a bridged satellite, driven by
+`harness/chorus_bridge.py`, exposed at `/api/discourse`, and rendered by a
+dedicated `DiscourseView`. Canon uses the fuller lane pattern and is reached
+through the shared lane machinery.
 
 **What it consumes from peers.**
 
@@ -209,7 +210,7 @@ the fuller lane pattern and is reached through the shared lane machinery.
   history (a supersede is recorded between two present rows). mneme is a peer lane
   in the same registry (organ `memory`).
 - An external verification assessor for the persona leg, and an external writing
-  linter for the writing gate, both injected rather than imported.
+  linter for the writing gate. The caller injects both, and canon imports neither.
 
 **What it emits for peers.**
 
@@ -262,14 +263,14 @@ checklist names, with the fourth correctly absent:
 4. **payload manifest** - absent by design. The bundled-lane descriptor under
    `packaging/bundled-lanes/` exists only for relay (the one lane frozen into the
    gateway executable), and `scripts/check_bundled_lane_descriptors.py` supports
-   lane `relay` alone. Canon is a source-checkout pip lane, not a frozen gateway
-   component, so it has no such manifest and needs none.
+   lane `relay` alone. Canon is a source-checkout pip lane, so it has no such
+   manifest and needs none.
 
 Remaining honest nulls, none of which are lane-wiring defects:
 
 - No PyPI distribution. Canon installs from a source checkout only.
-- Canon is absent from `LANE_MIN_TIERS`, so its tier is the T1 default rather than
-  an explicit entry. This fits a read-only door but is implicit.
+- Canon is absent from `LANE_MIN_TIERS`, so it takes the T1 default tier with no
+  explicit entry. This fits a read-only door but is implicit.
 - No dedicated desktop deep-view. Chorus has a `DiscourseView` destination; canon
   is reached through the lane card and the generic `/api/lane` caller only.
 - The reconcile write-path is intentionally not exposed over MCP or the lane

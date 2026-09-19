@@ -1,6 +1,6 @@
 # Local-model (Flywheel engine lane)
 
-> Native feature documentation for the local-model lane as it lives inside Flywheel. Every claim below is bound to code in the Flywheel harness (`harness/local_mcp.py` and the modules it imports). Observed facts are stated plainly; anything proposed or in flight is marked. local-model is a bundled lane: it is not a separate package, it is part of Flywheel and ships with the engine (`flywheel-verify`, license FSL-1.1-MIT).
+> Native feature documentation for the local-model lane as it lives inside Flywheel. Every claim below is bound to code in the Flywheel harness (`harness/local_mcp.py` and the modules it imports). Observed facts are stated plainly; anything proposed or in flight is marked. local-model is a bundled lane. It ships with the engine as part of Flywheel (`flywheel-verify`, license FSL-1.1-MIT).
 
 ## One sentence
 
@@ -8,7 +8,7 @@ local-model is Flywheel's engine lane: it exposes the on-machine agent that prop
 
 ## One paragraph
 
-Inside Flywheel, local-model is the `propose-verify` organ. It is bundled (`kind="bundled"` in `harness/lanes_registry.py`), so nothing installs it and it is never missing: it is Flywheel. The lane is a zero-dependency stdio JSON-RPC 2.0 server (`harness/local_mcp.py`, protocol `2025-06-18`) that any harness can spawn with `python -m harness.local_mcp`. It fronts two local model tiers in preference order, the model served by `harness/serve.py` over localhost (the project's trained coder) and an Ollama model, with health-gated failover between them (`harness/local_agent.py`). A one-shot completion returns a content-addressed receipt that binds request, prompt, model, and response, so an identical turn shares an id and any change breaks the recompute (`harness/messages_api.py`). A gated agentic run drives the model through a text tool protocol a small model can emit, sandboxes reads to a root, keeps writes and command execution off unless the caller allows them, and records every step into a sha256 hash-chained session ledger that re-derives on verify (`harness/local_loop.py`, `harness/local_tools.py`, `harness/local_session.py`). The lane also verifies receipt-log membership as a replayable Merkle proof (`harness/receipt_operations.py`) and bridges to Canon context memory over a bounded child process (`harness/context_memory_bridge.py`). Because it can execute code, Flywheel floors the whole lane at governance tier T2 (`harness/lane_caller.py`). Every verdict it carries ships its own does-not-prove line: a hash chain proves the submitted entries are internally consistent, not that the recorded actions happened or that the answer is correct.
+Inside Flywheel, local-model is the `propose-verify` organ. It is bundled (`kind="bundled"` in `harness/lanes_registry.py`), so nothing installs it and it is never missing: it is Flywheel. The lane is a zero-dependency stdio JSON-RPC 2.0 server (`harness/local_mcp.py`, protocol `2025-06-18`) that any harness can spawn with `python -m harness.local_mcp`. It fronts two local model tiers in preference order, the model served by `harness/serve.py` over localhost (the project's trained coder) and an Ollama model, with health-gated failover between them (`harness/local_agent.py`). A one-shot completion returns a content-addressed receipt that binds request, prompt, model, and response, so an identical turn shares an id and any change breaks the recompute (`harness/messages_api.py`). A gated agentic run drives the model through a text tool protocol a small model can emit, sandboxes reads to a root, keeps writes and command execution off unless the caller allows them, and records every step into a sha256 hash-chained session ledger that re-derives on verify (`harness/local_loop.py`, `harness/local_tools.py`, `harness/local_session.py`). The lane also verifies receipt-log membership as a replayable Merkle proof (`harness/receipt_operations.py`) and bridges to Canon context memory over a bounded child process (`harness/context_memory_bridge.py`). Because it can execute code, Flywheel floors the whole lane at governance tier T2 (`harness/lane_caller.py`). Every verdict it carries ships its own does-not-prove line: a hash chain proves the submitted entries are internally consistent. It does not prove that the recorded actions happened or that the answer is correct.
 
 ## Feature list
 
@@ -23,20 +23,20 @@ Each item names the module that implements it.
 - **Gated agentic loop with a witnessed ledger.** `run_agent` in `harness/local_loop.py` runs the goal to completion or `max_steps`, parses text tool calls, executes them through the gate, and appends every user turn, assistant turn, tool call, and tool result to a `SessionLedger`. It returns the final answer, step count, ledger checkpoint, and verify verdict.
 - **Text tool protocol for small models.** `harness/local_tools.py` exposes `read_file`, `list_dir`, `repo_map`, `grep`, `glob`, `edit_file`, `write_file`, `apply_patch`, and `run`, each called as one `TOOL name {json}` line. A malformed args object is skipped, not executed.
 - **Default-deny gate.** `ToolGate` keeps `write_file`, `edit_file`, and `apply_patch` off unless `allow_write`, and `run` off unless `allow_exec`. External MCP tools stay off unless `allow_mcp`. Each blocked call returns a `[gate]` result the ledger records.
-- **Destructive-command denylist.** Even with exec allowed, `_DENY` in `harness/local_tools.py` refuses recursive-force deletes however the flags are spelled, `rmdir /s`, `del /`, `format`, `mkfs`, `dd if=`, `shutdown`, `reboot`, a fork bomb, and `curl|sh` or `wget|sh` pipes. The lookaheads scan the argument span so a later `; safe` cannot mask an earlier destructive verb. This is a guardrail against a small model wrecking the tree, not a security boundary against a determined operator.
+- **Destructive-command denylist.** Even with exec allowed, `_DENY` in `harness/local_tools.py` refuses recursive-force deletes however the flags are spelled, `rmdir /s`, `del /`, `format`, `mkfs`, `dd if=`, `shutdown`, `reboot`, a fork bomb, and `curl|sh` or `wget|sh` pipes. The lookaheads scan the argument span so a later `; safe` cannot mask an earlier destructive verb. This is a guardrail against a small model wrecking the tree. It is not a security boundary against a determined operator.
 - **Path confinement that follows links.** `_safe_path` resolves a target under the root and returns nothing when it escapes; `_within` re-confines every `rglob` candidate by its real path, so a symlink or junction inside the tree whose target is outside is never read or listed.
 - **Strict edits.** `edit_file` requires its `old` text to match exactly once, so an ambiguous or stale edit is refused. `apply_patch` verifies every hunk before writing a byte, and any mismatch refuses the whole patch.
 - **Sandboxed execution with an explicit fallback.** `make_sandboxed_runner` (`harness/tool_sandbox_bridge.py`) routes `run` through the Windows low-integrity sandbox. On a host with no sandbox the default is refuse; `FLYWHEEL_ALLOW_UNSANDBOXED=1` runs the command bare and labels the output `[UNVERIFIABLE: sandbox unavailable]`. A machine-wide policy (`harness/machine_policy.py`) can pin the hatch closed and outranks the variable.
 - **Hash-chained session ledger.** `SessionLedger` in `harness/local_session.py` chains entries by sha256; `verify()` re-derives the chain, `checkpoint()` returns the head hash, and `save`/`load` use JSONL with no dependencies. Its own bound: the chain shows the submitted entries are internally consistent; it does not authenticate the producer or prove the actions happened, and catching a consistently rewritten history needs a separately retained checkpoint.
-- **Per-run signatures and edit fingerprints.** `run_agent` signs each tool result with a per-run HMAC key (`sign_result`). A mutating tool's receipt carries the post-edit sha256 of the target file (`_edit_fingerprint`), so a stranger binds this edit to a specific file state; an unreadable target yields no fingerprint rather than a fake one.
+- **Per-run signatures and edit fingerprints.** `run_agent` signs each tool result with a per-run HMAC key (`sign_result`). A mutating tool's receipt carries the post-edit sha256 of the target file (`_edit_fingerprint`), so a stranger binds this edit to a specific file state; an unreadable target yields no fingerprint at all.
 - **Sealed tool-call receipt chain and byte witness.** When a receipt directory is set, `ToolExecutor` seals one receipt per call over the same argument bytes it witnesses, chained by prev-sha256, with a capability class (builtin-read, builtin-write, builtin-exec, external-mcp, or unknown) and an outcome (COMPLETED, BLOCKED, or ERROR) (`harness/local_tools.py`, `harness/tool_witness.py`).
 - **Integrity-gated pass and acceptance verdicts.** `_done` attaches a trajectory integrity report; `tests_pass_trusted` is true only when the tests passed and the trajectory did not tamper with the check, and `accepted_trusted` applies the same rule to acceptance criteria.
 - **Test-repair and acceptance-criteria loops.** With a `test_cmd`, `run_agent` runs the tests when the model believes it is done and feeds a failure back until they pass or steps run out. With `criteria`, it refuses to report done while any criterion is failing and witnesses the check as a ledger entry. `max_steps` is the honest backstop: it ends the run without reporting accepted when criteria are unmet.
-- **Canary tripwire.** When canaries are configured, a decoy resource surfacing in a tool output is a hard access signal: the loop contains the run and stops rather than trusting the model to have stopped (`harness/canary_tripwire.py`).
+- **Canary tripwire.** When canaries are configured, a decoy resource surfacing in a tool output is a hard access signal: the loop contains the run and stops on its own detection, without waiting for the model to have stopped (`harness/canary_tripwire.py`).
 - **Bounded external MCP calls.** A registered external tool runs on a daemon thread bounded to 120 seconds; a hang is named as its own witnessed failure and an external tool may not shadow a gated builtin (`ToolExecutor._execute_inner`).
 - **Receipt-log inclusion proofs.** `receipt.verify_inclusion` (`harness/receipt_operations.py`) verifies that a 64-hex envelope digest is a member of the ordered receipts Merkle log and returns replayable proof; it does not approve, mutate, or judge receipt semantics.
 - **Canon context memory bridge.** `flywheel.context.health`, `flywheel.context.capture`, and `flywheel.context.preflight` bridge to a configured Canon context MCP over a bounded child process (`harness/context_memory_bridge.py`). Unconfigured, it returns a typed 503; `not_found_in_searched_sources` is kept as a real status, never read as evidence a topic was never discussed.
-- **Network-free status and doctor.** `local-model.status` reports liveness and identity; `local-model.doctor` adds the tiers the lane would try and the tools it exposes, and reports reachability as `unprobed` rather than a verdict it never measured. `local_agent_health` is the tool that actually pings a tier.
+- **Network-free status and doctor.** `local-model.status` reports liveness and identity; `local-model.doctor` adds the tiers the lane would try and the tools it exposes, and reports reachability as `unprobed` because it measured none. `local_agent_health` is the tool that pings a tier.
 - **Packaged public skill resources.** `resources/list` and `resources/read` serve a closed manifest of public skill files (`harness/skill_resources.py`); URIs are identifiers, not paths, so traversal and `file://` input never reach the filesystem.
 - **Zero runtime dependencies.** `pyproject.toml` declares an empty `dependencies` list; the lane is standard library on Python 3.11 or newer.
 
@@ -62,7 +62,7 @@ Each item names the module that implements it.
 ### MCP tools (`harness/local_mcp.py`, `TOOLS`)
 
 | Tool | What it does |
-| --- | --- |
+| - | - |
 | `local_agent_health` | Report which model tiers are live; `online=true` adds hosted providers. Returns `any_live` and a per-tier list with a healthy flag and a detail string. |
 | `local_agent_chat` | One-shot completion from the first healthy tier. Returns the text, the backend name, and the per-turn receipt id. `backend` forces one tier (still health-gated). |
 | `local_agent_run` | Run a gated agentic task. Tools are sandboxed to `root`; write and exec are off unless `allow_write` / `allow_exec`. Returns `final`, `steps`, `verified`, and `checkpoint`. `max_steps` defaults to 6. |
@@ -85,7 +85,7 @@ The server also answers `resources/list` and `resources/read` for the packaged p
 ### Agentic loop and tools (`harness/local_loop.py`, `harness/local_tools.py`)
 
 | Tool line | What it does |
-| --- | --- |
+| - | - |
 | `TOOL repo_map {"path": "."}` | A repository map under a sandboxed subpath. |
 | `TOOL read_file {"path": "...", "offset": 0}` | Read a file confined to the root. |
 | `TOOL list_dir {"path": "..."}` | List a directory confined to the root. |
@@ -131,7 +131,7 @@ Native wiring is present and tested:
 
 - Local model completions from `harness/serve.py` and Ollama over localhost. These are the two default tiers.
 - Hosted completions from `harness/endpoints.py`, only when a caller passes `online=true`.
-- Canon context memory through the configured Canon context MCP, read by `flywheel.context.preflight` and written by `flywheel.context.capture` (`harness/context_memory_bridge.py`). Workspace and project scope come from Flywheel configuration, not the request body.
+- Canon context memory through the configured Canon context MCP, read by `flywheel.context.preflight` and written by `flywheel.context.capture` (`harness/context_memory_bridge.py`). Workspace and project scope come from Flywheel configuration. The request body does not carry them.
 - The receipts Merkle log through `gateway.receipts_ledger`, read by `receipt.verify_inclusion`.
 
 ### What it emits for peers
@@ -152,13 +152,13 @@ A two-lane composition that matches the lane's own rule, "the oracle decides, th
 3. Crucible's `verdict_for` turns that measurement into MATCH, DRIFT, or UNVERIFIABLE with no model in the step. The model that proposed the change is nowhere in the verdict.
 4. The tie-back is a receipt check: hand a sealed tool-call receipt digest to `receipt.verify_inclusion` and confirm it is a member of the receipts Merkle log, or re-derive the ledger checkpoint with `SessionLedger.verify`. A tampered edit or a rewritten step is caught.
 
-The bundle attests that the model proposed this change and these checks reproduce these fingerprints. It does not prove the change is correct in the world. That boundary holds for every composition local-model joins: a receipt proves a check reproduces, not that the answer is right.
+The bundle attests that the model proposed this change and these checks reproduce these fingerprints. It does not prove the change is correct in the world. That boundary holds for every composition local-model joins: a receipt proves a check reproduces. It does not prove the answer is right.
 
 A second shape uses the memory seam: before a run, `flywheel.context.preflight` asks Canon what was already decided on this project; after a run, `flywheel.context.capture` records the outcome. The preflight result keeps its does-not-prove line, so an empty search reads as "not found in the sources searched", never as "never discussed".
 
 ## Status and bounds
 
 - `flywheel-verify 1.0.1`; the lane server reports `__version__ = "0.1.0"` and protocol `2025-06-18`.
-- What this lane observes: which local tiers are live, the completion each returns, the trajectory of a gated run, and whether a receipt or a chain re-derives. What it does not claim: that a hash chain proves an action happened, that a served model is the model requested without the mismatch check, or that a passing test is semantic truth. UNVERIFIABLE and `unprobed` are kept as real states rather than smoothed into a verdict.
+- What this lane observes: which local tiers are live, the completion each returns, the trajectory of a gated run, and whether a receipt or a chain re-derives. What it does not claim: that a hash chain proves an action happened, that a served model is the model requested without the mismatch check, or that a passing test is semantic truth. UNVERIFIABLE and `unprobed` stay visible in the output as their own states.
 - Honest null on hosted tiers: the shipped default roster is local-only. The hosted endpoints reached under `online=true` depend on `harness/endpoints.py` configuration and are not part of the offline guarantee.
-- local-model is the bundled engine lane, not a separate distribution. Flywheel composes it as the propose-verify seam and does not vendor it from an outside package.
+- local-model is the bundled engine lane. Flywheel composes it as the propose-verify seam and ships it with the engine, so there is no outside package to vendor.

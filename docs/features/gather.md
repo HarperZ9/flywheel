@@ -17,8 +17,8 @@ platform a witnessed digest where every item records how it was obtained.
 Inside Flywheel, gather is the afferent organ. Its job is to bring information
 in and record provenance before any downstream lane reasons over it. Each kind
 of intake sits behind one `Source` shape (a string in, a list of receipted
-`Item`s out), so awkward access is an adapter problem rather than a platform
-problem. Every `Item` carries a `Provenance` receipt with a `method` field that
+`Item`s out), so awkward access becomes an adapter problem contained to that
+one shape. Every `Item` carries a `Provenance` receipt with a `method` field that
 is mechanically enforced: a fetch cannot be relabelled an inference and an
 inference cannot pose as a quote. A run folds its items' receipts into a
 `Digest` with a re-checkable seal, and that seal is the contract downstream
@@ -100,13 +100,13 @@ faked. Observed.
   `gather/__init__.py`. Observed.
 - **Zero-dependency core, opt-in backends.** `dependencies = []` in
   `pyproject.toml`; `fast` (lxml), `browser` (Playwright), `stealth`
-  (curl_cffi) are extras. `gather caps` reports what the install can actually
-  do; a missing capability degrades to UNVERIFIABLE. Observed: `pyproject.toml`,
+  (curl_cffi) are extras. `gather caps` reports what the install can do; a
+  missing capability degrades to UNVERIFIABLE. Observed: `pyproject.toml`,
   `src/gather/backends.py`.
 
 Honest null: the README's "roughly 2x on large documents" for the `fast` backend
-is described in the repo itself as informal and unpublished. Treat it as
-unverified, not a benchmark.
+is described in the repo itself as informal and unpublished. Treat it as an
+unverified, informal figure with no published benchmark behind it.
 
 ## Stepwise usage (how a user runs it)
 
@@ -182,14 +182,14 @@ to write into a corpus.
 Seven tools, observed in `src/gather/mcp.py` and declared in
 `src/gather/flagship.py`:
 
-- `gather.status` — Project Telos flagship-action status envelope.
-- `gather.doctor` — readiness checks (zero-dependency core, JSON receipts,
+- `gather.status`: Project Telos flagship-action status envelope.
+- `gather.doctor`: readiness checks (zero-dependency core, JSON receipts,
   offline docs intake, pilot engine).
-- `gather.docs` — read a local file or directory of text, offline.
-- `gather.arxiv` — fetch papers from the arXiv API by id or query.
-- `gather.federation` — validate a registry or compile capture plans, offline.
-- `gather.run` — run a multi-source session from an inline or file config.
-- `gather.pilot` — run / refresh / verify / bundle a pilot evidence root.
+- `gather.docs`: read a local file or directory of text, offline.
+- `gather.arxiv`: fetch papers from the arXiv API by id or query.
+- `gather.federation`: validate a registry or compile capture plans, offline.
+- `gather.run`: run a multi-source session from an inline or file config.
+- `gather.pilot`: run / refresh / verify / bundle a pilot evidence root.
 
 ### Python API
 Stable seams re-exported from `gather/__init__.py`: `make_item`, `Item`,
@@ -203,14 +203,14 @@ Stable seams re-exported from `gather/__init__.py`: `make_item`, `Item`,
 ### Composition seams (default to Null so gather stands alone)
 Observed in `ARCHITECTURE.md` and the modules named:
 
-- **Synthesizer** (`gather.derive`) — a real model plugs in behind this seam to
+- **Synthesizer** (`gather.derive`): a real model plugs in behind this seam to
   produce a `synthesized` item; the default `NullSynthesizer` performs a
   deterministic extractive compilation and invents nothing.
-- **ProvenanceProvider** (`gather.provenance`) — an external origin verdict
+- **ProvenanceProvider** (`gather.provenance`): an external origin verdict
   (forged / re-encoded / authentic) folds into a run's sealed `origins` field.
-- **Scope filter and store** (`gather.scope`, `gather.store`) — pluggable, Null
+- **Scope filter and store** (`gather.scope`, `gather.store`): pluggable, Null
   by default.
-- **Availability probe** (`gather.availability`) — the default reads the
+- **Availability probe** (`gather.availability`): the default reads the
   corpus's own object store; a live re-fetch probe plugs into the same seam.
 
 ## Composition tutorial: gather inside the application
@@ -260,14 +260,16 @@ Observed in `public/flywheel/harness`:
   ranks it through the scout, and turns the top threads into falsifier-gated
   build candidates, with a content-addressed digest over the ingested feed.
 - **Cross-domain live feeds** (`live_feeds.py`): shells `gather feed <url>
-  --json` so every roster item carries gather provenance; a dead feed is a named
-  error, not a fake heartbeat. Surfaced at the gateway `/api/feeds`.
+  --json` so every roster item carries gather provenance; a dead feed surfaces
+  as a named error, and the roster shows that failure plainly. Surfaced at the
+  gateway `/api/feeds`.
 - **Discourse over a gather corpus** (`chorus_bridge.py`): the `chorus` satellite
   reads a gather corpus and returns a weighted, clustered discourse digest with
   its own receipt. Surfaced at `/api/discourse`, `/api/discourse/corpora`, and
   `/api/discourse/digests`. Note: `chorus` is integrated as a shelled satellite
-  over a gather corpus, not as a registry lane, so it is a contrast to gather's
-  full lane registration rather than a template gather still needs to follow.
+  over a gather corpus, without its own registry-lane entry. Gather already has
+  full lane registration, so this contrast marks a different integration
+  pattern.
 - **Source-context routing** (`source_context_route.py`, `source_context_gather.py`):
   a `GatherPathAdapter` is meant to call gather's corpus inspection while
   Flywheel holds retained-root authority. See the integration gap below.
@@ -296,13 +298,13 @@ gather corpus search ./corpus --terms "aperiodic tiling" --method http-get --jso
 The contract handed across the seam is the content hash on each receipt and the
 digest seal over the run. The verification lane (`crucible`) consumes those
 claims and re-checks them; because each claim is bound to the hash of what
-gather actually fetched, a claim that was never grounded in the corpus fails
-closed rather than passing on reputation. The flagship envelope makes this
-routing explicit: gather's `doctor` next-action is `crucible assess`, "verify
-repeated claims from gathered sources." Observed: `src/gather/flagship.py`,
+gather fetched, a claim that was never grounded in the corpus fails closed, and
+only a grounded claim passes. The flagship envelope makes this routing explicit:
+gather's `doctor` next-action is `crucible assess`, "verify repeated claims from
+gathered sources." Observed: `src/gather/flagship.py`,
 `src/gather/corpus_cmd.py`, `src/gather/recall.py`.
 
-For a discourse-shaped question instead of a claim, the same corpus feeds the
+A discourse-shaped question takes a different path. The same corpus feeds the
 `chorus` satellite through `/api/discourse`, which returns a themed digest with
 its own re-runnable receipt. Observed: `harness/chorus_bridge.py`.
 
@@ -311,16 +313,16 @@ its own re-runnable receipt. Observed: `harness/chorus_bridge.py`.
 Gather is already a native lane, so most of the wiring the question asks about
 exists. Present and verified:
 
-- **Lane registry entry** — `LANES["gather"]` in `harness/lanes_registry.py`,
+- **Lane registry entry**: `LANES["gather"]` in `harness/lanes_registry.py`,
   organ `perception`, version `1.6.1`, `py_module="gather.cli"`,
   `source_repo="public/gather"`.
-- **Expected-set test** — `tests/test_lanes.py::test_registry_covers_the_expected_lanes`
+- **Expected-set test**: `tests/test_lanes.py::test_registry_covers_the_expected_lanes`
   asserts `gather` is in the lane set, and
   `test_install_name_to_command_asymmetry_is_mapped` pins `gather-engine` to the
   `gather` command.
-- **Desktop app card** — `laneIdentities['gather']` in
+- **Desktop app card**: `laneIdentities['gather']` in
   `desktop/lib/models/lane_identity.dart`.
-- **Readiness receipt** — `scripts/run_gather_readiness.py` with
+- **Readiness receipt**: `scripts/run_gather_readiness.py` with
   `tests/test_gather_readiness.py`, producing `harness.gather-readiness/v1`.
 
 What is still missing or in flight (proposed work, not present on the working

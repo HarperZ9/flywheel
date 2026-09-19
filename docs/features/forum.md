@@ -166,7 +166,7 @@ you.
 ### CLI surface (`src/forum/cli.py`)
 
 | Command | What it does |
-| --- | --- |
+| - | - |
 | `forum route` | Decide a route and print the route frame. No model call. |
 | `forum submit` | Plan and run a request across executors; append to the ledger. |
 | `forum plan` | Plan a request into a dependency graph of waves without running. |
@@ -204,7 +204,7 @@ expose the same behavior.
 ### Ledger primitives (`src/forum/ledger.py`)
 
 - `verify(deep=False)` returns True only if the hash chain links.
-- `verify(deep=True)` additionally calls `verify_payloads()` to re-hash each
+- `verify(deep=True)` also calls `verify_payloads()` to re-hash each
   present body; a tampered body returns False even when the chain still links.
 - `replay(until=seq)` rebuilds the exact state at a past point.
 - `causal_chain(seq)` follows parent links to answer why an entry exists.
@@ -338,10 +338,11 @@ each piece is present and testable:
   `forum.gate.approve/edit/reject`, `forum.context.preflight`,
   `forum.runtime.inspect`) are reachable over the lane's own MCP and HTTP
   surfaces but are not yet forwarded through the gateway origin. This is an
-  observed depth gap, not a missing registration; see the integration gap note.
+  observed depth gap. The tools are registered; only the gateway forwarding is
+  missing. See the integration gap note.
 - The `ContextProvider` and `VerifierProvider` seams default to no-op. Peer
-  composition with `index` and `crucible` is a supported seam, not an always-on
-  behavior; if no peer is wired, Forum records the run without external context
+  composition with `index` and `crucible` is a supported seam that stays off by
+  default. If no peer is wired, Forum records the run without external context
   injection or an external verdict, and says so by the absence of those entries.
 - Version, tool, endpoint, and path facts here are high confidence (read from
   source). The behavioral summaries of routing and delivery are drawn from the
