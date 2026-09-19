@@ -19,7 +19,7 @@ build-backend = "setuptools.build_meta"
 # an unrelated package, so this publishes under a scoped name. The installed
 # console command stays `flywheel` (see [project.scripts]).
 name = "flywheel-verify"
-version = "1.0.0"
+version = "1.0.1"
 description = "The one platform: routing, verification, the lane layer, memory/context/catalog, and the closed verified-inference loop."
 readme = "README.md"
 # 3.11, not 3.10, because `datetime.UTC` landed in 3.11 and 51 modules use it.
@@ -81,7 +81,7 @@ harness = [
 
 [tool.pytest.ini_options]
 # Phase 0: a per-test timeout so no single test can wedge the suite. The full
-# collection is 6908 tests; 60s is generous for a unit test and surfaces any
-# smoke/integration test that should be marked and split out.
+# collection is 11,212 tests across 969 files; 60s is generous for a unit test
+# and surfaces any smoke/integration test that should be marked and split out.
 addopts = "--timeout=60 --timeout-method=thread -q"
 testpaths = ["tests"]

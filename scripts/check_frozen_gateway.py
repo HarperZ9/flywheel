@@ -155,6 +155,9 @@ def check(executable: Path, expected_version: str, receipt: dict) -> None:
     receipt["executable_sha256"] = hashlib.sha256(executable.read_bytes()).hexdigest()
     receipt["canon_context_payload"] = validate_canon_context_payload(
         executable, require)
+    from scripts.frozen_gateway_lane_smoke import bundled_lane_admission_smoke
+    receipt["bundled_lane_admission"] = bundled_lane_admission_smoke(
+        executable, require)
     from scripts.frozen_gateway_native_smoke import (
         prepare_native_smoke_fixture, run_native_acceptance_smoke)
 

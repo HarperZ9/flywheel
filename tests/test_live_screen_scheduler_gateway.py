@@ -96,33 +96,42 @@ def _handler(tmp_path, raw=b"{}"):
 def test_gateway_start_schedules_producer_without_poll_capture(tmp_path):
     _journey(tmp_path)
     manager = _manager()
+    # One fixed clock across manager, scheduler, and every gateway call. The
+    # session's expiry is now_ns + expires_after_ms, so mixing the manager's
+    # fixed clock with a real-monotonic gateway/scheduler clock made the 5s
+    # window depend on real elapsed setup time; under a loaded CI runner the
+    # journey and grant I/O between open and start could cross it, expiring the
+    # session and returning a non-200 start with no producer block. Pinning one
+    # clock (well inside the window) makes admission deterministic while the real
+    # background thread still ticks in real time.
+    clk = 1_000_000_000
     gateway._Handler.live_screen_manager = manager
     gateway._Handler.live_screen_scheduler = LiveScreenProducerScheduler(
-        manager, tick_interval_ms=1)
+        manager, clock_ns=lambda: clk, tick_interval_ms=5)
     gateway._Handler._live_screen_state_root = tmp_path / "state"
 
     h, sent = _handler(tmp_path, _approved_final(tmp_path, _open_operation(), "open-1"))
-    live_screen_post(h, "/api/live-screen/sessions")
+    live_screen_post(h, "/api/live-screen/sessions", now_ns=clk)
     assert sent["code"] == 200
     session_id = sent["body"]["session_id"]
 
     h, sent = _handler(tmp_path, _approved_final(
         tmp_path, _operation("start", session_id=session_id), "start-1"))
-    live_screen_post(h, f"/api/live-screen/sessions/{session_id}/start")
+    live_screen_post(h, f"/api/live-screen/sessions/{session_id}/start", now_ns=clk)
     assert sent["body"]["producer"]["tick_events"] == 1
 
-    deadline = time.time() + 1
+    deadline = time.time() + 2
     frame = None
     while time.time() < deadline:
         frame = manager.latest_frame(session_id, "display:primary",
-                                     owner_ref=OWNER, now_ns=time.monotonic_ns())
+                                     owner_ref=OWNER, now_ns=clk)
         if frame and frame.source_sequence >= 2:
             break
         time.sleep(0.01)
 
     assert frame is not None and frame.source_sequence >= 2
     h, sent = _handler(tmp_path, b"{}")
-    live_screen_post(h, f"/api/live-screen/sessions/{session_id}/poll")
+    live_screen_post(h, f"/api/live-screen/sessions/{session_id}/poll", now_ns=clk)
     sequences = [event["source_sequence"] for event in sent["body"]["events"]]
     assert sequences[0] == 1
     assert max(sequences) >= 2

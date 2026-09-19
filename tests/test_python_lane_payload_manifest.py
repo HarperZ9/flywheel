@@ -14,8 +14,8 @@ def test_python_lane_payload_manifest_check_passes():
     assert result.returncode == 0, result.stdout + result.stderr
     report = json.loads(result.stdout)
     assert report["verdict"] == "PASS"
-    assert report["async_blockers"] == ["forum"]
-    assert report["registry_updates"] == ["canon", "forum", "gather", "index", "mneme"]
+    assert report["async_lanes"] == ["forum"]
+    assert report["registry_updates"] == ["canon", "forum", "gather", "index", "mneme", "relay"]
 
 
 def test_python_lane_payload_manifest_rejects_descriptor_tamper(tmp_path):

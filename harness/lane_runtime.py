@@ -1,4 +1,19 @@
-"""Runtime selection for source and package-backed lanes."""
+"""Runtime selection for source- and package-backed lanes.
+
+A lane is one MCP tool server the gateway can launch, and the same lane can run
+more than one way. This module decides which, via the "runtime profile" in the
+per-lane registry row:
+
+  - "auto" (the default): prefer a resolvable source checkout, else the package.
+  - "source": force the source checkout; block the lane if none resolves.
+  - "package": force the installed package at its expected version.
+
+An unknown profile is a blocking error, so a typo cannot widen what launches.
+resolve_lane_runtime launches nothing: it returns a ResolvedLaneRuntime with the
+launch it would perform, plus mismatch_codes (every anomaly noticed) and
+blocking_codes (the subset that makes the lane unusable; see _blocking_codes).
+The pure helpers it calls live in lane_runtime_support.py.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -6,6 +21,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 
 from . import lane_runtime_support as _support
+from .bundled_lane_descriptor import bundled_payload_lane_names
 from .lane_runtime_versions import validate_public_version
 from .lanes_registry import Lane
 from .mcp_client import LaunchSpec
@@ -36,6 +52,10 @@ class LaneRuntimeError(RuntimeError):
 
 @dataclass(frozen=True)
 class ResolvedLaneRuntime:
+    """The resolved-but-not-launched runtime for one lane. selected_runtime
+    names the chosen path; mismatch_codes lists every anomaly noticed and
+    blocking_codes is the subset that prevents use, so a recorded version drift
+    stays visible without the lane being refused over it."""
     name: str
     launch: LaunchSpec | None
     selected_profile: str
@@ -54,14 +74,21 @@ class ResolvedLaneRuntime:
 
     @property
     def present(self) -> bool:
+        """True when a real runtime was chosen and nothing blocks it. A version
+        mismatch alone does not make a lane absent; a blocking code does."""
         return self.selected_runtime in {"source", "package", "bundled", "http"} and not self.blocking_codes
 
     def require_launch(self) -> LaunchSpec:
+        """Return the launch spec, or raise if the lane is blocked or has none,
+        so the gateway fails closed instead of launching an unusable lane."""
         if self.blocking_codes or self.launch is None:
             raise LaneRuntimeError(self.name, self.blocking_codes or ("runtime_launch_missing",))
         return self.launch
 
     def to_dict(self, capability: dict | None = None) -> dict:
+        """Serialize the resolution for the registry and telemetry. The launch is
+        reduced to a shape summary (launch_summary) so no absolute path or env
+        value leaks into a stored record."""
         row = {
             "schema": RUNTIME_SCHEMA,
             "selected_profile": self.selected_profile,
@@ -97,6 +124,11 @@ def resolve_lane_runtime(
     installed_version_fn: Callable[[Lane], str | None],
     package_runtime_version_fn: Callable[[Lane, str], str | None],
 ) -> ResolvedLaneRuntime:
+    """Resolve one lane's runtime without launching it. Every observation is
+    injected as a callable, so this stays testable and free of direct environment
+    reads. The body validates the profile and versions, picks a launch via
+    _select_launch, then asks _blocking_codes which codes are fatal; the returned
+    mismatch_codes unions the advisory and blocking codes, de-duplicated in order."""
     lane = lanes[name]
     row, row_codes = _registry_row(registry.get(name))
     profile, selection_source, profile_codes = _runtime_profile(row)
@@ -143,6 +175,7 @@ def resolve_lane_runtime(
 
 
 def _registry_row(value: object) -> tuple[dict, tuple[str, ...]]:
+    """The per-lane registry entry as a dict; a non-dict is a named mismatch."""
     if value is None:
         return {}, ()
     if isinstance(value, dict):
@@ -151,6 +184,8 @@ def _registry_row(value: object) -> tuple[dict, tuple[str, ...]]:
 
 
 def _runtime_profile(row: dict) -> tuple[str, str, tuple[str, ...]]:
+    """The requested profile and its source label. A missing key means "auto";
+    an out-of-set string resolves to "invalid", which blocks."""
     if "runtime_profile" not in row:
         return "auto", "default.auto", ()
     profile = row.get("runtime_profile")
@@ -161,6 +196,8 @@ def _runtime_profile(row: dict) -> tuple[str, str, tuple[str, ...]]:
 
 def _runtime_expected_version(row: dict, expected_version: str | None,
                               profile: str) -> tuple[str | None, tuple[str, ...]]:
+    """The version the package profile must match; only a "package" profile may
+    override the lane's expected version with a pinned "runtime_version"."""
     if profile != "package" or "runtime_version" not in row:
         return expected_version, ()
     return validate_public_version(
@@ -168,6 +205,8 @@ def _runtime_expected_version(row: dict, expected_version: str | None,
 
 
 def _runtime_python(row: dict) -> tuple[str | None, tuple[str, ...]]:
+    """A pinned absolute interpreter path, validated to exist. A relative or
+    missing path is a named code, never a silent fallback."""
     value = row.get("runtime_python")
     if value in (None, ""):
         return None, ()
@@ -184,6 +223,8 @@ def _runtime_python(row: dict) -> tuple[str | None, tuple[str, ...]]:
 
 
 def _observed_package_version(lane, runtime_python, installed_fn, python_version_fn):
+    """The installed version: a pinned interpreter is queried in its own
+    environment, else the current interpreter's metadata is read."""
     if runtime_python and lane.kind == "pip":
         return python_version_fn(lane, runtime_python)
     return installed_fn(lane)
@@ -191,13 +232,18 @@ def _observed_package_version(lane, runtime_python, installed_fn, python_version
 
 def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
                    extra_roots, importable_fn, runtime_python):
+    """Choose the one launch to perform, as (launch, selected_runtime,
+    bundled_component, bundled_codes). The check order is the precedence: relay-in-
+    frozen, disabled package, http, other frozen build, bundled, then the profiles."""
     if profile not in _VALID_PROFILES:
         return None, "invalid", None, ()
-    if lane.name == "relay" and is_frozen and profile == "auto":
+    # A payload lane admits from the frozen payload, unless it is package-disabled
+    # and forced off the auto profile (which stays a refusal below).
+    if is_frozen and lane.name in bundled_payload_lane_names() and (
+            profile == "auto" or not lane.package_disabled_reason):
         from .bundled_lane_admission import admit_bundled_lane
-        admission = admit_bundled_lane(
-            "relay", executable=python_executable, environ=environ,
-            importable_fn=importable_fn)
+        admission = admit_bundled_lane(lane.name, executable=python_executable,
+                                       environ=environ, importable_fn=importable_fn)
         if not admission.blocking_codes:
             return admission.launch, "bundled", admission.component, ()
         return None, "bundled", admission.component, admission.blocking_codes
@@ -205,6 +251,9 @@ def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
         return None, "package", None, ()
     if lane.kind == "http":
         return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), "http", None, ()
+    # A frozen build ships its own packaged imports and has no adjacent source
+    # checkout, so source is skipped: a source-tree launch would point at a path
+    # the shipped artifact lacks. Run the packaged command instead.
     if is_frozen:
         return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), (
             "package" if lane.kind in {"pip", "npm"} else lane.kind), None, ()
@@ -225,6 +274,12 @@ def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
 
 
 def _blocking_codes(lane, profile, selected, source_available, package_available, mismatch):
+    """Decide which accumulated codes make the lane unusable: the mismatch-vs-
+    blocking split. Most codes in `mismatch` are advisory and the lane still
+    launches (a source version differing from expected is recorded, not fatal). A
+    code blocks only when it defeats the selected path: an invalid profile, a
+    failed bundled admission, a disabled package, a source profile with no source,
+    or a package-profile pip/npm lane's bad interpreter, missing package, or mismatch."""
     if "invalid_runtime_profile" in mismatch:
         return ["invalid_runtime_profile"]
     if selected == "bundled":

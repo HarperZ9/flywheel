@@ -232,7 +232,7 @@ def test_different_operation_race_has_no_bare_request_or_second_grant_burn(
     entered, release, second_done = Event(), Event(), Event()
     original = first._consume_or_block
     def pause(checked):
-        entered.set(); assert release.wait(2)
+        entered.set(); assert release.wait(30)
         return original(checked)
     monkeypatch.setattr(first, "_consume_or_block", pause)
     results, errors = [], []
@@ -242,13 +242,13 @@ def test_different_operation_race_has_no_bare_request_or_second_grant_burn(
         finally:
             if done is not None: done.set()
     leader = Thread(target=call, args=(first, leader_command)); leader.start()
-    assert entered.wait(2)
+    assert entered.wait(30)
     follower_command = check_command(
         tmp_path, second, check_events(tmp_path)[-1]["event_sha256"],
         operation_ref=OPERATION.replace("a", "d"), request_id="check-race")
     follower = Thread(
         target=call, args=(second, follower_command, second_done)); follower.start()
-    early = second_done.wait(0.2); release.set(); leader.join(2); follower.join(2)
+    early = second_done.wait(0.2); release.set(); leader.join(30); follower.join(30)
     assert not early and len(results) == 1 and len(errors) == 1
     assert str(errors[0]) == "HEAD_CONFLICT"
     assert [event["event_type"] for event in check_events(tmp_path)[1:]] == [
@@ -284,13 +284,13 @@ def test_cross_service_run_executes_runner_and_side_effect_once(tmp_path, follow
         finally:
             if done is not None: done.set()
     leader = Thread(target=execute, args=("leader", first, leader_runner)); leader.start()
-    assert entered.wait(2)
+    assert entered.wait(30)
     follower = Thread(
         target=execute, args=("follower", second, follower_runner, follower_done)); follower.start()
-    early = follower_done.wait(2 if follower_timeout == 0.0 else 0.2)
+    early = follower_done.wait(30 if follower_timeout == 0.0 else 0.2)
     try: assert follower_timeout != 0.0 or (early and _busy_error(errors.get("follower")))
     finally:
-        release.set(); leader.join(5); follower.join(5)
+        release.set(); leader.join(30); follower.join(30)
     assert not leader.is_alive() and not follower.is_alive()
     unexpected = [exc for label, exc in errors.items() if label != "follower" or not _busy_error(exc)]
     assert not unexpected and set(results) | set(errors) == {"leader", "follower"}

@@ -66,6 +66,7 @@ from scripts.build_python_lane_payloads import (
 )
 from scripts.frozen_gateway_metadata import flywheel_verify_metadata_datas
 from scripts.studio_runtime_packaging import pyinstaller_studio_runtime_inputs
+from scripts.python_lane_freeze import python_lane_freeze_inputs
 import importlib.util
 
 
@@ -107,10 +108,18 @@ if canon_context_origin is None or not canon_context_origin.is_relative_to(canon
 distribution_data = flywheel_verify_metadata_datas(copy_metadata)
 canon_context_datas = canon_context_payload_datas(repo, canon_src)
 studio_runtime = pyinstaller_studio_runtime_inputs(repo)
+# Every other manifest lane (relay is the submodule, Canon is wired above) bundles
+# from its staged, hash-pinned source. The helper verifies each staged source
+# manifest hash against its pin and that each entrypoint resolves from its own src
+# before returning the analysis path entries and hidden imports.
+lane_source_root = Path(os.environ["FLYWHEEL_PYTHON_LANE_SOURCE_ROOT"])
+python_lane_pathex, python_lane_hidden, python_lane_receipts = (
+    python_lane_freeze_inputs(repo, lane_source_root))
 
 a = Analysis(
     [str(repo / "packaging" / "gateway_entry.py")],
-    pathex=[str(canon_src), str(relay_src), str(repo), *studio_runtime.pathex],
+    pathex=[str(canon_src), str(relay_src), str(repo), *python_lane_pathex,
+            *studio_runtime.pathex],
     datas=[(str(repo / "site"), "site"),
            (str(repo / "harness" / "gateway.py"), "harness"),
            (str(repo / "packaging" / "bundled-lanes" / "relay.json"),
@@ -145,6 +154,7 @@ a = Analysis(
         "harness.key_roster", "harness.keychain", "harness.keychain_route",
         "cryptography.hazmat.primitives.asymmetric.ed25519",
         "cryptography.hazmat.primitives.serialization",
+        *python_lane_hidden,
         *studio_runtime.hiddenimports,
     ],
     excludes=["tkinter", "matplotlib", "numpy", "PIL"],

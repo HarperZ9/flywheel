@@ -19,7 +19,7 @@ def test_registry_covers_the_expected_lanes():
     # the six spine flagships + local-model (the engine) + relay (execution) +
     # plexus (wiring) + mneme (memory) + calibrate-pro (its own calibration lane)
     # + accountable-surface (actuation) + canon (continuity) + writing (authoring)
-    assert set(LANES) == {"gather", "crucible", "chorus", "index", "forum",
+    assert set(LANES) == {"gather", "crucible", "chorus", "articulate", "index", "forum",
                           "learn", "telos", "local-model", "relay", "plexus", "mneme",
                           "calibrate-pro", "accountable-surface", "canon", "bulletin",
                           "writing"}

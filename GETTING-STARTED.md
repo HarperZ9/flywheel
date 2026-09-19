@@ -16,20 +16,18 @@ holds across every layer of the platform.
 
 ## Release status
 
-Use [v0.6.2](https://github.com/HarperZ9/flywheel/releases/tag/v0.6.2) for the
-currently published install path. This source checkout now declares
-`1.0.0` for the candidate line, and [docs/RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md)
-lists the remaining release holds. A source checkout is a development path, not
-a published 1.0 artifact.
+Use [v1.0.1](https://github.com/HarperZ9/flywheel/releases/tag/v1.0.1) for the
+current published install path. [RELEASE-NOTES-1.0.1.md](RELEASE-NOTES-1.0.1.md)
+lists what this release adds and its honest state.
 
 ## Install
 
 ```bash
-python -m pip install flywheel-verify==0.6.2
+python -m pip install flywheel-verify
 ```
 
 (`flywheel-verify` is the PyPI distribution name; the installed command is
-`flywheel`. From a source checkout for candidate development: `pip install -e .`.)
+`flywheel`. From a source checkout: `pip install -e .`.)
 
 Zero runtime dependencies. Python 3.11+. Stdlib only. No model download is
 required: the engine works immediately against any hosted provider you hold a
@@ -45,9 +43,9 @@ pip install "flywheel-verify[local]"     # the local HF serve/training stack
 
 ## Sign in with a subscription
 
-A token an authorized login already produced can carry your usage instead of a
+A token an authorized login already produced can carry your usage in place of a
 raw API key. Each provider differs in what it permits, and the CLI says which
-is which rather than implying they are alike:
+is which, keeping them distinct:
 
 ```bash
 flywheel auth status              # presence and terms per provider
@@ -72,11 +70,11 @@ Tokens land in the OS credential store under the same names the router
 already reads, so a completed sign-in shows up on the endpoints roster
 (presence only, never values). Sign out with
 `flywheel auth logout <provider>`; if the token is also set as an environment
-variable, the command says so instead of claiming it cleared it.
+variable, the command says so and leaves that variable in place.
 
 Two guarantees hold across every flow: the engine never runs another app's
 OAuth client, and it refuses to start a flow on a machine with no credential
-store rather than minting a token it cannot keep. Provider terms are yours to
+store, declining to mint a token it cannot keep. Provider terms are yours to
 read; flywheel does not interpret them for you.
 
 ## Start the engine
@@ -93,10 +91,10 @@ desktop client connects automatically when launched.
 ## Start the desktop client
 
 Download the current published installer,
-[Flywheel-Setup-0.6.2-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/Flywheel-Setup-0.6.2-x64.exe),
+[Flywheel-Setup-1.0.1-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v1.0.1/Flywheel-Setup-1.0.1-x64.exe),
 and verify it against the release
-[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/SHA256SUMS.txt)
-(engine bundled, no Python needed). From a candidate source checkout:
+[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v1.0.1/SHA256SUMS.txt)
+(engine bundled, no Python needed). From a source checkout:
 
 ```bash
 cd desktop && flutter run -d windows
@@ -109,12 +107,12 @@ jump to any destination by name.
 
 ## Ownership, profiles, memory, and sessions
 
-This section describes behavior in the current candidate source unless a release
-note says otherwise. The published 0.6.2 installer remains the install target
-above, and not every native candidate behavior described here ships in 0.6.2.
+This section describes behavior in the current source unless a release note says
+otherwise. The published installer remains the install target above, and not
+every native behavior described here ships in the installer yet.
 
 Flywheel binds native state to configured local ownership, project, workspace,
-and session facts instead of a display name. The desktop asks the local gateway
+and session facts in place of a display name. The desktop asks the local gateway
 which Canon project and workspace are configured, then uses that binding for
 context memory. Retrieved memory is input data; the run still needs its own
 receipts and evidence before a result is accepted.
@@ -126,7 +124,7 @@ limits are documented in
 [docs/native-cli-session-contract.md](docs/native-cli-session-contract.md). That
 contract refuses the older direct Codex CLI path because it lacked an admitted
 project-isolation control. It does not rule out separate managed provider-session
-candidate work on the 1.0 line.
+work in a later release.
 
 Continuation starts a fresh Evidence Journey from a source-bound workspace or
 export preview and refuses source drift; it does not resume a provider-native
@@ -222,7 +220,7 @@ flywheel lanes --probe      # live MCP handshake per lane
 The registered lanes and their roles:
 
 | Lane | Role |
-|---|---|
+|:--|:--|
 | gather | Research intake + provenance receipts |
 | crucible | Falsifiable verification + re-check |
 | index | Workspace map + symbol graph + verified wiki |
@@ -287,8 +285,7 @@ print(f"verify: {store.verify()['verdict']}")  # MATCH
 
 ## Read more
 
-- [docs/RELEASE-0.6.2.md](docs/RELEASE-0.6.2.md): current published release notes
-- [docs/RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md): unreleased candidate scope and holds
+- [RELEASE-NOTES-1.0.1.md](RELEASE-NOTES-1.0.1.md): what 1.0.1 adds and its honest state
 - [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory owner/project binding
 - [docs/native-cli-session-contract.md](docs/native-cli-session-contract.md): native CLI profile and session contract
 - [docs/native-continuation.md](docs/native-continuation.md): source-bound continuation preview and limits

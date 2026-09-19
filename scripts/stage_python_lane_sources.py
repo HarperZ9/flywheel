@@ -93,8 +93,6 @@ def _parse_repo_overrides(values: list[str]) -> dict[str, str]:
 
 def _require_safe_row(row: dict[str, Any]) -> None:
     lane, tag, commit = str(row["lane"]), str(row["owner_tag"]), str(row["owner_commit"])
-    if lane != "canon":
-        raise StageError("only the accepted Canon lane is staged by this script")
     if not SAFE_TOKEN.fullmatch(lane) or not SAFE_TOKEN.fullmatch(tag):
         raise StageError(f"{lane}: unsafe lane/tag directory token")
     if not COMMIT.fullmatch(commit):
@@ -129,9 +127,13 @@ def _ensure_checkout(row: dict[str, Any], source_root: Path,
     elif _content_dirty(dest):
         raise StageError(f"{lane}: source checkout is dirty: {dest}")
     got = _run(["git", "rev-parse", "HEAD"], cwd=dest)
-    if got != commit:
+    # A pin may name a commit or an annotated tag object; peel it to the commit
+    # it identifies so the check binds the exact tagged source, not the tag SHA.
+    want = _run(["git", "rev-parse", f"{commit}^{{commit}}"], cwd=dest)
+    if got != want:
         raise StageError(
-            f"{lane}: existing stage is {got}, expected {commit}; use a fresh source root")
+            f"{lane}: existing stage is {got}, expected {want} (pin {commit}); "
+            "use a fresh source root")
     return dest
 
 
@@ -184,7 +186,8 @@ def stage_sources(args: argparse.Namespace) -> dict[str, Any]:
     rows = _load_rows(Path(args.manifest))
     overrides = _parse_repo_overrides(args.source_repo or [])
     staged = []
-    for lane in args.lane or ["canon"]:
+    lanes = sorted(rows) if getattr(args, "all", False) else (args.lane or ["canon"])
+    for lane in lanes:
         if lane not in rows:
             raise StageError(f"unknown lane: {lane}")
         row = rows[lane]
@@ -212,7 +215,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", default=str(MANIFEST))
     parser.add_argument("--source-root", default=str(DEFAULT_SOURCE_ROOT))
-    parser.add_argument("--lane", action="append", choices=["canon"])
+    parser.add_argument("--lane", action="append")
+    parser.add_argument("--all", action="store_true",
+                        help="stage every manifest lane, not just --lane")
     parser.add_argument("--source-repo", action="append")
     parser.add_argument("--receipt")
     parser.add_argument("--bounded-receipt")

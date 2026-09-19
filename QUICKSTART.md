@@ -2,26 +2,23 @@
 
 Flywheel routes a task to the local or hosted model and tools you choose, then
 keeps a **receipt you can re-check yourself** for every accepted answer. The
-current published release is `0.6.2`; this source branch is the
-`1.0.0` candidate line and is not evidence of a published 1.0 artifact. The
-browser shell below is the fallback surface, and the native Windows app is the
-current user-facing client.
+current release is `1.0.1`. The browser shell below is the fallback surface, and
+the native Windows app is the current user-facing client.
 
 ## Run it now
 
 ```
-python -m pip install flywheel-verify==0.6.2
+python -m pip install flywheel-verify
 flywheel app --port 8799
 ```
 
-(From a source checkout for candidate development:
+(From a source checkout:
 `python scripts/run_harness_cli.py app --port 8799`.)
 
-The native surface is **Flywheel Desktop**. For the current published release,
-install
-[Flywheel-Setup-0.6.2-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/Flywheel-Setup-0.6.2-x64.exe)
+The native surface is **Flywheel Desktop**. For the current release, install
+[Flywheel-Setup-1.0.1-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v1.0.1/Flywheel-Setup-1.0.1-x64.exe)
 and verify it against
-[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/SHA256SUMS.txt).
+[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v1.0.1/SHA256SUMS.txt).
 The browser shell toured below is the dev/CI fallback: open
 **http://127.0.0.1:8799/site/index.html**.
 
@@ -34,7 +31,7 @@ surface to load.
 Every route is same-origin JSON you can also `curl`:
 
 | Route | What it gives you |
-|---|---|
+|:--|:--|
 | `/site/index.html` | The fallback shell: router, world, companion, studio, receipts |
 | `GET /api/endpoints` | Every provider in one roster (local and hosted), credential *presence* only, never a value |
 | `GET /api/endpoints/health` | Live health of your local tiers; hosted tiers report configured-or-not |
@@ -66,7 +63,7 @@ Cache hit → answer for free with the stored receipt. Otherwise run your local
 model and **check** the result; agreement is reported as agreement, an external
 check is reported as verified, and only the part that fails the check is
 escalated to a stronger tier. The decision to escalate is a threshold on
-evidence, not a guess, and the stronger tier is only *named* in the response,
+evidence, a measured trigger, and the stronger tier is only *named* in the response,
 never called for you.
 
 ## Why this is different from every other router
@@ -88,5 +85,5 @@ have to take the surface's word for it; recompute and compare.
 
 It markets what is real: re-checkable receipts, pass-parity with the models it
 routes to, availability on your own schedule, and local cost. It makes **no**
-capability-uplift claim. When a result is agreement rather than a verified
-check, it says so.
+capability-uplift claim. When a result is agreement with no verified check
+behind it, it says so.

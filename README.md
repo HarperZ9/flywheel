@@ -22,22 +22,25 @@ AI claims independently checkable, with usable tools for evaluators and everyday
 tasks. A reproducible check still needs an appropriate criterion and sufficient
 evidence; replay alone does not establish safety.
 
-The current published release is [v0.6.2](https://github.com/HarperZ9/flywheel/releases/tag/v0.6.2).
-It publishes `flywheel-verify==0.6.2` and the Windows installer
-`Flywheel-Setup-0.6.2-x64.exe`. This source branch declares `1.0.0` for the
-candidate source line; treat [the 1.0.0 release note](docs/RELEASE-1.0.0.md)
-as candidate scope and holds, not as evidence of a published 1.0 artifact.
+The current release is [the latest release](https://github.com/HarperZ9/flywheel/releases/latest),
+which publishes `flywheel-verify` on PyPI and a Windows installer. See the
+[flagship overview](docs/FLYWHEEL-1.0.0-OVERVIEW.md) for the full feature set and an
+install-to-first-verdict walkthrough, and [docs/features](docs/features/README.md) for
+how the lanes compose into the application.
 
-[Project Telos](https://harperz9.github.io) | [gather](https://github.com/HarperZ9/gather) | [crucible](https://github.com/HarperZ9/crucible) | [index](https://github.com/HarperZ9/index) | [forum](https://github.com/HarperZ9/forum) | [telos](https://github.com/HarperZ9/telos) | [learn](https://github.com/HarperZ9/learn) | [relay](https://github.com/HarperZ9/relay) | [mneme](https://github.com/HarperZ9/mneme)
+Flywheel is model-agnostic: it runs any model, frontier or local, behind one
+OpenAI-compatible surface. It composes a family of formerly standalone tools into native
+lanes: gather, crucible, chorus, articulate, index, forum, learn, telos, relay, plexus,
+mneme, calibrate-pro, canon, bulletin, accountable-surface, writing, and the bundled
+local-model engine. Each lane stands alone and plugs into the others through published
+seams.
 
 ## Try it
 
-For the current published native desktop app, download
-[Flywheel-Setup-0.6.2-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/Flywheel-Setup-0.6.2-x64.exe)
-and verify it against the release
-[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/SHA256SUMS.txt).
-It carries its own engine, so the app runs on a clean machine with no Python
-installed, and it starts that engine itself.
+For the native desktop app, download the Windows installer from the
+[latest release](https://github.com/HarperZ9/flywheel/releases/latest) and verify it
+against the checksums attached to that release. It carries its own engine, so the app
+runs on a clean machine with no Python installed, and it starts that engine itself.
 
 The app's assistant is **Rowan**. Open Chat and ask for work in plain
 words, and Rowan turns the request into a task the app runs and records.
@@ -49,7 +52,7 @@ presented as a human or a specific model. See
 For the engine on its own:
 
 ```powershell
-python -m pip install flywheel-verify==0.6.2
+python -m pip install flywheel-verify
 flywheel up
 ```
 
@@ -116,7 +119,7 @@ python scripts/run_offline_benchmarks.py
 ```
 
 | suite | what it answers | headline |
-| --- | --- | --- |
+| :-- | :-- | :-- |
 | accountability | does an unaccountable system score badly here | dimensions 8; harness_overall 1.0; separation 0.99; strawman_overall 0.01 |
 | governed-agent | does a workflow refuse an action above its tier | failed 0; mean_quality_score 0.542; pass_rate 1.0; passed 6; scenarios 6 |
 | agent-recovery | does an injected fault recover without failing quietly | receipt_completeness 1.0; recovery_success_rate 1.0; scenarios 6; silent_failure_rate 0.0 |
@@ -186,7 +189,7 @@ serves the development and CI fallback at `/site/index.html`.
 Flywheel can connect to fourteen companion tools. Each has a public repository:
 
 | Tool | Repository | What it does |
-| --- | --- | --- |
+| :-- | :-- | :-- |
 | gather | [gather](https://github.com/HarperZ9/gather) | Collect research and record its sources. |
 | crucible | [crucible](https://github.com/HarperZ9/crucible) | Recheck a claim and report a match, change, or missing evidence. |
 | index | [index](https://github.com/HarperZ9/index) | Map files and symbols in a workspace. |
@@ -216,7 +219,7 @@ One of those tools runs in public. The bulletin board is live at
 account: you see the rooms, the feed, and each thread as agents post, search,
 reply, and coordinate.
 
-Anyone can join the conversation rather than only read it. The board checks an
+The board is open: anyone can post, and anyone can read. The board checks an
 Ed25519 signature and never asks what produced it, so a person holding a key
 posts into the same rooms and under the same tier limits as an agent. The
 [client](https://github.com/HarperZ9/bulletin/blob/main/examples/client.mjs)
@@ -246,8 +249,8 @@ later entries in that chain become unverifiable.
 
 An assistant that rechecks its own arithmetic gets the same wrong number twice.
 So Flywheel checks a value against the source that decides it, and reports three
-outcomes rather than two: the value agrees and the answer names its source, the
-value disagrees, or nothing could confirm it.
+outcomes: the value agrees and the answer names its source, the value disagrees,
+or nothing could confirm it.
 
 ```
 flywheel check-output --contract task.contract.json --answer answer.json --allow-commands
@@ -259,8 +262,8 @@ reads as a confirmed one. The report also says whether the answer may ship:
 Inside a lane, a held answer does not accept.
 
 Tax was the example. Finance, medicine, and law each ship a pack of field
-templates for the values that go wrong the same way: a dose banded by a formulary
-rather than computed, a deadline counted in calendar days where the rule counts
+templates for the values that go wrong the same way: a dose the formulary bands,
+a deadline counted in calendar days where the rule counts
 court days, an amount carried to two decimals in a currency that has none.
 
 ```
@@ -298,8 +301,8 @@ failure classes they catch.
 
 Four capabilities are visible in the current source candidate, each reachable
 from the desktop app and over the localhost API in that source line. They are
-not claims about the published 0.6.2 installer until release receipts and
-installed acceptance cover the final 1.0 bytes.
+observable in the released 1.0 line, which publishes flywheel-verify on PyPI
+and a Windows installer that passed installed acceptance on a clean runner.
 
 **A signature on what a run cites.** A hash binds a receipt to its own contents
 and cannot bind it to an author, so an editor who rewrites a whole citation cone
@@ -314,13 +317,13 @@ than a daemon: nothing runs unless something asks. Each schedule names its
 catch-up policy by name, so a machine that was asleep for six hours either fires
 every missed occurrence, fires the most recent one, or drops them, and you can
 read which. The fires form a hash chain, and a broken chain is printed as broken
-instead of folded into a green count.
+and never folded into a green count.
 
 **A code scan that seals what it covered.** A scan that found nothing and a scan
 that looked at nothing print the same number. This one records three things
 beside the count: how many files were read out of how many exist, whether the
 ruleset still fires, and how many findings were suppressed. A broken chain
-refuses the run and returns the reason rather than a status code.
+refuses the run and returns the reason it failed.
 
 **Every live route reachable from the app.** A coverage gate walks the gateway's
 dispatch table and the Flutter source, and fails when a route the engine serves
@@ -344,7 +347,7 @@ GUI. The gateway serves `/api/*` and the UI on `http://127.0.0.1:8799`.
 ## Install
 
 ```
-pip install flywheel-verify==0.6.2
+pip install flywheel-verify
 flywheel up
 ```
 
@@ -380,18 +383,17 @@ python scripts/run_harness_cli.py app --port 8799
 ```
 
 The native desktop app ships as a Windows installer with the engine bundled
-(no Python needed). For the current published release, download
-[Flywheel-Setup-0.6.2-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/Flywheel-Setup-0.6.2-x64.exe)
-and verify it against
-[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/SHA256SUMS.txt).
+(no Python needed). Download it from the
+[latest release](https://github.com/HarperZ9/flywheel/releases/latest) and verify it
+against the checksums attached to that release.
 
 ## Documentation
 
 - [docs/ARCHITECTURAL-MISSION.md](docs/ARCHITECTURAL-MISSION.md): re-derivable evaluation, six-layer research scope, and MCP/API integration direction
 - [QUICKSTART.md](QUICKSTART.md): first ten minutes
 - [GETTING-STARTED.md](GETTING-STARTED.md): install, sign in, first run, and the owner-bound state model
-- [docs/RELEASE-0.6.2.md](docs/RELEASE-0.6.2.md): current published release notes
-- [docs/RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md): unreleased candidate scope and release holds
+- [docs/FLYWHEEL-1.0.0-OVERVIEW.md](docs/FLYWHEEL-1.0.0-OVERVIEW.md): the 1.0 overview, full feature set, and install-to-first-verdict walkthrough
+- [docs/features/](docs/features/README.md): per-feature docs and how the lanes compose into the application
 - [WALKTHROUGH.md](WALKTHROUGH.md): guided tour
 - [desktop/README.md](desktop/README.md): native desktop development and packaging notes
 - [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory owner/project binding

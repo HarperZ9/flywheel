@@ -11,8 +11,16 @@ import math
 import socket
 
 
-def request(port, path, *, data=None, headers=None, timeout=3):
-    """Send exactly once; return the actual status/body, with no retries."""
+def request(port, path, *, data=None, headers=None, timeout=20):
+    """Send exactly once; return the actual status/body, with no retries.
+
+    The timeout covers connect and every read on the socket. The default is
+    generous on purpose: a loaded CI runner can take several seconds to answer
+    one request while parallel suite shards contend for the GIL, and a tight
+    value turned that runner contention into a spurious socket timeout on
+    Windows. The bound stays finite, so a genuinely hung server still fails the
+    read instead of blocking forever.
+    """
     if (isinstance(timeout, bool) or not isinstance(timeout, (int, float))
             or not math.isfinite(timeout) or timeout <= 0):
         raise ValueError('timeout must be a finite positive number')
