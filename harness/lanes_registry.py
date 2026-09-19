@@ -65,6 +65,10 @@ LANES: dict[str, Lane] = {
         "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.2.0",
         "falsifiable verification + re-check (register -> steelman -> measure -> witness)",
         "verification", source_repo="public/crucible", py_module="crucible.cli"),
+    "chorus": Lane(
+        "chorus", "chorus-discourse", "chorus", ("mcp",), "pip", "0.3.0",
+        "re-derivable discourse digest (themes, contested aspects, dissent, receipt)",
+        "synthesis", source_repo="public/chorus", py_module="chorus.cli"),
     "index": Lane(
         "index", "index-graph", "index", ("mcp",), "pip", "2.10.0",
         "workspace map + symbol graph + verified wiki (the catalog lane)",
