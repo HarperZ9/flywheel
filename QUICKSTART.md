@@ -34,7 +34,7 @@ surface to load.
 Every route is same-origin JSON you can also `curl`:
 
 | Route | What it gives you |
-|---|---|
+|:--|:--|
 | `/site/index.html` | The fallback shell: router, world, companion, studio, receipts |
 | `GET /api/endpoints` | Every provider in one roster (local and hosted), credential *presence* only, never a value |
 | `GET /api/endpoints/health` | Live health of your local tiers; hosted tiers report configured-or-not |
@@ -66,7 +66,7 @@ Cache hit → answer for free with the stored receipt. Otherwise run your local
 model and **check** the result; agreement is reported as agreement, an external
 check is reported as verified, and only the part that fails the check is
 escalated to a stronger tier. The decision to escalate is a threshold on
-evidence, not a guess, and the stronger tier is only *named* in the response,
+evidence, a measured trigger, and the stronger tier is only *named* in the response,
 never called for you.
 
 ## Why this is different from every other router
@@ -88,5 +88,5 @@ have to take the surface's word for it; recompute and compare.
 
 It markets what is real: re-checkable receipts, pass-parity with the models it
 routes to, availability on your own schedule, and local cost. It makes **no**
-capability-uplift claim. When a result is agreement rather than a verified
-check, it says so.
+capability-uplift claim. When a result is agreement with no verified check
+behind it, it says so.

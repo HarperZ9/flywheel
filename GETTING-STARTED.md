@@ -45,9 +45,9 @@ pip install "flywheel-verify[local]"     # the local HF serve/training stack
 
 ## Sign in with a subscription
 
-A token an authorized login already produced can carry your usage instead of a
+A token an authorized login already produced can carry your usage in place of a
 raw API key. Each provider differs in what it permits, and the CLI says which
-is which rather than implying they are alike:
+is which, keeping them distinct:
 
 ```bash
 flywheel auth status              # presence and terms per provider
@@ -72,11 +72,11 @@ Tokens land in the OS credential store under the same names the router
 already reads, so a completed sign-in shows up on the endpoints roster
 (presence only, never values). Sign out with
 `flywheel auth logout <provider>`; if the token is also set as an environment
-variable, the command says so instead of claiming it cleared it.
+variable, the command says so and leaves that variable in place.
 
 Two guarantees hold across every flow: the engine never runs another app's
 OAuth client, and it refuses to start a flow on a machine with no credential
-store rather than minting a token it cannot keep. Provider terms are yours to
+store, declining to mint a token it cannot keep. Provider terms are yours to
 read; flywheel does not interpret them for you.
 
 ## Start the engine
@@ -114,7 +114,7 @@ note says otherwise. The published 1.0.0 installer remains the install target
 above, and not every native candidate behavior described here ships in 1.0.0.
 
 Flywheel binds native state to configured local ownership, project, workspace,
-and session facts instead of a display name. The desktop asks the local gateway
+and session facts in place of a display name. The desktop asks the local gateway
 which Canon project and workspace are configured, then uses that binding for
 context memory. Retrieved memory is input data; the run still needs its own
 receipts and evidence before a result is accepted.
@@ -222,7 +222,7 @@ flywheel lanes --probe      # live MCP handshake per lane
 The registered lanes and their roles:
 
 | Lane | Role |
-|---|---|
+|:--|:--|
 | gather | Research intake + provenance receipts |
 | crucible | Falsifiable verification + re-check |
 | index | Workspace map + symbol graph + verified wiki |
