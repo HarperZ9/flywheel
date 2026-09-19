@@ -46,7 +46,8 @@ def test_headers_and_body_share_one_send_and_401_is_preserved(monkeypatch):
         b'HTTP/1.0 401 Unauthorized\r\nContent-Length: 2\r\n\r\n{}')
     assert request(8799, '/api/auth/login', data=b'{"provider":"openai"}',
                    headers={'Authorization': 'Bearer synthetic'}) == (401, '{}')
-    assert connections == [(('127.0.0.1', 8799), 3)]
+    # 20 is the client default, kept generous so CI load cannot flake it (see http_fixture_client).
+    assert connections == [(('127.0.0.1', 8799), 20)]
     assert len(sock.sent) == 1
     head, body = sock.sent[0].split(b'\r\n\r\n', 1)
     assert head.startswith(b'POST /api/auth/login HTTP/1.1\r\n')
