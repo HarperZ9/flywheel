@@ -29,8 +29,8 @@ SOURCE_ALGORITHM = "sha256-canonical-source-manifest/v1"
 COMPONENT_SCHEMA = "flywheel.bundled-lane-component/v1"
 ROW_SCHEMA = "flywheel.python-lane-payload/v1"
 PACKAGING_BOUNDARY = (
-    "source_pin_and_manifest_only_no_runtime_admission_until_runtime_contract"
-    "_extends_python_sidecars"
+    "source_pinned_vendored_runtime_admission_all_python_lanes"
+    "_status_doctor_tools_only"
 )
 DOES_NOT_PROVE = [
     "NOT_PROVES_FULL_LANE_WORKFLOW: status and doctor admission checks identity/readiness only.",

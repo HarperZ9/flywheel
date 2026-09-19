@@ -16,7 +16,7 @@ from harness.evidence_json import canonical_sha256
 
 EXPECTED_LANES = ("gather", "crucible", "index", "forum", "plexus", "mneme", "canon", "chorus", "relay", "accountable-surface")
 REGISTRY_UPDATES = {"gather", "index", "forum", "mneme", "canon", "relay"}
-ASYNC_BLOCKED = {"forum"}
+ASYNC_LANES = {"forum"}
 MANIFEST = Path("packaging/python-lane-payloads.jsonl")
 SOURCE_ALGORITHM = "sha256-canonical-source-manifest/v1"
 SHA256_URI = re.compile(r"sha256:[0-9a-f]{64}\Z")
@@ -88,7 +88,7 @@ def validate_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
         _require(mcp.get("callable_style") in {"sync", "async"}, f"{lane}: callable style invalid")
         if mcp.get("callable_style") == "async":
             seen_async.add(lane)
-            _require(mcp.get("contract_status") == "needs_async_dispatch_or_wrapper", f"{lane}: async blocker not recorded")
+            _require(mcp.get("contract_status") == "async_coroutine_runtime_dispatch", f"{lane}: async contract not recorded")
         else:
             _require(mcp.get("contract_status") == "compatible_with_sync_dispatcher", f"{lane}: sync status mismatch")
         project = row.get("owner_project")
@@ -115,13 +115,13 @@ def validate_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
         seen_registry_updates == REGISTRY_UPDATES,
         f"registry update set changed: {sorted(seen_registry_updates)!r}",
     )
-    _require(seen_async == ASYNC_BLOCKED, f"async blocker set changed: {sorted(seen_async)!r}")
+    _require(seen_async == ASYNC_LANES, f"async lane set changed: {sorted(seen_async)!r}")
     return {
         "schema": "flywheel.python-lane-payload-manifest-check/v1",
         "verdict": "PASS",
         "lanes": lanes,
         "registry_updates": sorted(seen_registry_updates),
-        "async_blockers": sorted(seen_async),
+        "async_lanes": sorted(seen_async),
         "descriptor_sha256": descriptor_digests,
         "source_manifest_sha256": source_digests,
     }

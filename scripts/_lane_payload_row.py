@@ -144,7 +144,7 @@ def _mcp_block(checkout: Path, rev: str, lane: Any, pkg: str, pkg_dir: str) -> d
         shutil.rmtree(tmp, ignore_errors=True)
     health, doctor = _health_doctor(tool_names)
     contract = (
-        "needs_async_dispatch_or_wrapper"
+        "async_coroutine_runtime_dispatch"
         if style == "async"
         else "compatible_with_sync_dispatcher"
     )
