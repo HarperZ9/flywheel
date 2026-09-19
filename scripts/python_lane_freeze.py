@@ -1,11 +1,13 @@
 """Freeze inputs for bundling manifest Python lanes into the frozen gateway.
 
-Relay ships as a submodule and Canon has its own context-payload wiring, so both
-are handled directly in the spec. Every other manifest lane ships from its
-staged, hash-pinned source, and this module derives what PyInstaller needs for
-each one: the ``src`` directory to put on the analysis path, and every module in
-the pinned package as a hidden import (the child dispatcher imports the lane's
-entrypoint dynamically, which static analysis cannot follow on its own).
+Relay ships as a submodule, so it is handled directly in the spec. Every other
+manifest lane, Canon included, ships from its staged, hash-pinned source, and
+this module derives what PyInstaller needs for each one: the ``src`` directory to
+put on the analysis path, and every module in the pinned package as a hidden
+import (the child dispatcher imports the lane's entrypoint dynamically, which
+static analysis cannot follow on its own). Canon must go through here too, not
+only through its context-payload wiring, or its bundled-lane entrypoint
+(``canon.local_mcp``) is left out of the freeze and admission blocks it.
 
 For each lane it verifies two things before returning inputs. The staged source
 manifest hash must equal the pinned manifest row, so a build cannot bundle source
@@ -22,7 +24,7 @@ from pathlib import Path
 
 from scripts.build_python_lane_payloads import _verify_source_files
 
-SPEC_HANDLED_LANES = ("relay", "canon")
+SPEC_HANDLED_LANES = ("relay",)
 
 
 def _manifest_rows(repo: Path) -> dict[str, dict]:
