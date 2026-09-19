@@ -16,16 +16,16 @@ holds across every layer of the platform.
 
 ## Release status
 
-Use [v0.6.2](https://github.com/HarperZ9/flywheel/releases/tag/v0.6.2) for the
+Use [v1.0.0](https://github.com/HarperZ9/flywheel/releases/tag/v1.0.0) for the
 currently published install path. This source checkout now declares
-`1.0.0` for the candidate line, and [docs/RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md)
+`1.0.0` for the candidate line, and [RELEASE-NOTES-1.0.0.md](RELEASE-NOTES-1.0.0.md)
 lists the remaining release holds. A source checkout is a development path, not
 a published 1.0 artifact.
 
 ## Install
 
 ```bash
-python -m pip install flywheel-verify==0.6.2
+python -m pip install flywheel-verify==1.0.0
 ```
 
 (`flywheel-verify` is the PyPI distribution name; the installed command is
@@ -93,9 +93,9 @@ desktop client connects automatically when launched.
 ## Start the desktop client
 
 Download the current published installer,
-[Flywheel-Setup-0.6.2-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/Flywheel-Setup-0.6.2-x64.exe),
+[Flywheel-Setup-1.0.0-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v1.0.0/Flywheel-Setup-1.0.0-x64.exe),
 and verify it against the release
-[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/SHA256SUMS.txt)
+[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v1.0.0/SHA256SUMS.txt)
 (engine bundled, no Python needed). From a candidate source checkout:
 
 ```bash
@@ -110,8 +110,8 @@ jump to any destination by name.
 ## Ownership, profiles, memory, and sessions
 
 This section describes behavior in the current candidate source unless a release
-note says otherwise. The published 0.6.2 installer remains the install target
-above, and not every native candidate behavior described here ships in 0.6.2.
+note says otherwise. The published 1.0.0 installer remains the install target
+above, and not every native candidate behavior described here ships in 1.0.0.
 
 Flywheel binds native state to configured local ownership, project, workspace,
 and session facts instead of a display name. The desktop asks the local gateway
@@ -287,8 +287,8 @@ print(f"verify: {store.verify()['verdict']}")  # MATCH
 
 ## Read more
 
-- [docs/RELEASE-0.6.2.md](docs/RELEASE-0.6.2.md): current published release notes
-- [docs/RELEASE-1.0.0.md](docs/RELEASE-1.0.0.md): unreleased candidate scope and holds
+- [RELEASE-NOTES-1.0.0.md](RELEASE-NOTES-1.0.0.md): current published release notes
+- [RELEASE-NOTES-1.0.0.md](RELEASE-NOTES-1.0.0.md): unreleased candidate scope and holds
 - [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory owner/project binding
 - [docs/native-cli-session-contract.md](docs/native-cli-session-contract.md): native CLI profile and session contract
 - [docs/native-continuation.md](docs/native-continuation.md): source-bound continuation preview and limits

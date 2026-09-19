@@ -2,7 +2,7 @@
 
 Flywheel routes a task to the local or hosted model and tools you choose, then
 keeps a **receipt you can re-check yourself** for every accepted answer. The
-current published release is `0.6.2`; this source branch is the
+current published release is `1.0.0`; this source branch is the
 `1.0.0` candidate line and is not evidence of a published 1.0 artifact. The
 browser shell below is the fallback surface, and the native Windows app is the
 current user-facing client.
@@ -10,7 +10,7 @@ current user-facing client.
 ## Run it now
 
 ```
-python -m pip install flywheel-verify==0.6.2
+python -m pip install flywheel-verify==1.0.0
 flywheel app --port 8799
 ```
 
@@ -19,9 +19,9 @@ flywheel app --port 8799
 
 The native surface is **Flywheel Desktop**. For the current published release,
 install
-[Flywheel-Setup-0.6.2-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/Flywheel-Setup-0.6.2-x64.exe)
+[Flywheel-Setup-1.0.0-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v1.0.0/Flywheel-Setup-1.0.0-x64.exe)
 and verify it against
-[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v0.6.2/SHA256SUMS.txt).
+[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v1.0.0/SHA256SUMS.txt).
 The browser shell toured below is the dev/CI fallback: open
 **http://127.0.0.1:8799/site/index.html**.
 
