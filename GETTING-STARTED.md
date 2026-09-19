@@ -16,20 +16,18 @@ holds across every layer of the platform.
 
 ## Release status
 
-Use [v1.0.0](https://github.com/HarperZ9/flywheel/releases/tag/v1.0.0) for the
-currently published install path. This source checkout now declares
-`1.0.0` for the candidate line, and [RELEASE-NOTES-1.0.0.md](RELEASE-NOTES-1.0.0.md)
-lists the remaining release holds. A source checkout is a development path, not
-a published 1.0 artifact.
+Use [v1.0.1](https://github.com/HarperZ9/flywheel/releases/tag/v1.0.1) for the
+current published install path. [RELEASE-NOTES-1.0.1.md](RELEASE-NOTES-1.0.1.md)
+lists what this release adds and its honest state.
 
 ## Install
 
 ```bash
-python -m pip install flywheel-verify==1.0.0
+python -m pip install flywheel-verify
 ```
 
 (`flywheel-verify` is the PyPI distribution name; the installed command is
-`flywheel`. From a source checkout for candidate development: `pip install -e .`.)
+`flywheel`. From a source checkout: `pip install -e .`.)
 
 Zero runtime dependencies. Python 3.11+. Stdlib only. No model download is
 required: the engine works immediately against any hosted provider you hold a
@@ -93,10 +91,10 @@ desktop client connects automatically when launched.
 ## Start the desktop client
 
 Download the current published installer,
-[Flywheel-Setup-1.0.0-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v1.0.0/Flywheel-Setup-1.0.0-x64.exe),
+[Flywheel-Setup-1.0.1-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v1.0.1/Flywheel-Setup-1.0.1-x64.exe),
 and verify it against the release
-[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v1.0.0/SHA256SUMS.txt)
-(engine bundled, no Python needed). From a candidate source checkout:
+[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v1.0.1/SHA256SUMS.txt)
+(engine bundled, no Python needed). From a source checkout:
 
 ```bash
 cd desktop && flutter run -d windows
@@ -109,9 +107,9 @@ jump to any destination by name.
 
 ## Ownership, profiles, memory, and sessions
 
-This section describes behavior in the current candidate source unless a release
-note says otherwise. The published 1.0.0 installer remains the install target
-above, and not every native candidate behavior described here ships in 1.0.0.
+This section describes behavior in the current source unless a release note says
+otherwise. The published installer remains the install target above, and not
+every native behavior described here ships in the installer yet.
 
 Flywheel binds native state to configured local ownership, project, workspace,
 and session facts in place of a display name. The desktop asks the local gateway
@@ -126,7 +124,7 @@ limits are documented in
 [docs/native-cli-session-contract.md](docs/native-cli-session-contract.md). That
 contract refuses the older direct Codex CLI path because it lacked an admitted
 project-isolation control. It does not rule out separate managed provider-session
-candidate work on the 1.0 line.
+work in a later release.
 
 Continuation starts a fresh Evidence Journey from a source-bound workspace or
 export preview and refuses source drift; it does not resume a provider-native
@@ -287,8 +285,7 @@ print(f"verify: {store.verify()['verdict']}")  # MATCH
 
 ## Read more
 
-- [RELEASE-NOTES-1.0.0.md](RELEASE-NOTES-1.0.0.md): current published release notes
-- [RELEASE-NOTES-1.0.0.md](RELEASE-NOTES-1.0.0.md): unreleased candidate scope and holds
+- [RELEASE-NOTES-1.0.1.md](RELEASE-NOTES-1.0.1.md): what 1.0.1 adds and its honest state
 - [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory owner/project binding
 - [docs/native-cli-session-contract.md](docs/native-cli-session-contract.md): native CLI profile and session contract
 - [docs/native-continuation.md](docs/native-continuation.md): source-bound continuation preview and limits

@@ -2,26 +2,23 @@
 
 Flywheel routes a task to the local or hosted model and tools you choose, then
 keeps a **receipt you can re-check yourself** for every accepted answer. The
-current published release is `1.0.0`; this source branch is the
-`1.0.0` candidate line and is not evidence of a published 1.0 artifact. The
-browser shell below is the fallback surface, and the native Windows app is the
-current user-facing client.
+current release is `1.0.1`. The browser shell below is the fallback surface, and
+the native Windows app is the current user-facing client.
 
 ## Run it now
 
 ```
-python -m pip install flywheel-verify==1.0.0
+python -m pip install flywheel-verify
 flywheel app --port 8799
 ```
 
-(From a source checkout for candidate development:
+(From a source checkout:
 `python scripts/run_harness_cli.py app --port 8799`.)
 
-The native surface is **Flywheel Desktop**. For the current published release,
-install
-[Flywheel-Setup-1.0.0-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v1.0.0/Flywheel-Setup-1.0.0-x64.exe)
+The native surface is **Flywheel Desktop**. For the current release, install
+[Flywheel-Setup-1.0.1-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v1.0.1/Flywheel-Setup-1.0.1-x64.exe)
 and verify it against
-[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v1.0.0/SHA256SUMS.txt).
+[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v1.0.1/SHA256SUMS.txt).
 The browser shell toured below is the dev/CI fallback: open
 **http://127.0.0.1:8799/site/index.html**.
 
