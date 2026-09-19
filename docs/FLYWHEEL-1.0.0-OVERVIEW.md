@@ -113,9 +113,9 @@ not shipped 1.0.0 behavior.
   auto-wiring), mneme (memory recall with ranking receipts), calibrate-pro (display
   calibration), canon (provider-neutral memory bank), bulletin (agent correspondence
   board), accountable-surface (witnessed perception and gated effectors).
-- Fast-follow (post-1.0.0-tag): chorus (re-derivable discourse digest) as a lane, and a
-  compose pipeline that chains gather, chorus, and crucible into one claim-verification
-  bundle (harness/compose_claim.py). These land in 1.0.1.
+- Native in 1.0.1: chorus (re-derivable discourse digest) and articulate (writing-quality
+  and AI-tell detector and editor) are registered lanes, and a compose pipeline chains
+  gather, chorus, and crucible into one claim-verification bundle (harness/compose_claim.py).
 
 ### Research intake, code intelligence, learning, memory
 - Research intake: crawl and normalize sources, rank ACTIONABLE / INSPIRATION / NOISE by
@@ -130,7 +130,7 @@ not shipped 1.0.0 behavior.
 ### Creative studio, actuation, governance, interop
 - Creative studio: deterministic seeded pipelines with per-stage receipts for image, film,
   and raster work, a parametric typeface forge, and a seeded sound studio (telos lane).
-  This is the one place color is a subject rather than a verdict.
+  This is the one place color is the subject of the work.
 - Accountable actuation: witnessed perception, an operator-grant pre-execution gate,
   self-verifying effectors, and a tamper-evident journal; browser and native control with
   credential-shaped fields refused before policy is consulted (accountable-surface lane).
@@ -156,7 +156,7 @@ not shipped 1.0.0 behavior.
   those decisions and to abstain under uncertainty (harness/classifier_model.py,
   train/classifier_encoder.py). Three arms exist and are tested: a stdlib hashed-feature
   CPU ranker, an optional neural encoder, and decoder comparators.
-- How it is meant to bolster the engine: as a pre-accept proposer aid it can rank
+- How it is meant to help the engine: as a pre-accept proposer aid it can rank
   candidates before the oracle runs, route each task to the cheapest adequate tier,
   pre-rank intake and recall, and triage lint findings. It stays off the accept path by
   design, because a model that both proposes and accepts makes verification circular. So it
@@ -186,7 +186,7 @@ not shipped 1.0.0 behavior.
    agent or the relay lane; reads are free, writes and exec are opt-in.
 6. Run through a lane. `flywheel lanes` probes the roster and grades each LIVE / STALE /
    DECLARED / MISSING. A code task routes to the pytest oracle; a claim with no registered
-   domain oracle returns UNVERIFIABLE rather than a fabricated pass.
+   domain oracle returns UNVERIFIABLE.
 7. Get a receipt. An accepted answer emits a proof envelope carrying the oracle command,
    the oracle output hash, and the signed fixture set. In the API it rides the x_receipt
    extension; in the app it is the Receipts view and the verdict pill.
@@ -197,13 +197,13 @@ not shipped 1.0.0 behavior.
 
 ## Honest state
 
-- Released: `flywheel-verify` 1.0.0 on PyPI (Trusted Publishing, attested) and a Windows
+- Released: `flywheel-verify` on PyPI (Trusted Publishing, attested) and a Windows
   installer attached to the GitHub release, which passed a clean-runner installed
-  acceptance. The chorus lane and the compose pipeline land in 1.0.1.
+  acceptance. 1.0.1 adds the chorus and articulate lanes and the compose pipeline natively.
 - On the shipped benchmark the verified loop shows no measured accuracy uplift over
   single-shot; the interval includes zero. The demonstrated value is the re-derivable
   receipt and the containment, and capability uplift is the direction the mechanisms aim
-  at, not a result claimed.
+  at. It is not a demonstrated result yet.
 - The internal classifier is experimental, abstains today, and stays off the accept path
   by design.
 - A receipt proves a check reproduces. It does not prove the answer is true of the world.

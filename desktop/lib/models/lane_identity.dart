@@ -41,6 +41,16 @@ const Map<String, LaneIdentity> laneIdentities = {
         'digest carries a receipt that re-derives from the raw text.',
     surface: 'discourse digest + dissent',
   ),
+  'articulate': LaneIdentity(
+    title: 'Articulate',
+    identity:
+        'A local writing-quality and AI-tell detector and editor. It flags the '
+        'devices that read as machine-written, scores prose texture, and with a '
+        'model backend rewrites toward a plain, skilled standard. Detection is '
+        'standard-library and offline; each pass can carry a content-free audit '
+        'receipt, and it is a craft tool, never an evasion tool.',
+    surface: 'writing findings + edit receipts',
+  ),
   'index': LaneIdentity(
     title: 'Index',
     identity:

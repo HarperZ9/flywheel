@@ -69,6 +69,11 @@ LANES: dict[str, Lane] = {
         "chorus", "chorus-discourse", "chorus", ("mcp",), "pip", "0.3.0",
         "re-derivable discourse digest (themes, contested aspects, dissent, receipt)",
         "synthesis", source_repo="public/chorus", py_module="chorus.cli"),
+    "articulate": Lane(
+        "articulate", "articulate-writing", "python", ("-m", "articulate.mcp_server"),
+        "pip", "0.1.0",
+        "writing-quality + AI-tell detector and editor with content-free audit receipts (the MCP surface needs the [mcp] extra)",
+        "authoring", source_repo="articulate", py_module="articulate.mcp_server"),
     "index": Lane(
         "index", "index-graph", "index", ("mcp",), "pip", "2.10.0",
         "workspace map + symbol graph + verified wiki (the catalog lane)",
