@@ -14,8 +14,8 @@ if str(ROOT) not in sys.path:
 
 from harness.evidence_json import canonical_sha256
 
-EXPECTED_LANES = ("gather", "crucible", "index", "forum", "plexus", "mneme", "canon", "chorus")
-REGISTRY_UPDATES = {"gather", "index", "forum", "mneme", "canon"}
+EXPECTED_LANES = ("gather", "crucible", "index", "forum", "plexus", "mneme", "canon", "chorus", "relay", "accountable-surface")
+REGISTRY_UPDATES = {"gather", "index", "forum", "mneme", "canon", "relay"}
 ASYNC_BLOCKED = {"forum"}
 MANIFEST = Path("packaging/python-lane-payloads.jsonl")
 SOURCE_ALGORITHM = "sha256-canonical-source-manifest/v1"

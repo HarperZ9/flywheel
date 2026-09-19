@@ -102,7 +102,7 @@ LANES: dict[str, Lane] = {
     "relay": Lane(
         "relay", "relay-agent", "relay", ("--mcp",), "pip", "0.2.0",
         "accountable coding agent on any model endpoint (local-first, witnessed runs)",
-        "execution", source_repo="public/relay", py_module="relay.local_agent_cli",
+        "execution", source_repo="public/relay", py_module="relay.local_mcp",
         package_disabled_reason=("Relay's PyPI name belongs to another project. "
                                  "Use a HarperZ9 Relay source checkout.")),
     "plexus": Lane(
@@ -140,7 +140,7 @@ LANES: dict[str, Lane] = {
         "live accountability seam: witnessed perception + operator-grant pre-execution "
         "gate + self-verifying effectors + tamper-evident journal (actuates, so T2)",
         "actuation", source_repo="public/accountable-surface",
-        py_module="accountable_surface.server",
+        py_module="accountable_surface.mcp",
         extra_source_repos=("public/coherence-membrane", "public/proof-surface"),
         package_disabled_reason=("No published PyPI distribution is available. "
                                  "Use an accountable-surface source checkout.")),
