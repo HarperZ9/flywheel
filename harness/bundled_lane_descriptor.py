@@ -57,6 +57,17 @@ def load_manifest_rows(path: str | Path | None = None) -> dict[str, dict]:
     return rows
 
 
+def bundled_payload_lane_names(
+    manifest_rows: Mapping[str, dict] | None = None,
+) -> frozenset[str]:
+    """Every lane admissible from the bundled payload: the compiled anchors plus
+    every pinned manifest row. This is the set the runtime routes through bundled
+    admission in a frozen build, so a non-relay lane whose reviewed source is
+    vendored and hash-pinned admits by the same validated path relay does."""
+    rows = load_manifest_rows() if manifest_rows is None else manifest_rows
+    return frozenset(EXPECTED_BUNDLED_LANES) | frozenset(rows)
+
+
 def expected_from_manifest_row(row: Mapping[str, object]) -> dict[str, object]:
     """The admission expectation for one manifest lane, from its pinned row.
 

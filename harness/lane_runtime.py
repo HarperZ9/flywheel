@@ -236,18 +236,22 @@ def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
     frozen, disabled package, http, other frozen build, bundled, then the profiles."""
     if profile not in _VALID_PROFILES:
         return None, "invalid", None, ()
-    # Relay alone has a bundled-admission path: its reviewed source is carried
-    # INSIDE the frozen gateway payload, and the descriptor and module hashes must
-    # agree before that shipped source runs as a child (bundled_lane_admission.py).
-    # Every other lane is an external pip/npm package, not embedded in the exe.
-    if lane.name == "relay" and is_frozen and profile == "auto":
-        from .bundled_lane_admission import admit_bundled_lane
-        admission = admit_bundled_lane(
-            "relay", executable=python_executable, environ=environ,
-            importable_fn=importable_fn)
-        if not admission.blocking_codes:
-            return admission.launch, "bundled", admission.component, ()
-        return None, "bundled", admission.component, admission.blocking_codes
+    # A bundled-payload lane carries its reviewed source INSIDE the frozen gateway
+    # payload. Its descriptor and module hashes must agree before that shipped
+    # source runs as a child, and admission exposes only its status and doctor
+    # health tools (bundled_lane_admission.py). This is the one admission path for
+    # every lane in the payload manifest, not relay alone; a lane outside that set
+    # is an external pip/npm package or an http endpoint and falls through below.
+    if is_frozen and profile == "auto":
+        from .bundled_lane_descriptor import bundled_payload_lane_names
+        if lane.name in bundled_payload_lane_names():
+            from .bundled_lane_admission import admit_bundled_lane
+            admission = admit_bundled_lane(
+                lane.name, executable=python_executable, environ=environ,
+                importable_fn=importable_fn)
+            if not admission.blocking_codes:
+                return admission.launch, "bundled", admission.component, ()
+            return None, "bundled", admission.component, admission.blocking_codes
     if lane.package_disabled_reason and (is_frozen or profile == "package" or not source):
         return None, "package", None, ()
     if lane.kind == "http":
