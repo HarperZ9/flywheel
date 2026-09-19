@@ -214,15 +214,18 @@ def test_dispatch_serves_any_admitted_manifest_lane(monkeypatch):
     assert served == [True]
 
 
-def test_dispatch_refuses_async_serve_on_sync_path(monkeypatch):
-    """An async serve callable is refused rather than run on the sync dispatcher."""
+def test_dispatch_runs_async_coroutine_serve(monkeypatch):
+    """An async coroutine serve callable runs to completion under asyncio.run.
+
+    forum's declared callable is ``async def serve_stdio``, so the child mode has
+    to run a coroutine, not refuse it."""
     from harness import bundled_lane_admission, bundled_lane_descriptor
 
     monkeypatch.setattr(bundled_lane_descriptor, "module_importable",
                         lambda _name: True)
     calls = []
 
-    async def _aserve():  # pragma: no cover - must never be awaited here
+    async def _aserve():
         calls.append(True)
         return 0
 
@@ -231,8 +234,35 @@ def test_dispatch_refuses_async_serve_on_sync_path(monkeypatch):
         import_module_fn=lambda name: SimpleNamespace(serve=_aserve),
         executable="gateway.exe", environ={}, manifest_rows=_rows("widget"))
 
+    assert code == 0
+    assert calls == [True]
+
+
+def test_dispatch_refuses_non_coroutine_awaitable(monkeypatch):
+    """A non-coroutine awaitable has no run contract here, so it is closed and refused."""
+    from harness import bundled_lane_admission, bundled_lane_descriptor
+
+    monkeypatch.setattr(bundled_lane_descriptor, "module_importable",
+                        lambda _name: True)
+
+    class _Awaitable:
+        def __init__(self):
+            self.closed = False
+
+        def __await__(self):  # pragma: no cover - never awaited
+            yield
+
+        def close(self):
+            self.closed = True
+
+    obj = _Awaitable()
+    code = bundled_lane_admission.dispatch_bundled_lane_mcp(
+        ["--bundled-lane-mcp", "widget"],
+        import_module_fn=lambda name: SimpleNamespace(serve=lambda: obj),
+        executable="gateway.exe", environ={}, manifest_rows=_rows("widget"))
+
     assert code == 2
-    assert calls == []
+    assert obj.closed is True
 
 
 def test_dispatch_rejects_unknown_lane_and_extra_args():

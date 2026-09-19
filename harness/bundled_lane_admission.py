@@ -12,6 +12,7 @@ relay descriptor builder used by the build-time gate.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import asyncio
 import hashlib
 import importlib
 import inspect
@@ -116,9 +117,11 @@ def dispatch_bundled_lane_mcp(
 
     The child mode is exactly ``--bundled-lane-mcp <lane>`` (two tokens, a safe
     lane name). Any manifest lane admits and serves through this one path; the
-    lane must clear the same admission as launch, and its declared sync
-    ``serve`` callable is run. An awaitable callable is refused, so an async lane
-    cannot slip through the sync dispatcher before its runtime contract exists."""
+    lane must clear the same admission as launch, and its declared callable is
+    run. A synchronous callable runs directly; an async coroutine callable (such
+    as forum's ``serve_stdio``) runs to completion under ``asyncio.run`` in this
+    child process, which owns no other event loop. A non-coroutine awaitable is
+    refused, since it has no defined run contract here."""
     args = list(sys.argv[1:] if argv is None else argv)
     if not args or args[0] != "--bundled-lane-mcp":
         return None
@@ -144,6 +147,8 @@ def dispatch_bundled_lane_mcp(
     if not callable(serve):
         return 2
     result = serve()
+    if inspect.iscoroutine(result):
+        return int(asyncio.run(result) or 0)
     if inspect.isawaitable(result):
         getattr(result, "close", lambda: None)()
         return 2
