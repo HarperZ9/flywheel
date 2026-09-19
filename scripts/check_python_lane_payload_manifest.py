@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
 
 from harness.evidence_json import canonical_sha256
 
-EXPECTED_LANES = ("gather", "crucible", "index", "forum", "plexus", "mneme", "canon")
+EXPECTED_LANES = ("gather", "crucible", "index", "forum", "plexus", "mneme", "canon", "chorus")
 REGISTRY_UPDATES = {"gather", "index", "forum", "mneme", "canon"}
 ASYNC_BLOCKED = {"forum"}
 MANIFEST = Path("packaging/python-lane-payloads.jsonl")
