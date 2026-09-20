@@ -7,6 +7,17 @@
 > is observed from the repo source. Every claim under "How it composes" and
 > "Wiring it needs" is **proposed** and carries that label.
 
+> Wiring update. The lane now ships as a zero-dependency stdio server,
+> `harness/articulate_mcp.py` (`kind="bundled"`, launched with
+> `python -m harness.articulate_mcp`), mirroring the writing lane. It exposes the
+> two read-only detection tools, `check` and `score`, plus `articulate.status`
+> and `articulate.doctor` for the lane probe. It reads the detector from the
+> installed `articulate-writing` package and needs no `[mcp]` extra and no
+> fastmcp. The editor tools (`judge`, `fix`, `polish`) and the receipt commands
+> stay on the package's own `articulate.mcp_server` and CLI, so the "MCP server"
+> and "Wiring it needs" sections below describe that separate surface, not this
+> lane. Bringing the editor tools into the lane is a later slice.
+
 ## One sentence
 
 Articulate is a local, standard-library prose screener that flags AI-writing
