@@ -106,6 +106,37 @@ def test_local_model_requires_t2():
     assert LANE_MIN_TIERS.get("local-model") == "T2"
 
 
+def test_array_lane_follows_the_bulletin_floor_pattern():
+    # The lane floor is T1 for the read surface; the per-tool map carries
+    # the tier split (see the bulletin pattern).
+    assert LANE_MIN_TIERS.get("array") == "T1"
+
+
+def test_array_tool_tiers_split_read_from_actuation():
+    # Reading session state is T1; executing an offensive wave is T3.
+    assert required_tier("array", "array.status") == "T1"
+    assert required_tier("array", "roster_list") == "T1"
+    assert required_tier("array", "ledger_verify") == "T1"
+    assert required_tier("array", "engagement_build") == "T2"
+    assert required_tier("array", "wave_plan") == "T2"
+    assert required_tier("array", "isomorph_bridge") == "T2"
+    assert required_tier("array", "wave_approve") == "T3"
+    assert required_tier("array", "wave_deny") == "T3"
+    assert required_tier("array", "wave_execute") == "T3"
+
+
+def test_array_unlisted_tool_takes_the_safe_default():
+    # An unlisted tool on a mapped lane takes SPLIT_DEFAULT_TIER, never the
+    # lane floor: a gate that widens on its own when the far side grows is
+    # not a gate.
+    assert required_tier("array", "tool_added_later") == "T2"
+
+
+def test_t1_cannot_execute_an_array_wave():
+    assert _tier_allows("T1", required_tier("array", "wave_execute")) is False
+    assert _tier_allows("T3", required_tier("array", "wave_execute")) is True
+
+
 # --- mocked MCP call ----------------------------------------------------
 
 

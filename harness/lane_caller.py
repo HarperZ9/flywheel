@@ -89,6 +89,11 @@ LANE_MIN_TIERS: dict[str, str] = {
     "local-model": "T2",  # the propose-verify engine; can execute code
     "accountable-surface": "T2",  # actuates via effectors (fs/command/web/browser)
     "relay": "T2",  # the execution lane: a gated agent loop that runs code (run/exec)
+    # array follows the bulletin pattern, not the relay pattern: its read
+    # surface (status, roster, ledger) is open at T1 while the per-tool map
+    # pins planning at T2 and approval/execution at T3. The map, plus the
+    # SPLIT_DEFAULT_TIER, is what keeps the lane closed where it must be.
+    "array": "T1",
 }
 
 # The lane floor cannot say that reading a public board and posting to it are
@@ -122,6 +127,34 @@ TOOL_MIN_TIERS: dict[str, dict[str, str]] = {
         # signed, but they answer about the caller's own key and change nothing
         "board_whoami": "T1",
         "board_inbox": "T1",
+    },
+    # Array is a mapped lane because its read surface and its orchestration
+    # surface are different acts: listing the roster costs T1, approving and
+    # executing an offensive wave costs the top tier. The connector enforces
+    # its own single-use approval gate inside Array; this map is the outer
+    # governance floor. An unlisted tool arrives at SPLIT_DEFAULT_TIER, so a
+    # read tool is refused until listed (the safe direction) and an actuation
+    # tool can never arrive open.
+    "array": {
+        # health + read-only session surfaces
+        "array.status": "T1",
+        "array.connector_spec": "T1",
+        "array.lane_manifest": "T1",
+        "engagement_config": "T1",
+        "wave_list": "T1",
+        "ledger_query": "T1",
+        "ledger_verify": "T1",
+        "report_generate": "T1",
+        "tools_list": "T1",
+        "roster_list": "T1",
+        # planning and bridging: change session state, can trigger renders
+        "engagement_build": "T2",
+        "wave_plan": "T2",
+        "isomorph_bridge": "T2",
+        # operator acts: approve, deny, and execute an offensive wave
+        "wave_approve": "T3",
+        "wave_deny": "T3",
+        "wave_execute": "T3",
     },
 }
 

@@ -144,4 +144,12 @@ LANES: dict[str, Lane] = {
         extra_source_repos=("public/coherence-membrane", "public/proof-surface"),
         package_disabled_reason=("No published PyPI distribution is available. "
                                  "Use an accountable-surface source checkout.")),
+    "array": Lane(
+        "array", "array", "python", (), "pip", "1.1.0",
+        "private offensive orchestration: engagements, waves, approval gates, "
+        "containment, ledger + the attack-tool fleet (Isomorph bridge, Sofer perimeter)",
+        "assessment", source_repo="state/array",
+        py_module="offensive_platform.array_connector",
+        package_disabled_reason=("Array is a private orchestration checkout; "
+                                 "use a state/array source checkout.")),
 }

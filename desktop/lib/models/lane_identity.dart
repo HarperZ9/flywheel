@@ -160,4 +160,14 @@ const Map<String, LaneIdentity> laneIdentities = {
         'records the whole path.',
     surface: 'grant gate + action journal',
   ),
+  'array': LaneIdentity(
+    title: 'Array',
+    identity:
+        'The offensive assessment control plane: engagements with exact '
+        'target allow-lists, digest-sealed waves, single-use operator '
+        'approvals, independent containment, and a tamper-evident ledger. '
+        'It orchestrates the attack-tool fleet and never exploits anything '
+        'itself.',
+    surface: 'engagements + waves + evidence',
+  ),
 };

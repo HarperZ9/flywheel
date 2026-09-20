@@ -134,7 +134,11 @@ def package_runtime_version(lane: Lane, python_executable: str) -> str | None:
 
 def python_import_root(source: Path, lane: Lane) -> Path:
     top = lane.py_module.split(".", 1)[0]
-    for root in (source / "src", source):
+    # A monorepo may keep its Python package at the root (index), under
+    # src/ (gather, canon), or under platform/ (array keeps
+    # offensive_platform inside platform/). The probe is by existence,
+    # so a layout nothing uses costs one stat.
+    for root in (source / "src", source / "platform", source):
         if (root / top).is_dir() or (root / f"{top}.py").is_file():
             return root.resolve()
     return source.resolve()

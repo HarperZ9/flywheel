@@ -12,9 +12,9 @@ import harness.lanes as lanes
 from harness.mcp_client import LaunchSpec
 
 
-def _registry(monkeypatch, tmp_path, row):
+def _registry(monkeypatch, tmp_path, row, name="index"):
     path = tmp_path / "lanes.json"
-    path.write_text(json.dumps({"index": row}), encoding="utf-8")
+    path.write_text(json.dumps({name: row}), encoding="utf-8")
     monkeypatch.setattr(lanes, "LANE_REGISTRY_PATH", path)
 
 
@@ -184,6 +184,29 @@ def test_explicit_source_runtime_uses_source_even_when_package_is_present(
     runtime = lanes.lane_status("index", probe=False)["resolved_runtime"]
     assert runtime["selected_profile"] == "source"
     assert runtime["selected_runtime"] == "source"
+
+
+def test_platform_subdir_layout_resolves_its_import_root(
+        tmp_path, monkeypatch):
+    # array keeps offensive_platform inside platform/, not at the repo root
+    # or under src/. The import-root probe must find the package one level
+    # down, or the source launch sets a PYTHONPATH nothing imports from.
+    source = tmp_path / "workspace" / "state" / "array"
+    package = source / "platform" / "offensive_platform"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    _registry(monkeypatch, tmp_path, {"runtime_profile": "source"},
+              name="array")
+    monkeypatch.setattr(lanes, "resolve_source_repo", lambda lane: source)
+    monkeypatch.setattr(lanes, "_installed_version", lambda lane: "1.1.0")
+
+    launch = lanes.resolve_mcp_launch("array")
+
+    assert launch.argv == (
+        sys.executable, "-m", "offensive_platform.array_connector")
+    assert launch.cwd == str(source.resolve())
+    assert dict(launch.env_overrides)["PYTHONPATH"].split(os.pathsep)[0] == str(
+        (source / "platform").resolve())
 
 
 def test_invalid_runtime_profile_is_named_without_auto_fallback(tmp_path, monkeypatch):

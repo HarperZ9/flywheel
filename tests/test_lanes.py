@@ -19,10 +19,26 @@ def test_registry_covers_the_expected_lanes():
     # the six spine flagships + local-model (the engine) + relay (execution) +
     # plexus (wiring) + mneme (memory) + calibrate-pro (its own calibration lane)
     # + accountable-surface (actuation) + canon (continuity) + writing (authoring)
+    # + array (private offensive orchestration, assessment organ)
     assert set(LANES) == {"gather", "crucible", "chorus", "articulate", "index", "forum",
                           "learn", "telos", "local-model", "relay", "plexus", "mneme",
                           "calibrate-pro", "accountable-surface", "canon", "bulletin",
-                          "writing"}
+                          "writing", "array"}
+
+
+def test_array_lane_declares_the_private_offensive_connector():
+    lane = LANES["array"]
+    assert lane.organ == "assessment"
+    assert lane.kind == "pip"
+    assert lane.command == "python"
+    # The module entry carries the invocation for every runtime profile;
+    # mcp_args stays empty so no profile appends the module twice.
+    assert lane.mcp_args == ()
+    assert lane.py_module == "offensive_platform.array_connector"
+    assert lane.source_repo == "state/array"
+    # A private lane must not claim a public distribution.
+    assert lane.package_disabled_reason
+    assert "state/array source checkout" in lane.package_disabled_reason
 
 
 def test_install_name_to_command_asymmetry_is_mapped():
