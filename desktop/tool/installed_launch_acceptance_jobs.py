@@ -113,10 +113,11 @@ def _environment(env: Mapping[str, str]):
     return ctypes.create_unicode_buffer("\0".join(items) + "\0\0")
 
 
-def _startup(stdout_path: Path, stderr_path: Path):
+def _startup(stdout_path: Path, stderr_path: Path, stdin_path: Path | None = None):
     import msvcrt
 
-    streams = [open(os.devnull, "rb"), open(stdout_path, "wb"), open(stderr_path, "wb")]
+    stdin = open(stdin_path, "rb") if stdin_path else open(os.devnull, "rb")
+    streams = [stdin, open(stdout_path, "wb"), open(stderr_path, "wb")]
     for stream in streams:
         os.set_handle_inheritable(msvcrt.get_osfhandle(stream.fileno()), True)
     startup = STARTUPINFO()
@@ -184,7 +185,8 @@ class WindowsJobProcess:
 
 
 def start_windows_job_process(exe: Path, args: list[str], env: Mapping[str, str],
-                              cwd: Path, stdout: Path, stderr: Path):
+                              cwd: Path, stdout: Path, stderr: Path,
+                              stdin_path: Path | None = None):
     if os.name != "nt":
         return None, "job_object_unavailable:not_windows"
     kernel = _kernel()
@@ -201,7 +203,7 @@ def start_windows_job_process(exe: Path, args: list[str], env: Mapping[str, str]
     process = PROCESS_INFORMATION()
     streams = []
     try:
-        startup, streams = _startup(stdout, stderr)
+        startup, streams = _startup(stdout, stderr, stdin_path)
         command = ctypes.create_unicode_buffer(subprocess.list2cmdline([str(exe), *args]))
         environment = _environment(env)
         create = kernel.CreateProcessW

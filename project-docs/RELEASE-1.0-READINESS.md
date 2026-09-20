@@ -1,6 +1,6 @@
 # Flywheel 1.0 readiness
 
-Updated: 2026-09-13. This register tracks readiness; it is not a release receipt.
+Updated: 2026-09-15. This register tracks readiness; it is not a release receipt.
 
 ## Release decision
 
@@ -21,23 +21,29 @@ installation or security-sensitive interaction retains its own boundary.
 - Latest published application release checked on September 13 is
   [0.6.2](https://github.com/HarperZ9/flywheel/releases/tag/v0.6.2).
 - An existing installed 0.6.2 client does not validate later source changes.
-- No 1.0.0 tag, GitHub Release, PyPI package, installer, or installed
-  acceptance receipt exists until the release workflow produces and verifies it.
+- A local development installer has been compiled. It does not establish a
+  published 1.0.0 tag, GitHub Release, PyPI package or installed acceptance.
 - Source checks, hosted CI, packaged artifacts, installed acceptance, publication,
   and external use require separate evidence.
 
 ## Current candidate holds
 
-- Full Python acceptance must be rerun after the HTTP gateway-auth vendor MIME
-  regression is fixed.
+- Full Python acceptance passed locally after the gateway-auth and acceptance
+  recorder repairs, with recorded inputs unchanged. Bind the gate to the final
+  integrated source and rerun it if relevant inputs change.
 - Full Flutter acceptance on the candidate line must retain generated-file
   reconciliation evidence when generated files change only by line endings.
-- The 1.0.0 candidate must produce source-bound app, engine, CRT, installer and
-  SHA256SUMS manifests before installed acceptance.
+- The local development candidate has app, engine, CRT, installer and SHA256SUMS
+  evidence. Rebuild from the final accepted source commit and bind its manifests
+  before installed acceptance; a dirty composition's base commit is insufficient.
 - Installed acceptance must cover preflight, metadata, full engine restart, and
   Inspect import/reopen receipts on the same candidate bytes.
 
 ## Acceptance matrix
+
+The [architectural mission](../docs/ARCHITECTURAL-MISSION.md) couples evaluation
+with the general-user harness. The following rows retain the expanded native
+application requirements alongside the existing reviewer and release gates.
 
 | Workflow | Existing implementation or evidence | Remaining release acceptance |
 |---|---|---|
@@ -47,6 +53,11 @@ installation or security-sensitive interaction retains its own boundary.
 | Process review and incident simulation | Existing [incident-simulation evaluation](../docs/INCIDENT-SIM-EVALUATION.md), process-audit packets, and false-success controls. | Demonstrate a complete reviewer handoff with exact evidence, missingness, and the same bounded conclusions through CLI/API and Desktop. |
 | Trace and Journey persistence | Existing retained trace and Journey evidence paths. | Verify restart, authorized source access, changed/missing evidence, read failures, and recovery on installed bytes. |
 | Provider operation | Existing provider adapters and credential handling. | Test each advertised provider/auth route in its supported configuration. Credential presence is not successful inference or a provider guarantee. |
+| Rowan interaction | Recorded cue library, animation and operation bindings are in candidate source. | On candidate bytes, verify user-controlled playback, truthful event predicates, captions, mute/stop, interruption and recovered-event behavior. Voice is not evidence of task correctness. |
+| Navigable chat | Candidate outline, search, source links, bookmarks and notes preserve original message targets. | Exercise a long conversation, streaming, keyboard access, resizing, restart and missing targets in the compiled app without draft or history loss. |
+| Model selection and cross-provider orchestration | Candidate route discovery and child-route handling. | Verify each supported authentication path, explicit model selection, independent child authority, cancellation and provenance. Synthetic routing does not prove live provider operation. |
+| Studio and model observations | Candidate native visual/sound instruments, live-screen delivery and accountable actuation. | Verify actual capture-to-model and action-to-effect bindings, selected-source controls, rendered frames and device playback. Text-mediated observations do not establish native model senses. |
+| API/MCP interoperability | Shared operation and receipt surfaces in candidate source. | Check supported protocol versions, equivalent results and permission denials on the same artifacts. Preserve necessary session state and report unsupported paths. |
 | Windows packaging and upgrade | Existing frozen engine, installer, metadata, payload hashes, and launch checks. | Build from the accepted commit; retain complete payload manifests; verify install, launch, engine restart, upgrade behavior, and claimed recovery scope. |
 | Android and Relay/Plexus handoff | Bundled components and source-level paths exist. | Physical device, network, identity, interruption, and resume acceptance remains separate. Bundle presence is not an end-to-end handoff result. |
 | Public claims | [Independence register](../docs/INDEPENDENCE.md), versioned release notes, public source and fixtures. | Align all claims with the final candidate's actual coverage. A green source suite does not establish adoption, paid use, or regulatory approval. |

@@ -1,18 +1,4 @@
-"""subagents.py -- role-prompted agent swarms with per-child receipts.
-
-One goal fans out to N child agent loops. Each child runs in its own
-process tree (argv, never a shell) inside its own scratch workspace,
-under a fixed role whose authority is enforced at registration. Every
-child is sealed a run receipt; a deterministic quorum rule fans the
-children back in -- no learned model decides whether the swarm
-satisfied its goal, only counted completions against the policy.
-Fan-in fires the accountable hooks `agent.completed` event from the
-run root's registry.
-
-The contract lives in subagent_roles (roles, spec seals, quorum) and
-subagent_store (persistence, production launcher); this module owns
-the lifecycle.
-"""
+"""Role-prompted agent swarms with per-child receipts and quorum fan-in."""
 from __future__ import annotations
 
 import hashlib
@@ -22,12 +8,6 @@ import threading
 import time
 from pathlib import Path
 
-from .accountable_hooks import (
-    event_blocked,
-    load_registry,
-    run_hooks,
-    subprocess_runner,
-)
 from .evidence_json import canonical_sha256  # re-exported for seals
 from .subagent_roles import (
     BUILTIN_PROMPTS,
@@ -81,18 +61,31 @@ class SwarmRunner:
         self._lock = threading.Lock()
         self._live: dict[str, dict] = {}
 
-    def spawn(self, *, goal: str, endpoint: str, children: list[dict],
+    def spawn(self, *, goal: str, endpoint: str = "", children: list[dict],
               quorum_policy: str = "majority", timeout_s: float = 600.0,
-              max_steps: int = 6, model: str = "",
-              handle_factory=None) -> dict:
+              max_steps: int = 6, model: str = "", parent_authority=None,
+              workspace_root=None, state_root=None, operation_service=None,
+              process_factory=None, handle_factory=None) -> dict:
         if not isinstance(goal, str) or not goal.strip() \
                 or len(goal) > MAX_GOAL_CHARS:
             _refuse("the swarm goal is empty or over the limit")
-        if not isinstance(endpoint, str) or not endpoint.strip() \
-                or len(endpoint) > 200:
-            _refuse("the swarm names no endpoint")
-        if not isinstance(model, str) or len(model) > 200:
-            _refuse("the model ref is invalid")
+        from .subagent_gateway_bridge import (aggregate_child_budget,
+            attach_reservation, is_v2_child, parent_authority_summary,
+            require_authorized_parent, reserve_gateway_swarm)
+        bound_mode = isinstance(children, list) and any(is_v2_child(c) for c in children)
+        if bound_mode:
+            parent_authorized = require_authorized_parent(parent_authority)
+            parent_authority = parent_authority_summary(parent_authorized)
+            if operation_service is None or process_factory is None or state_root is None:
+                _refuse("gateway operation service is required for v2 children")
+        else:
+            parent_authorized = None; parent_authority = None
+        if not bound_mode:
+            if not isinstance(endpoint, str) or not endpoint.strip() \
+                    or len(endpoint) > 200:
+                _refuse("the swarm names no endpoint")
+            if not isinstance(model, str) or len(model) > 200:
+                _refuse("the model ref is invalid")
         if quorum_policy not in QUORUM_POLICIES:
             _refuse(f"unknown quorum policy: {quorum_policy!r}")
         if isinstance(timeout_s, bool) \
@@ -105,16 +98,22 @@ class SwarmRunner:
         if not isinstance(children, list) \
                 or not 1 <= len(children) <= MAX_CHILDREN:
             _refuse(f"a swarm carries 1..{MAX_CHILDREN} children")
-        sealed_children = []
-        for c in children:
-            if isinstance(c, str):
-                c = {"role": c}
-            if not isinstance(c, dict):
-                _refuse("every child binding is a role object")
-            sealed_children.append(with_role_prompt(validate_child(
-                str(c.get("role", "")), str(c.get("prompt") or ""),
-                allow_write=bool(c.get("allow_write")),
-                allow_exec=bool(c.get("allow_exec")))))
+        sealed_children = list(children) if bound_mode else []
+        if bound_mode and any(not is_v2_child(c) for c in sealed_children):
+            _refuse("every v2 child must carry its own route")
+        aggregate = (aggregate_child_budget(
+            sealed_children, parent_authority, float(timeout_s))
+            if bound_mode else None)
+        if not bound_mode:
+            for c in children:
+                if isinstance(c, str):
+                    c = {"role": c}
+                if not isinstance(c, dict):
+                    _refuse("every child binding is a role object")
+                sealed_children.append(with_role_prompt(validate_child(
+                    str(c.get("role", "")), str(c.get("prompt") or ""),
+                    allow_write=bool(c.get("allow_write")),
+                    allow_exec=bool(c.get("allow_exec")))))
         swarm_id = "swarm_" + secrets.token_hex(6)
         sdir = swarm_dir(self.root, swarm_id)
         sdir.mkdir(parents=True, exist_ok=True)
@@ -125,39 +124,66 @@ class SwarmRunner:
             child_id = "sa_" + secrets.token_hex(4)
             workspace = sdir / ("work_" + child_id)
             workspace.mkdir(parents=True, exist_ok=True)
-            spec = build_spec(swarm_id=swarm_id, child_id=child_id,
-                              goal=goal, endpoint=endpoint, model=model,
-                              max_steps=max_steps, child=child,
-                              workspace=workspace, created_at=created_at)
-            spec_path = sdir / (child_id + ".spec.json")
-            spec_path.write_text(
-                json.dumps(spec, indent=2, sort_keys=True),
+            if bound_mode:
+                from .subagent_gateway_bridge import build_bound_spec
+                spec = build_bound_spec(swarm_id=swarm_id, child_id=child_id,
+                    goal=goal, child=child, workspace=workspace,
+                    created_at=created_at, parent_authority=parent_authority,
+                    workspace_root=workspace_root, state_root=state_root)
+            else:
+                spec = build_spec(swarm_id=swarm_id, child_id=child_id,
+                                  goal=goal, endpoint=endpoint, model=model,
+                                  max_steps=max_steps, child=child,
+                                  workspace=workspace, created_at=created_at)
+            records.append({"child_id": child_id, "role": child["role"],
+                            "spec": spec, "spec_path": sdir / (child_id + ".spec.json"),
+                            "workspace": workspace, "handle": None})
+        if bound_mode:
+            from .subagent_gateway_child import GatewayChildHandle
+            reservation = reserve_gateway_swarm(
+                operation_service, parent_authorized, swarm_id,
+                [r["spec"] for r in records], aggregate, float(timeout_s))
+            for r in records:
+                r["spec"] = attach_reservation(r["spec"], reservation)
+            def factory(spec_path, workspace):
+                spec = next(r["spec"] for r in records if r["spec_path"] == spec_path)
+                return GatewayChildHandle(spec, parent_authorized,
+                    operation_service, process_factory, Path(state_root))
+        for r in records:
+            r["spec_path"].write_text(
+                json.dumps(r["spec"], indent=2, sort_keys=True),
                 encoding="utf-8")
             try:
-                handle = factory(spec_path, workspace)
+                r["handle"] = factory(r["spec_path"], r["workspace"])
             except Exception:
-                handle = None
-            records.append({"child_id": child_id, "role": child["role"],
-                            "spec": spec, "spec_path": spec_path,
-                            "workspace": workspace, "handle": handle})
+                r["handle"] = None
         # The live state is what a restarted process adopts from: pids,
         # workspaces, and seals -- no in-memory handles required.
-        save_live_state({
+        from .subagent_gateway_contract import spec_live_fields
+        endpoint_name = "mixed" if bound_mode else endpoint
+        live = {
             "schema": LIVE_SCHEMA, "swarm_id": swarm_id,
             "created_at": created_at,
             "timeout_at": time.time() + float(timeout_s),
             "quorum_policy": quorum_policy, "goal": goal,
-            "endpoint": endpoint,
+            "endpoint": endpoint_name,
             "children": [{"child_id": c["child_id"], "role": c["role"],
                           "pid": getattr(c["handle"], "pid", None),
                           "workspace": str(c["workspace"]),
-                          "spec_sha256": c["spec"]["spec_sha256"]}
+                          "spec_sha256": c["spec"]["spec_sha256"],
+                          **spec_live_fields(c["spec"])}
                          for c in records],
-        }, run_root=self.root)
+        }
+        if bound_mode:
+            live["routing_schema"] = "flywheel.subagent-routing/v2"
+            live["state_root"] = str(Path(state_root))
+        save_live_state(live, run_root=self.root)
         rec = {"swarm_id": swarm_id, "status": "running",
-               "quorum_policy": quorum_policy, "timeout_s": timeout_s,
-               "goal": goal, "endpoint": endpoint, "created_at": created_at,
-               "cancel_requested": False, "children": records}
+                "quorum_policy": quorum_policy, "timeout_s": timeout_s,
+                "goal": goal, "endpoint": endpoint_name, "created_at": created_at,
+                "cancel_requested": False, "children": records}
+        if bound_mode:
+            rec["routing_schema"] = "flywheel.subagent-routing/v2"
         with self._lock:
             self._live[swarm_id] = rec
         threading.Thread(target=self._orchestrate, args=(rec,),
@@ -165,8 +191,9 @@ class SwarmRunner:
         return {"schema": "flywheel.subagent-spawn-ack/v1",
                 "swarm_id": swarm_id, "status": "running",
                 "quorum_policy": quorum_policy, "timeout_s": timeout_s,
-                "children": [{"child_id": c["child_id"], "role": c["role"]}
-                             for c in records]}
+                "children": [{"child_id": c["child_id"], "role": c["role"],
+                              **spec_live_fields(c["spec"])}
+                              for c in records]}
 
     def _orchestrate(self, rec: dict) -> None:
         for c in rec["children"]:
@@ -198,6 +225,7 @@ class SwarmRunner:
             else:
                 status = child_status(exit_code, result_ok)
             verdict = result.get("verdict") if isinstance(result, dict) else None
+            from .subagent_gateway_contract import spec_receipt_fields
             c["receipt"] = {
                 "schema": RUN_SCHEMA, "swarm_id": rec["swarm_id"],
                 "child_id": c["child_id"], "role": c["role"],
@@ -215,56 +243,13 @@ class SwarmRunner:
                 "accepted": bool(result_ok and isinstance(verdict, dict)
                                  and verdict.get("accepted")),
                 "verdict_chain_head": (verdict or {}).get("chain_head", ""),
+                **spec_receipt_fields(c["spec"], result),
             }
         self._finalize(rec)
 
     def _finalize(self, rec: dict) -> None:
-        receipts = [c["receipt"] for c in rec["children"]]
-        completed = sum(1 for r in receipts if r["status"] == "completed")
-        accepted = sum(1 for r in receipts if r.get("accepted"))
-        counts = quorum(rec["quorum_policy"], completed, len(receipts))
-        verified = quorum(rec["quorum_policy"], accepted, len(receipts))
-        # the swarm_cert commits to every child's chain_head + accept bit, so the
-        # fan-in itself is an auditable object: a verifier re-derives each child's
-        # verdict from its own ledger (persisted in the child's result) and confirms
-        # the head matches. This is what a mere exit-code body count cannot offer.
-        cert_children = [{"child_id": r["child_id"],
-                          "chain_head": r.get("verdict_chain_head", ""),
-                          "accepted": bool(r.get("accepted"))} for r in receipts]
-        swarm_cert = {"children": cert_children, "accepted": accepted,
-                      "cert_sha256": hashlib.sha256(
-                          json.dumps(cert_children, sort_keys=True).encode()).hexdigest()[:16]}
-        registry = load_registry(self.root / "hooks" / "registry.json")
-        hook_receipts = run_hooks(
-            "agent.completed", registry,
-            runner=subprocess_runner(timeout_s=15.0),
-            context={"swarm_id": rec["swarm_id"],
-                     "completed": counts["completed"],
-                     "total": counts["total"]})
-        receipt = {
-            "schema": SWARM_SCHEMA, "swarm_id": rec["swarm_id"],
-            "goal_sha256": hashlib.sha256(rec["goal"].encode()).hexdigest(),
-            "endpoint": rec["endpoint"],
-            "quorum_policy": rec["quorum_policy"], **counts,
-            "verified": {"accepted": accepted, "required": verified["required"],
-                         "verdict": verified["verdict"]},
-            "swarm_cert": swarm_cert,
-            "children": receipts, "hook_receipts": hook_receipts,
-            "event_blocked": event_blocked(hook_receipts),
-            "created_at": rec["created_at"],
-            "finished_at": self._clock(),
-            "does_not_prove": [
-                "a satisfied completed quorum attests the children ran and reported; "
-                "it does not prove the goal was achieved",
-                "a satisfied verified quorum attests each counted child's chain was "
-                "intact, its trajectory did not tamper with its grader, and any check "
-                "it ran passed; it does not prove the child pursued the intended goal",
-            ],
-        }
-        save_swarm_receipt(receipt, run_root=self.root)
-        with self._lock:
-            rec["receipt"] = receipt
-            rec["status"] = "sealed"
+        from .subagent_fanin import finalize_swarm
+        finalize_swarm(self, rec)
 
     def snapshot(self, swarm_id: str) -> "dict | None":
         with self._lock:

@@ -2,8 +2,8 @@
 #
 # Flywheel is the umbrella surface that encompasses routing, verification,
 # the lane layer (the flagship tool family), memory/context/catalog, and the
-# closed verified-inference loop. `local-model` is the trained-model lane
-# inside it. See README.md and PROJECT.md.
+# closed verified-inference loop. The archived `local-model` predecessor is
+# consolidated here; model uplift lives in Flywheel. See MODEL-UPLIFT.md.
 #
 # Zero runtime dependencies is a load-bearing invariant (mirrors the flagship
 # tools and project-docs/SUPERAPP.md "stdlib only"). The heavy optional backends -- torch,
@@ -19,7 +19,7 @@ build-backend = "setuptools.build_meta"
 # an unrelated package, so this publishes under a scoped name. The installed
 # console command stays `flywheel` (see [project.scripts]).
 name = "flywheel-verify"
-version = "1.0.0"
+version = "1.0.1"
 description = "The one platform: routing, verification, the lane layer, memory/context/catalog, and the closed verified-inference loop."
 readme = "README.md"
 # 3.11, not 3.10, because `datetime.UTC` landed in 3.11 and 51 modules use it.
@@ -57,6 +57,11 @@ local = [                    # the local HF serve/training stack
 # The single surface command. Dispatches to the existing run_harness_cli
 # front controller plus the new lane/loop subcommands.
 flywheel = "harness.cli_entry:main"
+# Installed MCP entrypoints for harnesses that consume tools from PATH rather
+# than from a source checkout. The workspace launcher requires FLYWHEEL_HOME so
+# a model-side config cannot silently create or mutate the default owner state.
+flywheel-writing-lint-mcp = "harness.writing_lint.mcp:serve"
+flywheel-writing-workspace-mcp = "harness.writing_workspace_mcp:main"
 
 [tool.setuptools]
 # Explicit package + data discovery. Keep py_modules minimal.
@@ -76,7 +81,7 @@ harness = [
 
 [tool.pytest.ini_options]
 # Phase 0: a per-test timeout so no single test can wedge the suite. The full
-# collection is 6908 tests; 60s is generous for a unit test and surfaces any
-# smoke/integration test that should be marked and split out.
+# collection is 11,212 tests across 969 files; 60s is generous for a unit test
+# and surfaces any smoke/integration test that should be marked and split out.
 addopts = "--timeout=60 --timeout-method=thread -q"
 testpaths = ["tests"]

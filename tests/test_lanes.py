@@ -19,11 +19,12 @@ def test_registry_covers_the_expected_lanes():
     # the six spine flagships + local-model (the engine) + relay (execution) +
     # plexus (wiring) + mneme (memory) + calibrate-pro (its own calibration lane)
     # + accountable-surface (actuation) + canon (continuity) + writing (authoring)
-    # + articulate (writing-quality + AI-tell detection over articulate-writing)
-    assert set(LANES) == {"gather", "crucible", "index", "forum",
+    # + chorus (discourse digest) + articulate (writing-quality + AI-tell
+    # detection over articulate-writing)
+    assert set(LANES) == {"gather", "crucible", "chorus", "articulate", "index", "forum",
                           "learn", "telos", "local-model", "relay", "plexus", "mneme",
                           "calibrate-pro", "accountable-surface", "canon", "bulletin",
-                          "writing", "articulate"}
+                          "writing"}
 
 
 def test_install_name_to_command_asymmetry_is_mapped():

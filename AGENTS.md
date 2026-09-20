@@ -58,6 +58,39 @@ archived and read-only; nothing lands there.
   labelled unchecked. Agreement with no source named is `UNVERIFIABLE`, not a
   pass. Rechecking your own arithmetic is not a check.
 
+## Compete to win across all relevant features
+
+Apply this to all development, research and task work. Aim for leadership across
+every relevant feature and aspect, not only a distinctive property competitors
+lack. Preserve our strengths while competing on capability, quality, speed,
+efficiency, reliability, usability, integration, portability, privacy, security
+and operations. A competitor's advantage is a research and improvement target.
+
+Compare strong alternatives, expose deficits, set measurable targets, test
+competing approaches, ship checked improvements and repeat. Prioritization
+sequences work; it does not concede deferred features. Keep a revisit trigger
+for deferred gaps. Current superiority claims still require evidence. Complete
+the 1.0.0 release gates, then execute the
+[competitive leadership plan](project-docs/plans/POST-1.0.0-COMPETITIVE-LEADERSHIP.md).
+
+## Evaluation value and neutrality
+
+An evaluation is useful only if it changes a decision or leads to a checked
+improvement. Before testing, name the decision, accountable owner, baseline,
+criterion and evidence that would change the decision. After testing, record
+the finding, decision, action or justified retention, independent recheck and
+remaining uncertainty. Preserve negative results; an unused report is available
+evidence, not demonstrated impact. Do not manufacture changes to claim value.
+
+Evaluate both models and the organizations that train and deploy them, including
+our own, neutrally. Apply consistent relevant criteria across providers, nations,
+affiliations, customers and potential partners. Neutrality means conclusions
+proportional to evidence, not equal verdicts. Keep model behavior, organizational
+practices, causal hypotheses and normative choices separate. Missing evidence
+stays unknown. Disclose criterion ownership, access limits and conflicts; retain
+counterevidence and correction paths. A policy or mitigation's existence does
+not establish effectiveness, and a receipt's integrity does not establish truth.
+
 ## Validating an answer before it reaches a reader
 A model that rechecks its own work re-derives the same wrong number. The case
 this was built from is public: a frontier demo filled out a Form 1040 and took
@@ -138,6 +171,16 @@ carries which fields were short, never the value an answer failed against.
 the tree, `3` work is left, `0` nothing outstanding. Unfinished and wrong are
 separate facts, and a script that merged them would report a run with held
 output as clean.
+
+## Attribution and voice
+Explain a model's misbehavior by the training environment and the incentive
+structure that produced it, not by intent or a survival drive. Read internals with
+interpretability methods, but treat any internal signal as an untrusted readout
+checked against behavior, never as reading a mind. In public copy and model cards,
+lead with the mechanism, reward-hacking caused by incentives and the engineering
+that set the environment; keep consciousness and welfare a separate, explicitly
+bounded thread, never the headline; and ship the does-not-prove line with every
+claim.
 
 ## Hygiene
 Never commit secrets, `.env` files, tokens, or private material to this public

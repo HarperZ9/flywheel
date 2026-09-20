@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 from typing import Any
 import sys
 
@@ -13,11 +14,12 @@ if str(ROOT) not in sys.path:
 
 from harness.evidence_json import canonical_sha256
 
-EXPECTED_LANES = ("gather", "crucible", "index", "forum", "plexus", "mneme", "canon")
-REGISTRY_UPDATES = {"gather", "index", "forum", "mneme", "canon"}
-ASYNC_BLOCKED = {"forum"}
+EXPECTED_LANES = ("gather", "crucible", "index", "forum", "plexus", "mneme", "canon", "chorus", "relay", "accountable-surface")
+REGISTRY_UPDATES = {"gather", "index", "forum", "mneme", "canon", "relay"}
+ASYNC_LANES = {"forum"}
 MANIFEST = Path("packaging/python-lane-payloads.jsonl")
 SOURCE_ALGORITHM = "sha256-canonical-source-manifest/v1"
+SHA256_URI = re.compile(r"sha256:[0-9a-f]{64}\Z")
 
 
 class ManifestError(RuntimeError):
@@ -86,13 +88,24 @@ def validate_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
         _require(mcp.get("callable_style") in {"sync", "async"}, f"{lane}: callable style invalid")
         if mcp.get("callable_style") == "async":
             seen_async.add(lane)
-            _require(mcp.get("contract_status") == "needs_async_dispatch_or_wrapper", f"{lane}: async blocker not recorded")
+            _require(mcp.get("contract_status") == "async_coroutine_runtime_dispatch", f"{lane}: async contract not recorded")
         else:
             _require(mcp.get("contract_status") == "compatible_with_sync_dispatcher", f"{lane}: sync status mismatch")
         project = row.get("owner_project")
         _require(isinstance(project, dict), f"{lane}: project block missing")
         _require(project.get("runtime_dependencies") == [], f"{lane}: runtime dependencies must be explicit and empty")
-        _require(bool(project.get("license_files")), f"{lane}: license file evidence missing")
+        license_files = project.get("license_files")
+        _require(isinstance(license_files, list) and bool(license_files),
+                 f"{lane}: license file evidence missing")
+        for notice in license_files:
+            _require(isinstance(notice, dict), f"{lane}: license notice shape")
+            _require(isinstance(notice.get("path"), str) and notice["path"],
+                     f"{lane}: license notice path missing")
+            _require(isinstance(notice.get("bytes"), int) and notice["bytes"] > 0,
+                     f"{lane}: license notice bytes missing")
+            _require(isinstance(notice.get("sha256"), str)
+                     and SHA256_URI.fullmatch(notice["sha256"]),
+                     f"{lane}: license notice hash invalid")
         _require(mcp.get("module") in set(row.get("hidden_imports") or []), f"{lane}: mcp module absent from hidden imports")
         if row.get("owner_project", {}).get("version") != row.get("flywheel_registry_expected_version"):
             seen_registry_updates.add(lane)
@@ -102,13 +115,13 @@ def validate_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
         seen_registry_updates == REGISTRY_UPDATES,
         f"registry update set changed: {sorted(seen_registry_updates)!r}",
     )
-    _require(seen_async == ASYNC_BLOCKED, f"async blocker set changed: {sorted(seen_async)!r}")
+    _require(seen_async == ASYNC_LANES, f"async lane set changed: {sorted(seen_async)!r}")
     return {
         "schema": "flywheel.python-lane-payload-manifest-check/v1",
         "verdict": "PASS",
         "lanes": lanes,
         "registry_updates": sorted(seen_registry_updates),
-        "async_blockers": sorted(seen_async),
+        "async_lanes": sorted(seen_async),
         "descriptor_sha256": descriptor_digests,
         "source_manifest_sha256": source_digests,
     }

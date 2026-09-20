@@ -24,6 +24,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 from scripts.frozen_gateway_relay_smoke import relay_status_smoke
+from scripts.frozen_gateway_studio_smoke import (
+    prepare_studio_smoke_fixture, run_studio_acceptance_smoke)
+from scripts.frozen_gateway_receipt_smoke import (
+    prepare_receipt_smoke_fixture, run_receipt_acceptance_smoke)
+from scripts.frozen_gateway_context_smoke import (
+    prepare_context_smoke_fixture, run_context_memory_smoke)
 
 NATIVE_ROUTES = {
     "/api/bulletin-identity": "get",
@@ -111,6 +117,35 @@ def _request(base: str, path: str, token: str | None, *,
         return response.code, body
 
 
+def validate_canon_context_payload(executable: Path, require) -> dict:
+    root = executable.parent / "_internal"
+    if not root.is_dir():
+        root = executable.parent
+    manifest = root / "packaging" / "python-lane-payloads.jsonl"
+    require(manifest.is_file(), "CANON_CONTEXT_PIN_MANIFEST_MISSING")
+    rows = [
+        json.loads(line) for line in manifest.read_text(
+            encoding="utf-8").splitlines() if line.strip()
+    ]
+    canon = next((row for row in rows if row.get("lane") == "canon"), None)
+    require(isinstance(canon, dict), "CANON_CONTEXT_PIN_MISSING")
+    require(canon.get("owner_commit")
+            == "8c6a8228ce2117112c5dad74ddb0450ba80aa8ff",
+            "CANON_CONTEXT_PIN_COMMIT")
+    notice = canon["owner_project"]["license_files"][0]
+    license_relative_path = "python-lane-payloads/canon/licenses/LICENSE"
+    license_path = root / Path(license_relative_path)
+    require(license_path.is_file(), "CANON_CONTEXT_LICENSE_MISSING")
+    require("sha256:" + hashlib.sha256(license_path.read_bytes()).hexdigest()
+            == notice["sha256"], "CANON_CONTEXT_LICENSE_HASH")
+    return {"schema": "flywheel.frozen-canon-context-payload/v1",
+            "owner_commit": canon["owner_commit"],
+            "source_manifest_sha256": canon["component_descriptor"]["source"]["manifest_sha256"],
+            "license_sha256": notice["sha256"],
+            "license_present": True,
+            "license_path": license_relative_path}
+
+
 
 
 
@@ -118,6 +153,11 @@ def _request(base: str, path: str, token: str | None, *,
 def check(executable: Path, expected_version: str, receipt: dict) -> None:
     require(executable.is_file(), "EXECUTABLE_MISSING")
     receipt["executable_sha256"] = hashlib.sha256(executable.read_bytes()).hexdigest()
+    receipt["canon_context_payload"] = validate_canon_context_payload(
+        executable, require)
+    from scripts.frozen_gateway_lane_smoke import bundled_lane_admission_smoke
+    receipt["bundled_lane_admission"] = bundled_lane_admission_smoke(
+        executable, require)
     from scripts.frozen_gateway_native_smoke import (
         prepare_native_smoke_fixture, run_native_acceptance_smoke)
 
@@ -126,12 +166,18 @@ def check(executable: Path, expected_version: str, receipt: dict) -> None:
     with tempfile.TemporaryDirectory(prefix="flywheel-frozen-smoke-") as directory:
         home = Path(directory).resolve()
         fixture = prepare_native_smoke_fixture(home, home / "runs")
+        receipt_leaf = prepare_receipt_smoke_fixture(home)
         secret_values = (fixture.key_json,)
+        from harness.gateway_auth import load_or_create_owner_ref
+        owner_ref = load_or_create_owner_ref(home)
         with socket.socket() as sock:
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
         env = _environment(
             home, bulletin_key=fixture.key_json, bulletin_base_url=fixture.board.url)
+        env.update(prepare_context_smoke_fixture(home, owner_ref))
+        studio_fixture = prepare_studio_smoke_fixture(home)
+        env.update(studio_fixture.env)
         process = None
         try:
             process = subprocess.Popen([
@@ -172,15 +218,20 @@ def check(executable: Path, expected_version: str, receipt: dict) -> None:
                 docs.append(body if path == "/llms.txt" else json.loads(body))
             validate_documents(*docs, expected_version=expected_version)
             native_acceptance = run_native_acceptance_smoke(base, token, fixture)
-            from harness.gateway_auth import load_or_create_owner_ref
-            owner_ref = load_or_create_owner_ref(home)
+            receipt["receipt_transport_parity"] = run_receipt_acceptance_smoke(
+                executable, home, env, base, token, receipt_leaf, _request)
+            receipt["studio_acceptance"] = run_studio_acceptance_smoke(
+                base, token, studio_fixture)
             relay_acceptance = relay_status_smoke(
+                base, token, home, owner_ref, secret_values, _request, require)
+            context_acceptance = run_context_memory_smoke(
                 base, token, home, owner_ref, secret_values, _request, require)
             receipt.update(signing_imports_available=True, identity_source="env",
                            version=docs[2]["version"], routes=docs[2]["routes"],
                            native_routes=list(NATIVE_ROUTES),
                            native_acceptance=native_acceptance,
                            relay_bundled_status=relay_acceptance,
+                           context_memory_acceptance=context_acceptance,
                            credential_echo=False)
         finally:
             if process is not None:
@@ -207,6 +258,8 @@ def main() -> int:
                "does_not_prove": ["installer integration", "clean OS compatibility",
                                   "Flutter UI rendering", "native identity registration",
                                   "Relay model-backed task execution",
+                                  "live screen capture or model perception",
+                                  "Studio semantic correctness or hardware playback",
                                   "production Bulletin posting"]}
     try:
         check(args.executable.resolve(), args.expected_version, receipt)

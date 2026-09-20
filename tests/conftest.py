@@ -75,8 +75,11 @@ def scratch():
 def _isolated_run_root(tmp_path_factory, monkeypatch):
     scratch = tmp_path_factory.mktemp("run-root")
     home = tmp_path_factory.mktemp("flywheel-home")
+    pip_cache = scratch / "pip-cache"
+    pip_cache.mkdir()
     monkeypatch.setenv("FLYWHEEL_RUN_ROOT", str(scratch))
     monkeypatch.setenv("FLYWHEEL_HOME", str(home))
+    monkeypatch.setenv("PIP_CACHE_DIR", str(pip_cache))
     try:
         from harness import gateway
         monkeypatch.setattr(gateway._Handler, "run_root", str(scratch),

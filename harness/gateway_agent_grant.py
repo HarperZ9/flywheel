@@ -34,7 +34,8 @@ def review_binding(record):
     if binding.get('execution_mode') == 'native_cli_session':
         from .gateway_cli_binding import review_cli_binding
         return review_cli_binding(binding)
-    review = {"schema": ("flywheel.gateway-agent-review/v2"
+    review = {"schema": ("flywheel.gateway-agent-review/v4"
+            if "mcp_admission" in binding else "flywheel.gateway-agent-review/v2"
             if "tool_protocol" in binding else "flywheel.gateway-agent-review/v1"),
         "binding_sha256": freeze_json(binding).sha256,
         "endpoint": binding["endpoint"]["name"],
@@ -44,4 +45,7 @@ def review_binding(record):
         "budget": binding["budget"], "capabilities": binding["capabilities"]}
     if "tool_protocol" in binding:
         review["tool_protocol"] = binding["tool_protocol"]
+    if "mcp_admission" in binding:
+        from .gateway_agent_mcp_review import review_mcp_admission
+        review["mcp_admission"] = review_mcp_admission(binding["mcp_admission"])
     return review

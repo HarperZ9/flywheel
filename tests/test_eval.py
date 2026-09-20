@@ -119,3 +119,47 @@ def test_eval_report_aggregation():
     assert rep.pass_rate == pytest.approx(2 / 3)
     assert rep.avg_oracle_calls == pytest.approx(6 / 3)
     assert rep.receipt_reproducibility == 1.0
+
+
+def test_detail_collection_records_hashes_and_unavailable_metrics(task):
+    """Opt-in M7 detail keeps route evidence without leaking oracle material."""
+    reports = run_eval(
+        [SINGLE_SHOT], [task],
+        proposer_for=lambda arm, t: StrongAlways(),
+        oracle_for=lambda t: PytestOracle(),
+        collect_detail=True)
+
+    detail = reports[SINGLE_SHOT.name].per_task_detail[0]
+    assert detail["task_id"] == task.task_id
+    assert len(detail["prompt_sha256"]) == 64
+    assert len(detail["task_identity"]["task_source_sha256"]) == 64
+    assert len(detail["task_identity"]["oracle_files_sha256"]) == 64
+    assert len(detail["task_identity"]["held_out_cmd_sha256"]) == 64
+    assert "hidden_tests" not in detail["task_identity"]
+    assert "solution" not in detail["task_identity"]
+    assert detail["timing"]["task_arm_total_latency_ms"] >= 0
+
+    candidate = detail["candidate_rows"][0]
+    assert len(candidate["completion_sha256"]) == 64
+    assert candidate["completion_hash_scope"] == "post_extract_candidate_text"
+    assert candidate["usage"] == {"source": "not_returned", "tokens": None}
+    assert candidate["model_digest"] is None
+    assert candidate["model_identity_status"] in {
+        "reported_unverified",
+        "requested_unverified",
+        "digest_not_returned",
+    }
+    assert candidate["server_timing_ms"] is None
+    assert candidate["cost"] is None
+    assert candidate["oracle_receipt"]["oracle_type"] == "pytest"
+    assert candidate["oracle_receipt"]["output_hash"]
+    assert candidate["oracle_latency_ms"] >= 0
+
+
+def test_default_eval_report_does_not_collect_detail(task):
+    reports = run_eval(
+        [SINGLE_SHOT], [task],
+        proposer_for=lambda arm, t: StrongAlways(),
+        oracle_for=lambda t: PytestOracle())
+
+    assert reports[SINGLE_SHOT.name].per_task_detail == []

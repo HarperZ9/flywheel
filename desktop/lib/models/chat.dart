@@ -1,7 +1,16 @@
 import 'dart:collection';
+import 'dart:convert';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
+
+import 'chat_reference.dart';
 import 'evidence_state.dart';
+
+export 'chat_local_safety.dart';
+export 'chat_reference.dart';
+
+part 'chat_resolution.dart';
 
 enum PromptDisposition { accepted, retained }
 
@@ -10,6 +19,7 @@ typedef SubmitPrompt = Future<PromptDisposition> Function(String text);
 class ChatMessage {
   factory ChatMessage({
     required String role,
+    String? id,
     String text = '',
     bool streaming = false,
     Map<String, dynamic>? receipt,
@@ -20,14 +30,18 @@ class ChatMessage {
     if (attemptRef != null && !isChatAttemptRef(attemptRef)) {
       throw ArgumentError('Invalid chat attempt reference');
     }
+    if (id != null && !isChatMessageId(id)) {
+      throw ArgumentError('Invalid chat message id');
+    }
     final copy = receipt == null ? null : _immutableMap(receipt);
-    return ChatMessage._(role, text, streaming, copy,
+    return ChatMessage._(id ?? newChatMessageId(), role, text, streaming, copy,
         _effectiveReceiptState(copy != null, receiptState), run, attemptRef);
   }
 
-  ChatMessage._(this.role, this.text, this.streaming, this._receipt,
+  ChatMessage._(this.id, this.role, this.text, this.streaming, this._receipt,
       this.receiptState, this.run, this.attemptRef);
 
+  final String id;
   final String role;
   String text;
   bool streaming;
@@ -46,25 +60,32 @@ class ChatMessage {
   }
 
   Map<String, dynamic> toJson() => {
+        'id': id,
         'role': role,
         'text': text,
         if (attemptRef != null) 'attempt_ref': attemptRef,
         if (_receipt != null) 'receipt': _receipt,
       };
 
-  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+  factory ChatMessage.fromJson(Map<String, dynamic> json,
+      {String? conversationId, int? position, Set<String>? usedIds}) {
     final rawReceipt = json['receipt'];
     final receipt = rawReceipt is Map<String, dynamic> ? rawReceipt : null;
     final malformedReceipt =
         json.containsKey('receipt') && rawReceipt != null && receipt == null;
+    final id = _messageIdFromJson(json, conversationId, position, usedIds);
     final state = malformedReceipt ? ReceiptState.invalidResponse : null;
     return ChatMessage(
+        id: id,
         role: json['role'] == 'user' ? 'user' : 'assistant',
         text: json['text'] is String ? json['text'] as String : '',
         receipt: receipt,
         receiptState: state,
         attemptRef: _attemptFromJson(json));
   }
+
+  static String legacyId(String conversationId, int position) =>
+      _legacyMessageId(conversationId, position);
 }
 
 ReceiptState _effectiveReceiptState(bool present, ReceiptState? state) {
@@ -106,56 +127,71 @@ class Conversation {
     required this.id,
     this.title = 'New chat',
     List<ChatMessage>? messages,
+    List<ChatBookmark>? bookmarks,
+    this.notes = '',
     this.model,
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : messages = messages ?? [],
+        bookmarks = bookmarks ?? [],
         createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? createdAt ?? DateTime.now();
 
   final String id;
   String title;
   final List<ChatMessage> messages;
+  final List<ChatBookmark> bookmarks;
+  String notes;
   String? model;
   final DateTime createdAt;
 
-  /// When this conversation last changed. Advancing it on every content change
-  /// makes two devices' histories deterministically last-write-wins mergeable,
-  /// which is the precondition for chat that follows the user across devices.
   DateTime updatedAt;
 
-  bool get isEmpty => messages.isEmpty;
+  bool get isEmpty =>
+      messages.isEmpty && bookmarks.isEmpty && notes.trim().isEmpty;
 
-  /// Mark the conversation as just changed. Called before a history save so the
-  /// persisted timestamp reflects the newest edit.
   void touch() => updatedAt = DateTime.now();
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'title': title,
         if (model != null) 'model': model,
+        if (notes.isNotEmpty) 'notes': notes,
+        if (bookmarks.isNotEmpty)
+          'bookmarks': [for (final bookmark in bookmarks) bookmark.toJson()],
         'created_at': createdAt.millisecondsSinceEpoch,
         'updated_at': updatedAt.millisecondsSinceEpoch,
         'messages': [for (final message in messages) message.toJson()],
       };
 
-  factory Conversation.fromJson(Map<String, dynamic> json) => Conversation(
-        id: json['id'] is String ? json['id'] as String : 'c0',
-        title: json['title'] is String ? json['title'] as String : 'New chat',
-        model: json['model'] is String ? json['model'] as String : null,
-        createdAt: json['created_at'] is int
-            ? DateTime.fromMillisecondsSinceEpoch(json['created_at'] as int)
-            : null,
-        // Older histories predate updated_at; fall back to created_at so a merge
-        // still has a comparable timestamp.
-        updatedAt: json['updated_at'] is int
-            ? DateTime.fromMillisecondsSinceEpoch(json['updated_at'] as int)
-            : null,
-        messages: [
-          for (final message in (json['messages'] as List? ?? const []))
-            if (message is Map<String, dynamic>) ChatMessage.fromJson(message)
-        ],
-      );
+  factory Conversation.fromJson(Map<String, dynamic> json) {
+    final id = json['id'] is String ? json['id'] as String : 'c0';
+    final usedIds = <String>{};
+    final messages = <ChatMessage>[];
+    for (final raw in (json['messages'] as List? ?? const [])) {
+      if (raw is Map<String, dynamic>) {
+        messages.add(ChatMessage.fromJson(raw,
+            conversationId: id, position: messages.length, usedIds: usedIds));
+      }
+    }
+    return Conversation(
+      id: id,
+      title: json['title'] is String ? json['title'] as String : 'New chat',
+      model: json['model'] is String ? json['model'] as String : null,
+      notes: json['notes'] is String ? json['notes'] as String : '',
+      bookmarks: [
+        for (final raw in (json['bookmarks'] as List? ?? const []))
+          if (ChatBookmark.fromJson(raw) case final bookmark?) bookmark
+      ],
+      createdAt: json['created_at'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(json['created_at'] as int)
+          : null,
+      updatedAt: json['updated_at'] is int
+          ? DateTime.fromMillisecondsSinceEpoch(json['updated_at'] as int)
+          : null,
+      messages: messages,
+    );
+  }
 
   void titleFromFirstMessage() {
     for (final message in messages) {
@@ -201,14 +237,22 @@ bool chatHasAdmittedPair(Conversation conversation, String? attemptRef) {
 }
 
 final _chatAttemptRef = RegExp(r'^att_[0-9a-f]{32}$');
+
 bool isChatAttemptRef(String value) => _chatAttemptRef.hasMatch(value);
 
 String newChatAttemptRef() {
+  return 'att_${_randomHex128()}';
+}
+
+String newChatMessageId() {
+  return 'msg_${_randomHex128()}';
+}
+
+String _randomHex128() {
   final random = Random.secure();
-  final hex = List.generate(16, (_) => random.nextInt(256))
+  return List.generate(16, (_) => random.nextInt(256))
       .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
       .join();
-  return 'att_$hex';
 }
 
 String? _attemptFromJson(Map<String, dynamic> json) {
@@ -220,73 +264,33 @@ String? _attemptFromJson(Map<String, dynamic> json) {
   return value;
 }
 
-final _chatWindowsPath = RegExp(r'[A-Za-z]:[\\/]');
-final _chatUncPath = RegExp(r'(?:\\\\|//)[^\\/\s]+[\\/][^\s]+');
-final _chatPrivatePath = RegExp(r'(?:^|[\s=(\[{,:;])/(?!/)[^\s]+|/'
-    r'(?:Users|home|private|tmp|var|etc|root|opt|mnt|srv|usr|bin|sbin|lib|'
-    r'Applications|Volumes|dev|proc|sys|run)(?:/|$)');
-final _chatFileUri = RegExp(r'(?<![A-Za-z0-9+.-])file:', caseSensitive: false);
-final _chatSecretValue = RegExp(
-    r'(-----BEGIN [A-Z ]*PRIVATE KEY-----|\bAKIA[0-9A-Z]{16}\b|\bgh[pousr]_[A-Za-z0-9]{30,}\b|\bsk-(?:live|proj|ant)[A-Za-z0-9_-]{10,}\b|\bxox[baprs]-[A-Za-z0-9-]{10,}\b)');
-final _chatAssignedSecret = RegExp(
-    r'\b(?:secret|password|passwd|api_key|access_key|token|credential)\s*[:=]\s*["\x27]?[A-Za-z0-9/+_-]{12,}',
-    caseSensitive: false);
-final _chatSecretKey = RegExp(r'^(?:api_keys?|access_tokens?|refresh_tokens?|'
-    r'tokens?|passwords?|secrets?|credentials?|private_keys?|authorizations?|'
-    r'cookies?|environments?|envs?|passwds?|access_keys?|.+_(?:api_keys?|'
-    r'private_keys?|passwords?|secrets?|credentials?|tokens?))$');
-
-bool safeChatLocalText(String value) {
-  final decoded = _decodeChatPercent(value);
-  return _safeChatForm(value) && _safeChatForm(decoded);
-}
-
-bool _safeChatForm(String value) =>
-    !_chatWindowsPath.hasMatch(value) &&
-    !_chatUncPath.hasMatch(value) &&
-    !_chatPrivatePath.hasMatch(value) &&
-    !_chatFileUri.hasMatch(value) &&
-    !_chatSecretValue.hasMatch(value) &&
-    !_chatAssignedSecret.hasMatch(value);
-
-bool isChatLocalSecretKey(String key) => _chatSecretKey
-    .hasMatch(_decodeChatPercent(key).toLowerCase().replaceAll('-', '_'));
-bool safeChatLocalRef(String value) =>
-    value.isNotEmpty && value.length <= 256 && !value.contains(':');
-
-String _decodeChatPercent(String value) {
-  final result = StringBuffer();
-  for (var index = 0; index < value.length;) {
-    if (value.codeUnitAt(index) != 0x25) {
-      result.writeCharCode(value.codeUnitAt(index++));
-      continue;
-    }
-    final next = index + 1 < value.length ? value.codeUnitAt(index + 1) : null;
-    if (index + 2 >= value.length ||
-        !_chatHex(next) ||
-        !_chatHex(value.codeUnitAt(index + 2))) {
-      result.write('%');
-      index++;
-      continue;
-    }
-    final start = index;
-    while (index + 2 < value.length &&
-        value.codeUnitAt(index) == 0x25 &&
-        _chatHex(value.codeUnitAt(index + 1)) &&
-        _chatHex(value.codeUnitAt(index + 2))) {
-      index += 3;
-    }
-    try {
-      result.write(Uri.decodeComponent(value.substring(start, index)));
-    } catch (_) {
-      throw ArgumentError('Invalid encoded local text');
-    }
+String _messageIdFromJson(Map<String, dynamic> json, String? conversationId,
+    int? position, Set<String>? usedIds) {
+  final raw = json['id'];
+  final fallback = conversationId != null && position != null
+      ? _legacyMessageId(conversationId, position)
+      : newChatMessageId();
+  var candidate = raw is String && isChatMessageId(raw) ? raw : fallback;
+  if (usedIds == null || usedIds.add(candidate)) return candidate;
+  candidate = fallback;
+  var collision = 0;
+  while (!usedIds.add(candidate)) {
+    collision++;
+    candidate = _legacyMessageId(
+        conversationId ?? 'conversation', position ?? 0,
+        collision: collision);
   }
-  return result.toString();
+  return candidate;
 }
 
-bool _chatHex(int? value) =>
-    value != null &&
-    ((value >= 0x30 && value <= 0x39) ||
-        (value >= 0x41 && value <= 0x46) ||
-        (value >= 0x61 && value <= 0x66));
+String _legacyMessageId(String conversationId, int position,
+    {int collision = 0}) {
+  if (position < 0 || collision < 0) {
+    throw ArgumentError('Invalid legacy message position');
+  }
+  final digest = sha256
+      .convert(utf8.encode(
+          'flywheel.desktop-chat-message/v1\x00$conversationId\x00$position\x00$collision'))
+      .toString();
+  return 'msg_${digest.substring(0, 32)}';
+}

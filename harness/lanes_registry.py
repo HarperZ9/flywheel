@@ -65,6 +65,10 @@ LANES: dict[str, Lane] = {
         "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.2.0",
         "falsifiable verification + re-check (register -> steelman -> measure -> witness)",
         "verification", source_repo="public/crucible", py_module="crucible.cli"),
+    "chorus": Lane(
+        "chorus", "chorus-discourse", "chorus", ("mcp",), "pip", "0.3.0",
+        "re-derivable discourse digest (themes, contested aspects, dissent, receipt)",
+        "synthesis", source_repo="public/chorus", py_module="chorus.cli"),
     "index": Lane(
         "index", "index-graph", "index", ("mcp",), "pip", "2.10.0",
         "workspace map + symbol graph + verified wiki (the catalog lane)",
@@ -110,7 +114,7 @@ LANES: dict[str, Lane] = {
     "relay": Lane(
         "relay", "relay-agent", "relay", ("--mcp",), "pip", "0.2.0",
         "accountable coding agent on any model endpoint (local-first, witnessed runs)",
-        "execution", source_repo="public/relay", py_module="relay.local_agent_cli",
+        "execution", source_repo="public/relay", py_module="relay.local_mcp",
         package_disabled_reason=("Relay's PyPI name belongs to another project. "
                                  "Use a HarperZ9 Relay source checkout.")),
     "plexus": Lane(
@@ -148,7 +152,7 @@ LANES: dict[str, Lane] = {
         "live accountability seam: witnessed perception + operator-grant pre-execution "
         "gate + self-verifying effectors + tamper-evident journal (actuates, so T2)",
         "actuation", source_repo="public/accountable-surface",
-        py_module="accountable_surface.server",
+        py_module="accountable_surface.mcp",
         extra_source_repos=("public/coherence-membrane", "public/proof-surface"),
         package_disabled_reason=("No published PyPI distribution is available. "
                                  "Use an accountable-surface source checkout.")),

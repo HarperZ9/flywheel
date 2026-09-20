@@ -95,6 +95,34 @@ jobs:
           print("freeze dependency cryptography=" + md.version("cryptography"))
           '@ | python -
 
+      - name: Stage Studio runtime payload
+        shell: pwsh
+        run: |
+          $sources = "packaging\studio-runtime-sources.json"
+          $workRoot = Join-Path $env:RUNNER_TEMP "flywheel-studio-runtime-sources"
+          $manifest = Join-Path $env:RUNNER_TEMP "studio-body-runtime-manifest.json"
+          $payload = Join-Path $env:RUNNER_TEMP "flywheel-studio-runtime-payload"
+          python -m scripts.studio_runtime_packaging stage-pinned-payload `
+            --sources $sources `
+            --work-root $workRoot `
+            --manifest $manifest `
+            --payload-root $payload
+          if ($LASTEXITCODE -ne 0) { throw "Studio runtime payload staging failed" }
+          "FLYWHEEL_STUDIO_BODY_RUNTIME_MANIFEST=$manifest" | Out-File -Append $env:GITHUB_ENV -Encoding ascii
+          "FLYWHEEL_STUDIO_BODY_RUNTIME_PAYLOAD=$payload" | Out-File -Append $env:GITHUB_ENV -Encoding ascii
+
+      - name: Stage Python lane source payloads
+        shell: pwsh
+        run: |
+          $sourceRoot = Join-Path $env:RUNNER_TEMP "flywheel-python-lane-sources"
+          $receipt = Join-Path $env:RUNNER_TEMP "python-lane-source-stage.json"
+          python scripts/stage_python_lane_sources.py `
+            --all `
+            --source-root $sourceRoot `
+            --receipt $receipt
+          if ($LASTEXITCODE -ne 0) { throw "Python lane source staging failed" }
+          "FLYWHEEL_PYTHON_LANE_SOURCE_ROOT=$sourceRoot" | Out-File -Append $env:GITHUB_ENV -Encoding ascii
+
       - name: Ensure Inno Setup
         shell: pwsh
         run: |

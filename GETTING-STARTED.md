@@ -14,10 +14,16 @@ conferred by something outside the thing itself, witnessed, coverage-accounted,
 stamped MATCH / DRIFT / UNVERIFIABLE. This is the witnessing spine, and it
 holds across every layer of the platform.
 
+## Release status
+
+Use [v1.0.1](https://github.com/HarperZ9/flywheel/releases/tag/v1.0.1) for the
+current published install path. [RELEASE-NOTES-1.0.1.md](RELEASE-NOTES-1.0.1.md)
+lists what this release adds and its honest state.
+
 ## Install
 
 ```bash
-pip install flywheel-verify
+python -m pip install flywheel-verify
 ```
 
 (`flywheel-verify` is the PyPI distribution name; the installed command is
@@ -37,9 +43,9 @@ pip install "flywheel-verify[local]"     # the local HF serve/training stack
 
 ## Sign in with a subscription
 
-A token an authorized login already produced can carry your usage instead of a
+A token an authorized login already produced can carry your usage in place of a
 raw API key. Each provider differs in what it permits, and the CLI says which
-is which rather than implying they are alike:
+is which, keeping them distinct:
 
 ```bash
 flywheel auth status              # presence and terms per provider
@@ -64,11 +70,11 @@ Tokens land in the OS credential store under the same names the router
 already reads, so a completed sign-in shows up on the endpoints roster
 (presence only, never values). Sign out with
 `flywheel auth logout <provider>`; if the token is also set as an environment
-variable, the command says so instead of claiming it cleared it.
+variable, the command says so and leaves that variable in place.
 
 Two guarantees hold across every flow: the engine never runs another app's
 OAuth client, and it refuses to start a flow on a machine with no credential
-store rather than minting a token it cannot keep. Provider terms are yours to
+store, declining to mint a token it cannot keep. Provider terms are yours to
 read; flywheel does not interpret them for you.
 
 ## Start the engine
@@ -84,10 +90,11 @@ desktop client connects automatically when launched.
 
 ## Start the desktop client
 
-Download `Flywheel-Setup-<version>-x64.exe` from the
-[releases page](https://github.com/HarperZ9/flywheel/releases) and verify it
-against the release's `SHA256SUMS.txt` (engine bundled, no Python needed).
-From a dev checkout:
+Download the current published installer,
+[Flywheel-Setup-1.0.1-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v1.0.1/Flywheel-Setup-1.0.1-x64.exe),
+and verify it against the release
+[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v1.0.1/SHA256SUMS.txt)
+(engine bundled, no Python needed). From a source checkout:
 
 ```bash
 cd desktop && flutter run -d windows
@@ -97,6 +104,36 @@ The desktop client shows its destinations in a collapsible side rail,
 grouped into Work, Chat, Code, Evidence, and Advanced. Type in the rail's
 search field to filter it. Or press Ctrl+K to open the command palette and
 jump to any destination by name.
+
+## Ownership, profiles, memory, and sessions
+
+This section describes behavior in the current source unless a release note says
+otherwise. The published installer remains the install target above, and not
+every native behavior described here ships in the installer yet.
+
+Flywheel binds native state to configured local ownership, project, workspace,
+and session facts in place of a display name. The desktop asks the local gateway
+which Canon project and workspace are configured, then uses that binding for
+context memory. Retrieved memory is input data; the run still needs its own
+receipts and evidence before a result is accepted.
+
+Native provider sessions are scoped to one run and one reviewed profile. The
+restricted-files direct CLI adapter binds the selected provider profile,
+workspace, account readiness, tool grants, and budget before launch; the exact
+limits are documented in
+[docs/native-cli-session-contract.md](docs/native-cli-session-contract.md). That
+contract refuses the older direct Codex CLI path because it lacked an admitted
+project-isolation control. It does not rule out separate managed provider-session
+work in a later release.
+
+Continuation starts a fresh Evidence Journey from a source-bound workspace or
+export preview and refuses source drift; it does not resume a provider-native
+web session. Writing Workspace binds author state to the configured Flywheel
+home and keeps proposal approval on an operator-controlled surface. The detailed
+native feature docs are [desktop/README.md](desktop/README.md),
+[docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md),
+[docs/native-continuation.md](docs/native-continuation.md), and
+[docs/writing-workspace.md](docs/writing-workspace.md).
 
 ## Meet Rowan
 
@@ -183,7 +220,7 @@ flywheel lanes --probe      # live MCP handshake per lane
 The registered lanes and their roles:
 
 | Lane | Role |
-|---|---|
+|:--|:--|
 | gather | Research intake + provenance receipts |
 | crucible | Falsifiable verification + re-check |
 | index | Workspace map + symbol graph + verified wiki |
@@ -248,6 +285,11 @@ print(f"verify: {store.verify()['verdict']}")  # MATCH
 
 ## Read more
 
+- [RELEASE-NOTES-1.0.1.md](RELEASE-NOTES-1.0.1.md): what 1.0.1 adds and its honest state
+- [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory owner/project binding
+- [docs/native-cli-session-contract.md](docs/native-cli-session-contract.md): native CLI profile and session contract
+- [docs/native-continuation.md](docs/native-continuation.md): source-bound continuation preview and limits
+- [docs/writing-workspace.md](docs/writing-workspace.md): Writing Workspace custody and MCP launcher rules
 - [docs/LESSON-LOOP.md](docs/LESSON-LOOP.md): the learning loop architecture
 - [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): full guide and spec
 - [docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md](docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md): security assessment

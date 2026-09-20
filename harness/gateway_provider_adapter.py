@@ -148,6 +148,11 @@ def _source_context_snapshot(operation, owner_ref, state_root):
 
 def _credential_plan(operation) -> tuple[tuple[str, ...], tuple[str, ...]]:
     value, action = operation.operation, operation.action
+    if action == "live_screen.deliver":
+        if value.get("destination") != "openai_responses:vision":
+            raise GatewayOperationError("INVALID_REQUEST")
+        from .endpoint_registry import credential_slots_for_endpoint
+        return credential_slots_for_endpoint("openai"), tuple(value["credential_refs"])
     if action == "chat.complete":
         name = value["model"].split(":", 1)[0]
         if name in _LOCAL_MODELS:

@@ -64,7 +64,8 @@ def receipt_args_bytes(args: Any) -> tuple[bytes, str]:
 
 
 def witness_call(log, *, tool: str, args: Any, output: str, ok: bool, seq: int,
-                 capability: str = "", outcome: str = "") -> dict | None:
+                 capability: str = "", outcome: str = "",
+                 context: dict | None = None) -> dict | None:
     """Witness one call's two byte sequences. Never raises.
 
     Returns what binds the call to the chain, or None when there was no chain
@@ -74,7 +75,8 @@ def witness_call(log, *, tool: str, args: Any, output: str, ok: bool, seq: int,
         return None
     try:
         payload, encoding = receipt_args_bytes(args)
-        context = {"capability": capability, "outcome": outcome, "ok": bool(ok)}
+        context = {"capability": capability, "outcome": outcome, "ok": bool(ok),
+                   **(context or {})}
         action = f"tool:{tool}"
         first = observe(log, payload, action=action, kind=INPUT, seq=seq,
                         encoding=encoding, context=context)

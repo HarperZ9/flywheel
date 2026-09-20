@@ -49,16 +49,23 @@ def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
                     CredentialBindings(bindings), root, ledger, deadline,
                     on_event=progress, test_cmd=execution.get("test_cmd"))
             else:
-                proposer = BoundAgentProposer(binding, CredentialBindings(bindings), ledger, deadline)
-                result = run_router_agent(
-                    goal, binding["endpoint"]["name"], root=str(root),
-                    allow_write=binding["capabilities"]["allow_write"],
-                    allow_exec=binding["capabilities"]["allow_exec"], max_steps=binding["budget"]["max_steps"],
-                    model=binding["model"]["model_id"], max_tokens=binding["budget"]["max_tokens"],
-                    temperature=binding["sampling"]["temperature"], seed=binding["sampling"]["router_seed"],
-                    proposer=proposer, test_cmd=execution.get("test_cmd"),
-                    credential_bindings=CredentialBindings(bindings),
-                    on_event=progress, ledger=ledger, event_errors_fatal=True)
+                bound_credentials = CredentialBindings(bindings)
+                proposer = BoundAgentProposer(binding, bound_credentials, ledger, deadline)
+                from .gateway_agent_mcp_admission import open_mcp_runtime
+                with open_mcp_runtime(binding.get("mcp_admission"),
+                                      credentials=bound_credentials, root=root,
+                                      on_event=progress,
+                                      deadline=deadline) as mcp_runtime:
+                    result = run_router_agent(
+                        goal, binding["endpoint"]["name"], root=str(root),
+                        allow_write=binding["capabilities"]["allow_write"],
+                        allow_exec=binding["capabilities"]["allow_exec"], max_steps=binding["budget"]["max_steps"],
+                        allow_mcp=mcp_runtime["allow_mcp"], external=mcp_runtime["external"],
+                        model=binding["model"]["model_id"], max_tokens=binding["budget"]["max_tokens"],
+                        temperature=binding["sampling"]["temperature"], seed=binding["sampling"]["router_seed"],
+                        proposer=proposer, test_cmd=execution.get("test_cmd"),
+                        credential_bindings=bound_credentials,
+                        on_event=progress, ledger=ledger, event_errors_fatal=True)
             if time.monotonic() >= deadline:
                 raise GatewayOperationError("OPERATION_DEADLINE_EXCEEDED")
         if rejected:

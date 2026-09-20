@@ -1,0 +1,59 @@
+# Pre-tag installed acceptance for a clean Windows runner.
+# This workflow builds a fresh candidate from an exact branch-reachable commit,
+# installs those same bytes per-user in the ephemeral runner, and uploads only
+# sanitized receipts. It does not publish, tag, sign, or verify native UI launch.
+name: windows-installed-acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Exact lowercase 40-hex commit reachable from origin branch history"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  installed-acceptance:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      ACCEPTANCE_COMMIT: ${{ inputs.commit }}
+      EXPECTED_REPOSITORY: HarperZ9/flywheel
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@6292cfc21e60a8e80b17aa5c8c44be81236112f8 # v2.12.0
+        with:
+          channel: stable
+          flutter-version: 3.44.6
+          cache: true
+
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Build, install, and accept exact source commit
+        shell: pwsh
+        timeout-minutes: 75
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File desktop\tool\run_ci_installed_acceptance.ps1
+
+      - name: Upload sanitized installed acceptance receipts
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: windows-installed-acceptance-${{ github.run_id }}
+          path: |
+            desktop/build/installer/SHA256SUMS.txt
+            desktop/build/installer/installed-build-manifest.json
+            desktop/build/installer/ci-installed-acceptance-summary.json
+            desktop/build/installer/python-lane-source-stage.json
+            desktop/build/installer/frozen-gateway-smoke.json
+            desktop/build/installer/installed-acceptance/*.json
+          if-no-files-found: error
+          retention-days: 14

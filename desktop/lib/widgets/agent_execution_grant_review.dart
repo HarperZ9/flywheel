@@ -51,6 +51,10 @@ class AgentExecutionGrantReview extends StatelessWidget {
         _Line('Tool schema digest', review.toolProtocol!.toolSchemaDigestLabel,
             tokens: t),
       ],
+      if (review.mcpAdmission != null) ...[
+        _Line('MCP admission', review.mcpAdmission!.serverLabel, tokens: t),
+        _Line('MCP tools', review.mcpAdmission!.toolNamesLabel, tokens: t),
+      ],
       _Line('Selection', review.model.selectionLabel, tokens: t),
       _Line('Observation basis', review.model.observationPolicyLabel,
           tokens: t),
@@ -88,12 +92,36 @@ class AgentExecutionGrantReview extends StatelessWidget {
               if (review.toolProtocol != null) ...[
                 _ReceiptLine('Tool names', review.toolProtocol!.toolNamesLabel,
                     tokens: t),
+                if (review.toolProtocol!.mcpAdmissionSha256 != null)
+                  _HashLine('MCP admission digest',
+                      review.toolProtocol!.mcpAdmissionSha256!,
+                      tokens: t),
                 _ReceiptLine(
                     'Tool result order',
                     review.toolProtocol!.resultOrderPolicy.isEmpty
                         ? 'unknown'
                         : review.toolProtocol!.resultOrderPolicy,
                     tokens: t),
+              ],
+              if (review.mcpAdmission != null) ...[
+                _HashLine('MCP admission', review.mcpAdmission!.admissionSha256,
+                    tokens: t),
+                for (final server in review.mcpAdmission!.servers) ...[
+                  _ReceiptLine(
+                      'MCP server', '${server.serverId} / ${server.catalogRef}',
+                      tokens: t),
+                  _ReceiptLine('MCP server tools', server.toolsLabel,
+                      tokens: t),
+                  _ReceiptLine('MCP launch limits', server.limitsLabel,
+                      tokens: t),
+                  _ReceiptLine('MCP does not prove', server.doesNotProveLabel,
+                      tokens: t),
+                  _HashLine('MCP descriptor', server.descriptorSha256,
+                      tokens: t),
+                  _HashLine('MCP config', server.configSha256, tokens: t),
+                  _HashLine('MCP tools list', server.toolsListSha256,
+                      tokens: t),
+                ],
               ],
               if (review.cliSession != null) ...[
                 _ReceiptLine('CLI tools', review.cliSession!.toolsLabel,
