@@ -19,10 +19,11 @@ def test_registry_covers_the_expected_lanes():
     # the six spine flagships + local-model (the engine) + relay (execution) +
     # plexus (wiring) + mneme (memory) + calibrate-pro (its own calibration lane)
     # + accountable-surface (actuation) + canon (continuity) + writing (authoring)
+    # + articulate (writing-quality + AI-tell detection over articulate-writing)
     assert set(LANES) == {"gather", "crucible", "index", "forum",
                           "learn", "telos", "local-model", "relay", "plexus", "mneme",
                           "calibrate-pro", "accountable-surface", "canon", "bulletin",
-                          "writing"}
+                          "writing", "articulate"}
 
 
 def test_install_name_to_command_asymmetry_is_mapped():
@@ -92,6 +93,8 @@ def test_public_commands_are_portable_declared_argv():
     assert resolve_mcp_command("learn") == ["node", "src/mcp.mjs"]
     assert resolve_mcp_command("local-model") == [
         "python", "-m", "harness.local_mcp"]
+    assert resolve_mcp_command("articulate") == [
+        "python", "-m", "harness.articulate_mcp"]
 
 
 def test_install_lane_arg_parser_defaults():

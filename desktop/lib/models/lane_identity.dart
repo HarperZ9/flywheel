@@ -132,6 +132,15 @@ const Map<String, LaneIdentity> laneIdentities = {
         'decisions, reviews, and exports behind exact approval receipts.',
     surface: 'scoped revisions + proposal receipts',
   ),
+  'articulate': LaneIdentity(
+    title: 'Articulate',
+    identity:
+        'Local writing-quality and AI-tell detection. It screens text against '
+        'register-adaptive profiles and returns each tell with its line, tier, '
+        'and category next to a 0-to-100 machine-texture score. The detector is '
+        'standard-library-only and makes no network call.',
+    surface: 'tell findings + texture score',
+  ),
   'accountable-surface': LaneIdentity(
     title: 'Accountable surface',
     identity:

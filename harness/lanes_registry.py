@@ -90,6 +90,23 @@ LANES: dict[str, Lane] = {
         "writing", "", "python", ("-m", "harness.writing_mcp"), "bundled", "0.1.0",
         "private author workspace: scoped revisions, exact approval, and export receipts",
         "authoring"),
+    # articulate carries a native, zero-dependency transport (python -m
+    # harness.articulate_mcp, mirroring the writing lane) but reads its detector
+    # from the installed articulate-writing package rather than a vendored copy.
+    # So the transport is bundled while the engine is a separately released
+    # package: this is not a self-contained native lane, and it does not change
+    # the count of natively bundled engines. install_name records the package the
+    # shim needs (so the roster surfaces its version), and version tracks that
+    # detector, not the transport shim (harness.articulate_mcp __version__). The
+    # lane-vs-package drift risk (the lane runs whatever articulate-writing is
+    # installed) is surfaced by articulate.doctor and guarded by the lane's
+    # parity test against `python -m articulate.cli check`.
+    "articulate": Lane(
+        "articulate", "articulate-writing", "python",
+        ("-m", "harness.articulate_mcp"), "bundled", "0.3.0",
+        "local writing-quality + AI-tell detection: check/score over the "
+        "articulate-writing detector (read-only, no network, no model backend)",
+        "authoring", py_module="articulate.cli"),
     "relay": Lane(
         "relay", "relay-agent", "relay", ("--mcp",), "pip", "0.2.0",
         "accountable coding agent on any model endpoint (local-first, witnessed runs)",
