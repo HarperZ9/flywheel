@@ -77,6 +77,16 @@ begin
   end;
 end;
 
+function FwHasMetaFile(Dir: String): Boolean;
+begin
+  Result := FileExists(PathCombine(Dir, 'METADATA')) or FileExists(PathCombine(Dir, 'PKG-INFO'));
+end;
+
+function FwOwnedDirName(Name: String): Boolean;
+begin
+  Result := Copy(FwNormalize(Name), 1, 15) = 'flywheel-verify';
+end;
+
 function FwAllowedFile(Relative: String): Boolean;
 var Lower: String; LicenseName: String;
 begin
@@ -179,7 +189,14 @@ begin
         if (Rec.Attributes and FILE_ATTRIBUTE_DIRECTORY <> 0) and (Rec.Name <> '.') and (Rec.Name <> '..') and FwMetadataDir(Rec.Name) then begin
           Source := PathCombine(InternalRoot, Rec.Name);
           if Rec.Attributes and FILE_ATTRIBUTE_REPARSE_POINT <> 0 then begin Failure := 'REPARSE_METADATA_ROOT: ' + Source; Result := False; exit; end;
-          if not FwLoadMeta(Source, Name, Version) then begin Failure := 'MISSING_METADATA_BINDING: ' + Source; Result := False; exit; end;
+          if not FwLoadMeta(Source, Name, Version) then begin
+            { No bindable Name. Abort only when the dir looks like package metadata
+              (a METADATA/PKG-INFO is present but unreadable) or the dir name marks it as
+              flywheel-verify's own. An unrelated dist-info left by a prior install with no
+              metadata file at all is not ours to touch, so skip it instead of failing. }
+            if FwHasMetaFile(Source) or FwOwnedDirName(Rec.Name) then begin Failure := 'MISSING_METADATA_BINDING: ' + Source; Result := False; exit; end;
+            continue;
+          end;
           if FwNormalize(Name) <> 'flywheel-verify' then continue;
           if Version = '' then begin Failure := 'MISSING_METADATA_VERSION: ' + Source; Result := False; exit; end;
           if not FwValidateTree(Source, '', Failure) then begin Result := False; exit; end;
