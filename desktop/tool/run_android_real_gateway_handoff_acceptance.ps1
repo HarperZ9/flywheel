@@ -153,7 +153,7 @@ try {
   $selectedDevice = $selection.id; $applicationId = Get-AndroidApplicationId
   $screen = Invoke-Captured $adb @("-s", $selectedDevice, "shell", "dumpsys", "window", "policy") $desktopRoot 30
   $receipt.screen_preflight = Test-AndroidScreenReadiness $(if ($screen.exit_code -eq 0) { $screen.stdout } else { "" })
-  if (!$receipt.screen_preflight.ok) { $receipt.blocker = $receipt.screen_preflight.reason; exit 1 }
+  if (!$receipt.screen_preflight.ok) { $receipt.blocker = $receipt.screen_preflight.reason; Complete-Receipt $receipt "" $selectedDevice; exit 1 }
   $prePackage = Test-InstalledPackage $adb $selectedDevice $applicationId
   $receipt.package_policy = @{ package_id = $applicationId; requires_absent_package = $true; pre_status = $prePackage.status; clear_data = $false }
   if ($prePackage.status -ne "absent") { $receipt.blocker = "package_present_before_run"; Complete-Receipt $receipt "" $selectedDevice; exit 1 }
