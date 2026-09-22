@@ -14,6 +14,7 @@ import '../models/gateway_grant_models.dart';
 import '../models/inspect_evidence_models.dart';
 import '../models/operation_models.dart';
 import '../models/process_audit_review.dart';
+import '../models/provider_session_models.dart';
 import '../models/rowan_mcp_catalog.dart';
 import '../models/service_desk_review.dart';
 import '../models/workflow_models.dart';
@@ -36,6 +37,7 @@ part 'gateway_inspect.dart';
 part 'gateway_process_audit.dart';
 part 'gateway_live_screen.dart';
 part 'gateway_live_screen_controls.dart';
+part 'gateway_provider_session_bindings.dart';
 
 class GatewayClient {
   static const String loopback = 'http://127.0.0.1:8799';
@@ -46,7 +48,6 @@ class GatewayClient {
   GatewayClient({this.baseUrl = loopback, http.Client? httpClient})
       : _http = httpClient ?? AuthedClient(http.Client());
 
-  /// True if the gateway is reachable (the gateway serves /api/world on GET).
   Future<bool> isAlive({Duration timeout = const Duration(seconds: 2)}) async {
     try {
       final r =
@@ -57,7 +58,6 @@ class GatewayClient {
     }
   }
 
-  /// GET /api/lanes — the lane roster (live/declared/missing).
   Future<LaneRoster> laneRoster({bool probe = false}) async {
     final r = await _http.get(
       Uri.parse('$baseUrl/api/lanes${probe ? '?probe=true' : ''}'),
@@ -69,13 +69,11 @@ class GatewayClient {
     return LaneRoster.fromJson(body);
   }
 
-  /// GET /api/world — the projected world (spine + root hash + findings).
   Future<WorldDoc> projectedWorld() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/world'));
     return WorldDoc.fromJson(_decode(r));
   }
 
-  /// GET /api/endpoints — the universal router roster (credential presence).
   Future<List<EndpointRow>> endpointRoster() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/endpoints'));
     final body = _decode(r);
@@ -86,23 +84,19 @@ class GatewayClient {
         .toList();
   }
 
-  /// GET /api/models?endpoint=NAME — one endpoint's model roster.
   Future<Map<String, dynamic>> models(String endpoint) =>
       getJson('/api/models?endpoint=${Uri.encodeQueryComponent(endpoint)}');
 
-  /// GET /api/endpoints/health — live health probe of local tiers.
   Future<Map<String, dynamic>> endpointHealth() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/endpoints/health'));
     return _decode(r);
   }
 
-  /// GET /api/router/stats — observed per-provider success rate + cost.
   Future<Map<String, dynamic>> routerStats() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/router/stats'));
     return _decode(r);
   }
 
-  /// POST /api/relay/start — start a witnessed relay run.
   Future<Map<String, dynamic>> startRelayRun(Map<String, dynamic> task) async {
     final r = await _http.post(
       Uri.parse('$baseUrl/api/relay/start'),
@@ -112,7 +106,6 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// GET /api/relay/status — a relay run's progress.
   Future<Map<String, dynamic>> relayStatus(String runId) =>
       getJson('/api/relay/status?run_id=${Uri.encodeQueryComponent(runId)}');
 
@@ -175,11 +168,9 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// Auth polling retains this raw future after its separate UI deadline.
   Future<Map<String, dynamic>> authStatus() async =>
       _decode(await _http.get(Uri.parse('$baseUrl/api/auth')));
 
-  /// Generic GET returning decoded JSON, for lightweight read-only routes.
   Future<Map<String, dynamic>> getJson(
     String path, {
     Duration timeout = const Duration(seconds: 15),
@@ -189,7 +180,6 @@ class GatewayClient {
     return _decode(r, acceptedStatuses);
   }
 
-  /// Generic POST returning decoded JSON, for small parameterless verbs.
   Future<Map<String, dynamic>> postJson(
     String path,
     Map<String, dynamic> body, {
@@ -205,7 +195,6 @@ class GatewayClient {
     return _decode(r);
   }
 
-  /// Generic POST returning decoded JSON while rejecting redirects.
   Future<Map<String, dynamic>> postJsonNoRedirect(
     String path,
     Map<String, dynamic> body, {
@@ -221,11 +210,6 @@ class GatewayClient {
     return _decode(response, acceptedStatuses);
   }
 
-  /// POST returning the decoded body whatever the status came back as.
-  /// Some routes answer a real finding with a non-200: an evidence packet
-  /// that drifted is a 422 whose body IS the verdict, and a suite that
-  /// cannot be audited is a 400 that names why. Throwing those away would
-  /// report a transport failure where the engine actually answered.
   Future<Map<String, dynamic>> postJsonLenient(
     String path,
     Map<String, dynamic> body, {

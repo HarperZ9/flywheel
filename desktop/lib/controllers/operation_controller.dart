@@ -13,6 +13,7 @@ enum OperationObserverState { idle, connecting, observing, closed, error }
 final class OperationController extends ChangeNotifier {
   final String Function() _requestId;
   final int stopTimeoutMs;
+  final Duration observationDetachTimeout;
   final VoidCallback? _onTerminal;
   final ValueChanged<OperationResult>? _onTerminalResult;
   final GatewayOperationController? grants;
@@ -23,11 +24,13 @@ final class OperationController extends ChangeNotifier {
   StreamSubscription<GatewayOperationEvent>? _watch;
   OperationObserverState _observer = OperationObserverState.idle;
   int _lastSequence = 0;
+  int _watchGeneration = 0;
   bool _terminalNotified = false, _disposed = false;
 
   OperationController({
     required String Function() requestId,
     this.stopTimeoutMs = 5000,
+    this.observationDetachTimeout = const Duration(seconds: 5),
     VoidCallback? onTerminal,
     ValueChanged<OperationResult>? onTerminalResult,
     this.grants,
@@ -36,6 +39,9 @@ final class OperationController extends ChangeNotifier {
         _onTerminalResult = onTerminalResult {
     if (stopTimeoutMs < 1 || stopTimeoutMs > 30000) {
       throw ArgumentError('Invalid Stop timeout');
+    }
+    if (observationDetachTimeout <= Duration.zero) {
+      throw ArgumentError('Invalid observation detach timeout');
     }
   }
 
@@ -56,12 +62,15 @@ final class OperationController extends ChangeNotifier {
     Stream<GatewayOperationEvent> stream, {
     required ValueChanged<Map<String, dynamic>> onProgress,
     required VoidCallback onInterrupted,
+    ValueChanged<OperationSnapshot>? onSnapshot,
   }) {
     if (_disposed) return;
-    _watch?.cancel();
+    final generation = ++_watchGeneration;
+    unawaited(_cancelWatch(_watch));
     beginObservation();
     _watch = stream.listen(
       (event) {
+        if (_disposed || generation != _watchGeneration) return;
         if (event.sequence <= _lastSequence) {
           failObservation();
           onInterrupted();
@@ -73,16 +82,19 @@ final class OperationController extends ChangeNotifier {
             ? snapshot == null || acceptSnapshot(snapshot)
             : snapshot != null && acceptTerminal(snapshot, event.result!);
         if (accepted) {
+          if (snapshot != null) onSnapshot?.call(snapshot);
           _lastSequence = event.sequence;
         } else {
           onInterrupted();
         }
       },
       onError: (_) {
+        if (_disposed || generation != _watchGeneration) return;
         failObservation();
         if (!_disposed && !hasTerminal) onInterrupted();
       },
       onDone: () {
+        if (_disposed || generation != _watchGeneration) return;
         closeObservation();
         if (!_disposed && !hasTerminal) onInterrupted();
       },
@@ -206,10 +218,57 @@ final class OperationController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Detaches this observer without cancelling the server operation.
+  /// False preserves a cancellation error; it is not clean stream completion.
+  Future<bool> detachObservation() async {
+    final generation = ++_watchGeneration;
+    final watch = _watch;
+    _watch = null;
+    final clean = await _cancelWatch(watch);
+    if (!_disposed && generation == _watchGeneration) {
+      if (clean) {
+        closeObservation();
+      } else {
+        failObservation();
+      }
+    }
+    return clean;
+  }
+
+  Future<bool> _cancelWatch(
+    StreamSubscription<GatewayOperationEvent>? watch, {
+    bool bounded = true,
+  }) async {
+    if (watch == null) return true;
+    final result = Completer<bool>();
+    Timer? timeout;
+
+    void complete(bool clean) {
+      timeout?.cancel();
+      if (!result.isCompleted) result.complete(clean);
+    }
+
+    if (bounded) {
+      timeout = Timer(observationDetachTimeout, () => complete(false));
+    }
+    try {
+      watch.cancel().then<void>(
+            (_) => complete(true),
+            onError: (_, __) => complete(false),
+          );
+    } on Object {
+      complete(false);
+    }
+    return result.future;
+  }
+
   @override
   void dispose() {
     _disposed = true;
-    _watch?.cancel();
+    _watchGeneration++;
+    final watch = _watch;
+    _watch = null;
+    unawaited(_cancelWatch(watch, bounded: false));
     grants?.invalidate();
     super.dispose();
   }

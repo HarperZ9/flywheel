@@ -126,8 +126,8 @@ def dispatch_bundled_lane_mcp(
     serve = getattr(module, str(expected_row["callable"]), None)
     if not callable(serve):
         return 2
-    result = serve()
-    return int(result or 0)
+    from .bundled_lane_stdio import serve_admitted_lane
+    return serve_admitted_lane(module, tuple(expected_row["allowed_tools"]))
 
 
 def build_relay_descriptor(source_root: Path, *, commit: str) -> dict:
@@ -220,7 +220,7 @@ def _validate_descriptor(
         codes.append("bundled_source_algorithm_mismatch")
     files = source.get("files")
     if (not isinstance(files, list)
-            or any(not _manifest_file_row(row) for row in files)
+            or any(not _manifest_file_row(row, str(expected.get("source_path", ""))) for row in files)
             or sorted(row["path"] for row in files) != [row["path"] for row in files]):
         codes.append("bundled_source_manifest_invalid")
     else:
@@ -233,7 +233,7 @@ def _validate_descriptor(
             codes.append("bundled_source_manifest_digest_invalid")
         if source.get("manifest_sha256") != expected.get("source_manifest_sha256"):
             codes.append("bundled_source_digest_mismatch")
-    if entrypoint.get("argv") != ["--bundled-lane-mcp", "relay"]:
+    if entrypoint.get("argv") != ["--bundled-lane-mcp", expected.get("name", "relay")]:
         codes.append("bundled_entrypoint_invalid")
     if entrypoint.get("module") != expected.get("module"):
         codes.append("bundled_entrypoint_invalid")
@@ -267,13 +267,13 @@ def _component_summary(
     }
 
 
-def _manifest_file_row(value: object) -> bool:
+def _manifest_file_row(value: object, source_path: str = "src/relay") -> bool:
     if not isinstance(value, dict):
         return False
     return (
         set(value) == {"path", "bytes", "sha256"}
         and isinstance(value.get("path"), str)
-        and value["path"].startswith("src/relay/")
+        and value["path"].startswith(source_path.rstrip("/") + "/")
         and value["path"].endswith(".py")
         and isinstance(value.get("bytes"), int)
         and value["bytes"] >= 0

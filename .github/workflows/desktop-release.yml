@@ -118,6 +118,8 @@ jobs:
           $receipt = Join-Path $env:RUNNER_TEMP "python-lane-source-stage.json"
           python scripts/stage_python_lane_sources.py `
             --lane canon `
+            --lane mneme `
+            --lane plexus `
             --source-root $sourceRoot `
             --receipt $receipt
           if ($LASTEXITCODE -ne 0) { throw "Python lane source staging failed" }

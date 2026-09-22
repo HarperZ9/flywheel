@@ -14,7 +14,8 @@ extension GatewayStreamsAndPlugins on GatewayClient {
           {'model': model, 'messages': messages, 'stream': true});
     final res = await _http.send(req);
     if (res.statusCode != 200) {
-      throw GatewayException('gateway returned ${res.statusCode}');
+      final body = await _boundedResponse(res.stream);
+      throw GatewayException.fromResponse(res.statusCode, body);
     }
     const decoder =
         GatewaySseDecoder(requireIds: false, requireTerminal: false);

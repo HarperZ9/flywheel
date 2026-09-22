@@ -1,0 +1,154 @@
+{
+  "allowed_tools": [
+    "mneme.status",
+    "mneme.doctor"
+  ],
+  "does_not_prove": [
+    "NOT_PROVES_FULL_LANE_WORKFLOW: status and doctor admission checks identity/readiness only.",
+    "NOT_PROVES_RUNTIME_DEPENDENCY_CLOSURE: interpreter, wheels, and import closure are bound by a separate installed release receipt.",
+    "NOT_PROVES_PROVIDER_DEVICE_OR_PRIVATE_DATA_READINESS: no provider, device, account, model, or private-data operation is exercised."
+  ],
+  "entrypoint": {
+    "argv": [
+      "--bundled-lane-mcp",
+      "mneme"
+    ],
+    "callable": "serve",
+    "health_tool": "mneme.status",
+    "module": "mneme.mcp"
+  },
+  "name": "mneme",
+  "schema": "flywheel.bundled-lane-component/v1",
+  "source": {
+    "algorithm": "sha256-canonical-source-manifest/v1",
+    "bytes": 192513,
+    "commit": "d3de14d8caa06373fe42b6cc3023285a1d3550bf",
+    "file_count": 24,
+    "files": [
+      {
+        "bytes": 609,
+        "path": "src/mneme/__init__.py",
+        "sha256": "sha256:1bcef04188d8746bf1511b8772d9a7f285918e7c73f32d6346b1121853045639"
+      },
+      {
+        "bytes": 79,
+        "path": "src/mneme/__main__.py",
+        "sha256": "sha256:307299fda7b77d22c64cb51430ec75e5f59d78e9c948786afb3b2544fe45e4b7"
+      },
+      {
+        "bytes": 5373,
+        "path": "src/mneme/bench.py",
+        "sha256": "sha256:fe02c2cacef53681db6b7886f1c888c19c128faab2259004d884d7c480773df1"
+      },
+      {
+        "bytes": 20221,
+        "path": "src/mneme/cli.py",
+        "sha256": "sha256:9e821902eb13919d5ac9f4ed68ec3ffb561268c17496f3beeabe1fbcc9f43082"
+      },
+      {
+        "bytes": 4456,
+        "path": "src/mneme/compose.py",
+        "sha256": "sha256:b05966f316689b23cc30addcf0b2ec3acb9f28f6250432000f8f92fae0aff3f3"
+      },
+      {
+        "bytes": 6179,
+        "path": "src/mneme/consolidate.py",
+        "sha256": "sha256:737069aabb047d15ec5ff4b312b22b6b429d3460fd0121f1542b01ee807154ea"
+      },
+      {
+        "bytes": 6463,
+        "path": "src/mneme/drift.py",
+        "sha256": "sha256:746231cc44d304fe058b5888997cc25f504d09c6a83b63f0901ac7189b218d79"
+      },
+      {
+        "bytes": 2545,
+        "path": "src/mneme/embed.py",
+        "sha256": "sha256:970ffe9cebbfc86cebbb5b13584de5d2a4a0eae430a411acd934157798763587"
+      },
+      {
+        "bytes": 5711,
+        "path": "src/mneme/entity.py",
+        "sha256": "sha256:bd699d6c602a0acaf917391ac9e0fdef948d714562e5fd0a16af50894b31eb30"
+      },
+      {
+        "bytes": 3278,
+        "path": "src/mneme/extract.py",
+        "sha256": "sha256:a0de928f8dfb2e25f2aa15df7da4a5d0f1d4c7a348a464b078ae92df4ed71e9b"
+      },
+      {
+        "bytes": 6354,
+        "path": "src/mneme/ingest.py",
+        "sha256": "sha256:811976aad2d2db44dcd579fbbd0734a72ba296a59e836b7f091b661a87f8bc86"
+      },
+      {
+        "bytes": 6109,
+        "path": "src/mneme/inspect.py",
+        "sha256": "sha256:8ad67266a5edb7489883271de8e02b231896079adea1a75b1f8745a6d451a02e"
+      },
+      {
+        "bytes": 5129,
+        "path": "src/mneme/llm_extract.py",
+        "sha256": "sha256:ec68deeef291ca16015ff73695f5c3c42bb359cc42035777a4dee7b6e40823a4"
+      },
+      {
+        "bytes": 14789,
+        "path": "src/mneme/mcp.py",
+        "sha256": "sha256:3761c2468a3291a246f89c05fd21e0f9ba1af065109257746ea79bfbe4d55c5c"
+      },
+      {
+        "bytes": 13799,
+        "path": "src/mneme/memory.py",
+        "sha256": "sha256:f06a11ff0c35e77ebef88b88e7811243a11fa15930c13c252abaf7b953cf5e0c"
+      },
+      {
+        "bytes": 17376,
+        "path": "src/mneme/origin.py",
+        "sha256": "sha256:af8bf804c11441ec442cee70efdc4c77cebc665cd1bf825d910984d113575255"
+      },
+      {
+        "bytes": 9531,
+        "path": "src/mneme/recall.py",
+        "sha256": "sha256:2578905aa8640ea20598b12ec7407cc4d31caf23936a1d31eecfeb5f624f04c8"
+      },
+      {
+        "bytes": 7855,
+        "path": "src/mneme/receipt.py",
+        "sha256": "sha256:49989ad997d4bab09256e1a3b6a1650d226771e74cdbdd4faf7d28759bdac32c"
+      },
+      {
+        "bytes": 14253,
+        "path": "src/mneme/replay.py",
+        "sha256": "sha256:877c8b8fab737d01fe684235a38aca2ad7f055c146eb559ac8cd6ff1a0fa20be"
+      },
+      {
+        "bytes": 2711,
+        "path": "src/mneme/scenario.py",
+        "sha256": "sha256:1176516503c6acc4d2167f5336af9add077d0ffe5eb54e387ff8de34a6b64241"
+      },
+      {
+        "bytes": 1967,
+        "path": "src/mneme/schema.py",
+        "sha256": "sha256:78b2a8d440654721bb52ea93a6f41cbf4d729b58bbbc9158e75908f10f1d2d74"
+      },
+      {
+        "bytes": 10922,
+        "path": "src/mneme/source.py",
+        "sha256": "sha256:b36c0aa604968cdb3c405f15d209b319299d35a710f2734b3010899ac3df966f"
+      },
+      {
+        "bytes": 23221,
+        "path": "src/mneme/store.py",
+        "sha256": "sha256:cb830a10b6fc052d89050c9649ce233ebffbd64c2cbc3f4eee12a949dd2e7bd3"
+      },
+      {
+        "bytes": 3583,
+        "path": "src/mneme/temporal.py",
+        "sha256": "sha256:0bdfd85f6deb4b615bf52284d67d6243a2062660968b6a9bf4ac2338c363862e"
+      }
+    ],
+    "manifest_sha256": "sha256:a0ce0a1f641bd60190477b3cce25a29c487b0f6c75f87277f5904ebeddaa6f17",
+    "path": "src/mneme",
+    "repo": "https://github.com/HarperZ9/mneme.git"
+  },
+  "version": "0.4.1"
+}

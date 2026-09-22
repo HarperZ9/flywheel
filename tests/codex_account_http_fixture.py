@@ -6,6 +6,7 @@ import json
 import threading
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+from types import SimpleNamespace
 
 from harness import gateway
 from harness.gateway_auth import DEFAULT_HOSTS
@@ -108,6 +109,12 @@ class CodexAccountGateway:
         run_root_value.mkdir()
         repo_root = Path(__file__).resolve().parents[1]
         manager_value = self.manager
+        components = SimpleNamespace(
+            state_root=home / "state",
+            operation_service=object(),
+            operation_process_factory=object(),
+            codex_account_manager=manager_value,
+        )
 
         class Handler(gateway._Handler):
             auth_token = TOKEN
@@ -115,6 +122,7 @@ class CodexAccountGateway:
             flywheel_home = home
             root = repo_root
             run_root = str(run_root_value)
+            native_codex_components = components
             codex_account_manager = manager_value
 
             def log_message(self, *_args) -> None:

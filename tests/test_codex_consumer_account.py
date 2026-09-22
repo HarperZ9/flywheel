@@ -159,6 +159,28 @@ def test_discover_models_paginates_and_sanitizes_listing_errors():
     assert "listing unavailable" in failed["reason"]
 
 
+def test_discover_models_reports_bounded_partial_catalog_when_page_cap_remains():
+    pages = [
+        {"data": [{
+            "id": f"catalog-{i}",
+            "model": f"gpt-6-model-{i}",
+            "hidden": False,
+            "isDefault": False,
+            "supportedReasoningEfforts": [],
+            "inputModalities": ["text"],
+        }], "nextCursor": f"cursor-{i + 1}"}
+        for i in range(10)
+    ]
+    client = FakeClient(models=pages)
+
+    out = discover_models(client, max_pages=10)
+
+    assert len(out["models"]) == 10
+    assert out["listing_partial"] is True
+    assert out["reason"] == "provider catalog truncated after 10 pages"
+    assert client.calls[-1] == ("models", "cursor-9", 100, False)
+
+
 def test_successful_model_metadata_redacts_secret_shapes_and_validates_reasoning():
     client = FakeClient(models=[{
         "data": [{

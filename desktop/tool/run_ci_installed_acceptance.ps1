@@ -217,7 +217,7 @@ $pythonLaneSourceRoot = Join-Path $env:RUNNER_TEMP "flywheel-python-lane-sources
 $pythonLaneStageReceipt = Join-Path $env:RUNNER_TEMP "python-lane-source-stage.full.json"
 $pythonLaneBoundedReceipt = Join-Path $installerDir "python-lane-source-stage.json"
 New-Item -ItemType Directory -Force -Path $installerDir | Out-Null
-Invoke-Checked "stage Canon Python lane source" "python" @("scripts/stage_python_lane_sources.py", "--lane", "canon", "--source-root", $pythonLaneSourceRoot, "--receipt", $pythonLaneStageReceipt, "--bounded-receipt", $pythonLaneBoundedReceipt)
+Invoke-Checked "stage Python lane sources" "python" @("scripts/stage_python_lane_sources.py", "--lane", "canon", "--lane", "mneme", "--lane", "plexus", "--source-root", $pythonLaneSourceRoot, "--receipt", $pythonLaneStageReceipt, "--bounded-receipt", $pythonLaneBoundedReceipt)
 $env:FLYWHEEL_PYTHON_LANE_SOURCE_ROOT = $pythonLaneSourceRoot
 Find-InnoSetup
 Assert-CleanWorkspaceNoUntracked "before build"

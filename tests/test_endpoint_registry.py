@@ -260,9 +260,11 @@ def test_authorized_native_proposer_injects_exact_binding(monkeypatch):
 
 def test_authorized_ambient_adapters_fail_before_construction(monkeypatch):
     monkeypatch.setattr(endpoint_registry.shutil, "which", lambda _binary: "/bin/tool")
-    for name in ("claude-cli", "codex-cli", "opencode"):
+    cases = (("claude-cli", {}), ("codex-cli", {"model": "gpt-6-astra"}), ("opencode", {}))
+    for name, kwargs in cases:
         try:
-            make_authorized_endpoint_proposer(name, credential_bindings=_Bindings({}))
+            make_authorized_endpoint_proposer(
+                name, credential_bindings=_Bindings({}), **kwargs)
         except ProviderPermissionError as failure:
             assert failure.code == "PERMISSION_REQUIRED"
             assert str(failure) == "explicit credential injection required"

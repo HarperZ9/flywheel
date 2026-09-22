@@ -80,7 +80,9 @@ def _estimate_tokens(text: Any) -> int:
 def _usage_ok(raw: Any) -> bool:
     return isinstance(raw, dict) and all(
         isinstance(raw.get(k), int) and not isinstance(raw.get(k), bool)
-        for k in ("prompt", "completion", "total"))
+        and 0 <= raw[k] <= 2 ** 53 - 1
+        for k in ("prompt", "completion", "total")) and (
+            raw["total"] == raw["prompt"] + raw["completion"])
 
 
 def _price_for(model_ref: str) -> dict[str, str] | None:
@@ -269,3 +271,12 @@ def handle_usage_summary(req_or_qs: Any, run_root: Any) -> tuple[dict, int]:
         "receipts": receipts,
     }
     return body, 200
+
+
+def handle_usage_get(path: str, qs: Any, run_root: Any) -> tuple[dict, int]:
+    if path == "/api/usage/live":
+        from .usage_live import handle_usage_live
+        return handle_usage_live(qs, run_root)
+    if path == "/api/usage":
+        return handle_usage_summary(qs, run_root)
+    return {"error": "unknown usage route"}, 404

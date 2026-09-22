@@ -204,7 +204,11 @@ def test_frozen_build_never_launches_sys_executable(monkeypatch):
             assert launch.allowed_tools == ("relay.status",)
             assert launch.inherit_env is False
             continue
-        if name in {"canon", "mneme", "plexus", "telos", "accountable-surface"}:
+        if name in {"mneme", "plexus"}:
+            with pytest.raises(ln.LaneRuntimeError, match="bundled_descriptor_missing"):
+                ln.resolve_mcp_launch(name)
+            continue
+        if name in {"canon", "telos", "accountable-surface"}:
             with pytest.raises(ln.LaneRuntimeError, match="package_distribution_disabled"):
                 ln.resolve_mcp_launch(name)
             continue

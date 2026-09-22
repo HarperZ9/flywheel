@@ -1,0 +1,89 @@
+{
+  "allowed_tools": [
+    "plexus.status",
+    "plexus.doctor"
+  ],
+  "does_not_prove": [
+    "NOT_PROVES_FULL_LANE_WORKFLOW: status and doctor admission checks identity/readiness only.",
+    "NOT_PROVES_RUNTIME_DEPENDENCY_CLOSURE: interpreter, wheels, and import closure are bound by a separate installed release receipt.",
+    "NOT_PROVES_PROVIDER_DEVICE_OR_PRIVATE_DATA_READINESS: no provider, device, account, model, or private-data operation is exercised."
+  ],
+  "entrypoint": {
+    "argv": [
+      "--bundled-lane-mcp",
+      "plexus"
+    ],
+    "callable": "serve",
+    "health_tool": "plexus.status",
+    "module": "plexus.mcp"
+  },
+  "name": "plexus",
+  "schema": "flywheel.bundled-lane-component/v1",
+  "source": {
+    "algorithm": "sha256-canonical-source-manifest/v1",
+    "bytes": 57497,
+    "commit": "31a86aaf30983c6a7a511d2636e6366fcd2b3f36",
+    "file_count": 11,
+    "files": [
+      {
+        "bytes": 1009,
+        "path": "src/plexus/__init__.py",
+        "sha256": "sha256:ec4c36b8bb5b630f345f2b5e135c5759cdd6c1eff733cb2a1d75cb705c125e6c"
+      },
+      {
+        "bytes": 85,
+        "path": "src/plexus/__main__.py",
+        "sha256": "sha256:92236ba630211b9679f2a312da7d025dacece3a19ba65252f8acb6bcd37a1729"
+      },
+      {
+        "bytes": 5548,
+        "path": "src/plexus/cli.py",
+        "sha256": "sha256:e785fbb1e0b175ae9cc395e97e59b5fc28a38a7da40fb2ea2e5b36d0c5374426"
+      },
+      {
+        "bytes": 1513,
+        "path": "src/plexus/graph.py",
+        "sha256": "sha256:a1fda887683fb6cd781fd01cd7da56fd97271f0455f8cf0de06c343c14d2ddbe"
+      },
+      {
+        "bytes": 5353,
+        "path": "src/plexus/manifest.py",
+        "sha256": "sha256:6ede03275df50bbbc727829f8e7b10d2d40210fe51d00126a744d81ccbfef1c5"
+      },
+      {
+        "bytes": 6370,
+        "path": "src/plexus/mcp.py",
+        "sha256": "sha256:a5c71de3e53c7f3111489d52c037623e8d25789a6a3b46729d580ed166d8076f"
+      },
+      {
+        "bytes": 3934,
+        "path": "src/plexus/mesh.py",
+        "sha256": "sha256:1bf1bfcbec9a03b6302f4f04fef9d4a71f23eb916a454844daa43115d9fa4c1b"
+      },
+      {
+        "bytes": 4946,
+        "path": "src/plexus/plan.py",
+        "sha256": "sha256:c3fee7c4d6e567efe2efc2e16a8fddc79ae6e03eeda61ff07ea91dc1787b00f2"
+      },
+      {
+        "bytes": 2751,
+        "path": "src/plexus/receipt.py",
+        "sha256": "sha256:59ed0575ea82a1a0ce0701b55599f36dd440ded9729a69d12efb6cc6955b2cc4"
+      },
+      {
+        "bytes": 23940,
+        "path": "src/plexus/registry.py",
+        "sha256": "sha256:2fb7bb6b98c662d349e84970b9d9cd8141daa20c2bda76a3fed5a07e23f88689"
+      },
+      {
+        "bytes": 2048,
+        "path": "src/plexus/run.py",
+        "sha256": "sha256:cd036adb9764f68f3b4be4a4928a9277ed062686cd506d7059ee5e20957e4ac8"
+      }
+    ],
+    "manifest_sha256": "sha256:c445ac8ced75fd0224acdadcd818eba1c529c32de743dbe483495708e165de2d",
+    "path": "src/plexus",
+    "repo": "https://github.com/HarperZ9/plexus.git"
+  },
+  "version": "0.2.1"
+}

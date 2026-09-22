@@ -10,16 +10,24 @@
 // view is a thin wire: it hands the client's typed usage methods to the panel.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 import '../client/gateway_client.dart';
+import '../models/usage_live_selection.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 import '../widgets/usage_receipt_panel.dart';
+import '../widgets/usage_live_panel.dart';
 
 class UsageView extends StatelessWidget {
   final GatewayClient client;
   final bool alive;
-  const UsageView({super.key, required this.client, required this.alive});
+  final ValueListenable<UsageLiveSelection>? usageSelection;
+  const UsageView(
+      {super.key,
+      required this.client,
+      required this.alive,
+      this.usageSelection});
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +39,9 @@ class UsageView extends StatelessWidget {
     final t = context.fw;
     return ViewScroll(storageKey: 'usage', children: [
       const SectionHeader('Usage metering', kicker: 'usage'),
+      const SizedBox(height: FwLayout.s4),
+      _livePanel(),
+      const SizedBox(height: FwLayout.s5),
       const SizedBox(height: FwLayout.s3),
       Text(
         'Every answer costs something, and a stranger should be able to re-check '
@@ -48,4 +59,18 @@ class UsageView extends StatelessWidget {
       ),
     ]);
   }
+
+  Widget _livePanel() {
+    final listenable = usageSelection;
+    if (listenable == null) {
+      return _livePanelFor(UsageLiveSelection.none);
+    }
+    return ValueListenableBuilder<UsageLiveSelection>(
+        valueListenable: listenable,
+        builder: (_, selection, __) => _livePanelFor(selection));
+  }
+
+  Widget _livePanelFor(UsageLiveSelection selection) => UsageLivePanel(
+      key: ValueKey(selection.cacheKey),
+      loadSnapshot: () => client.getJson(selection.path));
 }

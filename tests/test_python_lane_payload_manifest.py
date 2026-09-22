@@ -15,7 +15,7 @@ def test_python_lane_payload_manifest_check_passes():
     report = json.loads(result.stdout)
     assert report["verdict"] == "PASS"
     assert report["async_blockers"] == ["forum"]
-    assert report["registry_updates"] == ["canon", "forum", "gather", "index", "mneme"]
+    assert report["registry_updates"] == ["canon", "forum", "gather", "index"]
 
 
 def test_python_lane_payload_manifest_rejects_descriptor_tamper(tmp_path):
@@ -77,8 +77,10 @@ def test_python_lane_payload_pins_accepted_index_and_plexus_sources():
     )
 
     plexus = by_lane["plexus"]
-    assert plexus["owner_commit"] == "f16aa20d52834db1a7beaaa44780200676caaf0b"
+    assert plexus["owner_commit"] == "31a86aaf30983c6a7a511d2636e6366fcd2b3f36"
     assert plexus["component_descriptor"]["source"]["commit"] == plexus["owner_commit"]
+    assert plexus["owner_tag"] == "v0.2.1"
+    assert plexus["component_descriptor"]["version"] == "0.2.1"
     assert "plexus.registry" in plexus["hidden_imports"]
     assert any(
         item["path"] == "src/plexus/registry.py"

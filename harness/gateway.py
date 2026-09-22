@@ -548,8 +548,8 @@ class _Handler(BaseHTTPRequestHandler):
     flywheel_home = Path(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
     owner_ref, clock = None, staticmethod(
         lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
-    operation_service = operation_process_factory = None
-    session_token_store = _session_token_state_root = None
+    operation_service = operation_process_factory = native_codex_components = native_codex_lifecycle = None
+    codex_account_manager = native_codex_config = session_token_store = _session_token_state_root = None
     def log_message(self, *a):  # quiet
         pass
 
@@ -610,7 +610,7 @@ class _Handler(BaseHTTPRequestHandler):
     def _json(self, obj, code=200):
         error = obj.get("error") if isinstance(obj, dict) else None
         error_code = error.get("code") if isinstance(error, dict) else None
-        public_boundary = isinstance(obj, dict) and obj.get("code") in {"CAPABILITY_NOT_ADMITTED", "GATEWAY_ROUTE_MALFORMED", "GATEWAY_ROUTE_MISMATCH"}
+        public_boundary = isinstance(obj, dict) and (obj.get("code") in {"CAPABILITY_NOT_ADMITTED", "GATEWAY_ROUTE_MALFORMED", "GATEWAY_ROUTE_MISMATCH"} or error_code == "MODEL_SELECTION_REQUIRED")
         if (getattr(self, "_gateway_guarded", False)
                 and error_code != "PERMISSION_REQUIRED"
                 and not (isinstance(obj, dict) and obj.get("governance_denied") is True)
@@ -627,16 +627,14 @@ class _Handler(BaseHTTPRequestHandler):
         if getattr(self, "command", "") != "HEAD": self.wfile.write(body)
 
     def _operation_components(self):
-        state_root = self.flywheel_home / "state"
-        service = type(self).operation_service
-        if service is None or service.state_root != state_root:
-            from harness.gateway_operations import GatewayOperations
-            from harness.gateway_operation_process import GatewayOperationProcessFactory
-            service = GatewayOperations(state_root, clock=self.clock)
-            type(self).operation_service = service
-            type(self).operation_process_factory = GatewayOperationProcessFactory(
-                repo_root=Path(self.root), run_root=Path(self.run_root), state_root=state_root)
-        return service, type(self).operation_process_factory
+        state_root, current = self.flywheel_home / "state", type(self).native_codex_components
+        if current is None or current.state_root != state_root: current = type(self)._configure_operation_components(state_root)
+        return current.operation_service, current.operation_process_factory
+
+    @classmethod
+    def _configure_operation_components(cls, state_root):
+        from harness.codex_managed_gateway_config import configure_managed_gateway_components
+        return configure_managed_gateway_components(cls, state_root)
 
     def _session_tokens(self):
         """Lazily build (and rebuild on flywheel_home change) the one
@@ -671,6 +669,7 @@ class _Handler(BaseHTTPRequestHandler):
     def _route_operation(self, method):
         path = self.path.split("?", 1)[0]
         is_operation = (path in {"/api/agent", "/api/output/check"}  # start or read a governed operation
+                        or path.startswith("/api/provider-sessions/")  # native session bindings and approvals
                         or path.startswith("/api/operations/"))  # one long-running operation
         if not is_operation: return False
         from harness.gateway_operation_route import route_gateway_operation
@@ -1090,9 +1089,9 @@ class _Handler(BaseHTTPRequestHandler):
             return self._json(gateway_graph(self.root, self.run_root,
                                             with_index=with_index,
                                             budget=budget, query=query))
-        if p == "/api/usage":                        # signed usage-metering session summary
-            from harness.usage_route import handle_usage_summary
-            return self._json(*handle_usage_summary(qs, self.run_root))
+        if p == "/api/usage" or p == "/api/usage/live":  # usage summary or private live counters
+            from harness.usage_route import handle_usage_get
+            return self._json(*handle_usage_get(p, qs, self.run_root))
         if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
             return self._json(receipts_ledger(self.root, self.run_root))
         if p == "/api/receipts/proof":               # prove one receipt is in the log
@@ -1347,7 +1346,8 @@ class _Handler(BaseHTTPRequestHandler):
                 from harness.gateway_grant_route import gateway_grant_post
                 body, code = gateway_grant_post(
                     p, raw, owner_ref=self.owner_ref, run_root=Path(self.run_root),
-                    state_root=self.flywheel_home / "state", clock=self.clock, workspace_root=Path(self.root))
+                    state_root=self.flywheel_home / "state", clock=self.clock,
+                    workspace_root=Path(self.root), provider_session_registry=getattr(self._operation_components()[1], "provider_session_registry", None))
             else:
                 from harness.credential_handle_route import credential_handle_post
                 body, code = credential_handle_post(
@@ -2252,6 +2252,11 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--allow-host", action="append", default=[], dest="allow_host",
                     help="add a Host header value to the DNS-rebinding allowlist (repeatable). "
                          "Give the public tunnel hostname here so a phone can reach this gateway.")
+    ap.add_argument("--strict-bind", action="store_true", help="fail startup if any requested bind host cannot be opened")
+    for opt in ("--managed-codex-executable", "--managed-codex-executable-sha256",
+                "--managed-codex-model", "--managed-codex-version", "--managed-codex-policy-root"):
+        ap.add_argument(opt)
+    ap.add_argument("--managed-codex-version-provenance", default="configured")
     return ap
 
 
@@ -2270,18 +2275,17 @@ def _resolve_hosts(requested):
     return hosts
 
 
-def _bind_hosts(hosts, port):
-    """Bind one ThreadingHTTPServer per host, all sharing the one _Handler class.
-    A host whose address this machine does not hold (e.g. the Tailscale interface
-    is down) is reported and skipped, so a working interface still serves instead
-    of the whole gateway refusing to start. Returns the bound servers in order;
-    empty when none bound."""
+def _bind_hosts(hosts, port, *, strict=False):
+    """Bind hosts. Default skips failed hosts; strict refuses partial plans."""
     servers = []
     for h in hosts:
         try:
             servers.append(ThreadingHTTPServer((h, port), _Handler))
         except OSError as e:
-            print(f"  SKIP      cannot bind {h}:{port}: {e}")
+            print(f"  {'ABORT' if strict else 'SKIP '}     cannot bind {h}:{port}: {e}")
+            if strict:
+                for server in servers: server.server_close()
+                return []
     return servers
 
 
@@ -2317,7 +2321,7 @@ def main(argv=None) -> int:
     _Handler.flywheel_home = flywheel_home
     _Handler.auth_token = load_or_create_token(flywheel_home)
     hosts = _resolve_hosts(a.host)
-    servers = _bind_hosts(hosts, a.port)
+    servers = _bind_hosts(hosts, a.port, strict=a.strict_bind)
     if not servers:
         print(f"no interface bound on port {a.port}; nothing to serve")
         return 1
@@ -2327,13 +2331,11 @@ def main(argv=None) -> int:
         print(f"  REMOTE    binding {', '.join(remote)}: reachable off-box. Front a routable "
               f"bind with a TLS tunnel; allowlisted hosts = {sorted(_Handler.allowed_hosts)}")
     state_root = flywheel_home / "state"
-    from harness.gateway_operations import GatewayOperations
-    from harness.gateway_operation_process import GatewayOperationProcessFactory
     from harness.gateway_operation_recovery import recover_gateway_operations
     from harness.journey_recovery import recover_store
-    _Handler.operation_service = GatewayOperations(state_root, clock=_Handler.clock)
-    _Handler.operation_process_factory = GatewayOperationProcessFactory(
-        repo_root=_Handler.root, run_root=Path(_Handler.run_root), state_root=state_root)
+    from harness.codex_managed_gateway_config import managed_config_from_args
+    _Handler.native_codex_config = managed_config_from_args(a, state_root=state_root)
+    _Handler._configure_operation_components(state_root)
     from harness.credential_handles import CredentialHandleStore
     from harness.keychain import keychain_get
     from harness.session_token import SessionTokenStore

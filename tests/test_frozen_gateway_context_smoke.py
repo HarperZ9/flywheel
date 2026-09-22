@@ -131,22 +131,36 @@ def test_frozen_smoke_validates_canon_payload_metadata(tmp_path):
     exe = tmp_path / "dist" / "flywheel-gateway" / "flywheel-gateway.exe"
     root = exe.parent / "_internal"
     (root / "packaging").mkdir(parents=True)
-    (root / "python-lane-payloads" / "canon" / "licenses").mkdir(parents=True)
     exe.parent.mkdir(parents=True, exist_ok=True)
     exe.write_bytes(b"exe")
-    license_data = b"Canon test license\n"
-    license_hash = "sha256:" + sha256(license_data).hexdigest()
-    (root / "python-lane-payloads" / "canon" / "licenses" / "LICENSE").write_bytes(
-        license_data)
-    row = {
-        "lane": "canon",
-        "owner_commit": "8c6a8228ce2117112c5dad74ddb0450ba80aa8ff",
-        "component_descriptor": {"source": {"manifest_sha256": "sha256:" + "1" * 64}},
-        "owner_project": {"license_files": [{
-            "path": "LICENSE", "bytes": len(license_data), "sha256": license_hash}]},
+    rows = []
+    pins = {
+        "canon": "8c6a8228ce2117112c5dad74ddb0450ba80aa8ff",
+        "mneme": "d3de14d8caa06373fe42b6cc3023285a1d3550bf",
+        "plexus": "31a86aaf30983c6a7a511d2636e6366fcd2b3f36",
     }
+    for index, (lane, commit) in enumerate(pins.items(), start=1):
+        lane_root = root / "python-lane-payloads" / lane
+        (lane_root / "licenses").mkdir(parents=True)
+        license_data = f"{lane} test license\n".encode()
+        license_hash = "sha256:" + sha256(license_data).hexdigest()
+        (lane_root / "licenses" / "LICENSE").write_bytes(license_data)
+        descriptor = {"source": {"manifest_sha256": "sha256:" + str(index) * 64}}
+        if lane in {"mneme", "plexus"}:
+            (lane_root / "descriptors").mkdir(parents=True)
+            (lane_root / "descriptors" / f"{lane}.json").write_text(
+                json.dumps(descriptor), encoding="utf-8")
+        rows.append({
+            "lane": lane,
+            "owner_commit": commit,
+            "component_descriptor": descriptor,
+            "owner_project": {"license_files": [{
+                "path": "LICENSE", "bytes": len(license_data), "sha256": license_hash}]},
+        })
+    row = rows[0]
+    license_hash = row["owner_project"]["license_files"][0]["sha256"]
     (root / "packaging" / "python-lane-payloads.jsonl").write_text(
-        json.dumps(row) + "\n", encoding="utf-8")
+        "".join(json.dumps(item) + "\n" for item in rows), encoding="utf-8")
 
     result = validate_canon_context_payload(exe, _require)
 
@@ -154,6 +168,8 @@ def test_frozen_smoke_validates_canon_payload_metadata(tmp_path):
     assert result["license_sha256"] == license_hash
     assert result["license_present"] is True
     assert result["license_path"] == "python-lane-payloads/canon/licenses/LICENSE"
+    assert result["python_lanes"]["mneme"]["descriptor_present"] is True
+    assert result["python_lanes"]["plexus"]["descriptor_present"] is True
     assert not Path(result["license_path"]).is_absolute()
     assert ":" not in result["license_path"]
 

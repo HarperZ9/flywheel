@@ -201,6 +201,14 @@ def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
         if not admission.blocking_codes:
             return admission.launch, "bundled", admission.component, ()
         return None, "bundled", admission.component, admission.blocking_codes
+    if lane.name in {"mneme", "plexus"} and is_frozen and profile == "auto":
+        from .python_lane_admission import admit_python_lane
+        admission = admit_python_lane(
+            lane.name, executable=python_executable, environ=environ,
+            importable_fn=importable_fn)
+        if not admission.blocking_codes:
+            return admission.launch, "bundled", admission.component, ()
+        return None, "bundled", admission.component, admission.blocking_codes
     if lane.package_disabled_reason and (is_frozen or profile == "package" or not source):
         return None, "package", None, ()
     if lane.kind == "http":

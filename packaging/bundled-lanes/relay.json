@@ -20,14 +20,14 @@
   "schema": "flywheel.bundled-lane-component/v1",
   "source": {
     "algorithm": "sha256-canonical-source-manifest/v1",
-    "bytes": 274599,
-    "commit": "a1f7f553cf2963ed756d0ec28d00015a3007188f",
-    "file_count": 38,
+    "bytes": 277986,
+    "commit": "252e781de7fce6367dca0f293852cc9f22356878",
+    "file_count": 39,
     "files": [
       {
         "bytes": 1055,
         "path": "src/relay/__init__.py",
-        "sha256": "sha256:3e59124ab4484169a759e1fde28beca2698394242f21edd3576745acadf3306f"
+        "sha256": "sha256:843ad9a57be5dffdff71f6ccf0da351f6d870960e44a2b33e1d29f26ef109fcf"
       },
       {
         "bytes": 100,
@@ -38,6 +38,11 @@
         "bytes": 2537,
         "path": "src/relay/approvals.py",
         "sha256": "sha256:5ef4c946fe72fdc1ad570b3b189685d9ac85b7003d8035108a355fd4d57a5793"
+      },
+      {
+        "bytes": 1366,
+        "path": "src/relay/architect.py",
+        "sha256": "sha256:652730106dec37ce9a9e6cb56dc606dab274b59fef85adc1c9cc9a0e23d9dbd4"
       },
       {
         "bytes": 14565,
@@ -110,9 +115,9 @@
         "sha256": "sha256:b5d8204290decf4b98d75ea56855f2455169a9042c6926b5ea3c14b61089c059"
       },
       {
-        "bytes": 23050,
+        "bytes": 25071,
         "path": "src/relay/local_agent_cli.py",
-        "sha256": "sha256:12081400eef76048d3113151e471f17811f06236f8ac19e909039d2955bcabe6"
+        "sha256": "sha256:ca8bb1d6ef7712503653cc0e9a1c6adca232dabcc0c2bf94d50cd7cba198fcf6"
       },
       {
         "bytes": 3383,
@@ -127,7 +132,7 @@
       {
         "bytes": 17288,
         "path": "src/relay/local_mcp.py",
-        "sha256": "sha256:ed02be17bf0f78edcbe737b7201e6649c2d84bc9267d5ee3fb59cd4b0959c56c"
+        "sha256": "sha256:f46423a10c538e7161c6beebb4c6abb9fee23868f1f74a97ab7a370ceeb42042"
       },
       {
         "bytes": 9492,
@@ -215,9 +220,9 @@
         "sha256": "sha256:3b09ddd111107eeb6515eb8df8a6d8f12e2352a4925f83e6dfae5790cf0877be"
       }
     ],
-    "manifest_sha256": "sha256:5809a688e62d9d895f23dec1503b9876a80beaaed0633a46a0c93108d5163092",
+    "manifest_sha256": "sha256:b842b4009816bdd92b60a646b2a717f5331a9461ea608aa82b0b1936db58ea98",
     "path": "src/relay",
     "repo": "https://github.com/HarperZ9/relay"
   },
-  "version": "0.2.2"
+  "version": "0.2.3"
 }

@@ -25,11 +25,14 @@ def _reply_error(handler, state: str, status: int):
 
 
 def _manager(handler):
-    injected = getattr(handler, "codex_account_manager", None)
-    if injected is not None:
-        return injected
-    from .codex_account_route import DEFAULT_MANAGER
-    return DEFAULT_MANAGER
+    ensure_components = getattr(handler, "_operation_components", None)
+    if callable(ensure_components):
+        ensure_components()
+    manager = getattr(handler, "codex_account_manager", None)
+    if manager is not None:
+        return manager
+    from .codex_managed_composition import DisabledCodexAccountManager
+    return DisabledCodexAccountManager("AGENT_NATIVE_RUNTIME_DISABLED")
 
 
 def account_get(handler, path: str):

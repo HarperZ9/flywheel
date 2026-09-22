@@ -117,36 +117,48 @@ def _request(base: str, path: str, token: str | None, *,
         return response.code, body
 
 
+PYTHON_GATEWAY_LANE_PINS = {
+    "canon": "8c6a8228ce2117112c5dad74ddb0450ba80aa8ff",
+    "mneme": "d3de14d8caa06373fe42b6cc3023285a1d3550bf",
+    "plexus": "31a86aaf30983c6a7a511d2636e6366fcd2b3f36",
+}
+
+
 def validate_canon_context_payload(executable: Path, require) -> dict:
     root = executable.parent / "_internal"
     if not root.is_dir():
         root = executable.parent
     manifest = root / "packaging" / "python-lane-payloads.jsonl"
     require(manifest.is_file(), "CANON_CONTEXT_PIN_MANIFEST_MISSING")
-    rows = [
-        json.loads(line) for line in manifest.read_text(
-            encoding="utf-8").splitlines() if line.strip()
-    ]
-    canon = next((row for row in rows if row.get("lane") == "canon"), None)
-    require(isinstance(canon, dict), "CANON_CONTEXT_PIN_MISSING")
-    require(canon.get("owner_commit")
-            == "8c6a8228ce2117112c5dad74ddb0450ba80aa8ff",
-            "CANON_CONTEXT_PIN_COMMIT")
-    notice = canon["owner_project"]["license_files"][0]
-    license_relative_path = "python-lane-payloads/canon/licenses/LICENSE"
-    license_path = root / Path(license_relative_path)
-    require(license_path.is_file(), "CANON_CONTEXT_LICENSE_MISSING")
-    require("sha256:" + hashlib.sha256(license_path.read_bytes()).hexdigest()
-            == notice["sha256"], "CANON_CONTEXT_LICENSE_HASH")
+    rows = [json.loads(line) for line in manifest.read_text(
+        encoding="utf-8").splitlines() if line.strip()]
+    by_lane = {row.get("lane"): row for row in rows if isinstance(row, dict)}
+    summaries = {}
+    for lane, commit in PYTHON_GATEWAY_LANE_PINS.items():
+        row = by_lane.get(lane)
+        require(isinstance(row, dict), f"{lane.upper()}_PIN_MISSING")
+        require(row.get("owner_commit") == commit, f"{lane.upper()}_PIN_COMMIT")
+        notice = row["owner_project"]["license_files"][0]
+        rel = f"python-lane-payloads/{lane}/licenses/{Path(notice['path']).name}"
+        license_path = root / Path(rel)
+        require(license_path.is_file(), f"{lane.upper()}_LICENSE_MISSING")
+        require("sha256:" + hashlib.sha256(license_path.read_bytes()).hexdigest()
+                == notice["sha256"], f"{lane.upper()}_LICENSE_HASH")
+        summary = {"owner_commit": row["owner_commit"],
+                   "source_manifest_sha256": row["component_descriptor"]["source"]["manifest_sha256"],
+                   "license_sha256": notice["sha256"], "license_present": True,
+                   "license_path": rel}
+        if lane in {"mneme", "plexus"}:
+            desc_rel = f"python-lane-payloads/{lane}/descriptors/{lane}.json"
+            desc_path = root / Path(desc_rel)
+            require(desc_path.is_file(), f"{lane.upper()}_DESCRIPTOR_MISSING")
+            require(json.loads(desc_path.read_text(encoding="utf-8"))
+                    == row["component_descriptor"], f"{lane.upper()}_DESCRIPTOR_MISMATCH")
+            summary.update({"descriptor_present": True, "descriptor_path": desc_rel})
+        summaries[lane] = summary
+    canon = summaries["canon"]
     return {"schema": "flywheel.frozen-canon-context-payload/v1",
-            "owner_commit": canon["owner_commit"],
-            "source_manifest_sha256": canon["component_descriptor"]["source"]["manifest_sha256"],
-            "license_sha256": notice["sha256"],
-            "license_present": True,
-            "license_path": license_relative_path}
-
-
-
+            **canon, "python_lanes": summaries}
 
 
 

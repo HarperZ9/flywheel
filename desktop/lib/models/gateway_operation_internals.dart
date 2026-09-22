@@ -24,11 +24,8 @@ List<String> _refs(
   return List<String>.unmodifiable(given ?? existing ?? const []);
 }
 
-/// Destinations whose ref is a fixed name rather than a field of the
-/// operation. These three tables mirror destination_for in
-/// harness/gateway_operation_shape.py. The engine derives the authoritative
-/// destination; a client that derived a different one would name the wrong
-/// target in everything it renders before the sheet shows the engine's answer.
+/// These tables mirror destination_for in harness/gateway_operation_shape.py.
+/// The engine derives the authoritative destination before the sheet renders.
 const _fixedDestinations = {
   'companion.ask': GatewayDestination('model', 'companion'),
   'forge.create': GatewayDestination('forge', 'forge'),
@@ -84,6 +81,9 @@ GatewayDestination _destination(String action, Map<String, Object?> value) {
   if (named != null) {
     final ref = value[named.$2];
     return ref is String ? GatewayDestination(named.$1, ref) : _invalid();
+  }
+  if (_isProviderSessionAction(action)) {
+    return _providerDestination(action, value);
   }
   if (action == 'packs.admit') {
     return GatewayDestination('pack', _packRef(value['manifest']));
@@ -200,6 +200,7 @@ List<String> _scopes(String action, Map<String, Object?> value) {
     selected.addAll(const ['exec', 'network']);
   }
   if (action == 'capability.probe') selected.add('network');
+  if (_isProviderSessionAction(action)) selected.addAll(_providerScopes());
   if (action == 'invent.round') {
     // The forge calls a model to propose and a kernel to judge.
     selected.addAll(const ['network', 'write']);
