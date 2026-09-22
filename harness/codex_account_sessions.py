@@ -5,47 +5,45 @@ import threading
 import time
 from typing import Any, Callable
 
-from .codex_account_login import start_managed_login_raw
-from .codex_account_safety import (
-    DEFAULT_ALLOWED_LOGIN_HOSTS,
-    login_id as safe_login_id,
-    owner_ref,
-    public_string,
-    safe_error,
-    trusted_login_url,
-)
-from .codex_account_state import (
-    LOGIN_MODES,
-    Session,
-    bad_request_response,
-    completion_for,
-    notification_overflowed,
-    rejected_response,
-    route_state,
-    unknown_login_response,
-)
+from .codex_account_binding import LoginCompletionContext, account_client, close_account_client, successful_login_response
+from .codex_account_login import start_managed_login_raw, validated_login_start
+from .codex_account_safety import DEFAULT_ALLOWED_LOGIN_HOSTS, login_id as safe_login_id, owner_ref, public_string, safe_error
+from .codex_account_state import (LOGIN_MODES, Session, bad_request_response,
+    completion_for, notification_overflowed, rejected_response, route_state,
+    unknown_login_response)
 from .codex_app_server_client import CodexAppServerClient
-from .codex_consumer_account import (
-    cancel_managed_login,
-    logout_account,
-    read_account_state,
-    read_model_provider_capabilities,
-)
+from .codex_consumer_account import cancel_managed_login, logout_account, read_account_state, read_model_provider_capabilities
+
+class CodexAccountUnavailable(RuntimeError):
+    def __init__(self, state: str, *, reason: str, status: int = 503) -> None:
+        self.state, self.reason, self.status = state, reason, status
+        super().__init__(reason)
+
+
+def _unavailable_response(exc: CodexAccountUnavailable) -> tuple[dict, int]:
+    return route_state(exc.state, reason=exc.reason), exc.status
 
 class CodexAccountSessionManager:
     def __init__(
             self, *, client_factory: Callable[[], Any] | None = None,
+            owner_client_factory: Callable[..., Any] | None = None,
             key_source: Callable[[str], str] | None = None,
             clock: Callable[[], float] | None = None,
             ttl_seconds: float = 600.0,
             allowed_login_hosts: tuple[str, ...] | None = None,
-            max_pending_sessions: int = 16):
+            max_pending_sessions: int = 16,
+            login_success_hook: Callable[[LoginCompletionContext], Any] | None = None):
+        if client_factory is not None and owner_client_factory is not None:
+            raise ValueError('only one account client factory is allowed')
         self.client_factory = client_factory or CodexAppServerClient.connect
-        self.key_source = key_source
+        self.owner_client_factory = owner_client_factory
+        self.key_source = (key_source if key_source is not None else
+                           (lambda _: 'absent') if owner_client_factory is not None else None)
         self.clock = clock or time.time
         self.ttl_seconds = ttl_seconds
         self.allowed_login_hosts = allowed_login_hosts or DEFAULT_ALLOWED_LOGIN_HOSTS
         self.max_pending_sessions = max(1, int(max_pending_sessions))
+        self.login_success_hook = login_success_hook
         self._sessions: dict[tuple[str, str], Session] = {}
         self._reservation_seq = 0
         self._lock = threading.RLock()
@@ -54,24 +52,25 @@ class CodexAccountSessionManager:
         with self._lock:
             self._expire_locked()
         try:
-            owner_ref(owner_ref_value)
+            owner = owner_ref(owner_ref_value)
         except ValueError:
             return bad_request_response("owner required")
         try:
-            client = self.client_factory()
+            client = self._client_for(owner)
+        except CodexAccountUnavailable as exc:
+            return _unavailable_response(exc)
         except Exception as exc:
             return route_state("unavailable", reason=safe_error(exc)), 503
         try:
             body = route_state("ready")
-            body["account"] = read_account_state(client, key_source=self.key_source)
-            body["capabilities"] = read_model_provider_capabilities(client)
+            body["account"] = read_account_state(account_client(client), key_source=self.key_source)
+            body["capabilities"] = read_model_provider_capabilities(account_client(client))
             return body, 200
         finally:
             self._close(client)
 
-    def start_login(
-            self, owner_ref_value: Any, mode: Any, *,
-            visible_ui_action: bool = False) -> tuple[dict, int]:
+    def start_login(self, owner_ref_value: Any, mode: Any, *,
+                    visible_ui_action: bool = False) -> tuple[dict, int]:
         if not visible_ui_action:
             return rejected_response()
         try:
@@ -86,19 +85,22 @@ class CodexAccountSessionManager:
             return refused
         client = None
         try:
-            client = self.client_factory()
-            started = start_managed_login_raw(client, mode=mode_value)
+            client = self._client_for(owner)
+            started = start_managed_login_raw(account_client(client), mode=mode_value)
             login = safe_login_id(started.get("login_id"))
-            body = self._validated_start(started, started.get("mode"))
+            body = validated_login_start(started, self.allowed_login_hosts)
             accepted = self._accept_reservation(reserved_key, owner, login, body, client)
             if accepted is not None:
                 return accepted
             return body, 202
+        except CodexAccountUnavailable as exc:
+            with self._lock:
+                self._sessions.pop(reserved_key, None)
+            return _unavailable_response(exc)
         except Exception as exc:
             with self._lock:
                 self._sessions.pop(reserved_key, None)
-            if client is not None:
-                self._close(client)
+            if client is not None: self._close(client)
             return route_state("failed", reason=safe_error(exc)), 502
 
     def login_result(self, owner_ref_value: Any, login_id_value: Any) -> tuple[dict, int]:
@@ -116,7 +118,8 @@ class CodexAccountSessionManager:
             if self.clock() >= session.expires_at:
                 self._finish_locked(key, session)
                 return route_state("expired", login_id=login), 410
-            pop = getattr(session.client, "pop_notification", None)
+            client = account_client(session.client)
+            pop = getattr(client, "pop_notification", None)
             if pop is None:
                 body = route_state("pending", login_id=login)
                 body.update({"completion_state": "unknown",
@@ -129,7 +132,7 @@ class CodexAccountSessionManager:
                 return route_state("client_failed", login_id=login,
                                    reason=safe_error(exc)), 502
             if completed is None:
-                if notification_overflowed(session.client):
+                if notification_overflowed(client):
                     self._finish_locked(key, session)
                     return route_state("client_failed", login_id=login,
                                        reason="notification overflow"), 502
@@ -137,19 +140,17 @@ class CodexAccountSessionManager:
                 body.update({"completion_state": "pending",
                              "reason": "waiting for account/login/completed"})
                 return body, 202
-            self._finish_locked(key, session)
+            cleanup_ok = self._finish_locked(key, session)
         if completed.get("success") is True:
-            body = route_state("authenticated", login_id=login)
-            body.update({"completion_state": "completed", "mode": session.mode})
-            return body, 200
+            return successful_login_response(session, login, completed, cleanup_ok,
+                                             self.login_success_hook)
         body = route_state("failed", login_id=login,
                            reason=public_string(completed.get("error")))
         body["completion_state"] = "completed"
         return body, 200
 
-    def cancel_login(
-            self, owner_ref_value: Any, login_id_value: Any, *,
-            visible_ui_action: bool = False) -> tuple[dict, int]:
+    def cancel_login(self, owner_ref_value: Any, login_id_value: Any, *,
+                     visible_ui_action: bool = False) -> tuple[dict, int]:
         if not visible_ui_action:
             return rejected_response()
         try:
@@ -164,7 +165,7 @@ class CodexAccountSessionManager:
             if session is None or session.reserved:
                 return unknown_login_response()
             try:
-                result = cancel_managed_login(session.client, login)
+                result = cancel_managed_login(account_client(session.client), login)
                 state = public_string(result.get("state")) or "unknown"
                 return route_state(state, login_id=login), 200
             except Exception as exc:
@@ -173,9 +174,8 @@ class CodexAccountSessionManager:
             finally:
                 self._finish_locked(key, session)
 
-    def logout(
-            self, owner_ref_value: Any, *,
-            visible_ui_action: bool = False) -> tuple[dict, int]:
+    def logout(self, owner_ref_value: Any, *,
+               visible_ui_action: bool = False) -> tuple[dict, int]:
         if not visible_ui_action:
             return rejected_response()
         try:
@@ -186,15 +186,16 @@ class CodexAccountSessionManager:
             self._expire_locked()
             client = None
             try:
-                client = self.client_factory()
-                result = logout_account(client)
+                client = self._client_for(owner)
+                result = logout_account(account_client(client))
                 state = public_string(result.get("state")) or "logout_requested"
                 return route_state(state), 200
+            except CodexAccountUnavailable as exc:
+                return _unavailable_response(exc)
             except Exception as exc:
                 return route_state("client_failed", reason=safe_error(exc)), 502
             finally:
-                if client is not None:
-                    self._close(client)
+                if client is not None: self._close(client)
                 self._close_owner_sessions_locked(owner)
 
     def _reserve(self, owner: str, mode: str) -> tuple[tuple[str, str], tuple[dict, int] | None]:
@@ -236,19 +237,9 @@ class CodexAccountSessionManager:
             body.update({"login_id": login, "expires_at": expires_at})
             return None
 
-    def _validated_start(self, started: dict, mode: Any) -> dict:
-        body = route_state("login_started")
-        body["mode"] = mode
-        if mode == "browser":
-            body["auth_url"] = trusted_login_url(
-                started.get("auth_url"), self.allowed_login_hosts)
-            return body
-        if mode == "device_code":
-            body["verification_url"] = trusted_login_url(
-                started.get("verification_url"), self.allowed_login_hosts)
-            body["user_code"] = public_string(started.get("user_code"), limit=80)
-            return body
-        raise ValueError("login mode invalid")
+    def _client_for(self, owner: str):
+        return (self.owner_client_factory(owner_ref=owner)
+                if self.owner_client_factory is not None else self.client_factory())
 
     def _poll_completion(self, session: Session, pop: Callable[..., Any]) -> dict | None:
         for _ in range(25):
@@ -266,9 +257,8 @@ class CodexAccountSessionManager:
                 return self._sessions[(session_owner, login)]
         return None
 
-    def _expire_locked(
-            self, owner: str | None = None,
-            except_key: tuple[str, str] | None = None) -> None:
+    def _expire_locked(self, owner: str | None = None,
+                       except_key: tuple[str, str] | None = None) -> None:
         now = self.clock()
         expired = [key for key, session in self._sessions.items()
                    if key != except_key
@@ -278,21 +268,25 @@ class CodexAccountSessionManager:
             session = self._sessions.pop(key)
             self._close(session.client)
 
-    def _finish_locked(self, key: tuple[str, str], session: Session) -> None:
-        self._sessions.pop(key, None)
-        self._close(session.client)
+    def _finish_locked(self, key: tuple[str, str], session: Session) -> bool:
+        self._sessions.pop(key, None); return self._close(session.client)
 
     def _close_owner_sessions_locked(self, owner: str) -> None:
-        keys = [key for key, session in self._sessions.items()
-                if session.owner_ref == owner]
+        keys = [key for key, session in self._sessions.items() if session.owner_ref == owner]
         for key in keys:
             session = self._sessions.pop(key)
             self._close(session.client)
+
+    def shutdown(self) -> bool:
+        cleanup_ok = True
+        with self._lock:
+            for key, session in list(self._sessions.items()):
+                if self._close(session.client):
+                    self._sessions.pop(key, None)
+                else:
+                    cleanup_ok = False
+        return cleanup_ok
+
     @staticmethod
-    def _close(client: Any) -> None:
-        close = getattr(client, "close", None)
-        if close:
-            try:
-                close()
-            except Exception:
-                pass
+    def _close(client: Any) -> bool:
+        return close_account_client(client)

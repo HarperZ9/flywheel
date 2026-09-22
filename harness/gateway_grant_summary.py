@@ -23,6 +23,9 @@ def proposal_response(record: dict, operation) -> dict:
     if record["action"] == "agent.run":
         from .gateway_agent_grant import review_binding
         summary["agent_execution"] = review_binding(record)
+    if record["action"].startswith("provider.session."):
+        from .provider_session_grant_binding import review_provider_session_binding
+        summary["provider_session"] = review_provider_session_binding(record)
     return {
         "schema": PROPOSAL_SCHEMA, "proposal_ref": record["proposal_ref"],
         "planned_grant_ref": record["planned_grant_ref"],

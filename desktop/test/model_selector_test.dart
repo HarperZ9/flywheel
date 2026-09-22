@@ -66,6 +66,53 @@ void main() {
     expect(picked, ''); // '' = "use the endpoint default", no model field sent
   });
 
+  testWidgets('codex catalog default row emits explicit model route',
+      (tester) async {
+    String? picked;
+    await tester.pumpWidget(_wrap(ModelSelectorButton(
+      loadModels: () async => {
+        'endpoint': 'codex-cli',
+        'endpoint_default_selectable': false,
+        'models': [
+          {
+            'id': 'gpt-6-astra',
+            'catalog_id': 'catalog-astra',
+            'default': 'true',
+          },
+        ],
+        'reason': '',
+      },
+      current: null,
+      onSelect: (v) => picked = v,
+    )));
+    await tester.tap(find.byType(OutlinedButton));
+    await tester.pumpAndSettle();
+    expect(find.text('Use endpoint default'), findsNothing);
+    await tester.tap(find.text('gpt-6-astra'));
+    await tester.pumpAndSettle();
+    expect(picked, 'gpt-6-astra');
+  });
+
+  testWidgets('codex catalog failure does not synthesize endpoint default',
+      (tester) async {
+    await tester.pumpWidget(_wrap(ModelSelectorButton(
+      loadModels: () async => {
+        'endpoint': 'codex-cli',
+        'endpoint_default_selectable': false,
+        'models': [],
+        'reason': 'listing unavailable: RuntimeError',
+      },
+      current: null,
+      onSelect: (_) {},
+    )));
+    await tester.tap(find.byType(OutlinedButton));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('listing unavailable'), findsOneWidget);
+    expect(find.text('endpoint default'), findsNothing);
+    expect(find.text('Use endpoint default'), findsNothing);
+    expect(find.textContaining('Explicit model selection'), findsOneWidget);
+  });
+
   testWidgets('an honest reason from the roster stays visible', (tester) async {
     await tester.pumpWidget(_wrap(ModelSelectorButton(
       loadModels: () async => {

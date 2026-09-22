@@ -34,10 +34,14 @@ class ExecutionPlan:
     source_context_payload_sha256: str | None = None
     source_context_payload: FrozenJsonSnapshot | None = field(default=None, repr=False)
     agent_binding: FrozenJsonSnapshot | None = field(default=None, repr=False)
+    provider_session_binding: FrozenJsonSnapshot | None = field(default=None, repr=False)
 
 
 def freeze_execution_plan(operation, *, owner_ref: str | None = None,
-                          state_root: Path | None = None, workspace_root: Path | None = None) -> ExecutionPlan:
+                          state_root: Path | None = None, workspace_root: Path | None = None,
+                          journey_ref: str | None = None,
+                          expected_event_head: str | None = None,
+                          provider_session_registry=None) -> ExecutionPlan:
     """Snapshot server-derived dispatch metadata before approval."""
     launch = kind = market = None
     workflow_sha = profile_sha = None
@@ -46,6 +50,7 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
     source_context_sha = None
     verified = None
     agent_binding = None
+    provider_session_binding = None
     if operation.action in {"plugin.probe", "plugin.call"}:
         from .plugins import plugin_execution_plan
         launch, kind, required, refs = plugin_execution_plan(
@@ -72,6 +77,12 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
         workflow_sha = profile_sha = None
         workflow_snapshot = profile_snapshot = None
         verified = None
+    if operation.action.startswith("provider.session."):
+        from .provider_session_grant_binding import freeze_provider_session_binding
+        provider_session_binding = freeze_provider_session_binding(
+            operation, owner_ref=owner_ref, journey_ref=journey_ref,
+            expected_event_head=expected_event_head, state_root=state_root,
+            workspace_root=workspace_root, registry=provider_session_registry)
     argv = tuple(launch.argv) if hasattr(launch, "argv") else (
         tuple(launch) if launch is not None else ())
     cwd = getattr(launch, "cwd", None)
@@ -87,10 +98,12 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
         "profile_sha256": profile_sha,
         "source_context_payload_sha256": source_context_sha}
     if agent_binding is not None: material["agent_binding_sha256"] = agent_binding.sha256
+    if provider_session_binding is not None: material["provider_session_binding_sha256"] = provider_session_binding.sha256
     digest = canonical_sha256(material)
     return ExecutionPlan(digest, tuple(required), tuple(refs), launch, kind,
         market, workflow_sha, profile_sha, workflow_snapshot,
-        profile_snapshot, verified, source_context_sha, source_context_payload, agent_binding)
+        profile_snapshot, verified, source_context_sha, source_context_payload,
+        agent_binding, provider_session_binding)
 
 
 def _plan_snapshot(operation, owner_ref, state_root):

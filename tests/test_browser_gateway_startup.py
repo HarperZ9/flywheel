@@ -23,7 +23,7 @@ def isolated_gateway(tmp_path, monkeypatch):
         raise AssertionError("startup must not invoke an actuator")
     monkeypatch.setattr('harness.telos_browser_adapter.start_owned_process', forbid_process)
     monkeypatch.setattr(gateway, 'load_or_create_token', lambda path: calls.append('token') or 'inert-fixture-token')
-    monkeypatch.setattr(gateway, '_bind_hosts', lambda hosts, port: calls.append('bind') or [])
+    monkeypatch.setattr(gateway, '_bind_hosts', lambda hosts, port, *, strict=False: calls.append('bind') or [])
     yield calls
     browser.clear_drivers()
 

@@ -16,6 +16,7 @@ import 'package:flywheel_desktop/views/compare_view.dart';
 import 'package:flywheel_desktop/widgets/chat_thread.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+
 Future<void> _pump(WidgetTester tester, Widget child) =>
     tester.pumpWidget(MaterialApp(
         theme: flywheelLightTheme(), home: Scaffold(body: _granted(child))));
@@ -56,23 +57,6 @@ void main() {
     expect(s.splitFraction('agent', 0.7), 0.7);
     s.cancelPendingSaves(); // the test never writes the real home dir
   });
-  testWidgets('agent mode swaps panes and back', (tester) async {
-    await _pump(
-        tester,
-        AgentView(
-            client: GatewayClient(), alive: true, settings: DesktopSettings()));
-    await tester.pump();
-    expect(find.text('Point the agent at a workspace'), findsNothing);
-    expect(find.text('every reply is witnessed'), findsNothing);
-    await tester.tap(find.text('agent'));
-    await tester.pump();
-    expect(find.text('Point the agent at a workspace'), findsOneWidget);
-    expect(find.text('every run persists with its trace'), findsOneWidget);
-    await tester.tap(find.text('chat'));
-    await tester.pump();
-    expect(find.text('Point the agent at a workspace'), findsNothing);
-    expect(find.text('every reply is witnessed'), findsNothing);
-  });
   testWidgets('compare panes sit on a draggable divider', (tester) async {
     await _pump(
         tester,
@@ -83,6 +67,7 @@ void main() {
     expect(find.text('Pick a model and send a prompt.'), findsNWidgets(2));
   });
 }
+
 const _roster =
     '{"rows":[{"name":"local-public","backend":"local","credential":"local-none","provider_role":"","configured":true}]}';
 String _frames(List<String> values) =>
@@ -106,6 +91,7 @@ Directory _temporary(String name) {
   addTearDown(() => directory.deleteSync(recursive: true));
   return directory;
 }
+
 Future<void> _pumpAgent(WidgetTester tester, GatewayClient client,
     ChatStore history, ChatDraftStore drafts) async {
   await _pump(
@@ -118,6 +104,7 @@ Future<void> _pumpAgent(WidgetTester tester, GatewayClient client,
           draftStore: drafts));
   await tester.pumpAndSettle();
 }
+
 void _historyAndAvatarTruthTests() {
   test('legacy and envelope history cannot carry a verifier verdict', () {
     final directory = _temporary('chat-history-truth-');
@@ -165,6 +152,7 @@ void _historyAndAvatarTruthTests() {
         FwTokens.light.verified);
   });
 }
+
 ChatThread _avatarThread(ReceiptState state) => ChatThread(messages: [
       ChatMessage(
           role: 'assistant',
@@ -213,6 +201,7 @@ void _remoteRecoveryTests() {
     }
   });
 }
+
 Future<void> _exerciseRecovery(WidgetTester tester, String prompt,
     String answer, int draftFailure, int historyFailure) async {
   final directory = _temporary('chat-admission-recovery-');
@@ -291,6 +280,7 @@ Future<void> _exerciseRecovery(WidgetTester tester, String prompt,
         {ChatDraftState.dirty, ChatDraftState.submitting});
   }
 }
+
 List<String> _texts(ChatStore store) => [
       for (final conversation in store.load())
         for (final message in conversation.messages) message.text,

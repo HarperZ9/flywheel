@@ -154,6 +154,18 @@ def test_codex_account_post_mutations_mark_explicit_visible_api_action(
         ),
         (
             "/api/codex/account/login/start",
+            {"mode": "browser", "login_receipt_sha256": "a" * 64},
+            "application/json",
+            400,
+        ),
+        (
+            "/api/codex/account/login/start",
+            {"mode": "browser", "auth_paths": ["auth.json"]},
+            "application/json",
+            400,
+        ),
+        (
+            "/api/codex/account/login/start",
             {"mode": 7},
             "application/json",
             400,

@@ -6,6 +6,10 @@ from .gateway_agent_failures import AGENT_FAILURES
 from .journey_types import SHA256_PATTERN
 
 RESULT_SCHEMA = "flywheel.gateway-operation-result/v1"
+OPERATION_ACTIONS = frozenset((
+    "agent.run", "output.check", "provider.session.turn",
+    "provider.session.resume", "provider.session.reconcile",
+))
 OPERATION_REF_PATTERN = re.compile(r"op_[0-9a-f]{32}\Z")
 LIFECYCLE = frozenset((
     "operation_queued", "operation_started", "cancel_requested",
@@ -95,7 +99,7 @@ def validate_history(history: list[dict], operation_ref: str) -> None:
             or set(queued["payload"]) != qkeys
             or queued["payload"].get("operation_ref") != operation_ref
             or OPERATION_REF_PATTERN.fullmatch(operation_ref) is None
-            or queued["payload"].get("action") not in {"agent.run", "output.check"}
+            or queued["payload"].get("action") not in OPERATION_ACTIONS
             or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z",
                             queued["payload"].get("tool", "")) is None
             or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z",

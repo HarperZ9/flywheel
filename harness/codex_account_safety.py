@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlsplit
 
 SCHEMA = "flywheel.codex-account-route/v1"
 PROVIDER = "codex"
@@ -15,6 +15,9 @@ _SECRET_PATTERNS = (
     re.compile(r"Bearer\s+[A-Za-z0-9._-]{8,}", re.IGNORECASE),
     re.compile(r"(access|refresh|id)[_-]?token=[^&\s]+", re.IGNORECASE),
 )
+_PUBLIC_MANIFEST_ERROR_CODES = frozenset({
+    "MANIFEST_TREE_MISMATCH",
+})
 
 
 def route_payload() -> dict:
@@ -42,8 +45,19 @@ def public_string(value: Any, *, limit: int = 240) -> str:
 
 def safe_error(exc: BaseException | str) -> str:
     if isinstance(exc, BaseException):
+        if _is_public_manifest_error(exc):
+            return exc.code
         return type(exc).__name__
     return public_string(exc, limit=160) or "unknown"
+
+
+def _is_public_manifest_error(exc: BaseException) -> bool:
+    try:
+        from .codex_managed_profile_manifest import CodexProfileManifestError
+    except Exception:
+        return False
+    return (isinstance(exc, CodexProfileManifestError)
+            and getattr(exc, "code", None) in _PUBLIC_MANIFEST_ERROR_CODES)
 
 
 def owner_ref(value: Any) -> str:
@@ -91,7 +105,16 @@ def trusted_login_url(value: Any, allowed_hosts: tuple[str, ...]) -> str:
         raise ValueError("login URL host not allowed")
     if secret_shaped(value):
         raise ValueError("login URL contains credential-shaped data")
-    query = parsed.query.lower()
-    if any(name in query for name in _FORBIDDEN_QUERY_NAMES):
-        raise ValueError("login URL contains credential-shaped data")
+    organization_flag_seen = False
+    for key, item in parse_qsl(parsed.query, keep_blank_values=True):
+        # Codex emits this boolean OAuth request flag, not an ID token.
+        if key == "id_token_add_organizations":
+            if organization_flag_seen or item not in {"true", "false"}:
+                raise ValueError("login URL contains credential-shaped data")
+            organization_flag_seen = True
+            continue
+        if (secret_shaped(key) or secret_shaped(item)
+                or any(name in key.lower() or name in item.lower()
+                       for name in _FORBIDDEN_QUERY_NAMES)):
+            raise ValueError("login URL contains credential-shaped data")
     return value

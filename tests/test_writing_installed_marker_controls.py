@@ -66,6 +66,12 @@ def _venv_python(root: Path) -> Path:
     return exe
 
 
+@pytest.fixture
+def installed_flywheel(tmp_path) -> tuple[Path, Path]:
+    root = tmp_path / "venv"
+    return root, _venv_python(root)
+
+
 def _flywheel(root: Path, py: Path, home: Path, args: list[str],
               timeout_s: float = _FLYWHEEL_TIMEOUT_S) -> dict:
     exe = root / ("Scripts/flywheel.exe" if os.name == "nt" else "bin/flywheel")
@@ -145,8 +151,13 @@ def test_flywheel_helper_timeout_reports_phase_and_sanitizes_child_output(tmp_pa
     assert "FLYWHEEL_HOME" not in message
 
 
-def test_installed_mcp_diagnoses_known_and_unknown_source_markers(tmp_path):
-    py = _venv_python(tmp_path / "venv")
+# This installed integration test builds and installs a wheel, then exercises
+# several installed CLI and MCP commands. Keep a scoped cumulative timeout here;
+# _FLYWHEEL_TIMEOUT_S still bounds each child flywheel command.
+@pytest.mark.timeout(120)
+def test_installed_mcp_diagnoses_known_and_unknown_source_markers(
+        tmp_path, installed_flywheel):
+    venv, py = installed_flywheel
     home = tmp_path / "home"
     brief = tmp_path / "brief.json"; sources = tmp_path / "sources.json"
     brief.write_text(json.dumps({"schema": "flywheel.writing-project-brief/v1",
@@ -161,9 +172,9 @@ def test_installed_mcp_diagnoses_known_and_unknown_source_markers(tmp_path):
         "allowed_use": "cite"}, {"source_id": "src_unused", "title": "Unused",
         "origin": "local", "allowed_use": "cite"}],
         "does_not_prove": ["interpretation"]}), encoding="utf-8")
-    proposal = _flywheel(tmp_path / "venv", py, home, ["init", "--brief", str(brief),
+    proposal = _flywheel(venv, py, home, ["init", "--brief", str(brief),
         "--source-packet", str(sources), "--client-request-id", "init", "--prepare", "--json"])
-    ack = _approve_commit(tmp_path / "venv", py, home, proposal)
+    ack = _approve_commit(venv, py, home, proposal)
     journey, head = ack["journey_ref"], ack["event_head_sha256"]
     section = tmp_path / "section.json"
     section.write_text(json.dumps({"schema": "flywheel.writing-section/v1",
@@ -171,17 +182,17 @@ def test_installed_mcp_diagnoses_known_and_unknown_source_markers(tmp_path):
         "heading": "Recommendation", "purpose": "state the release decision",
         "reader_entry_state": "needs a decision", "promises": ["states the decision"],
         "order_index": 1}), encoding="utf-8")
-    head = _approve_commit(tmp_path / "venv", py, home, _flywheel(
-        tmp_path / "venv", py, home, ["section", "add", "--journey-ref", journey,
+    head = _approve_commit(venv, py, home, _flywheel(
+        venv, py, home, ["section", "add", "--journey-ref", journey,
         "--expected-event-head", head, "--client-request-id", "section",
         "--prepare", "--json", "--section-json", str(section)]))["event_head_sha256"]
     known = tmp_path / "known.txt"
     known.write_text("Recommendation: release. [src_receipt]\n", encoding="utf-8")
-    known_rev = _flywheel(tmp_path / "venv", py, home, ["revision", "record",
+    known_rev = _flywheel(venv, py, home, ["revision", "record",
         "--journey-ref", journey, "--expected-event-head", head, "--project", PROJECT,
         "--section", "sec_recommendation", "--body", str(known),
         "--client-request-id", "known", "--prepare", "--json"])
-    head = _approve_commit(tmp_path / "venv", py, home, known_rev)["event_head_sha256"]
+    head = _approve_commit(venv, py, home, known_rev)["event_head_sha256"]
     proc = subprocess.Popen([str(py), "-m", "harness.writing_mcp"], stdin=subprocess.PIPE,
         stdout=subprocess.PIPE, text=True, cwd=tmp_path, env={**os.environ, "FLYWHEEL_HOME": str(home)})
     try:
@@ -191,20 +202,20 @@ def test_installed_mcp_diagnoses_known_and_unknown_source_markers(tmp_path):
         known_artifact = json.loads((home / "state" / "artifacts" / known_diag["artifact_ref"]).read_text())
         assert known_artifact["source_grounding"][0]["status"] == "known_source"
         assert known_artifact["source_grounding"][0]["span_refs"][0]["excerpt"] == "[src_receipt]"
-        head = _approve_commit(tmp_path / "venv", py, home, known_diag)["event_head_sha256"]
+        head = _approve_commit(venv, py, home, known_diag)["event_head_sha256"]
         review = _mcp_call(proc, "writing.review_prepare", {"journey_ref": journey,
             "expected_event_head": head, "project_ref": PROJECT,
             "client_request_id": "known-review"}, 2)
         review_artifact = json.loads((home / "state" / "artifacts" / review["artifact_ref"]).read_text())
         assert review_artifact["source_coverage"]["source_refs"] == ["src_receipt"]
-        head = _approve_commit(tmp_path / "venv", py, home, review)["event_head_sha256"]
+        head = _approve_commit(venv, py, home, review)["event_head_sha256"]
         unknown = tmp_path / "unknown.txt"
         unknown.write_text("Recommendation: release. [src_missing]\n", encoding="utf-8")
-        unknown_rev = _flywheel(tmp_path / "venv", py, home, ["revision", "record",
+        unknown_rev = _flywheel(venv, py, home, ["revision", "record",
             "--journey-ref", journey, "--expected-event-head", head, "--project", PROJECT,
             "--section", "sec_recommendation", "--body", str(unknown),
             "--client-request-id", "unknown", "--prepare", "--json"])
-        head = _approve_commit(tmp_path / "venv", py, home, unknown_rev)["event_head_sha256"]
+        head = _approve_commit(venv, py, home, unknown_rev)["event_head_sha256"]
         unknown_diag = _mcp_call(proc, "writing.diagnose", {"journey_ref": journey,
             "expected_event_head": head, "project_ref": PROJECT,
             "revision_ref": unknown_rev["revision_ref"], "client_request_id": "unknown-diag"}, 4)

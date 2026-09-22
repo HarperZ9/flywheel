@@ -50,6 +50,69 @@ void main() {
     expect(selected, '');
   });
 
+  testWidgets('default reset is hidden when endpoint requires explicit model',
+      (tester) async {
+    String? selected;
+    await openPicker(
+        tester,
+        () async => {
+              'endpoint': 'codex-cli',
+              'endpoint_default_selectable': false,
+              'models': [],
+              'reason': 'listing unavailable',
+            },
+        (value) => selected = value);
+    expect(find.text('Use endpoint default'), findsNothing);
+    await tester.enterText(find.byType(TextField), 'gpt-6-astra');
+    await tester.tap(find.text('Use model ID'));
+    await tester.pumpAndSettle();
+    expect(selected, 'gpt-6-astra');
+  });
+
+  testWidgets(
+      'stale current is not emitted for an empty explicit-selection roster',
+      (tester) async {
+    String? selected;
+    await openPicker(
+        tester,
+        () async => {
+              'endpoint': 'codex-cli',
+              'endpoint_default_selectable': false,
+              'models': [],
+              'reason': 'listing unavailable',
+            },
+        (value) => selected = value);
+
+    await tester.tap(find.text('Use model ID'));
+    await tester.pump();
+
+    expect(selected, isNull);
+    expect(find.byType(Dialog), findsOneWidget);
+    expect(find.textContaining('Enter a model ID'), findsOneWidget);
+  });
+
+  testWidgets('listed current may be confirmed without retyping',
+      (tester) async {
+    String? selected;
+    await openPicker(
+        tester,
+        () async => {
+              'endpoint': 'codex-cli',
+              'endpoint_default_selectable': false,
+              'models': [
+                {'id': 'prior-model', 'default': 'false'},
+              ],
+              'reason': '',
+            },
+        (value) => selected = value);
+
+    await tester.tap(find.text('Use model ID'));
+    await tester.pumpAndSettle();
+
+    expect(selected, 'prior-model');
+    expect(find.byType(Dialog), findsNothing);
+  });
+
   testWidgets('unsafe or oversized manual IDs cannot be selected',
       (tester) async {
     String? selected;

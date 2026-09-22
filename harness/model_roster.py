@@ -5,8 +5,9 @@ to see past it. OpenAI-compatible endpoints (ollama, serve, every REGISTRY
 entry) expose GET {base_url}/models; this module asks, folds the answer into
 a stable payload, and never raises: an unreachable lister, an absent
 credential, or a native endpoint with no listing surface all degrade to the
-spec's default plus a plain-language reason. The default is ALWAYS present
-and flagged, so a picker can render before, during, and after any failure.
+spec's default plus a plain-language reason. Native Codex is stricter: its
+official catalog supplies selectable routes, and absent catalog data does not
+invent a default because the CLI route needs explicit model selection.
 
 Payload shape (no floats, JSON-safe):
   {"endpoint": name,
@@ -159,9 +160,18 @@ def _native_or_unknown(name: str, *, timeout: float) -> dict:
     native_name, kind, key_env, _host, default_model = native
     if native_name == "anthropic":
         return _anthropic_models(native_name, key_env, default_model, timeout)
+    if native_name == "codex-cli":
+        return _codex_consumer_roster(native_name, default_model,
+                                      timeout=timeout)
     return _default_only(
         name, default_model,
         "listing unavailable: endpoint has no OpenAI-compatible listing surface")
+
+
+def _codex_consumer_roster(name: str, default_model: str, *,
+                           timeout: float) -> dict:
+    from .codex_consumer_models import codex_consumer_roster
+    return codex_consumer_roster(name, default_model, timeout=timeout)
 
 
 def _anthropic_models(name: str, key_env: str, default_model: str,

@@ -11,6 +11,14 @@ import time
 import urllib.error
 
 
+def _model_selection_required_response(exc: Exception) -> tuple[dict, int] | None:
+    if getattr(exc, "code", "") != "MODEL_SELECTION_REQUIRED":
+        return None
+    return {"schema": "flywheel.evidence-transport-error/v1",
+            "error": {"code": "MODEL_SELECTION_REQUIRED",
+                      "message": str(exc)}}, getattr(exc, "status", 422)
+
+
 def _route_block(entry: dict, roster: dict, endpoint: str) -> tuple[dict, int] | None:
     if entry.get("credential") == "absent":
         return {"error": f"endpoint {endpoint!r} has no credential present; set its API "
@@ -49,6 +57,9 @@ def route_request(
         kw = {"model": model} if model else {}
         prop = make_endpoint_proposer(endpoint, ledger=router_ledger(), **kw)
     except Exception as e:
+        typed = _model_selection_required_response(e)
+        if typed is not None:
+            return typed
         return {"error": f"cannot build a proposer for {endpoint!r}: {e}"}, 502
     try:
         return route_answer(
@@ -115,6 +126,9 @@ def resolve_proposer(
             kwargs["credential_bindings"] = credential_bindings
         return factory(name, **kwargs), None, 200
     except Exception as e:
+        typed = _model_selection_required_response(e)
+        if typed is not None:
+            return None, typed[0], typed[1]
         return None, f"cannot build proposer for {name!r}: {e}", 502
 
 
@@ -198,6 +212,8 @@ def openai_chat(
             resolve_proposer(cand, serve_url) if credential_bindings is None
             else resolve_proposer(cand, serve_url, credential_bindings))
         if err is not None:
+            if isinstance(err, dict):
+                return err, code, None, None, None
             last_err, last_code = err, code
             tried.append((cand or "flywheel") + ": unavailable")
             resolution_failures.append(
