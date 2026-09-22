@@ -1,4 +1,5 @@
 import io
+import os
 import subprocess
 import threading
 
@@ -212,6 +213,11 @@ def test_unexpected_close_failure_notifies_waiters_and_allows_retry(monkeypatch)
     assert api.calls == ["job-handle"]
 
 
+@pytest.mark.skipif(
+    os.name != "nt",
+    reason="fakes the Windows launch path by setting os.name, which makes "
+           "pathlib hand back a WindowsPath; a POSIX tmp_path then reads as "
+           "relative and the launch validator rejects it")
 def test_constructor_failure_after_job_assignment_cleans_process_and_pipes(
         tmp_path, monkeypatch):
     fake = FakeProc(stderr=None)

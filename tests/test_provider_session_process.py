@@ -60,6 +60,11 @@ def test_non_windows_fails_closed_before_spawn(tmp_path, monkeypatch):
     assert "provider.exe" not in str(exc.value)
 
 
+@pytest.mark.skipif(
+    os.name != "nt",
+    reason="fakes the Windows launch path by setting os.name, which makes "
+           "pathlib hand back a WindowsPath; a POSIX tmp_path then reads as "
+           "relative and the launch validator rejects it")
 def test_launch_assigns_job_before_resume_and_exposes_binary_stdio(
         tmp_path, monkeypatch):
     events = []
@@ -109,6 +114,11 @@ def test_launch_assigns_job_before_resume_and_exposes_binary_stdio(
         owned.close()
 
 
+@pytest.mark.skipif(
+    os.name != "nt",
+    reason="fakes the Windows launch path by setting os.name, which makes "
+           "pathlib hand back a WindowsPath; a POSIX tmp_path then reads as "
+           "relative and the launch validator rejects it")
 def test_resume_failure_terminates_with_sanitized_error(tmp_path, monkeypatch):
     fake = FakeProc()
     terminated = []

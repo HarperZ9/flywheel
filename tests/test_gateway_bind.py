@@ -55,6 +55,12 @@ def test_tailnet_only_launcher_passes_strict_bind_and_writes_prebind_plan(tmp_pa
     pwsh = shutil.which("pwsh")
     if not pwsh:
         pytest.skip("PowerShell is required for launcher coverage")
+    if os.name != "nt":
+        # The launcher is stubbed with a Windows .cmd shim below. A Linux
+        # runner has pwsh, so a presence check alone admits the test and then
+        # the shim cannot execute, which sends the launcher down its browser
+        # path and fails on a missing www-browser.
+        pytest.skip("the launcher stub is a Windows .cmd shim")
     calls_path = tmp_path / "calls.jsonl"
     receipt_path = tmp_path / "receipt.json"
     fake_py = tmp_path / "fake_python.py"

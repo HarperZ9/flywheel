@@ -6,6 +6,8 @@ import sys
 import textwrap
 from pathlib import Path
 
+import pytest
+
 
 REPO = Path(__file__).resolve().parents[1]
 RUNNER = REPO / "desktop" / "tool" / "run_android_real_gateway_handoff_acceptance.ps1"
@@ -151,6 +153,10 @@ def test_android_screen_readiness_requires_visible_unlocked_awake_policy(tmp_pat
     }
 
 
+@pytest.mark.skipif(
+    os.name != "nt",
+    reason="stubs adb and flutter as Windows .cmd shims, which a Linux runner "
+           "cannot execute even though it has pwsh")
 def test_runner_stops_before_package_or_flutter_when_connected_screen_is_locked(tmp_path):
     adb_log = tmp_path / "adb.log"
     flutter_log = tmp_path / "flutter.log"

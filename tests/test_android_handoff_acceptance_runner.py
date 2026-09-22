@@ -1,13 +1,21 @@
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
+
+import pytest
 
 
 REPO = Path(__file__).resolve().parents[1]
 RUNNER = REPO / "desktop" / "tool" / "run_android_handoff_acceptance.ps1"
 
 
+@pytest.mark.skipif(
+    os.name != "nt",
+    reason="the runner drives Windows process semantics; pwsh alone is not "
+           "enough, so guarding on interpreter presence lets this run and "
+           "fail on a Linux runner")
 def test_android_handoff_runner_selftest_redacts_token_and_writes_contract(tmp_path):
     shell = shutil.which("pwsh") or shutil.which("powershell")
     assert shell is not None
