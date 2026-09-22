@@ -97,7 +97,7 @@ raise SystemExit(9)
         "-TailnetOnly", "-ReceiptPath", str(receipt_path),
         "-Python", str(fake_cmd),
     ], cwd=Path(__file__).resolve().parents[1], env=env,
-       capture_output=True, text=True, timeout=15)
+       capture_output=True, text=True, timeout=120)
 
     assert completed.returncode == 0, completed.stderr + completed.stdout
     calls = [json.loads(line) for line in calls_path.read_text(encoding="utf-8").splitlines()]

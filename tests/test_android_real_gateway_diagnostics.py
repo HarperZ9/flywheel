@@ -42,7 +42,12 @@ def _run_support_json(tmp_path: Path, body: str) -> dict:
         cwd=REPO,
         capture_output=True,
         text=True,
-        timeout=15,
+        # pwsh cold start on a Linux runner, plus the 750-iteration padding
+        # loop this probe builds, runs past 15s and the test aborted before the
+        # work it measures began. The synthetic work itself takes milliseconds,
+        # so a generous bound never changes behaviour on a healthy run; the
+        # suite-level pytest --timeout stays the real hang backstop.
+        timeout=120,
     )
     assert result.returncode == 0, result.stderr + result.stdout
     return json.loads(result.stdout)
