@@ -36,7 +36,24 @@ def test_install_name_to_command_asymmetry_is_mapped():
     assert LANES["forum"].install_name == "forum-engine"
     assert LANES["forum"].command == "forum"
     assert LANES["index"].version == "2.10.0"
-    assert LANES["mneme"].version == "0.2.0"
+    # relay and mneme publish under a flywheel- prefix: their bare names on PyPI
+    # belong to unrelated projects. The command stays the short name, so the
+    # asymmetry is wider here than a suffix change.
+    assert LANES["relay"].install_name == "flywheel-relay"
+    assert LANES["relay"].command == "relay"
+    assert LANES["mneme"].install_name == "flywheel-mneme"
+    assert LANES["mneme"].command == "mneme"
+    assert LANES["mneme"].version == "0.4.2"
+
+
+def test_published_lanes_are_not_marked_package_disabled():
+    """A lane whose distribution is live on PyPI must not carry a disabled
+    reason. resolve_lane_runtime skips the installed-version observation
+    entirely while package_disabled_reason is set, so a stale reason silently
+    hides a working install rather than reporting a mismatch."""
+    for name in ("relay", "mneme"):
+        assert not LANES[name].package_disabled_reason, (
+            f"{name} is published; its package_disabled_reason is stale")
 
 
 def test_every_lane_has_an_mcp_command_and_organ():

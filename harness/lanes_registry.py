@@ -100,22 +100,18 @@ LANES: dict[str, Lane] = {
         "private author workspace: scoped revisions, exact approval, and export receipts",
         "authoring"),
     "relay": Lane(
-        "relay", "relay-agent", "relay", ("--mcp",), "pip", "0.2.0",
+        "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.2.5",
         "accountable coding agent on any model endpoint (local-first, witnessed runs)",
-        "execution", source_repo="public/relay", py_module="relay.local_mcp",
-        package_disabled_reason=("Relay's PyPI name belongs to another project. "
-                                 "Use a HarperZ9 Relay source checkout.")),
+        "execution", source_repo="public/relay", py_module="relay.local_mcp"),
     "plexus": Lane(
         "plexus", "plexus-mesh", "plexus", ("mcp",), "pip", "0.2.0",
         "capability discovery + auto-wiring of the tool mesh (the layer above a flat tool list)",
         "wiring", source_repo="public/plexus", py_module="plexus.cli",
         package_disabled_reason="No published PyPI distribution is available. Use a Plexus source checkout."),
     "mneme": Lane(
-        "mneme", "mneme-memory", "mneme", ("mcp",), "pip", "0.2.0",
+        "mneme", "flywheel-mneme", "mneme", ("mcp",), "pip", "0.4.2",
         "accountable memory: recall with re-derivable ranking receipts + drift verdicts",
-        "memory", source_repo="public/mneme", py_module="mneme.cli",
-        package_disabled_reason=("Mneme's PyPI name belongs to another project. "
-                                 "Use a HarperZ9 Mneme source checkout.")),
+        "memory", source_repo="public/mneme", py_module="mneme.cli"),
     "calibrate-pro": Lane(
         "calibrate-pro", "calibrate-pro", "calibrate-pro", ("mcp",), "pip", "1.1.0",
         "evidence-labeled display calibration: color-target and characterized-panel "
