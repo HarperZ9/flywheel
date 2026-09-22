@@ -79,7 +79,9 @@ def test_relay_untrusted_package_never_probed_or_launched(
     assert status["status"] == "missing"
     assert status["installed_version"] is None
     assert status["package_installable"] is False
-    assert "source checkout" in status["detail"]
+    assert "package_distribution_disabled" in status["detail"]
+    assert "released as GitHub assets" in status["detail"]
+    assert "do not install the unowned PyPI 'relay' project" in status["detail"]
     with pytest.raises(lanes.LaneRuntimeError):
         lanes.resolve_mcp_launch("relay")
 

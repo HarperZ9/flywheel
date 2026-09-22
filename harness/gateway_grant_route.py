@@ -102,7 +102,8 @@ def _validate_continuation_handoff(action: str, operation, *, owner_ref: str,
             operation, state_root, owner_ref=owner_ref,
             journey_ref=journey_ref, journey_events=journey_events)
 def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
-             clock: Callable[[], str], workspace_root: Path | None = None) -> dict:
+             clock: Callable[[], str], workspace_root: Path | None = None,
+             provider_session_registry=None) -> dict:
     exact_request(body, _BASE | {"operation"})
     if (body.get("schema") != REQUEST_SCHEMA
             or JOURNEY_REF_PATTERN.fullmatch(body.get("journey_ref", "")) is None
@@ -117,14 +118,25 @@ def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
     _validate_continuation_handoff(
         action, operation, owner_ref=owner_ref,
         journey_ref=body["journey_ref"], state_root=state_root)
-    plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root, workspace_root=workspace_root)
-    credential_slots(operation, owner_ref, state_root, plan=plan)
+    plan = None
+    if not action.startswith("provider.session."):
+        plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root,
+            workspace_root=workspace_root, journey_ref=body["journey_ref"],
+            expected_event_head=body["expected_event_head"],
+            provider_session_registry=provider_session_registry)
+        credential_slots(operation, owner_ref, state_root, plan=plan)
     store = JourneyStore(state_root)
     journey_dir = store._journey_dir(owner_ref, body["journey_ref"])
     with ExclusiveJourneyLock.acquire(journey_dir / ".lock"):
         if _current_head(store, owner_ref, body["journey_ref"]) != body[
                 "expected_event_head"]:
             raise GatewayOperationError("HEAD_CONFLICT")
+        if plan is None:
+            plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root,
+                workspace_root=workspace_root, journey_ref=body["journey_ref"],
+                expected_event_head=body["expected_event_head"],
+                provider_session_registry=provider_session_registry)
+            credential_slots(operation, owner_ref, state_root, plan=plan)
         suffix = secrets.token_hex(16)
         proposal_ref, grant_ref = f"prp_{suffix}", f"gnt_{suffix}"
         expires = _utc_text(_parse_time(clock()) + timedelta(seconds=120))
@@ -170,15 +182,21 @@ def _approve(body: dict, owner_ref: str, state_root: Path, clock: Callable[[], s
             _write_indexed(owner_dir, record, clock(), _replace, _path(owner_dir, record["proposal_ref"]))
     return {"schema": "flywheel.operation-grant-approval/v1",
             "grant_ref": issued["grant_ref"], "expires_at": issued["expires_at"]}
-def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[], str], workspace_root: Path | None = None) -> AuthorizedOperation:
+def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[], str],
+               workspace_root: Path | None = None, provider_session_registry=None) -> AuthorizedOperation:
     action = envelope.action
     operation = envelope.operation
-    plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root, workspace_root=workspace_root)
-    credential_slots(operation, owner_ref, state_root, plan=plan)
     body = {"journey_ref": envelope.journey_ref,
             "expected_event_head": envelope.expected_event_head,
             "client_request_id": envelope.client_request_id,
             "grant_ref": envelope.grant_ref}
+    plan = None
+    if not operation.action.startswith("provider.session."):
+        plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root,
+            workspace_root=workspace_root, journey_ref=body["journey_ref"],
+            expected_event_head=body["expected_event_head"],
+            provider_session_registry=provider_session_registry)
+        credential_slots(operation, owner_ref, state_root, plan=plan)
     owner_dir = _directory(state_root, owner_ref)
     proposal_ref = "prp_" + str(body.get("grant_ref", ""))[4:]
     store = JourneyStore(state_root)
@@ -201,6 +219,12 @@ def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[]
                     or record["operation"] != thaw_operation(operation.operation)
                     or record["planned_grant_ref"] != body.get("grant_ref")):
                 raise GatewayOperationError("PERMISSION_DENIED")
+            if plan is None:
+                plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root,
+                    workspace_root=workspace_root, journey_ref=body["journey_ref"],
+                    expected_event_head=body["expected_event_head"],
+                    provider_session_registry=provider_session_registry)
+                credential_slots(operation, owner_ref, state_root, plan=plan)
             compare_binding(record, plan)
             if record["execution_plan_sha256"] != plan.digest:
                 raise GatewayOperationError("PERMISSION_DENIED")
@@ -229,13 +253,16 @@ def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[]
     )
 def authorize_gateway_operation(
         action: str, raw: bytes, *, owner_ref: str, state_root: Path,
-        clock: Callable[[], str], workspace_root: Path | None = None) -> AuthorizedOperation:
-    return authorize_gateway_envelope(parse_gateway_envelope(action, raw), owner_ref=owner_ref, state_root=state_root, clock=clock, workspace_root=workspace_root)
+        clock: Callable[[], str], workspace_root: Path | None = None,
+        provider_session_registry=None) -> AuthorizedOperation:
+    return authorize_gateway_envelope(parse_gateway_envelope(action, raw), owner_ref=owner_ref, state_root=state_root, clock=clock, workspace_root=workspace_root, provider_session_registry=provider_session_registry)
 def authorize_gateway_envelope(envelope, *, owner_ref: str, state_root: Path,
-        clock: Callable[[], str], workspace_root: Path | None = None) -> AuthorizedOperation:
+        clock: Callable[[], str], workspace_root: Path | None = None,
+        provider_session_registry=None) -> AuthorizedOperation:
     try:
         return _authorize(envelope, owner_ref=owner_ref,
-                          state_root=state_root, clock=clock, workspace_root=workspace_root)
+                          state_root=state_root, clock=clock, workspace_root=workspace_root,
+                          provider_session_registry=provider_session_registry)
     except GatewayOperationError:
         raise
     except GrantError as exc:
@@ -247,7 +274,7 @@ def authorize_gateway_envelope(envelope, *, owner_ref: str, state_root: Path,
         raise GatewayOperationError(code) from None
     except (TransportError, OSError, TypeError, ValueError):
         raise GatewayOperationError("INVALID_REQUEST") from None
-def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Path, clock: Callable[[], str], run_root: Path | None = None, workspace_root: Path | None = None) -> tuple[dict, int]:
+def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Path, clock: Callable[[], str], run_root: Path | None = None, workspace_root: Path | None = None, provider_session_registry=None) -> tuple[dict, int]:
     """Prepare or approve without dispatching an external operation."""
     try:
         if not path.startswith(ROUTE_PREFIX): raise GatewayOperationError("NOT_FOUND")
@@ -268,6 +295,6 @@ def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Pat
         if not route.startswith("prepare/") or "/" in route[8:]: raise GatewayOperationError("NOT_FOUND")
         action = route[8:]
         if action not in GRANTABLE_ACTIONS: raise GatewayOperationError("NOT_FOUND")
-        return _prepare(action, body, owner_ref, state_root, clock, workspace_root), 200
+        return _prepare(action, body, owner_ref, state_root, clock, workspace_root, provider_session_registry), 200
     except (TransportError, GatewayOperationError, GrantError, JourneyLockBusy, JourneyStoreError, OSError, ValueError) as exc:
         return gateway_error_response(exc)

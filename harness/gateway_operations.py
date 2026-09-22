@@ -245,7 +245,7 @@ class GatewayOperations:
                 return current
             state, result = normalize_outcome(
                 current.state, outcome.state, outcome.result)
-            if state in {"failed", "cancelled"}:
+            if state in {"failed", "cancelled"} and history[0]["payload"].get("action") == "agent.run":
                 from .gateway_agent_execution import recovered_projection
                 try:
                     result = recovered_projection(self.state_root, owner_ref,

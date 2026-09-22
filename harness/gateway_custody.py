@@ -15,7 +15,7 @@ from __future__ import annotations
 
 #: Everything under these prefixes is private, however deep.
 PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
-                    "/api/auth/", "/api/codex/",
+                    "/api/auth/", "/api/codex/", "/api/provider-sessions/",
                     "/api/continuation/",
                     "/api/writing/",
                     "/api/studio/body/", "/api/live-screen/",
@@ -34,7 +34,7 @@ PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
 PRIVATE_PATHS = frozenset({
     "/api/auth", "/api/agent/run", "/api/agent/runs",
     "/v1/chat/completions", "/api/agent", "/api/output/check", "/api/workflow",
-    "/api/hooks", "/api/operations",
+    "/api/hooks", "/api/operations", "/api/usage/live",
     "/api/plugins/probe", "/api/plugins/call", "/api/plugins/register",
     "/api/plugins/toggle", "/api/plugins/remove",
     "/api/marketplace/install", "/api/marketplace/add",

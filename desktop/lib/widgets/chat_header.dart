@@ -14,6 +14,7 @@ import 'rowan_avatar.dart';
 
 class ChatHeader extends StatelessWidget {
   final bool agentMode;
+  final bool nativeSessionMode;
   final bool streaming;
   final List<EndpointRow> endpoints;
 
@@ -23,6 +24,7 @@ class ChatHeader extends StatelessWidget {
   /// The chosen model override for [endpoint]; null/empty means its default.
   final String? chosenModel;
   final ValueChanged<bool> onMode;
+  final VoidCallback? onNativeSession;
   final ValueChanged<String> onEndpoint;
 
   /// Fires with the picked model id; '' means "use the endpoint default".
@@ -36,11 +38,13 @@ class ChatHeader extends StatelessWidget {
   const ChatHeader({
     super.key,
     required this.agentMode,
+    this.nativeSessionMode = false,
     required this.streaming,
     required this.endpoints,
     required this.endpoint,
     required this.chosenModel,
     required this.onMode,
+    this.onNativeSession,
     required this.onEndpoint,
     required this.onModel,
     required this.loadModels,
@@ -81,7 +85,7 @@ class ChatHeader extends StatelessWidget {
       const SizedBox(width: FwLayout.s4),
       FwModeChip(
           label: 'chat',
-          active: !agentMode,
+          active: !agentMode && !nativeSessionMode,
           onTap: () {
             if (!streaming) onMode(false);
           }),
@@ -92,15 +96,27 @@ class ChatHeader extends StatelessWidget {
           onTap: () {
             if (!streaming) onMode(true);
           }),
+      if (onNativeSession != null) ...[
+        const SizedBox(width: FwLayout.s1),
+        FwModeChip(
+            label: 'native',
+            active: nativeSessionMode,
+            onTap: () {
+              if (!streaming) onNativeSession!();
+            }),
+      ],
       const SizedBox(width: FwLayout.s4),
-      if (!agentMode && endpoints.isNotEmpty)
+      if (!agentMode && !nativeSessionMode && endpoints.isNotEmpty)
         ModelPickerButton(
           endpoints: endpoints,
           current: endpoint,
           enabled: !streaming,
           onSelect: onEndpoint,
         ),
-      if (!agentMode && endpoint != null && showReceiptCopy) ...[
+      if (!agentMode &&
+          !nativeSessionMode &&
+          endpoint != null &&
+          showReceiptCopy) ...[
         const SizedBox(width: FwLayout.s2),
         ModelSelectorButton(
           loadModels: loadModels,
@@ -113,9 +129,11 @@ class ChatHeader extends StatelessWidget {
         const Spacer(),
         Flexible(
           child: Text(
-              agentMode
-                  ? 'every run persists with its trace'
-                  : 'receipt state shown on every reply',
+              nativeSessionMode
+                  ? 'native sessions require a bound provider config'
+                  : agentMode
+                      ? 'every run persists with its trace'
+                      : 'receipt state shown on every reply',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: fwMono(t, size: 10.5, color: t.inkFaint)),

@@ -52,7 +52,8 @@ def replay_authorization_sha256(envelope, owner_ref: str,
         record = _validate_record(strict_load_json(path.read_bytes()), owner_ref)
         operation = envelope.operation
         plan = (ExecutionPlan(record["execution_plan_sha256"], (), ())
-            if operation.action == "agent.run" or _has_source_context_ref(operation.data_refs) else freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root))
+            if operation.action == "agent.run" or operation.action.startswith("provider.session.")
+            or _has_source_context_ref(operation.data_refs) else freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root))
         if (record["state"] != "approved" or record["action"] != envelope.action
                 or record["journey_ref"] != envelope.journey_ref
                 or record["expected_event_head"] != envelope.expected_event_head
@@ -212,7 +213,8 @@ def _start_replay(service, owner_ref: str, envelope, journey):
         return None
     queued = history[0]["payload"]
     plan_digest = (queued.get("execution_plan_sha256")
-        if envelope.action == "agent.run" or _has_source_context_ref(envelope.operation.data_refs) else
+        if envelope.action == "agent.run" or envelope.action.startswith("provider.session.")
+        or _has_source_context_ref(envelope.operation.data_refs) else
         freeze_execution_plan(envelope.operation, owner_ref=owner_ref,
                               state_root=service.state_root).digest)
     expected = {
@@ -242,7 +244,9 @@ def _start(action: str, raw: bytes, owner_ref: str, service, process_factory) ->
             authorized = service.authorizer(
                 action, raw, owner_ref=owner_ref,
                 state_root=service.state_root, clock=service.clock, **(
-                    {"workspace_root": getattr(process_factory, "repo_root", None)} if getattr(service.authorizer, "__module__", "") == "harness.gateway_grant_route" else {}))
+                    {"workspace_root": getattr(process_factory, "repo_root", None),
+                     "provider_session_registry": getattr(process_factory, "provider_session_registry", None)}
+                    if getattr(service.authorizer, "__module__", "") == "harness.gateway_grant_route" else {}))
             authorized = service.credential_resolver(
                 authorized, service.state_root)
             snapshot = service.start(
@@ -259,6 +263,13 @@ def route_gateway_operation(
         method: str, path: str, *, owner_ref: str, service, process_factory,
         raw: bytes = b"", query: str = "", content_type: str = "") -> RouteResponse:
     try:
+        if path.startswith("/api/provider-sessions/"):
+            from .provider_session_route import route_provider_session
+            routed = route_provider_session(method, path, owner_ref=owner_ref,
+                service=service, process_factory=process_factory, raw=raw,
+                query=query, content_type=content_type,
+                route_response=RouteResponse, start=_start)
+            if routed is not None: return routed
         if path in {"/api/agent", "/api/output/check"}:
             if method != "POST" or query or content_type != "application/json":
                 raise GatewayOperationError("INVALID_REQUEST")
