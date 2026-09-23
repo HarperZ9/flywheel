@@ -24,9 +24,10 @@ _UNBOUND = ("the task is not read: the oracle accepts any closed theorem, not "
             "pinned challenge exists")
 _REPLAY_LIMITS = (
     "leanchecker replay runs in plain mode: it re-checks the declarations the "
-    "compiled module adds and trusts the imported toolchain .olean files as "
-    "found on disk; it is neither the --fresh replay nor an external kernel "
-    "(comparator with nanoda or lean4lean)")
+    "compiled module adds and trusts every imported .olean file as found on "
+    "disk, the toolchain's and any found through the inherited LEAN_PATH; it "
+    "is neither the --fresh replay nor an external kernel (comparator with "
+    "nanoda or lean4lean)")
 _ELABORATION = (
     "the candidate's metaprograms ran unsandboxed with this user's rights "
     "during elaboration and compilation; one that writes files, such as the "

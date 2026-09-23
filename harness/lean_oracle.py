@@ -78,6 +78,14 @@ def lean_available() -> bool:
     return _lean_exe() is not None
 
 
+def leanchecker_available() -> bool:
+    """True when lean is installed and its toolchain ships leanchecker, the
+    precondition for a verdict above UNVERIFIABLE on any accepted file."""
+    from .lean_replay import toolchain_paths
+    exe = _lean_exe()
+    return exe is not None and toolchain_paths(exe)[0] is not None
+
+
 def _run(argv: list, code: str) -> tuple:
     """Default runner: write the candidate, let the kernel judge it. The
     spawn reaps the whole process tree on timeout (lean_replay.run_killable,
@@ -91,12 +99,17 @@ def _run(argv: list, code: str) -> tuple:
 
 
 def _toolchain(exe: str) -> str:
+    """The first line of `lean --version`, or "unknown". An elan proxy
+    starts the real lean as a child, so the spawn reaps the tree on timeout."""
+    from .lean_replay import run_killable
     try:
-        r = subprocess.run([exe, "--version"], capture_output=True,
-                           text=True, timeout=30)
-        return (r.stdout or "").strip().splitlines()[0] if r.stdout else ""
-    except Exception:
+        rc, out = run_killable([exe, "--version"], timeout=30,
+                               label="lean --version",
+                               stderr=subprocess.DEVNULL)
+    except OSError:
         return "unknown"
+    lines = out.strip().splitlines()
+    return lines[0] if rc == 0 and lines else "unknown"
 
 
 def _receipt(sha: str, passed, toolchain: str, output: str, note: str, *,
@@ -183,11 +196,11 @@ def _after_replay(sha: str, toolchain: str, out: str, footprint: dict,
     if rep["ok"] is None:
         return _receipt(
             sha, None, toolchain,
-            passed_below + ", but leanchecker could not replay the module: "
+            passed_below + ", but the leanchecker replay judged nothing: "
             + rep["detail"],
             "fail closed: an accept leanchecker did not replay is not a pass",
             footprint=footprint, level=below, replay=rep["record"],
-            reason="leanchecker-unavailable")
+            reason=rep.get("reason") or "leanchecker-unavailable")
     if rep["ok"] is False:
         return _receipt(
             sha, False, toolchain, passed_below + ", but " + rep["detail"],

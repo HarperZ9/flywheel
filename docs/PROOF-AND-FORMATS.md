@@ -232,23 +232,43 @@ the module adds back through the kernel. On the file above it stops with
 `declaration type mismatch, 'smuggled' has type True but it is expected to have
 type False`, and the verdict is `FAIL`.
 
-Three details of how the replay runs:
+Four details of how the replay runs:
 
 - leanchecker comes from the installation that `lean --print-prefix` names for
   the `lean` that compiled the module. An `.olean` file belongs to the toolchain
   that wrote it.
-- `LEAN_PATH` lists the toolchain's library before the build directory. The
-  candidate's code can write into the build directory. When that directory
-  came first, a planted `Init` package there shadowed the real one.
+- leanchecker's `LEAN_PATH` is the toolchain's library, then every entry of
+  the `LEAN_PATH` the harness was started with, then the build directory. The
+  kernel run and the compile read the inherited entries (`lake env` puts
+  Mathlib there), so the replay reads them too. Without them, a sound proof
+  that imports from one of those entries came back `FAIL`.
+- The build directory goes last because the candidate's code can write into
+  it. When it came first, a planted `Init` package there shadowed the real
+  one. Last in line, it only has to supply the name `Candidate`. If an
+  earlier entry also holds a `Candidate` module or directory, the replay
+  stops with `UNVERIFIABLE`. leanchecker would read that module in place of
+  the one the compile wrote: a harmless `Candidate.olean` placed there let
+  the file above pass the replay (exit 0).
 - It runs in plain mode. Plain mode checks the candidate's own declarations
   again and trusts the toolchain modules it imports. `--fresh` replays the
   imports too. On one machine it took 153 s on a one-line file (one run),
   where plain mode took 1.7 to 3.1 s (three runs on each of two files).
 
-A leanchecker exit other than 0 is `FAIL`, and so is an `.olean` compile that
-fails. A toolchain with no leanchecker, or one that will not start, gives
-`UNVERIFIABLE` with `unverifiable_reason: leanchecker-unavailable`. It never
-gives `PASS`. The replay adds about 3 to 4.5 s to each candidate that
+A leanchecker exit other than 0 is `FAIL`, and so are a leanchecker timeout
+and an `.olean` compile that fails. A replay that judged nothing gives
+`UNVERIFIABLE`, never `PASS`, and `unverifiable_reason` names the step:
+
+| `unverifiable_reason` | Cause |
+| --- | --- |
+| `leanchecker-unavailable` | the toolchain has no leanchecker, or it will not start |
+| `lean-compile-unavailable` | `lean` would not start for the `.olean` compile |
+| `leanchecker-import-unresolved` | leanchecker could not load a module the compile loaded |
+| `replay-module-shadowed` | an earlier search path entry holds a `Candidate` module |
+
+The import case is matched on the line right after leanchecker's `found a
+problem` header. There a kernel refusal starts with `while replaying
+declaration`, so a declaration name cannot make a refusal read as an import
+failure. The replay adds about 3 to 4.5 s to each candidate that
 reaches it (median of three runs on each of two files, one machine).
 
 `validation_level` names the highest rung cleared with every rung below it
@@ -262,7 +282,8 @@ says so.
 
 ### What a Lean accept does not say
 
-- The replay trusts the toolchain's own `.olean` files as they sit on disk. The
+- The replay trusts every imported `.olean` file as it sits on disk: the
+  toolchain's own, and any found through the inherited `LEAN_PATH`. The
   candidate's code ran with the user's rights while Lean elaborated it and
   could have changed files. Catching that takes a sandboxed build, which is
   the comparator rung.
