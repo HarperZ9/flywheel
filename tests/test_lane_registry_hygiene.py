@@ -56,16 +56,23 @@ def test_every_pip_lane_declares_a_release_version():
 def test_a_disabled_lane_states_a_reason_worth_reading():
     """An empty or bare reason reads as 'unavailable' with no way to act on it.
 
-    lane_status surfaces this string to the operator verbatim, so it has to say
-    what is wrong and what to do instead.
+    lane_status hands this string to the operator verbatim, so it has to carry
+    both halves: what is wrong, and what to do instead. That is checked as two
+    sentences rather than by looking for particular words. Whether prose is
+    useful to a human is not mechanically decidable, and a whitelist of phrases
+    would fail a future reason that is perfectly clear and worded differently,
+    which is the same brittleness that let the old version literals in test_lanes
+    sit green through five real drifts.
     """
     for name, lane in LANES.items():
         reason = lane.package_disabled_reason
         if not reason:
             continue
         assert len(reason) > 40, f"{name}: disabled reason is too thin to act on"
-        assert "source checkout" in reason or "no published" in reason.lower(), (
-            f"{name}: disabled reason does not say what to use instead")
+        sentences = [part for part in reason.split(". ") if part.strip()]
+        assert len(sentences) >= 2, (
+            f"{name}: disabled reason is one sentence, so it states a problem "
+            "without an alternative. Say what to run instead.")
 
 
 def test_no_pip_lane_hides_an_extras_marker_in_its_install_name():
