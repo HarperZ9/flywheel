@@ -58,10 +58,13 @@ range is refused as `INVALID_REQUEST`.
   itself. When the process tree is stopped in the middle of a step, no budget
   record is written, and the card says the time limit was reached before one
   was.
-- The run's check command runs through the same executor, so each run of it
-  uses one tool action. A test-repair loop can run it more than once. With
-  `max_tool_actions` set to 0 a run that has a check command stops at the
-  check.
+- The run's check command is the harness's step, not the model's, so a run
+  of it does not use a tool action. Each run is recorded in the budget record
+  as `harness_checks` and in the trace as a tool call marked `gate: test`, and
+  the card lists the count next to the tool actions. A test-repair loop can
+  run the check more than once. With `max_tool_actions` set to 0 the run's
+  check command still runs. The same command run by the model, as its own
+  tool call, uses one tool action like any other.
 
 A stopped run fails with `AGENT_RUN_BUDGET_EXHAUSTED`. A run whose provider
 or CLI reported success next to a limit error fails with

@@ -25,9 +25,10 @@ def test_the_overloaded_signal_and_the_language_limit_are_stated():
     assert "English phrase heuristic" in text
 
 
-def test_the_check_command_is_said_to_use_a_tool_action():
+def test_the_check_command_is_said_to_be_a_harness_check_not_a_tool_action():
     for name in ("RUN-BUDGET.md", "VERIFIED-COMPLETION.md"):
-        assert "uses one tool action" in _doc(name), name
+        assert "does not use a tool action" in _doc(name), name
+    assert "`harness_checks`" in _doc("RUN-BUDGET.md")
 
 
 def test_the_wall_time_record_is_described_as_it_behaves():

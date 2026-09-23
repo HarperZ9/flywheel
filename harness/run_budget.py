@@ -41,6 +41,7 @@ import time
 from .gateway_operation import GatewayOperationError
 from .limit_signal import provider_body_limit, provider_limit
 from .run_budget_contract import DOES_NOT_PROVE, SCHEMA
+from .run_budget_executor import BudgetedExecutor, harness_check  # noqa: F401
 
 BUDGET_EXHAUSTED = "AGENT_RUN_BUDGET_EXHAUSTED"
 FALSE_SUCCESS = "AGENT_FALSE_SUCCESS"
@@ -124,6 +125,9 @@ class RunBudget:
                           "calls_with_cost": 0}
         self.false_success: list[dict] = []
         self.limit_signal_steps: list[dict] = []
+        # Runs of the run's own check command: the harness's steps, not the
+        # model's, so they are recorded here and never charged.
+        self.harness_checks = 0
         self.tripped: str | None = None
         self._armed: str | None = None
         self._consecutive_limit_signals = 0
@@ -134,6 +138,11 @@ class RunBudget:
 
     def charge_tool_action(self) -> None:
         self._gate("tool_actions")
+
+    def record_harness_check(self) -> None:
+        """Record one run of the check command, after a limit armed earlier."""
+        self.settle()
+        self.harness_checks += 1
 
     def count_observed(self, name: str) -> None:
         """Count a step another process already started, then stop past the limit.
@@ -254,6 +263,7 @@ class RunBudget:
                 "false_success_steps": [dict(s) for s in self.false_success[:_LISTED_STEPS]],
                 "limit_signal_steps": [dict(s) for s in
                                        self.limit_signal_steps[-_LISTED_STEPS:]],
+                "harness_checks": self.harness_checks,
                 "does_not_prove": list(DOES_NOT_PROVE)}
 
     def _gate(self, name: str) -> None:
@@ -269,21 +279,3 @@ class RunBudget:
     def _trip(self, name: str) -> None:
         self.tripped = name
         raise RunBudgetExceeded(name)
-
-
-class BudgetedExecutor:
-    """A tool executor that charges each action before it runs.
-
-    Its output is never read for a limit: a tool's output is content the model
-    produced or read. Everything else passes through to the wrapped executor,
-    so receipt chains, the byte witness and the workspace root keep working."""
-
-    def __init__(self, inner, budget: RunBudget, *, test_cmd=None) -> None:
-        self._inner, self._budget, self._test_cmd = inner, budget, test_cmd
-
-    def execute(self, name, args, *extra, **kwargs):
-        self._budget.charge_tool_action()
-        return self._inner.execute(name, args, *extra, **kwargs)
-
-    def __getattr__(self, attr):
-        return getattr(self._inner, attr)

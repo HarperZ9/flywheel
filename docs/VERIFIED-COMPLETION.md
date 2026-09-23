@@ -27,8 +27,9 @@ failed that way today.
 A write whose tool reported success with no recorded hash is claimed. With no
 check command, the final answer is claimed. Set a check command in the Rowan
 card to change that; the engine runs it through the exec gate, so it needs exec
-allowed. Each run of the check uses one tool action from the run budget, and a
-test-repair loop can run it more than once (see `docs/RUN-BUDGET.md`). The
+allowed. The check is the harness's step, so a run of it does not use a tool
+action from the run budget; the budget record counts it as a harness check,
+and a test-repair loop can run it more than once (see `docs/RUN-BUDGET.md`). The
 check's exit code is its verdict: no tool output is read for limit errors, so
 a passing test log that names a rate-limit test case is still a pass.
 

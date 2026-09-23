@@ -64,9 +64,12 @@ String budgetHeadline(RunBudgetOutcome budget, {String? reason}) {
 String budgetSpendLine(RunBudgetOutcome budget) {
   if (!budget.recorded) return '';
   final used = budget.used, limits = budget.limits, reporting = budget.reporting;
+  final checks = budget.harnessChecks;
   final parts = [
     '${used['model_calls']} of ${limits['model_calls']} model calls',
     '${used['tool_actions']} of ${limits['tool_actions']} tool actions',
+    // The check command is the harness's step and uses no tool action.
+    if (checks > 0) '$checks check command run${checks == 1 ? '' : 's'}',
   ];
   final withTokens = reporting['calls_with_tokens'] ?? 0;
   final without = reporting['calls_without_tokens'] ?? 0;

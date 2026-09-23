@@ -59,6 +59,10 @@ void main() {
     expect(budgetSpendLine(budget),
         contains('spend not reported by the provider'));
     expect(budgetSpendLine(budget), contains('12,400 of 200,000 tokens'));
+    // The harness's check runs are listed apart from the model's tool actions.
+    expect(budget.harnessChecks, 1);
+    expect(budgetSpendLine(budget),
+        contains('24 of 24 tool actions · 1 check command run'));
     expect(
         falseSuccessLine(budget),
         '1 success report from the provider or the CLI came with a rate limit '

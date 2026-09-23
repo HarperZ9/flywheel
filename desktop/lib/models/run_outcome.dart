@@ -135,9 +135,13 @@ final class RunBudgetOutcome {
   final List<String> falseSuccessSignals;
   final List<LimitSignalStep> limitSignalSteps;
 
+  /// Runs of the run's own check command. They are the harness's steps, not
+  /// the model's, so they are not counted in `used['tool_actions']`.
+  final int harnessChecks;
+
   const RunBudgetOutcome._(this.status, this.tripped, this.reason, this.limits,
       this.used, this.reporting, this.falseSuccessCount, this.falseSuccessSignals,
-      [this.limitSignalSteps = const []]);
+      [this.limitSignalSteps = const [], this.harnessChecks = 0]);
 
   bool get recorded => status == 'within_limits' || status == 'stopped';
 
@@ -173,6 +177,7 @@ final class RunBudgetOutcome {
       'false_success_count',
       'false_success_signals',
       'limit_signal_steps',
+      'harness_checks',
       'record_sequence',
     });
     final tripped = value['tripped'];
@@ -185,8 +190,11 @@ final class RunBudgetOutcome {
     final count = value['false_success_count'];
     final signals = value['false_success_signals'];
     final steps = value['limit_signal_steps'];
+    final checks = value['harness_checks'];
     if (count is! int ||
         count < 0 ||
+        checks is! int ||
+        checks < 0 ||
         signals is! List ||
         signals.any((s) => s is! String || !runLimitSignals.contains(s)) ||
         steps is! List ||
@@ -202,6 +210,7 @@ final class RunBudgetOutcome {
         _naturals(value['reporting'], _reportingKeys),
         count,
         List<String>.unmodifiable(signals.cast<String>()),
-        List<LimitSignalStep>.unmodifiable(steps.map(LimitSignalStep.fromJson)));
+        List<LimitSignalStep>.unmodifiable(steps.map(LimitSignalStep.fromJson)),
+        checks);
   }
 }

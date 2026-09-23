@@ -40,10 +40,12 @@ def run_native_protocol_loop(route, goal, binding, key, transport, executor,
 
 def execute_native_test_command(test_cmd, executor, ledger, sign_key,
                                 on_event, deadline, private_guard=None):
-    return _execute({"name": "run", "args": {"cmd": test_cmd},
-        "provider_call_id": "test_cmd", "provider_item_id": "test_cmd",
-        "provider_order_index": 0}, executor, ledger, sign_key,
-        {"native_block": False, "gate": "test"}, on_event, deadline, private_guard)
+    from .run_budget_executor import harness_check
+    with harness_check(executor):   # the harness's step, not the model's
+        return _execute({"name": "run", "args": {"cmd": test_cmd},
+            "provider_call_id": "test_cmd", "provider_item_id": "test_cmd",
+            "provider_order_index": 0}, executor, ledger, sign_key,
+            {"native_block": False, "gate": "test"}, on_event, deadline, private_guard)
 
 
 def _openai_loop(goal, binding, key, transport, executor, ledger, sign_key,

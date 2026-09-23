@@ -129,9 +129,12 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                     return done
                 message = feedback
                 continue
-            res = executor.execute("run", {"cmd": test_cmd})
+            from .run_budget_executor import harness_check
+            with harness_check(executor):   # the harness's step, not the model's
+                res = executor.execute("run", {"cmd": test_cmd})
             last_test_ok = res.ok
-            ledger.append("tool_call", f"run {json.dumps({'cmd': test_cmd}, sort_keys=True)}")
+            ledger.append("tool_call", f"run {json.dumps({'cmd': test_cmd}, sort_keys=True)}",
+                          {"gate": "test"})
             ledger.append("tool_result", res.output, _result_meta("run", res, sign_key, {"gate": "test"}))
             _emit(type="tool_result", name="run", ok=res.ok, output=res.output[:500])
             if criteria is not None:
