@@ -33,7 +33,7 @@ provider name, adapter, configured URL, credential slot and specification digest
 explicit requested model or frozen default; optional catalog profile pins;
 canonical workspace, filesystem identity and parent root policy; step, output and
 wall budgets; write/execute/MCP capability gates; and transport constraints.
-Native v2 additionally freezes `schema` as
+Native v2 also freezes `schema` as
 `flywheel.gateway-agent-tool-protocol/v1`, `native_api_route`, the ToolExecutor
 function schema digest, tool names, strict-schema requirement,
 `parallel_tool_calls: false`, and `result_order_policy:

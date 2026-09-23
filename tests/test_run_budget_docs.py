@@ -62,3 +62,15 @@ def test_the_completion_doc_names_the_protected_set_and_no_unreachable_check():
     for name in ("`pytest.ini`", "`tox.ini`", "`pyproject.toml`", "`setup.cfg`",
                  "`conftest.py`", "`changed_by_command`"):
         assert name in text, name
+
+
+def test_the_docs_this_feature_changed_pass_the_writing_gate():
+    import subprocess
+    import sys
+    repo = DOCS.parent
+    changed = ["docs/RUN-BUDGET.md", "docs/VERIFIED-COMPLETION.md", "docs/ROWAN-HANDOFF.md",
+               "docs/native-agent-binding-contract.md", "docs/RELEASE-NEXT.md",
+               "project-docs/records/ROWAN-CAPABILITY-MAP-2026-09-23.md"]
+    gate = subprocess.run([sys.executable, "scripts/check_writing.py", "--gate", *changed],
+                          cwd=repo, capture_output=True, text=True, timeout=120)
+    assert gate.returncode == 0, gate.stdout + gate.stderr
