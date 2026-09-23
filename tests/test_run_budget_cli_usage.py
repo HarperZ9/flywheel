@@ -12,8 +12,11 @@ import json
 
 import pytest
 
+from harness.gateway_agent_execution import _settle_budget
 from harness.gateway_cli_events import NativeEvents
-from harness.run_budget import RunBudget, RunBudgetExceeded, resolve_limits
+from harness.gateway_operation import GatewayOperationError
+from harness.gateway_run_outcome import derive_run_outcome
+from harness.run_budget import BUDGET_EXHAUSTED, RunBudget, RunBudgetExceeded, resolve_limits
 
 USAGE = {"input_tokens": 12, "output_tokens": 30, "cache_creation_input_tokens": 400,
          "cache_read_input_tokens": 5_000, "service_tier": "standard"}
@@ -71,3 +74,45 @@ def test_streamed_tokens_past_the_limit_stop_the_session_at_the_next_step():
     assert stopped.value.limit == "usage_tokens"
     assert budget.report()["used"]["tool_actions"] == 0
     assert budget.report()["used"]["model_calls"] == 1
+
+
+def _derived(budget, terminal_state="failed"):
+    kind = "result" if terminal_state == "completed" else "failure"
+    records = [{"sequence": 0, "kind": kind, "record_sha256": "0" * 64,
+                "payload": {"run_budget": budget.report()}}]
+    return derive_run_outcome(records, terminal_state=terminal_state)["budget"]
+
+
+@pytest.mark.parametrize("errored", [False, True])
+def test_a_session_whose_messages_streamed_usage_still_reports_its_spend(errored):
+    # Each message carried usage, so the result's cost is the session's only
+    # report of spend. The card prints "spend not reported by the provider"
+    # when calls_with_cost is 0, so the block counts the calls the cost covers.
+    budget = RunBudget(resolve_limits({"max_steps": 6}))
+    result = {**_result(USAGE, cost=4.25), "is_error": errored}
+    with pytest.raises(GatewayOperationError) as failed:
+        _feed(budget, [_message("m1"), _message("m2"), result])
+        _settle_budget({"final": "done"}, budget)
+    budget.settle_failed()
+    assert failed.value.code == ("AGENT_CLI_INCOMPLETE" if errored else BUDGET_EXHAUSTED)
+    block = _derived(budget)
+    assert (block["status"], block["tripped"]) == ("stopped", "cost_micros")
+    assert block["used"]["cost_micros"] == 4_250_000
+    assert block["reporting"] == {"calls_with_tokens": 2, "calls_without_tokens": 0,
+                                  "calls_with_cost": 2}
+
+
+def test_a_session_within_its_limits_names_the_calls_its_cost_covers():
+    budget = RunBudget(resolve_limits({"max_steps": 6}))
+    _feed(budget, [_message("m1"), _message("m2"), _result(USAGE, cost=0.10)])
+    _settle_budget({"final": "done"}, budget)
+    block = _derived(budget, "completed")
+    assert block["status"] == "within_limits" and block["used"]["cost_micros"] == 100_000
+    assert block["reporting"]["calls_with_cost"] == 2
+
+
+def test_a_record_with_spend_and_no_cost_report_is_unverifiable():
+    budget = RunBudget(resolve_limits({"max_steps": 6}))
+    budget.used["cost_micros"] = 4_250_000
+    block = _derived(budget)
+    assert (block["status"], block["reason"]) == ("unverifiable", "BUDGET_SPEND_WITHOUT_REPORT")

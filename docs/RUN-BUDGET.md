@@ -51,8 +51,11 @@ range is refused as `INVALID_REQUEST`.
   stream. The result event then adds only the tokens the messages did not
   already report, so nothing is counted twice. A token limit crossed by a
   streamed message stops the session at its next tool call or model turn.
-  Spend arrives only in the result event, so the spend limit marks a session
-  stopped after the fact and cannot interrupt it. The result event is read on
+  Spend arrives only in the result event, and the record counts it as the
+  spend report for every model call in the session. So the spend limit marks
+  a session stopped after the fact and cannot interrupt it, and a record that
+  claims spend with no call that reported it is shown as `unverifiable`
+  (`BUDGET_SPEND_WITHOUT_REPORT`). The result event is read on
   an errored session too, and a limit its numbers crossed is named in the
   record as the stop, while the session's own error stays the run's failure
   reason. A session stopped before that event keeps the tokens its messages

@@ -133,9 +133,11 @@ class RunBudget:
         if self.used[name] > self.limits[name]:
             self._trip(name)
 
-    def record_usage(self, usage=None, *, cost_usd=None, calls: int = 1) -> None:
-        """Add one provider report. `calls` is how many model calls it covers:
-        a CLI reports its whole session once, at the end."""
+    def record_usage(self, usage=None, *, cost_usd=None, calls: int = 1,
+                     cost_calls: int | None = None) -> None:
+        """Add one provider report. `calls` is how many model calls its tokens
+        cover and `cost_calls` how many its cost covers, when that differs:
+        a CLI reports its whole session's cost once, at the end."""
         tokens = reported_tokens(usage)
         if tokens is None:
             self.reporting["calls_without_tokens"] += calls
@@ -144,7 +146,7 @@ class RunBudget:
             self.used["usage_tokens"] += tokens
         cost = reported_cost_micros(usage, cost_usd)
         if cost is not None:
-            self.reporting["calls_with_cost"] += calls
+            self.reporting["calls_with_cost"] += calls if cost_calls is None else cost_calls
             self.used["cost_micros"] += cost
         for name in ("usage_tokens", "cost_micros"):
             if self.used[name] > self.limits[name]:
@@ -170,12 +172,14 @@ class RunBudget:
 
         The session total adds only the tokens its messages did not already
         report, so nothing is counted twice and nothing streamed is dropped.
-        It covers the model calls no message reported for."""
+        Its tokens cover the model calls no message reported for. Its cost
+        covers every call in the session, since no message reports one."""
         tokens, streamed = reported_tokens(usage), sum(self._streamed.values())
         calls = self.unaccounted_calls() or (0 if self._streamed else 1)
         if tokens is not None:
             usage = {"total_tokens": max(0, tokens - streamed)}
-        self.record_usage(usage, cost_usd=cost_usd, calls=calls)
+        priced = max(1, self.used["model_calls"] - self.reporting["calls_with_cost"])
+        self.record_usage(usage, cost_usd=cost_usd, calls=calls, cost_calls=priced)
 
     def unaccounted_calls(self) -> int:
         """Model calls counted so far that no provider report has covered."""

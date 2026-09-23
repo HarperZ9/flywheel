@@ -117,6 +117,9 @@ def _check_report(report, counts: dict, terminal_state: str) -> dict:
     if reporting["calls_with_tokens"] + reporting["calls_without_tokens"] < used["model_calls"]:
         # Every counted model call either reported tokens or is named as not.
         raise _Unverifiable("BUDGET_HIDES_UNREPORTED_CALLS")
+    if used["cost_micros"] > 0 and reporting["calls_with_cost"] == 0:
+        # Spend comes only from a provider's cost report, so it names one.
+        raise _Unverifiable("BUDGET_SPEND_WITHOUT_REPORT")
     if tripped and terminal_state == "completed":
         raise _Unverifiable("BUDGET_STOP_ON_COMPLETED_RUN")
     if any(counts[k] > used[k] for k in _COUNTERS) or counts["harness_checks"] > checks:
