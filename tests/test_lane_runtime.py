@@ -9,16 +9,7 @@ from pathlib import Path
 import pytest
 
 import harness.lanes as lanes
-from harness.lanes_registry import LANES
 from harness.mcp_client import LaunchSpec
-
-# Read from the registry instead of repeating it. This file pinned "2.10.0" in
-# four places, so bumping index to the version PyPI actually carries broke it in
-# two. The fixture only needs the source to agree with what the lane declares;
-# which number that is does not matter to anything here. The "2.12.0" literals
-# below differ on purpose, standing in for an installed runtime that does not
-# match, so those stay literal.
-INDEX_DECLARED = LANES["index"].version
 
 
 def _registry(monkeypatch, tmp_path, row):
@@ -31,8 +22,7 @@ def _index_source(tmp_path):
     source = tmp_path / "workspace" / "public" / "index"
     package = source / "src" / "index_graph"
     package.mkdir(parents=True)
-    (package / "__init__.py").write_text(
-        f'__version__ = "{INDEX_DECLARED}"\n', encoding="utf-8")
+    package.joinpath("__init__.py").write_text("__version__ = %r\n" % lanes.LANES["index"].version, "utf-8")
     return source
 
 
@@ -98,7 +88,7 @@ def test_explicit_package_runtime_cannot_be_shadowed_by_source_checkout(
     runtime = status["resolved_runtime"]
     assert runtime["selected_profile"] == "package"
     assert runtime["selected_runtime"] == "package"
-    assert runtime["expected_version"] == INDEX_DECLARED
+    assert runtime["expected_version"] == lanes.LANES["index"].version
     assert runtime["runtime_expected_version"] == "2.12.0"
     assert runtime["installed_version"] == "2.12.0"
     assert runtime["source_available"] is True
@@ -145,15 +135,15 @@ def test_explicit_package_version_mismatch_reports_observed_version(
         "runtime_python": str(python),
     })
     monkeypatch.setattr(lanes, "resolve_source_repo", lambda lane: source)
-    _pin_package_runtime(monkeypatch, INDEX_DECLARED)
+    _pin_package_runtime(monkeypatch, lanes.LANES["index"].version)
 
     with pytest.raises(lanes.LaneRuntimeError, match="installed_version_mismatch"):
         lanes.resolve_mcp_launch("index")
 
     runtime = lanes.lane_status("index", probe=False)["resolved_runtime"]
-    assert runtime["expected_version"] == INDEX_DECLARED
+    assert runtime["expected_version"] == lanes.LANES["index"].version
     assert runtime["runtime_expected_version"] == "2.12.0"
-    assert runtime["installed_version"] == INDEX_DECLARED
+    assert runtime["installed_version"] == lanes.LANES["index"].version
     assert "installed_version_mismatch" in runtime["mismatch_codes"]
 
 
