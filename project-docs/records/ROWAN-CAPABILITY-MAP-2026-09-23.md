@@ -81,6 +81,19 @@ Rows 4, 12, 16 and 18 stay open. Row 12 (rollback) is the next candidate after
 this slice, because row 1's receipts already record the hashes a restore would
 need to check against.
 
+## What this branch changes
+
+The matrix above is `main` before this branch. After it:
+
+| # | Capability | Status | What changed |
+|---|---|---|---|
+| 13 | Run budget circuit breaker | Shipped | Per-run limits on model calls, tool actions, provider-reported tokens and spend, with the existing wall-time deadline; exit-0 limit errors recorded as failed; stop reason in the trace, the projection and the card (`docs/RUN-BUDGET.md`). Spend applies only where a provider reports cost |
+| 14 | Verified versus claimed completion | Shipped | Every run ends with a per-deliverable split rechecked by the gateway against the trace; the card says "Done" only when everything is verified; a check command field makes the final answer verifiable (`docs/VERIFIED-COMPLETION.md`) |
+| 19 | Scheduled and recurring runs | Partial | Hook receipts mark exit-0 limit errors as failed, and a schedule stops after two failed fires in a row until redefined. A schedule still cannot start `agent.run` |
+| 21 | Take a session elsewhere | Partial | One finished run exports as a provider-neutral Markdown brief (`docs/ROWAN-HANDOFF.md`). A multi-run session export does not exist |
+
+Counts after this branch: 8 shipped, 13 partial, 2 absent.
+
 ## Limits of this map
 
 - Checked by reading code on one commit. Nothing here was run against a live

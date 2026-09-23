@@ -14,6 +14,7 @@ import 'model_selector.dart';
 import 'operation_controls.dart';
 import 'operation_private_attachments.dart';
 import 'operation_trace_projection.dart';
+import 'rowan_handoff_button.dart';
 import 'rowan_operation_budget.dart';
 import 'rowan_run_outcome_view.dart';
 
@@ -226,6 +227,11 @@ final class RowanOperationCard extends StatelessWidget {
             if (_outcome(rowan) case final projection?)
               RowanRunOutcomeView(
                   outcome: projection.runOutcome!, reason: projection.reason),
+            if (snapshot.isTerminal)
+              RowanHandoffButton(
+                  key: ValueKey(snapshot.operationRef),
+                  baseUrl: rowan.client.baseUrl,
+                  operationRef: snapshot.operationRef),
             OperationPrivateAttachments(
               client: rowan.client,
               snapshot: snapshot,

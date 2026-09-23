@@ -11,7 +11,7 @@ from .gateway_operation_route_reads import read_snapshot_or_none, terminal_data
 from .gateway_operation_read_dispatch import _read
 from .journey_types import SHA256_PATTERN
 _OPERATION_PATH = re.compile(
-    r"/api/operations/(op_[0-9a-f]{32})(?:/(events|result|trace))?\Z")
+    r"/api/operations/(op_[0-9a-f]{32})(?:/(events|result|trace|handoff))?\Z")
 _MAX_LINE_BYTES = 262_144
 _MAX_BUFFER_BYTES = 1_048_576
 _MAX_GATEWAY_BUFFER_BYTES = 8_388_608
