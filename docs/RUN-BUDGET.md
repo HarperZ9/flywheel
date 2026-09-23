@@ -3,11 +3,12 @@
 Every Rowan `agent.run` carries a budget, and so does every staged run
 through `workflow.run`, the `/api/workflow` route or `plan.run`. When a run
 reaches a limit, the engine stops it at the next step boundary, records which
-limit stopped it, and the desktop card shows the stop. A rate limit, quota, billing, sign-in or
-service-overloaded (HTTP 503 or 529) error that the provider or the CLI reports
-in its own fields counts toward a second breaker, and two in a row stop the
-run. Tool output and the model's answer are never read for one. Scheduled jobs
-read their hooks' output and stop themselves after repeated failed fires.
+limit stopped it, and the desktop card shows the stop. A rate limit, quota,
+billing, sign-in or service-overloaded (HTTP 503 or 529) error that the
+provider or the CLI reports in its own fields counts toward a second breaker,
+and two in a row stop the run. Tool output and the model's answer are never
+read for one. Scheduled jobs read their hooks' output and stop themselves
+after repeated failed fires.
 
 ## Limits
 
@@ -123,8 +124,9 @@ count again, and one error a CLI restates in a second event counts once.
 A limit error reported next to a success is a false success, and the run
 fails with `AGENT_FALSE_SUCCESS`: a 2xx provider response whose body is a
 limit error, a CLI result marked success after the session reported a limit
-error, or a CLI that exits 0 with a limit error on its stderr. The card lists
-each counted error with where it came from and its token.
+error, or a CLI that exits 0 with a limit error on its stderr. When a run
+stops on limit errors or fails as a false success, the card lists each
+counted error with where it came from and its token.
 
 For example, claude 2.1.251, run against an account with no credit, streamed
 an assistant event with `"error": "billing_error"` and
@@ -169,7 +171,7 @@ A fire failed when any hook it ran failed, blocking or not:
 - an exit 0 marked `false_success`.
 
 After two failed fires in a row under one schedule definition, the tick stops
-firing that schedule and says why, with the matched words. Two failures inside
+firing that schedule and says why, with the matched tokens. Two failures inside
 one replayed backlog, fired seconds apart, are enough. Fire history recorded
 before this check existed counts the same way. A stopped schedule's owed
 occurrences are held, not due: the roster lists them under `plan.held`, counts
@@ -196,7 +198,7 @@ record in the private trace; its `completion` half is described in
 `effect_evidence` and recomputes it on every read and in offline verification. A submitted block that differs is refused. A
 record that does not add up is shown as `unverifiable` with a reason, for
 example a stop on a limit the recorded numbers never reached, or a report that
-counts fewer tool actions than the trace shows.
+counts fewer tool actions or check runs than the trace shows.
 
 ## Limits of this feature
 
@@ -213,9 +215,11 @@ counts fewer tool actions than the trace shows.
   settled when it returns, the same way `agent.run` is, so a crossed limit or
   a false success stops the workflow at that stage. The stage is recorded as
   `STOPPED` in the chained receipt with the stop code and the limit, and every
-  stage summary carries the budget record as it stood. These routes take no
-  `run_budget` override and have no aggregate deadline, so their wall time is
-  recorded and not enforced.
+  stage summary carries the budget record as it stood. A provider error on
+  these routes is read from its status, and from its body's error fields when
+  the provider adapter passes the body on. These routes take no `run_budget`
+  override and have no aggregate deadline, so their wall time is recorded and
+  not enforced.
 - The Claude CLI stream shape above was checked against claude 2.1.251 on a
   local session that failed on a billing error: one assistant event and one
   result event, each with every token counter at 0. A successful multi-turn
