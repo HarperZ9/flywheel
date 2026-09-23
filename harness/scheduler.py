@@ -205,17 +205,17 @@ def breaker(schedule: dict, records: list, *, trip: int = BREAKER_TRIP) -> dict:
     deliberate act that re-arms it; waiting does not.
     """
     from .accountable_hooks import hook_failed
-    streak, signals = 0, set()
+    consecutive_failed, signals = 0, set()
     for record in reversed(records):
         if (record.get("schedule_sha256") != schedule.get("schedule_sha256")
-                or streak >= trip):
+                or consecutive_failed >= trip):
             break
         failed = [r for r in record.get("hook_receipts") or () if hook_failed(r)]
         if not failed:
             break
-        streak += 1
+        consecutive_failed += 1
         signals.update(r["limit_signal"] for r in failed if r.get("limit_signal"))
-    return {"tripped": streak >= trip, "consecutive_failed_fires": streak,
+    return {"tripped": consecutive_failed >= trip, "consecutive_failed_fires": consecutive_failed,
             "trip_after": trip, "limit_signals": sorted(signals)}
 
 

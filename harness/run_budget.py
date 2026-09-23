@@ -120,7 +120,7 @@ class RunBudget:
         self.false_success: list[dict] = []
         self.tripped: str | None = None
         self._armed: str | None = None
-        self._streak = 0
+        self._consecutive_limit_signals = 0
         self._clock, self._started = clock, clock()
 
     def charge_model_call(self) -> None:
@@ -161,13 +161,13 @@ class RunBudget:
             return None
         signal = limit_signal(output)
         if signal is None:
-            self._streak = 0
+            self._consecutive_limit_signals = 0
             return None
-        self._streak += 1
+        self._consecutive_limit_signals += 1
         if ok:
             self.false_success.append({"tool": str(tool)[:64], "signal": signal,
                                        "action": self.used["tool_actions"]})
-        if self._streak >= self.limits["limit_signals"]:
+        if self._consecutive_limit_signals >= self.limits["limit_signals"]:
             self._arm("limit_signals")
         return signal
 
