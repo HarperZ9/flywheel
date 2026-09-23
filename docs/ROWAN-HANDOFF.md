@@ -20,9 +20,9 @@ run's owner at `GET /api/operations/{operation_ref}/handoff`.
   unchecked. A step that called a tool shows the tool's name and path only;
   the arguments, which can hold file content, are left out.
 - **Open items**: work that is claimed and unverified, checks that failed, an
-  unfinished run, a success claim with no check behind it, and steps that
-  exited 0 while their output named a rate limit, quota, billing, sign-in or
-  service-overloaded error.
+  unfinished run, a success claim with no check behind it, and success
+  reports from the provider or the CLI that came with a rate limit, quota,
+  billing, sign-in or service-overloaded error in their own fields.
 - **Final answer**: quoted, labelled as the model's words, up to 60 lines and
   40,000 characters.
 - **Receipts**: the operation, Journey and private trace references, the trace

@@ -168,9 +168,9 @@ def _open_items(state: str, reason, report: dict, completion: dict, payload: dic
         lines.append("- The answer says it succeeded, but no check backs that claim.")
     budget = payload.get("run_budget") or {}
     if budget.get("false_success_count"):
-        lines.append(f"- {budget['false_success_count']} step(s) exited 0 while the output "
-                     "named a rate limit, quota, billing, sign-in or service-overloaded "
-                     "error. They were recorded, not failed: check their work.")
+        lines.append(f"- {budget['false_success_count']} success report(s) from the "
+                     "provider or the CLI came with a rate limit, quota, billing, sign-in "
+                     "or service-overloaded error in its own fields: check the work.")
     return _capped(lines) or ["- None recorded."]
 
 

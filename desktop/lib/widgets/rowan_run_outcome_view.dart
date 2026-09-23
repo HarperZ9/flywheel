@@ -49,8 +49,8 @@ String budgetHeadline(RunBudgetOutcome budget, {String? reason}) {
   if (tripped == null) return 'Within the run budget.';
   if (tripped == 'wall_time') return 'Stopped by the run budget: time limit reached.';
   if (tripped == 'limit_signals') {
-    return 'Stopped by the run budget: ${budget.limits['limit_signals']} steps '
-        'in a row exited 0 while their output ended on a limit error.';
+    return 'Stopped by the run budget: ${budget.limits['limit_signals']} limit '
+        'errors in a row from the provider or the CLI.';
   }
   final used = budget.used[tripped] ?? 0;
   final limit = budget.limits[tripped] ?? 0;
@@ -84,25 +84,25 @@ String budgetSpendLine(RunBudgetOutcome budget) {
   return parts.join(' · ');
 }
 
-/// Steps that exited 0 while their output named a limit error.
-///
-/// Those steps were recorded, not failed: a passing test log or a commit
-/// message can name a rate limit. Only a CLI answer that is itself a limit
-/// error fails the run.
+/// Success reports that came with a limit error in the provider's or the
+/// CLI's own fields: a 2xx response whose body is a limit error, a CLI
+/// session marked success after a limit event, a CLI that exits 0 with a
+/// limit error on its stderr. Tool output and the answer are never read.
 String? falseSuccessLine(RunBudgetOutcome budget, {String? reason}) {
   final kinds = _signals(budget.falseSuccessSignals);
   if (reason == 'AGENT_FALSE_SUCCESS') {
-    return 'The CLI session ended marked success, but its answer was a '
-        '$kinds error, so the run is failed.';
+    return 'The provider or the CLI reported success next to a $kinds error, '
+        'so the run is failed.';
   }
   final n = budget.falseSuccessCount;
   if (n == 0) return null;
-  return '$n step${n == 1 ? '' : 's'} exited 0 while the output named a $kinds '
-      'error. Recorded, not failed: check the work if it looks incomplete.';
+  return '$n success report${n == 1 ? '' : 's'} from the provider or the CLI '
+      'came with a $kinds error.';
 }
 
-/// The steps a limit-signal stop, or a failed CLI answer, counted, each with
-/// the tool, the kind of limit and the words that matched.
+/// The limit errors a limit-signal stop, or a false success, counted: where
+/// each was reported (provider, cli_api_error, cli_result, cli_stderr), the
+/// kind of limit and the vocabulary token that matched.
 List<String> limitSignalLines(RunBudgetOutcome budget, {String? reason}) {
   if (budget.tripped != 'limit_signals' && reason != 'AGENT_FALSE_SUCCESS') {
     return const [];

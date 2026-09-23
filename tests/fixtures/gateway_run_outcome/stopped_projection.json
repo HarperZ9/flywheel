@@ -12,7 +12,7 @@
       "UPSTREAM_OUTPUT_LIMITS"
     ],
     "operation_ref": "op_cccccccccccccccccccccccccccccccc",
-    "projection_sha256": "6eef96aa01a18915b23103c802a8dc6980b6eb3e07ed48fc86e55edaec2cf8f4",
+    "projection_sha256": "725670234d25a4c1bd897f605e7280b19e9cf4fd956e871cf7527cb474d682d8",
     "reason": "AGENT_RUN_BUDGET_EXHAUSTED",
     "record_count": 5,
     "run_outcome": {
@@ -23,9 +23,9 @@
         ],
         "limit_signal_steps": [
           {
-            "match": "usage limit reached",
+            "match": "rate_limit_error",
             "signal": "rate_limit",
-            "tool": "run"
+            "tool": "provider"
           }
         ],
         "limits": {
@@ -212,17 +212,17 @@
             {
               "action": 7,
               "counted": true,
-              "match": "usage limit reached",
+              "match": "rate_limit_error",
               "signal": "rate_limit",
-              "tool": "run"
+              "tool": "provider"
             }
           ],
           "limit_signal_steps": [
             {
               "action": 7,
-              "match": "usage limit reached",
+              "match": "rate_limit_error",
               "signal": "rate_limit",
-              "tool": "run"
+              "tool": "provider"
             }
           ],
           "limits": {

@@ -2,11 +2,11 @@
 
 Every Rowan `agent.run` carries a budget. When a run reaches a limit, the
 engine stops it at the next step boundary, records which limit stopped it, and
-the desktop card shows the stop. A step that exits 0 while its output ends on a
-rate limit, quota, billing, sign-in or service-overloaded (HTTP 503 or 529)
-error counts toward a second breaker, and two such steps in a row stop the run.
-Scheduled jobs get the same output check and stop themselves after repeated
-failed fires.
+the desktop card shows the stop. A rate limit, quota, billing, sign-in or
+service-overloaded (HTTP 503 or 529) error that the provider or the CLI reports
+in its own fields counts toward a second breaker, and two in a row stop the
+run. Tool output and the model's answer are never read for one. Scheduled jobs
+read their hooks' output and stop themselves after repeated failed fires.
 
 ## Limits
 
@@ -63,24 +63,58 @@ range is refused as `INVALID_REQUEST`.
   `max_tool_actions` set to 0 a run that has a check command stops at the
   check.
 
-A stopped run fails with `AGENT_RUN_BUDGET_EXHAUSTED`. A native CLI session
-that ends marked success, with a short result text that opens with a limit
-error, fails with `AGENT_FALSE_SUCCESS`. On the text and provider-native
-paths the final answer is model prose and is not read this way: a provider
-limit there already fails the call as a non-2xx response, and a summary of
-work on rate-limit or sign-in code would read as a false failure.
+A stopped run fails with `AGENT_RUN_BUDGET_EXHAUSTED`. A run whose provider
+or CLI reported success next to a limit error fails with
+`AGENT_FALSE_SUCCESS`, as described below. The final answer is model prose on
+every path and is never read for a limit, so a summary of work on rate-limit
+or sign-in code completes.
 
-## The false-success check
+## Where limit errors are read
 
-A step's output is read for a limit error when the step is an action that
-exited 0: a command run, an MCP call, or a CLI tool call other than file reads,
-listings and edits. File content is not read this way. The run's own check
-command is not read either, because its exit code is already the verdict and a
-passing test log can name a rate-limit test case. A nonzero exit is a failure
-the model already sees, so it is not read. Short output is read whole; long
-output is read at its head and tail.
+A provider or a CLI reports a limit error in its own fields. Those fields are
+the only place the engine reads one:
 
-The check sorts what it finds into three tiers:
+- Text and provider-native tool loops: the provider response's HTTP status,
+  and the `error.type`, `error.code` and `error.status` fields of its body,
+  read by exact value. A 429, 402, 401, 503 or 529 status is a limit error,
+  and so is an error type such as `rate_limit_error`, `insufficient_quota`,
+  `billing_error`, `authentication_error` or `overloaded_error`.
+- Claude CLI sessions: the `error` field of an API error event (`rate_limit`,
+  `billing_error`, `authentication_failed`), the `api_error_status` of the
+  result event, and a `rate_limit_event` whose status is `rejected`.
+- Codex CLI sessions: the status, code and type fields of an `error` or
+  `turn.failed` event, and then its message.
+- Both CLIs: the CLI process's own stderr, read at the end of the session for
+  an anchored limit phrase, and its exit code.
+
+Tool results and the model's answer are never read for a limit error. They
+are content the model produced or read. A step that prints a test fixture
+holding `"status": 429`, or an answer that opens "HTTP 429 responses are now
+retried", describes a limit and does not report one the run hit. The run's
+own check command is not read either, because its exit code is its verdict.
+
+Each limit error is recorded in the budget report with where it was reported
+(`provider`, `cli_api_error`, `cli_result`, `cli_rate_limit_event`,
+`cli_error_event` or `cli_stderr`), its kind, and a token from a fixed
+vocabulary such as `rate_limit_error` or `status 429`, never the text around
+it. Two in a row stop the run, because a loop that retries into a limit keeps
+spending. A provider call or a CLI model turn that reports no limit starts the
+count again, and one error a CLI restates in a second event counts once.
+
+A limit error reported next to a success is a false success, and the run
+fails with `AGENT_FALSE_SUCCESS`: a 2xx provider response whose body is a
+limit error, a CLI result marked success after the session reported a limit
+error, or a CLI that exits 0 with a limit error on its stderr. The card lists
+each counted error with where it came from and its token.
+
+For example, claude 2.1.251, run against an account with no credit, streamed
+an assistant event with `"error": "billing_error"` and
+`"is_api_error_message": true`, then a result event with `"is_error": true`,
+`"subtype": "success"` and `"api_error_status": 400`, and exited 1. The engine
+records the `billing_error` and fails the session as incomplete.
+
+A CLI's stderr and a scheduled hook's output are read as text, by the phrase
+reader in `harness/limit_signal.py`. It sorts what it finds into three tiers:
 
 - structured: an HTTP status line such as `HTTP/2 429`, or a JSON status,
   code, type or reason field such as `"status": 429` or
@@ -90,16 +124,11 @@ The check sorts what it finds into three tiers:
 - mention: the same limits as prose, test names, commit subjects and retry
   logs use them, such as "rate limited" or "HTTP 429".
 
-Every match is recorded in the budget report as a suspected false success,
-with the tool and the matched words, and the step result the model sees is
-left as it was. A match counts toward the breaker only when it is anchored: a
-structured match anywhere, a terminal phrase on the output's last non-empty
-line, or a mention that opens that line or follows an error prefix there
-("Error: 429 Too Many Requests"). Two counted steps in a row stop the run,
-because a loop that retries into a limit keeps spending. Any other step in
-between, a file write included, starts the count again. The card lists the
-counted steps with their matched words, so the owner can tell a real limit
-from a quote.
+Only an anchored match is acted on: a structured match anywhere, a terminal
+phrase on the text's last non-empty line, or a mention that opens that line
+or follows an error prefix there ("Error: 429 Too Many Requests"). Short text
+is read whole; long text is read at its head and tail. Each match carries its
+kind and a token from the fixed vocabulary, never the words it was found in.
 
 ## Scheduled jobs
 
@@ -152,10 +181,13 @@ counts fewer tool actions than the trace shows.
 
 ## Limits of this feature
 
-- The limit-error check is an English phrase heuristic. It misses an error
-  worded another way or written in another language (a German
-  "Ratenlimit überschritten" is not seen), and an anchored match can still be
-  a quote. A structured status code is read in any language.
+- Only the fields listed above are read. A limit a provider or a CLI reports
+  in prose alone, outside those fields, is missed.
+- The phrase reader used on a CLI's stderr and on hook output is an English
+  phrase heuristic. It misses an error worded another way or written in
+  another language (a German "Ratenlimit überschritten" is not seen), and an
+  anchored match can still be a quote. A structured status code is read in any
+  language.
 - The budget covers `agent.run` only. `workflow.run`, the `/api/workflow`
   route and `plan.run` drive the same router loop with no run budget and no
   false-success check; their stages are bounded by each stage's `max_steps`.

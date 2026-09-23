@@ -61,9 +61,10 @@ void main() {
     expect(budgetSpendLine(budget), contains('12,400 of 200,000 tokens'));
     expect(
         falseSuccessLine(budget),
-        '1 step exited 0 while the output named a rate limit error. Recorded, '
-        'not failed: check the work if it looks incomplete.');
-    expect(budget.limitSignalSteps.single.match, 'usage limit reached');
+        '1 success report from the provider or the CLI came with a rate limit '
+        'error.');
+    expect(budget.limitSignalSteps.single.match, 'rate_limit_error');
+    expect(budget.limitSignalSteps.single.tool, 'provider');
     final unverifiable = RunBudgetOutcome.fromJson({
       'status': 'unverifiable',
       'reason': 'BUDGET_UNDERCOUNTS_TRACE',
@@ -82,7 +83,7 @@ void main() {
     ));
     expect(find.textContaining('tool action limit reached (24 of 24)'),
         findsOneWidget);
-    expect(find.textContaining('exited 0 while the output named a rate limit'),
+    expect(find.textContaining('from the provider or the CLI came with a rate limit'),
         findsOneWidget);
     // A tool-action stop does not list limit-signal steps.
     expect(find.byKey(const Key('rowan-limit-signal-step')), findsNothing);
@@ -94,16 +95,16 @@ void main() {
         (_fixture()['run_outcome'] as Map)['budget'] as Map);
     raw['tripped'] = 'limit_signals';
     raw['limit_signal_steps'] = [
-      for (final match in ['Error: 429', 'usage limit reached'])
-        {'tool': 'run', 'signal': 'rate_limit', 'match': match},
+      for (final match in ['status 429', 'rate_limit_error'])
+        {'tool': 'provider', 'signal': 'rate_limit', 'match': match},
     ];
     final budget = RunBudgetOutcome.fromJson(raw);
     expect(budgetHeadline(budget),
-        'Stopped by the run budget: 2 steps in a row exited 0 while their '
-        'output ended on a limit error.');
+        'Stopped by the run budget: 2 limit errors in a row from the provider '
+        'or the CLI.');
     expect(limitSignalLines(budget), [
-      'run: rate limit, matched "Error: 429"',
-      'run: rate limit, matched "usage limit reached"',
+      'provider: rate limit, matched "status 429"',
+      'provider: rate limit, matched "rate_limit_error"',
     ]);
     expect(limitSignalLines(budget, reason: 'AGENT_FALSE_SUCCESS'), hasLength(2));
     raw['limit_signal_steps'] = [

@@ -84,15 +84,16 @@ def test_model_call_past_the_limit_is_refused():
     assert report["used"]["model_calls"] == 1
 
 
-def test_exit_zero_with_a_limit_error_is_recorded_and_the_result_is_untouched():
+def test_tool_output_is_charged_and_never_read_for_a_limit():
+    # A tool's output is content the model produced or read. A limit named
+    # there is not one the run hit, so the step is charged and left alone.
     inner = Recorder(output="Claude AI usage limit reached|1760000000")
     budget = RunBudget(limits(tool_actions=10))
     result = budget.wrap_executor(inner).execute("run", {"cmd": "claude -p hi"})
     assert result.ok is True and result.output == inner.output
     report = budget.report()
-    assert report["false_success_count"] == 1
-    assert report["limit_signal_steps"] == [{"tool": "run", "signal": "rate_limit",
-                                             "match": "usage limit reached", "action": 1}]
+    assert report["used"]["tool_actions"] == 1
+    assert report["false_success_count"] == 0 and report["limit_signal_steps"] == []
 
 
 def test_file_content_that_quotes_a_limit_is_not_a_failed_step():
@@ -102,14 +103,16 @@ def test_file_content_that_quotes_a_limit_is_not_a_failed_step():
     assert result.ok is True and budget.report()["false_success_count"] == 0
 
 
-def test_repeated_limit_errors_trip_the_breaker_at_the_next_step():
-    inner = Recorder(output="Error: 429 Too Many Requests")
-    executor = RunBudget(limits(tool_actions=10)).wrap_executor(inner)
-    executor.execute("run", {"cmd": "retry"})
-    executor.execute("run", {"cmd": "retry"})
+def test_repeated_provider_limit_errors_trip_the_breaker_at_the_next_step():
+    budget = RunBudget(limits(model_calls=5, tool_actions=10))
+    call = budget.guard_transport(
+        lambda *a: (429, {"error": {"type": "rate_limit_error", "message": "slow"}}))
+    call("POST", "u", {}, b"", 5)
+    call("POST", "u", {}, b"", 5)
+    inner = Recorder()
     with pytest.raises(RunBudgetExceeded) as stopped:
-        executor.execute("run", {"cmd": "retry"})
-    assert stopped.value.limit == "limit_signals" and len(inner.calls) == 2
+        budget.wrap_executor(inner).execute("run", {"cmd": "retry"})
+    assert stopped.value.limit == "limit_signals" and inner.calls == []
 
 
 def test_tokens_crossing_the_limit_stop_the_next_step_and_settle():

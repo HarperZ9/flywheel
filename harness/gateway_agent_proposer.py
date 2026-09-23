@@ -33,6 +33,9 @@ class BoundAgentProposer:
         def observe(method, url, headers, body, timeout):
             status, response = transport(method, url, headers, body, timeout)
             self.response_status = status
+            if self.budget is not None:
+                # The provider's own status and error fields, never the reply text.
+                self.budget.observe_provider_response(status, response)
             if not 200 <= status < 300:
                 ledger.append("provider_error", "", {"status": status, "response": response})
                 return status, response  # existing native retry consumes the same transport budget

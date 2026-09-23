@@ -96,17 +96,6 @@ def test_failing_checks_that_quote_a_401_do_not_trip_the_breaker(tmp_path, monke
     assert report["tripped"] is None and report["limit_signal_steps"] == []
 
 
-def test_a_cli_answer_that_describes_limit_handling_is_not_a_limit_error():
-    budget = RunBudget(resolve_limits({"max_steps": 3}))
-    _settle_budget({"final": "Fixed the login flow: the handler now returns 401 "
-                             "Unauthorized for an invalid API key instead of 500."},
-                   budget, cli=True)
-    with pytest.raises(GatewayOperationError) as failed:
-        _settle_budget({"final": "Claude AI usage limit reached|1760000000"}, budget, cli=True)
-    assert failed.value.code == "AGENT_FALSE_SUCCESS"
-    assert budget.report()["limit_signal_steps"][-1]["match"] == "usage limit reached"
-
-
 def _assistant(ident, *tools):
     return {"type": "assistant", "message": {"id": ident, "content": [
         {"type": "tool_use", "id": t, "name": "Read", "input": {"file_path": "a"}}
@@ -126,7 +115,7 @@ def test_claude_cli_cache_tokens_count_against_the_token_limit(tmp_path, monkeyp
                      [_assistant("m1"), _result(usage=usage, total_cost_usd=0.5)], budget)
     assert budget.report()["used"]["usage_tokens"] == 942_012
     with pytest.raises(RunBudgetExceeded) as stopped:
-        _settle_budget(result, budget, cli=True)
+        _settle_budget(result, budget)
     assert stopped.value.limit == "usage_tokens"
 
 
@@ -200,7 +189,7 @@ def test_codex_reported_usage_reaches_the_budget():
     report = budget.report()
     assert report["used"]["usage_tokens"] == 590_000 and report["used"]["model_calls"] == 1
     with pytest.raises(RunBudgetExceeded):
-        _settle_budget(result, budget, cli=True)
+        _settle_budget(result, budget)
 
 
 def test_codex_commands_that_echo_limit_words_do_not_stop_the_session():

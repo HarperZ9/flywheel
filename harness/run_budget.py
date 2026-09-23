@@ -13,21 +13,25 @@ step is refused. When the crossing call was the last one, `settle()` still
 stops the run. Either way the run fails with AGENT_RUN_BUDGET_EXHAUSTED and
 the report names the limit that tripped.
 
-The second job is the success that is not one. A command can exit 0 while its
-output says the account hit a rate limit, ran out of quota or failed to sign
-in. `limit_match` (in limit_signal.py) reads for that signature. Every exit-0
-step whose output quotes a limit phrase is recorded as a suspected false
-success with the matched words, and the step result the model sees is left
-as it was. Only an anchored match counts toward the breaker: a structured
-status or error field, or a limit phrase on the output's last line. Two
-counted steps in a row trip it, because a loop that keeps retrying into a
-limit is the runaway this module exists to stop. The run's own check command
-is not read at all; its exit code is already the verdict.
+The second job is the limit a run keeps hitting, and the success that is
+not one. A provider or a CLI reports a limit in its own fields: an HTTP or
+API status, an error type, an error or result event, the CLI's own stderr.
+The paths read those fields (limit_signal.provider_limit and
+provider_body_limit read them by exact value) and hand each limit to
+`observe_limit`. Two in a row trip the breaker, because a loop that keeps
+retrying into a limit is the runaway this module exists to stop; a clean
+provider call in between starts the count again. A limit reported next to
+a success, such as a 2xx response whose body is an error or a CLI session
+marked success after a limit event, is also a false success, and the run
+fails. Tool output and the model's answer are never read for limits: they
+are content the model produced or read, and a limit named there is not one
+the run hit.
 
-Limits of the check: `limit_match` is an English phrase heuristic. It misses
-an error worded another way or in another language, and an anchored match can
-still be a quote. Usage a provider does not report is not counted, and the
-report says how many calls reported nothing instead of estimating them.
+Limits of the check: only the fields a provider or CLI fills are read, and a
+limit reported only in prose is missed. A CLI's stderr is read with the
+English phrase heuristic in limit_signal. Usage a provider does not report is
+not counted, and the report says how many calls reported nothing instead of
+estimating them.
 """
 from __future__ import annotations
 
@@ -35,7 +39,7 @@ import math
 import time
 
 from .gateway_operation import GatewayOperationError
-from .limit_signal import limit_match
+from .limit_signal import provider_body_limit, provider_limit
 from .run_budget_contract import DOES_NOT_PROVE, SCHEMA
 
 BUDGET_EXHAUSTED = "AGENT_RUN_BUDGET_EXHAUSTED"
@@ -58,15 +62,6 @@ _LISTED_STEPS = 32
 _TOKEN_KEYS = ("prompt_tokens", "input_tokens", "promptTokenCount",
                "completion_tokens", "output_tokens", "candidatesTokenCount",
                "cache_creation_input_tokens", "cache_read_input_tokens")
-
-# Tools whose output is file content or a listing. Scanning it would flag a
-# file that merely mentions a rate limit, so only actions are scanned.
-_CONTENT_TOOLS = frozenset({
-    "read_file", "list_dir", "grep", "glob", "repo_map", "write_file",
-    "edit_file", "apply_patch",
-    "Read", "Glob", "Grep", "LS", "Write", "Edit", "MultiEdit",
-    "NotebookEdit", "TodoWrite"})
-
 
 class RunBudgetExceeded(GatewayOperationError):
     def __init__(self, limit: str) -> None:
@@ -173,30 +168,39 @@ class RunBudget:
         return max(0, self.used["model_calls"] - self.reporting["calls_with_tokens"]
                    - self.reporting["calls_without_tokens"])
 
-    def observe_step(self, tool: str, ok: bool, output) -> str | None:
-        """Read one action's output. Returns the limit it counts, if any.
+    def observe_limit(self, source: str, found) -> None:
+        """Count a limit the provider or the CLI reported in its own fields.
 
-        A nonzero exit is a failure the caller already sees, so only an exit-0
-        step is read. Any match on it is recorded as a suspected false success.
-        An anchored match also counts toward the breaker. Any other step,
-        including a file read or write, ends the run of counted steps, so
-        "in a row" means in a row."""
-        found = None if tool in _CONTENT_TOOLS or not ok else limit_match(output)
-        if found is None:
-            self._consecutive_limit_signals = 0
-            return None
-        step = {"tool": str(tool)[:64], "signal": found.kind, "match": found.match,
-                "action": self.used["tool_actions"], "counted": found.anchored}
-        self.false_success.append(step)
-        if not found.anchored:
-            self._consecutive_limit_signals = 0
-            return None
-        self._consecutive_limit_signals += 1
+        `found` is a limit_signal.LimitMatch. Two in a row arm the breaker,
+        and the next step is refused."""
         self.limit_signal_steps.append(
-            {k: step[k] for k in ("tool", "signal", "match", "action")})
+            {"tool": str(source)[:64], "signal": found.kind, "match": found.match,
+             "action": self.used["tool_actions"]})
+        self._consecutive_limit_signals += 1
         if self._consecutive_limit_signals >= self.limits["limit_signals"]:
             self._arm("limit_signals")
-        return found.kind
+
+    def record_false_success(self, source: str, found) -> None:
+        """Name a success the provider or the CLI reported next to a limit."""
+        self.false_success.append(
+            {"tool": str(source)[:64], "signal": found.kind, "match": found.match,
+             "action": self.used["tool_actions"], "counted": True})
+
+    def observe_clean_call(self) -> None:
+        """A provider call that reported no limit ends a run of limit signals."""
+        self._consecutive_limit_signals = 0
+
+    def observe_provider_response(self, status, body) -> None:
+        """Read one provider response's status and error fields for a limit."""
+        ok = type(status) is int and 200 <= status < 300
+        found = provider_body_limit(body) or (None if ok else provider_limit(status=status))
+        if found is None:
+            if ok:
+                self.observe_clean_call()
+            return
+        self.observe_limit("provider", found)
+        if ok:
+            self.record_false_success("provider", found)
 
     def note_wall_time(self) -> None:
         self.tripped = self.tripped or "wall_time"
@@ -229,6 +233,7 @@ class RunBudget:
                 self.record_usage(None)
                 raise
             ok = type(obj) is dict and 200 <= status < 300
+            self.observe_provider_response(status, obj)
             # A refused or malformed response still counts as a call that
             # reported no usage, so the report never hides it.
             self.record_usage(obj.get("usage", obj.get("usageMetadata")) if ok else None)
@@ -269,23 +274,16 @@ class RunBudget:
 class BudgetedExecutor:
     """A tool executor that charges each action before it runs.
 
-    Its output is read for a limit signal, and the result is returned as the
-    tool produced it. The run's own check command is charged but not read:
-    its exit code is the verdict, and a passing test log that names a rate
-    limit case is still a pass. Everything else passes through to the wrapped
-    executor, so receipt chains, the byte witness and the workspace root keep
-    working."""
+    Its output is never read for a limit: a tool's output is content the model
+    produced or read. Everything else passes through to the wrapped executor,
+    so receipt chains, the byte witness and the workspace root keep working."""
 
     def __init__(self, inner, budget: RunBudget, *, test_cmd=None) -> None:
         self._inner, self._budget, self._test_cmd = inner, budget, test_cmd
 
     def execute(self, name, args, *extra, **kwargs):
         self._budget.charge_tool_action()
-        result = self._inner.execute(name, args, *extra, **kwargs)
-        check = (self._test_cmd is not None and name == "run"
-                 and type(args) is dict and args.get("cmd") == self._test_cmd)
-        self._budget.observe_step(name, result.ok, None if check else result.output)
-        return result
+        return self._inner.execute(name, args, *extra, **kwargs)
 
     def __getattr__(self, attr):
         return getattr(self._inner, attr)

@@ -182,8 +182,9 @@ def test_a_report_that_undercounts_the_trace_is_unverifiable():
 
 
 class _Process:
-    def __init__(self, rows):
+    def __init__(self, rows, stderr="", returncode=0):
         self.rows, self.closed = rows, False
+        self.stderr, self.returncode = stderr, returncode
 
     def resume(self):
         return True
@@ -196,14 +197,15 @@ class _Process:
 
     def wait(self, timeout_s):
         from types import SimpleNamespace
-        return SimpleNamespace(returncode=0, malformed_output=False, timed_out=False,
-                               stdout=self.stdout_snapshot()[0].decode(), elapsed_ms=1)
+        return SimpleNamespace(returncode=self.returncode, malformed_output=False,
+                               timed_out=False, stdout=self.stdout_snapshot()[0].decode(),
+                               stderr=self.stderr, elapsed_ms=1)
 
     def close(self):
         self.closed = True
 
 
-def _cli(tmp_path, monkeypatch, rows, budget):
+def _cli(tmp_path, monkeypatch, rows, budget, **process):
     from harness import gateway_cli_execution as execution
     from harness.gateway_cli_profiles import session_profile
     monkeypatch.setattr(execution, "verify_runtime", lambda r: None)
@@ -214,21 +216,24 @@ def _cli(tmp_path, monkeypatch, rows, budget):
                "budget": {"max_steps": 3},
                "cli_session": session_profile("claude-cli", allow_write=False, allow_exec=False),
                "cli_runtime": {"executable": "fixture.exe", "auth_directory": str(tmp_path)}}
-    proc = _Process(rows)
+    proc = _Process(rows, **process)
     result = execution.run_cli_session("read", binding, tmp_path, time.monotonic() + 5,
                                        lambda e: None, launcher=lambda *a, **k: proc,
                                        budget=budget)
     return result, proc
 
 
-def test_cli_exit_zero_success_that_reports_a_usage_limit_is_failed(tmp_path, monkeypatch):
+def test_cli_exit_zero_success_after_a_limit_event_is_failed(tmp_path, monkeypatch):
     budget = RunBudget(resolve_limits({"max_steps": 3}))
-    rows = [{"type": "result", "is_error": False, "subtype": "success",
-             "result": LIMIT_TEXT, "num_turns": 1, "total_cost_usd": 0.02}]
+    limited = {"type": "assistant", "error": "rate_limit", "is_api_error_message": True,
+               "message": {"id": "m1", "model": "<synthetic>",
+                           "content": [{"type": "text", "text": LIMIT_TEXT}]}}
+    rows = [limited, {"type": "result", "is_error": False, "subtype": "success",
+                      "result": LIMIT_TEXT, "num_turns": 1, "total_cost_usd": 0.02}]
     result, proc = _cli(tmp_path, monkeypatch, rows, budget)
     assert proc.closed and result["final"] == LIMIT_TEXT
     with pytest.raises(GatewayOperationError) as failed:
-        _settle_budget(result, budget, cli=True)
+        _settle_budget(result, budget)
     assert failed.value.code == "AGENT_FALSE_SUCCESS"
     outcome = derive_run_outcome([{"sequence": 0, "kind": "failure", "record_sha256": "0" * 64,
                                    "payload": {"run_budget": budget.report()}}],

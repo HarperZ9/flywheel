@@ -29,7 +29,7 @@ check command, the final answer is claimed. Set a check command in the Rowan
 card to change that; the engine runs it through the exec gate, so it needs exec
 allowed. Each run of the check uses one tool action from the run budget, and a
 test-repair loop can run it more than once (see `docs/RUN-BUDGET.md`). The
-check's exit code is its verdict: its output is not read for limit errors, so
+check's exit code is its verdict: no tool output is read for limit errors, so
 a passing test log that names a rate-limit test case is still a pass.
 
 The card also flags an answer that says it succeeded when no check backs it.

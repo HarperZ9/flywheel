@@ -1,8 +1,9 @@
 """What counts toward the limit-signal breaker, and what the budget reports.
 
-A passing check, a failed step and a mention in ordinary output never trip
-the breaker. Provider usage that arrives in cache fields, on a failed
-request, or never, is still named in the report.
+Only a provider's own status and error fields count. A passing check, a
+failed step and any tool output never do, whatever limit they name. Provider
+usage that arrives in cache fields, on a failed request, or never, is still
+named in the report.
 """
 import pytest
 
@@ -12,6 +13,13 @@ from tests.test_limit_signal import PYTEST_IDS
 from tests.test_run_budget import Recorder, limits
 
 ANCHORED = "Error: 429 Too Many Requests"
+LIMITED = (429, {"type": "error", "error": {"type": "rate_limit_error", "message": "slow"}})
+CLEAN = (200, {"usage": {"total_tokens": 5}})
+
+
+def _provider(budget, *replies):
+    for reply in replies:
+        budget.guard_transport(lambda *a, r=reply: r)("POST", "u", {}, b"", 5)
 
 
 def test_the_runs_own_check_command_is_charged_but_not_read():
@@ -34,8 +42,7 @@ def test_a_passing_verbose_test_log_that_names_limit_cases_is_left_alone():
         assert executor.execute("run", {"cmd": "pytest -vv"}).ok is True
     report = budget.report()
     assert report["status"] == "within_limits" and report["limit_signal_steps"] == []
-    assert report["false_success_count"] == 3
-    assert {s["counted"] for s in report["false_success_steps"]} == {False}
+    assert report["false_success_count"] == 0
 
 
 def test_nonzero_exit_steps_do_not_count_toward_the_breaker():
@@ -48,29 +55,32 @@ def test_nonzero_exit_steps_do_not_count_toward_the_breaker():
     assert report["status"] == "within_limits" and report["false_success_count"] == 0
 
 
-def test_a_file_write_between_two_signals_ends_the_run_of_counted_steps():
-    budget = RunBudget(limits(tool_actions=10))
-    signal = budget.wrap_executor(Recorder(output=ANCHORED))
-    write = budget.wrap_executor(Recorder(output="wrote a.py"))
-    signal.execute("run", {"cmd": "curl"})
-    write.execute("write_file", {"path": "a.py"})
-    signal.execute("run", {"cmd": "curl"})
-    write.execute("write_file", {"path": "a.py"})
+def test_a_clean_provider_call_between_two_limits_ends_the_run_of_counted_steps():
+    budget = RunBudget(limits(model_calls=6, tool_actions=10))
+    _provider(budget, LIMITED, CLEAN, LIMITED)
     report = budget.report()
-    assert report["status"] == "within_limits"
-    assert [s["action"] for s in report["limit_signal_steps"]] == [1, 3]
+    assert report["status"] == "within_limits" and len(report["limit_signal_steps"]) == 2
 
 
-def test_two_counted_steps_in_a_row_trip_and_the_report_names_them():
-    executor = RunBudget(limits(tool_actions=10)).wrap_executor(Recorder(output=ANCHORED))
-    executor.execute("run", {"cmd": "curl"})
-    executor.execute("run", {"cmd": "curl"})
+def test_two_provider_limits_in_a_row_trip_and_the_report_names_them():
+    budget = RunBudget(limits(model_calls=6, tool_actions=10))
+    _provider(budget, LIMITED, LIMITED)
     with pytest.raises(RunBudgetExceeded) as stopped:
-        executor.execute("run", {"cmd": "curl"})
+        budget.charge_tool_action()
     assert stopped.value.limit == "limit_signals"
-    steps = executor._budget.report()["limit_signal_steps"]
+    steps = budget.report()["limit_signal_steps"]
     assert [(s["tool"], s["signal"], s["match"]) for s in steps] == [
-        ("run", "rate_limit", "status 429")] * 2
+        ("provider", "rate_limit", "rate_limit_error")] * 2
+
+
+def test_a_2xx_response_whose_body_is_a_limit_error_is_a_false_success():
+    budget = RunBudget(limits(model_calls=6))
+    _provider(budget, (200, {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED"}}))
+    report = budget.report()
+    assert report["false_success_count"] == 1
+    assert report["false_success_steps"][0]["match"] == "status 429"
+    _provider(budget, (401, {"detail": "please run /login to sign in again"}))
+    assert budget.report()["limit_signal_steps"][-1]["match"] == "status 401"
 
 
 def test_anthropic_cache_tokens_count_toward_the_token_limit():

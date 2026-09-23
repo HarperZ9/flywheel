@@ -47,6 +47,7 @@ def run_cli_session(goal, binding, root, deadline, emit, *, launcher=None,
                     raise GatewayOperationError('AGENT_CLI_PROTOCOL_ERROR')
                 read_events(raw)
                 if outcome is not None:
+                    parser.exited(outcome.returncode, getattr(outcome, 'stderr', ''))
                     if outcome.returncode or outcome.timed_out:
                         raise GatewayOperationError('AGENT_CLI_PROCESS_FAILED')
                     if outcome.malformed_output: raise GatewayOperationError('AGENT_CLI_PROTOCOL_ERROR')

@@ -89,11 +89,18 @@ final class RunOutcome {
   }
 }
 
-/// One step whose exit-0 output ended on a limit error: the tool, the kind
-/// of limit and the match. The match is a token from the engine's fixed
-/// vocabulary (harness/limit_signal.py MATCH_TOKENS), such as
-/// "usage limit reached" or "status 429". It names the pattern that matched
-/// and never carries the output's own words; the gateway refuses a record
+/// One limit error the provider or the CLI reported in its own fields.
+///
+/// The engine reads limits only from that channel: a provider response's
+/// HTTP status and `error.type` / `error.code` / `error.status` fields, a
+/// Claude CLI API error event's `error` field, a result event's
+/// `api_error_status`, a rejected `rate_limit_event`, a Codex error or failed
+/// turn event, and the CLI process's own stderr and exit code. Tool results
+/// and the model's answer are never read. `tool` names where the error was
+/// reported (`provider`, `cli_api_error`, `cli_result`, `cli_stderr`, ...).
+/// `match` is a token from the engine's fixed vocabulary
+/// (harness/limit_signal.py MATCH_TOKENS), such as "rate_limit_error" or
+/// "status 429". It never carries free text; the gateway refuses a record
 /// whose match is not a token.
 final class LimitSignalStep {
   final String tool, signal, match;
