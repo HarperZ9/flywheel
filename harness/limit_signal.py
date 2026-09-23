@@ -36,9 +36,13 @@ language, and an anchored match can still be a quote.
 
 `provider_limit` and `provider_body_limit` are the other half: they read a
 limit from a provider's or a CLI's own fields (a status code, an error type)
-by exact value, and read no free text at all. The agent paths use only those;
-see docs/RUN-BUDGET.md. Standard library only, so the hook runner and the
-scheduler can use this module without importing the agent worker.
+by exact value, and read no free text at all. The text and provider-native
+tool loops use only those. A CLI session reads its fields with them too, and
+reads two texts with limit_match: the CLI's own stderr at the end of the
+session, and the message of a Codex error event. Tool output and the answer
+are read on no agent path; see docs/RUN-BUDGET.md. Standard library only, so
+the hook runner and the scheduler can use this module without importing the
+agent worker.
 """
 from __future__ import annotations
 

@@ -79,13 +79,25 @@ def test_the_completion_doc_names_the_protected_set_and_no_unreachable_check():
         assert name in text, name
 
 
+def test_limit_errors_are_named_by_token_and_the_cli_text_readers_are_listed():
+    for name in ("docs/RELEASE-NEXT.md",
+                 "project-docs/records/ROWAN-CAPABILITY-MAP-2026-09-23.md"):
+        text = " ".join((DOCS.parent / name).read_text(encoding="utf-8").split())
+        assert "matched words" not in text, name
+    from harness import limit_signal
+    doc = " ".join(limit_signal.__doc__.split())
+    assert "The agent paths use only those" not in doc
+    assert "the CLI's own stderr" in doc and "Codex error event" in doc
+
+
 def test_the_docs_this_feature_changed_pass_the_writing_gate():
     import subprocess
     import sys
     repo = DOCS.parent
     changed = ["docs/RUN-BUDGET.md", "docs/VERIFIED-COMPLETION.md", "docs/ROWAN-HANDOFF.md",
                "docs/native-agent-binding-contract.md", "docs/RELEASE-NEXT.md",
-               "project-docs/records/ROWAN-CAPABILITY-MAP-2026-09-23.md"]
+               "project-docs/records/ROWAN-CAPABILITY-MAP-2026-09-23.md",
+               "project-docs/records/2026-07-25-file-gate-burndown.md"]
     gate = subprocess.run([sys.executable, "scripts/check_writing.py", "--gate", *changed],
                           cwd=repo, capture_output=True, text=True, timeout=120)
     assert gate.returncode == 0, gate.stdout + gate.stderr

@@ -3,7 +3,7 @@
 A monitoring or sync job can print healthy status text that names a limit
 ("0 requests were rate limited"). That is a mention, not a failure, and it
 must not stop a working schedule. When a schedule does stop, the owner sees
-the matched words and re-arms it with one call that keeps its definition.
+the matched tokens and re-arms it with one call that keeps its definition.
 """
 import json
 import sys

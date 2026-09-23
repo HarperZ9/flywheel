@@ -13,8 +13,9 @@ These notes collect changes merged since 1.0.3 for the next release.
   the schedule with the Re-arm action in the Schedule view or
   `POST /api/schedule/rearm`. Earlier releases fired every owed occurrence
   whatever the hooks returned. See `docs/RUN-BUDGET.md`.
-- Hook receipts record the kind and the matched words of a limit error found in
-  the output (`limit_signal`, `limit_match`). A hook can opt out of the output
+- Hook receipts record the kind of a limit error found in the output and a
+  token from a fixed vocabulary that names the pattern it matched, never the
+  output's own words (`limit_signal`, `limit_match`). A hook can opt out of the output
   check at registration with `scan_output: false`.
 - Every Rowan `agent.run` carries a run budget, and so does every
   `workflow.run`, `/api/workflow` and `plan.run` run, over all its stages. A
