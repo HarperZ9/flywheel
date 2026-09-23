@@ -38,17 +38,26 @@ range is refused as `INVALID_REQUEST`.
   call was the last one, the run still ends as stopped.
 - Native CLI sessions: the CLI runs its own tools, so each call is counted as it
   streams past and the session is stopped at the first call over the limit. It
-  cannot be refused beforehand. The CLI reports tokens and spend once, for the
-  whole session, in its final result event, so both the token limit and the
-  spend limit mark a CLI session stopped after the fact and cannot interrupt
-  it. The result event is read on an errored session too, and a limit its
-  numbers crossed is named in the record as the stop, while the session's own
-  error stays the run's failure reason. A session stopped
-  before that event names every model call it saw as a call that reported
-  nothing. Claude CLI cache reads and cache writes count as tokens, at the
-  same weight as other input, so a session that re-reads a cached prompt on
-  each turn reaches the token limit sooner; raise `max_usage_tokens` for a
-  long CLI session.
+  cannot be refused beforehand.
+- Claude CLI sessions report tokens twice. Each assistant event carries its
+  message's `usage` (`input_tokens`, `output_tokens`,
+  `cache_creation_input_tokens`, `cache_read_input_tokens`), and the final
+  result event carries the same fields for the whole session, with the spend
+  in `total_cost_usd`. One message can arrive as several events with the same
+  message id, so the engine counts each message's tokens once, by id, as they
+  stream. The result event then adds only the tokens the messages did not
+  already report, so nothing is counted twice. A token limit crossed by a
+  streamed message stops the session at its next tool call or model turn.
+  Spend arrives only in the result event, so the spend limit marks a session
+  stopped after the fact and cannot interrupt it. The result event is read on
+  an errored session too, and a limit its numbers crossed is named in the
+  record as the stop, while the session's own error stays the run's failure
+  reason. A session stopped before that event keeps the tokens its messages
+  reported, and names each model call with no reported usage as a call that
+  reported nothing. Claude CLI cache reads and cache writes count as tokens,
+  at the same weight as other input, so a session that re-reads a cached
+  prompt on each turn reaches the token limit sooner; raise
+  `max_usage_tokens` for a long CLI session.
 - Codex CLI sessions report tokens per turn and neither the model calls inside
   a turn nor a cost. A turn counts as one model call, and a `run_budget` that
   sets `max_model_calls` or `max_cost_micros` for `codex-cli` is refused with
@@ -194,6 +203,12 @@ counts fewer tool actions than the trace shows.
 - The budget covers `agent.run` only. `workflow.run`, the `/api/workflow`
   route and `plan.run` drive the same router loop with no run budget and no
   false-success check; their stages are bounded by each stage's `max_steps`.
+- The Claude CLI stream shape above was checked against claude 2.1.251 on a
+  local session that failed on a billing error: one assistant event and one
+  result event, each with every token counter at 0. A successful multi-turn
+  session was not observed. If the CLI reports a message's usage before the
+  message is complete, the result event's total still adds the difference,
+  but a session stopped before that event can undercount its last message.
 - Usage a provider does not report is not counted. The record says how many
   calls reported nothing instead of estimating them. Most API providers report
   tokens but not cost, so the spend limit applies only where cost is reported.

@@ -37,9 +37,11 @@ def test_the_wall_time_record_is_described_as_it_behaves():
     assert "no budget record is written" in text
 
 
-def test_cli_token_limits_are_said_to_apply_after_the_fact():
+def test_cli_tokens_are_said_to_count_as_they_stream_and_spend_after_the_fact():
     text = _doc("RUN-BUDGET.md")
-    assert "both the token limit and the spend limit mark a CLI session stopped" in text
+    assert "counts each message's tokens once, by id, as they stream" in text
+    assert "the spend limit marks a session stopped after the fact" in text
+    assert "both the token limit and the spend limit mark a CLI session stopped" not in text
 
 
 def test_the_schedule_breaker_trigger_and_re_arm_are_documented():

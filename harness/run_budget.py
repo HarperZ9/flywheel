@@ -35,13 +35,13 @@ estimating them.
 """
 from __future__ import annotations
 
-import math
 import time
 
 from .gateway_operation import GatewayOperationError
 from .limit_signal import provider_body_limit, provider_limit
 from .run_budget_contract import DOES_NOT_PROVE, SCHEMA
 from .run_budget_executor import BudgetedExecutor, harness_check  # noqa: F401
+from .run_budget_usage import reported_cost_micros, reported_tokens
 
 BUDGET_EXHAUSTED = "AGENT_RUN_BUDGET_EXHAUSTED"
 FALSE_SUCCESS = "AGENT_FALSE_SUCCESS"
@@ -57,12 +57,7 @@ DEFAULTS = {"max_tool_actions": 24, "max_usage_tokens": 200_000,
 LIMIT_SIGNAL_TRIP = 2
 #: How many suspected and counted steps a report lists.
 _LISTED_STEPS = 32
-#: Anthropic reports cached input apart from input_tokens, so both are added
-#: when no total is given. Codex `cached_input_tokens` and OpenAI
-#: `prompt_tokens_details.cached_tokens` are subsets of input and are not.
-_TOKEN_KEYS = ("prompt_tokens", "input_tokens", "promptTokenCount",
-               "completion_tokens", "output_tokens", "candidatesTokenCount",
-               "cache_creation_input_tokens", "cache_read_input_tokens")
+
 
 class RunBudgetExceeded(GatewayOperationError):
     def __init__(self, limit: str) -> None:
@@ -95,25 +90,6 @@ def resolve_limits(operation: dict) -> dict:
             "wall_time_ms": int(operation.get("timeout_s", 300)) * 1000}
 
 
-def _reported_tokens(usage) -> int | None:
-    if type(usage) is not dict:
-        return None
-    total = usage.get("total_tokens", usage.get("totalTokenCount"))
-    if type(total) is int and total >= 0:
-        return total
-    parts = [usage.get(k) for k in _TOKEN_KEYS]
-    counted = [p for p in parts if type(p) is int and p >= 0]
-    return sum(counted) if counted else None
-
-
-def _reported_cost_micros(usage, cost_usd) -> int | None:
-    value = cost_usd if cost_usd is not None else (
-        usage.get("cost") if type(usage) is dict else None)
-    if type(value) in (int, float) and math.isfinite(value) and value >= 0:
-        return int(round(value * 1_000_000))
-    return None
-
-
 class RunBudget:
     """Counts one run's spend and refuses the step that would exceed it."""
 
@@ -128,6 +104,8 @@ class RunBudget:
         # Runs of the run's own check command: the harness's steps, not the
         # model's, so they are recorded here and never charged.
         self.harness_checks = 0
+        # Tokens each CLI message reported as it streamed, by message id.
+        self._streamed: dict[str, int] = {}
         self.tripped: str | None = None
         self._armed: str | None = None
         self._consecutive_limit_signals = 0
@@ -158,19 +136,46 @@ class RunBudget:
     def record_usage(self, usage=None, *, cost_usd=None, calls: int = 1) -> None:
         """Add one provider report. `calls` is how many model calls it covers:
         a CLI reports its whole session once, at the end."""
-        tokens = _reported_tokens(usage)
+        tokens = reported_tokens(usage)
         if tokens is None:
             self.reporting["calls_without_tokens"] += calls
         else:
             self.reporting["calls_with_tokens"] += calls
             self.used["usage_tokens"] += tokens
-        cost = _reported_cost_micros(usage, cost_usd)
+        cost = reported_cost_micros(usage, cost_usd)
         if cost is not None:
             self.reporting["calls_with_cost"] += calls
             self.used["cost_micros"] += cost
         for name in ("usage_tokens", "cost_micros"):
             if self.used[name] > self.limits[name]:
                 self._arm(name)
+
+    def record_streamed_usage(self, message_id, usage) -> None:
+        """Count one CLI message's tokens as it streams.
+
+        A message split over several events reports its usage on each, so a
+        later report for the same id replaces the earlier one."""
+        tokens = reported_tokens(usage)
+        if type(message_id) is not str or tokens is None:
+            return
+        previous = self._streamed.get(message_id)
+        self._streamed[message_id] = tokens
+        self.used["usage_tokens"] += tokens - (previous or 0)
+        self.reporting["calls_with_tokens"] += previous is None
+        if self.used["usage_tokens"] > self.limits["usage_tokens"]:
+            self._arm("usage_tokens")
+
+    def record_session_usage(self, usage, *, cost_usd=None) -> None:
+        """A CLI's end-of-session report, over what its messages streamed.
+
+        The session total adds only the tokens its messages did not already
+        report, so nothing is counted twice and nothing streamed is dropped.
+        It covers the model calls no message reported for."""
+        tokens, streamed = reported_tokens(usage), sum(self._streamed.values())
+        calls = self.unaccounted_calls() or (0 if self._streamed else 1)
+        if tokens is not None:
+            usage = {"total_tokens": max(0, tokens - streamed)}
+        self.record_usage(usage, cost_usd=cost_usd, calls=calls)
 
     def unaccounted_calls(self) -> int:
         """Model calls counted so far that no provider report has covered."""

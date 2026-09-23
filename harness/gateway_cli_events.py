@@ -95,6 +95,10 @@ class NativeEvents:
             model = msg.get('model')
             if type(model) is str and 0 < len(model) <= 160: self.model = model
             self._turn(msg)
+            if self.budget is not None:
+                # Each message carries its own usage, counted before its tool
+                # calls, so a session stopped mid-run still reports it.
+                self.budget.record_streamed_usage(msg.get('id'), msg.get('usage'))
             if event.get('error') is None: self._clean()
             else: self._limit('cli_api_error', provider_limit(error_type=event.get('error')))
             for block in msg['content']:
@@ -117,12 +121,11 @@ class NativeEvents:
                         content=block.get('content'), is_error=block.get('is_error', False))
         elif kind == 'result':
             if self.budget is not None:
-                # Tokens and cost arrive once, for the whole session, errored
-                # or not: a CLI token or spend limit can mark a session
-                # stopped, not interrupt it. The report covers every model
-                # call seen so far.
-                self.budget.record_usage(event.get('usage'), cost_usd=event.get('total_cost_usd'),
-                                         calls=max(1, self.budget.unaccounted_calls()))
+                # The session total, errored or not, over what the messages
+                # streamed; spend arrives only here, so a spend limit can
+                # mark a session stopped, not interrupt it.
+                self.budget.record_session_usage(event.get('usage'),
+                                                 cost_usd=event.get('total_cost_usd'))
             self._result_limit(event)
             if event.get('is_error') is not False or event.get('subtype') != 'success':
                 fail('AGENT_CLI_INCOMPLETE')
