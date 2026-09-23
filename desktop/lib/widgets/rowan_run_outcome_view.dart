@@ -137,17 +137,23 @@ final class RowanRunOutcomeView extends StatelessWidget {
       key: const Key('rowan-run-outcome'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(children: [
-          if (completion.recorded) ...[
-            VerdictPill(completion.verdict!,
-                status: completionVerdictStatus(completion.verdict)),
-            const SizedBox(width: FwLayout.s2),
-          ],
-          Expanded(
-              child: Text(completionHeadline(completion),
-                  key: const Key('rowan-completion-headline'),
-                  style: TextStyle(fontSize: 12, color: t.ink))),
-        ]),
+        // A live region, so a screen reader announces how the run ended
+        // when the outcome appears.
+        Semantics(
+          key: const Key('rowan-outcome-headline'),
+          liveRegion: true,
+          child: Row(children: [
+            if (completion.recorded) ...[
+              VerdictPill(completion.verdict!,
+                  status: completionVerdictStatus(completion.verdict)),
+              const SizedBox(width: FwLayout.s2),
+            ],
+            Expanded(
+                child: Text(completionHeadline(completion),
+                    key: const Key('rowan-completion-headline'),
+                    style: TextStyle(fontSize: 12, color: t.ink))),
+          ]),
+        ),
         if (completion.recorded) ...[
           Text(completionSplit(completion),
               style: fwMono(t, size: 11, color: t.inkSoft)),

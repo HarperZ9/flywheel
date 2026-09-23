@@ -81,6 +81,14 @@ final class RowanOperationCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: FwLayout.s2),
+          if (_outcome(rowan) case final projection?)
+            RowanRunOutcomeView(
+                outcome: projection.runOutcome!, reason: projection.reason),
+          if (snapshot != null && snapshot.isTerminal)
+            RowanHandoffButton(
+                key: ValueKey(snapshot.operationRef),
+                baseUrl: rowan.client.baseUrl,
+                operationRef: snapshot.operationRef),
           Wrap(
             spacing: FwLayout.s2,
             runSpacing: FwLayout.s2,
@@ -224,14 +232,6 @@ final class RowanOperationCard extends StatelessWidget {
               style: fwMono(t, size: 10.5, color: t.inkFaint),
               overflow: TextOverflow.ellipsis,
             ),
-            if (_outcome(rowan) case final projection?)
-              RowanRunOutcomeView(
-                  outcome: projection.runOutcome!, reason: projection.reason),
-            if (snapshot.isTerminal)
-              RowanHandoffButton(
-                  key: ValueKey(snapshot.operationRef),
-                  baseUrl: rowan.client.baseUrl,
-                  operationRef: snapshot.operationRef),
             OperationPrivateAttachments(
               client: rowan.client,
               snapshot: snapshot,

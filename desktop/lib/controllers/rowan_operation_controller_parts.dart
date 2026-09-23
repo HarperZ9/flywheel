@@ -6,12 +6,33 @@ extension RowanOperationControllerCheck on RowanOperationController {
   bool get _checkCommandApplies => _allowExec && !_executionMode.isNativeCli;
 
   /// The command the engine runs when the model says it is done. Its pass
-  /// is what lets the final answer read as verified instead of claimed.
+  /// is what lets the final answer read as verified instead of claimed. It
+  /// is not part of an MCP admission, so typing it keeps the admission.
   void setCheckCommand(String value) {
     final next = value.trim().isEmpty ? null : value.trim();
     if (_checkCommand == next) return;
     _checkCommand = next;
-    _bump();
+    _bump(invalidateMcpAdmission: false);
+  }
+
+  /// The owner's per-run limits. The engine fills unset ones with defaults.
+  ///
+  /// A value out of range is held as invalid, not dropped: the last valid
+  /// budget stays, and start() refuses until the field is fixed. The budget
+  /// is not part of an MCP admission, so changing it keeps the admission.
+  void setRunBudget(RowanRunBudget value) {
+    _invalidRunBudget = value.invalidField;
+    if (_invalidRunBudget != null) {
+      _error = 'INVALID_RUN_BUDGET';
+      _changed();
+      return;
+    }
+    if (_runBudget == value) {
+      if (_error == 'INVALID_RUN_BUDGET') _bump(invalidateMcpAdmission: false);
+      return;
+    }
+    _runBudget = value;
+    _bump(invalidateMcpAdmission: false);
   }
 }
 
@@ -36,6 +57,18 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
         const GatewayOperationFailure(
           'OPERATION_ACTIVE',
           'An operation is already being prepared or observed',
+        ),
+      );
+    }
+    if (_invalidRunBudget != null) {
+      // The field shows a value the engine would refuse. Sending the last
+      // valid budget instead would run under limits the owner did not set.
+      _error = 'INVALID_RUN_BUDGET';
+      _changed();
+      return GatewayAuthorizationOutcome.failure(
+        const GatewayOperationFailure(
+          'INVALID_RUN_BUDGET',
+          'A run budget field holds a value outside its range',
         ),
       );
     }

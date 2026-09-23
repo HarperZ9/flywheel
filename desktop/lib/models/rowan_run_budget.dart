@@ -73,10 +73,41 @@ final class RowanRunBudget {
 }
 
 /// Dollars typed by the owner to whole micro-dollars, or null when unset.
+/// Thousands separators are accepted; anything else unparsable is -1, which
+/// no range admits.
 int? costMicrosFromDollars(String text) {
-  final trimmed = text.trim().replaceFirst(r'$', '');
+  final trimmed = text.trim().replaceFirst(r'$', '').replaceAll(',', '');
   if (trimmed.isEmpty) return null;
   final dollars = double.tryParse(trimmed);
   if (dollars == null || dollars.isNaN || dollars.isInfinite) return -1;
   return (dollars * 1000000).round();
+}
+
+/// A whole number typed by the owner, or null when unset. Thousands
+/// separators are accepted, so "200,000" reads as the card prints it.
+int? wholeNumberFromText(String text) {
+  final trimmed = text.trim().replaceAll(RegExp(r'[,_ ]'), '');
+  return trimmed.isEmpty ? null : int.tryParse(trimmed) ?? -1;
+}
+
+/// Micro-dollars as the owner typed them: at least two decimals and no
+/// rounding, so a stored limit of 0.015 is shown as 0.015, not 0.01.
+String dollarsFromMicros(int? micros) {
+  if (micros == null) return '';
+  var text = (micros / 1000000).toStringAsFixed(6);
+  while (text.endsWith('0') && text.length - text.indexOf('.') > 3) {
+    text = text.substring(0, text.length - 1);
+  }
+  return text;
+}
+
+/// A whole number with thousands separators, as the card prints limits.
+String groupedDigits(int value) {
+  final digits = '${value.abs()}';
+  final out = StringBuffer(value < 0 ? '-' : '');
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) out.write(',');
+    out.write(digits[i]);
+  }
+  return out.toString();
 }

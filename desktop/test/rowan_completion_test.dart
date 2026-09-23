@@ -74,7 +74,7 @@ void main() {
   test('done is said only when every deliverable passed a check', () {
     final claimed = _completion([_fileVerified, _answerClaimed]);
     expect(completionHeadline(claimed),
-        "Finished, not verified: 1 of 2 deliverables rest on the model's word.");
+        'Finished, not verified: no check covered 1 of 2 deliverables.');
     expect(completionHeadline(claimed), isNot(contains('Done')));
     expect(claimed.done, isFalse);
     final verified = _completion([_fileVerified, _answerVerified]);

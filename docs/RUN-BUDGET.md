@@ -11,7 +11,11 @@ failed fires.
 ## Limits
 
 The owner sets overrides per run in the card's run budget row, or in the
-operation's optional `run_budget` object. Unset limits take the default.
+operation's optional `run_budget` object. Unset limits take the default. The
+card applies each field as it is typed, with no need to press Enter, and shows
+the default in an empty field. A value outside its range is named under the
+field, and the card refuses to start the run until it is fixed, so a run never
+goes out under limits the field does not show.
 
 | Limit | Operation field | Default | Accepted range |
 | --- | --- | --- | --- |

@@ -57,9 +57,20 @@ final class _RowanHandoffButtonState extends State<RowanHandoffButton> {
           icon: const Icon(Icons.ios_share_outlined, size: 14),
           label: Text(_busy ? 'Reading handoff brief' : 'Copy handoff brief'),
         ),
+        // Live regions: a screen reader hears that the brief is on the
+        // clipboard, or why it is not, without moving focus.
         if (_note != null)
-          Text(_note!, style: fwMono(t, size: 10.5, color: t.inkFaint)),
-        if (_error != null) HonestNull(_error!),
+          Semantics(
+            key: const Key('rowan-handoff-note'),
+            liveRegion: true,
+            child: Text(_note!, style: fwMono(t, size: 10.5, color: t.inkFaint)),
+          ),
+        if (_error != null)
+          Semantics(
+            key: const Key('rowan-handoff-error'),
+            liveRegion: true,
+            child: HonestNull(_error!),
+          ),
       ],
     );
   }

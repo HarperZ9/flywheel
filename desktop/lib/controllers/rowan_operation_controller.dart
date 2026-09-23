@@ -52,6 +52,9 @@ final class RowanOperationController extends ChangeNotifier {
   int _maxTokens = 1024, _timeoutSeconds = 300;
   int? _maxStepsOverride;
   RowanRunBudget _runBudget = const RowanRunBudget();
+  // The run-budget field that holds a value the engine would refuse. While
+  // it is set, start() refuses rather than send the last valid budget.
+  String? _invalidRunBudget;
   String? _checkCommand;
   bool _allowWrite = false, _allowExec = false, _authorizing = false;
   bool _recovering = false;
@@ -77,6 +80,7 @@ final class RowanOperationController extends ChangeNotifier {
   int get maxTokens => _maxTokens;
   int get timeoutSeconds => _timeoutSeconds;
   RowanRunBudget get runBudget => _runBudget;
+  String? get invalidRunBudgetField => _invalidRunBudget;
   String? get checkCommand => _checkCommand;
   bool get allowWrite => _allowWrite;
   bool get allowExec => _allowExec;
@@ -285,18 +289,6 @@ final class RowanOperationController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// The owner's per-run limits. The engine fills unset ones with defaults.
-  void setRunBudget(RowanRunBudget value) {
-    if (value.invalidField != null) {
-      _error = 'INVALID_RUN_BUDGET';
-      notifyListeners();
-      return;
-    }
-    if (_runBudget == value) return;
-    _runBudget = value;
-    _bump();
-  }
-
   void setMaxStepsOverride(int? value) {
     if (value != null && (value < 1 || value > 12)) {
       _error = 'INVALID_MAX_STEPS';
@@ -352,7 +344,7 @@ final class RowanOperationController extends ChangeNotifier {
   void _bump({bool invalidateMcpAdmission = true}) {
     _configGeneration++;
     if (invalidateMcpAdmission) _invalidateMcpAdmission();
-    _error = null;
+    _error = _invalidRunBudget == null ? null : 'INVALID_RUN_BUDGET';
     notifyListeners();
   }
 

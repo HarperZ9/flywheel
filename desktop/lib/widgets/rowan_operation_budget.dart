@@ -65,8 +65,10 @@ final class RowanBudgetRow extends StatelessWidget {
 
 /// The run budget: tool actions, total tokens and spend for the whole run.
 ///
-/// An empty field means the engine default, shown as the hint. The engine
-/// stops the run when a limit is reached and says which one.
+/// An empty field means the engine default, shown as the hint at rest. Each
+/// keystroke is applied, so a typed limit reaches the run without Enter. A
+/// value out of range is named under its field and blocks the run until it
+/// is fixed. The engine stops the run when a limit is reached and says which.
 final class RowanRunBudgetRow extends StatefulWidget {
   const RowanRunBudgetRow({super.key, required this.rowan});
 
@@ -85,17 +87,10 @@ final class _RowanRunBudgetRowState extends State<RowanRunBudgetRow> {
     final budget = widget.rowan.runBudget;
     _actions = TextEditingController(text: _text(budget.maxToolActions));
     _tokens = TextEditingController(text: _text(budget.maxUsageTokens));
-    final cost = budget.maxCostMicros;
-    _spend = TextEditingController(
-        text: cost == null ? '' : (cost / 1000000).toStringAsFixed(2));
+    _spend = TextEditingController(text: dollarsFromMicros(budget.maxCostMicros));
   }
 
   static String _text(int? value) => value == null ? '' : '$value';
-
-  static int? _whole(String text) {
-    final trimmed = text.trim();
-    return trimmed.isEmpty ? null : int.tryParse(trimmed) ?? -1;
-  }
 
   @override
   void dispose() {
@@ -105,18 +100,27 @@ final class _RowanRunBudgetRowState extends State<RowanRunBudgetRow> {
     super.dispose();
   }
 
-  void _submit() {
-    final rowan = widget.rowan;
-    rowan.setRunBudget(rowan.runBudget
-        .withToolActions(_whole(_actions.text))
-        .withUsageTokens(_whole(_tokens.text))
-        .withCostMicros(costMicrosFromDollars(_spend.text)));
+  RowanRunBudget _draft() => RowanRunBudget(
+      maxToolActions: wholeNumberFromText(_actions.text),
+      maxUsageTokens: wholeNumberFromText(_tokens.text),
+      maxCostMicros: costMicrosFromDollars(_spend.text));
+
+  void _apply() {
+    widget.rowan.setRunBudget(_draft());
+    setState(() {});
   }
+
+  static String? _outside(int? value, (int, int) range, String name,
+          String Function(int) show) =>
+      value != null && (value < range.$1 || value > range.$2)
+          ? '$name: ${show(range.$1)} to ${show(range.$2)}'
+          : null;
 
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
     final enabled = !widget.rowan.active;
+    final draft = _draft();
     return Wrap(
       spacing: FwLayout.s2,
       runSpacing: FwLayout.s1,
@@ -124,19 +128,25 @@ final class _RowanRunBudgetRowState extends State<RowanRunBudgetRow> {
       children: [
         Text('run budget', style: fwMono(t, size: 10.5, color: t.inkFaint)),
         _field(t, 'assistant-rowan-max-tool-actions', _actions, enabled,
-            'tool actions', '${RowanRunBudget.defaultToolActions}'),
+            'tool actions', '${RowanRunBudget.defaultToolActions}',
+            _outside(draft.maxToolActions, RowanRunBudget.toolActionsRange,
+                'tool actions', groupedDigits)),
         _field(t, 'assistant-rowan-max-usage-tokens', _tokens, enabled,
-            'run tokens', '${RowanRunBudget.defaultUsageTokens}'),
+            'run tokens', groupedDigits(RowanRunBudget.defaultUsageTokens),
+            _outside(draft.maxUsageTokens, RowanRunBudget.usageTokensRange,
+                'run tokens', groupedDigits)),
         _field(t, 'assistant-rowan-max-cost', _spend, enabled, r'spend $',
-            (RowanRunBudget.defaultCostMicros / 1000000).toStringAsFixed(2)),
+            dollarsFromMicros(RowanRunBudget.defaultCostMicros),
+            _outside(draft.maxCostMicros, RowanRunBudget.costMicrosRange,
+                'spend', (m) => '\$${dollarsFromMicros(m)}')),
       ],
     );
   }
 
   Widget _field(FwTokens t, String key, TextEditingController controller,
-          bool enabled, String label, String hint) =>
+          bool enabled, String label, String hint, String? error) =>
       SizedBox(
-        width: 104,
+        width: 120,
         child: TextField(
           key: Key(key),
           controller: controller,
@@ -144,8 +154,15 @@ final class _RowanRunBudgetRowState extends State<RowanRunBudgetRow> {
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           style: fwMono(t, size: 11.5),
           decoration: InputDecoration(
-              isDense: true, labelText: label, hintText: hint),
-          onSubmitted: (_) => _submit(),
+              isDense: true,
+              labelText: label,
+              hintText: hint,
+              // The default shows at rest, not only after a click.
+              floatingLabelBehavior: FloatingLabelBehavior.always,
+              errorText: error,
+              errorMaxLines: 2),
+          onChanged: (_) => _apply(),
+          onSubmitted: (_) => _apply(),
         ),
       );
 }
@@ -185,13 +202,33 @@ final class _RowanCheckCommandFieldState extends State<RowanCheckCommandField> {
       decoration: InputDecoration(
         isDense: true,
         labelText: 'check command',
+        floatingLabelBehavior: FloatingLabelBehavior.always,
         hintText: usable
             ? 'runs when Rowan says it is done, e.g. python -m pytest -q'
-            : 'allow exec to run a check; without one the answer stays claimed',
+            : null,
+        // Helper text shows on a disabled field; a hint never does.
+        helperText: usable ? null : checkCommandHelp(rowan, _command.text),
+        helperMaxLines: 2,
       ),
-      onChanged: rowan.setCheckCommand,
+      onChanged: (value) {
+        rowan.setCheckCommand(value);
+        setState(() {});
+      },
     );
   }
+}
+
+/// Why the check command field is off, and whether a typed command runs.
+String checkCommandHelp(RowanOperationController rowan, String typed) {
+  final cli = rowan.executionMode.isNativeCli;
+  if (typed.trim().isNotEmpty) {
+    return cli
+        ? 'native CLI sessions run no check: this command will not run'
+        : 'exec is off: this check will not run';
+  }
+  return cli
+      ? 'native CLI sessions run no check; the answer stays claimed'
+      : 'allow exec to run a check; without one the answer stays claimed';
 }
 
 final class RowanNumberField extends StatelessWidget {

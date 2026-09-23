@@ -29,11 +29,22 @@ String completionHeadline(RunCompletionOutcome completion) {
   final failed = completion.counts['failed'] ?? 0;
   final claimed = completion.counts['claimed'] ?? 0;
   if (completion.done) return 'Done. Every deliverable passed a check.';
+  // The answer item is always listed, so a run_state failure is always seen.
+  final stopped = completion.items
+      .any((i) => i.status == 'failed' && i.check == 'run_state');
+  final checked = failed - (stopped ? 1 : 0);
+  if (stopped && checked == 0) {
+    return 'Not done: the run stopped before it finished.';
+  }
+  if (stopped) {
+    return 'Not done: the run stopped before it finished, and $checked of '
+        '$total ${_deliverables(total)} failed a check.';
+  }
   if (failed > 0) {
     return 'Not done: $failed of $total ${_deliverables(total)} failed a check.';
   }
-  return 'Finished, not verified: $claimed of $total ${_deliverables(total)} '
-      "rest on the model's word.";
+  return 'Finished, not verified: no check covered $claimed of $total '
+      '${_deliverables(total)}.';
 }
 
 /// The split the summary leads with.
