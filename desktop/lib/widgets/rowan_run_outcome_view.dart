@@ -41,6 +41,8 @@ String budgetHeadline(RunBudgetOutcome budget, {String? reason}) {
       return 'Budget record unverifiable (${budget.reason}). '
           'Treat the spend below as unknown.';
     case 'unrecorded':
+      // The gateway writes a wall-time record for a run the deadline stopped
+      // mid-step; this line is for a trace that could not take one.
       return reason == 'OPERATION_DEADLINE_EXCEEDED'
           ? 'Stopped: time limit reached before a budget record was written.'
           : 'No budget record in this trace.';

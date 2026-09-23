@@ -62,11 +62,17 @@ range is refused as `INVALID_REQUEST`.
   a turn nor a cost. A turn counts as one model call, and a `run_budget` that
   sets `max_model_calls` or `max_cost_micros` for `codex-cli` is refused with
   `AGENT_CLI_BUDGET_UNSUPPORTED`.
-- Wall time stays with the aggregate deadline over the worker process tree. The
-  budget records a wall-time stop only when the worker sees the deadline
-  itself. When the process tree is stopped in the middle of a step, no budget
-  record is written, and the card says the time limit was reached before one
-  was.
+- Wall time stays with the aggregate deadline over the worker process tree.
+  When the worker sees the deadline itself, it records the wall-time stop with
+  its own counts. When the process tree is stopped in the middle of a step,
+  the worker writes nothing, so the gateway writes the record as it closes the
+  run (`recorded_by: gateway_deadline`): a wall-time stop, with the limits and
+  with the model calls, tool actions, check runs, tokens and spend the trace
+  records. What only the worker held, such as a Claude CLI message's streamed
+  tokens, is not in the trace and is not counted, and a model call with no
+  recorded usage is named as one that reported nothing. The card says the time
+  limit was reached before a budget record was written only when the gateway
+  could not write one.
 - The run's check command is the harness's step, not the model's, so a run
   of it does not use a tool action. Each run is recorded in the budget record
   as `harness_checks` and in the trace as a tool call marked `gate: test`, and

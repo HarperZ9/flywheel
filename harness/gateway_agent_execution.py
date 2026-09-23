@@ -181,7 +181,23 @@ def trace_context(authorized, state_root: Path) -> dict:
 
 
 def recovered_projection(state_root, owner, journey, operation, state, reason=None):
+    """The projection of a run the worker did not close itself.
+
+    When the deadline stopped the process tree mid-step, the worker wrote no
+    budget record, so the gateway writes the wall-time stop the trace supports
+    before it projects (run_budget_deadline)."""
     trace = AgentTrace(state_root, owner, journey, operation)
-    if not trace.read():
+    records = trace.read()
+    if not records:
         return None
+    if state == "failed" and reason == "OPERATION_DEADLINE_EXCEEDED":
+        from .run_budget_deadline import record_deadline_stop
+        try:
+            record_deadline_stop(trace, records)
+        except (TraceError, KeyError, StopIteration, ValueError):
+            # The trace refused the record or has no request to read limits
+            # from. The run still closes, and the card says the time limit was
+            # reached before a budget record was written.
+            trace = AgentTrace(state_root, owner, journey, operation)
+            trace.read()
     return trace.projection(state, reason=reason)

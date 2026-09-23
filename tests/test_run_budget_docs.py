@@ -34,7 +34,8 @@ def test_the_check_command_is_said_to_be_a_harness_check_not_a_tool_action():
 def test_the_wall_time_record_is_described_as_it_behaves():
     text = _doc("RUN-BUDGET.md")
     assert "Wall time stays with the existing aggregate deadline" not in text
-    assert "no budget record is written" in text
+    assert "no budget record is written" not in text
+    assert "`recorded_by: gateway_deadline`" in text
 
 
 def test_cli_tokens_are_said_to_count_as_they_stream_and_spend_after_the_fact():

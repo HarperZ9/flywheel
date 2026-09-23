@@ -57,7 +57,7 @@ def _budget_record(records: list) -> tuple[int, dict] | None:
     return None
 
 
-def _trace_counts(records: list) -> dict:
+def trace_counts(records: list) -> dict:
     """What the trace itself shows was attempted, independent of the report.
 
     A tool call the harness marked as its own check run (`gate: test`) is a
@@ -134,7 +134,7 @@ def _budget(records: list, terminal_state: str) -> dict:
         return {"status": "unrecorded"}
     sequence, report = found
     try:
-        block = _check_report(report, _trace_counts(records), terminal_state)
+        block = _check_report(report, trace_counts(records), terminal_state)
     except _Unverifiable as exc:
         return {"status": "unverifiable", "reason": exc.reason,
                 "record_sequence": sequence}
