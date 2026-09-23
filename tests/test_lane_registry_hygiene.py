@@ -18,7 +18,8 @@ from harness.lanes_registry import LANES
 # not carry a disabled reason, because resolve_lane_runtime skips the
 # installed-version observation entirely while that field is set: a stale reason
 # hides a working install rather than reporting drift against it.
-PUBLISHED = ("relay", "mneme", "plexus", "canon", "chorus", "accountable-surface")
+PUBLISHED = ("relay", "mneme", "plexus", "canon", "chorus", "accountable-surface",
+             "articulate")
 
 
 def test_published_lanes_are_not_marked_package_disabled():

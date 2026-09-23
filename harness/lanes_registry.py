@@ -70,24 +70,19 @@ LANES: dict[str, Lane] = {
         "re-derivable discourse digest (themes, contested aspects, dissent, receipt)",
         "synthesis", source_repo="public/chorus", py_module="chorus.cli"),
     "articulate": Lane(
-        # Held to the source profile on purpose. articulate-writing 0.3.0 is the
-        # published release, and its MCP entry imports fastmcp from the [mcp]
-        # extra, so `pip install articulate-writing` produces a lane that
-        # installs cleanly and then raises ModuleNotFoundError the moment the
-        # gateway launches it. Probed directly against the published wheel in a
-        # clean venv, which is why this lane is not simply bumped to 0.3.0 with
-        # the others. The version below tracks the source checkout, which is the
-        # admitted profile while the package profile is disabled. articulate
-        # 0.4.0 adds a stdlib-only server (articulate-mcp,
-        # articulate.local_mcp); once that is on the index this lane points at
-        # it and the disabled reason comes off.
-        "articulate", "articulate-writing", "python", ("-m", "articulate.mcp_server"),
+        # articulate-mcp, not `python -m articulate.mcp_server`. The FastMCP
+        # entry imports fastmcp from the [mcp] extra, so a plain
+        # `pip install articulate-writing` left it raising ModuleNotFoundError
+        # at launch through 0.3.0. The extra cannot go in install_name either:
+        # installed_version() passes that string to importlib.metadata.version,
+        # which does not accept an extras marker. 0.4.0 adds
+        # articulate.local_mcp, stdlib-only and serving the same tools plus
+        # status and doctor, so the lane installs and launches from one clean
+        # name. Same shape as accountable-surface below, same reason.
+        "articulate", "articulate-writing", "articulate-mcp", (),
         "pip", "0.4.0",
-        "writing-quality + AI-tell detector and editor with content-free audit receipts (the MCP surface needs the [mcp] extra)",
-        "authoring", source_repo="articulate", py_module="articulate.mcp_server",
-        package_disabled_reason=("The published articulate-writing MCP entry needs the "
-                                 "[mcp] extra and fails at launch without it. Use an "
-                                 "articulate source checkout until 0.4.0 is on PyPI.")),
+        "writing-quality + AI-tell detector and editor with content-free audit receipts (stdlib-only MCP server; the FastMCP surface stays under the [mcp] extra)",
+        "authoring", source_repo="articulate", py_module="articulate.local_mcp"),
     "index": Lane(
         "index", "index-graph", "index", ("mcp",), "pip", "2.13.0",
         "workspace map + symbol graph + verified wiki (the catalog lane)",
