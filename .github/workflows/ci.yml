@@ -80,6 +80,7 @@ jobs:
           tests/test_gateway_auth.py
           tests/test_gate_end_to_end.py
           tests/test_file_gate.py
+          tests/test_check_path_length.py
           tests/test_accept_path_purity.py
           tests/test_no_aggregate_over_the_person.py
           tests/test_criterion_spec.py
@@ -247,6 +248,20 @@ jobs:
         with:
           python-version: "3.13"
       - run: python scripts/check_file_gate.py
+
+  path_length:
+    # A tracked path of L characters needs a clone directory shorter than
+    # about 258 - L on a Windows host without core.longpaths. Paths up to 206
+    # characters once made a clone under an ordinary profile path fail with
+    # "Filename too long". No path is grandfathered.
+    name: no tracked path over 180 characters
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.13"
+      - run: python scripts/check_path_length.py
 
   writing:
     name: hard writing rules gate our prose; the score stays report-only

@@ -13,6 +13,7 @@ Runs a deterministic, integration-focused benchmark pass that exercises:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -21,8 +22,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
-
-import hashlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -148,6 +147,7 @@ class RouteStubProposer:
 
 
 def run_spin_benchmark(root: Path, turns: int) -> dict[str, Any]:
+    root = Path(root).resolve()  # the chdir below must not re-root a relative path
     tasks, routes = build_bench_tasks(root / "spin")
     proposer = RouteStubProposer(routes)
     catalog = [
