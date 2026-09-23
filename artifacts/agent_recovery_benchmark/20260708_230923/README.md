@@ -30,11 +30,12 @@ What follows from those facts, inferred and not reproduced:
   the spin step then wrote its candidates and junit files through the relative
   root, under `<root>/spin/<root>/spin/fw_*`. That one change of directory
   accounts for 8 of the 38 files.
-- The other 30 files (`externalization/`, `loop/`, the input JSON files and
-  both reports) were written while the working directory was
-  `<root>/spin/<root>`. What moved it there is unknown. A return to the
-  relative root made from inside `<root>/spin` would land there and would
-  account for all 38 paths, but no copy of that code survives to confirm it.
+- The other 30 files (`externalization/`, `loop/`, the forum case file, the
+  two M7 scorecards and both reports) were written while the working
+  directory was `<root>/spin/<root>`. What moved it there is unknown. A
+  return to the relative root made from inside `<root>/spin` would land there
+  and would account for all 38 paths, but no copy of that code survives to
+  confirm it.
 
 The fix in `scripts/run_flywheel_integration_benchmark.py` resolves the root
 before the spin step changes directory.
