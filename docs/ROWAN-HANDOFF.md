@@ -47,18 +47,25 @@ leaves the engine:
 
 - Credentials found by pattern are replaced with `[credential omitted]`. The
   patterns cover:
-  - URL user info, and the secret in `curl -u name:secret` or `--user`.
+  - URL user info, and the secret in `curl -u name:secret`, `--user` and
+    `smbclient -U name%secret`.
+  - `Authorization` headers with the Basic, Token, Negotiate or NTLM scheme,
+    sent with `curl -H` or through git's `http.extraheader`.
   - Password flags such as `--password`, `--http-password`, `--passphrase`,
     `-storepass` and OpenSSL's `-passin`.
   - The password flag of `mysql -p`, `sshpass -p`, `docker login -p` and the
     other registry logins, `redis-cli -a`, `mongosh -p`, `sqlcmd -P` and the
     LDAP tools' `-w`. Each is read only on a line that runs its command.
-  - Assignments such as `API_KEY=...`, `PGPASSWORD=...` and `DB_PASS=...`.
+  - The last argument of `htpasswd -b`, and a secret a line feeds to
+    `--password-stdin` through a here-string (`<<<`) or `echo`. A variable
+    such as `$TOKEN` is kept.
+  - Assignments such as `API_KEY=...`, `PGPASSWORD=...`, `DB_PASS=...` and
+    `REDISCLI_AUTH=...`.
   - Bearer tokens, and the Docker, GitLab, GitHub, npm, Hugging Face and PyPI
     token shapes.
   - A keyword followed by a value that looks like a credential, with up to two
-    linking words between them: `password hunter2pass` or
-    `the password is Hunter2pass!`.
+    linking words between them: `password hunter2pass`,
+    `the password is Hunter2pass!` or `the password for admin is Hunter2pass!`.
 - A line that still matches a credential pattern after that is withheld whole.
 - The workspace root is written as `<workspace>`, and any other host path as
   `[host path omitted]`. These count as host paths: drive paths such as

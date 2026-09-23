@@ -26,6 +26,20 @@ SHAPES = [
     ("export MYSQL_PWD='Or4nge Jq7x'", "Or4nge Jq7x"),
     ("wget --http-password=Sup3rSecret https://files.example.test", "Sup3rSecret"),
     ("keytool -list -storepass Ch4ngeItNow", "Ch4ngeItNow"),
+    ("curl -H 'Authorization: Basic YWRtaW46SHVudGVyMnBhc3Mh' https://api.example.test",
+     "YWRtaW46SHVudGVyMnBhc3Mh"),
+    ("git -c http.extraheader='AUTHORIZATION: basic YWRtaW46SHVudGVyMnBhc3Mh' clone r",
+     "YWRtaW46SHVudGVyMnBhc3Mh"),
+    ("REDISCLI_AUTH=Hunter2pass! redis-cli ping", "Hunter2pass!"),
+    ("smbclient //srv/share -U admin%Hunter2pass!", "Hunter2pass!"),
+    (r"smbclient //srv/share -U 'CORP\admin%Hunter2 Zq9x'", "Hunter2 Zq9x"),
+    ("htpasswd -b .htpasswd admin Hunter2pass!", "Hunter2pass!"),
+    ("htpasswd -nbB admin 'Hunter2 Zq9x'", "Hunter2 Zq9x"),
+    ("the password for admin is Hunter2pass! now", "Hunter2pass!"),
+    ("The password of the admin account is Hunter2pass! today", "Hunter2pass!"),
+    ("docker login -u me --password-stdin <<< Hunter2pass!", "Hunter2pass!"),
+    ("echo Hunter2pass! | docker login -u me --password-stdin registry.example.test",
+     "Hunter2pass!"),
 ]
 
 
@@ -86,6 +100,10 @@ KEPT = [
     "psql --no-password -h db app",
     "proxy_bypass=true and tests_pass=12",
     "date -u +%H:%M",
+    "htpasswd -v .htpasswd admin; echo hello | grep h",
+    "echo $REGISTRY_TOKEN | docker login -u me --password-stdin registry.example.test",
+    "ENABLE_AUTH=true and USE_AUTH=1",
+    "The password for admin is required.",
     r"print('a\\nb') matches \\d+ digits",
 ]
 
@@ -127,7 +145,9 @@ def test_the_cut_counts_what_it_left_in_the_trace():
 
 @pytest.mark.parametrize("unit", ["mysql ", "a-", "a.", "x://a:", "docker ", "-u a:",
                                   "redis-cli -a ", "the token is ", "PGPASSWORD",
-                                  "password ", "\\\\a", "a_b_", "Bearer abcdefgh", "C:/x/"])
+                                  "password ", "\\\\a", "a_b_", "Bearer abcdefgh", "C:/x/",
+                                  "htpasswd -b ", "-U a%", "Authorization: Basic ",
+                                  "the password for a is ", "echo --password-stdin <<< "])
 def test_redaction_time_grows_with_the_text_not_its_square(unit):
     text = unit * (60_000 // len(unit))
     start = time.perf_counter()

@@ -31,21 +31,40 @@ _LONG_FLAG = re.compile(r"(?i)(?<![\w-])(--(?!no-)(?:[a-z]+-){0,3}pass(?:word|wd
 _WORD_FLAG = re.compile(r"(?<![\w-])(-(?:store|key|srcstore|srckey|deststore|destkey)?"
                         r"pass(?:word|in|out)?)([ \t]+)(?!-)" + _VALUE)
 # curl -u name:secret, --user, -U, --proxy-user: the part after the colon.
-_USER_FLAG = re.compile(r"(?<![\w-])(-[uU]|--(?:proxy-)?user)(=|[ \t]*)(['\"])?([\w.@+-]+):"
-                        + _FRESH + r"((?(3)[^'\"\n]+|[^\s'\"]+))")
-# DB_PASS=, MYSQL_PWD=, PGPASSWORD=: a variable named for a password, set.
+# smbclient and the other Samba tools take -U name%secret, and DOMAIN\name.
+_USER_FLAG = re.compile(r"(?<![\w-])(-[uU]|--(?:proxy-)?user)(=|[ \t]*)(['\"])?"
+                        r"(\w[\w.@+\\-]*)([:%])" + _FRESH + r"((?(3)[^'\"\n]+|[^\s'\"]+))")
+# Authorization: Basic, Token, Negotiate or NTLM, as a header or in git's
+# http.extraheader. A bearer token is left to the engine's scrubber.
+_AUTH_SCHEME = re.compile(r"(?i)\b((?:proxy-)?authorization['\"]?[ \t]*[:=][ \t]*"
+                          r"(?:basic|token|negotiate|ntlm)[ \t]+)" + _FRESH + r"([\w+/=.~-]+)")
+# DB_PASS=, MYSQL_PWD=, PGPASSWORD=, REDISCLI_AUTH=: a variable named for a
+# password, set.
 _SECRET_NAME = re.compile(
-    r"(?i)(?<![\w.-])((?:[a-z][a-z0-9]{0,31}_){1,4}(?:pass|pwd)"
+    r"(?i)(?<![\w.-])((?:[a-z][a-z0-9]{0,31}_){1,4}(?:pass|pwd|auth)"
     r"|(?:[a-z][a-z0-9_]{0,63}?)?pass(?:word|wd|phrase))(['\"]?[ \t]*[:=][ \t]*)" + _VALUE)
 _NOT_SECRET = {"true", "false", "none", "null", "yes", "no", "on", "off", "''", '""'}
+_LINKING = r"(?:is|was|are|were|now|still|set to|reset to|changed to|becomes|remains)"
 # A keyword, up to two linking words, then a value that looks like a
 # credential: quoted, or 8 or more characters with a digit or a symbol, so
-# "token limit" and "the password is required" survive.
+# "token limit" and "the password is required" survive. "for admin" or "of
+# the account" may sit between the keyword and a linking word.
 _KEYWORD_VALUE = re.compile(
     r"(?i)\b(\w*(?:password|passwd|passphrase|secret(?:_access_key)?|api[ _-]?key"
-    r"|access[ _-]?key|token))((?:[ \t]+(?:is|was|are|were|now|still|set to|reset to"
-    r"|changed to|becomes|remains)){0,2}\s+)" + _FRESH
+    r"|access[ _-]?key|token))((?:[ \t]+(?:for|of)(?:[ \t]+[\w.@-]+){1,3}(?=[ \t]+"
+    + _LINKING + r"\b))?(?:[ \t]+" + _LINKING + r"){0,2}\s+)" + _FRESH
     + r"('[^'\n]+'|\"[^\"\n]+\"|(?=\S*[\d/+=!@#$%^&*])\S{8,})")
+# htpasswd -b takes the password as its last argument, before any closing
+# quote or bracket a JSON form adds.
+_HTPASSWD = re.compile(r"(?i)(?<![\w-])htpasswd(?![\w-])([^\n;&|]*)")
+_BATCH_FLAG = re.compile(r"(?<![\w-])-[A-Za-z]*b[A-Za-z]*(?![\w-])")
+_LAST_ARG = re.compile(r"(?<=[ \t])(?<!\[credential )(?!-)" + _FRESH
+                       + r"('[^'\n]*'|\"[^\"\n]*\"|[^\s'\"]+)(?=[\"'}\]),]*[ \t]*$)")
+# A secret fed to --password-stdin: a here-string, or echo piped into it.
+_STDIN_FLAG = re.compile(r"(?i)(?<![\w-])--password-stdin(?![\w-])")
+_HERE_STRING = re.compile(r"(<<<)([ \t]*)" + _VALUE)
+_ECHO_PIPE = re.compile(r"(?<![\w-])(echo(?:[ \t]+-[neE]+)*)([ \t]+)" + _VALUE
+                        + r"(?=[ \t]*\|)")
 # Token shapes the engine's bundle scanner does not list.
 _TOKEN_SHAPE = re.compile(r"\b(?:dckr_pat_[\w-]{20,}|glpat-[\w-]{20,}|github_pat_\w{40,}"
                           r"|npm_[A-Za-z0-9]{36}|hf_[A-Za-z0-9]{30,}|pypi-[\w-]{40,})")
@@ -77,9 +96,31 @@ def _keep(m: re.Match) -> str:
 
 def _user_secret(m: re.Match) -> str:
     """uid:gid, as in `docker run -u 1000:1000`, is not a credential."""
-    if m.group(4).isdigit() and m.group(5).isdigit():
+    if m.group(4).isdigit() and m.group(6).isdigit():
         return m.group(0)
-    return m.group(1) + m.group(2) + (m.group(3) or "") + m.group(4) + ":" + OMITTED
+    return m.group(1) + m.group(2) + (m.group(3) or "") + m.group(4) + m.group(5) + OMITTED
+
+
+def _htpasswd(m: re.Match) -> str:
+    """htpasswd in batch mode: its last argument is the password."""
+    if not _BATCH_FLAG.search(m.group(1)):
+        return m.group(0)
+    return m.group(0)[:m.start(1) - m.start(0)] + _LAST_ARG.sub(OMITTED, m.group(1), count=1)
+
+
+def _unless_variable(m: re.Match) -> str:
+    """`$TOKEN` names a secret without holding it, so it stays."""
+    return m.group(0) if m.group(3).strip("'\"").startswith("$") else _keep(m)
+
+
+def _stdin_secret(text: str) -> str:
+    """Each line that runs --password-stdin: what it feeds to the flag."""
+    out = []
+    for line in text.split("\n"):
+        if _STDIN_FLAG.search(line):
+            line = _ECHO_PIPE.sub(_unless_variable, _HERE_STRING.sub(_unless_variable, line))
+        out.append(line)
+    return "\n".join(out)
 
 
 def _named_secret(m: re.Match) -> str:
@@ -105,10 +146,13 @@ def _own(text: str) -> str:
     """The patterns this module adds to the engine's scrubber."""
     value = _URL_USERINFO.sub(lambda m: m.group(1) + OMITTED + "@", text)
     value = _TOKEN_SHAPE.sub(OMITTED, value)
+    value = _AUTH_SCHEME.sub(lambda m: m.group(1) + OMITTED, value)
     value = _LONG_FLAG.sub(_keep, value)
     value = _WORD_FLAG.sub(_keep, value)
     value = _USER_FLAG.sub(_user_secret, value)
     value = _command_flags(value)
+    value = _HTPASSWD.sub(_htpasswd, value)
+    value = _stdin_secret(value)
     value = _SECRET_NAME.sub(_named_secret, value)
     return _KEYWORD_VALUE.sub(_keep, value)
 
