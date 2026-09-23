@@ -26,6 +26,7 @@ how many calls reported nothing instead of estimating them.
 """
 from __future__ import annotations
 
+import math
 import time
 from dataclasses import replace
 
@@ -102,7 +103,7 @@ def _reported_tokens(usage) -> int | None:
 def _reported_cost_micros(usage, cost_usd) -> int | None:
     value = cost_usd if cost_usd is not None else (
         usage.get("cost") if type(usage) is dict else None)
-    if type(value) in (int, float) and value >= 0 and value == value:
+    if type(value) in (int, float) and math.isfinite(value) and value >= 0:
         return int(round(value * 1_000_000))
     return None
 
@@ -186,8 +187,10 @@ class RunBudget:
         def call(method, url, headers, body, timeout):
             self.charge_model_call()
             status, obj = transport(method, url, headers, body, timeout)
-            if type(obj) is dict and 200 <= status < 300:
-                self.record_usage(obj.get("usage", obj.get("usageMetadata")))
+            ok = type(obj) is dict and 200 <= status < 300
+            # A refused or malformed response still counts as a call that
+            # reported no usage, so the report never hides it.
+            self.record_usage(obj.get("usage", obj.get("usageMetadata")) if ok else None)
             return status, obj
         return call
 

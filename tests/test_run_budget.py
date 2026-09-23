@@ -137,6 +137,15 @@ def test_cost_counts_only_when_reported_and_says_so():
     assert stopped.value.limit == "cost_micros"
 
 
+def test_a_non_finite_or_negative_cost_is_unreported_not_counted():
+    budget = RunBudget(limits())
+    for cost in (float("inf"), float("nan"), -1.0, True):
+        budget.record_usage(None, cost_usd=cost)
+    report = budget.report()
+    assert report["used"]["cost_micros"] == 0
+    assert report["reporting"]["calls_with_cost"] == 0
+
+
 def test_limits_resolve_from_defaults_and_owner_override():
     op = {"max_steps": 4, "timeout_s": 90}
     assert resolve_limits(op) == {
