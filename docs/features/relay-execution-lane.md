@@ -129,9 +129,10 @@ Each item is bound to the source that implements it.
 
 ### As a standalone agent
 
-1. Install from source. The name `relay-agent` on PyPI belongs to a different
-   project, so use a HarperZ9 source checkout:
-   `pip install git+https://github.com/HarperZ9/relay.git`.
+1. Install it: `pip install flywheel-relay`. The bare name `relay-agent` on
+   PyPI belongs to an unrelated project, so the distribution carries the
+   `flywheel-` prefix while the console script stays `relay`. A source checkout
+   (`pip install git+https://github.com/HarperZ9/relay.git`) still works.
 2. Check which tiers are live: `relay --health --online`.
 3. Ask a one-shot question: `relay "explain this function" --file app.py`.
 4. Run a gated agent task, writes enabled, committed on success:
@@ -217,11 +218,11 @@ From `src/relay/local_agent_cli.py`:
 
 From `harness/lanes_registry.py`:
 
-- name `relay`, install_name `relay-agent`, command `relay`, args `("--mcp",)`,
-  kind `pip`, organ `execution`, py_module `relay.local_agent_cli`, source_repo
-  `public/relay`.
-- `package_disabled_reason`: the PyPI name belongs to another project, so the
-  package install profile is disabled and a HarperZ9 source checkout is required.
+- name `relay`, install_name `flywheel-relay`, command `relay`, args
+  `("--mcp",)`, kind `pip`, version `0.2.5`, organ `execution`, py_module
+  `relay.local_mcp`, source_repo `public/relay`.
+- `package_disabled_reason` is empty: `flywheel-relay` is published, so the
+  package install profile is live and the source checkout is the fallback.
 - Minimum governance tier `T2` (`harness/lane_caller.py:LANE_MIN_TIERS`), because
   the lane can run code through `run`/exec.
 

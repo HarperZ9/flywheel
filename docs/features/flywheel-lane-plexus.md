@@ -29,15 +29,15 @@ Each item cites the code it rests on. Paths are relative to the Plexus source ch
 - **Live probe.** `probe_lane` and `probe_all` in `src/plexus/registry.py` spawn a lane's MCP server through `harness.lanes` and call `tools/list` and `status`, returning `{name, reachable, tools, error}`. This is the one path that runs a lane, and it requires the Flywheel harness on the import path and the lane's MCP server reachable.
 - **Command line.** `src/plexus/cli.py` exposes `discover`, `wiring`, `plan`, `route`, `validate`, `verify`, `graph`, `run`, `export`, and `mcp`. Source flags `--builtin` and `--dir DIR` select which manifests load. `validate` exits 1 on any problem, and `verify` exits non-zero on drift, so both work as CI gates over a toolchain's wiring.
 - **MCP server.** `src/plexus/mcp.py` serves a zero-dependency stdio JSON-RPC 2.0 server (protocol `2025-06-18`) exposing `plexus_discover`, `plexus_wiring`, `plexus_plan`, `plexus_route`, `plexus.status`, and `plexus.doctor`. `handle` maps a request dict to a response dict and is testable without pipes. This is how an agent queries the mesh while it works.
-- **Zero runtime dependencies.** `pyproject.toml` declares an empty `dependencies` list and Python 3.11 or later. The package name is `plexus-mesh`, version 0.2.0, under the fair-source license `LicenseRef-FSL-1.1-MIT`.
+- **Zero runtime dependencies.** `pyproject.toml` declares an empty `dependencies` list and Python 3.11 or later. The package name is `plexus-mesh`, version 0.2.2, published on PyPI under the fair-source license `LicenseRef-FSL-1.1-MIT`. Install it with `pip install plexus-mesh`.
 
 ## Stepwise usage
 
 ### Inside Flywheel, as a lane
 
-Plexus is declared in `harness/lanes_registry.py` under the name `plexus`, role `wiring`, organ `plexus`, kind `pip`, version 0.2.0, with `source_repo="public/plexus"` and `py_module="plexus.cli"`. Its MCP args are `("mcp",)`, so the lane runs `plexus mcp`.
+Plexus is declared in `harness/lanes_registry.py` under the name `plexus`, role `wiring`, organ `plexus`, kind `pip`, version 0.2.2, with `source_repo="public/plexus"` and `py_module="plexus.cli"`. Its MCP args are `("mcp",)`, so the lane runs `plexus mcp`.
 
-1. The lane carries `package_disabled_reason="No published PyPI distribution is available. Use a Plexus source checkout."`. Because of that, `resolve_mcp_command` in `harness/lanes.py` returns an empty argv on the public roster surface, and the runtime resolver launches the lane from the `public/plexus` source checkout, which is the admitted install profile for this lane.
+1. The lane carries no `package_disabled_reason`, because `plexus-mesh` is published. `resolve_mcp_command` in `harness/lanes.py` returns a real argv, the package install profile is live, and the `public/plexus` source checkout remains the fallback profile.
 2. `lane_status("plexus")` reports the lane's install or source and runtime-selection metadata. With `probe=True` it spawns the stdio MCP server and confirms it answers the `plexus.status` tool.
 3. An agent connected to the roster calls the plexus MCP tools while it works: `plexus_discover` for the whole mesh, `plexus_plan` to find what feeds a target lane, and `plexus_route` to find the path between two lanes.
 

@@ -102,9 +102,9 @@ Canon runs both as a standalone tool and as a Flywheel lane.
 
 **As a standalone tool.**
 
-1. Get a source checkout of canon. There is no PyPI package: the `canon` name on
-   PyPI belongs to another project, so the lane entry carries a
-   `package_disabled_reason` and installs from source only.
+1. Install it with `pip install flywheel-canon`. The bare name `canon` on PyPI
+   belongs to another project, so the distribution carries the prefix while the
+   console script stays `canon`. A source checkout also works.
 2. Point canon at your records with `CANON_BLOCKS_DIR`, and at your files with
    `CANON_HOME` and `CANON_WORKSPACE`.
 3. Ask canon what it believes, no transport in the way:
@@ -139,11 +139,12 @@ Canon runs both as a standalone tool and as a Flywheel lane.
 
 **Lane registration.** `harness/lanes_registry.py` declares
 `LANES["canon"]` as a `pip` lane, command `canon`, args `("mcp",)`, organ
-`continuity`, module `canon.cli`, source repo `public/canon`, version `0.0.0`
-(moderate confidence: read directly from the registry and from
+`continuity`, module `canon.cli`, source repo `public/canon`, install name
+`flywheel-canon`, version `0.2.0` (read from the registry and from
 `pyproject.toml`, which agree). The role text records that the MCP surface is
-read-only and that reconcile stays a library call. `package_disabled_reason`
-records that the PyPI name is taken, so only a source checkout installs.
+read-only and that reconcile stays a library call. `package_disabled_reason` is
+empty: the distribution is published, so the package install profile is live and
+a source checkout is the fallback.
 
 **Lane roster and probe.** `harness/lanes.py` computes each lane's status
 (`live`, `stale`, `declared`, `missing`). For canon it selects the runtime,
@@ -268,7 +269,6 @@ checklist names, with the fourth correctly absent:
 
 Remaining honest nulls, none of which are lane-wiring defects:
 
-- No PyPI distribution. Canon installs from a source checkout only.
 - Canon is absent from `LANE_MIN_TIERS`, so it takes the T1 default tier with no
   explicit entry. This fits a read-only door but is implicit.
 - No dedicated desktop deep-view. Chorus has a `DiscourseView` destination; canon
