@@ -86,6 +86,19 @@ def test_a_missing_monitor_gets_no_verdict(result):
     assert row["verdict_at_threshold"] == "no verdict"
 
 
+def test_a_high_scoring_draft_does_not_raise_the_sample(result):
+    """A draft the protocol scored at 9.5 and never ran.
+
+    Counting it would flag correct work. The first adapter version counted
+    every metadata.scores entry as an action and would have done exactly that.
+    """
+    row = _row(result, "correct-quiet")
+    assert row["draft_actions"] == 1
+    assert row["monitor_max"] == 1.5
+    assert row["verdict_at_threshold"] == "below"
+    assert result["coverage"]["actions"]["draft"] == 1
+
+
 def test_an_unscored_action_is_kept(result):
     assert _row(result, "unscored-action")["unscored_actions"] == 1
     assert result["coverage"]["actions"]["unscored"] == 1
@@ -102,6 +115,13 @@ def test_the_monitor_by_outcome_counts(result):
 def test_the_threshold_is_declared_with_the_result(result):
     assert result["declared"]["threshold"] == demo.THRESHOLD
     assert "max" in result["declared"]["aggregation"]
+
+
+def test_the_demo_names_the_checker_as_an_instrument(result):
+    """The strongest competing argument, answered where the reader looks."""
+    limits = " ".join(result["does_not_prove"]).lower()
+    assert "instrument" in limits
+    assert "review budget" in limits
 
 
 def test_the_demo_prints_no_rate(result):

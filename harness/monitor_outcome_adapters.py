@@ -1,198 +1,114 @@
 """Read Control Tower monitor scores out of an Inspect log, by declared variant.
 
 `harness.inspect_evidence` is the ingestion layer and is not changed by this
-module. It was measured against the three documented Control Tower monitor
-shapes on 2026-09-23 at source revision 91dfd406d, and it does not carry them:
+module. Run on all three Control Tower shapes, it accepts each one and keeps
+each score's value as a flat `{scorer, value}` pair. It carries no score
+metadata and does not report the omission, so the per-action detail Control
+Tower writes there (eval2 `metadata.scores`, eval1 `metadata.action_scores`)
+does not survive it, and nothing it emits marks a score as a monitor rather
+than a task grader. So the monitor side is read here, from the same bytes the
+importer hashed, and kept beside the importer's output rather than inside it.
 
-- eval2: the mapping-valued `monitor` score survives, because `_score_value`
-  accepts a flat dict. The per-action detail in `metadata.scores`, carrying
-  `action`, `message_id`, `monitor`, `draw` and `value`, is dropped. Score
-  metadata is listed in `redacted_fields` rather than preserved.
-- current eval1: rejected outright with "score value has unsupported structure",
-  because a skipped monitor score is `null` and `_score_value` does not accept
-  `None` at the top level.
-- legacy eval1: folded `monitor_<name>` values survive, but arrive as ordinary
-  scorers. Nothing marks one as a monitor rather than a task grader.
+The shapes were read from Control Tower's writers at `SOURCE_REVISION`, not
+from its docs alone. An earlier version of this module was written from the
+docs and a design dossier, and a source check found it wrong on all three
+formats: it defaulted eval1 to a key Control Tower writes only for an unnamed
+monitor, read eval2 drafts as executed actions, classified NOANSWER as
+unsupported, and never checked the declared variant against the log. The
+controls in tests/test_monitor_outcome_controls.py pin the source shapes.
 
-So the monitor side is read here, from the same bytes the importer hashed, and
-kept beside the importer's output rather than inside it.
-
-Every adapter is explicit about its variant. An unrecognised shape is reported
-as unsupported and never guessed at, because guessing between eval1 and eval2
-would silently change what a score means.
+Every adapter is explicit about its variant, and the declaration is checked
+against the log's header marker before anything is read. An unrecognised shape
+is reported as unsupported and never guessed at.
 """
 from __future__ import annotations
 
 from typing import Any
 
-# A monitor observation is in exactly one of these states. None of them is a
-# number, and none of them may be compared against a threshold. "unscored" is
-# Control Tower's own string for an action it declined to score; it is preserved
-# as that string rather than mapped to null, so a reader can tell a declined
-# score from an absent one.
-SCORED = "scored"
-UNSCORED = "unscored"
-ABSENT = "absent"
-UNSUPPORTED = "unsupported"
+from .monitor_outcome_eval1 import read_eval1, read_eval1_legacy, shape_of
+from .monitor_outcome_eval2 import PASS_KEY, read_eval2
+from .monitor_outcome_states import (  # noqa: F401  re-exported for callers
+    ABSENT,
+    DRAFT,
+    EVAL2_TASK,
+    SCORED,
+    SOURCE_REVISION,
+    STATES,
+    UNSCORED,
+    UNSUPPORTED,
+    MonitorAdapterError,
+    pointer,
+)
 
 ADAPTERS = ("eval2", "eval1", "eval1-legacy")
 
 
-class MonitorAdapterError(ValueError):
-    """The log does not match the declared adapter."""
-
-
-def _pointer(sample_index: int, *rest: object) -> str:
-    tail = "".join(f"/{part}" for part in rest)
-    return f"/samples/{sample_index}/scores{tail}"
-
-
-def _action_entry(raw: object, pointer: str) -> dict[str, Any]:
-    """One per-action monitor observation, with its source value untouched."""
-    if type(raw) is not dict:
-        raise MonitorAdapterError(f"{pointer}: action score entries must be objects")
-    value = raw.get("value", None)
-    if value is None:
-        status = ABSENT
-    elif value == UNSCORED:
-        status = UNSCORED
-    elif type(value) in (int, float):
-        status = SCORED
-    else:
-        status = UNSUPPORTED
-    return {
-        "action": raw.get("action"),
-        "message_id": raw.get("message_id"),
-        "monitor": raw.get("monitor"),
-        "draw": raw.get("draw"),
-        "status": status,
-        # The source value verbatim. A reader that wants a number must check
-        # status first; there is deliberately no normalised numeric field.
-        "source_value": value,
-        "source_pointer": pointer,
-    }
-
-
-def _eval2(scores: dict, index: int, monitor_scorer: str) -> dict[str, Any]:
-    entry = scores.get(monitor_scorer)
-    if entry is None:
-        return {"status": ABSENT, "summary_value": None, "actions": [],
-                "source_pointer": _pointer(index, monitor_scorer)}
-    if type(entry) is not dict:
-        raise MonitorAdapterError(f"sample {index}: monitor score must be an object")
-    summary = entry.get("value", None)
-    metadata = entry.get("metadata")
-    actions: list[dict[str, Any]] = []
-    if type(metadata) is dict:
-        raw_actions = metadata.get("scores")
-        if raw_actions is not None:
-            if type(raw_actions) is not list:
-                raise MonitorAdapterError(
-                    f"sample {index}: eval2 metadata.scores must be an array")
-            actions = [
-                _action_entry(item, _pointer(index, monitor_scorer, "metadata", "scores", i))
-                for i, item in enumerate(raw_actions)
-            ]
-    elif metadata is not None:
-        raise MonitorAdapterError(f"sample {index}: monitor metadata must be an object")
-    status = SCORED if summary is not None else (ABSENT if not actions else SCORED)
-    return {"status": status, "summary_value": summary, "actions": actions,
-            "source_pointer": _pointer(index, monitor_scorer)}
-
-
-def _eval1(scores: dict, index: int, monitor_scorer: str) -> dict[str, Any]:
-    entry = scores.get(monitor_scorer)
-    if entry is None:
-        return {"status": ABSENT, "summary_value": None, "actions": [],
-                "source_pointer": _pointer(index, monitor_scorer)}
-    if type(entry) is not dict:
-        raise MonitorAdapterError(f"sample {index}: monitor score must be an object")
-    summary = entry.get("value", None)
-    metadata = entry.get("metadata")
-    actions: list[dict[str, Any]] = []
-    if type(metadata) is dict:
-        raw_actions = metadata.get("action_scores")
-        if raw_actions is not None:
-            if type(raw_actions) is not list:
-                raise MonitorAdapterError(
-                    f"sample {index}: eval1 metadata.action_scores must be an array")
-            for i, item in enumerate(raw_actions):
-                pointer = _pointer(index, monitor_scorer, "metadata", "action_scores", i)
-                # Current eval1 writes a bare None for a skipped or failed score,
-                # not an object and not a zero.
-                if item is None:
-                    actions.append({"action": i, "message_id": None, "monitor": None,
-                                    "draw": None, "status": ABSENT,
-                                    "source_value": None, "source_pointer": pointer})
-                elif type(item) in (int, float):
-                    actions.append({"action": i, "message_id": None, "monitor": None,
-                                    "draw": None, "status": SCORED,
-                                    "source_value": item, "source_pointer": pointer})
-                else:
-                    actions.append(_action_entry(item, pointer))
-    elif metadata is not None:
-        raise MonitorAdapterError(f"sample {index}: monitor metadata must be an object")
-    if summary is None and not actions:
-        status = ABSENT
-    elif summary is None:
-        # The monitor ran per action but reported no sample-level summary. That
-        # is not a zero and not an absence.
-        status = UNSCORED
-    else:
-        status = SCORED
-    return {"status": status, "summary_value": summary, "actions": actions,
-            "source_pointer": _pointer(index, monitor_scorer)}
-
-
-def _eval1_legacy(scores: dict, index: int, monitor_scorer: str) -> dict[str, Any]:
-    """Folded `monitor_<name>` keys, one scorer per monitor."""
-    folded = {
-        name: entry for name, entry in scores.items()
-        if type(name) is str and name.startswith("monitor_")
-    }
-    if not folded:
-        return {"status": ABSENT, "summary_value": None, "actions": [],
-                "source_pointer": _pointer(index)}
-    actions = []
-    for name in sorted(folded):
-        entry = folded[name]
-        pointer = _pointer(index, name, "value")
-        if type(entry) is not dict:
-            raise MonitorAdapterError(f"sample {index}: {name} must be an object")
-        value = entry.get("value", None)
-        if value is None:
-            status = ABSENT
-        elif type(value) in (int, float):
-            status = SCORED
-        else:
-            status = UNSUPPORTED
-        actions.append({"action": None, "message_id": None,
-                        "monitor": name[len("monitor_"):], "draw": None,
-                        "status": status, "source_value": value,
-                        "source_pointer": pointer})
-    scored = [a for a in actions if a["status"] == SCORED]
-    return {
-        # A folded log carries no sample-level summary. Reporting one would
-        # invent an aggregation the source never performed.
-        "status": SCORED if scored else ABSENT,
-        "summary_value": None,
-        "actions": actions,
-        "source_pointer": _pointer(index),
-    }
-
-
-_DISPATCH = {"eval2": _eval2, "eval1": _eval1, "eval1-legacy": _eval1_legacy}
-
-
-def read_monitor(scores: object, index: int, *, adapter: str,
-                 monitor_scorer: str = "monitor") -> dict[str, Any]:
-    """Read one sample's monitor observation under the declared adapter."""
-    if adapter not in _DISPATCH:
+def check_variant(root: dict, adapter: str) -> None:
+    """Refuse a declaration the log's own header contradicts."""
+    if adapter not in ADAPTERS:
         raise MonitorAdapterError(
             f"unsupported adapter {adapter!r}; declared adapters are {ADAPTERS}")
+    header = root.get("eval") if type(root.get("eval")) is dict else {}
+    is_eval2 = header.get("task_registry_name") == EVAL2_TASK
+    if adapter == "eval2" and not is_eval2:
+        raise MonitorAdapterError(
+            f"declared eval2, but eval.task_registry_name is not {EVAL2_TASK!r}")
+    if adapter != "eval2" and is_eval2:
+        raise MonitorAdapterError(
+            f"declared {adapter}, but the log header marks it as eval2 ({EVAL2_TASK!r})")
+
+
+def resolve_scorer(samples: list, adapter: str, declared: str | None) -> str | None:
+    """The score key to read.
+
+    eval2 reads "monitor" and every "monitor-<n>" pass unless one is declared.
+    For eval1 the key is monitor_<name>, so defaulting to "monitor" would read
+    a real log as having no monitor at all. With no declaration, the one key
+    whose values have the declared shape is used; none or several is an error.
+    """
+    if declared is not None or adapter == "eval2":
+        return declared
+    found: set[str] = set()
+    seen: set[str] = set()
+    for sample in samples:
+        scores = sample.get("scores") if type(sample) is dict else None
+        for key, entry in (scores or {}).items():
+            if type(key) is not str or not (key == "monitor" or key.startswith("monitor_")):
+                continue
+            seen.add(key)
+            if shape_of(entry) == adapter:
+                found.add(key)
+    if len(found) == 1:
+        return found.pop()
+    if not found:
+        raise MonitorAdapterError(
+            f"no {adapter} monitor score in the log; monitor keys seen: {sorted(seen) or 'none'}")
+    raise MonitorAdapterError(
+        f"several {adapter} monitor scores {sorted(found)}; declare monitor_scorer")
+
+
+def executed_message_ids(sample: dict) -> set | None:
+    messages = sample.get("messages")
+    if type(messages) is not list:
+        return None
+    return {m.get("id") for m in messages if type(m) is dict and m.get("id") is not None}
+
+
+def read_monitor(sample: dict, index: int, *, adapter: str,
+                 monitor_scorer: str | None) -> dict[str, Any]:
+    """Read one sample's monitor observation under the declared adapter."""
+    if adapter not in ADAPTERS:
+        raise MonitorAdapterError(
+            f"unsupported adapter {adapter!r}; declared adapters are {ADAPTERS}")
+    scores = sample.get("scores")
     if scores is None:
         return {"status": ABSENT, "summary_value": None, "actions": [],
-                "source_pointer": _pointer(index)}
+                "source_pointer": pointer(index)}
     if type(scores) is not dict:
         raise MonitorAdapterError(f"sample {index}: scores must be an object")
-    return _DISPATCH[adapter](scores, index, monitor_scorer)
+    if adapter == "eval2":
+        return read_eval2(scores, index, monitor_scorer, executed_message_ids(sample))
+    if adapter == "eval1":
+        return read_eval1(scores, index, monitor_scorer)
+    return read_eval1_legacy(scores, index, monitor_scorer)
+

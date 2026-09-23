@@ -33,11 +33,15 @@ from typing import Any
 from .monitor_outcome_adapters import (
     ABSENT,
     ADAPTERS,
+    DRAFT,
     SCORED,
+    SOURCE_REVISION,
     UNSCORED,
     UNSUPPORTED,
     MonitorAdapterError,
+    check_variant,
     read_monitor,
+    resolve_scorer,
 )
 
 SCHEMA = "flywheel.monitor-outcome/v1"
@@ -68,7 +72,7 @@ def _sample_key(sample_id: object, epoch: object) -> tuple:
 
 
 def build_monitor_record(raw: bytes, *, adapter: str,
-                         monitor_scorer: str = "monitor") -> dict[str, Any]:
+                         monitor_scorer: str | None = None) -> dict[str, Any]:
     """Read the monitor side of a log. Outcomes are deliberately left absent."""
     if adapter not in ADAPTERS:
         raise MonitorOutcomeError(
@@ -88,6 +92,11 @@ def build_monitor_record(raw: bytes, *, adapter: str,
         samples_raw = []
     if type(samples_raw) is not list:
         raise MonitorOutcomeError("samples must be an array")
+    try:
+        check_variant(root, adapter)
+        monitor_scorer = resolve_scorer(samples_raw, adapter, monitor_scorer)
+    except MonitorAdapterError as error:
+        raise MonitorOutcomeError(str(error)) from None
 
     seen: set[tuple] = set()
     samples: list[dict[str, Any]] = []
@@ -102,7 +111,7 @@ def build_monitor_record(raw: bytes, *, adapter: str,
                 f"duplicate sample id and epoch at index {index}; refusing to merge")
         seen.add(key)
         try:
-            monitor = read_monitor(item.get("scores"), index, adapter=adapter,
+            monitor = read_monitor(item, index, adapter=adapter,
                                    monitor_scorer=monitor_scorer)
         except MonitorAdapterError as error:
             raise MonitorOutcomeError(str(error)) from None
@@ -117,7 +126,9 @@ def build_monitor_record(raw: bytes, *, adapter: str,
     return {
         "schema": SCHEMA,
         "adapter": adapter,
+        # None under eval2 means "monitor" and every "monitor-<n>" pass.
         "monitor_scorer": monitor_scorer,
+        "shapes_from": SOURCE_REVISION,
         "source": {"sha256": digest, "bytes": len(raw)},
         "samples": samples,
         "coverage": _coverage(samples),
@@ -199,7 +210,8 @@ def _coverage(samples: list[dict[str, Any]]) -> dict[str, Any]:
     """Denominators, with every state counted and none folded into another."""
     monitor_states = {SCORED: 0, UNSCORED: 0, ABSENT: 0, UNSUPPORTED: 0}
     outcome_states = {"verified": 0, "reported": 0, "excluded": 0, ABSENT: 0}
-    action_states = {SCORED: 0, UNSCORED: 0, ABSENT: 0, UNSUPPORTED: 0}
+    # DRAFT is eval2 only: scored, never executed. Counted, never compared.
+    action_states = {SCORED: 0, UNSCORED: 0, ABSENT: 0, DRAFT: 0, UNSUPPORTED: 0}
     for sample in samples:
         monitor_states[sample["monitor"]["status"]] += 1
         outcome_states[sample["outcome"]["status"]] += 1
