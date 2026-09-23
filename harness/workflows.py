@@ -6,7 +6,8 @@ checkpoint, integrity verdict) is folded into a chain hash, so the whole
 run carries one re-checkable receipt. Steps can FAIL and the run says so;
 a verify step without an exec grant reports UNVERIFIABLE instead of
 pretending. Because the endpoint is a runtime argument, the same staged
-discipline runs over any provider or model generation in the roster."""
+discipline runs over any provider or model generation in the roster. One run
+budget covers every stage and is settled after each (workflow_steps)."""
 from __future__ import annotations
 
 import hashlib
@@ -14,9 +15,10 @@ import json
 import time
 from pathlib import Path
 
-from .endpoint_registry import ProviderPermissionError
 from .plan_run_snapshot import FrozenJsonSnapshot, thaw_json
 from .router_agent import run_router_agent
+from .workflow_steps import (agent_step, fixed_if_authorized, step_summary,
+                             verify_step, workflow_budget)
 
 WORKFLOWS = {
     "code-change": {
@@ -143,78 +145,6 @@ def recompute_chain(doc: dict) -> str:
     return chain.hexdigest()
 
 
-def _step_summary(name: str, kind: str, status: str, result: dict | None,
-                  note: str = "") -> dict:
-    s = {"name": name, "kind": kind, "status": status}
-    if note:
-        s["note"] = note
-    if result:
-        final = str(result.get("final", ""))
-        s["excerpt"] = final[:400]
-        s["steps"] = result.get("steps")
-        s["checkpoint"] = result.get("checkpoint")
-        s["ledger_verified"] = result.get("verified")
-        integrity = result.get("integrity")
-        if isinstance(integrity, dict):
-            s["integrity_clean"] = integrity.get("clean")
-        if "tests_pass_trusted" in result:
-            s["tests_pass_trusted"] = result["tests_pass_trusted"]
-    return s
-
-
-def _fixed_if_authorized(authorized: bool, exc: Exception) -> None:
-    if not authorized:
-        return
-    if isinstance(exc, ProviderPermissionError):
-        raise ProviderPermissionError() from None
-    raise RuntimeError("authorized external action failed") from None
-
-
-def _verify_step(step, endpoint, *, root, allow_write, test_cmd, proposer,
-                 credential_bindings, authorized):
-    try:
-        result = run_router_agent(
-            "Run the test command and report the outcome honestly.", endpoint,
-            root=root, allow_exec=True, allow_write=allow_write, max_steps=2,
-            test_cmd=test_cmd, proposer=proposer,
-            credential_bindings=credential_bindings)
-    except Exception as exc:
-        _fixed_if_authorized(authorized, exc)
-        return _step_summary(step["name"], "verify", "ERROR", None,
-                             note=f"{type(exc).__name__}: {exc}"), "FAILED"
-    trusted = bool(result.get("tests_pass_trusted"))
-    status = "VERIFIED" if trusted else "FAILED"
-    return _step_summary(step["name"], "verify", status, result), status
-
-
-def _agent_step(step, goal, prev, endpoint, *, root, allow_write, allow_exec,
-                allow_mcp, system, proposer, credential_bindings, authorized):
-    step_goal = step["goal"].format(goal=goal, prev=prev)
-    if system:
-        step_goal = f"{system}\n\n{step_goal}"
-    try:
-        result = run_router_agent(
-            step_goal, endpoint, root=root, allow_write=allow_write,
-            allow_exec=allow_exec, allow_mcp=allow_mcp,
-            max_steps=step.get("max_steps", 6), proposer=proposer,
-            credential_bindings=credential_bindings)
-    except Exception as exc:
-        _fixed_if_authorized(authorized, exc)
-        note = f"{type(exc).__name__}: {exc}"
-        return _step_summary(step["name"], "agent", "ERROR", None,
-                             note=note), prev, "FAILED", True
-    summary = _step_summary(step["name"], "agent", "DONE", result)
-    reasons = []
-    if result.get("verified") is False:
-        reasons.append("ledger did not verify")
-    if summary.get("integrity_clean") is False:
-        reasons.append("trajectory integrity dirty")
-    if reasons:
-        summary["status"] = "FAILED"
-        summary["note"] = "; ".join(reasons)
-        return summary, str(result.get("final", "")), "FAILED", True
-    return summary, str(result.get("final", "")), None, False
-
 def _persist_workflow(doc: dict, run_root, authorized: bool) -> None:
     if not run_root:
         return
@@ -225,7 +155,7 @@ def _persist_workflow(doc: dict, run_root, authorized: bool) -> None:
         out.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
         doc["receipt_path"] = out.name
     except Exception as exc:
-        _fixed_if_authorized(authorized, exc)
+        fixed_if_authorized(authorized, exc)
         doc["receipt_note"] = f"run not persisted: {type(exc).__name__}: {exc}"
 
 def _frozen_workflow(raw: bytes, workflow: str) -> dict:
@@ -266,22 +196,23 @@ def run_workflow(workflow: str, goal: str, endpoint: str, *, root: str = ".",
     chain.update(json.dumps(header, sort_keys=True, default=str).encode())
     prev = ""
     status = "COMPLETED"
+    budget = workflow_budget(spec["steps"])
     for step in spec["steps"]:
         if step["kind"] == "verify":
             if not (test_cmd and allow_exec):
-                summary = _step_summary(step["name"], "verify", "UNVERIFIABLE",
-                                        None, note="no test command granted; "
-                                        "nothing was executed")
+                summary = step_summary(step["name"], "verify", "UNVERIFIABLE",
+                                       None, note="no test command granted; "
+                                       "nothing was executed")
                 status = "UNVERIFIED"
             else:
-                summary, status = _verify_step(
-                    step, endpoint, root=root, allow_write=allow_write,
-                    test_cmd=test_cmd, proposer=proposer,
+                summary, status = verify_step(
+                    step, endpoint, run_router_agent, budget, root=root,
+                    allow_write=allow_write, test_cmd=test_cmd, proposer=proposer,
                     credential_bindings=credential_bindings,
                     authorized=authorized)
         else:
-            summary, prev, changed, stop = _agent_step(
-                step, goal, prev, endpoint, root=root,
+            summary, prev, changed, stop = agent_step(
+                step, goal, prev, endpoint, run_router_agent, budget, root=root,
                 allow_write=allow_write, allow_exec=allow_exec,
                 allow_mcp=allow_mcp, system=system, proposer=proposer,
                 credential_bindings=credential_bindings,

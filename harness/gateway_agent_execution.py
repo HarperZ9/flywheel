@@ -119,11 +119,7 @@ def _settle_budget(result: dict, budget) -> None:
     stderr. The paths record those as they read them, and the run fails here.
     The final answer is model prose and is never read for a limit, on any
     path, so an answer about 429 handling completes."""
-    from .gateway_operation import GatewayOperationError
-    from .run_budget import FALSE_SUCCESS
-    budget.settle()
-    if budget.false_success:
-        raise GatewayOperationError(FALSE_SUCCESS)
+    budget.settle_run()
 
 
 def _completion(ledger, result, root, cli_events, exc=None) -> dict:

@@ -223,8 +223,9 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                      event_errors_fatal: bool = False, budget=None) -> dict:
     """Run one gated agentic loop over a named or explicitly bound endpoint.
 
-    With `budget` (a run_budget.RunBudget), every tool action is charged
-    before it runs and its output is read for a limit signal."""
+    With `budget` (a run_budget.RunBudget), every model call and tool action
+    is charged before it runs, and the provider's own status and error fields
+    are read for a limit. Tool output is never read for one."""
     ledger = SessionLedger() if ledger is None else ledger
     agent = RouterAgent(
         endpoint, model=model, base_url=base_url, proposer=proposer,
@@ -237,6 +238,8 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
         runner=make_sandboxed_runner(bindings=credential_bindings,
                                      on_unavailable=fallback_from_env()))
     if budget is not None:
+        from .run_budget_executor import budget_proposer
+        agent._proposer = budget_proposer(agent._proposer, budget)
         executor = budget.wrap_executor(executor, test_cmd=test_cmd)
     from .check_guard import guard_check
     executor = guard_check(executor, root=root, ledger=ledger, test_cmd=test_cmd)

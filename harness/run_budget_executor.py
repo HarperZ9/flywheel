@@ -61,3 +61,42 @@ def harness_check(executor):
         if target is None:
             break
     return nullcontext()
+
+
+class BudgetedProposer:
+    """A proposer whose every model call is charged to the run budget.
+
+    The usage the call reports is recorded. A call that raises is named as
+    one that reported nothing, and an error that carries the provider's HTTP
+    status and body is read for a limit in those fields only."""
+
+    def __init__(self, inner, budget) -> None:
+        self._inner, self.budget = inner, budget
+
+    def generate(self, prompt, **kwargs):
+        from .run_budget_usage import proposer_usage
+        self.budget.charge_model_call()
+        try:
+            out = self._inner.generate(prompt, **kwargs)
+        except Exception as exc:
+            self.budget.record_usage(None)
+            status = getattr(exc, "status", getattr(exc, "code", None))
+            if type(status) is int:
+                self.budget.observe_provider_response(status, getattr(exc, "body", None))
+            raise
+        self.budget.record_usage(proposer_usage(getattr(out, "usage", None)))
+        self.budget.observe_clean_call()
+        return out
+
+    def __getattr__(self, attr):
+        return getattr(self._inner, attr)
+
+
+def budget_proposer(proposer, budget):
+    """The proposer to use under `budget`: one that charges each call.
+
+    A proposer that already charges this budget (the gateway's bound
+    proposer) is used as it is, so no call is charged twice."""
+    if getattr(proposer, "budget", None) is budget:
+        return proposer
+    return BudgetedProposer(proposer, budget)

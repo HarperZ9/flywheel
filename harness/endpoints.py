@@ -18,6 +18,14 @@ from .endpoints_http import _http, _guard, _k
 from .endpoint_opencode import OpenCodeBackend  # noqa: F401 (re-exported)
 
 
+def _response_error(name: str, status, obj) -> BackendError:
+    """A response with no completion. The status and the body ride on the
+    error, so a caller can read the provider's own error fields."""
+    error = BackendError(f"{name} returned {status}: {obj.get('error', obj)}")
+    error.status, error.body = status, obj
+    return error
+
+
 def _credential(env_name: str, direct: str | None) -> str:
     return _k(env_name) if direct is None else direct
 
@@ -70,7 +78,7 @@ class OpenAICompatBackend:
             message = obj["choices"][0]["message"]
             text = message["content"]
         except (KeyError, IndexError, TypeError):
-            raise BackendError(f"{self.name} returned {status}: {obj.get('error', obj)}")
+            raise _response_error(self.name, status, obj)
         out = {"model_ref": f"{self.name}:{self.model}", "seed": seed}
         calls = message.get("tool_calls") if isinstance(message, dict) else None
         if isinstance(calls, list) and calls:
@@ -195,7 +203,7 @@ class AnthropicBackend:
         try:
             text = "".join(b.get("text", "") for b in obj["content"] if b.get("type") == "text")
         except (KeyError, TypeError):
-            raise BackendError(f"{self.name} returned {status}: {obj.get('error', obj)}")
+            raise _response_error(self.name, status, obj)
         return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed}
 
 
@@ -231,7 +239,7 @@ class GeminiBackend:
         try:
             text = "".join(p.get("text", "") for p in obj["candidates"][0]["content"]["parts"])
         except (KeyError, IndexError, TypeError):
-            raise BackendError(f"{self.name} returned {status}: {obj.get('error', obj)}")
+            raise _response_error(self.name, status, obj)
         return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed}
 
 

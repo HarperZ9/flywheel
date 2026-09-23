@@ -1,8 +1,9 @@
 # Run budget and the false-success check
 
-Every Rowan `agent.run` carries a budget. When a run reaches a limit, the
-engine stops it at the next step boundary, records which limit stopped it, and
-the desktop card shows the stop. A rate limit, quota, billing, sign-in or
+Every Rowan `agent.run` carries a budget, and so does every staged run
+through `workflow.run`, the `/api/workflow` route or `plan.run`. When a run
+reaches a limit, the engine stops it at the next step boundary, records which
+limit stopped it, and the desktop card shows the stop. A rate limit, quota, billing, sign-in or
 service-overloaded (HTTP 503 or 529) error that the provider or the CLI reports
 in its own fields counts toward a second breaker, and two in a row stop the
 run. Tool output and the model's answer are never read for one. Scheduled jobs
@@ -206,9 +207,15 @@ counts fewer tool actions than the trace shows.
   another language (a German "Ratenlimit überschritten" is not seen), and an
   anchored match can still be a quote. A structured status code is read in any
   language.
-- The budget covers `agent.run` only. `workflow.run`, the `/api/workflow`
-  route and `plan.run` drive the same router loop with no run budget and no
-  false-success check; their stages are bounded by each stage's `max_steps`.
+- `workflow.run`, the `/api/workflow` route and `plan.run` run every stage
+  under one budget for the whole workflow run, with the defaults above and a
+  model-call limit that is the sum of the stages' step budgets. Each stage is
+  settled when it returns, the same way `agent.run` is, so a crossed limit or
+  a false success stops the workflow at that stage. The stage is recorded as
+  `STOPPED` in the chained receipt with the stop code and the limit, and every
+  stage summary carries the budget record as it stood. These routes take no
+  `run_budget` override and have no aggregate deadline, so their wall time is
+  recorded and not enforced.
 - The Claude CLI stream shape above was checked against claude 2.1.251 on a
   local session that failed on a billing error: one assistant event and one
   result event, each with every token counter at 0. A successful multi-turn

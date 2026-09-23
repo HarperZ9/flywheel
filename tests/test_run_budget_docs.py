@@ -13,10 +13,12 @@ def _doc(name: str) -> str:
     return " ".join((DOCS / name).read_text(encoding="utf-8").split())
 
 
-def test_the_uncovered_workflow_paths_are_named():
+def test_the_workflow_paths_are_named_with_what_their_budget_covers():
     text = _doc("RUN-BUDGET.md")
     for path in ("`workflow.run`", "`/api/workflow`", "`plan.run`"):
         assert path in text
+    assert "no run budget and no false-success check" not in text
+    assert "under one budget for the whole workflow run" in text
 
 
 def test_the_overloaded_signal_and_the_language_limit_are_stated():

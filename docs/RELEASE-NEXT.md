@@ -16,4 +16,7 @@ These notes collect changes merged since 1.0.3 for the next release.
 - Hook receipts record the kind and the matched words of a limit error found in
   the output (`limit_signal`, `limit_match`). A hook can opt out of the output
   check at registration with `scan_output: false`.
-- Every Rowan `agent.run` carries a run budget. See `docs/RUN-BUDGET.md`.
+- Every Rowan `agent.run` carries a run budget, and so does every
+  `workflow.run`, `/api/workflow` and `plan.run` run, over all its stages. A
+  stage the budget stops is recorded as `STOPPED` in the workflow receipt. See
+  `docs/RUN-BUDGET.md`.

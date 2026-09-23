@@ -224,6 +224,13 @@ class RunBudget:
         if self._armed is not None:
             self._trip(self._armed)
 
+    def settle_run(self) -> None:
+        """Close a run that returned: stop it on a crossed limit, and fail it on
+        a success the provider or the CLI reported next to a limit error."""
+        self.settle()
+        if self.false_success:
+            raise GatewayOperationError(FALSE_SUCCESS)
+
     def settle_failed(self) -> None:
         """Name a crossed limit on a run that already failed for another reason.
 
