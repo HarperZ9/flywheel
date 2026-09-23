@@ -17,7 +17,7 @@ with a line per deliverable naming the check behind its mark.
 | --- | --- | --- | --- |
 | A file the run wrote | `file_hash_recheck` | The file on disk at the end of the run has the hash the engine recorded right after the write | The file is missing, or changed after it was written |
 | A file a command changed | none | Never: it is claimed, because nothing recorded what it should hold | Never |
-| The final answer | `test_command` | The run's check command ran after the model said it was done, and passed on a trajectory that did not touch the check | The check failed, passed on a trajectory that changed what grades it, or never ran because the steps ran out before the model answered |
+| The final answer | `test_command` | The run's check command ran after the model said it was done, and passed on a trajectory that did not touch the check | The check failed, or passed on a trajectory that changed what grades it. When the steps ran out before the model answered, the check never ran: the answer is failed with the detail `not_run`, and the card says the check was not run, not that it did not pass |
 | The final answer | `run_state` | Never | The run stopped before it finished, for example on its budget |
 
 The engine's record format also has an `acceptance_criteria` check for the
@@ -89,6 +89,7 @@ again on every read and in offline verification. It shows the report as
 - the answer is marked verified by the check command with no passing check run
   in the trace;
 - the answer is marked verified on a failed run;
+- the answer is marked `not_run` while the trace holds a run of the check;
 - the counts or the verdict do not match the items.
 
 ## Limits

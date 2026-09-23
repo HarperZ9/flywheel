@@ -38,7 +38,7 @@ def _sha(value) -> bool:
 _FILE_DETAILS = {"matches", "missing", "changed_after_write", "no_recorded_hash",
                  "changed_by_command"}
 _ANSWER_DETAILS = {"passed", "failed", "no_check_ran", "integrity_not_clean",
-                   "test_run_not_in_trace", "NO_RESULT"}
+                   "test_run_not_in_trace", "not_run", "NO_RESULT"}
 _REASON = re.compile(r"[A-Z][A-Z0-9_]{0,63}\Z")
 
 
@@ -82,6 +82,11 @@ def _check_items(items: list, terminal_state: str, tested) -> None:
             and tested is not True:
         raise _Unverifiable("COMPLETION_TEST_NOT_IN_TRACE")
     if answer["status"] == "claimed" and answer["check"] is not None:
+        raise _Unverifiable("COMPLETION_ITEM_NOT_SUPPORTED")
+    if answer["detail"] == "not_run" and (
+            answer["check"] != "test_command" or answer["status"] != "failed"
+            or tested is not None):
+        # "Not run" is true only when the trace holds no harness check run.
         raise _Unverifiable("COMPLETION_ITEM_NOT_SUPPORTED")
 
 

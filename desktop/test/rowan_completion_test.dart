@@ -131,6 +131,18 @@ void main() {
         'File changed by a command: claimed, nothing recorded what it holds.');
   });
 
+  test('a check the step budget never reached is named as not run', () {
+    final completion = _completion(
+        [_fileVerified, _item('final_answer', 'failed', 'test_command', 'not_run')]);
+    expect(completionItemLine(completion.items.last),
+        'Answer: step budget exhausted; the test command never ran, so this is '
+        'unwitnessed, not an observed failure.');
+    expect(completionItemLine(completion.items.last),
+        isNot(contains('did not pass')));
+    expect(completionHeadline(completion),
+        'Not done: the run stopped before it finished.');
+  });
+
   testWidgets('the card leads with the split and never says done for claims',
       (tester) async {
     final outcome = RunOutcome.fromJson(

@@ -159,6 +159,9 @@ def _open_items(state: str, reason, report: dict, completion: dict, payload: dic
         name = code(item["path"], root) if item.get("kind") == "file" else "the final answer"
         if item.get("status") == "claimed":
             lines.append(f"- Check {name}: it is claimed and nothing verified it.")
+        elif item.get("detail") == "not_run":
+            lines.append(f"- Run the check on {name}: the step budget ran out before "
+                         "the check command ran, so nothing was observed to fail.")
         elif item.get("status") == "failed":
             lines.append(f"- Fix {name}: its check failed ({item.get('detail')}).")
     if confirmed and completion.get("unbacked_success_claim"):

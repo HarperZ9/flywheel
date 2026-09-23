@@ -6,7 +6,9 @@ the run finished:
 
 - verified: a named check ran and passed;
 - claimed: the model or its tool said so and nothing checked it;
-- failed: a check ran and did not pass, or the run did not complete.
+- failed: a check ran and did not pass, or the run did not complete. A run
+  whose step budget ran out before its check ran is failed with the detail
+  `not_run`, never as a check that did not pass.
 
 Two deliverables are checked today. Each file the run wrote is re-hashed on
 disk at the end of the run and compared with the hash the harness recorded
@@ -167,6 +169,10 @@ def _answer_item(result: dict | None, failure: str | None, tested: bool | None) 
         trusted = result.get("tests_pass_trusted") is True
         if passed is True and trusted and tested is True:
             return {**item, "status": "verified", "check": "test_command", "detail": "passed"}
+        if passed is False and tested is None:
+            # The step budget ran out before the harness ran its check, so
+            # there is no observed failure to report: the check was not run.
+            return {**item, "status": "failed", "check": "test_command", "detail": "not_run"}
         detail = ("failed" if passed is not True else "integrity_not_clean" if not trusted
                   else "test_run_not_in_trace")
         return {**item, "status": "failed", "check": "test_command", "detail": detail}

@@ -148,9 +148,24 @@ def test_a_native_run_that_runs_out_of_steps_never_runs_its_check(tmp_path, monk
     answer, report, projected = _answer(records)
     assert projection["state"] == "completed" and len(sent) == 2 and ran == []
     assert records[-1]["payload"]["tests_pass"] is False
+    # The check never ran, so the record says so instead of "did not pass".
     assert (answer["status"], answer["check"], answer["detail"]) == (
-        "failed", "test_command", "failed")
+        "failed", "test_command", "not_run")
     assert report["verdict"] == "failed" and projected["verdict"] == "failed"
+    assert projected["items"][-1]["detail"] == "not_run"
+
+
+def test_a_not_run_answer_beside_a_recorded_check_run_is_unverifiable(tmp_path):
+    from harness.gateway_completion_outcome import derive_completion
+    from harness.run_completion import completion_report
+    ran = [{"kind": "tool_result", "content": "1 passed",
+            "meta": {"tool": "run", "ok": True, "gate": "test"}}]
+    report = completion_report([], {"tests_pass": False}, tmp_path)
+    assert report["items"][-1]["detail"] == "not_run"
+    forged = [{"sequence": 0, "kind": "ledger", "payload": ran[0]},
+              {"sequence": 1, "kind": "failure", "payload": {"completion": report}}]
+    assert derive_completion(forged, "failed") == {
+        "status": "unverifiable", "reason": "COMPLETION_ITEM_NOT_SUPPORTED"}
 
 
 class _Recorder:
@@ -180,3 +195,14 @@ def test_files_the_check_itself_writes_are_its_side_effects(tmp_path):
     (tmp_path / "tests" / "test_x.py").write_text("def test_x(): pass\n", encoding="utf-8")
     executor.execute("run", {"cmd": "pytest -q"})
     assert [f.kind for f in trajectory_integrity(ledger)] == ["check_files_changed"]
+
+
+def test_the_desktop_shows_the_engines_unrun_note_word_for_word():
+    import re
+    from pathlib import Path
+    from harness.gateway_agent_native_tools import UNRUN_CHECK_NOTE
+    dart = (Path(__file__).resolve().parents[1] / "desktop" / "lib" / "widgets"
+            / "rowan_completion_summary.dart").read_text(encoding="utf-8")
+    body = re.search(r"const unrunCheckNote = ((?:\s*'[^']*')+);", dart)
+    assert body is not None
+    assert "".join(re.findall(r"'([^']*)'", body.group(1))) == UNRUN_CHECK_NOTE

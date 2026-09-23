@@ -30,8 +30,9 @@ String completionHeadline(RunCompletionOutcome completion) {
   final claimed = completion.counts['claimed'] ?? 0;
   if (completion.done) return 'Done. Every deliverable passed a check.';
   // The answer item is always listed, so a run_state failure is always seen.
-  final stopped = completion.items
-      .any((i) => i.status == 'failed' && i.check == 'run_state');
+  // A check the step budget never reached is a run that did not finish too.
+  final stopped = completion.items.any((i) =>
+      i.status == 'failed' && (i.check == 'run_state' || i.detail == 'not_run'));
   final checked = failed - (stopped ? 1 : 0);
   if (stopped && checked == 0) {
     return 'Not done: the run stopped before it finished.';
@@ -72,6 +73,7 @@ String completionItemLine(CompletionItem item) {
       'Answer: the acceptance criteria passed.',
     ('failed', 'run_state', final reason) =>
       'Answer: the run did not complete ($reason).',
+    ('failed', 'test_command', 'not_run') => 'Answer: $unrunCheckNote.',
     ('failed', _, 'integrity_not_clean') =>
       'Answer: the check passed on a run that touched its own check; '
           'not trusted.',
@@ -79,6 +81,12 @@ String completionItemLine(CompletionItem item) {
     _ => 'Answer: claimed, no check ran. A check command would verify it.',
   };
 }
+
+/// The engine's UNRUN_CHECK_NOTE (harness/gateway_agent_native_tools.py),
+/// word for word: the step budget ran out before the check command ran.
+/// tests/test_run_completion_integrity.py fails if the two drift.
+const unrunCheckNote = 'step budget exhausted; the test command never ran, '
+    'so this is unwitnessed, not an observed failure';
 
 /// Shown when the answer says it succeeded and nothing backs that.
 const unbackedClaimLine =

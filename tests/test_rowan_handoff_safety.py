@@ -154,7 +154,10 @@ def test_the_final_answer_mark_survives_the_cap_and_omitted_items_are_counted(tm
     report = completion_report(ledger, {"final": "ok", "tests_pass": False}, tmp_path)
     assert report["items_omitted"] == 7
     section = _section(_brief(_records(ledger=ledger, report=report)), "Deliverables")
-    assert "- Final answer: failed (test_command, failed)" in section
+    # No check ran in this ledger, so the answer is failed as not run.
+    assert "- Final answer: failed (test_command, not_run)" in section
+    opened = _section(_brief(_records(ledger=ledger, report=report)), "Open items")
+    assert "the step budget ran out before the check command ran" in opened
     assert "- and 44 more in the trace, and 7 more not listed in the completion record" \
         in section
 
