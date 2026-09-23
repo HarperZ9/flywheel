@@ -13,9 +13,8 @@ def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
     import time
     from .gateway_agent_binding import validate_agent_binding
     from .gateway_agent_workspace import pinned_workspace
-    from .gateway_agent_proposer import BoundAgentProposer
     from .gateway_operation import canonicalize_operation, materialize_agent_attachment, GatewayOperationError
-    from .router_agent import run_router_agent
+    from .run_budget import RunBudget, resolve_limits
     from .source_context_worker import materialize_goal
 
     # Credentials travel only via the approved in-memory binding interface.
@@ -26,6 +25,7 @@ def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
     trace.append("request", {"operation": operation, "source_context": source_context, "execution_binding": binding})
     execution = materialize_agent_attachment(operation)
     ledger = TraceLedger(trace)
+    budget = RunBudget(resolve_limits(operation))
     rejected = []
 
     def progress(event):
@@ -39,33 +39,9 @@ def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
     try:
         with pinned_workspace(binding["workspace"]) as root:
             goal = materialize_goal(execution["goal"], source_context)
-            if binding.get('execution_mode') == 'native_cli_session':
-                from .gateway_cli_execution import run_cli_session
-                result = run_cli_session(goal, binding, root, deadline, progress,
-                    state_root=trace.root, state_identity=trace.identity)
-            elif binding.get("tool_protocol", {}).get("protocol") == "native":
-                from .gateway_agent_native_tools import run_native_tool_agent
-                result = run_native_tool_agent(goal, binding,
-                    CredentialBindings(bindings), root, ledger, deadline,
-                    on_event=progress, test_cmd=execution.get("test_cmd"))
-            else:
-                bound_credentials = CredentialBindings(bindings)
-                proposer = BoundAgentProposer(binding, bound_credentials, ledger, deadline)
-                from .gateway_agent_mcp_admission import open_mcp_runtime
-                with open_mcp_runtime(binding.get("mcp_admission"),
-                                      credentials=bound_credentials, root=root,
-                                      on_event=progress,
-                                      deadline=deadline) as mcp_runtime:
-                    result = run_router_agent(
-                        goal, binding["endpoint"]["name"], root=str(root),
-                        allow_write=binding["capabilities"]["allow_write"],
-                        allow_exec=binding["capabilities"]["allow_exec"], max_steps=binding["budget"]["max_steps"],
-                        allow_mcp=mcp_runtime["allow_mcp"], external=mcp_runtime["external"],
-                        model=binding["model"]["model_id"], max_tokens=binding["budget"]["max_tokens"],
-                        temperature=binding["sampling"]["temperature"], seed=binding["sampling"]["router_seed"],
-                        proposer=proposer, test_cmd=execution.get("test_cmd"),
-                        credential_bindings=bound_credentials,
-                        on_event=progress, ledger=ledger, event_errors_fatal=True)
+            result = _run_bound_path(goal, binding, bindings, root, ledger, trace,
+                                     deadline, progress, execution, budget)
+            _settle_budget(result, budget)
             if time.monotonic() >= deadline:
                 raise GatewayOperationError("OPERATION_DEADLINE_EXCEEDED")
         if rejected:
@@ -73,14 +49,73 @@ def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
         if operation.get("effort"):
             result["effort"] = stamp_applied(resolve_effort(operation["effort"]),
                 max_steps_applied=operation["max_steps"], n_candidates_applied=False)
+        result["run_budget"] = budget.report()
         trace.append("result", result)
         return trace.projection("completed", runtime=result.get("environment", {}))
     except Exception as exc:
-        try:
-            trace.append("failure", {"error_type": type(exc).__name__, "message": str(exc)})
-        except Exception:
-            pass  # rejected credentials/custody never enter the diagnostic record
+        _record_failure(trace, exc, budget)
         raise
+
+
+def _run_bound_path(goal, binding, bindings, root, ledger, trace, deadline,
+                    progress, execution, budget) -> dict:
+    """Dispatch to the one execution path the binding names, under the budget."""
+    if binding.get('execution_mode') == 'native_cli_session':
+        from .gateway_cli_execution import run_cli_session
+        return run_cli_session(goal, binding, root, deadline, progress,
+            state_root=trace.root, state_identity=trace.identity, budget=budget)
+    if binding.get("tool_protocol", {}).get("protocol") == "native":
+        from .gateway_agent_native_tools import run_native_tool_agent
+        return run_native_tool_agent(goal, binding,
+            CredentialBindings(bindings), root, ledger, deadline,
+            on_event=progress, test_cmd=execution.get("test_cmd"), budget=budget)
+    from .gateway_agent_mcp_admission import open_mcp_runtime
+    from .gateway_agent_proposer import BoundAgentProposer
+    from .router_agent import run_router_agent
+    bound_credentials = CredentialBindings(bindings)
+    proposer = BoundAgentProposer(binding, bound_credentials, ledger, deadline, budget=budget)
+    with open_mcp_runtime(binding.get("mcp_admission"),
+                          credentials=bound_credentials, root=root,
+                          on_event=progress,
+                          deadline=deadline) as mcp_runtime:
+        return run_router_agent(
+            goal, binding["endpoint"]["name"], root=str(root),
+            allow_write=binding["capabilities"]["allow_write"],
+            allow_exec=binding["capabilities"]["allow_exec"], max_steps=binding["budget"]["max_steps"],
+            allow_mcp=mcp_runtime["allow_mcp"], external=mcp_runtime["external"],
+            model=binding["model"]["model_id"], max_tokens=binding["budget"]["max_tokens"],
+            temperature=binding["sampling"]["temperature"], seed=binding["sampling"]["router_seed"],
+            proposer=proposer, test_cmd=execution.get("test_cmd"),
+            credential_bindings=bound_credentials,
+            on_event=progress, ledger=ledger, event_errors_fatal=True, budget=budget)
+
+
+def _settle_budget(result: dict, budget) -> None:
+    """Stop a run whose last step crossed a limit, or whose answer is a limit error.
+
+    A final answer that is itself a rate-limit, quota or sign-in error reads as
+    a finished run to anything that only checks the exit state. It is failed
+    here instead, with the signal recorded in the budget report."""
+    from .gateway_operation import GatewayOperationError
+    from .limit_signal import limit_signal
+    from .run_budget import FALSE_SUCCESS
+    budget.settle()
+    signal = limit_signal(result.get("final"))
+    if signal is not None:
+        budget.false_success.append({"tool": "final_answer", "signal": signal,
+                                     "action": budget.used["tool_actions"]})
+        raise GatewayOperationError(FALSE_SUCCESS)
+
+
+def _record_failure(trace, exc, budget) -> None:
+    """Write why the run stopped, with the budget as it stood, to the trace."""
+    if getattr(exc, "code", None) == "OPERATION_DEADLINE_EXCEEDED":
+        budget.note_wall_time()
+    try:
+        trace.append("failure", {"error_type": type(exc).__name__, "message": str(exc),
+                                 "run_budget": budget.report()})
+    except Exception:
+        pass  # rejected credentials/custody never enter the diagnostic record
 
 
 

@@ -127,8 +127,15 @@ def _native_private_guard(credentials, ledger):
     return guard
 
 
+def _under_budget(budget, executor, transport):
+    """Charge every tool action and provider request to the run budget."""
+    if budget is None:
+        return executor, transport
+    return budget.wrap_executor(executor), budget.guard_transport(transport)
+
+
 def run_native_tool_agent(goal: str, binding: dict, credentials, root, ledger,
-                          deadline: float, *, on_event=None, test_cmd=None) -> dict:
+                          deadline: float, *, on_event=None, test_cmd=None, budget=None) -> dict:
     endpoint = binding["endpoint"]
     contract = binding["tool_protocol"]
     from .gateway_agent_mcp_admission import open_mcp_runtime, native_mcp_tool_schemas
@@ -155,6 +162,7 @@ def run_native_tool_agent(goal: str, binding: dict, credentials, root, ledger,
         executor = ToolExecutor(root=str(root), gate=gate, external=mcp_runtime["external"],
             runner=make_sandboxed_runner(bindings=credentials,
                                          on_unavailable=fallback_from_env()))
+        executor, transport = _under_budget(budget, executor, transport)
         if hasattr(executor, "init_receipt_chain"):
             executor.init_receipt_chain(f"run-{ledger.checkpoint()[:12]}")
         pre_state = _workspace_pre(str(root), gate.allow_write or gate.allow_exec, ledger)

@@ -47,6 +47,12 @@ const _rosterBody = {
       },
       'fires': 1,
       'chain_intact': false,
+      'breaker': {
+        'tripped': true,
+        'consecutive_failed_fires': 2,
+        'trip_after': 2,
+        'limit_signals': ['rate_limit'],
+      },
       'last_fired_for': '2026-09-05T00:00:00Z',
       'pending': {'occurrences': [], 'due': 0, 'truncated': false},
       'plan': {
@@ -118,6 +124,8 @@ void main() {
     // a broken fire history is stated, not folded into a green count
     expect(find.text('broken'), findsOneWidget);
     expect(find.textContaining('no longer verifies'), findsOneWidget);
+    // a schedule the engine stopped for repeated failed fires says so
+    expect(find.text('STOPPED AFTER 2 FAILED FIRES'), findsOneWidget);
   });
 
   testWidgets('a tick prints what fired and what it refused', (tester) async {

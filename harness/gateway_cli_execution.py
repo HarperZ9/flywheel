@@ -10,7 +10,7 @@ from .gateway_cli_profile_home import owned_profile_home
 
 
 def run_cli_session(goal, binding, root, deadline, emit, *, launcher=None,
-                    state_root=None, state_identity=None):
+                    state_root=None, state_identity=None, budget=None):
     runtime, profile = binding['cli_runtime'], binding['cli_session']
     check_configuration_boundary(profile['provider'], root)
     verify_runtime(runtime)
@@ -19,7 +19,7 @@ def run_cli_session(goal, binding, root, deadline, emit, *, launcher=None,
     if type(goal) is not str or len(goal.encode('utf-8')) > 1024 * 1024:
         raise GatewayOperationError('AGENT_CLI_PROTOCOL_ERROR')
     parser = NativeEvents(profile['provider'], profile['tools'], emit,
-                           max_steps=binding['budget']['max_steps'])
+                           max_steps=binding['budget']['max_steps'], budget=budget)
     process, consumed = None, 0
     def read_events(raw, *, final=False):
         nonlocal consumed

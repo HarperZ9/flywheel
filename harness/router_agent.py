@@ -203,8 +203,11 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                      compact_budget: int = 0, proposer=None, credential_bindings=None,
                      canaries: "list | None" = None, on_event=None,
                      receipt_dir: "str | None" = None, ledger=None,
-                     event_errors_fatal: bool = False) -> dict:
-    """Run one gated agentic loop over a named or explicitly bound endpoint."""
+                     event_errors_fatal: bool = False, budget=None) -> dict:
+    """Run one gated agentic loop over a named or explicitly bound endpoint.
+
+    With `budget` (a run_budget.RunBudget), every tool action is charged
+    before it runs and its output is read for a limit signal."""
     ledger = SessionLedger() if ledger is None else ledger
     agent = RouterAgent(
         endpoint, model=model, base_url=base_url, proposer=proposer,
@@ -216,6 +219,8 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                       allow_mcp=allow_mcp), receipt_dir=receipt_dir,
         runner=make_sandboxed_runner(bindings=credential_bindings,
                                      on_unavailable=fallback_from_env()))
+    if budget is not None:
+        executor = budget.wrap_executor(executor)
     pre_state = _workspace_pre(root, allow_write or allow_exec, ledger)
     from . import tool_receipts
     sign_key = tool_receipts.new_session_key()

@@ -8,12 +8,15 @@ def fail(code='AGENT_CLI_PROTOCOL_ERROR'):
 
 
 class NativeEvents:
-    def __init__(self, provider, tools, emit, *, max_steps):
+    def __init__(self, provider, tools, emit, *, max_steps, budget=None):
         self.provider, self.tools, self.emit = provider, set(tools), emit
         self.max_steps, self.count, self.turns = max_steps, 0, 0
         self.terminal, self.final, self.model = False, '', None
-        self.calls = set()
+        self.calls, self.call_names, self.messages = set(), {}, set()
         self.omissions = set()
+        # The CLI runs its own tools. The budget can only observe each call
+        # as it streams past and stop the session, not refuse the call.
+        self.budget = budget
 
     def feed(self, line):
         if not line.strip(): return
@@ -38,7 +41,21 @@ class NativeEvents:
         if name not in self.tools: fail('AGENT_CLI_PERMISSION_UNSUPPORTED')
         if type(ident) is not str or not ident or ident in self.calls: fail()
         self.calls.add(ident)
+        self.call_names[ident] = name
         self._send('cli_tool_call', call_id=ident, tool=name, arguments=arguments)
+        if self.budget is not None: self.budget.count_observed('tool_actions')
+
+    def _observe(self, ident, ok, content):
+        if self.budget is None: return
+        if type(content) is list:
+            content = ' '.join(str(b.get('text', '')) for b in content if type(b) is dict)
+        self.budget.observe_step(self.call_names.get(ident, ''), ok, content)
+
+    def _turn(self, message):
+        ident = message.get('id')
+        if self.budget is None or type(ident) is not str or ident in self.messages: return
+        self.messages.add(ident)
+        self.budget.count_observed('model_calls')
 
     def _claude(self, event):
         kind = event['type']
@@ -47,6 +64,7 @@ class NativeEvents:
             if type(msg) is not dict or type(msg.get('content')) is not list: fail()
             model = msg.get('model')
             if type(model) is str and 0 < len(model) <= 160: self.model = model
+            self._turn(msg)
             for block in msg['content']:
                 if type(block) is not dict: fail()
                 if block.get('type') == 'tool_use':
@@ -65,11 +83,17 @@ class NativeEvents:
                     if block.get('tool_use_id') not in self.calls: fail()
                     self._send('cli_tool_result', call_id=block['tool_use_id'],
                         content=block.get('content'), is_error=block.get('is_error', False))
+                    self._observe(block['tool_use_id'], block.get('is_error') is not True,
+                                  block.get('content'))
         elif kind == 'result':
             if event.get('is_error') is not False or event.get('subtype') != 'success':
                 fail('AGENT_CLI_INCOMPLETE')
             if type(event.get('num_turns')) is not int or not 1 <= event['num_turns'] <= self.max_steps:
                 fail('AGENT_CLI_INCOMPLETE')
+            if self.budget is not None:
+                # Cost is reported once, at the end: a spend limit on a CLI
+                # session can mark it stopped, not interrupt it.
+                self.budget.record_usage(event.get('usage'), cost_usd=event.get('total_cost_usd'))
             self.final, self.terminal = event.get('result'), True
         elif kind not in {'system', 'stream_event', 'rate_limit_event'}: fail()
 
@@ -95,6 +119,7 @@ class NativeEvents:
                 if kind == 'item.completed':
                     self._send('cli_tool_result', call_id=ident, content={key: item[key]
                         for key in ('aggregated_output', 'exit_code', 'status', 'changes') if key in item})
+                    self._observe(ident, item.get('exit_code', 0) == 0, item.get('aggregated_output'))
             elif typ == 'reasoning' and kind == 'item.completed':
                 # Codex exec_events::ReasoningItem documents text as a summary.
                 # No other fields are mined or decoded for reasoning content.

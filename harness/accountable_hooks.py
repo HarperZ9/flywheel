@@ -164,8 +164,32 @@ def run_hooks(event: str, registrations: list[dict], *, runner,
         }
         if error:
             receipt["error"] = error
+        _mark_limit_signal(receipt, output, bool(reg.get("blocking")))
         receipts.append(receipt)
     return receipts
+
+
+def _mark_limit_signal(receipt: dict, output: str, blocking: bool) -> None:
+    """Record a hook that exited 0 while its output reports a limit error.
+
+    Exit 0 with "usage limit reached" on stdout is the failure a scheduler
+    reads as success and keeps paying for. The receipt names the signal and
+    marks it `false_success`, and a blocking hook blocks the event, the same
+    as a nonzero exit would."""
+    from .limit_signal import limit_signal
+    signal = limit_signal(output)
+    if signal is None:
+        return
+    receipt["limit_signal"] = signal
+    if receipt["exit_code"] == 0:
+        receipt["false_success"] = True
+        receipt["blocked"] = blocking
+
+
+def hook_failed(receipt: dict) -> bool:
+    """A hook run that did not succeed: nonzero exit, error, or false success."""
+    return (receipt.get("exit_code") != 0 or bool(receipt.get("error"))
+            or receipt.get("false_success") is True)
 
 
 def event_blocked(receipts: list[dict]) -> bool:

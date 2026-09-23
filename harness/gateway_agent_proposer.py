@@ -10,13 +10,13 @@ from .proposer import StubProposer, normalize_usage
 
 class BoundAgentProposer:
     def __init__(self, binding, credentials: CredentialBindings, ledger, deadline,
-                 *, transport_factory=None, clock=time.monotonic):
+                 *, transport_factory=None, clock=time.monotonic, budget=None):
         from .gateway_agent_transport import BoundAgentTransport
         from .endpoint_registry import BackendProposer
         from .endpoints import OpenAICompatBackend, AnthropicBackend, GeminiBackend
         self.binding, self.ledger, self.deadline, self.clock = binding, ledger, deadline, clock
         self.ordinal, self.observed, self.usage, self.usage_reported = 0, None, None, None
-        self.response_status = None
+        self.response_status, self.budget = None, budget
         self.binding_sha256 = canonical_sha256(binding)
         endpoint, model = binding["endpoint"], binding["model"]["model_id"]
         slot = endpoint["slot"]
@@ -58,6 +58,8 @@ class BoundAgentProposer:
             raise GatewayOperationError("AGENT_BINDING_DRIFT")
         if self.clock() >= self.deadline:
             raise GatewayOperationError("OPERATION_DEADLINE_EXCEEDED")
+        if self.budget is not None:
+            self.budget.charge_model_call()
         self.ordinal += 1
         self.observed, self.usage, self.usage_reported = None, None, None
         self.response_status = None
@@ -79,6 +81,8 @@ class BoundAgentProposer:
                     raise GatewayOperationError("AGENT_MODEL_MISMATCH")
             return replace(output, served_model=self.observed or "", usage=self.usage)
         finally:
+            if self.budget is not None:
+                self.budget.record_usage(self.usage_reported)
             self.ledger.append("model_call", "", {
                 "schema": "flywheel.gateway-agent-model-call/v1",
                 "binding_sha256": self.binding_sha256, "ordinal": self.ordinal,

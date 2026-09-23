@@ -67,7 +67,7 @@ _FIELDS = {
     "agent.run": ({"goal", "endpoint", "max_steps", "allow_write",
                    "allow_exec", "stream"} | _REFS,
                   {"root", "test_cmd", "attachment", "effort", "model", "max_tokens", "timeout_s",
-                   "tool_protocol", "continuation", "execution_mode", "mcp_admission"}),
+                   "tool_protocol", "continuation", "execution_mode", "mcp_admission", "run_budget"}),
     "workflow.run": ({"workflow", "goal", "endpoint", "allow_write",
                       "allow_exec"} | _REFS,
                      {"profile", "root", "test_cmd"}),
@@ -249,6 +249,7 @@ def _validate_shape(action: str, value: dict) -> None:
     # module-level import would cycle.
     from .gateway_operation_shape import validate_operation_shape
     validate_operation_shape(action, value)
+    if "run_budget" in value: from .run_budget import validate_run_budget_request as v; v(value["run_budget"])
     if "attachment" in value:
         attachment = value["attachment"]
         if (type(attachment) is not dict

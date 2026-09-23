@@ -22,7 +22,7 @@ from pathlib import Path
 from .accountable_hooks import (event_blocked, load_registry, run_hooks,
                                 subprocess_runner)
 from .evidence_public import TransportError, error_response
-from .scheduler import (append_fire, chain_intact, define_schedule,
+from .scheduler import (append_fire, breaker, chain_intact, define_schedule,
                         fire_record, fires_path, last_fired_for, load_fires,
                         load_schedules, pending, plan_fires, save_schedules,
                         schedules_path)
@@ -44,6 +44,7 @@ def _state(schedule: dict, *, run_root: Path, now: str) -> dict:
     return {"schedule": schedule,
             "fires": len(records),
             "chain_intact": chain_intact(records),
+            "breaker": breaker(schedule, records),
             "last_fired_for": last_fired_for(records),
             "pending": owed,
             "plan": plan_fires(schedule, owed)}
@@ -102,8 +103,14 @@ def _tick_one(schedule: dict, *, run_root: Path, now: str,
     owed = pending(schedule, last_fired_for=last_fired_for(records), now=now)
     plan = plan_fires(schedule, owed)
     registry = load_registry(Path(run_root) / "hooks" / "registry.json")
-    fired = []
+    fired, stopped = [], None
     for occurrence in plan["fire"]:
+        state = breaker(schedule, records)
+        if state["tripped"]:
+            # Stop before the next fire, not after the whole backlog: a
+            # replayed backlog is exactly how a failing job multiplies.
+            stopped = {"refused": _breaker_refusal(state), "breaker": state}
+            break
         receipts = run_hooks(schedule["event"], registry,
                              runner=subprocess_runner(timeout_s=timeout_s),
                              context={"schedule_id": schedule["schedule_id"],
@@ -126,7 +133,14 @@ def _tick_one(schedule: dict, *, run_root: Path, now: str,
             "fired": len(fired),
             "skipped": plan["skipped"],
             "truncated": plan["truncated"],
-            "runs": fired}
+            "runs": fired, **(stopped or {})}
+
+
+def _breaker_refusal(state: dict) -> str:
+    signals = ", ".join(s.replace("_", " ") for s in state["limit_signals"])
+    reported = f"; output reported: {signals}" if signals else ""
+    return (f"circuit breaker: the last {state['consecutive_failed_fires']} fires "
+            f"failed{reported}. Redefine the schedule to re-arm it")
 
 
 def handle_schedule_post(path: str, body: dict, *, run_root: Path,

@@ -167,6 +167,8 @@ class _ScheduleViewState extends State<ScheduleView> {
     final schedule = (row['schedule'] as Map?) ?? const {};
     final intact = row['chain_intact'] != false;
     final due = _int((row['pending'] as Map?)?['due']);
+    final breaker = row['breaker'] as Map?;
+    final stopped = breaker?['tripped'] == true;
     return Row(children: [
       VerdictDot(intact ? 'verified' : 'drift'),
       const SizedBox(width: FwLayout.s2),
@@ -184,6 +186,14 @@ class _ScheduleViewState extends State<ScheduleView> {
       Text('${schedule['catch_up'] ?? ''}',
           style: TextStyle(fontSize: 12, color: t.inkMuted)),
       const SizedBox(width: FwLayout.s3),
+      if (stopped) ...[
+        // The engine stopped this schedule after repeated failed fires.
+        VerdictPill(
+            'stopped after ${_int(breaker?['consecutive_failed_fires'])} '
+            'failed fires',
+            status: 'drift'),
+        const SizedBox(width: FwLayout.s2),
+      ],
       VerdictPill('$due due', status: due == 0 ? 'verified' : 'pending'),
     ]);
   }

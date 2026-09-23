@@ -1,0 +1,105 @@
+{
+  "projection": {
+    "does_not_prove": [
+      "NOT_SEMANTIC_TRUTH",
+      "NOT_UNLIMITED_TOOL_OUTPUT",
+      "ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED"
+    ],
+    "journey_ref": "jrn_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "omissions": [
+      "PRIVATE_CONTENT",
+      "CREDENTIAL_VALUES",
+      "UPSTREAM_OUTPUT_LIMITS"
+    ],
+    "operation_ref": "op_cccccccccccccccccccccccccccccccc",
+    "projection_sha256": "d5373f2f97d4937515df3b66ebeae371a7416b2b5eda34c7691eaedd29d57a83",
+    "reason": "AGENT_RUN_BUDGET_EXHAUSTED",
+    "record_count": 1,
+    "run_outcome": {
+      "budget": {
+        "false_success_count": 1,
+        "false_success_signals": [
+          "rate_limit"
+        ],
+        "limits": {
+          "cost_micros": 2000000,
+          "limit_signals": 2,
+          "model_calls": 6,
+          "tool_actions": 24,
+          "usage_tokens": 200000,
+          "wall_time_ms": 300000
+        },
+        "record_sequence": 0,
+        "reporting": {
+          "calls_with_cost": 0,
+          "calls_with_tokens": 5,
+          "calls_without_tokens": 0
+        },
+        "status": "stopped",
+        "tripped": "tool_actions",
+        "used": {
+          "cost_micros": 0,
+          "model_calls": 5,
+          "tool_actions": 24,
+          "usage_tokens": 12400,
+          "wall_time_ms": 41250
+        }
+      },
+      "schema": "flywheel.gateway-run-outcome/v1",
+      "terminal_state": "failed"
+    },
+    "schema": "flywheel.gateway-agent-projection/v1",
+    "state": "failed",
+    "trace_head_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "trace_ref": "agt_3e2197a3f63109a97f701d387b758689"
+  },
+  "records": [
+    {
+      "kind": "failure",
+      "payload": {
+        "error_type": "RunBudgetExceeded",
+        "message": "AGENT_RUN_BUDGET_EXHAUSTED",
+        "run_budget": {
+          "does_not_prove": [
+            "NOT_A_PROVIDER_INVOICE",
+            "UNREPORTED_USAGE_NOT_COUNTED",
+            "LIMIT_SIGNAL_IS_A_PHRASE_HEURISTIC"
+          ],
+          "false_success_count": 1,
+          "false_success_steps": [
+            {
+              "action": 7,
+              "signal": "rate_limit",
+              "tool": "run"
+            }
+          ],
+          "limits": {
+            "cost_micros": 2000000,
+            "limit_signals": 2,
+            "model_calls": 6,
+            "tool_actions": 24,
+            "usage_tokens": 200000,
+            "wall_time_ms": 300000
+          },
+          "reporting": {
+            "calls_with_cost": 0,
+            "calls_with_tokens": 5,
+            "calls_without_tokens": 0
+          },
+          "schema": "flywheel.run-budget/v1",
+          "status": "stopped",
+          "tripped": "tool_actions",
+          "used": {
+            "cost_micros": 0,
+            "model_calls": 5,
+            "tool_actions": 24,
+            "usage_tokens": 12400,
+            "wall_time_ms": 41250
+          }
+        }
+      },
+      "record_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "sequence": 0
+    }
+  ]
+}

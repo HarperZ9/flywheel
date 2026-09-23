@@ -16,6 +16,7 @@ GatewayOperation _rowanOperation({
   required AgentToolProtocol toolProtocol,
   Map<String, Object?>? mcpAdmission,
   Map<String, Object?>? continuation,
+  Map<String, Object?>? runBudget,
 }) =>
     agentRunOperation(
       requestId: requestId,
@@ -33,4 +34,5 @@ GatewayOperation _rowanOperation({
       toolProtocol: toolProtocol,
       mcpAdmission: mcpAdmission,
       continuation: continuation,
+      runBudget: runBudget,
     );

@@ -62,6 +62,7 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
         toolProtocol: _toolProtocol,
         mcpAdmission: _mcpAdmission,
         continuation: continuation,
+        runBudget: _runBudget.toWire(),
       );
     } on Object {
       _error = 'INVALID_CONTEXT';

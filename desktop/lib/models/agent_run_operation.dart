@@ -20,6 +20,7 @@ GatewayOperation agentRunOperation({
   Map<String, Object?>? mcpAdmission,
   Map<String, Object?>? attachment,
   Map<String, Object?>? continuation,
+  Map<String, Object?>? runBudget,
 }) {
   final input = goal.trim();
   if (input.isEmpty || endpoint.isEmpty) throw ArgumentError('invalid agent');
@@ -50,6 +51,7 @@ GatewayOperation agentRunOperation({
         'stream': true,
         if (attachment != null) 'attachment': attachment,
         if (continuation != null) 'continuation': continuation,
+        if (runBudget != null) 'run_budget': runBudget,
       },
     );
   }
@@ -72,6 +74,7 @@ GatewayOperation agentRunOperation({
       if (root != null && root.isNotEmpty) 'root': root,
       if (attachment != null) 'attachment': attachment,
       if (continuation != null) 'continuation': continuation,
+      if (runBudget != null) 'run_budget': runBudget,
     },
   );
 }

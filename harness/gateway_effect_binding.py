@@ -11,6 +11,7 @@ from .gateway_effect_evidence import (
     validate_effect_evidence,
 )
 from .gateway_operation_validation import TERMINAL_EVENTS
+from .gateway_run_outcome import derive_run_outcome, validate_run_outcome
 
 
 def _is_agent_projection(value: object) -> bool:
@@ -40,9 +41,13 @@ def _validate_projection_binding(value: dict, operation_ref: str,
         raise ValueError("invalid terminal projection binding")
 
 
+_DERIVED = ("effect_evidence", "run_outcome")
+
+
 def _without_effect(value: dict) -> dict:
     projected = dict(value)
-    projected.pop("effect_evidence", None)
+    for key in _DERIVED:
+        projected.pop(key, None)
     return projected
 
 
@@ -65,6 +70,11 @@ def attach_terminal_effect_evidence(state_root: Path, owner_ref: str,
     clean = _without_effect(result)
     _validate_projection_binding(clean, operation_ref, journey_ref,
                                  terminal_state)
+    # Both derived blocks attach together or not at all: a projection either
+    # carries everything the accepted trace prefix yields, or stays legacy.
+    # The run outcome reports a bad budget record as unverifiable rather than
+    # raising, so the fallback below is reached only when the trace itself
+    # cannot be read or the effect block cannot be derived.
     try:
         trace, records = _read_matching_records(
             state_root, owner_ref, journey_ref, operation_ref, clean)
@@ -77,6 +87,8 @@ def attach_terminal_effect_evidence(state_root: Path, owner_ref: str,
             terminal_basis_event_type=basis_event["event_type"],
             terminal_basis_event_sha256=basis_event["event_sha256"],
         )
+        candidate["run_outcome"] = derive_run_outcome(
+            records, terminal_state=terminal_state)
         candidate["projection_sha256"] = canonical_sha256(candidate)
         return candidate
     except Exception:
@@ -99,27 +111,27 @@ def _terminal_and_basis(history: list[dict]) -> tuple[dict, dict]:
 def validate_terminal_effect_evidence(state_root: Path, owner_ref: str,
                                       journey_ref: str, operation_ref: str,
                                       result: dict, history: list[dict]) -> None:
-    if not _is_agent_projection(result) or "effect_evidence" not in result:
-        if _is_agent_projection(result):
-            terminal, _ = _terminal_and_basis(history)
-            _validate_projection_binding(
-                result, operation_ref, journey_ref,
-                terminal["event_type"].removeprefix("operation_"))
+    if not _is_agent_projection(result):
         return
     terminal, basis = _terminal_and_basis(history)
-    _validate_projection_binding(
-        result, operation_ref, journey_ref,
-        terminal["event_type"].removeprefix("operation_"))
+    state = terminal["event_type"].removeprefix("operation_")
+    _validate_projection_binding(result, operation_ref, journey_ref, state)
+    if not any(key in result for key in _DERIVED):
+        return
     trace, records = _read_matching_records(
         state_root, owner_ref, journey_ref, operation_ref, result)
-    validate_effect_evidence(
-        records,
-        trace_ref=trace.ref,
-        terminal_state=terminal["event_type"].removeprefix("operation_"),
-        terminal_basis_event_type=basis["event_type"],
-        terminal_basis_event_sha256=basis["event_sha256"],
-        submitted=result["effect_evidence"],
-    )
+    if "effect_evidence" in result:
+        validate_effect_evidence(
+            records,
+            trace_ref=trace.ref,
+            terminal_state=state,
+            terminal_basis_event_type=basis["event_type"],
+            terminal_basis_event_sha256=basis["event_sha256"],
+            submitted=result["effect_evidence"],
+        )
+    if "run_outcome" in result:
+        validate_run_outcome(records, terminal_state=state,
+                             submitted=result["run_outcome"])
     expected_hash = canonical_sha256(
         {key: value for key, value in result.items()
          if key != "projection_sha256"})
