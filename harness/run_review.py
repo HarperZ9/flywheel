@@ -43,8 +43,8 @@ def _parse_call(content: str) -> tuple:
 
 
 def _patch_paths(patch: str) -> list:
-    return [line[6:].strip() for line in (patch or "").splitlines()
-            if line.startswith("+++ b/")]
+    from .patch_paths import patch_target_paths
+    return patch_target_paths(patch)
 
 
 def run_review(entries: list) -> dict:

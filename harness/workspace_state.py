@@ -17,8 +17,16 @@ _SKIP_DIRS = {".git", "node_modules", "__pycache__", ".dart_tool", "build",
               ".elan", "artifacts", ".pytest_cache", ".ruff_cache"}
 
 
+def skipped_part(rel: Path) -> bool:
+    """A path under a directory the snapshot never reads (VCS, caches, builds)."""
+    return any(part in _SKIP_DIRS for part in rel.parts)
+
+
 def workspace_snapshot(root, *, max_files: int = 2000,
-                       max_bytes: int = 1_000_000) -> dict:
+                       max_bytes: int = 1_000_000, hashes: dict | None = None) -> dict:
+    """The snapshot record. With `hashes`, each counted file's content hash is
+    also put there by relative path, for a caller that diffs two snapshots
+    without writing the listing into the record."""
     root = Path(root)
     rows: list = []
     skipped = 0
@@ -27,7 +35,7 @@ def workspace_snapshot(root, *, max_files: int = 2000,
         if not p.is_file():
             continue
         rel = p.relative_to(root)
-        if any(part in _SKIP_DIRS for part in rel.parts):
+        if skipped_part(rel):
             continue
         if counted >= max_files:
             skipped += 1
@@ -42,6 +50,8 @@ def workspace_snapshot(root, *, max_files: int = 2000,
             skipped += 1
             continue
         rows.append(f"{rel.as_posix()}:{digest}")
+        if hashes is not None:
+            hashes[rel.as_posix()] = digest
         counted += 1
     return {
         "schema": SCHEMA,

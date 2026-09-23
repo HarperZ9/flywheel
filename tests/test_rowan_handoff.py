@@ -13,13 +13,13 @@ from harness.gateway_operation import GatewayOperationError
 from harness.rowan_handoff import handoff_markdown
 from tests.test_gateway_operations import JOURNEY, OWNER
 from tests.test_gateway_operation_recovery import OPERATION
-from tests.test_run_completion import WRITE, _run
+from tests.test_run_completion import WRITE, _run, state_dir
 
 TOKEN = "synthetic-handoff-token"
 
 
 def _brief(tmp_path, state, reason=None):
-    trace = AgentTrace(tmp_path, OWNER, JOURNEY, OPERATION)
+    trace = AgentTrace(state_dir(tmp_path), OWNER, JOURNEY, OPERATION)
     records = trace.read()
     projection = trace.projection(state, reason=reason)
     return handoff_markdown(records, projection), records
@@ -52,7 +52,7 @@ def test_a_stopped_run_says_where_to_pick_up(tmp_path, monkeypatch):
 def server(tmp_path, monkeypatch):
     _run(tmp_path, monkeypatch, [WRITE, "Created notes.md."])
     (tmp_path / "owner.ref").write_text(OWNER)
-    trace = AgentTrace(tmp_path, OWNER, JOURNEY, OPERATION)
+    trace = AgentTrace(state_dir(tmp_path), OWNER, JOURNEY, OPERATION)
     trace.read()
     projected = {"result": trace.projection("completed")}
 
@@ -60,7 +60,7 @@ def server(tmp_path, monkeypatch):
         if owner != OWNER or op != OPERATION:
             raise GatewayOperationError("NOT_FOUND")
         return SimpleNamespace(journey_ref=JOURNEY, state="completed")
-    service = SimpleNamespace(state_root=tmp_path, snapshot=snapshot,
+    service = SimpleNamespace(state_root=state_dir(tmp_path), snapshot=snapshot,
                               result=lambda *a: projected)
 
     class Handler(_Handler):

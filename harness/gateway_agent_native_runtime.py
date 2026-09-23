@@ -17,9 +17,18 @@ from .local_loop import _edit_fingerprint, _result_meta
 from .proposer import normalize_usage
 
 
+#: The final text when the step budget ran out before the model answered.
+NO_FINAL_ANSWER = "[max_steps reached without a final answer]"
+
+
 def run_native_protocol_loop(route, goal, binding, key, transport, executor,
                              ledger, sign_key, deadline, on_event, tools, props,
                              private_guard=None):
+    """Run the provider-native turn loop.
+
+    Returns (final text, steps, answered). `answered` is False when the step
+    budget ran out before the model gave a final answer, so the caller does
+    not treat a check run after that as the model's finished work."""
     if route == "openai_responses":
         return _openai_loop(goal, binding, key, transport, executor, ledger,
                             sign_key, deadline, on_event, tools, props, private_guard)
@@ -59,7 +68,7 @@ def _openai_loop(goal, binding, key, transport, executor, ledger, sign_key,
             text = openai_text(output)
             ledger.append("assistant", text, {"backend": binding["endpoint"]["name"],
                 "native_api_route": "openai_responses", "response_id": obj.get("id")})
-            return text, step
+            return text, step, True
         results = []
         for call in calls:
             res = _execute(call, executor, ledger, sign_key, _call_meta(
@@ -68,7 +77,7 @@ def _openai_loop(goal, binding, key, transport, executor, ledger, sign_key,
                 "call_id": call["provider_call_id"], "output": res.output})
         input_items.extend(deepcopy(output))
         input_items.extend(results)
-    return "[max_steps reached without a final answer]", binding["budget"]["max_steps"]
+    return NO_FINAL_ANSWER, binding["budget"]["max_steps"], False
 
 
 def _anthropic_loop(goal, binding, key, transport, executor, ledger, sign_key,
@@ -94,7 +103,7 @@ def _anthropic_loop(goal, binding, key, transport, executor, ledger, sign_key,
             text = anthropic_text(content)
             ledger.append("assistant", text, {"backend": binding["endpoint"]["name"],
                 "native_api_route": "anthropic_messages", "response_id": obj.get("id")})
-            return text, step
+            return text, step, True
         messages.append({"role": "assistant", "content": deepcopy(content)})
         blocks = []
         for call in calls:
@@ -103,7 +112,7 @@ def _anthropic_loop(goal, binding, key, transport, executor, ledger, sign_key,
             blocks.append({"type": "tool_result", "tool_use_id": call["provider_call_id"],
                            "content": res.output, "is_error": not res.ok})
         messages.append({"role": "user", "content": blocks})
-    return "[max_steps reached without a final answer]", binding["budget"]["max_steps"]
+    return NO_FINAL_ANSWER, binding["budget"]["max_steps"], False
 
 
 def _call(route, binding, transport, url, payload, headers, ledger, ordinal,

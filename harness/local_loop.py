@@ -25,9 +25,9 @@ def _edit_fingerprint(name, args, res, executor) -> "dict | None":
     if name in ("write_file", "edit_file") and args.get("path"):
         paths = [str(args["path"])]
     elif name == "apply_patch":
-        patch = str(args.get("patch") or args.get("diff") or "")
-        paths = [ln[6:].strip() for ln in patch.splitlines()
-                 if ln.startswith("+++ b/")]
+        # The headers apply_patch writes to, `+++ path` as well as `+++ b/path`.
+        from .patch_paths import patch_target_paths
+        paths = patch_target_paths(args.get("patch") or args.get("diff"))
     files = {}
     for p in paths:
         try:

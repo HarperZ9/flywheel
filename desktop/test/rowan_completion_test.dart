@@ -122,6 +122,15 @@ void main() {
         throwsFormatException);
   });
 
+  test('a file a command changed is named as claimed, never checked', () {
+    final item = _completion([
+      _item('file', 'claimed', null, 'changed_by_command'),
+      _answerVerified,
+    ]).items.first;
+    expect(completionItemLine(item),
+        'File changed by a command: claimed, nothing recorded what it holds.');
+  });
+
   testWidgets('the card leads with the split and never says done for claims',
       (tester) async {
     final outcome = RunOutcome.fromJson(

@@ -19,6 +19,8 @@ from .router_agent import _finalize_run, _workspace_pre
 from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
 
 TOOL_PROTOCOL_SCHEMA = "flywheel.gateway-agent-tool-protocol/v1"
+UNRUN_CHECK_NOTE = ("step budget exhausted; the test command never ran, so this is "
+                    "unwitnessed, not an observed failure")
 NATIVE_ROUTES = {"openai": "openai_responses", "anthropic": "anthropic_messages"}
 
 
@@ -164,6 +166,8 @@ def run_native_tool_agent(goal: str, binding: dict, credentials, root, ledger,
             runner=make_sandboxed_runner(bindings=credentials,
                                          on_unavailable=fallback_from_env()))
         executor, transport = _under_budget(budget, executor, transport, test_cmd)
+        from .check_guard import guard_check
+        executor = guard_check(executor, root=root, ledger=ledger, test_cmd=test_cmd)
         if hasattr(executor, "init_receipt_chain"):
             executor.init_receipt_chain(f"run-{ledger.checkpoint()[:12]}")
         pre_state = _workspace_pre(str(root), gate.allow_write or gate.allow_exec, ledger)
@@ -171,15 +175,19 @@ def run_native_tool_agent(goal: str, binding: dict, credentials, root, ledger,
         from . import tool_receipts
         sign_key = tool_receipts.new_session_key()
         ledger.append("user", goal)
-        final, steps = run_native_protocol_loop(contract["native_api_route"], goal,
-            binding, key, transport, executor, ledger, sign_key, deadline, on_event,
+        final, steps, answered = run_native_protocol_loop(contract["native_api_route"],
+            goal, binding, key, transport, executor, ledger, sign_key, deadline, on_event,
             tools, props, secret_guard)
-        tests_pass = None
-        if test_cmd:
+        tests_pass, note = None, ""
+        if test_cmd and not answered:
+            # The model never said it was done, so a check run now would grade
+            # unfinished work. The router loop records the same outcome.
+            tests_pass, note = False, UNRUN_CHECK_NOTE
+        elif test_cmd:
             tests_pass = execute_native_test_command(
                 test_cmd, executor, ledger, sign_key, on_event, deadline,
                 secret_guard).ok
-        result = _done(final, steps, ledger, tests_pass=tests_pass,
+        result = _done(final, steps, ledger, tests_pass=tests_pass, note=note,
                        system="provider-native tool loop", goal=goal)
         return _finalize_run(result, endpoint=endpoint["name"],
             agent=SimpleNamespace(last_compaction=None), executor=executor,

@@ -26,6 +26,13 @@ def _operation(tmp_path, **extra):
             "credential_refs": [], **extra}
 
 
+def state_dir(tmp_path):
+    """The engine's private state, beside the workspace and never inside it."""
+    state = tmp_path.parent / (tmp_path.name + "_state")
+    state.mkdir(exist_ok=True)
+    return state
+
+
 def _run(tmp_path, monkeypatch, replies, runner=None, **extra):
     """The real router path; the provider and, when given, the test runner are synthetic."""
     sent = []
@@ -42,15 +49,18 @@ def _run(tmp_path, monkeypatch, replies, runner=None, **extra):
         monkeypatch.setattr("harness.router_agent.make_sandboxed_runner",
                             lambda **kwargs: runner)
     op = _operation(tmp_path, **extra)
-    binding = thaw_json(freeze_agent_binding(canonicalize_operation("agent.run", op), tmp_path))
-    trace = AgentTrace(tmp_path, OWNER, JOURNEY, OPERATION)
+    # The private trace lives outside the workspace, as it does in the engine,
+    # so the end-of-run workspace diff sees only the run's own changes.
+    state = state_dir(tmp_path)
+    binding = thaw_json(freeze_agent_binding(canonicalize_operation("agent.run", op), state))
+    trace = AgentTrace(state, OWNER, JOURNEY, OPERATION)
     error = None
     try:
-        run_private_agent(op, {}, tmp_path, trace, None, lambda e: None,
+        run_private_agent(op, {}, state, trace, None, lambda e: None,
                           binding=binding, deadline=time.monotonic() + 60)
     except GatewayOperationError as exc:
         error = exc
-    records = AgentTrace(tmp_path, OWNER, JOURNEY, OPERATION).read()
+    records = AgentTrace(state, OWNER, JOURNEY, OPERATION).read()
     return error, records, records[-1]["payload"]["completion"]
 
 

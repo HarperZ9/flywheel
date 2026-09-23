@@ -15,16 +15,24 @@ was deleted, or was overwritten later fails. The final answer is verified only
 by the harness's own test command (`test_command`) or acceptance criteria,
 never by the model's word; with neither, it stays claimed.
 
+A file a command changed, rather than a hashed write tool, is listed too. The
+end-of-run workspace diff names it in a `workspace_changes` ledger entry, and
+it is claimed (`changed_by_command`): nothing recorded what it should hold.
+
 What this does not prove: a file that matches its recorded hash can still be
 wrong, and a passing test proves what the test checks and no more. A native
 CLI edit reports no hash the harness took, so an Edit stays claimed; only a
-full Write, whose content the CLI reports, is rechecked.
+full Write, whose content the CLI reports, is rechecked. The last operation on
+a path sets what is expected of it.
 """
 from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
+import os
+from pathlib import Path, PurePath
+
+from .patch_paths import patch_target_paths
 
 SCHEMA = "flywheel.run-completion/v1"
 WRITE_TOOLS = frozenset({"write_file", "edit_file", "apply_patch"})
@@ -50,8 +58,43 @@ def _parse_call(content: str) -> tuple[str, dict]:
 def _claimed_paths(name: str, args: dict) -> list[str]:
     if name in ("write_file", "edit_file") and args.get("path"):
         return [str(args["path"])]
-    patch = str(args.get("patch") or args.get("diff") or "")
-    return [ln[6:].strip() for ln in patch.splitlines() if ln.startswith("+++ b/")]
+    # Read the headers the way apply_patch reads them, `+++ path` included.
+    return patch_target_paths(args.get("patch") or args.get("diff"))
+
+
+def path_key(path: str) -> str:
+    """One spelling per file, so `./a.py` and `a.py` are not two deliverables."""
+    return os.path.normcase(os.path.normpath(str(path).replace(chr(92), "/")))
+
+
+def workspace_path(path: str, root) -> str | None:
+    """A path the run reported, relative to the workspace root.
+
+    A native CLI names files by absolute path. Inside the root it is made
+    relative, so the record does not carry the host's layout and a reader can
+    use it. Outside the root it is None."""
+    if not PurePath(path).is_absolute():
+        return path
+    try:
+        rel = Path(os.path.normpath(path)).relative_to(os.path.normpath(str(root)))
+    except ValueError:
+        return None
+    return rel.as_posix() if rel.parts else None
+
+
+def command_changes(entries) -> list[str]:
+    """Files the end-of-run workspace diff found changed (`workspace_changes`)."""
+    paths: list[str] = []
+    for entry in entries:
+        if _field(entry, "kind") != "workspace_changes":
+            continue
+        try:
+            value = json.loads(_field(entry, "content", "") or "{}")
+        except ValueError:
+            continue
+        listed = value.get("paths") if isinstance(value, dict) else None
+        paths += [p for p in listed or () if isinstance(p, str) and p]
+    return paths
 
 
 def ledger_writes(entries) -> dict[str, str | None]:
@@ -107,6 +150,13 @@ def _file_item(root: Path, path: str, expected: str | None) -> dict:
             "check": "file_hash_recheck", "detail": detail, "observed_sha256": observed}
 
 
+def _command_item(root: Path, path: str) -> dict:
+    """A file a command changed: nothing recorded what it should hold."""
+    return {"kind": "file", "path": path, "expected_sha256": None, "status": "claimed",
+            "check": None, "detail": "changed_by_command",
+            "observed_sha256": _observed(root, path)}
+
+
 def _answer_item(result: dict | None, failure: str | None, tested: bool | None) -> dict:
     item = {"kind": "final_answer"}
     if failure is not None or result is None:
@@ -127,9 +177,19 @@ def _answer_item(result: dict | None, failure: str | None, tested: bool | None) 
     return {**item, "status": "claimed", "check": None, "detail": "no_check_ran"}
 
 
-def cli_writes(events) -> dict[str, str | None]:
-    """Files a native CLI session reported writing, with the hash its content implies."""
-    calls, failed, writes = {}, set(), {}
+#: Where a CLI write outside the workspace root is listed. Its host path is
+#: not recorded, and nothing here can recheck it, so it stays claimed.
+OUTSIDE_WORKSPACE = "(outside the workspace)"
+
+
+def cli_writes(events, root=None) -> dict[str, str | None]:
+    """Files a native CLI session reported writing, with the hash its content implies.
+
+    Calls are read in order and the last one on a path sets what is expected:
+    a Write followed by an Edit leaves content no event reported, so the file
+    is claimed, not failed against the Write's hash. With `root`, each path is
+    made relative to it."""
+    calls, failed, writes, outside = {}, set(), {}, 0
     for event in events:
         if event.get("type") == "cli_tool_call":
             calls[event.get("call_id")] = (event.get("tool"), event.get("arguments") or {})
@@ -139,10 +199,16 @@ def cli_writes(events) -> dict[str, str | None]:
         path = args.get("file_path") if isinstance(args, dict) else None
         if ident in failed or not isinstance(path, str):
             continue
-        if tool == "Write" and isinstance(args.get("content"), str):
-            writes[path] = hashlib.sha256(args["content"].encode("utf-8")).hexdigest()
-        elif tool in CLI_EDIT_TOOLS:
-            writes.setdefault(path, None)
+        written = tool == "Write" and isinstance(args.get("content"), str)
+        if not written and tool not in CLI_EDIT_TOOLS:
+            continue
+        rel = path if root is None else workspace_path(path, root)
+        if rel is None:
+            outside += 1
+            writes[f"{OUTSIDE_WORKSPACE} {outside}"] = None
+            continue
+        writes[rel] = (hashlib.sha256(args["content"].encode("utf-8")).hexdigest()
+                       if written else None)
     return writes
 
 
@@ -157,8 +223,13 @@ def completion_report(entries, result: dict | None, root, *, failure: str | None
                       cli_events=()) -> dict:
     """Sort a run's deliverables into verified, claimed and failed."""
     root = Path(root)
-    writes = {**ledger_writes(entries), **cli_writes(cli_events)}
-    items = [_file_item(root, path, expected) for path, expected in sorted(writes.items())]
+    writes = {**ledger_writes(entries), **cli_writes(cli_events, root)}
+    items = [_file_item(root, path, expected) for path, expected in writes.items()]
+    known = {path_key(path) for path in writes}
+    for path in dict.fromkeys(command_changes(entries)):
+        if path_key(path) not in known:
+            items.append(_command_item(root, path))
+    items.sort(key=lambda item: item["path"])
     items.append(_answer_item(result, failure, last_test_run(entries)))
     counts = {status: sum(1 for i in items if i["status"] == status)
               for status in ("verified", "claimed", "failed")}

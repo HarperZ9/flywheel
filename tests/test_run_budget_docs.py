@@ -53,3 +53,12 @@ def test_the_schedule_breaker_trigger_and_re_arm_are_documented():
     notes = _doc("RELEASE-NEXT.md")
     assert "## Behaviour changes" in notes and "Schedules stop themselves" in notes
 
+
+def test_the_completion_doc_names_the_protected_set_and_no_unreachable_check():
+    text = _doc("VERIFIED-COMPLETION.md")
+    table = text[text.index("## The checks"):text.index("A write whose tool")]
+    assert "| The final answer | `acceptance_criteria` |" not in table
+    assert "`agent.run` takes no criteria" in text
+    for name in ("`pytest.ini`", "`tox.ini`", "`pyproject.toml`", "`setup.cfg`",
+                 "`conftest.py`", "`changed_by_command`"):
+        assert name in text, name

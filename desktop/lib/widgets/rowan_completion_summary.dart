@@ -48,6 +48,8 @@ const _fileLines = {
   'missing': 'File written: missing at the end of the run.',
   'changed_after_write': 'File written: changed after it was written.',
   'no_recorded_hash': 'File written: claimed, no hash was recorded.',
+  'changed_by_command':
+      'File changed by a command: claimed, nothing recorded what it holds.',
 };
 
 /// One line per deliverable, naming the check behind its status.

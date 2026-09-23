@@ -4,15 +4,18 @@ The worker writes a completion report into the private trace (run_completion).
 This module projects it without paths or text, and rechecks it against the
 trace before it is shown: every file the ledger says was written must appear,
 with the hash the ledger recorded, and a final answer marked verified by the
-test command must have a passing harness test run in the trace. A report that
-fails a recheck is shown as unverifiable with the reason, so a completion
-record cannot claim more than the trace it sits in.
+test command must have a passing harness test run in the trace. The same holds
+for a native CLI session's Write and Edit calls, read from its progress
+records, and for each file the end-of-run workspace diff found changed. A
+report that fails a recheck is shown as unverifiable with the reason, so a
+completion record cannot claim more than the trace it sits in.
 """
 from __future__ import annotations
 
 import re
 
-from .run_completion import SCHEMA, last_test_run, ledger_writes
+from .run_completion import (SCHEMA, cli_writes, command_changes, last_test_run,
+                             ledger_writes, path_key)
 
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
 _STATUSES = ("verified", "claimed", "failed")
@@ -32,7 +35,8 @@ def _sha(value) -> bool:
     return type(value) is str and _SHA.fullmatch(value) is not None
 
 
-_FILE_DETAILS = {"matches", "missing", "changed_after_write", "no_recorded_hash"}
+_FILE_DETAILS = {"matches", "missing", "changed_after_write", "no_recorded_hash",
+                 "changed_by_command"}
 _ANSWER_DETAILS = {"passed", "failed", "no_check_ran", "integrity_not_clean",
                    "test_run_not_in_trace", "NO_RESULT"}
 _REASON = re.compile(r"[A-Z][A-Z0-9_]{0,63}\Z")
@@ -81,13 +85,21 @@ def _check_items(items: list, terminal_state: str, tested) -> None:
         raise _Unverifiable("COMPLETION_ITEM_NOT_SUPPORTED")
 
 
-def _check_coverage(items: list, writes: dict) -> None:
+def _check_coverage(items: list, writes: dict, changed=()) -> None:
     files = {i["path"]: i.get("expected_sha256") for i in items if i["kind"] == "file"}
     for path, recorded in writes.items():
         if path not in files:
             raise _Unverifiable("COMPLETION_OMITS_WRITE")
         if files[path] != recorded:
             raise _Unverifiable("COMPLETION_HASH_NOT_FROM_TRACE")
+    listed = {path_key(path) for path in files}
+    if any(path_key(path) not in listed for path in changed):
+        raise _Unverifiable("COMPLETION_OMITS_WRITE")
+
+
+def _writes(ledger: list, cli_events: list, root) -> dict:
+    """Every write the trace records: ledger write tools, then CLI calls."""
+    return {**ledger_writes(ledger), **cli_writes(cli_events, root)}
 
 
 def _verdict(counts: dict) -> str:
@@ -96,7 +108,8 @@ def _verdict(counts: dict) -> str:
     return "claimed" if counts["claimed"] else "verified"
 
 
-def _check_report(report, ledger: list, terminal_state: str) -> dict:
+def _check_report(report, ledger: list, terminal_state: str, cli_events=(),
+                  root=None) -> dict:
     if type(report) is not dict or report.get("schema") != SCHEMA:
         raise _Unverifiable("COMPLETION_RECORD_MALFORMED")
     if report.get("verdict") == "unavailable":
@@ -114,11 +127,22 @@ def _check_report(report, ledger: list, terminal_state: str) -> dict:
             or report["verdict"] != _verdict(counts)):
         raise _Unverifiable("COMPLETION_VERDICT_MISMATCH")
     if omitted == 0:
-        _check_coverage(items, ledger_writes(ledger))
+        _check_coverage(items, _writes(ledger, list(cli_events), root),
+                        command_changes(ledger))
     return {"status": "recorded", "verdict": report["verdict"], "counts": dict(counts),
             "items": [{k: i[k] for k in ("kind", "status", "check", "detail")} for i in items],
             "items_omitted": omitted,
             "unbacked_success_claim": report["unbacked_success_claim"]}
+
+
+def _workspace_root(records: list):
+    """The pinned workspace root the run's binding names, for CLI paths."""
+    for record in records:
+        if record.get("kind") == "request":
+            binding = record["payload"].get("execution_binding") or {}
+            root = (binding.get("workspace") or {}).get("root")
+            return root if type(root) is str else None
+    return None
 
 
 def derive_completion(records: list, terminal_state: str) -> dict:
@@ -129,8 +153,11 @@ def derive_completion(records: list, terminal_state: str) -> dict:
     if report is None:
         return {"status": "unrecorded"}
     ledger = [r["payload"] for r in records if r.get("kind") == "ledger"]
+    cli_events = [r["payload"] for r in records if r.get("kind") == "progress"
+                  and str(r["payload"].get("type", "")).startswith("cli_tool")]
     try:
-        block = _check_report(report, ledger, terminal_state)
+        block = _check_report(report, ledger, terminal_state, cli_events,
+                              _workspace_root(records))
     except _Unverifiable as exc:
         return {"status": "unverifiable", "reason": exc.reason}
     except (KeyError, TypeError, ValueError, AttributeError):
