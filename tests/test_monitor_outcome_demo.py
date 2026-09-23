@@ -145,6 +145,12 @@ def test_the_committed_fixture_is_what_the_generator_writes():
     assert demo.TASK.read_bytes() == (json.dumps(task, indent=2) + "\n").encode("utf-8")
 
 
+def test_the_reviewer_guide_prints_the_fixture_hash_it_describes(result):
+    """The guide quotes the hash a reviewer should see; the bytes decide it."""
+    guide = (demo.ROOT / "docs" / "MONITOR-OUTCOME-DEMO.md").read_text(encoding="utf-8")
+    assert result["source_sha256"] in guide
+
+
 def test_the_demo_writes_json(tmp_path):
     out = tmp_path / "result.json"
     assert demo.main(["--json", str(out)]) == 0
