@@ -92,7 +92,8 @@ The matrix above is `main` before this branch. After it:
 | 19 | Scheduled and recurring runs | Partial | Hook receipts mark exit-0 limit errors as failed, and a schedule stops after two failed fires in a row until redefined. A schedule still cannot start `agent.run` |
 | 21 | Take a session elsewhere | Partial | One finished run exports as a provider-neutral Markdown brief (`docs/ROWAN-HANDOFF.md`). A multi-run session export does not exist |
 
-Counts after this branch: 8 shipped, 13 partial, 2 absent.
+Counts after this branch: 8 shipped, 12 partial, 3 absent (rows 13 and 14 move
+from partial to shipped, row 21 from absent to partial).
 
 ## Limits of this map
 
