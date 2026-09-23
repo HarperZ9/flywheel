@@ -167,5 +167,7 @@ def test_the_doc_states_the_caps_and_the_redaction_limit():
     doc = " ".join((Path(__file__).resolve().parents[1] / "docs" / "ROWAN-HANDOFF.md")
                    .read_text(encoding="utf-8").split())
     for phrase in ("the final answer first", "Up to 20 lines", "[credential omitted]",
-                   "`<workspace>`", "Redaction is a pattern list", "not confirmed"):
+                   "`<workspace>`", "Redaction is a pattern list", "not confirmed",
+                   "ends 512 characters before the end of what was read"):
         assert phrase in doc, phrase
+    assert "still replaced whole" not in doc

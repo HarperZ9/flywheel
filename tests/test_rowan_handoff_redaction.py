@@ -10,7 +10,8 @@ import time
 import pytest
 
 from harness.rowan_handoff import DOES_NOT_PROVE
-from harness.rowan_handoff_text import HOST_PATH, OMITTED, code, leaks, outbound, quote
+from harness.rowan_handoff_text import (HOST_PATH, MARGIN, OMITTED, code, leaks, outbound,
+                                       quote)
 from tests.test_rowan_handoff_safety import _brief, _records
 
 SHAPES = [
@@ -104,7 +105,7 @@ def test_the_cut_counts_what_it_left_in_the_trace():
 
 @pytest.mark.parametrize("unit", ["mysql ", "a-", "a.", "x://a:", "docker ", "-u a:",
                                   "redis-cli -a ", "the token is ", "PGPASSWORD",
-                                  "password ", "\\\\a", "a_b_"])
+                                  "password ", "\\\\a", "a_b_", "Bearer abcdefgh", "C:/x/"])
 def test_redaction_time_grows_with_the_text_not_its_square(unit):
     text = unit * (60_000 // len(unit))
     start = time.perf_counter()
@@ -112,4 +113,52 @@ def test_redaction_time_grows_with_the_text_not_its_square(unit):
     leaks(text[:2_000])
     # 1.2 MB in 20 lines: only what the quote can show is redacted.
     quote("\n".join([text] * 20), max_chars=40_000)
+    # A field whose text redacts to almost nothing widens its window a bounded
+    # number of times.
+    code(text, limit=200)
     assert time.perf_counter() - start < 2.0, unit
+
+
+JWT = "eyJ" + "b" * 590
+URL = "https://admin:Hunter2pass!@db.internal/api"
+
+
+def _straddling(head, at, url=URL):
+    """`head`, filler, then `url` with its '@' at index `at`, past a window."""
+    return head + "k" * (at - url.index("@") - len(head)) + url
+
+
+@pytest.mark.parametrize("shift", [0, 1, 12])
+def test_a_secret_past_a_shrunken_field_window_is_not_shown_in_part(shift):
+    # The bearer token redacts to a 20-character marker, so the redacted
+    # window falls far short of the room plus a margin.
+    head = 'curl -H "Authorization: Bearer ' + JWT + '" '
+    assert "Hun" not in code(_straddling(head, 200 + MARGIN + shift), limit=200)
+    command = _straddling(head, 160 + MARGIN + shift)
+    brief = _brief(_records(progress=[{"type": "cli_tool_call", "call_id": "u", "tool": "Bash",
+                                       "arguments": {"command": command}}]))
+    assert "Hun" not in brief
+    # The window widened, so the rest of the command is still shown.
+    assert f"https://{OMITTED}@db.internal/api" in brief
+
+
+@pytest.mark.parametrize("url", [URL, "postgres://app:Hunter2pass!@db.internal/app"])
+def test_a_secret_past_a_shrunken_quote_line_is_not_shown_in_part(url):
+    # Each host path becomes a 19-character marker, so the redacted lines leave
+    # the last line more room than its raw window holds.
+    path = "C:/Users/zain/AppData/Local/Programs/Python/Python312/lib/site-packages/pkg/sub/"
+    lines = [f"File {path}connection_pool.py, line {n:03d}, in connect" for n in range(54)]
+    room = 8_000 - sum(map(len, lines))
+    assert room < 2_000 - MARGIN
+    goal = "\n".join(lines + [_straddling(" clone ", room + MARGIN, url)])
+    assert "Hun" not in quote(goal)
+    assert "Hun" not in _brief(_records(goal=goal))
+
+
+def test_a_cut_quote_line_keeps_a_margin_of_its_window_unshown():
+    line = "x" * 1_990 + " " + "y" * 2_000
+    out = quote(line, line_chars=2_000)
+    assert out.splitlines()[0] == "> " + line[:2_000]
+    shrunk = "password=" + "p" * 1_000 + " " + line
+    shown = quote(shrunk, line_chars=2_000).splitlines()[0]
+    assert len(shown) - 2 <= len(outbound(shrunk[:2_000 + MARGIN])) - MARGIN

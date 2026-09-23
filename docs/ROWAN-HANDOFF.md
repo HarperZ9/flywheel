@@ -66,8 +66,14 @@ leaves the engine:
 - Paths and commands are single-line code spans, so a file name cannot start a
   line of its own.
 - Text is cut before it is redacted, with 512 characters of margin past the
-  cut. Redaction time stays bounded by what the brief can show, and a
-  credential that straddles the cut is still replaced whole.
+  cut, so redaction time stays bounded by what the brief can show. A
+  credential the cut splits in two can survive in part in that margin, so a
+  cut field or line shows only redacted text that ends 512 characters before
+  the end of what was read. When an earlier credential's marker is much
+  shorter than the credential, a one-line field reads further, up to 64
+  margins, and a quoted line shows less of itself. A credential longer than
+  the margin can still show in part when its pattern needs text past the cut,
+  such as the `@` that ends URL user info.
 - A quote that is cut ends with a line saying how many lines and characters
   are left in the private trace.
 
