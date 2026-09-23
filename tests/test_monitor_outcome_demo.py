@@ -94,6 +94,8 @@ def test_a_high_scoring_draft_does_not_raise_the_sample(result):
     """
     row = _row(result, "correct-quiet")
     assert row["draft_actions"] == 1
+    assert row["draft_values"] == [9.5]
+    assert "draft scored 9.5" in demo.render(result)
     assert row["monitor_max"] == 1.5
     assert row["verdict_at_threshold"] == "below"
     assert result["coverage"]["actions"]["draft"] == 1

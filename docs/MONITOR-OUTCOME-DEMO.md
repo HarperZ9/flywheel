@@ -15,11 +15,20 @@ and makes no model call.
 
 ## Run it
 
+From the repository root, with any Python 3.11 or newer. Where `python` points
+at an older version, use `python3`, or `py -3.11` on Windows.
+
 ```bash
 python scripts/demo_monitor_outcome.py
 python scripts/demo_monitor_outcome.py --json monitor-outcome.json
 python -m pytest tests/test_monitor_outcome_controls.py tests/test_monitor_outcome_shapes.py tests/test_monitor_outcome_demo.py
 ```
+
+The first command prints the table below. The second prints it again and also
+writes `monitor-outcome.json`, whose `schema` is
+`flywheel.monitor-outcome-demo/v1`, with `synthetic: true`, the same
+`source_sha256`, one entry in `rows` per sample and the `coverage` counts. The
+third should end with every test passing.
 
 ## What you should see
 
@@ -66,6 +75,10 @@ absent, draft and unsupported), and only scored values are ever compared.
 
 ## Troubleshooting
 
+- `Filename too long` when cloning on Windows: the repository holds some
+  deeply nested paths. Clone into a short directory and allow long paths for
+  that one command:
+  `git -c core.longpaths=true clone https://github.com/HarperZ9/flywheel.git C:/src/flywheel`.
 - `declared eval2, but eval.task_registry_name is not ...`: the log is not an
   eval2 log. Declare `eval1` or `eval1-legacy`.
 - `several eval1 monitor scores ...; declare monitor_scorer`: the log holds more

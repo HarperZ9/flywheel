@@ -67,9 +67,19 @@ decision about data (below).
 
 ## Independent recheck
 
-- Pending: a replay of the demo from a clean clone of the branch, following only
-  `docs/MONITOR-OUTCOME-DEMO.md`, with setup time and every point of friction
-  recorded. An agent replay is not a human reviewer and will be labelled so.
+- Done, by an agent on a different model with no prior context, 2026-09-23
+  07:39 to 07:40 UTC: a fresh clone of `ab911f5af`, following only
+  `docs/MONITOR-OUTCOME-DEMO.md`. Verdict: replayed as documented. The source
+  hash matched byte for byte; all nine rows and every summary count matched; the
+  three test files reported 59 passed; elapsed about 1.6 minutes. Friction it
+  found, all fixed in the next commit: a Windows clone into a long directory
+  fails on the repository's deeply nested artifact paths (the guide now gives
+  the fix; the paths themselves are a separate cleanup task); the guide did not
+  say what to do when `python` is older than 3.11; one row cited a draft score
+  the output did not print (it prints it now), and the `--json` output had no
+  described content.
+- This is an agent replay. It shows the guide is sufficient to reproduce the
+  result. It does not show that a human reviewer finds the demo clear.
 - Not done: review by a person who did not write the code.
 
 ## Operator decisions this depends on
