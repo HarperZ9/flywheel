@@ -2,9 +2,10 @@
 
 Run 20260708_230923 passed a relative output root. The spin step changes the
 working directory into <root>/spin, so every later use of the relative root
-resolved under <root>/spin/<root>/..., and the committed output repeated the run
-root until its longest path was too long for a default Windows clone. The
-fixture below reproduces that shape: a relative root, entered from a temp dir.
+resolved under <root>/spin/<root>. The committed output repeated the run
+root in paths up to 206 characters, and a Windows clone without core.longpaths
+failed whenever the clone directory was longer than 51 characters. The fixture
+below reproduces the cause: a relative root, entered from a temp dir.
 """
 import os
 from pathlib import Path

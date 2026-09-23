@@ -3,8 +3,9 @@
 This run was started with a relative output root. The spin step then changed
 the working directory into `spin/`, and every later write through the relative
 root landed under a copy of the run root inside `spin/`. Commit 4d7767b9e
-tracked 38 files at those nested paths. The longest was 206 characters, too
-long for a default Windows clone to check out.
+tracked 38 files at those nested paths. The longest was 206 characters, so a
+Windows clone without core.longpaths failed whenever the clone directory was
+longer than 51 characters.
 
 On 2026-09-23 the nested files were moved to the paths the run meant to write.
 No file's bytes changed, and `git log --follow` on a moved file shows where it

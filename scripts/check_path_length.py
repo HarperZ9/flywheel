@@ -1,18 +1,23 @@
 """check_path_length.py -- no tracked path longer than 180 characters.
 
-Windows caps a full path at 259 characters unless core.longpaths is set, and a
-first-time clone runs with the default. A tracked path of L characters plus the
-separator and the clone directory must fit under that cap, so the clone
-directory can be at most about 258 - L characters. Past that, the checkout
-stops with "Filename too long".
+A first clone on Windows runs without core.longpaths. Measured with Git for
+Windows 2.52 on Windows 11, a checkout then cannot create a file once the clone
+directory plus the tracked file path reaches 260 characters, or a directory
+once the clone directory plus the tracked directory path reaches 248. A tree
+whose longest file path is F characters and whose longest directory path is D
+therefore checks out only from a clone directory of at most
+min(258 - F, 246 - D) characters. The directory case stops the checkout with
+"Filename too long". The file case printed the same error, left the file
+missing, and still exited 0.
 
 The check exists because a benchmark run wrote its output under a path that
 repeated its own root, and 38 files were committed at paths up to 206
-characters. That left room for a clone directory of about 52 characters, and a
-reviewer cloning under an ordinary user profile path hit the error.
+characters, in a directory of 195. That capped the clone directory at 51
+characters, and a reviewer cloning under an ordinary user profile path hit the
+error.
 
-At 180 characters a clone directory of about 78 characters still works. There
-is no grandfather list: every tracked path must pass.
+With every path at 180 characters or less, any clone directory up to 68
+characters works. There is no grandfather list: every tracked path must pass.
 
 The length is counted in characters of the repository-relative path exactly
 as `git ls-files` prints it, with forward slashes. The script exits 1 when a
