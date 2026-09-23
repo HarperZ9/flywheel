@@ -59,8 +59,11 @@ void main() {
     expect(budgetSpendLine(budget),
         contains('spend not reported by the provider'));
     expect(budgetSpendLine(budget), contains('12,400 of 200,000 tokens'));
-    expect(falseSuccessLine(budget),
-        '1 step exited 0 but reported a rate limit error; recorded as failed.');
+    expect(
+        falseSuccessLine(budget),
+        '1 step exited 0 while the output named a rate limit error. Recorded, '
+        'not failed: check the work if it looks incomplete.');
+    expect(budget.limitSignalSteps.single.match, 'usage limit reached');
     final unverifiable = RunBudgetOutcome.fromJson({
       'status': 'unverifiable',
       'reason': 'BUDGET_UNDERCOUNTS_TRACE',
@@ -79,8 +82,38 @@ void main() {
     ));
     expect(find.textContaining('tool action limit reached (24 of 24)'),
         findsOneWidget);
-    expect(find.textContaining('exited 0 but reported a rate limit'),
+    expect(find.textContaining('exited 0 while the output named a rate limit'),
         findsOneWidget);
+    // A tool-action stop does not list limit-signal steps.
+    expect(find.byKey(const Key('rowan-limit-signal-step')), findsNothing);
+  });
+
+  testWidgets('a limit-signal stop names each counted step and its words',
+      (tester) async {
+    final raw = Map<String, dynamic>.from(
+        (_fixture()['run_outcome'] as Map)['budget'] as Map);
+    raw['tripped'] = 'limit_signals';
+    raw['limit_signal_steps'] = [
+      for (final match in ['Error: 429', 'usage limit reached'])
+        {'tool': 'run', 'signal': 'rate_limit', 'match': match},
+    ];
+    final budget = RunBudgetOutcome.fromJson(raw);
+    expect(budgetHeadline(budget),
+        'Stopped by the run budget: 2 steps in a row exited 0 while their '
+        'output ended on a limit error.');
+    expect(limitSignalLines(budget), [
+      'run: rate limit, matched "Error: 429"',
+      'run: rate limit, matched "usage limit reached"',
+    ]);
+    expect(limitSignalLines(budget, reason: 'AGENT_FALSE_SUCCESS'), hasLength(2));
+    raw['limit_signal_steps'] = [
+      {'tool': 'run', 'signal': 'rate_limit', 'match': ''},
+    ];
+    expect(() => RunBudgetOutcome.fromJson(raw), throwsFormatException);
+    final full = Map<String, dynamic>.from(
+        (_fixture()['run_outcome'] as Map)['budget'] as Map)
+      ..remove('limit_signal_steps');
+    expect(() => RunBudgetOutcome.fromJson(full), throwsFormatException);
   });
 
   test('only the limits the owner set travel, and bad ones are refused', () {

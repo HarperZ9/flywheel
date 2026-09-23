@@ -86,14 +86,17 @@ class NativeEvents:
                     self._observe(block['tool_use_id'], block.get('is_error') is not True,
                                   block.get('content'))
         elif kind == 'result':
+            if self.budget is not None:
+                # Tokens and cost arrive once, for the whole session, errored
+                # or not: a CLI token or spend limit can mark a session
+                # stopped, not interrupt it. The report covers every model
+                # call seen so far.
+                self.budget.record_usage(event.get('usage'), cost_usd=event.get('total_cost_usd'),
+                                         calls=max(1, self.budget.unaccounted_calls()))
             if event.get('is_error') is not False or event.get('subtype') != 'success':
                 fail('AGENT_CLI_INCOMPLETE')
             if type(event.get('num_turns')) is not int or not 1 <= event['num_turns'] <= self.max_steps:
                 fail('AGENT_CLI_INCOMPLETE')
-            if self.budget is not None:
-                # Cost is reported once, at the end: a spend limit on a CLI
-                # session can mark it stopped, not interrupt it.
-                self.budget.record_usage(event.get('usage'), cost_usd=event.get('total_cost_usd'))
             self.final, self.terminal = event.get('result'), True
         elif kind not in {'system', 'stream_event', 'rate_limit_event'}: fail()
 
@@ -103,6 +106,11 @@ class NativeEvents:
         if kind == 'turn.completed':
             model = event.get('model')
             if type(model) is str and 0 < len(model) <= 160: self.model = model
+            if self.budget is not None:
+                # codex exec reports tokens per turn and hides the model
+                # calls inside it, so a turn counts as one call at least.
+                self.budget.count_observed('model_calls')
+                self.budget.record_usage(event.get('usage'))
             self.terminal = True
         elif kind in {'item.started', 'item.completed', 'item.updated'}:
             item = event.get('item')

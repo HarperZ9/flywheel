@@ -89,6 +89,32 @@ final class RunOutcome {
   }
 }
 
+/// One step whose exit-0 output ended on a limit error: the tool, the kind
+/// of limit and the words that matched. The words come from the engine's
+/// fixed vocabulary, never from free output.
+final class LimitSignalStep {
+  final String tool, signal, match;
+
+  const LimitSignalStep._(this.tool, this.signal, this.match);
+
+  factory LimitSignalStep.fromJson(Object? raw) {
+    final value = _map(raw);
+    _fields(value, const {'tool', 'signal', 'match'});
+    final tool = value['tool'], signal = value['signal'], match = value['match'];
+    if (tool is! String ||
+        tool.isEmpty ||
+        tool.length > 64 ||
+        signal is! String ||
+        !runLimitSignals.contains(signal) ||
+        match is! String ||
+        match.isEmpty ||
+        match.length > 80) {
+      _invalid();
+    }
+    return LimitSignalStep._(tool, signal, match);
+  }
+}
+
 /// What the run spent against its limits, or why that cannot be shown.
 final class RunBudgetOutcome {
   /// within_limits, stopped, unverifiable or unrecorded.
@@ -97,9 +123,11 @@ final class RunBudgetOutcome {
   final Map<String, int> limits, used, reporting;
   final int falseSuccessCount;
   final List<String> falseSuccessSignals;
+  final List<LimitSignalStep> limitSignalSteps;
 
   const RunBudgetOutcome._(this.status, this.tripped, this.reason, this.limits,
-      this.used, this.reporting, this.falseSuccessCount, this.falseSuccessSignals);
+      this.used, this.reporting, this.falseSuccessCount, this.falseSuccessSignals,
+      [this.limitSignalSteps = const []]);
 
   bool get recorded => status == 'within_limits' || status == 'stopped';
 
@@ -134,6 +162,7 @@ final class RunBudgetOutcome {
       'reporting',
       'false_success_count',
       'false_success_signals',
+      'limit_signal_steps',
       'record_sequence',
     });
     final tripped = value['tripped'];
@@ -145,10 +174,13 @@ final class RunBudgetOutcome {
     }
     final count = value['false_success_count'];
     final signals = value['false_success_signals'];
+    final steps = value['limit_signal_steps'];
     if (count is! int ||
         count < 0 ||
         signals is! List ||
-        signals.any((s) => s is! String || !runLimitSignals.contains(s))) {
+        signals.any((s) => s is! String || !runLimitSignals.contains(s)) ||
+        steps is! List ||
+        steps.length > 8) {
       _invalid();
     }
     return RunBudgetOutcome._(
@@ -159,6 +191,7 @@ final class RunBudgetOutcome {
         _naturals(value['used'], _usedKeys),
         _naturals(value['reporting'], _reportingKeys),
         count,
-        List<String>.unmodifiable(signals.cast<String>()));
+        List<String>.unmodifiable(signals.cast<String>()),
+        List<LimitSignalStep>.unmodifiable(steps.map(LimitSignalStep.fromJson)));
   }
 }

@@ -39,8 +39,8 @@ def validate_operation_shape(action: str, value: dict) -> None:
     if action == "hook.register":
         from .accountable_hooks import validate_hook_payload
         validate_hook_payload(event=value["event"], argv=value["argv"],
-                              blocking=value["blocking"],
-                              hook_id=value["hook_id"])
+                              blocking=value["blocking"], hook_id=value["hook_id"],
+                              scan_output=value.get("scan_output", True))
     if action == "hook.run":
         from .accountable_hooks import validate_hook_run_plan
         validate_hook_run_plan(event=value["event"],

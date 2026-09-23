@@ -12,5 +12,7 @@ TRIPS = ("model_calls", "tool_actions", "usage_tokens", "cost_micros",
          "limit_signals", "wall_time")
 #: The kinds of limit an output can report.
 SIGNALS = ("rate_limit", "quota", "billing", "auth", "overloaded")
+#: The limit signal reads English phrasing only: an error in another language,
+#: or worded another way, is not seen.
 DOES_NOT_PROVE = ("NOT_A_PROVIDER_INVOICE", "UNREPORTED_USAGE_NOT_COUNTED",
-                  "LIMIT_SIGNAL_IS_A_PHRASE_HEURISTIC")
+                  "LIMIT_SIGNAL_IS_A_PHRASE_HEURISTIC", "LIMIT_SIGNAL_READS_ENGLISH_ONLY")

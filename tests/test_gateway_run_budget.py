@@ -80,13 +80,14 @@ def test_reported_tokens_past_the_limit_stop_the_next_step(tmp_path, monkeypatch
     assert _ledger_kinds(records, "tool_call") == 0
 
 
-def test_a_final_answer_that_is_a_limit_error_fails_the_run(tmp_path, monkeypatch):
-    _, error, records, _ = _run(tmp_path, monkeypatch, _operation(tmp_path), [LIMIT_TEXT])
-    assert error.code == "AGENT_FALSE_SUCCESS"
-    report = records[-1]["payload"]["run_budget"]
-    assert report["false_success_count"] == 1 and report["status"] == "within_limits"
-    budget = derive_run_outcome(records, terminal_state="failed")["budget"]
-    assert budget["false_success_signals"] == ["rate_limit"]
+def test_a_router_final_answer_is_model_prose_and_is_not_read_for_a_limit(
+        tmp_path, monkeypatch):
+    # A provider limit on this path fails the call as a non-2xx response. The
+    # answer text is the model's own, so quoting a limit does not fail the run.
+    projection, error, records, _ = _run(tmp_path, monkeypatch, _operation(tmp_path),
+                                         [LIMIT_TEXT])
+    assert error is None and projection["state"] == "completed"
+    assert records[-1]["payload"]["run_budget"]["false_success_count"] == 0
 
 
 def test_an_ordinary_run_completes_and_records_what_it_spent(tmp_path, monkeypatch):
@@ -227,8 +228,12 @@ def test_cli_exit_zero_success_that_reports_a_usage_limit_is_failed(tmp_path, mo
     result, proc = _cli(tmp_path, monkeypatch, rows, budget)
     assert proc.closed and result["final"] == LIMIT_TEXT
     with pytest.raises(GatewayOperationError) as failed:
-        _settle_budget(result, budget)
+        _settle_budget(result, budget, cli=True)
     assert failed.value.code == "AGENT_FALSE_SUCCESS"
+    outcome = derive_run_outcome([{"sequence": 0, "kind": "failure", "record_sha256": "0" * 64,
+                                   "payload": {"run_budget": budget.report()}}],
+                                 terminal_state="failed")["budget"]
+    assert outcome["false_success_signals"] == ["rate_limit"]
     assert budget.report()["used"]["cost_micros"] == 20_000
 
 

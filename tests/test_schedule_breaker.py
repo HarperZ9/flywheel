@@ -70,7 +70,7 @@ def test_a_backlog_stops_after_two_failed_fires_instead_of_replaying(tmp_path):
     assert code == 200 and result["fired"] == 2 and _runs(tmp_path) == 2
     assert result["breaker"]["tripped"] is True
     assert result["breaker"]["limit_signals"] == ["rate_limit"]
-    assert "Redefine the schedule" in result["refused"]
+    assert "Re-arm the schedule" in result["refused"]
     later, _ = handle_schedule_post("/api/schedule/tick", {}, run_root=tmp_path,
                                     clock=_clock("2026-09-06T06:30:00Z"))
     assert later["fired"] == 0 and _runs(tmp_path) == 2

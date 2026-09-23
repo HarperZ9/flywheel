@@ -82,13 +82,15 @@ def test_a_passing_check_command_verifies_the_answer(tmp_path, monkeypatch):
     assert derive_completion(records, "completed")["verdict"] == "verified"
 
 
-def test_a_check_that_exits_zero_on_a_rate_limit_does_not_verify(tmp_path, monkeypatch):
-    _, _, report = _run(
+def test_the_check_commands_exit_code_is_its_verdict(tmp_path, monkeypatch):
+    # The check's output is not read for limit phrases: a passing test log
+    # that names a rate-limit case is still a pass.
+    error, records, report = _run(
         tmp_path, monkeypatch, [WRITE, "Created notes.md."],
-        runner=lambda cmd, root: (True, "Error: 429 Too Many Requests"),
+        runner=lambda cmd, root: (True, "test_retry[rate limit exceeded] PASSED\n1 passed"),
         test_cmd="pytest -q", allow_exec=True, max_steps=2)
-    assert report["items"][-1]["status"] == "failed"
-    assert report["verdict"] == "failed"
+    assert error is None and report["items"][-1]["status"] == "verified"
+    assert records[-1]["payload"]["run_budget"]["false_success_count"] == 0
 
 
 def test_a_file_removed_after_it_was_written_fails(tmp_path, monkeypatch):

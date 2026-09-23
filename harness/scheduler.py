@@ -197,15 +197,17 @@ BREAKER_TRIP = 2
 def breaker(schedule: dict, records: list, *, trip: int = BREAKER_TRIP) -> dict:
     """Whether this schedule has stopped itself, and on what.
 
-    A fire failed when any hook it ran failed: a nonzero exit, a runner
-    error, or an exit 0 whose output reports a rate limit, quota, billing
-    or sign-in error. That last case is the one a clock-driven job repeats
-    all night, because each run looks like it worked. Only fires cut under
-    the current `schedule_sha256` count, so redefining the schedule is the
-    deliberate act that re-arms it; waiting does not.
+    A fire failed when any hook it ran failed, blocking or not: a nonzero
+    exit, a timeout, a runner error, or an exit 0 whose output ends on a
+    rate limit, quota, billing, sign-in or overloaded error. That last case
+    is the one a clock-driven job repeats all night, because each run looks
+    like it worked. Two failures inside one replayed backlog count, and so
+    does history recorded before the breaker existed. Only fires cut under
+    the current `schedule_sha256` count, so re-arming (redefining the
+    schedule) is the deliberate act that clears it; waiting does not.
     """
     from .accountable_hooks import hook_failed
-    consecutive_failed, signals = 0, set()
+    consecutive_failed, signals, matches = 0, set(), set()
     for record in reversed(records):
         if (record.get("schedule_sha256") != schedule.get("schedule_sha256")
                 or consecutive_failed >= trip):
@@ -215,8 +217,10 @@ def breaker(schedule: dict, records: list, *, trip: int = BREAKER_TRIP) -> dict:
             break
         consecutive_failed += 1
         signals.update(r["limit_signal"] for r in failed if r.get("limit_signal"))
+        matches.update(str(r["limit_match"])[:80] for r in failed if r.get("limit_match"))
     return {"tripped": consecutive_failed >= trip, "consecutive_failed_fires": consecutive_failed,
-            "trip_after": trip, "limit_signals": sorted(signals)}
+            "trip_after": trip, "limit_signals": sorted(signals),
+            "limit_matches": sorted(matches)[:8]}
 
 
 def chain_intact(records: list) -> bool:

@@ -220,7 +220,7 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
         runner=make_sandboxed_runner(bindings=credential_bindings,
                                      on_unavailable=fallback_from_env()))
     if budget is not None:
-        executor = budget.wrap_executor(executor)
+        executor = budget.wrap_executor(executor, test_cmd=test_cmd)
     pre_state = _workspace_pre(root, allow_write or allow_exec, ledger)
     from . import tool_receipts
     sign_key = tool_receipts.new_session_key()

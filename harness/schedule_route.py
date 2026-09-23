@@ -2,6 +2,7 @@
 
 GET  /api/schedule            every schedule, its chain verdict, what is owed
 POST /api/schedule/define     seal a schedule and store it
+POST /api/schedule/rearm      re-seal a stopped schedule's stored definition
 POST /api/schedule/tick       evaluate what is owed and fire it
 
 The tick is a pull, not a daemon. Whatever wakes the process, a system
@@ -41,13 +42,19 @@ def _state(schedule: dict, *, run_root: Path, now: str) -> dict:
     """One schedule as a reader needs to see it: owed work and chain verdict."""
     records = load_fires(fires_path(run_root, schedule["schedule_id"]))
     owed = pending(schedule, last_fired_for=last_fired_for(records), now=now)
+    state = breaker(schedule, records)
+    plan = plan_fires(schedule, owed)
+    if state["tripped"]:
+        # A stopped schedule fires nothing until it is re-armed, so the
+        # occurrences it owes are held, not due.
+        plan = {**plan, "fire": [], "held": plan["fire"]}
     return {"schedule": schedule,
             "fires": len(records),
             "chain_intact": chain_intact(records),
-            "breaker": breaker(schedule, records),
+            "breaker": state,
             "last_fired_for": last_fired_for(records),
             "pending": owed,
-            "plan": plan_fires(schedule, owed)}
+            "plan": plan}
 
 
 def handle_schedule_get(path: str, *, run_root: Path,
@@ -65,6 +72,7 @@ def handle_schedule_get(path: str, *, run_root: Path,
             # verdict that means the history cannot be trusted is lifted
             # to the top rather than left in a nested field.
             "any_chain_broken": any(not s["chain_intact"] for s in states),
+            "any_breaker_tripped": any(s["breaker"]["tripped"] for s in states),
             "schedules": states}, 200
 
 
@@ -138,9 +146,34 @@ def _tick_one(schedule: dict, *, run_root: Path, now: str,
 
 def _breaker_refusal(state: dict) -> str:
     signals = ", ".join(s.replace("_", " ") for s in state["limit_signals"])
+    words = "; ".join(f'"{m}"' for m in state.get("limit_matches", ()))
     reported = f"; output reported: {signals}" if signals else ""
+    matched = f" (matched {words})" if words else ""
     return (f"circuit breaker: the last {state['consecutive_failed_fires']} fires "
-            f"failed{reported}. Redefine the schedule to re-arm it")
+            f"failed{reported}{matched}. Re-arm the schedule to fire it again")
+
+
+def _rearm(body: dict, *, run_root: Path, clock) -> tuple[dict, int]:
+    """Re-seal a stored schedule with a new created_at, and nothing else.
+
+    The breaker counts only fires under the current seal, so a new seal
+    re-arms it. The fire history is keyed by schedule_id and kept, so owed
+    occurrences are still owed. Restating the fields is not needed, which
+    means a re-arm cannot change the interval or the catch-up policy."""
+    path = schedules_path(run_root)
+    stored = [s for s in load_schedules(path)
+              if s["schedule_id"] == body.get("schedule_id")]
+    if not stored:
+        return _invalid("no schedule with that schedule_id")
+    old = stored[0]
+    schedule = define_schedule(
+        schedule_id=old["schedule_id"], event=old["event"],
+        every_seconds=old["every_seconds"], starts_at=old["starts_at"],
+        catch_up=old["catch_up"], created_at=clock())
+    kept = [s for s in load_schedules(path) if s["schedule_id"] != old["schedule_id"]]
+    save_schedules(kept + [schedule], path=path)
+    return {"schema": "flywheel.schedule-ack/v1", "schedule": schedule,
+            "rearmed": True, "defined_at": clock()}, 200
 
 
 def handle_schedule_post(path: str, body: dict, *, run_root: Path,
@@ -148,6 +181,8 @@ def handle_schedule_post(path: str, body: dict, *, run_root: Path,
     action = path.rsplit("/", 1)[-1]
     if action == "define":
         return _define(body, run_root=run_root, clock=clock)
+    if action == "rearm":
+        return _rearm(body, run_root=run_root, clock=clock)
     if action == "tick":
         now = clock()
         wanted = body.get("schedule_id", "")

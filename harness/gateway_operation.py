@@ -107,7 +107,7 @@ _FIELDS = {
     "store.put": ({"kind", "data"} | _REFS, {"project"}),
     "import.config": ({"root"} | _REFS, set()),
     "import.inspect": ({"source"} | _REFS, set()),
-    "hook.register": ({"event", "argv", "blocking", "hook_id"} | _REFS, set()), "hook.run": ({"event", "context", "registrations"} | _REFS, set()),
+    "hook.register": ({"event", "argv", "blocking", "hook_id"} | _REFS, {"scan_output"}), "hook.run": ({"event", "context", "registrations"} | _REFS, set()),
 }
 _FIELDS["live_screen.control"] = ({"control", "data_refs", "credential_refs"}, {"session_id", "body_session_ref", "instrument_ref", "sources", "destination", "model", "delivery_mode", "expires_after_ms", "buffer_frames_per_source", "max_frame_bytes", "start_immediately"})
 _FIELDS["live_screen.deliver"] = ({"session_id", "source_id", "destination", "model", "delivery_mode", "prompt", "max_output_tokens", "timeout_s", "data_refs", "credential_refs"}, {"max_age_ms"})

@@ -50,7 +50,7 @@ String budgetHeadline(RunBudgetOutcome budget, {String? reason}) {
   if (tripped == 'wall_time') return 'Stopped by the run budget: time limit reached.';
   if (tripped == 'limit_signals') {
     return 'Stopped by the run budget: ${budget.limits['limit_signals']} steps '
-        'in a row reported a limit error.';
+        'in a row exited 0 while their output ended on a limit error.';
   }
   final used = budget.used[tripped] ?? 0;
   final limit = budget.limits[tripped] ?? 0;
@@ -84,16 +84,34 @@ String budgetSpendLine(RunBudgetOutcome budget) {
   return parts.join(' · ');
 }
 
-/// Steps that exited 0 while their output reported a limit error.
+/// Steps that exited 0 while their output named a limit error.
+///
+/// Those steps were recorded, not failed: a passing test log or a commit
+/// message can name a rate limit. Only a CLI answer that is itself a limit
+/// error fails the run.
 String? falseSuccessLine(RunBudgetOutcome budget, {String? reason}) {
+  final kinds = _signals(budget.falseSuccessSignals);
+  if (reason == 'AGENT_FALSE_SUCCESS') {
+    return 'The CLI session ended marked success, but its answer was a '
+        '$kinds error, so the run is failed.';
+  }
   final n = budget.falseSuccessCount;
   if (n == 0) return null;
-  final kinds = _signals(budget.falseSuccessSignals);
-  final answer = reason == 'AGENT_FALSE_SUCCESS'
-      ? ' The final answer was one of them, so the run is failed.'
-      : '';
-  return '$n step${n == 1 ? '' : 's'} exited 0 but reported a $kinds error; '
-      'recorded as failed.$answer';
+  return '$n step${n == 1 ? '' : 's'} exited 0 while the output named a $kinds '
+      'error. Recorded, not failed: check the work if it looks incomplete.';
+}
+
+/// The steps a limit-signal stop, or a failed CLI answer, counted, each with
+/// the tool, the kind of limit and the words that matched.
+List<String> limitSignalLines(RunBudgetOutcome budget, {String? reason}) {
+  if (budget.tripped != 'limit_signals' && reason != 'AGENT_FALSE_SUCCESS') {
+    return const [];
+  }
+  return [
+    for (final step in budget.limitSignalSteps)
+      '${step.tool}: ${_signalNames[step.signal] ?? step.signal}, '
+          'matched "${step.match}"',
+  ];
 }
 
 const _visibleItems = 8;
@@ -113,6 +131,7 @@ final class RowanRunOutcomeView extends StatelessWidget {
     final stopped = budget.status == 'stopped' || budget.status == 'unverifiable';
     final spend = budgetSpendLine(budget);
     final falseSuccess = falseSuccessLine(budget, reason: reason);
+    final counted = limitSignalLines(budget, reason: reason);
     final hidden = completion.items.length - _visibleItems + completion.itemsOmitted;
     return Column(
       key: const Key('rowan-run-outcome'),
@@ -148,6 +167,10 @@ final class RowanRunOutcomeView extends StatelessWidget {
               style: fwMono(t, size: 11, color: t.inkSoft)),
         if (spend.isNotEmpty)
           Text(spend, style: fwMono(t, size: 10.5, color: t.inkFaint)),
+        for (final line in counted)
+          Text(line,
+              key: const Key('rowan-limit-signal-step'),
+              style: fwMono(t, size: 10.5, color: t.inkSoft)),
         if (falseSuccess != null) ...[
           const SizedBox(height: FwLayout.s1),
           HonestNull(falseSuccess),

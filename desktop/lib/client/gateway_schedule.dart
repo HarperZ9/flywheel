@@ -65,6 +65,19 @@ class ScheduleApi {
     return _decode(r);
   }
 
+  /// POST /api/schedule/rearm -- re-seal a stopped schedule's stored
+  /// definition so it fires again. Nothing is restated, so a re-arm cannot
+  /// change the interval, the anchor or the catch-up policy, and the fire
+  /// history and owed occurrences are kept.
+  Future<Map<String, dynamic>> rearm(String scheduleId) async {
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/schedule/rearm'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'schedule_id': scheduleId}),
+    );
+    return _decode(r);
+  }
+
   /// POST /api/schedule/tick -- fire what is owed, for one schedule or
   /// for all of them. A schedule whose fire chain is broken refuses in
   /// its own result row rather than failing the whole tick.

@@ -12,7 +12,7 @@
       "UPSTREAM_OUTPUT_LIMITS"
     ],
     "operation_ref": "op_cccccccccccccccccccccccccccccccc",
-    "projection_sha256": "32b72ba6247b86b951c9ad6325403d98b1df766e44d37a5af4b21f4a44e21576",
+    "projection_sha256": "6eef96aa01a18915b23103c802a8dc6980b6eb3e07ed48fc86e55edaec2cf8f4",
     "reason": "AGENT_RUN_BUDGET_EXHAUSTED",
     "record_count": 5,
     "run_outcome": {
@@ -20,6 +20,13 @@
         "false_success_count": 1,
         "false_success_signals": [
           "rate_limit"
+        ],
+        "limit_signal_steps": [
+          {
+            "match": "usage limit reached",
+            "signal": "rate_limit",
+            "tool": "run"
+          }
         ],
         "limits": {
           "cost_micros": 2000000,
@@ -197,12 +204,23 @@
           "does_not_prove": [
             "NOT_A_PROVIDER_INVOICE",
             "UNREPORTED_USAGE_NOT_COUNTED",
-            "LIMIT_SIGNAL_IS_A_PHRASE_HEURISTIC"
+            "LIMIT_SIGNAL_IS_A_PHRASE_HEURISTIC",
+            "LIMIT_SIGNAL_READS_ENGLISH_ONLY"
           ],
           "false_success_count": 1,
           "false_success_steps": [
             {
               "action": 7,
+              "counted": true,
+              "match": "usage limit reached",
+              "signal": "rate_limit",
+              "tool": "run"
+            }
+          ],
+          "limit_signal_steps": [
+            {
+              "action": 7,
+              "match": "usage limit reached",
               "signal": "rate_limit",
               "tool": "run"
             }

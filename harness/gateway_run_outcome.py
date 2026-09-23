@@ -26,7 +26,10 @@ _USED_KEYS = {"model_calls", "tool_actions", "usage_tokens", "cost_micros",
               "wall_time_ms"}
 _REPORTING_KEYS = {"calls_with_tokens", "calls_without_tokens", "calls_with_cost"}
 _REPORT_KEYS = {"schema", "status", "tripped", "limits", "used", "reporting",
-                "false_success_count", "false_success_steps", "does_not_prove"}
+                "false_success_count", "false_success_steps", "limit_signal_steps",
+                "does_not_prove"}
+#: Counted limit-signal steps shown to the reader, newest last.
+_SHOWN_SIGNAL_STEPS = 8
 _SIGNALS = set(SIGNALS)
 _COUNTERS = {"model_calls", "tool_actions"}
 _SPEND = {"usage_tokens", "cost_micros"}
@@ -68,6 +71,15 @@ def _trace_counts(records: list) -> dict:
     return {"tool_actions": tools, "model_calls": models}
 
 
+def _signal_step(step) -> dict:
+    """One counted step as the reader sees it: the tool, the kind, the words."""
+    if (type(step) is not dict or step.get("signal") not in _SIGNALS
+            or type(step.get("tool")) is not str or not 0 < len(step["tool"]) <= 64
+            or type(step.get("match")) is not str or not 0 < len(step["match"]) <= 80):
+        raise _Unverifiable("BUDGET_RECORD_MALFORMED")
+    return {"tool": step["tool"], "signal": step["signal"], "match": step["match"]}
+
+
 def _check_report(report, counts: dict, terminal_state: str) -> dict:
     if type(report) is not dict or set(report) != _REPORT_KEYS \
             or report["schema"] != BUDGET_SCHEMA:
@@ -76,6 +88,10 @@ def _check_report(report, counts: dict, terminal_state: str) -> dict:
     used = _naturals(report["used"], _USED_KEYS)
     reporting = _naturals(report["reporting"], _REPORTING_KEYS)
     tripped, steps = report["tripped"], report["false_success_steps"]
+    counted = report["limit_signal_steps"]
+    if type(counted) is not list:
+        raise _Unverifiable("BUDGET_RECORD_MALFORMED")
+    shown = [_signal_step(step) for step in counted][-_SHOWN_SIGNAL_STEPS:]
     if (tripped is not None and tripped not in TRIPS
             or report["status"] != ("stopped" if tripped else "within_limits")
             or type(steps) is not list or type(report["false_success_count"]) is not int
@@ -83,8 +99,12 @@ def _check_report(report, counts: dict, terminal_state: str) -> dict:
             or any(type(s) is not dict or s.get("signal") not in _SIGNALS for s in steps)):
         raise _Unverifiable("BUDGET_RECORD_MALFORMED")
     if tripped in _COUNTERS and used[tripped] < limits[tripped] \
-            or tripped in _SPEND and used[tripped] <= limits[tripped]:
+            or tripped in _SPEND and used[tripped] <= limits[tripped] \
+            or tripped == "limit_signals" and len(counted) < limits["limit_signals"]:
         raise _Unverifiable("BUDGET_STOP_NOT_SUPPORTED")
+    if reporting["calls_with_tokens"] + reporting["calls_without_tokens"] < used["model_calls"]:
+        # Every counted model call either reported tokens or is named as not.
+        raise _Unverifiable("BUDGET_HIDES_UNREPORTED_CALLS")
     if tripped and terminal_state == "completed":
         raise _Unverifiable("BUDGET_STOP_ON_COMPLETED_RUN")
     if any(counts[k] > used[k] for k in counts):
@@ -92,7 +112,8 @@ def _check_report(report, counts: dict, terminal_state: str) -> dict:
     return {"status": report["status"], "tripped": tripped, "limits": dict(limits),
             "used": dict(used), "reporting": dict(reporting),
             "false_success_count": report["false_success_count"],
-            "false_success_signals": sorted({s["signal"] for s in steps})}
+            "false_success_signals": sorted({s["signal"] for s in steps}),
+            "limit_signal_steps": shown}
 
 
 def _budget(records: list, terminal_state: str) -> dict:

@@ -67,7 +67,8 @@ def _run_checked(root, source_context, binding, bindings, ledger, trace, deadlin
         goal = materialize_goal(execution["goal"], source_context)
         result = _run_bound_path(goal, binding, bindings, root, ledger, trace,
                                  deadline, progress, execution, budget)
-        _settle_budget(result, budget)
+        _settle_budget(result, budget,
+                       cli=binding.get("execution_mode") == "native_cli_session")
         if time.monotonic() >= deadline:
             raise GatewayOperationError("OPERATION_DEADLINE_EXCEEDED")
     except Exception as exc:
@@ -110,21 +111,39 @@ def _run_bound_path(goal, binding, bindings, root, ledger, trace, deadline,
             on_event=progress, ledger=ledger, event_errors_fatal=True, budget=budget)
 
 
-def _settle_budget(result: dict, budget) -> None:
-    """Stop a run whose last step crossed a limit, or whose answer is a limit error.
+#: A native CLI prints a limit error as a short result text. Model prose is longer.
+CLI_LIMIT_ANSWER_CHARS = 300
+#: How far into the answer a limit phrase may start: room for "Claude AI " or
+#: "API Error: ", and not for a sentence that describes the task.
+CLI_LIMIT_LEAD_CHARS = 24
 
-    A final answer that is itself a rate-limit, quota or sign-in error reads as
-    a finished run to anything that only checks the exit state. It is failed
-    here instead, with the signal recorded in the budget report."""
+
+def _settle_budget(result: dict, budget, *, cli: bool = False) -> None:
+    """Stop a run whose last step crossed a limit, or a CLI whose answer is one.
+
+    A native CLI can end a session marked success whose result text is a
+    rate-limit, quota or sign-in error. That reads as a finished run to
+    anything that only checks the exit state, so it is failed here, with the
+    matched words in the budget report. Only a short answer that opens with
+    the error counts. On the router and native tool paths the answer is model
+    prose, and a provider limit already fails the call as a non-2xx response,
+    so a summary that mentions HTTP 429 is not read as one."""
     from .gateway_operation import GatewayOperationError
-    from .limit_signal import limit_signal
+    from .limit_signal import limit_match
     from .run_budget import FALSE_SUCCESS
     budget.settle()
-    signal = limit_signal(result.get("final"))
-    if signal is not None:
-        budget.false_success.append({"tool": "final_answer", "signal": signal,
-                                     "action": budget.used["tool_actions"]})
-        raise GatewayOperationError(FALSE_SUCCESS)
+    final = result.get("final")
+    if not cli or type(final) is not str or len(final.strip()) > CLI_LIMIT_ANSWER_CHARS:
+        return
+    found = limit_match(final.strip().splitlines()[0]) if final.strip() else None
+    if found is None or not found.anchored or (
+            found.tier != "structured" and found.start > CLI_LIMIT_LEAD_CHARS):
+        return
+    step = {"tool": "final_answer", "signal": found.kind, "match": found.match,
+            "action": budget.used["tool_actions"]}
+    budget.false_success.append({**step, "counted": True})
+    budget.limit_signal_steps.append(step)
+    raise GatewayOperationError(FALSE_SUCCESS)
 
 
 def _completion(ledger, result, root, cli_events, exc=None) -> dict:

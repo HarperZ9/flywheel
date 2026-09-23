@@ -19,6 +19,11 @@ def _request(value):
         raise GatewayOperationError('AGENT_CLI_PROFILE_UNSUPPORTED')
     if 'max_tokens' in value or 'effort' in value:
         raise GatewayOperationError('AGENT_CLI_BUDGET_UNSUPPORTED')
+    # codex exec reports neither the model calls inside a turn nor a cost,
+    # so a limit on either could only ever read as within limits.
+    if value['endpoint'] == 'codex-cli' and {'max_model_calls', 'max_cost_micros'} & set(
+            value.get('run_budget') or ()):
+        raise GatewayOperationError('AGENT_CLI_BUDGET_UNSUPPORTED')
     if value.get('test_cmd') or value['credential_refs']:
         raise GatewayOperationError('AGENT_CLI_PERMISSION_UNSUPPORTED')
     return session_profile(value['endpoint'], allow_write=value['allow_write'], allow_exec=value['allow_exec'])

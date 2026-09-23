@@ -87,9 +87,9 @@ The matrix above is `main` before this branch. After it:
 
 | # | Capability | Status | What changed |
 |---|---|---|---|
-| 13 | Run budget circuit breaker | Shipped | Per-run limits on model calls, tool actions, provider-reported tokens and spend, with the existing wall-time deadline; exit-0 limit errors recorded as failed; stop reason in the trace, the projection and the card (`docs/RUN-BUDGET.md`). Spend applies only where a provider reports cost |
+| 13 | Run budget circuit breaker | Shipped | Per-run limits on model calls, tool actions, provider-reported tokens and spend, with the existing wall-time deadline; exit-0 steps whose output ends on a limit error trip a second breaker after two in a row; stop reason in the trace, the projection and the card (`docs/RUN-BUDGET.md`). Spend applies only where a provider reports cost. A native CLI session reports tokens and spend once, at its end, so both limits mark it stopped after the fact. `agent.run` only: workflow and plan runs have no budget |
 | 14 | Verified versus claimed completion | Shipped | Every run ends with a per-deliverable split rechecked by the gateway against the trace; the card says "Done" only when everything is verified; a check command field makes the final answer verifiable (`docs/VERIFIED-COMPLETION.md`) |
-| 19 | Scheduled and recurring runs | Partial | Hook receipts mark exit-0 limit errors as failed, and a schedule stops after two failed fires in a row until redefined. A schedule still cannot start `agent.run` |
+| 19 | Scheduled and recurring runs | Partial | Hook receipts name a limit error and its matched words, and mark an exit 0 that ends on one as failed; a schedule stops after two failed fires in a row, holds what it owes, and fires again after Re-arm in the Schedule view. A schedule still cannot start `agent.run`, and the desktop still cannot define one |
 | 21 | Take a session elsewhere | Partial | One finished run exports as a provider-neutral Markdown brief (`docs/ROWAN-HANDOFF.md`). A multi-run session export does not exist |
 
 Counts after this branch: 8 shipped, 12 partial, 3 absent (rows 13 and 14 move

@@ -84,13 +84,15 @@ def test_model_call_past_the_limit_is_refused():
     assert report["used"]["model_calls"] == 1
 
 
-def test_exit_zero_with_a_limit_error_is_recorded_as_failed():
+def test_exit_zero_with_a_limit_error_is_recorded_and_the_result_is_untouched():
     inner = Recorder(output="Claude AI usage limit reached|1760000000")
     budget = RunBudget(limits(tool_actions=10))
     result = budget.wrap_executor(inner).execute("run", {"cmd": "claude -p hi"})
-    assert result.ok is False
-    assert result.output.startswith("[flywheel] the step exited 0")
-    assert budget.report()["false_success_count"] == 1
+    assert result.ok is True and result.output == inner.output
+    report = budget.report()
+    assert report["false_success_count"] == 1
+    assert report["limit_signal_steps"] == [{"tool": "run", "signal": "rate_limit",
+                                             "match": "usage limit reached", "action": 1}]
 
 
 def test_file_content_that_quotes_a_limit_is_not_a_failed_step():

@@ -15,23 +15,27 @@ the report names the limit that tripped.
 
 The second job is the success that is not one. A command can exit 0 while its
 output says the account hit a rate limit, ran out of quota or failed to sign
-in. `limit_signal` (in limit_signal.py) reads for that signature and the
-step is recorded as failed. Two limit signals in a row trip the breaker, because a loop that
-keeps retrying into a limit is the runaway this module exists to stop.
+in. `limit_match` (in limit_signal.py) reads for that signature. Every exit-0
+step whose output quotes a limit phrase is recorded as a suspected false
+success with the matched words, and the step result the model sees is left
+as it was. Only an anchored match counts toward the breaker: a structured
+status or error field, or a limit phrase on the output's last line. Two
+counted steps in a row trip it, because a loop that keeps retrying into a
+limit is the runaway this module exists to stop. The run's own check command
+is not read at all; its exit code is already the verdict.
 
-Limits of the check: `limit_signal` is a phrase heuristic. It misses an error
-worded another way, and it can flag a short output that quotes one of the
-phrases. Usage a provider does not report is not counted, and the report says
-how many calls reported nothing instead of estimating them.
+Limits of the check: `limit_match` is an English phrase heuristic. It misses
+an error worded another way or in another language, and an anchored match can
+still be a quote. Usage a provider does not report is not counted, and the
+report says how many calls reported nothing instead of estimating them.
 """
 from __future__ import annotations
 
 import math
 import time
-from dataclasses import replace
 
 from .gateway_operation import GatewayOperationError
-from .limit_signal import limit_signal
+from .limit_signal import limit_match
 from .run_budget_contract import DOES_NOT_PROVE, SCHEMA
 
 BUDGET_EXHAUSTED = "AGENT_RUN_BUDGET_EXHAUSTED"
@@ -44,8 +48,16 @@ OVERRIDE_BOUNDS = {"max_model_calls": (1, 12), "max_tool_actions": (0, 200),
 #: Defaults when the owner sets nothing. Model calls default to max_steps.
 DEFAULTS = {"max_tool_actions": 24, "max_usage_tokens": 200_000,
             "max_cost_micros": 2_000_000}
-#: Consecutive steps reporting a limit before the breaker trips.
+#: Consecutive counted limit signals before the breaker trips.
 LIMIT_SIGNAL_TRIP = 2
+#: How many suspected and counted steps a report lists.
+_LISTED_STEPS = 32
+#: Anthropic reports cached input apart from input_tokens, so both are added
+#: when no total is given. Codex `cached_input_tokens` and OpenAI
+#: `prompt_tokens_details.cached_tokens` are subsets of input and are not.
+_TOKEN_KEYS = ("prompt_tokens", "input_tokens", "promptTokenCount",
+               "completion_tokens", "output_tokens", "candidatesTokenCount",
+               "cache_creation_input_tokens", "cache_read_input_tokens")
 
 # Tools whose output is file content or a listing. Scanning it would flag a
 # file that merely mentions a rate limit, so only actions are scanned.
@@ -93,9 +105,7 @@ def _reported_tokens(usage) -> int | None:
     total = usage.get("total_tokens", usage.get("totalTokenCount"))
     if type(total) is int and total >= 0:
         return total
-    parts = [usage.get(k) for k in ("prompt_tokens", "input_tokens", "promptTokenCount",
-                                    "completion_tokens", "output_tokens",
-                                    "candidatesTokenCount")]
+    parts = [usage.get(k) for k in _TOKEN_KEYS]
     counted = [p for p in parts if type(p) is int and p >= 0]
     return sum(counted) if counted else None
 
@@ -118,6 +128,7 @@ class RunBudget:
         self.reporting = {"calls_with_tokens": 0, "calls_without_tokens": 0,
                           "calls_with_cost": 0}
         self.false_success: list[dict] = []
+        self.limit_signal_steps: list[dict] = []
         self.tripped: str | None = None
         self._armed: str | None = None
         self._consecutive_limit_signals = 0
@@ -140,36 +151,52 @@ class RunBudget:
         if self.used[name] > self.limits[name]:
             self._trip(name)
 
-    def record_usage(self, usage=None, *, cost_usd=None) -> None:
+    def record_usage(self, usage=None, *, cost_usd=None, calls: int = 1) -> None:
+        """Add one provider report. `calls` is how many model calls it covers:
+        a CLI reports its whole session once, at the end."""
         tokens = _reported_tokens(usage)
         if tokens is None:
-            self.reporting["calls_without_tokens"] += 1
+            self.reporting["calls_without_tokens"] += calls
         else:
-            self.reporting["calls_with_tokens"] += 1
+            self.reporting["calls_with_tokens"] += calls
             self.used["usage_tokens"] += tokens
         cost = _reported_cost_micros(usage, cost_usd)
         if cost is not None:
-            self.reporting["calls_with_cost"] += 1
+            self.reporting["calls_with_cost"] += calls
             self.used["cost_micros"] += cost
         for name in ("usage_tokens", "cost_micros"):
             if self.used[name] > self.limits[name]:
                 self._arm(name)
 
+    def unaccounted_calls(self) -> int:
+        """Model calls counted so far that no provider report has covered."""
+        return max(0, self.used["model_calls"] - self.reporting["calls_with_tokens"]
+                   - self.reporting["calls_without_tokens"])
+
     def observe_step(self, tool: str, ok: bool, output) -> str | None:
-        """Read one action's output. Returns the limit it reports, if any."""
-        if tool in _CONTENT_TOOLS:
+        """Read one action's output. Returns the limit it counts, if any.
+
+        A nonzero exit is a failure the caller already sees, so only an exit-0
+        step is read. Any match on it is recorded as a suspected false success.
+        An anchored match also counts toward the breaker. Any other step,
+        including a file read or write, ends the run of counted steps, so
+        "in a row" means in a row."""
+        found = None if tool in _CONTENT_TOOLS or not ok else limit_match(output)
+        if found is None:
+            self._consecutive_limit_signals = 0
             return None
-        signal = limit_signal(output)
-        if signal is None:
+        step = {"tool": str(tool)[:64], "signal": found.kind, "match": found.match,
+                "action": self.used["tool_actions"], "counted": found.anchored}
+        self.false_success.append(step)
+        if not found.anchored:
             self._consecutive_limit_signals = 0
             return None
         self._consecutive_limit_signals += 1
-        if ok:
-            self.false_success.append({"tool": str(tool)[:64], "signal": signal,
-                                       "action": self.used["tool_actions"]})
+        self.limit_signal_steps.append(
+            {k: step[k] for k in ("tool", "signal", "match", "action")})
         if self._consecutive_limit_signals >= self.limits["limit_signals"]:
             self._arm("limit_signals")
-        return signal
+        return found.kind
 
     def note_wall_time(self) -> None:
         self.tripped = self.tripped or "wall_time"
@@ -179,14 +206,20 @@ class RunBudget:
         if self._armed is not None:
             self._trip(self._armed)
 
-    def wrap_executor(self, executor):
-        return BudgetedExecutor(executor, self)
+    def wrap_executor(self, executor, *, test_cmd=None):
+        return BudgetedExecutor(executor, self, test_cmd=test_cmd)
 
     def guard_transport(self, transport):
         """Charge each provider request and read the usage it reports."""
         def call(method, url, headers, body, timeout):
             self.charge_model_call()
-            status, obj = transport(method, url, headers, body, timeout)
+            try:
+                status, obj = transport(method, url, headers, body, timeout)
+            except BaseException:
+                # A timed-out or refused request can still be billed. It is
+                # named as a call that reported nothing, never dropped.
+                self.record_usage(None)
+                raise
             ok = type(obj) is dict and 200 <= status < 300
             # A refused or malformed response still counts as a call that
             # reported no usage, so the report never hides it.
@@ -197,12 +230,17 @@ class RunBudget:
     def report(self) -> dict:
         used = dict(self.used)
         used["wall_time_ms"] = max(0, int((self._clock() - self._started) * 1000))
+        reporting = dict(self.reporting)
+        # A session stopped before its provider reported is named, not guessed.
+        reporting["calls_without_tokens"] += self.unaccounted_calls()
         return {"schema": SCHEMA,
                 "status": "stopped" if self.tripped else "within_limits",
                 "tripped": self.tripped, "limits": dict(self.limits),
-                "used": used, "reporting": dict(self.reporting),
+                "used": used, "reporting": reporting,
                 "false_success_count": len(self.false_success),
-                "false_success_steps": [dict(s) for s in self.false_success[:32]],
+                "false_success_steps": [dict(s) for s in self.false_success[:_LISTED_STEPS]],
+                "limit_signal_steps": [dict(s) for s in
+                                       self.limit_signal_steps[-_LISTED_STEPS:]],
                 "does_not_prove": list(DOES_NOT_PROVE)}
 
     def _gate(self, name: str) -> None:
@@ -220,26 +258,25 @@ class RunBudget:
         raise RunBudgetExceeded(name)
 
 
-_FALSE_SUCCESS_NOTE = ("[flywheel] the step exited 0 but its output reports a "
-                       "{signal} error; it is recorded as failed.\n")
-
-
 class BudgetedExecutor:
     """A tool executor that charges each action before it runs.
 
-    Everything else passes through to the wrapped executor, so receipt
-    chains, the byte witness and the workspace root keep working."""
+    Its output is read for a limit signal, and the result is returned as the
+    tool produced it. The run's own check command is charged but not read:
+    its exit code is the verdict, and a passing test log that names a rate
+    limit case is still a pass. Everything else passes through to the wrapped
+    executor, so receipt chains, the byte witness and the workspace root keep
+    working."""
 
-    def __init__(self, inner, budget: RunBudget) -> None:
-        self._inner, self._budget = inner, budget
+    def __init__(self, inner, budget: RunBudget, *, test_cmd=None) -> None:
+        self._inner, self._budget, self._test_cmd = inner, budget, test_cmd
 
     def execute(self, name, args, *extra, **kwargs):
         self._budget.charge_tool_action()
         result = self._inner.execute(name, args, *extra, **kwargs)
-        signal = self._budget.observe_step(name, result.ok, result.output)
-        if signal is not None and result.ok:
-            return replace(result, ok=False, output=_FALSE_SUCCESS_NOTE.format(
-                signal=signal.replace("_", " ")) + result.output)
+        check = (self._test_cmd is not None and name == "run"
+                 and type(args) is dict and args.get("cmd") == self._test_cmd)
+        self._budget.observe_step(name, result.ok, None if check else result.output)
         return result
 
     def __getattr__(self, attr):
