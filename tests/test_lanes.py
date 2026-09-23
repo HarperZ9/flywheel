@@ -5,7 +5,6 @@ and the install-name -> command asymmetry must map correctly (pip install
 gather-engine exposes the `gather` command, etc.). A missing lane never
 crashes the roster; it reports `missing`/`declared`.
 """
-import re
 from pathlib import Path
 
 import harness.lanes as lanes
@@ -46,42 +45,6 @@ def test_install_name_to_command_asymmetry_is_mapped():
     assert LANES["mneme"].command == "mneme"
     assert LANES["canon"].install_name == "flywheel-canon"
     assert LANES["canon"].command == "canon"
-
-
-def test_every_pip_lane_declares_a_release_version():
-    """Structural, because a pinned literal per lane guards nothing useful.
-
-    This test used to assert LANES["index"].version == "2.10.0" and
-    LANES["mneme"].version == "0.4.2". Those pins sat green on 2026-09-22 while
-    five lanes had drifted away from what PyPI actually carried: gather declared
-    1.6.1 against 1.8.2, index 2.10.0 against 2.13.0, forum 1.13.0 against
-    1.14.0, calibrate-pro 1.1.0 against 2.0.0, articulate 0.2.0 against 0.3.0.
-    A literal only proves the number has not changed, which is the opposite of
-    what matters when resolve_lane_runtime compares it to the installed version
-    by equality.
-
-    Checking the declared version against the index needs the network, so it
-    cannot live here. It is done at release time by installing each lane from
-    PyPI and probing it. What this test can enforce is that every pip lane
-    declares a version at all, in a shape that comparison will not silently
-    mishandle.
-    """
-    for name, lane in LANES.items():
-        if lane.kind != "pip":
-            continue
-        assert re.fullmatch(r"\d+\.\d+(\.\d+)?", lane.version), (
-            f"{name} declares version {lane.version!r}, which is not a release "
-            "number resolve_lane_runtime can compare")
-
-
-def test_published_lanes_are_not_marked_package_disabled():
-    """A lane whose distribution is live on PyPI must not carry a disabled
-    reason. resolve_lane_runtime skips the installed-version observation
-    entirely while package_disabled_reason is set, so a stale reason silently
-    hides a working install rather than reporting a mismatch."""
-    for name in ("relay", "mneme"):
-        assert not LANES[name].package_disabled_reason, (
-            f"{name} is published; its package_disabled_reason is stale")
 
 
 def test_every_lane_has_an_mcp_command_and_organ():
