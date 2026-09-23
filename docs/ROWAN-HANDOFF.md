@@ -7,18 +7,24 @@ run's owner at `GET /api/operations/{operation_ref}/handoff`.
 
 ## What the brief holds
 
-- **Goal**: the task as it was given.
+- **Goal**: the task as it was given, quoted, up to 60 lines and 8,000
+  characters.
 - **Where it ended**: the run state and failure reason, the completion split
   (verified, claimed, failed) and whether the run budget stopped it.
-- **Deliverables**: each file the run wrote and the final answer, with its
-  mark and the check behind it (see `docs/VERIFIED-COMPLETION.md`).
+- **Deliverables**: the final answer first, then each file the run wrote or a
+  command changed, with its mark and the check behind it (see
+  `docs/VERIFIED-COMPLETION.md`). Up to 20 lines, then a count of the rest,
+  including any the completion record itself left out.
 - **Commands run**: up to 20, then a count of the rest.
 - **Steps the model stated**: the model's own words per step, labelled as
-  unchecked.
+  unchecked. A step that called a tool shows the tool's name and path only;
+  the arguments, which can hold file content, are left out.
 - **Open items**: work that is claimed and unverified, checks that failed, an
   unfinished run, a success claim with no check behind it, and steps that
-  exited 0 while reporting a limit error.
-- **Final answer**: quoted, and labelled as the model's words.
+  exited 0 while their output named a rate limit, quota, billing, sign-in or
+  service-overloaded error.
+- **Final answer**: quoted, labelled as the model's words, up to 60 lines and
+  40,000 characters.
 - **Receipts**: the operation, Journey and private trace references, the trace
   head hash, the ledger checkpoint and the run verdict.
 
@@ -26,12 +32,40 @@ The response also carries the trace reference, record count and head hash the
 brief was rendered from. The engine refuses the brief when the trace no longer
 matches the run's recorded result.
 
+## The marks it shows
+
+The brief shows the completion marks only after the gateway recheck the Rowan
+card uses. When the recheck refuses the record, for example because the run
+was stopped at its deadline after the worker recorded a verified answer, the
+brief says "Completion: unverifiable" with the reason, and each deliverable
+reads "recorded as verified, not confirmed" instead of a mark.
+
+## What stays on the machine
+
+The brief is written to be pasted into another provider's agent, so before it
+leaves the engine:
+
+- credentials found by pattern are replaced with `[credential omitted]`: URL
+  user info, `--password` and `mysql -p` values, `sshpass -p`, assignments such
+  as `API_KEY=...`, bearer tokens, and a keyword followed by a value that looks
+  like a credential (`password hunter2pass`). A line that still matches a
+  credential pattern after that is withheld whole;
+- the workspace root is written as `<workspace>`, and any other host path as
+  `[host path omitted]`;
+- paths and commands are single-line code spans, so a file name cannot start a
+  line of its own;
+- a quote that is cut ends with a line saying how many lines and characters
+  are left in the private trace.
+
 ## Limits
 
 - The brief is a plain export of one run. Nothing is re-run or re-checked when
   it is exported; the marks are the ones recorded at the end of the run.
 - File contents are not included. The next agent needs the workspace to
   continue from the files themselves.
+- Redaction is a pattern list. A credential written in a shape it does not
+  know, such as an all-letter password after the word "password", is not
+  caught. Read the brief before pasting it anywhere.
 - The format is plain Markdown for any agent. Rendering context for a
   particular provider is not part of this export.
 - Only the run's owner can read it, through the same authorization as the

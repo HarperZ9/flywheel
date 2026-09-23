@@ -29,7 +29,7 @@ def test_the_brief_carries_goal_marks_open_items_and_receipts(tmp_path, monkeypa
     _run(tmp_path, monkeypatch, [WRITE, "Created notes.md. Everything works now."])
     brief, records = _brief(tmp_path, "completed")
     assert brief.startswith("# Handoff: write notes")
-    assert "- notes.md: verified (file_hash_recheck, matches)" in brief
+    assert "- `notes.md`: verified (file_hash_recheck, matches)" in brief
     assert "- Final answer: claimed (no check, no_check_ran)" in brief
     assert "- Check the final answer: it is claimed and nothing verified it." in brief
     assert "no check backs that claim" in brief

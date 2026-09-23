@@ -135,7 +135,7 @@ def _check_report(report, ledger: list, terminal_state: str, cli_events=(),
             "unbacked_success_claim": report["unbacked_success_claim"]}
 
 
-def _workspace_root(records: list):
+def trace_workspace_root(records: list):
     """The pinned workspace root the run's binding names, for CLI paths."""
     for record in records:
         if record.get("kind") == "request":
@@ -157,7 +157,7 @@ def derive_completion(records: list, terminal_state: str) -> dict:
                   and str(r["payload"].get("type", "")).startswith("cli_tool")]
     try:
         block = _check_report(report, ledger, terminal_state, cli_events,
-                              _workspace_root(records))
+                              trace_workspace_root(records))
     except _Unverifiable as exc:
         return {"status": "unverifiable", "reason": exc.reason}
     except (KeyError, TypeError, ValueError, AttributeError):
