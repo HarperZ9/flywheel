@@ -41,6 +41,14 @@ def test_the_wall_time_record_is_described_as_it_behaves():
     assert "the call in flight when the tree stopped is counted too" in text
 
 
+def test_a_2xx_limit_body_is_said_to_fail_with_the_code_its_path_raises():
+    text = _doc("RUN-BUDGET.md")
+    stale = "fails with `AGENT_FALSE_SUCCESS`: a 2xx provider response whose body is a"
+    assert stale not in text
+    for code in ("`EXTERNAL_ACTION_FAILED`", "`AGENT_NATIVE_PROTOCOL_ERROR`"):
+        assert code in text, code
+
+
 def test_cli_tokens_are_said_to_count_as_they_stream_and_spend_after_the_fact():
     text = _doc("RUN-BUDGET.md")
     assert "counts each message's tokens once, by id, as they stream" in text

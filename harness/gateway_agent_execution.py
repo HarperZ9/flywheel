@@ -114,11 +114,13 @@ def _settle_budget(result: dict, budget) -> None:
     """Stop a run whose last step crossed a limit, or that reported a false success.
 
     A provider or a CLI can report success next to a limit in its own fields:
-    a 2xx response whose body is a rate-limit error, a CLI session marked
-    success after a limit event, a CLI that exits 0 with a limit error on its
-    stderr. The paths record those as they read them, and the run fails here.
-    The final answer is model prose and is never read for a limit, on any
-    path, so an answer about 429 handling completes."""
+    a 2xx response whose body carries a completion and a rate-limit error, a
+    CLI session marked success after a limit event, a CLI that exits 0 with a
+    limit error on its stderr. The paths record those as they read them, and
+    the run fails here. A 2xx body that is only a limit error holds no
+    completion, so its call fails first, with the path's own code. The final
+    answer is model prose and is never read for a limit, on any path, so an
+    answer about 429 handling completes."""
     budget.settle_run()
 
 

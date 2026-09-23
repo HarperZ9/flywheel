@@ -173,3 +173,23 @@ def test_a_provider_429_is_recorded_from_its_status_and_error_type(tmp_path, mon
     assert [(s["tool"], s["signal"], s["match"]) for s in steps] == [
         ("provider", "rate_limit", "rate_limit_error")]
     assert payload["run_budget"]["false_success_count"] == 0
+
+
+def test_a_2xx_body_that_is_only_a_limit_error_fails_the_call_first(tmp_path, monkeypatch):
+    # The body holds no completion, so the router backend fails the call
+    # before the run settles. The record still counts the false success.
+    from harness.gateway_agent_failures import failure_reason
+    error, payload = _router(tmp_path, monkeypatch,
+                             [(200, {"error": {"type": "rate_limit_error"}})])
+    assert failure_reason(error) == "EXTERNAL_ACTION_FAILED"
+    report = payload["run_budget"]
+    assert (report["status"], report["false_success_count"]) == ("within_limits", 1)
+
+
+def test_a_2xx_completion_next_to_a_limit_error_fails_as_a_false_success(tmp_path, monkeypatch):
+    from harness.gateway_agent_failures import failure_reason
+    body = {"model": "qwen2.5-coder:14b", "choices": [{"message": {"content": "done"}}],
+            "error": {"type": "rate_limit_error"}}
+    error, payload = _router(tmp_path, monkeypatch, [(200, body)])
+    assert failure_reason(error) == "AGENT_FALSE_SUCCESS"
+    assert payload["run_budget"]["false_success_count"] == 1

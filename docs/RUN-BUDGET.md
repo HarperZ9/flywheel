@@ -127,12 +127,17 @@ it. Two in a row stop the run, because a loop that retries into a limit keeps
 spending. A provider call or a CLI model turn that reports no limit starts the
 count again, and one error a CLI restates in a second event counts once.
 
-A limit error reported next to a success is a false success, and the run
-fails with `AGENT_FALSE_SUCCESS`: a 2xx provider response whose body is a
-limit error, a CLI result marked success after the session reported a limit
-error, or a CLI that exits 0 with a limit error on its stderr. When a run
-stops on limit errors or fails as a false success, the card lists each
-counted error with where it came from and its token.
+A limit error reported next to a success is a false success. The record
+counts it, and a run that goes on to settle fails with `AGENT_FALSE_SUCCESS`:
+a 2xx provider response whose body carries a completion and a limit error, a
+CLI result marked success after the session reported a limit error, or a CLI
+that exits 0 with a limit error on its stderr. A 2xx response whose body is
+only a limit error holds no completion, so the call fails before the run
+settles. The text router path then fails the run with `EXTERNAL_ACTION_FAILED`
+and the provider-native tool loop with `AGENT_NATIVE_PROTOCOL_ERROR`, and the
+record still counts the false success. When a run stops on limit errors or
+fails as a false success, the card lists each counted error with where it
+came from and its token.
 
 For example, claude 2.1.251, run against an account with no credit, streamed
 an assistant event with `"error": "billing_error"` and
