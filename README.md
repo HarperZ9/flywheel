@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/art/flywheel-header.svg" alt="Flywheel: run an AI task with any model, keep a record you can recheck offline." width="100%"></p>
 
-**Run an AI task with any model. Keep a record you can recheck offline.**
+**A self-hostable, model-agnostic AI workstation and coding harness.**
 
 [![PyPI](https://img.shields.io/pypi/v/flywheel-verify?style=flat-square&labelColor=14041b&color=f8cc43)](https://pypi.org/project/flywheel-verify/)
 [![license](https://img.shields.io/badge/license-FSL--1.1--MIT-8f8095?style=flat-square&labelColor=14041b)](LICENSE)
@@ -9,13 +9,20 @@
 ![python: 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&labelColor=14041b)
 ![deps: none (core)](https://img.shields.io/badge/core%20deps-none-success?style=flat-square&labelColor=14041b)
 
-Flywheel runs an AI task with the local or hosted model and tools you choose. It
-records the run, and optional sealed tool-call receipts can be inspected and
-rechecked offline. The repository also includes a native desktop app.
+Flywheel runs any model, frontier or local, behind a single OpenAI-compatible
+surface, and your keys and data stay on your machine. Its desktop assistant,
+Rowan, takes a request in plain words and turns it into a task the app runs and
+records on the model you pick. A permission-gated coding agent, relay, runs over
+your own folders and checks each tool request before it acts. About fifteen
+composable lanes ship in the roster, ten of them bundled natively from source.
 
-Flywheel has two parts. The Python engine routes tasks, checks tool requests,
-runs verification, writes the run ledger, and serves a local gateway. The
-Flutter client provides the native desktop interface.
+The command `flywheel check-output` checks a value against the source that
+decides it, ships finance, medicine, and law packs, and can emit the check as a
+Lean 4 proof a kernel runs. Every accepted result carries a sealed, re-derivable
+receipt. An independent witness re-runs that receipt offline and returns MATCH,
+DRIFT, or UNVERIFIABLE, with no learned model on the accept path. Install the
+engine with `pip install flywheel-verify`, or run the native desktop app, which
+bundles the engine and needs no Python.
 
 The [architectural mission](docs/ARCHITECTURAL-MISSION.md) is to make consequential
 AI claims independently checkable, with usable tools for evaluators and everyday

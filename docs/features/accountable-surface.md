@@ -44,9 +44,15 @@ Evidence base: `tests/` holds 233 test functions and `examples/` holds eight run
 ### As a standalone MCP server
 
 ```
-python -m pip install -e ".[server]"
-python -m accountable_surface.server   # or the accountable-surface-server console script
+pip install accountable-surface
+accountable-surface-mcp                # stdio MCP server, stdlib only
 ```
+
+`accountable-surface-mcp` (`accountable_surface.interop_mcp`) needs nothing
+beyond the declared dependencies. The FastMCP server is a second entry point:
+`pip install "accountable-surface[server]"`, then `accountable-surface-server`
+or `python -m accountable_surface.server`. Installing without the extra and
+running the FastMCP entry raises `ModuleNotFoundError: No module named 'mcp'`.
 
 Set `ACCOUNTABLE_SURFACE_GRANTS` to the grants file and, optionally, `ACCOUNTABLE_SURFACE_JOURNAL` to an append-only JSONL path so the witnessed self-view spans sessions.
 
@@ -105,7 +111,7 @@ Verdict mapping in `certify.py`: gate `allow`/`deny`/`needs-human` maps to `VERI
 
 ### Which lane it is
 
-It is the `actuation` organ in the lane layer. The registry entry (`harness/lanes_registry.py`) declares kind `pip`, command `accountable-surface-server`, module `accountable_surface.server`, source repo `public/accountable-surface`, and `extra_source_repos` `("public/coherence-membrane", "public/proof-surface")`. It is the only lane in the roster whose stated purpose is to change external state, which is why `harness/lane_caller.py` sets its tier floor to `T2` alongside `relay` (execution) and `local-model` (the engine). The membership assertion lives in `tests/test_lanes.py::test_registry_covers_the_expected_lanes`, and the human-facing card lives in `desktop/lib/models/lane_identity.dart` under title "Accountable surface", surface "grant gate + action journal".
+It is the `actuation` organ in the lane layer. The registry entry (`harness/lanes_registry.py`) declares kind `pip`, install name `accountable-surface`, version `0.3.1`, command `accountable-surface-mcp`, module `accountable_surface.interop_mcp`, source repo `public/accountable-surface`, and `extra_source_repos` `("public/coherence-membrane", "public/proof-surface")`. It is the only lane in the roster whose stated purpose is to change external state, which is why `harness/lane_caller.py` sets its tier floor to `T2` alongside `relay` (execution) and `local-model` (the engine). The membership assertion lives in `tests/test_lanes.py::test_registry_covers_the_expected_lanes`, and the human-facing card lives in `desktop/lib/models/lane_identity.dart` under title "Accountable surface", surface "grant gate + action journal".
 
 ### What it consumes from peers
 
@@ -135,11 +141,11 @@ This mapper sits beside two peers in the same file: `drift_lessons` reads `mneme
 
 ### A note on the registration model
 
-This lane is wired more deeply than a bridge satellite such as `chorus` (`harness/chorus_bridge.py`), which the desktop drives as an external CLI and reads verbatim without a `LANES` entry. accountable-surface is a full roster lane: it carries a registry `Lane`, a tier floor, an expected-set assertion, a desktop identity card, and a downstream consumer. The apt in-family comparison is the other source-checkout lanes such as `mneme` and `relay`, which also set `package_disabled_reason` and resolve live from a source checkout.
+This lane is wired more deeply than a bridge satellite such as `chorus` (`harness/chorus_bridge.py`), which the desktop drives as an external CLI and reads verbatim without a `LANES` entry. accountable-surface is a full roster lane: it carries a registry `Lane`, a tier floor, an expected-set assertion, a desktop identity card, and a downstream consumer. The apt in-family comparison is `mneme` and `relay`, which also publish a distribution and keep a source checkout as the fallback profile.
 
 ## Honest limits
 
-- **Source-checkout only.** There is no admitted PyPI distribution; from a package-only workstation the roster reports the lane `MISSING`. It runs live only from a source checkout with both sibling repos present.
+- **The lane runs the interop server, not the FastMCP one.** `accountable-surface` is published, so a package-only workstation installs and launches it. The lane points at `accountable-surface-mcp` because the FastMCP entry needs the `[server]` extra, and that extra cannot be folded into the lane's install name: `installed_version()` passes that string to `importlib.metadata.version`, which rejects an extras marker. A workstation that wants the FastMCP surface installs the extra itself.
 - **Advisory over the MCP surface.** The MCP `propose` tool returns a gate decision for the operator to enforce; the effector-driven `actuate` loop runs on the Python API path only. The world server runs the real loop within its own grant.
 - **No static tool manifest.** The exposed tool set is declared by decorators and discovered at probe time, not asserted by a committed manifest.
 - **Grounding is relevance scoring.** The cortex reports `ungrounded` when relevance is low, so it stays honest under weak evidence. A `grounded` verdict is a relevance judgment. It does not prove the premise is correct.

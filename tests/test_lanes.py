@@ -35,8 +35,16 @@ def test_install_name_to_command_asymmetry_is_mapped():
     assert LANES["crucible"].command == "crucible"
     assert LANES["forum"].install_name == "forum-engine"
     assert LANES["forum"].command == "forum"
-    assert LANES["index"].version == "2.10.0"
-    assert LANES["mneme"].version == "0.2.0"
+    # relay, mneme and canon publish under a flywheel- prefix: their bare names
+    # on PyPI belong to unrelated projects. The command stays the short name, so
+    # the asymmetry is wider here than a suffix change, and reverting one of
+    # these to the bare name would install a stranger's package.
+    assert LANES["relay"].install_name == "flywheel-relay"
+    assert LANES["relay"].command == "relay"
+    assert LANES["mneme"].install_name == "flywheel-mneme"
+    assert LANES["mneme"].command == "mneme"
+    assert LANES["canon"].install_name == "flywheel-canon"
+    assert LANES["canon"].command == "canon"
 
 
 def test_every_lane_has_an_mcp_command_and_organ():

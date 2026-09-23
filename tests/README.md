@@ -52,6 +52,20 @@ current counts, and the list can only shrink. A new file over the limit fails,
 and a grandfathered file that grows fails. The point is legibility: a file you
 can read in one sitting is one a new lead can take over.
 
+### The tracked-path length gate
+
+`python scripts/check_path_length.py`, pinned by
+`tests/test_check_path_length.py`.
+
+No path that git tracks runs past 180 characters, and nothing is
+grandfathered. A first clone on Windows runs without core.longpaths, and Git
+for Windows then cannot create a file whose full path reaches 260 characters or
+a directory whose full path reaches 248. Every character in a tracked path is
+one fewer for the directory someone clones into. The gate came from a benchmark
+run that wrote its output under a path that repeated its own root. Its
+206-character paths capped the clone directory at 51 characters. At 180, any
+clone directory up to 68 characters works.
+
 ### The stdlib accept path
 
 `python scripts/check_verifier_stdlib.py`, pinned by

@@ -147,10 +147,18 @@ import time
 time.sleep(60)
 """)
     pid_file = tmp_path / "descendant.pid"
+    pid_part = tmp_path / "descendant.pid.part"
+    # The 0.5s timeout can kill the spawner mid-write, so record the pid through a
+    # temporary file and os.replace. The pid file is then either absent or complete,
+    # never a truncated read that turns a timing window into int('').
     script = _script(tmp_path / "spawner.py", f'''
-import subprocess, sys, time
+import os, subprocess, sys, time
 child = subprocess.Popen([sys.executable, "-I", "-B", {str(descendant)!r}])
-open({str(pid_file)!r}, "w", encoding="utf-8").write(str(child.pid))
+with open({str(pid_part)!r}, "w", encoding="utf-8") as handle:
+    handle.write(str(child.pid))
+    handle.flush()
+    os.fsync(handle.fileno())
+os.replace({str(pid_part)!r}, {str(pid_file)!r})
 time.sleep(60)
 ''')
 
@@ -158,8 +166,9 @@ time.sleep(60)
         "MCP_TIMEOUT", run_mcp_process, Path(sys.executable), ["-I", "-B", str(script)],
         home, _child_env(home), "", timeout=0.5, max_bytes=2000)
 
-    if pid_file.exists():
-        assert not _pid_is_live(int(pid_file.read_text(encoding="utf-8")))
+    recorded = pid_file.read_text(encoding="utf-8").strip() if pid_file.exists() else ""
+    if recorded:
+        assert not _pid_is_live(int(recorded))
 
 
 def test_run_mcp_process_fails_closed_when_job_objects_unavailable(tmp_path, monkeypatch):

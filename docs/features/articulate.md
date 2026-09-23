@@ -1,11 +1,14 @@
 # Articulate (Flywheel native feature)
 
-> Status note. Articulate ships today as a standalone repo and a PyPI package
-> (`articulate-writing` 0.1.0). It is **not_integrated** into Flywheel: no lane
-> registry entry, no desktop card, no expected-set test, and no admitted-tool
-> manifest exist yet. Every claim in "What it is" and "Feature reference" below
-> is observed from the repo source. Every claim under "How it composes" and
-> "Wiring it needs" is **proposed** and carries that label.
+> Status note. Articulate ships as a standalone repo and as
+> `articulate-writing` on PyPI, currently 0.4.0. It is a lane: `LANES["articulate"]`
+> declares it, `desktop/lib/models/lane_identity.dart` carries its card, and
+> `tests/test_lanes.py` asserts it in the expected set. Two wiring pieces are
+> still absent: it has no entry in `LANE_MIN_TIERS` (`harness/lane_caller.py`),
+> so it takes the T1 default without saying so, and no admitted-tool manifest.
+> Claims in "What it is" and "Feature reference" are observed from the repo
+> source. Claims under "How it composes" and "Wiring it needs" are **proposed**
+> and carry that label.
 
 ## One sentence
 
@@ -166,10 +169,17 @@ Each item names the capability and the source that implements it.
   `articulate-lsp`) speaks LSP over stdio with no dependency, for VS Code,
   JetBrains via LSP4IJ, and Neovim (`src/articulate/lsp_server.py`,
   `tests/test_lsp.py`).
-- **MCP server.** `python -m articulate.mcp_server` exposes five tools: `check`,
-  `score`, `judge`, `fix`, `polish` (`mcp_server.py`). It needs the `mcp` extra
-  (`fastmcp>=3`). `receipt`, `verify`, and `audit` are CLI-only and have no MCP
-  tool.
+- **MCP server, two transports, one implementation.** `articulate-mcp`
+  (`local_mcp.py`) serves `check`, `score`, `judge`, `fix`, `polish` plus
+  `articulate.status` and `articulate.doctor` over stdio JSON-RPC 2.0 with the
+  standard library alone, so it runs from a bare `pip install`. The FastMCP
+  server (`mcp_server.py`) serves the same five and needs the `mcp` extra
+  (`fastmcp>=3`). Both call the same `do_check`, `do_score`, `do_judge`,
+  `do_fix` and `do_polish`, and a test parses the FastMCP module for its
+  `@mcp.tool` functions to assert the stdio server exposes every one. `doctor`
+  names which tools run local (`check`, `score`) and which need an LLM backend
+  (`judge`, `fix`, `polish`). `receipt`, `verify`, and `audit` are CLI-only and
+  have no MCP tool.
 - **GitHub Action and pre-commit.** `action.yml` and `.pre-commit-hooks.yaml`
   gate a change and re-verify committed receipts.
 - **Benchmark.** `python -m articulate.bench` runs the detector over a labeled
@@ -179,11 +189,11 @@ Each item names the capability and the source that implements it.
 
 ### Package facts
 
-- Distribution `articulate-writing` 0.1.0, module `articulate`, license
+- Distribution `articulate-writing` 0.4.0, module `articulate`, license
   `LicenseRef-FSL-1.1-MIT`, Python `>=3.9`, core `dependencies = []`
   (`pyproject.toml`).
-- Console scripts: `articulate` and `articulate-lsp`. Optional extras: `mcp`
-  (`fastmcp>=3`) and `dev` (`pytest>=7`).
+- Console scripts: `articulate`, `articulate-lsp`, and `articulate-mcp`.
+  Optional extras: `mcp` (`fastmcp>=3`) and `dev` (`pytest>=7`).
 
 ---
 
@@ -192,7 +202,8 @@ Each item names the capability and the source that implements it.
 Observed from the CLI and README. These run against the standalone package
 today.
 
-1. **Install.** `pip install articulate-writing`. For the agent surface,
+1. **Install.** `pip install articulate-writing`. That is enough for the agent
+   surface: run `articulate-mcp`. The FastMCP server needs
    `pip install "articulate-writing[mcp]"`.
 2. **Lint a file under its profile.** `python -m articulate.cli check
    path/to/doc.md --gate` exits 1 when the file is blocked under the profile the
@@ -296,110 +307,65 @@ receipt is committed beside the file for later audit.
 
 ---
 
-## Wiring it needs to become a native lane (proposed, modeled on Chorus)
+## Lane wiring: what landed, and what is still missing
 
-Articulate is **not_integrated**. Four pieces of wiring are missing. Each is
-modeled on an existing, code-verified pattern.
+Three of the four pieces this section used to propose are in place. The two notes
+below are the remainder, and one correction is worth keeping because the proposal
+would have broken something.
 
-### 1. Lane registry entry
+### Landed
 
-Add one `Lane` to `LANES` in `harness/lanes_registry.py`. The
-install-name-to-command asymmetry and the `python -m` module entry follow the
-existing rows (for example `index` installs as `index-graph` and runs as
-`index`). Articulate diverges in one way that must be stated: its console script
-is `articulate`, and it has no `articulate mcp` subcommand, so the MCP launch uses
-the module entry. Pip lanes like `gather` reach their MCP server through the
-console-script-plus-`mcp` convention that Articulate lacks.
+- **Lane registry entry.** `LANES["articulate"]` declares `articulate-writing`
+  at the version on PyPI, command `articulate-mcp`, `py_module`
+  `articulate.local_mcp`, organ `authoring`, `source_repo` `articulate`.
+- **Desktop card.** `desktop/lib/models/lane_identity.dart` carries it.
+  `callable_lane.dart` already renders any lane the engine names, so the
+  registry entry alone puts it in the Lanes roster with its tier.
+- **Expected-set test.** `tests/test_lanes.py` asserts it in the exact lane set,
+  and `tests/test_lane_registry_hygiene.py` asserts it is not marked
+  package-disabled now that it publishes.
 
-Proposed entry (illustrative, not committed):
+### The correction
 
-```python
-"articulate": Lane(
-    "articulate", "articulate-writing", "python",
-    ("-m", "articulate.mcp_server"), "pip", "0.1.0",
-    "re-derivable prose screening and AI-tell detection "
-    "(register profiles, writing modes, receipts)",
-    "verification", source_repo="public/articulate",
-    py_module="articulate.mcp_server"),
-```
+The proposal here named `articulate-writing[mcp]` as the install target, so the
+MCP surface would arrive with its `fastmcp` dependency. That does not work.
+`installed_version()` in `harness/lane_runtime_support.py` passes `install_name`
+straight to `importlib.metadata.version`, which does not accept an extras
+marker, so the lane would install and then report no version at all.
+`resolve_lane_runtime` compares declared against installed by equality, so the
+lane would never resolve cleanly.
 
-Two accuracy notes. The MCP surface needs the `mcp` extra, so the install target
-is `articulate-writing[mcp]`, which the install path
-(`harness/lanes.py` `install_lane`) would need to express. The `source_repo`
-value `public/articulate` assumes the repo sits beside the other `public/*`
-checkouts that `resolve_source_repo` walks; the repo is not at that path today,
-so either it moves there or the resolver convention accommodates its current
-location. An alternative that matches the pip-lane convention is to add an
-`articulate mcp` subcommand to `cli.py`, then declare `command="articulate",
-mcp_args=("mcp",)`.
+articulate 0.4.0 removes the need. `articulate.local_mcp` is stdlib-only and
+serves the same five tools plus `status` and `doctor`, so `install_name` stays a
+bare distribution name and the lane installs and launches from one clean name.
+`accountable-surface` took the same route for the same reason.
 
-### 2. Desktop app card
+The proposal also assumed `source_repo="public/articulate"`. The repo does not
+sit beside the other `public/*` checkouts, so the entry declares `articulate`.
 
-Add a destination, following the Discourse card. The steps, each grounded in the
-current desktop code:
+### Still missing
 
-- Add an id to the `DestinationId` enum in
-  `desktop/lib/navigation/app_route.dart` (the enum already carries `discourse`,
-  `lint`, `writing`).
-- Add a `DestinationSpec` to `destinationCatalog` in
-  `desktop/lib/navigation/destination_catalog.dart` with a label, a two-letter
-  abbreviation, and a group (`DestinationGroup.code` alongside `lint`, or
-  `evidence` alongside `receipts`).
-- Wire the id to a view in `desktop/lib/shell/view_factory.dart`, the way
-  `DestinationId.discourse => DiscourseView(...)` is wired.
-- Add the view and its model, modeled on `desktop/lib/views/discourse_view.dart`
-  and `desktop/lib/models/discourse.dart`, parsing defensively so a missing
-  field degrades and Drift stays visible (per `desktop/CLAUDE.md`).
-
-Note: `desktop/lib/models/callable_lane.dart` already renders any lane the
-engine names in the Lanes destination, so a registry entry alone makes Articulate
-appear in the Lanes roster with its tier. A dedicated card is the richer,
-verdict-rendering surface.
-
-### 3. Expected-set test
-
-`tests/test_lanes.py::test_registry_covers_the_expected_lanes` asserts the exact
-set of lane names. Adding a lane makes that test the tripwire: the set literal
-gains `"articulate"`, or the test fails. Extend it, and add lane-specific
-falsifiers alongside the existing ones:
-
-- `test_install_name_to_command_asymmetry_is_mapped` gains
-  `LANES["articulate"].install_name == "articulate-writing"` and
-  `LANES["articulate"].command == "python"`.
-- `test_public_commands_are_portable_declared_argv` gains
-  `resolve_mcp_command("articulate") == ["python", "-m",
-  "articulate.mcp_server"]`.
-- A bridge test modeled on the Chorus bridge covers the CLI-absent path: an
-  injected `runner` stands in for the CLI so the seam is testable in CI where the
-  package is not installed (see the `runner=None` seam in
-  `chorus_bridge.discourse_digest`).
-
-### 4. Payload manifest (admitted-tool set plus a seam fixture)
-
-Two parts, both with existing precedent.
-
-- **Admitted-tool set.** A lane launch admits tools through
-  `LaunchSpec.allowed_tools` (`harness/mcp_client.py` `launch_allows_tool`); a
-  tool outside the set returns `CAPABILITY_NOT_ADMITTED`. The proposed admitted
-  set for Articulate is `("check", "score")` for a default, backend-free
-  deployment, widening to include `("judge", "fix", "polish")` only where an LLM
-  backend is configured, because those three fail without one. The governance
-  tier is proposed T1: the tools take text in and return text out with no
+- **Tier floor.** Articulate has no entry in `LANE_MIN_TIERS`
+  (`harness/lane_caller.py`), so it takes the T1 default without saying so.
+  Proposed T1 and explicit: the tools take text in and return text out with no
   filesystem or network side effect, unlike the T2 actuation lane
   `accountable-surface`.
-- **Seam fixture.** A recorded call-and-response fixture proves the seam without
-  spawning a server, following `tests/fixtures/e2e/gather_context/*.json` and
-  the `_ProbeClient` pattern in `tests/test_lanes.py`. It records a `check`
-  request and the verdict-bearing response, plus a `receipt` request routed
-  through the proposed bridge and the returned `articulate/receipt/v1` payload.
+- **Admitted-tool set.** A lane launch admits tools through
+  `LaunchSpec.allowed_tools` (`harness/mcp_client.py` `launch_allows_tool`), and
+  a tool outside the set returns `CAPABILITY_NOT_ADMITTED`. Proposed set:
+  `("check", "score", "articulate.status", "articulate.doctor")` for a
+  backend-free deployment, widening to `("judge", "fix", "polish")` only where an
+  LLM backend is configured, because those three cannot work without one.
+  `articulate.doctor` reports that split at runtime, so the manifest and the
+  server would agree rather than drifting.
 
-### Gateway route (implied, proposed)
+### Gateway route (proposed)
 
 The bridge needs a gateway endpoint, modeled on the Chorus rows in
 `harness/gateway.py` (`/api/discourse`, `/api/discourse/corpora`,
 `/api/discourse/digests`). A proposed `/api/prose/screen` and
 `/api/prose/verify` would call `harness/articulate_bridge.py` and return the
-CLI's JSON verbatim, with a 400 when the payload carries an `error`.
+CLI JSON verbatim, with a 400 when the payload carries an `error`.
 
 ---
 
