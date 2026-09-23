@@ -2,61 +2,45 @@
 
 The brief is copied to the clipboard and pasted into another provider's agent,
 so every free-text field passes through here first. Credentials are replaced
-by a marker, the workspace root by `<workspace>`, any other host path by a
-marker, a model's TOOL lines by the tool name and path, and long text is cut
-with a stated marker. A line that still looks like a credential after that is
-withheld whole.
+by a marker (the patterns live in rowan_handoff_redact), the workspace root by
+`<workspace>`, any other host path, UNC paths included, by a marker, a model's
+TOOL lines by the tool name and path, and long text is cut with a stated
+marker. A line that still looks like a credential after that is withheld whole.
 
-The redaction is a pattern list. It catches URL user info, password flags,
-`sshpass -p`, keyword-and-value pairs such as `password hunter2pass`, and the
-shapes the engine's secret scanners already know. A credential written some
-other way passes, which is why the brief lists REDACTION_IS_PATTERN_BASED in
-what it does not prove. Standard library and engine scanners only.
+Text is cut before it is redacted, with a margin past the cut, so the work is
+bounded by what the brief can show, and a credential that straddles the cut is
+still whole when the patterns run. Standard library and engine scanners only.
 """
 from __future__ import annotations
 
 import re
 
-from .bundle import scan_for_secrets
-from .continuation_context import _BEARER, _CREDENTIAL_ASSIGNMENT, scrub_credentials
+from .rowan_handoff_redact import OMITTED, leaks, redact
 
-OMITTED = "[credential omitted]"
+__all__ = ["HOST_PATH", "MARGIN", "OMITTED", "WITHHELD", "code", "flat_line", "host_safe",
+           "leaks", "one_line", "outbound", "quote", "redact", "safe_line"]
+
 WITHHELD = "[line withheld: credential pattern]"
 HOST_PATH = "[host path omitted]"
+#: Characters redacted past a cut and then dropped with it.
+MARGIN = 512
 
-_VALUE = r"('[^'\n]*'|\"[^\"\n]*\"|\S+)"
-_URL_USERINFO = re.compile(r"(?i)\b([a-z][a-z0-9+.-]*://)[^\s/@:]+:[^\s/@]+@")
-_PASSWORD_FLAG = re.compile(r"(?i)(--password)(=|\s+)" + _VALUE)
-_SSHPASS = re.compile(r"(?i)\b(sshpass\s+-p)\s*" + _VALUE)
-_MYSQL_P = re.compile(r"(?i)\b((?:mysql|mariadb)[\w-]*\b[^\n]*?\s-p)(?=[^\s-])(\S+)")
-# A keyword, a space, then a value that looks like a credential: quoted, or
-# at least 8 characters with a digit or a symbol, so "token limit" survives.
-_KEYWORD_VALUE = re.compile(
-    r"(?i)\b(\w*(?:password|passwd|secret(?:_access_key)?|api[ _-]?key|access[ _-]?key"
-    r"|token))(\s+)('[^'\n]+'|\"[^\"\n]+\"|(?=\S*[\d/+=!@#$%^&*])\S{8,})")
 _DRIVE_PATH = re.compile(r"(?<![\w/\\])[A-Za-z]:[\\/][^\s'\"`<>|]*")
+# \\server\share, \\?\C:\..., \\wsl$\distro, and the same with JSON's doubled
+# backslashes.
+_UNC_PATH = re.compile(r"(?<![\w\\])\\{2,4}[\w.$?-]+\\[^\s'\"`<>|]*")
 _POSIX_HOST = re.compile(
     r"(?<![\w.~/\\])/(?:Users|home|root|tmp|var|etc|mnt|private|opt|srv|Volumes)"
     r"(?:/[^\s'\"`<>|]*)?")
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 
 
-def redact(text) -> str:
-    """Replace every credential shape named above with a marker."""
-    value = scrub_credentials(str(text or ""))
-    value = _URL_USERINFO.sub(lambda m: m.group(1) + OMITTED + "@", value)
-    value = _PASSWORD_FLAG.sub(lambda m: m.group(1) + m.group(2) + OMITTED, value)
-    value = _SSHPASS.sub(lambda m: m.group(1) + " " + OMITTED, value)
-    value = _MYSQL_P.sub(lambda m: m.group(1) + OMITTED, value)
-    return _KEYWORD_VALUE.sub(lambda m: m.group(1) + m.group(2) + OMITTED, value)
-
-
 def _root_pattern(root):
     parts = [p for p in re.split(r"[\\/]+", str(root or "")) if p]
     if len(parts) < 2:
         return None
-    lead = "/" if str(root).startswith("/") else ""
-    return re.compile(re.escape(lead) + r"[\\/]+".join(map(re.escape, parts))
+    lead = r"[\\/]+" if str(root)[:1] in "\\/" else ""
+    return re.compile(lead + r"[\\/]+".join(map(re.escape, parts))
                       + r"(?![^\\/\s'\"`])", re.IGNORECASE)
 
 
@@ -66,16 +50,9 @@ def host_safe(text, root=None) -> str:
     pattern = _root_pattern(root)
     if pattern is not None:
         value = pattern.sub("<workspace>", value)
-    value = _DRIVE_PATH.sub(HOST_PATH, value)
-    return _POSIX_HOST.sub(HOST_PATH, value)
-
-
-def leaks(line: str) -> bool:
-    """A rendered line that still carries a credential shape."""
-    if scan_for_secrets(line):
-        return True
-    return any("[credential" not in m.group(0)
-               for pattern in (_CREDENTIAL_ASSIGNMENT, _BEARER) for m in pattern.finditer(line))
+    for path in (_UNC_PATH, _DRIVE_PATH, _POSIX_HOST):
+        value = path.sub(HOST_PATH, value)
+    return value
 
 
 def outbound(text, root=None) -> str:
@@ -89,17 +66,42 @@ def one_line(text, limit: int = 200) -> str:
     return flat if len(flat) <= limit else flat[:limit - 3] + "..."
 
 
+def flat_line(text, root=None, limit: int = 200) -> str:
+    """Free text as one outbound line of at most `limit` characters. Only a
+    margin past the cut is redacted, and the cut is marked even when the
+    redacted head fits."""
+    words = " ".join(str(text or "").split())
+    head = one_line(outbound(words[:limit + MARGIN], root), limit)
+    if len(words) > limit + MARGIN and not head.endswith("..."):
+        head = head[:limit - 3] + "..."
+    return head
+
+
 def code(text, root=None, limit: int = 200) -> str:
     """A path or command as one inline code span: nothing in it can start a
     new Markdown line or close the span."""
-    return "`" + one_line(outbound(text, root), limit).replace("`", "'") + "`"
+    return "`" + flat_line(text, root, limit).replace("`", "'") + "`"
+
+
+def _window(lines: list, max_lines: int, max_chars: int, line_chars: int) -> list:
+    """The raw lines a quote can show, each cut a margin past its share."""
+    out, used = [], 0
+    for line in lines[:max_lines]:
+        room = min(line_chars, max_chars - used)
+        if room <= 0:
+            break
+        out.append(line[:room + MARGIN])
+        used += min(len(line), room)
+    return out
 
 
 def quote(text, root=None, *, max_lines: int = 60, max_chars: int = 8_000,
           line_chars: int = 2_000) -> str:
     """A block quote of at most `max_lines` lines and `max_chars` characters.
     What is cut is counted in a closing marker, never dropped silently."""
-    lines = outbound(text, root).strip().splitlines() or ["(empty)"]
+    raw = str(text or "").strip().splitlines() or ["(empty)"]
+    window = _window(raw, max_lines, max_chars, line_chars)
+    lines = outbound("\n".join(window), root).split("\n")
     kept, used = [], 0
     for line in lines[:max_lines]:
         room = min(line_chars, max_chars - used)
@@ -107,8 +109,10 @@ def quote(text, root=None, *, max_lines: int = 60, max_chars: int = 8_000,
             break
         kept.append(line[:room])
         used += len(kept[-1])
-    omitted_lines = len(lines) - len(kept)
-    omitted_chars = sum(map(len, lines)) - used
+    omitted_lines = len(raw) - len(kept)
+    # The shown part counts as redacted; the rest as it sits in the trace.
+    omitted_chars = (sum(map(len, lines)) - used
+                     + sum(map(len, raw)) - sum(map(len, window)))
     body = [WITHHELD if leaks(line) else line for line in kept]
     out = "\n".join("> " + line for line in body)
     if omitted_lines or omitted_chars:

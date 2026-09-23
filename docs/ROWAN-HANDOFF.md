@@ -45,16 +45,30 @@ reads "recorded as verified, not confirmed" instead of a mark.
 The brief is written to be pasted into another provider's agent, so before it
 leaves the engine:
 
-- credentials found by pattern are replaced with `[credential omitted]`: URL
-  user info, `--password` and `mysql -p` values, `sshpass -p`, assignments such
-  as `API_KEY=...`, bearer tokens, and a keyword followed by a value that looks
-  like a credential (`password hunter2pass`). A line that still matches a
-  credential pattern after that is withheld whole;
-- the workspace root is written as `<workspace>`, and any other host path as
-  `[host path omitted]`;
-- paths and commands are single-line code spans, so a file name cannot start a
-  line of its own;
-- a quote that is cut ends with a line saying how many lines and characters
+- Credentials found by pattern are replaced with `[credential omitted]`. The
+  patterns cover:
+  - URL user info, and the secret in `curl -u name:secret` or `--user`.
+  - Password flags such as `--password`, `--http-password`, `--passphrase`,
+    `-storepass` and OpenSSL's `-passin`.
+  - The password flag of `mysql -p`, `sshpass -p`, `docker login -p` and the
+    other registry logins, `redis-cli -a`, `mongosh -p`, `sqlcmd -P` and the
+    LDAP tools' `-w`. Each is read only on a line that runs its command.
+  - Assignments such as `API_KEY=...`, `PGPASSWORD=...` and `DB_PASS=...`.
+  - Bearer tokens, and the Docker, GitLab, GitHub, npm, Hugging Face and PyPI
+    token shapes.
+  - A keyword followed by a value that looks like a credential, with up to two
+    linking words between them: `password hunter2pass` or
+    `the password is Hunter2pass!`.
+- A line that still matches a credential pattern after that is withheld whole.
+- The workspace root is written as `<workspace>`, and any other host path as
+  `[host path omitted]`. UNC paths such as `\\server\share` count as host
+  paths.
+- Paths and commands are single-line code spans, so a file name cannot start a
+  line of its own.
+- Text is cut before it is redacted, with 512 characters of margin past the
+  cut. Redaction time stays bounded by what the brief can show, and a
+  credential that straddles the cut is still replaced whole.
+- A quote that is cut ends with a line saying how many lines and characters
   are left in the private trace.
 
 ## Limits
@@ -65,7 +79,9 @@ leaves the engine:
   continue from the files themselves.
 - Redaction is a pattern list. A credential written in a shape it does not
   know, such as an all-letter password after the word "password", is not
-  caught. Read the brief before pasting it anywhere.
+  caught. A value of digits only, or `true` or `false`, after a name such as
+  `DB_PASS` is kept, since it is more often a count or a switch. Read the brief
+  before pasting it anywhere.
 - The format is plain Markdown for any agent. Rendering context for a
   particular provider is not part of this export.
 - Only the run's owner can read it, through the same authorization as the

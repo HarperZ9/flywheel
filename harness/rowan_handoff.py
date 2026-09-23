@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import json
 
-from .rowan_handoff_text import code, one_line, outbound, quote, safe_line
+from .rowan_handoff_text import code, flat_line, one_line, quote, safe_line
 
 SCHEMA = "flywheel.rowan-handoff/v1"
 MAX_LINES = 20
@@ -71,7 +71,7 @@ def _step(text, root) -> str | None:
     from .tool_rescue import rescue_tool_calls
     lines = str(text or "").splitlines()
     cut = next((i for i, ln in enumerate(lines) if ln.lstrip().startswith("TOOL ")), None)
-    prose = one_line(outbound("\n".join(lines[:cut]), root), 160)
+    prose = flat_line("\n".join(lines[:cut]), root, 160)
     if cut is None:
         return prose or None
     calls, _ = rescue_tool_calls("\n".join(lines[cut:]))
@@ -217,7 +217,7 @@ def handoff_markdown(records: list, projection: dict) -> str:
     commands = [f"- {code(c, root, 160)}" for c in _commands(records)]
     steps = [f"{i}. {s}" for i, s in enumerate(_stated_steps(records, root), 1)]
     body = [
-        f"# Handoff: {one_line(outbound(goal, root), 80) or 'Rowan run'}",
+        f"# Handoff: {flat_line(goal, root, 80) or 'Rowan run'}",
         "Exported from a recorded Rowan run so another agent can continue it. "
         "Nothing was re-run for this export. The marks below are the ones "
         "recorded when the run ended, checked against the run's trace, and the "
