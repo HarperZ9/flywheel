@@ -13,7 +13,8 @@ third party re-running oracle_cmd reproduces the hash.
 Every pytest run writes its JUnit report under a fresh per-run name and the
 oracle reads only that file (junit_report.py). A report left over from an
 earlier run in the same workdir can no longer grade a candidate that exits
-before pytest writes one.
+before pytest writes one. That report also outranks the exit code: a failing
+outcome in it is FAIL even when the candidate forced the process to exit 0.
 """
 from __future__ import annotations
 import hashlib
@@ -29,12 +30,14 @@ from typing import Protocol
 # before the reasoning behind them outgrew its line budget.
 from .proc_kill import _kill_tree, spawn_killable  # noqa: F401
 # JUNIT_NAME is re-exported for callers that name the canonical report token.
-from .junit_report import JUNIT_NAME, bind_report, discard_report  # noqa: F401
+from .junit_report import JUNIT_NAME, bind_report, discard_report, grade  # noqa: F401
 from .task import Task
 from .verdict import Verdict, Execution, Attribution, is_dispositive, attribution_for
 
 NO_REPORT_NOTE = ("[oracle] exit 0 with no fresh JUnit report: the process "
                   "ended before pytest wrote results; graded FAIL\n")
+FORCED_EXIT_NOTE = ("[oracle] exit 0, but this run's JUnit report records a "
+                    "failing test: the exit code was forced; graded FAIL\n")
 
 
 def clear_bytecode(workdir: Path) -> None:
@@ -168,14 +171,6 @@ def _pytest_canonical(report: Path | None) -> str:
     return "\n".join(sorted(outcomes))
 
 
-def _pytest_ran_a_real_pass(canon: str) -> bool:
-    """True iff the canonical outcomes show at least one testcase that actually
-    PASSED. pytest exits 0 when every collected test was SKIPPED, so a green
-    exit code alone can mean zero executed assertions; that run verified
-    nothing and must not read as a pass."""
-    return any(line.endswith("=PASS") for line in canon.splitlines())
-
-
 def _digest(canon: str, rc: int) -> str:
     return hashlib.sha256(f"{canon}\n{rc}".encode()).hexdigest()[:16]
 
@@ -195,21 +190,21 @@ def canonical_hash(oracle_type: str, workdir: Path, rc: int, *,
 
 def _pytest_result(cmd: str, out: bytes, rc: int, canon: str,
                    fresh: bool) -> OracleResult:
-    """Grade one pytest run from its own report.
+    """Grade one pytest run from its own report (junit_report.grade).
 
     Exit 0 with no fresh report means the process ended before pytest wrote
-    results, for example a candidate calling os._exit(0) at import. That run
-    executed no assertion the oracle can see, so it is a FAIL, and the
-    candidate caused it.
+    results, for example a candidate calling os._exit(0) at import, so the
+    run CRASHED. Exit 0 over a failing outcome means the candidate forced the
+    exit code after pytest recorded the failure. Both are candidate FAILs.
     """
+    note, execution = "", Execution.COMPLETED
     if rc == 0 and not fresh:
-        return OracleResult(
-            passed=False, cmd=cmd, output_hash=_digest(canon, rc),
-            stdout_excerpt=NO_REPORT_NOTE + _excerpt(out), rc=rc,
-            execution=Execution.CRASHED)
+        note, execution = NO_REPORT_NOTE, Execution.CRASHED
+    elif rc == 0 and any(ln.endswith("=FAIL") for ln in canon.splitlines()):
+        note = FORCED_EXIT_NOTE
     return OracleResult(
-        passed=rc == 0 and _pytest_ran_a_real_pass(canon), cmd=cmd,
-        output_hash=_digest(canon, rc), stdout_excerpt=_excerpt(out), rc=rc)
+        verdict_=grade(canon, rc), cmd=cmd, output_hash=_digest(canon, rc),
+        stdout_excerpt=note + _excerpt(out), rc=rc, execution=execution)
 
 
 class PytestOracle:

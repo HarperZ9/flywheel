@@ -23,6 +23,11 @@ What this module does about it:
   candidate caused. pytest writes the report on every normal exit, so an
   absent report means the process ended early.
 
+- A report outranks the exit code. A candidate can force exit 0 during
+  interpreter shutdown, for example with `atexit.register(os._exit, 0)`, after
+  pytest wrote a truthful report of its failures. `grade` reads any failing
+  outcome in the run's own report as FAIL, whatever the exit code says.
+
 Does not prove: candidate code runs inside the pytest process. It can read
 the per-run name from sys.argv and write a forged report itself. The nonce
 stops a stale report from grading a new run. It is not containment, and
@@ -34,6 +39,8 @@ import re
 import secrets
 import sys
 from pathlib import Path
+
+from .verdict import Verdict
 
 JUNIT_NAME = "_oracle_junit.xml"
 JUNIT_TOKEN = f"--junitxml={JUNIT_NAME}"
@@ -81,3 +88,20 @@ def discard_report(report: Path | None) -> None:
     except OSError as exc:
         print(f"junit_report: could not remove {report.name}: {exc}",
               file=sys.stderr)
+
+
+def grade(canon: str, rc: int) -> Verdict:
+    """The verdict one pytest run's own outcomes and exit code support.
+
+    `canon` is the sorted `name=PASS|FAIL|SKIP` lines read from this run's
+    report. PASS needs all three: exit 0, no FAIL outcome, and at least one
+    PASS outcome. pytest exits 0 when every test was skipped, so a zero exit
+    alone can mean no assertion ran. A FAIL outcome under exit 0 means the
+    candidate forced the exit code after pytest recorded the failure.
+    """
+    lines = canon.splitlines()
+    if rc != 0 or any(line.endswith("=FAIL") for line in lines):
+        return Verdict.FAIL
+    if any(line.endswith("=PASS") for line in lines):
+        return Verdict.PASS
+    return Verdict.FAIL
