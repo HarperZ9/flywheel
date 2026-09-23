@@ -58,7 +58,7 @@ class Lane:
 # FLYWHEEL_BULLETIN_URL still wins, for anyone running their own deployment.
 LANES: dict[str, Lane] = {
     "gather": Lane(
-        "gather", "gather-engine", "gather", ("mcp",), "pip", "1.6.1",
+        "gather", "gather-engine", "gather", ("mcp",), "pip", "1.8.2",
         "research intake + provenance receipts (verified-data flywheel intake)",
         "perception", source_repo="public/gather", py_module="gather.cli"),
     "crucible": Lane(
@@ -70,16 +70,30 @@ LANES: dict[str, Lane] = {
         "re-derivable discourse digest (themes, contested aspects, dissent, receipt)",
         "synthesis", source_repo="public/chorus", py_module="chorus.cli"),
     "articulate": Lane(
+        # Held to the source profile on purpose. articulate-writing 0.3.0 is the
+        # published release, and its MCP entry imports fastmcp from the [mcp]
+        # extra, so `pip install articulate-writing` produces a lane that
+        # installs cleanly and then raises ModuleNotFoundError the moment the
+        # gateway launches it. Probed directly against the published wheel in a
+        # clean venv, which is why this lane is not simply bumped to 0.3.0 with
+        # the others. The version below tracks the source checkout, which is the
+        # admitted profile while the package profile is disabled. articulate
+        # 0.4.0 adds a stdlib-only server (articulate-mcp,
+        # articulate.local_mcp); once that is on the index this lane points at
+        # it and the disabled reason comes off.
         "articulate", "articulate-writing", "python", ("-m", "articulate.mcp_server"),
-        "pip", "0.2.0",
+        "pip", "0.4.0",
         "writing-quality + AI-tell detector and editor with content-free audit receipts (the MCP surface needs the [mcp] extra)",
-        "authoring", source_repo="articulate", py_module="articulate.mcp_server"),
+        "authoring", source_repo="articulate", py_module="articulate.mcp_server",
+        package_disabled_reason=("The published articulate-writing MCP entry needs the "
+                                 "[mcp] extra and fails at launch without it. Use an "
+                                 "articulate source checkout until 0.4.0 is on PyPI.")),
     "index": Lane(
-        "index", "index-graph", "index", ("mcp",), "pip", "2.10.0",
+        "index", "index-graph", "index", ("mcp",), "pip", "2.13.0",
         "workspace map + symbol graph + verified wiki (the catalog lane)",
         "structure", source_repo="public/index", py_module="index_graph"),
     "forum": Lane(
-        "forum", "forum-engine", "forum", ("mcp",), "pip", "1.13.0",
+        "forum", "forum-engine", "forum", ("mcp",), "pip", "1.14.0",
         "witnessed causal ledger + model-agnostic routing",
         "orchestration", source_repo="public/forum", py_module="forum.cli"),
     "learn": Lane(
@@ -112,7 +126,7 @@ LANES: dict[str, Lane] = {
         "accountable memory: recall with re-derivable ranking receipts + drift verdicts",
         "memory", source_repo="public/mneme", py_module="mneme.cli"),
     "calibrate-pro": Lane(
-        "calibrate-pro", "calibrate-pro", "calibrate-pro", ("mcp",), "pip", "1.1.0",
+        "calibrate-pro", "calibrate-pro", "calibrate-pro", ("mcp",), "pip", "2.0.0",
         "evidence-labeled display calibration: color-target and characterized-panel "
         "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
         "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
