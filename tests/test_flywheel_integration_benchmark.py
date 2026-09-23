@@ -1,11 +1,17 @@
 """The spin step of the integration benchmark, run once and checked three ways.
 
-Run 20260708_230923 passed a relative output root. The spin step changes the
-working directory into <root>/spin, so every later use of the relative root
-resolved under <root>/spin/<root>. The committed output repeated the run
-root in paths up to 206 characters, and a Windows clone without core.longpaths
-failed whenever the clone directory was longer than 51 characters. The fixture
-below reproduces the cause: a relative root, entered from a temp dir.
+Run 20260708_230923 passed a relative output root, and its committed output
+repeated the run root in paths up to 206 characters. A Windows clone without
+core.longpaths then failed whenever the clone directory was longer than 51
+characters.
+
+The spin step changes the working directory into <root>/spin. With a relative
+root, its writes landed under <root>/spin/<root>/spin, and the fixture below
+reproduces that level: a relative root, entered from a temp dir. The run's
+other outputs sat under <root>/spin/<root>/<root>, so the working directory
+was <root>/spin/<root> after the spin step. That second level is inferred from
+the committed tree and is not reproduced here. The cwd test fails on any spin
+step that ends in a directory other than the one it started in.
 """
 import os
 from pathlib import Path
