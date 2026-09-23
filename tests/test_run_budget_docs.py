@@ -67,6 +67,8 @@ def test_the_schedule_breaker_trigger_and_re_arm_are_documented():
     assert "stops itself after two failed fires in a row" in readme
     notes = _doc("RELEASE-NEXT.md")
     assert "## Behaviour changes" in notes and "Schedules stop themselves" in notes
+    assert "the roster lists them under `plan.held`" not in section
+    assert "catch-up policy would fire once it is re-armed" in section
 
 
 def test_the_completion_doc_names_the_protected_set_and_no_unreachable_check():

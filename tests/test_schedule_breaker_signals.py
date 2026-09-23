@@ -94,6 +94,22 @@ def test_a_stopped_schedule_holds_what_it_owes_instead_of_planning_it(tmp_path):
     assert state["pending"]["due"] == 0 and state["pending"]["held"] == 3
 
 
+@pytest.mark.parametrize("policy", ["latest", "drop"])
+def test_a_stopped_schedule_holds_what_its_catch_up_policy_would_fire(
+        tmp_path, monkeypatch, policy):
+    handle_schedule_post("/api/schedule/define",
+                         {"schedule_id": "sched_limit", "event": "bench.completed",
+                          "every_seconds": 3600, "starts_at": ANCHOR, "catch_up": policy},
+                         run_root=tmp_path, clock=_clock(ANCHOR))
+    monkeypatch.setattr("harness.schedule_route.breaker",
+                        lambda schedule, records: {"tripped": True})
+    state = _roster(tmp_path, "2026-09-06T04:30:00Z")["schedules"][0]
+    owed = state["plan"]["skipped"] + state["plan"]["held"]
+    assert len(owed) == state["pending"]["held"] == 5 and state["pending"]["due"] == 0
+    assert state["plan"]["fire"] == []
+    assert state["plan"]["held"] == (owed[-1:] if policy == "latest" else [])
+
+
 def test_rearm_reseals_the_stored_definition_and_keeps_the_history(tmp_path):
     save_registry([_hook(tmp_path, LIMIT_TEXT)],
                   registry_path=tmp_path / "hooks" / "registry.json")

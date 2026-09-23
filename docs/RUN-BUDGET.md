@@ -185,9 +185,12 @@ After two failed fires in a row under one schedule definition, the tick stops
 firing that schedule and says why, with the matched tokens. Two failures inside
 one replayed backlog, fired seconds apart, are enough. Fire history recorded
 before this check existed counts the same way. A stopped schedule's owed
-occurrences are held, not due: the roster lists them under `plan.held`, counts
-them under `pending.held` with `pending.due` at 0, and sets
-`any_breaker_tripped`.
+occurrences are held, not due. The roster counts every one of them under
+`pending.held`, with `pending.due` at 0, and sets `any_breaker_tripped`. Its
+plan fires nothing: `plan.held` lists the occurrences the schedule's catch-up
+policy would fire once it is re-armed, and `plan.skipped` still lists the ones
+that policy passes over. Under `all`, `plan.held` lists every owed occurrence;
+under `latest`, the last one; under `drop`, none.
 
 The passage of time leaves a stopped schedule stopped. To re-arm it, press
 Re-arm on its row in the desktop Schedule view, or call

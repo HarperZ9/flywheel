@@ -45,8 +45,9 @@ def _state(schedule: dict, *, run_root: Path, now: str) -> dict:
     state = breaker(schedule, records)
     plan = plan_fires(schedule, owed)
     if state["tripped"]:
-        # A stopped schedule fires nothing until it is re-armed, so the
-        # occurrences it owes are held, not due, in the count and the plan.
+        # A stopped schedule fires nothing until it is re-armed. Every owed
+        # occurrence counts as held, not due, and the plan holds the ones its
+        # catch-up policy would fire; the ones it passes over stay skipped.
         owed = {**owed, "due": 0, "held": owed["due"]}
         plan = {**plan, "fire": [], "held": plan["fire"]}
     return {"schedule": schedule,
