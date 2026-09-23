@@ -14,16 +14,8 @@ import shlex
 from dataclasses import dataclass, field
 
 from .local_agent import BackendError
-from .endpoints_http import _http, _guard, _k
+from .endpoints_http import _http, _guard, _k, _response_error
 from .endpoint_opencode import OpenCodeBackend  # noqa: F401 (re-exported)
-
-
-def _response_error(name: str, status, obj) -> BackendError:
-    """A response with no completion. The status and the body ride on the
-    error, so a caller can read the provider's own error fields."""
-    error = BackendError(f"{name} returned {status}: {obj.get('error', obj)}")
-    error.status, error.body = status, obj
-    return error
 
 
 def _credential(env_name: str, direct: str | None) -> str:
