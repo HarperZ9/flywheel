@@ -119,7 +119,8 @@ After two failed fires in a row under one schedule definition, the tick stops
 firing that schedule and says why, with the matched words. Two failures inside
 one replayed backlog, fired seconds apart, are enough. Fire history recorded
 before this check existed counts the same way. A stopped schedule's owed
-occurrences are held, not due: the roster lists them under `plan.held` and sets
+occurrences are held, not due: the roster lists them under `plan.held`, counts
+them under `pending.held` with `pending.due` at 0, and sets
 `any_breaker_tripped`.
 
 The passage of time leaves a stopped schedule stopped. To re-arm it, press

@@ -46,7 +46,8 @@ def _state(schedule: dict, *, run_root: Path, now: str) -> dict:
     plan = plan_fires(schedule, owed)
     if state["tripped"]:
         # A stopped schedule fires nothing until it is re-armed, so the
-        # occurrences it owes are held, not due.
+        # occurrences it owes are held, not due, in the count and the plan.
+        owed = {**owed, "due": 0, "held": owed["due"]}
         plan = {**plan, "fire": [], "held": plan["fire"]}
     return {"schedule": schedule,
             "fires": len(records),

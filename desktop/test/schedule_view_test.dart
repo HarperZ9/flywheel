@@ -56,7 +56,7 @@ const _rosterBody = {
         'limit_matches': ['usage limit reached'],
       },
       'last_fired_for': '2026-09-05T00:00:00Z',
-      'pending': {'occurrences': [], 'due': 3, 'truncated': false},
+      'pending': {'occurrences': [], 'due': 0, 'held': 3, 'truncated': false},
       'plan': {
         'policy': 'drop',
         'fire': [],
@@ -159,7 +159,11 @@ void main() {
         }
         final roster = jsonDecode(jsonEncode(_rosterBody)) as Map;
         if (rearmed) {
-          ((roster['schedules'] as List)[1] as Map)['breaker']['tripped'] = false;
+          // A re-armed schedule's owed runs are due again, as the engine
+          // reports them.
+          final row = (roster['schedules'] as List)[1] as Map;
+          row['breaker']['tripped'] = false;
+          row['pending'] = {'occurrences': [], 'due': 3, 'truncated': false};
         }
         return http.Response(jsonEncode(roster), 200);
       }),

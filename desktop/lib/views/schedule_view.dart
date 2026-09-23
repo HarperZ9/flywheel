@@ -143,8 +143,8 @@ class _ScheduleViewState extends State<ScheduleView> {
   }
 
   Widget _headline() {
-    // A stopped schedule's owed occurrences are held, not due: nothing
-    // fires them until the owner re-arms it.
+    // A stopped schedule's owed occurrences are held, not due: the engine
+    // reports them under pending.held, and nothing fires them until re-arm.
     final due = _rows.where((row) => !_stopped(row)).fold<int>(
         0, (sum, row) => sum + _int((row['pending'] as Map?)?['due']));
     final fires = _rows.fold<int>(0, (sum, row) => sum + _int(row['fires']));
@@ -183,9 +183,9 @@ class _ScheduleViewState extends State<ScheduleView> {
   Widget _row(BuildContext context, Map<String, dynamic> row, FwTokens t) {
     final schedule = (row['schedule'] as Map?) ?? const {};
     final intact = row['chain_intact'] != false;
-    final due = _int((row['pending'] as Map?)?['due']);
     final breaker = row['breaker'] as Map?;
     final stopped = _stopped(row);
+    final due = _int((row['pending'] as Map?)?[stopped ? 'held' : 'due']);
     final main = Row(children: [
       VerdictDot(intact ? 'verified' : 'drift'),
       const SizedBox(width: FwLayout.s2),

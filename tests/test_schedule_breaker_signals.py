@@ -90,6 +90,8 @@ def test_a_stopped_schedule_holds_what_it_owes_instead_of_planning_it(tmp_path):
     assert state["plan"]["fire"] == []
     assert state["plan"]["held"] == ["2026-09-06T02:00:00Z", "2026-09-06T03:00:00Z",
                                      "2026-09-06T04:00:00Z"]
+    # A held schedule reports nothing as due: the owed runs are counted as held.
+    assert state["pending"]["due"] == 0 and state["pending"]["held"] == 3
 
 
 def test_rearm_reseals_the_stored_definition_and_keeps_the_history(tmp_path):
