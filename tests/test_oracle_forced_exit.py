@@ -1,11 +1,14 @@
-"""Falsifier: a pytest run's own report outranks its exit code.
+"""Falsifier: a pytest run's own report outranks its exit code, and the
+witness re-grades what it re-runs.
 
 Found 2026-09-23 in review of the fresh-report fix. A candidate that calls
 atexit.register(os._exit, 0) lets pytest write a truthful report of its
 failures, then forces the process exit code to 0 at interpreter shutdown. The
 oracle read exit 0 plus one passing testcase as PASS. A candidate failing 4 of
 6 tests read PASS, accept_gate accepted it, and an RL group paid it reward 1.0
-with the held-out oracle on.
+with the held-out oracle on. Separately, the witness compared hashes only, so
+an envelope that sealed a failing run's own hash under a PASS verdict
+re-witnessed MATCH, in the oracle's workdir and in a fresh one.
 
 Success criteria:
   - a failing candidate that forces exit 0 is FAIL with rc 0, execution
@@ -14,12 +17,15 @@ Success criteria:
   - RL collect with the held-out oracle on pays the forced exit reward 0.0.
   - a correct candidate that also forces exit 0 still reads PASS.
   - grade(): any FAIL outcome is FAIL whatever the exit code; skips alone FAIL.
+  - witness: a PASS envelope carrying a failing run's own hash is DRIFT, in the
+    oracle's workdir and in a fresh one, and the honest FAIL envelope is MATCH.
 """
 import shutil
 import sys
 from pathlib import Path
 
 from harness.consensus import accept_gate
+from harness.envelope import ProofEnvelope
 from harness.integrity import scan_reward_hacking
 from harness.junit_report import grade
 from harness.oracle import PytestOracle
@@ -27,6 +33,7 @@ from harness.proposer import ProposerOutput
 from harness.rl_from_oracle import RLFromOracle
 from harness.task import Task
 from harness.verdict import Attribution, Execution, Verdict
+from harness.witness import witness_envelope
 
 FIXTURE = (Path(__file__).resolve().parent.parent
            / "tasks" / "b0" / "josephus" / "hidden_test.py")
@@ -44,6 +51,7 @@ WRONG = "def josephus(n, k):\n    return 0\n"   # fails 4 of the 6 tests
 FORCE = "import atexit, os; atexit.register(os._exit, 0)\n"
 SNEAKY = ("import atexit; atexit.register("
           "getattr(__import__('o' + 's'), '_exit'), 0)\n")
+BARE_EXIT = "import os; os._exit(0)\n"
 
 
 def _task(workdir: Path) -> Task:
@@ -108,3 +116,27 @@ def test_grade_lets_the_report_outrank_the_exit_code():
     assert grade("t::a=SKIP", 0) is Verdict.FAIL   # nothing was asserted
     assert grade("", 0) is Verdict.FAIL            # no report at all
 
+
+def _envelope(candidate: str, sealed, verdict: str) -> ProofEnvelope:
+    return ProofEnvelope(task_id="josephus", candidate=candidate, oracle="pytest",
+                         oracle_cmd=sealed.cmd, oracle_output_hash=sealed.output_hash,
+                         verdict=verdict, model_ref="stub", seed=0,
+                         prompt_hash="h", budget_spent={})
+
+
+def test_witness_regrades_a_pass_sealed_on_a_failing_runs_own_hash(tmp_path):
+    task = _task(tmp_path / "w")
+    for i, candidate in enumerate((BARE_EXIT, FORCE + WRONG)):
+        sealed = PytestOracle(timeout=60).verify(candidate, task)
+        assert sealed.verdict_ is Verdict.FAIL
+        forged = _envelope(candidate, sealed, "PASS")
+        fresh = _task(tmp_path / f"fresh{i}")
+        for workdir in (task.workdir, fresh.workdir):
+            wv = witness_envelope(forged, workdir=workdir,
+                                  candidate_path=task.candidate_path)
+            assert wv.verdict == "DRIFT" and "verdict mismatch" in wv.reason
+            assert wv.reproduced_hash == sealed.output_hash
+        honest = witness_envelope(_envelope(candidate, sealed, "FAIL"),
+                                  workdir=task.workdir,
+                                  candidate_path=task.candidate_path)
+        assert honest.verdict == "MATCH"

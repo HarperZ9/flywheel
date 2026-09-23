@@ -188,6 +188,20 @@ def canonical_hash(oracle_type: str, workdir: Path, rc: int, *,
     return _digest(canon, rc)
 
 
+def rerun_outcome(oracle_type: str, rc: int, report: Path | None
+                  ) -> tuple[str, Verdict | None]:
+    """A re-run's canonical hash and, for pytest, the verdict it supports.
+
+    The witness needs both, because a hash can match under a verdict the
+    outcomes do not support. Other oracle types give no verdict: their
+    canonical form is empty, so re-running the command cannot re-derive it.
+    """
+    if oracle_type != "pytest":
+        return _digest("", rc), None
+    canon = _pytest_canonical(report)
+    return _digest(canon, rc), grade(canon, rc)
+
+
 def _pytest_result(cmd: str, out: bytes, rc: int, canon: str,
                    fresh: bool) -> OracleResult:
     """Grade one pytest run from its own report (junit_report.grade).
