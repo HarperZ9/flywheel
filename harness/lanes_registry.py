@@ -66,7 +66,7 @@ LANES: dict[str, Lane] = {
         "falsifiable verification + re-check (register -> steelman -> measure -> witness)",
         "verification", source_repo="public/crucible", py_module="crucible.cli"),
     "chorus": Lane(
-        "chorus", "chorus-discourse", "chorus", ("mcp",), "pip", "0.3.0",
+        "chorus", "chorus-discourse", "chorus", ("mcp",), "pip", "0.3.1",
         "re-derivable discourse digest (themes, contested aspects, dissent, receipt)",
         "synthesis", source_repo="public/chorus", py_module="chorus.cli"),
     "articulate": Lane(
@@ -104,10 +104,9 @@ LANES: dict[str, Lane] = {
         "accountable coding agent on any model endpoint (local-first, witnessed runs)",
         "execution", source_repo="public/relay", py_module="relay.local_mcp"),
     "plexus": Lane(
-        "plexus", "plexus-mesh", "plexus", ("mcp",), "pip", "0.2.0",
+        "plexus", "plexus-mesh", "plexus", ("mcp",), "pip", "0.2.2",
         "capability discovery + auto-wiring of the tool mesh (the layer above a flat tool list)",
-        "wiring", source_repo="public/plexus", py_module="plexus.cli",
-        package_disabled_reason="No published PyPI distribution is available. Use a Plexus source checkout."),
+        "wiring", source_repo="public/plexus", py_module="plexus.cli"),
     "mneme": Lane(
         "mneme", "flywheel-mneme", "mneme", ("mcp",), "pip", "0.4.2",
         "accountable memory: recall with re-derivable ranking receipts + drift verdicts",
@@ -118,26 +117,30 @@ LANES: dict[str, Lane] = {
         "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
         "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
     "canon": Lane(
-        "canon", "canon", "canon", ("mcp",), "pip", "0.0.0",
+        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.2.0",
         "provider-neutral memory bank + personality container: one envelope, "
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",
-        "continuity", source_repo="public/canon", py_module="canon.cli",
-        package_disabled_reason=("Canon's PyPI name belongs to another project. "
-                                 "Use a HarperZ9 Canon source checkout.")),
+        "continuity", source_repo="public/canon", py_module="canon.cli"),
     "bulletin": Lane(
         "bulletin", "", "", (), "http", "0.2.0",
         "the open board: a workstation or another agent reaches it over the web, "
         "registers an ed25519 identity, and reads what other agents left behind",
         "correspondence", url="https://bulletin.zaindharper.workers.dev/mcp"),
     "accountable-surface": Lane(
-        "accountable-surface", "accountable-surface", "accountable-surface-server", (),
-        "pip", "0.1.0",
+        # accountable-surface-mcp, not accountable-surface-server. The server
+        # entry imports mcp.server.fastmcp, which lives in the [server] extra, so
+        # a plain `pip install accountable-surface` leaves it raising
+        # ModuleNotFoundError at launch. The extra cannot go in install_name
+        # either: installed_version() passes that string to
+        # importlib.metadata.version, which does not accept an extras marker.
+        # accountable_surface.interop_mcp is stdlib-only and serves the same
+        # protocol, so the lane installs and launches from one clean name.
+        "accountable-surface", "accountable-surface", "accountable-surface-mcp", (),
+        "pip", "0.3.1",
         "live accountability seam: witnessed perception + operator-grant pre-execution "
         "gate + self-verifying effectors + tamper-evident journal (actuates, so T2)",
         "actuation", source_repo="public/accountable-surface",
-        py_module="accountable_surface.mcp",
-        extra_source_repos=("public/coherence-membrane", "public/proof-surface"),
-        package_disabled_reason=("No published PyPI distribution is available. "
-                                 "Use an accountable-surface source checkout.")),
+        py_module="accountable_surface.interop_mcp",
+        extra_source_repos=("public/coherence-membrane", "public/proof-surface")),
 }
