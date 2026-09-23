@@ -129,13 +129,8 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                     return done
                 message = feedback
                 continue
-            from .run_budget_executor import harness_check
-            with harness_check(executor):   # the harness's step, not the model's
-                res = executor.execute("run", {"cmd": test_cmd})
+            res = _run_check(executor, ledger, test_cmd, sign_key)
             last_test_ok = res.ok
-            ledger.append("tool_call", f"run {json.dumps({'cmd': test_cmd}, sort_keys=True)}",
-                          {"gate": "test"})
-            ledger.append("tool_result", res.output, _result_meta("run", res, sign_key, {"gate": "test"}))
             _emit(type="tool_result", name="run", ok=res.ok, output=res.output[:500])
             if criteria is not None:
                 for cid in [c["id"] for c in criteria if c["oracle"] == "test_cmd"]:
@@ -212,6 +207,20 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
                  note=("step budget exhausted; the test command never ran, so "
                        "this is unwitnessed, not an observed failure") if unrun else "",
                  system=agent.system, goal=goal, criteria=criteria)
+
+
+def _run_check(executor, ledger, test_cmd, sign_key):
+    """Run the check command as the harness's own step, and witness it.
+
+    Both ledger entries carry `gate: test`, so the run budget records it as a
+    harness check rather than one of the model's tool actions."""
+    from .run_budget_executor import harness_check
+    with harness_check(executor):
+        res = executor.execute("run", {"cmd": test_cmd})
+    ledger.append("tool_call", f"run {json.dumps({'cmd': test_cmd}, sort_keys=True)}",
+                  {"gate": "test"})
+    ledger.append("tool_result", res.output, _result_meta("run", res, sign_key, {"gate": "test"}))
+    return res
 
 
 def _refuse_if_failing(criteria, text, step, ledger, *, tests_pass=None, note="",

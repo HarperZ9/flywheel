@@ -171,6 +171,26 @@ def _frozen_workflow(raw: bytes, workflow: str) -> dict:
         raise ValueError("invalid workflow snapshot")
     return spec
 
+def _run_stage(step, goal, prev, endpoint, budget, status, common, *, test_cmd,
+               allow_exec, allow_mcp, system):
+    """One stage, folded into the workflow: (summary, prev, status, stop).
+
+    `run_router_agent` is looked up here at call time, so a caller that swaps
+    it on this module swaps it for every stage."""
+    if step["kind"] != "verify":
+        summary, prev, changed, stop = agent_step(
+            step, goal, prev, endpoint, run_router_agent, budget, allow_exec=allow_exec,
+            allow_mcp=allow_mcp, system=system, **common)
+        return summary, prev, changed or status, stop
+    if not (test_cmd and allow_exec):
+        return (step_summary(step["name"], "verify", "UNVERIFIABLE", None,
+                             note="no test command granted; nothing was executed"),
+                prev, "UNVERIFIED", False)
+    summary, status = verify_step(step, endpoint, run_router_agent, budget,
+                                  test_cmd=test_cmd, **common)
+    return summary, prev, status, False
+
+
 def run_workflow(workflow: str, goal: str, endpoint: str, *, root: str = ".",
                  allow_write: bool = False, allow_exec: bool = False,
                  allow_mcp: bool = False, test_cmd: "str | None" = None,
@@ -194,33 +214,17 @@ def run_workflow(workflow: str, goal: str, endpoint: str, *, root: str = ".",
               "goal_excerpt": goal[:200], "started": started}
     chain = hashlib.sha256()
     chain.update(json.dumps(header, sort_keys=True, default=str).encode())
-    prev = ""
-    status = "COMPLETED"
+    prev, status = "", "COMPLETED"
     budget = workflow_budget(spec["steps"])
+    common = {"root": root, "allow_write": allow_write, "proposer": proposer,
+              "credential_bindings": credential_bindings, "authorized": authorized}
     for step in spec["steps"]:
-        if step["kind"] == "verify":
-            if not (test_cmd and allow_exec):
-                summary = step_summary(step["name"], "verify", "UNVERIFIABLE",
-                                       None, note="no test command granted; "
-                                       "nothing was executed")
-                status = "UNVERIFIED"
-            else:
-                summary, status = verify_step(
-                    step, endpoint, run_router_agent, budget, root=root,
-                    allow_write=allow_write, test_cmd=test_cmd, proposer=proposer,
-                    credential_bindings=credential_bindings,
-                    authorized=authorized)
-        else:
-            summary, prev, changed, stop = agent_step(
-                step, goal, prev, endpoint, run_router_agent, budget, root=root,
-                allow_write=allow_write, allow_exec=allow_exec,
-                allow_mcp=allow_mcp, system=system, proposer=proposer,
-                credential_bindings=credential_bindings,
-                authorized=authorized)
-            status = changed or status
+        summary, prev, status, stop = _run_stage(
+            step, goal, prev, endpoint, budget, status, common, test_cmd=test_cmd,
+            allow_exec=allow_exec, allow_mcp=allow_mcp, system=system)
         steps_out.append(summary)
         chain.update(json.dumps(summary, sort_keys=True, default=str).encode())
-        if step["kind"] != "verify" and stop:
+        if stop:
             break
     chain.update(json.dumps({"final_status": status}, sort_keys=True).encode())
     doc = {"schema": "flywheel.workflow-run/v1", "workflow": workflow,
