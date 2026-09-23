@@ -38,6 +38,7 @@ def test_the_wall_time_record_is_described_as_it_behaves():
     assert "Wall time stays with the existing aggregate deadline" not in text
     assert "no budget record is written" not in text
     assert "`recorded_by: gateway_deadline`" in text
+    assert "the call in flight when the tree stopped is counted too" in text
 
 
 def test_cli_tokens_are_said_to_count_as_they_stream_and_spend_after_the_fact():

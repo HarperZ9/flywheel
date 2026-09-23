@@ -10,6 +10,10 @@ closes the run, from what the private trace shows:
   outcome check counts them, and the harness's check runs apart;
 - the tokens and spend the recorded provider responses reported, with each
   model call that recorded none named as a call that reported nothing;
+- each model call the trace shows starting (a `model_inference` record in
+  phase `started`) with no model_call entry for its ordinal. It was in
+  flight when the tree stopped, or failed before it reported usage, so it
+  is counted and named as a call that reported nothing;
 - a wall-time stop, at the time limit.
 
 What only the worker held in memory is not in the trace and is not claimed:
@@ -45,6 +49,21 @@ def _usage(records: list) -> tuple[dict, dict]:
     return used, reporting
 
 
+def _unfinished_calls(records: list) -> int:
+    """Model calls the trace shows starting with no model_call entry after."""
+    started, finished = set(), set()
+    for record in records:
+        payload = record.get("payload")
+        if record.get("kind") != "ledger" or type(payload) is not dict:
+            continue
+        meta = payload.get("meta") if type(payload.get("meta")) is dict else {}
+        if payload.get("kind") == "model_inference" and meta.get("phase") == "started":
+            started.add(meta.get("ordinal"))
+        elif payload.get("kind") == "model_call":
+            finished.add(meta.get("ordinal"))
+    return len(started - finished)
+
+
 def deadline_budget_report(records: list) -> dict:
     """The wall-time budget record the trace supports, for a run with none."""
     from .run_budget import resolve_limits
@@ -52,8 +71,11 @@ def deadline_budget_report(records: list) -> dict:
     limits = resolve_limits(operation)
     counts = trace_counts(records)
     spent, reporting = _usage(records)
-    used = {"model_calls": counts["model_calls"], "tool_actions": counts["tool_actions"],
-            **spent, "wall_time_ms": limits["wall_time_ms"]}
+    unfinished = _unfinished_calls(records)
+    reporting["calls_without_tokens"] += unfinished
+    used = {"model_calls": counts["model_calls"] + unfinished,
+            "tool_actions": counts["tool_actions"], **spent,
+            "wall_time_ms": limits["wall_time_ms"]}
     return {"schema": SCHEMA, "status": "stopped", "tripped": "wall_time",
             "limits": limits, "used": used, "reporting": reporting,
             "false_success_count": 0, "false_success_steps": [], "limit_signal_steps": [],

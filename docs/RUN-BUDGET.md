@@ -76,7 +76,9 @@ range is refused as `INVALID_REQUEST`.
   with the model calls, tool actions, check runs, tokens and spend the trace
   records. What only the worker held, such as a Claude CLI message's streamed
   tokens, is not in the trace and is not counted, and a model call with no
-  recorded usage is named as one that reported nothing. The card says the time
+  recorded usage is named as one that reported nothing. Each model call is
+  marked in the trace before it goes out, so the call in flight when the tree
+  stopped is counted too, as one that reported nothing. The card says the time
   limit was reached before a budget record was written only when the gateway
   could not write one.
 - The run's check command is the harness's step, not the model's, so a run

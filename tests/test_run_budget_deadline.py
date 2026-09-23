@@ -26,14 +26,23 @@ class _TreeStopped(BaseException):
     """Stands in for the process tree being stopped in the middle of a step."""
 
 
-def _stopped_mid_step(tmp_path, monkeypatch):
-    """A real router run that is cut off during its second model call."""
-    calls = []
+def _trace_dir(tmp_path):
+    return tmp_path / AgentTrace(tmp_path, OWNER, JOURNEY, OPERATION).base
+
+
+def _stopped_mid_step(tmp_path, monkeypatch, *, hard=False):
+    """A real router run that is cut off during its second model call.
+
+    The stand-in exception still runs the finally blocks it unwinds through.
+    A real stop kills the process tree and runs none of them, so `hard` drops
+    every trace record written after the cut, as a killed worker leaves it."""
+    calls, kept = [], []
 
     def factory(**authority):
         def transport(method, url, headers, body, timeout):
             calls.append(1)
             if len(calls) > 1:
+                kept.extend(p.name for p in _trace_dir(tmp_path).iterdir())
                 raise _TreeStopped()
             return 200, {"model": authority["model"], "usage": {"total_tokens": 40},
                          "choices": [{"message": {"content": 'TOOL list_dir {"path": "."}'}}]}
@@ -45,6 +54,9 @@ def _stopped_mid_step(tmp_path, monkeypatch):
     with pytest.raises(_TreeStopped):
         run_private_agent(op, {}, tmp_path, trace, None, lambda e: None,
                           binding=binding, deadline=time.monotonic() + 60)
+    for path in _trace_dir(tmp_path).iterdir():
+        if hard and path.name not in kept:
+            path.unlink()
 
 
 def test_a_deadline_stop_mid_step_writes_a_wall_time_budget_record(tmp_path, monkeypatch):
@@ -66,6 +78,39 @@ def test_a_deadline_stop_mid_step_writes_a_wall_time_budget_record(tmp_path, mon
     records = AgentTrace(tmp_path, OWNER, JOURNEY, OPERATION).read()
     assert records[-1]["kind"] == "failure"
     assert records[-1]["payload"]["recorded_by"] == "gateway_deadline"
+
+
+def test_a_call_in_flight_when_the_tree_is_killed_is_counted_as_unreported(
+        tmp_path, monkeypatch):
+    _started(tmp_path, _queued(tmp_path))
+    _stopped_mid_step(tmp_path, monkeypatch, hard=True)
+    ledger = [r["payload"]["kind"] for r in AgentTrace(tmp_path, OWNER, JOURNEY,
+                                                       OPERATION).read() if r["kind"] == "ledger"]
+    assert ledger.count("model_call") == 1
+    _service(tmp_path)._terminal(OWNER, OPERATION, WorkerOutcome(
+        "failed", {"reason": "OPERATION_DEADLINE_EXCEEDED"}))
+    budget = _service(tmp_path).result(OWNER, OPERATION)["result"]["run_outcome"]["budget"]
+    assert (budget["status"], budget["tripped"]) == ("stopped", "wall_time")
+    assert budget["used"]["model_calls"] == 2 and budget["used"]["usage_tokens"] == 40
+    assert budget["reporting"] == {"calls_with_tokens": 1, "calls_without_tokens": 1,
+                                   "calls_with_cost": 0}
+
+
+def test_a_native_call_that_started_and_never_reported_is_counted():
+    from harness.run_budget_deadline import deadline_budget_report
+
+    def ledger(kind, ordinal, **meta):
+        return {"kind": "ledger", "payload": {"kind": kind, "content": "",
+                                              "meta": {"ordinal": ordinal, **meta}}}
+    records = [{"kind": "request", "payload": {"operation": {"max_steps": 4}}},
+               ledger("model_inference", 1, phase="started"),
+               ledger("model_call", 1, usage_reported={"total_tokens": 40}),
+               ledger("model_inference", 2, phase="started"),
+               ledger("model_inference", 2, phase="failed"),
+               ledger("model_inference", 3, phase="started")]
+    report = deadline_budget_report(records)
+    assert report["used"]["model_calls"] == 3 and report["used"]["usage_tokens"] == 40
+    assert report["reporting"]["calls_without_tokens"] == 2
 
 
 def test_a_worker_record_is_never_overwritten_and_other_stops_add_none(tmp_path, monkeypatch):
