@@ -75,3 +75,15 @@ def test_a_limit_error_in_a_2xx_response_is_recorded_as_a_false_success(tmp_path
     report = doc["steps"][0]["run_budget"]
     assert report["false_success_count"] == 1
     assert report["limit_signal_steps"][0]["match"] == "rate_limit_error"
+
+
+def test_a_verify_stage_with_no_test_command_still_carries_the_budget_record(tmp_path):
+    for allow_exec, test_cmd in ((False, None), (True, None), (False, "pytest -q")):
+        doc = workflows.run_workflow("code-change", "goal", "stub", root=str(tmp_path),
+                                     proposer=_Proposer(["plan", "applied"]),
+                                     allow_exec=allow_exec, test_cmd=test_cmd)
+        assert doc["status"] == "UNVERIFIED"
+        verify = _stages(doc)["verify"]
+        assert verify["status"] == "UNVERIFIABLE"
+        assert [("run_budget" in step) for step in doc["steps"]] == [True] * 3
+        assert verify["run_budget"]["used"]["model_calls"] == 2

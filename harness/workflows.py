@@ -184,8 +184,8 @@ def _run_stage(step, goal, prev, endpoint, budget, status, common, *, test_cmd,
         return summary, prev, changed or status, stop
     if not (test_cmd and allow_exec):
         return (step_summary(step["name"], "verify", "UNVERIFIABLE", None,
-                             note="no test command granted; nothing was executed"),
-                prev, "UNVERIFIED", False)
+                             note="no test command granted; nothing was executed",
+                             budget=budget), prev, "UNVERIFIED", False)
     summary, status = verify_step(step, endpoint, run_router_agent, budget,
                                   test_cmd=test_cmd, **common)
     return summary, prev, status, False
