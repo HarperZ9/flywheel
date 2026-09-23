@@ -189,8 +189,8 @@ def _mark_limit_signal(receipt: dict, output: str, blocking: bool) -> None:
 
     Exit 0 with "usage limit reached" on stdout is the failure a scheduler
     reads as success and keeps paying for. The receipt names the signal and
-    keeps the matched words (at most 80 characters of the fixed vocabulary,
-    never free output), so the owner can judge the match. Only an anchored
+    the token of the pattern that matched (limit_signal.MATCH_TOKENS, never
+    the output's own words), so the owner can judge the match. Only an anchored
     match on an exit 0 marks the run `false_success`, and then a blocking hook
     blocks the event, the same as a nonzero exit would. A status line such as
     "0 requests were rate limited" is a mention and is only recorded."""

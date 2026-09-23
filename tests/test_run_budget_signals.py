@@ -70,7 +70,7 @@ def test_two_counted_steps_in_a_row_trip_and_the_report_names_them():
     assert stopped.value.limit == "limit_signals"
     steps = executor._budget.report()["limit_signal_steps"]
     assert [(s["tool"], s["signal"], s["match"]) for s in steps] == [
-        ("run", "rate_limit", "Error: 429")] * 2
+        ("run", "rate_limit", "status 429")] * 2
 
 
 def test_anthropic_cache_tokens_count_toward_the_token_limit():

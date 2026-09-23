@@ -72,3 +72,32 @@ def test_the_match_is_the_matched_words_and_nothing_around_them():
 
 def test_non_english_output_is_not_read():
     assert limit_signal("Fehler: Ratenlimit überschritten") is None
+
+
+@pytest.mark.parametrize("text,token", [
+    ('{"error": {"type": "rate_limit_exceeded_for_org_zainharper"}}', "rate limit"),
+    ('{"reason": "quota exceeded for acct northwind billing team"}', "quota exceeded"),
+    ("You've hit your weekly Opus limit", "hit your limit"),
+    ("Error: 429 Too Many Requests", "status 429"),
+    ("HTTP/2 529 \r\n", "HTTP 529"),
+    ('{"status": 402, "detail": "pay"}', "status 402"),
+    ('{"type": "error", "error": {"type": "overloaded_error"}}', "overloaded_error"),
+])
+def test_the_match_is_a_fixed_vocabulary_token_never_free_text(text, token):
+    from harness.limit_signal import MATCH_TOKENS
+    found = limit_match(text)
+    assert found is not None and found.match == token and token in MATCH_TOKENS
+    for free in ("zainharper", "northwind", "Opus", "Too Many"):
+        assert free not in found.match
+
+
+def test_a_record_whose_match_is_free_text_is_not_shown():
+    from harness.gateway_run_outcome import derive_run_outcome
+    from harness.run_budget import RunBudget, resolve_limits
+    budget = RunBudget(resolve_limits({"max_steps": 3}))
+    budget.limit_signal_steps = [{"tool": "run", "signal": "quota", "action": 1,
+                                  "match": '"reason": "quota exceeded for acct northwind"'}]
+    records = [{"sequence": 0, "kind": "failure", "record_sha256": "0" * 64,
+                "payload": {"run_budget": budget.report()}}]
+    derived = derive_run_outcome(records, terminal_state="failed")["budget"]
+    assert derived["reason"] == "BUDGET_RECORD_MALFORMED"

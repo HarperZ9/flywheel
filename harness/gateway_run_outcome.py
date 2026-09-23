@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from .evidence_json import canonical_bytes
 from .gateway_completion_outcome import derive_completion
+from .limit_signal import MATCH_TOKENS
 from .run_budget_contract import SCHEMA as BUDGET_SCHEMA, SIGNALS, TRIPS
 
 SCHEMA = "flywheel.gateway-run-outcome/v1"
@@ -72,10 +73,13 @@ def _trace_counts(records: list) -> dict:
 
 
 def _signal_step(step) -> dict:
-    """One counted step as the reader sees it: the tool, the kind, the words."""
+    """One counted step as the reader sees it: the tool, the kind, the token.
+
+    The match must be a token of the fixed vocabulary, so a record that
+    carries free text never reaches the card."""
     if (type(step) is not dict or step.get("signal") not in _SIGNALS
             or type(step.get("tool")) is not str or not 0 < len(step["tool"]) <= 64
-            or type(step.get("match")) is not str or not 0 < len(step["match"]) <= 80):
+            or step.get("match") not in MATCH_TOKENS):
         raise _Unverifiable("BUDGET_RECORD_MALFORMED")
     return {"tool": step["tool"], "signal": step["signal"], "match": step["match"]}
 

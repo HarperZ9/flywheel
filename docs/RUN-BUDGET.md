@@ -104,9 +104,12 @@ from a quote.
 ## Scheduled jobs
 
 A schedule fires hook commands; it cannot start `agent.run`. Each hook receipt
-names a limit error found in the hook's output with its kind and the matched
-words (`limit_signal`, `limit_match`, at most 80 characters of the fixed
-vocabulary). A hook that exited 0 is marked `false_success` only when the match
+names a limit error found in the hook's output with its kind (`limit_signal`)
+and a token from a fixed vocabulary (`limit_match`), such as
+`usage limit reached`, `invalid api key` or `status 429`. The token names the
+pattern that matched and never carries the output's own words, so an account
+or model name printed next to the error stays out of the receipt. A hook that
+exited 0 is marked `false_success` only when the match
 is anchored, as described above: a status line such as "0 requests were rate
 limited" or "GET /v1/items -> status 429, retried" is recorded and does not
 fail the hook.

@@ -90,8 +90,11 @@ final class RunOutcome {
 }
 
 /// One step whose exit-0 output ended on a limit error: the tool, the kind
-/// of limit and the words that matched. The words come from the engine's
-/// fixed vocabulary, never from free output.
+/// of limit and the match. The match is a token from the engine's fixed
+/// vocabulary (harness/limit_signal.py MATCH_TOKENS), such as
+/// "usage limit reached" or "status 429". It names the pattern that matched
+/// and never carries the output's own words; the gateway refuses a record
+/// whose match is not a token.
 final class LimitSignalStep {
   final String tool, signal, match;
 
