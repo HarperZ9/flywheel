@@ -143,6 +143,25 @@ def test_an_errored_cli_result_still_records_what_it_spent(tmp_path, monkeypatch
     assert report["used"]["usage_tokens"] == 320_000
 
 
+def test_an_errored_run_over_its_limits_is_recorded_as_stopped(tmp_path, monkeypatch):
+    from harness.gateway_agent_execution import _record_failure
+    for usage, cost, limit in (({"input_tokens": 300_000, "output_tokens": 20_000}, None,
+                                "usage_tokens"), (None, 4.25, "cost_micros")):
+        budget = RunBudget(resolve_limits({"max_steps": 3}))
+        rows = [_assistant("m1"), _result(is_error=True, subtype="error_max_turns",
+                                          total_cost_usd=cost, usage=usage)]
+        with pytest.raises(GatewayOperationError) as failed:
+            _cli(tmp_path, monkeypatch, rows, budget)
+        (tmp_path / limit).mkdir()
+        trace = AgentTrace(tmp_path / limit, OWNER, JOURNEY, OPERATION)
+        _record_failure(trace, failed.value, budget)
+        records = AgentTrace(tmp_path / limit, OWNER, JOURNEY, OPERATION).read()
+        report = records[-1]["payload"]["run_budget"]
+        assert (report["status"], report["tripped"]) == ("stopped", limit)
+        derived = derive_run_outcome(records, terminal_state="failed")["budget"]
+        assert (derived["status"], derived["tripped"]) == ("stopped", limit)
+
+
 def test_a_cli_session_stopped_before_its_result_names_unreported_calls(tmp_path, monkeypatch):
     limits = {**resolve_limits({"max_steps": 3}), "tool_actions": 2}
     budget = RunBudget(limits)

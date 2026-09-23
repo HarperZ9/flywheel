@@ -41,7 +41,9 @@ range is refused as `INVALID_REQUEST`.
   cannot be refused beforehand. The CLI reports tokens and spend once, for the
   whole session, in its final result event, so both the token limit and the
   spend limit mark a CLI session stopped after the fact and cannot interrupt
-  it. The result event is read on an errored session too. A session stopped
+  it. The result event is read on an errored session too, and a limit its
+  numbers crossed is named in the record as the stop, while the session's own
+  error stays the run's failure reason. A session stopped
   before that event names every model call it saw as a call that reported
   nothing. Claude CLI cache reads and cache writes count as tokens, at the
   same weight as other input, so a session that re-reads a cached prompt on

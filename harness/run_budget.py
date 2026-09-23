@@ -206,6 +206,14 @@ class RunBudget:
         if self._armed is not None:
             self._trip(self._armed)
 
+    def settle_failed(self) -> None:
+        """Name a crossed limit on a run that already failed for another reason.
+
+        An errored CLI result can report spend past a limit. The run's own
+        error stands, and the record still says which limit it crossed."""
+        if self.tripped is None and self._armed is not None:
+            self.tripped = self._armed
+
     def wrap_executor(self, executor, *, test_cmd=None):
         return BudgetedExecutor(executor, self, test_cmd=test_cmd)
 

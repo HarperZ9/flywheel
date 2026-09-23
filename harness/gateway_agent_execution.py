@@ -162,7 +162,11 @@ def _completion(ledger, result, root, cli_events, exc=None) -> dict:
 
 
 def _record_failure(trace, exc, budget, completion=None) -> None:
-    """Write why the run stopped, with the budget and completion as they stood."""
+    """Write why the run stopped, with the budget and completion as they stood.
+
+    A limit the run crossed before it failed is settled first, so the record
+    never says within limits next to numbers over them."""
+    budget.settle_failed()
     if getattr(exc, "code", None) == "OPERATION_DEADLINE_EXCEEDED":
         budget.note_wall_time()
     payload = {"error_type": type(exc).__name__, "message": str(exc),
