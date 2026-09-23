@@ -31,6 +31,11 @@ benchmarks/*.json -text -diff
 # normalize the stream (same reason as packs/**/fixtures/** above).
 tests/fixtures/model-receipt-golden.json -text -diff
 
+# The monitor-outcome sidecar records the sha256 of the log it read, and the
+# demo prints it. generate.py writes LF, so pin the checkout to LF and the
+# recorded hash is the same whoever cloned the repository.
+tests/fixtures/monitor_outcome/** text eol=lf
+
 # Generated artwork. render_repo_art.py writes LF on every platform, so pin the
 # checkout to LF as well and each file's size and hash stay the same whoever
 # cloned the repository.

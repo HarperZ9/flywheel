@@ -163,10 +163,42 @@ def attach_outcomes(record: dict[str, Any], outcomes: list[dict[str, Any]]) -> d
     return record
 
 
+def exclude_samples(record: dict[str, Any], exclusions: list[dict[str, Any]]) -> dict[str, Any]:
+    """Mark samples the agent never had a fair chance at, with the evidence.
+
+    Control Tower's scorer guidance separates infrastructure that was already
+    unavailable before the agent acted from state the agent changed. Only the
+    first is an exclusion. Treating an agent that destroyed its own output as a
+    precondition failure would remove a real task failure from the denominator,
+    so an exclusion here requires a named reason and an evidence pointer, and it
+    stays counted rather than disappearing.
+    """
+    if record.get("schema") != SCHEMA:
+        raise MonitorOutcomeError(f"record schema must be {SCHEMA}")
+    by_key = {_sample_key(s["id"], s["epoch"]): s for s in record["samples"]}
+    for position, item in enumerate(exclusions):
+        if type(item) is not dict:
+            raise MonitorOutcomeError(f"exclusion {position} must be an object")
+        for field in ("id", "epoch", "reason", "evidence"):
+            if not item.get(field) and item.get(field) != 0:
+                raise MonitorOutcomeError(f"exclusion {position} requires {field!r}")
+        target = by_key.get(_sample_key(item["id"], item["epoch"]))
+        if target is None:
+            raise MonitorOutcomeError(f"exclusion {position} names a sample absent from the log")
+        if target["outcome"]["status"] != ABSENT:
+            raise MonitorOutcomeError(
+                f"exclusion {position} would overwrite an outcome already attached")
+        target["outcome"] = {"status": "excluded", "value": None, "source": None,
+                             "checked_by": None, "reason": item["reason"],
+                             "evidence": item["evidence"]}
+    record["coverage"] = _coverage(record["samples"])
+    return record
+
+
 def _coverage(samples: list[dict[str, Any]]) -> dict[str, Any]:
     """Denominators, with every state counted and none folded into another."""
     monitor_states = {SCORED: 0, UNSCORED: 0, ABSENT: 0, UNSUPPORTED: 0}
-    outcome_states = {"verified": 0, "reported": 0, ABSENT: 0}
+    outcome_states = {"verified": 0, "reported": 0, "excluded": 0, ABSENT: 0}
     action_states = {SCORED: 0, UNSCORED: 0, ABSENT: 0, UNSUPPORTED: 0}
     for sample in samples:
         monitor_states[sample["monitor"]["status"]] += 1
