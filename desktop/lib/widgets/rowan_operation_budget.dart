@@ -150,6 +150,50 @@ final class _RowanRunBudgetRowState extends State<RowanRunBudgetRow> {
       );
 }
 
+/// The check the engine runs when the model says it is done.
+///
+/// Without one, the final answer can only be claimed. The engine runs it
+/// through the exec gate, so the field is live only when exec is allowed.
+final class RowanCheckCommandField extends StatefulWidget {
+  const RowanCheckCommandField({super.key, required this.rowan});
+
+  final RowanOperationController rowan;
+
+  @override
+  State<RowanCheckCommandField> createState() => _RowanCheckCommandFieldState();
+}
+
+final class _RowanCheckCommandFieldState extends State<RowanCheckCommandField> {
+  late final TextEditingController _command =
+      TextEditingController(text: widget.rowan.checkCommand ?? '');
+
+  @override
+  void dispose() {
+    _command.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rowan = widget.rowan;
+    final usable = rowan.allowExec && !rowan.executionMode.isNativeCli;
+    return TextField(
+      key: const Key('assistant-rowan-check-command'),
+      controller: _command,
+      enabled: usable && !rowan.active,
+      style: fwMono(context.fw, size: 11.5),
+      decoration: InputDecoration(
+        isDense: true,
+        labelText: 'check command',
+        hintText: usable
+            ? 'runs when Rowan says it is done, e.g. python -m pytest -q'
+            : 'allow exec to run a check; without one the answer stays claimed',
+      ),
+      onChanged: rowan.setCheckCommand,
+    );
+  }
+}
+
 final class RowanNumberField extends StatelessWidget {
   const RowanNumberField({
     super.key,

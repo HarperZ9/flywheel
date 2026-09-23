@@ -215,6 +215,7 @@ final class RowanOperationCard extends StatelessWidget {
             timeout: timeout,
           ),
           RowanRunBudgetRow(rowan: rowan),
+          RowanCheckCommandField(rowan: rowan),
           if (snapshot != null) ...[
             const SizedBox(height: FwLayout.s2),
             Text(

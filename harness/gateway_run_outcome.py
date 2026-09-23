@@ -1,9 +1,10 @@
 """Content-free run outcome derived from an accepted private agent trace.
 
-The worker records what the run spent in its own trace, next to the result
-or the failure. This module projects that record onto the public terminal
-projection, so the desktop can say why a run stopped without reading private
-content. It is derived, not copied: the gateway recomputes it from the trace
+The worker records what the run spent, and which deliverables a check
+confirmed, in its own trace next to the result or the failure. This module
+projects both records onto the public terminal projection, so the desktop can
+say why a run stopped and what was verified without reading private content.
+The completion half lives in gateway_completion_outcome. It is derived, not copied: the gateway recomputes it from the trace
 records at terminal time and again on every read, and a submitted block that
 differs from the recomputation is refused.
 
@@ -15,6 +16,7 @@ to see.
 from __future__ import annotations
 
 from .evidence_json import canonical_bytes
+from .gateway_completion_outcome import derive_completion
 from .run_budget_contract import SCHEMA as BUDGET_SCHEMA, SIGNALS, TRIPS
 
 SCHEMA = "flywheel.gateway-run-outcome/v1"
@@ -118,6 +120,7 @@ def derive_run_outcome(records: list, *, terminal_state: str) -> dict:
             "completed", "failed", "cancelled"}:
         raise ValueError("run outcome input is invalid")
     return {"schema": SCHEMA, "terminal_state": terminal_state,
+            "completion": derive_completion(records, terminal_state),
             "budget": _budget(records, terminal_state)}
 
 

@@ -1,5 +1,20 @@
 part of 'rowan_operation_controller.dart';
 
+extension RowanOperationControllerCheck on RowanOperationController {
+  /// A check command runs only with exec allowed, and native CLI sessions
+  /// run their own tools, so the engine's check applies to neither.
+  bool get _checkCommandApplies => _allowExec && !_executionMode.isNativeCli;
+
+  /// The command the engine runs when the model says it is done. Its pass
+  /// is what lets the final answer read as verified instead of claimed.
+  void setCheckCommand(String value) {
+    final next = value.trim().isEmpty ? null : value.trim();
+    if (_checkCommand == next) return;
+    _checkCommand = next;
+    _bump();
+  }
+}
+
 extension RowanOperationControllerLifecycle on RowanOperationController {
   Future<GatewayAuthorizationOutcome<bool>> start(
     BuildContext context,
@@ -63,6 +78,7 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
         mcpAdmission: _mcpAdmission,
         continuation: continuation,
         runBudget: _runBudget.toWire(),
+        testCmd: _checkCommandApplies ? _checkCommand : null,
       );
     } on Object {
       _error = 'INVALID_CONTEXT';

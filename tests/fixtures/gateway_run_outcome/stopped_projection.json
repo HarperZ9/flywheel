@@ -12,9 +12,9 @@
       "UPSTREAM_OUTPUT_LIMITS"
     ],
     "operation_ref": "op_cccccccccccccccccccccccccccccccc",
-    "projection_sha256": "d5373f2f97d4937515df3b66ebeae371a7416b2b5eda34c7691eaedd29d57a83",
+    "projection_sha256": "32b72ba6247b86b951c9ad6325403d98b1df766e44d37a5af4b21f4a44e21576",
     "reason": "AGENT_RUN_BUDGET_EXHAUSTED",
-    "record_count": 1,
+    "record_count": 5,
     "run_outcome": {
       "budget": {
         "false_success_count": 1,
@@ -29,7 +29,7 @@
           "usage_tokens": 200000,
           "wall_time_ms": 300000
         },
-        "record_sequence": 0,
+        "record_sequence": 4,
         "reporting": {
           "calls_with_cost": 0,
           "calls_with_tokens": 5,
@@ -45,18 +45,152 @@
           "wall_time_ms": 41250
         }
       },
+      "completion": {
+        "counts": {
+          "claimed": 1,
+          "failed": 1,
+          "verified": 1
+        },
+        "items": [
+          {
+            "check": "file_hash_recheck",
+            "detail": "matches",
+            "kind": "file",
+            "status": "verified"
+          },
+          {
+            "check": null,
+            "detail": "no_recorded_hash",
+            "kind": "file",
+            "status": "claimed"
+          },
+          {
+            "check": "run_state",
+            "detail": "AGENT_RUN_BUDGET_EXHAUSTED",
+            "kind": "final_answer",
+            "status": "failed"
+          }
+        ],
+        "items_omitted": 0,
+        "status": "recorded",
+        "unbacked_success_claim": false,
+        "verdict": "failed"
+      },
       "schema": "flywheel.gateway-run-outcome/v1",
       "terminal_state": "failed"
     },
     "schema": "flywheel.gateway-agent-projection/v1",
     "state": "failed",
-    "trace_head_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "trace_head_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
     "trace_ref": "agt_3e2197a3f63109a97f701d387b758689"
   },
   "records": [
     {
+      "kind": "ledger",
+      "payload": {
+        "content": "write_file {\"content\": \"x\", \"path\": \"notes.md\"}",
+        "entry_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "kind": "tool_call",
+        "meta": {},
+        "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "seq": 0
+      },
+      "record_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "sequence": 0
+    },
+    {
+      "kind": "ledger",
+      "payload": {
+        "content": "wrote notes.md",
+        "entry_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "kind": "tool_result",
+        "meta": {
+          "edited": {
+            "notes.md": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "ok": true,
+          "tool": "write_file"
+        },
+        "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "seq": 1
+      },
+      "record_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "sequence": 1
+    },
+    {
+      "kind": "ledger",
+      "payload": {
+        "content": "write_file {\"content\": \"y\", \"path\": \"plan.md\"}",
+        "entry_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "kind": "tool_call",
+        "meta": {},
+        "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "seq": 2
+      },
+      "record_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "sequence": 2
+    },
+    {
+      "kind": "ledger",
+      "payload": {
+        "content": "wrote plan.md",
+        "entry_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "kind": "tool_result",
+        "meta": {
+          "ok": true,
+          "tool": "write_file"
+        },
+        "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+        "seq": 3
+      },
+      "record_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "sequence": 3
+    },
+    {
       "kind": "failure",
       "payload": {
+        "completion": {
+          "counts": {
+            "claimed": 1,
+            "failed": 1,
+            "verified": 1
+          },
+          "does_not_prove": [
+            "NOT_SEMANTIC_CORRECTNESS",
+            "HASH_RECHECK_IS_NOT_A_TEST",
+            "TEST_PASS_PROVES_ONLY_WHAT_THE_TEST_CHECKS"
+          ],
+          "items": [
+            {
+              "check": "file_hash_recheck",
+              "detail": "matches",
+              "expected_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "kind": "file",
+              "observed_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "path": "notes.md",
+              "status": "verified"
+            },
+            {
+              "check": null,
+              "detail": "no_recorded_hash",
+              "expected_sha256": null,
+              "kind": "file",
+              "observed_sha256": null,
+              "path": "plan.md",
+              "status": "claimed"
+            },
+            {
+              "check": "run_state",
+              "detail": "AGENT_RUN_BUDGET_EXHAUSTED",
+              "kind": "final_answer",
+              "status": "failed"
+            }
+          ],
+          "items_omitted": 0,
+          "schema": "flywheel.run-completion/v1",
+          "unbacked_success_claim": false,
+          "verdict": "failed"
+        },
         "error_type": "RunBudgetExceeded",
         "message": "AGENT_RUN_BUDGET_EXHAUSTED",
         "run_budget": {
@@ -98,8 +232,8 @@
           }
         }
       },
-      "record_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-      "sequence": 0
+      "record_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "sequence": 4
     }
   ]
 }

@@ -21,6 +21,7 @@ GatewayOperation agentRunOperation({
   Map<String, Object?>? attachment,
   Map<String, Object?>? continuation,
   Map<String, Object?>? runBudget,
+  String? testCmd,
 }) {
   final input = goal.trim();
   if (input.isEmpty || endpoint.isEmpty) throw ArgumentError('invalid agent');
@@ -75,6 +76,9 @@ GatewayOperation agentRunOperation({
       if (attachment != null) 'attachment': attachment,
       if (continuation != null) 'continuation': continuation,
       if (runBudget != null) 'run_budget': runBudget,
+      // The engine runs this after the model says it is done; a pass is what
+      // lets the final answer read as verified instead of claimed.
+      if (testCmd != null && testCmd.trim().isNotEmpty) 'test_cmd': testCmd.trim(),
     },
   );
 }

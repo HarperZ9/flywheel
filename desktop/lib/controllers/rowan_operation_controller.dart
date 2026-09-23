@@ -52,6 +52,7 @@ final class RowanOperationController extends ChangeNotifier {
   int _maxTokens = 1024, _timeoutSeconds = 300;
   int? _maxStepsOverride;
   RowanRunBudget _runBudget = const RowanRunBudget();
+  String? _checkCommand;
   bool _allowWrite = false, _allowExec = false, _authorizing = false;
   bool _recovering = false;
   bool _mcpCatalogLoading = false, _mcpDiscoveryRunning = false;
@@ -76,6 +77,7 @@ final class RowanOperationController extends ChangeNotifier {
   int get maxTokens => _maxTokens;
   int get timeoutSeconds => _timeoutSeconds;
   RowanRunBudget get runBudget => _runBudget;
+  String? get checkCommand => _checkCommand;
   bool get allowWrite => _allowWrite;
   bool get allowExec => _allowExec;
   bool get authorizing => _authorizing;

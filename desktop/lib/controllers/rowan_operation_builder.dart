@@ -17,6 +17,7 @@ GatewayOperation _rowanOperation({
   Map<String, Object?>? mcpAdmission,
   Map<String, Object?>? continuation,
   Map<String, Object?>? runBudget,
+  String? testCmd,
 }) =>
     agentRunOperation(
       requestId: requestId,
@@ -35,4 +36,5 @@ GatewayOperation _rowanOperation({
       mcpAdmission: mcpAdmission,
       continuation: continuation,
       runBudget: runBudget,
+      testCmd: testCmd,
     );

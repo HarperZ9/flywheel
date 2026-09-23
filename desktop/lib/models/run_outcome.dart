@@ -6,6 +6,10 @@
 // invalid, the same rule the effect evidence block follows, because the
 // projection hash covers it.
 
+import 'run_completion_outcome.dart';
+
+export 'run_completion_outcome.dart';
+
 const runOutcomeSchema = 'flywheel.gateway-run-outcome/v1';
 
 const _limitKeys = {
@@ -61,19 +65,27 @@ Map<String, int> _naturals(Object? raw, Set<String> keys) {
 
 final class RunOutcome {
   final String terminalState;
+  final RunCompletionOutcome completion;
   final RunBudgetOutcome budget;
 
-  const RunOutcome._(this.terminalState, this.budget);
+  const RunOutcome._(this.terminalState, this.completion, this.budget);
 
   factory RunOutcome.fromJson(Object? raw, {required String terminalState}) {
     final value = _map(raw);
-    _fields(value, const {'schema', 'terminal_state', 'budget'});
+    _fields(value, const {'schema', 'terminal_state', 'completion', 'budget'});
     if (value['schema'] != runOutcomeSchema ||
         value['terminal_state'] != terminalState) {
       _invalid();
     }
-    return RunOutcome._(
-        terminalState, RunBudgetOutcome.fromJson(value['budget']));
+    final completion = RunCompletionOutcome.fromJson(value['completion']);
+    // A run that did not complete cannot have a verified final answer.
+    if (terminalState == 'failed' &&
+        completion.items.any((item) =>
+            item.kind == 'final_answer' && item.status == 'verified')) {
+      _invalid();
+    }
+    return RunOutcome._(terminalState, completion,
+        RunBudgetOutcome.fromJson(value['budget']));
   }
 }
 

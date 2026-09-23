@@ -65,9 +65,10 @@ schedule re-arms it; the passage of time leaves it stopped.
 ## What the projection carries
 
 The terminal projection gains a content-free `run_outcome` block with schema
-`flywheel.gateway-run-outcome/v1`. The gateway derives it from the budget record
-in the private trace, next to `effect_evidence`, and recomputes it on every read
-and in offline verification. A submitted block that differs is refused. A
+`flywheel.gateway-run-outcome/v1`. Its `budget` half comes from the budget
+record in the private trace; its `completion` half is described in
+`docs/VERIFIED-COMPLETION.md`. The gateway derives the block next to
+`effect_evidence` and recomputes it on every read and in offline verification. A submitted block that differs is refused. A
 record that does not add up is shown as `unverifiable` with a reason, for
 example a stop on a limit the recorded numbers never reached, or a report that
 counts fewer tool actions than the trace shows.

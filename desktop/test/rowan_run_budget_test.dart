@@ -120,5 +120,15 @@ void main() {
     ));
     await rowan.start(context, 'inspect');
     expect(approved?['run_budget'], {'max_tool_actions': 3});
+    expect(approved?.containsKey('test_cmd'), isFalse);
+
+    // A check command travels only with exec allowed, since the engine runs
+    // it through the exec gate; with exec off it would fail every run.
+    rowan.setCheckCommand('python -m pytest -q');
+    await rowan.start(context, 'inspect');
+    expect(approved?.containsKey('test_cmd'), isFalse);
+    rowan.setAllowExec(true);
+    await rowan.start(context, 'inspect');
+    expect(approved?['test_cmd'], 'python -m pytest -q');
   });
 }

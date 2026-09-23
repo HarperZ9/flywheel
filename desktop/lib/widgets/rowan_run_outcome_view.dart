@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/run_outcome.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
+import 'rowan_completion_summary.dart';
 
 const _limitNames = {
   'model_calls': 'model call limit',
@@ -95,6 +96,9 @@ String? falseSuccessLine(RunBudgetOutcome budget, {String? reason}) {
       'recorded as failed.$answer';
 }
 
+const _visibleItems = 8;
+
+/// How a finished run ended: what a check confirmed first, then its spend.
 final class RowanRunOutcomeView extends StatelessWidget {
   const RowanRunOutcomeView({super.key, required this.outcome, this.reason});
 
@@ -104,14 +108,39 @@ final class RowanRunOutcomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
+    final completion = outcome.completion;
     final budget = outcome.budget;
     final stopped = budget.status == 'stopped' || budget.status == 'unverifiable';
     final spend = budgetSpendLine(budget);
     final falseSuccess = falseSuccessLine(budget, reason: reason);
+    final hidden = completion.items.length - _visibleItems + completion.itemsOmitted;
     return Column(
       key: const Key('rowan-run-outcome'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(children: [
+          if (completion.recorded) ...[
+            VerdictPill(completion.verdict!,
+                status: completionVerdictStatus(completion.verdict)),
+            const SizedBox(width: FwLayout.s2),
+          ],
+          Expanded(
+              child: Text(completionHeadline(completion),
+                  key: const Key('rowan-completion-headline'),
+                  style: TextStyle(fontSize: 12, color: t.ink))),
+        ]),
+        if (completion.recorded) ...[
+          Text(completionSplit(completion),
+              style: fwMono(t, size: 11, color: t.inkSoft)),
+          for (final item in completion.items.take(_visibleItems))
+            Text(completionItemLine(item),
+                style: fwMono(t, size: 10.5, color: t.inkFaint)),
+          if (hidden > 0)
+            Text('and $hidden more',
+                style: fwMono(t, size: 10.5, color: t.inkFaint)),
+        ],
+        if (completion.unbackedSuccessClaim) HonestNull(unbackedClaimLine),
+        const SizedBox(height: FwLayout.s1),
         if (stopped)
           HonestNull(budgetHeadline(budget, reason: reason))
         else
