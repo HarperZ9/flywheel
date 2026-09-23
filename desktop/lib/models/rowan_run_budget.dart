@@ -36,6 +36,13 @@ final class RowanRunBudget {
           if (maxCostMicros != null) 'max_cost_micros': maxCostMicros,
         };
 
+  /// The fields as a panel shows this budget: empty where the default applies.
+  RowanRunBudgetText get text => (
+        actions: maxToolActions == null ? '' : '$maxToolActions',
+        tokens: maxUsageTokens == null ? '' : '$maxUsageTokens',
+        spend: dollarsFromMicros(maxCostMicros),
+      );
+
   /// The first out-of-range field, or null when every set field is valid.
   String? get invalidField {
     bool outside(int? value, (int, int) range) =>
@@ -70,6 +77,19 @@ final class RowanRunBudget {
 
   @override
   int get hashCode => Object.hash(maxToolActions, maxUsageTokens, maxCostMicros);
+}
+
+/// The three budget fields as the owner typed them. The controller holds
+/// this while a field is out of range, so a rebuilt panel shows the same text
+/// and the same error that make start() refuse.
+typedef RowanRunBudgetText = ({String actions, String tokens, String spend});
+
+extension RowanRunBudgetTextParse on RowanRunBudgetText {
+  /// The limits the text sets. Unparsable text reads as -1, out of range.
+  RowanRunBudget get budget => RowanRunBudget(
+      maxToolActions: wholeNumberFromText(actions),
+      maxUsageTokens: wholeNumberFromText(tokens),
+      maxCostMicros: costMicrosFromDollars(spend));
 }
 
 /// Dollars typed by the owner to whole micro-dollars, or null when unset.

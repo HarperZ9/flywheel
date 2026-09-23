@@ -52,9 +52,9 @@ final class RowanOperationController extends ChangeNotifier {
   int _maxTokens = 1024, _timeoutSeconds = 300;
   int? _maxStepsOverride;
   RowanRunBudget _runBudget = const RowanRunBudget();
-  // The run-budget field that holds a value the engine would refuse. While
-  // it is set, start() refuses rather than send the last valid budget.
-  String? _invalidRunBudget;
+  // The budget fields as typed while one holds a value the engine would
+  // refuse. While set, start() refuses rather than send the last valid one.
+  RowanRunBudgetText? _invalidRunBudget;
   String? _checkCommand;
   bool _allowWrite = false, _allowExec = false, _authorizing = false;
   bool _recovering = false;
@@ -80,7 +80,7 @@ final class RowanOperationController extends ChangeNotifier {
   int get maxTokens => _maxTokens;
   int get timeoutSeconds => _timeoutSeconds;
   RowanRunBudget get runBudget => _runBudget;
-  String? get invalidRunBudgetField => _invalidRunBudget;
+  String? get invalidRunBudgetField => _invalidRunBudget?.budget.invalidField;
   String? get checkCommand => _checkCommand;
   bool get allowWrite => _allowWrite;
   bool get allowExec => _allowExec;

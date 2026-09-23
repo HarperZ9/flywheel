@@ -17,7 +17,8 @@ operation's optional `run_budget` object. Unset limits take the default. The
 card applies each field as it is typed, with no need to press Enter, and shows
 the default in an empty field. A value outside its range is named under the
 field, and the card refuses to start the run until it is fixed, so a run never
-goes out under limits the field does not show.
+goes out under limits the field does not show. Closing and reopening the panel
+keeps the typed value and its error in the field.
 
 | Limit | Operation field | Default | Accepted range |
 | --- | --- | --- | --- |

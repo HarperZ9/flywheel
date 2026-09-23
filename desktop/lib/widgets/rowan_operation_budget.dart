@@ -68,7 +68,8 @@ final class RowanBudgetRow extends StatelessWidget {
 /// An empty field means the engine default, shown as the hint at rest. Each
 /// keystroke is applied, so a typed limit reaches the run without Enter. A
 /// value out of range is named under its field and blocks the run until it
-/// is fixed. The engine stops the run when a limit is reached and says which.
+/// is fixed; a reopened panel shows the same text and error. The engine
+/// stops the run when a limit is reached and says which.
 final class RowanRunBudgetRow extends StatefulWidget {
   const RowanRunBudgetRow({super.key, required this.rowan});
 
@@ -84,13 +85,13 @@ final class _RowanRunBudgetRowState extends State<RowanRunBudgetRow> {
   @override
   void initState() {
     super.initState();
-    final budget = widget.rowan.runBudget;
-    _actions = TextEditingController(text: _text(budget.maxToolActions));
-    _tokens = TextEditingController(text: _text(budget.maxUsageTokens));
-    _spend = TextEditingController(text: dollarsFromMicros(budget.maxCostMicros));
+    // While a field is out of range this is the typed text, not the last
+    // valid budget, so the error shown matches start()'s refusal.
+    final shown = widget.rowan.runBudgetText;
+    _actions = TextEditingController(text: shown.actions);
+    _tokens = TextEditingController(text: shown.tokens);
+    _spend = TextEditingController(text: shown.spend);
   }
-
-  static String _text(int? value) => value == null ? '' : '$value';
 
   @override
   void dispose() {
@@ -100,13 +101,11 @@ final class _RowanRunBudgetRowState extends State<RowanRunBudgetRow> {
     super.dispose();
   }
 
-  RowanRunBudget _draft() => RowanRunBudget(
-      maxToolActions: wholeNumberFromText(_actions.text),
-      maxUsageTokens: wholeNumberFromText(_tokens.text),
-      maxCostMicros: costMicrosFromDollars(_spend.text));
+  RowanRunBudgetText _typed() =>
+      (actions: _actions.text, tokens: _tokens.text, spend: _spend.text);
 
   void _apply() {
-    widget.rowan.setRunBudget(_draft());
+    widget.rowan.setRunBudgetText(_typed());
     setState(() {});
   }
 
@@ -120,7 +119,7 @@ final class _RowanRunBudgetRowState extends State<RowanRunBudgetRow> {
   Widget build(BuildContext context) {
     final t = context.fw;
     final enabled = !widget.rowan.active;
-    final draft = _draft();
+    final draft = _typed().budget;
     return Wrap(
       spacing: FwLayout.s2,
       runSpacing: FwLayout.s1,

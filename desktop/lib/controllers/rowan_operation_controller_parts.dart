@@ -15,13 +15,24 @@ extension RowanOperationControllerCheck on RowanOperationController {
     _bump(invalidateMcpAdmission: false);
   }
 
+  /// The budget fields as a panel shows them: the typed text while one is
+  /// out of range, so the error a reopened panel shows and start() agree.
+  RowanRunBudgetText get runBudgetText => _invalidRunBudget ?? _runBudget.text;
+
   /// The owner's per-run limits. The engine fills unset ones with defaults.
   ///
   /// A value out of range is held as invalid, not dropped: the last valid
   /// budget stays, and start() refuses until the field is fixed. The budget
   /// is not part of an MCP admission, so changing it keeps the admission.
-  void setRunBudget(RowanRunBudget value) {
-    _invalidRunBudget = value.invalidField;
+  void setRunBudget(RowanRunBudget value) => _setRunBudget(value, value.text);
+
+  /// The fields as typed. Out of range, the text itself is held, so a panel
+  /// rebuilt later shows what the owner typed next to its error.
+  void setRunBudgetText(RowanRunBudgetText typed) =>
+      _setRunBudget(typed.budget, typed);
+
+  void _setRunBudget(RowanRunBudget value, RowanRunBudgetText typed) {
+    _invalidRunBudget = value.invalidField == null ? null : typed;
     if (_invalidRunBudget != null) {
       _error = 'INVALID_RUN_BUDGET';
       _changed();

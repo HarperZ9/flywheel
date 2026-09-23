@@ -27,7 +27,8 @@ final class _Host {
   var authorizations = 0;
 }
 
-Future<_Host> _pump(WidgetTester tester, RowanOperationController rowan) async {
+Future<_Host> _pump(WidgetTester tester, RowanOperationController rowan,
+    {bool open = true}) async {
   final host = _Host(rowan);
   await tester.pumpWidget(MaterialApp(
     theme: flywheelLightTheme(),
@@ -43,7 +44,8 @@ Future<_Host> _pump(WidgetTester tester, RowanOperationController rowan) async {
           body: ListenableBuilder(
             listenable: rowan,
             builder: (_, __) => Column(children: [
-              RowanRunBudgetRow(rowan: rowan),
+              // Closing the panel disposes the row; reopening builds a new one.
+              if (open) RowanRunBudgetRow(rowan: rowan),
               RowanCheckCommandField(rowan: rowan),
               const TextField(key: Key('elsewhere')),
             ]),
@@ -120,6 +122,37 @@ void main() {
     await host.rowan.start(host.context, 'inspect');
     expect(host.authorizations, 1);
     expect(host.approved?['run_budget'], {'max_usage_tokens': 200000});
+  });
+
+  testWidgets('a reopened panel shows the text that blocks the run',
+      (tester) async {
+    final rowan = _rowan();
+    var host = await _pump(tester, rowan);
+    await tester.enterText(find.byKey(_actions), '500');
+    await tester.enterText(find.byKey(_cost), 'ten');
+    await _pump(tester, rowan, open: false);
+    host = await _pump(tester, rowan);
+    String typed(Key key) =>
+        tester.widget<TextField>(find.byKey(key)).controller!.text;
+    expect(typed(_actions), '500');
+    expect(typed(_cost), 'ten');
+    expect(find.text('tool actions: 0 to 200'), findsOneWidget);
+    expect(find.text(r'spend: $0.01 to $1000.00'), findsOneWidget);
+    final outcome = await host.rowan.start(host.context, 'inspect');
+    expect(outcome.failure?.code, 'INVALID_RUN_BUDGET');
+    expect(host.authorizations, 0);
+
+    // Once fixed, a reopened panel shows the valid limit and runs under it.
+    await tester.enterText(find.byKey(_actions), '7');
+    await tester.enterText(find.byKey(_cost), '');
+    await _pump(tester, rowan, open: false);
+    host = await _pump(tester, rowan);
+    expect(typed(_actions), '7');
+    expect(find.text('tool actions: 0 to 200'), findsNothing);
+    expect(find.textContaining('spend: '), findsNothing);
+    expect(rowan.invalidRunBudgetField, isNull);
+    await host.rowan.start(host.context, 'inspect');
+    expect(host.approved?['run_budget'], {'max_tool_actions': 7});
   });
 
   testWidgets('a stored sub-cent spend limit is shown and kept exactly',
