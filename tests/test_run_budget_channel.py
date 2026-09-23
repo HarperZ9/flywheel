@@ -76,9 +76,19 @@ def test_codex_command_output_is_not_read_for_limits():
     "Rate limited requests now back off with jitter.",
     "HTTP 429 responses are now retried with backoff.",
     "Claude AI usage limit reached|1760000000"])
-def test_a_short_cli_answer_is_model_prose_and_is_not_read(final):
-    budget = _budget()
-    _settle_budget({"final": final}, budget)
+def test_a_short_cli_answer_completes_on_the_cli_path(final, tmp_path, monkeypatch):
+    # Through _run_checked with a native_cli_session binding, so the test fails
+    # if the answer check comes back on the CLI path only.
+    from types import SimpleNamespace
+    from harness.gateway_agent_execution import _run_checked
+    monkeypatch.setattr("harness.gateway_cli_execution.run_cli_session",
+                        lambda *args, **kwargs: {"final": final})
+    budget, completion = _budget(), {}
+    result = _run_checked(tmp_path, None, {"execution_mode": "native_cli_session"}, {},
+                          SimpleNamespace(entries=[]), SimpleNamespace(root=None, identity=None),
+                          time.monotonic() + 60, lambda e: None, {"goal": "g"}, budget, [],
+                          completion)
+    assert result["final"] == final
     assert budget.report()["false_success_count"] == 0
 
 
