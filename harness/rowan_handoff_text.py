@@ -3,9 +3,11 @@
 The brief is copied to the clipboard and pasted into another provider's agent,
 so every free-text field passes through here first. Credentials are replaced
 by a marker (the patterns live in rowan_handoff_redact), the workspace root by
-`<workspace>`, any other host path, UNC paths included, by a marker, a model's
-TOOL lines by the tool name and path, and long text is cut with a stated
-marker. A line that still looks like a credential after that is withheld whole.
+`<workspace>`, any other host path the patterns below name (drive, home and
+system paths, UNC paths in either slash, file URIs, drive mounts and bare
+server names) by a marker, a model's TOOL lines by the tool name and path, and
+long text is cut with a stated marker. A line that still looks like a
+credential after that is withheld whole.
 
 Text is cut before it is redacted, with a margin past the cut, so the work is
 bounded by what the brief can show. A credential of up to MARGIN characters
@@ -36,9 +38,21 @@ _DRIVE_PATH = re.compile(r"(?<![\w/\\])[A-Za-z]:[\\/][^\s'\"`<>|]*")
 # \\server\share, \\?\C:\..., \\wsl$\distro, and the same with JSON's doubled
 # backslashes.
 _UNC_PATH = re.compile(r"(?<![\w\\])\\{2,4}[\w.$?-]+\\[^\s'\"`<>|]*")
+# A bare \\fileserver01 or \\10.0.0.5. The name must hold a digit, a dot, a
+# hyphen or a $, so a LaTeX \\hline or \\frac and a \\x41 escape stay text.
+_UNC_HOST = re.compile(r"(?<![\w\\])\\{2,4}(?!(?:x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4})(?![\w.$-]))"
+                       r"(?=[\w.$-]*[\d.$-])[A-Za-z0-9][\w.$-]*(?![\w.$\\-])")
+# //server/share, the forward-slash UNC form. A URL's // follows a colon.
+_SLASH_UNC = re.compile(r"(?<![\w:/\\.])//[\w.$-]+/[^\s'\"`<>|]*")
+# file://server/share and file:///C:/..., unless it names the workspace.
+_FILE_URI = re.compile(r"(?i)\bfile:/{2,}(?!/*<workspace>)[^\s'\"`<>|]*")
+# /c/Users/..., the drive form of MSYS, Git Bash and WSL-style shells.
+_DRIVE_MOUNT = re.compile(r"(?<![\w.~/\\:-])/[A-Za-z]/[^\s'\"`<>|]*")
 _POSIX_HOST = re.compile(
-    r"(?<![\w.~/\\])/(?:Users|home|root|tmp|var|etc|mnt|private|opt|srv|Volumes)"
-    r"(?:/[^\s'\"`<>|]*)?")
+    r"(?<![\w.~/\\])/(?:Users|home|root|tmp|var|etc|mnt|private|opt|srv|Volumes"
+    r"|cygdrive)(?:/[^\s'\"`<>|]*)?")
+_HOST_PATHS = (_FILE_URI, _UNC_PATH, _UNC_HOST, _SLASH_UNC, _DRIVE_PATH, _DRIVE_MOUNT,
+               _POSIX_HOST)
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 
 
@@ -57,7 +71,7 @@ def host_safe(text, root=None) -> str:
     pattern = _root_pattern(root)
     if pattern is not None:
         value = pattern.sub("<workspace>", value)
-    for path in (_UNC_PATH, _DRIVE_PATH, _POSIX_HOST):
+    for path in _HOST_PATHS:
         value = path.sub(HOST_PATH, value)
     return value
 

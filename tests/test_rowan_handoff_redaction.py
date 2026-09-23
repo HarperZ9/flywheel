@@ -52,7 +52,29 @@ def test_unc_paths_are_host_paths(path):
         assert HOST_PATH in out and out.startswith(form[:5]), out
 
 
+@pytest.mark.parametrize("text", ["cd /c/Users/zain/project", "cd /c/dev/zain-private/project",
+                                  "cd /cygdrive/c/Users/zain/x",
+                                  "open //fileserver/share/zain/file.txt",
+                                  "open file://fileserver/share/zain/file.txt",
+                                  "open file:///C:/Users/zain/file.txt",
+                                  r"see \\fileserver01 for it", r"ping \\10.0.0.5 now"])
+def test_drive_mounts_slash_unc_file_uris_and_bare_hosts_are_host_paths(text):
+    for form in (text, json.dumps({"cmd": text})):
+        out = outbound(form)
+        assert not any(name in out for name in ("zain", "fileserver", "10.0.0")), out
+        assert HOST_PATH in out, out
+
+
+def test_a_file_uri_to_the_workspace_stays_workspace_relative():
+    assert (outbound("open file:///C:/ws/src/app.py", root="C:/ws")
+            == "open file:///<workspace>/src/app.py")
+
+
 KEPT = [
+    "https://gitlab.example.test/g/p/-/blob/main/x and http://host//double/slash",
+    r"a & b \\ \hline, then \\\hline and \\frac{a}{b}",
+    r"use \\x41 and \\u00e9 here",
+    "dir /s /b; sed 's/a/b/g' x; see ./a/b and ../c/d",
     "The token limit and the password field are unchanged.",
     "The password is required, and the api key is in the vault.",
     "docker run -u 1000:1000 -p 8080:80 app",

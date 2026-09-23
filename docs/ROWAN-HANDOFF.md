@@ -61,8 +61,11 @@ leaves the engine:
     `the password is Hunter2pass!`.
 - A line that still matches a credential pattern after that is withheld whole.
 - The workspace root is written as `<workspace>`, and any other host path as
-  `[host path omitted]`. UNC paths such as `\\server\share` count as host
-  paths.
+  `[host path omitted]`. These count as host paths: drive paths such as
+  `C:\Users`, home and system paths such as `/Users` and `/home`, UNC paths
+  such as `\\server\share` and `//server/share`, `file://` URIs, drive mounts
+  such as `/c/Users` and `/cygdrive/c`, and a bare server name such as
+  `\\fileserver01`.
 - Paths and commands are single-line code spans, so a file name cannot start a
   line of its own.
 - Text is cut before it is redacted, with 512 characters of margin past the
@@ -88,6 +91,9 @@ leaves the engine:
   caught. A value of digits only, or `true` or `false`, after a name such as
   `DB_PASS` is kept, since it is more often a count or a switch. Read the brief
   before pasting it anywhere.
+- Host paths are found by pattern too. A bare server name counts only when it
+  holds a digit, a dot, a hyphen or a `$`, so LaTeX such as `\\hline` stays
+  as written, and so does a letters-only `\\server`.
 - The format is plain Markdown for any agent. Rendering context for a
   particular provider is not part of this export.
 - Only the run's owner can read it, through the same authorization as the
