@@ -25,7 +25,7 @@ Dates are PDT.
 ## Result so far
 
 Criteria (a) to (d) are met on fixtures built from Control Tower's writers at
-`1cc91b7`: 58 tests across the three monitor test files, and a mutation run in
+`1cc91b7`: 59 tests across the three monitor test files, and a mutation run in
 which 15 reintroduced defects were all caught. The source check that forced the
 rewrite is in `MONITOR-OUTCOME-SOURCE-CHECK-2026-09-23.md`.
 
