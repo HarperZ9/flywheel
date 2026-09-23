@@ -50,6 +50,17 @@ def test_the_gate_bites_on_a_tracked_path_past_the_limit(tmp_path, capsys):
     assert long_path in capsys.readouterr().out
 
 
+def test_a_path_that_is_not_utf8_is_an_error_not_a_crash(tmp_path, capsys):
+    # Git keeps path bytes as given, so a tracked path can be invalid UTF-8.
+    # Such a path has no length in characters: the gate names it and exits 2.
+    _git(tmp_path, "init", "-q")
+    blob = _git(tmp_path, "hash-object", "-w", "--stdin", stdin=b"x\n").strip()
+    _git(tmp_path, "update-index", "--index-info",
+         stdin=b"100644 " + blob + b"\tcaf\xe9.txt\n")
+    assert main(tmp_path) == 2
+    assert "not valid UTF-8: b'caf\\xe9.txt'" in capsys.readouterr().out
+
+
 def test_no_git_checkout_is_an_error_not_a_pass(tmp_path, monkeypatch):
     # Stop git from finding a repository above tmp_path.
     monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))

@@ -250,11 +250,11 @@ jobs:
       - run: python scripts/check_file_gate.py
 
   path_length:
-    # Without core.longpaths, Git for Windows cannot create a file once the
-    # clone directory plus the tracked path reaches 260 characters, or a
-    # directory once it reaches 248. A 206-character path once capped the
-    # clone directory at 51 characters. At 180, any clone directory up to 68
-    # characters works. No path is grandfathered.
+    # Without core.longpaths, Git for Windows cannot create a file whose full
+    # path (clone directory, separator, tracked path) reaches 260 characters,
+    # or a directory whose full path reaches 248. A 206-character path once
+    # capped the clone directory at 51 characters. At 180, any clone
+    # directory up to 68 characters works. No path is grandfathered.
     name: no tracked path over 180 characters
     runs-on: ubuntu-latest
     steps:
