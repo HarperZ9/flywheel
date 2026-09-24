@@ -208,8 +208,9 @@ def _pytest_result(cmd: str, out: bytes, rc: int, canon: str,
     Exit 0 with no fresh report means the process ended before pytest wrote
     results, for example a candidate calling os._exit(0) at import, so the
     run CRASHED. Exit 0 over a failing outcome means the candidate forced the
-    exit code after pytest recorded the failure. Exit 0 over a skipped
-    outcome means an assertion never ran. All three are candidate FAILs.
+    exit code after pytest recorded the failure. Exit 0 over a skipped or
+    xfailed outcome means a test did not count as a pass. All three are
+    candidate FAILs.
     """
     note, execution = exit_zero_note(canon, rc), Execution.COMPLETED
     if rc == 0 and not fresh:

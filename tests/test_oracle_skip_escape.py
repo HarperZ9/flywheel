@@ -18,7 +18,7 @@ must not run a test leaves it out of the recorded command with --deselect.
 
 Success criteria:
   - the obfuscated skip is FAIL with rc 0, execution COMPLETED, attribution
-    CANDIDATE, and a note naming the skipped test.
+    CANDIDATE, and a note saying a skipped or xfailed test failed the run.
   - xfail, importorskip, unittest.SkipTest, a location-forged skip, and a
     skip from an injected autouse fixture are FAIL, none flagged by the guard.
   - accept_gate refuses the obfuscated skip, held-out tier included.

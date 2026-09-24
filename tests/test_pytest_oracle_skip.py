@@ -62,6 +62,20 @@ def test_a_conftest_skip_beside_a_real_pass_fails(tmp_path):
     assert "skipped or xfailed" in r.stdout_excerpt
 
 
+def test_the_note_for_an_xfail_that_ran_does_not_say_it_never_ran(tmp_path):
+    """A marker xfail runs its assertion. The run still FAILs, and the note
+    that reaches the receipt must hold for an xfail as well as for a skip."""
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_known.py").write_text(
+        MIXED.replace("skip(reason='guarded')", "xfail(reason='known')"),
+        encoding="utf-8")
+    r = PytestOracle(timeout=60).verify("x = 1\n", task=_task(tmp_path))
+    assert r.rc == 0 and not r.passed
+    assert "x." in r.stdout_excerpt   # pytest's progress marks: xfailed, passed
+    assert "skipped or xfailed" in r.stdout_excerpt
+    assert "never ran" not in r.stdout_excerpt
+
+
 def test_a_deselected_test_beside_a_real_pass_passes(tmp_path):
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "test_mixed.py").write_text(MIXED, encoding="utf-8")

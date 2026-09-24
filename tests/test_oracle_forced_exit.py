@@ -111,7 +111,7 @@ def test_rl_collect_with_held_out_pays_a_forced_exit_nothing(tmp_path):
 
 def test_grade_lets_the_report_outrank_the_exit_code():
     assert grade("t::a=PASS\nt::b=FAIL", 0) is Verdict.FAIL
-    assert grade("t::a=PASS\nt::b=SKIP", 0) is Verdict.FAIL  # b never ran
+    assert grade("t::a=PASS\nt::b=SKIP", 0) is Verdict.FAIL  # b is not a pass
     assert grade("t::a=PASS", 0) is Verdict.PASS
     assert grade("t::a=PASS", 1) is Verdict.FAIL
     assert grade("t::a=SKIP", 0) is Verdict.FAIL   # nothing was asserted

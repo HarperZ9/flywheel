@@ -4,7 +4,8 @@ Flywheel 1.0.0 is released: `flywheel-verify` 1.0.0 on PyPI and a Windows deskto
 installer on the GitHub release. This document is the code-grounded overview: what
 Flywheel is, the full feature set, and an install-to-first-verdict walkthrough. Claims
 are bound to the code; items marked proposed or fast-follow are roadmap, not shipped
-behavior.
+behavior. Items marked unreleased are on main after the latest release tag and are in
+no published version yet.
 
 ## What Flywheel is
 
@@ -31,8 +32,8 @@ not a result claimed.
 
 ## Full feature set
 
-Grouped by domain. Each line is bound to code. Items marked proposed or fast-follow are
-not shipped 1.0.0 behavior.
+Grouped by domain. Each line is bound to code. Items marked proposed, fast-follow, or
+unreleased are not shipped 1.0.0 behavior.
 
 ### Verified-inference engine core
 - Propose-verify-witness loop with per-stage hash-chained receipts; acceptance requires
@@ -47,9 +48,12 @@ not shipped 1.0.0 behavior.
 - The oracle is the sole acceptor; no learned model sits on the accept path
   (harness/oracle.py).
 - PytestOracle runs model-written code in an allowlisted, tree-killable subprocess; the
-  canonical hash is over junit outcomes, and a green exit with any skipped or xfailed
-  test is refused as a non-pass, because a skipped assertion never ran and the report
-  cannot say whether the task or the candidate skipped it (harness/junit_report.py).
+  canonical hash is over junit outcomes, and an all-skipped green exit is refused as a
+  non-pass (harness/oracle.py).
+- Unreleased, on main after v1.0.2: a green exit with any skipped or xfailed test is
+  refused as a non-pass, because the report cannot say whether the task or the
+  candidate skipped it. In v1.0.0 through v1.0.2 one passing test beside skips still
+  reads PASS (harness/junit_report.py).
 - Domain routing denies by default: an unregistered domain returns UNVERIFIABLE. Today:
   code (pytest), math (Lean), ml (a measurement gate) (harness/oracle_registry.py).
 - Data-only certificate checkers that never execute the certificate, with scope
