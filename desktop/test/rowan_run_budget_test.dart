@@ -77,6 +77,22 @@ void main() {
     expect(budgetHeadline(unverifiable), startsWith('Budget record unverifiable'));
   });
 
+  test('a CLI session whose messages streamed usage shows the spend it reported',
+      () {
+    // The engine derives this block from a Claude CLI session's events
+    // (tests/test_rowan_run_budget_mirror.py). Its cost arrives only in the
+    // result event and covers every model call in the session.
+    final data = jsonDecode(File(
+                '../tests/fixtures/gateway_run_outcome/cli_streamed_spend.json')
+            .readAsStringSync()) as Map<String, dynamic>;
+    final budget =
+        RunBudgetOutcome.fromJson(data['budget'] as Map<String, dynamic>);
+    expect(budgetHeadline(budget),
+        'Stopped by the run budget: spend limit reached (\$4.25 of \$2.00).');
+    expect(budgetSpendLine(budget), contains('spend \$4.25 of \$2.00'));
+    expect(budgetSpendLine(budget), isNot(contains('not reported')));
+  });
+
   testWidgets('the card view shows a stop as an honest null', (tester) async {
     final projection = _parse(_fixture());
     await tester.pumpWidget(MaterialApp(
