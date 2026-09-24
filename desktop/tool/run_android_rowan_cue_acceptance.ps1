@@ -113,7 +113,8 @@ function Get-RowanSourceIdentity {
     "desktop/tool/android_real_gateway_runner_support.ps1"
   )
   $hashes = @{}; foreach ($file in $files) { $hashes[$file] = Get-FileSha256 (Join-Path $repoRoot $file) }
-  @{ repo_head = (& git -C $repoRoot rev-parse HEAD).Trim(); branch = (& git -C $repoRoot branch --show-current).Trim(); owned_status = @(& git -C $repoRoot status --short -- $files); files = $hashes }
+  # A detached HEAD prints no branch; the string wrap reads that as "".
+  @{ repo_head = "$(& git -C $repoRoot rev-parse HEAD)".Trim(); branch = "$(& git -C $repoRoot branch --show-current)".Trim(); owned_status = @(& git -C $repoRoot status --short -- $files); files = $hashes }
 }
 function Complete-RowanReceipt($Receipt, [string]$Token, [string]$Device) {
   $json = $Receipt | ConvertTo-Json -Depth 32
@@ -149,8 +150,9 @@ if ($SelfTest) { Invoke-RowanSelfTest; exit 0 }
 $runId = New-RowanRunId
 $owned = $null; $gateway = $null; $reverseAdded = $false; $installedByRunner = $false
 $token = ""; $selectedDevice = ""; $applicationId = ""; $adb = $null; $port = $null; $apk = $null; $apkQuarantine = $null; $exitCode = 1
-$receipt = @{ schema = $schema; run_id = $runId; timestamp_utc = [DateTimeOffset]::UtcNow.ToString("o"); status = "blocked"; source = Get-RowanSourceIdentity; limits = @("USB reverse only; not LAN/Tailscale proof", "endpoint stub only; not live provider proof", "native player completion is recorded separately from audible output confirmation") }
+$receipt = @{ schema = $schema; run_id = $runId; timestamp_utc = [DateTimeOffset]::UtcNow.ToString("o"); status = "blocked"; source = $null; limits = @("USB reverse only; not LAN/Tailscale proof", "endpoint stub only; not live provider proof", "native player completion is recorded separately from audible output confirmation") }
 try {
+  $receipt.source = Get-RowanSourceIdentity
   $flutter = Resolve-Tool $FlutterPath @("flutter") @("C:/flutter/bin/flutter.bat")
   $adb = Resolve-Tool $AdbPath @("adb") @((Join-Path (Join-Path $env:LOCALAPPDATA "Android/Sdk") "platform-tools/adb.exe"))
   $python = Resolve-Tool $PythonPath @("python") @("python")
@@ -254,7 +256,13 @@ try {
   $receipt.cleanup = $cleanup
   $receipt.cleanup_validation = Test-RealCleanupState $cleanup
   if ($receipt.status -eq "passed" -and !$receipt.cleanup_validation.ok) { $receipt.status = "failed_cleanup_incomplete"; $receipt.blocker = $receipt.cleanup_validation.reason; $exitCode = 1 }
-  try { Complete-RowanReceipt $receipt $token $selectedDevice } catch {}
+  # Report a receipt-write failure rather than leaving a missing file with no reason.
+  try {
+    Complete-RowanReceipt $receipt $token $selectedDevice
+  } catch {
+    Write-Error ("receipt_write_failed: " + $_.Exception.GetType().FullName + ": " + $_.Exception.Message) -ErrorAction Continue
+    $exitCode = 1
+  }
   Pop-Location -ErrorAction SilentlyContinue
   exit $exitCode
 }

@@ -24,7 +24,10 @@ function Get-RealSourceIdentity {
     "tests/test_android_real_gateway_handoff_runner.py"
   )
   $hashes = @{}; foreach ($file in $files) { $hashes[$file] = Get-FileSha256 (Join-Path $repoRoot $file) }
-  @{ repo_head = (& git -C $repoRoot rev-parse HEAD).Trim(); branch = (& git -C $repoRoot branch --show-current).Trim(); owned_status = @(& git -C $repoRoot status --short -- $files); files = $hashes }
+  # A detached HEAD, which is how CI checks out a pull request, prints nothing
+  # for "branch --show-current". Calling .Trim() on that $null throws, so the
+  # string wrap reads it as "" instead: an empty branch means detached HEAD.
+  @{ repo_head = "$(& git -C $repoRoot rev-parse HEAD)".Trim(); branch = "$(& git -C $repoRoot branch --show-current)".Trim(); owned_status = @(& git -C $repoRoot status --short -- $files); files = $hashes }
 }
 function Redact-Args([string[]]$Arguments, [string]$Device, [string]$Token) { @($Arguments | ForEach-Object { Redact-GatewayTail ([string]$_) $Token $Device }) }
 function Complete-Receipt($Receipt, [string]$Token, [string]$Device) {
@@ -139,8 +142,11 @@ if ($SelfTest) { Invoke-SelfTest; exit 0 }
 $runId = New-RealGatewayRunId
 $owned = $null; $gateway = $null; $reverseAdded = $false; $installedByRunner = $false
 $token = ""; $selectedDevice = ""; $applicationId = ""; $adb = $null; $port = $null; $apk = $null; $apkQuarantine = $null; $exitCode = 1
-$receipt = @{ schema = $schema; run_id = $runId; timestamp_utc = [DateTimeOffset]::UtcNow.ToString("o"); status = "blocked"; source = Get-RealSourceIdentity; limits = @("USB reverse only; not LAN/Tailscale proof", "endpoint stub only; not live provider proof", "Relay/Plexus evidence not included in this first slice") }
+$receipt = @{ schema = $schema; run_id = $runId; timestamp_utc = [DateTimeOffset]::UtcNow.ToString("o"); status = "blocked"; source = $null; limits = @("USB reverse only; not LAN/Tailscale proof", "endpoint stub only; not live provider proof", "Relay/Plexus evidence not included in this first slice") }
 try {
+  # Read inside try, so a failure here still lands in a receipt as
+  # runner_exception instead of leaving no receipt at all.
+  $receipt.source = Get-RealSourceIdentity
   $flutter = Resolve-Tool $FlutterPath @("flutter") @("C:/flutter/bin/flutter.bat")
   $adb = Resolve-Tool $AdbPath @("adb") @((Join-Path (Join-Path $env:LOCALAPPDATA "Android/Sdk") "platform-tools/adb.exe"))
   $python = Resolve-Tool $PythonPath @("python") @("python")

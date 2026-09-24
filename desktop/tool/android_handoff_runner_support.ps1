@@ -253,8 +253,9 @@ function New-SelfTestFixtureReceipt($RunId) {
   }
 }
 function Get-SourceIdentity {
-  $head = (& git -C $repoRoot rev-parse HEAD).Trim()
-  $branch = (& git -C $repoRoot branch --show-current).Trim()
+  # A detached HEAD prints no branch; the string wrap reads that as "".
+  $head = "$(& git -C $repoRoot rev-parse HEAD)".Trim()
+  $branch = "$(& git -C $repoRoot branch --show-current)".Trim()
   $status = & git -C $repoRoot status --short -- "desktop/integration_test/android_gateway_handoff_test.dart" "desktop/tool/run_android_handoff_acceptance.ps1" "desktop/tool/android_handoff_runner_support.ps1" "tests/test_android_handoff_acceptance_runner.py"
   $runnerPath = Join-Path $scriptRoot "run_android_handoff_acceptance.ps1"
   $supportPath = Join-Path $scriptRoot "android_handoff_runner_support.ps1"
