@@ -47,8 +47,9 @@ not shipped 1.0.0 behavior.
 - The oracle is the sole acceptor; no learned model sits on the accept path
   (harness/oracle.py).
 - PytestOracle runs model-written code in an allowlisted, tree-killable subprocess; the
-  canonical hash is over junit outcomes, and an all-skipped green exit is refused as a
-  non-pass (harness/oracle.py).
+  canonical hash is over junit outcomes, and a green exit with any skipped or xfailed
+  test is refused as a non-pass, because a skipped assertion never ran and the report
+  cannot say whether the task or the candidate skipped it (harness/junit_report.py).
 - Domain routing denies by default: an unregistered domain returns UNVERIFIABLE. Today:
   code (pytest), math (Lean), ml (a measurement gate) (harness/oracle_registry.py).
 - Data-only certificate checkers that never execute the certificate, with scope

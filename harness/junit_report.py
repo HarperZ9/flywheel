@@ -28,10 +28,29 @@ What this module does about it:
   pytest wrote a truthful report of its failures. `grade` reads any failing
   outcome in the run's own report as FAIL, whatever the exit code says.
 
+- A skipped test is FAIL (since 2026-09-23). A skipped test's assertions did
+  not run. A candidate that answered one input and called
+  `getattr(__import__("py" + "test"), "skip")("x")` for the rest read PASS
+  with "3 passed, 3 skipped", held-out tier included, because a SKIP outcome
+  was neutral. pytest.skip, pytest.xfail, pytest.importorskip, a raised
+  unittest.SkipTest, and a skip raised from a fixture or conftest all reach
+  the report as the same `<skipped>` element, and the candidate can raise one
+  with the reason and test location a marker in the task's own test file
+  would write. The report cannot say who skipped, so `grade` refuses every
+  SKIP outcome. A task that must not run a test leaves it out of the
+  recorded command, for example with `--deselect`, and a witness re-runs the
+  same exclusion. The cost: a task whose tests skip on some platform, such
+  as a `skipif(os.name == "nt")` marker, fails every candidate there. No
+  shipped task used a skip API on 2026-09-23: 0 hits across tasks/, which
+  holds 48 Python files (30 B0 hidden tests among them) and 247 curated
+  hidden-test strings.
+
 Does not prove: candidate code runs inside the pytest process. It can read
 the per-run name from sys.argv and write a forged report itself. The nonce
 stops a stale report from grading a new run. It is not containment, and
-python_execution_containment.py names the boundary that would be.
+python_execution_containment.py names the boundary that would be. `grade`
+reads the tests the report lists. It does not check that the list holds
+every test the command collected.
 """
 from __future__ import annotations
 
@@ -46,6 +65,10 @@ JUNIT_NAME = "_oracle_junit.xml"
 JUNIT_TOKEN = f"--junitxml={JUNIT_NAME}"
 _PREFIX = "_oracle_junit"
 _TOKEN_RE = re.compile(r"(?<!\S)" + re.escape(JUNIT_TOKEN) + r"(?!\S)")
+FORCED_EXIT_NOTE = ("[oracle] exit 0, but this run's JUnit report records a "
+                    "failing test: the exit code was forced; graded FAIL\n")
+SKIPPED_NOTE = ("[oracle] exit 0, but this run's JUnit report records a "
+                "skipped or xfailed test: its assertions never ran; graded FAIL\n")
 
 
 def is_report_name(name: str) -> bool:
@@ -94,14 +117,25 @@ def grade(canon: str, rc: int) -> Verdict:
     """The verdict one pytest run's own outcomes and exit code support.
 
     `canon` is the sorted `name=PASS|FAIL|SKIP` lines read from this run's
-    report. PASS needs all three: exit 0, no FAIL outcome, and at least one
-    PASS outcome. pytest exits 0 when every test was skipped, so a zero exit
-    alone can mean no assertion ran. A FAIL outcome under exit 0 means the
-    candidate forced the exit code after pytest recorded the failure.
+    report. PASS needs exit 0, at least one PASS outcome, and no outcome
+    other than PASS. pytest exits 0 when tests were skipped, so a zero exit
+    alone can mean an assertion never ran. A FAIL outcome under exit 0 means
+    the candidate forced the exit code after pytest recorded the failure. A
+    SKIP outcome is a skip or an xfail, and either one may be the candidate's.
     """
     lines = canon.splitlines()
-    if rc != 0 or any(line.endswith("=FAIL") for line in lines):
+    if rc != 0 or any(line.endswith(("=FAIL", "=SKIP")) for line in lines):
         return Verdict.FAIL
     if any(line.endswith("=PASS") for line in lines):
         return Verdict.PASS
     return Verdict.FAIL
+
+
+def exit_zero_note(canon: str, rc: int) -> str:
+    """Why a run that exited 0 over a fresh report still grades FAIL, or ""."""
+    lines = canon.splitlines() if rc == 0 else []
+    if any(line.endswith("=FAIL") for line in lines):
+        return FORCED_EXIT_NOTE
+    if any(line.endswith("=SKIP") for line in lines):
+        return SKIPPED_NOTE
+    return ""
