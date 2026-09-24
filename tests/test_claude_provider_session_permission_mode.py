@@ -136,7 +136,7 @@ def _dispatch_auto_grant(tmp_path, client):
         json.dumps({"proposal_ref": prepared["proposal_ref"]}).encode(),
         owner_ref=OWNER, state_root=tmp_path, clock=lambda: NOW)
     assert approved_status == 200, approved
-    service = GatewayOperations(tmp_path, clock=lambda: NOW, lock_timeout_s=0.5)
+    service = GatewayOperations(tmp_path, clock=lambda: NOW)
     factory = provider_factory(registry=registry)
     raw = _authorized_raw(head, operation, approved["grant_ref"])
 

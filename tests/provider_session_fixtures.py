@@ -23,7 +23,10 @@ def create_journey(root, *, journey_ref=JOURNEY, request_id="genesis"):
 
 def service_with_journey(root, *, authorize=True, journey_ref=JOURNEY):
     head = create_journey(root, journey_ref=journey_ref)
-    kwargs = {"clock": lambda: NOW, "lock_timeout_s": 0.5}
+    # The production lock budget. A 0.5 s wait expired on a loaded Windows
+    # runner while the operation's worker held the journey lock, and the
+    # stream reported STORE_BUSY for a store that was only contended.
+    kwargs = {"clock": lambda: NOW}
     if authorize:
         kwargs["authorizer"] = _authorizer(root)
         kwargs["credential_resolver"] = lambda value, _root: value

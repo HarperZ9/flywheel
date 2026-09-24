@@ -120,7 +120,7 @@ def test_grant_backed_dispatch_rejects_provider_binding_ref_mismatch(tmp_path):
     grant_ref = _prepare_and_approve(
         tmp_path, registry, head, operation_value,
         request_id="dispatch-binding-ref-mismatch")
-    service = GatewayOperations(tmp_path, clock=lambda: NOW, lock_timeout_s=0.5)
+    service = GatewayOperations(tmp_path, clock=lambda: NOW)
     tampered = {**operation_value, "provider_binding_ref": "psb_" + "b" * 32}
 
     response = route_gateway_operation(

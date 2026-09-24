@@ -286,7 +286,7 @@ def prepare_approve_and_dispatch(comp, state_root, head, op, *, request_id):
         json.dumps({"proposal_ref": prepared["proposal_ref"]}).encode(),
         owner_ref=OWNER, state_root=state_root, clock=lambda: NOW)
     assert approved_status == 200
-    service = GatewayOperations(state_root, clock=lambda: NOW, lock_timeout_s=0.5)
+    service = GatewayOperations(state_root, clock=lambda: NOW)
     response = route_gateway_operation(
         "POST", "/api/provider-sessions/turn", owner_ref=OWNER,
         service=service, process_factory=comp.operation_process_factory,

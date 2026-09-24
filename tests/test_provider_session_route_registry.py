@@ -169,7 +169,7 @@ def test_real_grant_backed_provider_session_route_uses_runtime_registry(tmp_path
     operation = _operation(registry, head)
     grant_ref = _prepare_and_approve(
         tmp_path, registry, head, operation, request_id="route-turn")
-    service = GatewayOperations(tmp_path, clock=lambda: NOW, lock_timeout_s=0.5)
+    service = GatewayOperations(tmp_path, clock=lambda: NOW)
 
     response = route_gateway_operation(
         "POST", "/api/provider-sessions/turn", owner_ref=OWNER,
@@ -189,7 +189,7 @@ def test_real_grant_backed_provider_session_route_rejects_wrong_registry(tmp_pat
     grant_ref = _prepare_and_approve(
         tmp_path, prepared_registry, head, operation, request_id="route-drift")
     dispatch_registry = RouteRegistry(config="cfg-dispatch")
-    service = GatewayOperations(tmp_path, clock=lambda: NOW, lock_timeout_s=0.5)
+    service = GatewayOperations(tmp_path, clock=lambda: NOW)
 
     response = route_gateway_operation(
         "POST", "/api/provider-sessions/turn", owner_ref=OWNER,

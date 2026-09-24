@@ -208,7 +208,7 @@ def test_provider_turn_with_matching_codex_binding_remains_incomplete(tmp_path):
         owner_ref=OWNER, state_root=state_root, clock=lambda: NOW)
     assert approved_status == 200
 
-    service = GatewayOperations(state_root, clock=lambda: NOW, lock_timeout_s=0.5)
+    service = GatewayOperations(state_root, clock=lambda: NOW)
     response = route_gateway_operation(
         "POST", "/api/provider-sessions/turn", owner_ref=OWNER,
         service=service,
