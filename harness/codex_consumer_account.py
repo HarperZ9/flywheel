@@ -236,9 +236,13 @@ def discover_models(
     except Exception as exc:
         return {"provider": "codex", "transport": "codex-app-server",
                 "models": [], "omitted_model_rows": omitted,
+                "listing_partial": False,
                 "reason": f"listing unavailable: {type(exc).__name__}"}
+    partial = bool(cursor)
+    reason = f"provider catalog truncated after {max_pages} pages" if partial else ""
     return {"provider": "codex", "transport": "codex-app-server",
-            "models": models, "omitted_model_rows": omitted, "reason": ""}
+            "models": models, "omitted_model_rows": omitted,
+            "listing_partial": partial, "reason": reason}
 
 
 def read_model_provider_capabilities(client: CodexAppServerClient) -> dict:

@@ -24,7 +24,13 @@ final class GatewayOperations {
 
   Stream<GatewayOperationEvent> start(Map<String, dynamic> authorizedBody,
       {String path = '/api/agent'}) {
-    if (path != '/api/agent' && path != '/api/output/check') {
+    if (!const {
+      '/api/agent',
+      '/api/output/check',
+      '/api/provider-sessions/turn',
+      '/api/provider-sessions/resume',
+      '/api/provider-sessions/reconcile',
+    }.contains(path)) {
       return Stream.error(const GatewaySseException());
     }
     final encoded = utf8.encode(jsonEncode(authorizedBody));
@@ -47,6 +53,7 @@ final class GatewayOperations {
     return _events(
       http.Request('GET', Uri.parse('${_client.baseUrl}$path')),
       afterSequence: afterSequence,
+      expectedOperationRef: operationRef,
     );
   }
 
@@ -120,6 +127,7 @@ final class GatewayOperations {
   Stream<GatewayOperationEvent> _events(
     http.Request request, {
     int afterSequence = 0,
+    String? expectedOperationRef,
   }) async* {
     final response = await _client._http.send(request);
     if (response.statusCode != 200) {
@@ -131,7 +139,11 @@ final class GatewayOperations {
     )) {
       if (event.id <= afterSequence) throw const GatewaySseException();
       try {
-        yield _parseEvent(event);
+        final parsed = _parseEvent(event);
+        if (!_matchesExpectedOperation(parsed, expectedOperationRef)) {
+          throw const GatewaySseException();
+        }
+        yield parsed;
       } on GatewaySseException {
         rethrow;
       } on Object {
@@ -139,6 +151,27 @@ final class GatewayOperations {
       }
     }
   }
+}
+
+bool _matchesExpectedOperation(
+  GatewayOperationEvent event,
+  String? expectedOperationRef,
+) {
+  if (expectedOperationRef == null) return true;
+  final snapshot = event.snapshot;
+  if (snapshot != null && snapshot.operationRef != expectedOperationRef) {
+    return false;
+  }
+  final result = event.result;
+  if (result != null && result.operationRef != expectedOperationRef) {
+    return false;
+  }
+  final progress = event.progress;
+  final providerSession = progress?['provider_session'];
+  if (providerSession is Map && providerSession.containsKey('operation_ref')) {
+    return providerSession['operation_ref'] == expectedOperationRef;
+  }
+  return true;
 }
 
 Future<String> _boundedResponse(Stream<List<int>> stream) async {

@@ -2,10 +2,8 @@
 from __future__ import annotations
 
 from .evidence_json import canonical_sha256
-from .continuation_agent_handoff import AGENT_HANDOFF_SCHEMA
-from .continuation_store import PREVIEW_REF_PATTERN
-from .gateway_operation import (
-    PROPOSAL_REF_PATTERN, OPERATION_REF_PATTERN, _relative_path, _text)
+from .continuation_agent_handoff import AGENT_HANDOFF_SCHEMA; from .continuation_store import PREVIEW_REF_PATTERN
+from .gateway_operation import PROPOSAL_REF_PATTERN, OPERATION_REF_PATTERN, _relative_path, _text
 from .journey_types import SHA256_PATTERN
 
 def validate_operation_shape(action: str, value: dict) -> None:
@@ -134,6 +132,7 @@ def validate_operation_shape(action: str, value: dict) -> None:
         _kill_shape(value)
     if action == "import.inspect":
         from .inspect_upload_metadata import validate_inspect_operation as v; v(value)
+    if action.startswith("provider.session."): from .provider_session_operation_shape import validate_provider_operation_shape as v; return v(action, value)
 def _kill_shape(value: dict) -> None:
     """The kill switch refuses a request it cannot name in full.
 
@@ -156,7 +155,6 @@ def _kill_shape(value: dict) -> None:
 def _bounded_int(value: object, low: int, high: int) -> None:
     if type(value) is not int or not low <= value <= high:
         raise ValueError
-
 def _continuation_agent_shape(value: object) -> None:
     fields = {"schema", "preview_ref", "preview_sha256",
               "source_state_sha256", "selected_files"}
@@ -215,6 +213,7 @@ def destination_for(action: str, value: dict) -> dict:
         return {"kind": "workspace", "ref": value["root"]}
     if action == "import.inspect":
         return {"kind": "import", "ref": f"inspect-json:{value['source']['sha256'][:16]}"}
+    if action.startswith("provider.session."): from .provider_session_operation_shape import provider_destination as d; return d(value)
     if action == "hook.register":
         return {"kind": "hook", "ref": value["hook_id"]}
     if action == "hook.run":
@@ -271,6 +270,7 @@ def derived_scopes(action: str, value: dict, secrets: bool) -> tuple:
         selected.update(("exec", "network", "plugin"))
     if action in {"packs.admit", "store.put", "import.config", "import.inspect"}:
         selected.add("write")
+    if action.startswith("provider.session."): from .provider_session_operation_shape import provider_session_scopes; selected.update(provider_session_scopes())
     if action == "hook.register":
         selected.add("write")
     if action == "hook.run":
