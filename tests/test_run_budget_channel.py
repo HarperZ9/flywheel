@@ -193,3 +193,28 @@ def test_a_2xx_completion_next_to_a_limit_error_fails_as_a_false_success(tmp_pat
     error, payload = _router(tmp_path, monkeypatch, [(200, body)])
     assert failure_reason(error) == "AGENT_FALSE_SUCCESS"
     assert payload["run_budget"]["false_success_count"] == 1
+
+
+def test_a_2xx_limit_body_on_the_native_loop_fails_as_a_protocol_error(tmp_path, monkeypatch):
+    # docs/RUN-BUDGET.md names this code for the provider-native tool loop.
+    from harness.gateway_agent_failures import failure_reason
+    op = {"goal": "read", "endpoint": "openai", "model": "gpt-6-astra", "tool_protocol": "native",
+          "root": str(tmp_path), "max_steps": 6, "allow_write": False, "allow_exec": False,
+          "stream": True, "data_refs": [], "credential_refs": []}
+
+    class Transport:
+        def __init__(self, **kwargs):
+            pass
+
+        def __call__(self, method, url, headers, body, timeout):
+            return 200, {"error": {"type": "rate_limit_error", "message": "slow down"}}
+    monkeypatch.setattr("harness.gateway_agent_native_tools.BoundAgentTransport", Transport)
+    binding = thaw_json(freeze_agent_binding(canonicalize_operation("agent.run", op), tmp_path))
+    trace = AgentTrace(tmp_path, OWNER, JOURNEY, OPERATION, secrets=("sk-channel-fixture-4c1",))
+    with pytest.raises(GatewayOperationError) as failed:
+        run_private_agent(op, {"OPENAI_API_KEY": "sk-channel-fixture-4c1"}, tmp_path, trace,
+                          None, lambda e: None, binding=binding, deadline=time.monotonic() + 15)
+    assert failure_reason(failed.value) == "AGENT_NATIVE_PROTOCOL_ERROR"
+    report = AgentTrace(tmp_path, OWNER, JOURNEY, OPERATION).read()[-1]["payload"]["run_budget"]
+    assert (report["status"], report["false_success_count"]) == ("within_limits", 1)
+    assert report["limit_signal_steps"][0]["match"] == "rate_limit_error"
