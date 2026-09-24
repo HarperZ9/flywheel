@@ -280,6 +280,49 @@ with `mode`, `module`, `exit` and `version`. leanchecker has no version flag,
 so `version` is the toolchain's `lean --version` line, and `version_source`
 says so.
 
+### The environment Lean runs in
+
+The candidate's code runs while Lean elaborates it, and `#eval IO.getEnv
+"NAME"` returns any variable the Lean process holds. Lean prints what an
+`#eval` returns, and the receipt keeps that output as `kernel_output`. The
+gateway's `/api/lean` route stores the receipt. On Lean 4.34.0 a synthetic
+variable set in the harness came back in the `kernel_output` of a passing
+receipt. A candidate that failed only in the replay's `.olean` compile put the
+same value in a refusal.
+
+So a Lean process never inherits the harness's environment. Each one gets an
+allowlist from `harness/lean_env.py`. That covers the kernel run, the axiom
+audit, the `.olean` compile, leanchecker, and the version and prefix queries.
+It also covers the `lean` runs behind `--verify-lean`, the
+`flywheel.lean-check/v1` adapter, and the certificate export. The list starts
+from the one the pytest oracle uses (`ENV_ALLOWLIST` in `harness/oracle.py`:
+`PATH`, `HOME`, `USERPROFILE`, `TEMP`, `SYSTEMROOT` and a few more). It adds
+the variables the toolchain reads:
+
+| Variable | Why Lean needs it |
+| --- | --- |
+| `ELAN_HOME`, `ELAN_TOOLCHAIN` | pick the installation the elan proxy starts |
+| `LEAN_PATH` | the import search path; the replay extends it |
+| `LEAN_SYSROOT` | an installation root in place of the one lean infers |
+| `LEAN_NUM_THREADS`, `LEAN_STACK_SIZE_KB` | runtime settings for a large proof |
+
+Proxy variables are left out, because a proxy URL can carry a password. elan
+therefore cannot download a missing toolchain during a check, so install the
+toolchain first.
+
+The allowlist narrows what a candidate can read. What is left:
+
+- A candidate can read any file the harness user can read, with
+  `IO.FS.readFile`, and print it into `kernel_output`.
+- It can print an allowlisted value. `USERPROFILE` and `HOME` hold the
+  profile path, which names the user account.
+- The text screen refuses `sorry`, `axiom` and the kernel-bypass constructs.
+  It does not refuse `#eval` or `IO`, because sound proofs and metaprograms
+  use both.
+
+Keeping a candidate away from the user's files takes a sandboxed build, which
+is the comparator rung.
+
 ### What a Lean accept does not say
 
 - The replay trusts every imported `.olean` file as it sits on disk: the
@@ -293,3 +336,6 @@ says so.
 - The math oracle does not read its task. It accepts any closed theorem, and
   the theorem need not be the one the task asked for. Binding a proof to a
   pinned challenge statement, as `leanprover/comparator` does, is open work.
+- The stored `kernel_output` can hold anything the candidate printed. Lean
+  ran with the allowlisted environment, so the only harness variables it can
+  hold are allowlisted ones. It can also hold a file the user can read.

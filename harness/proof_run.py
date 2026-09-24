@@ -18,7 +18,8 @@ artifact, so a file the kernel rejects is still written out.
 
 Running Lean means running a program, so nothing here goes looking for one on
 its own. A caller asks by name or passes an explicit path, the same way a
-command authority is asked for rather than assumed.
+command authority is asked for rather than assumed. The program gets the
+allowlisted environment from lean_env.py, never this process's whole one.
 """
 from __future__ import annotations
 
@@ -28,6 +29,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from .lean_env import lean_env
 from .verdict import Verdict
 
 # `#print axioms Some.Name` prints one of these two lines. Both are matched
@@ -59,7 +61,7 @@ def lean_path(explicit=None) -> str | None:
 def lean_version(lean: str) -> str:
     try:
         out = subprocess.run([lean, "--version"], capture_output=True, text=True,
-                             timeout=30)
+                             timeout=30, env=lean_env())
     except (OSError, subprocess.SubprocessError):
         return ""
     found = VERSION.search(out.stdout or "")
@@ -135,7 +137,8 @@ def run_proof(path, *, lean=None, timeout: int = TIMEOUT) -> dict:
     checker = lean_version(binary)
     try:
         done = subprocess.run([binary, str(path)], capture_output=True, text=True,
-                              timeout=timeout, cwd=str(Path(path).parent))
+                              timeout=timeout, cwd=str(Path(path).parent),
+                              env=lean_env())
     except subprocess.TimeoutExpired:
         return _unverifiable(f"lean did not finish in {timeout}s", checker)
     except OSError as exc:

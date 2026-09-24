@@ -169,12 +169,14 @@ def lean_axioms(source: str, *, lean: str = "lean", timeout: int = 180) -> dict:
     Returns {ok, axioms, stderr}. `ok` is True only when Lean COMPILED it, which
     for these scripts means the property held. A missing toolchain returns
     ok=None with a note, never a false pass: absence of a checker is not a check.
+    Lean runs with the allowlisted environment from lean_env.py.
     """
     import shutil
     import subprocess
     import tempfile
     from pathlib import Path
 
+    from .lean_env import lean_env
     if shutil.which(lean) is None:
         return {"ok": None, "axioms": [], "note": f"{lean} not on PATH; the "
                 "emitted script was not checked here. It is self-contained and a "
@@ -184,7 +186,7 @@ def lean_axioms(source: str, *, lean: str = "lean", timeout: int = 180) -> dict:
         p.write_text(source, encoding="utf-8")
         try:
             r = subprocess.run([lean, str(p)], capture_output=True, text=True,
-                               timeout=timeout)
+                               timeout=timeout, env=lean_env())
         except subprocess.TimeoutExpired:
             return {"ok": None, "axioms": [], "note": f"lean did not finish in "
                     f"{timeout}s"}

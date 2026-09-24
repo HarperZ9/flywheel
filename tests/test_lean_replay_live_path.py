@@ -51,7 +51,8 @@ def test_compile_argv_and_the_replay_search_path(monkeypatch, tmp_path):
         "lean", f"--root={root}", "-o",
         os.path.join(root, "build", f"{MODULE}.olean"),
         os.path.join(root, f"{MODULE}.lean")]
-    # The compile inherits the harness environment unchanged.
+    # The compile passes no env, so run_killable gives it lean_env(), which
+    # keeps the inherited LEAN_PATH (tests/test_lean_spawn_env.py).
     assert compile_env is None
     assert check_argv == [checker, MODULE]
     # Toolchain library first, inherited entries in order, build dir last.

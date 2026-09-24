@@ -32,6 +32,11 @@ _ELABORATION = (
     "the candidate's metaprograms ran unsandboxed with this user's rights "
     "during elaboration and compilation; one that writes files, such as the "
     "toolchain's .olean files, is outside what an in-process replay detects")
+_ENVIRONMENT = (
+    "Lean ran with an allowlisted environment (lean_env.py), so the candidate "
+    "could not read a harness variable off that list; it could still read any "
+    "file this user can read, or an allowlisted value such as the profile "
+    "path, and print it into the kernel output this result stores")
 _AUDIT_SCOPE = (
     "the axiom audit reads source-named theorem and lemma declarations only; "
     "a def, or a declaration a metaprogram added, whose value rests on an "
@@ -78,21 +83,24 @@ def _result(res: dict, output_hash: str, coverage: dict) -> "OracleResult":
     common = dict(cmd="lean", output_hash=output_hash,
                   stdout_excerpt=kernel[:1200],
                   objective="lean kernel type-check")
+    # A receipt with no toolchain named is one where Lean never ran.
+    ran = [_ENVIRONMENT] if res.get("toolchain") else []
     if passed is None:
         return OracleResult(
             rc=0, verdict_=Verdict.UNVERIFIABLE,
             execution=Execution.TOOLCHAIN_MISSING,
             unverifiable_reason=UnverifiableReason.TOOLCHAIN_MISSING.value,
             does_not_prove=[kernel[:240] or "no Lean toolchain installed; "
-                            "the proof was not checked"],
+                            "the proof was not checked", *ran],
             coverage=coverage, **common)
     if passed:
         return OracleResult(
             rc=0, verdict_=Verdict.PASS,
             does_not_prove=[_GAP, _UNBOUND, _REPLAY_LIMITS, _ELABORATION,
-                            _AUDIT_SCOPE],
+                            _AUDIT_SCOPE, *ran],
             coverage=coverage, **common)
     return OracleResult(
         rc=1, verdict_=Verdict.FAIL,
-        does_not_prove=[kernel[:160] or "the kernel refused the proof", _GAP],
+        does_not_prove=[kernel[:160] or "the kernel refused the proof", _GAP,
+                        *ran],
         coverage=coverage, **common)

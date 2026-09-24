@@ -18,7 +18,7 @@ sit on disk. `--fresh` also replays the imports. On one Windows machine on
 2026-09-23, plain mode took 1.7 to 3.1 s per file (n=3 on each of two files)
 and `--fresh` took 153 s on a one-line file (n=1).
 
-Four choices here carry weight:
+Five choices here carry weight:
 
 - leanchecker comes from the installation prefix of the `lean` that compiled
   the module. An `.olean` belongs to the toolchain that wrote it, and a
@@ -43,6 +43,9 @@ Four choices here carry weight:
   every module on the search path (6.8 GB resident before it was killed,
   2026-09-23). The version recorded is the toolchain's `lean --version` line,
   and the receipt says where it came from.
+- Every spawn gets lean_env(), an allowlist, never the harness's whole
+  environment. The candidate's code can read any variable its process
+  holds and print it into the output a receipt keeps (lean_env.py).
 """
 from __future__ import annotations
 
@@ -84,13 +87,15 @@ def run_killable(argv: list, *, timeout: int = TIMEOUT,
 
     Popen plus tree-kill, the oracle.py discipline: the child runs candidate
     metaprograms, and a candidate that forks must cost one timeout, never a
-    wedged harness. A toolchain query passes stderr=subprocess.DEVNULL so an
-    elan notice cannot land in the text it parses. OSError from a binary
-    that cannot start propagates.
+    wedged harness. With no `env` the child gets lean_env(), the allowlist,
+    never this process's whole environment. A toolchain query passes
+    stderr=subprocess.DEVNULL so an elan notice cannot land in the text it
+    parses. OSError from a binary that cannot start propagates.
     """
+    from .lean_env import lean_env
     from .proc_kill import _kill_tree, spawn_killable
-    proc = spawn_killable(argv, env=env, stdout=subprocess.PIPE,
-                          stderr=stderr)
+    proc = spawn_killable(argv, env=lean_env() if env is None else env,
+                          stdout=subprocess.PIPE, stderr=stderr)
     try:
         out, _ = proc.communicate(timeout=timeout)
         return proc.returncode, (out or b"").decode("utf-8", errors="replace")
@@ -213,8 +218,8 @@ def _check_live(checker: str, libdir: str, build: Path) -> dict:
                              f"module named {MODULE}, so leanchecker would "
                              "not replay the module the compile wrote",
                        reason=R_SHADOW)
-    env = dict(os.environ)
-    env["LEAN_PATH"] = os.pathsep.join(entries)
+    from .lean_env import lean_env
+    env = lean_env({"LEAN_PATH": os.pathsep.join(entries)})
     try:
         rc, out = run_killable([checker, MODULE], env=env)
     except OSError as exc:

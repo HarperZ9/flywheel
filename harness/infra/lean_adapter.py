@@ -9,6 +9,17 @@ The adapter is a stdlib-only subprocess wrapper. It does not import Lean; it
 shells out to the `lean` binary. If Lean is not installed, the adapter returns
 UNVERIFIABLE (never a silent pass).
 
+Every `lean` it starts gets harness/lean_env.py's allowlist as its
+environment. A file under check runs code while Lean elaborates it, and an
+`#eval IO.getEnv` in it printed a harness variable into `output_excerpt` of
+the sealed receipt before this (a synthetic value, 2026-09-23). The allowlist
+does not stop the file from printing what else this user can read, such as
+another file or the profile path.
+
+The verdict reads the exit code alone. Lean exits 0 on a `sorry` with only a
+warning, so MATCH here does not rule out an admitted hole; lean_oracle's
+lean_check is the checker that refuses one.
+
 Schema: flywheel.lean-check/v1. Sealed.
 """
 from __future__ import annotations
@@ -60,9 +71,11 @@ def _probe_lean() -> str:
     Three subprocesses to type-check one small file is how a 30-second proof
     budget reached pytest's 60-second ceiling under parallel workers.
     """
+    from ..lean_env import lean_env
     try:
         result = subprocess.run(
-            ["lean", "--version"], capture_output=True, text=True, timeout=10)
+            ["lean", "--version"], capture_output=True, text=True, timeout=10,
+            env=lean_env())
         if result.returncode == 0:
             return result.stdout.strip().split("\n")[0]
     except (OSError, subprocess.SubprocessError):
@@ -111,6 +124,15 @@ class LeanCheckResult:
         }
 
 
+def _run_lean(path: Path, timeout: int) -> subprocess.CompletedProcess:
+    """`lean <path>` from the file's directory, with the allowlisted
+    environment rather than this process's own."""
+    from ..lean_env import lean_env
+    return subprocess.run(
+        ["lean", str(path)], capture_output=True, text=True,
+        timeout=timeout, cwd=str(path.parent), env=lean_env())
+
+
 def check_lean_file(path: Path, *, timeout: int = 60) -> LeanCheckResult:
     """Type-check a Lean file using the `lean` compiler.
 
@@ -134,11 +156,7 @@ def check_lean_file(path: Path, *, timeout: int = 60) -> LeanCheckResult:
     import time
     start = time.monotonic()
     try:
-        result = subprocess.run(
-            ["lean", str(path)],
-            capture_output=True, text=True, timeout=timeout,
-            cwd=str(path.parent),
-        )
+        result = _run_lean(path, timeout)
         elapsed = time.monotonic() - start
         if result.returncode == 0:
             return LeanCheckResult(

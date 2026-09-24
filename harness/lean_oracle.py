@@ -89,7 +89,9 @@ def leanchecker_available() -> bool:
 def _run(argv: list, code: str) -> tuple:
     """Default runner: write the candidate, let the kernel judge it. The
     spawn reaps the whole process tree on timeout (lean_replay.run_killable,
-    the oracle.py discipline): a hostile candidate costs one timeout."""
+    the oracle.py discipline): a hostile candidate costs one timeout. It
+    gets lean_env(), so an `#eval` in the candidate cannot read a harness
+    variable off the allowlist into kernel_output."""
     from .lean_replay import run_killable
     with tempfile.TemporaryDirectory() as td:
         path = Path(td) / "candidate.lean"

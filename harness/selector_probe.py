@@ -11,12 +11,11 @@ from __future__ import annotations
 
 import ast
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
 
-from .oracle import _kill_tree, spawn_killable
+from .oracle import _kill_tree, run_env, spawn_killable
 
 
 # --- typed input battery (the "pre-decided world" as a behavioral probe) -------
@@ -194,14 +193,14 @@ def _signature(candidate, fn: str, batt: list[tuple], workdir: Path,
         (workdir / "driver.py").write_text(driver, encoding="utf-8")
     except Exception:
         return ("UNRUNNABLE", idx)
-    # PYTHONHASHSEED=0 pins set/dict iteration order so repr()-based signatures
-    # are identical across processes -- otherwise the same candidate can land in
-    # different clusters on different runs and selection stops being deterministic.
+    # run_env is the oracle's allowlist: the candidate is model-written code and
+    # reads no harness variable. PYTHONHASHSEED=0 pins set/dict order so repr()
+    # signatures match across processes and selection stays deterministic.
     try:
         proc = spawn_killable(
             [sys.executable, "driver.py"], cwd=workdir,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONHASHSEED": "0"})
+            env=run_env({"PYTHONHASHSEED": "0"}))
     except Exception:
         return ("UNRUNNABLE", idx)
     # The backstop must DOMINATE the worst-case per-slot sum so it only catches a
