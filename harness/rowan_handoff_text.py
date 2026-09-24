@@ -9,14 +9,15 @@ server names) by a marker, a model's TOOL lines by the tool name and path, and
 long text is cut with a stated marker. A line that still looks like a
 credential after that is withheld whole.
 
-Text is cut before it is redacted, with a margin past the cut, so the work is
-bounded by what the brief can show. A credential of up to MARGIN characters
-that the cut splits is left, in part, in the redacted window's last MARGIN
-characters, so a window that stops short of the text shows only what ends a
-margin before its own end. That holds when an earlier credential's marker is
-far shorter than the credential it replaced. A one-line field widens its
-window, up to 64 margins, when redaction shrinks it below the room it has to
-fill. Standard library and engine scanners only.
+Each field is redacted whole and cut after, so a credential the cut splits is
+replaced whole, however long it is, and a pattern bound to one line still sees
+that line. A quote reads whole lines only. A credential that runs past the
+last line read either matches to the end of what was read, as a private key
+block or an open quoted value does, or holds its secret past that line, where
+nothing is shown. The patterns run in time that grows with the text, and no
+field reads more than REDACT_CHARS: a longer one-line field, or a quote line
+that would pass the bound, stays in the private trace and the brief says so.
+Standard library and engine scanners only.
 """
 from __future__ import annotations
 
@@ -24,15 +25,13 @@ import re
 
 from .rowan_handoff_redact import OMITTED, leaks, redact
 
-__all__ = ["HOST_PATH", "MARGIN", "OMITTED", "WITHHELD", "code", "flat_line", "host_safe",
-           "leaks", "one_line", "outbound", "quote", "redact", "safe_line"]
+__all__ = ["HOST_PATH", "OMITTED", "REDACT_CHARS", "WITHHELD", "code", "flat_line",
+           "host_safe", "leaks", "one_line", "outbound", "quote", "redact", "safe_line"]
 
 WITHHELD = "[line withheld: credential pattern]"
 HOST_PATH = "[host path omitted]"
-#: Characters redacted past a cut and then dropped with it.
-MARGIN = 512
-#: How far a one-line field's window may widen, in margins past its room.
-_WIDEN = (1, 4, 16, 64)
+#: The most characters of one field the brief reads and redacts.
+REDACT_CHARS = 65_536
 
 _DRIVE_PATH = re.compile(r"(?<![\w/\\])[A-Za-z]:[\\/][^\s'\"`<>|]*")
 # \\server\share, \\?\C:\..., \\wsl$\distro, and the same with JSON's doubled
@@ -87,34 +86,17 @@ def one_line(text, limit: int = 200) -> str:
     return flat if len(flat) <= limit else flat[:limit - 3] + "..."
 
 
-def _shown(red: str, room: int, whole: bool) -> str:
-    """What a redacted window may show: all of it when the window held the
-    whole text, otherwise at most `room` characters that end a margin before
-    the window's end, where a credential the cut split still sits in part."""
-    return red if whole else red[:max(0, min(room, len(red) - MARGIN))]
-
-
-def _head(text: str, root, room: int) -> tuple[str, bool]:
-    """One line's redacted head for `room` characters, and whether the window
-    held the whole line. The window widens while redaction leaves it short of
-    the room plus a margin."""
-    for widen in _WIDEN:
-        end = room + MARGIN * widen
-        red, whole = outbound(text[:end], root), end >= len(text)
-        if whole or len(red) >= room + MARGIN:
-            break
-    return _shown(red, room, whole), whole
-
-
 def flat_line(text, root=None, limit: int = 200) -> str:
-    """Free text as one outbound line of at most `limit` characters. The cut
-    is marked even when the shown head is shorter than the limit."""
-    words = " ".join(str(text or "").split())
-    shown, whole = _head(words, root, limit)
-    head = one_line(shown, limit)
-    if not whole and not head.endswith("..."):
-        head = head[:limit - 3] + "..."
-    return head
+    """Free text as one outbound line of at most `limit` characters.
+
+    The text is redacted with its line breaks, then flattened and cut, so a
+    pattern bound to one line still sees it. A text past REDACT_CHARS is not
+    read, and the line says how long it is and where it stays."""
+    value = str(text or "")
+    if len(value) > REDACT_CHARS:
+        return one_line(f"[{len(value)} characters left in the private trace: "
+                        "longer than the brief redacts]", limit)
+    return one_line(outbound(value, root), limit)
 
 
 def code(text, root=None, limit: int = 200) -> str:
@@ -123,15 +105,15 @@ def code(text, root=None, limit: int = 200) -> str:
     return "`" + flat_line(text, root, limit).replace("`", "'") + "`"
 
 
-def _window(lines: list, max_lines: int, max_chars: int, line_chars: int) -> list:
-    """The raw lines a quote can show, each cut a margin past its share."""
-    out, used = [], 0
+def _window(lines: list, max_lines: int) -> list:
+    """The lines a quote reads: whole lines, at most `max_lines` of them and
+    REDACT_CHARS in all, so no credential is split before it is redacted."""
+    out, size = [], -1
     for line in lines[:max_lines]:
-        room = min(line_chars, max_chars - used)
-        if room <= 0:
+        size += len(line) + 1
+        if size > REDACT_CHARS:
             break
-        out.append(line[:room + MARGIN])
-        used += min(len(line), room)
+        out.append(line)
     return out
 
 
@@ -140,28 +122,23 @@ def quote(text, root=None, *, max_lines: int = 60, max_chars: int = 8_000,
     """A block quote of at most `max_lines` lines and `max_chars` characters.
     What is cut is counted in a closing marker, never dropped silently."""
     raw = str(text or "").strip().splitlines() or ["(empty)"]
-    window = _window(raw, max_lines, max_chars, line_chars)
-    lines = outbound("\n".join(window), root).split("\n")
-    # Redaction keeps line breaks. Were one lost, every line would count as cut.
-    whole = ([len(w) == len(r) for w, r in zip(window, raw)]
-             if len(lines) == len(window) else [False] * len(lines))
+    window = _window(raw, max_lines)
+    lines = outbound("\n".join(window), root).split("\n") if window else []
     kept, used = [], 0
-    for line, entire in zip(lines[:max_lines], whole):
+    for line in lines[:max_lines]:
         room = min(line_chars, max_chars - used)
         if room <= 0:
             break
-        kept.append(_shown(line, room, entire)[:room])
+        kept.append(line[:room])
         used += len(kept[-1])
-    omitted_lines = len(raw) - len(kept)
-    # The shown part counts as redacted; the rest as it sits in the trace.
-    omitted_chars = (sum(map(len, lines)) - used
-                     + sum(map(len, raw)) - sum(map(len, window)))
-    body = [WITHHELD if leaks(line) else line for line in kept]
-    out = "\n".join("> " + line for line in body)
+    omitted_lines = len(lines) - len(kept) + len(raw) - len(window)
+    # What the quote read counts as redacted; the rest as it sits in the trace.
+    omitted_chars = sum(map(len, lines)) - used + sum(map(len, raw[len(window):]))
+    rows = ["> " + (WITHHELD if leaks(line) else line) for line in kept]
     if omitted_lines or omitted_chars:
-        out += (f"\n> [{omitted_lines} more lines and {omitted_chars} more characters "
-                "are in the private trace]")
-    return out
+        rows.append(f"> [{omitted_lines} more lines and {omitted_chars} more characters "
+                    "are in the private trace]")
+    return "\n".join(rows)
 
 
 def safe_line(line: str) -> str:

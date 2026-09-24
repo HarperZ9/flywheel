@@ -82,11 +82,12 @@ def _step(text, root) -> str | None:
     return f"{prose} {tools}" if prose else tools
 
 
-def _stated_steps(records: list, root) -> list[str]:
+def _stated_texts(records: list) -> list:
+    """The model's replies that state a step: every one with any text."""
     texts = [e.get("content") for e in _ledger(records) if e.get("kind") == "assistant"]
     texts += [r["payload"].get("text") for r in records
               if r.get("kind") == "progress" and r["payload"].get("type") == "cli_message"]
-    return [s for s in (_step(t, root) for t in texts) if s]
+    return [t for t in texts if str(t or "").split()]
 
 
 def _outcome(records: list, state: str) -> dict:
@@ -191,9 +192,10 @@ def _receipts(records: list, projection: dict, terminal: dict) -> list[str]:
     return lines
 
 
-def _capped(lines: list[str], unlisted: int = 0) -> list[str]:
-    """At most MAX_LINES lines, then a count of what was left out and where."""
-    rest = max(0, len(lines) - MAX_LINES)
+def _capped(lines: list[str], unlisted: int = 0, *, unread: int = 0) -> list[str]:
+    """At most MAX_LINES lines, then a count of what was left out and where.
+    `unread` counts entries past the cap that were never rendered."""
+    rest = max(0, len(lines) - MAX_LINES) + unread
     unlisted = unlisted if type(unlisted) is int and unlisted > 0 else 0
     parts = ([f"{rest} more in the trace"] if rest else []) + (
         [f"{unlisted} more not listed in the completion record"] if unlisted else [])
@@ -214,8 +216,11 @@ def handoff_markdown(records: list, projection: dict) -> str:
     outcome = _outcome(records, state)
     completion = outcome["completion"]
     report = payload.get("completion") if isinstance(payload.get("completion"), dict) else {}
-    commands = [f"- {code(c, root, 160)}" for c in _commands(records)]
-    steps = [f"{i}. {s}" for i, s in enumerate(_stated_steps(records, root), 1)]
+    # Only the entries the brief lists are read and redacted; the rest are
+    # counted, so the work stays bounded by what the brief shows.
+    ran, stated = _commands(records), _stated_texts(records)
+    commands = [f"- {code(c, root, 160)}" for c in ran[:MAX_LINES]]
+    steps = [f"{i}. {_step(t, root)}" for i, t in enumerate(stated[:MAX_LINES], 1)]
     body = [
         f"# Handoff: {flat_line(goal, root, 80) or 'Rowan run'}",
         "Exported from a recorded Rowan run so another agent can continue it. "
@@ -227,9 +232,10 @@ def handoff_markdown(records: list, projection: dict) -> str:
         _section("Where it ended", _ended(state, reason, completion, outcome["budget"]), ""),
         _section("Deliverables", _deliverables(
             report, completion.get("status") == "recorded", root), "- None recorded."),
-        _section("Commands run", _capped(commands), "- None."),
-        _section("Steps the model stated (its words, not checked)", _capped(steps),
-                 "- None recorded."),
+        _section("Commands run", _capped(commands, unread=len(ran) - len(commands)),
+                 "- None."),
+        _section("Steps the model stated (its words, not checked)",
+                 _capped(steps, unread=len(stated) - len(steps)), "- None recorded."),
         _section("Open items", _open_items(state, reason, report, completion, payload,
                                            root), ""),
         _section("Final answer (the model's words)",

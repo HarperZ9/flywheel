@@ -75,15 +75,18 @@ leaves the engine:
   `\\fileserver01`.
 - Paths and commands are single-line code spans, so a file name cannot start a
   line of its own.
-- Text is cut before it is redacted, with 512 characters of margin past the
-  cut, so redaction time stays bounded by what the brief can show. A
-  credential the cut splits in two can survive in part in that margin, so a
-  cut field or line shows only redacted text that ends 512 characters before
-  the end of what was read. When an earlier credential's marker is much
-  shorter than the credential, a one-line field reads further, up to 64
-  margins, and a quoted line shows less of itself. A credential longer than
-  the margin can still show in part when its pattern needs text past the cut,
-  such as the `@` that ends URL user info.
+- Each field is redacted whole before it is cut, so a credential the cut
+  splits is still replaced whole, however long it is. A one-line field is
+  redacted with its line breaks and then flattened, so a pattern bound to one
+  line, such as the last argument of `htpasswd -b`, still sees that line.
+- A quote reads whole lines only. A credential that runs past the last line
+  it reads either matches to the end of what was read, as a private key block
+  or an open quoted value does, or has its secret past that line, where
+  nothing is shown.
+- No field reads more than 65,536 characters. A longer command, step or
+  title shows only its length and says it stays in the private trace. A
+  quote stops before the first line that would pass the bound. Only the
+  commands and steps the brief lists are read; the rest are counted.
 - A quote that is cut ends with a line saying how many lines and characters
   are left in the private trace.
 

@@ -168,6 +168,7 @@ def test_the_doc_states_the_caps_and_the_redaction_limit():
                    .read_text(encoding="utf-8").split())
     for phrase in ("the final answer first", "Up to 20 lines", "[credential omitted]",
                    "`<workspace>`", "Redaction is a pattern list", "not confirmed",
-                   "ends 512 characters before the end of what was read"):
+                   "Each field is redacted whole before it is cut",
+                   "A quote reads whole lines only", "No field reads more than 65,536"):
         assert phrase in doc, phrase
-    assert "still replaced whole" not in doc
+    assert "Text is cut before it is redacted" not in doc
