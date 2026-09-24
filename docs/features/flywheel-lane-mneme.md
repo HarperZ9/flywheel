@@ -11,17 +11,17 @@ Mneme fills the `memory` role in the Flywheel lane layer. It records raw turns, 
 Flywheel treats each engine as a lane with a declared role. Mneme is declared in `harness/lanes_registry.py` under the key `mneme`:
 
 - Role: `memory`. Lane summary: "accountable memory: recall with re-derivable ranking receipts + drift verdicts".
-- Organ field: `mneme`. Install name: `mneme-memory`. Command: `mneme`. MCP args: `("mcp",)`. Kind: `pip`. Version: `0.2.0`.
+- Organ field: `mneme`. Install name: `flywheel-mneme`. Command: `mneme`. MCP args: `("mcp",)`. Kind: `pip`. Version: `0.4.2`.
 - Source repo: `public/mneme`. Python module entry: `mneme.cli`.
-- `package_disabled_reason` is set: the PyPI name belongs to a different project, so inside Flywheel the pip-install argv is withheld and the lane runs from a HarperZ9 Mneme source checkout. `resolve_mcp_command("mneme")` returns an empty argv for that reason, and the runtime resolver launches the lane from the checked-out source.
+- `package_disabled_reason` is empty. The lane publishes as `flywheel-mneme` because the bare name `mneme-memory` was never admitted, so `pip install flywheel-mneme` installs it and `resolve_mcp_command("mneme")` returns a real argv. A source checkout still works and stays the fallback profile.
 
 The lane advertises its wiring in `mneme.interop.json` at the repo root, which names the invoke surfaces (`cli: mneme`, `mcp_server: mneme.mcp:serve`, `python_import: mneme`) and lists what the lane emits and consumes. The Flywheel application also lists `mneme` in the platform spine tuple in `harness/gateway.py` and in the lesson-source set in `harness/lesson.py`.
 
-Version note: the lane registry and `pyproject.toml` both pin `0.2.0` (moderate confidence). `CHANGELOG.md` still headers an earlier `0.1.0 (unreleased)` entry, so the changelog lags the manifest.
+Version note: the lane registry and `pyproject.toml` both pin `0.4.2`, and that is the version on PyPI. `resolve_lane_runtime` compares the declared version against the installed one by exact equality, so the two drifting apart raises `installed_version_mismatch` rather than passing quietly.
 
 Distribution facts, from `pyproject.toml`:
 
-- Package name `mneme-memory`, version `0.2.0`, `requires-python >= 3.11`.
+- Package name `flywheel-mneme`, version `0.4.2`, `requires-python >= 3.11`. Install with `pip install flywheel-mneme`; the console script is `mneme` and `mneme mcp` serves the lane over stdio.
 - `dependencies = []`. The only runtime import is the standard-library `sqlite3`. `pytest` is the sole declared test dependency.
 - License `LicenseRef-FSL-1.1-MIT` (fair-source: readable and runnable, commercial use reserved). This is an independent project; it does not depend on the other lanes to run.
 

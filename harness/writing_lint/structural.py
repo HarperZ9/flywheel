@@ -3,10 +3,11 @@
 
 The phrase-list engine in check.py sees vocabulary. Several tells named in the
 writing standard live in structure instead, so a draft can score a clean
-per100w and still read as machine prose: the rule of three (tricolon),
-corrective negation (antithesis), negative anaphora, and the short landing
-sentence that seals a paragraph. This module counts those, and reports a
-sentence-length cadence metric so a suspiciously even beat is visible.
+per100w and still read as machine prose: the rule of three (tricolon), negative
+anaphora, and the short landing sentence that seals a paragraph. This module
+counts those, and reports a sentence-length cadence metric so a suspiciously
+even beat is visible. Corrective negation (antithesis) moved to higher_order.py,
+which carries the richer clause-level and adjacent-sentence version.
 
 Every category here is a heuristic, so it is REPORT-ONLY: it informs a writer
 and never gates, the same contract the Phase 2 checks in check.py follow.
@@ -24,12 +25,6 @@ _WORD = re.compile(r"[A-Za-z][A-Za-z'-]*")
 _RULE_OF_THREE = re.compile(
     r"\b[\w'-]+(?:\s+[\w'-]+){0,2},\s+[\w'-]+(?:\s+[\w'-]+){0,2},?"
     r"\s+(?:and|or)\s+[\w'-]+(?:\s+[\w'-]+){0,2}\b",
-    re.IGNORECASE)
-
-# Corrective negation / antithesis: "rather than", "instead of", and the
-# "not X but Y" turn inside one clause.
-_CORRECTIVE = re.compile(
-    r"\brather than\b|\binstead of\b|\bnot\b[^.!?,;:]{1,60}?\bbut\b",
     re.IGNORECASE)
 
 # Negative anaphora: "no X, no Y" (often continued, "no key, no clock").
@@ -50,9 +45,6 @@ def structural_counts(prose: str, paras: "list[str]", sentences_of) -> dict:
     r3 = len(_RULE_OF_THREE.findall(prose))
     if r3:
         v["rule_of_three"] = r3
-    cn = len(_CORRECTIVE.findall(prose))
-    if cn:
-        v["corrective_negation"] = cn
     na = len(_NEG_ANAPHORA.findall(prose))
     if na:
         v["negative_anaphora"] = na

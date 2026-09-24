@@ -22,9 +22,12 @@ is handed back to the caller rather than disappearing.
 
 Restore applies the SAME exclusions as capture, because capture runs on our
 side and restore runs on receipt data we did not write. The one that must not
-be skipped is the junit file: canonical_hash reads its outcomes back, so a
-receipt permitted to carry _oracle_junit.xml would be carrying its own answer
-key into the directory where it is about to be graded.
+be skipped is the junit report: canonical_hash reads its outcomes back, so a
+receipt permitted to carry one would be carrying its own answer key into the
+directory where it is about to be graded. The oracle now writes each report
+under a per-run name (junit_report.py) and reads only that one, so a planted
+report is no longer read either way. Both ends still refuse every report
+name, the canonical `_oracle_junit.xml` and each `_oracle_junit_<nonce>.xml`.
 
 Trust boundary, stated plainly. Restoring these files makes a re-check execute
 more third-party content than the candidate alone, since a conftest.py runs at
@@ -38,6 +41,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .junit_report import is_report_name
 from .receipt_secrets import withhold_reason
 
 MAX_FILES = 64
@@ -50,7 +54,9 @@ SKIP_DIRS = frozenset({
     "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", ".git",
     ".hypothesis", ".tox", ".venv", "venv", "node_modules", "htmlcov",
 })
-# Written by the oracle itself. _oracle_junit.xml is the answer key.
+# Written by the oracle itself. The junit report is the answer key; its
+# canonical name stays listed here, and _excluded also refuses every per-run
+# name through is_report_name.
 SKIP_NAMES = frozenset({"_oracle_junit.xml", ".coverage"})
 
 
@@ -72,7 +78,8 @@ def safe_relative(name: str) -> str | None:
 
 def _excluded(rel: str) -> bool:
     parts = rel.split("/")
-    return bool(SKIP_DIRS.intersection(parts)) or parts[-1] in SKIP_NAMES
+    return (bool(SKIP_DIRS.intersection(parts)) or parts[-1] in SKIP_NAMES
+            or is_report_name(parts[-1]))
 
 
 def capture(workdir: str | Path, *, exclude: tuple = ()) -> tuple[dict, list]:

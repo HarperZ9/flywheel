@@ -144,9 +144,10 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
 
     # Snapshot the fixtures BEFORE the oracle runs, so this receipt can rebuild
     # its own environment later without a caller handing one over (the fallback
-    # in grounding.py). Timing is the whole point: after the run the workdir
-    # also holds the candidate and the junit file the canonical hash is read
-    # back from, and a receipt carrying its own answer key grades itself.
+    # in grounding.py). After the run the workdir also holds the candidate and
+    # any file its code wrote, which a receipt must not carry into its own
+    # re-check. The oracle's JUnit report is gone by then (junit_report.py
+    # removes each one after reading it), and capture refuses report names too.
     oracle_inputs, withheld_inputs = capture_inputs(
         task.workdir, exclude=(task.candidate_path,)
     ) if capture_oracle_inputs else ({}, [])

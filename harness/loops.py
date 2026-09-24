@@ -207,9 +207,9 @@ def _invent_kernel(ctx):
         v = kernel(c)
         if v.get("passed") is True:
             survivors.append(c)
-        elif v.get("passed") is None:
-            # the kernel could not judge -> the edge cannot close honestly
-            raise RuntimeError("kernel DECLARED (no toolchain); cannot judge")
+        elif v.get("passed") is None:  # the edge cannot close honestly
+            why = v.get("unverifiable_reason") or "no verdict"
+            raise RuntimeError(f"kernel DECLARED ({why}); cannot judge")
     ctx["_survivors_list"] = survivors
     ctx["_survivors"] = len(survivors)
     return True, f"{len(survivors)}/{len(ctx['_conjectures'])} survived", \
