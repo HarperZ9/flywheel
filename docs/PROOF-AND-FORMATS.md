@@ -310,18 +310,29 @@ Proxy variables are left out, because a proxy URL can carry a password. elan
 therefore cannot download a missing toolchain during a check, so install the
 toolchain first.
 
-The allowlist narrows what a candidate can read. What is left:
+The allowlist empties the Lean process's own environment. The candidate still
+runs as the harness user, and what is left is wide:
 
-- A candidate can read any file the harness user can read, with
-  `IO.FS.readFile`, and print it into `kernel_output`.
+- A candidate can read the environment of the process that started Lean. That
+  process is the harness, and its environment holds every variable the
+  allowlist removed. On Windows, a program the candidate started read the
+  synthetic variable out of the harness process's memory, and the value came
+  back in the `kernel_output` of a passing receipt (Lean 4.34.0). On Linux, a
+  process can read `/proc/<pid>/environ` of another process of the same user,
+  which holds the environment that process started with.
+- It can read any file the harness user can read, with `IO.FS.readFile`, and
+  print it into `kernel_output`.
 - It can print an allowlisted value. `USERPROFILE` and `HOME` hold the
   profile path, which names the user account.
+- It can send what it read over the network.
 - The text screen refuses `sorry`, `axiom` and the kernel-bypass constructs.
   It does not refuse `#eval` or `IO`, because sound proofs and metaprograms
   use both.
 
-Keeping a candidate away from the user's files takes a sandboxed build, which
-is the comparator rung.
+Keeping a candidate away from the harness's environment and the user's files
+takes Lean running as another OS identity or in a sandbox that cannot read the
+user's processes, which is the comparator rung. Until then, serve the Lean
+route from a process whose environment holds no secret.
 
 ### What a Lean accept does not say
 
@@ -336,6 +347,7 @@ is the comparator rung.
 - The math oracle does not read its task. It accepts any closed theorem, and
   the theorem need not be the one the task asked for. Binding a proof to a
   pinned challenge statement, as `leanprover/comparator` does, is open work.
-- The stored `kernel_output` can hold anything the candidate printed. Lean
-  ran with the allowlisted environment, so the only harness variables it can
-  hold are allowlisted ones. It can also hold a file the user can read.
+- The stored `kernel_output` can hold anything the candidate printed. That
+  includes every harness variable, which the candidate can read from the
+  process that started Lean past the allowlist, and any file the user can
+  read.

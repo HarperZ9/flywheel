@@ -157,22 +157,34 @@ def test_proof_run_and_lean_export_spawns_get_only_allowlisted_keys(
         _assert_scrubbed(argv, env)
 
 
-def _injected(rc: int):
+def _injected(rc: int, *, checker: bool = True):
     def run(argv, code):
+        if argv[0] == "leanchecker" and not checker:
+            raise OSError("leanchecker not installed")
         if "#print axioms" in code:
             return 0, "'probe_ok' does not depend on any axioms"
         return rc, "" if rc == 0 else "error: type mismatch"
     return run
 
 
+def _names_the_open_routes(line: str) -> bool:
+    # The allowlist empties the Lean process's own environment only. The
+    # parent's environment, readable files and the network stay open.
+    return all(part in line for part in (
+        "allowlisted environment", "the process that started Lean",
+        "any file this user can read", "network"))
+
+
 def test_the_result_names_what_the_allowlist_leaves_open():
     from harness.lean_oracle import LeanOracle
-    for rc, verdict in ((0, "PASS"), (1, "FAIL")):
-        r = LeanOracle(runner=_injected(rc)).verify(GOOD, None)
+    # Lean ran on every one of these; the last judged nothing because
+    # leanchecker could not start, which is UNVERIFIABLE.
+    for runner, verdict in ((_injected(0), "PASS"), (_injected(1), "FAIL"),
+                            (_injected(0, checker=False), "UNVERIFIABLE")):
+        r = LeanOracle(runner=runner).verify(GOOD, None)
         assert r.verdict() == verdict
-        assert any("allowlisted environment" in line
-                   and "any file this user can read" in line
-                   for line in r.does_not_prove), r.does_not_prove
+        assert any(_names_the_open_routes(line)
+                   for line in r.does_not_prove), (verdict, r.does_not_prove)
     # Refused before Lean ran: no claim about the environment Lean ran in.
     r = LeanOracle(runner=_injected(0)).verify("theorem t : True := sorry",
                                                 None)

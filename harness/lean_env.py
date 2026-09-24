@@ -25,12 +25,26 @@ Proxy variables stay out, because a proxy URL can carry a password. elan
 therefore cannot download a missing toolchain from inside a check; install
 the toolchain first.
 
-What the allowlist does not do: a candidate can still read any file this
-user can read (`IO.FS.readFile`) and print it, and it can print an
-allowlisted value, such as the profile path in USERPROFILE or HOME. The
-hygiene screen (benchmark_hygiene.py) refuses admitted holes and
-kernel-bypass constructs. It does not refuse `#eval` or `IO`, which sound
-proofs and metaprograms use.
+The allowlist empties the Lean process's own environment and does nothing
+else. The candidate runs as this user, so it can still:
+
+- read the environment of the process that started Lean. That is the
+  harness process, and it holds every variable the allowlist removed. On
+  Windows a program the candidate started read it out of the harness
+  process's memory through psutil, and the synthetic value reached the
+  kernel_output of a passing receipt (Lean 4.34.0, 2026-09-23). On Linux,
+  /proc/<pid>/environ holds the environment a process started with, and a
+  same-user child read the value there (WSL, no Lean run).
+- read any file this user can read (`IO.FS.readFile`);
+- print an allowlisted value, such as the profile path in USERPROFILE or
+  HOME;
+- send what it read over the network.
+
+Closing the first route takes Lean running as another OS identity or in a
+sandbox that cannot read this user's processes, or a harness process whose
+environment holds no secret. The hygiene screen (benchmark_hygiene.py)
+refuses admitted holes and kernel-bypass constructs. It does not refuse
+`#eval` or `IO`, which sound proofs and metaprograms use.
 """
 from __future__ import annotations
 

@@ -193,9 +193,9 @@ def _signature(candidate, fn: str, batt: list[tuple], workdir: Path,
         (workdir / "driver.py").write_text(driver, encoding="utf-8")
     except Exception:
         return ("UNRUNNABLE", idx)
-    # run_env is the oracle's allowlist: the candidate is model-written code and
-    # reads no harness variable. PYTHONHASHSEED=0 pins set/dict order so repr()
-    # signatures match across processes and selection stays deterministic.
+    # run_env empties the candidate's own env; it can still read this process's,
+    # but its output never reaches the selection receipt. PYTHONHASHSEED=0 pins
+    # set/dict order so repr() signatures, and so selection, stay deterministic.
     try:
         proc = spawn_killable(
             [sys.executable, "driver.py"], cwd=workdir,

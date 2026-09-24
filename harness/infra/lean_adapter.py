@@ -12,9 +12,10 @@ UNVERIFIABLE (never a silent pass).
 Every `lean` it starts gets harness/lean_env.py's allowlist as its
 environment. A file under check runs code while Lean elaborates it, and an
 `#eval IO.getEnv` in it printed a harness variable into `output_excerpt` of
-the sealed receipt before this (a synthetic value, 2026-09-23). The allowlist
-does not stop the file from printing what else this user can read, such as
-another file or the profile path.
+the sealed receipt before this (a synthetic value, 2026-09-23). The file can
+still print what else this user can read: another file, the profile path,
+or the environment of the process that started lean, which holds every
+variable the allowlist removed (lean_env.py).
 
 The verdict reads the exit code alone. Lean exits 0 on a `sorry` with only a
 warning, so MATCH here does not rule out an admitted hole; lean_oracle's

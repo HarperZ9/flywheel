@@ -33,10 +33,12 @@ _ELABORATION = (
     "during elaboration and compilation; one that writes files, such as the "
     "toolchain's .olean files, is outside what an in-process replay detects")
 _ENVIRONMENT = (
-    "Lean ran with an allowlisted environment (lean_env.py), so the candidate "
-    "could not read a harness variable off that list; it could still read any "
-    "file this user can read, or an allowlisted value such as the profile "
-    "path, and print it into the kernel output this result stores")
+    "Lean ran with an allowlisted environment (lean_env.py), which empties the "
+    "Lean process's own environment only; the candidate could still read every "
+    "harness variable from the process that started Lean, whose environment "
+    "this user can read, and it could read any file this user can read or an "
+    "allowlisted value such as the profile path, then print what it read into "
+    "the kernel output this result stores or send it over the network")
 _AUDIT_SCOPE = (
     "the axiom audit reads source-named theorem and lemma declarations only; "
     "a def, or a declaration a metaprogram added, whose value rests on an "

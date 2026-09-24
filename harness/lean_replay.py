@@ -45,7 +45,9 @@ Five choices here carry weight:
   and the receipt says where it came from.
 - Every spawn gets lean_env(), an allowlist, never the harness's whole
   environment. The candidate's code can read any variable its process
-  holds and print it into the output a receipt keeps (lean_env.py).
+  holds and print it into the output a receipt keeps. It can also read the
+  harness's environment from this process; lean_env.py lists what stays
+  open.
 """
 from __future__ import annotations
 

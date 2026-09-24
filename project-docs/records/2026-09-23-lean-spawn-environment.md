@@ -1,7 +1,11 @@
 # Lean spawn environment (2026-09-23)
 
-Status: the Lean spawns are fixed on branch `fix/lean-spawn-env`. The
-follow-ups at the end are open.
+Status: on branch `fix/lean-spawn-env` every Lean spawn gets an allowlisted
+environment. That closes the direct read (`IO.getEnv` in the Lean process).
+It does not close the ancestor read: a candidate can still read the
+harness's environment from the process that started Lean, and the value
+still reaches a stored receipt (see "The ancestor read"). The follow-ups at
+the end are open.
 
 ## The defect
 
@@ -56,7 +60,8 @@ It gave `passed: False` with `kernel_output` ending in
 After the fix the same three runs give `some` replaced by `none`: the kernel
 run's `kernel_output` is `none`, the replay refusal ends in `error: leak
 none`, and the adapter's `output_excerpt` is `none`. The probe value appears
-nowhere in any of the three receipts.
+nowhere in any of the three receipts. These candidates use the direct read
+only; the ancestor read below still reaches a receipt.
 
 The regression tests are in `tests/test_lean_spawn_env.py` and
 `tests/test_selector_probe_env.py`. Run against origin/main in a throwaway
@@ -93,7 +98,12 @@ purpose, because a proxy URL can carry a password.
 - `infra/lean_adapter.py`, `proof_run.py` and `lean_export.py` pass
   `env=lean_env()` to `subprocess.run`.
 - The math oracle's `does_not_prove` names what the allowlist leaves open on
-  every verdict where Lean ran.
+  every verdict where Lean ran: the environment of the process that started
+  Lean, readable files, allowlisted values and the network. The first commit
+  said the candidate "could not read a harness variable off that list",
+  which the ancestor read disproves; review caught it and the line was
+  corrected. `test_the_result_names_what_the_allowlist_leaves_open` checks
+  the line on PASS, FAIL and UNVERIFIABLE.
 
 Custom `ELAN_HOME`, checked two ways. The committed live test builds an elan
 home in a temporary directory: a `settings.toml` that pins the toolchain the
@@ -111,12 +121,20 @@ spawn in the chain.
 `subprocess` and `Popen` across `harness/`, read for spawns that run code a
 model or a submitter wrote.
 
+Every `run_env()` row that runs candidate code is open to the ancestor read
+described below: the allowlist empties the child's own environment, and the
+candidate can read the harness's from its parent. The last column says whether that value can
+then reach a stored record.
+
 | Spawn | Environment before | Candidate output in a stored receipt | Action |
 | --- | --- | --- | --- |
-| `oracle.py` PytestOracle | `run_env()` allowlist | yes, `stdout_excerpt` | none needed |
-| `exec_oracle.py`, `escalation.py`, `witness.py`, `suite_audit.py`, `task_curator.py`, `tasks_lib.py` | `run_env()` allowlist | not checked one by one; the allowlist already applies | none needed |
-| `sandboxed_runner.py` (agent shell through the sandbox) | `CredentialBindings.child_environment`, a tighter list | output is redacted of bound values | none needed |
-| `selector_probe._signature` | whole environment | no: the selection receipt stores hashes, indices and confidence only | fixed here: `run_env({"PYTHONHASHSEED": "0"})` |
+| `oracle.py` PytestOracle | `run_env()` allowlist | yes, `stdout_excerpt` | follow-up 6: the ancestor read reaches it |
+| `exec_oracle.py` | `run_env()` allowlist | `DenseResult.output_hash` holds the first 32 characters of the candidate's stdout; no module in `harness/` or `scripts/` imports `exec_oracle` | follow-up 6 |
+| `escalation.py` | `run_env()` allowlist | `py_compile` output in `stdout_excerpt`. The candidate is compiled and never runs | none needed |
+| `witness.py` | `run_env()` allowlist | no: the re-run output enters only the hash | none for receipts; the read itself stays open |
+| `suite_audit.py`, `task_curator.py`, `tasks_lib.py` | `run_env()` allowlist | no: only the exit code is kept | none for receipts; the read itself stays open |
+| `sandboxed_runner.py` (agent shell through the sandbox) | `CredentialBindings.child_environment`, a tighter list | output is redacted of bound values only | Windows: the low-integrity sandbox refused the ancestor read (observed). bwrap: its own pid namespace and `/proc` (inferred from the argv, not run). Seatbelt: the process table stays shared, and whether the profile allows reading another process's environment is unknown |
+| `selector_probe._signature` | whole environment | no: the selection receipt stores hashes, indices and confidence only | fixed here for the direct read: `run_env({"PYTHONHASHSEED": "0"})` |
 | `externalization_ablation._run_pytest` | whole environment | no: only the exit code is kept | follow-up 3 |
 | `verified_bench.subprocess_gate` | whole environment plus `PYTHONPATH` | no: output enters only the sha256 `gate_ref` | follow-up 2 |
 | `local_tools._t_run` with no runner | whole environment, `shell=True` | not a receipt; output returns to the agent | follow-up 4 |
@@ -127,10 +145,59 @@ the one the pytest oracle already applies to the same kind of code.
 `os.environ.get("FLYWHEEL_PROBE_SECRET")` got `'probe-value-123'` on
 origin/main and gets `None` now.
 
+## The ancestor read
+
+Found in review of the first commit on this branch, and re-run before the
+texts were corrected. The allowlist empties the Lean process's own
+environment. The candidate runs as the harness user, and that user can read
+the environment of another of its processes, including the harness process
+that started Lean.
+
+Windows, Lean 4.34.0, the fix commit `abe60fbc`, synthetic
+`FLYWHEEL_PROBE_SECRET=probe-value-123` set through `os.environ` in the
+harness process. The candidate's `#eval` ran `IO.Process.output` on
+`python -c` with a script that walks `psutil.Process().parents()` and prints
+the probe key from each ancestor's `environ()`, followed by
+`theorem probe_ok : 1 + 1 = 2 := rfl`. `lean_check` returned `passed: True`
+at `leanchecker_replay` with `kernel_output` holding
+`[('lean.exe', None), ('lean.exe', None), ('python.exe', 'probe-value-123'), ...]`.
+The third ancestor is the Python process that called `lean_check`. On
+`/api/lean` that is the gateway process, which calls `lean_check` in process
+and stores the receipt.
+
+The same script under the pytest oracle's spawn shape
+(`spawn_killable(cmd, shell=True, env=run_env())`) printed `None` for a
+direct read and `[('cmd.exe', None), ('python.exe', 'probe-value-123'), ...]`
+for the ancestors.
+
+Linux, WSL Ubuntu 24.04, Python 3.12.3, no Lean there. A child started with
+only `PATH` and `HOME` printed `direct getenv: None` and read
+`FLYWHEEL_PROBE_SECRET=probe-value-123` from `/proc/<ppid>/environ`. That
+file holds the environment the process started with: the same check with the
+variable set through `os.environ` after start found nothing. An exported
+secret, or one a service manager sets, is there from the start. That a Lean
+candidate reaches the same file with `IO.FS.readFile` is inferred, not run.
+
+The Windows low-integrity sandbox in `sandboxed_runner.py` refused the same
+read. Run through `sandboxed_run`, the script got `AccessDenied` on the
+harness process and printed no value. The same script started bare with
+`run_env()` printed the value. So Lean in that sandbox is one route to
+closing the read on Windows, if its build directory can be made writable
+there (follow-up 7).
+
+`tests/test_lean_env_residual.py` pins the route: its live test starts a
+harness process with the probe set from the start and asserts the value
+still reaches the receipt. If Lean comes to run isolated, that test fails
+and the texts that name the route get updated with it.
+
 ## What the allowlist leaves open
 
-- A Lean candidate can read any file the harness user can read
-  (`IO.FS.readFile`) and print it into `kernel_output`.
+- A Lean candidate can read the environment of the process that started
+  Lean, which holds every variable the allowlist removed, and print it into
+  `kernel_output` (above).
+- It can read any file the harness user can read (`IO.FS.readFile`) and
+  print it into `kernel_output`.
+- It can send what it read over the network.
 - It can print an allowlisted value. `USERPROFILE` and `HOME` hold the
   profile path, which names the user account.
 - `benchmark_hygiene.screen_statements` refuses `sorry`, `sorryAx`, `admit`,
@@ -139,9 +206,15 @@ origin/main and gets `None` now.
   a text screen for them would refuse good candidates and still miss a name
   built from parts.
 
+Closing the ancestor route takes Lean running as another OS identity or in a
+sandbox that cannot read this user's processes (a separate user, a
+low-integrity or AppContainer token on Windows, a pid namespace with its own
+`/proc` on Linux), or a harness process whose environment holds no secret.
 Closing the file route takes a sandboxed build with no read access outside
-the candidate's directory and the toolchain, which is the comparator rung
-(`project-docs/records/2026-09-23-lean-oracle-task-binding.md`).
+the candidate's directory and the toolchain. Both are the comparator rung
+(`project-docs/records/2026-09-23-lean-oracle-task-binding.md`). Until then,
+the practical control is to serve `/api/lean` from a process that holds no
+secret.
 
 ## Follow-ups
 
@@ -149,9 +222,11 @@ the candidate's directory and the toolchain, which is the comparator rung
    fix: `check_lean_source("theorem t : False := sorry")` gave `MATCH`, and
    its output held Lean's `declaration uses sorry` warning (exit 0). A grep
    of `harness/` and `scripts/` finds no caller besides the tests and a
-   parity row in `harness/parity_rows.py` that names the module. Route it
-   through `lean_check`, or read the sorry warning as refusal, before
-   anything relies on its verdict.
+   parity row in `harness/parity_rows.py` that names the module. Reading
+   the sorry warning as refusal would not be enough:
+   `check_lean_source("axiom bad : False\ntheorem t : False := bad\n")` also
+   gave `MATCH`, with empty output (observed in review). Route it through
+   `lean_check` before anything relies on its verdict.
 2. `verified_bench.subprocess_gate` runs an operator's gate command over a
    model-written `PROPOSED.md` with the whole environment. The output is
    hashed, so it does not reach a receipt, but a gate that executes the
@@ -170,6 +245,19 @@ the candidate's directory and the toolchain, which is the comparator rung
    inside a check. A `lean-toolchain` file in the working directory that
    names an uninstalled toolchain now fails where it might have downloaded.
    Not observed; it follows from the allowlist.
+6. The `run_env()` oracles are open to the ancestor read. A model-written
+   pytest candidate can read the harness's environment from its parent and
+   print it, and PytestOracle keeps the output as `stdout_excerpt`. The
+   spawn shape was observed leaking the synthetic value (above); the full
+   path through a stored oracle receipt is inferred, not run.
+   `exec_oracle`'s `output_hash` carries 32 characters of candidate stdout,
+   but nothing imports it. The fix is the one the Lean route needs, so it
+   belongs with follow-up 7.
+7. Isolate candidate execution from this user's processes. On Windows the
+   low-integrity sandbox (`sandboxed_runner.py`) refused the ancestor read in
+   one run; Lean would need its build directory and temp files writable
+   there, and the toolchain readable. On Linux a pid namespace with its own
+   `/proc` hides the harness. Neither has been tried with Lean.
 
 ## Unknowns
 
@@ -177,5 +265,19 @@ the candidate's directory and the toolchain, which is the comparator rung
   timeout inside a kernel run of a two-line file. Reruns on the same code
   and on the fix took 1 to 7 s per live test. The cause is unknown; it came
   before any change here.
-- Only Windows was run. The POSIX path of the custom `ELAN_HOME` test uses
-  `os.symlink` and was not executed.
+- Only Windows was run with Lean. The POSIX path of the custom `ELAN_HOME`
+  test uses `os.symlink` and was not executed, and the `/proc` branch of the
+  ancestor pin in `tests/test_lean_env_residual.py` has not run with Lean.
+- `tests/test_lean_replay.py::test_live_smuggled_declaration_is_refused_by_the_replay`
+  is slow and load sensitive. Its candidate imports `Lean`. In review it
+  failed once at its `axiom_footprint` assertion and passed alone. On the
+  fix's second round, with the machine at 78% CPU from other work, it
+  passed alone in 14 to 18 s on this branch (n=3) and took 16, 19 and 127 s
+  on origin/main (n=3). Four slice runs gave one pass, one 60 s pytest
+  timeout in this test, one 60 s timeout whose test name was not captured,
+  and one failure at the same assertion after 91 s with the per-test
+  timeout raised to 300 s.
+  The likely mechanism, inferred and not traced: the kernel run passed the
+  90 s `_TIMEOUT` in `lean_oracle.py`, so the audit never ran and the
+  footprint stayed empty. The test is untouched here, and origin/main shows
+  the same slowness.
