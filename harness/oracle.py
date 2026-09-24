@@ -14,7 +14,8 @@ Every pytest run writes its JUnit report under a fresh per-run name and the
 oracle reads only that file (junit_report.py). A report left over from an
 earlier run in the same workdir can no longer grade a candidate that exits
 before pytest writes one. That report also outranks the exit code: a failing
-or skipped outcome in it is FAIL even when the process exited 0.
+or skipped outcome in it is FAIL even when the process exited 0. Each run
+ends by putting the workdir back as it found it (workdir_restore.py).
 """
 from __future__ import annotations
 import hashlib
@@ -33,6 +34,7 @@ from .proc_kill import _kill_tree, spawn_killable  # noqa: F401
 from .junit_report import (FORCED_EXIT_NOTE, JUNIT_NAME, bind_report,  # noqa: F401
                            discard_report, exit_zero_note, grade)
 from .task import Task
+from .workdir_restore import restore, snapshot
 from .verdict import Verdict, Execution, Attribution, is_dispositive, attribution_for
 
 NO_REPORT_NOTE = ("[oracle] exit 0 with no fresh JUnit report: the process "
@@ -246,12 +248,14 @@ class PytestOracle:
         # The recorded command keeps the canonical report token. The executed
         # one writes to a name no earlier run used, read here and then removed.
         run_cmd, report = bind_report(cmd, workdir)
+        before = snapshot(workdir)      # so no run grades the next one
         try:
             out, rc = self._run(run_cmd, task.workdir)
             fresh = report is not None and report.exists()
             canon = _pytest_canonical(report)
         finally:
             discard_report(report)
+            restore(before)
         return _pytest_result(cmd, out, rc, canon, fresh)
 
     def _run(self, cmd: str, cwd: str) -> tuple[bytes, int]:

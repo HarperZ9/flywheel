@@ -52,6 +52,8 @@ purity.py` checks it by replay and by import closure.
 | `rl_from_oracle.py` | Collects a scored group of rollouts from the oracle. |
 | `advantages.py` | The group-relative estimator, recorded in receipts. |
 | `proc_kill.py` | `spawn_killable` and tree-kill, so a hostile candidate costs one timeout. |
+| `junit_report.py` | A fresh JUnit report per pytest run, and `grade`: exit 0, one pass or more, and no failed, skipped or xfailed test. |
+| `workdir_restore.py` | Puts the task workdir back after every oracle and witness run, so a file one candidate writes cannot grade the next. |
 
 ## The lane system
 
