@@ -81,6 +81,7 @@ jobs:
           tests/test_gate_end_to_end.py
           tests/test_file_gate.py
           tests/test_check_path_length.py
+          tests/test_check_tracked_junit.py
           tests/test_accept_path_purity.py
           tests/test_no_aggregate_over_the_person.py
           tests/test_criterion_spec.py
@@ -263,6 +264,21 @@ jobs:
         with:
           python-version: "3.13"
       - run: python scripts/check_path_length.py
+
+  junit_reports:
+    # pytest writes the build host's name into every JUnit report, and a
+    # failed import adds absolute local paths. 1149 oracle reports were
+    # committed before the oracle stopped leaving them in workdirs. The
+    # .gitignore keeps them out of `git add`; this catches `git add -f` and a
+    # report under any other name. Nothing is grandfathered.
+    name: no tracked JUnit report names a host or a local path
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.13"
+      - run: python scripts/check_tracked_junit.py
 
   writing:
     name: hard writing rules gate our prose; the score stays report-only

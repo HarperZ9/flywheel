@@ -66,6 +66,20 @@ run that wrote its output under a path that repeated its own root. Its
 206-character paths capped the clone directory at 51 characters. At 180, any
 clone directory up to 68 characters works.
 
+### The tracked JUnit report gate
+
+`python scripts/check_tracked_junit.py`, pinned by
+`tests/test_check_tracked_junit.py`.
+
+No JUnit report that git tracks may name the build host or hold an absolute
+local path, and nothing is grandfathered. pytest writes the host into every
+report, and a failed import adds the traceback's paths. The pytest oracle once
+left `_oracle_junit.xml` in every task workdir, and 1149 of them were
+committed. The oracle now reads only the report its own run wrote and deletes
+it, so a committed report is never evidence. The `.gitignore` keeps the
+oracle's reports out of `git add`. The gate catches `git add -f` and a JUnit
+report under any other name.
+
 ### The stdlib accept path
 
 `python scripts/check_verifier_stdlib.py`, pinned by

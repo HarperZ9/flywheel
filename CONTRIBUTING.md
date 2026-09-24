@@ -67,6 +67,7 @@ usually means a rule you had no way to guess, so the command is listed here.
 | :-- | :-- |
 | No source file over 300 lines, and the burn-down list only shrinks | `python scripts/check_file_gate.py` |
 | No tracked path over 180 characters, so a Windows clone needs no long-path setting | `python scripts/check_path_length.py` |
+| No tracked JUnit report names a host or an absolute local path | `python scripts/check_tracked_junit.py` |
 | The accept path imports nothing outside the standard library | `python scripts/check_verifier_stdlib.py` |
 | A published repository's instructions name no local path | `python scripts/check_public_instructions.py` |
 | No checker claims optimality on a public surface | `python scripts/check_claim_language.py` |
