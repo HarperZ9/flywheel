@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 
+import harness.oracle as oracle
 from scripts.run_flywheel_integration_benchmark import run_spin_benchmark
 
 RELATIVE_ROOT = Path("out") / "20260708_230923"
@@ -30,15 +31,29 @@ def spun(tmp_path_factory):
     # candidate and costs tens of seconds on a loaded Windows host.
     base = tmp_path_factory.mktemp("spin")
     before = Path.cwd()
+    reports = []
+    discard = oracle.discard_report
+
+    def observe(report):
+        # The oracle removes each per-run report after reading it
+        # (junit_report.py), so record where it was and whether it existed.
+        if report is not None:
+            where = report.resolve().parent.relative_to(base.resolve())
+            reports.append((where.as_posix(), report.exists()))
+        discard(report)
+
     os.chdir(base)
     try:
-        result = run_spin_benchmark(RELATIVE_ROOT, turns=1)
+        with pytest.MonkeyPatch.context() as patch:
+            patch.setattr(oracle, "discard_report", observe)
+            result = run_spin_benchmark(RELATIVE_ROOT, turns=1)
         after = Path.cwd()
     finally:
         os.chdir(before)
     written = sorted(p.relative_to(base).as_posix()
                      for p in base.rglob("*") if p.is_file())
-    return {"base": base, "after": after, "result": result, "written": written}
+    return {"base": base, "after": after, "result": result,
+            "written": written, "reports": reports}
 
 
 def test_run_spin_benchmark_restores_original_cwd(spun):
@@ -57,8 +72,10 @@ def test_the_oracle_ran_where_the_tests_are(spun):
     # A positive control: the check above would also pass if the oracle wrote
     # its receipts somewhere else entirely. In the nested run every junit file
     # reported tests="0" and the pass rate was 0.0, not the 0.5 that two
-    # correct candidates out of four earn.
+    # correct candidates out of four earn. Each report is removed once read,
+    # so the fixture records where every one sat at the moment it was read.
     root = RELATIVE_ROOT.as_posix()
+    read_in = {where for where, existed in spun["reports"] if existed}
     for task in TASKS:
-        assert f"{root}/spin/{task}/_oracle_junit.xml" in spun["written"]
+        assert f"{root}/spin/{task}" in read_in
     assert spun["result"]["first_turn"]["pass_rate"] == 0.5
