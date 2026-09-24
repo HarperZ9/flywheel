@@ -145,6 +145,8 @@ def _completion_possible(request: dict) -> bool:
 
 
 def _acceptable_ids(workflow: Workflow, request: dict) -> list[str]:
+    if not _completion_possible(request):
+        return []  # No eligible path completes the form, so blocking is the only right move.
     state = _state(request)
     choices = _choices(request)
     before = _mismatch(state["form"], state["request"])
@@ -162,9 +164,7 @@ def _acceptable_ids(workflow: Workflow, request: dict) -> list[str]:
                 labels.append(cid)
             elif result["status"] == "transient_failure" and _retry_submits(sim):
                 labels.append(cid)
-    if labels or _completion_possible(request):
-        return labels
-    return []
+    return labels
 
 
 def _retry_submits(workflow: Workflow) -> bool:

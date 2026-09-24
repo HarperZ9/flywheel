@@ -131,3 +131,49 @@ def test_transient_failure_state_labels_retry_submit():
         ]
         assert submit_ids
         assert set(submit_ids) <= set(row["acceptable_choice_ids"])
+
+
+def test_state_with_no_completion_path_labels_no_action():
+    """Regression: the old tail `if labels or possible: return labels` never fired,
+    so partial progress toward an impossible form was labelled acceptable."""
+    from train.classifier_workflow_data import _acceptable_ids, _choices, _completion_possible
+    from train.classifier_workflow_fixture import Workflow
+
+    workflow = Workflow("missing_destination_blocked", seed=1709)
+    request = workflow.request()
+    choices = _choices(request)
+    date = [cid for cid in request["eligible_choice_ids"]
+            if choices[cid] == {"op": "set", "field": "date", "value": "2026-10-03"}]
+    assert len(date) == 1  # this edit would still lower the field mismatch count
+    assert _completion_possible(request) is False
+    assert _acceptable_ids(workflow, request) == []
+
+
+def test_state_with_a_completion_path_keeps_its_progress_labels():
+    from train.classifier_workflow_data import _acceptable_ids, _choices
+    from train.classifier_workflow_fixture import Workflow
+
+    workflow = Workflow("basic_paris_search", seed=1709)
+    request = workflow.request()
+    labelled = {(m["field"], m["value"]) for cid, m in _choices(request).items()
+                if cid in _acceptable_ids(workflow, request)}
+    assert labelled == {("origin", "NYC"), ("destination", "Paris"), ("date", "2026-10-12"),
+                        ("travelers", "1 adult"), ("cabin", "economy")}
+
+
+def test_labels_agree_with_the_rule_policy_on_every_row():
+    """The authored rule policy is an independent oracle for these forms. It must
+    pick a labelled action wherever one exists and abstain exactly on empty labels.
+    Before the fix, dead-end perturbation rows broke this in 7 of 186 rows."""
+    from train.classifier_workflow_fixture import deterministic_policy
+
+    for seed in (1709, 43):
+        examples, _, _ = build_corpus(seed=seed, case_count=48)
+        disagreements = []
+        for row in examples:
+            pick = deterministic_policy(row["request"])
+            labels = row["acceptable_choice_ids"]
+            if (pick is None) != (labels == []) or (pick is not None and pick not in labels):
+                disagreements.append(row["label_provenance"]["source_ref"])
+        assert disagreements == []
+        assert sum(row["acceptable_choice_ids"] == [] for row in examples) > 0

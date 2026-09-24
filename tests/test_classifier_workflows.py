@@ -1,3 +1,4 @@
+import json
 from copy import deepcopy
 
 from harness.classifier_workflows import score_workflow_batch
@@ -68,3 +69,52 @@ def test_scorer_extras_do_not_enter_shadow_report():
     assert all(r["status"] == "scored_shadow" for r in results)
     assert "should-not-leak" not in str(results)
     assert all(r["scores"]["automatic_selection_enabled"] is False for r in results)
+
+
+def test_scorer_exception_leaves_its_type_and_no_text():
+    class Failed:
+        def score_batch(self, requests, *, task_family):
+            raise RuntimeError("internal private endpoint detail")
+
+    result = score_workflow_batch(packets(), Failed())
+    assert [r["scorer_error_type"] for r in result] == ["RuntimeError"] * 3
+    assert {r["scorer_error_stage"] for r in result} == {"score_batch"}
+    assert all(r["status"] == "scorer_unavailable" for r in result)
+    assert "private endpoint" not in json.dumps(result)
+
+
+def test_one_failing_family_does_not_mark_another():
+    class FailsRouting(Scorer):
+        def score_batch(self, requests, *, task_family):
+            if task_family == "routing":
+                raise TimeoutError("slow backend")
+            return super().score_batch(requests, task_family=task_family)
+
+    result = score_workflow_batch(packets(), FailsRouting())
+    assert [(r["task_family"], r["status"], r["scorer_error_type"]) for r in result] == [
+        ("routing", "scorer_unavailable", "TimeoutError"),
+        ("tool_selection", "scored_shadow", None),
+        ("routing", "scorer_unavailable", "TimeoutError")]
+
+
+def test_misbound_scores_are_a_binding_failure_not_a_scorer_exception():
+    result = score_workflow_batch(packets(), Scorer(mismatch=True))
+    assert {(r["scorer_error_type"], r["scorer_error_stage"]) for r in result} == {
+        ("ValueError", "binding")}
+
+
+def test_scored_decisions_carry_empty_error_fields():
+    result = score_workflow_batch(packets(), Scorer())
+    assert [(r["scorer_error_type"], r["scorer_error_stage"]) for r in result] == [(None, None)] * 3
+
+
+def test_exception_class_named_from_data_is_not_echoed():
+    leaky = type("secret token value", (Exception,), {})
+
+    class Failed:
+        def score_batch(self, requests, *, task_family):
+            raise leaky("private")
+
+    result = score_workflow_batch(packets(), Failed())
+    assert {r["scorer_error_type"] for r in result} == {"Exception"}
+    assert "secret" not in json.dumps(result)

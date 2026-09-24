@@ -71,6 +71,35 @@ def _bound_score(score: dict, request: dict, family: str) -> dict:
             "automatic_selection_enabled": False}
 
 
+def exception_type_name(exc: BaseException) -> str:
+    """Name the exception class only. Its message can carry private runtime detail."""
+    name = type(exc).__name__
+    # A class built at runtime can carry arbitrary text in its name.
+    return name if name.isidentifier() and len(name) <= 64 else "Exception"
+
+
+def _score_family(scorer, family: str, snapshots: list[dict]) -> tuple[list, tuple]:
+    """Score one family group; return (bound scores, (error type, error stage)).
+
+    A failure keeps the caller's fallback. The record names which step failed and
+    the exception class, so a stalled run can be told apart from a model that
+    chose to abstain, while the exception text never leaves this adapter.
+    """
+    requests = [copy.deepcopy(snapshot) for snapshot in snapshots]
+    try:
+        scores = scorer.score_batch(requests, task_family=family)
+    except Exception as exc:
+        return [], (exception_type_name(exc), "score_batch")
+    try:
+        if type(scores) is not list or len(scores) != len(snapshots):
+            raise ValueError("scorer result count mismatch")
+        checked = [_bound_score(score, snapshot, family)
+                   for score, snapshot in zip(scores, snapshots)]
+    except Exception as exc:
+        return [], (exception_type_name(exc), "binding")
+    return checked, (None, None)
+
+
 def score_workflow_batch(packets: list[dict], scorer) -> list[dict]:
     """Score at most 256 independent decisions without changing their workflow."""
     if type(packets) is not list or len(packets) > 256:
@@ -85,26 +114,20 @@ def score_workflow_batch(packets: list[dict], scorer) -> list[dict]:
         snapshot = validate_request(packet["request"])
         groups[family].append(len(snapshots))
         snapshots.append((family, snapshot))
-    bound = {}
+    bound, failures = {}, {}
     for family, indexes in groups.items():
-        requests = [copy.deepcopy(snapshots[index][1]) for index in indexes]
-        try:
-            scores = scorer.score_batch(requests, task_family=family)
-            if type(scores) is not list or len(scores) != len(indexes):
-                raise ValueError("scorer result count mismatch")
-            checked = [_bound_score(score, snapshots[index][1], family)
-                       for score, index in zip(scores, indexes)]
-            bound.update(zip(indexes, checked))
-        except Exception:
-            # Preserve the caller's fallback and avoid leaking runtime errors.
-            continue
+        checked, failure = _score_family(scorer, family, [snapshots[i][1] for i in indexes])
+        bound.update(zip(indexes, checked))
+        failures.update((index, failure) for index in indexes)
     result = []
     for index, (family, snapshot) in enumerate(snapshots):
         score = bound.get(index)
+        error_type, error_stage = failures[index]
         result.append({
             "schema": "flywheel.classifier-workflow-shadow/v1",
             "task_family": family, "request_sha256": canonical_sha256(snapshot),
             "status": "scored_shadow" if score is not None else "scorer_unavailable",
+            "scorer_error_type": error_type, "scorer_error_stage": error_stage,
             "scores": score, "fallback_required": True,
             "proposal": evaluate_proposal(snapshot, json.dumps({
                 "choice_id": None, "evidence_refs": []}), scorer_ref="classifier-shadow"),
