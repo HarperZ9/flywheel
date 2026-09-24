@@ -139,6 +139,19 @@ sibling modules (`classifier_features.py`, `classifier_training.py`,
 own docstring and `DOES_NOT_PROVE` constant state what a score does not
 establish. The model can rank candidates. It cannot accept one.
 
+The decision lane sits beside it under the same fence. `systemone_contract.py`
+validates `/v1/systemone`-shaped requests and maps them to and from
+`flywheel.decision-request/v1`. `decision_policy.py` and `decision_policy_fit.py`
+fit and apply `flywheel.decision-policy-card/v1` cards: the abstention gates, the
+fold into `select_threshold`, the feasibility floor and revocation. `conformal.py`
+builds split-conformal prediction sets. `decision_bench.py`,
+`decision_bench_sealed.py` and `decision_bench_metrics.py` run sealed suites with
+a single-use confirm and a control battery, and `decision_backends/` holds the
+backend protocol, the five controls and the lexical rule. The purity test
+(`tests/test_accept_path_purity.py`) forbids every `decision_*`, `classifier_*`,
+`systemone_contract`, `conformal` and `train.*` module in the verifier closure,
+so no fitted policy can reach a verdict.
+
 ## Where the "why" lives
 
 Four modules carry the reasoning the rest of the tree assumes. Read their
