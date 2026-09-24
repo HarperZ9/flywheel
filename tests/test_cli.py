@@ -55,17 +55,21 @@ def test_cli_with_cache_does_not_crash(tmp_path, capsys):
 def test_cli_boot_root_leads_chain_with_boot_stage(tmp_path, capsys,
                                                    monkeypatch):
     # --boot once raised NameError inside run_loop. The index lane is stubbed
-    # so the run does not spawn an MCP server.
+    # so the run does not spawn an MCP server; the stub records the budget and
+    # focus boot() passes it, which shows --boot-budget reaches boot().
     import harness.boot as boot_mod
+    seen = []
     monkeypatch.setattr(boot_mod, "_safe_context_envelope",
-                        lambda *a, **k: None)
+                        lambda root, budget, focus: seen.append((budget, focus)))
     ws = tmp_path / "ws"
     ws.mkdir()
     (ws / "mod.py").write_text("X = 1\n")
     task_dir = materialize(REGISTRY[1], tmp_path / "task")
     from harness.cli import main
     rc = main([str(task_dir), "--no-witness", "--boot", str(ws),
+               "--boot-budget", "10",
                "--envelopes-dir", str(tmp_path / "env")])
     obj = json.loads(capsys.readouterr().out)
     assert obj["chain_stages"][0] == "boot"
+    assert seen == [(10, REGISTRY[1].task_id)]
     assert rc in (0, 1)
