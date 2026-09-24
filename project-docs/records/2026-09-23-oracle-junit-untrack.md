@@ -56,12 +56,20 @@ What it found:
   sorted test outcomes and the exit code, and a witness re-derives it by
   running the recorded `oracle_cmd` again. Since #288 the oracle and the
   witness read only the report their own run wrote, and delete it after.
-- Checked on the 14 receipts whose output hash matched a removed report. For
-  each, the tracked workdir was copied with every report left out, the
-  receipt's candidate written, and the receipt's `oracle_cmd` run with the
-  report token bound to a fresh name. 14 of 14 reproduced the recorded hash.
-  The control wrote an empty candidate into the same 14 copies, and 0 of 14
-  reproduced it. Run on Windows, Python 3.12.10, pytest 8.4.2.
+- Checked on all 20 receipts whose output hash matched a removed report: the
+  8 in `.tmp-flywheel-cache/` and the 12 loop receipts, one in `loop/cache/`
+  and one in `loop/env/` for each of 6 runs. In every run the `loop/env`
+  receipt matches the `loop/cache` receipt field for field. For each receipt,
+  the tracked workdir was copied with every report left out, the receipt's
+  candidate written, and the receipt's `oracle_cmd` run with the report token
+  bound to a fresh name. 20 of 20 reproduced the recorded hash. The control
+  wrote an empty candidate into the same 20 copies, and 0 of 20 reproduced
+  it. Run on Windows, Python 3.12.10, pytest 8.4.2. The loop receipts quote
+  pytest 9.0.3 and Python 3.12.10 as the versions they were recorded with.
+- A first pass re-ran only the 14 distinct receipts, the 8 cache receipts and
+  the 6 in `loop/cache/`, and got 14 of 14. The message of commit b0a57fd2
+  reports that pass as if the 14 were every receipt that matched. The full
+  set is the 20 above.
 - The 9 task-workdir copies were a live hazard before #288. On a fresh clone,
   a candidate that exits before pytest writes read the committed report and
   passed. They go regardless of references.
@@ -78,25 +86,39 @@ What it found:
   depth.
 - `python scripts/check_tracked_junit.py`, pinned by
   `tests/test_check_tracked_junit.py` and run by the `junit_reports` CI job,
-  exits 1 on any tracked JUnit report with a non-empty `hostname` or an
-  absolute path. It finds a report by the oracle's file name or by a
-  `<testsuites>` or `<testsuite>` root, so `git add -f` and a report under
-  another name both fail.
+  exits 1 on any tracked JUnit report with a non-empty `hostname` attribute or
+  path-shaped text. It finds a report by the oracle's file name, or by a
+  `<testsuites>` or `<testsuite>` root element in any tracked file, whatever
+  its name or extension. It skips an XML prolog before the root, and it reads
+  UTF-8, UTF-16, and UTF-32 with a byte order mark. So `git add -f` fails, and
+  so does a report under another name. The script's docstring lists the
+  shapes it does not catch.
+- The path rule errs toward failing. A path-shaped literal from a test's own
+  source, such as `'/tmp/cache'`, fails too, because the gate cannot tell it
+  from a path on the build machine.
+- Run on commit 02a33d2dbf, the gate as committed here finds the same 1149
+  reports, all 1149 naming a host and 63 holding absolute paths.
 
 ## Recheck
 
 - `git ls-tree -r --name-only 02a33d2dbf | grep -c _oracle_junit` prints 1149.
 - `git show 02a33d2dbf:<path>` prints any removed report.
 - `python scripts/check_tracked_junit.py` exits 0 and counts 0 reports.
+- With a detached worktree of 02a33d2dbf at `<dir>`, this command, run from
+  this checkout, exits 1 and ends with
+  `1149 of 1149 tracked JUnit reports name a host or an absolute path`:
+  `python -c "import sys; sys.path.insert(0, 'scripts'); import check_tracked_junit as g; sys.exit(g.main(sys.argv[1]))" <dir>`.
 
 ## Does not prove
 
-- That the tree names no machine. The loop receipts under
-  `artifacts/agent_recovery_benchmark/*/loop/` and the 8 receipts in
-  `.tmp-flywheel-cache/` quote pytest's stdout, and its `rootdir` and
-  `generated xml file` lines hold absolute local paths. They are receipts, the
-  gate does not read them, and this change leaves them as they are.
+- That the tree names no machine. The 12 loop receipts under
+  `artifacts/agent_recovery_benchmark/*/loop/cache/` and `loop/env/` quote
+  pytest's stdout, and its `rootdir` and `generated xml file` lines hold
+  absolute local paths. They are receipts, the gate does not read them, and
+  this change leaves them as they are. The 8 receipts in
+  `.tmp-flywheel-cache/` hold no absolute path: their stdout excerpt is only
+  pytest's progress line.
 - That the reports are gone from the public record. Git history keeps every
   removed blob.
-- That the re-derivation holds on another host or pytest version. It ran once,
-  on the host named above.
+- That the re-derivation holds on another host or pytest version. It ran on
+  one Windows host with Python 3.12.10 and pytest 8.4.2.

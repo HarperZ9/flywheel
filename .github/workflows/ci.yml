@@ -269,8 +269,9 @@ jobs:
     # pytest writes the build host's name into every JUnit report, and a
     # failed import adds absolute local paths. 1149 oracle reports were
     # committed before the oracle stopped leaving them in workdirs. The
-    # .gitignore keeps them out of `git add`; this catches `git add -f` and a
-    # report under any other name. Nothing is grandfathered.
+    # .gitignore keeps them out of `git add`; this catches `git add -f`, and a
+    # report under another name, which it finds by its testsuite root element
+    # in any tracked file. Nothing is grandfathered.
     name: no tracked JUnit report names a host or a local path
     runs-on: ubuntu-latest
     steps:

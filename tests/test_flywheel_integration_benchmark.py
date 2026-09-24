@@ -1,4 +1,4 @@
-"""The spin step of the integration benchmark, run once and checked three ways.
+"""The spin step of the integration benchmark, run once and checked four ways.
 
 Run 20260708_230923 passed a relative output root, and its committed output
 repeated the run root in paths up to 206 characters. A Windows clone without

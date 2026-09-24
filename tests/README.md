@@ -77,8 +77,13 @@ report, and a failed import adds the traceback's paths. The pytest oracle once
 left `_oracle_junit.xml` in every task workdir, and 1149 of them were
 committed. The oracle now reads only the report its own run wrote and deletes
 it, so a committed report is never evidence. The `.gitignore` keeps the
-oracle's reports out of `git add`. The gate catches `git add -f` and a JUnit
-report under any other name.
+oracle's reports out of `git add`. The gate catches `git add -f`. It also reads
+every tracked file and treats any whose root element is `<testsuites>` or
+`<testsuite>` as a report, whatever its name or extension. It skips an XML
+prolog first, and it reads UTF-8, UTF-16, and UTF-32 with a byte order mark.
+A report fails on a `hostname` attribute and on any path-shaped text, a
+literal from a test's own source included. The script's docstring lists the
+shapes it does not catch.
 
 ### The stdlib accept path
 
