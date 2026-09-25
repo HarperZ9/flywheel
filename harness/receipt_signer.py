@@ -23,6 +23,7 @@ from __future__ import annotations
 import base64
 import binascii
 import hashlib
+import logging
 import os
 import subprocess
 import sys
@@ -33,6 +34,7 @@ from .receipt import Receipt
 from .receipt_sign import SignedReceipt, ed25519_attach
 
 # A signer keeps its key outside every repo, under the user's own home.
+_log = logging.getLogger(__name__)
 DEFAULT_KEY_PATH = Path.home() / ".flywheel" / "keys" / "receipt-signing-ed25519"
 
 _OPENSSH_PRIVATE_MARKER = b"-----BEGIN OPENSSH PRIVATE KEY-----"
@@ -132,6 +134,22 @@ def _lock_down(path: Path) -> None:
                     capture_output=True, text=True, check=False)
             except OSError:
                 pass
+    _label_key(path)
+
+
+def _label_key(path: Path) -> None:
+    """Keep the key unreadable from the low-integrity Windows command sandbox.
+
+    The owner-only DACL above does not stop a low-integrity child running as
+    the same user; the No-Read-Up label does (secret_file_label.py). A host
+    that refuses the label keeps working and logs why."""
+    from .secret_file_label import protect_from_lower_integrity
+    try:
+        protect_from_lower_integrity(path)
+    except OSError as exc:
+        _log.warning("signing key integrity label not applied (%s: %s); a "
+                     "low-integrity sandboxed command may be able to read it",
+                     type(exc).__name__, exc.errno)
 
 
 def generate_signing_key(dest, *, comment: str,
@@ -191,6 +209,8 @@ def load_signing_key(path=DEFAULT_KEY_PATH) -> SigningKey:
     """Load an OpenSSH Ed25519 private key from `path` into a `SigningKey`."""
     from cryptography.hazmat.primitives.serialization import (
         load_ssh_private_key)
+    if Path(path).is_file():
+        _label_key(Path(path))  # a key minted before the label existed gets it here
     data = Path(path).read_bytes()
     if _OPENSSH_PRIVATE_MARKER not in data:
         raise SigningKeyError(
