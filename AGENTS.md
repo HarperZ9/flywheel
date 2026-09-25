@@ -33,6 +33,10 @@ archived and read-only; nothing lands there.
 
 ## Gates that must stay green (run before a commit that touches them)
 - `python scripts/check_file_gate.py`: no file over 300 lines. The burn-down only shrinks.
+- `python scripts/check_path_length.py`: no tracked path over 180 characters, so a
+  Windows clone works without core.longpaths. Nothing is grandfathered.
+- `python scripts/check_tracked_junit.py`: no tracked JUnit report names the
+  build host or an absolute local path. Nothing is grandfathered.
 - `python scripts/check_verifier_stdlib.py`: the accept path imports no third party.
 - `python scripts/check_claim_language.py`: no optimality claim on a public surface.
 - `python scripts/check_public_instructions.py`: published instruction files stand alone.

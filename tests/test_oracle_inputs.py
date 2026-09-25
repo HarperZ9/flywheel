@@ -61,7 +61,8 @@ def test_capture_skips_what_a_build_produced_not_what_a_task_supplied(tmp_path):
 def test_capture_never_ships_the_answer_key(tmp_path):
     """canonical_hash reads outcomes back out of the junit file. A receipt
     carrying one would arrive in the fresh directory already graded."""
-    _tree(tmp_path, {"tests/t.py": "ok", "_oracle_junit.xml": "<testsuites/>"})
+    _tree(tmp_path, {"tests/t.py": "ok", "_oracle_junit.xml": "<testsuites/>",
+                     "_oracle_junit_0123456789abcdef.xml": "<testsuites/>"})
     assert set(_carried(tmp_path)) == {"tests/t.py"}
 
 
@@ -123,6 +124,7 @@ def test_restore_re_enforces_every_bound_capture_applied(tmp_path):
     so it cannot inherit capture's guarantees. It re-checks them."""
     hostile = {
         "_oracle_junit.xml": "<testsuites/>",          # the answer key
+        "_oracle_junit_0123456789abcdef.xml": "<x/>",  # a per-run answer key
         "__pycache__/x.pyc": "stale",                  # a build artefact
         "big.py": "#" * (MAX_FILE_BYTES + 1),          # over the per-file cap
         "n.py": 5,                                     # not even text

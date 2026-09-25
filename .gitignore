@@ -26,6 +26,14 @@ envelopes-turn-*/
 .warden-safe-cache/
 *.safe
 
+# pytest oracle JUnit reports, at any depth. pytest writes the build host's
+# name into each one, and a failed import adds absolute local paths. The
+# oracle reads only the per-run report it just wrote and then deletes it
+# (harness/junit_report.py), so no committed copy is ever evidence. 1149 were
+# removed on 2026-09-23; scripts/check_tracked_junit.py fails on a new one.
+_oracle_junit.xml
+_oracle_junit_*.xml
+
 # --- proprietary corpus source identifiers ---
 # INVARIANT: only aggregate stats leave the repo; the per-file source manifest
 # enumerates real C:\dev source paths and must stay proprietary.

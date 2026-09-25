@@ -179,3 +179,117 @@ It does not say those sources are right. A table can be out of date and a
 checker program can be wrong, and the kernel has no opinion about either. The
 axiom list is there so the reader can see what remains to be trusted, which is
 a smaller and more specific claim than "verified".
+
+## Judging Lean that someone else wrote
+
+The file `--verify-lean` checks is one Flywheel wrote. It holds definitions,
+theorems closed `by decide`, and named axioms, and it runs no code of its own.
+The math domain oracle, `lean_check` in `harness/lean_oracle.py`, judges Lean
+that a model wrote. That source can run its own programs while Lean elaborates
+it, and an exit code or an axiom list cannot see everything those programs do.
+
+This file proves `False`, and before the replay rung below the oracle passed it:
+
+```lean
+import Lean
+open Lean Meta
+
+def optName : Name := Name.mkStr (Name.mkSimple "debug") "skipKernelTC"
+
+run_meta do
+  withOptions (fun o => o.setBool optName true) do
+    addDecl (Declaration.thmDecl {
+      name := `smuggled
+      levelParams := []
+      type := mkConst ``False
+      value := mkConst ``True.intro })
+
+theorem bad : False := smuggled
+```
+
+The metaprogram stores `smuggled : False` with the kernel check switched off.
+It spells the option as a name built from parts, so a text screen for
+`debug.skipKernelTC` finds nothing. `lean` exits 0 with no warning.
+`#print axioms bad` reports no axioms, because it reads the same environment
+the metaprogram wrote.
+
+So `lean_check` climbs the validation ladder from the Lean reference's
+"Validating Proofs" chapter one rung further. A text screen for `sorry`,
+`axiom`, `native_decide` and the other escape hatches runs first. After it,
+each rung runs only when the rung below it passed.
+
+| Rung | `validation_level` | What it refuses |
+| --- | --- | --- |
+| Kernel exit | `exit_code` | an error, or a `sorry` warning on an exit of 0 |
+| Axiom list | `print_axioms` | a named theorem resting on any axiom besides `propext`, `Classical.choice` and `Quot.sound` |
+| Replay | `leanchecker_replay` | a stored declaration whose value does not have its stored type |
+| Comparator | `comparator_external` | not implemented here |
+
+The replay compiles the candidate to an `.olean` file in a temporary directory
+and runs `leanchecker Candidate` on it. leanchecker ships in the Lean toolchain.
+It reads the compiled module in a separate process and sends every declaration
+the module adds back through the kernel. On the file above it stops with
+`declaration type mismatch, 'smuggled' has type True but it is expected to have
+type False`, and the verdict is `FAIL`.
+
+Four details of how the replay runs:
+
+- leanchecker comes from the installation that `lean --print-prefix` names for
+  the `lean` that compiled the module. An `.olean` file belongs to the toolchain
+  that wrote it.
+- leanchecker's `LEAN_PATH` is the toolchain's library, then every entry of
+  the `LEAN_PATH` the harness was started with, then the build directory. The
+  kernel run and the compile read the inherited entries (`lake env` puts
+  Mathlib there), so the replay reads them too. Without them, a sound proof
+  that imports from one of those entries came back `FAIL`.
+- The build directory goes last because the candidate's code can write into
+  it. When it came first, a planted `Init` package there shadowed the real
+  one. Last in line, it only has to supply the name `Candidate`. If an
+  earlier entry also holds a `Candidate` module or directory, the replay
+  stops with `UNVERIFIABLE`. leanchecker would read that module in place of
+  the one the compile wrote: a harmless `Candidate.olean` placed there let
+  the file above pass the replay (exit 0).
+- It runs in plain mode. Plain mode checks the candidate's own declarations
+  again and trusts the toolchain modules it imports. `--fresh` replays the
+  imports too. On one machine it took 153 s on a one-line file (one run),
+  where plain mode took 1.7 to 3.1 s (three runs on each of two files).
+
+A leanchecker exit other than 0 is `FAIL`, and so are a leanchecker timeout
+and an `.olean` compile that fails. A replay that judged nothing gives
+`UNVERIFIABLE`, never `PASS`, and `unverifiable_reason` names the step:
+
+| `unverifiable_reason` | Cause |
+| --- | --- |
+| `leanchecker-unavailable` | the toolchain has no leanchecker, or it will not start |
+| `lean-compile-unavailable` | `lean` would not start for the `.olean` compile |
+| `leanchecker-import-unresolved` | leanchecker could not load a module the compile loaded |
+| `replay-module-shadowed` | an earlier search path entry holds a `Candidate` module |
+
+The import case is matched on the line right after leanchecker's `found a
+problem` header. There a kernel refusal starts with `while replaying
+declaration`, so a declaration name cannot make a refusal read as an import
+failure. The replay adds about 3 to 4.5 s to each candidate that
+reaches it (median of three runs on each of two files, one machine).
+
+`validation_level` names the highest rung cleared with every rung below it
+cleared too. The axiom rung reads named `theorem` and `lemma` declarations. A
+file with none of them gives it nothing to read, so the level stays `exit_code`
+even when the replay accepts the file. The receipt also carries
+`validation_ladder`, the four rung names in order, and a `leanchecker` block
+with `mode`, `module`, `exit` and `version`. leanchecker has no version flag,
+so `version` is the toolchain's `lean --version` line, and `version_source`
+says so.
+
+### What a Lean accept does not say
+
+- The replay trusts every imported `.olean` file as it sits on disk: the
+  toolchain's own, and any found through the inherited `LEAN_PATH`. The
+  candidate's code ran with the user's rights while Lean elaborated it and
+  could have changed files. Catching that takes a sandboxed build, which is
+  the comparator rung.
+- The axiom rung covers named `theorem` and `lemma` declarations only. A `def`,
+  or a declaration that a metaprogram added, can rest on an axiom the audit
+  never reads, and the replay accepts an axiom as a valid declaration.
+- The math oracle does not read its task. It accepts any closed theorem, and
+  the theorem need not be the one the task asked for. Binding a proof to a
+  pinned challenge statement, as `leanprover/comparator` does, is open work.

@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 from .envelope import ProofEnvelope, load_envelope
+from .junit_report import is_report_name
 from .task import Task
 
 _SKIP_DIRS = {"__pycache__", ".pytest_cache", "_oracle_junit.xml"}
@@ -80,7 +81,8 @@ def oracle_input_hash(task: Task) -> str:
         for p in sorted(wd.rglob("*")):
             if not p.is_file():
                 continue
-            if p.name == cand_name or p.name in _SKIP_DIRS:
+            if (p.name == cand_name or p.name in _SKIP_DIRS
+                    or is_report_name(p.name)):
                 continue
             if any(part in _SKIP_DIRS for part in p.parts):
                 continue

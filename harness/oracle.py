@@ -9,6 +9,12 @@ Determinism contract: output_hash is over CANONICAL content (test outcomes),
 never raw stdout — pytest's `N passed in X.XXs` timing line would otherwise
 break the receipt chain. canonical_hash() is shared by oracle + witness so a
 third party re-running oracle_cmd reproduces the hash.
+
+Every pytest run writes its JUnit report under a fresh per-run name and the
+oracle reads only that file (junit_report.py). A report left over from an
+earlier run in the same workdir can no longer grade a candidate that exits
+before pytest writes one. That report also outranks the exit code: a failing
+outcome in it is FAIL even when the candidate forced the process to exit 0.
 """
 from __future__ import annotations
 import hashlib
@@ -23,10 +29,15 @@ from typing import Protocol
 # re-exported here because six modules imported them from this file
 # before the reasoning behind them outgrew its line budget.
 from .proc_kill import _kill_tree, spawn_killable  # noqa: F401
+# JUNIT_NAME is re-exported for callers that name the canonical report token.
+from .junit_report import JUNIT_NAME, bind_report, discard_report, grade  # noqa: F401
 from .task import Task
 from .verdict import Verdict, Execution, Attribution, is_dispositive, attribution_for
 
-JUNIT_NAME = "_oracle_junit.xml"
+NO_REPORT_NOTE = ("[oracle] exit 0 with no fresh JUnit report: the process "
+                  "ended before pytest wrote results; graded FAIL\n")
+FORCED_EXIT_NOTE = ("[oracle] exit 0, but this run's JUnit report records a "
+                    "failing test: the exit code was forced; graded FAIL\n")
 
 
 def clear_bytecode(workdir: Path) -> None:
@@ -144,12 +155,12 @@ def _excerpt(stdout: bytes, n: int = 1200) -> str:
     return t[-n:] if len(t) > n else t
 
 
-def _pytest_canonical(workdir: Path) -> str:
-    jp = workdir / JUNIT_NAME
-    if not jp.exists():
+def _pytest_canonical(report: Path | None) -> str:
+    """Sorted per-test outcomes from THIS run's report, or "" without one."""
+    if report is None or not report.exists():
         return ""
     outcomes = []
-    for tc in ET.parse(jp).iter("testcase"):
+    for tc in ET.parse(report).iter("testcase"):
         name = f"{tc.get('classname', '')}::{tc.get('name', '')}"
         if tc.find("failure") is not None or tc.find("error") is not None:
             outcomes.append(f"{name}=FAIL")
@@ -160,21 +171,54 @@ def _pytest_canonical(workdir: Path) -> str:
     return "\n".join(sorted(outcomes))
 
 
-def _pytest_ran_a_real_pass(workdir: Path) -> bool:
-    """True iff the junit record shows at least one testcase that actually
-    PASSED. pytest exits 0 when every collected test was SKIPPED, so a green
-    exit code alone can mean zero executed assertions; that run verified
-    nothing and must not read as a pass."""
-    canon = _pytest_canonical(workdir)
-    return any(line.endswith("=PASS") for line in canon.splitlines())
-
-
-def canonical_hash(oracle_type: str, workdir: Path, rc: int) -> str:
-    if oracle_type == "pytest":
-        canon = _pytest_canonical(workdir)
-    else:
-        canon = ""
+def _digest(canon: str, rc: int) -> str:
     return hashlib.sha256(f"{canon}\n{rc}".encode()).hexdigest()[:16]
+
+
+def canonical_hash(oracle_type: str, workdir: Path, rc: int, *,
+                   report: Path | None = None) -> str:
+    """Hash of the canonical outcomes plus the exit code.
+
+    A pytest oracle reads its outcomes from `report`, the per-run file that
+    junit_report.bind_report named. Without one the outcomes are empty: the
+    fixed name in the workdir is never read, because it may hold an earlier
+    run's results. `workdir` stays in the signature for existing callers.
+    """
+    canon = _pytest_canonical(report) if oracle_type == "pytest" else ""
+    return _digest(canon, rc)
+
+
+def rerun_outcome(oracle_type: str, rc: int, report: Path | None
+                  ) -> tuple[str, Verdict | None]:
+    """A re-run's canonical hash and, for pytest, the verdict it supports.
+
+    The witness needs both, because a hash can match under a verdict the
+    outcomes do not support. Other oracle types give no verdict: their
+    canonical form is empty, so re-running the command cannot re-derive it.
+    """
+    if oracle_type != "pytest":
+        return _digest("", rc), None
+    canon = _pytest_canonical(report)
+    return _digest(canon, rc), grade(canon, rc)
+
+
+def _pytest_result(cmd: str, out: bytes, rc: int, canon: str,
+                   fresh: bool) -> OracleResult:
+    """Grade one pytest run from its own report (junit_report.grade).
+
+    Exit 0 with no fresh report means the process ended before pytest wrote
+    results, for example a candidate calling os._exit(0) at import, so the
+    run CRASHED. Exit 0 over a failing outcome means the candidate forced the
+    exit code after pytest recorded the failure. Both are candidate FAILs.
+    """
+    note, execution = "", Execution.COMPLETED
+    if rc == 0 and not fresh:
+        note, execution = NO_REPORT_NOTE, Execution.CRASHED
+    elif rc == 0 and any(ln.endswith("=FAIL") for ln in canon.splitlines()):
+        note = FORCED_EXIT_NOTE
+    return OracleResult(
+        verdict_=grade(canon, rc), cmd=cmd, output_hash=_digest(canon, rc),
+        stdout_excerpt=note + _excerpt(out), rc=rc, execution=execution)
 
 
 class PytestOracle:
@@ -194,11 +238,24 @@ class PytestOracle:
         return verify_prepared(self, argv, task, input_refs)
 
     def verify(self, candidate: str, task: Task) -> OracleResult:
+        workdir = Path(task.workdir)
         cpath = task.candidate_full()
         cpath.parent.mkdir(parents=True, exist_ok=True)
         cpath.write_text(candidate, encoding="utf-8")
-        clear_bytecode(Path(task.workdir))
+        clear_bytecode(workdir)
         cmd = self._cmd(task)
+        # The recorded command keeps the canonical report token. The executed
+        # one writes to a name no earlier run used, read here and then removed.
+        run_cmd, report = bind_report(cmd, workdir)
+        try:
+            out, rc = self._run(run_cmd, task.workdir)
+            fresh = report is not None and report.exists()
+            canon = _pytest_canonical(report)
+        finally:
+            discard_report(report)
+        return _pytest_result(cmd, out, rc, canon, fresh)
+
+    def _run(self, cmd: str, cwd: str) -> tuple[bytes, int]:
         # Popen + tree-kill, NOT subprocess.run(timeout=): with shell=True on
         # Windows, run() kills only cmd.exe on timeout — the pytest grandchild
         # (e.g. a candidate with an infinite loop) survives holding the stdout
@@ -206,7 +263,7 @@ class PytestOracle:
         # must cost one timeout, never a wedged harness.
         out: bytes = b""
         proc = spawn_killable(
-            cmd, cwd=task.workdir, shell=True, env=run_env(),
+            cmd, cwd=cwd, shell=True, env=run_env(),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
             out, _ = proc.communicate(timeout=self.timeout)
@@ -218,11 +275,7 @@ class PytestOracle:
             except Exception:
                 out = b""
             rc = 124
-        return OracleResult(
-            passed=rc == 0 and _pytest_ran_a_real_pass(Path(task.workdir)),
-            cmd=cmd,
-            output_hash=canonical_hash("pytest", Path(task.workdir), rc),
-            stdout_excerpt=_excerpt(out), rc=rc)
+        return out, rc
 
 
 class StubOracle:
