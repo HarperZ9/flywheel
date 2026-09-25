@@ -184,8 +184,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--root", default=".",
                     help=("sandbox root for file/exec tools (--agent); "
                           "repo root for receipt tools (--mcp)"))
-    ap.add_argument("--allow-write", action="store_true", dest="allow_write")
-    ap.add_argument("--allow-exec", action="store_true", dest="allow_exec")
+    ap.add_argument("--allow-write", action="store_true", dest="allow_write",
+                    help="grant the write tools (--agent; the operator grant for --mcp runs)")
+    ap.add_argument("--allow-exec", action="store_true", dest="allow_exec",
+                    help="grant the sandboxed exec tool (--agent; the operator grant for --mcp runs)")
     ap.add_argument("--isolate", action="store_true",
                     help="run in a disposable copy of --root (--agent)")
     ap.add_argument("--max-steps", type=int, default=6, dest="max_steps")
@@ -210,8 +212,10 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--isolate and --auto-commit cannot both be set: a commit in "
                  "a disposable copy is not reachable from the original tree")
     if args.mcp:
+        from .local_agent_grants import grants_from_config
         from .local_mcp import serve
-        return serve(root=args.root, run_root=args.run_root)
+        return serve(root=args.root, run_root=args.run_root, grants=grants_from_config(
+            workspace=args.root, allow_write=args.allow_write, allow_exec=args.allow_exec))
     if args.agent:
         return _run_agentic(args)
     if args.health:

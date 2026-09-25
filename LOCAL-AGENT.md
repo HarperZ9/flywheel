@@ -149,6 +149,21 @@ fallback tier:
 python -m harness.local_agent_cli --mcp
 ```
 
+`local_agent_run` takes its authority from how you start the server, not from
+the tool arguments the model writes. Runs are confined to the workspace (`--root`,
+or `FLYWHEEL_LOCAL_AGENT_WORKSPACE`, default the working directory). Write and
+exec stay off unless you start the server with `--allow-write` / `--allow-exec`
+or set `FLYWHEEL_LOCAL_AGENT_ALLOW_WRITE=1` / `FLYWHEEL_LOCAL_AGENT_ALLOW_EXEC=1`:
+
+```
+python -m harness.local_agent_cli --mcp --root /path/to/project --allow-write
+```
+
+A tool call can narrow these (`"allow_exec": false`) but not widen them.
+`"allow_exec": true` without the grant returns `GRANT_NOT_OPERATOR_APPROVED`, and a
+`root` that resolves outside the workspace (through `..`, a symlink or a junction)
+returns `ROOT_OUTSIDE_WORKSPACE`. Both refusals happen before any agent step.
+
 ## Boundaries
 
 - Credentials come only from the environment (API keys), the official CLI's own
