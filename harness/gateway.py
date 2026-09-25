@@ -2305,6 +2305,8 @@ def _serve_all(servers):
 def main(argv=None) -> int:
     a = _build_parser().parse_args(argv)
     _Handler.root = Path(a.root).resolve()
+    from harness.local_agent_grants import pin_gateway_workspace
+    pin_gateway_workspace(_Handler.root)  # the local-model lane's run workspace
     _Handler.serve_url = a.serve_url
     _Handler.ollama_url = a.ollama_url
     _Handler.run_root = a.run_root

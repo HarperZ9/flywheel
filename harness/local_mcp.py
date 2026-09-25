@@ -12,7 +12,10 @@ import sys
 from pathlib import Path
 
 from .local_agent import LocalAgent, available_backends, health_report
-from .local_agent_grants import AgentRunGrants, GrantRefusal, grants_from_config, resolve_run
+from .local_agent_grants import (
+    AgentRunGrants, GrantRefusal, check_online, grants_from_config, refused_grants,
+    resolve_run,
+)
 from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import ToolExecutor, ToolGate
@@ -31,7 +34,7 @@ from .context_memory_bridge import (
 PROTOCOL = "2025-06-18"
 __version__ = "0.1.0"
 
-_ONLINE = {"online": {"type": "boolean", "description": "include codex/claude/gemini/deepseek"}}
+_ONLINE = {"online": {"type": "boolean", "description": "include codex/claude/gemini/deepseek; for chat and run, true is refused unless the operator granted online tiers"}}
 
 TOOLS = [
     {"name": "local_agent_health",
@@ -70,6 +73,23 @@ def _backends(args: dict) -> list:
 def _agent(args: dict) -> LocalAgent:
     return LocalAgent(backends=_backends(args), prefer=args.get("backend", "auto"),
                       max_tokens=int(args.get("max_tokens", 512)))
+
+
+def _local_tiers() -> frozenset:
+    return frozenset(("auto", *(getattr(b, "name", "") for b in available_backends())))
+
+
+def _checked_online(args: dict, grants) -> None:
+    """Refuse an online or plan-mode tier the operator did not grant."""
+    check_online(args, grants or grants_from_config(), _local_tiers())
+
+
+def _pin_cli_cwd(agent, root: str) -> None:
+    """A plan-mode CLI tier runs in the run's resolved root, not the server's cwd."""
+    from .endpoints import CliBackend
+    for backend in getattr(agent, "backends", ()):
+        if isinstance(backend, CliBackend):
+            backend.cwd = root
 
 
 def _lane_health(deep: bool) -> dict:
@@ -129,19 +149,23 @@ def _call(params: dict, *, root=None, run_root=None, grants=None) -> dict:
         if name == "local_agent_health":
             return _text(health_report(_backends(args)))
         if name == "local_agent_chat":
+            _checked_online(args, grants)
             resp = _agent(args).send(args["prompt"])
             return _text({"text": resp["content"][0]["text"], "backend": resp.get("backend"),
                           "receipt": resp.get("x_receipt", {}).get("receipt_id")})
         if name == "local_agent_run":
-            run_root_dir, allow_write, allow_exec = resolve_run(
-                args, grants or grants_from_config())
+            grants = grants or grants_from_config()
+            run_root_dir, allow_write, allow_exec = resolve_run(args, grants)
+            _checked_online(args, grants)
             ex = ToolExecutor(root=run_root_dir,
                               gate=ToolGate(allow_write=allow_write, allow_exec=allow_exec),
                               runner=make_sandboxed_runner(
                                   bindings=None,
                                   on_unavailable=fallback_from_env()))
             from harness import tool_receipts
-            r = run_agent(_agent(args), args["goal"], ex, SessionLedger(),
+            agent = _agent(args)
+            _pin_cli_cwd(agent, run_root_dir)
+            r = run_agent(agent, args["goal"], ex, SessionLedger(),
                           max_steps=int(args.get("max_steps", 6)),
                           sign_key=tool_receipts.new_session_key())
             return _text({"final": r["final"], "steps": r["steps"],
@@ -211,7 +235,14 @@ def serve(stdin=None, stdout=None, *, root=None, run_root=None,
     """Serve stdio JSON-RPC. local_agent_run grants are frozen once, here, from
     the start configuration; nothing a request carries can change them."""
     stdin, stdout = stdin or sys.stdin, stdout or sys.stdout
-    grants = grants or grants_from_config()
+    if grants is None:
+        try:
+            grants = grants_from_config()
+        except GrantRefusal as refusal:
+            # Keep serving health, chat and receipts; every run gets the refusal.
+            print(f"[local-agent] {refusal.code}: {refusal.message}; "
+                  "local_agent_run is refused", file=sys.stderr, flush=True)
+            grants = refused_grants(refusal)
     for line in stdin:
         line = line.strip()
         if not line:

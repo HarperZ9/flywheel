@@ -48,7 +48,7 @@ Each item names the module that implements it.
 2. Launch the lane: `python -m harness.local_mcp`. It speaks JSON-RPC 2.0 over stdio.
 3. Check what is live: call `local_agent_health`. Add `{"online": true}` to include hosted endpoints in the report.
 4. Get a completion: call `local_agent_chat` with `{"prompt": "..."}`. The result carries the text, the backend that answered, and the per-turn `receipt` id.
-5. Run a gated task: call `local_agent_run` with `{"goal": "...", "root": "."}`. Reads are sandboxed to `root`, which must resolve inside the workspace the server was started with. Edits and commands need the operator's grant at server start (`--allow-write` / `--allow-exec`, or `FLYWHEEL_LOCAL_AGENT_ALLOW_WRITE=1` / `FLYWHEEL_LOCAL_AGENT_ALLOW_EXEC=1`); the arguments can only narrow that grant. The result carries the final answer, the step count, the `verified` chain verdict, and the ledger `checkpoint`.
+5. Run a gated task: call `local_agent_run` with `{"goal": "...", "root": "."}`. Reads are sandboxed to `root`, which must resolve inside the workspace the server was started with. Edits, commands and online tiers need the operator's grant at server start (`--allow-write`, `--allow-exec`, `--allow-online`, or the matching `FLYWHEEL_LOCAL_AGENT_ALLOW_*=1` variable); the arguments can only narrow that grant. The home directory itself and the Flywheel home are refused as a root. The result carries the final answer, the step count, the `verified` chain verdict, and the ledger `checkpoint`.
 
 **As a Flywheel lane.** Flywheel launches the server for you; a user does not spawn it by hand.
 

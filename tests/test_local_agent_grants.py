@@ -17,7 +17,7 @@ import pytest
 import harness.local_mcp as local_mcp
 
 GRANT_ENV = ("FLYWHEEL_LOCAL_AGENT_ALLOW_WRITE", "FLYWHEEL_LOCAL_AGENT_ALLOW_EXEC",
-             "FLYWHEEL_LOCAL_AGENT_WORKSPACE")
+             "FLYWHEEL_LOCAL_AGENT_ALLOW_ONLINE", "FLYWHEEL_LOCAL_AGENT_WORKSPACE")
 
 
 @pytest.fixture
@@ -28,6 +28,7 @@ def workspace(tmp_path, monkeypatch):
     for name in GRANT_ENV:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("FLYWHEEL_LOCAL_AGENT_WORKSPACE", str(root))
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path / "flywheel-home"))
     monkeypatch.chdir(root)
     return root
 
@@ -107,13 +108,26 @@ def test_symlink_escape_is_refused(workspace, runs):
     assert runs == []
 
 
-def test_default_run_has_no_write_or_exec_and_stays_in_workspace(workspace, runs):
+def test_default_run_has_no_write_or_exec_and_stays_in_workspace(workspace, runs,
+                                                                 monkeypatch):
+    # The server's current directory is outside the workspace, so a default root
+    # of "the current directory" and "the operator's workspace" differ here.
+    monkeypatch.chdir(workspace.parent / "outside")
     result = _run({"goal": "look around"})
     assert not result.get("isError"), result
     (executor,) = runs
     assert executor.gate.allow_write is False
     assert executor.gate.allow_exec is False
-    assert os.path.normcase(executor.root) == os.path.normcase(os.path.realpath(workspace))
+    assert os.path.normcase(os.path.realpath(executor.root)) == os.path.normcase(
+        os.path.realpath(workspace))
+
+
+def test_sibling_directory_sharing_the_workspace_prefix_is_refused(workspace, runs):
+    sibling = workspace.parent / (workspace.name + "-evil")
+    sibling.mkdir()
+    result = _run({"goal": "x", "root": str(sibling)})
+    assert _error_code(result) == "ROOT_OUTSIDE_WORKSPACE"
+    assert runs == []
 
 
 def test_operator_grant_applies_and_root_may_narrow_inside(workspace, runs, monkeypatch):
@@ -136,6 +150,28 @@ def test_model_may_narrow_an_operator_grant(workspace, runs, monkeypatch):
 
 
 def test_serve_freezes_grants_at_start(workspace, runs, monkeypatch):
+    """serve() with no explicit grants reads them once. An environment change
+    between two requests does not grant exec to the second one."""
+    import io
+    request = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                          "params": {"name": "local_agent_run",
+                                     "arguments": {"goal": "x", "allow_exec": True}}})
+
+    def lines():
+        yield request + "\n"
+        monkeypatch.setenv("FLYWHEEL_LOCAL_AGENT_ALLOW_EXEC", "1")
+        yield request + "\n"
+
+    stdout = io.StringIO()
+    local_mcp.serve(lines(), stdout)
+    results = [json.loads(line)["result"] for line in stdout.getvalue().splitlines()]
+    assert len(results) == 2
+    assert [_error_code(result) for result in results] == [
+        "GRANT_NOT_OPERATOR_APPROVED", "GRANT_NOT_OPERATOR_APPROVED"]
+    assert runs == []
+
+
+def test_explicit_serve_grants_win_over_the_environment(workspace, runs, monkeypatch):
     import io
     request = {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
                "params": {"name": "local_agent_run",
