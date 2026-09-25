@@ -20,7 +20,8 @@ from .oracle import Oracle, OracleResult
 from .proposer import Proposer, ProposerOutput, prompt_hash
 from .task import Task
 from .witness import witness_envelope, WitnessVerdict
-from .boot import BootPacket, boot as boot_packet, hydrate_prompt
+from .boot import BootPacket, boot, hydrate_prompt
+from .evolutionary_flywheel import VerifiedPool
 from .policy import PolicyLayer, PolicyResult, gate as run_gate
 from .cache import (ReceiptCache, cache_key, canonical_prompt, knowledge_hash,
                     oracle_context_hash)
@@ -84,7 +85,7 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
              output_relations=(),
              output_verify_proof: bool = False,
              validation_ledger=None,
-             pool: "VerifiedPool | None" = None,
+             pool: VerifiedPool | None = None,
              auto_context: bool = True,
              memory_sources: list[str] | None = None,
              context_budget: int = 4096,
