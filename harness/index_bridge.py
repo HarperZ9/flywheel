@@ -58,8 +58,9 @@ def index_view(root: str, view: str, *, timeout: int = _TIMEOUT) -> dict:
                          "pip install index-graph"}
     cmd = argv + _VIEWS[view] + ["--root", str(root)]
     try:
+        from .lane_env import lane_process_environment
         proc = subprocess.run(cmd, capture_output=True, text=True,
-                              timeout=timeout)
+                              timeout=timeout, env=lane_process_environment("index"))
     except subprocess.TimeoutExpired:
         return {"error": f"index {view} timed out after {timeout}s"}
     except (OSError, ValueError) as e:

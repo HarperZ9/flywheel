@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import subprocess
 import sys
@@ -119,9 +118,10 @@ def _remember(rows: dict[str, dict[str, Any]], root: str,
 
 
 def _env(run_root: Path | str) -> dict[str, str]:
-    env = os.environ.copy()
-    env["INDEX_ROUTER_JOB_DIR"] = str(_job_root(run_root))
-    return env
+    """The index lane environment plus the job directory, never the whole env."""
+    from .lane_env import lane_process_environment
+    return lane_process_environment(
+        "index", {"INDEX_ROUTER_JOB_DIR": str(_job_root(run_root))})
 
 
 def _parse_version(text: str) -> tuple[int, int, int] | None:

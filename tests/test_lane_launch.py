@@ -8,6 +8,7 @@ source-aware, frozen launches bare, and unreachable stderr visible."""
 import os
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import harness.lanes as ln
@@ -18,9 +19,10 @@ from harness.plugins import probe_plugin
 
 
 def _confined(launch, argv):
-    """A pip or npm lane launch keeps its argv and starts without ambient env."""
-    assert launch.argv == tuple(argv)
-    assert launch.inherit_env is False
+    """A pip or npm lane launch keeps its argv and every other field, and starts
+    without ambient env: only env_overrides differs from the bare launch."""
+    assert replace(launch, env_overrides=()) == LaunchSpec(tuple(argv), inherit_env=False)
+    assert "PATH" in {key.upper() for key, _ in launch.env_overrides}
     return True
 
 
@@ -31,7 +33,9 @@ def test_current_python_source_launch_imports_from_src_checkout(name):
     if source is None:
         pytest.skip(f"{name} source checkout is absent")
     launch = ln.resolve_mcp_launch(name)
-    child_env = os.environ.copy()
+    # Build the env the way StdioTransport does, so the import runs under the
+    # confined environment the lane really gets.
+    child_env = os.environ.copy() if launch.inherit_env else {}
     child_env.update(launch.env_overrides)
     code = (
         "import importlib, pathlib, sys; "
@@ -70,11 +74,15 @@ def test_extra_source_repos_join_the_child_pythonpath(tmp_path, monkeypatch):
     assert str((tmp_path / "public" / "sib-b" / "src").resolve()) in parts
 
 
-def test_extra_source_repos_absent_leaves_pythonpath_unchanged(monkeypatch):
-    # a lane with no siblings behaves exactly as before (own root, then inherited).
+def test_package_launch_carries_the_parent_pythonpath(monkeypatch):
+    # a package launch has no PYTHONPATH of its own; the child keeps the
+    # parent's import path, as it did when it inherited the whole environment.
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
     monkeypatch.setattr(ln, "_importable", lambda top: False)
-    assert _confined(ln.resolve_mcp_launch("gather"), ("gather", "mcp"))
+    monkeypatch.setenv("PYTHONPATH", "parent-import-path")
+    launch = ln.resolve_mcp_launch("gather")
+    assert _confined(launch, ("gather", "mcp"))
+    assert dict(launch.env_overrides)["PYTHONPATH"] == "parent-import-path"
 
 
 def test_public_pip_command_stays_portable_when_importable(monkeypatch):

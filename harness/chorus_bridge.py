@@ -20,6 +20,12 @@ from pathlib import Path
 _TIMEOUT = 120
 
 
+def _lane_env() -> dict:
+    """The chorus lane environment: the chorus CLI is lane code (lane_env.py)."""
+    from .lane_env import lane_process_environment
+    return lane_process_environment("chorus")
+
+
 def _chorus_argv() -> "list | None":
     """The argv that runs the chorus CLI: the console script if on PATH, else
     `python -m chorus` if the module is importable. None when neither works."""
@@ -56,7 +62,8 @@ def discourse_digest(corpus: str, *, runner=None) -> dict:
         if runner is not None:
             rc, out, err = runner(cmd)
         else:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=_TIMEOUT)
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=_TIMEOUT,
+                                  env=_lane_env())
             rc, out, err = proc.returncode, proc.stdout, proc.stderr
     except subprocess.TimeoutExpired:
         return {"error": f"chorus timed out after {_TIMEOUT}s"}
@@ -88,7 +95,8 @@ def list_corpora(root: str, *, runner=None) -> dict:
         if runner is not None:
             rc, out, err = runner(cmd)
         else:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=_TIMEOUT)
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=_TIMEOUT,
+                                  env=_lane_env())
             rc, out, err = proc.returncode, proc.stdout, proc.stderr
     except subprocess.TimeoutExpired:
         return {"error": f"chorus corpora timed out after {_TIMEOUT}s"}
@@ -120,7 +128,8 @@ def recent_digests(store: str, *, limit: int = 20, runner=None) -> dict:
         if runner is not None:
             rc, out, err = runner(cmd)
         else:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=_TIMEOUT)
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=_TIMEOUT,
+                                  env=_lane_env())
             rc, out, err = proc.returncode, proc.stdout, proc.stderr
     except subprocess.TimeoutExpired:
         return {"error": f"chorus digests timed out after {_TIMEOUT}s"}

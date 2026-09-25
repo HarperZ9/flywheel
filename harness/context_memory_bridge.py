@@ -66,7 +66,10 @@ class CanonContextMcpClient:
     def __init__(self, *, command: list[str] | None = None,
                  env: dict[str, str] | None = None, timeout_s: float = 5.0) -> None:
         self.command = list(command or context_mcp_command())
-        self.env = dict(env or os.environ)
+        if env is None:
+            from .lane_env import lane_process_environment
+            env = lane_process_environment("canon")
+        self.env = dict(env)
         self.timeout_s = timeout_s
 
     @classmethod

@@ -254,7 +254,12 @@ def install_lane(name: str, *, profile: str = "package") -> dict:
         else:
             return {"name": name, "installed": False,
                     "detail": f"unknown kind {lane.kind}"}
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        # pip build backends and npm install scripts are lane-supplied code, so
+        # the package manager gets the lane env; a private index or proxy is
+        # granted per lane through env_allow in lanes.json.
+        from .lane_env import lane_process_environment
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300,
+                                env=lane_process_environment(name))
         ok = result.returncode == 0
         return {"name": name, "installed": ok, "cmd": cmd,
                 "detail": (result.stdout[-200:] if ok else

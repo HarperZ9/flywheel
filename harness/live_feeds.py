@@ -47,8 +47,10 @@ FEED_ROSTER: dict = {
 
 def _shell(argv: list) -> tuple:
     try:
+        from .lane_env import lane_process_environment
         p = subprocess.run(argv, capture_output=True, text=True,
-                           timeout=_TIMEOUT, shell=False)
+                           timeout=_TIMEOUT, shell=False,
+                           env=lane_process_environment("gather"))
         return (p.returncode, p.stdout or p.stderr or "")
     except subprocess.TimeoutExpired:
         return (124, f"timed out after {_TIMEOUT}s")

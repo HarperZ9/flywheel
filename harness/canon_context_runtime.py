@@ -28,9 +28,12 @@ def context_mcp_command(
 
 
 def context_mcp_environment(env: dict[str, str], db: str) -> dict[str, str]:
+    """The canon lane environment drawn from ``env``, plus the database and scope.
+
+    The child runs the flywheel-canon lane's code, so it gets the lane env
+    (lane_env.py), not the caller's whole environment."""
     if not context_db_configured(db):
         raise ValueError("Canon context database path must be absolute")
-    child_env = dict(env)
-    child_env[CANON_CONTEXT_DB] = db
-    child_env[CANON_CONTEXT_SCOPE] = TRUSTED_SCOPE
-    return child_env
+    from .lane_env import lane_process_environment
+    return lane_process_environment(
+        "canon", {CANON_CONTEXT_DB: db, CANON_CONTEXT_SCOPE: TRUSTED_SCOPE}, environ=env)

@@ -112,7 +112,10 @@ LANES: dict[str, Lane] = {
         "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.2.0",
         "the reconciliation lane: five-tool workflow + creative engine + doctors",
         "reconciliation", source_repo="public/telos",
-        package_disabled_reason="No published npm distribution is available. Use a Telos source checkout."),
+        package_disabled_reason="No published npm distribution is available. Use a Telos source checkout.",
+        env_vars=("TELOS_CHROME_PATH", "TELOS_CHROME_PROFILE", "TELOS_EMET_CLI",
+                  "TELOS_EMET_DISABLE_FALLBACKS", "LEARN_CLI", "CAPTCHA_VENV_PY",
+                  "TELOS_CONSO_FONT_ZIP", "TELOS_KILON_FONT_ZIP")),
     "local-model": Lane(
         "local-model", "", "python", ("-m", "harness.local_mcp"), "bundled", "0.1.0",
         "the trained 14B proposer + verified-inference harness (the engine lane)",
@@ -125,7 +128,12 @@ LANES: dict[str, Lane] = {
         "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.2.5",
         "accountable coding agent on any model endpoint (local-first, witnessed runs)",
         "execution", source_repo="public/relay", py_module="relay.local_mcp",
-        env_vars=("RELAY_RUN_ROOT", "RELAY_SESSION_DIR")),
+        # The online tier reads <PROVIDER>_MODEL, _PROVIDER_BASE_URL and
+        # _CLOUD_BASE_URL; its keys stay operator grants (env_allow).
+        env_vars=("RELAY_RUN_ROOT", "RELAY_SESSION_DIR", *(
+            f"{provider}_{suffix}"
+            for provider in ("CODEX", "CLAUDE", "GLM", "GEMINI", "DEEPSEEK")
+            for suffix in ("MODEL", "PROVIDER_BASE_URL", "CLOUD_BASE_URL")))),
     "plexus": Lane(
         "plexus", "plexus-mesh", "plexus", ("mcp",), "pip", "0.2.2",
         "capability discovery + auto-wiring of the tool mesh (the layer above a flat tool list)",
@@ -146,7 +154,11 @@ LANES: dict[str, Lane] = {
         "provider-neutral memory bank + personality container: one envelope, "
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",
-        "continuity", source_repo="public/canon", py_module="canon.cli"),
+        "continuity", source_repo="public/canon", py_module="canon.cli",
+        env_vars=("CANON_HOME", "CANON_WORKSPACE", "CANON_BLOCKS_DIR", "CANON_CONTEXT_DB",
+                  "CANON_CONTEXT_SCOPE", "CANON_CONTEXT_CLIENT", "CANON_CONTEXT_CONTAINER_ID",
+                  "CANON_CONTEXT_PROJECT_ID", "CANON_CONTEXT_WORKSPACE_ID",
+                  "CANON_CONTEXT_TOP_K", "CANON_HOOK_STDIN_MAX_CHARS")),
     "bulletin": Lane(
         "bulletin", "", "", (), "http", "0.2.0",
         "the open board: a workstation or another agent reaches it over the web, "

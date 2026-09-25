@@ -9,7 +9,9 @@ by name in the lane registry.
 """
 from __future__ import annotations
 
+import dataclasses
 import json
+import re
 import sys
 
 import pytest
@@ -45,9 +47,14 @@ def _registry(monkeypatch, tmp_path, rows):
     monkeypatch.setattr(ln, "LANE_REGISTRY_PATH", path)
 
 
-def _probe_lane(monkeypatch, tmp_path, *, rows=None):
+def _probe_lane(monkeypatch, tmp_path, *, rows=None, declared=()):
+    # Built without the env_vars keyword so the leak assertions, not a
+    # TypeError, are what fail on code that predates the field.
     lane = ln.Lane("probe", "probe-dist", sys.executable, ("-c", _PROBE), "pip",
-                   "0.1.0", "env probe", "test", env_vars=("FAKE_LANE_SETTING",))
+                   "0.1.0", "env probe", "test")
+    if declared:
+        assert hasattr(lane, "env_vars"), "Lane has no env_vars declaration field"
+        lane = dataclasses.replace(lane, env_vars=tuple(declared))
     monkeypatch.setattr(ln, "LANES", {"probe": lane})
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
     monkeypatch.setattr(ln, "_importable", lambda top: False)
@@ -73,7 +80,14 @@ def test_launched_pip_lane_does_not_see_parent_provider_keys(tmp_path, monkeypat
     assert seen["OPENAI_API_KEY"] is False
     assert seen["FAKE_UNDECLARED"] is False
     assert seen["PATH"] is True
+
+
+def test_manifest_declared_variable_reaches_the_lane(tmp_path, monkeypatch):
+    _parent_env(monkeypatch)
+    launch = _probe_lane(monkeypatch, tmp_path, declared=("FAKE_LANE_SETTING",))
+    seen = _child_view(launch)
     assert seen["FAKE_LANE_SETTING"] is True
+    assert seen["OPENROUTER_API_KEY"] is False
 
 
 def test_operator_grant_admits_one_named_variable(tmp_path, monkeypatch):
@@ -90,10 +104,11 @@ def test_invalid_operator_grant_is_named_and_dropped(tmp_path, monkeypatch):
     _parent_env(monkeypatch)
     _probe_lane(monkeypatch, tmp_path, rows={
         "probe": {"env_allow": ["FAKE_OPERATOR_GRANT", "*", "PATH=x", 7]}})
+    from harness import lane_env
+    row = {"env_allow": ["FAKE_OPERATOR_GRANT", "*", "PATH=x", 7]}
+    assert lane_env.operator_grants(row) == (("FAKE_OPERATOR_GRANT",), ("env_allow_invalid",))
     runtime = ln.resolve_lane_runtime("probe")
-    env = dict(runtime.launch.env_overrides)
-    assert "FAKE_OPERATOR_GRANT" in env
-    assert "*" not in env and "PATH=x" not in env
+    assert "FAKE_OPERATOR_GRANT" in dict(runtime.launch.env_overrides)
     assert "env_allow_invalid" in runtime.mismatch_codes
     assert runtime.blocking_codes == ()
 
@@ -153,8 +168,31 @@ def test_source_launch_keeps_pythonpath_and_drops_keys(tmp_path, monkeypatch):
     assert not set(FAKE_KEYS) & set(env)
 
 
+# Name segments and whole names that mark a credential. Independent of the
+# gateway's own secret-name check, which misses names such as
+# AWS_SECRET_ACCESS_KEY and OTEL_EXPORTER_OTLP_HEADERS.
+_CREDENTIAL_SEGMENTS = frozenset((
+    "KEY", "KEYS", "TOKEN", "TOKENS", "SECRET", "SECRETS", "PASSWORD", "PASSWD",
+    "PASS", "CREDENTIAL", "CREDENTIALS", "AUTH", "HEADERS", "DSN", "COOKIE"))
+_CREDENTIAL_NAMES = frozenset(("DATABASE_URL",))
+
+
+def _looks_like_credential(name: str) -> bool:
+    segments = set(re.split(r"[_\W]+", name.upper()))
+    return bool(segments & _CREDENTIAL_SEGMENTS) or name.upper() in _CREDENTIAL_NAMES
+
+
+@pytest.mark.parametrize("name", (
+    "AWS_SECRET_ACCESS_KEY", "ANTHROPIC_API_KEY", "OTEL_EXPORTER_OTLP_HEADERS",
+    "FOO_KEY", "GOOGLE_APPLICATION_CREDENTIALS", "SENTRY_DSN", "DB_PASS",
+    "BASIC_AUTH", "DATABASE_URL", "GITHUB_TOKEN"))
+def test_credential_check_flags_known_credential_names(name):
+    assert _looks_like_credential(name)
+
+
 def test_manifest_declarations_never_name_a_credential():
     from harness.gateway_secret_validation import _secret_name
     for lane in ln.LANES.values():
         for name in lane.env_vars:
             assert not _secret_name(name), (lane.name, name)
+            assert not _looks_like_credential(name), (lane.name, name)
