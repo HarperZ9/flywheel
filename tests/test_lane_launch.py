@@ -17,6 +17,13 @@ from harness.mcp_client import LaunchSpec
 from harness.plugins import probe_plugin
 
 
+def _confined(launch, argv):
+    """A pip or npm lane launch keeps its argv and starts without ambient env."""
+    assert launch.argv == tuple(argv)
+    assert launch.inherit_env is False
+    return True
+
+
 @pytest.mark.parametrize("name", ("gather", "crucible", "index", "forum"))
 def test_current_python_source_launch_imports_from_src_checkout(name):
     lane = ln.LANES[name]
@@ -67,7 +74,7 @@ def test_extra_source_repos_absent_leaves_pythonpath_unchanged(monkeypatch):
     # a lane with no siblings behaves exactly as before (own root, then inherited).
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
     monkeypatch.setattr(ln, "_importable", lambda top: False)
-    assert ln.resolve_mcp_launch("gather") == LaunchSpec(("gather", "mcp"))
+    assert _confined(ln.resolve_mcp_launch("gather"), ("gather", "mcp"))
 
 
 def test_public_pip_command_stays_portable_when_importable(monkeypatch):
@@ -80,14 +87,14 @@ def test_runtime_pip_lane_prefers_this_interpreter_when_importable(monkeypatch):
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
     monkeypatch.setattr(ln, "_importable", lambda top: True)
     launch = ln.resolve_mcp_launch("gather")
-    assert launch == LaunchSpec((sys.executable, "-m", "gather.cli", "mcp"))
+    assert _confined(launch, (sys.executable, "-m", "gather.cli", "mcp"))
 
 
 def test_runtime_pip_lane_falls_back_to_console_script(monkeypatch):
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
     monkeypatch.setattr(ln, "_importable", lambda top: False)
     launch = ln.resolve_mcp_launch("gather")
-    assert launch == LaunchSpec(("gather", "mcp"))
+    assert _confined(launch, ("gather", "mcp"))
 
 
 def test_importable_checks_top_package_only(monkeypatch):
@@ -166,7 +173,7 @@ def test_node_source_launch_uses_absolute_script(tmp_path, monkeypatch):
     (source / "demo" / "telos-mcp.mjs").write_text("", encoding="utf-8")
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: source)
     launch = ln.resolve_mcp_launch("telos")
-    assert launch == LaunchSpec(("node", str((source / "demo" / "telos-mcp.mjs").resolve())))
+    assert _confined(launch, ("node", str((source / "demo" / "telos-mcp.mjs").resolve())))
 
 
 def test_unreachable_probe_reports_server_stderr(monkeypatch):
@@ -233,8 +240,7 @@ def test_frozen_bundled_lane_admits_from_payload(monkeypatch):
 def test_frozen_node_lane_keeps_bare_declared_command(tmp_path, monkeypatch):
     monkeypatch.setattr(ln, "_frozen", lambda: True)
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: tmp_path)
-    assert ln.resolve_mcp_launch("learn") == LaunchSpec(
-        ("node", "src/mcp.mjs"))
+    assert _confined(ln.resolve_mcp_launch("learn"), ("node", "src/mcp.mjs"))
 
 
 def test_gateway_forum_proxy_uses_runtime_launch_spec(monkeypatch):

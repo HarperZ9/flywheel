@@ -22,6 +22,7 @@ from typing import Any, Callable, Mapping
 
 from . import lane_runtime_support as _support
 from .bundled_lane_descriptor import bundled_payload_lane_names
+from .lane_env import confine_lane_launch
 from .lane_runtime_versions import validate_public_version
 from .lanes_registry import Lane
 from .mcp_client import LaunchSpec
@@ -125,10 +126,9 @@ def resolve_lane_runtime(
     package_runtime_version_fn: Callable[[Lane, str], str | None],
 ) -> ResolvedLaneRuntime:
     """Resolve one lane's runtime without launching it. Every observation is
-    injected as a callable, so this stays testable and free of direct environment
-    reads. The body validates the profile and versions, picks a launch via
-    _select_launch, then asks _blocking_codes which codes are fatal; the returned
-    mismatch_codes unions the advisory and blocking codes, de-duplicated in order."""
+    injected, so this stays testable and free of direct environment reads. It picks
+    a launch via _select_launch, confines a pip or npm launch to the minimal env
+    (lane_env.py), then asks _blocking_codes which codes are fatal."""
     lane = lanes[name]
     row, row_codes = _registry_row(registry.get(name))
     profile, selection_source, profile_codes = _runtime_profile(row)
@@ -158,11 +158,12 @@ def resolve_lane_runtime(
     launch, selected, bundled_component, bundled_codes = _select_launch(
         lane, profile, source, python_executable, environ, is_frozen,
         extra_roots, importable_fn, runtime_python)
+    launch, env_codes = confine_lane_launch(lane, launch, environ, row)
     blocking = _blocking_codes(
         lane, profile, selected, bool(source), package_available,
         [*mismatch, *bundled_codes])
     blocking = tuple(dict.fromkeys(blocking))
-    all_codes = tuple(dict.fromkeys([*mismatch, *bundled_codes, *blocking]))
+    all_codes = tuple(dict.fromkeys([*mismatch, *env_codes, *bundled_codes, *blocking]))
     return ResolvedLaneRuntime(
         name=name, launch=launch, selected_profile=profile,
         selection_source=selection_source, selected_runtime=selected,

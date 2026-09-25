@@ -43,3 +43,35 @@ bounded capability metadata: tool count and a digest of sorted tool names.
 Status details use stable codes for malformed runtime config and probe failures.
 They do not echo raw runtime registry values, child process exceptions, health
 tool response text, local executable paths, or environment values.
+
+## Lane environment
+
+A pip or npm lane MCP server starts with a minimal environment, not the
+gateway's whole one. It receives three sets of variables and nothing else:
+
+- The base allowlist in `harness/lane_env.py`: what a Python or Node process
+  needs to start on Windows, macOS and Linux (`PATH`, system roots, temp and
+  home directories, locale, CA bundle paths, `FLYWHEEL_HOME` and the workspace
+  roots).
+- The non-secret configuration names the lane declares in `env_vars` in
+  `harness/lanes_registry.py`, such as `INDEX_CACHE_DIR` or `RELAY_RUN_ROOT`.
+  A test fails if a declared name looks like a credential.
+- Names the operator grants to that lane with `env_allow` in the registry:
+
+```json
+{
+  "forum": {
+    "env_allow": ["ANTHROPIC_API_KEY"]
+  }
+}
+```
+
+A provider key reaches a lane only through `env_allow`, one lane and one name at
+a time. An `env_allow` entry that is not a plain variable name, or an
+`env_allow` that is not a list, is dropped and reported as `env_allow_invalid`;
+the lane still launches. Proxy variables (`HTTP_PROXY`, `HTTPS_PROXY`,
+`NO_PROXY`) are not in the base set because a proxy URL can carry a user name
+and password; grant them by name when a lane needs them. The bundled payload
+path already used its own minimal environment and is unchanged. The in-repo
+bundled lanes (`local-model`, `writing`) run Flywheel's own modules and still
+inherit the gateway environment outside a frozen build.

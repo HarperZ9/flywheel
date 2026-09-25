@@ -9,7 +9,6 @@ from pathlib import Path
 import pytest
 
 import harness.lanes as lanes
-from harness.mcp_client import LaunchSpec
 
 
 def _registry(monkeypatch, tmp_path, row):
@@ -83,7 +82,7 @@ def test_explicit_package_runtime_cannot_be_shadowed_by_source_checkout(
 
     launch = lanes.resolve_mcp_launch("index")
 
-    assert launch == LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"))
+    assert (launch.argv, launch.inherit_env) == ((str(python.resolve()), "-I", "-m", "index_graph", "mcp"), False)
     status = lanes.lane_status("index", probe=False)
     runtime = status["resolved_runtime"]
     assert runtime["selected_profile"] == "package"
@@ -280,7 +279,7 @@ def test_lane_caller_uses_selected_runtime_launch(tmp_path, monkeypatch):
     _pin_package_runtime(monkeypatch, "2.12.0")
     seen = _client(monkeypatch, response={"ok": True, "text": '{"ok": true}'})
     assert call_lane_tool("index", "index.status") == {"ok": True}
-    assert seen == [LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"))]
+    assert [(x.argv, x.inherit_env) for x in seen] == [((str(python.resolve()), "-I", "-m", "index_graph", "mcp"), False)]
 
 
 def test_context_envelope_uses_selected_runtime_launch(tmp_path, monkeypatch):
@@ -297,4 +296,4 @@ def test_context_envelope_uses_selected_runtime_launch(tmp_path, monkeypatch):
     seen = _client(monkeypatch, tools=[{"name": "index.context.envelope"}],
                    response={"ok": True, "text": '{"retained_names":["index"]}'})
     build_context_envelope(".", lane_timeout=1.0)
-    assert seen == [LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"))]
+    assert [(x.argv, x.inherit_env) for x in seen] == [((str(python.resolve()), "-I", "-m", "index_graph", "mcp"), False)]
