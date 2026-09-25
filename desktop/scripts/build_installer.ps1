@@ -81,8 +81,10 @@ if (-not $SkipEngine) {
         if (-not (Test-Path -LiteralPath "scripts\stage_python_lane_sources.py")) {
             throw "engine repo is missing scripts\stage_python_lane_sources.py"
         }
+        # The gateway spec freezes every manifest lane but relay from its
+        # staged source (scripts\python_lane_freeze.py), so stage them all.
         python scripts\stage_python_lane_sources.py `
-            --lane canon `
+            --all `
             --source-root $pythonLaneSourceRoot `
             --receipt $pythonLaneStageReceipt `
             --bounded-receipt $pythonLaneBoundedReceipt

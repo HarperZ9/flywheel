@@ -182,11 +182,22 @@ def _bounded_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def selected_lanes(rows: dict[str, dict[str, Any]], *,
+                   lanes: list[str] | None = None,
+                   all_lanes: bool = False) -> list[str]:
+    """The lanes one run stages: every manifest row with --all, else --lane.
+
+    With neither flag the default is Canon alone. That is too few for the gateway
+    freeze, which reads every manifest lane but relay, so build paths pass --all."""
+    return sorted(rows) if all_lanes else list(lanes or ["canon"])
+
+
 def stage_sources(args: argparse.Namespace) -> dict[str, Any]:
     rows = _load_rows(Path(args.manifest))
     overrides = _parse_repo_overrides(args.source_repo or [])
     staged = []
-    lanes = sorted(rows) if getattr(args, "all", False) else (args.lane or ["canon"])
+    lanes = selected_lanes(rows, lanes=args.lane,
+                           all_lanes=getattr(args, "all", False))
     for lane in lanes:
         if lane not in rows:
             raise StageError(f"unknown lane: {lane}")
