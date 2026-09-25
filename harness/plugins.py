@@ -9,24 +9,15 @@ import re
 from .lanes import LANES, resolve_mcp_command, resolve_mcp_launch, resolve_lane_runtime
 from .gateway_operation import GatewayOperationError
 from .plugin_lane_runtime import lane_plugin_row, require_lane_launch, unavailable_response
+from .plugin_launch import (  # noqa: F401 -- re-exported for existing importers
+    PluginPermissionError, _POSIX_ENV, _WINDOWS_ENV, _launch, _restricted_launch,
+)
 
 # The gated builtin tool sets (local_tools.ToolExecutor). Names only; the
 # gate decides what actually runs.
 BUILTIN_TOOLS = ("read", "grep", "glob", "apply_patch", "run")
 _CREDENTIAL_REF = re.compile(r"cred_[0-9a-f]{32}\Z")
 _SLOT_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
-_WINDOWS_ENV = frozenset((
-    "PATH", "PATHEXT", "SYSTEMROOT", "WINDIR", "COMSPEC", "TEMP", "TMP"))
-_POSIX_ENV = frozenset(("PATH", "HOME", "TMPDIR", "LANG", "LC_ALL"))
-
-
-class PluginPermissionError(RuntimeError):
-    """A fixed non-enumerating launch/metadata refusal."""
-
-    code = "PERMISSION_REQUIRED"
-
-    def __init__(self) -> None:
-        super().__init__(self.code)
 
 
 def _permission() -> dict:
@@ -190,31 +181,6 @@ def _direct_refusal(name, probe):
                 {"error": f"plugin '{name}' is disabled; enable it first"})
     return None
 
-def _restricted_launch(command, bindings, slots):
-    from .mcp_client import LaunchSpec
-    if isinstance(command, LaunchSpec) and not slots and not command.inherit_env: return command
-    platform = "windows" if os.name == "nt" else "posix"
-    try:
-        child_env = bindings.child_environment(os.environ, platform=platform)
-    except Exception:
-        raise PluginPermissionError from None
-    allowed = (_WINDOWS_ENV if platform == "windows" else _POSIX_ENV) | set(slots)
-    if (type(child_env) is not dict or set(slots) - set(child_env)
-            or set(child_env) - allowed
-            or any(type(key) is not str or type(value) is not str
-                   for key, value in child_env.items())):
-        raise PluginPermissionError
-    spec = command if isinstance(command, LaunchSpec) else LaunchSpec(tuple(command))
-    return LaunchSpec(
-        spec.argv, spec.cwd, tuple(sorted(child_env.items())), False,
-        url=spec.url, hide_window=spec.hide_window, allowed_tools=spec.allowed_tools)
-def _launch(command, slots, bindings):
-    if bindings is None:
-        if slots:
-            raise PluginPermissionError
-        return command
-    return _restricted_launch(command, bindings, slots)
-
 def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
                 timeout: float = 45.0, client_factory=None,
                 credential_bindings=None, execution_plan=None) -> dict:
@@ -228,7 +194,7 @@ def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
     try:
         if execution_plan is None:
             command, kind, slots, _ = plugin_execution_plan(name)
-            command = _launch(command, slots, credential_bindings)
+            command = _launch(command, slots, credential_bindings, kind)
         else:
             command, kind = execution_plan.launch, execution_plan.plugin_kind
     except GatewayOperationError:
@@ -261,7 +227,7 @@ def probe_plugin(name: str, timeout: float = 20.0, client_factory=None,
     try:
         if execution_plan is None:
             command, kind, slots, _ = plugin_execution_plan(name)
-            command = _launch(command, slots, credential_bindings)
+            command = _launch(command, slots, credential_bindings, kind)
         else:
             command, kind = execution_plan.launch, execution_plan.plugin_kind
     except GatewayOperationError:

@@ -188,7 +188,8 @@ def restricted_catalog_launch(catalog_ref: str, tools: list[str] | tuple[str, ..
         command, plugin_kind, slots, refs = plugin_execution_plan(catalog)
         if slots or refs:
             raise GatewayOperationError("MCP_CREDENTIAL_VERSION_UNAVAILABLE")
-        launch = _restricted_launch(command, CredentialBindings({}), slots)
+        launch = _restricted_launch(command, CredentialBindings({}), slots,
+                                    lane=plugin_kind == "lane")
     except GatewayOperationError:
         raise
     except Exception:

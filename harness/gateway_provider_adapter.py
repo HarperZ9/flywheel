@@ -224,7 +224,9 @@ def resolve_credentials(operation, state_root: Path):
         if plan.launch is not None:
             from .plugins import _restricted_launch
             plan = replace(
-                plan, launch=_restricted_launch(plan.launch, bindings, required))
+                plan, launch=_restricted_launch(
+                    plan.launch, bindings, required,
+                    lane=plan.plugin_kind == "lane"))
         if _is_bulletin_media(operation):
             plan = replace(plan, verified_plan={
                 "bulletin_media_state_root": str(Path(state_root))})
