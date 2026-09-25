@@ -50,14 +50,14 @@ unreleased are not shipped 1.0.0 behavior.
 - PytestOracle runs model-written code in an allowlisted, tree-killable subprocess; the
   canonical hash is over junit outcomes, and an all-skipped green exit is refused as a
   non-pass (harness/oracle.py).
-- Unreleased, on main after v1.0.2: a green exit with any skipped or xfailed test is
-  refused as a non-pass, because the report cannot say whether the task or the
-  candidate skipped it. In v1.0.0 through v1.0.2 one passing test beside skips still
-  reads PASS (harness/junit_report.py).
-- Unreleased, on main after v1.0.2: every pytest oracle run and every witness re-run
-  puts the task workdir back as it found it, so a file one candidate writes, such as
-  a conftest.py, cannot grade the next candidate in the same workdir. In v1.0.0
-  through v1.0.2 it can (harness/workdir_restore.py).
+- Since v1.0.3: a green exit with any skipped or xfailed test is refused as a
+  non-pass, because the report cannot say whether the task or the candidate skipped
+  it. In v1.0.0 through v1.0.2 one passing test beside skips reads PASS
+  (harness/junit_report.py).
+- Since v1.0.3: every pytest oracle run and every witness re-run puts the task
+  workdir back as it found it, so a file one candidate writes, such as a conftest.py,
+  cannot grade the next candidate in the same workdir. In v1.0.0 through v1.0.2 it
+  can (harness/workdir_restore.py).
 - Domain routing denies by default: an unregistered domain returns UNVERIFIABLE. Today:
   code (pytest), math (Lean), ml (a measurement gate) (harness/oracle_registry.py).
 - Data-only certificate checkers that never execute the certificate, with scope
