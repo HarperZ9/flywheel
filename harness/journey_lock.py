@@ -71,6 +71,28 @@ def _unlock(stream) -> None:
     fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
 
 
+def _initialize(stream) -> None:
+    """Give an empty lock file its single byte, allowing for a racing holder.
+
+    Windows enforces byte-range locks on writes, and the C runtime's append
+    mode seeks to the end and writes in two separate steps. Two callers that
+    both find the file empty can both aim at byte 0; when the other caller
+    writes and locks that byte first, this write fails with PermissionError.
+    A held lock is contention, so this caller then waits like any other. A
+    refused write while the lock is free is a real error and still raises.
+    """
+    try:
+        stream.write(b"\0")
+    except PermissionError:
+        if os.name != "nt":
+            raise
+        if _try_lock(stream):
+            _unlock(stream)
+            raise
+        return
+    os.fsync(stream.fileno())
+
+
 class ExclusiveJourneyLock:
     """Cross-process advisory lock with a bounded acquisition deadline."""
 
@@ -81,13 +103,12 @@ class ExclusiveJourneyLock:
             raise ValueError("timeout_s must not be negative")
         path = Path(lock_path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("a+b") as stream:
+        deadline = time.monotonic() + timeout_s
+        # Unbuffered: a refused write must not stay queued for close to retry.
+        with path.open("a+b", buffering=0) as stream:
             stream.seek(0, os.SEEK_END)
             if stream.tell() == 0:
-                stream.write(b"\0")
-                stream.flush()
-                os.fsync(stream.fileno())
-            deadline = time.monotonic() + timeout_s
+                _initialize(stream)
             while not _try_lock(stream):
                 if time.monotonic() >= deadline:
                     raise JourneyLockBusy()

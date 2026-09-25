@@ -115,7 +115,9 @@ def _exercise(tmp_path, monkeypatch, *, different_ids, expires):
         futures = [pool.submit(start_one, index) for index in range(CALLERS)]
         try:
             assert owner_entered.wait(WATCHDOG), "owner never reached create"
-            assert contended.wait(WATCHDOG), "all peers must fail a real outer lock attempt"
+            assert contended.wait(WATCHDOG), (
+                "all peers must fail a real outer lock attempt: "
+                f"{len(contenders)} of {CALLERS - 1} " + probe.diagnostic(futures))
             if expires:
                 assert refused.wait(WATCHDOG), "expired contenders did not return"
                 assert all(status == 503 and body["error"] == {
