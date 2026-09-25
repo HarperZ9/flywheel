@@ -78,7 +78,9 @@ def python_lane_freeze_inputs(repo: Path, source_root: Path,
         row = rows[lane]
         checkout, src = _staged_src(source_root, row)
         if not src.is_dir():
-            raise RuntimeError(f"staged {lane} source missing: {src}")
+            raise RuntimeError(
+                f"staged {lane} source missing: {src} (stage every manifest "
+                "lane with scripts/stage_python_lane_sources.py --all)")
         staged[lane] = (row, checkout, src)
         value = str(src)
         while value in sys.path:
