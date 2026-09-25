@@ -16,7 +16,8 @@ Success criteria:
   - accept_gate refuses a forced exit spelled so the AST guard does not flag it.
   - RL collect with the held-out oracle on pays the forced exit reward 0.0.
   - a correct candidate that also forces exit 0 still reads PASS.
-  - grade(): any FAIL outcome is FAIL whatever the exit code; skips alone FAIL.
+  - grade(): any FAIL outcome is FAIL whatever the exit code; any SKIP
+    outcome is FAIL too (test_oracle_skip_escape.py says why).
   - witness: a PASS envelope carrying a failing run's own hash is DRIFT, in the
     oracle's workdir and in a fresh one, and the honest FAIL envelope is MATCH.
 """
@@ -110,7 +111,7 @@ def test_rl_collect_with_held_out_pays_a_forced_exit_nothing(tmp_path):
 
 def test_grade_lets_the_report_outrank_the_exit_code():
     assert grade("t::a=PASS\nt::b=FAIL", 0) is Verdict.FAIL
-    assert grade("t::a=PASS\nt::b=SKIP", 0) is Verdict.PASS
+    assert grade("t::a=PASS\nt::b=SKIP", 0) is Verdict.FAIL  # b is not a pass
     assert grade("t::a=PASS", 0) is Verdict.PASS
     assert grade("t::a=PASS", 1) is Verdict.FAIL
     assert grade("t::a=SKIP", 0) is Verdict.FAIL   # nothing was asserted

@@ -37,3 +37,9 @@ resistant), SWE-bench-Live (monthly-dated PRs), BigCodeBench (Apache-2.0). Verif
 each source's license and per-task date before admission; prefer already-hardened
 oracle variants, and keep minting private tasks so a never-public core slice always
 exists.
+
+A skipped or xfailed test fails the whole run (`harness/junit_report.py: grade`),
+because the report cannot say whether the task or the candidate skipped it. An
+imported suite with platform skips needs each one rewritten to run everywhere or
+left out of the recorded command with `--deselect`, where a witness re-runs the same
+exclusion.

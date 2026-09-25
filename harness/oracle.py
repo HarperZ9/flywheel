@@ -14,7 +14,8 @@ Every pytest run writes its JUnit report under a fresh per-run name and the
 oracle reads only that file (junit_report.py). A report left over from an
 earlier run in the same workdir can no longer grade a candidate that exits
 before pytest writes one. That report also outranks the exit code: a failing
-outcome in it is FAIL even when the candidate forced the process to exit 0.
+or skipped outcome in it is FAIL even when the process exited 0. Each run
+ends by putting the workdir back as it found it (workdir_restore.py).
 """
 from __future__ import annotations
 import hashlib
@@ -29,15 +30,15 @@ from typing import Protocol
 # re-exported here because six modules imported them from this file
 # before the reasoning behind them outgrew its line budget.
 from .proc_kill import _kill_tree, spawn_killable  # noqa: F401
-# JUNIT_NAME is re-exported for callers that name the canonical report token.
-from .junit_report import JUNIT_NAME, bind_report, discard_report, grade  # noqa: F401
+# JUNIT_NAME and FORCED_EXIT_NOTE are re-exported for callers that name them.
+from .junit_report import (FORCED_EXIT_NOTE, JUNIT_NAME, bind_report,  # noqa: F401
+                           discard_report, exit_zero_note, grade)
 from .task import Task
+from .workdir_restore import restore, snapshot
 from .verdict import Verdict, Execution, Attribution, is_dispositive, attribution_for
 
 NO_REPORT_NOTE = ("[oracle] exit 0 with no fresh JUnit report: the process "
                   "ended before pytest wrote results; graded FAIL\n")
-FORCED_EXIT_NOTE = ("[oracle] exit 0, but this run's JUnit report records a "
-                    "failing test: the exit code was forced; graded FAIL\n")
 
 
 def clear_bytecode(workdir: Path) -> None:
@@ -209,13 +210,13 @@ def _pytest_result(cmd: str, out: bytes, rc: int, canon: str,
     Exit 0 with no fresh report means the process ended before pytest wrote
     results, for example a candidate calling os._exit(0) at import, so the
     run CRASHED. Exit 0 over a failing outcome means the candidate forced the
-    exit code after pytest recorded the failure. Both are candidate FAILs.
+    exit code after pytest recorded the failure. Exit 0 over a skipped or
+    xfailed outcome means a test did not count as a pass. All three are
+    candidate FAILs.
     """
-    note, execution = "", Execution.COMPLETED
+    note, execution = exit_zero_note(canon, rc), Execution.COMPLETED
     if rc == 0 and not fresh:
         note, execution = NO_REPORT_NOTE, Execution.CRASHED
-    elif rc == 0 and any(ln.endswith("=FAIL") for ln in canon.splitlines()):
-        note = FORCED_EXIT_NOTE
     return OracleResult(
         verdict_=grade(canon, rc), cmd=cmd, output_hash=_digest(canon, rc),
         stdout_excerpt=note + _excerpt(out), rc=rc, execution=execution)
@@ -247,12 +248,14 @@ class PytestOracle:
         # The recorded command keeps the canonical report token. The executed
         # one writes to a name no earlier run used, read here and then removed.
         run_cmd, report = bind_report(cmd, workdir)
+        before = snapshot(workdir)      # so no run grades the next one
         try:
             out, rc = self._run(run_cmd, task.workdir)
             fresh = report is not None and report.exists()
             canon = _pytest_canonical(report)
         finally:
             discard_report(report)
+            restore(before)
         return _pytest_result(cmd, out, rc, canon, fresh)
 
     def _run(self, cmd: str, cwd: str) -> tuple[bytes, int]:

@@ -30,6 +30,7 @@ from pathlib import Path
 from .envelope import ProofEnvelope, load_envelope
 from .junit_report import bind_report, discard_report
 from .oracle import clear_bytecode, rerun_outcome, run_env
+from .workdir_restore import restore, snapshot
 
 
 @dataclass
@@ -46,6 +47,7 @@ def witness_envelope(envelope: ProofEnvelope, *, workdir: str | Path,
     cpath.write_text(envelope.candidate, encoding="utf-8")
     clear_bytecode(Path(workdir))
     run_cmd, report = bind_report(envelope.oracle_cmd, workdir)
+    before = snapshot(workdir)
     try:
         p = subprocess.run(
             run_cmd, cwd=str(workdir), shell=True, env=run_env(),
@@ -57,6 +59,7 @@ def witness_envelope(envelope: ProofEnvelope, *, workdir: str | Path,
         return WitnessVerdict("UNVERIFIABLE", None, f"oracle re-run failed: {e!r}")
     finally:
         discard_report(report)
+        restore(before)
     if reproduced != envelope.oracle_output_hash:
         return WitnessVerdict(
             "DRIFT", reproduced,
