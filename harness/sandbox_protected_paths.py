@@ -48,7 +48,7 @@ CREDENTIAL_DIRECTORIES = (
 #: would take non-credential state with it.
 CREDENTIAL_FILES = (
     ".netrc", ".npmrc", ".pypirc", ".git-credentials",
-    ".docker/config.json",
+    ".docker/config.json", ".flywheel/gateway.token",
 )
 
 
