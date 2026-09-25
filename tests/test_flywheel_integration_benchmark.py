@@ -1,4 +1,4 @@
-"""The spin step of the integration benchmark, run once and checked three ways.
+"""The spin step of the integration benchmark, run once and checked four ways.
 
 Run 20260708_230923 passed a relative output root, and its committed output
 repeated the run root in paths up to 206 characters. A Windows clone without
@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 
+from harness.junit_report import is_report_name
 from scripts.run_flywheel_integration_benchmark import run_spin_benchmark
 
 RELATIVE_ROOT = Path("out") / "20260708_230923"
@@ -54,11 +55,22 @@ def test_no_written_path_contains_the_run_root_twice(spun):
 
 
 def test_the_oracle_ran_where_the_tests_are(spun):
-    # A positive control: the check above would also pass if the oracle wrote
-    # its receipts somewhere else entirely. In the nested run every junit file
-    # reported tests="0" and the pass rate was 0.0, not the 0.5 that two
-    # correct candidates out of four earn.
+    # A positive control: the check above would also pass if the oracle ran
+    # somewhere else entirely. In the nested run pytest found no tests, every
+    # junit report said tests="0", and the pass rate was 0.0, not the 0.5
+    # that two correct candidates out of four earn. A PASS needs a passing
+    # outcome in the run's own report, so 0.5 means pytest found the tests.
     root = RELATIVE_ROOT.as_posix()
     for task in TASKS:
-        assert f"{root}/spin/{task}/_oracle_junit.xml" in spun["written"]
+        assert f"{root}/spin/{task}/solution.py" in spun["written"]
+        assert f"{root}/spin/{task}/tests/test_solution.py" in spun["written"]
     assert spun["result"]["first_turn"]["pass_rate"] == 0.5
+
+
+def test_the_oracle_leaves_no_report_behind(spun):
+    # This test used to look for `_oracle_junit.xml` in each task directory.
+    # Since 2026-09-23 the oracle writes a per-run report and deletes it after
+    # reading, so none is left. A report left in an output directory is how
+    # 1149 of them came to be committed.
+    left = [p for p in spun["written"] if is_report_name(p.rsplit("/", 1)[-1])]
+    assert left == [], f"oracle reports left behind: {left[:3]}"
