@@ -43,9 +43,9 @@ def test_adoption_without_presence_or_for_another_digest_is_refused(tmp_path):
     assert settings.effective(tmp_path, owner)["content"] == "off"
 
 
-def test_a_switch_whose_feature_is_not_built_accepts_only_off(tmp_path):
+def test_a_value_other_than_on_or_off_is_refused(tmp_path):
     with pytest.raises(ValueError):
-        settings.write_file(tmp_path, {"archive_transcripts": "on"})
+        settings.write_file(tmp_path, {"archive_transcripts": "sometimes"})
 
 
 def test_a_malformed_file_changes_nothing_and_is_reported(tmp_path):
