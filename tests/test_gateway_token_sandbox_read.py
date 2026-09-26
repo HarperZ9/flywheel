@@ -118,7 +118,9 @@ def test_loading_an_existing_signing_key_labels_it(tmp_path):
     keys.mkdir()
     key = keys / "receipt-signing-ed25519"
     key.write_bytes(b"minted before the label existed, not a real key")
-    with pytest.raises(SigningKeyError):
+    # SigningKeyError with the signing extra installed, ImportError without it;
+    # the label is applied before either, so the check below holds on both hosts.
+    with pytest.raises((SigningKeyError, ImportError)):
         load_signing_key(key)
     control = keys / "control.txt"
     control.write_bytes(b"not secret")

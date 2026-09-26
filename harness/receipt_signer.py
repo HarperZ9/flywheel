@@ -207,10 +207,12 @@ class SigningKey:
 
 def load_signing_key(path=DEFAULT_KEY_PATH) -> SigningKey:
     """Load an OpenSSH Ed25519 private key from `path` into a `SigningKey`."""
+    if Path(path).is_file():
+        # Label before anything can fail: a key minted before the label existed
+        # gets it here, even on a host without the signing extra installed.
+        _label_key(Path(path))
     from cryptography.hazmat.primitives.serialization import (
         load_ssh_private_key)
-    if Path(path).is_file():
-        _label_key(Path(path))  # a key minted before the label existed gets it here
     data = Path(path).read_bytes()
     if _OPENSSH_PRIVATE_MARKER not in data:
         raise SigningKeyError(
