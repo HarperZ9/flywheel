@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import logging
 from pathlib import Path
 import os
 import re
@@ -20,13 +21,25 @@ SCHEMA = "flywheel.gateway-agent-record/v1"
 MAX_RECORD_BYTES = 8 * 1024 * 1024
 MAX_TRACE_BYTES = 32 * 1024 * 1024
 MAX_RECORDS = 2048
+# One record and 64 KiB stay reserved for the fixed failure record (EN-C3).
+REGULAR_RECORDS = MAX_RECORDS - 1
+REGULAR_BYTES = MAX_TRACE_BYTES - 64 * 1024
+MAX_FAILURE_BYTES = 1024
 GENESIS = "0" * 64
 KINDS = {"request", "ledger", "progress", "result", "failure"}
+FAILURE_SCHEMA = "flywheel.gateway-agent-failure/v1"
+FAILURE_CLASSES = ("credential_refused", "size_bound", "custody_error", "schema_error")
+_RULE = re.compile(r"[A-Za-z0-9_]{1,64}\Z")
+_log = logging.getLogger(__name__)
 
 
 class TraceError(ValueError):
-    def __init__(self):
+    """The public code stays PRIVATE_TRACE_UNAVAILABLE; the class and the
+    catalog rule are private and reach only the reserved failure record."""
+
+    def __init__(self, failure_class: str = "custody_error", rule: str | None = None):
         super().__init__("PRIVATE_TRACE_UNAVAILABLE")
+        self.failure_class, self.rule = failure_class, rule
 
 
 def _private_value(value, secrets, *, result=False):
@@ -86,40 +99,86 @@ class AgentTrace:
             self.base = Path("gateway-agent-traces/v1/owners") / owner_ref / operation_ref
             self.secrets = tuple(secrets)
             self.count, self.head, self.size = 0, GENESIS, 0
-            self.rejected = False
+            self.rejected, self.refusal, self.failure_written = False, None, False
         except Exception:
             raise TraceError() from None
 
-    def append(self, kind: str, payload: dict) -> None:
+    def _refuse(self, failure_class: str, rule: str | None = None) -> TraceError:
+        self.rejected = True
+        if self.refusal is None:
+            self.refusal = (failure_class, rule)
+        return TraceError(failure_class, rule)
+
+    def _checked(self, kind: str, payload) -> tuple[dict, bytes]:
+        if kind not in KINDS or type(payload) is not dict:
+            raise self._refuse("schema_error")
         try:
-            if self.rejected or kind not in KINDS or type(payload) is not dict:
-                raise TraceError()
-            _private_value(payload, self.secrets, result=kind == "result")
-            value = {"schema": SCHEMA, **self.binding, "sequence": self.count,
-                "kind": kind, "prior_sha256": self.head, "payload": payload}
-            value["record_sha256"] = canonical_sha256(value)
-            raw = canonical_bytes(value)
-            if (len(raw) > MAX_RECORD_BYTES or self.size + len(raw) > MAX_TRACE_BYTES
-                    or self.count >= MAX_RECORDS):
-                raise TraceError()
-            with open_artifact_root(self.root, expected=self.identity) as fs:
-                # The pinned root/ancestors cannot be swapped during ACL setup.
-                with fs.borrow_descriptor() as descriptor:
-                    if descriptor.fd is not None:
-                        os.fchmod(descriptor.fd, 0o700)
-                    else:
-                        _secure_owner_only(self.root, directory=True)
-                fs.write_new_or_same(self.base / f"{self.count:08d}.json", raw)
-                fs.write_new_or_same(self.base / f"head-{self.count:08d}.json",
-                    canonical_bytes({"schema": "flywheel.gateway-agent-head/v1",
-                        **self.binding, "record_count": self.count + 1,
-                        "trace_head_sha256": value["record_sha256"]}))
-            self.count += 1
-            self.head = value["record_sha256"]
-            self.size += len(raw)
+            canonical_bytes(payload)
         except Exception:
-            self.rejected = True
-            raise TraceError() from None
+            raise self._refuse("schema_error") from None
+        try:
+            _private_value(payload, self.secrets, result=kind == "result")
+        except Exception as exc:
+            if "out of range" in str(exc):
+                raise self._refuse("schema_error") from None
+            from .trace_redact import first_credential_rule
+            raise self._refuse("credential_refused", first_credential_rule(payload)) from None
+        value = {"schema": SCHEMA, **self.binding, "sequence": self.count,
+            "kind": kind, "prior_sha256": self.head, "payload": payload}
+        value["record_sha256"] = canonical_sha256(value)
+        raw = canonical_bytes(value)
+        if (len(raw) > MAX_RECORD_BYTES or self.size + len(raw) > REGULAR_BYTES
+                or self.count >= REGULAR_RECORDS):
+            raise self._refuse("size_bound")
+        return value, raw
+
+    def _write(self, value: dict, raw: bytes) -> None:
+        with open_artifact_root(self.root, expected=self.identity) as fs:
+            # The pinned root/ancestors cannot be swapped during ACL setup.
+            with fs.borrow_descriptor() as descriptor:
+                if descriptor.fd is not None:
+                    os.fchmod(descriptor.fd, 0o700)
+                else:
+                    _secure_owner_only(self.root, directory=True)
+            fs.write_new_or_same(self.base / f"{self.count:08d}.json", raw)
+            fs.write_new_or_same(self.base / f"head-{self.count:08d}.json",
+                canonical_bytes({"schema": "flywheel.gateway-agent-head/v1",
+                    **self.binding, "record_count": self.count + 1,
+                    "trace_head_sha256": value["record_sha256"]}))
+        self.count += 1
+        self.head = value["record_sha256"]
+        self.size += len(raw)
+
+    def append(self, kind: str, payload: dict) -> None:
+        if self.rejected:
+            failure_class, rule = self.refusal or ("custody_error", None)
+            raise TraceError(failure_class, rule)
+        value, raw = self._checked(kind, payload)
+        try:
+            self._write(value, raw)
+        except Exception:
+            raise self._refuse("custody_error") from None
+
+    def append_failure(self, failure_class: str, rule: str | None = None) -> None:
+        """The one record accepted past the regular bound, once: class, catalog
+        rule id (or None) and the sequence of the refused record."""
+        if (self.failure_written or failure_class not in FAILURE_CLASSES
+                or rule is not None and (type(rule) is not str or not _RULE.fullmatch(rule))
+                or self.count >= MAX_RECORDS):
+            raise TraceError("schema_error")
+        payload = {"schema": FAILURE_SCHEMA, "class": failure_class, "rule": rule,
+                   "sequence": self.count}
+        value = {"schema": SCHEMA, **self.binding, "sequence": self.count,
+                 "kind": "failure", "prior_sha256": self.head, "payload": payload}
+        value["record_sha256"] = canonical_sha256(value)
+        raw = canonical_bytes(value)
+        if len(raw) > MAX_FAILURE_BYTES or self.size + len(raw) > MAX_TRACE_BYTES:
+            raise TraceError("size_bound")
+        try:
+            self._write(value, raw)
+        except Exception:
+            raise TraceError("custody_error") from None
+        self.failure_written = True
 
     def read_reference(self, trace_ref: str) -> list[dict]:
         if trace_ref != self.ref:
@@ -170,6 +229,25 @@ class AgentTrace:
 
     def projection(self, state: str, **kwargs) -> dict:
         return projection(self.binding, state, self.count, self.head, **kwargs)
+
+
+def record_failure(trace: "AgentTrace", exc: BaseException) -> None:
+    """End a failed run's private trace with one failure record (N-12).
+
+    After a refusal the trace accepts only the fixed-schema record in its
+    reserved slot; otherwise the diagnostic record is tried first, and a
+    refusal of that record falls back to the fixed one. A failure record that
+    cannot be written is logged by class, never by value."""
+    try:
+        if trace.refusal is not None:
+            trace.append_failure(*trace.refusal)
+            return
+        try:
+            trace.append("failure", {"error_type": type(exc).__name__, "message": str(exc)})
+        except TraceError:
+            trace.append_failure(*trace.refusal)
+    except TraceError as missed:
+        _log.warning("private trace failure record not written (%s)", missed.failure_class)
 
 
 class TraceLedger(SessionLedger):

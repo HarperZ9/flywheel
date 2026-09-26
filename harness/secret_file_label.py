@@ -59,3 +59,41 @@ def protect_from_lower_integrity(path: str | Path) -> None:
             raise OSError(code, "cannot label the file", str(path))
     finally:
         kernel.LocalFree(descriptor)
+
+
+def has_lower_integrity_label(path: str | Path) -> bool | None:
+    """Whether ``path`` carries the medium No-Read-Up label; None off Windows
+    or when the label cannot be read."""
+    if os.name != "nt":
+        return None
+    import ctypes
+    from ctypes import wintypes
+    advapi = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    get_info = advapi.GetNamedSecurityInfoW
+    get_info.argtypes = (wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p,
+                         ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
+                         ctypes.POINTER(ctypes.c_void_p))
+    get_info.restype = wintypes.DWORD
+    render = advapi.ConvertSecurityDescriptorToStringSecurityDescriptorW
+    render.argtypes = (ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD,
+                       ctypes.POINTER(wintypes.LPWSTR), ctypes.c_void_p)
+    render.restype = wintypes.BOOL
+    kernel.LocalFree.argtypes = (ctypes.c_void_p,)
+    descriptor = ctypes.c_void_p()
+    if get_info(str(path), _SE_FILE_OBJECT, _LABEL_SECURITY_INFORMATION, None, None, None,
+                None, ctypes.byref(descriptor)):
+        return None
+    try:
+        text = wintypes.LPWSTR()
+        if not render(descriptor, 1, _LABEL_SECURITY_INFORMATION, ctypes.byref(text), None):
+            return None
+        try:
+            import re
+            match = re.search(r"\(ML;[^;]*;([A-Z]*);;;(ME|HI|SI)\)", text.value or "")
+            flags = match.group(1) if match else ""
+            return "NR" in [flags[i:i + 2] for i in range(0, len(flags), 2)]
+        finally:
+            kernel.LocalFree(text)
+    finally:
+        kernel.LocalFree(descriptor)

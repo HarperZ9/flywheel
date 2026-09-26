@@ -94,6 +94,12 @@ STORES = (
           CLASSIFY_FIRST, EXPORT, NOT_DESIGNED,
           note="HOME of gateway worker children (gateway_worker_env.py); whatever "
                "child tools write there is unknown"),
+    Store("S14", "Capture failure and suppression records", "state", ("capture-failures",),
+          ("C4",), META, "harness.trace_spool_adapters.export_records",
+          "harness.trace_spool_adapters.delete_all", owner_binding="home",
+          added_by_program=True,
+          note="reason codes, session ids and times; a suppression's working directory "
+               "is DPAPI-encrypted on Windows and omitted elsewhere"),
     Store("CL", "Custody ledger", "state", ("custody-ledger",), ("C4",), META,
           "harness.trace_custody_ledger.export_records",
           "harness.trace_custody_ledger.delete_all", owner_binding="owner",

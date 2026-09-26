@@ -77,8 +77,18 @@ def source_context(home, run_root):
         gather_payload=fixture._selection("SWEEP-SOURCE"), selected_at=CLOCK)
 
 
+def capture_spool(home, run_root):
+    import os
+    from harness.capture_hooks import spool
+    from harness.gateway_endpoint_file import write_endpoint
+    assert spool.write_failure(home, "claude-code", "stop", "sweep-session", None,
+                               "GATEWAY_NOT_RUNNING")
+    spool.note_suppression(home, "codex", "sweep-session", str(run_root))
+    write_endpoint(home, "127.0.0.1", 9, os.getpid())
+
+
 DRIVERS = (agent_trace, scaffold, memory_note, operations, grants,
-           continuation, source_context)
+           continuation, source_context, capture_spool)
 
 
 def run_all(home, run_root):

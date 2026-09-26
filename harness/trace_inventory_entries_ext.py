@@ -102,6 +102,7 @@ STORES = (
 _NO_TRACE = "holds no trace-derived data"
 EXEMPTIONS = (
     Exemption("home", "gateway.token", f"gateway credential; {_NO_TRACE}"),
+    Exemption("home", "gateway.endpoint*", f"where the running gateway listens; {_NO_TRACE}"),
     Exemption("home", "owner.ref", f"owner identity; {_NO_TRACE}"),
     Exemption("home", "lanes.json", f"lane install registry; {_NO_TRACE}"),
     Exemption("home", "plugins.json", f"plugin configuration; {_NO_TRACE}"),
