@@ -20,8 +20,8 @@ from harness.lane_caller import (
 
 
 def test_t1_can_call_t1_lane():
-    """A T1 governance tier can call a T1-minimum lane."""
-    result = call_lane_tool("gather", "gather.run", {},
+    """A T1 governance tier can call a T1 tool."""
+    result = call_lane_tool("gather", "gather.docs", {},
                             governance_tier="T1",
                             timeout=1)  # will fail to spawn, but check gate first
     # The call will fail at the MCP spawn level, not the governance gate
@@ -29,8 +29,8 @@ def test_t1_can_call_t1_lane():
 
 
 def test_t1_cannot_call_t2_lane():
-    """A T1 governance tier is denied access to a T2-minimum lane."""
-    result = call_lane_tool("local-model", "local_agent_health", {},
+    """A T1 governance tier is denied a tool the policy puts at T2."""
+    result = call_lane_tool("local-model", "flywheel.context.capture", {},
                             governance_tier="T1")
     assert result.get("governance_denied") is True
     assert "T2" in result["error"]
@@ -50,11 +50,13 @@ def test_t3_can_call_any_lane():
     assert "governance_denied" not in result
 
 
-def test_no_governance_tier_allows_all():
-    """When no governance tier is set, no gating occurs."""
+def test_no_governance_tier_runs_at_t1():
+    """A call that sends no tier runs at T1: T1 tools pass, T2 tools do not."""
     result = call_lane_tool("local-model", "local_agent_health", {},
                             governance_tier="", timeout=1)
     assert "governance_denied" not in result
+    denied = call_lane_tool("gather", "gather.run", {}, governance_tier="")
+    assert denied.get("governance_denied") is True
 
 
 # --- unknown lane handling ----------------------------------------------
@@ -122,7 +124,7 @@ def test_successful_mcp_call():
          patch.dict("sys.modules", {"harness.mcp_client": MagicMock(
              MCPClient=MagicMock(return_value=mock_client),
              MCPError=Exception)}):
-        result = call_lane_tool("gather", "gather.run", {"query": "test"}, timeout=5)
+        result = call_lane_tool("gather", "gather.docs", {"path": "test"}, timeout=5)
     # Result depends on whether the mock was actually used; the test verifies
     # that call_lane_tool doesn't crash on a mocked path
     assert isinstance(result, dict)
@@ -153,7 +155,7 @@ def test_lane_caller_uses_runtime_launch_spec(monkeypatch):
                         raising=False)
     monkeypatch.setattr(lanes, "resolve_mcp_command", lambda name: ["portable"])
     monkeypatch.setattr(mcp_client, "MCPClient", FakeClient)
-    assert call_lane_tool("gather", "gather.run") == {"status": "ok"}
+    assert call_lane_tool("gather", "gather.docs") == {"status": "ok"}
     assert seen == [expected]
 
 
@@ -199,14 +201,33 @@ def test_a_lane_with_one_tier_is_untouched_by_the_split():
     assert required_tier("local-model", "anything_at_all") == "T2"
 
 
-def test_the_per_tool_map_only_ever_raises_the_floor():
-    # An entry below its lane floor would be a hole in the lane gate: the lane
-    # says T2, one tool says T1, and the tool wins.
+# The policy table sets each listed tool's tier, and on three T2-floor lanes it
+# opens reviewed tools at T1 (the operator reviews them, O-4). Any other entry
+# below its lane floor is a new hole in the lane gate, so it must be added here
+# on purpose, never arrive with a table edit alone.
+REVIEWED_BELOW_FLOOR = {
+    "local-model": {"local_agent_health", "local_agent_chat", "local_agent_run",
+                    "local-model.status", "local-model.doctor",
+                    "flywheel.context.health", "flywheel.context.preflight",
+                    "receipt.verify_inclusion"},
+    "relay": {"local_agent_health", "local_agent_chat", "local_agent_run",
+              "local_agent_status", "local_agent_result", "local_agent_runs",
+              "local_agent_sessions", "relay.status", "relay.doctor"},
+    "accountable-surface": {"accountable-surface.perceive", "accountable-surface.device_ls",
+                            "accountable-surface.journal", "accountable-surface.receipt",
+                            "accountable-surface.status", "accountable-surface.doctor"},
+}
+
+
+def test_only_reviewed_tools_sit_below_their_lane_floor():
     ranks = {"T1": 1, "T2": 2, "T3": 3}
+    below = {}
     for lane, tools in TOOL_MIN_TIERS.items():
         floor = LANE_MIN_TIERS.get(lane, "T1")
         for tool in tools:
-            assert ranks[required_tier(lane, tool)] >= ranks[floor], f"{lane}.{tool}"
+            if ranks[required_tier(lane, tool)] < ranks[floor]:
+                below.setdefault(lane, set()).add(tool)
+    assert below == REVIEWED_BELOW_FLOOR
 
 
 def test_every_tier_named_in_either_map_is_a_tier():
@@ -228,7 +249,7 @@ def test_no_board_tool_that_changes_the_board_sits_in_the_open_set(tool):
     and the board lives in another repository, so nothing mechanical stops one
     of them being added to it. This is what catches that.
     """
-    assert TOOL_MIN_TIERS["bulletin"].get(tool) is None
+    assert TOOL_MIN_TIERS["bulletin"].get(tool) == "T2"
     assert required_tier("bulletin", tool) == "T2"
 
 

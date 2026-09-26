@@ -14,7 +14,10 @@ frozen engine can perform for each lane:
 - an http lane spawns nothing;
 - any other lane is not in this build, and says so with a code.
 
-No launch here starts with a bare interpreter or console script. A launch that
+Every spawned launch admits only the tool policy's T1 tools that are in the
+build (``lane_tool_policy.admitted_tools``); the payload lanes carry the same
+list through their reviewed rows. No launch here starts with a bare interpreter
+or console script. A launch that
 cannot happen returns codes instead. A setup code (``SETUP_CODES``) means the
 person has a step to take; any other code is a defect of the build.
 """
@@ -26,6 +29,7 @@ from typing import Callable, Mapping
 
 from . import node_lanes
 from .bundled_lane_descriptor import bundled_payload_lane_names
+from .lane_tool_policy import admitted_tools
 from .lane_workdir import lane_workdir
 from .mcp_client import LaunchSpec
 from .tool_discovery import find_node
@@ -98,11 +102,11 @@ def select_frozen_launch(lane, profile: str, executable: str,
         root, code = local_model_root(environ)
         if code:
             return None, "bundled", None, (code,)
-        return LaunchSpec((executable, "--mcp", "--root", root),
-                          hide_window=True), "bundled", None, ()
+        return LaunchSpec((executable, "--mcp", "--root", root), hide_window=True,
+                          allowed_tools=tuple(admitted_tools(lane.name))), "bundled", None, ()
     if lane.name in LANE_MCP_LANES:
-        return LaunchSpec((executable, "--lane-mcp", lane.name),
-                          hide_window=True), "bundled", None, ()
+        return LaunchSpec((executable, "--lane-mcp", lane.name), hide_window=True,
+                          allowed_tools=tuple(admitted_tools(lane.name))), "bundled", None, ()
     if lane.package_disabled_reason:
         # The runtime reports package_distribution_disabled with the reason.
         return None, "package", None, ()

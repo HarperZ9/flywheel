@@ -117,7 +117,7 @@ def test_lane_call_uses_runtime_launch_spec(monkeypatch, tmp_path):
     monkeypatch.setattr(plugins, "resolve_mcp_launch", lambda name: expected,
                         raising=False)
     monkeypatch.setattr("harness.mcp_client.MCPClient", FakeClient)
-    assert plugins.call_plugin("gather", "gather.run")["result"]["ok"] is True
+    assert plugins.call_plugin("gather", "gather.docs")["result"]["ok"] is True
     assert seen == [expected]
 
 

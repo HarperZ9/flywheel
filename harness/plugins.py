@@ -189,6 +189,8 @@ def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
         return {"error": "the builtin tool set runs inside gated agent "
                          "runs, not through this route"}
     refusal = None if execution_plan is not None else _direct_refusal(name, False)
+    from .lane_tier_gate import guard_args, plugin_refusal  # a lane tool needs T1 here
+    refusal = plugin_refusal(name, tool) if refusal is None else refusal
     if refusal is not None:
         return refusal
     try:
@@ -208,7 +210,7 @@ def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
     try:
         with factory(command, timeout=timeout,
                      client_name="flywheel-plugins") as c:
-            out = c.call_text(tool, arguments or {})
+            out = c.call_text(tool, guard_args(name, tool, arguments or {}))
             return {"name": name, "kind": kind, "tool": tool, "result": out}
     except (MCPError, FileNotFoundError, OSError) as error:
         return {"error": f"{type(error).__name__}: {error}", "name": name,

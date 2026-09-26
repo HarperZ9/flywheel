@@ -202,6 +202,9 @@ def restricted_catalog_launch(catalog_ref: str, tools: list[str] | tuple[str, ..
         raise GatewayOperationError("MCP_AMBIENT_ENV_UNSUPPORTED")
     if launch.allowed_tools is not None and not set(selected) <= set(launch.allowed_tools):
         raise GatewayOperationError("CAPABILITY_NOT_ADMITTED")
+    from .lane_tier_gate import agent_tool_refusal  # lane tools: T1, in build, unguarded
+    if (code := agent_tool_refusal(catalog, plugin_kind, selected)) is not None:
+        raise GatewayOperationError(code)
     launch = _pin_catalog_cwd(launch, catalog if plugin_kind == "lane" else None)
     launch = replace(launch, allowed_tools=selected)
     validate_limits(_effective_limits(launch))
