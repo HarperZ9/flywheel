@@ -68,3 +68,11 @@ def retention_export(home) -> list[dict]:
 
 def retention_delete(home) -> dict:
     return {"removed": remove_tree(Path(home) / "state" / "trace-retention")}
+
+
+def export_grants_export(home) -> list[dict]:
+    return json_records(Path(home) / "state" / "trace-export")
+
+
+def export_grants_delete(home) -> dict:
+    return {"removed": remove_tree(Path(home) / "state" / "trace-export")}
