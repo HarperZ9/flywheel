@@ -96,6 +96,11 @@ automated test yet. Without either, traces stay plaintext and
 
 - A trace started before encryption keeps reading, and its new records are
   encrypted. An encrypted record followed by a plaintext one is refused.
+- `flywheel traces encrypt --legacy` encrypts traces written before this
+  release, newest file first, so a trace reads at every step. A trace whose
+  run is still writing is skipped. The old plaintext stays in freed disk
+  space until something overwrites it, and the command says so; only volume
+  encryption (BitLocker or Device Encryption) covers that.
 - Once a store holds an encrypted record, a plaintext write to it is refused
   (`ENC_REQUIRED`), for example after a reinstall without the key store.
 - The route that shows a trace returns the same bytes it returned before
