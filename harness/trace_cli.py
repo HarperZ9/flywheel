@@ -27,7 +27,9 @@ def _size(n: int) -> str:
     return f"{n} B"
 
 
-def _protection(p: dict) -> str:
+def _protection(p: dict, encryption: dict | None = None) -> str:
+    if p["kind"] == "encrypted" and encryption is not None:
+        return encryption["protection"]
     if p["kind"] == "plaintext-exception":
         return f"plaintext (exception: {p['reason']}; closes in {p['package']})"
     if p["kind"] == "outside-custody":
@@ -48,13 +50,13 @@ def _observed(o: dict) -> str:
     return text + ("" if o["complete"] else " (count stopped at its bound)")
 
 
-def _store_lines(row: dict) -> list[str]:
+def _store_lines(row: dict, encryption: dict | None = None) -> list[str]:
     classes = ("UNCLASSIFIED" if row["classes"] is None else
                ", ".join(f"{c} {inv.CLASS_NAMES[c]}" for c in row["classes"]))
     lines = [f"{row['id']:<5} {escape(row['name'])}",
              f"      location    {escape(row['location'])}",
              f"      classes     {classes} ({row['evidence']})",
-             f"      protection  {_protection(row['protection'])}",
+             f"      protection  {_protection(row['protection'], encryption)}",
              f"      retention   {row['retention']}"]
     lines += [f"      cap         {c['what']}: {c['behavior']}" for c in row["caps"]]
     lines += [f"      observed    {_observed(row['observed'])}",
@@ -69,8 +71,12 @@ def render_status(doc: dict, roots: dict) -> list[str]:
     lines = ["Flywheel trace custody",
              f"home {escape(roots['home'])}", f"run root {escape(roots['run'])}",
              f"Retention default: {doc['retention_default']}.", ""]
+    encryption = doc.get("encryption")
+    if encryption:
+        floored = ", ".join(sorted(encryption["floors"])) or "none yet"
+        lines.insert(4, f"Encryption: {encryption['protection']}; floor set for {floored}.")
     for row in doc["stores"]:
-        lines += _store_lines(row)
+        lines += _store_lines(row, encryption)
     lines.append("")
     by_id = {row["id"]: row for row in doc["stores"]}
     lines += [f"UNCLASSIFIED {sid} {escape(by_id[sid]['name'])}: {by_id[sid]['note']}"

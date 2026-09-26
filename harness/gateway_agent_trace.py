@@ -16,6 +16,7 @@ from .local_session import SessionLedger
 from .operation_grants import OWNER_REF_PATTERN, _secure_owner_only
 from .private_artifact_fs import (ArtifactIdentity, PrivateArtifactError,
                                   open_artifact_root, root_identity)
+from .trace_enc_write import ItemCipher, write_new_or_equivalent
 
 SCHEMA = "flywheel.gateway-agent-record/v1"
 MAX_RECORD_BYTES = 8 * 1024 * 1024
@@ -100,6 +101,8 @@ class AgentTrace:
             self.secrets = tuple(secrets)
             self.count, self.head, self.size = 0, GENESIS, 0
             self.rejected, self.refusal, self.failure_written = False, None, False
+            # Records and checkpoints are encrypted below the canonical bytes (7.3).
+            self.cipher = ItemCipher(self.root, owner_ref, "S1", self.ref)
         except Exception:
             raise TraceError() from None
 
@@ -140,11 +143,13 @@ class AgentTrace:
                     os.fchmod(descriptor.fd, 0o700)
                 else:
                     _secure_owner_only(self.root, directory=True)
-            fs.write_new_or_same(self.base / f"{self.count:08d}.json", raw)
-            fs.write_new_or_same(self.base / f"head-{self.count:08d}.json",
-                canonical_bytes({"schema": "flywheel.gateway-agent-head/v1",
-                    **self.binding, "record_count": self.count + 1,
-                    "trace_head_sha256": value["record_sha256"]}))
+            head = canonical_bytes({"schema": "flywheel.gateway-agent-head/v1",
+                **self.binding, "record_count": self.count + 1,
+                "trace_head_sha256": value["record_sha256"]})
+            for name, plain in ((f"{self.count:08d}.json", raw),
+                                (f"head-{self.count:08d}.json", head)):
+                write_new_or_equivalent(fs, self.base / name, self.cipher.seal(name, plain),
+                                        plain, self.cipher, name)
         self.count += 1
         self.head = value["record_sha256"]
         self.size += len(raw)
@@ -188,6 +193,7 @@ class AgentTrace:
     def read(self) -> list[dict]:
         try:
             records, head, size = [], GENESIS, 0
+            self.cipher.prefix.reset()
             with open_artifact_root(self.root, expected=self.identity, writable=False) as fs:
                 try:
                     names = fs.list_names(self.base, max_entries=MAX_RECORDS * 2 + 16)
@@ -202,7 +208,8 @@ class AgentTrace:
                             committed + ["head-" + n for n in committed])):
                     raise TraceError()
                 for seq in range(len(committed)):
-                    raw = fs.read_bytes(self.base / f"{seq:08d}.json", max_bytes=MAX_RECORD_BYTES)
+                    raw = self.cipher.open(f"{seq:08d}.json", fs.read_bytes(
+                        self.base / f"{seq:08d}.json", max_bytes=self.cipher.bound(MAX_RECORD_BYTES)))
                     size += len(raw)
                     value = strict_load_json(raw, max_bytes=MAX_RECORD_BYTES, max_depth=32)
                     digest = value.pop("record_sha256")
@@ -215,8 +222,9 @@ class AgentTrace:
                         raise TraceError()
                     _private_value(value["payload"], (), result=value["kind"] == "result")
                     value["record_sha256"] = digest
-                    checkpoint = strict_load_json(fs.read_bytes(
-                        self.base / f"head-{seq:08d}.json", max_bytes=2048))
+                    checkpoint = strict_load_json(self.cipher.open(f"head-{seq:08d}.json",
+                        fs.read_bytes(self.base / f"head-{seq:08d}.json",
+                                      max_bytes=self.cipher.bound(2048))), max_bytes=2048)
                     if checkpoint != {"schema": "flywheel.gateway-agent-head/v1",
                             **self.binding, "record_count": seq + 1, "trace_head_sha256": digest}:
                         raise TraceError()

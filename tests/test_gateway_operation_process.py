@@ -167,17 +167,17 @@ def test_review_critical_child_secret_leak_writes_no_artifact(
         return {"final": ESCAPED_SECRET if mode == "result" else "safe"}
     monkeypatch.setattr("harness.router_agent.run_router_agent", leaking_run)
     monkeypatch.setattr(worker_protocol, "_emit", emitted.append)
+    from harness.gateway_agent_execution import trace_context, trace_from_request as reader
+    context = trace_context(_authorized(tmp_path), tmp_path)
     monkeypatch.setattr(worker_protocol, "_worker_request", lambda: (
-        operation, {"TOKEN": ESCAPED_SECRET}, tmp_path, run_root, None,
-        __import__("harness.gateway_agent_execution", fromlist=["trace_context"]).trace_context(
-            _authorized(tmp_path), tmp_path),
+        operation, {"TOKEN": ESCAPED_SECRET}, tmp_path, run_root, None, context,
         thaw_json(freeze_agent_binding(canonicalize_operation("agent.run", operation), tmp_path)),
         time.monotonic() + 300))
     assert worker_protocol._main() == 1
     assert emitted[-1]["type"] == "terminal" and emitted[-1]["state"] == "failed"
     assert ESCAPED_SECRET not in json.dumps(emitted)
-    artifacts = [path for path in tmp_path.rglob("*") if path.is_file()]
-    assert all(ESCAPED_SECRET not in path.read_text() for path in artifacts)
+    assert all(ESCAPED_SECRET.encode() not in p.read_bytes() for p in tmp_path.rglob("*") if p.is_file())
+    assert ESCAPED_SECRET not in json.dumps(reader(context).read())  # decrypted, too
     assert not (run_root / "agent_runs").exists()
 @pytest.mark.parametrize(("stderr", "malformed", "expected"), (
     ("", False, "completed"), (SECRET, False, "cancelled"),
