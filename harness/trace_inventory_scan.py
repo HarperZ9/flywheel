@@ -192,10 +192,12 @@ def validate_row(row) -> list[str]:
 def scan(environ=None) -> dict:
     """The `flywheel.trace-inventory/v1` document for the resolved home."""
     from .trace_custody_ledger import ledger_summary
+    from .trace_enc_probe import encryption_status
     roots = resolve_roots(environ)
     rows = [store_row(store, roots) for store in inv.stores()]
     return {"schema": inv.SCHEMA, "generated_at": _iso(datetime.now(timezone.utc).timestamp()),
             "retention_default": inv.DEFAULT_RETENTION, "stores": rows,
             "unregistered": _unregistered(roots),
             "unclassified": [r["id"] for r in rows if r["classes"] is None],
-            "ledger": ledger_summary(roots["home"])}
+            "ledger": ledger_summary(roots["home"]),
+            "encryption": encryption_status(roots["state"])}

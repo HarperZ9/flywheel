@@ -27,6 +27,9 @@ correctness, source truth, or unlimited retention of original subprocess output.
 
 Records are immutable, hash chained, owner/Journey/operation bound, and written
 through the pinned private artifact filesystem before their metadata is emitted.
+Where an OS key store exists, each record and checkpoint file is encrypted below
+the canonical bytes under a per-trace key; readers decrypt before every check
+below, so the canonical bytes, hashes and responses are the same in both modes.
 Each ledger append is persisted before the next model/tool step. Interrupted or
 cancelled runs retain the accepted prefix; recovery does not claim a final answer
 exists. Each record is bounded to 8 MiB, a trace to 32 MiB and 2048 records. A size,
