@@ -26,6 +26,9 @@ class Lane:
     env_vars: tuple = ()            # non-secret config names this lane reads; a pip or
     #                                 npm lane launch passes only these plus the base
     #                                 allowlist in lane_env.py and operator env_allow grants
+    bundled_mcp_module: str = ""    # module the frozen build serves MCP from, when it is
+    #                                 not the one mcp_args implies (forum serves its
+    #                                 stdio loop from forum.mcp_surface, not forum.mcp)
 
     def mcp_command(self) -> list[str]:
         """The argv that launches this lane's MCP stdio server.
@@ -101,6 +104,7 @@ LANES: dict[str, Lane] = {
         "forum", "forum-engine", "forum", ("mcp",), "pip", "1.14.0",
         "witnessed causal ledger + model-agnostic routing",
         "orchestration", source_repo="public/forum", py_module="forum.cli",
+        bundled_mcp_module="forum.mcp_surface",
         env_vars=("FORUM_RUN_REAL", "OTEL_EXPORTER_OTLP_ENDPOINT")),
     "learn": Lane(
         "learn", "@harperz9/learn", "node", ("src/mcp.mjs",), "npm", "1.6.0",
