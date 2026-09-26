@@ -10,6 +10,7 @@ import os
 import runpy
 import sys
 from pathlib import Path
+from harness.cli_version import print_version_if_asked
 # The new umbrella subcommands. Handled in cli_entry; everything else is
 # delegated to the existing run_harness_cli front controller.
 _UMBRELLA_COMMANDS = {"lanes", "loop-status", "install", "up", "down", "corpus-export",
@@ -241,6 +242,7 @@ def main(argv: list[str] | None = None) -> int:
     # existing run_harness_cli parser requires a subcommand, so the first
     # non-flag token is the command name.
     command = next((a for a in raw if not a.startswith("-")), None)
+    if command is None and print_version_if_asked(raw): return 0  # --version, -V
     packaged = _dispatch_packaged(command, raw)
     if packaged is not None:
         return packaged
