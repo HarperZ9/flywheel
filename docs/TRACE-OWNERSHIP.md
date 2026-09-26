@@ -83,6 +83,39 @@ knows the gateway token, and it never sends the token itself.
 `FLYWHEEL_CAPTURE=off` stops capture for a session and says so once in the
 client. `docs/WRAPPER-HOOKS.md` has the details and the limits.
 
+## Encryption at rest
+
+Gateway agent traces and their checkpoints are encrypted before they touch
+disk. Each trace has its own random key. On Windows the keys sit in a keystore
+sealed with your Windows account's data protection (DPAPI), and each file is
+also checked with a key-bound digest, so a changed byte is reported as
+tampering. On macOS and Linux, installing the `encryption` extra encrypts with
+AES-256-GCM under a key kept in the system keychain; that keychain path has no
+automated test yet. Without either, traces stay plaintext and
+`flywheel traces status` says `plaintext (no OS key store)`.
+
+- A trace started before encryption keeps reading, and its new records are
+  encrypted. An encrypted record followed by a plaintext one is refused.
+- Once a store holds an encrypted record, a plaintext write to it is refused
+  (`ENC_REQUIRED`), for example after a reinstall without the key store.
+- The route that shows a trace returns the same bytes it returned before
+  encryption, so the desktop and any client reading traces see no change.
+- If the operating system can no longer decrypt the keystore (a forced
+  password reset, another machine), reads fail with `OS_KEY_UNAVAILABLE` and
+  a loss record names the trace. Encrypted data cannot be read on another
+  machine or after a password reset. Export is the backup.
+- Your Flywheel home carries a Windows integrity label that keeps
+  low-integrity sandboxed commands from opening anything inside it, and the
+  home and its `state` folder are excluded from Windows Search indexing.
+
+What this protects: files copied off the machine without your Windows
+password, and disks read by another account where file permissions do not
+apply. Destroying a trace's key makes its ciphertext unreadable; the command
+that deletes a trace comes with the deletion change. What it does not
+protect: any program running as you, agents included, can ask Windows to
+decrypt, just as you can. A backup that includes your Windows profile's
+protection keys, plus your password, decrypts everything in it.
+
 ## Desktop chat history
 
 The desktop app keeps your conversations in `chats.json` in your Flywheel
@@ -111,6 +144,6 @@ built.
 
 ## What is not covered yet
 
-Export, deletion, retention settings, encryption at rest and import of
-existing Claude Code and Codex transcripts are listed by `status` as gaps,
+Export, deletion, retention settings and import of existing Claude Code
+and Codex transcripts are listed by `status` as gaps,
 each with the change that adds it. This page grows as each one lands.

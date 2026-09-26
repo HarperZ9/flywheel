@@ -2302,6 +2302,7 @@ def main(argv=None) -> int:
         print(f"no interface bound on port {a.port}; nothing to serve")
         return 1
     from harness.gateway_endpoint_file import publish_endpoint; publish_endpoint(flywheel_home, servers)  # hooks find this listener, never a fixed port
+    from harness.trace_enc_probe import startup as custody_startup; custody_startup(flywheel_home)  # encryption probe, custody tree label
     bound = [s.server_address[0] for s in servers]
     remote = [h for h in bound if h not in ("127.0.0.1", "localhost", "::1")]
     if remote:

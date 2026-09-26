@@ -4,7 +4,8 @@ Three shapes are found by reading the AST of every harness module:
   1. path joins under `state_root`, `run_root`, `flywheel_home`, a `home`
      that its module reads from FLYWHEEL_HOME, or `run_root_default()`;
   2. `Path("...")` literals in modules that write through the pinned private
-     filesystem (`write_new_or_same`, `publish_bytes`), by first segment;
+     filesystem (`write_new_or_same`, `publish_bytes`, and `write_new_or_equivalent`,
+     which encrypts on the way), by first segment;
   3. `mkdtemp(prefix=..., dir=...)` calls, by prefix.
 What this cannot see is stated in the design: paths built from variables, and
 stores other processes write. The dynamic sweep covers the second gap.
@@ -18,7 +19,7 @@ from harness import trace_inventory
 HARNESS = Path(__file__).resolve().parents[1] / "harness"
 _ROOTS = {"state_root": "state", "run_root": "run", "flywheel_home": "home",
           "run_root_default": "run"}
-_PINNED_WRITES = ("write_new_or_same", "publish_bytes")
+_PINNED_WRITES = ("write_new_or_same", "publish_bytes", "write_new_or_equivalent")
 
 
 @dataclass(frozen=True)
@@ -77,7 +78,7 @@ def _joins(tree, reads_home, module):
 
 
 def _pinned_literals(tree, source, module):
-    if not any(f".{m}(" in source for m in _PINNED_WRITES):
+    if not any(f"{m}(" in source for m in _PINNED_WRITES):
         return
     for node in ast.walk(tree):
         if (isinstance(node, ast.Call) and getattr(node.func, "id", None) == "Path"

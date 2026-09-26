@@ -101,4 +101,5 @@ def test_approved_binding_uses_value_for_without_ambient_fallback(tmp_path, monk
     selected = {**operation(tmp_path), "endpoint": "openai", "model": "gpt-4o-mini"}
     run_bound(selected, {"OPENAI_API_KEY": marker}, tmp_path, writer, lambda _: None)
     assert seen == [marker]
-    assert marker not in "".join(p.read_text() for p in tmp_path.rglob("*.json"))
+    assert marker.encode() not in b"".join(p.read_bytes() for p in tmp_path.rglob("*.json"))
+    assert marker not in json.dumps(AgentTrace(tmp_path, OWNER, JOURNEY, OP).read())

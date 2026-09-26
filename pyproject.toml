@@ -41,6 +41,8 @@ dependencies = []
 signing = ["cryptography"]   # Ed25519 receipt SIGNING (pynacl works as the
                              # fallback backend; VERIFICATION stays stdlib)
 monitor = ["psutil"]         # network egress monitoring (infra controls)
+encryption = ["cryptography"]  # AES-256-GCM trace custody on macOS and Linux, with a
+                             # keychain-held key; Windows uses DPAPI and needs nothing
 local = [                    # the local HF serve/training stack
     "torch",                 # GPU builds may need the PyTorch index URL
     "transformers",

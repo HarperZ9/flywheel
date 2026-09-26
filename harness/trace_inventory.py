@@ -163,7 +163,8 @@ def validate_document(doc) -> list[str]:
     if type(doc) is not dict or doc.get("schema") != SCHEMA:
         return ["schema is not flywheel.trace-inventory/v1"]
     errors = [f"missing key {k}" for k in ("generated_at", "retention_default",
-              "stores", "unregistered", "unclassified", "ledger") if k not in doc]
+              "stores", "unregistered", "unclassified", "ledger", "encryption")
+              if k not in doc]
     for row in doc.get("stores", []) if type(doc.get("stores")) is list else []:
         errors.extend(validate_row(row))
     for row in doc.get("unregistered", []):

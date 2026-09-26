@@ -20,7 +20,8 @@ def _plain(reason: str, package: str) -> Protection:
     return Protection("plaintext-exception", reason, package)
 
 
-ENC_LATER = _plain("encryption at rest lands in FW-04a", "FW-04a")
+ENCRYPTED = Protection("encrypted", "records and checkpoints encrypted below the canonical "
+                       "bytes; plaintext only where no OS key store exists, stated in status")
 CLASSIFY_FIRST = _plain("encryption follows this classification (7.16)", "7.16")
 TRACE_BOUND = Cap(
     "8 MiB per record, 32 MiB and 2048 records per trace",
@@ -50,7 +51,7 @@ DESKTOP_DELETE = Gap("delete from the desktop app: it removes a conversation by 
 
 STORES = (
     Store("S1", "Gateway private agent traces", "state", ("gateway-agent-traces",),
-          ("C1", "C2", "C4", "C5"), ENC_LATER, EXPORT, DEL_ENC, owner_binding="owner",
+          ("C1", "C2", "C4", "C5"), ENCRYPTED, EXPORT, DEL_ENC, owner_binding="owner",
           caps=(TRACE_BOUND, TOOL_OUTPUT), invalidate=True),
     Store("S2", "Gateway operations and their results", "state", ("gateway-operations",),
           ("C1", "C4", "C5"), CLASSIFY_FIRST, EXPORT, DEL_PLAIN, owner_binding="owner",
@@ -100,6 +101,13 @@ STORES = (
           added_by_program=True,
           note="reason codes, session ids and times; a suppression's working directory "
                "is DPAPI-encrypted on Windows and omitted elsewhere"),
+    Store("KS", "Keystore: item keys, the custody key and encryption floors", "state",
+          ("keys",), ("C6",), Protection("encrypted", "each shard sealed by the OS key store"),
+          "harness.trace_keystore_adapters.export_records",
+          "harness.trace_keystore_adapters.delete_all", owner_binding="owner",
+          added_by_program=True, invalidate=True,
+          note="an export lists shard counts and floors, never a key; destroying an item "
+               "key is what makes its ciphertext unreadable"),
     Store("CL", "Custody ledger", "state", ("custody-ledger",), ("C4",), META,
           "harness.trace_custody_ledger.export_records",
           "harness.trace_custody_ledger.delete_all", owner_binding="owner",
