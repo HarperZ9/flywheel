@@ -13,6 +13,8 @@ const _sessionSchema = 'flywheel.desktop-journey-session/v1';
 const journeyLocalMaxBytes = 1048576;
 const _maxDepth = 16;
 const _maxNodes = 4096;
+const journeyLocalMaxDepth = _maxDepth;
+const journeyLocalMaxNodes = _maxNodes;
 final _journeyRef = RegExp(r'^jrn_[0-9a-f]{32}$');
 final _selectionRef = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$');
 
