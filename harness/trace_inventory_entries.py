@@ -31,9 +31,22 @@ TOOL_OUTPUT = Cap(
     "cut with no marker (observed, local_tools.py:349,362); a kept or named copy is "
     "deferred with F-23 (7.16)", "deferred: F-23 (7.16)")
 DESKTOP_WINDOW = Cap(
-    "60 newest non-empty conversations, one file of at most 1 MiB",
-    "older conversations are dropped with no marker (F-07); FW-13 archives them",
-    "desktop/test/chat_store_archive_test.dart (FW-13)")
+    "the active file keeps the newest conversations that fit: at most 60, 768 KiB "
+    "and 3072 JSON nodes",
+    "older conversations move to archive segments first; nothing is dropped",
+    "desktop/test/chat_store_archive_test.dart::61 conversations all survive across "
+    "the active file and the archive")
+DESKTOP_OVERSIZE = Cap(
+    "one conversation over the 1 MiB envelope or its node bound",
+    "the save is refused, the latest turn stays in drafts and a metadata-only "
+    "loss record is written under desktop/loss/v1",
+    "desktop/test/chat_store_archive_test.dart::an oversize conversation leaves a "
+    "metadata-only loss record")
+DESKTOP_PHASE2 = _plain("desktop history: plaintext, kept in full, moved into "
+                        "encrypted custody in phase 2", "D12")
+DESKTOP_DELETE = Gap("delete from the desktop app: it removes a conversation by id "
+                     "from the active file, every archive segment and the drafts; "
+                     "engine-side deletion waits for phase 2 (7.9)", "7.16")
 
 STORES = (
     Store("S1", "Gateway private agent traces", "state", ("gateway-agent-traces",),
@@ -92,11 +105,20 @@ STORES = (
           shape="file", owner_binding="home",
           note="receipts keep unsalted prompt and answer digests, URLs and exception text"),
     Store("S13", "Desktop chat history and drafts", "home",
-          ("chats.json", "chat-drafts.json", "journey-session.json", "journey-drafts.json"),
-          ("C1", "C4", "C5"), _plain("desktop history moves into encrypted custody in "
-                                     "phase 2", "D12"), EXPORT,
-          Gap("the desktop app deletes its own files until phase 2 (7.9)", "FW-13"),
-          shape="file", owner_binding="home", caps=(DESKTOP_WINDOW,)),
+          ("chats.json", "chat-drafts.json", "journey-session.json", "journey-drafts.json",
+           "chats.unreadable-*.json"), ("C1", "C4", "C5"), DESKTOP_PHASE2, EXPORT,
+          DESKTOP_DELETE, shape="file", owner_binding="home",
+          caps=(DESKTOP_WINDOW, DESKTOP_OVERSIZE),
+          note="an unreadable history file is renamed chats.unreadable-<utc>.json and "
+               "never parsed or overwritten again"),
+    Store("S13a", "Desktop chat archive", "home", ("chats-archive",), ("C1", "C4", "C5"),
+          DESKTOP_PHASE2, EXPORT, DESKTOP_DELETE, owner_binding="home",
+          retention="kept in full, no cap (decision D12)",
+          note="segments <yyyymm>-<n>.json of at most 1 MiB; one copy per conversation"),
+    Store("S13b", "Desktop loss records", "home", ("desktop",), ("C4",), META, EXPORT,
+          NOT_DESIGNED, owner_binding="home",
+          note="loss/v1 records name a conversation id, a reason code and where the "
+               "original is; never text"),
     Store("S23", "Output validation ledger", "home", ("validation.jsonl",), ("C4",), META,
           EXPORT, NOT_DESIGNED, shape="file", owner_binding="home",
           note="which fields were short, never the value checked (observed)"),
