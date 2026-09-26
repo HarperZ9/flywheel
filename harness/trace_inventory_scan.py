@@ -201,7 +201,22 @@ def scan(environ=None) -> dict:
             "unclassified": [r["id"] for r in rows if r["classes"] is None],
             "ledger": ledger_summary(roots["home"]),
             "encryption": encryption_status(roots["state"]),
-            "presence": _presence(roots["home"])}
+            "presence": _presence(roots["home"]),
+            "deletions": _deletions(roots["home"])}
+
+
+def _deletions(home) -> dict:
+    from .trace_custody_ledger import read_owner_ref
+    from .trace_delete_journal import pending
+    from .trace_tombstones import TombstoneLedger
+    owner = read_owner_ref(home)
+    if owner is None:
+        return {"tombstones": 0, "pending": 0}
+    ledger = TombstoneLedger(Path(home) / "state", owner)
+    report = ledger.verify()
+    return {"tombstones": report.get("entries", 0) if report["ok"] else 0,
+            "pending": len(pending(Path(home) / "state", owner)),
+            **({} if report["ok"] else {"ledger": report["reason"]})}
 
 
 def _presence(home) -> dict:

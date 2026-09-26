@@ -69,6 +69,28 @@ def _presence_post(handler, path: str):
                           "presence_statement": status["statement"]})
 
 
+def _delete_post(handler, path: str):
+    from harness.trace_delete_apply import apply_plan
+    from harness.trace_delete_plan import PlanError, make_plan
+    from harness.trace_presence import PresenceError
+    apply = path.endswith("/apply")
+    body = _body(handler, {"plan_digest", "presence_ref"} if apply
+                 else {"trace_refs", "turn_refs", "session"})
+    if body is None:
+        return handler._json(capture.error("INVALID_REQUEST", "unexpected fields"), 422)
+    try:
+        if apply:
+            report = apply_plan(handler.flywheel_home, handler.owner_ref,
+                                body.get("plan_digest"), body.get("presence_ref"))
+            return handler._json({"schema": "flywheel.trace-delete-report/v1", **report})
+        return handler._json(make_plan(handler.flywheel_home, handler.owner_ref, body))
+    except PresenceError as exc:
+        return handler._json(capture.error(exc.code, "presence required"), 403)
+    except PlanError as exc:
+        status = {"NOT_FOUND": 404, "INVALID_SELECTION": 422}.get(exc.code, 409)
+        return handler._json(capture.error(exc.code, "deletion refused"), status)
+
+
 def _turns(handler, path: str):
     from harness.trace_turn_store import TurnStore
     store = TurnStore(handler.flywheel_home, handler.owner_ref)
@@ -118,4 +140,6 @@ def route_post(handler, path: str):
         return capture.turn(handler, "prompt" if path == protocol.PROMPT_PATH else "stop", raw)
     if path in ("/api/traces/presence", "/api/traces/presence/approve"):
         return _presence_post(handler, path)
+    if path in ("/api/traces/delete/plan", "/api/traces/delete/apply"):
+        return _delete_post(handler, path)
     return handler._json(capture.error("NOT_FOUND", "no such trace route"), 404)

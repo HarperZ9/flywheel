@@ -70,8 +70,10 @@ Errors use existing operation codes: `AUTH_REQUIRED` (401), `INVALID_REQUEST`
 (422), `NOT_FOUND` (404), and `STORE_COMMIT_FAILED` (500) for corrupt or unsafe
 custody. Error messages contain no supplied paths, source content, or credentials.
 
-Evidence records remain until the operator removes the private runtime state;
-this change adds no automatic export, external fetch, or deletion policy.
+Evidence records remain until the owner deletes them with
+`flywheel traces delete --trace-ref agt_...` (plan, then apply with presence);
+the key is destroyed before the files are removed, and a tombstone records the
+deletion. There is no automatic export, external fetch, or deletion policy.
 Current upstream tools already bound retained output (including the default
 4000-character tool-output cap). This trace preserves their recorded values;
 it does not recover bytes discarded before ledger insertion.
