@@ -66,6 +66,10 @@ class Lane:
 # (found by a search of each lane's source for environment reads). A provider key
 # a lane can use, such as ANTHROPIC_API_KEY for forum, is never declared here; the
 # operator grants it per lane with env_allow in the lane registry.
+# chorus and canon launch as `python -m chorus` and `python -m canon`: their
+# published cli modules have no main guard, so `python -m chorus.cli mcp` exits 0
+# without serving. A frozen build launches none of these argvs as declared;
+# lane_runtime_frozen picks the engine's own child modes instead.
 LANES: dict[str, Lane] = {
     "gather": Lane(
         "gather", "gather-engine", "gather", ("mcp",), "pip", "1.8.2",
@@ -78,7 +82,7 @@ LANES: dict[str, Lane] = {
     "chorus": Lane(
         "chorus", "chorus-discourse", "chorus", ("mcp",), "pip", "0.3.1",
         "re-derivable discourse digest (themes, contested aspects, dissent, receipt)",
-        "synthesis", source_repo="public/chorus", py_module="chorus.cli"),
+        "synthesis", source_repo="public/chorus", py_module="chorus"),
     "articulate": Lane(
         # articulate-mcp, not `python -m articulate.mcp_server`. The FastMCP
         # entry imports fastmcp from the [mcp] extra, so a plain
@@ -113,10 +117,11 @@ LANES: dict[str, Lane] = {
         env_vars=("LEARN_CRUCIBLE_CMD", "LEARN_GATHER_CMD", "LEARN_NATIVE_CONTROL",
                   "LEARN_TELOS_CMD")),
     "telos": Lane(
-        "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.2.0",
+        "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.1",
         "the reconciliation lane: five-tool workflow + creative engine + doctors",
         "reconciliation", source_repo="public/telos",
-        package_disabled_reason="No published npm distribution is available. Use a Telos source checkout.",
+        package_disabled_reason=("No published npm distribution is available. Use a Telos source "
+                                 "checkout; the desktop app ships the v0.4.1 GitHub release."),
         env_vars=("TELOS_CHROME_PATH", "TELOS_CHROME_PROFILE", "TELOS_EMET_CLI",
                   "TELOS_EMET_DISABLE_FALLBACKS", "LEARN_CLI", "CAPTCHA_VENV_PY",
                   "TELOS_CONSO_FONT_ZIP", "TELOS_KILON_FONT_ZIP")),
@@ -158,13 +163,13 @@ LANES: dict[str, Lane] = {
         "provider-neutral memory bank + personality container: one envelope, "
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",
-        "continuity", source_repo="public/canon", py_module="canon.cli",
+        "continuity", source_repo="public/canon", py_module="canon",
         env_vars=("CANON_HOME", "CANON_WORKSPACE", "CANON_BLOCKS_DIR", "CANON_CONTEXT_DB",
                   "CANON_CONTEXT_SCOPE", "CANON_CONTEXT_CLIENT", "CANON_CONTEXT_CONTAINER_ID",
                   "CANON_CONTEXT_PROJECT_ID", "CANON_CONTEXT_WORKSPACE_ID",
                   "CANON_CONTEXT_TOP_K", "CANON_HOOK_STDIN_MAX_CHARS")),
     "bulletin": Lane(
-        "bulletin", "", "", (), "http", "0.2.0",
+        "bulletin", "", "", (), "http", "0.5.0",
         "the open board: a workstation or another agent reaches it over the web, "
         "registers an ed25519 identity, and reads what other agents left behind",
         "correspondence", url="https://bulletin.zaindharper.workers.dev/mcp"),

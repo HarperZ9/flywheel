@@ -20,8 +20,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
+from . import lane_runtime_frozen as _frozen
 from . import lane_runtime_support as _support
-from .bundled_lane_descriptor import bundled_payload_lane_names
 from .lane_env import confine_lane_launch
 from .lane_runtime_versions import validate_public_version
 from .lanes_registry import Lane
@@ -234,30 +234,16 @@ def _observed_package_version(lane, runtime_python, installed_fn, python_version
 def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
                    extra_roots, importable_fn, runtime_python):
     """Choose the one launch to perform, as (launch, selected_runtime,
-    bundled_component, bundled_codes). The check order is the precedence: relay-in-
-    frozen, disabled package, http, other frozen build, bundled, then the profiles."""
+    bundled_component, bundled_codes). The check order is the precedence: a frozen
+    build (lane_runtime_frozen), disabled package, http, bundled, then the profiles."""
     if profile not in _VALID_PROFILES:
         return None, "invalid", None, ()
-    # A payload lane admits from the frozen payload, unless it is package-disabled
-    # and forced off the auto profile (which stays a refusal below).
-    if is_frozen and lane.name in bundled_payload_lane_names() and (
-            profile == "auto" or not lane.package_disabled_reason):
-        from .bundled_lane_admission import admit_bundled_lane
-        admission = admit_bundled_lane(lane.name, executable=python_executable,
-                                       environ=environ, importable_fn=importable_fn)
-        if not admission.blocking_codes:
-            return admission.launch, "bundled", admission.component, ()
-        return None, "bundled", admission.component, admission.blocking_codes
-    if lane.package_disabled_reason and (is_frozen or profile == "package" or not source):
+    if is_frozen:
+        return _frozen.select_frozen_launch(lane, profile, python_executable, environ, importable_fn)
+    if lane.package_disabled_reason and (profile == "package" or not source):
         return None, "package", None, ()
     if lane.kind == "http":
         return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), "http", None, ()
-    # A frozen build ships its own packaged imports and has no adjacent source
-    # checkout, so source is skipped: a source-tree launch would point at a path
-    # the shipped artifact lacks. Run the packaged command instead.
-    if is_frozen:
-        return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), (
-            "package" if lane.kind in {"pip", "npm"} else lane.kind), None, ()
     if lane.kind == "bundled":
         return (LaunchSpec((python_executable, *lane.mcp_args))
                 if lane.command == "python" else LaunchSpec(tuple(lane.mcp_command()))), "bundled", None, ()
@@ -284,7 +270,7 @@ def _blocking_codes(lane, profile, selected, source_available, package_available
     if "invalid_runtime_profile" in mismatch:
         return ["invalid_runtime_profile"]
     if selected == "bundled":
-        return [code for code in mismatch if code.startswith("bundled_")]
+        return [code for code in mismatch if _frozen.is_blocking(code)]
     if selected == "package" and lane.package_disabled_reason:
         return ["package_distribution_disabled"]
     if profile == "source" and not source_available:

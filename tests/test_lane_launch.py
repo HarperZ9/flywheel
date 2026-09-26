@@ -4,7 +4,7 @@ A pip lane's console script is only as healthy as the interpreter its shim was
 built for; a stale shim made every lane read `unreachable` with a bare "server
 closed the connection" while the real cause (ModuleNotFoundError) went to a
 discarded stderr. These tests keep public commands portable, runtime launches
-source-aware, frozen launches bare, and unreachable stderr visible."""
+source-aware, frozen launches vetted, and unreachable stderr visible."""
 import os
 import subprocess
 import sys
@@ -209,11 +209,12 @@ def test_unreachable_probe_without_stderr_stays_plain(monkeypatch):
     assert "server stderr" not in out["detail"]   # no words, no fabricated words
 
 
-def test_frozen_build_relaunches_only_via_bundled_admission(monkeypatch):
+def test_frozen_build_relaunches_only_via_vetted_child_modes(monkeypatch):
     # In a PyInstaller bundle sys.executable IS the gateway. A lane may relaunch
-    # it only through the vetted --bundled-lane-mcp admission path (a safe lane
-    # name, descriptor- and hash-checked, status and doctor tools only). No lane
-    # relaunches the gateway any other way.
+    # it only in a vetted child mode: the --bundled-lane-mcp admission path (a
+    # safe lane name, descriptor- and hash-checked, policy tools only), the
+    # engine's --mcp --root <picked folder> for local-model, and --lane-mcp
+    # writing. No lane relaunches the gateway any other way.
     from harness.bundled_lane_descriptor import bundled_payload_lane_names
     monkeypatch.setattr(ln, "_frozen", lambda: True)
     monkeypatch.setattr(ln, "_importable", lambda top: True)  # even if importable
@@ -229,8 +230,15 @@ def test_frozen_build_relaunches_only_via_bundled_admission(monkeypatch):
             assert launch.allowed_tools, name  # status and doctor tools only
             if name == "relay":
                 assert launch.allowed_tools == ("relay.status",)
+        elif launch.argv and launch.argv[0] == sys.executable:
+            assert (name, launch.argv[1:2]) in {
+                ("local-model", ("--mcp",)), ("writing", ("--lane-mcp",))}, name
+            if name == "local-model":
+                assert launch.argv[2] == "--root" and len(launch.argv) == 4
+            else:
+                assert launch.argv[1:] == ("--lane-mcp", "writing")
         elif launch.argv:
-            assert launch.argv[0] != sys.executable, f"{name} would relaunch the gateway"
+            assert Path(launch.argv[0]).is_absolute(), f"{name} launches a bare argv"
         else:                              # an http lane spawns nothing at all
             assert ln.LANES[name].kind == "http", f"{name} lost its argv"
 
@@ -247,10 +255,14 @@ def test_frozen_bundled_lane_admits_from_payload(monkeypatch):
     assert launch.inherit_env is False
 
 
-def test_frozen_node_lane_keeps_bare_declared_command(tmp_path, monkeypatch):
+def test_frozen_node_lane_without_its_stage_never_launches_bare_node(tmp_path, monkeypatch):
+    # A frozen build launches learn only from its staged folder on an absolute
+    # Node (lane_runtime_frozen); a source checkout does not change that.
     monkeypatch.setattr(ln, "_frozen", lambda: True)
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: tmp_path)
-    assert _confined(ln.resolve_mcp_launch("learn"), ("node", "src/mcp.mjs"))
+    runtime = ln.resolve_lane_runtime("learn")
+    assert runtime.launch is None
+    assert runtime.blocking_codes == ("node_lane_not_staged",)
 
 
 def test_gateway_forum_proxy_uses_runtime_launch_spec(monkeypatch):

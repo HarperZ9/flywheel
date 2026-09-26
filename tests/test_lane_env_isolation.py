@@ -141,11 +141,24 @@ def test_every_pip_and_npm_lane_launch_is_scrubbed(name, tmp_path, monkeypatch):
 
 
 def test_frozen_non_payload_npm_lane_is_scrubbed(tmp_path, monkeypatch):
+    # The frozen Node launch (absolute node, staged script) is rebuilt from the
+    # minimal env like any other npm launch.
+    from harness import lane_runtime_frozen as lrf
+    from harness.tool_discovery import ToolFinding
     _parent_env(monkeypatch)
+    stage = tmp_path / "node-lanes"
+    (stage / "learn" / "src").mkdir(parents=True)
+    (stage / "learn" / "src" / "mcp.mjs").write_text("", encoding="utf-8")
+    (stage / "node-lane-stage.json").write_text(
+        json.dumps({"verdict": "PASS", "lanes": [{"lane": "learn"}]}), encoding="utf-8")
+    node = tmp_path / "node.exe"
     monkeypatch.setattr(ln, "_frozen", lambda: True)
+    monkeypatch.setattr(lrf, "_stage_root", lambda: stage)
+    monkeypatch.setattr(lrf, "find_node", lambda environ, bundled=None: ToolFinding(
+        "node", True, str(node), "24.21.0", "bundled", "20", "found"))
     _registry(monkeypatch, tmp_path, {})
     launch = ln.resolve_mcp_launch("learn")
-    assert launch.argv == ("node", "src/mcp.mjs")
+    assert launch.argv == (str(node), str((stage / "learn" / "src" / "mcp.mjs").resolve()))
     assert launch.inherit_env is False
     assert not set(FAKE_KEYS) & set(dict(launch.env_overrides))
 

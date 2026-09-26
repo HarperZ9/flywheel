@@ -67,6 +67,8 @@ flagship tool family, and it decides which lanes exist and how each one starts.
 | `lane_runtime.py` | Runtime selection: the auto, source, and package profile system. |
 | `lane_runtime_support.py` | The pure, side-effect-free helpers `lane_runtime.py` calls. |
 | `lane_runtime_versions.py` | Version validation shared across the runtime path. |
+| `lane_runtime_frozen.py` | The launch a frozen build performs per lane (payload admission, staged Node, the engine's own child modes), and the setup or defect code when it cannot. |
+| `frozen_lane_modes.py` | The frozen engine's `--lane-mcp writing` and `--bundled-lane-cli <lane>` child modes. |
 | `bundled_lane_admission.py` | Admits the relay lane carried inside a frozen build, only when its source manifest matches the descriptor. |
 | `bundled_lane_expectations.py` | The expected descriptor a bundled lane is checked against. |
 | `mcp_client.py` | `LaunchSpec` and the MCP client the gateway launches lanes with. |
