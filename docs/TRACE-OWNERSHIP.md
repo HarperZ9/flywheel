@@ -296,6 +296,22 @@ and a keyed digest of the destination; the ledger is the only custody file
 an export changes. Once written, an export is outside custody, and deleting
 a trace later does not reach it.
 
+## Bench tasks
+
+Each gateway trace of a run with a test command becomes one bench task, kept
+encrypted beside your other traces: the goal as the run saw it, the test
+command, the verdict the run recorded, the endpoint and model, and the git
+identity of the workspace. That identity is recorded at run start when the
+workspace is a git work tree: the commit, a digest of the tracked files and
+a digest of `git status`. The calls that read it turn off a repository's
+fsmonitor command and hooks and leave `.git/index` untouched. A task is
+reproducible when its commit is known and still present and nothing tracked
+or untracked had changed at start; ignored files such as `.venv` do not
+count. Otherwise it is marked unreproducible with the reason, and runs from
+before this change have no git identity. A goal built from selected source
+context is marked untrusted. A run without a test command is counted and
+skipped. Deleting a trace deletes its tasks.
+
 ## Owner presence and the witness
 
 An agent you run works as you: it can call every command you can. So each

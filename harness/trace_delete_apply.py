@@ -20,7 +20,7 @@ from pathlib import Path
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy
 from .private_artifact_remove import remove
 from .trace_custody_lock import custody_lock
-from .trace_delete_adapters_import import drop_index_rows, exclude, indexed
+from .trace_delete_adapters_import import exclude
 from .trace_delete_apply_plain import ScrubPending, remove_plain, scrub_store, verify_plain
 from .trace_delete_journal import DeletionJournal, apply_journaled
 from .trace_delete_plan import (ENCRYPTED, PlanError, drop_selection, load_selection,
@@ -29,7 +29,7 @@ from .trace_delete_plan import (ENCRYPTED, PlanError, drop_selection, load_selec
 INVALIDATORS: list = []
 _CLASSES = {"S1": ("C1", "C2", "C4", "C5"), "CT": ("C1", "C4", "C5"), "S8b": ("C1", "C4"),
             "S7": ("C4", "C5"), "S9": ("C1",), "S10": ("C1", "C2"), "S11": ("C1", "C2"),
-            "S2": ("C1", "C4", "C5"), "IM": ("C1", "C2", "C4", "C5")}
+            "S2": ("C1", "C4", "C5"), "IM": ("C1", "C2", "C4", "C5"), "BT": ("C1", "C4")}
 
 
 def register_invalidator(fn) -> None:
@@ -62,6 +62,22 @@ def _template(plan: dict, method: str, reason: str) -> dict:
             "presence": method}
 
 
+def _row_stores():
+    """Stores whose items also have a row in an index (IM, BT)."""
+    from .trace_bench_tasks import drop_rows, rows_present
+    from .trace_delete_adapters_import import drop_index_rows, indexed
+    return ((drop_index_rows, indexed), (drop_rows, rows_present))
+
+
+def _drop_rows(home: Path, owner: str, entries: list[dict]) -> None:
+    for drop, _ in _row_stores():
+        drop(home, owner, entries)
+
+
+def _indexed(home: Path, owner: str, entries: list[dict]) -> bool:
+    return any(present(home, owner, entries) for _, present in _row_stores())
+
+
 def _steps(home: Path, owner: str, plan: dict, roots: dict, reason: str) -> list:
     from .private_artifact_fs import root_identity
     from .trace_keystore import Keystore
@@ -84,7 +100,7 @@ def _steps(home: Path, owner: str, plan: dict, roots: dict, reason: str) -> list
     return [("invalidate", invalidate),
             ("exclude_imports", lambda: exclude(home, owner, encrypted)),
             ("destroy_keys", destroy_keys), ("remove_files", remove_files),
-            ("drop_import_rows", lambda: drop_index_rows(home, owner, encrypted)),
+            ("drop_index_rows", lambda: _drop_rows(home, owner, encrypted)),
             ("scrub_store_db", lambda: scrub_store(
                 home, plain, reason)), ("remove_plain", lambda: remove_plain(roots, plain))]
 
@@ -98,7 +114,7 @@ def _verifier(home: Path, owner: str, plan: dict, roots: dict):
     def verify(scan_set):
         if any(keystore.present(e["store"], e["item"]) for e in encrypted):
             return {"ok": False, "reason": "KEY_PRESENT", "checks": ["keys_absent"]}
-        if any((state / e["rel"]).exists() for e in encrypted) or indexed(home, owner, encrypted):
+        if any((state / e["rel"]).exists() for e in encrypted) or _indexed(home, owner, encrypted):
             return {"ok": False, "reason": "RESIDUE_FOUND", "checks": ["files_absent"]}
         result = verify_plain(home, roots, plain, scan_set)
         return {**result, "checks": ["keys_absent", "files_absent", *result["checks"]]}
