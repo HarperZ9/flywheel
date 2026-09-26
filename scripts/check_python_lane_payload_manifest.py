@@ -15,9 +15,11 @@ if str(ROOT) not in sys.path:
 from harness.evidence_json import canonical_sha256
 
 EXPECTED_LANES = ("gather", "crucible", "index", "forum", "plexus", "mneme", "canon", "chorus", "relay", "accountable-surface")
-REGISTRY_UPDATES = {"gather", "index", "forum", "mneme", "canon", "relay"}
+REGISTRY_UPDATES = {"index", "forum"}
 ASYNC_LANES = {"forum"}
 MANIFEST = Path("packaging/python-lane-payloads.jsonl")
+STUDIO_SOURCES = ROOT / "packaging" / "studio-runtime-sources.json"
+_DEP_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 SOURCE_ALGORITHM = "sha256-canonical-source-manifest/v1"
 SHA256_URI = re.compile(r"sha256:[0-9a-f]{64}\Z")
 
@@ -50,6 +52,22 @@ def _digest(value: dict[str, Any] | list[Any]) -> str:
     return "sha256:" + canonical_sha256(value)
 
 
+def studio_supplied_packages(path: Path = STUDIO_SOURCES) -> set[str]:
+    """Import names the pinned Studio runtime payload stages beside the lanes."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ManifestError(f"studio runtime sources unreadable: {exc}") from exc
+    return set(doc.get("components", {}))
+
+
+def _dependency_import_name(requirement: str) -> str:
+    match = _DEP_NAME.match(requirement.strip())
+    if not match:
+        raise ManifestError(f"unparseable runtime dependency: {requirement!r}")
+    return match.group(0).lower().replace("-", "_").replace(".", "_")
+
+
 def validate_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
     lanes = [str(row.get("lane")) for row in rows]
     _require(tuple(lanes) == EXPECTED_LANES, f"unexpected lane order/set: {lanes!r}")
@@ -57,6 +75,7 @@ def validate_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
     seen_async: set[str] = set()
     descriptor_digests: dict[str, str] = {}
     source_digests: dict[str, str] = {}
+    studio_supplied = studio_supplied_packages()
     for row in rows:
         lane = str(row["lane"])
         descriptor = row.get("component_descriptor")
@@ -93,7 +112,13 @@ def validate_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
             _require(mcp.get("contract_status") == "compatible_with_sync_dispatcher", f"{lane}: sync status mismatch")
         project = row.get("owner_project")
         _require(isinstance(project, dict), f"{lane}: project block missing")
-        _require(project.get("runtime_dependencies") == [], f"{lane}: runtime dependencies must be explicit and empty")
+        # A lane's runtime dependencies must be explicit, and each one must be a
+        # package the pinned Studio runtime payload stages beside the lanes
+        # (accountable-surface 0.3 imports coherence_membrane and proof_surface).
+        deps = project.get("runtime_dependencies")
+        _require(isinstance(deps, list), f"{lane}: runtime dependencies must be an explicit list")
+        unsupplied = sorted(d for d in deps if _dependency_import_name(d) not in studio_supplied)
+        _require(not unsupplied, f"{lane}: runtime dependencies not staged by the Studio runtime: {unsupplied!r}")
         license_files = project.get("license_files")
         _require(isinstance(license_files, list) and bool(license_files),
                  f"{lane}: license file evidence missing")

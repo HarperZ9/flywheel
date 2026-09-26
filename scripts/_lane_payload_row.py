@@ -108,12 +108,16 @@ def _tool_surface(module: Any, module_name: str) -> tuple[list[str], str]:
         raise GeneratorError(
             f"MCP module {module_name!r} has no 'serve' callable (bundled-lane convention)"
         )
-    if not hasattr(module, "handle_request"):
+    # Older lanes name the JSON-RPC dispatcher handle_request; newer lane
+    # releases (relay 0.2, plexus 0.2, canon 0.2) name it handle. The runtime
+    # only calls serve, so either name gives the generator the tool list.
+    handler = getattr(module, "handle_request", None) or getattr(module, "handle", None)
+    if handler is None:
         raise GeneratorError(
-            f"MCP module {module_name!r} has no 'handle_request' tools/list handler "
-            "(bundled-lane convention)"
+            f"MCP module {module_name!r} has no 'handle_request' or 'handle' tools/list "
+            "handler (bundled-lane convention)"
         )
-    response = module.handle_request({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+    response = handler({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
     try:
         tool_names = [tool["name"] for tool in response["result"]["tools"]]
     except (TypeError, KeyError) as exc:
@@ -134,6 +138,18 @@ def _mcp_block(checkout: Path, rev: str, lane: Any, pkg: str, pkg_dir: str) -> d
     try:
         try:
             module = importlib.import_module(module_name)
+        except ModuleNotFoundError as exc:
+            # A `<command> mcp` lane may serve from <pkg>.local_mcp (canon 0.2).
+            fallback = f"{pkg}.local_mcp"
+            if exc.name != module_name or module_name != f"{pkg}.mcp":
+                raise GeneratorError(f"MCP module {module_name!r} import failed: {exc!r}") from exc
+            try:
+                module = importlib.import_module(fallback)
+            except Exception as exc2:  # noqa: BLE001 - report the real import failure
+                raise GeneratorError(
+                    f"MCP module {module_name!r} missing and {fallback!r} import failed: {exc2!r}"
+                ) from exc2
+            module_name = fallback
         except Exception as exc:  # noqa: BLE001 - report the real import failure
             raise GeneratorError(f"MCP module {module_name!r} import failed: {exc!r}") from exc
         tool_names, style = _tool_surface(module, module_name)
