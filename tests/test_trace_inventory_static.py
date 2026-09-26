@@ -149,5 +149,5 @@ def test_the_known_trace_stores_are_among_the_findings():
     seen = {(f.root, f.segment) for f in scan_harness()}
     for expected in [("state", "gateway-agent-traces"), ("home", "store.db"),
                      ("run", "snapshots"), ("run", "fold_index.json"),
-                     ("any", "native-cli-profile-*"), ("run", "bench")]:
+                     ("any", "native-cli-profile-*"), ("state", "trace-bench")]:
         assert expected in seen
