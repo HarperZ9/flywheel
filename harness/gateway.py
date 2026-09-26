@@ -39,7 +39,7 @@ REPO = Path(__file__).resolve().parent.parent
 # so the on-demand endpoint_registry / context_forge imports work in both modes.
 if str(REPO) not in sys.path: sys.path.insert(0, str(REPO))
 from harness.run_paths import run_root_default
-from harness.gateway_custody import is_private
+from harness.gateway_custody import is_private, is_signed
 from harness.gateway_lane_calls import _forum_mcp_call, _relay_mcp_call, _relay_start_not_admitted
 from harness.gateway_auth import (authenticate_owner as _auth_owner,
     load_or_create_owner_ref, load_or_create_token, check as _auth_check, DEFAULT_HOSTS)
@@ -799,7 +799,7 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
         """Refuse before dispatch; public auth-off compatibility stays available,
         while private custody always requires a configured bearer token."""
         path = self.path.split("?", 1)[0]
-        if path.startswith("/api/traces/capture/"): return True  # signed channel: trace_routes verifies before any body is read
+        if is_signed(path): return True  # signed capture channel: trace_routes verifies before any body is read
         private = is_private(path)
         if not self.auth_token and not private: return True
         if private:
