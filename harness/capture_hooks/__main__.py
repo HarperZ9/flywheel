@@ -107,6 +107,8 @@ def _act(args, event, home) -> tuple[dict, list[str]]:
     messages = []
     if channel.effective.get("pending_change"):
         messages.append(output.PENDING_SETTINGS)
+    if channel.effective.get("retention_pending"):
+        messages.append(output.PENDING_RETENTION)
     if args.event == "session-end":
         if channel.effective.get("archive_transcripts") == "on":
             reason = event.get("reason") if type(event.get("reason")) is str else ""
