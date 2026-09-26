@@ -235,6 +235,12 @@ class AgentTrace:
         except Exception:
             raise TraceError() from None
 
+    def hold(self, timeout_s: float = 30.0):
+        """The writer lock of this trace, `.writer.lock` beside its records; a
+        run holds it, and legacy encryption skips a trace whose lock is held."""
+        from .journey_lock import ExclusiveJourneyLock
+        return ExclusiveJourneyLock.acquire(self.root / self.base / ".writer.lock", timeout_s)
+
     def projection(self, state: str, **kwargs) -> dict:
         return projection(self.binding, state, self.count, self.head, **kwargs)
 
