@@ -14,7 +14,8 @@ extension _AgentViewLayout on _AgentViewState {
       streaming: _busy,
       onNew: _newChat,
       onSelect: _select,
-      onDelete: _delete);
+      onDelete: _delete,
+      banner: _historyBanner());
 
   void _useWorkspaceGoal(String goal) {
     _admission.changeDraft(_current, goal);

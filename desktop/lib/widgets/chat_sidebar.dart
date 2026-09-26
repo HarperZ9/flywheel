@@ -16,6 +16,9 @@ class ChatSidebar extends StatelessWidget {
   final ValueChanged<Conversation> onSelect;
   final ValueChanged<Conversation> onDelete;
 
+  /// History notices and the archived count (chat_history_banner.dart).
+  final Widget? banner;
+
   /// When non-null, the sidebar renders inside a DraggableScrollableSheet and
   /// delegates its list scrolling to this controller.
   final ScrollController? scrollController;
@@ -27,6 +30,7 @@ class ChatSidebar extends StatelessWidget {
     required this.onNew,
     required this.onSelect,
     required this.onDelete,
+    this.banner,
     this.scrollController,
   });
 
@@ -49,6 +53,7 @@ class ChatSidebar extends StatelessWidget {
                       horizontal: FwLayout.s3, vertical: FwLayout.s3)),
             ),
           ),
+          if (banner != null) banner!,
           Expanded(
             child: ListView(
               controller: scrollController,
