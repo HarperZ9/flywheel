@@ -43,14 +43,33 @@ only the names of `FLYWHEEL_*` variables.
 
 ## What a turn sends and keeps
 
-Today the Stop hook sends the final answer text (and a prompt when the event
-carries one) to the gateway, which stores a receipt holding their sha256
-digests in `store.db` and discards the text. No URL is fetched: URL freezing
-is off on this path. The prompt hook checks the channel and reports
-unacknowledged failures. Pairing each answer with its prompt, content
-capture as an opt-in and receipts built from salted commitments come with
-the turn-pairing change; until then a Claude Code receipt pairs the answer
-with an empty prompt, because the Stop event carries no prompt.
+By default the hooks send no text. The prompt hook draws a random 32-byte
+salt and sends a commitment, `sha256(tag, 0x00, salt, prompt)`, with the
+salt; the Stop hook does the same for the final answer. The gateway pairs the
+answer with its prompt by Claude Code's `prompt_id` or Codex's `turn_id`,
+else first in, first out within the session, and chains a receipt
+(`flywheel.turn-receipt/v2`) into `store.db`. The receipt holds the two
+commitments, the pairing mode and segment, and a session ref keyed with your
+custody key. It holds no text, no URL, no path and no plain digest, and its
+id is random. The salts sit in an encrypted turn record under
+`state/captured-turns/`. To prove a turn later, reveal the text and the
+salt; anything else learns nothing from the receipt.
+
+- A continued Stop (`stop_hook_active`) adds a segment to the same prompt.
+- A prompt with no answer within `pending_ttl_hours` (24 by default) becomes
+  an unpaired turn, checked whenever a turn or status runs.
+- A Stop with no prompt is recorded as `unpaired`, with no prompt
+  commitment.
+- The final answer is the text the client hands the hook. Tool calls, tool
+  results and reasoning are not in it; they are in the client's transcript.
+
+`flywheel traces capture content on` keeps the prompt and answer text too,
+encrypted, in the turn record, a second copy beside the client's own
+transcript. It takes effect only after you confirm it (see owner presence in
+TRACE-OWNERSHIP.md). The gateway decides what capture does: an edited
+`trace-capture.json` stays pending until confirmed, the prompt hook says so,
+and the hooks never read the file. Transcript archiving and URL freezing
+are off in this version and cannot be switched on.
 
 `POST /api/scaffold` stays for other callers with its bearer authentication,
 and still freezes the URLs a prompt names; the hooks no longer use it.
