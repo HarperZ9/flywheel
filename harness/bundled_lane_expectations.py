@@ -15,13 +15,17 @@ EXPECTED_BUNDLED_LANES: dict[str, dict[str, object]] = {
             "8229ac28523e0c97"
         ),
         "descriptor_sha256": (
-            "sha256:10df491efab2ac04bc21c98d1f39ffebd66f86f77162cf58"
-            "e3e2219c5e19e062"
+            "sha256:0c5905a9b5e3b0558c69de83c495ca4ca4fa575a014708d6"
+            "aa1ffaaae409ab20"
         ),
         "module": "relay.local_mcp",
         "callable": "serve",
         "health_tool": "relay.status",
-        "allowed_tools": ("relay.status",),
+        # Relay's T1 tools in the lane tool policy (lane_tool_policy_agents).
+        "allowed_tools": (
+            "local_agent_health", "local_agent_chat", "local_agent_run",
+            "local_agent_runs", "local_agent_sessions", "relay.status", "relay.doctor",
+        ),
     },
 }
 

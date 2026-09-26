@@ -1,11 +1,18 @@
 {
   "allowed_tools": [
-    "relay.status"
+    "local_agent_health",
+    "local_agent_chat",
+    "local_agent_run",
+    "local_agent_runs",
+    "local_agent_sessions",
+    "relay.status",
+    "relay.doctor"
   ],
   "does_not_prove": [
     "NOT_PROVES_REPLACEMENT_OF_TRUSTED_EXECUTABLE: the descriptor binds the reviewed Relay source included in this build, not a later replacement of the whole gateway executable.",
-    "NOT_PROVES_AGENTIC_TASK_SUCCESS: relay.status is an identity and transport check, not proof that Relay can complete model-backed work.",
-    "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: the status check is network-free and carries no provider credential custody."
+    "NOT_PROVES_AGENTIC_TASK_SUCCESS: admitting Relay's T1 tools checks identity and transport, not that Relay completes model-backed work.",
+    "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: no provider credential rides the launch; a model server is a separate setup item.",
+    "NOT_PROVES_WRITE_OR_EXEC_CONFINEMENT_OUTSIDE_THE_ENGINE: the engine forces allow_write and allow_exec false on every call it makes; this Relay release still reads both from tool arguments, so a caller outside the engine is not confined by this build."
   ],
   "entrypoint": {
     "argv": [

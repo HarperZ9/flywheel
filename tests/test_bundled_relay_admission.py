@@ -65,9 +65,10 @@ def _expected(descriptor):
     }
 
 
-def test_valid_descriptor_admits_only_relay_status(tmp_path):
+def test_valid_descriptor_admits_only_relay_t1_tools(tmp_path):
     """Catches admission through PATH, registry python, or unbounded tools."""
     from harness.bundled_lane_admission import admit_bundled_lane
+    from harness.lane_tool_policy import admitted_tools
 
     descriptor = _descriptor(source_digest="sha256:" + canonical_sha256(
         _descriptor()["source"]["files"]))
@@ -82,7 +83,8 @@ def test_valid_descriptor_admits_only_relay_status(tmp_path):
     assert result.blocking_codes == ()
     assert result.launch.argv == (
         "D:/app/flywheel-gateway.exe", "--bundled-lane-mcp", "relay")
-    assert result.launch.allowed_tools == ("relay.status",)
+    assert result.launch.allowed_tools == tuple(admitted_tools("relay"))
+    assert "local_agent_start" not in result.launch.allowed_tools
     assert result.launch.inherit_env is False
     assert result.launch.hide_window is True
     assert result.component["descriptor_sha256"] == _expected(descriptor)["descriptor_sha256"]

@@ -30,12 +30,13 @@ COMPONENT_SCHEMA = "flywheel.bundled-lane-component/v1"
 ROW_SCHEMA = "flywheel.python-lane-payload/v1"
 PACKAGING_BOUNDARY = (
     "source_pinned_vendored_runtime_admission_all_python_lanes"
-    "_status_doctor_tools_only"
+    "_policy_t1_tools_only"
 )
 DOES_NOT_PROVE = [
-    "NOT_PROVES_FULL_LANE_WORKFLOW: status and doctor admission checks identity/readiness only.",
+    "NOT_PROVES_FULL_LANE_WORKFLOW: admitting the lane tool policy's T1 tools checks that each is served and allowed, not that any tool returns a correct result.",
     "NOT_PROVES_RUNTIME_DEPENDENCY_CLOSURE: interpreter, wheels, and import closure are bound by a separate installed release receipt.",
-    "NOT_PROVES_PROVIDER_DEVICE_OR_PRIVATE_DATA_READINESS: no provider, device, account, model, or private-data operation is exercised.",
+    "NOT_PROVES_PROVIDER_DEVICE_OR_PRIVATE_DATA_READINESS: admission exercises no provider, device, account, model, or private-data operation.",
+    "NOT_PROVES_T2_TOOLS_UNREACHABLE_OUTSIDE_THE_ENGINE: T2 tools are absent from allowed_tools and reach the lane through the engine only on a granted T2 call, one tool at a time; the lane module itself still serves them.",
 ]
 TEST_DIR_NAMES = {"tests", "test"}
 

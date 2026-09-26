@@ -70,10 +70,12 @@ flagship tool family, and it decides which lanes exist and how each one starts.
 | `lane_runtime_frozen.py` | The launch a frozen build performs per lane (payload admission, staged Node, the engine's own child modes), and the setup or defect code when it cannot. |
 | `frozen_lane_modes.py` | The frozen engine's `--lane-mcp writing` and `--bundled-lane-cli <lane>` child modes. |
 | `lane_cli.py` | The one launcher the native screens use for a lane CLI: the console script or `python -m` in a source or pip install, `--bundled-lane-cli` in a frozen build, started in the lane folder with UTF-8 output and no console window. |
-| `bundled_lane_admission.py` | Admits the relay lane carried inside a frozen build, only when its source manifest matches the descriptor. |
+| `bundled_lane_admission.py` | Admits a lane carried inside a frozen build (relay from its descriptor, the others from their payload rows), only when its source manifest matches the descriptor, with the policy's T1 tools. |
 | `bundled_lane_expectations.py` | The expected descriptor a bundled lane is checked against. |
 | `mcp_client.py` | `LaunchSpec` and the MCP client the gateway launches lanes with. |
 | `lane_caller.py`, `lane_call_route.py` | Calling a lane and routing the call. |
+| `lane_tool_policy.py` (data in `lane_tool_policy_evidence.py`, `lane_tool_policy_agents.py`, `lane_tool_policy_node.py`) | The one table of every lane tool: tier, main action, setup needs, effect, reason, forced arguments and what the build leaves out. Frozen admission, the tier each call needs and the Plugins and agent-run checks all read it. Reviewed in `project-docs/lanes/POLICY-REVIEW.md`. |
+| `lane_tier_gate.py` | Applies the table on each route: the per-call T2 widening, `NOT_IN_BUILD`, the Plugins T1 check, the agent-run check and the forced arguments. |
 
 ## The gateway
 

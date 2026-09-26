@@ -47,8 +47,10 @@ def test_canon_payload_pins_context_source_without_expanding_public_tools():
     assert canon["owner_commit"] == "de598d4002ad019a73d4b3a4afb5de1c55800d64"
     assert canon["component_descriptor"]["source"]["commit"] == canon["owner_commit"]
     assert canon["component_descriptor"]["entrypoint"]["module"] == "canon.local_mcp"
+    # Admission follows the lane tool policy: T1 tools only, so canon.render
+    # (T2 in the reviewed draft) stays out.
     assert canon["component_descriptor"]["allowed_tools"] == [
-        "canon.status", "canon.doctor"]
+        "canon.status", "canon.doctor", "canon.blocks", "canon.validate", "canon.check"]
     assert canon["mcp"]["static_tool_names"] == [
         "canon.status", "canon.doctor", "canon.blocks",
         "canon.render", "canon.validate", "canon.check"]

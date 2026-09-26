@@ -122,14 +122,14 @@ def test_articulate_row_pins_its_stdlib_mcp_server():
     assert row["owner_project"]["runtime_dependencies"] == []
 
 
-def test_admitted_tools_come_from_the_policy_stub():
+def test_admitted_tools_come_from_the_policy():
     sys.path.insert(0, str(ROOT))
     from harness.lane_tool_policy import admitted_tools, validate_policy
 
     assert validate_policy() == []
     for lane, row in ROWS.items():
         admitted = admitted_tools(lane)
-        assert admitted == [row["mcp"]["health_tool"], row["mcp"]["doctor_tool"]], lane
+        assert {row["mcp"]["health_tool"], row["mcp"]["doctor_tool"]} <= set(admitted), lane
         assert row["component_descriptor"]["allowed_tools"] == admitted
         assert row["mcp"]["allowed_tools_for_initial_admission"] == admitted
 

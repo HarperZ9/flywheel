@@ -28,18 +28,25 @@ from . import bundled_lane_env as _bundled_env
 from .bundled_lane_descriptor import (  # re-exported for scripts and tests
     SCHEMA, SOURCE_ALGORITHM, canonical_descriptor_text, descriptor_digest)
 from .evidence_json import canonical_sha256
+from .lane_tool_policy import admitted_tools
 from .mcp_client import LaunchSpec
 
-ADMITTED_BUNDLED_RELAY_TOOLS = ("relay.status",)
+# Relay's T1 tools from the lane tool policy. local_agent_start, _status and
+# _result stay out (a background run dies with the per-call child, WP10 and O-3).
+ADMITTED_BUNDLED_RELAY_TOOLS = tuple(admitted_tools("relay"))
 _SAFE_LANE = re.compile(r"[a-z][a-z0-9_-]{0,63}\Z")
 DOES_NOT_PROVE = (
     "NOT_PROVES_REPLACEMENT_OF_TRUSTED_EXECUTABLE: the descriptor binds the "
     "reviewed Relay source included in this build, not a later replacement of "
     "the whole gateway executable.",
-    "NOT_PROVES_AGENTIC_TASK_SUCCESS: relay.status is an identity and "
-    "transport check, not proof that Relay can complete model-backed work.",
-    "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: the status check is "
-    "network-free and carries no provider credential custody.",
+    "NOT_PROVES_AGENTIC_TASK_SUCCESS: admitting Relay's T1 tools checks identity "
+    "and transport, not that Relay completes model-backed work.",
+    "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: no provider credential rides the "
+    "launch; a model server is a separate setup item.",
+    "NOT_PROVES_WRITE_OR_EXEC_CONFINEMENT_OUTSIDE_THE_ENGINE: the engine forces "
+    "allow_write and allow_exec false on every call it makes; this Relay release "
+    "still reads both from tool arguments, so a caller outside the engine is not "
+    "confined by this build.",
 )
 
 

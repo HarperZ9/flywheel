@@ -227,9 +227,9 @@ def test_frozen_build_relaunches_only_via_vetted_child_modes(monkeypatch):
         if name in bundled:
             assert launch.argv == (sys.executable, "--bundled-lane-mcp", name), name
             assert launch.inherit_env is False, name
-            assert launch.allowed_tools, name  # status and doctor tools only
-            if name == "relay":
-                assert launch.allowed_tools == ("relay.status",)
+            # the lane tool policy's T1 tools that are in the build, nothing more
+            from harness.lane_tool_policy import admitted_tools
+            assert launch.allowed_tools == tuple(admitted_tools(name)), name
         elif launch.argv and launch.argv[0] == sys.executable:
             assert (name, launch.argv[1:2]) in {
                 ("local-model", ("--mcp",)), ("writing", ("--lane-mcp",))}, name
@@ -251,7 +251,8 @@ def test_frozen_bundled_lane_admits_from_payload(monkeypatch):
     monkeypatch.setattr(ln, "_importable", lambda top: True)
     launch = ln.resolve_mcp_launch("gather")
     assert launch.argv == (sys.executable, "--bundled-lane-mcp", "gather")
-    assert launch.allowed_tools == ("gather.status", "gather.doctor")
+    assert launch.allowed_tools == ("gather.status", "gather.doctor", "gather.docs",
+                                    "gather.arxiv", "gather.context")  # T1 only
     assert launch.inherit_env is False
 
 

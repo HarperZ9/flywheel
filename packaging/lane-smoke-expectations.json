@@ -3,22 +3,22 @@
   "levels": ["no_frozen_launch", "cannot_launch", "starts", "health", "main"],
   "bar_level": "main",
   "lanes": {
-    "gather": {"expected": "health", "bar": "A"},
-    "crucible": {"expected": "health", "bar": "A"},
-    "chorus": {"expected": "health", "bar": "A"},
-    "articulate": {"expected": "health", "bar": "A"},
-    "index": {"expected": "health", "bar": "A/B"},
-    "forum": {"expected": "health", "bar": "A/B-untested"},
+    "gather": {"expected": "main", "bar": "A"},
+    "crucible": {"expected": "main", "bar": "A"},
+    "chorus": {"expected": "main", "bar": "A"},
+    "articulate": {"expected": "main", "bar": "A"},
+    "index": {"expected": "main", "bar": "A/B"},
+    "forum": {"expected": "main", "bar": "A/B-untested"},
     "learn": {"expected": "main", "bar": "A"},
     "telos": {"expected": "main", "bar": "A"},
     "local-model": {"expected": "health", "bar": "B"},
     "writing": {"expected": "health", "bar": "A"},
     "relay": {"expected": "health", "bar": "B"},
-    "plexus": {"expected": "health", "bar": "A"},
-    "mneme": {"expected": "health", "bar": "A"},
-    "calibrate-pro": {"expected": "health", "bar": "C"},
+    "plexus": {"expected": "main", "bar": "A"},
+    "mneme": {"expected": "main", "bar": "A"},
+    "calibrate-pro": {"expected": "main", "bar": "C"},
     "canon": {"expected": "health", "bar": "B"},
     "bulletin": {"expected": "no_frozen_launch", "bar": "A"},
-    "accountable-surface": {"expected": "health", "bar": "A/C"}
+    "accountable-surface": {"expected": "main", "bar": "A/C"}
   }
 }

@@ -1,8 +1,8 @@
-"""Draft tool policy for the Node lanes (learn 1.6.0, telos 0.4.1). Operator review pending.
+"""Tool policy data for the Node lanes (learn 1.6.0, telos 0.4.1). Operator review pending.
 
 Plain data, merged into ``lane_tool_policy.LANE_TOOL_POLICY``; each entry holds
 the ``ToolPolicy`` fields that differ from the default (T1, 20 s, no needs, not
-main, in the build). The tool names are exactly the ``static_tool_names``
+main, in the build, effect ``read``). The tool names are exactly the ``static_tool_names``
 pinned in ``packaging/node-lane-payloads.json``, measured from ``tools/list``
 of the pinned archives.
 
@@ -30,6 +30,18 @@ TELOS_NOT_IN_BUILD = {
     "telos.room": "needs_source_checkouts",
     "telos.workflow": "needs_source_checkouts",
 }
+_TELOS_OUT = {
+    "telos.native.control": {
+        "tier": "T2", "effect": "actuate",
+        "reason": "The Chrome DevTools and UI Automation driver; mail, post and listing "
+                  "actions sit behind other arguments. Left out rather than admitted at T2."},
+    "telos.room": {"reason": "Runs python against sibling source checkouts an installed "
+                             "app does not have."},
+    "telos.workflow": {"reason": "Runs python and node by name against sibling source "
+                                 "checkouts and writes temp files."},
+}
+_TELOS_READ = ("Runs one fixed package script that reads files inside the package and "
+               "prints JSON; the MCP mapping passes no arguments.")
 
 _TELOS_TOOLS = (
     "telos.status", "telos.doctor", "telos.room", "telos.workflow", "telos.catalog",
@@ -50,18 +62,27 @@ _TELOS_TOOLS = (
 
 def _telos_entry(name: str) -> dict:
     if name in TELOS_NOT_IN_BUILD:
-        return {"not_in_build": TELOS_NOT_IN_BUILD[name]}
-    return dict(_MAIN) if name in ("telos.catalog", "telos.doctor") else {}
+        return {"not_in_build": TELOS_NOT_IN_BUILD[name], **_TELOS_OUT[name]}
+    entry = {"reason": _TELOS_READ}
+    return {**entry, **_MAIN} if name in ("telos.catalog", "telos.doctor") else entry
 
 
+_READ = {"reason": "Reads a saved run or session in the lane folder, or a file the "
+                  "caller names, and returns JSON."}
+_SESSION = ("Writes one session file under <home>/lanes/learn/tutor/, the lane's own "
+            "folder.")
 _LEARN = {
-    "learn_doctor": {}, "learn_status": {}, "learn_verify": {}, "learn_receipt": {},
-    "learn_dry_run": _MAIN, "learn_tutor_plan": _MAIN,
-    "learn_tutor_record": {"tier": "T2"},
-    "learn_tutor_mastery": {}, "learn_visualize_dry_run": {}, "learn_tutor_due": {},
-    "learn_tutor_studyplan": {}, "learn_tutor_misconceptions": {},
-    "learn_tutor_reverify": {}, "learn_tutor_derive_schedule": {},
-    "learn_tutor_prooflesson": {},
+    "learn_doctor": _READ, "learn_status": _READ, "learn_verify": _READ,
+    "learn_receipt": _READ,
+    "learn_dry_run": {**_MAIN, "reason": "Checks a workflow step by step without running "
+                                         "it; reads the file the caller names."},
+    "learn_tutor_plan": {**_MAIN, "effect": "state_write", "reason": _SESSION},
+    "learn_tutor_record": {"tier": "T2", "effect": "state_write",
+                           "reason": _SESSION + " Section 1a puts it at T2."},
+    "learn_tutor_mastery": _READ, "learn_visualize_dry_run": _READ, "learn_tutor_due": _READ,
+    "learn_tutor_studyplan": _READ, "learn_tutor_misconceptions": _READ,
+    "learn_tutor_reverify": _READ, "learn_tutor_derive_schedule": _READ,
+    "learn_tutor_prooflesson": _READ,
 }
 
 # Every tool of both lanes runs under Node, so each needs the "node" setup item
