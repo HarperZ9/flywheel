@@ -247,6 +247,8 @@ jobs:
           python-version: "3.13"
       - name: Every checker verifies a SUBMITTED object; none decides optimality
         run: python scripts/check_claim_language.py
+      - name: Copy says where request content goes; no GDPR wording for a deletion
+        run: python scripts/check_data_location_copy.py
 
   file_gate:
     name: 300-line gate, burn-down only shrinks

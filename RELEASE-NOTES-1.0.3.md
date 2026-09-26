@@ -6,6 +6,10 @@ data stay on your machine. An answer is accepted only when a real check passes, 
 test run or a Lean proof. Each accepted answer carries a sealed receipt, and the witness
 re-runs that receipt offline to return MATCH, DRIFT, or UNVERIFIABLE.
 
+Correction, 2026-09-26: the opening says keys and data stay on your machine. Keys and
+Flywheel's records do. The content of each request goes to the hosted provider you
+route it to.
+
 1.0.3 is mainly a fix release. Its largest group of fixes closes several ways the verifier
 could accept a candidate that had not earned the pass. Two known Lean routes stay open,
 and the Limits section names them. 1.0.3 also fixes a Windows lock race and
