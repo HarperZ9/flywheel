@@ -113,6 +113,17 @@ def _export_post(handler):
     return handler._json({"schema": "flywheel.trace-export-report/v1", **report})
 
 
+def _bench_post(handler):
+    """Bench replay (7.8): endpoints are required, and a replay needs
+    presence bound to the grant whose summary lists every goal."""
+    from harness.trace_bench_grant import handle
+    body = _body(handler, {"endpoints", "grant_digest", "presence_ref"})
+    if body is None:
+        return handler._json(capture.error("INVALID_REQUEST", "unexpected fields"), 422)
+    doc, status = handle(handler.flywheel_home, handler.owner_ref, body)
+    return handler._json(doc, status)
+
+
 def _turns(handler, path: str):
     from harness.trace_turn_store import TurnStore
     store = TurnStore(handler.flywheel_home, handler.owner_ref)
@@ -166,4 +177,6 @@ def route_post(handler, path: str):
         return _delete_post(handler, path)
     if path == "/api/traces/export":
         return _export_post(handler)
+    if path == "/api/traces/bench":
+        return _bench_post(handler)
     return handler._json(capture.error("NOT_FOUND", "no such trace route"), 404)
