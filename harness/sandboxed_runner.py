@@ -38,8 +38,12 @@ def sandboxed_run(
     *,
     bindings: CredentialBindings | None = None,
     timeout_seconds: int = 120,
+    scratch_home: bool = False,
 ) -> tuple[bool, str]:
     """Run `cmd` under this host's sandbox, rooted at `root`.
+
+    With `scratch_home`, `HOME`, `TEMP` and `TMP` point into the run's own
+    scratch directory rather than the caller's (the bench replay, 7.8).
 
     Returns (ok, output). `ok` is False for a denied command, a timeout, or a
     non-zero exit code. Raises SandboxUnavailable when the host cannot
@@ -54,14 +58,16 @@ def sandboxed_run(
         return False, (f"[denied] command requires escalation: "
                        f"{admission.reason_code}")
     if os.name != "nt":
-        return _posix_sandboxed_run(cmd, root, bindings, timeout_seconds)
+        return _posix_sandboxed_run(cmd, root, bindings, timeout_seconds, scratch_home)
 
     source = Path(root).resolve()
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_", dir=source.parent))
     stdout_path, stderr_path = work / "stdout.txt", work / "stderr.txt"
     try:
-        rc = _execute(source, work, cmd, _build_env(bindings),
-                     timeout_seconds, stdout_path, stderr_path)
+        env = _build_env(bindings)
+        if scratch_home:
+            env.update({name: str(work) for name in ("HOME", "TEMP", "TMP")})
+        rc = _execute(source, work, cmd, env, timeout_seconds, stdout_path, stderr_path)
         out = _redact(_read_output(stdout_path, stderr_path), bindings)
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -73,7 +79,7 @@ def sandboxed_run(
 
 def _posix_sandboxed_run(
     cmd: str, root: str, bindings: CredentialBindings | None,
-    timeout_seconds: int,
+    timeout_seconds: int, scratch_home: bool = False,
 ) -> tuple[bool, str]:
     """Run `cmd` under whichever POSIX backend this host has.
 
@@ -107,7 +113,7 @@ def _posix_sandboxed_run(
     # directory the run was told to use would be the one directory it could
     # not write to.
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_")).resolve()
-    env = _build_posix_env(bindings, work)
+    env = _build_posix_env(bindings, work, scratch_home)
     try:
         policy = from_env()
     except PolicyRefused as exc:
@@ -170,7 +176,7 @@ def _no_backend_reason() -> str:
 
 
 def _build_posix_env(bindings: CredentialBindings | None,
-                     work: Path) -> dict[str, str]:
+                     work: Path, scratch_home: bool = False) -> dict[str, str]:
     """The child's environment, with its temp directory inside the sandbox.
 
     The allowlist passes the host's `TMPDIR` through, and the host's is
@@ -183,6 +189,8 @@ def _build_posix_env(bindings: CredentialBindings | None,
     active = bindings if bindings is not None else CredentialBindings({})
     env = active.child_environment(os.environ, platform="posix")
     env.update({name: str(work) for name in ("TMPDIR", "TMP", "TEMP")})
+    if scratch_home:
+        env["HOME"] = str(work)
     return env
 
 

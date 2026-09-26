@@ -310,7 +310,21 @@ or untracked had changed at start; ignored files such as `.venv` do not
 count. Otherwise it is marked unreproducible with the reason, and runs from
 before this change have no git identity. A goal built from selected source
 context is marked untrusted. A run without a test command is counted and
-skipped. Deleting a trace deletes its tasks.
+skipped. Deleting a trace deletes its tasks and their replay results.
+
+A reproducible task replays in a shared clone of its workspace at the
+recorded commit. The clone reads your repository and writes nothing into it,
+and git runs there without your global or system configuration, hooks or
+fsmonitor. A clone whose git identity differs from the recorded one marks
+the task unreproducible. The goal runs through the agent loop in the clone,
+then the test command runs in the low-integrity sandbox with a short
+allowlisted environment (`PATH`, `SYSTEMROOT`, `COMSPEC`, `PATHEXT`, and
+`HOME`, `TEMP` and `TMP` inside the run's scratch folder), so provider keys
+in the gateway's environment never reach code from an old commit. Each
+verdict is kept encrypted with a link to its task, the clone is removed with
+junctions and symbolic links deleted as links, and a clone left by a crash
+is removed when the gateway starts. The regression report compares each
+task and endpoint with the verdict the original run recorded.
 
 ## Owner presence and the witness
 

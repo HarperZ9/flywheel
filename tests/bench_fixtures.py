@@ -11,7 +11,10 @@ import sys
 from delete_fixtures import OWNER
 
 JOURNEY = "jrn_" + "d" * 32
-GATE = f'"{sys.executable}" -c "import calc, sys; sys.exit(0 if calc.add(2, 2) == 4 else 1)"'
+# No quotes: the Windows sandbox passes the command to cmd.exe with quotes
+# escaped as \", which cmd.exe does not read (see the replay notes).
+GATE = f"{sys.executable} test_calc.py"
+SHOW_ENV = f"{sys.executable} show_env.py"
 
 
 def git(repo: Path, *args: str) -> str:
@@ -30,6 +33,9 @@ def git_repo(base: Path) -> Path:
     git(repo, "init", "-q", "-b", "main")
     (repo / "calc.py").write_text("def add(a, b):\n    return a - b\n")
     (repo / ".gitignore").write_text(".venv/\n")
+    (repo / "test_calc.py").write_text("import sys\nimport calc\n"
+                                       "sys.exit(0 if calc.add(2, 2) == 4 else 1)\n")
+    (repo / "show_env.py").write_text("import os\nprint(sorted(os.environ.items()))\n")
     git(repo, "add", "-A")
     git(repo, "commit", "-q", "-m", "a broken add")
     return repo
