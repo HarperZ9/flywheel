@@ -8,7 +8,7 @@ them unknown, and FW-01 is the package that classifies them.
 from __future__ import annotations
 
 from .trace_inventory import Exemption, Gap, Protection, Store
-from .trace_inventory_entries import DEL_PLAIN, EXPORT, META, NOT_DESIGNED, _plain
+from .trace_inventory_entries import APPLY, DEL_PLAIN, EXPORT, META, NOT_DESIGNED, _plain
 
 S12 = _plain("classified by FW-01; encryption and deletion are not designed in this "
              "round", "7.16")
@@ -29,18 +29,21 @@ def _run(sid, name, patterns, classes, shape="dir", **kw):
 STORES = (
     Store("S8", "Frozen web snapshots", "run", ("snapshots",), ("C1", "C4"),
           _plain("legacy snapshots stay plaintext; capture snapshots move to encrypted "
-                 "S8b", "FW-05b"), EXPORT, DEL_PLAIN, owner_binding="run-root",
+                 "S8b", "FW-05b"), EXPORT,
+          Gap("legacy snapshots stay until every store that cites a snapshot hash is "
+              "indexed; a deletion report counts the ones it kept (EN-C11)", "7.16"),
+          owner_binding="run-root",
           note="third-party page bytes, private when the URL carried a token"),
     Store("S9", "Fold index notes", "run", ("fold_index.json",), ("C1", "C8"),
           _plain("notes are addressed by content hash; encrypting them changes the "
-                 "recall API", "7.16"), EXPORT, DEL_PLAIN, shape="file",
+                 "recall API", "7.16"), EXPORT, APPLY, shape="file",
           owner_binding="run-root", invalidate=True),
     Store("S10", "Legacy agent-run store", "run", ("agent_runs",), ("C1", "C2"),
-          _plain("legacy runs from before #184; no writer remains", "FW-07b"), EXPORT,
-          DEL_PLAIN, owner_binding="run-root", evidence="inferred"),
+          _plain("legacy runs from before #184; no writer remains", "7.16"), EXPORT,
+          APPLY, owner_binding="run-root", evidence="inferred"),
     Store("S11", "Trace bench files", "run", ("bench",), ("C1", "C2"),
           _plain("bench tasks move into encrypted private custody", "FW-12a"), EXPORT,
-          DEL_PLAIN, owner_binding="run-root",
+          APPLY, owner_binding="run-root",
           retention="overwritten each run (route unwired, F-05)"),
     _run("S12a", "Lesson memory", ("lessons.jsonl",), ("C1", "C8"), shape="file"),
     _run("S12b", "Science run history", ("science",), ("C2", "C4", "C5")),
