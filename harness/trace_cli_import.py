@@ -42,6 +42,11 @@ def _summary(plan: dict) -> list[str]:
 
 
 def run(args) -> int:
+    if args.pending:
+        return pending(args)
+    if args.client is None:
+        emit("Name a client (claude-code) or pass --pending.")
+        return 2
     from .trace_import_claude import plan_claude
     from .trace_import_core import run_import
     home = _home()
@@ -64,9 +69,36 @@ def run(args) -> int:
     return 0 if result["state"] == "OK" else 1
 
 
+def pending(args) -> int:
+    """Import the sessions whose SessionEnd archive could not reach the gateway."""
+    from .capture_hooks import spool
+    from .operation_grants import load_or_create_owner_ref
+    from .trace_import_session import SessionRefused, import_session
+    home = _home()
+    owner = load_or_create_owner_ref(home)
+    directory, done = spool.spool_dir(home), 0
+    for path in sorted(directory.glob("f-*.json")) if directory.is_dir() else []:
+        record = json.loads(path.read_bytes())
+        if record.get("event") != "session-end" or not record.get("session_id"):
+            continue
+        try:
+            result = import_session(home, owner, record["client"], record["session_id"])
+        except SessionRefused as refused:
+            emit(f"  {escape(record['session_id'])}: {refused.code}")
+            continue
+        if result["imported"] or result["skipped"]:
+            (directory / "acknowledged").mkdir(exist_ok=True)
+            path.replace(directory / "acknowledged" / path.name)
+            done += 1
+    emit(f"{done} pending session{'' if done == 1 else 's'} imported.")
+    return 0
+
+
 def register(sub) -> None:
     parser = sub.add_parser("import", help="copy client transcripts into encrypted custody")
-    parser.add_argument("client", choices=("claude-code",))
+    parser.add_argument("client", nargs="?", choices=("claude-code",))
+    parser.add_argument("--pending", action="store_true",
+                        help="import sessions the SessionEnd archive spooled")
     parser.add_argument("--apply", action="store_true", help="import; without it, plan only")
     parser.add_argument("--json", action="store_true", help="print the plan as JSON")
     parser.set_defaults(run=run)
