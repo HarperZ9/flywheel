@@ -10,14 +10,16 @@
 ![deps: none (core)](https://img.shields.io/badge/core%20deps-none-success?style=flat-square&labelColor=14041b)
 
 Flywheel runs any model, frontier or local, behind a single OpenAI-compatible
-surface, and your keys and data stay on your machine. Its desktop assistant,
-Rowan, takes a request in plain words and turns it into a task the app runs and
-records on the model you pick. A permission-gated coding agent, relay, runs over
-your own folders and checks each tool request before it acts. Seventeen
-composable lanes ship in the roster. In the Windows app's installed-app check, 15
-of 17 lanes reach the class the check expects for them; index is below that bar
-without Git, and telos is not in this build ([per-lane
-table](project-docs/lanes/LANES.md)).
+surface. Your provider keys and Flywheel's records stay on your machine. The
+content of each request, including files and tool output the agent reads, goes
+to the model provider you pick, under that provider's terms. With a local model
+it stays on your machine. Flywheel's desktop assistant, Rowan, takes a request
+in plain words and turns it into a task the app runs and records on the model
+you pick. A permission-gated coding agent, relay, runs over your own folders and
+checks each tool request before it acts. Seventeen composable lanes ship in the
+roster. In the Windows app's installed-app check, 15 of 17 lanes reach the class
+the check expects for them; index is below that bar without Git, and telos is
+not in this build ([per-lane table](project-docs/lanes/LANES.md)).
 
 The command `flywheel check-output` checks a value against the source that
 decides it, ships finance, medicine, and law packs, and can emit the check as a
