@@ -20,11 +20,11 @@ import sys
 from . import output, spool
 from .client import CaptureFailure, open_channel, read_token
 from .home import resolve_home
-from .protocol import FREEZE_PATH, PROMPT_PATH, STOP_PATH, commitment
+from .protocol import FREEZE_PATH, PROMPT_PATH, SESSION_PATH, STOP_PATH, commitment
 
-EVENTS = ("prompt", "stop")
+EVENTS = ("prompt", "stop", "session-end")
 CLIENTS = ("claude-code", "codex")
-TIMEOUT = {"prompt": 10.0, "stop": 10.0}
+TIMEOUT = {"prompt": 10.0, "stop": 10.0, "session-end": 1.0}
 MAX_EVENT = 16 * 1024 * 1024
 _PROMPT_KEYS = ("prompt", "user_prompt", "message", "input")
 _URL = re.compile(r"https?://[^\s)\]>\"']+")
@@ -107,6 +107,13 @@ def _act(args, event, home) -> tuple[dict, list[str]]:
     messages = []
     if channel.effective.get("pending_change"):
         messages.append(output.PENDING_SETTINGS)
+    if args.event == "session-end":
+        if channel.effective.get("archive_transcripts") == "on":
+            reason = event.get("reason") if type(event.get("reason")) is str else ""
+            channel.request("POST", SESSION_PATH, {
+                "client": args.client, "session_id": spool.clean_session(event.get("session_id")),
+                "reason": reason[:64]})
+        return {}, []
     if args.event == "stop":
         answer = event.get("last_assistant_message")
         answer = answer if type(answer) is str else (_text(event, _ANSWER_KEYS) or None)
