@@ -71,6 +71,10 @@ def render_status(doc: dict, roots: dict) -> list[str]:
     lines = ["Flywheel trace custody",
              f"home {escape(roots['home'])}", f"run root {escape(roots['run'])}",
              f"Retention default: {doc['retention_default']}.", ""]
+    deletions = doc.get("deletions")
+    if deletions:
+        lines.insert(4, f"Deletions: {deletions['tombstones']} tombstones, "
+                        f"{deletions['pending']} pending.")
     presence = doc.get("presence")
     if presence:
         lines.insert(4, f"Presence: {presence['method']}: {presence['statement']}.")
@@ -150,7 +154,8 @@ def _parser() -> argparse.ArgumentParser:
     doctor.add_argument("--ack", action="store_true", help="move reported failures aside")
     doctor.add_argument("--json", action="store_true", help="print flywheel.trace-doctor/v1")
     doctor.set_defaults(run=_doctor)
-    from . import trace_cli_capture, trace_cli_import, trace_cli_presence
+    from . import trace_cli_capture, trace_cli_delete, trace_cli_import, trace_cli_presence
+    trace_cli_delete.register(sub)
     trace_cli_presence.register(sub)
     trace_cli_capture.register(sub)
     trace_cli_import.register(sub)

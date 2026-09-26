@@ -82,7 +82,7 @@ def test_status_prints_every_store_with_location_protection_and_gaps(planted, ca
     for store in trace_inventory.stores():
         assert store.name in out
         assert trace_inventory_scan.location_text(store) in out
-    assert "none (gap: FW-07a)" in out and "none (gap: FW-09)" in out
+    assert "none (gap: FW-07b)" in out and "none (gap: FW-09)" in out
     assert "keep until you delete" in out
     assert "UNREGISTERED state/unexpected-store" in out
     assert "plaintext" in out
