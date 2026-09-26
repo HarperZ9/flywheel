@@ -116,11 +116,49 @@ def _scaffold(handler):
                                          citations=cites if isinstance(cites, list) else None))
 
 
+def _body(handler, allowed: set) -> dict | None:
+    """A JSON object whose keys are all in `allowed` (I12: no owner, no path)."""
+    length = handler._content_length()
+    if length is None or length > 64 * 1024:
+        return None
+    try:
+        doc = json.loads(handler.rfile.read(length) or b"{}")
+    except ValueError:
+        return None
+    return doc if type(doc) is dict and set(doc) <= allowed else None
+
+
+def _presence_post(handler, path: str):
+    from harness import trace_presence as presence
+    state = handler.flywheel_home / "state"
+    body = _body(handler, {"ref"} if path.endswith("/approve") else {"kind", "plan_digest"})
+    if body is None:
+        return handler._json(_error("INVALID_REQUEST", "unexpected fields"), 422)
+    try:
+        if path.endswith("/approve"):
+            presence.approve_from_desktop(state, handler.owner_ref, body.get("ref"))
+            return handler._json({"schema": "flywheel.presence-approval/v1", "ok": True})
+        kind, digest = body.get("kind"), body.get("plan_digest")
+        ref = presence.confirm(state, handler.owner_ref, kind, digest,
+                               f"{kind} {str(digest)[:12]}")
+    except presence.PresenceError as exc:
+        code = 422 if exc.code == "PRESENCE_INVALID" else 403
+        return handler._json(_error(exc.code, "presence refused"), code)
+    status = presence.presence_status(state, handler.owner_ref)
+    return handler._json({"schema": "flywheel.presence-challenge-result/v1", "ref": ref,
+                          "method": status["method"],
+                          "presence_statement": status["statement"]})
+
+
 def route_get(handler, path: str, qs: str):
     if path.startswith(protocol.PREFIX) and not _host_ok(handler):
         return handler._json(_REFUSED, 401)
     if path == protocol.HELLO_PATH:
         return _hello(handler, qs)
+    if path == "/api/traces/presence/pending":
+        from harness.trace_presence import PresenceStore
+        pending = PresenceStore(handler.flywheel_home / "state", handler.owner_ref).pending()
+        return handler._json({"schema": "flywheel.presence-pending/v1", "pending": pending})
     if path == protocol.PING_PATH:
         raw, sent = _signed_body(handler, "GET")
         return sent if raw is None else handler._json({"schema": "flywheel.capture-ping/v1",
@@ -133,6 +171,8 @@ def route_post(handler, path: str):
         return _scaffold(handler)
     if path.startswith(protocol.PREFIX) and not _host_ok(handler):
         return handler._json(_REFUSED, 401)
+    if path in ("/api/traces/presence", "/api/traces/presence/approve"):
+        return _presence_post(handler, path)
     if path == protocol.SCAFFOLD_PATH:
         raw, sent = _signed_body(handler, "POST")
         return sent if raw is None else _capture_receipt(handler, raw)

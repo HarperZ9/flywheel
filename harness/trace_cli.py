@@ -71,6 +71,9 @@ def render_status(doc: dict, roots: dict) -> list[str]:
     lines = ["Flywheel trace custody",
              f"home {escape(roots['home'])}", f"run root {escape(roots['run'])}",
              f"Retention default: {doc['retention_default']}.", ""]
+    presence = doc.get("presence")
+    if presence:
+        lines.insert(4, f"Presence: {presence['method']}: {presence['statement']}.")
     encryption = doc.get("encryption")
     if encryption:
         floored = ", ".join(sorted(encryption["floors"])) or "none yet"
@@ -139,6 +142,8 @@ def _parser() -> argparse.ArgumentParser:
     doctor.add_argument("--ack", action="store_true", help="move reported failures aside")
     doctor.add_argument("--json", action="store_true", help="print flywheel.trace-doctor/v1")
     doctor.set_defaults(run=_doctor)
+    from . import trace_cli_presence
+    trace_cli_presence.register(sub)
     hooks = sub.add_parser("hooks", help="hook mount lines for Claude Code and Codex")
     hooks_sub = hooks.add_subparsers(dest="hooks_command", required=True)
     hooks_sub.add_parser("print-mount", help="print the exact mount blocks").set_defaults(

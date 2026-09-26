@@ -54,6 +54,16 @@ PRIVATE_PATHS = frozenset({
 PRIVATE_LANE_SUFFIXES = ("/tools", "/local-model/root", "/check", "/install")
 
 
+#: Capture routes authenticate by a signature over each request instead of the
+#: bearer token (harness/gateway_request_sig.py); the gateway lets them through
+#: its bearer check and trace_routes verifies before reading any body.
+SIGNED_PREFIXES = ("/api/traces/capture/",)
+
+
+def is_signed(path: str) -> bool:
+    return path.startswith(SIGNED_PREFIXES)
+
+
 def is_private(path: str) -> bool:
     """Does this path sit under private custody? One rule, two readers."""
     lane_console = path.startswith("/api/lanes/") and path.endswith(PRIVATE_LANE_SUFFIXES)

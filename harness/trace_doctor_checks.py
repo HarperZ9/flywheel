@@ -129,8 +129,25 @@ def encryption_check(home: Path):
 
 
 def presence_check(home: Path):
-    return ("WARN", "presence method none: any process running as the owner, agents "
-            "included, can perform custody operations; no witness", "presence lands with FW-15")
+    from harness.trace_custody_ledger import CustodyLedger, read_owner_ref
+    from harness.trace_presence import STATEMENT, presence_status
+    from harness.trace_witness import default_sink, reconcile
+    owner = read_owner_ref(home)
+    status = presence_status(home / "state", owner) if owner else {
+        "method": "none", "statement": STATEMENT}
+    sink = default_sink()
+    try:
+        entries = CustodyLedger(home, owner).entries() if owner else []
+        missing = reconcile(entries, sink.read(), owner)
+        witness = f"{sink.status()}; {len(missing)} ledger entries without an event"
+    except (OSError, ValueError) as exc:
+        missing, witness = [], f"{sink.status()} unreadable ({type(exc).__name__})"
+    detail = f"presence method {status['method']}: {status['statement']}; witness: {witness}"
+    if missing:
+        return "FAIL", detail + " (WITNESS_MISMATCH)", "compare the ledger with the event log"
+    if status["method"] == "none" or sink.status().startswith("no witness"):
+        return "WARN", detail, "flywheel traces presence set windows-hello"
+    return "PASS", detail, ""
 
 
 def disk_check(home: Path):

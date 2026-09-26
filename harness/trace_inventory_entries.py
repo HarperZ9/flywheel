@@ -108,6 +108,12 @@ STORES = (
           added_by_program=True, invalidate=True,
           note="an export lists shard counts and floors, never a key; destroying an item "
                "key is what makes its ciphertext unreadable"),
+    Store("PR", "Presence challenges and the presence method", "state", ("presence",),
+          ("C4",), META, "harness.trace_meta_adapters.presence_export",
+          "harness.trace_meta_adapters.presence_delete", owner_binding="owner",
+          added_by_program=True,
+          note="kind, plan digest, times, state and method of each confirmation; no "
+               "summary text is stored"),
     Store("CL", "Custody ledger", "state", ("custody-ledger",), ("C4",), META,
           "harness.trace_custody_ledger.export_records",
           "harness.trace_custody_ledger.delete_all", owner_binding="owner",

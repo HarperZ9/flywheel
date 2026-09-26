@@ -200,4 +200,13 @@ def scan(environ=None) -> dict:
             "unregistered": _unregistered(roots),
             "unclassified": [r["id"] for r in rows if r["classes"] is None],
             "ledger": ledger_summary(roots["home"]),
-            "encryption": encryption_status(roots["state"])}
+            "encryption": encryption_status(roots["state"]),
+            "presence": _presence(roots["home"])}
+
+
+def _presence(home) -> dict:
+    from .trace_custody_ledger import read_owner_ref
+    from .trace_presence import STATEMENT, presence_status
+    owner = read_owner_ref(home)
+    return presence_status(Path(home) / "state", owner) if owner else {
+        "method": "none", "statement": STATEMENT}
