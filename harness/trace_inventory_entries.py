@@ -114,6 +114,15 @@ STORES = (
           added_by_program=True,
           note="kind, plan digest, times, state and method of each confirmation; no "
                "summary text is stored"),
+    Store("TD", "Deletion ledger (tombstones) and deletion journals", "state",
+          ("trace-deletions",), ("C1", "C4"),
+          Protection("encrypted", "tombstones are metadata only; a journal and its scan "
+                     "set are encrypted and removed when the tombstone is written"),
+          "harness.trace_meta_adapters.tombstones_export",
+          "harness.trace_meta_adapters.deletions_delete", owner_binding="owner",
+          added_by_program=True,
+          note="a scan set holds the text of plaintext rows being deleted, only until "
+               "the deletion verifies"),
     Store("CL", "Custody ledger", "state", ("custody-ledger",), ("C4",), META,
           "harness.trace_custody_ledger.export_records",
           "harness.trace_custody_ledger.delete_all", owner_binding="owner",

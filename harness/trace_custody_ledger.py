@@ -14,17 +14,14 @@ timestamps): no spaces, no path separators, at most 128 characters.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import json
-import os
 from pathlib import Path
 import re
 
-from .evidence_json import canonical_bytes, canonical_sha256
-from .journey_lock import ExclusiveJourneyLock, fsync_directory
+from .journey_lock import ExclusiveJourneyLock
+from .trace_chain_log import GENESIS, ChainedLog, ok
 
 SCHEMA = "flywheel.custody-ledger-entry/v1"
 HEAD_SCHEMA = "flywheel.custody-ledger-head/v1"
-GENESIS = "0" * 64
 _OWNER = re.compile(r"owner_[0-9a-f]{32}\Z")
 _TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:\-]{0,127}\Z")
 _PRESENCE = {"presence"}
@@ -84,89 +81,25 @@ class CustodyLedger:
     def __init__(self, home, owner_ref: str, *, lock_timeout_s: float = 5.0) -> None:
         if type(owner_ref) is not str or _OWNER.fullmatch(owner_ref) is None:
             raise LedgerError("OWNER_INVALID")
-        self.dir = Path(home) / "state" / "custody-ledger" / "v1" / "owners" / owner_ref
-        self.path, self.anchor = self.dir / "ledger.jsonl", self.dir / "head.json"
+        directory = Path(home) / "state" / "custody-ledger" / "v1" / "owners" / owner_ref
+        self.log = ChainedLog(directory, "ledger", SCHEMA, HEAD_SCHEMA, anchor="head.json",
+                              lock_timeout_s=lock_timeout_s)
+        self.dir, self.path, self.anchor = self.log.dir, self.log.path, self.log.anchor
         self.lock_timeout_s = lock_timeout_s
 
     def append(self, kind: str, fields: dict) -> dict:
         check_fields(kind, fields)
-        self.dir.mkdir(parents=True, exist_ok=True)
-        _owner_only(self.dir)
-        with ExclusiveJourneyLock.acquire(self.dir / ".lock", self.lock_timeout_s):
-            entries, report = self._load(repair=True)
-            if not report["ok"]:
-                raise LedgerError("LEDGER_INVALID")
-            head = entries[-1]["entry_sha256"] if entries else GENESIS
-            entry = {"schema": SCHEMA, "seq": len(entries), "kind": kind, "at": _now(),
-                     "fields": fields, "prior_sha256": head}
-            entry["entry_sha256"] = canonical_sha256(entry)
-            with self.path.open("ab") as stream:
-                stream.write(canonical_bytes(entry) + b"\n")
-                stream.flush()
-                os.fsync(stream.fileno())
-            self._write_anchor(len(entries) + 1, entry["entry_sha256"])
-            return entry
+        return self.log.append_body({"kind": kind, "at": _now(), "fields": fields},
+                                    invalid=LedgerError("LEDGER_INVALID"))
 
     def entries(self) -> list[dict]:
-        entries, report = self._load(repair=False)
+        report = self.log.verify()
         if not report["ok"]:
             raise LedgerError(report["reason"])
-        return entries
+        return self.log.entries()
 
     def verify(self) -> dict:
-        return self._load(repair=False)[1]
-
-    def _write_anchor(self, count: int, head: str) -> None:
-        temporary = self.anchor.with_name("head.json.tmp")
-        temporary.write_bytes(canonical_bytes({"schema": HEAD_SCHEMA, "count": count,
-                                               "head_sha256": head}))
-        os.replace(temporary, self.anchor)
-        fsync_directory(self.dir)
-
-    def _load(self, *, repair: bool) -> tuple[list[dict], dict]:
-        raw = self.path.read_bytes() if self.path.exists() else b""
-        if raw and not raw.endswith(b"\n"):
-            if not repair:
-                return [], _bad("TORN_TAIL")
-            raw = raw[:raw.rfind(b"\n") + 1]
-            with self.path.open("r+b") as stream:
-                stream.truncate(len(raw))
-        entries, head = [], GENESIS
-        for number, line in enumerate(raw.splitlines()):
-            try:
-                entry = json.loads(line)
-                digest = entry.pop("entry_sha256")
-            except (ValueError, TypeError, KeyError, AttributeError):
-                return [], _bad("ENTRY_UNREADABLE")
-            if canonical_sha256(entry) != digest:
-                return [], _bad("ENTRY_DIGEST")
-            if entry.get("prior_sha256") != head or entry.get("seq") != number:
-                return [], _bad("CHAIN_BROKEN")
-            entry["entry_sha256"] = head = digest
-            entries.append(entry)
-        return entries, self._against_anchor(entries, head)
-
-    def _against_anchor(self, entries: list[dict], head: str) -> dict:
-        if not self.anchor.exists():
-            return (_ok(0, GENESIS, 0) if not entries else _bad("ANCHOR_MISSING"))
-        try:
-            anchor = json.loads(self.anchor.read_bytes())
-            count, anchored = anchor["count"], anchor["head_sha256"]
-        except (ValueError, TypeError, KeyError):
-            return _bad("ANCHOR_UNREADABLE")
-        if type(count) is not int or count > len(entries):
-            return _bad("TRUNCATED")
-        if count and entries[count - 1]["entry_sha256"] != anchored:
-            return _bad("HEAD_MISMATCH")
-        return _ok(len(entries), head, len(entries) - count)
-
-
-def _ok(entries: int, head: str, behind: int) -> dict:
-    return {"ok": True, "entries": entries, "head": head, "anchor_behind": behind}
-
-
-def _bad(reason: str) -> dict:
-    return {"ok": False, "reason": reason}
+        return self.log.verify()
 
 
 def _owner_only(directory: Path) -> None:
@@ -191,7 +124,7 @@ def ledger_for(home) -> CustodyLedger | None:
 def ledger_summary(home) -> dict:
     ledger = ledger_for(home)
     if ledger is None:
-        return {**_ok(0, GENESIS, 0), "losses": 0}
+        return {**ok(0, GENESIS, 0), "losses": 0}
     report = ledger.verify()
     losses = sum(1 for e in ledger.entries() if e["kind"] == "loss") if report["ok"] else 0
     return {**report, "losses": losses}
