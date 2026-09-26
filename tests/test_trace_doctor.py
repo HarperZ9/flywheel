@@ -67,14 +67,20 @@ def test_nothing_from_a_settings_file_is_executed(planted):
 
 def test_the_synthetic_run_uses_the_flywheel_module_not_a_settings_command(
         planted, monkeypatch):
+    from harness import trace_witness
+    monkeypatch.setattr(trace_witness, "default_sink", trace_witness.MemorySink)
     with running_gateway(planted["home"], monkeypatch):
         checks = _doctor(planted, synthetic=True)
     assert not planted["marker"].exists()
-    assert _by_name(checks)["synthetic turn"].state == "PASS"
+    synthetic = _by_name(checks)["synthetic turn"]
+    assert synthetic.state == "PASS" and "records were removed (DELETED)" in synthetic.detail
+    assert not list((planted["home"] / "state" / "captured-turns").rglob("turn_*.enc"))
 
 
 def test_a_planted_key_in_an_env_block_appears_nowhere(planted, monkeypatch):
+    from harness import trace_witness
     from harness.trace_doctor import to_json
+    monkeypatch.setattr(trace_witness, "default_sink", trace_witness.MemorySink)
     with running_gateway(planted["home"], monkeypatch):
         checks = _doctor(planted, synthetic=True)
     fake = planted["fake"]
