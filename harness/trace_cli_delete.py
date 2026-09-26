@@ -1,8 +1,9 @@
 """`flywheel traces delete` and `flywheel traces verify-gone` (7.10).
 
-`delete --trace-ref agt_... --turn-ref turn_... --session client:id` prints the
-plan: what goes per store, keys to destroy, receipts, copies outside reach
-with the command that removes each, residue to expect, and the plan digest.
+`delete --trace-ref agt_... --turn-ref turn_... --import-ref imp_...
+--session client:id` prints the plan: what goes per store, keys to destroy,
+receipts, copies outside reach with the command that removes each, residue
+to expect, and the plan digest.
 `delete --apply --plan-digest <d>` runs exactly that plan after presence.
 `verify-gone` reads a phrase without echo (or from standard input), never
 from the command line, and reports hits per file, never text.
@@ -31,7 +32,7 @@ def _selection(args) -> dict:
     if args.session:
         client, _, session_id = args.session.partition(":")
         selection["session"] = {"client": client, "session_id": session_id}
-    for flag, key in (("receipt_eid", "receipt_eids"), ("note_ref", "note_refs"),
+    for flag, key in (("import_ref", "import_refs"), ("receipt_eid", "receipt_eids"), ("note_ref", "note_refs"),
                       ("legacy_run", "legacy_runs")):
         if getattr(args, flag):
             selection[key] = getattr(args, flag)
@@ -122,6 +123,7 @@ def register(sub) -> None:
     parser.add_argument("--trace-ref", action="append", default=[])
     parser.add_argument("--turn-ref", action="append", default=[])
     parser.add_argument("--session", help="client:session-id, every turn of that session")
+    parser.add_argument("--import-ref", action="append", default=[])
     parser.add_argument("--receipt-eid", action="append", default=[])
     parser.add_argument("--note-ref", action="append", default=[])
     parser.add_argument("--legacy-run", action="append", default=[])

@@ -1,8 +1,9 @@
 """Deletion plans (7.10, I4): a selection becomes the closure to delete.
 
-A selection names gateway trace refs, captured turn refs, a client and
-session id, store.db receipt ids, fold index note refs or legacy run ids;
-nothing else, and never a path. The plan lists every entry (store, item,
+A selection names gateway trace refs, captured turn refs, imported item refs,
+a client and session id, store.db receipt ids, fold index note refs or
+legacy run ids; nothing else, and never a path. A session covers its
+captured turns and its imported transcripts. The plan lists every entry (store, item,
 where it lives), the keys to destroy per encrypted store, the copies outside
 reach (the model provider for a gateway trace, the client's own transcript,
 backups), the residue to expect, and the stores no deletion covers yet, and
@@ -19,13 +20,14 @@ import re
 from .evidence_json import canonical_bytes, canonical_sha256
 from .trace_delete_adapters_enc import (session_pending, session_turns, trace_entries,
                                         turn_entries, valid_trace_ref, valid_turn_ref)
+from .trace_delete_adapters_import import entries_for as import_entries, valid_ref
 from .trace_delete_adapters_plain import (PROFILE_NOTE, selection_entries, trace_closure,
                                           valid)
 
 _SESSION = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
 REMEDIES = {"claude-code": "claude project purge", "codex": "remove the rollout in Codex"}
-ENCRYPTED = ("S1", "CT", "S8b")
-_LISTS = {"trace_refs": valid_trace_ref, "turn_refs": valid_turn_ref,
+ENCRYPTED = ("S1", "CT", "S8b", "IM")
+_LISTS = {"trace_refs": valid_trace_ref, "turn_refs": valid_turn_ref, "import_refs": valid_ref,
           "receipt_eids": lambda v: valid("receipt_eids", v),
           "note_refs": lambda v: valid("note_refs", v),
           "legacy_runs": lambda v: valid("legacy_runs", v)}
@@ -79,7 +81,11 @@ def _encrypted(home: Path, owner: str, selection: dict) -> tuple[list, list, set
             raise PlanError("NOT_FOUND")
         entries, receipts = entries + found, receipts + eids
         clients.add("claude-code" if "/claude-code/" in found[0]["rel"] else "codex")
-    return entries, receipts, clients
+    imported, import_clients = import_entries(home, owner, selection.get("import_refs", []),
+                                              session)
+    if selection.get("import_refs") and not imported:
+        raise PlanError("NOT_FOUND")
+    return entries + imported, receipts, clients | import_clients
 
 
 def _collect(home: Path, owner: str, selection: dict, roots: dict) -> tuple[list, list, set]:
