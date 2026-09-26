@@ -117,10 +117,15 @@ def _near_sweep(environ, days: int, now) -> int:
 
 
 def encryption_check(home: Path):
-    return ("WARN", "not encrypted: traces are plaintext under the owner-only folder; "
-            "encryption at rest lands with FW-04a. Encrypted data cannot be read on another "
-            "machine or after a password reset. Export is the backup.",
-            "upgrade to a release with encryption at rest")
+    from harness.trace_enc_probe import encryption_status
+    status = encryption_status(home / "state")
+    floored = ", ".join(sorted(status["floors"])) or "none yet"
+    note = ("Encrypted data cannot be read on another machine or after a password reset. "
+            "Export is the backup.")
+    detail = f"{status['protection']}; floor set for {floored}. {note}"
+    if status["provider"] == "none":
+        return "WARN", detail, "on macOS or Linux install the encryption extra with a keychain"
+    return "PASS", detail, ""
 
 
 def presence_check(home: Path):

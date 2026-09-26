@@ -103,6 +103,7 @@ _NO_TRACE = "holds no trace-derived data"
 EXEMPTIONS = (
     Exemption("home", "gateway.token", f"gateway credential; {_NO_TRACE}"),
     Exemption("home", "gateway.endpoint*", f"where the running gateway listens; {_NO_TRACE}"),
+    Exemption("home", ".custody-label-v1", f"marks the custody tree as labeled; {_NO_TRACE}"),
     Exemption("home", "owner.ref", f"owner identity; {_NO_TRACE}"),
     Exemption("home", "lanes.json", f"lane install registry; {_NO_TRACE}"),
     Exemption("home", "plugins.json", f"plugin configuration; {_NO_TRACE}"),
@@ -117,6 +118,7 @@ EXEMPTIONS = (
     Exemption("state", "credential-handles",
               f"opaque handles; secrets live only in the OS keychain; {_NO_TRACE}"),
     Exemption("state", "credential-locks", f"lock files; {_NO_TRACE}"),
+    Exemption("state", "custody.lock", f"the custody lock file; {_NO_TRACE}"),
     Exemption("run", "router_stats.json", f"per-provider success counts; {_NO_TRACE}"),
     Exemption("run", "packs", f"admitted data-only domain-pack manifests; {_NO_TRACE}"),
     Exemption("run", "runners", f"runner pool membership chain; {_NO_TRACE}"),
