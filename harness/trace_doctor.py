@@ -103,7 +103,7 @@ def print_mount() -> list[str]:
     base = f'"{sys.executable}" -m harness.capture_hooks'
 
     def block(client):
-        events = (("UserPromptSubmit", "prompt"), ("Stop", "stop"))
+        events = (("UserPromptSubmit", "prompt"), ("Stop", "stop"), ("SessionEnd", "session-end"))
         return {"hooks": {event: [{"hooks": [{"type": "command",
                 "command": f"{base} {arg} --client {client}"}]}] for event, arg in events}}
     return ["Claude Code (settings.json):", json.dumps(block("claude-code"), indent=2), "",

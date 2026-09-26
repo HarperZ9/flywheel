@@ -60,6 +60,8 @@ def confirm_file(args) -> int:
 _FIRST_ON = {
     "content": "Content capture keeps a second, encrypted copy of each prompt and final "
                "answer in your Flywheel home, beside the copy your client already keeps.",
+    "archive_transcripts": "The transcript archive copies each ended session's transcript "
+                           "into encrypted custody when the SessionEnd hook is mounted.",
     "freeze_urls": "URL freezing sends the URLs each prompt names to the local gateway, "
                    "which fetches them and keeps the pages encrypted; links that carry "
                    "credentials are refused and never fetched.",
@@ -83,6 +85,8 @@ def register(sub) -> None:
     commands.add_parser("confirm", help="adopt the settings file, with presence").set_defaults(
         run=confirm_file)
     for name, switch, text in (("content", "content", "keep prompt and answer text, encrypted"),
+                               ("archive", "archive_transcripts",
+                                "import each ended session's transcript"),
                                ("freeze", "freeze_urls", "fetch and keep the URLs prompts name")):
         command = commands.add_parser(name, help=text)
         command.add_argument("value", choices=("on", "off"))

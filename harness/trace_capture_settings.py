@@ -24,7 +24,7 @@ DEFAULTS = {"content": "off", "archive_transcripts": "off", "freeze_urls": "off"
 SWITCHES = ("content", "archive_transcripts", "freeze_urls")
 #: Values this version can act on. A switch whose feature is not built yet
 #: accepts only "off", so no file can advertise a behavior that does not run.
-SUPPORTED = {"content": ("off", "on"), "archive_transcripts": ("off",),
+SUPPORTED = {"content": ("off", "on"), "archive_transcripts": ("off", "on"),
              "freeze_urls": ("off", "on")}
 
 
@@ -113,7 +113,8 @@ def data_flow(settings: dict) -> list[str]:
                               "and kept encrypted." if settings["content"] == "on" else
                               "off: hooks send salted commitments only; no text leaves the "
                               "hook."),
-        "Transcript archive " + ("on: each ended session is copied into encrypted custody."
+        "Transcript archive " + ("on: each ended session's transcript is imported into "
+                                 "encrypted custody."
                                  if settings["archive_transcripts"] == "on" else
                                  "off: transcripts stay only where the client keeps them."),
         "URL freezing " + ("on: URLs a prompt names are sent to the gateway and fetched."

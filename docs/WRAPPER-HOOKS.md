@@ -68,8 +68,16 @@ encrypted, in the turn record, a second copy beside the client's own
 transcript. It takes effect only after you confirm it (see owner presence in
 TRACE-OWNERSHIP.md). The gateway decides what capture does: an edited
 `trace-capture.json` stays pending until confirmed, the prompt hook says so,
-and the hooks never read the file. Transcript archiving is off in this
-version and cannot be switched on.
+and the hooks never read the file.
+
+`flywheel traces capture archive on` imports each session's transcript when it
+ends. The `SessionEnd` hook (included in `print-mount`) sends only the client
+and the session id; the gateway finds the transcript under its own Claude Code
+folder, refuses links, network paths, device names and stream names before
+opening anything, and imports it in the background so the hook stays within
+Claude Code's time budget. It accepts one request per session per minute. If
+the gateway is down, the hook records the session id, and
+`flywheel traces import --pending` imports it later.
 
 `flywheel traces capture freeze on` turns on URL freezing, separately from
 content capture. The prompt hook then sends the URLs it finds (at most five)
