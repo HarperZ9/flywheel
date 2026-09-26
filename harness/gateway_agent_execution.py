@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .credential_handles import CredentialBindings
-from .gateway_agent_trace import AgentTrace, TraceError, TraceLedger
+from .gateway_agent_trace import AgentTrace, TraceError, TraceLedger, record_failure
 
 
 def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
@@ -76,10 +76,8 @@ def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
         trace.append("result", result)
         return trace.projection("completed", runtime=result.get("environment", {}))
     except Exception as exc:
-        try:
-            trace.append("failure", {"error_type": type(exc).__name__, "message": str(exc)})
-        except Exception:
-            pass  # rejected credentials/custody never enter the diagnostic record
+        # A refused value never enters a record; the reserved slot names its class.
+        record_failure(trace, exc)
         raise
 
 
