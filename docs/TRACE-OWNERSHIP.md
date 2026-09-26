@@ -118,6 +118,16 @@ and checks free space. `--apply` imports.
   session that extends a listed transcript. Deleting an import will add to
   that list once deletion of imports lands; until then the list stays empty.
 
+`flywheel traces import codex` does the same for Codex rollouts under
+`sessions/` and `archived_sessions/`. Compressed `.jsonl.zst` rollouts need a
+zstd module (Python 3.14, or the `backports.zstd` package); without one they
+are named with their size and not imported. A decompression that grows past
+200 times its input, or past 2 GiB, stops and stores nothing. A session whose
+writer lock is held waits for the next run. Codex's SQLite databases, such as
+`thread_history_1.sqlite`, are named with their size and never read, so a
+session Codex moved into one may be missing. Reasoning Codex received
+encrypted stays encrypted inside the stored line and is labeled unreadable.
+
 What an import does not prove: the stored copy matches the file as it was
 read. Claude Code's transcript can lag the live conversation, and its format
 changes between versions.
@@ -224,6 +234,5 @@ built.
 
 ## What is not covered yet
 
-Export, deletion, retention settings and import of Codex sessions are listed
-by `status` as gaps,
+Export, deletion and retention settings are listed by `status` as gaps,
 each with the change that adds it. This page grows as each one lands.

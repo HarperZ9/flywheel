@@ -88,13 +88,15 @@ STORES = (
           LANE_EXPORT, NOT_DESIGNED, env=("RELAY_SESSION_DIR",), owner_binding="lane"),
     Store("E1", "Claude Code transcripts", "client", ("projects/*/*.jsonl",),
           ("C1", "C2", "C3", "C4"), OUTSIDE,
-          Gap("import copies transcripts into custody", "FW-10a"), CLIENT_DELETE,
+          Gap("the client's own store; flywheel traces import copies it into custody "
+              "(store IM), whose export lands with bulk export", "FW-09"), CLIENT_DELETE,
           env=("CLAUDE_CONFIG_DIR",), owner_binding="client",
           retention="swept by Claude Code after cleanupPeriodDays (default 30)"),
     Store("E2", "Codex rollouts", "client",
           ("sessions/**/rollout-*.jsonl*", "archived_sessions/rollout-*.jsonl*"),
           ("C1", "C2", "C3", "C4"), OUTSIDE,
-          Gap("import copies rollouts into custody", "FW-11"), CLIENT_DELETE,
+          Gap("the client's own store; flywheel traces import codex copies it into "
+              "custody (store IM), whose export lands with bulk export", "FW-09"), CLIENT_DELETE,
           env=("CODEX_HOME",), owner_binding="client",
           retention="set by Codex; compression and migration are in transition (N-18)"),
 )
