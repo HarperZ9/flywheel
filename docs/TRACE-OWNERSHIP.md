@@ -71,6 +71,18 @@ records it holds.
 What this does not prove: a ledger you control can be rewritten whole, and a
 rewrite that keeps the head file consistent is not detected here.
 
+## Capture from Claude Code and Codex
+
+Mount the Flywheel hook module in Claude Code or Codex
+(`flywheel traces hooks print-mount` prints the lines) and each finished turn
+leaves a receipt: digests of the answer and prompt, not their text. A turn
+that cannot be recorded shows an error in the client, in the same turn, and
+leaves a metadata record that `flywheel traces doctor` lists until you
+acknowledge it. The hook sends nothing until the local gateway has proved it
+knows the gateway token, and it never sends the token itself.
+`FLYWHEEL_CAPTURE=off` stops capture for a session and says so once in the
+client. `docs/WRAPPER-HOOKS.md` has the details and the limits.
+
 ## Desktop chat history
 
 The desktop app keeps your conversations in `chats.json` in your Flywheel

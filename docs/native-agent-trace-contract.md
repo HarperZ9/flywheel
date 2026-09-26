@@ -32,6 +32,15 @@ cancelled runs retain the accepted prefix; recovery does not claim a final answe
 exists. Each record is bounded to 8 MiB, a trace to 32 MiB and 2048 records. A size,
 secret, or custody failure stops the run with a fixed failure; it never silently
 truncates evidence. Credentials are excluded from private records too.
+One record and 64 KiB are reserved for a failure record: regular records stop
+at 2047 and at 32 MiB minus 64 KiB, and after a refusal the trace accepts
+exactly one more record, of kind `failure`, with the fixed payload schema
+`flywheel.gateway-agent-failure/v1`: `class` (`credential_refused`,
+`size_bound`, `custody_error` or `schema_error`), `rule` (the redaction
+catalog rule the refused value matched, `unclassified`, or null) and
+`sequence` (the sequence the refused record would have taken). It is at most
+1 KiB and holds none of the refused value. The public projection keeps its
+fixed `PRIVATE_TRACE_UNAVAILABLE` code.
 Each accepted record has a separate immutable count/head checkpoint. A missing
 record, missing checkpoint, or gap fails closed, including an interrupted write
 between the two files. The hashes do not detect rollback of both all records and
