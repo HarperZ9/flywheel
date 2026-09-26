@@ -90,6 +90,38 @@ def _blob_bytes(checkout: Path, rev: str, path: str) -> bytes:
     return _git(checkout, "cat-file", "blob", f"{rev}:{path}")
 
 
+def _package_blobs(checkout: Path, rev: str, pkg_dir: str, keep: list[str] | None = None,
+                   *, filters: bool) -> dict[str, bytes]:
+    """Every package file's bytes in one ``git cat-file --batch`` process.
+
+    ``filters=True`` reads what ``_filtered_bytes`` reads, under the same pinned
+    config, one file per input line of ``<blob> <path>``; ``filters=False``
+    reads raw blobs. One process instead of one per file keeps regeneration of
+    a 100-file lane under a second or two."""
+    listing = _git(checkout, "ls-tree", "-r", "-z", rev, pkg_dir).decode("utf-8")
+    entries = [line.split("\t", 1) for line in listing.split("\0") if line]
+    wanted = None if keep is None else set(keep)
+    pairs = sorted((path, meta.split()[2]) for meta, path in entries
+                   if meta.split()[1] == "blob" and (wanted is None or path in wanted))
+    config = ["-c", "core.autocrlf=false", "-c", "core.eol=lf"] if filters else []
+    flags = ["--batch", "--filters"] if filters else ["--batch"]
+    stdin = "".join(f"{sha} {path}\n" if filters else f"{sha}\n" for path, sha in pairs)
+    proc = subprocess.run(["git", "-C", str(checkout), *config, "cat-file", *flags],
+                          input=stdin.encode("utf-8"), capture_output=True)
+    if proc.returncode != 0:
+        raise GeneratorError(f"git cat-file --batch failed: {proc.stderr.decode('utf-8', 'replace').strip()}")
+    out, pos, blobs = proc.stdout, 0, {}
+    for path, sha in pairs:
+        end = out.index(b"\n", pos)
+        header = out[pos:end].split()
+        if len(header) != 3 or header[0].decode() != sha:
+            raise GeneratorError(f"git cat-file --batch: unexpected header for {path}: {header!r}")
+        size = int(header[2])
+        blobs[path] = out[end + 1:end + 1 + size]
+        pos = end + 1 + size + 1
+    return blobs
+
+
 def _tracked_paths(checkout: Path, rev: str, subdir: str) -> list[str]:
     out = _git(checkout, "ls-tree", "-r", "--name-only", "-z", rev, subdir)
     return sorted(p for p in out.decode("utf-8").split("\0") if p)
@@ -125,10 +157,13 @@ def _find_package_dir(checkout: Path, rev: str) -> tuple[str, str]:
 def _mcp_module(lane: Any, pkg: str) -> str:
     """The module that serves the bundled-lane MCP, derived from the registry entry.
 
+    - a registry ``bundled_mcp_module`` names it outright (forum).
     - ``<command> mcp`` subcommand lanes serve from ``<pkg>.mcp``.
     - ``python -m <module>`` lanes serve from that ``-m`` module.
     - otherwise the registry ``py_module`` is taken as the serving module.
     """
+    if getattr(lane, "bundled_mcp_module", ""):
+        return lane.bundled_mcp_module
     args = list(lane.mcp_args)
     if "mcp" in args:
         return f"{pkg}.mcp"
@@ -139,13 +174,19 @@ def _mcp_module(lane: Any, pkg: str) -> str:
     raise GeneratorError(f"cannot determine MCP module for lane {lane.name!r} from registry")
 
 
-def _source_block(checkout: Path, rev: str, pkg_dir: str) -> tuple[dict[str, Any], list[str]]:
-    commit = _git(checkout, "rev-parse", rev, text=True).strip()
+def _nearest_tag(checkout: Path, rev: str) -> str:
+    """The tag a staged checkout is named for: the nearest tag at or below ``rev``."""
+    return _git(checkout, "describe", "--tags", "--abbrev=0", rev, text=True).strip()
+
+
+def _source_block(checkout: Path, rev: str, pkg_dir: str,
+                  keep: list[str] | None = None) -> tuple[dict[str, Any], list[str]]:
+    """Hash every package file, data files included (forum's roster toml)."""
+    commit = _git(checkout, "rev-parse", f"{rev}^{{commit}}", text=True).strip()
     repo = _git(checkout, "remote", "get-url", "origin", text=True).strip()
     files: list[dict[str, Any]] = []
     py_paths: list[str] = []
-    for path in _tracked_paths(checkout, rev, pkg_dir):
-        data = _filtered_bytes(checkout, rev, path)
+    for path, data in _package_blobs(checkout, rev, pkg_dir, keep, filters=True).items():
         files.append({"bytes": len(data), "path": path, "sha256": _hash_bytes(data)})
         if path.endswith(".py"):
             py_paths.append(path)
@@ -188,12 +229,13 @@ def _version_from_init(checkout: Path, rev: str, pkg_dir: str) -> str | None:
     return None
 
 
-def _materialize(checkout: Path, rev: str, pkg_dir: str) -> Path:
+def _materialize(checkout: Path, rev: str, pkg_dir: str,
+                 keep: list[str] | None = None) -> Path:
     tmp = Path(tempfile.mkdtemp(prefix="flywheel_lane_pkg_"))
-    for path in _tracked_paths(checkout, rev, pkg_dir):
+    for path, data in _package_blobs(checkout, rev, pkg_dir, keep, filters=False).items():
         dst = tmp / path
         dst.parent.mkdir(parents=True, exist_ok=True)
-        dst.write_bytes(_blob_bytes(checkout, rev, path))
+        dst.write_bytes(data)
     return tmp
 
 
