@@ -46,6 +46,16 @@ PRIVATE_PATHS = frozenset({
     "/api/runners/tickets"})
 
 
+#: Capture routes authenticate by a signature over each request instead of the
+#: bearer token (harness/gateway_request_sig.py); the gateway lets them through
+#: its bearer check and trace_routes verifies before reading any body.
+SIGNED_PREFIXES = ("/api/traces/capture/",)
+
+
+def is_signed(path: str) -> bool:
+    return path.startswith(SIGNED_PREFIXES)
+
+
 def is_private(path: str) -> bool:
     """Does this path sit under private custody? One rule, two readers."""
     return path.startswith(PRIVATE_PREFIXES) or path in PRIVATE_PATHS
