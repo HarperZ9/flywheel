@@ -610,7 +610,7 @@ class _Handler(BaseHTTPRequestHandler):
     def _json(self, obj, code=200):
         error = obj.get("error") if isinstance(obj, dict) else None
         error_code = error.get("code") if isinstance(error, dict) else None
-        public_boundary = isinstance(obj, dict) and obj.get("code") in {"CAPABILITY_NOT_ADMITTED", "GATEWAY_ROUTE_MALFORMED", "GATEWAY_ROUTE_MISMATCH"}
+        public_boundary = isinstance(obj, dict) and obj.get("code") in {"CAPABILITY_NOT_ADMITTED", "GATEWAY_ROUTE_MALFORMED", "GATEWAY_ROUTE_MISMATCH", "NOT_IN_BUILD", "LANE_SETUP_REQUIRED", "LANE_CANNOT_LAUNCH", "LANE_TIMEOUT", "LANE_TOOL_ERROR"}
         if (getattr(self, "_gateway_guarded", False)
                 and error_code != "PERMISSION_REQUIRED"
                 and not (isinstance(obj, dict) and obj.get("governance_denied") is True)
