@@ -54,6 +54,32 @@ records it holds.
 What this does not prove: a ledger you control can be rewritten whole, and a
 rewrite that keeps the head file consistent is not detected here.
 
+## Desktop chat history
+
+The desktop app keeps your conversations in `chats.json` in your Flywheel
+home. That file holds the newest conversations that fit: at most 60, and at
+most 768 KiB, so a conversation that keeps growing has room. Older
+conversations move to archive files in `chats-archive/` before the active
+file shrinks. Nothing is dropped. The conversation list shows how many
+conversations are archived and opens them read-only.
+
+- If `chats.json` cannot be parsed, it is renamed to
+  `chats.unreadable-<time>.json` and never written again. History starts
+  empty and the conversation list names the file it set aside. You can delete
+  that file from the list once you no longer need it.
+- If `chats.json` exists but cannot be read at all, saving pauses, so the
+  file is never replaced.
+- A single conversation larger than 1 MiB cannot be saved. The latest turn
+  stays in your drafts, the list says so, and a record under
+  `desktop/loss/v1/` notes the conversation id and the reason. The record
+  holds no text.
+- Deleting a conversation removes it from `chats.json`, from every archive
+  file and from your drafts, so it does not come back on the next start.
+
+The history and its archive are plaintext files that inherit your Flywheel
+home's permissions. Moving them into encrypted custody is planned and not
+built.
+
 ## What is not covered yet
 
 Export, deletion, retention settings, encryption at rest and import of
