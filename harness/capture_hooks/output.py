@@ -14,6 +14,8 @@ import json
 DOCTOR = "Run: flywheel traces doctor"
 PENDING_SETTINGS = ("Flywheel capture settings changed on disk and are not in effect. "
                     "Confirm with: flywheel traces capture confirm.")
+PENDING_RETENTION = ("Flywheel retention has a policy change or a deletion plan waiting "
+                     "for you. See: flywheel traces retention show.")
 
 
 def failure_line(code: str, spooled: bool) -> str:

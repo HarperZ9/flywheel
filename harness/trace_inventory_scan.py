@@ -202,7 +202,18 @@ def scan(environ=None) -> dict:
             "ledger": ledger_summary(roots["home"]),
             "encryption": encryption_status(roots["state"]),
             "presence": _presence(roots["home"]),
-            "deletions": _deletions(roots["home"])}
+            "deletions": _deletions(roots["home"]),
+            "retention": _retention(roots["home"])}
+
+
+def _retention(home) -> dict:
+    from .trace_custody_ledger import read_owner_ref
+    from .trace_retention_schedule import status
+    owner = read_owner_ref(home)
+    if owner is None:
+        return {"action": "keep", "rules": 0, "pending_change": False, "pending_plan": None,
+                "last_run": None, "scheduled": False, "file_valid": True}
+    return status(home, owner)
 
 
 def _deletions(home) -> dict:

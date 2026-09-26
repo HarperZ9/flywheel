@@ -8,7 +8,7 @@ them unknown, and FW-01 is the package that classifies them.
 from __future__ import annotations
 
 from .trace_inventory import Exemption, Gap, Protection, Store
-from .trace_inventory_entries import APPLY, DEL_PLAIN, EXPORT, META, NOT_DESIGNED, _plain
+from .trace_inventory_entries import APPLY, EXPORT, META, NOT_DESIGNED, _plain
 
 S12 = _plain("classified by FW-01; encryption and deletion are not designed in this "
              "round", "7.16")
@@ -109,6 +109,7 @@ EXEMPTIONS = (
     Exemption("home", "gateway.token", f"gateway credential; {_NO_TRACE}"),
     Exemption("home", "gateway.endpoint*", f"where the running gateway listens; {_NO_TRACE}"),
     Exemption("home", "trace-capture.json", f"capture settings as edited; {_NO_TRACE}"),
+    Exemption("home", "trace-retention.json", f"retention policy as edited; {_NO_TRACE}"),
     Exemption("home", ".custody-label-v1", f"marks the custody tree as labeled; {_NO_TRACE}"),
     Exemption("home", "owner.ref", f"owner identity; {_NO_TRACE}"),
     Exemption("home", "lanes.json", f"lane install registry; {_NO_TRACE}"),

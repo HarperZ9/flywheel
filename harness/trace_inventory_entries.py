@@ -132,6 +132,12 @@ STORES = (
           "harness.trace_meta_adapters.capture_settings_export",
           "harness.trace_meta_adapters.capture_settings_delete", owner_binding="owner",
           added_by_program=True, note="the settings the gateway runs, adopted with presence"),
+    Store("RP", "Adopted retention policy and retention run state", "state",
+          ("trace-retention",), ("C4",), META, "harness.trace_meta_adapters.retention_export",
+          "harness.trace_meta_adapters.retention_delete", owner_binding="owner",
+          added_by_program=True,
+          note="the policy the gateway runs, adopted with presence; pending plans hold "
+               "digests and counts only"),
     Store("IM", "Imported client transcripts", "state", ("imports",),
           ("C1", "C2", "C3", "C4", "C6", "C7"), ENCRYPTED,
           "harness.trace_import_items.export_records", "harness.trace_import_items.delete_all",

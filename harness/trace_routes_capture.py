@@ -60,7 +60,10 @@ def hello(handler, qs: str):
     body = STATE.hello(handler.auth_token, cn, host, port)
     if body is None:
         return handler._json(error("INVALID_REQUEST", "hello refused"), 429)
-    return handler._json({**body, "effective": effective(handler)})
+    from harness.trace_retention_schedule import needs_owner
+    waiting = needs_owner(handler.flywheel_home, _owner(handler))
+    return handler._json({**body, "effective": {**effective(handler),
+                                                "retention_pending": waiting}})
 
 
 def signed_body(handler, method: str):

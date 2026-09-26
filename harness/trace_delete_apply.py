@@ -136,23 +136,38 @@ def _execute(home: Path, owner: str, plan: dict, roots: dict, method: str, reaso
 
 def apply_plan(home, owner: str, plan_digest: str, presence_ref, *, sink=None,
                reason: str = "owner_request") -> dict:
-    from .trace_presence import STATEMENT, require
+    """Run a saved plan after presence bound to its digest."""
+    from .trace_presence import require
+    home = Path(home)
+    _plan_for(home, owner, plan_digest, roots_for(home))  # drift is refused before presence
+    method = require(home / "state", owner, "delete_apply", plan_digest, presence_ref)
+    return apply_authorized(home, owner, plan_digest, method, reason=reason, sink=sink)
+
+
+def apply_authorized(home, owner: str, plan_digest: str, method: str, *, sink=None,
+                     reason: str = "owner_request", record: bool = True) -> dict:
+    """Run a saved plan whose authority the caller established: presence for
+    a manual delete, the adopted policy for retention (7.4). With `record`
+    false the caller writes the one ledger entry and witness event itself."""
+    from .trace_presence import STATEMENT
     from .trace_witness import record_custody_event
     home = Path(home)
     roots = roots_for(home)
     plan = _plan_for(home, owner, plan_digest, roots)
-    method = require(home / "state", owner, "delete_apply", plan_digest, presence_ref)
     result = _execute(home, owner, plan, roots, method, reason)
     report = {**result, "plan_digest": plan_digest, "stores": sorted(plan["counts"]),
               "counts": plan["counts"], "out_of_reach": plan["out_of_reach"],
               "remedies": plan["remedies"], "residue": dict(plan["residue_forecast"]),
               "not_covered": plan["not_covered"], "notes": plan["notes"],
+              "items": len(plan["entries"]),
               "presence": method, "presence_statement": STATEMENT if method == "none" else ""}
     if result["state"] == "DELETED":
-        event = record_custody_event(home, owner, "deletion", {
-            "plan_digest": plan_digest, "stores": report["stores"],
-            "items": len(plan["entries"]), "reason_code": reason,
-            "residue": report["residue"], "out_of_reach": plan["out_of_reach"]}, method, sink=sink)
-        report["witness"] = event["witness"]
+        if record:
+            event = record_custody_event(home, owner, "deletion", {
+                "plan_digest": plan_digest, "stores": report["stores"],
+                "items": len(plan["entries"]), "reason_code": reason,
+                "residue": report["residue"], "out_of_reach": plan["out_of_reach"]}, method,
+                sink=sink)
+            report["witness"] = event["witness"]
         drop_selection(home, owner, plan_digest)
     return report
