@@ -120,6 +120,14 @@ def _doctor(args) -> int:
     return 1 if any(c.state == "FAIL" for c in results) else 0
 
 
+def _encrypt(args) -> int:
+    from . import trace_enc_migrate
+    report = trace_enc_migrate.migrate_legacy()
+    for line in trace_enc_migrate.render(report):
+        emit(line)
+    return 0 if report["state"] == "DONE" else 1
+
+
 def _print_mount(args) -> int:
     from .trace_doctor import print_mount
     for line in print_mount():
@@ -144,6 +152,10 @@ def _parser() -> argparse.ArgumentParser:
     doctor.set_defaults(run=_doctor)
     from . import trace_cli_presence
     trace_cli_presence.register(sub)
+    encrypt = sub.add_parser("encrypt", help="encrypt traces written before encryption at rest")
+    encrypt.add_argument("--legacy", action="store_true", required=True,
+                         help="convert plaintext gateway traces, newest file first")
+    encrypt.set_defaults(run=_encrypt)
     hooks = sub.add_parser("hooks", help="hook mount lines for Claude Code and Codex")
     hooks_sub = hooks.add_subparsers(dest="hooks_command", required=True)
     hooks_sub.add_parser("print-mount", help="print the exact mount blocks").set_defaults(
