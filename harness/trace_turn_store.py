@@ -120,8 +120,10 @@ class TurnStore:
             result = self._record(client, session_ref, prompt_key, mode, segment, pending,
                                   answer, salt, keep_text)
             if found is not None:
+                refs = [*pending.get("turn_refs", []), result["turn_ref"]]
                 self._write(found[0], found[0].stem, {**pending, "state": "paired",
-                                                      "segments": segment + 1})
+                                                      "segments": segment + 1,
+                                                      "turn_refs": refs})
         return result
 
     def _record(self, client, session_ref, prompt_key, mode, segment, pending, answer, salt,
@@ -142,6 +144,7 @@ class TurnStore:
         turn_ref = "turn_" + secrets.token_hex(16)
         month = datetime.fromtimestamp(self.clock(), timezone.utc).strftime("%Y-%m")
         doc = {"schema": "flywheel.captured-turn/v1", "turn_ref": turn_ref, "client": client,
+               "session_ref": session_ref,
                "receipt_eid": receipt["eid"], "pairing": mode, "segment": segment,
                "prompt_salt": pending.get("prompt_salt"), "answer_salt": _b64(salt),
                "prompt_text": pending.get("prompt_text"), "answer_text": answer_text,

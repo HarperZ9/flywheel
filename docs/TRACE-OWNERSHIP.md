@@ -170,6 +170,35 @@ protect: any program running as you, agents included, can ask Windows to
 decrypt, just as you can. A backup that includes your Windows profile's
 protection keys, plus your password, decrypts everything in it.
 
+## Delete
+
+```
+flywheel traces delete --trace-ref agt_...
+flywheel traces delete --turn-ref turn_...
+flywheel traces delete --session claude-code:<session id>
+flywheel traces delete --apply --plan-digest <digest>
+```
+
+The first form only plans. The plan lists everything that goes together:
+an agent trace with its checkpoints, a captured turn with its pending prompt
+and any pages frozen for it, and the key of each. It names the copies
+Flywheel cannot reach (the model provider for an agent run, Claude Code's or
+Codex's own transcript, with the command that removes it there, and your
+backups) and prints a plan digest. `--apply` runs exactly that plan after
+your confirmation; a plan whose items changed since is refused. Each key is
+destroyed first, then the files are removed without following any link,
+then Flywheel checks that files and keys are gone and records a tombstone:
+when, why, which stores and how many items, and no content, digest of
+content, path or session id. A trace whose agent run is still writing is
+left alone and the deletion stays pending.
+
+`flywheel traces verify-gone` asks for a phrase without showing it and
+reports how many times it still appears in the files Flywheel controls,
+per file, never the text. Freed disk space, backups and copies outside
+Flywheel are not searched. Deleting store.db receipts and the other
+plaintext stores comes in the next change; until then a captured turn's
+receipt stays in store.db, holding commitments whose salts are gone.
+
 ## Owner presence and the witness
 
 An agent you run works as you: it can call every command you can. So each
@@ -234,5 +263,6 @@ built.
 
 ## What is not covered yet
 
-Export, deletion and retention settings are listed by `status` as gaps,
+Export, deletion of plaintext stores and retention settings are listed by
+`status` as gaps,
 each with the change that adds it. This page grows as each one lands.
