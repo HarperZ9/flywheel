@@ -24,7 +24,7 @@ def _summary(plan: dict) -> list[str]:
         row = counts.setdefault(item["state"], [0, 0])
         row[0] += 1
         row[1] += item["size"]
-    lines = [f"Claude Code import plan: {plan['state']}"]
+    lines = [f"{plan['client']} import plan: {plan['state']}"]
     lines += [f"  {state}: {n} files, {size} bytes" for state, (n, size) in sorted(counts.items())]
     if "need" in plan:
         lines.append(f"  needs {plan['need']} bytes; {plan['free']} free on the custody volume")
@@ -36,7 +36,8 @@ def _summary(plan: dict) -> list[str]:
         lines.append(f"  refused {escape(row['rel'])}: {row['reason']}")
     for row in plan["not_imported"]:
         extra = f" ({row['flag']})" if row.get("flag") else ""
-        count = f", {row['count']} files" if row.get("count") else ""
+        count = f", {row['count']} files" if row.get("count") else (
+            f", {row['bytes']} bytes, {row['note']}" if row.get("note") else "")
         lines.append(f"  not imported {escape(row['name'])}: {row['reason']}{count}{extra}")
     return lines
 
@@ -48,9 +49,10 @@ def run(args) -> int:
         emit("Name a client (claude-code) or pass --pending.")
         return 2
     from .trace_import_claude import plan_claude
+    from .trace_import_codex import plan_codex
     from .trace_import_core import run_import
     home = _home()
-    plan = plan_claude(home)
+    plan = (plan_codex if args.client == "codex" else plan_claude)(home)
     if args.json:
         print(json.dumps({k: v for k, v in plan.items() if k != "owner_ref"}, indent=2,
                          sort_keys=True, default=str))
@@ -96,7 +98,7 @@ def pending(args) -> int:
 
 def register(sub) -> None:
     parser = sub.add_parser("import", help="copy client transcripts into encrypted custody")
-    parser.add_argument("client", nargs="?", choices=("claude-code",))
+    parser.add_argument("client", nargs="?", choices=("claude-code", "codex"))
     parser.add_argument("--pending", action="store_true",
                         help="import sessions the SessionEnd archive spooled")
     parser.add_argument("--apply", action="store_true", help="import; without it, plan only")

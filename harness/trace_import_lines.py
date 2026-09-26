@@ -29,8 +29,10 @@ def _depth(value, limit: int) -> int:
 
 
 class LineAnalyzer:
-    def __init__(self, bound: int, depth_bound: int = 200, redact: bool = True) -> None:
+    def __init__(self, bound: int, depth_bound: int = 200, redact: bool = True,
+                 turn_ids: bool = False) -> None:
         self.bound, self.depth_bound, self.redact = bound, depth_bound, redact
+        self.turn_ids: list[str] | None = [] if turn_ids else None
         self.carry, self.skipping, self.number = b"", False, 0
         self.kinds = {"parsed": 0, "oversized": 0, "unparseable": 0}
         self.types: dict[str, int] = {}
@@ -56,8 +58,11 @@ class LineAnalyzer:
         if self.carry and not self.skipping:
             self._line(self.carry)
         self.carry = b""
-        return {"lines": self.number, "line_kinds": dict(self.kinds),
-                "record_types": dict(self.types)}
+        stats = {"lines": self.number, "line_kinds": dict(self.kinds),
+                 "record_types": dict(self.types)}
+        if self.turn_ids is not None:
+            stats["turn_ids"] = list(self.turn_ids)
+        return stats
 
     def _line(self, line: bytes) -> None:
         self.number += 1
@@ -77,6 +82,11 @@ class LineAnalyzer:
         kind = value.get("type") if isinstance(value, dict) else None
         name = kind if isinstance(kind, str) and len(kind) <= 64 else "untyped"
         self.types[name] = self.types.get(name, 0) + 1
+        payload = value.get("payload") if isinstance(value, dict) else None
+        turn = payload.get("turn_id") if isinstance(payload, dict) else None
+        wanted = self.turn_ids is not None and isinstance(turn, str) and len(turn) <= 128
+        if wanted and turn not in self.turn_ids:
+            self.turn_ids.append(turn)
         if self.redact:
             self._redaction(line)
 

@@ -29,7 +29,8 @@ DEPTH_BOUND = 200
 FILES_PER_DIRECTORY = 10_000
 MARGIN = 512 * 1024 * 1024
 LIVE_WINDOW_S = 60
-JSONL_KINDS = ("transcript", "subagent", "variant")
+CODEX_KINDS = ("rollout", "archived_rollout", "compressed_rollout")
+JSONL_KINDS = ("transcript", "subagent", "variant", *CODEX_KINDS)
 PARSER_VERSION = "flywheel.import-lines/1"
 
 
@@ -55,6 +56,8 @@ def _state(key, listed, stored, client, source, now, live_window_s) -> dict:
     excluded, new_bytes = check(key, listed, ref, size, probe)
     if excluded:
         return {"state": excluded, "new_bytes": new_bytes}
+    if source.get("forced_state"):
+        return {"state": source["forced_state"]}
     if now - source["mtime"] < live_window_s:
         return {"state": "LIVE_WRITER"}
     for row in reversed(stored):
@@ -89,42 +92,62 @@ def build_plan(home, owner_ref: str, client: str, sources, *, refused=(), not_im
     return plan
 
 
-def _import_one(store, key, listed, item, on_read) -> tuple[str | None, int]:
-    from .trace_import_lines import LineAnalyzer
-    from .trace_import_read import SourceRefused, read_source
-    from .trace_redact_rules import CATALOG_VERSION
-    path, staged = Path(item["path"]), store.stage(item["client"])
-    lines = LineAnalyzer(LINE_BOUND, DEPTH_BOUND) if item["kind"] in JSONL_KINDS else None
-    probe = PrefixProbe(key, [e["n"] for e in listed])
-    whole = hmac.new(key, b"prefix\x00", hashlib.sha256)  # prefix_ref of all the bytes
+class _Sink:
+    """Where one source's bytes go while it streams: the staged item, the
+    keyed digests, and the line analyzer (through zstd for compressed)."""
 
-    def take(chunk):
-        probe.feed(chunk)
-        whole.update(chunk)
-        staged.write(chunk)
-        if lines:
-            lines.feed(chunk)
+    def __init__(self, key, listed, item, staged) -> None:
+        from .trace_import_lines import LineAnalyzer
+        from .trace_zstd import Stream
+        self.staged = staged
+        self.probe = PrefixProbe(key, [e["n"] for e in listed])
+        self.whole = hmac.new(key, b"prefix\x00", hashlib.sha256)  # prefix_ref of all bytes
+        self.lines = (LineAnalyzer(LINE_BOUND, DEPTH_BOUND, turn_ids=item["kind"] in CODEX_KINDS)
+                      if item["kind"] in JSONL_KINDS else None)
+        feed = self.lines.feed if self.lines else (lambda piece: None)
+        self.stream = Stream(feed) if item["kind"] == "compressed_rollout" else None
+        self.feed = self.stream.feed if self.stream else feed
+
+    def take(self, chunk: bytes) -> None:
+        self.probe.feed(chunk)
+        self.whole.update(chunk)
+        self.staged.write(chunk)
+        self.feed(chunk)
+
+
+def _manifest(item, read, ref, sink) -> dict:
+    from .trace_redact_rules import CATALOG_VERSION
+    stats = sink.lines.finish() if sink.lines else {}
+    return {"schema": "flywheel.import-manifest/v1", "client": item["client"],
+            "rel": item["rel"], "kind": item["kind"], "session_id": item.get("session_id"),
+            "source_ref": ref, "bytes": read["bytes"], "sha256": read["sha256"],
+            "identity_before": [str(v) for v in read["before"]],
+            "identity_after": [str(v) for v in read["after"]],
+            "second_hash": read["second_hash"], "catalog_version": CATALOG_VERSION,
+            "parser_version": PARSER_VERSION, "supersedes": item.get("supersedes"),
+            "decompressed_bytes": sink.stream.produced if sink.stream else None, **stats}
+
+
+def _import_one(store, key, listed, item, on_read) -> tuple[str | None, int]:
+    from .trace_import_read import SourceRefused, read_source
+    from .trace_zstd import InputBound
+    path, staged = Path(item["path"]), store.stage(item["client"])
     try:
-        read = read_source(path, take, on_read=on_read)
+        sink = _Sink(key, listed, item, staged)
+        read = read_source(path, sink.take, on_read=on_read)
         ref = source_ref(key, item["client"], path, item.get("session_id"))
-        excluded, _ = check(key, listed, ref, read["bytes"], probe)
+        excluded, _ = check(key, listed, ref, read["bytes"], sink.probe)
         if excluded:
             staged.discard()
             return excluded, 0
-    except SourceRefused as refused:
+    except (SourceRefused, InputBound) as refused:
         staged.discard()
         return refused.code, 0
-    stats = lines.finish() if lines else {}
-    manifest = {"schema": "flywheel.import-manifest/v1", "client": item["client"],
-                "rel": item["rel"], "kind": item["kind"], "session_id": item.get("session_id"),
-                "source_ref": ref, "bytes": read["bytes"], "sha256": read["sha256"],
-                "identity_before": [str(v) for v in read["before"]],
-                "identity_after": [str(v) for v in read["after"]],
-                "second_hash": read["second_hash"], "catalog_version": CATALOG_VERSION,
-                "parser_version": PARSER_VERSION, "supersedes": item.get("supersedes"), **stats}
     row = {"kind": item["kind"], "bytes": read["bytes"], "source_ref": ref,
-           "content_ref": whole.hexdigest(), "keyed_path": keyed_path(key, item["client"], path)}
-    staged.finalize(manifest, lines.index if lines else [], row)
+           "content_ref": sink.whole.hexdigest(),
+           "keyed_path": keyed_path(key, item["client"], path)}
+    staged.finalize(_manifest(item, read, ref, sink), sink.lines.index if sink.lines else [],
+                    row)
     return None, read["bytes"]
 
 

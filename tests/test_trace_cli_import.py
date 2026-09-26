@@ -45,3 +45,17 @@ def test_a_hostile_project_name_is_printed_escaped(tmp_path, monkeypatch, capsys
     with using(StreamTestProvider()):
         trace_cli.main(["import", "claude-code"])
     assert "\x1b" not in capsys.readouterr().out
+
+
+def test_codex_plan_names_its_databases(tmp_path, monkeypatch, capsys):
+    from codex_fixtures import codex_tree
+    home = tmp_path / "home"
+    (home / "state").mkdir(parents=True)
+    (home / "owner.ref").write_text(OWNER)
+    monkeypatch.setenv("FLYWHEEL_HOME", str(home))
+    monkeypatch.setenv("CODEX_HOME", str(codex_tree(tmp_path)))
+    with using(StreamTestProvider()):
+        assert trace_cli.main(["import", "codex"]) == 0
+    out = capsys.readouterr().out
+    assert "codex import plan: OK" in out
+    assert "not imported thread_history_1.sqlite: SQLITE_NOT_READ" in out
