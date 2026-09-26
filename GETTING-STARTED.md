@@ -16,8 +16,8 @@ holds across every layer of the platform.
 
 ## Release status
 
-Use [v1.0.3](https://github.com/HarperZ9/flywheel/releases/tag/v1.0.3) for the
-current published install path. [RELEASE-NOTES-1.0.3.md](RELEASE-NOTES-1.0.3.md)
+Use [v1.0.4](https://github.com/HarperZ9/flywheel/releases/tag/v1.0.4) for the
+current published install path. [RELEASE-NOTES-1.0.4.md](RELEASE-NOTES-1.0.4.md)
 lists what this release adds and its honest state.
 
 ## Install
@@ -91,9 +91,9 @@ desktop client connects automatically when launched.
 ## Start the desktop client
 
 Download the current published installer,
-[Flywheel-Setup-1.0.3-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v1.0.3/Flywheel-Setup-1.0.3-x64.exe),
+[Flywheel-Setup-1.0.4-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v1.0.4/Flywheel-Setup-1.0.4-x64.exe),
 and verify it against the release
-[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v1.0.3/SHA256SUMS.txt)
+[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v1.0.4/SHA256SUMS.txt)
 (engine bundled, no Python needed). From a source checkout:
 
 ```bash
@@ -285,7 +285,7 @@ print(f"verify: {store.verify()['verdict']}")  # MATCH
 
 ## Read more
 
-- [RELEASE-NOTES-1.0.3.md](RELEASE-NOTES-1.0.3.md): what 1.0.3 fixes and its limits
+- [RELEASE-NOTES-1.0.4.md](RELEASE-NOTES-1.0.4.md): what 1.0.4 fixes and its limits
 - [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory owner/project binding
 - [docs/native-cli-session-contract.md](docs/native-cli-session-contract.md): native CLI profile and session contract
 - [docs/native-continuation.md](docs/native-continuation.md): source-bound continuation preview and limits
