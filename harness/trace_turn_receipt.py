@@ -26,14 +26,15 @@ def keyed_ref(custody_key: bytes, label: str, *parts) -> str:
 
 
 def build(*, client: str, session_ref: str, prompt_key_ref, pairing: str, segment: int,
-          prompt_commitment, answer_commitment, captured_content: bool) -> dict:
+          prompt_commitment, answer_commitment, captured_content: bool, frozen_urls: int = 0,
+          refused_urls: int = 0, freeze_commitment=None) -> dict:
     if pairing not in PAIRINGS:
         raise ValueError("pairing")
     return {"schema": SCHEMA, "client": client, "session_ref": session_ref,
             "prompt_key_ref": prompt_key_ref, "pairing": pairing, "segment": segment,
             "prompt_commitment": prompt_commitment, "answer_commitment": answer_commitment,
-            "frozen_urls": 0, "refused_urls": 0, "freeze_commitment": None,
-            "captured_content": captured_content}
+            "frozen_urls": frozen_urls, "refused_urls": refused_urls,
+            "freeze_commitment": freeze_commitment, "captured_content": captured_content}
 
 
 def store_receipt(home, data: dict) -> dict:
