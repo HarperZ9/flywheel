@@ -8,7 +8,15 @@ from .gateway_agent_trace import AgentTrace, TraceError, TraceLedger, record_fai
 
 
 def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
-                      trace: AgentTrace, source_context, emit, *, binding=None, deadline=None) -> dict:
+                      trace: AgentTrace, source_context, emit, **kwargs) -> dict:
+    with trace.hold():  # legacy encryption skips a trace while its run writes it
+        return _run_private_agent(operation, bindings, repo_root, trace, source_context,
+                                  emit, **kwargs)
+
+
+def _run_private_agent(operation: dict, bindings: dict, repo_root: Path,
+                       trace: AgentTrace, source_context, emit, *, binding=None,
+                       deadline=None) -> dict:
     from .effort import resolve_effort, stamp_applied
     import time
     from .gateway_agent_binding import validate_agent_binding
