@@ -154,7 +154,8 @@ def test_python_lane_payload_builder_writes_source_closure_manifest(tmp_path):
     assert receipt["schema"] == "flywheel.python-lane-payload-build-manifest/v1"
     assert receipt["wheel_build"]["skipped"] is True
     assert [row["lane"] for row in receipt["lanes"]] == [
-        "gather", "crucible", "index", "forum", "plexus", "mneme", "canon"
+        "gather", "crucible", "index", "forum", "plexus", "mneme", "canon",
+        "chorus", "relay", "accountable-surface",
     ]
     for row in receipt["lanes"]:
         assert row["source_closure_sha256"].startswith("sha256:")
