@@ -6,6 +6,7 @@ what the first decided, without carrying the value an answer failed against.
 """
 from __future__ import annotations
 
+import re
 import json
 from pathlib import Path
 import subprocess
@@ -127,8 +128,11 @@ def test_the_summary_never_carries_the_value_an_answer_failed_against(
     assert canary not in render_markdown(summary)
     # Exempt only the exact controlled identity and its documented display
     # prefix, not arbitrary hex text or other fields that might leak the value.
+    # ISO timestamps are stripped too: generated_at carries microseconds, and
+    # "...46.254169Z" once matched the digits with no leak (CI, 2026-09-26).
+    stamp = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?")
     for output in (json.dumps(summary), render_markdown(summary)):
-        assert "4169" not in output.replace(head, "").replace(head[:12], "")
+        assert "4169" not in stamp.sub("", output.replace(head, "").replace(head[:12], ""))
 
 
 def test_a_since_bound_applies_to_the_ledger_as_well(repo: Path, tmp_path: Path) -> None:
