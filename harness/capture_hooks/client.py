@@ -114,7 +114,7 @@ class Channel:
             raise CaptureFailure("AUTH_REFUSED")
         if 400 <= status < 500:
             raise CaptureFailure(f"REQUEST_REJECTED:{status}")
-        if status != 200:
+        if status not in (200, 202):
             raise CaptureFailure(f"GATEWAY_ERROR:{status}")
         try:
             doc = json.loads(raw) if raw else {}
