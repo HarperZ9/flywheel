@@ -16,4 +16,14 @@ extension GatewayLaneClient on GatewayClient {
     }
     return LaneRoster.fromJson(body);
   }
+
+  /// GET /api/settings/node_path: the node the Node lanes use and its source.
+  Future<Map<String, dynamic>> nodePath() async =>
+      _decode(await _http.get(Uri.parse('$baseUrl/api/settings/node_path')));
+
+  /// POST /api/settings/node_path: choose node.exe for the Node lanes, or clear
+  /// the choice with null. The engine runs only a file named node, and keeps
+  /// it only when it answers --version with 20 or later.
+  Future<Map<String, dynamic>> setNodePath(String? path) =>
+      postJson('/api/settings/node_path', {'path': path});
 }
