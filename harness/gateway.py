@@ -972,6 +972,8 @@ class _Handler(BaseHTTPRequestHandler):
         if p == "/api/lanes/callable":                # list lanes + their tier requirements
             from harness.lane_caller import list_available_lanes
             return self._json({"lanes": list_available_lanes()})
+        if p.startswith("/api/lanes/"): from harness.lane_console_route import console_get; return self._json(*console_get(p))  # lane console: GET <lane>/setup and local-model/root; POST <lane>/check, <lane>/tools (plugin.probe grant) and local-model/root
+        if p == "/api/settings/node_path": from harness.lane_console_route import node_path_get; return self._json(node_path_get())  # the node executable the Node lanes use; POST chooses or clears it
         if p == "/api/training/status":            # training lane status, read-only
             return self._json(_training_status(self.run_root))
         if p == "/api/train/duel":                    # verified-inference duel summary (read-only)
@@ -2056,6 +2058,11 @@ class _Handler(BaseHTTPRequestHandler):
             profile = str(req.get("profile", "package")).strip() or "package"
             from harness.lanes import install_lane
             return self._json(install_lane(name, profile=profile))
+        if p.startswith("/api/lanes/"): from harness.lane_console_route import console_post_mount; return console_post_mount(self, p)  # lane console writes: check, tools, local-model root
+        if p == "/api/settings/node_path":  # choose or clear node.exe for the Node lanes
+            req, bad = self._req_json()
+            if bad: return bad
+            from harness.lane_console_route import node_path_post; return self._json(*node_path_post(req or {}))
         if p == "/api/telos/kernel":                   # run a bridged telos creative kernel
             req, bad = self._req_json()
             if bad:
@@ -2252,6 +2259,8 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--allow-host", action="append", default=[], dest="allow_host",
                     help="add a Host header value to the DNS-rebinding allowlist (repeatable). "
                          "Give the public tunnel hostname here so a phone can reach this gateway.")
+    ap.add_argument("--desktop-launch", action="store_true",
+                    help="started by Flywheel Desktop: check the lanes once in the background")
     return ap
 
 
@@ -2342,6 +2351,7 @@ def main(argv=None) -> int:
     _Handler.session_token_store = SessionTokenStore(
         CredentialHandleStore(state_root, keychain_get=keychain_get))
     _Handler._session_token_state_root = state_root
+    from harness.lane_probe_cache import start_probe; start_probe(desktop_launch=a.desktop_launch)  # only under --desktop-launch
     _Handler.startup_recovery = {"journeys": recover_store(state_root, now=_Handler.clock()), "gateway_operations": recover_gateway_operations(state_root, now=_Handler.clock())}
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
     print(f"  bound     {', '.join(f'{h}:{a.port}' for h in bound)}")
