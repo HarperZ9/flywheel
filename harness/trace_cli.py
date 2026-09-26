@@ -158,9 +158,10 @@ def _parser() -> argparse.ArgumentParser:
     doctor.add_argument("--ack", action="store_true", help="move reported failures aside")
     doctor.add_argument("--json", action="store_true", help="print flywheel.trace-doctor/v1")
     doctor.set_defaults(run=_doctor)
-    from . import (trace_cli_capture, trace_cli_delete, trace_cli_import, trace_cli_presence,
-                   trace_cli_retention)
+    from . import (trace_cli_capture, trace_cli_delete, trace_cli_export, trace_cli_import,
+                   trace_cli_presence, trace_cli_retention)
     trace_cli_delete.register(sub)
+    trace_cli_export.register(sub)
     trace_cli_retention.register(sub)
     trace_cli_presence.register(sub)
     trace_cli_capture.register(sub)

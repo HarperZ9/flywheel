@@ -92,14 +92,14 @@ STORES = (
     Store("E1", "Claude Code transcripts", "client", ("projects/*/*.jsonl",),
           ("C1", "C2", "C3", "C4"), OUTSIDE,
           Gap("the client's own store; flywheel traces import copies it into custody "
-              "(store IM), whose export lands with bulk export", "FW-09"), CLIENT_DELETE,
+              "(store IM), which the trace export includes", "7.5"), CLIENT_DELETE,
           env=("CLAUDE_CONFIG_DIR",), owner_binding="client",
           retention="swept by Claude Code after cleanupPeriodDays (default 30)"),
     Store("E2", "Codex rollouts", "client",
           ("sessions/**/rollout-*.jsonl*", "archived_sessions/rollout-*.jsonl*"),
           ("C1", "C2", "C3", "C4"), OUTSIDE,
           Gap("the client's own store; flywheel traces import codex copies it into "
-              "custody (store IM), whose export lands with bulk export", "FW-09"), CLIENT_DELETE,
+              "custody (store IM), which the trace export includes", "7.5"), CLIENT_DELETE,
           env=("CODEX_HOME",), owner_binding="client",
           retention="set by Codex; compression and migration are in transition (N-18)"),
 )
