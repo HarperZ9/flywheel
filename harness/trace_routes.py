@@ -106,10 +106,12 @@ def route_post(handler, path: str):
         return _scaffold(handler)
     if path.startswith(protocol.PREFIX) and not capture.host_ok(handler):
         return handler._json(capture.REFUSED, 401)
-    if path in (protocol.PROMPT_PATH, protocol.STOP_PATH):
+    if path in (protocol.PROMPT_PATH, protocol.STOP_PATH, protocol.FREEZE_PATH):
         raw, sent = capture.signed_body(handler, "POST")
         if raw is None:
             return sent
+        if path == protocol.FREEZE_PATH:
+            return capture.freeze(handler, raw)
         return capture.turn(handler, "prompt" if path == protocol.PROMPT_PATH else "stop", raw)
     if path in ("/api/traces/presence", "/api/traces/presence/approve"):
         return _presence_post(handler, path)

@@ -137,3 +137,24 @@ def turn(handler, event: str, raw: bytes):
     result = store.stop(*args, **kwargs, stop_hook_active=fields.get("stop_hook_active", False))
     return handler._json({"schema": "flywheel.capture-turn-result/v1", "eid": result["eid"],
                           "pairing": result["pairing"], "segment": result["segment"]})
+
+
+def freeze(handler, raw: bytes):
+    from harness.trace_turn_store import TurnStore
+    try:
+        doc = json.loads(raw or b"{}")
+    except ValueError:
+        doc = None
+    urls = doc.get("urls") if type(doc) is dict else None
+    fields = _turn_fields(json.dumps({k: v for k, v in doc.items() if k != "urls"}).encode()
+                          ) if type(doc) is dict else None
+    if (fields is None or type(urls) is not list or len(urls) > 5
+            or any(type(u) is not str or len(u) > 2048 for u in urls)):
+        return handler._json(error("INVALID_REQUEST", "malformed freeze"), 422)
+    settings = effective(handler)
+    if settings["freeze_urls"] != "on":
+        return handler._json(error("FREEZE_OFF", "URL freezing is not in effect"), 403)
+    store = TurnStore(handler.flywheel_home, handler.owner_ref, settings=settings)
+    manifest = store.freeze(fields["client"], fields.get("session_id"),
+                            fields.get("prompt_key"), urls)
+    return handler._json({"schema": "flywheel.capture-freeze-manifest/v1", **manifest})

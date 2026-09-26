@@ -45,7 +45,7 @@ def test_adoption_without_presence_or_for_another_digest_is_refused(tmp_path):
 
 def test_a_switch_whose_feature_is_not_built_accepts_only_off(tmp_path):
     with pytest.raises(ValueError):
-        settings.write_file(tmp_path, {"freeze_urls": "on"})
+        settings.write_file(tmp_path, {"archive_transcripts": "on"})
 
 
 def test_a_malformed_file_changes_nothing_and_is_reported(tmp_path):

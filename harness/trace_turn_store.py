@@ -128,20 +128,34 @@ class TurnStore:
                 answer_text) -> dict:
         custody = self.keystore.custody_key()
         key_ref = keyed_ref(custody, "prompt-key", client, prompt_key) if prompt_key else None
+        envelope, freeze_salt = pending.get("freeze"), os.urandom(32)
+        freeze_value = (commitment("freeze", freeze_salt, canonical_bytes(envelope).decode())
+                        if envelope else None)
         receipt = store_receipt(self.home, build(
             client=client, session_ref=session_ref, prompt_key_ref=key_ref, pairing=mode,
             segment=segment, prompt_commitment=pending.get("prompt_commitment"),
             answer_commitment=answer,
-            captured_content=bool(pending.get("prompt_text") or answer_text)))
+            captured_content=bool(pending.get("prompt_text") or answer_text),
+            frozen_urls=len(envelope["sources"]) if envelope else 0,
+            refused_urls=envelope["refused"] if envelope else 0,
+            freeze_commitment=freeze_value))
         turn_ref = "turn_" + secrets.token_hex(16)
         month = datetime.fromtimestamp(self.clock(), timezone.utc).strftime("%Y-%m")
         doc = {"schema": "flywheel.captured-turn/v1", "turn_ref": turn_ref, "client": client,
                "receipt_eid": receipt["eid"], "pairing": mode, "segment": segment,
                "prompt_salt": pending.get("prompt_salt"), "answer_salt": _b64(salt),
-               "prompt_text": pending.get("prompt_text"), "answer_text": answer_text}
+               "prompt_text": pending.get("prompt_text"), "answer_text": answer_text,
+               "freeze": envelope, "freeze_salt": _b64(freeze_salt) if envelope else None}
         self._write(self.base / client / month / f"{turn_ref}.enc", turn_ref, doc)
         return {"eid": receipt["eid"], "pairing": mode, "segment": segment,
                 "turn_ref": turn_ref}
+
+    def freeze(self, client: str, session_id, prompt_key, urls) -> dict:
+        from .trace_capture_freeze import freeze
+        if self.settings.get("freeze_urls") != "on":
+            return {"frozen": 0, "refused": 0, "failed": 0, "sources": [],
+                    "reason": "FREEZE_OFF"}
+        return freeze(self, client, session_id, prompt_key, urls)
 
     def expire(self) -> int:
         """Pending prompts past their time to live become unpaired turns; paired
