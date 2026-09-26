@@ -5,6 +5,23 @@ calls it made and what they returned. Flywheel, its lanes and the agent
 clients you run keep copies of that record on your disk. This page says where
 those copies are and which of them you control today.
 
+## Where your data goes
+
+- **Stays on your machine:** your provider keys, and every record Flywheel
+  keeps: agent traces, receipts, the custody ledger and desktop history.
+- **Goes to the model provider you pick:** the whole content of each request.
+  That is your prompt, the system text, any files or context attached or
+  recalled for the request, and in an agent run every tool result sent back
+  for the next step. The provider keeps what its terms allow. Flywheel's
+  native agent path to the OpenAI Responses API asks the provider not to
+  store the request (`store: false`); what a provider does behind that flag
+  is not something Flywheel can check. With a local model, nothing leaves
+  your machine.
+- **Kept by your agent clients on their own:** Claude Code and Codex write
+  their own transcripts of every session to your disk and remove old ones on
+  their own schedule. `flywheel traces status` counts them and marks them as
+  outside Flywheel's custody.
+
 ## See every store
 
 ```
