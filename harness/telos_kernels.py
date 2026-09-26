@@ -56,10 +56,12 @@ def run_kernel(kernel: str, args: "dict | None" = None,
         "if (out && out.output) out.output = Array.from(out.output);\n"
         "process.stdout.write(JSON.stringify(out));\n")
     try:
+        from .lane_env import lane_process_environment
         r = subprocess.run(
             ["node", "--input-type=module", "-e", shim],
             input=json.dumps(args or {}),
-            capture_output=True, text=True, timeout=timeout)
+            capture_output=True, text=True, timeout=timeout,
+            env=lane_process_environment("telos"))
     except FileNotFoundError:
         return {"error": "node is not on PATH; the telos kernels run in node"}
     except subprocess.TimeoutExpired:

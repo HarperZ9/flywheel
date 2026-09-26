@@ -90,7 +90,9 @@ def _cmd_install(argv: list[str]) -> int:
         if not ok:
             det = r.get("detail", "")
             print(f"    {det[:200]}", file=sys.stderr)
-        registry[name] = {"install_name": lane.install_name, "kind": lane.kind,
+        previous = registry.get(name)  # merge: keep operator keys such as env_allow
+        registry[name] = {**(previous if isinstance(previous, dict) else {}),
+                          "install_name": lane.install_name, "kind": lane.kind,
                           "profile": profile, "installed": ok,
                           "version": lane.version}
         if ok:

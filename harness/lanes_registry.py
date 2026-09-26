@@ -23,6 +23,9 @@ class Lane:
     #                                 lane that composes uninstalled siblings still probes live
     url: str = ""                   # compiled-in default endpoint for a kind="http" lane
     package_disabled_reason: str = ""  # package name is not an admitted distribution
+    env_vars: tuple = ()            # non-secret config names this lane reads; a pip or
+    #                                 npm lane launch passes only these plus the base
+    #                                 allowlist in lane_env.py and operator env_allow grants
 
     def mcp_command(self) -> list[str]:
         """The argv that launches this lane's MCP stdio server.
@@ -56,6 +59,10 @@ class Lane:
 # so it carries an endpoint instead of an argv. The board is public and needs
 # no key, so its address is compiled in and a build reaches it with no setup.
 # FLYWHEEL_BULLETIN_URL still wins, for anyone running their own deployment.
+# env_vars lists the non-secret configuration names each lane's own source reads
+# (found by a search of each lane's source for environment reads). A provider key
+# a lane can use, such as ANTHROPIC_API_KEY for forum, is never declared here; the
+# operator grants it per lane with env_allow in the lane registry.
 LANES: dict[str, Lane] = {
     "gather": Lane(
         "gather", "gather-engine", "gather", ("mcp",), "pip", "1.8.2",
@@ -86,20 +93,29 @@ LANES: dict[str, Lane] = {
     "index": Lane(
         "index", "index-graph", "index", ("mcp",), "pip", "2.13.0",
         "workspace map + symbol graph + verified wiki (the catalog lane)",
-        "structure", source_repo="public/index", py_module="index_graph"),
+        "structure", source_repo="public/index", py_module="index_graph",
+        env_vars=("INDEX_CACHE_DIR", "INDEX_CACHE_TTL_SECONDS", "INDEX_GRAPH_REPO_CACHE_DIR",
+                  "INDEX_MCP_CACHE_DIR", "INDEX_MCP_CACHE_TTL_SECONDS",
+                  "INDEX_MCP_DEBUG_ERRORS")),
     "forum": Lane(
         "forum", "forum-engine", "forum", ("mcp",), "pip", "1.14.0",
         "witnessed causal ledger + model-agnostic routing",
-        "orchestration", source_repo="public/forum", py_module="forum.cli"),
+        "orchestration", source_repo="public/forum", py_module="forum.cli",
+        env_vars=("FORUM_RUN_REAL", "OTEL_EXPORTER_OTLP_ENDPOINT")),
     "learn": Lane(
         "learn", "@harperz9/learn", "node", ("src/mcp.mjs",), "npm", "1.6.0",
         "accountable learning forge (spaced repetition + retrieval practice)",
-        "learning", source_repo="public/learn"),
+        "learning", source_repo="public/learn",
+        env_vars=("LEARN_CRUCIBLE_CMD", "LEARN_GATHER_CMD", "LEARN_NATIVE_CONTROL",
+                  "LEARN_TELOS_CMD")),
     "telos": Lane(
         "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.2.0",
         "the reconciliation lane: five-tool workflow + creative engine + doctors",
         "reconciliation", source_repo="public/telos",
-        package_disabled_reason="No published npm distribution is available. Use a Telos source checkout."),
+        package_disabled_reason="No published npm distribution is available. Use a Telos source checkout.",
+        env_vars=("TELOS_CHROME_PATH", "TELOS_CHROME_PROFILE", "TELOS_EMET_CLI",
+                  "TELOS_EMET_DISABLE_FALLBACKS", "LEARN_CLI", "CAPTCHA_VENV_PY",
+                  "TELOS_CONSO_FONT_ZIP", "TELOS_KILON_FONT_ZIP")),
     "local-model": Lane(
         "local-model", "", "python", ("-m", "harness.local_mcp"), "bundled", "0.1.0",
         "the trained 14B proposer + verified-inference harness (the engine lane)",
@@ -111,7 +127,13 @@ LANES: dict[str, Lane] = {
     "relay": Lane(
         "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.2.5",
         "accountable coding agent on any model endpoint (local-first, witnessed runs)",
-        "execution", source_repo="public/relay", py_module="relay.local_mcp"),
+        "execution", source_repo="public/relay", py_module="relay.local_mcp",
+        # The online tier reads <PROVIDER>_MODEL, _PROVIDER_BASE_URL and
+        # _CLOUD_BASE_URL; its keys stay operator grants (env_allow).
+        env_vars=("RELAY_RUN_ROOT", "RELAY_SESSION_DIR", *(
+            f"{provider}_{suffix}"
+            for provider in ("CODEX", "CLAUDE", "GLM", "GEMINI", "DEEPSEEK")
+            for suffix in ("MODEL", "PROVIDER_BASE_URL", "CLOUD_BASE_URL")))),
     "plexus": Lane(
         "plexus", "plexus-mesh", "plexus", ("mcp",), "pip", "0.2.2",
         "capability discovery + auto-wiring of the tool mesh (the layer above a flat tool list)",
@@ -119,7 +141,9 @@ LANES: dict[str, Lane] = {
     "mneme": Lane(
         "mneme", "flywheel-mneme", "mneme", ("mcp",), "pip", "0.4.2",
         "accountable memory: recall with re-derivable ranking receipts + drift verdicts",
-        "memory", source_repo="public/mneme", py_module="mneme.cli"),
+        "memory", source_repo="public/mneme", py_module="mneme.cli",
+        env_vars=("MNEME_STATE", "MNEME_CRUCIBLE_SRC", "MNEME_GATHER_SRC",
+                  "OPENAI_BASE_URL", "OPENAI_MODEL")),
     "calibrate-pro": Lane(
         "calibrate-pro", "calibrate-pro", "calibrate-pro", ("mcp",), "pip", "2.0.0",
         "evidence-labeled display calibration: color-target and characterized-panel "
@@ -130,7 +154,11 @@ LANES: dict[str, Lane] = {
         "provider-neutral memory bank + personality container: one envelope, "
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",
-        "continuity", source_repo="public/canon", py_module="canon.cli"),
+        "continuity", source_repo="public/canon", py_module="canon.cli",
+        env_vars=("CANON_HOME", "CANON_WORKSPACE", "CANON_BLOCKS_DIR", "CANON_CONTEXT_DB",
+                  "CANON_CONTEXT_SCOPE", "CANON_CONTEXT_CLIENT", "CANON_CONTEXT_CONTAINER_ID",
+                  "CANON_CONTEXT_PROJECT_ID", "CANON_CONTEXT_WORKSPACE_ID",
+                  "CANON_CONTEXT_TOP_K", "CANON_HOOK_STDIN_MAX_CHARS")),
     "bulletin": Lane(
         "bulletin", "", "", (), "http", "0.2.0",
         "the open board: a workstation or another agent reaches it over the web, "
@@ -151,5 +179,8 @@ LANES: dict[str, Lane] = {
         "gate + self-verifying effectors + tamper-evident journal (actuates, so T2)",
         "actuation", source_repo="public/accountable-surface",
         py_module="accountable_surface.interop_mcp",
-        extra_source_repos=("public/coherence-membrane", "public/proof-surface")),
+        extra_source_repos=("public/coherence-membrane", "public/proof-surface"),
+        env_vars=("ACCOUNTABLE_SURFACE_GRANTS", "ACCOUNTABLE_SURFACE_JOURNAL",
+                  "ACCOUNTABLE_SURFACE_NATIVE_CONTROL_SCRIPT", "ACCOUNTABLE_SURFACE_RECEIPTS",
+                  "ANTHROPIC_MODEL", "OLLAMA_HOST", "OLLAMA_MODEL")),
 }

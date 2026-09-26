@@ -48,7 +48,7 @@ CREDENTIAL_DIRECTORIES = (
 #: would take non-credential state with it.
 CREDENTIAL_FILES = (
     ".netrc", ".npmrc", ".pypirc", ".git-credentials",
-    ".docker/config.json",
+    ".docker/config.json", ".flywheel/gateway.token",
 )
 
 
@@ -82,6 +82,33 @@ def present_paths(home, exists=None) -> tuple:
     """
     look = exists if exists is not None else (lambda path: Path(path).exists())
     return tuple(pair for pair in default_paths(home) if look(pair[1]))
+
+
+def flywheel_home_paths(flywheel_home) -> tuple:
+    """The gateway token and signing keys under a custom FLYWHEEL_HOME.
+
+    The gateway keeps its token under FLYWHEEL_HOME when that is set, so the
+    home-relative entries above miss it there."""
+    base = PurePosixPath(str(flywheel_home).replace("\\", "/"))
+    return (("file", (base / "gateway.token").as_posix()),
+            ("dir", (base / "keys").as_posix()))
+
+
+def host_protected_paths(home, environ, exists=None) -> tuple:
+    """present_paths for ``home`` plus the FLYWHEEL_HOME token and keys.
+
+    ``environ`` is the host environment; a set FLYWHEEL_HOME is resolved and
+    added. Pairs already in the home set are not repeated."""
+    look = exists if exists is not None else (lambda path: Path(path).exists())
+    pairs = list(present_paths(home, exists=look))
+    raw = (environ or {}).get("FLYWHEEL_HOME")
+    if raw:
+        resolved = Path(raw).expanduser()
+        if resolved.exists():   # follow a symlinked home to the real files
+            resolved = resolved.resolve()
+        pairs += [pair for pair in flywheel_home_paths(resolved)
+                  if pair not in pairs and look(pair[1])]
+    return tuple(pairs)
 
 
 def sbpl_deny_lines(paths, quote) -> list:

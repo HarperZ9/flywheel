@@ -83,7 +83,7 @@ def test_explicit_package_runtime_cannot_be_shadowed_by_source_checkout(
 
     launch = lanes.resolve_mcp_launch("index")
 
-    assert launch == LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"))
+    assert launch == LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"), env_overrides=launch.env_overrides, inherit_env=False)
     status = lanes.lane_status("index", probe=False)
     runtime = status["resolved_runtime"]
     assert runtime["selected_profile"] == "package"
@@ -280,7 +280,7 @@ def test_lane_caller_uses_selected_runtime_launch(tmp_path, monkeypatch):
     _pin_package_runtime(monkeypatch, "2.12.0")
     seen = _client(monkeypatch, response={"ok": True, "text": '{"ok": true}'})
     assert call_lane_tool("index", "index.status") == {"ok": True}
-    assert seen == [LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"))]
+    assert [x == LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"), env_overrides=x.env_overrides, inherit_env=False) for x in seen] == [True]
 
 
 def test_context_envelope_uses_selected_runtime_launch(tmp_path, monkeypatch):
@@ -297,4 +297,4 @@ def test_context_envelope_uses_selected_runtime_launch(tmp_path, monkeypatch):
     seen = _client(monkeypatch, tools=[{"name": "index.context.envelope"}],
                    response={"ok": True, "text": '{"retained_names":["index"]}'})
     build_context_envelope(".", lane_timeout=1.0)
-    assert seen == [LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"))]
+    assert [x == LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"), env_overrides=x.env_overrides, inherit_env=False) for x in seen] == [True]

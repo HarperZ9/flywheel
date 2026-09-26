@@ -12,6 +12,10 @@ import sys
 from pathlib import Path
 
 from .local_agent import LocalAgent, available_backends, health_report
+from .local_agent_grants import (
+    AgentRunGrants, GrantRefusal, check_online, grants_from_config, refused_grants,
+    resolve_run,
+)
 from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import ToolExecutor, ToolGate
@@ -30,7 +34,7 @@ from .context_memory_bridge import (
 PROTOCOL = "2025-06-18"
 __version__ = "0.1.0"
 
-_ONLINE = {"online": {"type": "boolean", "description": "include codex/claude/gemini/deepseek"}}
+_ONLINE = {"online": {"type": "boolean", "description": "include codex/claude/gemini/deepseek; for chat and run, true is refused unless the operator granted online tiers"}}
 
 TOOLS = [
     {"name": "local_agent_health",
@@ -42,10 +46,12 @@ TOOLS = [
                      "properties": {"prompt": {"type": "string"},
                                     "backend": {"type": "string"}, **_ONLINE}}},
     {"name": "local_agent_run",
-     "description": "Run a gated agentic task (tools sandboxed to root; write/exec off unless allowed); returns the final answer and a verifiable ledger checkpoint.",
+     "description": "Run a gated agentic task confined to the operator's workspace. Write and exec are granted by the operator when the server starts; the arguments can only narrow them. Returns the final answer and a verifiable ledger checkpoint.",
      "inputSchema": {"type": "object", "required": ["goal"],
-                     "properties": {"goal": {"type": "string"}, "root": {"type": "string"},
-                                    "allow_write": {"type": "boolean"}, "allow_exec": {"type": "boolean"},
+                     "properties": {"goal": {"type": "string"},
+                                    "root": {"type": "string", "description": "directory inside the operator's workspace; relative paths are taken from the workspace"},
+                                    "allow_write": {"type": "boolean", "description": "false narrows the operator grant; true is refused unless the operator granted write"},
+                                    "allow_exec": {"type": "boolean", "description": "false narrows the operator grant; true is refused unless the operator granted exec"},
                                     "max_steps": {"type": "integer"}, **_ONLINE}}},
     {"name": "local-model.status",
      "description": "Liveness and identity of the local-model lane (name, version, protocol). Network-free, for a fast health probe.",
@@ -67,6 +73,23 @@ def _backends(args: dict) -> list:
 def _agent(args: dict) -> LocalAgent:
     return LocalAgent(backends=_backends(args), prefer=args.get("backend", "auto"),
                       max_tokens=int(args.get("max_tokens", 512)))
+
+
+def _local_tiers() -> frozenset:
+    return frozenset(("auto", *(getattr(b, "name", "") for b in available_backends())))
+
+
+def _checked_online(args: dict, grants) -> None:
+    """Refuse an online or plan-mode tier the operator did not grant."""
+    check_online(args, grants or grants_from_config(), _local_tiers())
+
+
+def _pin_cli_cwd(agent, root: str) -> None:
+    """A plan-mode CLI tier runs in the run's resolved root, not the server's cwd."""
+    from .endpoints import CliBackend
+    for backend in getattr(agent, "backends", ()):
+        if isinstance(backend, CliBackend):
+            backend.cwd = root
 
 
 def _lane_health(deep: bool) -> dict:
@@ -120,24 +143,29 @@ def _context_memory_bridge() -> ContextMemoryBridge:
     return ContextMemoryBridge()
 
 
-def _call(params: dict, *, root=None, run_root=None) -> dict:
+def _call(params: dict, *, root=None, run_root=None, grants=None) -> dict:
     name, args = params.get("name"), params.get("arguments", {}) or {}
     try:
         if name == "local_agent_health":
             return _text(health_report(_backends(args)))
         if name == "local_agent_chat":
+            _checked_online(args, grants)
             resp = _agent(args).send(args["prompt"])
             return _text({"text": resp["content"][0]["text"], "backend": resp.get("backend"),
                           "receipt": resp.get("x_receipt", {}).get("receipt_id")})
         if name == "local_agent_run":
-            ex = ToolExecutor(root=args.get("root", "."),
-                              gate=ToolGate(allow_write=bool(args.get("allow_write")),
-                                            allow_exec=bool(args.get("allow_exec"))),
+            grants = grants or grants_from_config()
+            run_root_dir, allow_write, allow_exec = resolve_run(args, grants)
+            _checked_online(args, grants)
+            ex = ToolExecutor(root=run_root_dir,
+                              gate=ToolGate(allow_write=allow_write, allow_exec=allow_exec),
                               runner=make_sandboxed_runner(
                                   bindings=None,
                                   on_unavailable=fallback_from_env()))
             from harness import tool_receipts
-            r = run_agent(_agent(args), args["goal"], ex, SessionLedger(),
+            agent = _agent(args)
+            _pin_cli_cwd(agent, run_root_dir)
+            r = run_agent(agent, args["goal"], ex, SessionLedger(),
                           max_steps=int(args.get("max_steps", 6)),
                           sign_key=tool_receipts.new_session_key())
             return _text({"final": r["final"], "steps": r["steps"],
@@ -158,7 +186,7 @@ def _call(params: dict, *, root=None, run_root=None) -> dict:
             return _structured(verify_receipt_inclusion(
                 args, ledger=_receipt_reader(root, run_root)))
         return {"content": [{"type": "text", "text": f"unknown tool {name!r}"}], "isError": True}
-    except ReceiptOperationError as e:
+    except (ReceiptOperationError, GrantRefusal) as e:
         return _error(e.code, e.message)
     except ContextMemoryError as e:
         return _error(e.code, e.message)
@@ -174,7 +202,7 @@ def _ok(rid, result):
     return {"jsonrpc": "2.0", "id": rid, "result": result}
 
 
-def handle(req: dict, *, root=None, run_root=None):
+def handle(req: dict, *, root=None, run_root=None, grants: AgentRunGrants | None = None):
     method, rid = req.get("method"), req.get("id")
     if method == "initialize":
         return _ok(rid, {"protocolVersion": PROTOCOL,
@@ -184,7 +212,7 @@ def handle(req: dict, *, root=None, run_root=None):
         return _ok(rid, {"tools": TOOLS})
     if method == "tools/call":
         return _ok(rid, _call(req.get("params", {}),
-                              root=root, run_root=run_root))
+                              root=root, run_root=run_root, grants=grants))
     if method == "resources/list":
         return _ok(rid, list_resources())
     if method == "resources/read":
@@ -202,8 +230,19 @@ def handle(req: dict, *, root=None, run_root=None):
     return {"jsonrpc": "2.0", "id": rid, "error": {"code": -32601, "message": f"method not found: {method}"}}
 
 
-def serve(stdin=None, stdout=None, *, root=None, run_root=None) -> int:
+def serve(stdin=None, stdout=None, *, root=None, run_root=None,
+          grants: AgentRunGrants | None = None) -> int:
+    """Serve stdio JSON-RPC. local_agent_run grants are frozen once, here, from
+    the start configuration; nothing a request carries can change them."""
     stdin, stdout = stdin or sys.stdin, stdout or sys.stdout
+    if grants is None:
+        try:
+            grants = grants_from_config()
+        except GrantRefusal as refusal:
+            # Keep serving health, chat and receipts; every run gets the refusal.
+            print(f"[local-agent] {refusal.code}: {refusal.message}; "
+                  "local_agent_run is refused", file=sys.stderr, flush=True)
+            grants = refused_grants(refusal)
     for line in stdin:
         line = line.strip()
         if not line:
@@ -212,7 +251,7 @@ def serve(stdin=None, stdout=None, *, root=None, run_root=None) -> int:
             req = json.loads(line)
         except json.JSONDecodeError:
             continue
-        resp = handle(req, root=root, run_root=run_root)
+        resp = handle(req, root=root, run_root=run_root, grants=grants)
         if resp is not None:
             stdout.write(json.dumps(resp) + "\n")
             stdout.flush()

@@ -48,7 +48,7 @@ Each item names the module that implements it.
 2. Launch the lane: `python -m harness.local_mcp`. It speaks JSON-RPC 2.0 over stdio.
 3. Check what is live: call `local_agent_health`. Add `{"online": true}` to include hosted endpoints in the report.
 4. Get a completion: call `local_agent_chat` with `{"prompt": "..."}`. The result carries the text, the backend that answered, and the per-turn `receipt` id.
-5. Run a gated task: call `local_agent_run` with `{"goal": "...", "root": "."}`. Reads are sandboxed to `root`; add `{"allow_write": true}` and `{"allow_exec": true}` to enable edits and commands. The result carries the final answer, the step count, the `verified` chain verdict, and the ledger `checkpoint`.
+5. Run a gated task: call `local_agent_run` with `{"goal": "...", "root": "."}`. Reads are sandboxed to `root`, which must resolve inside the workspace the server was started with. Edits, commands and online tiers need the operator's grant at server start (`--allow-write`, `--allow-exec`, `--allow-online`, or the matching `FLYWHEEL_LOCAL_AGENT_ALLOW_*=1` variable); the arguments can only narrow that grant. The home directory itself and the Flywheel home are refused as a root. The result carries the final answer, the step count, the `verified` chain verdict, and the ledger `checkpoint`.
 
 **As a Flywheel lane.** Flywheel launches the server for you; a user does not spawn it by hand.
 
@@ -65,7 +65,7 @@ Each item names the module that implements it.
 | - | - |
 | `local_agent_health` | Report which model tiers are live; `online=true` adds hosted providers. Returns `any_live` and a per-tier list with a healthy flag and a detail string. |
 | `local_agent_chat` | One-shot completion from the first healthy tier. Returns the text, the backend name, and the per-turn receipt id. `backend` forces one tier (still health-gated). |
-| `local_agent_run` | Run a gated agentic task. Tools are sandboxed to `root`; write and exec are off unless `allow_write` / `allow_exec`. Returns `final`, `steps`, `verified`, and `checkpoint`. `max_steps` defaults to 6. |
+| `local_agent_run` | Run a gated agentic task. Tools are sandboxed to `root` inside the operator's workspace; write and exec are off unless the operator granted them at server start, and `allow_write` / `allow_exec` arguments can only narrow the grant. Returns `final`, `steps`, `verified`, and `checkpoint`. `max_steps` defaults to 6. |
 | `local-model.status` | Liveness and identity (name, version, protocol). Network-free; a fast probe that does not ping a tier. |
 | `local-model.doctor` | Identity plus the tiers the lane would try and the tools it exposes. Network-free, so reachability is reported as `unprobed`. |
 | `flywheel.context.health` | Status of the Canon context bridge: scope configuration, owner binding, and the Canon child health, with the current limits kept visible. |
@@ -147,7 +147,7 @@ Because these are data contracts, a peer consumes them without reaching into the
 
 A two-lane composition that matches the lane's own rule, "the oracle decides, the model proposes".
 
-1. **local-model** runs a gated task: `local_agent_run` with a goal, `allow_write=true`, `allow_exec=true`, and a `test_cmd`. The loop edits code, runs the tests, and feeds failures back until they pass or `max_steps` is reached. It returns the final answer, the ledger `checkpoint`, `verified`, and `tests_pass_trusted`. Each mutating tool call carries the post-edit file sha256 and a sealed receipt.
+1. **local-model** runs a gated task: `local_agent_run` with a goal and a `test_cmd` on a server the operator started with write and exec granted. The loop edits code, runs the tests, and feeds failures back until they pass or `max_steps` is reached. It returns the final answer, the ledger `checkpoint`, `verified`, and `tests_pass_trusted`. Each mutating tool call carries the post-edit file sha256 and a sealed receipt.
 2. **Crucible** (organ `verification`) registers a falsifiable claim about the same work, for example "the proof or test oracle accepts this change". A `ProofMeasure` or `SubprocessMeasure` runs the checker and produces a deviation at the seam.
 3. Crucible's `verdict_for` turns that measurement into MATCH, DRIFT, or UNVERIFIABLE with no model in the step. The model that proposed the change is nowhere in the verdict.
 4. The tie-back is a receipt check: hand a sealed tool-call receipt digest to `receipt.verify_inclusion` and confirm it is a member of the receipts Merkle log, or re-derive the ledger checkpoint with `SessionLedger.verify`. A tampered edit or a rewritten step is caught.

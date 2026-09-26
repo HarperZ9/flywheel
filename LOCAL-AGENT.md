@@ -149,6 +149,40 @@ fallback tier:
 python -m harness.local_agent_cli --mcp
 ```
 
+`local_agent_run` takes its authority from how you start the server, not from
+the tool arguments the model writes. Each grant comes from a start flag, or from
+the environment when the flag is absent. An explicit flag wins over the
+environment in both directions.
+
+| Grant | Start flag | Environment | Default |
+| --- | --- | --- | --- |
+| Workspace runs are confined to | `--root PATH` | `FLYWHEEL_LOCAL_AGENT_WORKSPACE` | the working directory |
+| Write tools | `--allow-write` / `--no-allow-write` | `FLYWHEEL_LOCAL_AGENT_ALLOW_WRITE=1` | off |
+| Sandboxed exec tool | `--allow-exec` / `--no-allow-exec` | `FLYWHEEL_LOCAL_AGENT_ALLOW_EXEC=1` | off |
+| Online and plan-mode tiers | `--allow-online` / `--no-allow-online` | `FLYWHEEL_LOCAL_AGENT_ALLOW_ONLINE=1` | off |
+
+```
+python -m harness.local_agent_cli --mcp --root /path/to/project --allow-write
+```
+
+When the gateway launches the bundled local-model lane, it sets
+`FLYWHEEL_LOCAL_AGENT_WORKSPACE` to its own `--root` unless you already set it.
+
+A tool call can narrow these (`"allow_exec": false`) but not widen them.
+`"allow_exec": true`, `"allow_write": true` or `"online": true` without the grant
+returns `GRANT_NOT_OPERATOR_APPROVED`, and so does a `backend` other than a local
+tier (`serve`, `ollama`, `auto`), such as `claude-plan` or `codex-plan`. A value
+that is not a boolean returns `INVALID_GRANT_ARGUMENT`. A `root` that resolves
+outside the workspace (through `..`, a symlink or a junction) returns
+`ROOT_OUTSIDE_WORKSPACE`. A `root` that is your home directory itself, or that
+contains or sits inside the Flywheel home (`lanes.json`, the gateway token, the
+signing keys), returns `ROOT_PROTECTED`. Pass such a workspace with `--root` and
+the server refuses to start with `WORKSPACE_PROTECTED`. When it comes from the
+environment (for example the gateway's own `--root`), the server still answers
+health, chat and receipt tools, and every run returns `WORKSPACE_PROTECTED`. Every refusal
+happens before any agent step. With the online grant, a plan-mode tier runs its
+CLI in the run's resolved `root`.
+
 ## Boundaries
 
 - Credentials come only from the environment (API keys), the official CLI's own

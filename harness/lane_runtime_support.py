@@ -122,9 +122,11 @@ def package_runtime_version(lane: Lane, python_executable: str) -> str | None:
         " raise SystemExit(2)\n"
     )
     try:
+        from .lane_env import lane_process_environment
         result = subprocess.run(
             [python_executable, "-I", "-c", code, lane.install_name],
             capture_output=True, text=True, timeout=8,
+            env=lane_process_environment(getattr(lane, "name", "")),
             creationflags=0x08000000 if os.name == "nt" else 0)  # CREATE_NO_WINDOW
     except (FileNotFoundError, PermissionError, subprocess.TimeoutExpired, OSError):
         return None
