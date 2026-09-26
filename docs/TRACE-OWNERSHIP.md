@@ -51,11 +51,42 @@ and every store whose contents could not be classified yet, marked
 `UNCLASSIFIED` with the reason. Copies kept by Claude Code and Codex are
 listed as outside Flywheel's custody, with their counts.
 
-`status` only reads. It creates no file and no folder, and it never opens a
-file to read its contents.
+`status` only reads. It creates no file and no folder. Besides counting
+files it reads custody metadata only (the ledger, the tombstones, the
+presence method and the retention policy), and it never opens a trace, a
+turn or an import to read its content.
+
+## Retention
+
+```
+flywheel traces retention show
+flywheel traces retention set --store S1 --max-age-days 30
+flywheel traces retention plan
+flywheel traces retention apply --plan-digest <digest>
+```
 
 The default retention is keep until you delete. Nothing is deleted on a
-timer.
+timer until you adopt a rule. A rule names a store (`S1` gateway traces, `CT`
+captured turns, `IM` imported transcripts) or a data class, with a maximum
+age in days, a maximum item count or a maximum size. `set` writes
+`trace-retention.json` in your Flywheel home and adopts it after your
+confirmation. A file edited by hand does nothing until `flywheel traces
+retention adopt`; until then `status` and the next prompt say a change is
+waiting.
+
+The gateway runs an adopted rule at start and every 24 hours. The first run
+after an adoption only plans. A later run hands its plan to the deletion
+engine, so the closure, the checks and the tombstone are the same as for
+`flywheel traces delete`. A run that would delete more than
+`max_share_per_run` of a store's items (10 percent by default) stops at its
+plan and waits for `retention apply` with your confirmation. Each run writes
+one custody ledger entry and one witness event, and a failed run keeps its
+plan pending and shows in `status`.
+
+An item's age is the time Flywheel stored it, read from the file's
+modification time. Restoring custody from a backup resets that time, so
+restored items count as new. Retention covers the three stores above; the
+other stores keep until you delete, and their inventory entries say so.
 
 ## The custody ledger
 
@@ -283,5 +314,4 @@ built.
 
 ## What is not covered yet
 
-Export and retention settings are listed by `status` as gaps,
-each with the change that adds it. This page grows as each one lands.
+Export is listed by `status` as a gap, with the change that adds it. This page grows as each one lands.
