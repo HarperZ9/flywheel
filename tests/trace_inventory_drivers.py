@@ -93,8 +93,17 @@ def presence(home, run_root):
     assert trace_presence.require(home / "state", OWNER, "export", "f" * 64, ref) == "none"
 
 
+def deletion(home, run_root):
+    from harness.trace_delete_journal import DeletionJournal, apply_journaled
+    journal = DeletionJournal(home / "state", OWNER, "9" * 64)
+    result = apply_journaled(journal, [("noop", lambda: None)],
+                             lambda scan_set: {"ok": True, "checks": ["structural"]},
+                             scan_set=["sweep text"], tombstone={"stores": ["S1"]})
+    assert result["state"] == "DELETED"
+
+
 DRIVERS = (agent_trace, scaffold, memory_note, operations, grants,
-           continuation, source_context, capture_spool, presence)
+           continuation, source_context, capture_spool, presence, deletion)
 
 
 def run_all(home, run_root):
