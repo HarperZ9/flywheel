@@ -95,6 +95,29 @@ def _status(args) -> int:
     return 0
 
 
+def _home():
+    from .trace_inventory_scan import resolve_roots
+    return resolve_roots()["home"]
+
+
+def _doctor(args) -> int:
+    from . import trace_doctor
+    results = trace_doctor.run_doctor(_home(), synthetic=args.synthetic, ack=args.ack)
+    if args.json:
+        print(json.dumps(trace_doctor.to_json(results), indent=2, sort_keys=True))
+    else:
+        for line in trace_doctor.render(results):
+            emit(line)
+    return 1 if any(c.state == "FAIL" for c in results) else 0
+
+
+def _print_mount(args) -> int:
+    from .trace_doctor import print_mount
+    for line in print_mount():
+        emit(line)
+    return 0
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="flywheel traces",
@@ -104,6 +127,16 @@ def _parser() -> argparse.ArgumentParser:
     status.add_argument("--json", action="store_true",
                         help="print the flywheel.trace-inventory/v1 document")
     status.set_defaults(run=_status)
+    doctor = sub.add_parser("doctor", help="check hook mounts, the capture channel and custody")
+    doctor.add_argument("--synthetic", action="store_true",
+                        help="record one synthetic turn through the Flywheel hook module")
+    doctor.add_argument("--ack", action="store_true", help="move reported failures aside")
+    doctor.add_argument("--json", action="store_true", help="print flywheel.trace-doctor/v1")
+    doctor.set_defaults(run=_doctor)
+    hooks = sub.add_parser("hooks", help="hook mount lines for Claude Code and Codex")
+    hooks_sub = hooks.add_subparsers(dest="hooks_command", required=True)
+    hooks_sub.add_parser("print-mount", help="print the exact mount blocks").set_defaults(
+        run=_print_mount)
     return parser
 
 
