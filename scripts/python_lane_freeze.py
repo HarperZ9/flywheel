@@ -23,6 +23,8 @@ import sys
 from pathlib import Path
 
 from scripts.build_python_lane_payloads import _verify_source_files
+from scripts.frozen_payload_datas import (
+    importable_path, lane_package_datas, package_files, stage_dirs)
 
 SPEC_HANDLED_LANES = ("relay",)
 
@@ -46,11 +48,10 @@ def bundled_python_lanes(repo: Path,
 def lane_hidden_imports(row: dict) -> list[str]:
     """Every importable module in the pinned package, from its source.files list."""
     modules: set[str] = set()
-    for item in row["component_descriptor"]["source"]["files"]:
-        path = str(item["path"])
-        if not path.endswith(".py") or not path.startswith("src/"):
+    for path in package_files(row):
+        if not path.endswith(".py"):
             continue
-        parts = path[len("src/"):-len(".py")].split("/")
+        parts = importable_path(row, path)[:-len(".py")].split("/")
         if parts and parts[-1] == "__init__":
             parts = parts[:-1]
         if parts:
@@ -59,22 +60,15 @@ def lane_hidden_imports(row: dict) -> list[str]:
 
 
 def _staged_src(source_root: Path, row: dict) -> tuple[Path, Path]:
-    checkout = (source_root / f"{row['lane']}-{row['owner_tag']}").resolve()
-    return checkout, (checkout / "src").resolve()
+    return stage_dirs(source_root, row)
 
 
-def python_lane_freeze_inputs(repo: Path, source_root: Path,
-                              exclude: tuple[str, ...] = SPEC_HANDLED_LANES):
-    """Return ``(pathex, hiddenimports, receipts)`` for the bundled python lanes.
-
-    Raises RuntimeError on a missing stage, a source-manifest mismatch, or an
-    entrypoint module that resolves outside its own staged source."""
-    repo = Path(repo).resolve()
-    source_root = Path(source_root).resolve()
+def _stage_lanes(repo: Path, source_root: Path,
+                 exclude: tuple[str, ...]) -> dict[str, tuple[dict, Path, Path]]:
+    """Each bundled lane's row, verify root and import dir, first on sys.path."""
     rows = _manifest_rows(repo)
-    lanes = bundled_python_lanes(repo, exclude)
     staged: dict[str, tuple[dict, Path, Path]] = {}
-    for lane in lanes:
+    for lane in bundled_python_lanes(repo, exclude):
         row = rows[lane]
         checkout, src = _staged_src(source_root, row)
         if not src.is_dir():
@@ -86,6 +80,18 @@ def python_lane_freeze_inputs(repo: Path, source_root: Path,
         while value in sys.path:
             sys.path.remove(value)
         sys.path.insert(0, value)
+    return staged
+
+
+def python_lane_freeze_inputs(repo: Path, source_root: Path,
+                              exclude: tuple[str, ...] = SPEC_HANDLED_LANES):
+    """Return ``(pathex, hiddenimports, receipts)`` for the bundled python lanes.
+
+    Raises RuntimeError on a missing stage, a source-manifest mismatch, or an
+    entrypoint module that resolves outside its own staged source."""
+    repo = Path(repo).resolve()
+    source_root = Path(source_root).resolve()
+    staged = _stage_lanes(repo, source_root, exclude)
     pathex: list[str] = []
     hiddenimports: list[str] = []
     receipts: list[dict] = []
@@ -109,3 +115,20 @@ def python_lane_freeze_inputs(repo: Path, source_root: Path,
             "bytes": total_bytes,
         })
     return pathex, sorted(set(hiddenimports)), receipts
+
+
+def python_lane_freeze_datas(repo: Path, source_root: Path,
+                             exclude: tuple[str, ...] = SPEC_HANDLED_LANES
+                             ) -> list[tuple[str, str]]:
+    """PyInstaller datas for every bundled lane's package data, checked against pins.
+
+    Raises RuntimeError on a missing stage, a source-manifest mismatch, or a
+    data file whose bytes differ from its pin."""
+    staged = _stage_lanes(Path(repo).resolve(), Path(source_root).resolve(), exclude)
+    datas: list[tuple[str, str]] = []
+    for lane, (row, checkout, _src) in staged.items():
+        digest, _count, _bytes = _verify_source_files(row, checkout)
+        if digest != row["component_descriptor"]["source"]["manifest_sha256"]:
+            raise RuntimeError(f"staged {lane} source manifest mismatch")
+        datas.extend(lane_package_datas(row, checkout))
+    return datas

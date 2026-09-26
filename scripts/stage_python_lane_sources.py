@@ -11,6 +11,10 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts.frozen_payload_datas import FreezeInputError, stage_slice_tree  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "packaging" / "python-lane-payloads.jsonl"
 DEFAULT_SOURCE_ROOT = Path(os.environ.get(
@@ -205,9 +209,15 @@ def stage_sources(args: argparse.Namespace) -> dict[str, Any]:
         checkout = _ensure_checkout(
             row, Path(args.source_root), _repo_source(row, overrides))
         verified = _verify_manifest(row, checkout)
-        staged.append({"lane": lane, "path": str(checkout.as_posix()),
-                       "owner_commit": row["owner_commit"],
-                       "owner_tag": row["owner_tag"], **verified})
+        entry = {"lane": lane, "path": str(checkout.as_posix()),
+                 "owner_commit": row["owner_commit"],
+                 "owner_tag": row["owner_tag"], **verified}
+        if row.get("payload_slice"):
+            # The freeze reads a reviewed slice from its own tree, never the
+            # full checkout (scripts/frozen_payload_datas.py).
+            entry["slice_path"] = stage_slice_tree(
+                row, checkout, Path(args.source_root)).as_posix()
+        staged.append(entry)
     receipt = {"schema": SCHEMA, "verdict": "PASS",
                "source_root": str(Path(args.source_root).as_posix()),
                "lanes": staged}
@@ -235,7 +245,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         receipt = stage_sources(args)
-    except (OSError, subprocess.SubprocessError, StageError, json.JSONDecodeError) as exc:
+    except (OSError, subprocess.SubprocessError, StageError, FreezeInputError,
+            json.JSONDecodeError) as exc:
         print(json.dumps({"verdict": "FAIL", "error": str(exc)}, sort_keys=True))
         return 1
     print(json.dumps({"verdict": "PASS", "lanes": [row["lane"] for row in receipt["lanes"]]}, sort_keys=True))

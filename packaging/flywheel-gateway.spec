@@ -66,7 +66,10 @@ from scripts.build_python_lane_payloads import (
 )
 from scripts.frozen_gateway_metadata import flywheel_verify_metadata_datas
 from scripts.studio_runtime_packaging import pyinstaller_studio_runtime_inputs
-from scripts.python_lane_freeze import python_lane_freeze_inputs
+from scripts.python_lane_freeze import (
+    python_lane_freeze_datas, python_lane_freeze_inputs)
+from scripts.frozen_payload_datas import (
+    NODE_STAGE_ENV, check_pyz_slices, node_lane_stage_datas)
 import importlib.util
 
 
@@ -122,6 +125,12 @@ for _studio_root in studio_runtime.pathex:
 lane_source_root = Path(os.environ["FLYWHEEL_PYTHON_LANE_SOURCE_ROOT"])
 python_lane_pathex, python_lane_hidden, python_lane_receipts = (
     python_lane_freeze_inputs(repo, lane_source_root))
+# Package data inside each pinned lane package (forum's default roster, for one)
+# lands at its package-relative folder, where importlib.resources looks for it.
+python_lane_datas = python_lane_freeze_datas(repo, lane_source_root)
+# learn and telos ship from the folder scripts/stage_node_lanes.py stages, under
+# _internal/node-lanes. A build without that stage fails here, not at run time.
+node_lane_datas = node_lane_stage_datas(os.environ.get(NODE_STAGE_ENV))
 
 a = Analysis(
     [str(repo / "packaging" / "gateway_entry.py")],
@@ -132,6 +141,8 @@ a = Analysis(
            (str(repo / "packaging" / "bundled-lanes" / "relay.json"),
             "packaging/bundled-lanes"),
            *canon_context_datas,
+           *python_lane_datas,
+           *node_lane_datas,
            *studio_runtime.datas,
            *distribution_data],
     hiddenimports=[
@@ -168,6 +179,11 @@ a = Analysis(
     noarchive=False,
 )
 pyz = PYZ(a.pure)
+# A reviewed slice (calibrate-pro) must freeze exactly its reviewed modules: an
+# extra one reached code outside the review, a missing one breaks a slice tool.
+check_pyz_slices(Path(pyz.tocfilename),
+                 [json.loads(line) for line in (repo / "packaging" / "python-lane-payloads.jsonl")
+                  .read_text(encoding="utf-8").splitlines() if line.strip()])
 
 exe = EXE(
     pyz,

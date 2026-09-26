@@ -53,6 +53,7 @@ function Assert-RequiredTargetFiles() {
     "desktop\scripts\build_installer.ps1",
     "scripts\studio_runtime_packaging.py",
     "scripts\stage_python_lane_sources.py",
+    "scripts\stage_node_lanes.py",
     "scripts\check_frozen_gateway.py",
     "scripts\check_installed_canon_context.py",
     "packaging\flywheel-gateway.spec",
@@ -221,6 +222,10 @@ New-Item -ItemType Directory -Force -Path $installerDir | Out-Null
 # (scripts/python_lane_freeze.py), so stage them all, as desktop-release does.
 Invoke-Checked "stage Python lane sources" "python" @("scripts/stage_python_lane_sources.py", "--all", "--source-root", $pythonLaneSourceRoot, "--receipt", $pythonLaneStageReceipt, "--bounded-receipt", $pythonLaneBoundedReceipt)
 $env:FLYWHEEL_PYTHON_LANE_SOURCE_ROOT = $pythonLaneSourceRoot
+# The freeze also refuses to run without the staged Node lanes (scripts/frozen_payload_datas.py).
+$nodeLaneStageRoot = Join-Path $env:RUNNER_TEMP "flywheel-node-lanes"
+Invoke-Checked "stage Node lanes" "python" @("scripts/stage_node_lanes.py", "--stage-root", $nodeLaneStageRoot)
+$env:FLYWHEEL_NODE_LANE_STAGE_ROOT = $nodeLaneStageRoot
 Find-InnoSetup
 Assert-CleanWorkspaceNoUntracked "before build"
 New-Item -ItemType Directory -Force -Path $installerDir, $acceptanceDir | Out-Null

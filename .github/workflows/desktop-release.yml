@@ -123,6 +123,16 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Python lane source staging failed" }
           "FLYWHEEL_PYTHON_LANE_SOURCE_ROOT=$sourceRoot" | Out-File -Append $env:GITHUB_ENV -Encoding ascii
 
+      - name: Stage Node lane payloads
+        shell: pwsh
+        run: |
+          # The gateway spec refuses to freeze without the staged Node lanes
+          # (scripts/frozen_payload_datas.py); they ship under _internal/node-lanes.
+          $nodeStageRoot = Join-Path $env:RUNNER_TEMP "flywheel-node-lanes"
+          python scripts/stage_node_lanes.py --stage-root $nodeStageRoot
+          if ($LASTEXITCODE -ne 0) { throw "Node lane staging failed" }
+          "FLYWHEEL_NODE_LANE_STAGE_ROOT=$nodeStageRoot" | Out-File -Append $env:GITHUB_ENV -Encoding ascii
+
       - name: Ensure Inno Setup
         shell: pwsh
         run: |
