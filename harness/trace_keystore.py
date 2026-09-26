@@ -31,6 +31,9 @@ from .trace_enc import EncError, default_provider
 MAX_SHARD_ENTRIES = 4096
 SCHEMA = "flywheel.keystore-shard/v1"
 CUSTODY = "custody.keys"
+#: With no OS key store, shards are plain JSON behind this marker: the custody
+#: key still works for keyed references, and status says nothing is encrypted.
+PLAIN = b"FWKEYS-PLAIN\n"
 
 
 def _replace(source: Path, target: Path) -> None:
@@ -69,7 +72,14 @@ class Keystore:
         cached = self._cache.get(str(path))
         if cached and cached[0] == stamp:
             return cached[1]
-        doc = json.loads(self.provider.unseal(path.read_bytes(), self._context(path)))
+        raw = path.read_bytes()
+        if raw.startswith(PLAIN):
+            body = raw[len(PLAIN):]
+        elif self.provider.name == "none":
+            raise EncError("OS_KEY_UNAVAILABLE")  # sealed by a key store no longer here
+        else:
+            body = self.provider.unseal(raw, self._context(path))
+        doc = json.loads(body)
         if type(doc) is not dict or doc.get("schema") != SCHEMA:
             raise EncError("ENC_INTEGRITY")
         keys = {k: base64.b64decode(v) for k, v in doc["keys"].items()}
@@ -82,7 +92,8 @@ class Keystore:
             k: base64.b64encode(v).decode("ascii") for k, v in sorted(keys.items())}})
         temporary = path.with_name(path.name + ".tmp")
         with open(temporary, "wb") as stream:
-            stream.write(self.provider.seal(body, self._context(path)))
+            stream.write(PLAIN + body if self.provider.name == "none"
+                         else self.provider.seal(body, self._context(path)))
             stream.flush()
             os.fsync(stream.fileno())
         _replace(temporary, path)
@@ -152,4 +163,9 @@ class Keystore:
 
     def unsealed_shards(self, store: str) -> list[bytes]:
         """The decrypted shard bytes, for verification that a key is gone."""
-        return [self.provider.unseal(p.read_bytes(), self._context(p)) for p in self.shards(store)]
+        out = []
+        for path in self.shards(store):
+            raw = path.read_bytes()
+            out.append(raw[len(PLAIN):] if raw.startswith(PLAIN)
+                       else self.provider.unseal(raw, self._context(path)))
+        return out

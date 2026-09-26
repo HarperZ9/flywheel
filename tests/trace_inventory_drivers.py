@@ -120,8 +120,21 @@ def turns(home, run_root):
                salt=salt)
 
 
+def imports(home, run_root):
+    import tempfile
+    from pathlib import Path
+    from harness.trace_import_claude import plan_claude
+    from harness.trace_import_core import run_import
+    from import_fixtures import age_tree, claude_tree
+    base = Path(tempfile.mkdtemp(prefix="sweep-claude-"))
+    root, _, _ = claude_tree(base)
+    age_tree(root, seconds=300)
+    result = run_import(home, plan_claude(home, root=root, owner_ref=OWNER))
+    assert result["imported"] == 5, result
+
+
 DRIVERS = (agent_trace, scaffold, memory_note, operations, grants,
-           continuation, source_context, capture_spool, presence, deletion, turns)
+           continuation, source_context, capture_spool, presence, deletion, turns, imports)
 
 
 def run_all(home, run_root):

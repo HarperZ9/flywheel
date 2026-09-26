@@ -130,6 +130,12 @@ STORES = (
           "harness.trace_meta_adapters.capture_settings_export",
           "harness.trace_meta_adapters.capture_settings_delete", owner_binding="owner",
           added_by_program=True, note="the settings the gateway runs, adopted with presence"),
+    Store("IM", "Imported client transcripts", "state", ("imports",),
+          ("C1", "C2", "C3", "C4", "C6", "C7"), ENCRYPTED,
+          "harness.trace_import_items.export_records", "harness.trace_import_items.delete_all",
+          owner_binding="owner", added_by_program=True,
+          note="exact source bytes, encrypted; redaction applies when content leaves "
+               "custody; the exclusion list keeps keyed digests of deleted sources"),
     Store("TD", "Deletion ledger (tombstones) and deletion journals", "state",
           ("trace-deletions",), ("C1", "C4"),
           Protection("encrypted", "tombstones are metadata only; a journal and its scan "
