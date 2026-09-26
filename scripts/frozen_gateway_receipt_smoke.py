@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import tempfile
 
 from harness.receipt_operations import mcp_tool_descriptors
 from harness.transparency_log import verify_inclusion
@@ -144,9 +145,14 @@ def run_receipt_acceptance_smoke(executable: Path, home: Path, env: dict,
     wire = "".join(json.dumps({"jsonrpc": "2.0", "id": index,
                                "method": method, "params": params}) + "\n"
                    for index, (method, params) in enumerate(operations, 1))
-    stdout = run_mcp_process(
-        executable, ["--mcp", "--root", str(home),
-                     "--run-root", str(home / "runs")], home, env, wire)
+    # The local agent refuses a workspace that is the home directory or holds
+    # FLYWHEEL_HOME, and says so on stderr, which run_mcp_process forbids. The
+    # receipt ledger reads envelopes from --run-root and a fixed repo catalog
+    # that neither directory holds, so an empty workspace keeps parity with HTTP.
+    with tempfile.TemporaryDirectory(prefix="flywheel-frozen-workspace-") as workspace:
+        stdout = run_mcp_process(
+            executable, ["--mcp", "--root", str(Path(workspace).resolve()),
+                         "--run-root", str(home / "runs")], home, env, wire)
     require(token not in stdout, "RECEIPT_MCP_CREDENTIAL_ECHO")
     responses = {}
     for line in stdout.splitlines():
