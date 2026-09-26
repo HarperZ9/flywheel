@@ -28,7 +28,7 @@ PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
                     "/api/import/inspect",
                     "/api/credential-handles", "/api/session-tokens",
                     "/api/bulletin-identity", "/api/operations/", "/api/hooks/",
-                    "/api/settings/")
+                    "/api/settings/", "/api/traces/")
 
 #: Exact paths held under private custody. Model calls and anything that runs
 #: an agent, installs a plugin, or reaches the marketplace.
