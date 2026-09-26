@@ -102,8 +102,26 @@ def deletion(home, run_root):
     assert result["state"] == "DELETED"
 
 
+def turns(home, run_root):
+    import os
+    from harness.capture_hooks.protocol import commitment
+    from harness.trace_capture_settings import adopt, write_file, digest
+    from harness.trace_presence import confirm
+    from harness.trace_turn_store import TurnStore
+    from harness.trace_witness import MemorySink
+    settings = write_file(home, {"content": "off"})
+    ref = confirm(home / "state", OWNER, "capture_settings", digest(settings), "sweep")
+    adopt(home, OWNER, ref, sink=MemorySink())
+    store = TurnStore(home, OWNER)
+    salt = os.urandom(32)
+    store.prompt("codex", "sweep-session", "turn-1", commitment=commitment("prompt", salt, "p"),
+                 salt=salt)
+    store.stop("codex", "sweep-session", "turn-1", commitment=commitment("answer", salt, "a"),
+               salt=salt)
+
+
 DRIVERS = (agent_trace, scaffold, memory_note, operations, grants,
-           continuation, source_context, capture_spool, presence, deletion)
+           continuation, source_context, capture_spool, presence, deletion, turns)
 
 
 def run_all(home, run_root):
