@@ -115,8 +115,8 @@ and checks free space. `--apply` imports.
 - Running it again stores nothing new. A transcript that grew, because the
   session was resumed, is stored as a new version linked to the earlier one.
 - The importer skips every source on its exclusion list, including a resumed
-  session that extends a listed transcript. Deleting an import will add to
-  that list once deletion of imports lands; until then the list stays empty.
+  session that extends a listed transcript. Deleting an import adds it to
+  that list.
 
 `flywheel traces import codex` does the same for Codex rollouts under
 `sessions/` and `archived_sessions/`. Compressed `.jsonl.zst` rollouts need a
@@ -196,6 +196,14 @@ left alone and the deletion stays pending.
 reports how many times it still appears in the files Flywheel controls,
 per file, never the text. Freed disk space, backups and copies outside
 Flywheel are not searched.
+
+Imported transcripts are deleted the same way: `--import-ref imp_...` selects
+one item, and `--session` covers the imported files of that session as well
+as its captured turns. Before any key is destroyed, each item joins the
+exclusion list as a keyed digest of its bytes, so a later import skips it,
+and a resumed session whose transcript extends the deleted one is skipped as
+`PREVIOUSLY_DELETED_SESSION` with nothing of it stored. The client's own
+transcript stays, and the report names the command that removes it there.
 
 Plaintext stores are covered too: `--receipt-eid`, `--note-ref` and
 `--legacy-run` select store.db receipts, memory notes and runs from before
