@@ -1,55 +1,22 @@
-"""wrapper_turn_receipt_hook.py -- the post-pass for external wrappers.
+"""wrapper_turn_receipt_hook.py -- deprecated; runs the capture hook module.
 
-The prompt hook (wrapper_scaffold_hook.py) freezes sources before the
-model works; this stop hook completes the guarantee: when the wrapper's
-turn ends, the prompt and final answer are sent to the gateway's
-POST /api/scaffold, which chains a turn receipt (prompt hash, answer
-hash, frozen sources) into the audit ledger. Together the pair gives
-any harness the same per-message spine the engine's own routes carry.
-
-Protocol-lenient: reads a JSON event on stdin, finds the prompt and the
-final answer under common keys, and stays silent. Fails open: a dead
-gateway or an unrecognized event shape costs nothing and never blocks
-the wrapper. No receipt is faked; a turn that could not be banked is
-simply not banked.
+This script used to POST the turn to /api/scaffold with no token, and the
+gateway refused it with a 401 the script hid. It now prints one deprecation
+line on stderr and runs `python -m harness.capture_hooks stop --client
+claude-code`, which authenticates, fails visibly and spools what it could not
+send. Mount the module directly; `flywheel traces hooks print-mount` prints
+the line. This wrapper stays for one release.
 """
 from __future__ import annotations
 
-import json
+from pathlib import Path
 import sys
-import urllib.request
 
-GATEWAY = "http://127.0.0.1:8799"
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-
-def _first(event: dict, keys: tuple) -> str:
-    for k in keys:
-        v = event.get(k)
-        if isinstance(v, str) and v.strip():
-            return v
-    return ""
-
-
-def main() -> int:
-    try:
-        event = json.loads(sys.stdin.read() or "{}")
-    except Exception:
-        return 0
-    prompt = _first(event, ("prompt", "user_prompt", "message", "input"))
-    answer = _first(event, ("answer", "final_message", "response",
-                            "last_assistant_message", "output"))
-    if not prompt and not answer:
-        return 0
-    try:
-        body = json.dumps({"prompt": prompt, "answer": answer}).encode()
-        req = urllib.request.Request(
-            GATEWAY + "/api/scaffold", data=body,
-            headers={"Content-Type": "application/json"})
-        urllib.request.urlopen(req, timeout=30).read()
-    except Exception:
-        pass
-    return 0
-
+from harness.capture_hooks.__main__ import main  # noqa: E402
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.stderr.write("flywheel capture: wrapper_turn_receipt_hook.py is deprecated; "
+                     "mount python -m harness.capture_hooks stop instead\n")
+    raise SystemExit(main(["stop", "--client", "claude-code", *sys.argv[1:]]))

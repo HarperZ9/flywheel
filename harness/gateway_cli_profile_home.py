@@ -29,3 +29,9 @@ def owned_profile_home(*, state_root=None, state_identity=None):
         raise
     except Exception:
         raise GatewayOperationError('AGENT_CLI_UNAVAILABLE') from None
+
+
+def profile_record(profile) -> dict:
+    """The progress record that names this operation's profile directory, so a
+    deletion of the trace can find and remove it (EN-C4). Name only, no path."""
+    return {"type": "cli_profile", "profile_dir": Path(profile).name}
