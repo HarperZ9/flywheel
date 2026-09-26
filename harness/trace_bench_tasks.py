@@ -32,12 +32,16 @@ STORE = "BT"
 SCHEMA = "flywheel.trace-task/v2"
 
 
-class BenchTasks:
+class _SealedIndex:
+    """Sealed items under one folder of the bench store, with a plaintext
+    index holding refs, verdicts and classes only."""
+    FOLDER, KEY, FIELDS, NAME = "", "", (), ""
+
     def __init__(self, home, owner: str) -> None:
         from .trace_keystore import Keystore
         self.home, self.owner = Path(home), owner
         self.state = self.home / "state"
-        self.base = self.state / "trace-bench" / "v1" / "owners" / owner / "tasks"
+        self.base = self.state / "trace-bench" / "v1" / "owners" / owner / self.FOLDER
         self.keystore = Keystore(self.state, owner)
 
     def _cipher(self, ref: str):
@@ -57,23 +61,39 @@ class BenchTasks:
         os.replace(temporary, self.base / "index.jsonl")
 
     def read(self, ref: str) -> dict:
-        return json.loads(self._cipher(ref).open("task", (self.base / f"{ref}.enc").read_bytes()))
+        raw = (self.base / f"{ref}.enc").read_bytes()
+        return json.loads(self._cipher(ref).open(self.NAME, raw))
 
-    def add(self, task: dict) -> None:
+    def add(self, doc: dict) -> None:
         from .trace_custody_lock import custody_lock
-        ref = task["task_ref"]
+        ref = doc[self.KEY]
         with custody_lock(self.state):
             self.base.mkdir(parents=True, exist_ok=True)
-            (self.base / f"{ref}.enc").write_bytes(self._cipher(ref).seal("task",
-                                                                        canonical_bytes(task)))
-            self._write_index(self.index() + [{k: task[k] for k in (
-                "task_ref", "trace_ref", "prior_verdict", "class", "reason")}])
+            (self.base / f"{ref}.enc").write_bytes(self._cipher(ref).seal(self.NAME,
+                                                                        canonical_bytes(doc)))
+            self._write_index(self.index() + [{k: doc[k] for k in self.FIELDS}])
 
     def drop(self, refs) -> None:
         from .trace_custody_lock import custody_lock
         gone = set(refs)
         with custody_lock(self.state):
-            self._write_index([r for r in self.index() if r["task_ref"] not in gone])
+            self._write_index([r for r in self.index() if r[self.KEY] not in gone])
+
+    def entries(self, refs) -> list[dict]:
+        return [{"store": STORE, "item": ref,
+                 "rel": (self.base / f"{ref}.enc").relative_to(self.state).as_posix()}
+                for ref in refs]
+
+
+class BenchTasks(_SealedIndex):
+    FOLDER, KEY, NAME = "tasks", "task_ref", "task"
+    FIELDS = ("task_ref", "trace_ref", "prior_verdict", "class", "reason")
+
+
+class ReplayResults(_SealedIndex):
+    """Replay results (FW-12b1), with lineage to their task."""
+    FOLDER, KEY, NAME = "results", "result_ref", "result"
+    FIELDS = ("result_ref", "task_ref", "endpoint", "verdict")
 
 
 def _facts(records: list[dict]) -> dict | None:
@@ -151,22 +171,25 @@ def build_tasks(home, owner: str) -> dict:
 
 
 def task_entries(home, owner: str, trace_ref: str) -> list[dict]:
-    """Deletion closure: the tasks derived from a trace."""
-    store = BenchTasks(home, owner)
-    return [{"store": STORE, "item": row["task_ref"],
-             "rel": (store.base / f"{row['task_ref']}.enc").relative_to(store.state).as_posix()}
-            for row in store.index() if row["trace_ref"] == trace_ref]
+    """Deletion closure: the tasks derived from a trace and their results."""
+    tasks, results = BenchTasks(home, owner), ReplayResults(home, owner)
+    mine = [r["task_ref"] for r in tasks.index() if r["trace_ref"] == trace_ref]
+    return tasks.entries(mine) + results.entries(
+        [r["result_ref"] for r in results.index() if r["task_ref"] in mine])
 
 
 def drop_rows(home, owner: str, entries: list[dict]) -> None:
     refs = [e["item"] for e in entries if e["store"] == STORE]
     if refs:
-        BenchTasks(home, owner).drop(refs)
+        for store in (BenchTasks(home, owner), ReplayResults(home, owner)):
+            store.drop(refs)
 
 
 def rows_present(home, owner: str, entries: list[dict]) -> bool:
     refs = {e["item"] for e in entries if e["store"] == STORE}
-    return bool(refs) and any(r["task_ref"] in refs for r in BenchTasks(home, owner).index())
+    return bool(refs) and any(r[s.KEY] in refs for s in (BenchTasks(home, owner),
+                                                         ReplayResults(home, owner))
+                              for r in s.index())
 
 
 def _owners(home) -> list[str]:
@@ -177,8 +200,8 @@ def _owners(home) -> list[str]:
 def export_records(home) -> list[dict]:
     out = []
     for owner in _owners(home):
-        store = BenchTasks(home, owner)
-        out += [store.read(row["task_ref"]) for row in store.index()]
+        for store in (BenchTasks(home, owner), ReplayResults(home, owner)):
+            out += [store.read(row[store.KEY]) for row in store.index()]
     return out
 
 
@@ -186,7 +209,7 @@ def delete_all(home) -> dict:
     from .trace_meta_adapters import remove_tree
     removed = 0
     for owner in _owners(home):
-        store = BenchTasks(home, owner)
-        store.keystore.destroy(STORE, [row["task_ref"] for row in store.index()])
+        for store in (BenchTasks(home, owner), ReplayResults(home, owner)):
+            store.keystore.destroy(STORE, [row[store.KEY] for row in store.index()])
         removed += remove_tree(store.base.parent)
     return {"removed": removed}
