@@ -12,11 +12,16 @@ level. ``packaging/lane-smoke-expectations.json`` records, per registry lane,
 the level measured today (``expected``) and the target class (``bar``).
 
 A fixture that needs a model server (relay) runs only when one answers at a
-fixed local address; the receipt records ``model_server_answering``, and a row's
-``expected_with_model_server`` applies then, so the verdict does not depend on
-whether the build machine happens to run Ollama. Each lane's run is also a
-write-containment probe (``lane_smoke_containment``): a file written under the
-throwaway home outside the lane's folder fails the lane.
+fixed local address, and the receipt records ``model_server_answering``. Its
+outcome never raises the lane's level: a run the model answered in time reads
+``model_main_ok`` and a slow or absent model reads ``model_no_answer`` or
+``no_model_server``, all at ``health``, so the verdict does not depend on the
+build machine's model. A reply that shows a widened run
+(``main_assertion_failed``) or a tool error fails the lane, since that is the
+engine's guard, not the host. Each lane's run is also a write-containment probe
+(``lane_smoke_containment``): a file written under the throwaway home outside
+the lane's folder fails the lane. The home holds the engine's own
+``owner.ref`` first, as every home does once the engine has started.
 
 Verdicts: ``PASS`` when every lane reaches the main action; ``BELOW_BAR_EXPECTED``
 when every lane matches its row and some lane is below the bar; ``FAIL`` when a
@@ -39,6 +44,9 @@ EXPECTATIONS = REPO_ROOT / "packaging" / "lane-smoke-expectations.json"
 SCHEMA = "flywheel.frozen-lane-smoke/v2"
 LEVELS = ("no_frozen_launch", "cannot_launch", "starts", "health", "main")
 BAR_LEVEL = "main"
+# Reasons that fail a lane whatever its row: a model-backed reply showed a
+# widened run, or the tool refused after a model server answered (C6).
+_GUARD_FAILURES = frozenset(("main_assertion_failed_model", "main_call_failed_model"))
 CLASSES = ("A", "B", "C", "A/B", "A/B-untested", "A/C", "B-untested")
 _SYSTEM_VARS = {"SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "SYSTEMDRIVE"}
 DOES_NOT_PROVE = [
@@ -127,13 +135,27 @@ def _call_json(client: MCPClient, tool: str, args: dict) -> tuple[bool, object]:
 
 def _main_step(client: MCPClient, plan: LanePlan, listed: set[str],
                home: Path, lane: str, model_server: bool = False) -> tuple[str, str]:
-    from harness.lane_tier_gate import guard_args
     from scripts.lane_smoke_fixtures import FIXTURES
     fixture = FIXTURES.get(lane)
     if fixture is None:
         return "health", "no_fixture"
     if fixture.needs_model_server and not model_server:
         return "health", "no_model_server"
+    if fixture.needs_model_server:
+        try:
+            level, reason = _run_fixture(client, plan, listed, home, lane, fixture)
+        except MCPError:
+            return "health", "model_no_answer"
+        if level == "main":
+            return "health", "model_main_ok"
+        return level, (f"{reason}_model" if reason in ("main_assertion_failed",
+                                                     "main_call_failed") else reason)
+    return _run_fixture(client, plan, listed, home, lane, fixture)
+
+
+def _run_fixture(client: MCPClient, plan: LanePlan, listed: set[str], home: Path,
+                 lane: str, fixture) -> tuple[str, str]:
+    from harness.lane_tier_gate import guard_args
     work = home / "fixtures" / lane
     calls = fixture.calls(home, work)
     allowed = plan.launch.allowed_tools if plan.launch else None
@@ -209,7 +231,8 @@ def _probe(lane: str, plan: LanePlan, home: Path, *, timeout: float,
 def _verdict(lanes: dict[str, dict], unexpected: list[str]) -> dict:
     failures = sorted(set(unexpected) | {
         lane for lane, row in lanes.items()
-        if row["level"] != row["expected"] or row.get("outside_writes")})
+        if row["level"] != row["expected"] or row.get("outside_writes")
+        or row["reason"] in _GUARD_FAILURES})
     below = sorted(lane for lane, row in lanes.items() if row["level"] != BAR_LEVEL)
     verdict = "FAIL" if failures else ("BELOW_BAR_EXPECTED" if below else "PASS")
     return {"verdict": verdict, "failures": failures, "below_bar": below}
@@ -221,7 +244,7 @@ def run_lane_smoke(plans: Mapping[str, LanePlan], expectations: Mapping[str, dic
     """Probe every planned lane and compare each level with its expectation row.
 
     ``model_server`` defaults to whether a model server answers at a fixed
-    local address now; a row's ``expected_with_model_server`` applies then."""
+    local address now; the receipt records it."""
     if model_server is None:
         from scripts.lane_smoke_fixtures import model_server_answering
         model_server = model_server_answering()
@@ -232,9 +255,7 @@ def run_lane_smoke(plans: Mapping[str, LanePlan], expectations: Mapping[str, dic
                     if plan is not None
                     else {"level": "no_frozen_launch", "reason": "no_frozen_launch"})
         row = expectations.get(lane, {})
-        expected = (row.get("expected_with_model_server") if model_server else None
-                    ) or row.get("expected")
-        lanes[lane] = {"level": measured["level"], "expected": expected,
+        lanes[lane] = {"level": measured["level"], "expected": row.get("expected"),
                        "bar": row.get("bar"), "reason": measured["reason"],
                        **{k: v for k, v in measured.items() if k not in ("level", "reason")}}
     unexpected = [lane for lane in plans if lane not in expectations]
@@ -253,6 +274,8 @@ def bundled_lane_smoke(executable: Path, *, repo_root: Path = REPO_ROOT,
     with tempfile.TemporaryDirectory(prefix="flywheel-lane-smoke-") as directory:
         home = Path(directory).resolve() / "home"
         home.mkdir()
+        from harness.operation_grants import load_or_create_owner_ref
+        load_or_create_owner_ref(home)   # the engine writes it at start
         plans = bundled_lane_plans(executable, home, repo_root=repo_root)
         plans.update(frozen_lane_plans(executable, home, smoke_environ(home),
                                        home.parent / "project"))

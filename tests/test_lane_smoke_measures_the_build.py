@@ -52,20 +52,45 @@ def test_a_payload_plan_carries_the_gateway_confinement(tmp_path, monkeypatch):
     assert Path(env["TEMP"]).is_relative_to(folder)
 
 
-def test_a_model_backed_fixture_waits_for_a_model_server(tmp_path):
-    plan = _fake({"relay.status": {"ok": True}, "local_agent_run": {}},
+_RELAY_OK = {"final_answer": "ok", "request_binding": {
+    "allow_write": False, "allow_exec": False, "granted_allow_write": False,
+    "granted_allow_exec": False, "requested_root": None, "online": False,
+    "check_present": False, "test_cmd_present": False}}
+_RELAY_BAD = {**_RELAY_OK, "request_binding": {**_RELAY_OK["request_binding"],
+                                                "check_present": True}}
+
+
+def _relay_plan(reply) -> smoke.LanePlan:
+    fake = _fake({"relay.status": {"ok": True}, "local_agent_run": reply},
                  ("relay.status", "local_agent_run"))
-    plan = smoke.LanePlan(plan.launch, "relay.status")
-    rows = {"relay": {"expected": "health", "bar": "B",
-                      "expected_with_model_server": "main"}}
-    without = smoke.run_lane_smoke({"relay": plan}, rows, home=tmp_path, timeout=20,
-                                   model_server=False)
+    return smoke.LanePlan(fake.launch, "relay.status")
+
+
+def _relay_run(tmp_path, reply, model_server):
+    rows = {"relay": {"expected": "health", "bar": "B"}}
+    return smoke.run_lane_smoke({"relay": _relay_plan(reply)}, rows, home=tmp_path,
+                                timeout=20, model_server=model_server)
+
+
+def test_a_model_backed_main_step_is_measured_but_never_host_gated(tmp_path):
+    """C5: whether and how fast a host model answers never changes the verdict;
+    the receipt records it. The row stays at health on every host."""
+    without = _relay_run(tmp_path, _RELAY_OK, False)
     assert without["model_server_answering"] is False
     assert without["lanes"]["relay"]["reason"] == "no_model_server"
     assert without["verdict"] == "BELOW_BAR_EXPECTED"
-    with_server = smoke.run_lane_smoke({"relay": plan}, rows, home=tmp_path, timeout=20,
-                                       model_server=True)
-    assert with_server["lanes"]["relay"]["expected"] == "main"
+    served = _relay_run(tmp_path, _RELAY_OK, True)
+    assert served["lanes"]["relay"]["level"] == "health"
+    assert served["lanes"]["relay"]["reason"] == "model_main_ok"
+    assert served["verdict"] == "BELOW_BAR_EXPECTED"
+
+
+def test_a_model_backed_reply_that_shows_a_widened_run_fails(tmp_path):
+    """C6: a reply that came back with a check (or write, exec, online) is a
+    guard regression, and fails the smoke whatever the host."""
+    served = _relay_run(tmp_path, _RELAY_BAD, True)
+    assert served["lanes"]["relay"]["reason"] == "main_assertion_failed_model"
+    assert served["verdict"] == "FAIL" and served["failures"] == ["relay"]
 
 
 def test_nothing_listening_is_no_model_server():

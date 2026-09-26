@@ -13,7 +13,7 @@
     "telos": {"expected": "cannot_launch", "bar": "B", "reason": "lane_held"},
     "local-model": {"expected": "health", "bar": "B"},
     "writing": {"expected": "health", "bar": "A"},
-    "relay": {"expected": "health", "bar": "B", "expected_with_model_server": "main"},
+    "relay": {"expected": "health", "bar": "B"},
     "plexus": {"expected": "main", "bar": "A"},
     "mneme": {"expected": "main", "bar": "A"},
     "calibrate-pro": {"expected": "main", "bar": "C"},

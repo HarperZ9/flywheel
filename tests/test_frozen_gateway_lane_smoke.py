@@ -146,8 +146,7 @@ def test_expectations_cover_every_registry_lane():
     rows = smoke.load_expectations()
     assert set(rows) == set(LANES)
     for lane, row in rows.items():
-        assert {"expected", "bar"} <= set(row) <= {
-            "expected", "bar", "reason", "expected_with_model_server"}, lane
+        assert {"expected", "bar"} <= set(row) <= {"expected", "bar", "reason"}, lane
         assert row["expected"] in smoke.LEVELS, lane
         assert row["bar"] in smoke.CLASSES, lane
 
