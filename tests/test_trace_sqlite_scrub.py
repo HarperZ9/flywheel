@@ -1,0 +1,87 @@
+"""SP-14, N-29: the checked SQLite scrub. An open reader keeps the WAL, so the
+scrub ends DELETE_PENDING with DB_BUSY instead of claiming success; VACUUM
+writes no transient database into the temporary directory; the second
+checkpoint empties the WAL."""
+import os
+import sqlite3
+
+import pytest
+
+from harness.trace_sqlite_scrub import scrub
+
+
+def _db(path, rows=50):
+    con = sqlite3.connect(path)
+    con.execute("PRAGMA journal_mode=WAL")
+    con.execute("CREATE TABLE t(id INTEGER PRIMARY KEY, body TEXT)")
+    con.executemany("INSERT INTO t(body) VALUES (?)", [("row %d " % i * 40,) for i in range(rows)])
+    con.commit()
+    con.close()
+
+
+def _delete_half(con):
+    con.execute("DELETE FROM t WHERE id % 2 = 0")
+
+
+def test_an_open_reader_makes_the_scrub_pending_with_db_busy(tmp_path):
+    db = tmp_path / "busy.db"
+    _db(db)
+    reader = sqlite3.connect(db)
+    reader.execute("BEGIN")
+    reader.execute("SELECT count(*) FROM t").fetchone()
+    try:
+        result = scrub(db, _delete_half, retry_s=0.3)
+    finally:
+        reader.close()
+    assert result["state"] == "DELETE_PENDING" and result["reason"] == "DB_BUSY"
+    assert result["checkpoint"][0] == 1
+
+
+def test_a_clean_scrub_empties_the_wal_twice_and_keeps_live_rows(tmp_path):
+    db = tmp_path / "clean.db"
+    _db(db)
+    result = scrub(db, _delete_half)
+    assert result["state"] == "SCRUBBED" and result["checkpoint"] == [0, 0, 0]
+    wal = db.with_name(db.name + "-wal")
+    assert not wal.exists() or wal.stat().st_size == 0
+    con = sqlite3.connect(db)
+    assert con.execute("SELECT count(*) FROM t").fetchone()[0] == 25
+    assert con.execute("PRAGMA freelist_count").fetchone()[0] == 0
+    con.close()
+
+
+def test_vacuum_leaves_no_transient_file_in_the_temporary_directory(tmp_path, monkeypatch):
+    scratch = tmp_path / "scanned-temp"
+    scratch.mkdir()
+    for name in ("TMP", "TEMP", "SQLITE_TMPDIR"):
+        monkeypatch.setenv(name, str(scratch))
+    db = tmp_path / "vacuum.db"
+    _db(db, rows=2000)
+    assert scrub(db, _delete_half)["state"] == "SCRUBBED"
+    assert list(scratch.iterdir()) == []
+
+
+def test_a_failing_delete_rolls_back_and_raises(tmp_path):
+    db = tmp_path / "rollback.db"
+    _db(db)
+
+    def broken(con):
+        con.execute("DELETE FROM t WHERE id = 1")
+        raise RuntimeError("injected")
+    with pytest.raises(RuntimeError):
+        scrub(db, broken)
+    con = sqlite3.connect(db)
+    assert con.execute("SELECT count(*) FROM t").fetchone()[0] == 50
+    con.close()
+
+
+def test_a_rollback_journal_database_is_scrubbed_too(tmp_path):
+    db = tmp_path / "journal.db"
+    con = sqlite3.connect(db)
+    con.execute("CREATE TABLE t(id INTEGER PRIMARY KEY, body TEXT)")
+    con.execute("INSERT INTO t(body) VALUES ('x')")
+    con.commit()
+    con.close()
+    result = scrub(db, lambda c: c.execute("DELETE FROM t"))
+    assert result["state"] == "SCRUBBED" and result["checkpoint"] is None
+    assert not os.path.exists(str(db) + "-journal")
