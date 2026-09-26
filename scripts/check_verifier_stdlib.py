@@ -51,6 +51,7 @@ VERIFIER_ENTRY_POINTS = [
     "inspect_evidence_cli",  # external evidence intake without producer dependencies
     "inspect_fixture_contract",  # pinned importer contract checked offline
     "incident_sim_cli",  # submitted incident trace and bounded process audit
+    "trace_export_verify",  # the verify.py every trace export carries
     # The certificate checkers ARE the accept path for the construction
     # families, and none of them were listed. Relative imports inside the
     # package resolved to bare names with no file at harness/ level, so the

@@ -75,7 +75,7 @@ def _delete_post(handler, path: str):
     from harness.trace_presence import PresenceError
     apply = path.endswith("/apply")
     body = _body(handler, {"plan_digest", "presence_ref"} if apply
-                 else {"trace_refs", "turn_refs", "session"})
+                 else {"trace_refs", "turn_refs", "import_refs", "session"})
     if body is None:
         return handler._json(capture.error("INVALID_REQUEST", "unexpected fields"), 422)
     try:
@@ -89,6 +89,28 @@ def _delete_post(handler, path: str):
     except PlanError as exc:
         status = {"NOT_FOUND": 404, "INVALID_SELECTION": 422}.get(exc.code, 409)
         return handler._json(capture.error(exc.code, "deletion refused"), status)
+
+
+def _export_post(handler):
+    """Export through a one-use grant the local CLI wrote (I12): the body
+    names the grant, never a path."""
+    from harness.trace_export import export
+    from harness.trace_export_dest import ExportError, take_grant
+    from harness.trace_presence import PresenceError
+    body = _body(handler, {"grant_ref", "presence_ref", "sync_presence_ref"})
+    if body is None:
+        return handler._json(capture.error("INVALID_REQUEST", "unexpected fields"), 422)
+    try:
+        out, options = take_grant(handler.flywheel_home, handler.owner_ref,
+                                  body.get("grant_ref"))
+        report = export(handler.flywheel_home, handler.owner_ref, out, body.get("presence_ref"),
+                        sync_presence_ref=body.get("sync_presence_ref"), **options)
+    except PresenceError as exc:
+        return handler._json(capture.error(exc.code, "presence required"), 403)
+    except ExportError as exc:
+        status = 404 if exc.code == "GRANT_NOT_FOUND" else 409
+        return handler._json(capture.error(exc.code, "export refused"), status)
+    return handler._json({"schema": "flywheel.trace-export-report/v1", **report})
 
 
 def _turns(handler, path: str):
@@ -142,4 +164,6 @@ def route_post(handler, path: str):
         return _presence_post(handler, path)
     if path in ("/api/traces/delete/plan", "/api/traces/delete/apply"):
         return _delete_post(handler, path)
+    if path == "/api/traces/export":
+        return _export_post(handler)
     return handler._json(capture.error("NOT_FOUND", "no such trace route"), 404)
