@@ -12,6 +12,8 @@ from __future__ import annotations
 import json
 
 DOCTOR = "Run: flywheel traces doctor"
+PENDING_SETTINGS = ("Flywheel capture settings changed on disk and are not in effect. "
+                    "Confirm with: flywheel traces capture confirm.")
 
 
 def failure_line(code: str, spooled: bool) -> str:
