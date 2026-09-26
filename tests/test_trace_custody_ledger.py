@@ -61,7 +61,8 @@ def test_edited_entry_breaks_the_chain(ledger):
 
 def test_anchor_one_behind_after_a_crash_is_recovered_not_tamper(ledger, monkeypatch):
     ledger.append("deletion", _deletion())
-    monkeypatch.setattr(CustodyLedger, "_write_anchor", lambda *a, **k: None)
+    from harness.trace_chain_log import ChainedLog
+    monkeypatch.setattr(ChainedLog, "_write_anchor", lambda *a, **k: None)
     ledger.append("deletion", _deletion())
     monkeypatch.undo()
     report = ledger.verify()

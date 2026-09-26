@@ -38,3 +38,17 @@ def presence_export(home) -> list[dict]:
 
 def presence_delete(home) -> dict:
     return {"removed": remove_tree(Path(home) / "state" / "presence")}
+
+
+def tombstones_export(home) -> list[dict]:
+    """The deletion ledger's entries; journals and scan sets are never exported."""
+    root = Path(home) / "state" / "trace-deletions" / "v1" / "owners"
+    out = []
+    for owner in sorted(p for p in root.iterdir() if p.is_dir()) if root.is_dir() else []:
+        from .trace_tombstones import TombstoneLedger
+        out.extend(TombstoneLedger(Path(home) / "state", owner.name).entries())
+    return out
+
+
+def deletions_delete(home) -> dict:
+    return {"removed": remove_tree(Path(home) / "state" / "trace-deletions")}
