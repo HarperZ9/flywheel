@@ -86,6 +86,42 @@ knows the gateway token, and it never sends the token itself.
 `FLYWHEEL_CAPTURE=off` stops capture for a session and says so once in the
 client. `docs/WRAPPER-HOOKS.md` has the details and the limits.
 
+## Import your Claude Code history
+
+Claude Code deletes transcripts older than `cleanupPeriodDays` (30 days by
+default). Copy them into encrypted custody before that:
+
+```
+flywheel traces import claude-code
+flywheel traces import claude-code --apply
+```
+
+The first command only plans. It lists what it would import and what it
+would not, counts transcripts within seven days of Claude Code's cleanup,
+and checks free space. `--apply` imports.
+
+- Imported: session transcripts, subagent transcripts, spilled tool results
+  (binary files too), variants beside a transcript, and other files in a
+  session folder, each kept byte for byte and encrypted. Record types the
+  importer does not know are kept and counted.
+- Not imported, and named in every plan: `history.jsonl` (every prompt you
+  typed), `file-history/`, `paste-cache/`, `plans/`, `tasks/` and
+  `shell-snapshots/`.
+- A junction or symbolic link inside the Claude Code folder is refused and
+  never followed, so a link to your SSH keys cannot pull them in.
+- Sources are opened read-only and never renamed, rewritten or re-timed. A
+  file that changes during the read is skipped (`SOURCE_CHANGED`) and nothing
+  of it is stored; a file written in the last minute waits for the next run.
+- Running it again stores nothing new. A transcript that grew, because the
+  session was resumed, is stored as a new version linked to the earlier one.
+- The importer skips every source on its exclusion list, including a resumed
+  session that extends a listed transcript. Deleting an import will add to
+  that list once deletion of imports lands; until then the list stays empty.
+
+What an import does not prove: the stored copy matches the file as it was
+read. Claude Code's transcript can lag the live conversation, and its format
+changes between versions.
+
 ## Encryption at rest
 
 Gateway agent traces and their checkpoints are encrypted before they touch
@@ -188,6 +224,6 @@ built.
 
 ## What is not covered yet
 
-Export, deletion, retention settings and import of existing Claude Code
-and Codex transcripts are listed by `status` as gaps,
+Export, deletion, retention settings and import of Codex sessions are listed
+by `status` as gaps,
 each with the change that adds it. This page grows as each one lands.
