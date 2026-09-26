@@ -18,6 +18,7 @@ def call_lane_tool(
     timeout: int = 20,
     governance_tier: str = "",
     bulletin_access: object = None,
+    credential_bindings: object = None,
 ) -> dict[str, Any]:
     """Call one tool on a registered lane's MCP server.
 
@@ -27,7 +28,8 @@ def call_lane_tool(
 
     When governance_tier is set, checks the tier against the lane's floor,
     raised by the tool's own entry. A T1-classified system cannot call tools
-    that require T2+ authority.
+    that require T2+ authority. credential_bindings carries the values a grant
+    bound for this call; they join this lane child only.
     """
     args = args or {}
 
@@ -56,6 +58,11 @@ def call_lane_tool(
         command = resolve_mcp_launch(lane_name)
     except Exception as e:
         return {"error": f"cannot resolve MCP command for {lane_name!r}: {e}"}
+    from .lane_credentials import LaneCredentialError, bind_lane_credentials, credential_refused
+    try:  # a saved key granted to this lane joins this one child (lane_credentials.py)
+        command = bind_lane_credentials(lane_name, command, credential_bindings)
+    except LaneCredentialError:
+        return credential_refused(lane_name, tool_name)
 
     try:
         from harness.mcp_client import (

@@ -20,7 +20,8 @@ def parse_lane_path(path: str) -> tuple[str, str] | None:
     return parts[3], parts[4]
 
 
-def handle_lane_call(path: str, req: object) -> tuple[dict, int]:
+def handle_lane_call(path: str, req: object,
+                     credential_bindings: object = None) -> tuple[dict, int]:
     target = parse_lane_path(path)
     if target is None:
         return {"code": "GATEWAY_ROUTE_MALFORMED",
@@ -46,9 +47,13 @@ def handle_lane_call(path: str, req: object) -> tuple[dict, int]:
     bulletin_access = (body["bulletin_access"]
                        if "bulletin_access" in body else None)
     from .lane_caller import call_lane_tool
-    result = call_lane_tool(lane_name, tool_name, args, timeout=timeout,
-                            governance_tier=str(tier or ""),
-                            bulletin_access=bulletin_access)
-    if result.get("governance_denied"):
+    from .lane_credentials import redact_result
+    bound = {} if credential_bindings is None else {
+        "credential_bindings": credential_bindings}
+    result = redact_result(call_lane_tool(
+        lane_name, tool_name, args, timeout=timeout,
+        governance_tier=str(tier or ""), bulletin_access=bulletin_access,
+        **bound), credential_bindings)
+    if result.get("governance_denied") or result.get("code") == "PERMISSION_REQUIRED":
         return result, 403
     return result, 400 if "error" in result else 200

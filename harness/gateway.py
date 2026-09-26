@@ -2223,7 +2223,7 @@ class _Handler(BaseHTTPRequestHandler):
             if bad:
                 return bad
             from harness.lane_call_route import handle_lane_call
-            return self._json(*handle_lane_call(p, req))
+            return self._json(*handle_lane_call(p, req, self.__dict__.pop("_gateway_bindings", None)))
         if (p == "/api/infra/credential-scan"      # scan for exposed credentials
                 or p == "/api/infra/isolation"       # run the isolation test
                 or p == "/api/infra/kill"):          # the kill switch
