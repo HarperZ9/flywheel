@@ -70,9 +70,9 @@ class DeletionJournal:
         raw = self._read(self.path, "journal")
         return json.loads(raw) if raw else {}
 
-    def begin(self, steps, scan_set, template: dict) -> None:
+    def begin(self, steps, scan_set, template: dict, extra=None) -> None:
         doc = {"schema": "flywheel.trace-deletion-journal/v1", "plan_digest": self.plan,
-               "steps": list(steps), "done": [], "template": template,
+               "steps": list(steps), "done": [], "template": template, **(extra or {}),
                "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds")
                .replace("+00:00", "Z")}
         if scan_set is not None and self.cipher.encrypting:
@@ -115,11 +115,11 @@ def _tombstone_fields(journal: DeletionJournal, doc: dict, verdict: dict) -> dic
 
 
 def apply_journaled(journal: DeletionJournal, steps, verify, *, scan_set=None,
-                    tombstone=None) -> dict:
+                    tombstone=None, extra=None) -> dict:
     """Run `steps` (name, callable) under the journal, then `verify(scan_set)`.
     Faults propagate and leave the journal for a rerun to resume."""
     if not journal.exists():
-        journal.begin([name for name, _ in steps], scan_set, dict(tombstone or {}))
+        journal.begin([name for name, _ in steps], scan_set, dict(tombstone or {}), extra)
     done = journal.done_steps()
     for name, run in steps:
         if name not in done:

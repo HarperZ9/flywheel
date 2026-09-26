@@ -31,6 +31,10 @@ def _selection(args) -> dict:
     if args.session:
         client, _, session_id = args.session.partition(":")
         selection["session"] = {"client": client, "session_id": session_id}
+    for flag, key in (("receipt_eid", "receipt_eids"), ("note_ref", "note_refs"),
+                      ("legacy_run", "legacy_runs")):
+        if getattr(args, flag):
+            selection[key] = getattr(args, flag)
     return selection
 
 
@@ -45,6 +49,9 @@ def _print_plan(plan: dict) -> None:
     for client, command in plan["remedies"].items():
         emit(f"  {client} keeps its own transcript; remove it with: {escape(command)}")
     emit(f"  residue: {plan['residue_forecast']}")
+    for note in plan["notes"]:
+        emit(f"  note: {note}")
+    emit(f"  not covered by any deletion yet: {', '.join(plan['not_covered'])}")
     emit(f"Plan digest {plan['plan_digest']}")
     emit(f"Apply with: flywheel traces delete --apply --plan-digest {plan['plan_digest']}")
 
@@ -115,6 +122,9 @@ def register(sub) -> None:
     parser.add_argument("--trace-ref", action="append", default=[])
     parser.add_argument("--turn-ref", action="append", default=[])
     parser.add_argument("--session", help="client:session-id, every turn of that session")
+    parser.add_argument("--receipt-eid", action="append", default=[])
+    parser.add_argument("--note-ref", action="append", default=[])
+    parser.add_argument("--legacy-run", action="append", default=[])
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--plan-digest")
     parser.set_defaults(run=delete)
