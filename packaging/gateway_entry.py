@@ -65,6 +65,12 @@ def main(argv=None) -> int:
     bundled = dispatch_bundled_lane_mcp(args)
     if bundled is not None:
         return bundled
+    from harness import frozen_lane_modes
+    lane_mode = frozen_lane_modes.dispatch_lane_mcp(args)
+    if lane_mode is None:
+        lane_mode = frozen_lane_modes.dispatch_bundled_lane_cli(args)
+    if lane_mode is not None:
+        return lane_mode
     canon_context = _dispatch_canon_context_mcp(args)
     if canon_context is not None:
         return canon_context
