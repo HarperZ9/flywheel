@@ -11,7 +11,6 @@ from .trace_inventory import Cap, Gap, Protection, Store
 
 META = Protection("metadata-only")
 EXPORT = Gap("bulk export lands in FW-09", "FW-09")
-DEL_ENC = Gap("deletion of encrypted stores lands in FW-07a", "FW-07a")
 DEL_PLAIN = Gap("deletion of plaintext and legacy stores lands in FW-07b", "FW-07b")
 NOT_DESIGNED = Gap("deletion of this store is not designed in this round", "7.16")
 
@@ -51,7 +50,8 @@ DESKTOP_DELETE = Gap("delete from the desktop app: it removes a conversation by 
 
 STORES = (
     Store("S1", "Gateway private agent traces", "state", ("gateway-agent-traces",),
-          ("C1", "C2", "C4", "C5"), ENCRYPTED, EXPORT, DEL_ENC, owner_binding="owner",
+          ("C1", "C2", "C4", "C5"), ENCRYPTED, EXPORT, "harness.trace_delete_apply.apply_plan",
+          owner_binding="owner",
           caps=(TRACE_BOUND, TOOL_OUTPUT), invalidate=True),
     Store("S2", "Gateway operations and their results", "state", ("gateway-operations",),
           ("C1", "C4", "C5"), CLASSIFY_FIRST, EXPORT, DEL_PLAIN, owner_binding="owner",

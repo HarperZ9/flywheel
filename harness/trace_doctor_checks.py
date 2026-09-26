@@ -191,5 +191,26 @@ def synthetic_check(home: Path, run: bool):
                           cwd=str(Path(sys.executable).parent), timeout=60)
     if proc.returncode != 0:
         return "FAIL", "the hook module could not record a synthetic turn", DOCTOR
-    return ("PASS", "the Flywheel hook module recorded a synthetic turn; its receipt stays "
-            "until the deletion engine (FW-07a) removes doctor records", "")
+    removed = _remove_synthetic(home, session)
+    return ("PASS", "the Flywheel hook module recorded a synthetic turn; " + removed, "")
+
+
+def _remove_synthetic(home: Path, session: str) -> str:
+    """Delete what the doctor itself made, through the deletion engine, with
+    presence method doctor-synthetic, which applies only to these records."""
+    from harness.trace_custody_ledger import read_owner_ref
+    from harness.trace_delete_adapters_enc import session_turns
+    from harness.trace_delete_apply import apply_plan
+    from harness.trace_delete_plan import make_plan
+    from harness.trace_presence import PresenceStore
+    owner = read_owner_ref(home)
+    turns = session_turns(home, owner, "claude-code", session) if owner else []
+    if not turns:
+        return "no synthetic record was found to remove"
+    plan = make_plan(home, owner, {"turn_refs": turns})
+    store = PresenceStore(home / "state", owner)
+    challenge = store.create("delete_apply", plan["plan_digest"], synthetic=True)
+    store.satisfy(challenge["ref"], "doctor-synthetic")
+    report = apply_plan(home, owner, plan["plan_digest"], challenge["ref"],
+                        reason="doctor_synthetic")
+    return f"its records were removed ({report['state']})"
