@@ -38,8 +38,8 @@ def test_bundled_python_lanes_excludes_only_relay_by_default():
     assert "relay" not in lanes
     # Canon is bundled through the helper too, so its bundled-lane entrypoint
     # (canon.local_mcp) reaches the freeze; only relay (the submodule) is out.
-    assert lanes == ["accountable-surface", "canon", "chorus", "crucible",
-                     "forum", "gather", "index", "mneme", "plexus"]
+    assert lanes == ["accountable-surface", "articulate", "calibrate-pro", "canon",
+                     "chorus", "crucible", "forum", "gather", "index", "mneme", "plexus"]
 
 
 def test_bundled_python_lanes_exclusion_is_configurable():

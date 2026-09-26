@@ -15,7 +15,9 @@ def test_python_lane_payload_manifest_check_passes():
     report = json.loads(result.stdout)
     assert report["verdict"] == "PASS"
     assert report["async_lanes"] == ["forum"]
-    assert report["registry_updates"] == ["forum", "index"]
+    # The registry caught up with index 2.13.0 and forum 1.14.0, so no row
+    # is ahead of it.
+    assert report["registry_updates"] == []
 
 
 def test_python_lane_payload_manifest_rejects_descriptor_tamper(tmp_path):
