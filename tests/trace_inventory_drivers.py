@@ -87,8 +87,14 @@ def capture_spool(home, run_root):
     write_endpoint(home, "127.0.0.1", 9, os.getpid())
 
 
+def presence(home, run_root):
+    from harness import trace_presence
+    ref = trace_presence.confirm(home / "state", OWNER, "export", "f" * 64, "sweep")
+    assert trace_presence.require(home / "state", OWNER, "export", "f" * 64, ref) == "none"
+
+
 DRIVERS = (agent_trace, scaffold, memory_note, operations, grants,
-           continuation, source_context, capture_spool)
+           continuation, source_context, capture_spool, presence)
 
 
 def run_all(home, run_root):
