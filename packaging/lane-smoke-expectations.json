@@ -1,0 +1,24 @@
+{
+  "schema": "flywheel.lane-smoke-expectations/v1",
+  "levels": ["no_frozen_launch", "cannot_launch", "starts", "health", "main"],
+  "bar_level": "main",
+  "lanes": {
+    "gather": {"expected": "health", "bar": "A"},
+    "crucible": {"expected": "health", "bar": "A"},
+    "chorus": {"expected": "health", "bar": "A"},
+    "articulate": {"expected": "no_frozen_launch", "bar": "A"},
+    "index": {"expected": "health", "bar": "A/B"},
+    "forum": {"expected": "cannot_launch", "bar": "A/B-untested"},
+    "learn": {"expected": "no_frozen_launch", "bar": "B"},
+    "telos": {"expected": "no_frozen_launch", "bar": "B"},
+    "local-model": {"expected": "no_frozen_launch", "bar": "B"},
+    "writing": {"expected": "no_frozen_launch", "bar": "A"},
+    "relay": {"expected": "health", "bar": "B"},
+    "plexus": {"expected": "health", "bar": "A"},
+    "mneme": {"expected": "health", "bar": "A"},
+    "calibrate-pro": {"expected": "no_frozen_launch", "bar": "C"},
+    "canon": {"expected": "health", "bar": "B"},
+    "bulletin": {"expected": "no_frozen_launch", "bar": "A"},
+    "accountable-surface": {"expected": "health", "bar": "A/C"}
+  }
+}
