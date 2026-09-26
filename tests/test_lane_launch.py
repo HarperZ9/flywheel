@@ -20,8 +20,10 @@ from harness.plugins import probe_plugin
 
 def _confined(launch, argv):
     """A pip or npm lane launch keeps its argv and every other field, and starts
-    without ambient env: only env_overrides differs from the bare launch."""
-    assert replace(launch, env_overrides=()) == LaunchSpec(tuple(argv), inherit_env=False)
+    without ambient env in its own lane folder: only env_overrides and the lane
+    folder differ from the bare launch."""
+    assert replace(launch, env_overrides=(), cwd=None) == LaunchSpec(tuple(argv), inherit_env=False)
+    assert Path(launch.cwd).parent.name == "lanes"
     assert "PATH" in {key.upper() for key, _ in launch.env_overrides}
     return True
 

@@ -24,6 +24,7 @@ import tomllib
 from typing import Callable, Mapping
 
 from . import bundled_lane_descriptor as _descriptor
+from . import bundled_lane_env as _bundled_env
 from .bundled_lane_descriptor import (  # re-exported for scripts and tests
     SCHEMA, SOURCE_ALGORITHM, canonical_descriptor_text, descriptor_digest)
 from .evidence_json import canonical_sha256
@@ -51,19 +52,11 @@ class BundledLaneAdmission:
 
 def bundled_child_environment(
         environ: Mapping[str, str], *, platform: str = os.name) -> dict[str, str]:
-    """Return the small environment passed to a bundled lane child."""
-    if platform == "nt":
-        retained = {"SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "SYSTEMDRIVE",
-                    "TEMP", "TMP", "USERPROFILE", "APPDATA", "LOCALAPPDATA"}
-        env = {key: str(value) for key, value in environ.items()
-               if key.upper() in retained}
-        root = env.get("SYSTEMROOT") or env.get("WINDIR") or "C:/Windows"
-        env["PATH"] = str(Path(root) / "System32").replace("\\", "/")
-        return env
-    retained = {"LANG", "LC_ALL", "LC_CTYPE", "TMPDIR", "TEMP", "TMP"}
-    env = {key: str(value) for key, value in environ.items() if key in retained}
-    env["PATH"] = os.defpath
-    return env
+    """Return the small environment passed to a bundled lane child.
+
+    The base set, the Flywheel home, UTF-8 stdio and the Git folder; the rules
+    live in bundled_lane_env."""
+    return _bundled_env.bundled_child_environment(environ, platform=platform)
 
 
 def admit_bundled_lane(

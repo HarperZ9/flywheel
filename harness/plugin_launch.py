@@ -31,7 +31,8 @@ def _restricted_launch(command, bindings, slots, *, lane: bool = False):
     wider than the strict set and holds lanes.json env_allow grants, and a
     restricted launch is stored in discovery receipts; its env is filtered to
     the strict set plus its own import path. A frozen build's bundled lane
-    child already carries its own small env and passes through."""
+    child already carries its own small env and passes through. A lane launch
+    with its own env and bound slots keeps that env and adds the slots."""
     from dataclasses import replace
     from .mcp_client import LaunchSpec
     platform = "windows" if os.name == "nt" else "posix"
@@ -42,6 +43,8 @@ def _restricted_launch(command, bindings, slots, *, lane: bool = False):
         return replace(command, env_overrides=tuple(
             (key, value) for key, value in command.env_overrides
             if key.upper() in strict | _LAUNCH_OWN_ENV))
+    if isinstance(command, LaunchSpec) and slots and lane and not command.inherit_env:
+        return _join_bound_slots(command, bindings, slots)
     try:
         child_env = bindings.child_environment(os.environ, platform=platform)
     except Exception:
@@ -58,6 +61,24 @@ def _restricted_launch(command, bindings, slots, *, lane: bool = False):
     return LaunchSpec(
         spec.argv, spec.cwd, tuple(sorted(child_env.items())), False,
         url=spec.url, hide_window=spec.hide_window, allowed_tools=spec.allowed_tools)
+
+
+def _join_bound_slots(command, bindings, slots):
+    """A lane launch that carries its own env (bundled or confined) keeps it,
+    and each bound slot joins it by name. Rebuilding from the strict set would
+    drop the lane's home, UTF-8 and state variables (R7)."""
+    from dataclasses import replace
+    names = {slot.upper() for slot in slots}
+    env = {key: value for key, value in command.env_overrides
+           if key.upper() not in names}
+    try:
+        bound = {slot: bindings.value_for(slot) for slot in slots}
+    except Exception:
+        raise PluginPermissionError from None
+    if any(type(value) is not str or not value for value in bound.values()):
+        raise PluginPermissionError
+    env.update(bound)
+    return replace(command, env_overrides=tuple(sorted(env.items())))
 
 
 def _launch(command, slots, bindings, kind=None):

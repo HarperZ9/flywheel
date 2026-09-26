@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -191,7 +192,9 @@ def test_frozen_relay_auto_uses_gateway_self_child_and_not_path(monkeypatch):
     assert calls
     assert runtime.present is True
     assert runtime.selected_runtime == "bundled"
-    assert runtime.launch == admission.launch
+    from dataclasses import replace
+    assert replace(runtime.launch, cwd=None) == admission.launch
+    assert Path(runtime.launch.cwd).parts[-2:] == ("lanes", "relay")
     assert runtime.launch.allowed_tools == ("relay.status",)
     # This used to assert resolve_mcp_command("relay") == [], which held only
     # while relay carried package_disabled_reason and the roster offered no argv
