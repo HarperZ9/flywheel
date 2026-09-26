@@ -8,9 +8,9 @@ transcript does, is PREVIOUSLY_DELETED_SESSION with the count of new bytes,
 and nothing of the deleted prefix is stored. This is the one keyed
 fingerprint design invariant I5 allows: confirming a guess needs the owner's
 custody key and the exact bytes. Without the custody key the list cannot
-match, so imports fail closed with CUSTODY_KEY_UNAVAILABLE. The deletion
-adapter that fills the list lands with the deletion of imports; entries can
-be written directly here.
+match, so imports fail closed with CUSTODY_KEY_UNAVAILABLE. Deleting an
+import fills the list from the item's index row
+(trace_delete_adapters_import); `add` writes an entry from source bytes.
 """
 from __future__ import annotations
 
