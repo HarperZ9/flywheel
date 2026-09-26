@@ -73,8 +73,13 @@ def launch_state(codes) -> str | None:
 
 def select_frozen_launch(lane, profile: str, executable: str,
                          environ: Mapping[str, str],
-                         importable_fn: Callable[[str], bool]) -> Selection:
-    """The frozen launch for ``lane`` as (launch, selected, component, codes)."""
+                         importable_fn: Callable[[str], bool], *,
+                         stage_root: Path | None = None,
+                         find: Callable[..., object] | None = None) -> Selection:
+    """The frozen launch for ``lane`` as (launch, selected, component, codes).
+
+    ``stage_root`` and ``find`` default to this build's Node stage and Node
+    discovery; the smoke passes the build it measures."""
     if lane.name in bundled_payload_lane_names():
         if lane.package_disabled_reason and profile != "auto":
             return None, "package", None, ()
@@ -85,8 +90,9 @@ def select_frozen_launch(lane, profile: str, executable: str,
     if lane.kind == "http":
         return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), "http", None, ()
     if lane.name in node_lanes.NODE_LANES:
-        res = node_lanes.resolve_node_lane(lane, "frozen", environ,
-                                           stage_root=_stage_root(), find=find_node)
+        res = node_lanes.resolve_node_lane(
+            lane, "frozen", environ, find=find or find_node,
+            stage_root=stage_root if stage_root is not None else _stage_root())
         return res.launch, "bundled", None, res.codes
     if lane.name == LOCAL_MODEL:
         root, code = local_model_root(environ)

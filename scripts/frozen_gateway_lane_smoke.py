@@ -3,7 +3,9 @@
 Each bundled lane is launched the way the gateway launches it (the same
 admission, child environment and admitted-tool list), then must answer
 ``initialize``, ``tools/list``, its health tool, and its main tool on a test
-fixture from ``lane_smoke_fixtures``. The furthest step a lane clears is its
+fixture from ``lane_smoke_fixtures``. learn, telos, writing and local-model have
+no payload row; ``frozen_lane_smoke_plans`` launches them through the engine's
+frozen selection instead. The furthest step a lane clears is its
 level. ``packaging/lane-smoke-expectations.json`` records, per registry lane,
 the level measured today (``expected``) and the target class (``bar``).
 
@@ -204,7 +206,11 @@ def bundled_lane_smoke(executable: Path, *, repo_root: Path = REPO_ROOT,
     """Run the lane smoke against a frozen executable under a scratch home."""
     executable = Path(executable).resolve()
     expectations = load_expectations(expectations_path)
+    from scripts.frozen_lane_smoke_plans import frozen_lane_plans
     with tempfile.TemporaryDirectory(prefix="flywheel-lane-smoke-") as directory:
-        home = Path(directory).resolve()
+        home = Path(directory).resolve() / "home"
+        home.mkdir()
         plans = bundled_lane_plans(executable, home, repo_root=repo_root)
+        plans.update(frozen_lane_plans(executable, home, smoke_environ(home),
+                                       home.parent / "project"))
         return run_lane_smoke(plans, expectations, home=home, timeout=timeout)

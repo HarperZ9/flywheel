@@ -201,6 +201,42 @@ def _calibrate_ok(reply: object) -> bool:
     return isinstance(panels, list) and reply.get("count") == len(panels) == 58
 
 
+_OBJECTIVE = "state the worst-case comparison count"
+
+
+def _learn(home: Path, work: Path) -> list[Call]:
+    return [("learn_tutor_plan", {"sessionId": "lane-smoke", "topic": "binary search",
+                                  "objectives": [_OBJECTIVE]})]
+
+
+def _learn_ok(reply: object) -> bool:
+    return (isinstance(reply, dict) and reply.get("sessionId") == "lane-smoke"
+            and reply.get("objectives") == [_OBJECTIVE])
+
+
+def _telos(home: Path, work: Path) -> list[Call]:
+    return [("telos.catalog", {})]
+
+
+def _telos_ok(reply: object) -> bool:
+    if not isinstance(reply, dict):
+        return False
+    tools = reply.get("tools")
+    return (reply.get("schema") == "project-telos.mcp-tool-catalog/v1"
+            and isinstance(tools, list) and len(tools) > 0)
+
+
+# Lanes the smoke launches with no main fixture, and why. Each stays at the
+# health level here; its main action is measured elsewhere.
+NO_FIXTURE = {
+    "local-model": "local_agent_run needs a model server at a fixed address "
+                   "(127.0.0.1:8765 or Ollama); the installed-app acceptance runs it "
+                   "against a stub, and a smoke on a machine with a model would "
+                   "measure that machine",
+    "writing": "writing.diagnose reads a recorded revision (project, section and "
+               "revision records first), which a one-call fixture cannot build",
+}
+
 FIXTURES: dict[str, LaneFixture] = {
     "gather": LaneFixture(_gather, _gather_ok),
     "crucible": LaneFixture(_crucible, _crucible_ok),
@@ -214,4 +250,6 @@ FIXTURES: dict[str, LaneFixture] = {
     "accountable-surface": LaneFixture(_surface, _surface_ok),
     "articulate": LaneFixture(_articulate, _articulate_ok),
     "calibrate-pro": LaneFixture(_calibrate, _calibrate_ok),
+    "learn": LaneFixture(_learn, _learn_ok),
+    "telos": LaneFixture(_telos, _telos_ok),
 }

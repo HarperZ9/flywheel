@@ -16,7 +16,7 @@ from harness.lanes_registry import LANES
 from harness.mcp_client import LaunchSpec
 from scripts import check_frozen_gateway
 from scripts import frozen_gateway_lane_smoke as smoke
-from scripts.lane_smoke_fixtures import FIXTURES
+from scripts.lane_smoke_fixtures import FIXTURES, NO_FIXTURE
 
 FAKE_SERVER = r'''
 import json, sys
@@ -154,7 +154,10 @@ def test_every_bundled_lane_has_a_fixture():
     rows = smoke.load_expectations()
     bundled = {lane for lane, row in rows.items()
                if row["expected"] != "no_frozen_launch"}
-    assert bundled <= set(FIXTURES)
+    assert bundled <= set(FIXTURES) | set(NO_FIXTURE)
+    # An exemption states why and never shadows a real fixture.
+    assert not set(NO_FIXTURE) & set(FIXTURES)
+    assert all(len(reason) > 40 for reason in NO_FIXTURE.values())
 
 
 @pytest.mark.parametrize("lane", sorted(FIXTURES))
