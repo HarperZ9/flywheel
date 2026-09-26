@@ -7,13 +7,16 @@ table does not.
 
 This is the schema and a stub. The stub admits each Python payload lane's
 status and doctor tools and nothing else, which is exactly what the 1.0.x rows
-admit. Main tools, per-tool needs, T2 tools and the lanes without a Python
-payload (learn, telos, local-model, writing, bulletin) arrive with the policy
-content, which the operator reviews before merge.
+admit. The Node lanes (learn, telos) carry a full draft from
+``lane_tool_policy_node.py``. Main tools, per-tool needs and T2 tools for the
+other lanes, and the lanes without a payload (local-model, writing, bulletin),
+arrive with the policy content. The operator reviews both before merge.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
+
+from .lane_tool_policy_node import NODE_LANE_POLICY
 
 TIERS = ("T1", "T2")
 DEFAULT_TIMEOUT_S = 20
@@ -51,6 +54,8 @@ LANE_TOOL_POLICY: dict[str, dict[str, ToolPolicy]] = {
         "chorus", "relay", "accountable-surface", "articulate", "calibrate-pro",
     )
 }
+LANE_TOOL_POLICY.update({lane: {name: ToolPolicy(**fields) for name, fields in tools.items()}
+                         for lane, tools in NODE_LANE_POLICY.items()})
 
 
 def lane_policy(lane: str) -> dict[str, ToolPolicy]:
