@@ -120,6 +120,12 @@ STORES = (
           retention="keep until you delete; unanswered prompts become unpaired turns after "
                     "pending_ttl_hours",
           note="salts always; prompt and answer text only with content capture on"),
+    Store("S8b", "Capture snapshots (URLs frozen for captured turns)", "state",
+          ("capture-snapshots",), ("C1", "C4"), ENCRYPTED,
+          "harness.trace_capture_freeze.export_records",
+          "harness.trace_capture_freeze.delete_all", owner_binding="owner",
+          added_by_program=True,
+          note="only with URL freezing on; credential-bearing URLs are refused before fetch"),
     Store("CS", "Adopted capture settings", "state", ("capture-settings",), ("C4",), META,
           "harness.trace_meta_adapters.capture_settings_export",
           "harness.trace_meta_adapters.capture_settings_delete", owner_binding="owner",

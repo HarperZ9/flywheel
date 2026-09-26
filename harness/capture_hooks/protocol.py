@@ -21,7 +21,9 @@ HELLO_PATH = "/api/traces/capture/hello"
 PING_PATH = "/api/traces/capture/ping"
 PROMPT_PATH = "/api/traces/capture/prompt"
 STOP_PATH = "/api/traces/capture/stop"
-_COMMIT_TAGS = {"prompt": b"flywheel.turn.prompt.v1", "answer": b"flywheel.turn.answer.v1"}
+FREEZE_PATH = "/api/traces/capture/freeze"
+_COMMIT_TAGS = {"prompt": b"flywheel.turn.prompt.v1", "answer": b"flywheel.turn.answer.v1",
+                "freeze": b"flywheel.turn.freeze.v1"}
 PREFIX = "/api/traces/capture/"
 LOOPBACK = ("127.0.0.1", "::1")
 SCHEME = "FW-Sig"

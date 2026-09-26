@@ -15,9 +15,7 @@ import hashlib
 import ipaddress
 import json
 import socket
-import urllib.error
 import urllib.parse
-import urllib.request
 from pathlib import Path
 
 SCHEMA = "flywheel.web-snapshot/v1"
@@ -61,20 +59,6 @@ def _guard_url(url: str) -> "str | None":
     return None
 
 
-class _GuardedRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        reason = _guard_url(newurl)
-        if reason:
-            raise urllib.error.HTTPError(newurl, code, reason, headers, fp)
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
-
-
-# a real browser User-Agent gets past many generic-fetcher walls; when a
-# source shares real content it is the operator's context, so we present as a
-# browser rather than a bot and only fall back to naming a wall if one remains
-_BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-               "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
-
 # markers of a bot-wall / challenge / block page served with HTTP 200
 _BLOCK_MARKERS = (
     "please wait for verification", "just a moment", "checking your browser",
@@ -102,14 +86,10 @@ def looks_like_block_page(body: bytes, content_type: str) -> "str | None":
 
 
 def _fetch(url: str) -> tuple:
-    reason = _guard_url(url)
-    if reason:
-        raise ValueError(reason)
-    opener = urllib.request.build_opener(_GuardedRedirect())
-    req = urllib.request.Request(url, headers={"User-Agent": _BROWSER_UA})
-    with opener.open(req, timeout=_TIMEOUT) as r:
-        body = r.read(_MAX_BYTES + 1)
-        return (r.status, dict(r.headers), body, r.geturl())
+    """Resolve once, check every address, connect to the checked one, no proxy,
+    each redirect checked again (harness/web_fetch_pinned.py)."""
+    from . import web_fetch_pinned
+    return web_fetch_pinned.fetch_pinned(url, timeout=_TIMEOUT, max_bytes=_MAX_BYTES)
 
 
 def snapshot_url(url: str, dest_dir, *, runner=None) -> dict:

@@ -52,3 +52,18 @@ def render(client: str, event: str, *, failure: str | None = None,
         doc["hookSpecificOutput"] = {"hookEventName": "UserPromptSubmit",
                                      "additionalContext": context}
     return 0, (json.dumps(doc) if doc else ""), ""
+
+
+def freeze_context(manifest: dict) -> str | None:
+    """What the Claude Code prompt hook hands the model: the URLs frozen with
+    their digests, and counts of refused and failed ones, never their text."""
+    sources = [s for s in manifest.get("sources", []) if isinstance(s, dict)]
+    if not sources and not manifest.get("refused") and not manifest.get("failed"):
+        return None
+    lines = ["[flywheel] sources named in this message, frozen before work:"]
+    lines += [f"  frozen {s.get('url')} sha256:{s.get('sha256')}" for s in sources]
+    if manifest.get("refused"):
+        lines.append(f"  {manifest['refused']} refused (credential-bearing URL, not fetched)")
+    if manifest.get("failed"):
+        lines.append(f"  {manifest['failed']} could not be fetched")
+    return "\n".join(lines)

@@ -68,8 +68,20 @@ encrypted, in the turn record, a second copy beside the client's own
 transcript. It takes effect only after you confirm it (see owner presence in
 TRACE-OWNERSHIP.md). The gateway decides what capture does: an edited
 `trace-capture.json` stays pending until confirmed, the prompt hook says so,
-and the hooks never read the file. Transcript archiving and URL freezing
-are off in this version and cannot be switched on.
+and the hooks never read the file. Transcript archiving is off in this
+version and cannot be switched on.
+
+`flywheel traces capture freeze on` turns on URL freezing, separately from
+content capture. The prompt hook then sends the URLs it finds (at most five)
+and nothing else of the prompt. The gateway refuses any URL with a user name
+and password or a credential-bearing parameter (signed storage links, OAuth
+codes, access tokens), counts it and echoes nothing of it. It fetches the
+rest by resolving each host once, refusing private and loopback addresses,
+connecting to the address it checked, ignoring proxy variables and checking
+every redirect again, then keeps each page encrypted and hands Claude Code a
+manifest of what it froze. The Stop hook never fetches. The same fetcher now
+serves `POST /api/snapshot`, so a fetch that only worked through a proxy
+fails there too.
 
 `POST /api/scaffold` stays for other callers with its bearer authentication,
 and still freezes the URLs a prompt names; the hooks no longer use it.

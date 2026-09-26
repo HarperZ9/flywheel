@@ -57,13 +57,21 @@ def confirm_file(args) -> int:
     return _adopt(home, owner)
 
 
-def set_content(args) -> int:
+_FIRST_ON = {
+    "content": "Content capture keeps a second, encrypted copy of each prompt and final "
+               "answer in your Flywheel home, beside the copy your client already keeps.",
+    "freeze_urls": "URL freezing sends the URLs each prompt names to the local gateway, "
+                   "which fetches them and keeps the pages encrypted; links that carry "
+                   "credentials are refused and never fetched.",
+}
+
+
+def set_switch(args) -> int:
     from .trace_capture_settings import write_file
     home, owner = _context()
-    write_file(home, {"content": args.value})
+    write_file(home, {args.switch: args.value})
     if args.value == "on":
-        emit("Content capture keeps a second, encrypted copy of each prompt and final "
-             "answer in your Flywheel home, beside the copy your client already keeps.")
+        emit(_FIRST_ON[args.switch])
     return _adopt(home, owner)
 
 
@@ -74,6 +82,8 @@ def register(sub) -> None:
         run=show)
     commands.add_parser("confirm", help="adopt the settings file, with presence").set_defaults(
         run=confirm_file)
-    content = commands.add_parser("content", help="keep prompt and answer text, encrypted")
-    content.add_argument("value", choices=("on", "off"))
-    content.set_defaults(run=set_content)
+    for name, switch, text in (("content", "content", "keep prompt and answer text, encrypted"),
+                               ("freeze", "freeze_urls", "fetch and keep the URLs prompts name")):
+        command = commands.add_parser(name, help=text)
+        command.add_argument("value", choices=("on", "off"))
+        command.set_defaults(run=set_switch, switch=switch)

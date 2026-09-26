@@ -14,18 +14,20 @@ import argparse
 import base64
 import json
 import os
+import re
 import sys
 
 from . import output, spool
 from .client import CaptureFailure, open_channel, read_token
 from .home import resolve_home
-from .protocol import PROMPT_PATH, STOP_PATH, commitment
+from .protocol import FREEZE_PATH, PROMPT_PATH, STOP_PATH, commitment
 
 EVENTS = ("prompt", "stop")
 CLIENTS = ("claude-code", "codex")
 TIMEOUT = {"prompt": 10.0, "stop": 10.0}
 MAX_EVENT = 16 * 1024 * 1024
 _PROMPT_KEYS = ("prompt", "user_prompt", "message", "input")
+_URL = re.compile(r"https?://[^\s)\]>\"']+")
 _ANSWER_KEYS = ("answer", "final_message", "response", "output")
 
 
@@ -112,10 +114,17 @@ def _act(args, event, home) -> tuple[dict, list[str]]:
                                                          content_on))
         return {}, messages
     prompt = _text(event, _PROMPT_KEYS)
-    channel.request("POST", PROMPT_PATH, _turn_payload(args, event, "prompt", prompt,
-                                                       content_on))
+    payload = _turn_payload(args, event, "prompt", prompt, content_on)
+    channel.request("POST", PROMPT_PATH, payload)
+    result = {}
+    urls = list(dict.fromkeys(u.rstrip(".,;") for u in _URL.findall(prompt)))[:5]
+    if channel.effective.get("freeze_urls") == "on" and urls:
+        keys = ("client", "session_id", "prompt_key")
+        manifest = channel.request("POST", FREEZE_PATH,
+                                   {**{k: payload[k] for k in keys}, "urls": urls})
+        result["context"] = output.freeze_context(manifest)
     count, since = spool.unacknowledged(home)
-    return {}, messages + ([output.unacked_line(count, since)] if count else [])
+    return result, messages + ([output.unacked_line(count, since)] if count else [])
 
 
 def run(argv, raw: bytes, environ, cwd) -> tuple[int, str, str]:
