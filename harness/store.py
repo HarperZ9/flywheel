@@ -211,7 +211,7 @@ def verify_chain(*, home: "str | os.PathLike[str] | None" = None) -> dict:
     return {"ok": True, "checked": len(rows), "head": prev}
 
 
-def verify_records() -> dict:
+def verify_records(*, home: "str | os.PathLike[str] | None" = None) -> dict:
     """Re-check that stored records still match their content hash. The
     audit chain (verify_chain) proves the LEDGER was not rewritten; this
     proves the RECORDS the ledger attests were not edited underneath it.
@@ -219,17 +219,23 @@ def verify_records() -> dict:
     passes verify_chain but is caught here: the content is re-hashed and
     compared to both the stored column and the audit row that committed
     it."""
-    broken = []
-    with _conn() as c:
+    broken, latest = [], {}
+    with _conn(home=home) as c:
         committed = {}
         for op, ref, sha in c.execute(
                 "SELECT op, ref, sha256 FROM audit ORDER BY seq ASC"):
             committed[(op, ref)] = sha       # latest wins
+            latest[ref] = op                 # a latest forget_entity means expected absent
+        forgotten = {r for r, op in latest.items() if op == "forget_entity"}
         live_ent = {r[0] for r in c.execute("SELECT eid FROM entities")}
         live_rel = {r[0] for r in c.execute("SELECT rid FROM relations")}
         # a committed put with no surviving row is a DELETION the audit chain
         # cannot see (the chain is append-only; the record simply vanished)
+        broken += [{"ref": r, "table": "entities", "reason": "forgotten record is present"}
+                   for r in forgotten & live_ent]
         for (op, ref) in committed:
+            if ref in forgotten:
+                continue
             if op == "put_entity" and ref not in live_ent:
                 broken.append({"ref": ref, "table": "entities",
                                "reason": "attested record was deleted"})
@@ -246,20 +252,23 @@ def verify_records() -> dict:
                 broken.append({"ref": eid, "table": "entities",
                                "reason": "content no longer matches its "
                                          "committed hash"})
-        for rid, src, dst, kind, project, sha in c.execute(
-                "SELECT rid, src, dst, kind, project, sha256 FROM relations"):
-            recomputed = _sha({"src": src, "dst": dst, "kind": kind,
-                               "project": project})
-            audit_sha = committed.get(("put_relation", rid))
-            if recomputed != sha or (audit_sha is not None
-                                     and audit_sha != sha):
-                broken.append({"ref": rid, "table": "relations",
-                               "reason": "content no longer matches its "
-                                         "committed hash"})
+        broken += _broken_relations(c, committed)
     return {"ok": not broken, "checked": len(committed), "broken": broken,
             "note": "re-derives each record's content hash and compares to "
                     "the column and the audit row; catches a tamper that "
                     "verify_chain cannot see"}
+
+
+def _broken_relations(c, committed: dict) -> list:
+    broken = []
+    for rid, src, dst, kind, project, sha in c.execute(
+            "SELECT rid, src, dst, kind, project, sha256 FROM relations"):
+        recomputed = _sha({"src": src, "dst": dst, "kind": kind, "project": project})
+        audit_sha = committed.get(("put_relation", rid))
+        if recomputed != sha or (audit_sha is not None and audit_sha != sha):
+            broken.append({"ref": rid, "table": "relations",
+                           "reason": "content no longer matches its committed hash"})
+    return broken
 
 
 def stats() -> dict:

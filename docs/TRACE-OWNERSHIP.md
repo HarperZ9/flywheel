@@ -195,9 +195,21 @@ left alone and the deletion stays pending.
 `flywheel traces verify-gone` asks for a phrase without showing it and
 reports how many times it still appears in the files Flywheel controls,
 per file, never the text. Freed disk space, backups and copies outside
-Flywheel are not searched. Deleting store.db receipts and the other
-plaintext stores comes in the next change; until then a captured turn's
-receipt stays in store.db, holding commitments whose salts are gone.
+Flywheel are not searched.
+
+Plaintext stores are covered too: `--receipt-eid`, `--note-ref` and
+`--legacy-run` select store.db receipts, memory notes and runs from before
+private traces, and a deleted trace also takes its operation's sealed
+results and the CLI profile folder it names. Rows leave store.db through a
+checked scrub (secure delete, an emptied write-ahead log, VACUUM), and an
+audit entry records each removal, so the store's own verification still
+passes. If another program has store.db open, the deletion waits
+(`DB_BUSY`) and finishes on the next run. Plaintext leaves its old bytes in
+freed disk space until something overwrites them, and every report says so.
+Receipts written before this release kept content-derived ids and digests in
+the audit log; those rows stay and are counted. Pages frozen by old receipts
+stay until every store that cites them can be searched. Every report lists
+the stores no deletion covers yet.
 
 ## Owner presence and the witness
 
@@ -263,6 +275,5 @@ built.
 
 ## What is not covered yet
 
-Export, deletion of plaintext stores and retention settings are listed by
-`status` as gaps,
+Export and retention settings are listed by `status` as gaps,
 each with the change that adds it. This page grows as each one lands.

@@ -1,14 +1,17 @@
 """Apply a deletion plan (7.10, I4, I14, I17).
 
-Apply recomputes the plan from the saved selection and refuses it when the
-digest differs (PLAN_DRIFTED), then requires presence bound to the digest.
-A gateway trace whose run still holds its writer lock stops the deletion
-before anything is touched (ITEM_BUSY). Under the custody lock and the
-deletion journal: running stores drop cached copies, item keys are
-destroyed (the keystore rewrite is written through), then files are removed
-by handle, then the result is verified (files and keys absent). Only then is
-a tombstone written, and a custody ledger entry and a witness event name the
-deletion. The report names every copy outside reach and every residue.
+Apply recomputes the plan from the saved selection and refuses one whose
+digest differs (PLAN_DRIFTED), unless a journal for that digest exists, in
+which case it resumes the plan the journal holds. It requires presence bound
+to the digest and refuses a trace whose run holds its writer lock
+(ITEM_BUSY). Under the custody lock and the journal: running stores drop
+cached copies, item keys are destroyed, encrypted files are removed by
+handle, store.db rows go through the checked scrub (DB_BUSY stops the step
+for a later rerun), and plaintext items are removed or rewritten away. Then
+verification: files, rows and keys absent, and no window of deleted text in
+the plaintext stores' files. Only then a tombstone, a ledger entry and a
+witness event. The report names copies outside reach, residue, and every
+store no deletion covers yet.
 """
 from __future__ import annotations
 
@@ -17,11 +20,15 @@ from pathlib import Path
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy
 from .private_artifact_remove import remove
 from .trace_custody_lock import custody_lock
+from .trace_delete_apply_plain import ScrubPending, remove_plain, scrub_store, verify_plain
 from .trace_delete_journal import DeletionJournal, apply_journaled
-from .trace_delete_plan import PlanError, drop_selection, load_selection, make_plan
+from .trace_delete_plan import (ENCRYPTED, PlanError, drop_selection, load_selection,
+                                make_plan, roots_for)
 
 INVALIDATORS: list = []
-_CLASSES = {"S1": ("C1", "C2", "C4", "C5"), "CT": ("C1", "C4", "C5"), "S8b": ("C1", "C4")}
+_CLASSES = {"S1": ("C1", "C2", "C4", "C5"), "CT": ("C1", "C4", "C5"), "S8b": ("C1", "C4"),
+            "S7": ("C4", "C5"), "S9": ("C1",), "S10": ("C1", "C2"), "S11": ("C1", "C2"),
+            "S2": ("C1", "C4", "C5")}
 
 
 def register_invalidator(fn) -> None:
@@ -30,9 +37,13 @@ def register_invalidator(fn) -> None:
         INVALIDATORS.append(fn)
 
 
-def _fresh(home: Path, owner: str, digest: str) -> dict:
+def _plan_for(home: Path, owner: str, digest: str, roots: dict) -> dict:
+    journal = DeletionJournal(home / "state", owner, digest)
+    if journal.exists() and journal.state().get("plan"):
+        return journal.state()["plan"]
     try:
-        plan = make_plan(home, owner, load_selection(home, owner, digest), save=False)
+        plan = make_plan(home, owner, load_selection(home, owner, digest), save=False,
+                         roots=roots)
     except PlanError as exc:
         raise PlanError("PLAN_DRIFTED" if exc.code == "NOT_FOUND" else exc.code) from None
     if plan["plan_digest"] != digest:
@@ -42,21 +53,20 @@ def _fresh(home: Path, owner: str, digest: str) -> dict:
 
 def _template(plan: dict, method: str, reason: str) -> dict:
     counts: dict[str, int] = {}
-    for store, items in plan["keys"].items():
-        for data_class in _CLASSES.get(store, ()):
-            counts[data_class] = counts.get(data_class, 0) + len(items)
-    residue = dict(plan["residue_forecast"])
-    if plan["receipts"]:
-        residue["receipt_commitments"] = len(plan["receipts"])
-    return {"stores": sorted(plan["keys"]), "counts": counts, "reason_code": reason,
-            "residue": residue, "out_of_reach": plan["out_of_reach"], "presence": method}
+    for entry in plan["entries"]:
+        for data_class in _CLASSES.get(entry["store"], ()):
+            counts[data_class] = counts.get(data_class, 0) + 1
+    return {"stores": sorted(plan["counts"]), "counts": counts, "reason_code": reason,
+            "residue": dict(plan["residue_forecast"]), "out_of_reach": plan["out_of_reach"],
+            "presence": method}
 
 
-def _run(home: Path, owner: str, plan: dict, method: str, reason: str) -> dict:
+def _steps(home: Path, owner: str, plan: dict, roots: dict, reason: str) -> list:
     from .private_artifact_fs import root_identity
     from .trace_keystore import Keystore
-    state = home / "state"
-    keystore, identity = Keystore(state, owner), root_identity(state)
+    state, keystore = home / "state", Keystore(home / "state", owner)
+    encrypted = [e for e in plan["entries"] if e["store"] in ENCRYPTED]
+    plain = [e for e in plan["entries"] if e["store"] not in ENCRYPTED]
 
     def invalidate():
         for fn in list(INVALIDATORS):
@@ -67,19 +77,28 @@ def _run(home: Path, owner: str, plan: dict, method: str, reason: str) -> dict:
             keystore.destroy(store, items)
 
     def remove_files():
-        for entry in plan["entries"]:
+        identity = root_identity(state)
+        for entry in encrypted:
             remove(state, entry["rel"], expected=identity)
+    return [("invalidate", invalidate), ("destroy_keys", destroy_keys),
+            ("remove_files", remove_files), ("scrub_store_db", lambda: scrub_store(
+                home, plain, reason)), ("remove_plain", lambda: remove_plain(roots, plain))]
+
+
+def _verifier(home: Path, owner: str, plan: dict, roots: dict):
+    from .trace_keystore import Keystore
+    state, keystore = home / "state", Keystore(home / "state", owner)
+    encrypted = [e for e in plan["entries"] if e["store"] in ENCRYPTED]
+    plain = [e for e in plan["entries"] if e["store"] not in ENCRYPTED]
 
     def verify(scan_set):
-        present = [e for e in plan["entries"] if (state / e["rel"]).exists()]
-        keys = [e for e in plan["entries"] if keystore.present(e["store"], e["item"])]
-        reason_code = "KEY_PRESENT" if keys else ("RESIDUE_FOUND" if present else None)
-        return {"ok": reason_code is None, "reason": reason_code,
-                "checks": ["keys_absent", "files_absent"]}
-    journal = DeletionJournal(state, owner, plan["plan_digest"])
-    return apply_journaled(journal, [("invalidate", invalidate), ("destroy_keys", destroy_keys),
-                                     ("remove_files", remove_files)], verify,
-                           tombstone=_template(plan, method, reason))
+        if any(keystore.present(e["store"], e["item"]) for e in encrypted):
+            return {"ok": False, "reason": "KEY_PRESENT", "checks": ["keys_absent"]}
+        if any((state / e["rel"]).exists() for e in encrypted):
+            return {"ok": False, "reason": "RESIDUE_FOUND", "checks": ["files_absent"]}
+        result = verify_plain(home, roots, plain, scan_set)
+        return {**result, "checks": ["keys_absent", "files_absent", *result["checks"]]}
+    return verify
 
 
 def _check_writers(state: Path, plan: dict) -> None:
@@ -92,22 +111,38 @@ def _check_writers(state: Path, plan: dict) -> None:
                 pass
 
 
+def _execute(home: Path, owner: str, plan: dict, roots: dict, method: str, reason: str) -> dict:
+    from .trace_delete_adapters_plain import item_texts
+    state = home / "state"
+    journal = DeletionJournal(state, owner, plan["plan_digest"])
+    scan_set = None if journal.exists() else item_texts(
+        home, roots, [e for e in plan["entries"] if e["store"] not in ENCRYPTED])
+    try:
+        with custody_lock(state):
+            _check_writers(state, plan)
+            return apply_journaled(journal, _steps(home, owner, plan, roots, reason),
+                                   _verifier(home, owner, plan, roots), scan_set=scan_set,
+                                   tombstone=_template(plan, method, reason),
+                                   extra={"plan": plan})
+    except JourneyLockBusy:
+        return {"state": "DELETE_PENDING", "reason": "ITEM_BUSY", "checks": []}
+    except ScrubPending as pending:
+        return {"state": "DELETE_PENDING", "reason": pending.reason, "checks": []}
+
+
 def apply_plan(home, owner: str, plan_digest: str, presence_ref, *, sink=None,
                reason: str = "owner_request") -> dict:
     from .trace_presence import STATEMENT, require
     from .trace_witness import record_custody_event
     home = Path(home)
-    plan = _fresh(home, owner, plan_digest)
+    roots = roots_for(home)
+    plan = _plan_for(home, owner, plan_digest, roots)
     method = require(home / "state", owner, "delete_apply", plan_digest, presence_ref)
-    try:
-        with custody_lock(home / "state"):
-            _check_writers(home / "state", plan)
-            result = _run(home, owner, plan, method, reason)
-    except JourneyLockBusy:
-        result = {"state": "DELETE_PENDING", "reason": "ITEM_BUSY", "checks": []}
-    report = {**result, "plan_digest": plan_digest, "stores": sorted(plan["keys"]),
+    result = _execute(home, owner, plan, roots, method, reason)
+    report = {**result, "plan_digest": plan_digest, "stores": sorted(plan["counts"]),
               "counts": plan["counts"], "out_of_reach": plan["out_of_reach"],
-              "remedies": plan["remedies"], "residue": _template(plan, method, reason)["residue"],
+              "remedies": plan["remedies"], "residue": dict(plan["residue_forecast"]),
+              "not_covered": plan["not_covered"], "notes": plan["notes"],
               "presence": method, "presence_statement": STATEMENT if method == "none" else ""}
     if result["state"] == "DELETED":
         event = record_custody_event(home, owner, "deletion", {

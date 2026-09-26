@@ -11,7 +11,9 @@ from .trace_inventory import Cap, Gap, Protection, Store
 
 META = Protection("metadata-only")
 EXPORT = Gap("bulk export lands in FW-09", "FW-09")
-DEL_PLAIN = Gap("deletion of plaintext and legacy stores lands in FW-07b", "FW-07b")
+DEL_PLAIN = Gap("deletion by selection is not designed for this store yet; a deletion "
+                "report names it as not covered", "7.16")
+APPLY = "harness.trace_delete_apply.apply_plan"
 NOT_DESIGNED = Gap("deletion of this store is not designed in this round", "7.16")
 
 
@@ -54,8 +56,9 @@ STORES = (
           owner_binding="owner",
           caps=(TRACE_BOUND, TOOL_OUTPUT), invalidate=True),
     Store("S2", "Gateway operations and their results", "state", ("gateway-operations",),
-          ("C1", "C4", "C5"), CLASSIFY_FIRST, EXPORT, DEL_PLAIN, owner_binding="owner",
-          evidence="inferred", note="C1 only in chat.complete result files (inferred)"),
+          ("C1", "C4", "C5"), CLASSIFY_FIRST, EXPORT, APPLY, owner_binding="owner",
+          evidence="inferred", note="C1 only in chat.complete result files (inferred); a "
+          "deleted trace takes its operation's sealed results; Journey events stay"),
     Store("S3", "Journeys and Journey exports", "state", ("journeys", "journey-exports"),
           ("C1", "C4", "C5"), _plain("append-only event logs with their own custody model (7.10)",
                                      "7.16"), EXPORT,
@@ -69,8 +72,7 @@ STORES = (
           "state", ("artifacts",), ("C1", "C4", "C5"), CLASSIFY_FIRST, EXPORT, NOT_DESIGNED,
           owner_binding="owner", evidence="inferred"),
     Store("S6", "Native CLI profile scratch", "state", ("native-cli-profile-*",), None,
-          _plain("contents unknown until experiment X5", "FW-07b"), EXPORT,
-          Gap("profile directories named in a deleted trace are removed in FW-07b", "FW-07b"),
+          _plain("contents unknown until experiment X5", "7.16"), EXPORT, APPLY,
           retention="kept forever; orphans are listed (decision D18)",
           note="the Claude CLI writes these; contents unknown until experiment X5"),
     Store("S16", "Operation grants", "state", ("grants",), ("C4", "C5"), META, EXPORT,
@@ -152,7 +154,8 @@ STORES = (
     Store("S7", "Entity store (turn receipts, snapshots metadata, notes)", "home",
           ("store.db", "store.db-wal", "store.db-shm", "store.db-journal"),
           ("C1", "C4", "C5"), _plain("v2 receipts hold commitments only; legacy rows stay "
-                                     "plaintext until deleted", "FW-05"), EXPORT, DEL_PLAIN,
+                                     "plaintext until deleted", "FW-05"), EXPORT,
+          "harness.store_tombstone.forget_entities",
           shape="file", owner_binding="home",
           note="v1 receipts keep unsalted prompt and answer digests, URLs and exception "
                "text; v2 receipts from the capture hooks hold salted commitments and random "
