@@ -22,6 +22,8 @@ import json
 import subprocess
 from pathlib import Path
 
+from . import lane_cli
+
 SCHEMA = "flywheel.science-run/v1"
 _TIMEOUT = 120
 
@@ -29,10 +31,7 @@ _TIMEOUT = 120
 def _shell(argv: list) -> tuple:
     """Default runner: (rc, stdout). Injectable so tests never shell out."""
     try:
-        from .lane_env import lane_process_environment
-        p = subprocess.run(argv, capture_output=True, text=True,
-                           timeout=_TIMEOUT, shell=False,
-                           env=lane_process_environment("crucible"))
+        p = lane_cli.run_lane_cli(argv[0], list(argv[1:]), timeout=_TIMEOUT)
         return (p.returncode, p.stdout or p.stderr or "")
     except subprocess.TimeoutExpired:
         return (124, f"timed out after {_TIMEOUT}s")
@@ -62,6 +61,62 @@ def _parse_sources(raw: str) -> list:
                         "title": str(it.get("title", "")),
                         "url": str(it.get("url", ""))})
     return out
+
+
+def _crucible_stage(question: str, claims, measurements, workdir, runner,
+                    errors: dict) -> tuple:
+    """Stage 3: crucible judgment of the stated claims, as (verdicts, note).
+    A failure is recorded in ``errors`` under "crucible"."""
+    if not claims:
+        return [], "skipped: no claims given"
+    verdicts: list = []
+    crucible_note = ""
+    thesis = {"title": question, "claims": claims}
+    # absolute: the lane CLI runs in its own lane folder (lane_cli)
+    wdir = Path(workdir or ".").resolve()
+    wdir.mkdir(parents=True, exist_ok=True)
+    tpath = wdir / "thesis.json"
+    tpath.write_text(json.dumps(thesis, indent=1), encoding="utf-8")
+    argv = ["crucible", "assess", str(tpath), "--json"]
+    if measurements:
+        # measurements flip UNVERIFIABLE into witnessed MATCH/DRIFT;
+        # crucible's contract: {"measurements": [{claim, deviation,
+        # tolerance, method, evidence}]}
+        mpath = wdir / "measurements.json"
+        mpath.write_text(json.dumps({"measurements": measurements},
+                                    indent=1), encoding="utf-8")
+        argv += ["--measurements", str(mpath)]
+    rc, raw = runner(argv)
+    if rc in (0, 255):  # crucible exits nonzero when claims drift; JSON still valid
+        try:
+            a = json.loads(raw).get("assessment", {})
+            verdicts = a.get("verdicts", [])
+            crucible_note = a.get("verdict_seal", "")
+        except ValueError:
+            errors["crucible"] = "assess did not emit JSON"
+            crucible_note = "error"
+    else:
+        errors["crucible"] = raw.strip()[-300:]
+        crucible_note = "error"
+    return verdicts, crucible_note
+
+
+def _chain_hash(question, sources, prp, claims, measurements, verdicts,
+                errors) -> str:
+    """The chain binds EVERYTHING that produced the verdicts: the claims and
+    measurement content (not just statuses, so a widened tolerance moves the
+    hash) and the errors (so an errored run never hashes like a clean one).
+    The payload echoes claims and measurements so a stranger holding only the
+    doc can re-run the judgment."""
+    return hashlib.sha256(json.dumps({
+        "question": question,
+        "sources": [s["id"] for s in sources],
+        "gates": prp.get("validation_gates", []),
+        "claims": claims or [],
+        "measurements": measurements or [],
+        "verdicts": [(v.get("claim_id"), v.get("status")) for v in verdicts],
+        "errors": errors,
+    }, sort_keys=True).encode()).hexdigest()
 
 
 def science_run(question: str, *, claims: "list | None" = None,
@@ -94,50 +149,11 @@ def science_run(question: str, *, claims: "list | None" = None,
         errors["forge"] = f"{type(e).__name__}: {e}"
 
     # Stage 3: crucible judgment of the stated claims.
-    verdicts: list = []
-    crucible_note = "skipped: no claims given"
-    if claims:
-        thesis = {"title": question, "claims": claims}
-        wdir = Path(workdir or ".")
-        wdir.mkdir(parents=True, exist_ok=True)
-        tpath = wdir / "thesis.json"
-        tpath.write_text(json.dumps(thesis, indent=1), encoding="utf-8")
-        argv = ["crucible", "assess", str(tpath), "--json"]
-        if measurements:
-            # measurements flip UNVERIFIABLE into witnessed MATCH/DRIFT;
-            # crucible's contract: {"measurements": [{claim, deviation,
-            # tolerance, method, evidence}]}
-            mpath = wdir / "measurements.json"
-            mpath.write_text(json.dumps({"measurements": measurements},
-                                        indent=1), encoding="utf-8")
-            argv += ["--measurements", str(mpath)]
-        rc, raw = runner(argv)
-        if rc in (0, 255):  # crucible exits nonzero when claims drift; JSON still valid
-            try:
-                a = json.loads(raw).get("assessment", {})
-                verdicts = a.get("verdicts", [])
-                crucible_note = a.get("verdict_seal", "")
-            except ValueError:
-                errors["crucible"] = "assess did not emit JSON"
-                crucible_note = "error"
-        else:
-            errors["crucible"] = raw.strip()[-300:]
-            crucible_note = "error"
+    verdicts, crucible_note = _crucible_stage(
+        question, claims, measurements, workdir, runner, errors)
 
-    # the chain binds EVERYTHING that produced the verdicts: the claims and
-    # measurement content (not just statuses, so a widened tolerance moves
-    # the hash) and the errors (so an errored run never hashes like a clean
-    # one). The payload echoes claims and measurements so a stranger holding
-    # only the doc can re-run the judgment.
-    chain = hashlib.sha256(json.dumps({
-        "question": question,
-        "sources": [s["id"] for s in sources],
-        "gates": prp.get("validation_gates", []),
-        "claims": claims or [],
-        "measurements": measurements or [],
-        "verdicts": [(v.get("claim_id"), v.get("status")) for v in verdicts],
-        "errors": errors,
-    }, sort_keys=True).encode()).hexdigest()
+    chain = _chain_hash(question, sources, prp, claims, measurements,
+                        verdicts, errors)
 
     return {"schema": SCHEMA, "question": question, "sources": sources,
             "gather_raw": gather_raw,
