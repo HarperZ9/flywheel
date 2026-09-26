@@ -84,12 +84,14 @@ def test_forum_shaped_crash_fails_and_leaks_no_stderr(tmp_path):
 
 
 def test_forum_shaped_crash_is_never_pass_with_todays_rows(tmp_path):
+    # WP2 froze forum's package data and raised its row to health, so the
+    # 1.0.4 crash is now a regression and fails the smoke outright.
     rows = smoke.load_expectations()
     plans = {"forum": _crash(FORUM_CRASH)}
     receipt = _run(plans, {"forum": rows["forum"]}, tmp_path)
     assert receipt["lanes"]["forum"]["level"] == "cannot_launch"
-    assert receipt["verdict"] == "BELOW_BAR_EXPECTED"
-    assert receipt["below_bar"] == ["forum"]
+    assert receipt["verdict"] == "FAIL"
+    assert receipt["failures"] == ["forum"]
 
 
 def test_replying_fake_passes(tmp_path):

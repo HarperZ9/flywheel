@@ -181,6 +181,26 @@ def _surface_ok(reply: object) -> bool:
             and provenance["digest"] == "sha256:" + str(data.get("identity_sha256")))
 
 
+
+def _articulate(home: Path, work: Path) -> list[Call]:
+    return [("score", {"text": "The gateway starts each lane as a child process."})]
+
+
+def _articulate_ok(reply: object) -> bool:
+    keys = ("texture_score", "hard_hits", "advisories")
+    return isinstance(reply, dict) and all(isinstance(reply.get(k), int) for k in keys)
+
+
+def _calibrate(home: Path, work: Path) -> list[Call]:
+    return [("calibrate-pro.list-panels", {})]
+
+
+def _calibrate_ok(reply: object) -> bool:
+    # The v2.0.0 catalog slice holds 58 panels (PLAN section 1b).
+    panels = reply.get("panels") if isinstance(reply, dict) else None
+    return isinstance(panels, list) and reply.get("count") == len(panels) == 58
+
+
 FIXTURES: dict[str, LaneFixture] = {
     "gather": LaneFixture(_gather, _gather_ok),
     "crucible": LaneFixture(_crucible, _crucible_ok),
@@ -192,4 +212,6 @@ FIXTURES: dict[str, LaneFixture] = {
     "chorus": LaneFixture(_chorus, _chorus_ok),
     "relay": LaneFixture(_relay, _relay_ok),
     "accountable-surface": LaneFixture(_surface, _surface_ok),
+    "articulate": LaneFixture(_articulate, _articulate_ok),
+    "calibrate-pro": LaneFixture(_calibrate, _calibrate_ok),
 }
