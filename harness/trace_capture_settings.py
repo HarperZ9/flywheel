@@ -25,7 +25,7 @@ SWITCHES = ("content", "archive_transcripts", "freeze_urls")
 #: Values this version can act on. A switch whose feature is not built yet
 #: accepts only "off", so no file can advertise a behavior that does not run.
 SUPPORTED = {"content": ("off", "on"), "archive_transcripts": ("off",),
-             "freeze_urls": ("off",)}
+             "freeze_urls": ("off", "on")}
 
 
 def _valid(doc) -> dict | None:
