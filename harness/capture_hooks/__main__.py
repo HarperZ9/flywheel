@@ -11,6 +11,7 @@ counts the suppression.
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import sys
@@ -18,14 +19,14 @@ import sys
 from . import output, spool
 from .client import CaptureFailure, open_channel, read_token
 from .home import resolve_home
-from .protocol import PING_PATH, SCAFFOLD_PATH
+from .protocol import PROMPT_PATH, STOP_PATH, commitment
 
 EVENTS = ("prompt", "stop")
 CLIENTS = ("claude-code", "codex")
 TIMEOUT = {"prompt": 10.0, "stop": 10.0}
 MAX_EVENT = 16 * 1024 * 1024
 _PROMPT_KEYS = ("prompt", "user_prompt", "message", "input")
-_ANSWER_KEYS = ("last_assistant_message", "answer", "final_message", "response", "output")
+_ANSWER_KEYS = ("answer", "final_message", "response", "output")
 
 
 class _Usage(Exception):
@@ -82,15 +83,39 @@ def _fail(args, event, home, code):
                          failure=output.failure_line(code, spooled))
 
 
+def _turn_payload(args, event, kind: str, text, content_on: bool) -> dict:
+    """Commitments and salts by default; the text only when content capture
+    is in effect at the gateway."""
+    payload = {"client": args.client, "session_id": spool.clean_session(event.get("session_id")),
+               "prompt_key": spool.clean_key(event.get("prompt_id") or event.get("turn_id"))}
+    if kind == "answer":
+        payload["stop_hook_active"] = event.get("stop_hook_active") is True
+    if text is None:
+        return payload
+    if content_on:
+        return {**payload, "text": text}
+    salt = os.urandom(32)
+    return {**payload, "commitment": commitment(kind, salt, text),
+            "salt": base64.b64encode(salt).decode("ascii")}
+
+
 def _act(args, event, home) -> tuple[dict, list[str]]:
     channel = open_channel(home, read_token(home), TIMEOUT[args.event])
+    content_on = channel.effective.get("content") == "on"
+    messages = []
+    if channel.effective.get("pending_change"):
+        messages.append(output.PENDING_SETTINGS)
     if args.event == "stop":
-        channel.request("POST", SCAFFOLD_PATH, {"prompt": _text(event, _PROMPT_KEYS),
-                                                "answer": _text(event, _ANSWER_KEYS)})
-        return {}, []
-    channel.request("GET", PING_PATH)
+        answer = event.get("last_assistant_message")
+        answer = answer if type(answer) is str else (_text(event, _ANSWER_KEYS) or None)
+        channel.request("POST", STOP_PATH, _turn_payload(args, event, "answer", answer,
+                                                         content_on))
+        return {}, messages
+    prompt = _text(event, _PROMPT_KEYS)
+    channel.request("POST", PROMPT_PATH, _turn_payload(args, event, "prompt", prompt,
+                                                       content_on))
     count, since = spool.unacknowledged(home)
-    return {}, ([output.unacked_line(count, since)] if count else [])
+    return {}, messages + ([output.unacked_line(count, since)] if count else [])
 
 
 def run(argv, raw: bytes, environ, cwd) -> tuple[int, str, str]:

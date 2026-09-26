@@ -51,8 +51,15 @@ def channel_check(home: Path, environ, cwd: Path):
 
 
 def settings_check(home: Path):
-    return ("PASS", "defaults in effect: content capture off (hooks send hashes only), "
-            "transcript archive off, URL freezing off (no URL leaves the hook)", "")
+    from harness.trace_capture_settings import DEFAULTS, data_flow, effective
+    from harness.trace_custody_ledger import read_owner_ref
+    owner = read_owner_ref(home)
+    current = effective(home, owner) if owner else {**DEFAULTS, "pending_change": False}
+    detail = " ".join(data_flow(current))
+    if current["pending_change"]:
+        return ("WARN", detail + " A change on disk is not in effect.",
+                "flywheel traces capture confirm")
+    return "PASS", detail, ""
 
 
 def failures_check(home: Path, ack: bool):

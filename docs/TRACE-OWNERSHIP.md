@@ -75,7 +75,10 @@ rewrite that keeps the head file consistent is not detected here.
 
 Mount the Flywheel hook module in Claude Code or Codex
 (`flywheel traces hooks print-mount` prints the lines) and each finished turn
-leaves a receipt: digests of the answer and prompt, not their text. A turn
+leaves a receipt paired with its prompt: salted commitments to the answer and
+prompt, not their text, and nothing that confirms a guess of either without
+the salts. `flywheel traces capture content on` also keeps the text,
+encrypted, once you confirm it. A turn
 that cannot be recorded shows an error in the client, in the same turn, and
 leaves a metadata record that `flywheel traces doctor` lists until you
 acknowledge it. The hook sends nothing until the local gateway has proved it
