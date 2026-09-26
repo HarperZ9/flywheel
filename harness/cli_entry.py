@@ -90,9 +90,8 @@ def _cmd_install(argv: list[str]) -> int:
         if not ok:
             det = r.get("detail", "")
             print(f"    {det[:200]}", file=sys.stderr)
-        previous = registry.get(name)  # merge: keep operator keys such as env_allow
-        registry[name] = {**(previous if isinstance(previous, dict) else {}),
-                          "install_name": lane.install_name, "kind": lane.kind,
+        kept = registry.get(name) if isinstance(registry.get(name), dict) else {}  # keeps env_allow
+        registry[name] = {**kept, "install_name": lane.install_name, "kind": lane.kind,
                           "profile": profile, "installed": ok,
                           "version": lane.version}
         if ok:
@@ -240,9 +239,8 @@ def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
                                       if command in {"journey", "grant"} else rest)
 def main(argv: list[str] | None = None) -> int:
     raw = list(argv if argv is not None else sys.argv[1:])
-    # Peek at the first positional to decide umbrella-vs-passthrough. The
-    # existing run_harness_cli parser requires a subcommand, so the first
-    # non-flag token is the command name.
+    # The first non-flag token is the command: run_harness_cli requires a
+    # subcommand, so it decides umbrella versus passthrough.
     command = next((a for a in raw if not a.startswith("-")), None)
     if command is None and print_version_if_asked(raw): return 0  # --version, -V
     packaged = _dispatch_packaged(command, raw)
