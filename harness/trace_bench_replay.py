@@ -2,7 +2,8 @@
 
 Per reproducible task and endpoint: a shared clone of the recorded
 workspace (`git clone --shared --no-checkout`, then a detached checkout of
-the recorded commit) under `state/trace-bench/v1/owners/<owner>/replay/`,
+the recorded commit) under
+`FLYWHEEL_HOME/state/trace-bench/v1/owners/<owner>/replay/`,
 with system configuration off, global configuration pointed at an empty
 file, hooks and fsmonitor off, so neither the owner's configuration
 (filters, credential helpers) nor repository hooks run. The clone reads the
@@ -148,8 +149,9 @@ def _prior(tasks: list[dict], endpoints: list[str]) -> dict:
                          for e in endpoints]}
 
 
-def replay_tasks(home, owner: str, endpoints: list[str], *, proposer_for=None) -> dict:
-    """Replay every reproducible task on each endpoint; store and compare."""
+def replay_tasks(home, owner: str, endpoints: list[str], *, proposer_for=None,
+                 only=None) -> dict:
+    """Replay every reproducible task (or those in `only`) on each endpoint."""
     from .trace_bench import regression_report
     sweep(home, owner)
     store, results = BenchTasks(home, owner), ReplayResults(home, owner)
@@ -157,7 +159,7 @@ def replay_tasks(home, owner: str, endpoints: list[str], *, proposer_for=None) -
     replayable = []
     for row in store.index():
         classes[row["class"]] = classes.get(row["class"], 0) + 1
-        if row["class"] == "REPRODUCIBLE":
+        if row["class"] == "REPRODUCIBLE" and (only is None or row["task_ref"] in only):
             replayable.append(store.read(row["task_ref"]))
     out = []
     for task in replayable:

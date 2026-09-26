@@ -326,6 +326,17 @@ junctions and symbolic links deleted as links, and a clone left by a crash
 is removed when the gateway starts. The regression report compares each
 task and endpoint with the verdict the original run recorded.
 
+The gateway's bench route, `POST /api/traces/bench`, needs the endpoints to
+replay on and has no default, because each task's goal text goes to each
+named endpoint. Its first answer is a grant listing every reproducible task
+with its goal, the endpoints, and the capabilities the original run had,
+which a replay never exceeds. A goal that holds a credential refuses the
+whole grant before anything is sent. The replay runs only after your
+presence confirms that grant, and a grant whose tasks changed since it was
+planned is refused. Replays run in the gateway process through the agent
+loop with each endpoint's own proposer. The older bench route that read
+legacy run files and wrote task text to the run root is removed.
+
 ## Owner presence and the witness
 
 An agent you run works as you: it can call every command you can. So each
