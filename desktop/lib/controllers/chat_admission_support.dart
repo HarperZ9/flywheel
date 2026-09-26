@@ -18,11 +18,14 @@ bool _isAdmittedState(ChatDraftState state) =>
     state == ChatDraftState.admittedPendingHistory ||
     state == ChatDraftState.admittedPendingCleanup;
 
-int _nextSequence(List<Conversation> conversations) {
+/// The next conversation number, past every id in memory and in the archive,
+/// so a new conversation never takes an archived conversation's id.
+int _nextSequence(List<Conversation> conversations,
+    [Iterable<String> archived = const []]) {
   var next = 0;
-  for (final conversation in conversations) {
-    if (!conversation.id.startsWith('c')) continue;
-    final parsed = int.tryParse(conversation.id.substring(1));
+  for (final id in [...conversations.map((c) => c.id), ...archived]) {
+    if (!id.startsWith('c')) continue;
+    final parsed = int.tryParse(id.substring(1));
     if (parsed != null && parsed >= next) next = parsed + 1;
   }
   return next;
