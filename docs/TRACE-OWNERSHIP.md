@@ -250,6 +250,52 @@ the audit log; those rows stay and are counted. Pages frozen by old receipts
 stay until every store that cites them can be searched. Every report lists
 the stores no deletion covers yet.
 
+## Export
+
+```
+flywheel traces export --out <empty folder>
+python <folder>/verify.py <folder>
+flywheel traces verify-export <folder or zip>
+```
+
+An export is your portable, plaintext copy of the gateway traces, captured
+turns, pages frozen for them, imported transcripts and deletion tombstones.
+It carries `manifest.json` (every file with its sha256, the stores left out
+and why, the omissions, and what verification does not prove), a
+`README.txt`, and `verify.py`, a copy of the verifier that needs nothing but
+Python. The verifier prints `MATCH` when every file matches the manifest,
+the manifest root re-derives and every gateway trace chain re-derives record
+by record; `DRIFT` naming each changed file; or `UNVERIFIABLE` with the
+reason, such as a missing file. It refuses unsafe paths in a manifest
+(absolute, `..`, drive letters, UNC and device prefixes, alternate data
+streams, reserved device names) before opening anything, and reads a zip in
+memory under caps on member count, size and compression ratio without
+extracting it.
+
+Credentials are redacted by default, and `--no-redact` keeps them as stored.
+`--redact-personal` also redacts personal data. In a redacted export, paths
+under your home folder read `~`, and placeholder tags come from a key made
+for that export alone, so two exports cannot be linked through their tags
+(`--stable-tags` makes them match). Gateway traces are exported unredacted,
+because redaction would break their chain, and the manifest lists each one
+that holds a catalog hit with its counts. An imported file that is not a
+JSON-lines transcript is left out of a redacted export and listed as an
+omission.
+
+The destination must be new or empty and outside your Flywheel home. A
+folder under OneDrive, Dropbox, Google Drive or iCloud Drive is refused
+unless you pass `--allow-sync-root` and confirm it. The folder gets an
+owner-only ACL and is excluded from search indexing before anything is
+written, and it keeps an `.incomplete` name until its own verifier returns
+`MATCH`. `export` shows what would leave custody and asks you to type yes,
+then asks your presence for that exact destination and those options. The
+gateway's export route never takes a path: `--grant` writes a one-use grant
+naming the destination, and the route runs it after your presence. Each
+export writes one ledger entry and one witness event with the root digest
+and a keyed digest of the destination; the ledger is the only custody file
+an export changes. Once written, an export is outside custody, and deleting
+a trace later does not reach it.
+
 ## Owner presence and the witness
 
 An agent you run works as you: it can call every command you can. So each
@@ -314,4 +360,5 @@ built.
 
 ## What is not covered yet
 
-Export is listed by `status` as a gap, with the change that adds it. This page grows as each one lands.
+Stores outside the export are listed by `status` and in every export's
+manifest, each with its reason. Signing an export's root is not built yet. This page grows as each one lands.

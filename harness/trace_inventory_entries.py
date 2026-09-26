@@ -10,7 +10,8 @@ from __future__ import annotations
 from .trace_inventory import Cap, Gap, Protection, Store
 
 META = Protection("metadata-only")
-EXPORT = Gap("bulk export lands in FW-09", "FW-09")
+EXPORT = Gap("the trace export covers S1, CT, S8b, IM and the tombstones; each export "
+             "lists this store as excluded with this reason", "7.16")
 DEL_PLAIN = Gap("deletion by selection is not designed for this store yet; a deletion "
                 "report names it as not covered", "7.16")
 APPLY = "harness.trace_delete_apply.apply_plan"
@@ -52,7 +53,8 @@ DESKTOP_DELETE = Gap("delete from the desktop app: it removes a conversation by 
 
 STORES = (
     Store("S1", "Gateway private agent traces", "state", ("gateway-agent-traces",),
-          ("C1", "C2", "C4", "C5"), ENCRYPTED, EXPORT, "harness.trace_delete_apply.apply_plan",
+          ("C1", "C2", "C4", "C5"), ENCRYPTED, "harness.trace_export_stores.gateway_trace_records",
+          "harness.trace_delete_apply.apply_plan",
           owner_binding="owner",
           caps=(TRACE_BOUND, TOOL_OUTPUT), invalidate=True),
     Store("S2", "Gateway operations and their results", "state", ("gateway-operations",),
@@ -145,6 +147,12 @@ STORES = (
           note="exact source bytes, encrypted; redaction applies when content leaves "
                "custody; the exclusion list keeps keyed digests of deleted sources; "
                "selected items are deleted through flywheel traces delete"),
+    Store("EG", "Export grants", "state", ("trace-export",), ("C4",), META,
+          "harness.trace_meta_adapters.export_grants_export",
+          "harness.trace_meta_adapters.export_grants_delete", owner_binding="owner",
+          added_by_program=True,
+          note="one-use grants naming an export destination for the export route; removed "
+               "when used"),
     Store("TD", "Deletion ledger (tombstones) and deletion journals", "state",
           ("trace-deletions",), ("C1", "C4"),
           Protection("encrypted", "tombstones are metadata only; a journal and its scan "
