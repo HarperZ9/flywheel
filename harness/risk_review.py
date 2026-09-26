@@ -72,8 +72,8 @@ def _edit_content(name: str, args: dict) -> "tuple | None":
         patch = args.get("patch") or args.get("diff") or ""
         added = "\n".join(l[1:] for l in patch.splitlines()
                           if l.startswith("+") and not l.startswith("+++"))
-        paths = [l[6:].strip() for l in patch.splitlines()
-                 if l.startswith("+++ b/")]
+        from .patch_paths import patch_target_paths
+        paths = patch_target_paths(patch)
         return (paths[0] if paths else "(patch)"), added
     return None
 

@@ -13,6 +13,7 @@ import '../models/agent_tool_protocol.dart';
 import '../models/gateway_models.dart';
 import '../models/operation_models.dart';
 import '../models/rowan_mcp_catalog.dart';
+import '../models/rowan_run_budget.dart';
 import '../services/journey_session_store.dart';
 import '../widgets/effort_dial.dart';
 import '../widgets/operation_grant_sheet.dart';
@@ -50,6 +51,11 @@ final class RowanOperationController extends ChangeNotifier {
   AgentToolProtocol _toolProtocol = AgentToolProtocol.compatibility;
   int _maxTokens = 1024, _timeoutSeconds = 300;
   int? _maxStepsOverride;
+  RowanRunBudget _runBudget = const RowanRunBudget();
+  // The budget fields as typed while one holds a value the engine would
+  // refuse. While set, start() refuses rather than send the last valid one.
+  RowanRunBudgetText? _invalidRunBudget;
+  String? _checkCommand;
   bool _allowWrite = false, _allowExec = false, _authorizing = false;
   bool _recovering = false;
   bool _mcpCatalogLoading = false, _mcpDiscoveryRunning = false;
@@ -73,6 +79,9 @@ final class RowanOperationController extends ChangeNotifier {
   int get maxSteps => _maxStepsOverride ?? _effort.maxSteps;
   int get maxTokens => _maxTokens;
   int get timeoutSeconds => _timeoutSeconds;
+  RowanRunBudget get runBudget => _runBudget;
+  String? get invalidRunBudgetField => _invalidRunBudget?.budget.invalidField;
+  String? get checkCommand => _checkCommand;
   bool get allowWrite => _allowWrite;
   bool get allowExec => _allowExec;
   bool get authorizing => _authorizing;
@@ -276,31 +285,8 @@ final class RowanOperationController extends ChangeNotifier {
     _recoveryBlocked = false;
     _pendingRequestSha256 = null;
     _error = null;
-    _clearPersistedPendingRecovery();
+    _clearPersistedRowanRecovery(_sessionStore);
     notifyListeners();
-  }
-
-  void _clearPersistedPendingRecovery() {
-    final store = _sessionStore;
-    if (store == null) return;
-    try {
-      final prior = store.load();
-      if (prior == null || prior.operationRequestSha256 == null) return;
-      store.save(
-        JourneySession(
-          journeyRef: prior.journeyRef,
-          lens: prior.lens,
-          selectionRef: prior.selectionRef,
-          operationRef: prior.operationRef,
-          operationEventHeadSha256: prior.operationEventHeadSha256,
-          operationExecutionMode: prior.operationExecutionMode,
-          detailsExpanded: prior.detailsExpanded,
-          recoveryVisible: prior.recoveryVisible,
-        ),
-      );
-    } on Object {
-      // Session locators are hints; duplicate suppression remains in memory.
-    }
   }
 
   void setMaxStepsOverride(int? value) {
@@ -358,7 +344,7 @@ final class RowanOperationController extends ChangeNotifier {
   void _bump({bool invalidateMcpAdmission = true}) {
     _configGeneration++;
     if (invalidateMcpAdmission) _invalidateMcpAdmission();
-    _error = null;
+    _error = _invalidRunBudget == null ? null : 'INVALID_RUN_BUDGET';
     notifyListeners();
   }
 

@@ -324,7 +324,10 @@ than a daemon: nothing runs unless something asks. Each schedule names its
 catch-up policy by name, so a machine that was asleep for six hours either fires
 every missed occurrence, fires the most recent one, or drops them, and you can
 read which. The fires form a hash chain, and a broken chain is printed as broken
-and never folded into a green count.
+and never folded into a green count. A schedule stops itself after two failed
+fires in a row, including a hook that exits 0 while its output ends on a rate
+limit or quota error, and stays stopped until you press Re-arm on its row
+(`docs/RUN-BUDGET.md`).
 
 **A code scan that seals what it covered.** A scan that found nothing and a scan
 that looked at nothing print the same number. This one records three things

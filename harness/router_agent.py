@@ -101,17 +101,33 @@ def _workspace_pre(root: str, enabled: bool, ledger):
     if not enabled:
         return None
     from .workspace_state import workspace_snapshot
-    snapshot = workspace_snapshot(root)
+    hashes: dict = {}
+    snapshot = workspace_snapshot(root, hashes=hashes)
     ledger.append("workspace_pre", json.dumps(snapshot, sort_keys=True))
-    return snapshot
+    return {**snapshot, "_hashes": hashes}
 
 
-def _workspace_post(out: dict, root: str, before: dict | None, ledger) -> None:
+def _workspace_post(out: dict, root: str, before: dict | None, ledger,
+                    exclude=()) -> None:
+    """Snapshot the workspace after the run, and list each file it changed.
+
+    The list goes into a `workspace_changes` ledger entry. A file changed by a
+    command rather than a hashed write tool appears there and nowhere else, so
+    the completion report can mark it claimed. Files the check command itself
+    changed (`exclude`) are its side effects, not deliverables."""
     if before is None:
         return
+    from .check_guard import changed_paths
     from .workspace_state import workspace_snapshot
-    after = workspace_snapshot(root)
+    before = dict(before)
+    hashes_before, hashes = before.pop("_hashes", {}), {}
+    after = workspace_snapshot(root, hashes=hashes)
     ledger.append("workspace_post", json.dumps(after, sort_keys=True))
+    skip = set(exclude)
+    changed = [p for p in changed_paths(hashes_before, hashes) if p not in skip]
+    if changed:
+        ledger.append("workspace_changes", json.dumps(
+            {"paths": changed[:256], "count": len(changed)}, sort_keys=True))
     out["workspace"] = {
         "pre": before, "post": after,
         "changed": before["workspace_sha256"] != after["workspace_sha256"]}
@@ -183,7 +199,8 @@ def _finalize_run(result, *, endpoint, agent, executor, receipt_dir,
     from .behavioral_monitor import monitor_run
     out["behavioral_monitor"] = monitor_run(out)
     out["ttva_s"] = duration if result.get("tests_pass_trusted") is True else None
-    _workspace_post(out, root, pre_state, ledger)
+    _workspace_post(out, root, pre_state, ledger,
+                    exclude=getattr(executor, "check_side_effects", ()))
     from .provenance_trace import provenance_trace
     out["provenance"] = provenance_trace(
         ledger.entries, checkpoint=str(out.get("checkpoint", "")),
@@ -203,8 +220,12 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                      compact_budget: int = 0, proposer=None, credential_bindings=None,
                      canaries: "list | None" = None, on_event=None,
                      receipt_dir: "str | None" = None, ledger=None,
-                     event_errors_fatal: bool = False) -> dict:
-    """Run one gated agentic loop over a named or explicitly bound endpoint."""
+                     event_errors_fatal: bool = False, budget=None) -> dict:
+    """Run one gated agentic loop over a named or explicitly bound endpoint.
+
+    With `budget` (a run_budget.RunBudget), every model call and tool action
+    is charged before it runs, and the provider's own status and error fields
+    are read for a limit. Tool output is never read for one."""
     ledger = SessionLedger() if ledger is None else ledger
     agent = RouterAgent(
         endpoint, model=model, base_url=base_url, proposer=proposer,
@@ -216,6 +237,12 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
                       allow_mcp=allow_mcp), receipt_dir=receipt_dir,
         runner=make_sandboxed_runner(bindings=credential_bindings,
                                      on_unavailable=fallback_from_env()))
+    if budget is not None:
+        from .run_budget_executor import budget_proposer
+        agent._proposer = budget_proposer(agent._proposer, budget)
+        executor = budget.wrap_executor(executor, test_cmd=test_cmd)
+    from .check_guard import guard_check
+    executor = guard_check(executor, root=root, ledger=ledger, test_cmd=test_cmd)
     pre_state = _workspace_pre(root, allow_write or allow_exec, ledger)
     from . import tool_receipts
     sign_key = tool_receipts.new_session_key()

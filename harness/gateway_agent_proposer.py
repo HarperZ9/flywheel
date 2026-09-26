@@ -1,5 +1,6 @@
 """Use only frozen provider authority and preserve actual model observations."""
 from dataclasses import replace
+from datetime import UTC, datetime
 import time
 
 from .credential_handles import CredentialBindings
@@ -10,13 +11,13 @@ from .proposer import StubProposer, normalize_usage
 
 class BoundAgentProposer:
     def __init__(self, binding, credentials: CredentialBindings, ledger, deadline,
-                 *, transport_factory=None, clock=time.monotonic):
+                 *, transport_factory=None, clock=time.monotonic, budget=None):
         from .gateway_agent_transport import BoundAgentTransport
         from .endpoint_registry import BackendProposer
         from .endpoints import OpenAICompatBackend, AnthropicBackend, GeminiBackend
         self.binding, self.ledger, self.deadline, self.clock = binding, ledger, deadline, clock
         self.ordinal, self.observed, self.usage, self.usage_reported = 0, None, None, None
-        self.response_status = None
+        self.response_status, self.budget = None, budget
         self.binding_sha256 = canonical_sha256(binding)
         endpoint, model = binding["endpoint"], binding["model"]["model_id"]
         slot = endpoint["slot"]
@@ -33,6 +34,9 @@ class BoundAgentProposer:
         def observe(method, url, headers, body, timeout):
             status, response = transport(method, url, headers, body, timeout)
             self.response_status = status
+            if self.budget is not None:
+                # The provider's own status and error fields, never the reply text.
+                self.budget.observe_provider_response(status, response)
             if not 200 <= status < 300:
                 ledger.append("provider_error", "", {"status": status, "response": response})
                 return status, response  # existing native retry consumes the same transport budget
@@ -50,6 +54,19 @@ class BoundAgentProposer:
             timeout=binding["budget"]["timeout_s"])
         self.proposer = BackendProposer(backend, model_ref=endpoint["name"], extract=False)
 
+    def _mark_started(self):
+        """Record the call before it goes out, as the native tool loop does.
+
+        A process tree stopped mid-call runs no finally block, so without this
+        the call would leave no trace for the deadline record to count."""
+        self.ledger.append("model_inference", "", {
+            "schema": "flywheel.gateway-agent-inference/v1",
+            "binding_sha256": self.binding_sha256, "ordinal": self.ordinal,
+            "endpoint": self.binding["endpoint"]["name"],
+            "model_id": self.binding["model"]["model_id"], "phase": "started",
+            "observed_at_utc": datetime.now(UTC).isoformat(), "elapsed_ms": None,
+            "reason": None})
+
     def generate(self, prompt, *, seed, temperature, max_new_tokens, system=""):
         binding = self.binding
         if (seed != binding["sampling"]["router_seed"] or temperature != binding["sampling"]["temperature"]
@@ -58,12 +75,15 @@ class BoundAgentProposer:
             raise GatewayOperationError("AGENT_BINDING_DRIFT")
         if self.clock() >= self.deadline:
             raise GatewayOperationError("OPERATION_DEADLINE_EXCEEDED")
+        if self.budget is not None:
+            self.budget.charge_model_call()
         self.ordinal += 1
         self.observed, self.usage, self.usage_reported = None, None, None
         self.response_status = None
         started = self.clock()
         status = "unavailable"
         try:
+            self._mark_started()
             output = self.proposer.generate(prompt, seed=seed, temperature=temperature,
                 max_new_tokens=max_new_tokens, system=system)
             if self.response_status is not None and not 200 <= self.response_status < 300:
@@ -79,6 +99,8 @@ class BoundAgentProposer:
                     raise GatewayOperationError("AGENT_MODEL_MISMATCH")
             return replace(output, served_model=self.observed or "", usage=self.usage)
         finally:
+            if self.budget is not None:
+                self.budget.record_usage(self.usage_reported)
             self.ledger.append("model_call", "", {
                 "schema": "flywheel.gateway-agent-model-call/v1",
                 "binding_sha256": self.binding_sha256, "ordinal": self.ordinal,

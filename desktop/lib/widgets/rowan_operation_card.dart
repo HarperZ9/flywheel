@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../controllers/operation_controller.dart';
 import '../controllers/rowan_operation_controller.dart';
 import '../models/agent_execution_mode.dart';
+import '../models/agent_trace.dart';
 import '../models/agent_tool_protocol.dart';
 import '../theme/flywheel_theme.dart';
 import 'effort_dial.dart';
@@ -12,6 +13,28 @@ import 'fw.dart';
 import 'model_selector.dart';
 import 'operation_controls.dart';
 import 'operation_private_attachments.dart';
+import 'operation_trace_projection.dart';
+import 'rowan_handoff_button.dart';
+import 'rowan_operation_budget.dart';
+import 'rowan_run_outcome_view.dart';
+
+/// The accepted terminal projection when it carries a run outcome.
+///
+/// A projection that does not match its operation is shown as an error by
+/// the private trace entry below; here it is simply not summarised.
+TraceProjection? _outcome(RowanOperationController rowan) {
+  final snapshot = rowan.snapshot;
+  if (snapshot == null || !snapshot.isTerminal) return null;
+  try {
+    final projection = acceptedOperationTraceProjection(
+        snapshot: snapshot,
+        result: rowan.terminalResult,
+        progress: rowan.progress);
+    return projection?.runOutcome == null ? null : projection;
+  } on OperationTraceProjectionException {
+    return null;
+  }
+}
 
 final class RowanOperationCard extends StatelessWidget {
   const RowanOperationCard({
@@ -58,6 +81,14 @@ final class RowanOperationCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: FwLayout.s2),
+          if (_outcome(rowan) case final projection?)
+            RowanRunOutcomeView(
+                outcome: projection.runOutcome!, reason: projection.reason),
+          if (snapshot != null && snapshot.isTerminal)
+            RowanHandoffButton(
+                key: ValueKey(snapshot.operationRef),
+                baseUrl: rowan.client.baseUrl,
+                operationRef: snapshot.operationRef),
           Wrap(
             spacing: FwLayout.s2,
             runSpacing: FwLayout.s2,
@@ -186,12 +217,14 @@ final class RowanOperationCard extends StatelessWidget {
             _RowanMcpSelector(rowan: rowan),
           ],
           const SizedBox(height: FwLayout.s2),
-          _BudgetRow(
+          RowanBudgetRow(
             rowan: rowan,
             root: root,
             tokens: tokens,
             timeout: timeout,
           ),
+          RowanRunBudgetRow(rowan: rowan),
+          RowanCheckCommandField(rowan: rowan),
           if (snapshot != null) ...[
             const SizedBox(height: FwLayout.s2),
             Text(
@@ -330,92 +363,4 @@ final class _RowanMcpSelector extends StatelessWidget {
       ],
     );
   }
-}
-
-final class _BudgetRow extends StatelessWidget {
-  const _BudgetRow({
-    required this.rowan,
-    required this.root,
-    required this.tokens,
-    required this.timeout,
-  });
-
-  final RowanOperationController rowan;
-  final TextEditingController root, tokens, timeout;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.fw;
-    final nativeCli = rowan.executionMode.isNativeCli;
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            key: const Key('assistant-rowan-root'),
-            controller: root,
-            enabled: !rowan.active,
-            style: fwMono(t, size: 11.5),
-            decoration: const InputDecoration(
-              isDense: true,
-              labelText: 'Gateway workspace root',
-            ),
-            onChanged: rowan.setWorkspaceRoot,
-          ),
-        ),
-        const SizedBox(width: FwLayout.s2),
-        if (nativeCli)
-          Text(
-            'output tokens unsupported',
-            style: fwMono(t, size: 10.5, color: t.inkFaint),
-          )
-        else
-          _NumberField(
-            key: const Key('assistant-rowan-max-tokens'),
-            controller: tokens,
-            enabled: !rowan.active,
-            label: 'tokens',
-            onSubmitted: rowan.setMaxTokens,
-          ),
-        const SizedBox(width: FwLayout.s2),
-        _NumberField(
-          key: const Key('assistant-rowan-timeout'),
-          controller: timeout,
-          enabled: !rowan.active,
-          label: 'seconds',
-          onSubmitted: rowan.setTimeoutSeconds,
-        ),
-      ],
-    );
-  }
-}
-
-final class _NumberField extends StatelessWidget {
-  const _NumberField({
-    super.key,
-    required this.controller,
-    required this.enabled,
-    required this.label,
-    required this.onSubmitted,
-  });
-
-  final TextEditingController controller;
-  final bool enabled;
-  final String label;
-  final ValueChanged<int> onSubmitted;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-        width: 96,
-        child: TextField(
-          controller: controller,
-          enabled: enabled,
-          keyboardType: TextInputType.number,
-          style: fwMono(context.fw, size: 11.5),
-          decoration: InputDecoration(isDense: true, labelText: label),
-          onSubmitted: (value) {
-            final parsed = int.tryParse(value.trim());
-            if (parsed != null) onSubmitted(parsed);
-          },
-        ),
-      );
 }

@@ -15,6 +15,7 @@ absent in canonical operation bytes; the plan resolves concrete defaults.
 | `max_steps` | Existing required integer, 1 through 12 | No implicit change |
 | `root` | Existing optional workspace path | Gateway's configured workspace |
 | `tool_protocol` | Optional `native` or `text` | Absent, which preserves v1 bytes |
+| `run_budget` | Optional object of `max_model_calls`, `max_tool_actions`, `max_usage_tokens`, `max_cost_micros`; see `docs/RUN-BUDGET.md` | Engine defaults; the binding bytes do not change |
 
 No client base URL, environment, provider key or command is accepted. Supported
 adapters are configured OpenAI-compatible providers, Anthropic and Gemini APIs,
@@ -32,7 +33,7 @@ provider name, adapter, configured URL, credential slot and specification digest
 explicit requested model or frozen default; optional catalog profile pins;
 canonical workspace, filesystem identity and parent root policy; step, output and
 wall budgets; write/execute/MCP capability gates; and transport constraints.
-Native v2 additionally freezes `schema` as
+Native v2 also freezes `schema` as
 `flywheel.gateway-agent-tool-protocol/v1`, `native_api_route`, the ToolExecutor
 function schema digest, tool names, strict-schema requirement,
 `parallel_tool_calls: false`, and `result_order_policy:

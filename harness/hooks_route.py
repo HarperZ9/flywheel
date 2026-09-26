@@ -97,7 +97,8 @@ def handle_hooks_post(path: str, raw: bytes, *, run_root: Path,
             reg = register_hook(
                 event=body["event"], argv=body["argv"],
                 blocking=bool(body["blocking"]),
-                hook_id=body["hook_id"], created_at=clock())
+                hook_id=body["hook_id"], created_at=clock(),
+                scan_output=body.get("scan_output", True))
         except ValueError as exc:
             return _invalid(str(exc))
         registry = load_registry(_registry_path(run_root))

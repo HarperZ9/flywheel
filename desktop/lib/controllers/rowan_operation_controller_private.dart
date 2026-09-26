@@ -1,5 +1,27 @@
 part of 'rowan_operation_controller.dart';
 
+void _clearPersistedRowanRecovery(JourneySessionStore? store) {
+  if (store == null) return;
+  try {
+    final prior = store.load();
+    if (prior == null || prior.operationRequestSha256 == null) return;
+    store.save(
+      JourneySession(
+        journeyRef: prior.journeyRef,
+        lens: prior.lens,
+        selectionRef: prior.selectionRef,
+        operationRef: prior.operationRef,
+        operationEventHeadSha256: prior.operationEventHeadSha256,
+        operationExecutionMode: prior.operationExecutionMode,
+        detailsExpanded: prior.detailsExpanded,
+        recoveryVisible: prior.recoveryVisible,
+      ),
+    );
+  } on Object {
+    // Session locators are hints; duplicate suppression remains in memory.
+  }
+}
+
 Map<String, Object?> _jsonObjectCopy(Map<String, Object?> value) {
   final decoded = jsonDecode(jsonEncode(value));
   return _deepJsonObject(decoded);

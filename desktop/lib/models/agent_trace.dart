@@ -1,5 +1,6 @@
 import 'canonical_json.dart';
 import 'effect_evidence.dart';
+import 'run_outcome.dart';
 
 const traceProjectionSchema = 'flywheel.gateway-agent-projection/v1';
 const traceMaxRecords = 2048;
@@ -57,6 +58,7 @@ final class TraceProjection {
   final String? reason;
   final Map<String, String?>? runtime;
   final EffectEvidence? effectEvidence;
+  final RunOutcome? runOutcome;
 
   const TraceProjection._(
       this.operationRef,
@@ -70,7 +72,8 @@ final class TraceProjection {
       this.doesNotProve,
       this.reason,
       this.runtime,
-      this.effectEvidence);
+      this.effectEvidence,
+      this.runOutcome);
 
   factory TraceProjection.fromJson(Map<String, dynamic> value,
       {required String operationRef, required String journeyRef}) {
@@ -89,6 +92,7 @@ final class TraceProjection {
       if (state == 'failed') 'reason',
       if (value.containsKey('runtime')) 'runtime',
       if (value.containsKey('effect_evidence')) 'effect_evidence',
+      if (value.containsKey('run_outcome')) 'run_outcome',
     });
     if (value['schema'] != traceProjectionSchema ||
         !const {'running', 'completed', 'failed', 'cancelled'}
@@ -120,6 +124,10 @@ final class TraceProjection {
             terminalState: terminalState)
         : null;
     if (effectEvidence != null && terminalState == 'running') invalidTrace();
+    final runOutcome = value.containsKey('run_outcome')
+        ? RunOutcome.fromJson(value['run_outcome'], terminalState: terminalState)
+        : null;
+    if (runOutcome != null && terminalState == 'running') invalidTrace();
     return TraceProjection._(
         operationRef,
         journeyRef,
@@ -140,7 +148,8 @@ final class TraceProjection {
         }),
         reason as String?,
         value.containsKey('runtime') ? _runtime(value['runtime']) : null,
-        effectEvidence);
+        effectEvidence,
+        runOutcome);
   }
 
   bool get isRunning => state == 'running';
