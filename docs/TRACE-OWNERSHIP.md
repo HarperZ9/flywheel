@@ -116,6 +116,42 @@ protect: any program running as you, agents included, can ask Windows to
 decrypt, just as you can. A backup that includes your Windows profile's
 protection keys, plus your password, decrypts everything in it.
 
+## Owner presence and the witness
+
+An agent you run works as you: it can call every command you can. So each
+custody operation that destroys or sends out data (deletion, export,
+retention and capture-setting changes, as each one lands) needs a
+confirmation bound to that one operation's plan, valid once and for five
+minutes, from a channel an agent's shell should not reach. Changing the
+presence method itself is the first operation gated this way.
+
+```
+flywheel traces presence show
+flywheel traces presence set windows-hello
+```
+
+- `windows-hello` asks Windows for your PIN, fingerprint or face. Whether the
+  prompt works from the gateway and resists automated input has not been
+  checked on real hardware yet; until it is, treat it as untested.
+- `desktop-dialog` asks in the Flywheel desktop app. Software that can drive
+  your screen can press its button, so it slows an agent down and does not
+  stop one.
+- `none` is the default. Status, every report and every custody ledger entry
+  then say that any process running as you, agents included, can perform
+  these operations.
+
+The method changes only after the method already in effect confirms the
+change, and a deleted method file is refused rather than read as `none`.
+
+Deletions, exports, retention runs and settings changes are also written to
+the Windows Application event log, source `Flywheel`, as one line with the
+operation kind, a sequence number, a digest prefix and the presence method:
+no content and no path. A standard program can add to that log and cannot
+clear it without elevation. `flywheel traces doctor` names every custody
+ledger entry that has no matching event. A missing event is a sign of
+tampering or loss, not proof; the log keeps about 20 MiB and drops its
+oldest events first. Other systems have no witness yet, and status says so.
+
 ## Desktop chat history
 
 The desktop app keeps your conversations in `chats.json` in your Flywheel
