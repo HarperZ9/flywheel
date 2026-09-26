@@ -158,3 +158,25 @@ def freeze(handler, raw: bytes):
     manifest = store.freeze(fields["client"], fields.get("session_id"),
                             fields.get("prompt_key"), urls)
     return handler._json({"schema": "flywheel.capture-freeze-manifest/v1", **manifest})
+
+
+def session(handler, raw: bytes):
+    """Import one ended session by client and id; the gateway finds the file."""
+    from harness.trace_import_session import SessionRefused, prepare, queue
+    try:
+        doc = json.loads(raw or b"{}")
+    except ValueError:
+        doc = None
+    if (type(doc) is not dict or not set(doc) <= {"client", "session_id", "reason"}
+            or type(doc.get("reason", "")) is not str or len(doc.get("reason", "")) > 64):
+        return handler._json(error("INVALID_REQUEST", "client and session id only"), 422)
+    if effective(handler)["archive_transcripts"] != "on":
+        return handler._json(error("ARCHIVE_OFF", "transcript archiving is not in effect"), 403)
+    try:
+        root, path = prepare(doc.get("client"), doc.get("session_id"))
+    except SessionRefused as refused:
+        return handler._json(error(refused.code, "session not imported"), refused.status)
+    queue(handler.flywheel_home, handler.owner_ref, doc["client"], doc["session_id"], root,
+          path)
+    return handler._json({"schema": "flywheel.capture-session-import/v1", "queued": True},
+                         202)
