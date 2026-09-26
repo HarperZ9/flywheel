@@ -114,6 +114,16 @@ STORES = (
           added_by_program=True,
           note="kind, plan digest, times, state and method of each confirmation; no "
                "summary text is stored"),
+    Store("CT", "Captured turns and pending prompts", "state", ("captured-turns",),
+          ("C1", "C4", "C5"), ENCRYPTED, "harness.trace_turn_store.export_records",
+          "harness.trace_turn_store.delete_all", owner_binding="owner", added_by_program=True,
+          retention="keep until you delete; unanswered prompts become unpaired turns after "
+                    "pending_ttl_hours",
+          note="salts always; prompt and answer text only with content capture on"),
+    Store("CS", "Adopted capture settings", "state", ("capture-settings",), ("C4",), META,
+          "harness.trace_meta_adapters.capture_settings_export",
+          "harness.trace_meta_adapters.capture_settings_delete", owner_binding="owner",
+          added_by_program=True, note="the settings the gateway runs, adopted with presence"),
     Store("TD", "Deletion ledger (tombstones) and deletion journals", "state",
           ("trace-deletions",), ("C1", "C4"),
           Protection("encrypted", "tombstones are metadata only; a journal and its scan "
@@ -132,7 +142,9 @@ STORES = (
           ("C1", "C4", "C5"), _plain("v2 receipts hold commitments only; legacy rows stay "
                                      "plaintext until deleted", "FW-05"), EXPORT, DEL_PLAIN,
           shape="file", owner_binding="home",
-          note="receipts keep unsalted prompt and answer digests, URLs and exception text"),
+          note="v1 receipts keep unsalted prompt and answer digests, URLs and exception "
+               "text; v2 receipts from the capture hooks hold salted commitments and random "
+               "ids only"),
     Store("S13", "Desktop chat history and drafts", "home",
           ("chats.json", "chat-drafts.json", "journey-session.json", "journey-drafts.json",
            "chats.unreadable-*.json"), ("C1", "C4", "C5"), DESKTOP_PHASE2, EXPORT,

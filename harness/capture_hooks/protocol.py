@@ -19,7 +19,9 @@ SERVER_LABEL = b"flywheel.capture.server.v1"
 CLIENT_LABEL = b"flywheel.capture.client.v1"
 HELLO_PATH = "/api/traces/capture/hello"
 PING_PATH = "/api/traces/capture/ping"
-SCAFFOLD_PATH = "/api/traces/capture/scaffold"
+PROMPT_PATH = "/api/traces/capture/prompt"
+STOP_PATH = "/api/traces/capture/stop"
+_COMMIT_TAGS = {"prompt": b"flywheel.turn.prompt.v1", "answer": b"flywheel.turn.answer.v1"}
 PREFIX = "/api/traces/capture/"
 LOOPBACK = ("127.0.0.1", "::1")
 SCHEME = "FW-Sig"
@@ -86,3 +88,11 @@ def is_digest(value) -> bool:
 
 def same(a: str, b: str) -> bool:
     return hmac.compare_digest(a.encode("ascii", "replace"), b.encode("ascii", "replace"))
+
+
+def commitment(kind: str, salt: bytes, text: str) -> str:
+    """sha256(tag || 0x00 || 32-byte salt || utf8(text)): binds the text and
+    reveals nothing without the salt, which is deleted with the turn."""
+    if len(salt) != 32:
+        raise ValueError("salt must be 32 bytes")
+    return hashlib.sha256(_COMMIT_TAGS[kind] + b"\x00" + salt + text.encode("utf-8")).hexdigest()

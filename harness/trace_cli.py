@@ -150,8 +150,9 @@ def _parser() -> argparse.ArgumentParser:
     doctor.add_argument("--ack", action="store_true", help="move reported failures aside")
     doctor.add_argument("--json", action="store_true", help="print flywheel.trace-doctor/v1")
     doctor.set_defaults(run=_doctor)
-    from . import trace_cli_presence
+    from . import trace_cli_capture, trace_cli_presence
     trace_cli_presence.register(sub)
+    trace_cli_capture.register(sub)
     encrypt = sub.add_parser("encrypt", help="encrypt traces written before encryption at rest")
     encrypt.add_argument("--legacy", action="store_true", required=True,
                          help="convert plaintext gateway traces, newest file first")

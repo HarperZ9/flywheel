@@ -48,9 +48,11 @@ def test_a_stop_event_is_recorded_with_a_receipt(home, work, monkeypatch):
     assert proc.stdout == b"" and proc.stderr == b""
     receipts = _receipts(home)
     assert len(receipts) == 1
-    answer = hashlib.sha256(b"the final answer").hexdigest()
     from harness.store import get_entity
-    assert get_entity(receipts[0]["eid"], home=home)["data"]["answer_sha256"] == answer
+    data = get_entity(receipts[0]["eid"], home=home)["data"]
+    assert data["schema"] == "flywheel.turn-receipt/v2" and data["pairing"] == "unpaired"
+    assert len(data["answer_commitment"]) == 64
+    assert data["answer_commitment"] != hashlib.sha256(b"the final answer").hexdigest()
     assert spool_files(home) == []
 
 
@@ -151,18 +153,25 @@ def _signed_request(home, port, token, body: bytes):
             timeout=5) as r:
         hello = json.loads(r.read())
     _, k_c = protocol.derive_keys(token)
-    path = "/api/traces/capture/scaffold"
+    path = protocol.STOP_PATH
     header = protocol.auth_header(k_c, "POST", path, body, int(time.time()),
                                   "cd" * 16, hello["sn"], "127.0.0.1", port)
     return urllib.request.Request(f"http://127.0.0.1:{port}{path}", data=body, headers={
         "Authorization": header, "Content-Type": "application/json"}, method="POST")
 
 
+def _stop_body() -> bytes:
+    import base64
+    return json.dumps({"client": "claude-code", "session_id": UUID, "prompt_key": None,
+                       "commitment": "ab" * 32,
+                       "salt": base64.b64encode(b"s" * 32).decode()}).encode()
+
+
 def test_a_replayed_signed_request_is_refused(home, work, monkeypatch):
     with running_gateway(home, monkeypatch) as server:
         port = server.server_address[1]
         token = (home / "gateway.token").read_text().strip()
-        request = _signed_request(home, port, token, b'{"answer": "once"}')
+        request = _signed_request(home, port, token, _stop_body())
         with urllib.request.urlopen(request, timeout=5) as first:
             assert first.status == 200
         with pytest.raises(urllib.error.HTTPError) as replay:
@@ -174,7 +183,7 @@ def test_a_replayed_signed_request_is_refused(home, work, monkeypatch):
 def test_a_signature_under_the_wrong_token_is_refused(home, work, monkeypatch):
     with running_gateway(home, monkeypatch) as server:
         port = server.server_address[1]
-        request = _signed_request(home, port, "not-the-token", b'{"answer": "x"}')
+        request = _signed_request(home, port, "not-the-token", _stop_body())
         with pytest.raises(urllib.error.HTTPError) as refused:
             urllib.request.urlopen(request, timeout=5)
     assert refused.value.code == 401

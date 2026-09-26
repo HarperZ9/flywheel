@@ -52,3 +52,11 @@ def tombstones_export(home) -> list[dict]:
 
 def deletions_delete(home) -> dict:
     return {"removed": remove_tree(Path(home) / "state" / "trace-deletions")}
+
+
+def capture_settings_export(home) -> list[dict]:
+    return json_records(Path(home) / "state" / "capture-settings")
+
+
+def capture_settings_delete(home) -> dict:
+    return {"removed": remove_tree(Path(home) / "state" / "capture-settings")}
