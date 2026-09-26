@@ -26,7 +26,7 @@ from .trace_delete_adapters_plain import (PROFILE_NOTE, selection_entries, trace
 
 _SESSION = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
 REMEDIES = {"claude-code": "claude project purge", "codex": "remove the rollout in Codex"}
-ENCRYPTED = ("S1", "CT", "S8b", "IM")
+ENCRYPTED = ("S1", "CT", "S8b", "IM", "BT")
 _LISTS = {"trace_refs": valid_trace_ref, "turn_refs": valid_turn_ref, "import_refs": valid_ref,
           "receipt_eids": lambda v: valid("receipt_eids", v),
           "note_refs": lambda v: valid("note_refs", v),
@@ -90,8 +90,10 @@ def _encrypted(home: Path, owner: str, selection: dict) -> tuple[list, list, set
 
 def _collect(home: Path, owner: str, selection: dict, roots: dict) -> tuple[list, list, set]:
     entries, receipts, clients = _encrypted(home, owner, selection)
+    from .trace_bench_tasks import task_entries
     for entry in [e for e in entries if e["store"] == "S1"]:
         entries += trace_closure(home / "state", owner, entry)
+        entries += task_entries(home, owner, entry["item"])
     entries += selection_entries(roots, selection, receipts)
     unique = {(e["store"], e["item"]): e for e in entries}
     return sorted(unique.values(), key=lambda e: (e["store"], e["item"])), \
