@@ -56,7 +56,8 @@ def test_git_folder_is_appended_to_the_child_path(tmp_path):
     from harness.bundled_lane_env import bundled_child_environment
 
     git_dir = tmp_path / "Git" / "cmd"
-    env = bundled_child_environment(_BASE_NT, platform="nt", git_dir=str(git_dir))
+    env = bundled_child_environment(_BASE_NT, platform="nt", git_dir=str(git_dir),
+                                    lane="index")
     assert env["PATH"] == "C:/Windows/System32;" + str(git_dir)
 
 
@@ -71,21 +72,26 @@ def test_git_discovery_order_and_none_override(tmp_path):
     from harness.bundled_lane_env import git_directory
 
     pinned = _fake_git(tmp_path / "pinned")
-    on_path = _fake_git(tmp_path / "onpath")
     program = _fake_git(tmp_path / "pf" / "Git" / "cmd")
+    user_git = _fake_git(tmp_path / "user" / "Git" / "cmd")
 
-    def which(_name, path=None):
-        return str(on_path) if path == "P" else None
+    def registry(scope):
+        return str(user_git.parent) if scope == "user" else None
 
-    assert git_directory({"FLYWHEEL_GIT": str(pinned), "PATH": "P"},
-                         which=which) == str(pinned.parent)
-    assert git_directory({"FLYWHEEL_GIT": "none", "PATH": "P"}, which=which) is None
-    assert git_directory({"PATH": "P"}, which=which) == str(on_path.parent)
-    assert git_directory({"PATH": "Q", "ProgramFiles": str(tmp_path / "pf")},
-                         which=which, platform="nt") == str(program.parent)
-    assert git_directory({"PATH": "Q"}, which=which) is None
-    assert git_directory({"FLYWHEEL_GIT": str(tmp_path / "missing.exe")},
-                         which=which) is None
+    def none(_scope):
+        return None
+
+    env = {"PATH": "Q", "PROGRAMFILES": str(tmp_path / "pf")}
+    assert git_directory({**env, "FLYWHEEL_GIT": str(pinned)}, platform="nt",
+                         read_registry_path=registry) == str(pinned.parent)
+    assert git_directory({**env, "FLYWHEEL_GIT": "none"}, platform="nt",
+                         read_registry_path=registry) is None
+    assert git_directory(env, platform="nt", read_registry_path=registry) == str(
+        user_git.parent)
+    assert git_directory(env, platform="nt", read_registry_path=none) == str(program.parent)
+    assert git_directory({"PATH": "Q"}, platform="nt", read_registry_path=none) is None
+    assert git_directory({"FLYWHEEL_GIT": str(tmp_path / "missing.exe")}, platform="nt",
+                         read_registry_path=none) is None
 
 
 def test_confined_bundled_launch_gets_declared_granted_and_workdir(tmp_path):

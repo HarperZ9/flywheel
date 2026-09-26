@@ -1,18 +1,27 @@
 """Per-lane smoke for the frozen gateway: a real reply, not an exit code.
 
 Each bundled lane is launched the way the gateway launches it (the same
-admission, child environment and admitted-tool list), then must answer
+admission, then ``lane_env.confine_lane_launch``: the declared names, the lane
+folder, its state defaults and its own temp folders), then must answer
 ``initialize``, ``tools/list``, its health tool, and its main tool on a test
-fixture from ``lane_smoke_fixtures``. learn, telos, writing and local-model have
+fixture from ``lane_smoke_fixtures``. Fixture arguments pass through the
+engine's argument guards (``lane_tier_gate.guard_args``), as on the app route. learn, telos, writing and local-model have
 no payload row; ``frozen_lane_smoke_plans`` launches them through the engine's
 frozen selection instead. The furthest step a lane clears is its
 level. ``packaging/lane-smoke-expectations.json`` records, per registry lane,
 the level measured today (``expected``) and the target class (``bar``).
 
+A fixture that needs a model server (relay) runs only when one answers at a
+fixed local address; the receipt records ``model_server_answering``, and a row's
+``expected_with_model_server`` applies then, so the verdict does not depend on
+whether the build machine happens to run Ollama. Each lane's run is also a
+write-containment probe (``lane_smoke_containment``): a file written under the
+throwaway home outside the lane's folder fails the lane.
+
 Verdicts: ``PASS`` when every lane reaches the main action; ``BELOW_BAR_EXPECTED``
 when every lane matches its row and some lane is below the bar; ``FAIL`` when a
-lane falls under its row, rises above a row nobody raised, or ships without a
-row. A lane below the bar never yields ``PASS``.
+lane falls under its row, rises above a row nobody raised, ships without a
+row, or writes outside its folder. A lane below the bar never yields ``PASS``.
 """
 from __future__ import annotations
 
@@ -37,6 +46,7 @@ DOES_NOT_PROVE = [
     "result correctness beyond one fixture assertion per lane",
     "lanes the frozen build has no launch for (they report no_frozen_launch)",
     "installer, desktop UI or clean-machine behavior",
+    "write containment outside the throwaway home, or any read",
 ]
 
 
@@ -74,9 +84,12 @@ def smoke_environ(home: Path) -> dict[str, str]:
 
 def bundled_lane_plans(executable: Path, home: Path, *,
                        repo_root: Path = REPO_ROOT) -> dict[str, LanePlan]:
-    """Admit every lane in the build's manifest through the gateway's own path."""
+    """Admit every lane in the build's manifest through the gateway's own path:
+    the admission, then the same confinement the gateway applies (C3)."""
     from harness.bundled_lane_admission import admit_bundled_lane
     from harness.bundled_lane_descriptor import resolve_expected
+    from harness.lane_env import confine_lane_launch
+    from harness.lanes_registry import LANES
     rows = _manifest_rows(executable, repo_root)
     environ = smoke_environ(home)
     plans: dict[str, LanePlan] = {}
@@ -86,7 +99,10 @@ def bundled_lane_plans(executable: Path, home: Path, *,
         admission = admit_bundled_lane(
             lane, executable=str(executable), environ=environ,
             manifest_rows=rows, importable_fn=lambda _module: True)
-        plans[lane] = LanePlan(admission.launch, str(expected.get("health_tool", "")),
+        launch = admission.launch
+        if launch is not None and lane in LANES:
+            launch, _codes = confine_lane_launch(LANES[lane], launch, environ, {})
+        plans[lane] = LanePlan(launch, str(expected.get("health_tool", "")),
                                tuple(admission.blocking_codes))
     return plans
 
@@ -110,11 +126,14 @@ def _call_json(client: MCPClient, tool: str, args: dict) -> tuple[bool, object]:
 
 
 def _main_step(client: MCPClient, plan: LanePlan, listed: set[str],
-               home: Path, lane: str) -> tuple[str, str]:
+               home: Path, lane: str, model_server: bool = False) -> tuple[str, str]:
+    from harness.lane_tier_gate import guard_args
     from scripts.lane_smoke_fixtures import FIXTURES
     fixture = FIXTURES.get(lane)
     if fixture is None:
         return "health", "no_fixture"
+    if fixture.needs_model_server and not model_server:
+        return "health", "no_model_server"
     work = home / "fixtures" / lane
     calls = fixture.calls(home, work)
     allowed = plan.launch.allowed_tools if plan.launch else None
@@ -124,13 +143,14 @@ def _main_step(client: MCPClient, plan: LanePlan, listed: set[str],
             return "health", "main_not_admitted"
         if tool not in listed:
             return "health", "main_tool_missing"
-        ok, reply = _call_json(client, tool, args)
+        ok, reply = _call_json(client, tool, guard_args(lane, tool, args))
         if not ok:
             return "health", "main_call_failed"
     return ("main", "ok") if fixture.check(reply) else ("health", "main_assertion_failed")
 
 
-def _session(client: MCPClient, plan: LanePlan, home: Path, lane: str) -> tuple[str, str]:
+def _session(client: MCPClient, plan: LanePlan, home: Path, lane: str,
+             model_server: bool = False) -> tuple[str, str]:
     allowed = plan.launch.allowed_tools if plan.launch else None
     try:
         names = {str(tool.get("name")) for tool in client.list_tools()}
@@ -146,13 +166,24 @@ def _session(client: MCPClient, plan: LanePlan, home: Path, lane: str) -> tuple[
     if not ok:
         return "starts", "health_call_failed"
     try:
-        return _main_step(client, plan, listed, home, lane)
+        return _main_step(client, plan, listed, home, lane, model_server)
     except MCPError:
         return "health", "main_call_failed"
 
 
-def probe_lane(lane: str, plan: LanePlan, home: Path, *, timeout: float) -> dict:
-    """Run one lane through its steps; record the furthest level it clears."""
+def probe_lane(lane: str, plan: LanePlan, home: Path, *, timeout: float,
+               model_server: bool = False) -> dict:
+    """Run one lane through its steps; record the furthest level it clears and
+    every file it wrote under the home outside its own folder."""
+    from scripts.lane_smoke_containment import outside_writes, snapshot
+    before = snapshot(home)
+    measured = _probe(lane, plan, home, timeout=timeout, model_server=model_server)
+    measured["outside_writes"] = outside_writes(before, snapshot(home), lane)
+    return measured
+
+
+def _probe(lane: str, plan: LanePlan, home: Path, *, timeout: float,
+           model_server: bool) -> dict:
     if plan.launch is None:
         return {"level": "cannot_launch", "reason": "admission_blocked",
                 "codes": list(plan.blocking_codes)}
@@ -169,7 +200,7 @@ def probe_lane(lane: str, plan: LanePlan, home: Path, *, timeout: float) -> dict
         except MCPError:
             return {"level": "cannot_launch", "reason": "initialize_failed",
                     "exit_code": _exit_code(client)}
-        level, reason = _session(client, plan, home, lane)
+        level, reason = _session(client, plan, home, lane, model_server)
         return {"level": level, "reason": reason}
     finally:
         client.close()
@@ -177,27 +208,39 @@ def probe_lane(lane: str, plan: LanePlan, home: Path, *, timeout: float) -> dict
 
 def _verdict(lanes: dict[str, dict], unexpected: list[str]) -> dict:
     failures = sorted(set(unexpected) | {
-        lane for lane, row in lanes.items() if row["level"] != row["expected"]})
+        lane for lane, row in lanes.items()
+        if row["level"] != row["expected"] or row.get("outside_writes")})
     below = sorted(lane for lane, row in lanes.items() if row["level"] != BAR_LEVEL)
     verdict = "FAIL" if failures else ("BELOW_BAR_EXPECTED" if below else "PASS")
     return {"verdict": verdict, "failures": failures, "below_bar": below}
 
 
 def run_lane_smoke(plans: Mapping[str, LanePlan], expectations: Mapping[str, dict], *,
-                   home: Path, timeout: float = 30.0) -> dict:
-    """Probe every planned lane and compare each level with its expectation row."""
+                   home: Path, timeout: float = 30.0,
+                   model_server: bool | None = None) -> dict:
+    """Probe every planned lane and compare each level with its expectation row.
+
+    ``model_server`` defaults to whether a model server answers at a fixed
+    local address now; a row's ``expected_with_model_server`` applies then."""
+    if model_server is None:
+        from scripts.lane_smoke_fixtures import model_server_answering
+        model_server = model_server_answering()
     lanes: dict[str, dict] = {}
     for lane in sorted(set(expectations) | set(plans)):
         plan = plans.get(lane)
-        measured = (probe_lane(lane, plan, home, timeout=timeout) if plan is not None
+        measured = (probe_lane(lane, plan, home, timeout=timeout, model_server=model_server)
+                    if plan is not None
                     else {"level": "no_frozen_launch", "reason": "no_frozen_launch"})
         row = expectations.get(lane, {})
-        lanes[lane] = {"level": measured["level"], "expected": row.get("expected"),
+        expected = (row.get("expected_with_model_server") if model_server else None
+                    ) or row.get("expected")
+        lanes[lane] = {"level": measured["level"], "expected": expected,
                        "bar": row.get("bar"), "reason": measured["reason"],
                        **{k: v for k, v in measured.items() if k not in ("level", "reason")}}
     unexpected = [lane for lane in plans if lane not in expectations]
     return {"schema": SCHEMA, "bar_level": BAR_LEVEL, **_verdict(lanes, unexpected),
-            "lanes": lanes, "does_not_prove": list(DOES_NOT_PROVE)}
+            "model_server_answering": model_server, "lanes": lanes,
+            "does_not_prove": list(DOES_NOT_PROVE)}
 
 
 def bundled_lane_smoke(executable: Path, *, repo_root: Path = REPO_ROOT,

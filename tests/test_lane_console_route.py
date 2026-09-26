@@ -67,11 +67,12 @@ def test_unfiltered_listing_marks_what_the_launch_does_not_admit():
 
 
 def test_not_in_build_tools_are_listed_disabled_with_their_reason():
-    body, _ = tools_listing("articulate", LaunchSpec(("x",), allowed_tools=("score",)),
-                            client_factory=FakeClient)
-    judge = next(row for row in body["tools"] if row["name"] == "judge")
-    assert judge["listed"] is False and judge["admitted"] is False
-    assert judge["not_in_build"] == "claude_cli_not_resolvable"
+    body, _ = tools_listing("calibrate-pro", LaunchSpec(("x",), allowed_tools=(
+        "calibrate-pro.list-panels",)), client_factory=FakeClient)
+    targets = next(row for row in body["tools"]
+                   if row["name"] == "calibrate-pro.list-targets")
+    assert targets["listed"] is False and targets["admitted"] is False
+    assert targets["not_in_build"] == "numpy_not_in_build"
 
 
 def test_listing_failures_are_fixed_codes():
@@ -152,16 +153,19 @@ def test_node_path_runs_only_a_file_named_node_at_version_20(tmp_path):
     probe = lambda path: ran.append(path) or "v22.3.0"  # noqa: E731
     other = tmp_path / "evil.exe"
     other.write_text("x", encoding="utf-8")
-    body, status = node_path_post({"path": str(other)}, env, version_probe=probe)
+    body, status = node_path_post({"path": str(other)}, env, version_probe=probe,
+                                  platform="nt")
     assert (status, body["reason"], ran) == (400, "not_a_node_executable", [])
     node = tmp_path / "node.exe"
     node.write_text("x", encoding="utf-8")
     body, status = node_path_post({"path": str(node)}, env,
-                                  version_probe=lambda _p: "v18.0.0")
+                                  version_probe=lambda _p: "v18.0.0", platform="nt")
     assert (status, body["reason"]) == (400, "node_too_old_or_silent")
-    body, status = node_path_post({"path": str(node)}, env, version_probe=probe)
-    assert status == 200 and ran == [str(node)]
-    assert (tmp_path / "home" / "node_path").read_text(encoding="utf-8").strip() == str(node)
+    body, status = node_path_post({"path": str(node)}, env, version_probe=probe,
+                                  platform="nt")
+    assert status == 200 and ran == [str(node.resolve())]
+    saved = (tmp_path / "home" / "node_path").read_text(encoding="utf-8").splitlines()
+    assert saved[0] == str(node.resolve()) and saved[1].startswith("sha256=")
     body, status = node_path_post({"path": None}, env)
     assert status == 200 and not (tmp_path / "home" / "node_path").exists()
 

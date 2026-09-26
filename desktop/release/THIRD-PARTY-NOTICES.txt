@@ -125,3 +125,25 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
+
+Engine lane runtimes
+--------------------
+Scope: the Flywheel engine the installer ships (flywheel-gateway) carries these
+under _internal/node-lanes/. Each license file travels with its payload.
+
+Node.js v24.21.0 (win-x64, LTS)
+License: MIT for Node.js core, plus the third-party licenses Node.js lists
+License file shipped: _internal/node-lanes/node/LICENSE (the full Node.js
+LICENSE from the pinned nodejs.org archive, sha256 ed34dd8e3f0a78dbaf00d0444ce8e285b015b765379c2e17880455f70370f8e9)
+Source archive: https://nodejs.org/dist/v24.21.0/node-v24.21.0-win-x64.zip
+Source archive sha256: 158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541
+Copyright Node.js contributors. All rights reserved.
+
+@harperz9/learn 1.6.0
+License: Fair Source License (learn), LicenseRef-fair-source
+License file shipped: _internal/node-lanes/learn/LICENSE
+Source: https://registry.npmjs.org/@harperz9/learn/-/learn-1.6.0.tgz (npm integrity pinned in packaging/node-lane-payloads.json)
+Copyright (c) 2026 Zain Dana Harper.
+
+Telos (project-telos-mcp 0.4.1) is not in this build: its release contents are
+under review and the freeze refuses it.

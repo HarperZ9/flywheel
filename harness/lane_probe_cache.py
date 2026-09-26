@@ -9,7 +9,10 @@ last probe outcome in ``<home>/state/lane-probes.json``:
 - a record from an earlier engine session is served with its time and marked
   stale ("Last checked <time>") until a probe in this session replaces it;
 - a lane call that could not launch rewrites the lane's record at once;
-- a key name bound to a lane call that succeeded is recorded as validated.
+- a key name bound to a call that succeeded, to a tool that spends it, is
+  recorded as validated (lane_call_route);
+- a file that cannot be written (another engine holding it, a sharing
+  violation) is logged, and the records stay in memory for this process.
 
 The start probe runs only when the engine starts with ``--desktop-launch``,
 never under ``flywheel up`` or in gateway tests: four lanes at a time, 20
@@ -19,6 +22,7 @@ seconds each, and no http lane unless network contact at start is allowed
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import sys
@@ -37,6 +41,13 @@ START_TIMEOUT_S = 20
 OUTCOMES = ("answered", "unhealthy", "cannot_launch", "unreachable")
 _SLUG = re.compile(r"[a-z0-9_]{1,64}\Z")
 _PROBE_CODE = re.compile(r"MCP probe failed: ([a-z0-9_]{1,64}) \(cannot launch\)")
+_LOG = logging.getLogger(__name__)
+DESKTOP_FLAG_HELP = "started by Flywheel Desktop: check the lanes once in the background"
+
+
+def add_desktop_flag(parser) -> None:
+    """The gateway's ``--desktop-launch`` flag (a one-line hook in gateway.py)."""
+    parser.add_argument("--desktop-launch", action="store_true", help=DESKTOP_FLAG_HELP)
 
 
 def utc_now() -> str:
@@ -81,8 +92,11 @@ class ProbeCache:
         self.clock = clock
         self._fresh: set[str] = set()
         self._lock = threading.Lock()
+        self._memory: dict | None = None   # set while the file cannot be written
 
     def _load(self) -> dict:
+        if self._memory is not None:
+            return json.loads(json.dumps(self._memory))
         try:
             data = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -94,10 +108,17 @@ class ProbeCache:
         return {"schema": SCHEMA, "rows": rows, "validated": keys}
 
     def _save(self, data: dict) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.path.with_name(self.path.name + ".tmp")
-        tmp.write_text(json.dumps(data, indent=1, sort_keys=True), encoding="utf-8")
-        os.replace(tmp, self.path)
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self.path.with_name(self.path.name + ".tmp")
+            tmp.write_text(json.dumps(data, indent=1, sort_keys=True), encoding="utf-8")
+            os.replace(tmp, self.path)
+        except OSError as error:
+            _LOG.warning("lane probe cache: could not write %s (%s); keeping the "
+                         "records in memory", self.path, type(error).__name__)
+            self._memory = json.loads(json.dumps(data))
+            return
+        self._memory = None
 
     def lookup(self, lane: str, pin: str) -> tuple[dict | None, bool]:
         """(record, fresh): the record taken under this engine and pin, and

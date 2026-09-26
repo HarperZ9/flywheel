@@ -27,7 +27,7 @@ def _checks(tmp_path, **seams):
     base = dict(node=lambda: _finding("node", False), git=lambda: _finding("git", False),
                 model_health=lambda: {"any_live": False, "tiers": []},
                 key_source=lambda _n: "absent", key_grants=lambda _l: (),
-                validated_keys=lambda _l: set())
+                validated_keys=lambda _l: set(), frozen=True)
     base.update(seams)
     return SetupChecks(env, **base)
 
@@ -150,7 +150,9 @@ def test_project_folder_refuses_the_flywheel_home(tmp_path):
 
 
 def test_needs_leave_out_items_only_not_in_build_tools_use():
-    assert "claude_cli" not in lane_needs("articulate")
+    assert "claude_cli" in lane_needs("articulate")   # judge, fix, polish at T2 (0.5.0)
+    assert "writing_draft" in lane_needs("writing")
+    assert "actuation_grant" not in lane_needs("accountable-surface")   # C-6
     assert lane_needs("index") == ["git"]
     assert "provider_key" in lane_needs("forum") and "provider_key" in lane_needs("mneme")
     assert lane_needs("gather") == []
@@ -162,3 +164,14 @@ def test_each_item_is_evaluated_once_per_request(tmp_path):
     lane_setup("learn", checks)
     lane_setup("telos", checks)
     assert len(calls) == 1
+
+
+def test_the_project_folder_item_applies_to_a_frozen_build_only(tmp_path):
+    """C16: a pip or source install runs local-model in the engine's workspace,
+    so the item is met there and the card does not ask for it."""
+    from harness.lane_setup import lane_needs, lane_setup
+    assert "project_folder" in lane_needs("local-model", frozen=True)
+    assert "project_folder" not in lane_needs("local-model", frozen=False)
+    dev = lane_setup("local-model", _checks(tmp_path, frozen=False))
+    assert "project_folder" not in [item["id"] for item in dev["items"]]
+    assert _checks(tmp_path, frozen=False).item("project_folder", "local-model").met

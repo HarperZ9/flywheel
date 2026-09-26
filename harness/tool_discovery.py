@@ -9,7 +9,8 @@ Node, first usable wins:
 
 1. ``FLYWHEEL_NODE``: a node executable or its folder. ``none`` means not
    found, which is how the acceptance run tests the no-Node state.
-2. ``<home>/node_path``: the node executable the person picked in the app.
+2. ``<home>/node_path``: the node executable the person picked in the app,
+   with its sha256; a file that no longer matches is not run.
 3. The Node the frozen build bundles (``_internal/node-lanes/node``).
 4. The user PATH, then the machine PATH, read from the registry (HKCU
    ``Environment``, HKLM ``Session Manager\\Environment``), so a Node installed
@@ -24,7 +25,7 @@ when the operator chose it in 1 or 2. Git follows the same shape with
 """
 from __future__ import annotations
 
-import functools
+import hashlib
 import os
 import re
 import subprocess
@@ -80,8 +81,23 @@ def expand_env(value: str, environ: Mapping[str, str]) -> str:
     return _PERCENT.sub(lambda m: upper.get(m.group(1).upper(), m.group(0)), value)
 
 
-@functools.lru_cache(maxsize=32)
+_VERSIONS: dict[tuple[str, int, int], str] = {}
+_DIGESTS: dict[tuple[str, int, int], str] = {}
+
+
 def _cached_version(path: str, mtime_ns: int, size: int) -> str | None:
+    """``--version`` output, cached for a successful answer only, so one slow
+    or failed run (an antivirus scan past the timeout) is tried again (C11)."""
+    key = (path, mtime_ns, size)
+    if key not in _VERSIONS:
+        found = _run_version(path)
+        if found is None:
+            return None
+        _VERSIONS[key] = found
+    return _VERSIONS[key]
+
+
+def _run_version(path: str) -> str | None:
     env = {key: value for key, value in os.environ.items()
            if key.upper() in {"SYSTEMROOT", "WINDIR", "TEMP", "TMP"}}
     try:
@@ -101,6 +117,22 @@ def node_version(path: str) -> str | None:
     except OSError:
         return None
     return _cached_version(str(path), stat.st_mtime_ns, stat.st_size)
+
+
+def file_digest(path: Path) -> str | None:
+    """sha256 of a file, cached on its size and mtime; None when unreadable."""
+    try:
+        stat = Path(path).stat()
+        key = (str(path), stat.st_mtime_ns, stat.st_size)
+        if key not in _DIGESTS:
+            digest = hashlib.sha256()
+            with Path(path).open("rb") as handle:
+                for block in iter(lambda: handle.read(1 << 20), b""):
+                    digest.update(block)
+            _DIGESTS[key] = digest.hexdigest()
+        return _DIGESTS[key]
+    except OSError:
+        return None
 
 
 def node_major(version: str | None) -> int | None:
@@ -172,16 +204,19 @@ def _node(found, path, version, source, detail) -> ToolFinding:
     return ToolFinding("node", found, path, version, source, str(MIN_NODE_MAJOR), detail)
 
 
-def _chosen_node(environ, home) -> tuple[str, str] | None:
-    """The operator's explicit choice: FLYWHEEL_NODE, else ``<home>/node_path``."""
+def _chosen_node(environ, home) -> tuple[str, str, str | None] | None:
+    """The operator's explicit choice: FLYWHEEL_NODE, else ``<home>/node_path``
+    (its path and the sha256 saved with it)."""
     pinned = _get(environ, "FLYWHEEL_NODE")
     if pinned:
-        return "FLYWHEEL_NODE", pinned
+        return "FLYWHEEL_NODE", pinned, None
     try:
         text = (Path(home) / NODE_PATH_FILE).read_text(encoding="utf-8").strip()
     except OSError:
         return None
-    return ("node_path", text.splitlines()[0]) if text else None
+    lines = text.splitlines()
+    saved = next((line[7:].strip() for line in lines[1:] if line.startswith("sha256=")), "")
+    return ("node_path", lines[0], saved) if text else None
 
 
 def find_node(environ: Mapping[str, str], *, home: Path | None = None,
@@ -192,12 +227,15 @@ def find_node(environ: Mapping[str, str], *, home: Path | None = None,
     """Find a Node of at least ``MIN_NODE_MAJOR`` in the documented order."""
     chosen = _chosen_node(environ, flywheel_home(environ) if home is None else home)
     if chosen is not None:
-        source, value = chosen
+        source, value, saved = chosen
         if value.strip().lower() == "none":
             return _node(False, None, None, "disabled", f"{source}=none")
         exe = _as_exe(value, "node", platform)
         if exe is None:
             return _node(False, None, None, source, f"{source} names no node executable")
+        if saved is not None and (not saved or file_digest(exe) != saved):
+            return _node(False, str(exe), None, source,
+                         "node_path changed since it was chosen; choose node.exe again")
         return _judge_node(exe, source, node_version)
     candidates = [("bundled", Path(bundled))] if bundled and Path(bundled).is_file() else []
     candidates += list(_discovered("node", environ, read_registry_path, platform,

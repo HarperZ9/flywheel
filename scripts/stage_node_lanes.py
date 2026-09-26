@@ -5,7 +5,8 @@ The frozen gateway ships this folder as ``_internal/node-lanes``
 
     <stage>/node/node.exe, LICENSE     Node LTS, from the pinned nodejs.org zip
     <stage>/learn/...                   @harperz9/learn, from the pinned npm tarball
-    <stage>/telos/...                   project-telos-mcp, from the pinned GitHub release
+    <stage>/telos/...                   project-telos-mcp, from the pinned GitHub release,
+                                        only with --include-held (see below)
     <stage>/node-lane-stage.json        the receipt; the freeze requires verdict PASS
 
 Every input is pinned in ``packaging/node-lane-payloads.json``. An archive is
@@ -17,6 +18,11 @@ it is a cross-check and never the trust root.
 Archives come from ``--artifact-dir`` when present there (the default is a
 ``<stage>-downloads`` folder beside the stage, never inside it, since the whole
 stage ships). ``--offline`` refuses to download a missing one.
+
+A row with a ``hold`` field is skipped and listed under ``held`` in the receipt,
+unless ``--include-held`` is passed. telos carries the O-8 hold: its release
+contents are under review, so no freeze or installer stages it by default, and
+``scripts/frozen_payload_datas.py`` refuses a stage that lists a held lane.
 """
 from __future__ import annotations
 
@@ -139,17 +145,29 @@ def _stage_lane(row: dict, stage: Path, art: Path, offline: bool, fetch: Fetch) 
             "entry": row["entry"], "files": files, "bytes": size}
 
 
+def held_rows(manifest: dict) -> list[dict]:
+    """The manifest rows under a hold, as {lane, hold}."""
+    return [{"lane": row["lane"], "hold": str(row["hold"])}
+            for row in manifest["lanes"] if row.get("hold")]
+
+
 def stage_node_lanes(stage_root: Path, *, manifest: dict, artifact_dir: Path,
-                     offline: bool = False, fetch: Fetch = https_fetch) -> dict:
-    """Stage every pinned input into ``stage_root`` and return the PASS receipt."""
+                     offline: bool = False, fetch: Fetch = https_fetch,
+                     include_held: bool = False) -> dict:
+    """Stage every pinned input into ``stage_root`` and return the PASS receipt.
+
+    A held row is skipped unless ``include_held``; the receipt lists it."""
     stage, art = Path(stage_root), Path(artifact_dir)
     _prepare_stage(stage)
     node = _stage_node(manifest["node_runtime"], stage, art, offline, fetch)
-    lanes = [_stage_lane(row, stage, art, offline, fetch) for row in manifest["lanes"]]
+    rows = [row for row in manifest["lanes"] if include_held or not row.get("hold")]
+    lanes = [_stage_lane(row, stage, art, offline, fetch) for row in rows]
+    staged = {lane["lane"] for lane in lanes}
     receipt = {
         "schema": RECEIPT_SCHEMA, "verdict": "PASS",
         "manifest_sha256": _canonical_sha256(manifest),
         "node_runtime": node, "lanes": lanes,
+        "held": [row for row in held_rows(manifest) if row["lane"] not in staged],
         "total_bytes": node["bytes"] + sum(lane["bytes"] for lane in lanes),
     }
     _write_receipt(stage, receipt)
@@ -180,13 +198,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--artifact-dir", default=None,
                         help="archive folder; default <stage-root>-downloads")
     parser.add_argument("--offline", action="store_true")
+    parser.add_argument("--include-held", action="store_true",
+                        help="also stage rows under a hold (the freeze refuses the result)")
     args = parser.parse_args(argv)
     stage = Path(args.stage_root).resolve()
     art = Path(args.artifact_dir).resolve() if args.artifact_dir else Path(
         str(stage) + "-downloads")
     try:
         receipt = stage_node_lanes(stage, manifest=load_manifest(Path(args.manifest)),
-                                   artifact_dir=art, offline=args.offline)
+                                   artifact_dir=art, offline=args.offline,
+                                   include_held=args.include_held)
     except (StageError, OSError, ValueError, KeyError) as exc:
         error = f"{type(exc).__name__}: {exc}"
         _write_failure(stage, error)
@@ -195,6 +216,7 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps({"verdict": "PASS", "stage": str(stage),
                       "total_bytes": receipt["total_bytes"],
                       "lanes": {lane["lane"]: lane["version"] for lane in receipt["lanes"]},
+                      "held": [row["lane"] for row in receipt["held"]],
                       "node": receipt["node_runtime"]["version"]}, sort_keys=True))
     return 0
 

@@ -92,9 +92,11 @@ LANES: dict[str, Lane] = {
         # which does not accept an extras marker. 0.4.0 adds
         # articulate.local_mcp, stdlib-only and serving the same tools plus
         # status and doctor, so the lane installs and launches from one clean
-        # name. Same shape as accountable-surface below, same reason.
+        # name. Same shape as accountable-surface below, same reason. 0.5.0
+        # reads the claude CLI path from ARTICULATE_CLAUDE_CLI and runs it in a
+        # fresh empty folder (PINS_2026-09-26, O-14).
         "articulate", "articulate-writing", "articulate-mcp", (),
-        "pip", "0.4.0",
+        "pip", "0.5.0",
         "writing-quality + AI-tell detector and editor with content-free audit receipts (stdlib-only MCP server; the FastMCP surface stays under the [mcp] extra)",
         "authoring", source_repo="articulate", py_module="articulate.local_mcp"),
     "index": Lane(
@@ -120,22 +122,25 @@ LANES: dict[str, Lane] = {
         "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.1",
         "the reconciliation lane: five-tool workflow + creative engine + doctors",
         "reconciliation", source_repo="public/telos",
-        package_disabled_reason=("No published npm distribution is available. Use a Telos source "
-                                 "checkout; the desktop app ships the v0.4.1 GitHub release."),
+        package_disabled_reason=("No published npm distribution is available, and this build "
+                                 "holds Telos out while its release contents are reviewed. "
+                                 "Use a Telos source checkout."),
         env_vars=("TELOS_CHROME_PATH", "TELOS_CHROME_PROFILE", "TELOS_EMET_CLI",
                   "TELOS_EMET_DISABLE_FALLBACKS", "LEARN_CLI", "CAPTCHA_VENV_PY",
                   "TELOS_CONSO_FONT_ZIP", "TELOS_KILON_FONT_ZIP")),
     "local-model": Lane(
         "local-model", "", "python", ("-m", "harness.local_mcp"), "bundled", "0.1.0",
-        "the trained 14B proposer + verified-inference harness (the engine lane)",
+        "a local agent loop on the model server you run, inside a project folder you pick, "
+        "with verified-inference receipts (no model ships with the app)",
         "propose-verify"),
     "writing": Lane(
         "writing", "", "python", ("-m", "harness.writing_mcp"), "bundled", "0.1.0",
         "private author workspace: scoped revisions, exact approval, and export receipts",
         "authoring"),
     "relay": Lane(
-        "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.2.5",
-        "accountable coding agent on any model endpoint (local-first, witnessed runs)",
+        "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.3.0",
+        "accountable agent loop on a local model server, witnessed runs (in the app: "
+        "write and exec off, the two fixed local addresses only)",
         "execution", source_repo="public/relay", py_module="relay.local_mcp",
         # The online tier reads <PROVIDER>_MODEL, _PROVIDER_BASE_URL and
         # _CLOUD_BASE_URL; its keys stay operator grants (env_allow).
@@ -159,7 +164,7 @@ LANES: dict[str, Lane] = {
         "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
         "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
     "canon": Lane(
-        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.2.0",
+        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.3.0",
         "provider-neutral memory bank + personality container: one envelope, "
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",
@@ -185,7 +190,8 @@ LANES: dict[str, Lane] = {
         "accountable-surface", "accountable-surface", "accountable-surface-mcp", (),
         "pip", "0.3.1",
         "live accountability seam: witnessed perception + operator-grant pre-execution "
-        "gate + self-verifying effectors + tamper-evident journal (actuates, so T2)",
+        "gate + tamper-evident journal (the app perceives; actuation stays in Accountable "
+        "Surface itself)",
         "actuation", source_repo="public/accountable-surface",
         py_module="accountable_surface.interop_mcp",
         extra_source_repos=("public/coherence-membrane", "public/proof-surface"),

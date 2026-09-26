@@ -969,11 +969,7 @@ class _Handler(BaseHTTPRequestHandler):
                 # the word was wrong.
                 return self._json({"error": str(e)}, 400)
             return self._json(result.to_dict())
-        if p == "/api/lanes/callable":                # list lanes + their tier requirements
-            from harness.lane_caller import list_available_lanes
-            return self._json({"lanes": list_available_lanes()})
-        if p.startswith("/api/lanes/"): from harness.lane_console_route import console_get; return self._json(*console_get(p))  # lane console: GET <lane>/setup and local-model/root; POST <lane>/check, <lane>/tools (plugin.probe grant) and local-model/root
-        if p == "/api/settings/node_path": from harness.lane_console_route import node_path_get; return self._json(node_path_get())  # the node executable the Node lanes use; POST chooses or clears it
+        if p.startswith("/api/lanes/") or p == "/api/settings/node_path": from harness.lane_console_route import console_get; return self._json(*console_get(p))  # lane console: GET callable, <lane>/setup, local-model/root, node_path; POST install, <lane>/check, <lane>/tools (plugin.probe grant)
         if p == "/api/training/status":            # training lane status, read-only
             return self._json(_training_status(self.run_root))
         if p == "/api/train/duel":                    # verified-inference duel summary (read-only)
@@ -2048,21 +2044,7 @@ class _Handler(BaseHTTPRequestHandler):
                 want_svg=bool(req.get("svg")),
                 want_pdf=bool(req.get("pdf")))
             return self._json(out, 400 if out.get("refused") else 200)
-        if p == "/api/lanes/install":                  # one lane, installed on request
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            name = str(req.get("name", "")).strip()
-            if not name:
-                return self._json({"error": "provide a lane 'name'"}, 400)
-            profile = str(req.get("profile", "package")).strip() or "package"
-            from harness.lanes import install_lane
-            return self._json(install_lane(name, profile=profile))
-        if p.startswith("/api/lanes/"): from harness.lane_console_route import console_post_mount; return console_post_mount(self, p)  # lane console writes: check, tools, local-model root
-        if p == "/api/settings/node_path":  # choose or clear node.exe for the Node lanes
-            req, bad = self._req_json()
-            if bad: return bad
-            from harness.lane_console_route import node_path_post; return self._json(*node_path_post(req or {}))
+        if p.startswith("/api/lanes/") or p == "/api/settings/node_path": from harness.lane_console_route import console_post_mount; return console_post_mount(self, p)  # lane console: POST install, <lane>/check, <lane>/tools (plugin.probe grant); granted settings local-model/root (lane.root), node_path (settings.node_path)
         if p == "/api/telos/kernel":                   # run a bridged telos creative kernel
             req, bad = self._req_json()
             if bad:
@@ -2259,8 +2241,7 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--allow-host", action="append", default=[], dest="allow_host",
                     help="add a Host header value to the DNS-rebinding allowlist (repeatable). "
                          "Give the public tunnel hostname here so a phone can reach this gateway.")
-    ap.add_argument("--desktop-launch", action="store_true",
-                    help="started by Flywheel Desktop: check the lanes once in the background")
+    from harness.lane_probe_cache import add_desktop_flag; add_desktop_flag(ap)  # --desktop-launch
     return ap
 
 

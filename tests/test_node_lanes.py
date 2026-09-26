@@ -65,12 +65,16 @@ def test_frozen_learn_launches_the_bundled_node_on_an_absolute_script(tmp_path):
 
 
 def test_frozen_launch_carries_the_policy_t1_tools_only(tmp_path):
-    res = nl.resolve_node_lane(LANES["telos"], "frozen", _env(tmp_path),
-                               stage_root=_stage(tmp_path), find=_finder())
-    assert res.launch.allowed_tools == tuple(admitted_tools("telos"))
-    assert "telos.catalog" in res.launch.allowed_tools
-    for refused in ("telos.native.control", "telos.room", "telos.workflow"):
-        assert refused not in res.launch.allowed_tools
+    stage = _stage(tmp_path)
+    res = nl.resolve_node_lane(LANES["learn"], "frozen", _env(tmp_path),
+                               stage_root=stage, find=_finder())
+    assert res.launch.allowed_tools == tuple(admitted_tools("learn"))
+    assert "learn_tutor_plan" in res.launch.allowed_tools
+    assert "learn_tutor_record" not in res.launch.allowed_tools  # T2
+    # telos is held (O-8): its launch, if one were built, would admit nothing
+    held = nl.resolve_node_lane(LANES["telos"], "frozen", _env(tmp_path),
+                                stage_root=stage, find=_finder())
+    assert held.launch.allowed_tools == ()
 
 
 def test_no_node_gives_the_node_setup_item_and_no_launch(tmp_path):
@@ -179,10 +183,10 @@ def test_policy_covers_exactly_the_pinned_tool_names(lane):
 
 def test_policy_draft_for_the_node_lanes():
     telos = lane_policy("telos")
-    assert main_tools("telos") == ["telos.doctor", "telos.catalog"]
+    assert main_tools("telos") == []
     assert telos["telos.native.control"].not_in_build == "actuation_outside_app"
-    assert telos["telos.room"].not_in_build == "needs_source_checkouts"
-    assert telos["telos.workflow"].not_in_build == "needs_source_checkouts"
+    assert telos["telos.room"].not_in_build == "release_on_hold"
+    assert admitted_tools("telos") == []
     assert main_tools("learn") == ["learn_dry_run", "learn_tutor_plan"]
     assert lane_policy("learn")["learn_tutor_record"].tier == "T2"
     assert "learn_tutor_record" not in admitted_tools("learn")

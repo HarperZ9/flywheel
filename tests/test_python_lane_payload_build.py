@@ -153,10 +153,12 @@ def test_python_lane_payload_builder_writes_source_closure_manifest(tmp_path):
     receipt = json.loads((out / "python-lane-payload-build-manifest.json").read_text(encoding="utf-8"))
     assert receipt["schema"] == "flywheel.python-lane-payload-build-manifest/v1"
     assert receipt["wheel_build"]["skipped"] is True
+    manifest = (Path(__file__).resolve().parents[1] / "packaging"
+                / "python-lane-payloads.jsonl").read_text(encoding="utf-8")
+    # the lane list comes from the manifest, so a new payload row cannot leave
+    # this test asserting an old count (C18)
     assert [row["lane"] for row in receipt["lanes"]] == [
-        "gather", "crucible", "index", "forum", "plexus", "mneme", "canon",
-        "chorus", "relay", "accountable-surface",
-    ]
+        json.loads(line)["lane"] for line in manifest.splitlines() if line.strip()]
     for row in receipt["lanes"]:
         assert row["source_closure_sha256"].startswith("sha256:")
         assert row["notice_files"]

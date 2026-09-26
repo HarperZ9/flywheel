@@ -46,7 +46,8 @@ MUST_BE_T2 = {
     "learn": ("learn_tutor_record",),
     "mneme": ("mneme.forget", "mneme.to_crucible", "mneme.replay_crucible"),
     "canon": ("canon.render",),
-    "writing": ("writing.project_init", "writing.section_record", "writing.revision_record",
+    "writing": ("writing.diagnose", "writing.project_init", "writing.section_record",
+                "writing.revision_record",
                 "writing.card_record", "writing.candidate_record", "writing.decision_record",
                 "writing.review_prepare", "writing.export_prepare", "writing.proposal_commit"),
     "accountable-surface": ("accountable-surface.propose", "accountable-surface.actuate"),
@@ -69,7 +70,7 @@ MAIN = {
     "index": {"index.map", "index.symbol-definition", "index.symbol-references"},
     "forum": {"forum.route", "plan"},
     "learn": {"learn_dry_run", "learn_tutor_plan"},
-    "telos": {"telos.catalog", "telos.doctor"},
+    "telos": set(),  # held out of this build (O-8); no main tool until a reviewed release
     "local-model": {"local_agent_run", "local_agent_chat"},
     "writing": {"writing.diagnose"},
     "relay": {"local_agent_run"},
@@ -82,13 +83,13 @@ MAIN = {
 }
 
 NOT_IN_BUILD = {
-    "articulate": {"judge", "fix", "polish"},
     "index": {"index.router.job.start", "index.router.job.status", "index.router.job.result",
               "index.router.job.cancel", "index.router.job.resume"},
     "relay": {"local_agent_start", "local_agent_status", "local_agent_result"},
     "calibrate-pro": {"calibrate-pro.list-targets"},
-    "telos": {"telos.native.control", "telos.room", "telos.workflow"},
+    "telos": {name for name in policy.LANE_TOOL_POLICY["telos"]},  # every tool: O-8 hold
     "writing": {"writing.proposal_approve"},
+    "accountable-surface": {"accountable-surface.actuate"},   # C-6, class C
 }
 
 
@@ -151,13 +152,17 @@ def test_the_reviewed_t2_tools_stay_t2(lane, tool):
 
 def test_every_lane_has_a_main_tool_or_is_reads_only():
     for lane in LANES:
-        assert policy.main_tools(lane) or lane in policy.READS_ONLY_LANES, lane
+        assert (policy.main_tools(lane) or lane in policy.READS_ONLY_LANES
+                or lane in policy.HELD_LANES), lane
 
 
 @pytest.mark.parametrize("lane", sorted(MAIN))
 def test_main_tools_follow_section_1a(lane):
     assert set(policy.main_tools(lane)) == MAIN[lane]
     for name in policy.main_tools(lane):
+        if lane in policy.GRANTED_MAIN_LANES:   # a main action approved at T2 (C-5)
+            assert policy.tool_policy(lane, name).tier == "T2"
+            continue
         assert name in policy.admitted_tools(lane), f"{lane} {name} is main but not admitted"
 
 
@@ -175,7 +180,7 @@ def test_not_in_build_follows_section_1a(lane):
 @pytest.mark.parametrize("lane", ["relay", "local-model"])
 def test_an_agent_run_on_the_app_route_never_gets_write_or_exec(lane):
     forced = dict(policy.lane_policy(lane)["local_agent_run"].forced_args)
-    assert forced == {"allow_write": False, "allow_exec": False}
+    assert forced == {"allow_write": False, "allow_exec": False, "online": False}
 
 
 def test_argument_guards_drop_every_write_path_on_t1_tools():
@@ -188,7 +193,8 @@ def test_argument_guards_drop_every_write_path_on_t1_tools():
 def test_guard_args_forces_and_drops_without_touching_the_caller_dict():
     args = {"goal": "g", "allow_write": True, "allow_exec": True}
     guarded = policy.guard_args("relay", "local_agent_run", args)
-    assert guarded == {"goal": "g", "allow_write": False, "allow_exec": False}
+    assert guarded == {"goal": "g", "allow_write": False, "allow_exec": False,
+                       "online": False}
     assert args["allow_exec"] is True
     assert policy.guard_args("index", "index.map", {"root": "r", "resume_state": "x"}) == {
         "root": "r"}

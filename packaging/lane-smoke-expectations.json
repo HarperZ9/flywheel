@@ -10,14 +10,14 @@
     "index": {"expected": "main", "bar": "A/B"},
     "forum": {"expected": "main", "bar": "A/B-untested"},
     "learn": {"expected": "main", "bar": "A"},
-    "telos": {"expected": "main", "bar": "A"},
+    "telos": {"expected": "cannot_launch", "bar": "B", "reason": "lane_held"},
     "local-model": {"expected": "health", "bar": "B"},
     "writing": {"expected": "health", "bar": "A"},
-    "relay": {"expected": "health", "bar": "B"},
+    "relay": {"expected": "health", "bar": "B", "expected_with_model_server": "main"},
     "plexus": {"expected": "main", "bar": "A"},
     "mneme": {"expected": "main", "bar": "A"},
     "calibrate-pro": {"expected": "main", "bar": "C"},
-    "canon": {"expected": "health", "bar": "B"},
+    "canon": {"expected": "main", "bar": "B"},
     "bulletin": {"expected": "no_frozen_launch", "bar": "A"},
     "accountable-surface": {"expected": "main", "bar": "A/C"}
   }

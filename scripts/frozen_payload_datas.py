@@ -18,7 +18,9 @@ Four jobs, each fed by the pinned manifest rows in
   outside the review, and a missing one means a tool in the slice cannot load.
 - The Node-lane stage folder. ``FLYWHEEL_NODE_LANE_STAGE_ROOT`` must name the
   folder ``scripts/stage_node_lanes.py`` staged, holding a passing
-  ``node-lane-stage.json`` receipt. The freeze ships it as ``node-lanes``.
+  ``node-lane-stage.json`` receipt that lists no held lane (the O-8 hold on
+  telos, ``packaging/node-lane-payloads.json``). The freeze ships it as
+  ``node-lanes``.
 """
 from __future__ import annotations
 
@@ -37,6 +39,7 @@ SLICE_SCHEMA = "flywheel.python-lane-slice-stage/v1"
 NODE_STAGE_ENV = "FLYWHEEL_NODE_LANE_STAGE_ROOT"
 NODE_STAGE_RECEIPT = "node-lane-stage.json"
 NODE_STAGE_DEST = "node-lanes"
+NODE_MANIFEST = Path(__file__).resolve().parents[1] / "packaging" / "node-lane-payloads.json"
 
 
 class FreezeInputError(RuntimeError):
@@ -182,8 +185,18 @@ def check_pyz_slices(toc_path: Path, rows: Iterable[dict[str, Any]]) -> list[dic
     return receipts
 
 
-def node_lane_stage_datas(stage_root: str | None) -> list[tuple[str, str]]:
-    """The staged Node lanes as one PyInstaller data folder, or a refusal."""
+def held_node_lanes(manifest: Path = NODE_MANIFEST) -> tuple[str, ...]:
+    """The Node lanes the pinned manifest holds out of every freeze."""
+    rows = json.loads(Path(manifest).read_text(encoding="utf-8"))["lanes"]
+    return tuple(row["lane"] for row in rows if row.get("hold"))
+
+
+def node_lane_stage_datas(stage_root: str | None, *,
+                          held: Iterable[str] | None = None) -> list[tuple[str, str]]:
+    """The staged Node lanes as one PyInstaller data folder, or a refusal.
+
+    A receipt that lists a held lane is refused: a hold keeps that lane's
+    payload out of every freeze."""
     if not stage_root:
         raise FreezeInputError(
             f"{NODE_STAGE_ENV} must point to the staged Node lanes "
@@ -193,11 +206,17 @@ def node_lane_stage_datas(stage_root: str | None) -> list[tuple[str, str]]:
         raise FreezeInputError(f"Node lane stage folder missing: {root}")
     receipt = root / NODE_STAGE_RECEIPT
     try:
-        verdict = json.loads(receipt.read_text(encoding="utf-8")).get("verdict")
+        document = json.loads(receipt.read_text(encoding="utf-8"))
+        verdict = document.get("verdict")
+        staged = {str(row.get("lane")) for row in document.get("lanes") or ()}
     except (OSError, ValueError, AttributeError) as exc:
         raise FreezeInputError(f"Node lane stage has no readable {NODE_STAGE_RECEIPT}: {exc}") from exc
     if verdict != "PASS":
         raise FreezeInputError(f"Node lane stage receipt verdict is {verdict!r}, not PASS")
+    blocked = sorted(staged & set(held_node_lanes() if held is None else held))
+    if blocked:
+        raise FreezeInputError(f"Node lane stage lists held lanes {blocked}; a held lane "
+                               "never enters a freeze (restage without --include-held)")
     return [(str(root), NODE_STAGE_DEST)]
 
 

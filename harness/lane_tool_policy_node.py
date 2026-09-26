@@ -1,4 +1,4 @@
-"""Tool policy data for the Node lanes (learn 1.6.0, telos 0.4.1). Operator review pending.
+"""Tool policy data for the Node lanes (learn 1.6.0, telos 0.4.1).
 
 Plain data, merged into ``lane_tool_policy.LANE_TOOL_POLICY``; each entry holds
 the ``ToolPolicy`` fields that differ from the default (T1, 20 s, no needs, not
@@ -9,7 +9,11 @@ of the pinned archives.
 Measured on the pinned archives (the review notes in
 ``project-docs/lanes/POLICY-REVIEW.md`` give the evidence):
 
-- telos: every MCP tool ignores its arguments and runs one fixed script of the
+- telos: held out of this build (the O-8 hold, POLICY-DECISION C-7), so every
+  tool is ``NOT_IN_BUILD`` with slug ``release_on_hold`` and none is main. A
+  contained telos release gets a new tool-by-tool review before any tool
+  returns to T1. The notes below describe the held 0.4.1 archive: every MCP
+  tool ignores its arguments and runs one fixed script of the
   package with fixed flags, so a tool's reach is its script. ``native.control``
   is the Chrome DevTools and Windows UI Automation driver (it also holds mail,
   post and listing actions behind other arguments), so the build leaves it out
@@ -25,20 +29,12 @@ from __future__ import annotations
 
 _MAIN = {"main": True}
 
-TELOS_NOT_IN_BUILD = {
-    "telos.native.control": "actuation_outside_app",
-    "telos.room": "needs_source_checkouts",
-    "telos.workflow": "needs_source_checkouts",
-}
+TELOS_NOT_IN_BUILD = {"telos.native.control": "actuation_outside_app"}
 _TELOS_OUT = {
     "telos.native.control": {
         "tier": "T2", "effect": "actuate",
         "reason": "The Chrome DevTools and UI Automation driver; mail, post and listing "
                   "actions sit behind other arguments. Left out rather than admitted at T2."},
-    "telos.room": {"reason": "Runs python against sibling source checkouts an installed "
-                             "app does not have."},
-    "telos.workflow": {"reason": "Runs python and node by name against sibling source "
-                                 "checkouts and writes temp files."},
 }
 _TELOS_READ = ("Runs one fixed package script that reads files inside the package and "
                "prints JSON; the MCP mapping passes no arguments.")
@@ -60,11 +56,14 @@ _TELOS_TOOLS = (
 )
 
 
+_TELOS_HOLD = "release_on_hold"
+
+
 def _telos_entry(name: str) -> dict:
     if name in TELOS_NOT_IN_BUILD:
         return {"not_in_build": TELOS_NOT_IN_BUILD[name], **_TELOS_OUT[name]}
-    entry = {"reason": _TELOS_READ}
-    return {**entry, **_MAIN} if name in ("telos.catalog", "telos.doctor") else entry
+    return {"reason": _TELOS_READ + " Held out of this build (O-8).",
+            "not_in_build": _TELOS_HOLD}
 
 
 _READ = {"reason": "Reads a saved run or session in the lane folder, or a file the "

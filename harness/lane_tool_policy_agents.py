@@ -73,20 +73,29 @@ _MNEME = {
     **_health("mneme"),
 }
 
-_NO_GRANTS = (("allow_write", False), ("allow_exec", False))
-_RELAY_RUN = ("Runs an agent task on the model server the person set up. The engine "
-              "forces write and exec off, so the run reads and proposes only.")
+_OFFLINE = (("online", False),)
+_NO_GRANTS = (("allow_write", False), ("allow_exec", False), *_OFFLINE)
+_RELAY_RUN_ARGS = ("goal", "max_steps", "max_tokens", "model", "backend", "compact_budget")
+_RELAY_RUN = ("Runs an agent task on the model server the person set up. relay 0.3.0 takes "
+              "write and exec from its launch, which the engine starts with both off and its "
+              "root at the lane folder; the engine also passes only the listed arguments, so "
+              "root, check, test_cmd and online never reach the run, and forces write, exec "
+              "and online off.")
 _RELAY_SESSION = ("A background run dies with the per-call lane child. Out of this build "
                   "until long-lived lane sessions land (WP10) and relay start is allowed "
                   "(O-3).")
+_CHAT = "One completion from the first healthy local tier; online tiers are forced off."
+_PING = "Pings the local model tiers; online tiers are forced off."
 _RELAY = {
-    "local_agent_health": _t("network_read", "Pings the local model tiers."),
-    "local_agent_chat": _t("model_call", "One completion from the first healthy tier. Not "
-                           "named in section 1a.", needs=("model_server",), timeout_s=120),
+    "local_agent_health": _t("network_read", _PING, allowed_args=(), forced_args=_OFFLINE),
+    "local_agent_chat": _t("model_call", _CHAT, needs=("model_server",), timeout_s=120,
+                           allowed_args=("prompt", "backend"), forced_args=_OFFLINE),
     "local_agent_run": _main("model_call", _RELAY_RUN, needs=("model_server",),
-                             timeout_s=300, forced_args=_NO_GRANTS),
+                             timeout_s=300, allowed_args=_RELAY_RUN_ARGS,
+                             forced_args=_NO_GRANTS),
     "local_agent_start": _t("model_call", _RELAY_SESSION, tier="T2",
-                            not_in_build="per_call_child_ends_run", forced_args=_NO_GRANTS),
+                            not_in_build="per_call_child_ends_run",
+                            allowed_args=_RELAY_RUN_ARGS, forced_args=_NO_GRANTS),
     "local_agent_status": _t("read", _RELAY_SESSION, not_in_build="per_call_child_ends_run"),
     "local_agent_result": _t("read", _RELAY_SESSION, not_in_build="per_call_child_ends_run"),
     "local_agent_runs": _t("read", "Lists recorded runs."),
@@ -95,13 +104,16 @@ _RELAY = {
 }
 
 _LOCAL_RUN = ("Runs an agent task inside the picked project folder. Write and exec come "
-              "from the launch and default off; the engine forces both off in the call.")
+              "from the launch and default off; the engine passes only the listed "
+              "arguments and forces write, exec and online off in the call.")
 _LOCAL_MODEL = {
-    "local_agent_health": _t("network_read", "Pings the local model tiers."),
-    "local_agent_chat": _main("model_call", "One completion from the first healthy tier.",
-                              needs=("model_server",), timeout_s=120),
+    "local_agent_health": _t("network_read", _PING, allowed_args=(), forced_args=_OFFLINE),
+    "local_agent_chat": _main("model_call", _CHAT, needs=("model_server",), timeout_s=120,
+                              forced_args=_OFFLINE),
     "local_agent_run": _main("model_call", _LOCAL_RUN,
                              needs=("model_server", "project_folder"), timeout_s=300,
+                             allowed_args=("goal", "root", "max_steps", "max_tokens",
+                                           "backend"),
                              forced_args=_NO_GRANTS),
     **_health("local-model"),
     "flywheel.context.health": _t("read", "Reports the Canon context bridge status. Not "
@@ -117,14 +129,18 @@ _LOCAL_MODEL = {
 
 _PREPARE = ("Prepares a proposal in the writing workspace under the Flywheel home; nothing "
             "changes until a commit. Section 1a puts the records at T2.")
+_NO_HOME = (("home", None),)   # the engine picks the writing home, never the caller (C-5)
 _WRITING = {
     "writing.status": _t("read", "Lists the owner's writing projects."),
     "writing.doctor": _t("read", "Reports writing workflow readiness."),
     "writing.project_init": _t("state_write", _PREPARE, tier="T2"),
     "writing.section_record": _t("state_write", _PREPARE, tier="T2"),
     "writing.revision_record": _t("state_write", _PREPARE, tier="T2"),
-    "writing.diagnose": _main("state_write", "Prepares a reader-flow diagnostic proposal "
-                              "for a revision."),
+    "writing.diagnose": _main("outside_write", "Prepares a reader-flow diagnostic proposal "
+                              "for a recorded revision in the engine's journey store under "
+                              "<home>/state, outside the lane folder, so it runs on a call "
+                              "the owner approves at T2 (C-5).", tier="T2",
+                              needs=("writing_draft",)),
     "writing.card_record": _t("state_write", _PREPARE, tier="T2"),
     "writing.candidate_record": _t("state_write", _PREPARE, tier="T2"),
     "writing.decision_record": _t("state_write", _PREPARE, tier="T2"),
@@ -139,6 +155,7 @@ _WRITING = {
                                   "writing workspace. Section 1a puts the records at T2.",
                                   tier="T2"),
 }
+_WRITING = {name: {**entry, "forced_args": _NO_HOME} for name, entry in _WRITING.items()}
 
 _AS = {
     "accountable-surface.perceive": _main("network_read", "Witnesses a folder, file or web "
@@ -147,10 +164,12 @@ _AS = {
     "accountable-surface.propose": _t("state_write", "Runs the pre-execution gate against "
                                       "the operator's grants and journals the decision; "
                                       "never acts. Section 1a puts it at T2.", tier="T2"),
-    "accountable-surface.actuate": _t("actuate", "The full act loop for a wired verb.",
-                                      tier="T2", needs=("actuation_grant",)),
+    "accountable-surface.actuate": _t("actuate", "The full act loop for a wired verb. It "
+                                      "runs an external native-control driver, so it stays "
+                                      "in Accountable Surface itself (C-6, O-13 class C).",
+                                      tier="T2", not_in_build="actuation_outside_app"),
     "accountable-surface.device_ls": _t("read", "The shipped read-only verb: lists a "
-                                        "folder, with a receipt in the temp folder."),
+                                        "folder, with a receipt in the lane folder."),
     "accountable-surface.journal": _t("read", "Returns this session's journal."),
     "accountable-surface.receipt": _t("read", "Re-derives the receipt store."),
     **_health("accountable-surface"),

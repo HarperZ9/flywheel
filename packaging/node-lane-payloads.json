@@ -41,6 +41,8 @@
     },
     {
       "lane": "telos",
+      "hold": "O-8",
+      "hold_reason": "Held out of every freeze and installer while the release contents are reviewed (DECISIONS.json O-8). scripts/stage_node_lanes.py skips a held row unless --include-held is passed, and the freeze refuses a stage that lists one.",
       "package": "project-telos-mcp",
       "version": "0.4.1",
       "source": "github-release",

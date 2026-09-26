@@ -18,7 +18,8 @@ from pathlib import Path
 
 import pytest
 
-from scripts.frozen_payload_datas import NODE_STAGE_RECEIPT, node_lane_stage_datas
+from scripts.frozen_payload_datas import (
+    NODE_STAGE_RECEIPT, FreezeInputError, node_lane_stage_datas)
 from scripts.stage_node_lanes import StageError, load_manifest, main, stage_node_lanes
 
 REPO = Path(__file__).resolve().parents[1]
@@ -107,8 +108,11 @@ def test_stage_extracts_node_and_both_lanes_and_writes_a_passing_receipt(tmp_pat
     assert receipt["node_runtime"]["version"] == "v0.0.0"
     on_disk = json.loads((stage / NODE_STAGE_RECEIPT).read_text(encoding="utf-8"))
     assert on_disk == receipt
-    # the freeze accepts exactly this folder (WP2's required freeze input)
-    assert node_lane_stage_datas(str(stage)) == [(str(stage.resolve()), "node-lanes")]
+    # the fixture holds nothing, so the freeze accepts this folder; the committed
+    # manifest holds telos (O-8), so the default freeze refuses it
+    assert node_lane_stage_datas(str(stage), held=()) == [(str(stage.resolve()), "node-lanes")]
+    with pytest.raises(FreezeInputError, match="held"):
+        node_lane_stage_datas(str(stage))
 
 
 def test_a_telos_archive_that_differs_from_its_pin_refuses(tmp_path):

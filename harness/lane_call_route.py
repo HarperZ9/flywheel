@@ -11,8 +11,13 @@ message and a reason slug from a closed set. Tool text and server stderr are
 not passed through (O-7 default): the codes are what the gateway lets past its
 failure mask (``gateway._json`` ``public_boundary``), and a code that carried
 free text could carry a granted key's value with it. A call that could not
-launch rewrites the lane's probe record (H-10), and a key bound to a call that
-succeeded is recorded as validated (names only).
+launch rewrites the lane's probe record (H-10); a child that exits during the
+call is a tool error for that call and leaves the record alone (C8). A key
+bound to a call that succeeded is recorded as validated (names only), and only
+for a tool that spends it (C10).
+
+The timeout is the policy's ``timeout_s`` for the tool; a caller's value is
+clamped to 1 .. ``timeout_s`` (C4). An unlisted tool gets the default 20 s.
 """
 from __future__ import annotations
 
@@ -41,6 +46,13 @@ _CALLER_ERRORS = (
     ("OSError", ("LANE_CANNOT_LAUNCH", "launch_failed")),
     ("MCPError", ("LANE_TOOL_ERROR", "mcp_error")),
 )
+# The same failures once the child answered initialize (lane_caller._call).
+_CALL_ERRORS = (
+    ("MCPError: no response within", ("LANE_TIMEOUT", "no_response")),
+    ("MCPError: server closed", ("LANE_TOOL_ERROR", "server_exited_during_call")),
+    ("MCPError: server stdin is closed", ("LANE_TOOL_ERROR", "server_exited_during_call")),
+)
+_KEY_EFFECTS = frozenset(("spend", "model_call"))
 
 
 def parse_lane_path(path: str) -> tuple[str, str] | None:
@@ -87,6 +99,13 @@ def _classify_error(lane: str, tool: str, text: str, timeout: int) -> tuple[dict
     if text.startswith("cannot resolve MCP command"):
         from .lanes import resolve_lane_runtime
         return runtime_refusal(lane, tool, resolve_lane_runtime(lane).blocking_codes)
+    during = f"lane {lane!r} call failed: "
+    if text.startswith(during):
+        rest = text[len(during):]
+        code, reason = next((found for marker, found in _CALL_ERRORS
+                             if rest.startswith(marker)), ("LANE_TOOL_ERROR", "mcp_error"))
+        extra = {"timeout_s": timeout} if code == "LANE_TIMEOUT" else {}
+        return lane_error(code, lane, tool, reason, **extra)
     prefix = f"lane {lane!r} unavailable: "
     rest = text[len(prefix):] if text.startswith(prefix) else None
     for marker, (code, reason) in _CALLER_ERRORS if rest is not None else ():
@@ -124,8 +143,10 @@ def public_result(lane: str, tool: str, result: object,
     return result, 200
 
 
-def _record_validated(lane: str, bindings: object) -> None:
-    if bindings is None:
+def _record_validated(lane: str, tool: str, bindings: object) -> None:
+    from .lane_tool_policy import tool_policy
+    entry = tool_policy(lane, tool)
+    if bindings is None or entry is None or entry.effect not in _KEY_EFFECTS:
         return
     try:
         names = list(bindings.child_environment({}, platform="windows"))
@@ -157,9 +178,7 @@ def handle_lane_call(path: str, req: object,
     if not isinstance(args, dict):
         return {"error": "'args' must be an object"}, 400
     tier = body.get("governance_tier")
-    timeout = body.get("timeout")
-    if not isinstance(timeout, int) or isinstance(timeout, bool):
-        timeout = _DEFAULT_TIMEOUT
+    timeout = _call_timeout(lane_name, tool_name, body.get("timeout"))
     bulletin_access = (body["bulletin_access"]
                        if "bulletin_access" in body else None)
     from .lane_caller import call_lane_tool
@@ -172,5 +191,15 @@ def handle_lane_call(path: str, req: object,
         **bound), credential_bindings)
     answer, status = public_result(lane_name, tool_name, result, timeout)
     if status == 200:
-        _record_validated(lane_name, credential_bindings)
+        _record_validated(lane_name, tool_name, credential_bindings)
     return answer, status
+
+
+def _call_timeout(lane: str, tool: str, asked: object) -> int:
+    """The policy's timeout for the tool; a caller value only shortens it."""
+    from .lane_tool_policy import tool_policy
+    entry = tool_policy(lane, tool)
+    cap = entry.timeout_s if entry is not None else _DEFAULT_TIMEOUT
+    if not isinstance(asked, int) or isinstance(asked, bool):
+        return cap
+    return max(1, min(asked, cap))

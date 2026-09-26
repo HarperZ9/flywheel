@@ -70,7 +70,9 @@ def test_node_path_file_in_home_comes_before_the_bundled_node(tmp_path):
     chosen, bundled = _exe(tmp_path / "chosen"), _exe(tmp_path / "bundled")
     home = tmp_path / "home"
     home.mkdir()
-    (home / "node_path").write_text(f"{chosen}\n", encoding="utf-8")
+    from harness.lane_settings_route import file_sha256
+    (home / "node_path").write_text(f"{chosen}\nsha256={file_sha256(chosen)}\n",
+                                    encoding="utf-8")
     found = _find(tmp_path, _env(tmp_path), bundled=bundled,
                   node_version=_versions({chosen: "v20.0.0", bundled: "v24.21.0"}))
     assert found.source == "node_path" and found.path == str(chosen)

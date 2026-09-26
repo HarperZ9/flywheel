@@ -111,7 +111,7 @@ def lane_cli_environment(lane: str, extra: Mapping[str, str] | None = None, *,
     source = os.environ if environ is None else environ
     env = lane_process_environment(lane, extra, environ=source)
     if bundled:
-        base = bundled_child_environment(source)
+        base = bundled_child_environment(source, lane=lane)
         taken = {key.upper() for key in base}
         base.update({key: value for key, value in env.items()
                      if key.upper() not in BASE_NAMES and key.upper() not in taken})

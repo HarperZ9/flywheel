@@ -8,14 +8,20 @@ is evaluated here, once per request, from the mechanism that decides it:
 - ``model_server``: ``local_agent.health_report`` tiers at the two fixed local
   addresses, never ``OLLAMA_HOST``;
 - ``project_folder``: the picked folder, refused inside the Flywheel home
-  (``lane_runtime_frozen.local_model_root``);
+  (``lane_runtime_frozen.local_model_root``). Only a frozen build launches
+  local-model on it (``--mcp --root``); a pip or source install runs in the
+  engine's workspace, so the item is met there and the card leaves it out;
 - ``canon_blocks``: the blocks folder exists and holds N ``*.json`` blocks;
 - ``provider_key``: three facts per granted name. Granted (``env_allow`` in
   lanes.json), present (the environment or the keychain holds a non-empty
   value; the check returns where it would come from, never the value), and
   validated only after one bound call succeeded;
 - ``bulletin_identity``: a saved identity (registration is not checked here);
-- ``claude_cli`` and ``actuation_grant``: not met by this build.
+- ``writing_draft``: revision bodies recorded in the writing artifact store under
+  ``<home>/state`` (counted by file, nothing is opened or created);
+- ``claude_cli``: the claude CLI found by ``claude_discovery`` (the engine
+  passes its path to articulate); whether it is signed in is not checked, and
+  the copy says so.
 
 Copy states the real steps a person takes. No item reads a key value into a
 response or a log.
@@ -23,6 +29,7 @@ response or a log.
 from __future__ import annotations
 
 import os
+import sys
 import threading
 import time
 from dataclasses import asdict, dataclass, field
@@ -89,6 +96,11 @@ def _default_git(environ: Mapping[str, str]):
     return find_git(environ)
 
 
+def _default_claude(environ: Mapping[str, str]):
+    from .claude_discovery import find_claude
+    return find_claude(environ)
+
+
 def _default_key_source(name: str) -> str:
     from .keychain import credential_source
     return credential_source(name)
@@ -112,10 +124,13 @@ class SetupChecks:
                  model_health: Callable[[], dict] | None = None,
                  key_source: Callable[[str], str] | None = None,
                  key_grants: Callable[[str], tuple] | None = None,
-                 validated_keys: Callable[[str], set] | None = None) -> None:
+                 validated_keys: Callable[[str], set] | None = None,
+                 frozen: bool | None = None, claude: Callable | None = None) -> None:
         self.environ = dict(os.environ) if environ is None else environ
+        self.frozen = bool(getattr(sys, "frozen", False)) if frozen is None else frozen
         self.node = node or (lambda: _default_node(self.environ))
         self.git = git or (lambda: _default_git(self.environ))
+        self.claude = claude or (lambda: _default_claude(self.environ))
         self.model_health = model_health or cached_model_health
         self.key_source = key_source or _default_key_source
         self.key_grants = key_grants or _default_key_grants
@@ -164,6 +179,9 @@ def _model_server(checks: SetupChecks, _lane: str, item_id: str) -> SetupItem:
 
 def _project_folder(checks: SetupChecks, _lane: str, item_id: str) -> SetupItem:
     from .lane_runtime_frozen import local_model_root
+    if not checks.frozen:
+        return _item(item_id, True, "Runs in the engine's workspace; the installed app "
+                     "asks for a project folder.", root=None, code="not_frozen")
     root, code = local_model_root(checks.environ)
     if root:
         return _item(item_id, True, f"Project folder: {root}.", root=root, code="")
@@ -208,36 +226,58 @@ def _bulletin_identity(checks: SetupChecks, _lane: str, item_id: str) -> SetupIt
     if saved:
         return _item(item_id, True, "Identity saved. Registration with the board is not "
                      "checked here.", saved=True)
-    return _item(item_id, False, "Register an identity on the Bulletin screen.", saved=False)
+    return _item(item_id, False, "Create and register an identity in the Keys panel on the "
+                 "Endpoints screen.", saved=False)
+
+
+def _writing_draft(checks: SetupChecks, _lane: str, item_id: str) -> SetupItem:
+    store = flywheel_home(checks.environ) / "state" / "artifacts" / "writing" / "v1"
+    count = len(list(store.glob("owners/*/projects/*/body/*.txt"))) if store.is_dir() else 0
+    if count:
+        return _item(item_id, True, f"{count} draft revisions recorded.", count=count)
+    return _item(item_id, False, "Record a draft on the Writing screen first.", count=0)
+
+
+def _claude_cli(checks: SetupChecks, _lane: str, item_id: str) -> SetupItem:
+    found = checks.claude()
+    facts = {"path": found.path, "source": found.source}
+    if found.found:
+        return _item(item_id, True, f"claude CLI at {found.path}. It must be signed in "
+                     "(run claude login); that is not checked here.", **facts)
+    return _item(item_id, False, "Install the claude CLI and run claude login, or set "
+                 "ARTICULATE_CLAUDE_CLI to its full path. Restart Flywheel after "
+                 "installing.", **facts)
 
 
 def _unmet_by_build(_checks: SetupChecks, lane: str, item_id: str) -> SetupItem:
-    copy = {"claude_cli": "Needs a signed-in claude CLI. Not in this build.",
-            "actuation_grant": "Needs an operator grant and a wired actuator; see "
-                               "Accountable Surface."}.get(item_id, "Not available in this build.")
-    return _item(item_id, False, copy)
+    return _item(item_id, False, "Not available in this build.")
 
 
 _EVALUATORS = {"node": _node, "git": _git, "model_server": _model_server,
                "project_folder": _project_folder, "canon_blocks": _canon_blocks,
-               "provider_key": _provider_key, "bulletin_identity": _bulletin_identity}
+               "provider_key": _provider_key, "bulletin_identity": _bulletin_identity,
+               "writing_draft": _writing_draft, "claude_cli": _claude_cli}
 
 
-def lane_needs(lane: str) -> list[str]:
+def lane_needs(lane: str, *, frozen: bool | None = None) -> list[str]:
     """Setup item ids the lane's in-build tools need, in table order, plus the
-    key item for a key-backed lane."""
+    key item for a key-backed lane. ``project_folder`` applies to a frozen
+    build only (C16)."""
+    frozen = bool(getattr(sys, "frozen", False)) if frozen is None else frozen
     needs: dict[str, None] = {}
     for entry in lane_policy(lane).values():
         if not entry.not_in_build:
             needs.update(dict.fromkeys(entry.needs))
     if lane in KEY_BACKED:
         needs["provider_key"] = None
+    if not frozen:
+        needs.pop("project_folder", None)
     return list(needs)
 
 
 def lane_setup(lane: str, checks: SetupChecks | None = None) -> dict:
     """Every setup item this lane's card states, met or not."""
     checks = checks or SetupChecks()
-    items = [checks.item(item_id, lane) for item_id in lane_needs(lane)]
+    items = [checks.item(item_id, lane) for item_id in lane_needs(lane, frozen=checks.frozen)]
     return {"schema": SCHEMA, "lane": lane, "items": [i.to_dict() for i in items],
             "unmet": [i.id for i in items if not i.met]}

@@ -19,9 +19,16 @@ one saved key to one lane call:
 
 An http lane spawns no child, so it binds nothing here; bulletin's signing key
 keeps its own path.
+
+The key rule (POLICY-DECISION C-8): binding a key makes a call T2
+(``binds_any_key``), and a call below T2 has every key-shaped name the operator
+granted through ``env_allow`` stripped from its child (``strip_key_grants``),
+so ``mneme.remember`` or ``forum.plan`` at T1 runs key-free.
 """
 from __future__ import annotations
 
+import re
+from dataclasses import replace
 from pathlib import Path
 from typing import Mapping
 
@@ -30,6 +37,35 @@ from .lane_workdir import spawns_lane_child
 from .mcp_client import LaunchSpec
 
 _BULLETIN_SIGNED_TOOLS = frozenset(("board_write_post", "board_publish_media_post"))
+KEY_SHAPED = re.compile(
+    r"(?:^|_)(?:API_?KEY|KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIALS?|PAT)\Z")
+
+
+def key_shaped(name: str) -> bool:
+    """True for a variable name that names a credential by convention."""
+    return bool(KEY_SHAPED.search(str(name).upper()))
+
+
+def binds_any_key(bindings) -> bool:
+    """True when a credential binding would hand this call a value."""
+    try:
+        return bool(_bound_values(bindings))
+    except LaneCredentialError:
+        return True
+
+
+def strip_key_grants(lane_name: str, launch, registry: Mapping[str, object] | None = None):
+    """The launch without the key-shaped names granted to this lane. An
+    inheriting launch gets each one blanked, since it would inherit it."""
+    if not isinstance(launch, LaunchSpec) or not spawns_lane_child(launch):
+        return launch
+    keys = {name.upper() for name in lane_key_grants(lane_name, registry) if key_shaped(name)}
+    if not keys:
+        return launch
+    env = [(k, v) for k, v in launch.env_overrides if k.upper() not in keys]
+    if launch.inherit_env:
+        env += [(name, "") for name in sorted(keys)]
+    return replace(launch, env_overrides=tuple(env))
 
 
 class LaneCredentialError(RuntimeError):

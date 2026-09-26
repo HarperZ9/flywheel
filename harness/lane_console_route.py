@@ -1,39 +1,55 @@
-"""The lane console routes: setup, tool listing, a one-lane check, and the two
-setup choices a person makes in the app.
+"""The lane console routes: callable lanes, setup, tool listing, a one-lane
+check, lane install, and the two setup choices a person makes in the app.
 
+- ``GET /api/lanes/callable``: every lane with its tool tiers.
 - ``GET /api/lanes/<lane>/setup``: every setup item the card states.
 - ``POST /api/lanes/<lane>/check``: probe one lane now; the row with its state.
+  It spawns the lane, so it sits under private custody (S6).
 - ``POST /api/lanes/<lane>/tools``: every tool the lane's server lists, from
   an unfiltered ``tools/list`` (``MCPClient.list_tools`` filters, so it cannot
   be used as is), each marked ``admitted``, ``tier``, ``not_in_build``. It
   spawns the lane, so it carries the same approval as ``plugin.probe``: the
-  body is a ``plugin.probe`` grant envelope naming this lane (O-4 may change
-  that).
-- ``GET|POST /api/lanes/local-model/root``: the project folder local-model runs
-  in, refused inside the Flywheel home or as the home folder itself.
-- ``GET|POST /api/settings/node_path``: the ``node`` executable the Node lanes
-  use when ``FLYWHEEL_NODE`` is unset; only a file named node that answers
-  ``--version`` with 20 or later is accepted.
+  body is a ``plugin.probe`` grant envelope naming this lane (O-4 keeps POST
+  with the grant; there is no GET).
+- ``POST /api/lanes/install``: install one lane on request.
+- ``GET|POST /api/lanes/local-model/root`` and ``GET|POST
+  /api/settings/node_path``: the two setup choices (``lane_settings_route``);
+  each POST arrives only after the gateway consumed its exact grant.
+
+The gateway sends every ``/api/lanes/`` request and the node path setting here
+through one line per method, so ``harness/gateway.py`` stays inside its frozen
+size.
 """
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from typing import Callable, Mapping
+
+from .lane_settings_route import (  # re-exported for the gateway and the tests
+    LOCAL_MODEL_ROOT_ROUTE, NODE_PATH_ROUTE, node_path_get, node_path_post, root_body,
+    root_post, setting_post)
 
 SCHEMA_TOOLS = "flywheel.lane-tools/v1"
 LANES_PREFIX = "/api/lanes/"
-NODE_PATH_ROUTE = "/api/settings/node_path"
-LOCAL_MODEL_ROOT_ROUTE = "/api/lanes/local-model/root"
+CALLABLE_ROUTE = "/api/lanes/callable"
+INSTALL_ROUTE = "/api/lanes/install"
 CONSOLE_ROUTES = (
     ("GET", "/api/lanes/{lane}/setup", "every setup item a lane card states"),
     ("POST", "/api/lanes/{lane}/check", "probe one lane now and return its state"),
     ("POST", "/api/lanes/{lane}/tools", "every tool a lane lists, under a plugin.probe grant"),
     ("GET", LOCAL_MODEL_ROOT_ROUTE, "the local-model project folder"),
-    ("POST", LOCAL_MODEL_ROOT_ROUTE, "choose or clear the local-model project folder"),
+    ("POST", LOCAL_MODEL_ROOT_ROUTE, "choose or clear the local-model project folder, "
+                                     "under a lane.root grant"),
     ("GET", NODE_PATH_ROUTE, "the node executable the Node lanes use"),
-    ("POST", NODE_PATH_ROUTE, "choose or clear node.exe for the Node lanes"),
+    ("POST", NODE_PATH_ROUTE, "choose or clear node.exe for the Node lanes, under a "
+                              "settings.node_path grant"),
 )
+
+
+def serves(path: str) -> bool:
+    """True for a path this module answers."""
+    bare = path.split("?", 1)[0]
+    return bare.startswith(LANES_PREFIX) or bare == NODE_PATH_ROUTE
 
 
 def _bad(reason: str, status: int = 400) -> tuple[dict, int]:
@@ -51,7 +67,13 @@ def parse_console_path(path: str) -> tuple[str, str] | None:
 
 def console_get(path: str, *, environ: Mapping[str, str] | None = None) -> tuple[dict, int]:
     env = os.environ if environ is None else environ
-    if path.split("?", 1)[0] == LOCAL_MODEL_ROOT_ROUTE:
+    bare = path.split("?", 1)[0]
+    if bare == CALLABLE_ROUTE:
+        from .lane_caller import list_available_lanes
+        return {"lanes": list_available_lanes()}, 200
+    if bare == NODE_PATH_ROUTE:
+        return node_path_get(env), 200
+    if bare == LOCAL_MODEL_ROOT_ROUTE:
         return root_body(env), 200
     target = parse_console_path(path)
     from .lanes_registry import LANES
@@ -141,77 +163,28 @@ def tools_post(lane: str, authorize: Callable[[], object], *,
     return tools_listing(lane, launch, client_factory=client_factory)
 
 
-# ---- setup choices ------------------------------------------------------
-
-def root_body(environ: Mapping[str, str]) -> dict:
-    from .lane_setup import SetupChecks
-    return SetupChecks(environ).item("project_folder", "local-model").to_dict()
-
-
-def root_post(req: Mapping[str, object], environ: Mapping[str, str]) -> tuple[dict, int]:
-    """Write or clear ``<home>/lanes/local-model/root`` after the start rule."""
-    from .lane_runtime_frozen import local_model_root_file
-    from .lane_workdir import ensure_lane_workdir
-    raw = req.get("path")
-    target = local_model_root_file(environ)
-    if raw in (None, ""):
-        target.unlink(missing_ok=True)
-        return root_body(environ), 200
-    if not isinstance(raw, str) or "\x00" in raw:
-        return _bad("path_not_a_string")
-    folder = Path(os.path.expanduser(raw.strip()))
-    if not folder.is_absolute() or not folder.is_dir():
-        return _bad("local_model_root_missing")
-    from .local_agent_grants import GrantRefusal, grants_from_config
-    try:
-        grants_from_config(environ, workspace=str(folder))
-    except GrantRefusal:
-        return _bad("local_model_root_protected", 409)
-    ensure_lane_workdir("local-model", environ)
-    target.write_text(str(folder) + "\n", encoding="utf-8")
-    return root_body(environ), 200
-
-
-def node_path_get(environ: Mapping[str, str] | None = None) -> dict:
-    env = os.environ if environ is None else environ
-    from .lane_setup import SetupChecks
-    body = SetupChecks(env).item("node", "learn").to_dict()
-    body["override"] = bool(env.get("FLYWHEEL_NODE"))
-    return body
-
-
-def node_path_post(req: Mapping[str, object], environ: Mapping[str, str] | None = None,
-                   *, version_probe: Callable[[str], str | None] | None = None
-                   ) -> tuple[dict, int]:
-    """Write or clear ``<home>/node_path``. Only a file named node is run."""
-    from .lane_workdir import flywheel_home
-    from .tool_discovery import MIN_NODE_MAJOR, NODE_PATH_FILE, node_major, node_version
-    env = os.environ if environ is None else environ
-    target = flywheel_home(env) / NODE_PATH_FILE
-    raw = req.get("path")
-    if raw in (None, ""):
-        target.unlink(missing_ok=True)
-        return node_path_get(env), 200
-    if not isinstance(raw, str) or "\x00" in raw:
-        return _bad("path_not_a_string")
-    path = Path(os.path.expanduser(raw.strip().strip('"')))
-    if not path.is_file() or path.stem.lower() != "node":
-        return _bad("not_a_node_executable")
-    major = node_major((version_probe or node_version)(str(path)))
-    if major is None or major < MIN_NODE_MAJOR:
-        return _bad("node_too_old_or_silent")
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(str(path) + "\n", encoding="utf-8")
-    return node_path_get(env), 200
-
-
 # ---- gateway mount ------------------------------------------------------
 
+def _install(handler):
+    req, bad = handler._req_json()
+    if bad:
+        return bad
+    name = str((req or {}).get("name", "")).strip()
+    if not name:
+        return handler._json({"error": "provide a lane 'name'"}, 400)
+    profile = str(req.get("profile", "package")).strip() or "package"
+    from .lanes import install_lane
+    return handler._json(install_lane(name, profile=profile))
+
+
 def console_post_mount(handler, path: str):
-    """Serve a POST under /api/lanes/ for the gateway handler."""
-    if path.split("?", 1)[0] == LOCAL_MODEL_ROOT_ROUTE:
+    """Serve a POST under /api/lanes/ or the node path setting for the gateway."""
+    bare = path.split("?", 1)[0]
+    if bare in (LOCAL_MODEL_ROOT_ROUTE, NODE_PATH_ROUTE):  # granted: the body is the operation
         req, bad = handler._req_json()
-        return bad if bad else handler._json(*root_post(req or {}, os.environ))
+        return bad if bad else handler._json(*setting_post(bare, req))
+    if bare == INSTALL_ROUTE:
+        return _install(handler)
     target = parse_console_path(path)
     if target is None or target[1] not in ("tools", "check"):
         return handler._json({"code": "NOT_FOUND", "error": "no such lane console route"}, 404)

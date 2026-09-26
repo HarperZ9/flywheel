@@ -15,19 +15,25 @@ The T2 rule: a tool whose ``effect`` writes outside the lane's own folder,
 spends a model call or provider key, publishes, actuates or decides a human
 approval is T2. ``validate_policy`` enforces it. A tool may sit at T2 for a
 reviewed reason even when its effect alone would allow T1; the review document
-marks those. ``forced_args`` keeps a T1 tool inside the rule by forcing or
-dropping the one argument that would write elsewhere or widen a grant.
+marks those. Argument guards keep a T1 tool inside the rule: ``allowed_args``
+passes only listed argument names (an allowlist, so a lane release that adds a
+widening argument is dropped), ``forced_args`` then forces or drops named ones,
+``id_args`` must be plain ids and ``path_args`` may not reach into the Flywheel
+home outside the lane folder (``argument_refusal``).
 
-The content lives in three data files split by lane family. The operator
-reviews it before merge (O-4): ``project-docs/lanes/POLICY-REVIEW.md``, whose
-tables ``scripts/render_lane_policy_review.py`` renders from this table.
+The content lives in three data files split by lane family, plus the argument
+facts in ``lane_tool_policy_args``. The decision of record is O-4
+(``POLICY-DECISION.md``, rendered with the tables into
+``project-docs/lanes/POLICY-REVIEW.md`` by ``scripts/render_lane_policy_review.py``).
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Mapping
 
 from .lane_tool_policy_agents import AGENT_LANE_POLICY
+from .lane_tool_policy_args import ARG_POLICY
 from .lane_tool_policy_evidence import EVIDENCE_LANE_POLICY
 from .lane_tool_policy_node import NODE_LANE_POLICY
 
@@ -53,12 +59,22 @@ SETUP_ITEMS = {
     "project_folder": "a project folder outside the Flywheel home",
     "canon_blocks": "authored blocks in <home>/lanes/canon/blocks",
     "provider_key": "a provider key granted to the lane and bound per call",
-    "claude_cli": "a signed-in claude CLI the engine can resolve",
+    "claude_cli": "a signed-in claude CLI the engine can find",
     "bulletin_identity": "a registered bulletin identity",
-    "actuation_grant": "an operator grant and a wired actuator",
+    "writing_draft": "a draft revision recorded on the Writing screen",
 }
+#: Lanes whose main action is a T2 tool: the card says the call needs a T2
+#: approval. writing's diagnose writes into the engine's journey store (C-5).
+GRANTED_MAIN_LANES = frozenset(("writing",))
+ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
 READS_ONLY_LANES = {
     "calibrate-pro": "Reads the panel catalog. Calibration runs in Calibrate Pro itself.",
+}
+#: Lanes held out of this build, with the card's sentence. A held lane admits no
+#: tool and has no main tool; the frozen engine reports ``lane_held`` for it.
+#: telos: the O-8 hold (DECISIONS.json) while its release contents are reviewed.
+HELD_LANES = {
+    "telos": "Not in this build: Telos is held while its release contents are reviewed.",
 }
 
 
@@ -74,7 +90,9 @@ class ToolPolicy:
     ``effect``: what the tool does, from ``EFFECTS``; drives the T2 rule.
     ``reason``: one sentence for the reviewer, from reading the lane source.
     ``forced_args``: (name, value) pairs the engine applies to every call on
-    every route; ``None`` drops the argument.
+    every route, after ``allowed_args``; ``None`` drops the argument.
+    ``allowed_args``: when a tuple, the only argument names that pass.
+    ``id_args``, ``path_args``, ``open_egress``: see ``lane_tool_policy_args``.
     """
     tier: str = "T1"
     timeout_s: int = DEFAULT_TIMEOUT_S
@@ -84,10 +102,21 @@ class ToolPolicy:
     effect: str = "read"
     reason: str = ""
     forced_args: tuple[tuple[str, Any], ...] = ()
+    allowed_args: tuple[str, ...] | None = None
+    id_args: tuple[str, ...] = ()
+    path_args: tuple[str, ...] = ()
+    open_egress: bool = False
+
+    @property
+    def guarded(self) -> bool:
+        """True when the engine rewrites or checks this tool's arguments."""
+        return bool(self.forced_args or self.allowed_args is not None
+                    or self.id_args or self.path_args)
 
 
 def _build(tables: Mapping[str, Mapping[str, Mapping[str, Any]]]) -> dict[str, dict[str, ToolPolicy]]:
-    return {lane: {name: ToolPolicy(**fields) for name, fields in tools.items()}
+    return {lane: {name: ToolPolicy(**fields, **ARG_POLICY.get(lane, {}).get(name, {}))
+                   for name, fields in tools.items()}
             for lane, tools in tables.items()}
 
 
@@ -117,9 +146,11 @@ def main_tools(lane: str) -> list[str]:
 
 
 def guard_args(lane: str, tool: str, args: Mapping[str, Any]) -> dict[str, Any]:
-    """``args`` with the tool's forced arguments applied; the input is not changed."""
-    out = dict(args)
+    """``args`` filtered to ``allowed_args``, then with the forced arguments
+    applied; the input is not changed."""
     entry = tool_policy(lane, tool)
+    allowed = entry.allowed_args if entry else None
+    out = {k: v for k, v in args.items() if allowed is None or k in allowed}
     for name, value in (entry.forced_args if entry else ()):
         if value is None:
             out.pop(name, None)
@@ -128,7 +159,7 @@ def guard_args(lane: str, tool: str, args: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _entry_problems(where: str, entry: ToolPolicy) -> list[str]:
+def _entry_problems(where: str, entry: ToolPolicy, granted_main: bool = False) -> list[str]:
     problems: list[str] = []
     if entry.tier not in TIERS:
         problems.append(f"{where}: tier {entry.tier!r} not in {TIERS}")
@@ -137,7 +168,7 @@ def _entry_problems(where: str, entry: ToolPolicy) -> list[str]:
     for item in entry.needs:
         if item not in SETUP_ITEMS:
             problems.append(f"{where}: unknown setup item {item!r}")
-    if entry.main and (entry.not_in_build or entry.tier != "T1"):
+    if entry.main and (entry.not_in_build or (entry.tier != "T1" and not granted_main)):
         problems.append(f"{where}: a main tool must be T1 and in the build")
     if entry.effect not in EFFECTS:
         problems.append(f"{where}: effect {entry.effect!r} not in EFFECTS")
@@ -164,5 +195,5 @@ def validate_policy(
             if not isinstance(entry, ToolPolicy):
                 problems.append(f"{where}: not a ToolPolicy")
                 continue
-            problems.extend(_entry_problems(where, entry))
+            problems.extend(_entry_problems(where, entry, lane in GRANTED_MAIN_LANES))
     return problems

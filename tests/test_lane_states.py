@@ -37,7 +37,7 @@ def _checks(tmp_path, *, git=True, model=False, node=True):
         model_health=lambda: {"any_live": model, "tiers": [
             {"backend": "ollama", "healthy": model, "detail": "x"}]},
         key_source=lambda _name: "absent", key_grants=lambda _lane: (),
-        validated_keys=lambda _lane: set())
+        validated_keys=lambda _lane: set(), frozen=True)  # the installed app's engine
 
 
 def _row(lane, *, status="declared", codes=()):
@@ -66,7 +66,7 @@ def test_ready_needs_a_listed_main_tool_with_its_needs_met(tmp_path):
     _answered(cache, "gather", ["gather.status", "gather.docs", "gather.context"])
     state = lane_state("gather", _row("gather"), cache=cache, checks=_checks(tmp_path))
     assert state["state"] == "ready"
-    assert state["sentence"].startswith("Runs catalog a local document")
+    assert state["sentence"] == "Ready to catalog a local document and pull feeds."
     assert state["checked_line"] == f"Checked {NOW}."
     assert state["checked_this_session"] is True
 
@@ -80,7 +80,8 @@ def test_limited_names_the_item_other_tools_wait_on(tmp_path):
     assert state["state"] == "limited"
     assert state["waiting_tools"] == ["index.map"]
     assert [item["id"] for item in state["setup"]] == ["git"]
-    assert "1 tools need: Git for Windows" in state["sentence"]
+    assert state["sentence"] == ("Ready to find symbols. To map a repo's history, set up: "
+                                 "Git for Windows, for branch and history.")
 
 
 def test_needs_setup_when_no_main_tool_can_run_and_says_health_answered(tmp_path):
@@ -92,7 +93,7 @@ def test_needs_setup_when_no_main_tool_can_run_and_says_health_answered(tmp_path
     assert state["sentence"].startswith("Start a model server")
     assert "127.0.0.1:11434" in state["sentence"] and "127.0.0.1:8765" in state["sentence"]
     assert state["second_line"] == "Answers its health check."
-    assert not state["sentence"].startswith("Runs")
+    assert not state["sentence"].startswith(("Runs", "Ready"))
 
 
 def test_needs_setup_from_a_runtime_setup_code_names_the_item(tmp_path):
@@ -104,8 +105,17 @@ def test_needs_setup_from_a_runtime_setup_code_names_the_item(tmp_path):
     assert state["sentence"] == "Choose a project folder."
 
 
-def test_reads_only_for_a_class_c_lane(tmp_path):
-    state = lane_state("calibrate-pro", _row("calibrate-pro"), cache=_cache(tmp_path),
+def test_reads_only_for_a_class_c_lane_only_after_a_probe_lists_its_main_tool(tmp_path):
+    unprobed = lane_state("calibrate-pro", _row("calibrate-pro"), cache=_cache(tmp_path),
+                          checks=_checks(tmp_path))
+    assert unprobed["state"] == "not_checked"          # C9: no claim before a check
+    cache = _cache(tmp_path)
+    _answered(cache, "calibrate-pro", ["calibrate-pro.status", "calibrate-pro.doctor"])
+    empty = lane_state("calibrate-pro", _row("calibrate-pro"), cache=cache,
+                       checks=_checks(tmp_path))
+    assert (empty["state"], empty["code"]) == ("cannot_launch", "main_tool_not_admitted")
+    _answered(cache, "calibrate-pro", ["calibrate-pro.list-panels", "calibrate-pro.status"])
+    state = lane_state("calibrate-pro", _row("calibrate-pro"), cache=cache,
                        checks=_checks(tmp_path))
     assert state["state"] == "reads_only"
     assert "Calibration runs in Calibrate Pro itself" in state["sentence"]
@@ -138,7 +148,7 @@ def test_a_health_only_lane_is_never_ready(tmp_path):
     state = lane_state("crucible", _row("crucible", status="live"), cache=cache,
                        checks=_checks(tmp_path))
     assert state["state"] != "ready"
-    assert not state["sentence"].startswith("Runs")
+    assert not state["sentence"].startswith(("Runs", "Ready"))
     assert state["code"] == "main_tool_not_admitted"
 
 

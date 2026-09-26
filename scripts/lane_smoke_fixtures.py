@@ -4,21 +4,42 @@ Each fixture writes its inputs under a throwaway folder, names the calls to make
 (the last call is the lane's main tool from PLAN section 1a) and checks one fact
 about the parsed reply. These are test fixtures for the smoke, not content that
 ships in the app. A lane with no fixture here can reach ``health`` at most.
+
+A fixture marked ``needs_model_server`` runs only when a model server answers
+at one of the two fixed local addresses (``model_server_answering``); the smoke
+records that fact, so a build machine running Ollama and a runner without one
+get the same verdict.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 import json
 from pathlib import Path
+import socket
 from typing import Callable
 
 Call = tuple[str, dict]
+
+
+MODEL_SERVER_ADDRESSES = (("127.0.0.1", 8765), ("127.0.0.1", 11434))
 
 
 @dataclass(frozen=True)
 class LaneFixture:
     calls: Callable[[Path, Path], list[Call]]  # (home, workdir) -> calls; last is main
     check: Callable[[object], bool]            # one assertion on the last reply's JSON
+    needs_model_server: bool = False
+
+
+def model_server_answering(addresses=MODEL_SERVER_ADDRESSES, timeout: float = 0.5) -> bool:
+    """True when something accepts a connection at a fixed model server address."""
+    for host, port in addresses:
+        try:
+            with socket.create_connection((host, port), timeout=timeout):
+                return True
+        except OSError:
+            continue
+    return False
 
 
 def _write(path: Path, text: str) -> Path:
@@ -153,18 +174,25 @@ def _chorus_ok(reply: object) -> bool:
 
 
 def _relay(home: Path, work: Path) -> list[Call]:
+    # Every widening argument is asked for; the engine's guard must drop or
+    # force each one before the child sees it (the smoke routes the arguments
+    # through lane_tier_gate.guard_args, as the app route does).
     return [("local_agent_run", {"goal": "Reply with the word ok.", "root": str(work),
-                                 "max_steps": 1, "allow_write": False,
-                                 "allow_exec": False})]
+                                 "max_steps": 1, "allow_write": True, "allow_exec": True,
+                                 "online": True, "check": "whoami", "test_cmd": "whoami"})]
 
 
 def _relay_ok(reply: object) -> bool:
-    # Shape from relay 0.2.5 ``_run_projection``; the app route forces both
-    # grants false, so a reply that ran with either one on fails here.
+    # Shape from relay 0.3.0 ``run_projection``: the binding says what the run
+    # asked for and got. The launch grants nothing, so a reply that asked for
+    # or got write, exec, online, a check or a test command fails here.
     binding = reply.get("request_binding") if isinstance(reply, dict) else None
     return (isinstance(binding, dict) and bool(reply.get("final_answer"))
-            and binding.get("allow_write") is False
-            and binding.get("allow_exec") is False)
+            and binding.get("allow_write") is False and binding.get("allow_exec") is False
+            and binding.get("granted_allow_write") is False
+            and binding.get("granted_allow_exec") is False
+            and binding.get("requested_root") is None and binding.get("online") is False
+            and not binding.get("check_present") and not binding.get("test_cmd_present"))
 
 
 def _surface(home: Path, work: Path) -> list[Call]:
@@ -246,7 +274,7 @@ FIXTURES: dict[str, LaneFixture] = {
     "mneme": LaneFixture(_mneme, _mneme_ok),
     "canon": LaneFixture(_canon, _canon_ok),
     "chorus": LaneFixture(_chorus, _chorus_ok),
-    "relay": LaneFixture(_relay, _relay_ok),
+    "relay": LaneFixture(_relay, _relay_ok, needs_model_server=True),
     "accountable-surface": LaneFixture(_surface, _surface_ok),
     "articulate": LaneFixture(_articulate, _articulate_ok),
     "calibrate-pro": LaneFixture(_calibrate, _calibrate_ok),

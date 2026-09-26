@@ -128,8 +128,9 @@ python_lane_pathex, python_lane_hidden, python_lane_receipts = (
 # Package data inside each pinned lane package (forum's default roster, for one)
 # lands at its package-relative folder, where importlib.resources looks for it.
 python_lane_datas = python_lane_freeze_datas(repo, lane_source_root)
-# learn and telos ship from the folder scripts/stage_node_lanes.py stages, under
-# _internal/node-lanes. A build without that stage fails here, not at run time.
+# learn and the Node runtime ship from the folder scripts/stage_node_lanes.py
+# stages, under _internal/node-lanes. A build without that stage, or with a stage
+# that lists a held lane (telos, the O-8 hold), fails here, not at run time.
 node_lane_datas = node_lane_stage_datas(os.environ.get(NODE_STAGE_ENV))
 
 a = Analysis(

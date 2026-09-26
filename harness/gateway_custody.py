@@ -47,9 +47,10 @@ PRIVATE_PATHS = frozenset({
 
 
 #: Lane console routes under the public /api/lanes/ prefix that are private:
-#: the tool listing consumes an owner's plugin.probe grant, and the project
-#: folder names a local path and decides where the local agent may write.
-PRIVATE_LANE_SUFFIXES = ("/tools", "/local-model/root")
+#: the tool listing consumes an owner's plugin.probe grant, the project folder
+#: names a local path and decides where the local agent may read and write,
+#: and a check spawns the lane (for bulletin it contacts the remote board).
+PRIVATE_LANE_SUFFIXES = ("/tools", "/local-model/root", "/check")
 
 
 def is_private(path: str) -> bool:

@@ -189,8 +189,9 @@ def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
         return {"error": "the builtin tool set runs inside gated agent "
                          "runs, not through this route"}
     refusal = None if execution_plan is not None else _direct_refusal(name, False)
-    from .lane_tier_gate import guard_args, plugin_refusal  # a lane tool needs T1 here
+    from .lane_tier_gate import argument_refusal, guard_args, plugin_refusal  # T1 only here
     refusal = plugin_refusal(name, tool) if refusal is None else refusal
+    refusal = refusal or (argument_refusal(name, tool, arguments or {}) if name in LANES else None)
     if refusal is not None:
         return refusal
     try:

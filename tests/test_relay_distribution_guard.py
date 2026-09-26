@@ -104,14 +104,17 @@ def test_disabled_package_has_no_public_command_or_plugin_launch(monkeypatch, na
     row = next(r for r in plugins.plugin_roster()["plugins"] if r["name"] == name)
     assert row["enabled"] is False and row["command"] == []
     assert row["status"] == "unavailable"
-    with pytest.raises(GatewayOperationError, match="LANE_UNAVAILABLE") as failure:
+    # the grant path answers with a lane code from the closed set (S7)
+    with pytest.raises(GatewayOperationError, match="LANE_CANNOT_LAUNCH") as failure:
         plugins.plugin_execution_plan(name)
     response, status = gateway_error_response(failure.value)
-    assert status == 503 and response["error"]["code"] == "LANE_UNAVAILABLE"
-    for operation in (plugins.probe_plugin, lambda lane: plugins.call_plugin(lane, "status")):
-        result = operation(name)
-        assert result["code"] == "LANE_UNAVAILABLE"
-        assert result["status"] == "unavailable"
+    assert status == 503 and response["error"]["code"] == "LANE_CANNOT_LAUNCH"
+    probed = plugins.probe_plugin(name)
+    assert probed["code"] == "LANE_UNAVAILABLE" and probed["status"] == "unavailable"
+    # "status" is not in the lane's tool table, so Plugins refuse it before
+    # anything resolves (POLICY-DECISION C-11); either way nothing launches.
+    called = plugins.call_plugin(name, "status")
+    assert called["code"] in ("LANE_UNAVAILABLE", "CAPABILITY_NOT_ADMITTED")
 
 
 @pytest.mark.parametrize("profile,frozen", [

@@ -17,6 +17,12 @@ States (PLAN section 2):
 
 A row probed by an earlier engine session keeps its answer and reads "Last
 checked <time>" until a probe in this session replaces it (H-10).
+
+A class C lane reads ``reads_only`` only after a probe answered and listed a
+main tool; before that it is ``not_checked`` like any other lane. A held lane
+(``lane_tool_policy.HELD_LANES``) reads "Not in this build", not "Could not
+start". The writing lane's main tool is T2 (``GRANTED_MAIN_LANES``), so its
+card says the call needs a T2 approval.
 """
 from __future__ import annotations
 
@@ -24,7 +30,8 @@ from typing import Iterable, Mapping
 
 from .lane_probe_cache import ProbeCache, default_cache, lane_pin, slug
 from .lane_setup import SetupChecks, SetupItem
-from .lane_tool_policy import READS_ONLY_LANES, lane_policy, main_tools
+from .lane_tool_policy import (GRANTED_MAIN_LANES, HELD_LANES, READS_ONLY_LANES,
+                               lane_policy, main_tools)
 
 STATES = ("not_checked", "ready", "limited", "needs_setup", "reads_only",
           "cannot_launch", "unreachable")
@@ -34,7 +41,7 @@ MAIN_ACTIONS = {
     "chorus": "digest a corpus into themes",
     "articulate": "score and check prose",
     "index": "map a repo and find symbols",
-    "forum": "run a deliberation room",
+    "forum": "route and plan a request with no model",
     "learn": "plan and check a study step",
     "telos": "read the workstation catalog and proofs",
     "local-model": "run a local agent task in a project",
@@ -48,6 +55,18 @@ MAIN_ACTIONS = {
     "accountable-surface": "perceive a folder with provenance",
 }
 HEALTH_LINE = "Answers its health check."
+#: One main tool's action, where a lane's main tools can wait on different items.
+TOOL_ACTIONS = {
+    "index.map": "map a repo's history", "index.symbol-definition": "find symbols",
+    "index.symbol-references": "find symbols",
+    "local_agent_chat": "chat with a local model",
+    "local_agent_run": "run a local agent task in a project",
+}
+#: Key-backed paths the card names as untested (PLAN section 1b).
+UNTESTED = {"forum": "Real rooms: after setup, untested.",
+            "mneme": "Key-backed extraction: after setup, untested."}
+#: A lane whose build ships part of its package says so next to its version.
+SLICED = {"calibrate-pro": "catalog slice"}
 
 
 def _runtime_block(row: Mapping[str, object]) -> tuple[str, list[str], str] | None:
@@ -69,9 +88,13 @@ def _from_probe(lane: str, record: Mapping[str, object],
     """(state, unmet items, code, extra) for a lane whose health answered."""
     policy = lane_policy(lane)
     listed = set(record.get("tools") or ())
-    mains = [t for t in main_tools(lane) if t in listed]
+    granted = lane in GRANTED_MAIN_LANES
+    mains = [t for t in main_tools(lane)
+             if t in listed or (granted and policy[t].tier == "T2")]
     if not mains:
         return "cannot_launch", [], "main_tool_not_admitted", {}
+    if lane in READS_ONLY_LANES:
+        return "reads_only", [], "", {}
 
     def unmet(tool: str) -> list[str]:
         return [i for i in policy[tool].needs if not checks.item(i, lane).met]
@@ -80,7 +103,8 @@ def _from_probe(lane: str, record: Mapping[str, object],
     if not ready:
         items = list(dict.fromkeys(i for t in mains for i in unmet(t)))
         return "needs_setup", items, "", {"health_answered": True}
-    waiting = {t: unmet(t) for t in sorted(listed) if t in policy and t not in ready}
+    waiting = {t: unmet(t) for t in sorted(listed | set(mains))
+               if t in policy and t not in ready}
     waiting = {t: items for t, items in waiting.items() if items}
     if not waiting:
         return "ready", [], "", {"ready_tools": ready}
@@ -98,8 +122,6 @@ def _decide(lane: str, row: Mapping[str, object], record: dict | None,
         return "cannot_launch", [], slug(record.get("code"), "launch_failed"), {}
     if outcome == "unhealthy":
         return "cannot_launch", [], "health_check_failed", {}
-    if lane in READS_ONLY_LANES:
-        return "reads_only", [], "", {}
     if outcome == "unreachable":
         return "unreachable", [], "network_error", {}
     if outcome == "answered":
@@ -107,20 +129,47 @@ def _decide(lane: str, row: Mapping[str, object], record: dict | None,
     return "not_checked", [], "", {}
 
 
+def _actions(tools) -> str:
+    return " and ".join(dict.fromkeys(TOOL_ACTIONS.get(t, "") for t in tools if t in TOOL_ACTIONS))
+
+
+def _plural(count: int, one: str, many: str) -> str:
+    return f"{count} {one if count == 1 else many}"
+
+
+def _ready_sentence(lane: str) -> str:
+    action = MAIN_ACTIONS.get(lane, "run its main action")
+    if lane in GRANTED_MAIN_LANES:
+        return f"Ready to {action} on a call you approve at T2."
+    return " ".join(filter(None, (f"Ready to {action}.", UNTESTED.get(lane, ""))))
+
+
+def _limited_sentence(lane: str, items: list[SetupItem], extra: dict) -> str:
+    names = ", ".join(i.title for i in items)
+    waiting = list(extra.get("waiting_tools", ()))
+    mains = set(main_tools(lane))
+    ready_action = _actions(extra.get("ready_tools", ()))
+    waiting_main = [t for t in waiting if t in mains]
+    if waiting_main and ready_action and _actions(waiting_main):
+        return (f"Ready to {ready_action}. To {_actions(waiting_main)}, set up: {names}.")
+    first = _ready_sentence(lane)
+    return f"{first} {_plural(len(waiting), 'other tool needs', 'other tools need')}: {names}."
+
+
 def _sentence(lane: str, state: str, items: list[SetupItem], code: str,
               extra: dict) -> tuple[str, str]:
-    action = MAIN_ACTIONS.get(lane, "its main action")
     if state == "ready":
-        return f"Runs {action}.", ""
+        return _ready_sentence(lane), ""
     if state == "limited":
-        names = ", ".join(i.title for i in items)
-        return f"Runs {action}. {len(extra.get('waiting_tools', ()))} tools need: {names}.", ""
+        return _limited_sentence(lane, items, extra), ""
     if state == "needs_setup":
         first = items[0].copy if items else "A setup step is needed."
         return first, HEALTH_LINE if extra.get("health_answered") else ""
     if state == "reads_only":
         return READS_ONLY_LANES.get(lane, "Reads only."), ""
     if state == "cannot_launch":
+        if code == "lane_held":
+            return HELD_LANES.get(lane, "Not in this build."), ""
         return f"Could not start: {code}.", ""
     if state == "unreachable":
         from .lanes_registry import LANES
@@ -140,7 +189,9 @@ def lane_state(lane: str, row: Mapping[str, object], *, cache: ProbeCache | None
     checked_at = record.get("checked_at") if record else None
     checked = (f"Checked {checked_at}." if fresh else f"Last checked {checked_at}."
                ) if checked_at else ""
-    return {"state": state, "sentence": sentence, "second_line": second,
+    version = row.get("expected_version") or row.get("installed_version")
+    label = {"version_label": f"{version} ({SLICED[lane]})"} if lane in SLICED and version else {}
+    return {**label, "state": state, "sentence": sentence, "second_line": second,
             "checked_line": checked, "last_checked": checked_at,
             "checked_this_session": bool(record and fresh), "code": code,
             "setup": [i.to_dict() for i in items], "main_action": MAIN_ACTIONS.get(lane, ""),

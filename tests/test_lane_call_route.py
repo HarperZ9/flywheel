@@ -217,9 +217,10 @@ def test_not_admitted_carries_the_admitted_list(real_caller):
 
 
 def test_not_in_build_keeps_its_reason_slug(real_caller):
-    body, status = handle_lane_call("/api/lane/articulate/judge", {"governance_tier": "T2"})
+    body, status = handle_lane_call("/api/lane/calibrate-pro/calibrate-pro.list-targets",
+                                    {"governance_tier": "T2"})
     assert (status, body["code"], body["reason"]) == (
-        400, "NOT_IN_BUILD", "claude_cli_not_resolvable")
+        400, "NOT_IN_BUILD", "numpy_not_in_build")
 
 
 def test_a_setup_code_is_lane_setup_required_with_the_item(monkeypatch):
@@ -257,7 +258,8 @@ def test_a_success_with_a_bound_key_records_the_name_as_validated(real_caller, m
         def redact(self, text):
             return text.replace("sk-planted-fake", "[redacted]")
 
-    body, status = handle_lane_call("/api/lane/forum/forum.route", {}, Bindings())
+    # plan spends the key with FORUM_RUN_REAL; forum.route never uses it (C10)
+    body, status = handle_lane_call("/api/lane/forum/plan", {}, Bindings())
     assert status == 200 and body == {"ok": True}
     assert real_caller.validated("forum") == {"FORUM_KEY"}
     assert "sk-planted-fake" not in real_caller.path.read_text(encoding="utf-8")

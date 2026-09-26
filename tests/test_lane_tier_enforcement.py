@@ -103,7 +103,8 @@ def test_an_agent_run_asking_for_exec_runs_with_write_and_exec_off(lane_calls, l
     assert _call(lane, "local_agent_run", args, tier="T2") == {"ok": True}
     _launch, tool, sent = lane_calls.calls[-1]
     assert tool == "local_agent_run"
-    assert sent == {"goal": "list files", "allow_write": False, "allow_exec": False}
+    assert sent == {"goal": "list files", "allow_write": False, "allow_exec": False,
+                    "online": False}
     assert args["allow_exec"] is True
 
 
@@ -136,7 +137,8 @@ def test_plugins_force_relay_write_and_exec_off(monkeypatch):
     recorder = _Recorder()
     call = _plugin_lane(monkeypatch, recorder, "relay")
     call("local_agent_run", {"goal": "g", "allow_exec": True})
-    assert recorder.calls[-1][2] == {"goal": "g", "allow_write": False, "allow_exec": False}
+    assert recorder.calls[-1][2] == {"goal": "g", "allow_write": False, "allow_exec": False,
+                                     "online": False}
 
 
 def _catalog_lane(monkeypatch, tmp_path):
@@ -166,8 +168,8 @@ def test_an_agent_run_cannot_select_a_t2_guarded_or_left_out_lane_tool(
 def test_an_agent_run_may_select_plain_t1_lane_tools(monkeypatch, tmp_path):
     from harness.gateway_agent_mcp_cache import restricted_catalog_launch
     _catalog_lane(monkeypatch, tmp_path)
-    launch, kind = restricted_catalog_launch("index", ["index.symbol-definition"])
-    assert kind == "lane" and launch.allowed_tools == ("index.symbol-definition",)
+    launch, kind = restricted_catalog_launch("forum", ["forum.route"])
+    assert kind == "lane" and launch.allowed_tools == ("forum.route",)
 
 
 def test_node_launches_carry_the_policy_t1_tools(tmp_path):

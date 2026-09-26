@@ -71,17 +71,16 @@ _CHORUS = {
     "chorus.decision": _t("read", "Compares two source packs and returns a review gate."),
 }
 
-_ARTICULATE_MODEL = ("Runs the claude CLI, a model call. Out of this build until the "
-                     "articulate 0.5.0 pin and a resolved claude path land (O-14).")
+_ARTICULATE_MODEL = ("Runs the signed-in claude CLI, a model call on the person's account. "
+                     "articulate 0.5.0 runs it in a fresh empty folder with settings, MCP "
+                     "servers and tools off, from the path the engine passes in "
+                     "ARTICULATE_CLAUDE_CLI (O-14).")
 _ARTICULATE = {
     "check": _main("read", "Local detector; no network."),
     "score": _main("read", "Local score; no network."),
-    "judge": _t("spend", _ARTICULATE_MODEL, tier="T2", needs=("claude_cli",),
-                not_in_build="claude_cli_not_resolvable", timeout_s=120),
-    "fix": _t("spend", _ARTICULATE_MODEL, tier="T2", needs=("claude_cli",),
-              not_in_build="claude_cli_not_resolvable", timeout_s=120),
-    "polish": _t("spend", _ARTICULATE_MODEL, tier="T2", needs=("claude_cli",),
-                 not_in_build="claude_cli_not_resolvable", timeout_s=180),
+    "judge": _t("spend", _ARTICULATE_MODEL, tier="T2", needs=("claude_cli",), timeout_s=120),
+    "fix": _t("spend", _ARTICULATE_MODEL, tier="T2", needs=("claude_cli",), timeout_s=120),
+    "polish": _t("spend", _ARTICULATE_MODEL, tier="T2", needs=("claude_cli",), timeout_s=180),
     **_health("articulate"),
 }
 
@@ -111,8 +110,8 @@ _INDEX = {
     "index_focus": _t("read", "Returns one repo's dependency neighborhood.", timeout_s=60),
     "index_verify": _t("read", "Grounds a structural claim with file:line evidence.",
                        timeout_s=60),
-    "index_router": _t("read", "Builds a workspace map and returns it; writes nothing.",
-                       timeout_s=120),
+    "index_router": _t("read", "Builds a workspace map and returns it; its cache stays "
+                       "in the lane folder (INDEX_MCP_CACHE_DIR).", timeout_s=120),
     "index_internals": _t("read", "Builds one repo's module graph.", timeout_s=60),
     "index.router.job.start": _t("state_write", _ROUTER_JOB,
                                  not_in_build="per_call_child_ends_job"),

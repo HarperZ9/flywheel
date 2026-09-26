@@ -4,6 +4,11 @@ Generalizes _forum_mcp_call: spawns any registered lane's MCP server, calls
 the named tool, and returns the parsed JSON. Gated by tier: the engine computes
 the tier each call needs from the lane tool policy, whether or not the caller
 sends one, and a call that sends none runs at T1.
+
+The key rule (POLICY-DECISION C-8): a call whose child would receive a
+provider key needs T2. A bound credential makes the call T2; below T2 the
+child's key-shaped ``env_allow`` names are stripped, so a T1 call never spends
+a key. Argument guards run before any child spawns (``lane_tier_gate``).
 """
 from __future__ import annotations
 
@@ -34,6 +39,9 @@ def call_lane_tool(
     """
     tier = governance_tier or "T1"
     min_tier = required_tier(lane_name, tool_name)
+    from .lane_credentials import binds_any_key
+    if binds_any_key(credential_bindings) and _RANKS.get(min_tier, 1) < 2:
+        min_tier = "T2"   # the key rule: a call that would spend a key is T2
     if not _tier_allows(tier, min_tier):
         return {"error": f"governance gate: {lane_name}.{tool_name} requires tier "
                          f">= {min_tier}, but governance tier is "
@@ -44,10 +52,13 @@ def call_lane_tool(
         lane_name, tool_name, requested_access=bulletin_access)
     if denial is not None:
         return denial
+    from .lane_tier_gate import argument_refusal, guard_args
+    refused = argument_refusal(lane_name, tool_name, args or {})
+    if refused is not None:
+        return refused
     command = _launch_for_call(lane_name, tool_name, tier, credential_bindings)
     if isinstance(command, dict):
         return command
-    from .lane_tier_gate import guard_args
     return _call(lane_name, tool_name, command, guard_args(lane_name, tool_name, args or {}),
                  timeout)
 
@@ -63,7 +74,10 @@ def _launch_for_call(lane_name: str, tool_name: str, tier: str,
         command = resolve_mcp_launch(lane_name)
     except Exception as e:
         return {"error": f"cannot resolve MCP command for {lane_name!r}: {e}"}
-    from .lane_credentials import LaneCredentialError, bind_lane_credentials, credential_refused
+    from .lane_credentials import (LaneCredentialError, bind_lane_credentials,
+                                   credential_refused, strip_key_grants)
+    if not _tier_allows(tier, "T2"):
+        command = strip_key_grants(lane_name, command)   # the key rule, C-8
     try:  # a saved key granted to this lane joins this one child (lane_credentials.py)
         command = bind_lane_credentials(lane_name, command, credential_bindings)
     except LaneCredentialError:
@@ -75,10 +89,16 @@ def _launch_for_call(lane_name: str, tool_name: str, tier: str,
 
 def _call(lane_name: str, tool_name: str, command: Any, args: dict[str, Any],
           timeout: int) -> dict[str, Any]:
+    """Start the child, call the tool once. A failure to start reads "lane ...
+    unavailable"; a failure once the child answered initialize reads "lane ...
+    call failed", so a tool that crashes its server mid-call is not reported as
+    a lane that cannot launch (C8)."""
+    started = False
     try:
         from harness.mcp_client import MCPClient
         with MCPClient(command, timeout=timeout,
                        client_name=f"flywheel-{lane_name}-proxy") as c:
+            started = True
             res = c.call_text(tool_name, args)
             if not res["ok"]:
                 return {"error": f"{lane_name}.{tool_name} error: "
@@ -88,7 +108,8 @@ def _call(lane_name: str, tool_name: str, command: Any, args: dict[str, Any],
             except json.JSONDecodeError:
                 return {"raw": res["text"][:500]}
     except Exception as e:
-        return {"error": f"lane {lane_name!r} unavailable: {type(e).__name__}: {e}"}
+        stage = "call failed" if started else "unavailable"
+        return {"error": f"lane {lane_name!r} {stage}: {type(e).__name__}: {e}"}
 
 
 # Lane floors: the TADR tier for a tool the policy table does not list.

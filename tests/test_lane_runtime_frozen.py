@@ -83,12 +83,20 @@ def test_no_frozen_argv_starts_with_python_node_or_a_console_script(frozen):
         head = launch.argv[0]
         assert head not in bare, f"{name} launches a bare {head!r}"
         assert Path(head).is_absolute(), f"{name} launches a relative {head!r}"
+        # the frozen exe refuses -m (gateway_entry), so no argv may carry it (C15),
+        # and the head is the engine itself or the staged node
+        assert launch.argv[1:2] != ("-m",), f"{name} launches -m"
+        staged_node = str(frozen["stage"] / "node" / "node.exe")
+        assert head in (ln.sys.executable, staged_node), f"{name} launches {head!r}"
         launched.append(name)
-    assert {"learn", "telos", "local-model", "writing", "gather"} <= set(launched)
+    assert {"learn", "local-model", "writing", "gather"} <= set(launched)
+    assert "telos" not in launched  # held (O-8): no launch, a stated hold code
 
 
-def test_frozen_learn_and_telos_run_the_staged_scripts_on_the_bundled_node(frozen):
-    for name, entry in _NODE_ENTRIES:
+def test_frozen_learn_runs_the_staged_script_on_the_bundled_node_and_telos_is_held(frozen):
+    runtime = ln.resolve_lane_runtime("telos")
+    assert runtime.launch is None and runtime.blocking_codes == ("lane_held",)
+    for name, entry in _NODE_ENTRIES[:1]:
         launch = ln.resolve_mcp_launch(name)
         assert launch.argv == (str(frozen["stage"] / "node" / "node.exe"),
                                str((frozen["stage"] / name / entry).resolve()))
@@ -109,7 +117,7 @@ def test_frozen_node_lane_without_node_needs_setup(frozen, monkeypatch):
 
 def test_frozen_node_lane_without_its_stage_cannot_launch(frozen, monkeypatch):
     monkeypatch.setattr(lrf, "_stage_root", lambda: None)
-    runtime = ln.resolve_lane_runtime("telos")
+    runtime = ln.resolve_lane_runtime("learn")
     assert runtime.blocking_codes == ("node_lane_not_staged",)
     assert lrf.launch_state(runtime.blocking_codes) == lrf.CANNOT_LAUNCH
 
@@ -189,7 +197,7 @@ def test_registry_fixes_ride_with_the_launch_paths():
     assert LANES["chorus"].py_module == "chorus"  # chorus.cli has no main guard
     assert LANES["canon"].py_module == "canon"    # PyPI canon.cli has no main guard
     assert LANES["bulletin"].version == "0.5.0"   # what the live board reports
-    assert LANES["telos"].version == "0.4.1"      # the staged GitHub release (O-8)
+    assert LANES["telos"].version == "0.4.1"      # the held GitHub release (O-8 hold)
 
 
 def test_pip_chorus_and_canon_launch_through_their_package_main(monkeypatch):

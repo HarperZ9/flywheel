@@ -41,6 +41,8 @@ def _plans(tmp_path, monkeypatch):
 def test_every_frozen_lane_without_a_payload_row_gets_a_plan(tmp_path, monkeypatch):
     exe, home, project, plans = _plans(tmp_path, monkeypatch)
     assert set(plans) == {"learn", "telos", "writing", "local-model"}
+    held = plans.pop("telos")  # the O-8 hold: no launch, a stated code
+    assert held.launch is None and held.blocking_codes == ("lane_held",)
     for name, plan in plans.items():
         assert plan.launch is not None and not plan.blocking_codes, name
         assert Path(plan.launch.argv[0]).is_absolute(), name

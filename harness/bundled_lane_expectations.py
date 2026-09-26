@@ -6,17 +6,17 @@ EXPECTED_BUNDLED_LANES: dict[str, dict[str, object]] = {
     "relay": {
         "schema": "flywheel.bundled-lane-expectation/v1",
         "name": "relay",
-        "version": "0.2.5",
+        "version": "0.3.0",
         "source_repo": "https://github.com/HarperZ9/relay",
-        "source_commit": "29b8cc298c360c383ee2ff56212298b6185298c1",
+        "source_commit": "786c62506223594f5c6a19975649236e24a34ca8",
         "source_path": "src/relay",
         "source_manifest_sha256": (
-            "sha256:9dddeabcb4d019a013cbf6164fc48a7a55d519cdb7b798db"
-            "8229ac28523e0c97"
+            "sha256:1c9f26d64754ee811f493868931831ea2d39f9a7675e2197"
+            "b8a42072eae84693"
         ),
         "descriptor_sha256": (
-            "sha256:0c5905a9b5e3b0558c69de83c495ca4ca4fa575a014708d6"
-            "aa1ffaaae409ab20"
+            "sha256:40d6eeb3db3e4b7d9975ab3d8a560537c128e875206f7c15"
+            "039edef57640ae8e"
         ),
         "module": "relay.local_mcp",
         "callable": "serve",

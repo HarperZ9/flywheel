@@ -43,10 +43,11 @@ DOES_NOT_PROVE = (
     "and transport, not that Relay completes model-backed work.",
     "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: no provider credential rides the "
     "launch; a model server is a separate setup item.",
-    "NOT_PROVES_WRITE_OR_EXEC_CONFINEMENT_OUTSIDE_THE_ENGINE: the engine forces "
-    "allow_write and allow_exec false on every call it makes; this Relay release "
-    "still reads both from tool arguments, so a caller outside the engine is not "
-    "confined by this build.",
+    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.3.0 takes write and exec from its "
+    "launch, and the engine launches it with both off and its root at the lane "
+    "folder; the engine also passes only listed arguments, so root, check, "
+    "test_cmd and online never reach a run. relay's shell is not path-confined "
+    "when a launch grants exec, which this build never does.",
 )
 
 
@@ -58,12 +59,13 @@ class BundledLaneAdmission:
 
 
 def bundled_child_environment(
-        environ: Mapping[str, str], *, platform: str = os.name) -> dict[str, str]:
+        environ: Mapping[str, str], *, platform: str = os.name,
+        lane: str | None = None) -> dict[str, str]:
     """Return the small environment passed to a bundled lane child.
 
-    The base set, the Flywheel home, UTF-8 stdio and the Git folder; the rules
-    live in bundled_lane_env."""
-    return _bundled_env.bundled_child_environment(environ, platform=platform)
+    The base set, the Flywheel home, UTF-8 stdio and, for a lane that needs it,
+    the Git folder; the rules live in bundled_lane_env."""
+    return _bundled_env.bundled_child_environment(environ, platform=platform, lane=lane)
 
 
 def admit_bundled_lane(
@@ -95,7 +97,7 @@ def admit_bundled_lane(
     component = _descriptor.component_summary(descriptor, expected_row)
     launch = LaunchSpec(
         (executable, "--bundled-lane-mcp", name),
-        env_overrides=tuple(sorted(bundled_child_environment(environ).items())),
+        env_overrides=tuple(sorted(bundled_child_environment(environ, lane=name).items())),
         inherit_env=False,
         hide_window=True,
         allowed_tools=tuple(expected_row["allowed_tools"]),

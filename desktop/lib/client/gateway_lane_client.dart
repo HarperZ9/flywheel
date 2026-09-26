@@ -18,12 +18,11 @@ extension GatewayLaneClient on GatewayClient {
   }
 
   /// GET /api/settings/node_path: the node the Node lanes use and its source.
+  ///
+  /// Choosing node.exe is a granted action (settings.node_path): the engine
+  /// runs the file it names, so a POST needs an exact owner grant, like
+  /// plugin.register. The Node picker sends it through the grant flow when
+  /// the lane console lands (WP9b); there is no ungranted setter here.
   Future<Map<String, dynamic>> nodePath() async =>
       _decode(await _http.get(Uri.parse('$baseUrl/api/settings/node_path')));
-
-  /// POST /api/settings/node_path: choose node.exe for the Node lanes, or clear
-  /// the choice with null. The engine runs only a file named node, and keeps
-  /// it only when it answers --version with 20 or later.
-  Future<Map<String, dynamic>> setNodePath(String? path) =>
-      postJson('/api/settings/node_path', {'path': path});
 }

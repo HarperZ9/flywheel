@@ -195,8 +195,11 @@ def test_frozen_relay_auto_uses_gateway_self_child_and_not_path(monkeypatch):
     assert runtime.present is True
     assert runtime.selected_runtime == "bundled"
     from dataclasses import replace
-    assert replace(runtime.launch, cwd=None) == admission.launch
+    assert replace(runtime.launch, cwd=None, env_overrides=()) == admission.launch
     assert Path(runtime.launch.cwd).parts[-2:] == ("lanes", "relay")
+    # the lane folder's own temp and app-data folders (POLICY-DECISION C-9)
+    env = dict(runtime.launch.env_overrides)
+    assert Path(env["TEMP"]).parent == Path(runtime.launch.cwd)
     assert runtime.launch.allowed_tools == ("relay.status",)
     # This used to assert resolve_mcp_command("relay") == [], which held only
     # while relay carried package_disabled_reason and the roster offered no argv

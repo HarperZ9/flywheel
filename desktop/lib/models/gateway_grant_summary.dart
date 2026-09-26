@@ -39,6 +39,11 @@ final class GatewayGrantSummary extends DefensiveModel {
   final String argumentsSha256, effect, expiresAt;
   final GatewayAgentExecutionReview? agentExecution;
   final BulletinMediaReview? bulletinMediaReview;
+
+  /// For a lane.call: the tier the tool needs and the tier requested, its
+  /// effect, and the arguments the child receives in plain form. The engine
+  /// builds it (lane_tier_gate.lane_policy_review); the approval sheet shows it.
+  final Map<String, Object?>? lanePolicy;
   final GatewayDestination destination;
   final List<String> scopes, dataRefs, credentialRefs;
 
@@ -57,6 +62,7 @@ final class GatewayGrantSummary extends DefensiveModel {
     this.expiresAt,
     this.agentExecution,
     this.bulletinMediaReview,
+    this.lanePolicy,
     super.parseIssues,
   );
 
@@ -83,6 +89,7 @@ final class GatewayGrantSummary extends DefensiveModel {
         ...fields,
         if (json.containsKey('bulletin_media_review')) 'bulletin_media_review',
         if (json.containsKey('agent_execution')) 'agent_execution',
+        if (json.containsKey('lane_policy')) 'lane_policy',
       },
       issues,
       'summary',
@@ -115,6 +122,11 @@ final class GatewayGrantSummary extends DefensiveModel {
       );
     }
     if (bulletinReview != null) issues.addAll(bulletinReview.parseIssues);
+    final lanePolicy = json['lane_policy'];
+    if (json.containsKey('lane_policy') &&
+        (lanePolicy is! Map<String, Object?> || action != 'lane.call')) {
+      addParseIssue(issues, 'lane_policy', null);
+    }
     return GatewayGrantSummary._(
       action,
       readText(json, 'journey_ref', issues, pattern: _journeyRef),
@@ -130,6 +142,9 @@ final class GatewayGrantSummary extends DefensiveModel {
       readText(json, 'expires_at', issues),
       agentExecution,
       bulletinReview,
+      lanePolicy is Map<String, Object?>
+          ? Map<String, Object?>.unmodifiable(lanePolicy)
+          : null,
       issues,
     );
   }

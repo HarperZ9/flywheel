@@ -35,8 +35,16 @@ def _tier(entry: ToolPolicy) -> str:
 
 
 def _forced(entry: ToolPolicy) -> str:
-    parts = [f"drops `{name}`" if value is None else f"`{name}={str(value).lower()}`"
-             for name, value in entry.forced_args]
+    parts = []
+    if entry.allowed_args is not None:
+        names = ", ".join(f"`{n}`" for n in entry.allowed_args) or "no argument"
+        parts.append(f"passes only {names}")
+    parts += [f"drops `{name}`" if value is None else f"`{name}={str(value).lower()}`"
+              for name, value in entry.forced_args]
+    parts += [f"`{name}` a plain id" for name in entry.id_args]
+    parts += [f"`{name}` kept out of the home" for name in entry.path_args]
+    if entry.open_egress:
+        parts.append("open egress: no agent run")
     return ", ".join(parts)
 
 

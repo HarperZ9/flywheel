@@ -7,7 +7,9 @@ frozen engine can perform for each lane:
 
 - a payload lane admits from its reviewed payload through ``--bundled-lane-mcp``
   (bundled_lane_admission);
-- learn and telos run the staged scripts on an absolute Node (node_lanes);
+- learn runs the staged script on an absolute Node (node_lanes); a lane the
+  policy holds out of the build (telos, the O-8 hold) reports ``lane_held``
+  before any Node lookup;
 - local-model runs the engine's ``--mcp --root <folder>`` mode on the project
   folder the person picked, read from ``<home>/lanes/local-model/root``;
 - writing runs the engine's ``--lane-mcp writing`` mode (frozen_lane_modes);
@@ -29,7 +31,7 @@ from typing import Callable, Mapping
 
 from . import node_lanes
 from .bundled_lane_descriptor import bundled_payload_lane_names
-from .lane_tool_policy import admitted_tools
+from .lane_tool_policy import HELD_LANES, admitted_tools
 from .lane_workdir import lane_workdir
 from .mcp_client import LaunchSpec
 from .tool_discovery import find_node
@@ -46,6 +48,8 @@ SETUP_CODES = {
 }
 DEFECT_CODES = frozenset((
     "frozen_lane_not_in_build", "node_lane_not_staged", "node_lane_script_missing"))
+#: A stated hold: the lane is left out of this build on purpose, not by a defect.
+HOLD_CODES = frozenset(("lane_held",))
 NEEDS_SETUP = "needs_setup"
 CANNOT_LAUNCH = "cannot_launch"
 Selection = tuple  # (launch, selected_runtime, bundled_component, codes)
@@ -58,7 +62,8 @@ def _stage_root() -> Path | None:
 
 def is_blocking(code: str) -> bool:
     """True for a code that stops a frozen launch."""
-    return code.startswith("bundled_") or code in SETUP_CODES or code in DEFECT_CODES
+    return (code.startswith("bundled_") or code in SETUP_CODES or code in DEFECT_CODES
+            or code in HOLD_CODES)
 
 
 def setup_items(codes) -> tuple[str, ...]:
@@ -93,6 +98,8 @@ def select_frozen_launch(lane, profile: str, executable: str,
         return admission.launch, "bundled", admission.component, admission.blocking_codes
     if lane.kind == "http":
         return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), "http", None, ()
+    if lane.name in HELD_LANES:
+        return None, "bundled", None, ("lane_held",)
     if lane.name in node_lanes.NODE_LANES:
         res = node_lanes.resolve_node_lane(
             lane, "frozen", environ, find=find or find_node,

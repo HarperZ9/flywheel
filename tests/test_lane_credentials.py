@@ -129,8 +129,9 @@ def _call(tool, bindings, launch, monkeypatch):
     import harness.lanes as lanes
     from harness.lane_call_route import handle_lane_call
     monkeypatch.setattr(lanes, "resolve_mcp_launch", lambda _name: launch)
+    # a call that binds a key is T2 (the key rule, POLICY-DECISION C-8)
     return handle_lane_call(f"/api/lane/forum/{tool}",
-                            {"args": {"name": SLOT}}, bindings)
+                            {"args": {"name": SLOT}, "governance_tier": "T2"}, bindings)
 
 
 def test_fake_key_reaches_the_bound_child_only_and_no_response(

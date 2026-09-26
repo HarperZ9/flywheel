@@ -98,7 +98,8 @@ def test_replying_fake_passes(tmp_path):
     plans = {"plexus": _fake(PLEXUS_REPLIES, ("plexus.status", "plexus_route"))}
     receipt = _run(plans, _rows(plexus="main"), tmp_path)
     assert receipt["lanes"]["plexus"] == {
-        "level": "main", "expected": "main", "bar": "A", "reason": "ok"}
+        "level": "main", "expected": "main", "bar": "A", "reason": "ok",
+        "outside_writes": []}
     assert receipt["verdict"] == "PASS"
     assert receipt["below_bar"] == [] and receipt["failures"] == []
 
@@ -145,7 +146,8 @@ def test_expectations_cover_every_registry_lane():
     rows = smoke.load_expectations()
     assert set(rows) == set(LANES)
     for lane, row in rows.items():
-        assert set(row) == {"expected", "bar"}, lane
+        assert {"expected", "bar"} <= set(row) <= {
+            "expected", "bar", "reason", "expected_with_model_server"}, lane
         assert row["expected"] in smoke.LEVELS, lane
         assert row["bar"] in smoke.CLASSES, lane
 
