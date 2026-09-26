@@ -55,3 +55,18 @@ def test_the_exclusive_server_still_serves_and_reports_its_bound_address():
             assert server.allow_reuse_address is False
     finally:
         server.server_close()
+
+
+def test_the_gateway_starts_in_script_mode_from_another_folder(tmp_path):
+    """`python harness/gateway.py` puts harness/ first on the path, not the
+    repository; every harness import must follow the path setup, or an
+    installed copy of the package (or none) answers instead."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    script = Path(__file__).resolve().parents[1] / "harness" / "gateway.py"
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    done = subprocess.run([sys.executable, str(script), "--help"], cwd=tmp_path, env=env,
+                          capture_output=True, text=True, timeout=120)
+    assert done.returncode == 0, done.stderr[-2000:]

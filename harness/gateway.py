@@ -31,13 +31,13 @@ import sys
 import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler
-from harness.gateway_bind import ExclusiveThreadingHTTPServer  # no second socket can share the port (N-23)
 from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 # Ensure `from harness.X import ...` resolves even when run as `python
 # harness/gateway.py` (script mode puts harness/ on the path, not the repo root),
 # so the on-demand endpoint_registry / context_forge imports work in both modes.
 if str(REPO) not in sys.path: sys.path.insert(0, str(REPO))
+from harness.gateway_bind import ExclusiveThreadingHTTPServer  # no second socket can share the port (N-23)
 from harness.run_paths import run_root_default
 from harness.gateway_custody import is_private, is_signed
 from harness.gateway_lane_calls import _forum_mcp_call, _relay_mcp_call, _relay_start_not_admitted
