@@ -29,6 +29,7 @@ from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import ToolExecutor, ToolGate
 from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
+from .workspace_git_identity import record_git
 
 DEFAULT_AGENT_SYSTEM = (
     "You are a coding agent working in a sandboxed repository. Use the tools to "
@@ -103,6 +104,7 @@ def _workspace_pre(root: str, enabled: bool, ledger):
     from .workspace_state import workspace_snapshot
     snapshot = workspace_snapshot(root)
     ledger.append("workspace_pre", json.dumps(snapshot, sort_keys=True))
+    record_git(root, ledger)  # 7.8: HEAD and digests of tracked files and status
     return snapshot
 
 
