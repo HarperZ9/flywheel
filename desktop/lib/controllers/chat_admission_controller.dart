@@ -7,6 +7,7 @@ import '../services/chat_draft_store.dart';
 import '../services/chat_store.dart';
 
 part 'chat_admission_support.dart';
+part 'chat_admission_delete.dart';
 
 typedef ChatAdmissionDecision = ({
   PromptDisposition disposition,
@@ -40,7 +41,7 @@ final class ChatAdmissionController {
         }
       }
     } on ChatDraftStoreException {/* corrupt local bytes are not promoted */}
-    _sequence = _nextSequence(conversations);
+    _sequence = _nextSequence(conversations, historyStore.archivedIds());
   }
 
   Conversation blankConversation(String? model) =>
@@ -262,7 +263,8 @@ final class ChatAdmissionController {
     for (final conversation in conversations) {
       if (conversation.id == ref) return conversation;
     }
-    final conversation = Conversation(id: ref);
+    final conversation =
+        historyStore.archivedConversation(ref) ?? Conversation(id: ref);
     conversations.add(conversation);
     return conversation;
   }
