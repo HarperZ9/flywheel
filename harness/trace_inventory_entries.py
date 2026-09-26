@@ -147,6 +147,11 @@ STORES = (
           note="exact source bytes, encrypted; redaction applies when content leaves "
                "custody; the exclusion list keeps keyed digests of deleted sources; "
                "selected items are deleted through flywheel traces delete"),
+    Store("BT", "Bench tasks from gateway traces", "state", ("trace-bench",),
+          ("C1", "C4", "C5"), ENCRYPTED, "harness.trace_bench_tasks.export_records",
+          "harness.trace_bench_tasks.delete_all", owner_binding="owner", added_by_program=True,
+          note="one task per gateway trace with a gate; deleting the trace deletes its tasks; "
+               "the plaintext index holds refs, verdicts and classes only"),
     Store("EG", "Export grants", "state", ("trace-export",), ("C4",), META,
           "harness.trace_meta_adapters.export_grants_export",
           "harness.trace_meta_adapters.export_grants_delete", owner_binding="owner",

@@ -42,7 +42,8 @@ STORES = (
           _plain("legacy runs from before #184; no writer remains", "7.16"), EXPORT,
           APPLY, owner_binding="run-root", evidence="inferred"),
     Store("S11", "Trace bench files", "run", ("bench",), ("C1", "C2"),
-          _plain("bench tasks move into encrypted private custody", "FW-12a"), EXPORT,
+          _plain("the old bench route still writes here until it is retired; new tasks are "
+                 "kept encrypted in store BT", "FW-12b2"), EXPORT,
           APPLY, owner_binding="run-root",
           retention="overwritten each run (route unwired, F-05)"),
     _run("S12a", "Lesson memory", ("lessons.jsonl",), ("C1", "C8"), shape="file"),
