@@ -5,8 +5,8 @@ digest differs (PLAN_DRIFTED), unless a journal for that digest exists, in
 which case it resumes the plan the journal holds. It requires presence bound
 to the digest and refuses a trace whose run holds its writer lock
 (ITEM_BUSY). Under the custody lock and the journal: running stores drop
-cached copies, item keys are destroyed, encrypted files are removed by
-handle, store.db rows go through the checked scrub (DB_BUSY stops the step
+cached copies, deleted imports join the exclusion list, item keys are
+destroyed, encrypted files are removed by handle, store.db rows go through the checked scrub (DB_BUSY stops the step
 for a later rerun), and plaintext items are removed or rewritten away. Then
 verification: files, rows and keys absent, and no window of deleted text in
 the plaintext stores' files. Only then a tombstone, a ledger entry and a
@@ -20,6 +20,7 @@ from pathlib import Path
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy
 from .private_artifact_remove import remove
 from .trace_custody_lock import custody_lock
+from .trace_delete_adapters_import import drop_index_rows, exclude, indexed
 from .trace_delete_apply_plain import ScrubPending, remove_plain, scrub_store, verify_plain
 from .trace_delete_journal import DeletionJournal, apply_journaled
 from .trace_delete_plan import (ENCRYPTED, PlanError, drop_selection, load_selection,
@@ -28,7 +29,7 @@ from .trace_delete_plan import (ENCRYPTED, PlanError, drop_selection, load_selec
 INVALIDATORS: list = []
 _CLASSES = {"S1": ("C1", "C2", "C4", "C5"), "CT": ("C1", "C4", "C5"), "S8b": ("C1", "C4"),
             "S7": ("C4", "C5"), "S9": ("C1",), "S10": ("C1", "C2"), "S11": ("C1", "C2"),
-            "S2": ("C1", "C4", "C5")}
+            "S2": ("C1", "C4", "C5"), "IM": ("C1", "C2", "C4", "C5")}
 
 
 def register_invalidator(fn) -> None:
@@ -80,8 +81,11 @@ def _steps(home: Path, owner: str, plan: dict, roots: dict, reason: str) -> list
         identity = root_identity(state)
         for entry in encrypted:
             remove(state, entry["rel"], expected=identity)
-    return [("invalidate", invalidate), ("destroy_keys", destroy_keys),
-            ("remove_files", remove_files), ("scrub_store_db", lambda: scrub_store(
+    return [("invalidate", invalidate),
+            ("exclude_imports", lambda: exclude(home, owner, encrypted)),
+            ("destroy_keys", destroy_keys), ("remove_files", remove_files),
+            ("drop_import_rows", lambda: drop_index_rows(home, owner, encrypted)),
+            ("scrub_store_db", lambda: scrub_store(
                 home, plain, reason)), ("remove_plain", lambda: remove_plain(roots, plain))]
 
 
@@ -94,7 +98,7 @@ def _verifier(home: Path, owner: str, plan: dict, roots: dict):
     def verify(scan_set):
         if any(keystore.present(e["store"], e["item"]) for e in encrypted):
             return {"ok": False, "reason": "KEY_PRESENT", "checks": ["keys_absent"]}
-        if any((state / e["rel"]).exists() for e in encrypted):
+        if any((state / e["rel"]).exists() for e in encrypted) or indexed(home, owner, encrypted):
             return {"ok": False, "reason": "RESIDUE_FOUND", "checks": ["files_absent"]}
         result = verify_plain(home, roots, plain, scan_set)
         return {**result, "checks": ["keys_absent", "files_absent", *result["checks"]]}
