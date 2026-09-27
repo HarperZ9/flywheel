@@ -11,7 +11,7 @@ import pytest
 
 from harness.trace_residual_scan import Needles, scan_bytes, scan_paths
 from harness.trace_sqlite_scrub import scrub
-from trace_enc_fakes import long_canary, plain_delete
+from trace_enc_fakes import long_canary, plain_delete, secure_delete_starts_off
 
 
 @pytest.fixture
@@ -74,7 +74,11 @@ def test_a_plain_delete_leaves_the_canary_in_free_pages(tmp_path, canary):
     assert hits["total"] > 0
 
 
-def test_the_scrub_leaves_nothing_behind(tmp_path, canary):
+def test_the_scrub_leaves_nothing_behind(tmp_path, canary, monkeypatch):
+    """Every connection starts with secure_delete off, as the control's DELETE
+    runs, so a build that defaults it on cannot clear the pages in the scrub's
+    place."""
+    secure_delete_starts_off(monkeypatch)
     db = tmp_path / "scrubbed.db"
     result = _db_with_deleted_canary(db, canary, scrubbed=True)
     assert result["state"] == "SCRUBBED", result

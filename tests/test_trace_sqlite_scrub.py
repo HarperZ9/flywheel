@@ -8,10 +8,9 @@ import sqlite3
 
 import pytest
 
-from harness import trace_sqlite_scrub
 from harness.trace_residual_scan import Needles, scan_paths
 from harness.trace_sqlite_scrub import scrub
-from trace_enc_fakes import long_canary
+from trace_enc_fakes import long_canary, secure_delete_starts_off
 
 
 def _db(path, rows=50):
@@ -99,13 +98,7 @@ def test_a_pending_scrub_leaves_no_text_in_the_pages_it_freed(tmp_path, monkeypa
     reader = sqlite3.connect(db)
     reader.execute("BEGIN")
     reader.execute("SELECT count(*) FROM t").fetchone()
-    real = sqlite3.connect
-
-    def starts_off(*args, **kwargs):
-        opened = real(*args, **kwargs)
-        opened.execute("PRAGMA secure_delete=OFF")
-        return opened
-    monkeypatch.setattr(trace_sqlite_scrub.sqlite3, "connect", starts_off)
+    secure_delete_starts_off(monkeypatch)
     try:
         result = scrub(db, lambda c: c.execute("DELETE FROM t WHERE id = 1"), retry_s=0.3)
     finally:
