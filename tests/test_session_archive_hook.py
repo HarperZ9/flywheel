@@ -84,3 +84,19 @@ def test_with_the_gateway_down_a_spool_record_allows_a_later_import(setup, monke
     assert "1 pending session imported" in capsys.readouterr().out
     assert len(_imported(home)) == 1
     assert list((home / "state" / "capture-failures" / "v1").glob("f-*.json")) == []
+
+
+def test_a_pending_session_with_nothing_new_is_not_counted_as_imported(
+        setup, monkeypatch, capsys):
+    from harness import trace_cli, trace_import_session
+    from harness.capture_hooks import spool
+    home, work, root = setup
+    monkeypatch.setenv("FLYWHEEL_HOME", str(home))
+    _archive_on(home)
+    assert spool.write_failure(home, "claude-code", "session-end", SESSION, None,
+                               "GATEWAY_NOT_RUNNING")
+    monkeypatch.setattr(trace_import_session, "import_session",
+                        lambda *a, **k: {"imported": 0, "skipped": {"already": 1}})
+    assert trace_cli.main(["import", "--pending"]) == 0
+    out = capsys.readouterr().out
+    assert "0 pending sessions imported" in out and "1 had nothing new" in out

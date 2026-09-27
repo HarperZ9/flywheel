@@ -2,7 +2,9 @@
 
 The drivers in `trace_inventory_drivers.py` call real Flywheel writers
 (gateway agent run, scaffold with its snapshot store, memory notes,
-operations and Journeys, grants, continuation, source context) against a
+operations and Journeys, grants, continuation, source context, captured
+turns, imports, and the real deletion plan and apply, export, retention and
+bench task paths) against a
 temporary FLYWHEEL_HOME and run root. Every top-level entry they leave under
 the home, `state/`, the run root and `lanes/` must be registered or exempt.
 Paths other processes write, and paths code the drivers do not reach builds,
@@ -40,7 +42,10 @@ def test_every_top_level_entry_the_writers_left_is_registered_or_exempt(swept):
             ("run", "snapshots"), ("run", "fold_index.json"),
             ("state", "gateway-operations"), ("state", "journeys"),
             ("state", "grants"), ("state", "continuation"),
-            ("state", "source-context")} <= names
+            ("state", "source-context"), ("state", "trace-deletions"),
+            ("state", "trace-retention"), ("state", "trace-bench"),
+            ("state", "custody-ledger"), ("state", "captured-turns"),
+            ("state", "imports"), ("home", "trace-retention.json")} <= names
     for root, name in names:
         assert trace_inventory.classify(root, name) is not None, (root, name)
 

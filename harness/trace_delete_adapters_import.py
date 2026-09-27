@@ -8,7 +8,8 @@ its byte length and a keyed digest of those bytes), and each deleted
 captured session gets a session entry, so a crash after the exclusion and before removal
 leaves a state where the next import still skips it, and a resumed session
 that extends the deleted prefix is skipped as PREVIOUSLY_DELETED_SESSION.
-The client's own transcript stays; the report names it and the command that
+Selecting one version of a transcript that grew selects every version joined
+to it by a `supersedes` edge. The client's own transcript stays; the report names it and the command that
 removes it there.
 """
 from __future__ import annotations
@@ -38,6 +39,9 @@ def entries_for(home: Path, owner: str, refs=(), session=None) -> tuple[list[dic
     if session:
         wanted |= {r["item_ref"] for r in rows if r["client"] == session["client"]
                    and store.manifest(r["item_ref"]).get("session_id") == session["session_id"]}
+    if set(refs) - {r["item_ref"] for r in rows}:
+        return [], set()
+    wanted = _lineage(store, rows, wanted)
     out, clients = [], set()
     for row in rows:
         if row["item_ref"] in wanted:
@@ -45,9 +49,25 @@ def entries_for(home: Path, owner: str, refs=(), session=None) -> tuple[list[dic
             out.append({"store": "IM", "item": row["item_ref"],
                         "rel": folder.relative_to(state).as_posix()})
             clients.add(row["client"])
-    if set(refs) - {e["item"] for e in out}:
-        return [], set()
     return out, clients
+
+
+def _lineage(store, rows, wanted: set) -> set:
+    """`wanted` plus every item joined to it by a `supersedes` edge, in either
+    direction: an older version is a byte prefix of the same transcript."""
+    edges: dict[str, set] = {}
+    for row in rows:
+        older = store.manifest(row["item_ref"]).get("supersedes")
+        if older:
+            edges.setdefault(row["item_ref"], set()).add(older)
+            edges.setdefault(older, set()).add(row["item_ref"])
+    found, todo = set(wanted), list(wanted)
+    while todo:
+        for other in edges.get(todo.pop(), ()):
+            if other not in found:
+                found.add(other)
+                todo.append(other)
+    return found
 
 
 def _new_entries(home: Path, owner: str, entries: list[dict], sessions) -> list[dict]:

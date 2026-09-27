@@ -74,6 +74,19 @@ def _run(home, owner, args, options) -> int:
     return 0
 
 
+def _grant_presence(home, owner: str) -> str:
+    """What confirms a granted export under the presence method in effect."""
+    from .trace_presence import PresenceError, adopted_method
+    try:
+        method = adopted_method(home / "state", owner)
+    except PresenceError as exc:
+        return f"The export route refuses it until presence is set again ({exc.code})."
+    if method == "none":
+        return ("The export route runs it; with presence method none, nothing is asked and "
+                "any process holding the gateway token can run it.")
+    return "The export route runs it after Windows Hello confirms on this machine."
+
+
 def export_command(args) -> int:
     from .trace_export_dest import ExportError, create_grant
     from .trace_presence import PresenceError
@@ -82,8 +95,8 @@ def export_command(args) -> int:
     try:
         if args.grant:
             grant = create_grant(home, owner, args.out, options)
-            emit(f"Grant {grant['grant_ref']} for {escape(grant['destination'])}; confirm "
-                 f"export digest {grant['export_digest']} when the app asks.")
+            emit(f"Grant {grant['grant_ref']} for {escape(grant['destination'])}, export "
+                 f"digest {grant['export_digest']}. {_grant_presence(home, owner)}")
             return 0
         emit("This export would write:")
         _preview(home, owner, options)

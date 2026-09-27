@@ -11,7 +11,6 @@ file of these stores, subtracting text that kept rows still hold.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 from .private_artifact_remove import remove
@@ -25,9 +24,8 @@ class ScrubPending(Exception):
 
 
 def _atomic(path: Path, text: str) -> None:
-    temporary = path.with_name("." + path.name + ".tmp")
-    temporary.write_text(text, encoding="utf-8")
-    os.replace(temporary, path)
+    from . import trace_durable
+    trace_durable.write_durable(path, text.encode("utf-8"))
 
 
 def _fold(roots: dict, refs: set) -> None:

@@ -77,8 +77,9 @@ class _SetAside extends StatelessWidget {
         TextButton(
             onPressed: () async {
               if (await _confirm(context, 'Delete the set-aside file?',
-                  'The whole file at $path is deleted. It cannot be read, '
-                  'so nothing in it can be kept.')) {
+                  'The app could not parse it. Open it in a text editor '
+                  'first if you want anything from it. Deleting removes the '
+                  'whole file at $path.')) {
                 store.removeQuarantined(File(path));
               }
             },
@@ -162,11 +163,7 @@ Future<void> _showReadOnly(BuildContext context, Conversation conversation,
         actions: [
           TextButton(
               onPressed: () async {
-                if (await _confirm(readerContext, 'Delete this conversation?',
-                    'It is removed from the archive, the active history and '
-                    'the drafts. Old bytes in freed disk space, the gateway '
-                    'traces of these turns and the model provider\'s copy are '
-                    'not reached.')) {
+                if (await confirmConversationDelete(readerContext)) {
                   onDelete();
                   if (readerContext.mounted) Navigator.of(readerContext).pop();
                 }
@@ -178,6 +175,16 @@ Future<void> _showReadOnly(BuildContext context, Conversation conversation,
         ],
       ),
     );
+
+/// The one confirmation every conversation delete shows, from the list or
+/// from the archive reader: what is removed, that there is no undo, and what
+/// is not reached.
+Future<bool> confirmConversationDelete(BuildContext context) => _confirm(
+    context,
+    'Delete this conversation?',
+    'It is removed from the archive, the active history and the drafts, '
+    'and there is no undo. Old bytes in freed disk space, the gateway '
+    'traces of these turns and the model provider\'s copy are not reached.');
 
 Future<bool> _confirm(BuildContext context, String title, String body) async =>
     await showDialog<bool>(

@@ -16,8 +16,13 @@ LANE = _plain("lane-owned; encryption at rest is the lane's own decision", "7.16
 OUTSIDE = Protection("outside-custody", "the client writes it and sweeps it on its own "
                      "schedule; Flywheel only reads it on import", "7.6")
 LANE_EXPORT = Gap("export of lane stores is not designed in this round", "7.16")
-CLIENT_DELETE = Gap("the client's own store; a deletion report names the client's purge "
-                    "command (7.10)", "7.10")
+MNEME_DELETE = Gap("flywheel traces delete does not reach it; mneme's forget in the pinned "
+                   "release removes the extracted memory only, and the raw turn and an "
+                   "unsalted hash of it stay", "MN-01")
+CANON_DELETE = Gap("flywheel traces delete does not reach it; canon has no deletion in the "
+                   "pinned release", "CA-01")
+CLIENT_DELETE = Gap("the client's own store; a deletion report names the file the client "
+                    "keeps and how to remove it there (7.10)", "7.10")
 
 
 def _run(sid, name, patterns, classes, shape="dir", **kw):
@@ -68,25 +73,24 @@ STORES = (
     _run("S12r", "Local serve temporary files", ("tmp",), None,
          note="TMP and TEMP of the local serve lane (serve.py:36-37); transient, unknown"),
     Store("LNm", "mneme lane folder", "lanes", ("mneme",), ("C1", "C5", "C8"), LANE,
-          LANE_EXPORT, Gap("mneme erases through its own forget (MN-01)", "MN-01"),
-          owner_binding="lane", note="the lane default database lives here"),
+          LANE_EXPORT, MNEME_DELETE, owner_binding="lane",
+          note="the lane default database lives here"),
     Store("LNc", "canon lane folder", "lanes", ("canon",), None, LANE, LANE_EXPORT,
-          Gap("canon purges through its own context purge (CA-01)", "CA-01"),
-          owner_binding="lane", note="authored blocks; trace content unknown"),
+          CANON_DELETE, owner_binding="lane", note="authored blocks; trace content unknown"),
     Store("L4", "forum lane folder", "lanes", ("forum",), None, LANE, LANE_EXPORT,
           NOT_DESIGNED, owner_binding="lane",
           note="forum ledger contents unknown until experiment X17"),
     Store("L1", "mneme database", "env", ("mneme.db",), ("C1", "C5", "C8"), LANE,
-          LANE_EXPORT, Gap("mneme erases through its own forget (MN-01)", "MN-01"),
-          shape="file", env=("MNEME_STATE",), owner_binding="lane"),
+          LANE_EXPORT, MNEME_DELETE, shape="file", env=("MNEME_STATE",),
+          owner_binding="lane"),
     Store("L1a", "mneme replay snapshots", "temp", ("mneme-replay-*.db",),
           ("C1", "C5", "C8"), LANE, LANE_EXPORT,
-          Gap("MN-01 moves snapshots to a per-user directory and removes them", "MN-01"),
+          Gap("not reached by flywheel traces delete; mneme removes these copies at close, best "
+              "effort", "MN-01"),
           shape="file", owner_binding="lane",
           retention="removed best effort at close; a crash leaves the copy"),
     Store("L2", "canon context database", "env", ("canon-context.db",), ("C1", "C4", "C5"),
-          LANE, LANE_EXPORT, Gap("canon purges through its own context purge (CA-01)",
-                                 "CA-01"), shape="file",
+          LANE, LANE_EXPORT, CANON_DELETE, shape="file",
           env=("CANON_CONTEXT_DB", "FLYWHEEL_CANON_CONTEXT_DB"), owner_binding="lane"),
     Store("L3", "relay saved sessions", "env", ("sessions",), ("C1", "C2"), LANE,
           LANE_EXPORT, NOT_DESIGNED, env=("RELAY_SESSION_DIR",), owner_binding="lane"),
