@@ -10,7 +10,10 @@ It writes no file of its own; its per-repository graph cache goes where
 ``INDEX_GRAPH_REPO_CACHE_DIR`` points, which the engine sets inside the lane folder.
 So the policy lists it as a T1 read with ``root`` a path argument and ``paths`` a
 tree argument: index resolves each entry before it checks containment, so a network
-spelling would reach its share first.
+spelling would reach its share first. ``root`` is also the tree base: index reads a
+relative entry under ``root``, so the engine checks it there as well as from the lane
+folder, and a ``root`` that contains the home cannot name its state by a relative
+entry that the absolute spelling of the same folder would not pass.
 """
 from __future__ import annotations
 
@@ -59,6 +62,7 @@ def test_the_new_tool_has_a_reviewed_row_in_the_rows_order():
     entry = policy.tool_policy("index", NEW_TOOL)
     assert (entry.tier, entry.effect, entry.not_in_build) == ("T1", "read", "")
     assert entry.path_args == ("root",) and entry.tree_args == ("paths",)
+    assert entry.tree_base == "root"
     admitted = policy.admitted_tools("index")
     assert NEW_TOOL in admitted and len(admitted) == 22
     assert row["component_descriptor"]["allowed_tools"] == admitted
@@ -82,8 +86,8 @@ def home(tmp_path):
     return root
 
 
-def _refused(home: Path, args: dict) -> bool:
-    refusal = argument_refusal("index", NEW_TOOL, args, {"FLYWHEEL_HOME": str(home)})
+def _refused(home: Path, args: dict, **env: str) -> bool:
+    refusal = argument_refusal("index", NEW_TOOL, args, {"FLYWHEEL_HOME": str(home), **env})
     return bool(refusal) and refusal["reason"] == "argument_refused"
 
 
@@ -117,6 +121,43 @@ def test_control_without_the_tree_argument_the_share_reaches_index(home, tmp_pat
     monkeypatch.setitem(policy.LANE_TOOL_POLICY["index"], NEW_TOOL, bare)
     assert not _refused(home, {"root": str(tmp_path / "work"),
                                "paths": ["\\\\host.invalid\\share\\repo"]})
+
+
+def test_a_relative_entry_is_checked_under_root_where_index_reads_it(home, tmp_path):
+    """index joins a relative entry to ``root``. Under a root that contains the
+    home, the relative spelling of a state folder is refused like the absolute one."""
+    parent = str(tmp_path)
+    assert _refused(home, {"root": parent, "paths": [str(home / "state")]})   # control
+    assert _refused(home, {"root": parent, "paths": ["home/state"]})
+    assert _refused(home, {"root": parent, "paths": ["work/repo-a", "home/state/secret.json"]})
+    assert _refused(home, {"root": parent, "paths": ["home/lanes/../state"]})
+    # a relative root is read from the lane folder, the child's working directory
+    assert _refused(home, {"root": "../../..", "paths": ["home/state"]})
+    (tmp_path / "runs").mkdir()
+    assert _refused(home, {"root": parent, "paths": ["runs"]},
+                    FLYWHEEL_RUN_ROOT=str(tmp_path / "runs"))
+    assert not _refused(home, {"root": parent, "paths": ["work/repo-a"]})
+    assert not _refused(home, {"root": parent, "paths": ["home/lanes/index"]})
+
+
+def test_control_without_the_tree_base_a_relative_entry_passes(home, tmp_path, monkeypatch):
+    """Control: the refusal above comes from ``root`` being the tree base."""
+    import dataclasses
+    entry = policy.tool_policy("index", NEW_TOOL)
+    monkeypatch.setitem(policy.LANE_TOOL_POLICY["index"], NEW_TOOL,
+                        dataclasses.replace(entry, tree_base=""))
+    assert not _refused(home, {"root": str(tmp_path), "paths": ["home/state"]})
+    assert _refused(home, {"root": str(tmp_path), "paths": [str(home / "state")]})
+
+
+def test_a_tree_base_must_be_a_path_argument_of_a_tool_with_a_tree_argument():
+    import dataclasses
+    entry = policy.tool_policy("index", NEW_TOOL)
+    assert policy.validate_policy({"index": {NEW_TOOL: entry}}) == []
+    for bad in (dataclasses.replace(entry, tree_base="paths"),
+                dataclasses.replace(entry, tree_args=())):
+        problems = policy.validate_policy({"index": {NEW_TOOL: bad}})
+        assert any("a tree base must be a path argument" in p for p in problems), problems
 
 
 def test_the_notice_names_the_tag_and_drops_the_describe():

@@ -97,7 +97,7 @@ class ToolPolicy:
     ``forced_args``: (name, value) pairs the engine applies to every call on
     every route, after ``allowed_args``; ``None`` drops the argument.
     ``allowed_args``: when a tuple, the only argument names that pass.
-    ``id_args``, ``path_args``, ``tree_args``, ``open_egress``,
+    ``id_args``, ``path_args``, ``tree_args``, ``tree_base``, ``open_egress``,
     ``launch_grant``: see ``lane_tool_policy_args``.
     """
     tier: str = "T1"
@@ -112,6 +112,7 @@ class ToolPolicy:
     id_args: tuple[str, ...] = ()
     path_args: tuple[str, ...] = ()
     tree_args: tuple[str, ...] = ()
+    tree_base: str = ""
     open_egress: bool = False
     launch_grant: str = ""
 
@@ -188,6 +189,9 @@ def _entry_problems(where: str, entry: ToolPolicy, granted_main: bool = False,
     if any(not (isinstance(pair, tuple) and len(pair) == 2 and isinstance(pair[0], str))
            for pair in entry.forced_args):
         problems.append(f"{where}: forced_args must be (name, value) pairs")
+    if entry.tree_base and (entry.tree_base not in entry.path_args or not entry.tree_args):
+        problems.append(f"{where}: a tree base must be a path argument of a tool with a "
+                        "tree argument")
     if entry.launch_grant:
         from .lane_tool_policy_args import LAUNCH_GRANTS
         if entry.launch_grant not in LAUNCH_GRANTS.get(lane, {}):

@@ -134,7 +134,13 @@ reaches T2, since the model picks each inner call and its arguments.
   `INDEX_GRAPH_REPO_CACHE_DIR`, which the engine sets inside the lane folder. So it is
   `read` at T1, with `root` kept out of the home as on the other index tools and
   `paths` a tree argument: index resolves each entry before it checks the entry is
-  inside `root`, so a network spelling would reach its share first. Through the
+  inside `root`, so a network spelling would reach its share first. `root` is also
+  the tree base: index reads a relative entry under `root`, so the engine checks one
+  there as well as from the lane folder. The review of the pin found the first cut
+  checked it from the lane folder only, so under a `root` that contains the home a
+  relative entry could name the home's state that its absolute spelling could not.
+  Now a relative, `..`, same-drive drive-relative or junction spelling of a state
+  folder answers `argument_refused` like the absolute one. Through the
   engine's pip-mode launch of the PyPI 2.14.0 wheel, the lane lists 23 tools, a route
   over two repositories and four bad entries answers PARTIAL with each rejection
   typed, the only writes are the graph cache in the lane folder, and a T1 lane call
@@ -153,6 +159,11 @@ reaches T2, since the model picks each inner call and its arguments.
   outside the smoke's throwaway home are unmeasured.
 - `path_args` is a name-based list read from the pinned schemas. A path inside a nested object or a
   free-text field escapes it, and the containment probe measures writes, not reads.
+- A path argument is refused inside the home, not above it. index discovers repositories under
+  `root`, so its tools that discover reach a repository inside the home, or the run root, through a
+  `root` that contains it, such as the user folder that holds the default home. Refusing a `root`
+  that contains a state root is an open decision: it would also refuse a workspace that is the
+  user folder.
 - Timeouts in the table are draft values, unmeasured. The engine applies them on every call and
   clamps a caller's value to 1 .. `timeout_s`.
 - bulletin is an http lane; its launch carries no `allowed_tools`, so the tier gate is its only
@@ -269,7 +280,7 @@ Admitted at launch: 22 of 23 tools. T2 per granted call: 1. Not in this build: 0
 | `index_focus` | T1 |  | read |  | `root` kept out of the home | Returns one repo's dependency neighborhood. |
 | `index_verify` | T1 |  | read |  | `root` kept out of the home | Grounds a structural claim with file:line evidence. |
 | `index_router` | T1 |  | read |  | `root` kept out of the home | Builds a workspace map and returns it; its cache stays in the lane folder (INDEX_MCP_CACHE_DIR). |
-| `index.route` | T1 |  | read |  | `root` kept out of the home, every value in `paths` kept out of the home | Builds a context envelope for the repositories `paths` names under `root` and returns a route receipt; its graph cache stays in the lane folder (INDEX_GRAPH_REPO_CACHE_DIR). |
+| `index.route` | T1 |  | read |  | `root` kept out of the home, every value in `paths` kept out of the home, a relative one checked under `root` | Builds a context envelope for the repositories `paths` names under `root` and returns a route receipt; its graph cache stays in the lane folder (INDEX_GRAPH_REPO_CACHE_DIR). |
 | `index_internals` | T1 |  | read |  | `root` kept out of the home | Builds one repo's module graph. |
 | `index.router.job.start` | T1 |  | state_write |  | `root` kept out of the home | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. |
 | `index.router.job.status` | T1 |  | read |  | `job_id` a plain id | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
