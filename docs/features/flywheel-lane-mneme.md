@@ -169,7 +169,7 @@ Each capability, with its interface, module, output schema, and stated bound.
 ### forget, update, audit
 - CLI `mneme forget MEMORY_ID [--reason R]`, `mneme update MEMORY_ID TEXT [--reason R]`, `mneme audit`. Library `AgentMemory.forget/update/audit`. MCP `mneme.forget`, `mneme.audit`.
 - Module: `src/mneme/store.py`, `src/mneme/memory.py`. Audit schema: `mneme.audit/1`.
-- `forget` erases text and leaves a tombstone; `update` edits text, keeps provenance, records before and after hashes. `audit` reports `chain_intact` from `verify_audit`.
+- `forget` erases the memory and leaves a tombstone (the next item describes the pinned release's erase). `update` edits text and keeps provenance. From schema 5 its audit entry stores a salted commitment to each version instead of the plain content hash; entries written before schema 5 keep their plain hashes, and every entry still names the memory by its content-derived id. `audit` reports `chain_intact` from `verify_audit`.
 - From 0.5.0, `forget` erases the memory, its source turns and every derived row in one transaction, and the receipt reports what the erase could not reach, including audit entries that still name the memory by its content-derived id and the MCP client's own session history. MCP `mneme.forget` returns a plan and deletes only on a second call that carries `confirm_plan_sha256`. Flywheel keeps `mneme.forget` at T2, so each of the two calls is its own approval. Schema 5 migrates an older database on open. 0.5.1 closes GHSA-j2pw-g7f4-9ppp: a reason that quotes the erased text is refused, another user's turn is no longer taken as a duplicate, the receipt drops `plan_sha256` and reports `erased_residue_found` when a kept row still holds erased text.
 
 ### supersede and history (temporal)

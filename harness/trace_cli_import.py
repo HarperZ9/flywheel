@@ -46,7 +46,7 @@ def run(args) -> int:
     if args.pending:
         return pending(args)
     if args.client is None:
-        emit("Name a client (claude-code) or pass --pending.")
+        emit("Name a client (claude-code or codex) or pass --pending.")
         return 2
     from .trace_import_claude import plan_claude
     from .trace_import_codex import plan_codex
@@ -85,7 +85,7 @@ def pending(args) -> int:
              "archive on (flywheel traces capture archive on) to import them, or clear "
              "them with flywheel traces doctor --ack.")
         return 0
-    directory, done = spool.spool_dir(home), 0
+    directory, done, empty = spool.spool_dir(home), 0, 0
     for path in sorted(directory.glob("f-*.json")) if directory.is_dir() else []:
         record = json.loads(path.read_bytes())
         if record.get("event") != "session-end" or not record.get("session_id"):
@@ -98,13 +98,15 @@ def pending(args) -> int:
         if result["imported"] or result["skipped"]:
             (directory / "acknowledged").mkdir(exist_ok=True)
             path.replace(directory / "acknowledged" / path.name)
-            done += 1
-    emit(f"{done} pending session{'' if done == 1 else 's'} imported.")
+            done, empty = (done + 1, empty) if result["imported"] else (done, empty + 1)
+    tail = f", {empty} had nothing new to import" if empty else ""
+    emit(f"{done} pending session{'' if done == 1 else 's'} imported{tail}.")
     return 0
 
 
 def register(sub) -> None:
-    parser = sub.add_parser("import", help="copy client transcripts into encrypted custody")
+    parser = sub.add_parser("import", help="copy client transcripts into custody (encrypted where an OS key store "
+                             "is available)")
     parser.add_argument("client", nargs="?", choices=("claude-code", "codex"))
     parser.add_argument("--pending", action="store_true",
                         help="import sessions the SessionEnd archive spooled")

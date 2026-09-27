@@ -49,3 +49,13 @@ def test_a_zip_export_verifies(world, monkeypatch):
     assert trace_cli.main(["export", "--out", str(base / "z"), "--zip", "--yes"]) == 0
     assert (base / "z.zip").is_file() and not (base / "z").exists()
     assert trace_cli.main(["verify-export", str(base / "z.zip")]) == 0
+
+
+def test_a_grant_says_what_confirms_it_under_the_method_in_effect(world, capsys):
+    """No app asks for an export grant; with the default method `none` the
+    line says nothing is asked and any process with the token can run it."""
+    _, base = world
+    assert trace_cli.main(["export", "--out", str(base / "granted"), "--grant"]) == 0
+    printed = capsys.readouterr().out
+    assert "when the app asks" not in printed
+    assert "presence method none" in printed and "nothing is asked" in printed

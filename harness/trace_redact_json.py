@@ -11,7 +11,8 @@ ending in `_key` or `-key` after a prefix (SECRET_KEY, signing_key), and any
 name containing `secret`. Redacted values are written back and
 the line is re-serialized; a line with no hit comes back unchanged.
 
-A line that does not parse is scanned twice, as raw text and as an unescaped
+A line that does not parse, or has two equal keys in one object (the parser
+keeps only the last value), is scanned twice, as raw text and as an unescaped
 view with the JSON escapes decoded, and each hit in the view is mapped back
 to the raw bytes it came from.
 """
@@ -44,11 +45,28 @@ def key_rule(name, value) -> str | None:
     return "credential_assignment" if _SECRET_KEY.match(name) else None
 
 
+class _Duplicate(ValueError):
+    """Two equal keys in one object: the parser would drop the first value."""
+
+
+def _unique_pairs(pairs):
+    names = [name for name, _ in pairs]
+    if len(set(names)) != len(names):
+        raise _Duplicate()
+    return dict(pairs)
+
+
+def _loads(text: str):
+    return json.loads(text, object_pairs_hook=_unique_pairs)
+
+
 def _parse_nested(text: str, level: int):
+    """The nested value, or None. A nested string with a duplicate key stays
+    a string, so the plain-text scan sees every value in it."""
     if level >= MAX_NESTED or text.lstrip()[:1] not in ("{", "["):
         return None
     try:
-        value = json.loads(text)
+        value = _loads(text)
     except (ValueError, RecursionError):
         return None
     return value if type(value) in (dict, list) else None
@@ -98,8 +116,9 @@ class _Redactor:
 
 
 def redact_json_line(line: str, *, key: bytes, rules, deadline) -> tuple[str, dict]:
+    """A line that does not parse, or holds a duplicate key, is scanned raw."""
     try:
-        value = json.loads(line)
+        value = _loads(line)
     except (ValueError, RecursionError):
         return _redact_raw(line, key, rules, deadline)
     redactor = _Redactor(key, rules, deadline)

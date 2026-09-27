@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from pathlib import Path
 import secrets
 
@@ -55,10 +54,9 @@ class _SealedIndex:
         return [json.loads(line) for line in path.read_bytes().splitlines() if line.strip()]
 
     def _write_index(self, rows: list[dict]) -> None:
-        self.base.mkdir(parents=True, exist_ok=True)
-        temporary = self.base / ".index.jsonl.tmp"
-        temporary.write_bytes(b"".join(canonical_bytes(r) + b"\n" for r in rows))
-        os.replace(temporary, self.base / "index.jsonl")
+        from . import trace_durable
+        trace_durable.write_durable(self.base / "index.jsonl",
+                                    b"".join(canonical_bytes(r) + b"\n" for r in rows))
 
     def read(self, ref: str) -> dict:
         raw = (self.base / f"{ref}.enc").read_bytes()
