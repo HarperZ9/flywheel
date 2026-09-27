@@ -173,8 +173,8 @@ CASES: dict[str, LaneCase] = {c.lane: c for c in (
     _read_lane("learn", basis="PLAN 1a said B (Node); O-1 b bundles Node, so A"),
     LaneCase("telos", "B", "held", "O-8 hold: no telos payload in any freeze", (
         st("fresh", "cannot_launch", code="lane_held"),
-        call("fresh_catalog_refused", "fresh", "telos_catalog", lambda c: {},
-             status=REFUSED))),
+        call("fresh_catalog_refused", "fresh", "telos.catalog", lambda c: {},
+             status=REFUSED, code="LANE_CANNOT_LAUNCH"))),
     LaneCase("local-model", "B", "B", "PLAN 1a: model server and project folder", (
         st("fresh", "needs_setup"),
         call("fresh_run_needs_setup", "fresh", "local_agent_run",

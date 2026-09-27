@@ -157,7 +157,7 @@ LANES: dict[str, Lane] = {
         "capability discovery + auto-wiring of the tool mesh (the layer above a flat tool list)",
         "wiring", source_repo="public/plexus", py_module="plexus.cli"),
     "mneme": Lane(
-        "mneme", "flywheel-mneme", "mneme", ("mcp",), "pip", "0.5.0",
+        "mneme", "flywheel-mneme", "mneme", ("mcp",), "pip", "0.5.1",
         "accountable memory: recall with re-derivable ranking receipts + drift verdicts",
         "memory", source_repo="public/mneme", py_module="mneme.cli",
         env_vars=("MNEME_STATE", "MNEME_CRUCIBLE_SRC", "MNEME_GATHER_SRC",
@@ -168,7 +168,7 @@ LANES: dict[str, Lane] = {
         "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
         "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
     "canon": Lane(
-        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.4.1",
+        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.4.2",
         "provider-neutral memory bank + personality container: one envelope, "
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",

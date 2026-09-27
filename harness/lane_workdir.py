@@ -42,11 +42,16 @@ the user's: the claude CLI reads its login there. The lane CLI bridges and the
 lane install keep the user's folders (``lane_env.lane_process_environment``),
 since ``npm install -g`` finds its prefix under APPDATA.
 
-Two launches keep their own directory. A source-checkout launch already names
-its checkout as cwd, and the tests for source mode rely on that. A launch of one
-of the engine's own ``harness.*`` modules (local-model and writing outside a
-frozen build) needs the engine's import root as cwd; the frozen self-child modes
-that replace it take explicit roots instead. An http lane spawns nothing.
+A source-checkout launch starts in the lane folder too: its import root travels
+in PYTHONPATH with PYTHONSAFEPATH=1. A ``python -m`` lane started in its lane
+folder always gets PYTHONSAFEPATH=1, so a module file left in that folder cannot
+shadow the lane's package. The forced grants, state defaults and scoped folders
+apply to every spawned lane child in every install mode. Two launches keep
+their own directory and still get them: a launch that names its own cwd, and
+a launch of one of the engine's own ``harness.*`` modules (local-model and
+writing outside a frozen build), which needs the engine's import root; the
+frozen self-child modes that replace it take explicit roots instead. An http
+lane spawns nothing.
 """
 from __future__ import annotations
 
@@ -164,21 +169,25 @@ def _engine_self_module(launch: LaunchSpec) -> bool:
 
 def pin_lane_workdir(lane, launch: LaunchSpec | None,
                      environ: Mapping[str, str]) -> LaunchSpec | None:
-    """Return the launch started in the lane folder, with its state defaults.
+    """Return the launch started in the lane folder, with its state defaults,
+    forced grants and scoped folders (see the module note for the two launches
+    that keep their own cwd).
 
     The folder is created here, at launch resolution, so the child never starts
     in a missing directory. The state defaults join the launch's own
     environment; an inheriting launch gets them as overrides on top of the
     engine's environment, and only when the engine's environment lacks them."""
-    if (not spawns_lane_child(launch) or launch.cwd
-            or _engine_self_module(launch)):
+    if not spawns_lane_child(launch):
         return launch
     folder = ensure_lane_workdir(lane.name, environ)
+    engine_module = _engine_self_module(launch)
+    cwd = launch.cwd or (None if engine_module else str(folder))
     own = dict(launch.env_overrides)
     seen = own if not launch.inherit_env else {**environ, **own}
     forced = forced_env(lane.name, folder, environ)
+    if cwd == str(folder) and "-m" in launch.argv[1:]:
+        forced["PYTHONSAFEPATH"] = "1"
     taken = _SCOPED_NAMES | {name.upper() for name in forced}
     env = {**{k: v for k, v in own.items() if k.upper() not in taken},
            **lane_state_defaults(lane.name, folder, seen), **scoped_dirs(folder), **forced}
-    return replace(launch, cwd=str(folder),
-                   env_overrides=tuple(sorted(env.items())))
+    return replace(launch, cwd=cwd, env_overrides=tuple(sorted(env.items())))

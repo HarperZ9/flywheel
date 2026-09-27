@@ -12,7 +12,9 @@ check, lane install, and the two setup choices a person makes in the app.
   spawns the lane, so it carries the same approval as ``plugin.probe``: the
   body is a ``plugin.probe`` grant envelope naming this lane (O-4 keeps POST
   with the grant; there is no GET).
-- ``POST /api/lanes/install``: install one lane on request.
+- ``POST /api/lanes/install``: install one lane at its pinned version, only
+  after the gateway consumed an exact ``lane.install`` grant (the body is the
+  approved operation).
 - ``GET|POST /api/lanes/local-model/root`` and ``GET|POST
   /api/settings/node_path``: the two setup choices (``lane_settings_route``);
   each POST arrives only after the gateway consumed its exact grant.
@@ -27,13 +29,12 @@ import os
 from typing import Callable, Mapping
 
 from .lane_settings_route import (  # re-exported for the gateway and the tests
-    LOCAL_MODEL_ROOT_ROUTE, NODE_PATH_ROUTE, node_path_get, node_path_post, root_body,
+    INSTALL_ROUTE, LOCAL_MODEL_ROOT_ROUTE, NODE_PATH_ROUTE, node_path_get, node_path_post, root_body,
     root_post, setting_post)
 
 SCHEMA_TOOLS = "flywheel.lane-tools/v1"
 LANES_PREFIX = "/api/lanes/"
 CALLABLE_ROUTE = "/api/lanes/callable"
-INSTALL_ROUTE = "/api/lanes/install"
 CONSOLE_ROUTES = (
     ("GET", "/api/lanes/{lane}/setup", "every setup item a lane card states"),
     ("POST", "/api/lanes/{lane}/check", "probe one lane now and return its state"),

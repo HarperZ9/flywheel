@@ -160,8 +160,10 @@ def plugin_execution_plan(name: str):
     """Freeze launch and credential metadata from one registry read."""
     if name == "tools":
         return None, "builtin", (), ()
-    if name in LANES:
-        return require_lane_launch(name, resolve_mcp_launch), "lane", (), ()
+    if name in LANES:   # a plugin call runs at T1, so it runs key-free (C-8)
+        from .lane_credentials import strip_key_grants
+        launch = strip_key_grants(name, require_lane_launch(name, resolve_mcp_launch))
+        return launch, "lane", (), ()
     entry = next((row for row in _load_custom() if row.get("name") == name), None)
     if entry is None or not entry.get("enabled", True):
         raise PluginPermissionError

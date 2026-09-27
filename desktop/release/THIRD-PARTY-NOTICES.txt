@@ -188,8 +188,8 @@ crucible-bench 1.2.0 (lane crucible), tag v1.2.0 @ 9aea59a8b705, LicenseRef-Fair
 index-graph 2.13.0 (lane index), tag v2.13.0 @ 71c26eabde26, FSL-1.1-MIT
 forum-engine 1.14.0 (lane forum), tag v1.14.0 @ 7f8ae5e0dc37, LicenseRef-FSL-1.1-MIT
 plexus-mesh 0.2.2 (lane plexus), tag v0.2.2 @ aa7cef0eb541, LicenseRef-FSL-1.1-MIT
-flywheel-mneme 0.5.0 (lane mneme), tag v0.5.0 @ c47215d357c0, LicenseRef-FSL-1.1-MIT
-flywheel-canon 0.4.1 (lane canon), tag v0.4.1 @ 583e0ceea333, LicenseRef-FSL-1.1-MIT
+flywheel-mneme 0.5.1 (lane mneme), tag v0.5.1 @ 3009bedeaee6, LicenseRef-FSL-1.1-MIT
+flywheel-canon 0.4.2 (lane canon), tag v0.4.2 @ 8e0098aa802c, LicenseRef-FSL-1.1-MIT
 chorus-discourse 0.3.1 (lane chorus), tag v0.3.1 @ 677ad99554f3, LicenseRef-FSL-1.1-MIT
 flywheel-relay 0.4.0 (lane relay), tag v0.4.0 @ ac4d79877f19, LicenseRef-FSL-1.1-MIT
 accountable-surface 0.3.1 (lane accountable-surface), tag v0.3.1 @ d5a7c108ba46, LicenseRef-FSL-1.1-MIT

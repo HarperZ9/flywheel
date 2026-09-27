@@ -77,6 +77,7 @@ def test_extra_source_repos_join_the_child_pythonpath(tmp_path, monkeypatch):
 
 
 def test_package_launch_carries_the_parent_pythonpath(monkeypatch):
+    monkeypatch.setattr(ln, "_installed_version", lambda lane: lane.version)
     # a package launch has no PYTHONPATH of its own; the child keeps the
     # parent's import path, as it did when it inherited the whole environment.
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
@@ -94,6 +95,7 @@ def test_public_pip_command_stays_portable_when_importable(monkeypatch):
 
 
 def test_runtime_pip_lane_prefers_this_interpreter_when_importable(monkeypatch):
+    monkeypatch.setattr(ln, "_installed_version", lambda lane: lane.version)
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
     monkeypatch.setattr(ln, "_importable", lambda top: True)
     launch = ln.resolve_mcp_launch("gather")
@@ -101,6 +103,7 @@ def test_runtime_pip_lane_prefers_this_interpreter_when_importable(monkeypatch):
 
 
 def test_runtime_pip_lane_falls_back_to_console_script(monkeypatch):
+    monkeypatch.setattr(ln, "_installed_version", lambda lane: lane.version)
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
     monkeypatch.setattr(ln, "_importable", lambda top: False)
     launch = ln.resolve_mcp_launch("gather")
@@ -108,6 +111,7 @@ def test_runtime_pip_lane_falls_back_to_console_script(monkeypatch):
 
 
 def test_importable_checks_top_package_only(monkeypatch):
+    monkeypatch.setattr(ln, "_installed_version", lambda lane: lane.version)
     seen = []
     monkeypatch.setattr(ln, "_importable",
                         lambda top: (seen.append(top), False)[1])
@@ -133,7 +137,7 @@ def test_python_source_launch_has_child_cwd_and_pythonpath(
     monkeypatch.setenv("PYTHONPATH", "existing-path")
     launch = ln.resolve_mcp_launch("gather")
     assert launch.argv == (sys.executable, "-m", "gather.cli", "mcp")
-    assert launch.cwd == str(source.resolve())
+    assert Path(launch.cwd).parts[-2:] == ("lanes", "gather")   # not the checkout
     assert dict(launch.env_overrides)["PYTHONPATH"] == (
         str(source.resolve()) + os.pathsep + "existing-path")
     child_env = os.environ.copy()
@@ -172,7 +176,7 @@ def test_python_source_launch_precedes_importable_package(tmp_path, monkeypatch)
     monkeypatch.setenv("PYTHONPATH", "installed-path")
     launch = ln.resolve_mcp_launch("gather")
     assert launch.argv == (sys.executable, "-m", "gather.cli", "mcp")
-    assert launch.cwd == str(source.resolve())
+    assert Path(launch.cwd).parts[-2:] == ("lanes", "gather")   # not the checkout
     assert dict(launch.env_overrides)["PYTHONPATH"] == (
         str(source.resolve()) + os.pathsep + "installed-path")
 

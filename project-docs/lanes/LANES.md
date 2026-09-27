@@ -28,7 +28,7 @@ the approval sheet. Plugins and agent runs cannot reach a T2 tool.
 | crucible | check a thesis against measurements | A | none | run, batch and refine need approval at T2 |
 | chorus | digest a corpus into themes | A | none | none |
 | articulate | score and check prose | A | none for score and check; judge, fix and polish need the claude CLI, signed in with claude login | judge, fix and polish need approval at T2 and were not run |
-| index | find symbols; map a repository | below bar | Git for Windows, to read branch and history | symbols run with no setup, and map passes once Git is found; without Git, map returns an empty repository list instead of naming the Git step |
+| index | find symbols; map a repository | below bar | Git for Windows, to read branch and history | symbols run with no setup, and map passes once Git is found; without Git, map lists the repository with its branch and head as unknown and a FileNotFoundError, instead of naming the Git step |
 | forum | route a question to a plan | A/B-untested | real rooms need a provider key granted to the lane by name | route and plan run on the built-in echo executor; real rooms are untested |
 | learn | plan and check a study step | A | none; Node ships with the app | tutor_record needs approval at T2; tools that call out to crucible or gather were not checked |
 | telos | read the workstation catalog | not in this build | none | the release contents are under review, so no telos code ships |
@@ -47,9 +47,12 @@ in this build.
 
 ## Where every lane keeps its files
 
-Each lane process starts in its own folder, `lanes/<lane>` under the Flywheel home, and
-keeps its temporary files, caches and state there. Nothing is written into the install
-folder; the check compares the install folder before and after and found no change.
+In the Windows app, a pip install and a source checkout, each lane process starts in its
+own folder, `lanes/<lane>` under the Flywheel home, and keeps its temporary files, caches
+and state there. On a pip or source install, local-model and writing run as modes of the
+engine, so they start in the engine's folder and keep only their temporary and app-data
+files in `lanes/<lane>`. Nothing is written into the install folder; the check compares
+the install folder before and after and found no change.
 
 ## How this was measured
 

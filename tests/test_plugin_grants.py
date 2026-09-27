@@ -17,6 +17,7 @@ from harness.mcp_client import LaunchSpec, StdioTransport
 NOW = "2026-08-15T12:00:00Z"
 OWNER = "owner_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 JOURNEY = "jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+pytestmark = pytest.mark.usefixtures("lanes_at_their_pins")  # plans freeze a lane launch
 
 
 def _operation(action, body):

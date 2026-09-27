@@ -67,7 +67,7 @@ _MNEME = {
     "mneme.provenance": _t("read", "Shows one memory's provenance receipt."),
     "mneme.origin_recheck": _t("read", "Re-reads a source file under an allowed root."),
     "mneme.forget": _t("state_write", "Erases a memory, its source turns and what derives "
-                       "from them, and cannot be undone. mneme 0.5.0 returns a plan first "
+                       "from them, and cannot be undone. mneme 0.5.1 returns a plan first "
                        "and deletes only on a second call that carries its "
                        "confirm_plan_sha256; each call is its own T2 approval.",
                        tier="T2"),

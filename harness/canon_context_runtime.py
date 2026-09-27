@@ -43,3 +43,21 @@ def context_mcp_environment(env: dict[str, str], db: str) -> dict[str, str]:
         "canon", {CANON_CONTEXT_DB: db, CANON_CONTEXT_SCOPE: TRUSTED_SCOPE}, environ=env)
     return {key: value for key, value in child.items()
             if key.upper() != CANON_CONTEXT_MCP_PURGE}
+
+
+def context_version_refusal(*, frozen: bool | None = None,
+                            installed: str | None = None) -> str | None:
+    """``CANON_CONTEXT_OUTDATED`` when a non-frozen engine would run a canon
+    older than the lane pin (GHSA-48rq-xjfx-6j4f: before 0.4.2 an MCP ingest
+    was stored unredacted and query excerpts were cut before scrubbing). A
+    frozen build runs its pinned payload. An unknown version is not judged."""
+    if is_frozen_process() if frozen is None else frozen:
+        return None
+    from .lane_runtime_versions import version_below
+    from .lanes_registry import LANES
+    if installed is None:
+        from . import lane_runtime_support
+        installed = lane_runtime_support.installed_version(LANES["canon"])
+    if installed and version_below(installed, LANES["canon"].version):
+        return "CANON_CONTEXT_OUTDATED"
+    return None

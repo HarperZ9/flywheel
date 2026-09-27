@@ -23,7 +23,8 @@ tells you the truth about it: whether the action is ready, what setup it still n
 and when it was last checked. articulate, calibrate-pro and learn join the installer,
 learn with a bundled Node runtime, so it runs with nothing else installed. forum,
 local-model and writing now start inside the installed app. Every lane tool the app can
-call sits under one reviewed policy, and tools that write outside the lane's folder,
+call sits under one policy, reviewed tool by tool in
+`project-docs/lanes/POLICY-REVIEW.md`, and tools that write outside the lane's folder,
 spend a key, publish or act on your machine run only on a call you approve.
 
 ## Why this is 1.1.0
@@ -50,8 +51,8 @@ For the engine alone: `python -m pip install -U flywheel-verify`, then
 
 ## What each lane does in the app
 
-Seventeen lanes ship in the roster. In the Windows app, 15 run their main action at
-the class the app states: 8 with no setup (A), 4 after the setup step the card names
+Seventeen lanes ship in the roster. In the Windows app, 15 measure at the class their
+card states: 8 run their main action with no setup (A), 4 after the setup step the card names
 (B), 1 reads only by design (C), 1 runs with no setup and keeps actuation in its own
 app (A/C), and 1 runs with no setup while its provider-backed path is untested
 (A/B-untested). index is below that bar without Git, and telos is not in this build.
@@ -68,7 +69,7 @@ the main action runs in the tool's own app.
 | crucible | check a thesis against measurements | A | |
 | chorus | digest a corpus into themes | A | |
 | articulate | score and check prose | A | judge, fix and polish need a signed-in claude CLI and your approval at T2 |
-| index | find symbols; map a repository | below bar | symbols run with no setup and map runs with Git; without Git, map returns an empty repository list instead of naming the Git step |
+| index | find symbols; map a repository | below bar | symbols run with no setup and map runs with Git; without Git, map lists the repository with its branch and head as unknown and a FileNotFoundError, instead of naming the Git step |
 | forum | route a question to a plan | A/B-untested | real rooms need a provider key and are untested |
 | learn | plan and check a study step | A | Node ships with the app |
 | telos | read the workstation catalog | not in this build | its release contents are under review |
@@ -96,13 +97,16 @@ the main action runs in the tool's own app.
   four at a time. bulletin is checked only when you ask, so the app does not contact the
   board at start. A card from an earlier session reads "Last checked" until a new check
   replaces it, and a call that fails to start the lane updates the card.
-- **One tool policy.** Each lane's tools carry a tier. Reads and writes inside the
-  lane's own folder run on an approved call; writes outside it, key spend, publishing,
-  commands and device control need an approval at T2 for that one call. A tool the
+- **One tool policy.** Each lane's tools carry a tier. Reads, network reads, writes
+  inside the lane's own folder and calls to your local model server run on an approved
+  call; writes outside it, key spend, publishing, commands and device control need an
+  approval at T2 for that one call. A tool the
   policy does not list needs T2 too. The engine computes the tier itself, whatever the
   caller sends. Plugins and agent runs cannot reach a T2 tool or an unlisted one, and
   agent runs also refuse state writes, open network egress and path arguments. The
-  approval sheet shows the tier, the effect and the arguments in plain form.
+  approval sheet shows the tier, the effect, whether the lane's granted keys reach
+  the call and the arguments in plain form. A tool the policy does not list reads
+  "not reviewed: effect unknown".
 - **Lanes start inside the installed engine.** local-model and writing run as modes of
   the bundled engine instead of a `python` found on your PATH. The native screens that
   call lane commands do the same.
@@ -111,19 +115,24 @@ the main action runs in the tool's own app.
   forum 1.14.0 ships the data files it needs to start. `FLYWHEEL_NODE` or a node.exe you
   choose in the app still overrides the bundled Node; a chosen node.exe is checked by
   hash again at every launch.
-- **Lane updates.** relay 0.4.0, gather 1.9.0, mneme 0.5.0 and canon 0.4.1, each
+- **Lane updates.** relay 0.4.0, gather 1.9.0, mneme 0.5.1 and canon 0.4.2, each
   frozen from its release tag. None adds a tool the app can call, and each tool keeps
-  its tier. relay keeps its saved sessions in `lanes/relay/sessions` and starts with
-  write, exec, shell child variables and agent CLI tiers all off. gather starts with
-  no network, command or credential grant, since the app's gather tools read a local
-  document or corpus. mneme's forget erases a memory with everything derived from it
-  and returns a receipt. canon's context store can purge records from its own command
-  line; the engine never starts canon's context server with purge applied.
+  its tier. In the Windows app, a pip install and a source checkout, relay keeps its
+  saved sessions in `lanes/relay/sessions` and starts with write, exec, shell child
+  variables and agent CLI tiers all off, and gather starts with no network, command or
+  credential grant, since the app's gather tools read a local document or corpus.
+  mneme's forget erases a memory with the rows derived from it and returns a receipt
+  that names any residue it finds. canon's context store redacts every ingest and can
+  purge records from its own command line; the engine starts canon's context server
+  with purge disabled, so it can only plan one.
 - **relay starts from pip and source installs again.** With relay 0.3.0 or later, the
   engine's pip and source launch for relay exited at start. It now starts relay through its own
   command line. The Windows app was not affected.
-- **Each lane keeps to its own folder.** Every lane process starts in `lanes/<lane>`
-  under the Flywheel home and keeps its temporary files, caches and state there. The
+- **Each lane keeps to its own folder.** In the Windows app, a pip install and a
+  source checkout, every lane process starts in `lanes/<lane>` under the Flywheel home
+  and keeps its temporary files, caches and state there. On a pip or source install,
+  local-model and writing run as modes of the engine, so they start in the engine's
+  folder and keep only their temporary and app-data files in `lanes/<lane>`. The
   installed-app check found no change to the install folder.
 - **Keys reach a lane only when you grant them.** A key saved in the app can be bound to
   one approved T2 call of a lane whose `env_allow` names it. The lane card names the key
@@ -135,7 +144,8 @@ the main action runs in the tool's own app.
   engine stops.
 - **Error codes you can act on.** A failed lane call returns one of six fixed codes with
   a short reason slug, and the card offers one action for each: list tools again, show
-  setup, check the lane or run again.
+  setup, check the lane or run again. A call refused at its tier says so and offers no
+  action.
 - **License texts ship with the engine.** The engine folder now carries the Python
   license (with OpenSSL's), the texts for code compiled into Python, and each lane's
   license. The installer's third-party notice lists every one.
@@ -149,11 +159,52 @@ the main action runs in the tool's own app.
 - gather 1.9.0 fixes GHSA-pxvv-rg3f-4v5w (tool arguments could run commands and send
   environment secrets to a chosen host) and GHSA-r4f3-9xrf-72m5 (external tools started
   by bare name from the working folder).
+- mneme 0.5.1 fixes GHSA-j2pw-g7f4-9ppp (forget could keep erased text in its reason,
+  erase another user's turn, and let the receipt confirm a guess of the erased text).
+- canon 0.4.2 fixes GHSA-48rq-xjfx-6j4f (the shared context store kept secrets from an
+  MCP ingest, returned the start of a secret in query excerpts, and put transcript
+  paths into the next prompt). The same advisory covers canon 0.2.0, which 1.0.4
+  shipped; the 1.0.4 known-issues page says what to do there.
+- On a pip or npm install, a lane older than its pinned release no longer starts, so
+  these fixes cannot be skipped by an older package. `flywheel install` and the
+  install route ask for the pinned version.
+
+## Security changes in the engine
+
+- A path argument that names a Windows device path (`\\?\`, `\??\`) or a network
+  share is refused before the lane starts, and a folder is compared by identity, so no
+  spelling of the Flywheel home reaches a lane's read. The local-model folder setting
+  follows the same rule.
+- A T2 call keeps the keys granted to its lane only when its tool spends a model call.
+  A key you bind to the call still joins it. Plugins and the forum and relay screens run
+  without granted keys, and those screens refuse a tool above T1.
+- `learn_tutor_plan` is refused for a session that already has a file, so a T1 plan
+  cannot reset what an approved `learn_tutor_record` wrote. An id may not be a Windows
+  device name such as `CON` or `NUL`.
+- The engine refuses context capture and preflight through a flywheel-canon older than
+  its pin.
+- Installing a lane through the engine's install route now takes an approval.
 
 ## Breaking changes
 
 - A lane tool the policy does not list needs an approval at T2 on pip and source
   installs, as it already did in the Windows app.
+- On pip and source installs, a call that carries T1 can now run the tools the policy
+  lists at T1 on relay, local-model and accountable-surface, including
+  `local_agent_run` and `perceive`. 1.0.4 required T2 for every tool on those lanes.
+  Their write, exec and actuation paths stay at T2 or off.
+- A pip or npm lane older than its pin reports `installed_version_below_pin` and does
+  not start. Run `flywheel install` for that lane to get the pinned version.
+- A source checkout now starts each lane in `lanes/<lane>` with the same forced grants
+  as a pip install. An `env_allow` of `GATHER_ALLOW_NETWORK` or `RELAY_ALLOW_EXEC` no
+  longer reaches the lane there either.
+- A T2 call to a tool that does not spend a model call, such as `mneme.forget` or
+  `gather.run`, no longer receives keys granted with `env_allow`. Bind the key to the
+  call instead.
+- `/api/forum/run-room` answers `CAPABILITY_NOT_ADMITTED` on pip and source installs,
+  since `forum.run.room` is T2. The Windows app already refused it.
+- `POST /api/lanes/install` needs a `lane.install` approval; a bearer token alone
+  installs nothing.
 - relay takes write and exec grants only from how it is started; tool arguments can
   only narrow them. From 0.4.0 its shell children see an allowlist of variables and
   its saved sessions default to a per-user folder. The app starts relay with write and
@@ -161,11 +212,13 @@ the main action runs in the tool's own app.
 - gather 1.9.0 needs launch grants for network sources, commands and credentials in
   `gather.run` and `gather.pilot`. Flywheel grants none, so such a run answers
   `GRANT_REQUIRED`. The feeds screen uses gather's command line and is unchanged.
-- mneme 0.5.0 forget takes two calls: the first returns a plan and deletes nothing,
+- mneme 0.5.x forget takes two calls: the first returns a plan and deletes nothing,
   the second carries the plan's hash and erases. Each call needs your approval at T2.
-  A writable open migrates the lane's memory database to schema 5.
-- canon 0.4.x raises the context store to identity version 2 on its first capture or
-  purge; canon 0.3.0 and older refuse that store.
+  A writable open migrates the lane's memory database to schema 5. The 0.5.1 receipt
+  drops `plan_sha256` and adds finding codes.
+- canon 0.4.2 raises the context store to identity version 2 on its first capture or
+  purge; canon 0.3.0 and older refuse that store. An event stored raw before 0.4.2 and
+  sent again with a secret-shaped value is refused as a collision.
 - writing's `diagnose` now needs an approval at T2, because it works on the shared
   draft store outside the lane's folder.
 - Plugins and agent runs refuse a lane tool the policy does not list.
@@ -187,8 +240,9 @@ folder is about 94 MB.
 
 ## Limits
 
-- index maps a repository's history only when Git for Windows is installed, and without
-  Git its map reports no repositories instead of naming the Git step.
+- index maps a repository's history only when Git for Windows is installed. Without
+  Git, map lists the repository with its branch and head as unknown and a
+  FileNotFoundError, instead of naming the Git step.
 - telos is not in this build while its release contents are reviewed.
 - Lanes still run as your user with no filesystem sandbox. The policy governs what a
   caller can ask a lane to do, not what a lane's own code can reach.

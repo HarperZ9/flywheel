@@ -88,24 +88,27 @@ def test_pin_sets_cwd_for_a_package_launch_and_adds_state(tmp_path):
     assert dict(pinned.env_overrides)["PATH"] == "x"
 
 
-def test_pin_keeps_an_explicit_source_cwd(tmp_path):
+def test_pin_keeps_an_explicit_cwd(tmp_path):
     from harness.lane_workdir import pin_lane_workdir
 
     source = str(tmp_path / "src")
     launch = LaunchSpec(("python", "-m", "gather.cli", "mcp"), source,
                         (("PYTHONPATH", "p"),), False)
-    assert pin_lane_workdir(LANES["gather"], launch, _home(tmp_path)[1]).cwd == source
+    pinned = pin_lane_workdir(LANES["gather"], launch, _home(tmp_path)[1])
+    assert pinned.cwd == source
+    assert dict(pinned.env_overrides)["GATHER_ALLOW_NETWORK"] == ""
 
 
-def test_pin_leaves_http_and_engine_self_modules_alone(tmp_path):
+def test_pin_leaves_http_alone_and_engine_self_modules_their_cwd(tmp_path):
     from harness.lane_workdir import pin_lane_workdir
 
     env = _home(tmp_path)[1]
     http = LaunchSpec((), url="https://example.invalid/mcp")
     assert pin_lane_workdir(LANES["bulletin"], http, env) is http
     self_module = LaunchSpec(("python", "-m", "harness.local_mcp"))
-    assert pin_lane_workdir(LANES["local-model"], self_module, env) is self_module
-    assert not (tmp_path / "fw-home").exists()
+    pinned = pin_lane_workdir(LANES["local-model"], self_module, env)
+    assert pinned.cwd is None and pinned.argv == self_module.argv
+    assert "TEMP" in dict(pinned.env_overrides)
 
 
 def test_inheriting_launch_gets_state_as_overrides_only_when_unset(tmp_path):

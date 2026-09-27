@@ -202,6 +202,7 @@ def test_registry_fixes_ride_with_the_launch_paths():
 
 def test_pip_chorus_and_canon_launch_through_their_package_main(monkeypatch):
     monkeypatch.setattr(ln, "_frozen", lambda: False)
+    monkeypatch.setattr(ln, "_installed_version", lambda lane: lane.version)
     monkeypatch.setattr(ln, "_importable", lambda top: True)
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
     for name in ("chorus", "canon"):

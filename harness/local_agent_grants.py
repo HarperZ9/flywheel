@@ -31,6 +31,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, MutableMapping
 
+from .path_identity import device_or_unc, inside
+
 _TRUE = frozenset(("1", "true", "yes", "on"))
 WORKSPACE_ENV = "FLYWHEEL_LOCAL_AGENT_WORKSPACE"
 
@@ -77,6 +79,9 @@ def grants_from_config(environ: Mapping[str, str] | None = None, *,
     narrower root."""
     env = os.environ if environ is None else environ
     chosen = workspace or env.get(WORKSPACE_ENV) or None
+    if chosen is not None and device_or_unc(chosen):
+        raise GrantRefusal("WORKSPACE_PROTECTED",
+                           "the workspace is a device or network path; pick a local folder")
     resolved = os.path.realpath(os.path.expanduser(chosen or os.getcwd()))
     if chosen is not None and _protected(resolved, env):
         raise GrantRefusal("WORKSPACE_PROTECTED",
@@ -130,8 +135,8 @@ def check_online(args: Mapping[str, object], grants: AgentRunGrants,
 
 
 def _inside(path: str, root: str) -> bool:
-    path, root = os.path.normcase(path), os.path.normcase(root)
-    return path == root or path.startswith(root.rstrip(os.sep) + os.sep)
+    """By string after realpath, or by the identity of an existing ancestor."""
+    return inside(path, root)
 
 
 def _flywheel_home(env: Mapping[str, str]) -> str:
@@ -140,10 +145,11 @@ def _flywheel_home(env: Mapping[str, str]) -> str:
 
 
 def _protected(path: str, env: Mapping[str, str]) -> bool:
-    home = os.path.normcase(os.path.realpath(os.path.expanduser("~")))
+    home = os.path.realpath(os.path.expanduser("~"))
     fw_home = _flywheel_home(env)
-    return (os.path.normcase(path) == home or _inside(fw_home, path)
-            or _inside(path, fw_home))
+    same_as_home = os.path.normcase(path) == os.path.normcase(home) or (
+        os.path.isdir(path) and os.path.isdir(home) and os.path.samefile(path, home))
+    return same_as_home or _inside(fw_home, path) or _inside(path, fw_home)
 
 
 def resolve_run(args: Mapping[str, object], grants: AgentRunGrants,
@@ -160,6 +166,9 @@ def resolve_run(args: Mapping[str, object], grants: AgentRunGrants,
     raw = args.get("root", ".")
     if not isinstance(raw, str) or not raw or "\x00" in raw:
         raise GrantRefusal("INVALID_ROOT", "root must be a non-empty path string")
+    if device_or_unc(raw):
+        raise GrantRefusal("INVALID_ROOT", "root must be a local folder, not a device "
+                           "or network path")
     workspace = os.path.realpath(grants.workspace)
     root = os.path.realpath(os.path.join(workspace, os.path.expanduser(raw)))
     if not _inside(root, workspace):

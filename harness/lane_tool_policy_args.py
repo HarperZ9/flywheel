@@ -78,3 +78,12 @@ ARG_POLICY: dict[str, dict[str, dict]] = {
 }
 for _action in ("status", "result", "cancel", "resume"):
     ARG_POLICY["index"][f"index.router.job.{_action}"] = {"id_args": ("job_id",)}
+
+#: Tools that create a lane file named by an id argument and overwrite it
+#: unchecked: lane -> tool -> (id argument, file under the lane folder). The
+#: engine refuses the call when that file exists (``session_exists``), since
+#: learn_tutor_plan at T1 would otherwise reset attempts the T2
+#: learn_tutor_record wrote.
+CREATE_ONLY: dict[str, dict[str, tuple[str, str]]] = {
+    "learn": {"learn_tutor_plan": ("sessionId", "tutor/{}.json")},
+}

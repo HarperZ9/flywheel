@@ -23,7 +23,11 @@ keeps its own path.
 The key rule (POLICY-DECISION C-8): binding a key makes a call T2
 (``binds_any_key``), and a call below T2 has every key-shaped name the operator
 granted through ``env_allow`` stripped from its child (``strip_key_grants``),
-so ``mneme.remember`` or ``forum.plan`` at T1 runs key-free.
+so ``mneme.remember`` or ``forum.plan`` at T1 runs key-free. At T2 the granted
+keys stay only for a listed tool whose effect spends a model call
+(``keeps_key_grants``); any other T2 call, an unlisted tool included, runs
+without them, and a key it binds through credential_refs joins its one child.
+Plugins and the gateway's GET proxies run at T1, so they strip too.
 """
 from __future__ import annotations
 
@@ -38,12 +42,29 @@ from .mcp_client import LaunchSpec
 
 _BULLETIN_SIGNED_TOOLS = frozenset(("board_write_post", "board_publish_media_post"))
 KEY_SHAPED = re.compile(
-    r"(?:^|_)(?:API_?KEY|KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIALS?|PAT)\Z")
+    r"(?:^|_)(?:API_?KEY|KEY|TOKEN|SECRET|PASSWORD|PASSWD|PASSPHRASE|CREDENTIALS?|PAT"
+    r"|AUTH|BEARER|COOKIE|DSN)\Z")
 
 
 def key_shaped(name: str) -> bool:
     """True for a variable name that names a credential by convention."""
     return bool(KEY_SHAPED.search(str(name).upper()))
+
+
+#: Effects whose action spends a model call, so an env_allow key may reach it at T2.
+KEY_EFFECTS = frozenset(("spend", "model_call"))
+#: Tools recorded under another effect whose action spends a granted key when one
+#: is present: mneme.remember extracts facts with a model call when keyed.
+KEY_TOOLS = frozenset((("mneme", "mneme.remember"),))
+
+
+def keeps_key_grants(lane_name: str, tool_name: str) -> bool:
+    """True when a T2 call to this tool keeps the lane's granted keys: the
+    policy lists it and its effect spends a model call."""
+    from .lane_tool_policy import tool_policy
+    entry = tool_policy(lane_name, tool_name)
+    return entry is not None and (entry.effect in KEY_EFFECTS
+                                  or (lane_name, tool_name) in KEY_TOOLS)
 
 
 def binds_any_key(bindings) -> bool:

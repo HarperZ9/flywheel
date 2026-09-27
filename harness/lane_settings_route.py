@@ -1,4 +1,5 @@
-"""The two setup choices a person makes for the lanes, each a granted action.
+"""The two setup choices a person makes for the lanes, each a granted action,
+and the granted lane install.
 
 - ``/api/lanes/local-model/root`` (action ``lane.root``): the project folder the
   local model lane runs in. It widens what a T1 ``local_agent_run`` reads, so a
@@ -13,6 +14,10 @@
   the path, and ``tool_discovery`` checks it again before every launch, so a
   replaced file is not run under the old choice.
 
+- ``/api/lanes/install`` (action ``lane.install``): runs pip or npm for one lane
+  at its pinned version (``lanes.install_lane``); lane-supplied build code that
+  reaches the network, so it takes an exact grant too.
+
 A POST reaches these functions only after the gateway consumed an exact grant
 for the action (``gateway_operation.action_for_path``); the body is the
 approved operation. GET answers the current item with no grant.
@@ -26,14 +31,21 @@ from typing import Callable, Mapping
 
 NODE_PATH_ROUTE = "/api/settings/node_path"
 LOCAL_MODEL_ROOT_ROUTE = "/api/lanes/local-model/root"
+INSTALL_ROUTE = "/api/lanes/install"
+# lane.install rides the same tables: it runs pip or npm, lane-supplied code
+# that reaches the network, so a bearer token alone installs nothing (F9).
 SETTING_FIELDS = {
     "settings.node_path": ({"data_refs", "credential_refs"}, {"path"}),
     "lane.root": ({"data_refs", "credential_refs"}, {"path"}),
+    "lane.install": ({"name", "data_refs", "credential_refs"}, {"profile"}),
 }
-SETTING_PATHS = {NODE_PATH_ROUTE: "settings.node_path", LOCAL_MODEL_ROOT_ROUTE: "lane.root"}
+SETTING_PATHS = {NODE_PATH_ROUTE: "settings.node_path", LOCAL_MODEL_ROOT_ROUTE: "lane.root",
+                 INSTALL_ROUTE: "lane.install"}
 SETTING_DESTINATIONS = {"settings.node_path": {"kind": "setting", "ref": "node_path"},
-                        "lane.root": {"kind": "setting", "ref": "local-model-root"}}
-SETTING_SCOPES = {"settings.node_path": ("write", "exec"), "lane.root": ("write",)}
+                        "lane.root": {"kind": "setting", "ref": "local-model-root"},
+                        "lane.install": {"kind": "setting", "ref": "lane-install"}}
+SETTING_SCOPES = {"settings.node_path": ("write", "exec"), "lane.root": ("write",),
+                  "lane.install": ("write", "exec", "network")}
 
 
 def _bad(reason: str, status: int = 400) -> tuple[dict, int]:

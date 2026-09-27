@@ -73,6 +73,7 @@ BASE_NAMES = frozenset((
     "FLYWHEEL_HOME", "FLYWHEEL_WORKSPACE_ROOT", "FLYWHEEL_WORKSPACE_ROOTS",
 ))
 _NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,127}\Z")
+_USERINFO = re.compile(r"://[^/@\s]+@")
 
 
 def operator_grants(row: Mapping[str, object]) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -92,10 +93,15 @@ def lane_child_environment(environ: Mapping[str, str], declared: tuple[str, ...]
     """Keep only allowlisted, declared and granted names from ``environ``.
 
     Names match case-insensitively, so ``Path`` on Windows and ``PATH`` on POSIX
-    both count; the parent's own spelling is kept."""
+    both count; the parent's own spelling is kept. A lane-declared value that
+    carries ``user:token@`` in a URL is dropped: a declared base URL passes at
+    every tier, so it must not smuggle a credential. A granted name is the
+    operator's own choice and keeps its value."""
     wanted = BASE_NAMES | {name.upper() for name in (*declared, *granted)}
+    chosen = BASE_NAMES | {name.upper() for name in granted}
     return {key: str(value) for key, value in environ.items()
-            if isinstance(key, str) and key.upper() in wanted}
+            if isinstance(key, str) and key.upper() in wanted
+            and (key.upper() in chosen or not _USERINFO.search(str(value)))}
 
 
 def confine_lane_launch(lane, launch: LaunchSpec | None, environ: Mapping[str, str],
@@ -133,9 +139,11 @@ def _grant_bundled(launch: LaunchSpec, environ: Mapping[str, str],
     own = dict(launch.env_overrides)
     taken = {key.upper() for key in own}
     wanted = {name.upper() for name in (*declared, *granted)}
+    chosen = {name.upper() for name in granted}
     for key, value in environ.items():
         if (isinstance(key, str) and key.upper() in wanted
-                and key.upper() not in taken):
+                and key.upper() not in taken
+                and (key.upper() in chosen or not _USERINFO.search(str(value)))):
             own[key] = str(value)
     return replace(launch, env_overrides=tuple(sorted(own.items())))
 

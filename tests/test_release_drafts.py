@@ -5,8 +5,8 @@ next release notes and the lane page. They are public once published, so the
 two public-surface gates run on them here, although neither gate's file list
 includes project-docs/drafts. Each lane's class is read from the committed
 evidence summary of the installed-app acceptance, so a draft cannot state a
-class the receipt did not measure, and the README lane-count sentence stays
-as it is until the operator decides O-5.
+class the receipt did not measure, and the README lane sentence carries the
+receipt's own count (O-5: public lane wording comes only from the receipt).
 """
 from __future__ import annotations
 
@@ -19,7 +19,8 @@ import pytest
 from scripts import check_claim_language, check_public_instructions
 
 REPO = Path(__file__).resolve().parents[1]
-EVIDENCE = REPO / "project-docs" / "lanes" / "evidence" / "installed-lanes-local-20260926.json"
+EVIDENCE = (REPO / "project-docs" / "lanes" / "evidence"
+            / "installed-lanes-local-1.1.0-20260926.json")
 KNOWN_ISSUES = REPO / "project-docs" / "drafts" / "RELEASE-NOTES-1.0.4-known-issues.md"
 NEXT_NOTES = REPO / "project-docs" / "drafts" / "RELEASE-NOTES-next.md"
 LANE_PAGE = REPO / "project-docs" / "lanes" / "LANES.md"
@@ -74,10 +75,14 @@ def test_the_evidence_summary_counts_seventeen_lanes_and_names_its_limits():
     assert all(evidence["guards"].values())
 
 
-def test_the_readme_lane_count_sentence_waits_for_the_operator():
+def test_the_readme_lane_sentence_carries_the_receipt_count():
     readme = " ".join((REPO / "README.md").read_text(encoding="utf-8").split())
-    assert ("About fifteen composable lanes ship in the roster, ten of them bundled "
-            "natively from source.") in readme
+    lanes = _evidence()["lanes"]
+    at_class = sum(1 for row in lanes.values() if row["verdict"] == "AT_CLASS")
+    assert f"In the Windows app, {at_class} measure at the class their card states" in readme
+    assert "About fifteen composable lanes" not in readme
+    notes = " ".join(NEXT_NOTES.read_text(encoding="utf-8").split())
+    assert f"In the Windows app, {at_class} measure at the class their card states" in notes
 
 
 def test_the_known_issues_draft_names_each_measured_1_0_4_gap():

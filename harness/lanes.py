@@ -251,12 +251,14 @@ def install_lane(name: str, *, profile: str = "package") -> dict:
             if repo is None:
                 return {"name": name, "installed": False,
                         "detail": f"source checkout not found: {lane.source_repo}"}
+        # A package install asks for the pinned release: the pin carries the
+        # lane's security fixes, and an older package would not launch.
         if lane.kind == "pip":
             cmd = ["pip", "install", "-e", str(repo)] if profile == "source" else [
-                "pip", "install", lane.install_name]
+                "pip", "install", f"{lane.install_name}=={lane.version}"]
         elif lane.kind == "npm":
             cmd = ["npm", "install", "-g", str(repo)] if profile == "source" else [
-                "npm", "install", "-g", lane.install_name]
+                "npm", "install", "-g", f"{lane.install_name}@{lane.version}"]
         else:
             return {"name": name, "installed": False,
                     "detail": f"unknown kind {lane.kind}"}

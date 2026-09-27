@@ -56,4 +56,4 @@ def test_a_call_that_binds_a_key_is_shown_as_t2():
 
 def test_an_unlisted_tool_is_shown_as_unlisted():
     review = _summary({"name": "gather", "tool": "gather.new", "args": {}})["lane_policy"]
-    assert review["listed"] is False and review["effect"] == ""
+    assert review["listed"] is False and review["effect"] == "not reviewed: effect unknown"

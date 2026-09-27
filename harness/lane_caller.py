@@ -85,8 +85,8 @@ def _launch_for_call(lane_name: str, tool_name: str, tier: str,
     except Exception as e:
         return {"error": f"cannot resolve MCP command for {lane_name!r}: {e}"}
     from .lane_credentials import (LaneCredentialError, bind_lane_credentials,
-                                   credential_refused, strip_key_grants)
-    if not _tier_allows(tier, "T2"):
+                                   credential_refused, keeps_key_grants, strip_key_grants)
+    if not _tier_allows(tier, "T2") or not keeps_key_grants(lane_name, tool_name):
         command = strip_key_grants(lane_name, command)   # the key rule, C-8
     try:  # a saved key granted to this lane joins this one child (lane_credentials.py)
         command = bind_lane_credentials(lane_name, command, credential_bindings)

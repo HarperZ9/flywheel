@@ -123,6 +123,8 @@ def test_lane_call_uses_runtime_launch_spec(monkeypatch, tmp_path):
 
 def test_probe_uses_injected_client_and_always_closes(monkeypatch, tmp_path):
     _isolate(monkeypatch, tmp_path)
+    import harness.lanes as lanes   # a package below its pin would not launch
+    monkeypatch.setattr(lanes, "_installed_version", lambda lane: lane.version)
     calls = []
 
     class FakeClient:

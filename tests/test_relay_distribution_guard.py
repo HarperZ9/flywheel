@@ -19,6 +19,8 @@ reports success, not a gap.
 """
 from types import SimpleNamespace
 
+from pathlib import Path
+
 import pytest
 
 from harness import lanes
@@ -77,7 +79,7 @@ def test_reclaimed_lane_installs_the_distribution_we_publish(
         calls.append(a[0]) or SimpleNamespace(returncode=0, stdout="", stderr="")))
     result = lanes.install_lane(name)
     assert result["installed"] is True
-    assert calls == [["pip", "install", distribution]]
+    assert calls == [["pip", "install", f"{distribution}=={LANES[name].version}"]]
     assert LANES[name].command == name  # the short command survived the rename
 
 
@@ -174,7 +176,8 @@ def test_relay_source_still_resolves_and_installs(monkeypatch, tmp_path):
     monkeypatch.setattr(lanes, "resolve_source_repo", lambda lane: source)
     monkeypatch.setattr(lanes, "_frozen", lambda: False)
     launch = lanes.resolve_mcp_launch("relay")
-    assert launch.cwd == str(source.resolve())
+    assert Path(launch.cwd).parts[-2:] == ("lanes", "relay")   # not the checkout
+    assert str((source / "src").resolve()) in dict(launch.env_overrides)["PYTHONPATH"]
     assert launch.argv[-3:] == ("-m", "relay", "--mcp")   # relay.local_mcp refuses --mcp
     calls = []
     monkeypatch.setattr(lanes.subprocess, "run", lambda *a, **k: (
@@ -188,7 +191,7 @@ def test_other_package_install_keeps_its_distribution(monkeypatch):
     monkeypatch.setattr(lanes.subprocess, "run", lambda *a, **k: (
         calls.append(a[0]) or SimpleNamespace(returncode=0, stdout="", stderr="")))
     assert lanes.install_lane("index")["installed"] is True
-    assert calls == [["pip", "install", "index-graph"]]
+    assert calls == [["pip", "install", f"index-graph=={LANES['index'].version}"]]
 
 
 @pytest.mark.parametrize("profile,frozen", [

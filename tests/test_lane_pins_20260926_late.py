@@ -1,4 +1,7 @@
-"""The late 2026-09-26 pins: relay 0.4.0, gather 1.9.0, mneme 0.5.0, canon 0.4.1.
+"""The late 2026-09-26 pins: relay 0.4.0, gather 1.9.0, mneme 0.5.x, canon 0.4.x.
+
+mneme 0.5.0 and canon 0.4.1 were pinned here first; mneme 0.5.1 and canon
+0.4.2 replaced them the same night (tests/test_lane_pins_20260926_final.py).
 
 Every place the branch pins one of these lanes agrees on the release: the
 registry, the payload row, the relay submodule, descriptor and compiled
@@ -33,9 +36,7 @@ ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
     ROOT / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
     if line.strip()}
 PINS = {"relay": ("0.4.0", "v0.4.0", "ac4d79877f19e3e4c439c15d4781c3896e2f33db"),
-        "gather": ("1.9.0", "v1.9.0", "335452827727bdb76d577dd7e84313f987c2ab15"),
-        "mneme": ("0.5.0", "v0.5.0", "c47215d357c014e1105e6c402c2318110d0fdd40"),
-        "canon": ("0.4.1", "v0.4.1", "583e0ceea333ef6acfef492254b2b31a13baad5a")}
+        "gather": ("1.9.0", "v1.9.0", "335452827727bdb76d577dd7e84313f987c2ab15")}
 GATHER_GRANTS = ("GATHER_ALLOW_NETWORK", "GATHER_ALLOW_EXEC", "GATHER_AUTH_ENV_ALLOW",
                  "GATHER_CHILD_ENV")
 
@@ -71,12 +72,6 @@ def test_the_notices_name_each_new_pin():
         assert f"{ROWS[lane]['registry_install_name']} {version} (lane {lane}), tag {tag} " \
                f"@ {commit[:12]}" in text
 
-
-def test_the_canon_context_checks_name_the_new_pin():
-    from scripts import check_installed_canon_context as installed
-    assert installed.CANON_PIN == PINS["canon"][2]
-    source = (ROOT / "scripts" / "check_frozen_gateway.py").read_text(encoding="utf-8")
-    assert PINS["canon"][2] in source and PINS["canon"][2] == ROWS["canon"]["owner_commit"]
 
 
 def _confined(lane, tmp_path, environ_extra=None, row=None):

@@ -161,7 +161,7 @@ def test_missing_runtime_profile_keeps_legacy_auto_source_precedence(
     launch = lanes.resolve_mcp_launch("index")
 
     assert launch.argv == (sys.executable, "-m", "index_graph", "mcp")
-    assert launch.cwd == str(source.resolve())
+    assert Path(launch.cwd).parts[-2:] == ("lanes", "index")   # not the checkout
     assert dict(launch.env_overrides)["PYTHONPATH"].split(os.pathsep)[0] == str(
         (source / "src").resolve())
     runtime = lanes.lane_status("index", probe=False)["resolved_runtime"]
@@ -179,7 +179,7 @@ def test_explicit_source_runtime_uses_source_even_when_package_is_present(
 
     launch = lanes.resolve_mcp_launch("index")
 
-    assert launch.cwd == str(source.resolve())
+    assert Path(launch.cwd).parts[-2:] == ("lanes", "index")   # not the checkout
     assert launch.argv == (sys.executable, "-m", "index_graph", "mcp")
     runtime = lanes.lane_status("index", probe=False)["resolved_runtime"]
     assert runtime["selected_profile"] == "source"

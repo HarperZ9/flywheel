@@ -26,7 +26,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Mapping
 
-from .lane_tool_policy import ID_PATTERN, guard_args, tool_policy
+from .lane_tool_policy import ID_PATTERN, WINDOWS_DEVICE_STEMS, guard_args, tool_policy
 
 __all__ = ["admission_refusal", "agent_tool_refusal", "argument_refusal", "guard_args",
            "lane_policy_review", "not_in_build", "plugin_refusal", "widen_for_call"]
@@ -66,29 +66,30 @@ def admission_refusal(launch: Any, lane: str, tool: str) -> dict | None:
 
 
 def _plain_id(value: object) -> bool:
-    return isinstance(value, str) and bool(ID_PATTERN.fullmatch(value)) and ".." not in value
+    return (isinstance(value, str) and bool(ID_PATTERN.fullmatch(value)) and ".." not in value
+            and value.split(".", 1)[0].upper() not in WINDOWS_DEVICE_STEMS)
 
 
 def _reaches_home(lane: str, value: object, environ: Mapping[str, str]) -> bool:
     """True when a path argument resolves inside the Flywheel home, outside the
-    lane's own folder. A relative path resolves from the lane folder, the
-    child's working directory. A URL is not a local path."""
+    lane's own folder, or is a Windows device or UNC spelling (path_identity).
+    A relative path resolves from the lane folder, the child's working
+    directory in every install mode (lane_workdir). A URL is not a local path."""
     from .lane_workdir import flywheel_home
+    from .path_identity import device_or_unc, inside
     if not isinstance(value, str) or not value.strip() or "://" in value:
         return False
+    if device_or_unc(value):
+        return True
     home = flywheel_home(environ)
     own = home / "lanes" / lane
     try:
         raw = Path(os.path.expanduser(value.strip()))
-        target = os.path.normcase(os.path.realpath(raw if raw.is_absolute() else own / raw))
+        target = os.path.realpath(raw if raw.is_absolute() else own / raw)
+        home_s, own_s = (os.path.realpath(p) for p in (home, own))
     except (OSError, ValueError):
         return True   # an unresolvable path is refused, not guessed at
-    home_s, own_s = (os.path.normcase(os.path.realpath(p)) for p in (home, own))
-    return _inside(target, home_s) and not _inside(target, own_s)
-
-
-def _inside(target: str, base: str) -> bool:
-    return target == base or target.startswith(base.rstrip(os.sep) + os.sep)
+    return inside(target, home_s) and not inside(target, own_s)
 
 
 def argument_refusal(lane: str, tool: str, args: Mapping[str, Any],
@@ -101,11 +102,24 @@ def argument_refusal(lane: str, tool: str, args: Mapping[str, Any],
     env = os.environ if environ is None else environ
     bad = any(name in args and not _plain_id(args[name]) for name in entry.id_args) or any(
         name in args and _reaches_home(lane, args[name], env) for name in entry.path_args)
-    if not bad:
+    reason = "argument_refused" if bad else _create_only_refusal(lane, tool, args, env)
+    if not reason:
         return None
     return {"code": "LANE_TOOL_ERROR", "error": "the engine refused an argument of this "
             "lane tool", "status": "unavailable", "name": lane, "tool": tool,
-            "reason": "argument_refused"}
+            "reason": reason}
+
+
+def _create_only_refusal(lane: str, tool: str, args: Mapping[str, Any],
+                         environ: Mapping[str, str]) -> str:
+    """Return "session_exists" when a create-only tool names a file that exists."""
+    from .lane_tool_policy_args import CREATE_ONLY
+    rule = CREATE_ONLY.get(lane, {}).get(tool)
+    if rule is None or not _plain_id(args.get(rule[0])):
+        return ""
+    from .lane_workdir import lane_workdir
+    target = lane_workdir(lane, environ) / rule[1].format(args[rule[0]])
+    return "session_exists" if target.exists() else ""
 
 
 def plugin_refusal(lane: str, tool: str) -> dict | None:
@@ -146,11 +160,16 @@ def agent_tool_refusal(catalog: str, plugin_kind: str | None,
     return None
 
 
+_UNLISTED_REASON = ("The policy table does not list this tool, so nobody has reviewed "
+                    "what it does. It runs only on a T2 approval and without granted keys.")
+
+
 def lane_policy_review(operation: Mapping[str, Any]) -> dict:
     """What a lane.call approval authorizes, for the owner's approval sheet
     (POLICY-DECISION C-13): the tier the tool needs and the tier requested,
-    its effect and reason, what the engine forces or drops, and the arguments
-    the child receives, in plain form. Raw secrets never reach an operation
+    its effect and reason (an unlisted tool reads as not reviewed), whether the
+    lane's granted keys reach the child, what the engine forces or drops, and
+    the arguments the child receives, in plain form. Raw secrets never reach an operation
     (``validate_no_raw_secrets``), so the arguments carry none."""
     from .lane_caller import required_tier
     lane, tool = str(operation.get("name", "")), str(operation.get("tool", ""))
@@ -163,11 +182,14 @@ def lane_policy_review(operation: Mapping[str, Any]) -> dict:
     sent = guard_args(lane, tool, args)
     forced = {name: value for name, value in (entry.forced_args if entry else ())
               if value is not None}
+    from .lane_credentials import keeps_key_grants
+    keys = "granted keys pass" if keeps_key_grants(lane, tool) else "granted keys stripped"
     return {"lane": lane, "tool": tool, "listed": entry is not None,
             "required_tier": required,
             "requested_tier": str(operation.get("governance_tier") or "T1"),
-            "t2": required != "T1", "binds_key": binds_key,
-            "effect": entry.effect if entry else "", "reason": entry.reason if entry else "",
+            "t2": required != "T1", "binds_key": binds_key, "keys": keys,
+            "effect": entry.effect if entry else "not reviewed: effect unknown",
+            "reason": entry.reason if entry else _UNLISTED_REASON,
             "not_in_build": entry.not_in_build if entry else "",
             "forced_arguments": forced,
             "dropped_arguments": sorted(set(args) - set(sent)),

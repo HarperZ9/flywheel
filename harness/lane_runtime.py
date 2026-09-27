@@ -23,7 +23,7 @@ from typing import Any, Callable, Mapping
 from . import lane_runtime_frozen as _frozen
 from . import lane_runtime_support as _support
 from .lane_env import confine_lane_launch
-from .lane_runtime_versions import validate_public_version
+from .lane_runtime_versions import validate_public_version, version_below
 from .lanes_registry import Lane
 from .mcp_client import LaunchSpec
 
@@ -151,10 +151,7 @@ def resolve_lane_runtime(
         *row_codes, *expected_codes, *profile_codes, *source_codes,
         *version_codes, *python_codes, *installed_codes,
     ]
-    if source_version and expected and source_version != expected:
-        mismatch.append("source_version_mismatch")
-    if installed and runtime_expected and installed != runtime_expected and lane.kind in {"pip", "npm"}:
-        mismatch.append("installed_version_mismatch")
+    mismatch += _version_codes(lane, expected, source_version, installed, runtime_expected)
     launch, selected, bundled_component, bundled_codes = _select_launch(
         lane, profile, source, python_executable, environ, is_frozen,
         extra_roots, importable_fn, runtime_python)
@@ -173,6 +170,17 @@ def resolve_lane_runtime(
         source_version=source_version, mismatch_codes=all_codes,
         blocking_codes=blocking, bundled_component=bundled_component,
     )
+
+
+def _version_codes(lane, expected, source_version, installed, runtime_expected) -> list[str]:
+    """A source or installed version off its pin; below the pin is named too."""
+    codes = ["source_version_mismatch"] if (
+        source_version and expected and source_version != expected) else []
+    if installed and runtime_expected and installed != runtime_expected and lane.kind in {"pip", "npm"}:
+        codes.append("installed_version_mismatch")
+        if version_below(installed, runtime_expected):
+            codes.append("installed_version_below_pin")
+    return codes
 
 
 def _registry_row(value: object) -> tuple[dict, tuple[str, ...]]:
@@ -266,7 +274,8 @@ def _blocking_codes(lane, profile, selected, source_available, package_available
     launches (a source version differing from expected is recorded, not fatal). A
     code blocks only when it defeats the selected path: an invalid profile, a
     failed bundled admission, a disabled package, a source profile with no source,
-    or a package-profile pip/npm lane's bad interpreter, missing package, or mismatch."""
+    a package-profile pip/npm lane's bad interpreter, missing package, or mismatch,
+    or an "auto" pip/npm package older than its pin (the pin carries the fixes)."""
     if "invalid_runtime_profile" in mismatch:
         return ["invalid_runtime_profile"]
     if selected == "bundled":
@@ -283,4 +292,7 @@ def _blocking_codes(lane, profile, selected, source_available, package_available
         if "installed_version_mismatch" in mismatch:
             codes.append("installed_version_mismatch")
         return codes
+    if (selected == "package" and lane.kind in {"pip", "npm"}
+            and "installed_version_below_pin" in mismatch):
+        return ["installed_version_below_pin"]
     return []

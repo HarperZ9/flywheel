@@ -81,6 +81,19 @@ reaches T2, since the model picks each inner call and its arguments.
   `mneme.forget` stays T2 as a two-step erase. canon's context purge lives on the context
   server, which the engine calls only for health, ingest and query and never starts with
   `CANON_CONTEXT_MCP_PURGE`.
+- **Final pins and the finish review** (2026-09-26). mneme 0.5.1 (GHSA-j2pw-g7f4-9ppp) and canon
+  0.4.2 (GHSA-48rq-xjfx-6j4f) replace 0.5.0 and 0.4.1 and add no lane tool. A pip or npm lane
+  below its pin no longer launches under the default profile (`installed_version_below_pin`),
+  install asks for the pinned version, and the context bridge refuses ingest and query through a
+  canon below its pin. The home path guard refuses Windows device, NT-object and UNC spellings
+  and compares folders by identity; the local-model folder setting follows the same rule. A
+  source checkout starts in its lane folder like a pip launch, so the forced grants and scoped
+  folders apply in every install mode. A T2 call keeps granted keys only for a listed tool that
+  spends a model call; Plugins and the forum and relay GET proxies strip them, and the proxies
+  refuse a tool above T1 (`forum.run.room`). `learn_tutor_plan` is refused for a session that
+  already has a file. Ids refuse Windows device names, key-shaped names cover `*_AUTH`,
+  `*_BEARER`, `*_COOKIE`, `*_DSN` and `*_PASSPHRASE`, and `POST /api/lanes/install` takes a
+  `lane.install` grant.
 - **Measured containment** (C-16). The frozen lane smoke snapshots its throwaway home around each
   lane's fixture and fails a lane that writes outside its folder.
 
@@ -98,7 +111,8 @@ reaches T2, since the model picks each inner call and its arguments.
 - bulletin is an http lane; its launch carries no `allowed_tools`, so the tier gate is its only
   tool filter.
 - O-13 (class C for calibrate-pro and actuation) is recorded as the default in DECISIONS.json.
-- `mneme.forget` erases source turns and derived rows from mneme 0.5.0 on (known finding 4 closed
+- `mneme.forget` erases source turns and derived rows from mneme 0.5.0 on, and 0.5.1 closes the
+  gaps GHSA-j2pw-g7f4-9ppp names (known finding 4 closed
   in the lane); its receipt names the residue it cannot reach, such as exports and freed disk
   blocks.
 
@@ -253,7 +267,7 @@ Admitted at launch: 14 of 15 tools. T2 per granted call: 1. Not in this build: 0
 | `learn_verify` | T1 |  | read | node | `runId` a plain id | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 | `learn_receipt` | T1 |  | read | node | `runId` a plain id | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 | `learn_dry_run` | T1 | main | read | node | `workflowPath` kept out of the home | Checks a workflow step by step without running it; reads the file the caller names. |
-| `learn_tutor_plan` | T1 | main | state_write | node | `sessionId` a plain id | Writes one session file under <home>/lanes/learn/tutor/, the lane's own folder. |
+| `learn_tutor_plan` | T1 | main | state_write | node | `sessionId` a plain id | Writes one session file under <home>/lanes/learn/tutor/, the lane's own folder. The engine refuses a plan for a session that already has a file, so a T1 plan cannot reset what the T2 record wrote. |
 | `learn_tutor_record` | T2 (rule alone: T1) |  | state_write | node | `sessionId` a plain id | Writes one session file under <home>/lanes/learn/tutor/, the lane's own folder. Section 1a puts it at T2. |
 | `learn_tutor_mastery` | T1 |  | read | node | `sessionId` a plain id | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 | `learn_visualize_dry_run` | T1 |  | read | node |  | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
@@ -379,7 +393,7 @@ Admitted at launch: 6 of 6 tools. T2 per granted call: 0. Not in this build: 0.
 | `plexus.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `plexus.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 
-### mneme 0.5.0
+### mneme 0.5.1
 
 Admitted at launch: 8 of 11 tools. T2 per granted call: 3. Not in this build: 0.
 
@@ -392,7 +406,7 @@ Admitted at launch: 8 of 11 tools. T2 per granted call: 3. Not in this build: 0.
 | `mneme.replay_crucible` | T2 (rule alone: T1) |  | read |  |  | Replays a template on a read-only snapshot. Section 1a puts it at T2. |
 | `mneme.provenance` | T1 |  | read |  |  | Shows one memory's provenance receipt. |
 | `mneme.origin_recheck` | T1 |  | read |  | `allowed_root` kept out of the home | Re-reads a source file under an allowed root. |
-| `mneme.forget` | T2 (rule alone: T1) |  | state_write |  |  | Erases a memory, its source turns and what derives from them, and cannot be undone. mneme 0.5.0 returns a plan first and deletes only on a second call that carries its confirm_plan_sha256; each call is its own T2 approval. |
+| `mneme.forget` | T2 (rule alone: T1) |  | state_write |  |  | Erases a memory, its source turns and what derives from them, and cannot be undone. mneme 0.5.1 returns a plan first and deletes only on a second call that carries its confirm_plan_sha256; each call is its own T2 approval. |
 | `mneme.audit` | T1 |  | read |  |  | Returns the forget and update history. |
 | `mneme.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `mneme.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
@@ -410,7 +424,7 @@ Reads only (class C): Reads the panel catalog. Calibration runs in Calibrate Pro
 | `calibrate-pro.list-panels` | T1 | main | read |  |  | Lists the characterized panel catalog. |
 | `calibrate-pro.panel-info` | T1 | main | read |  |  | Returns one panel's stored characterization. |
 
-### canon 0.4.1
+### canon 0.4.2
 
 Admitted at launch: 5 of 6 tools. T2 per granted call: 1. Not in this build: 0.
 

@@ -76,6 +76,22 @@ void main() {
     ]);
   });
 
+  test('an unlisted tool reads as not reviewed and names its keys', () {
+    final lines = lanePolicyLines(const {
+      'required_tier': 'T2',
+      'requested_tier': 'T2',
+      'effect': 'not reviewed: effect unknown',
+      'keys': 'granted keys stripped',
+      'arguments': {},
+    });
+    expect(lines, [
+      'Tier: needs T2, asks T2',
+      'Effect: not reviewed: effect unknown',
+      'Keys: granted keys stripped',
+      'Lane receives: {}',
+    ]);
+  });
+
   testWidgets('the approval sheet block renders every line', (tester) async {
     await tester.pumpWidget(const MaterialApp(
         home: Scaffold(body: LanePolicyReview(policy: review))));

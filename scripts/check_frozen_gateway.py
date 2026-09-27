@@ -130,7 +130,7 @@ def validate_canon_context_payload(executable: Path, require) -> dict:
     canon = next((row for row in rows if row.get("lane") == "canon"), None)
     require(isinstance(canon, dict), "CANON_CONTEXT_PIN_MISSING")
     require(canon.get("owner_commit")
-            == "583e0ceea333ef6acfef492254b2b31a13baad5a",
+            == "8e0098aa802c0a21649c7a26e6998ab29a747cda",
             "CANON_CONTEXT_PIN_COMMIT")
     notice = canon["owner_project"]["license_files"][0]
     license_relative_path = "python-lane-payloads/canon/licenses/LICENSE"

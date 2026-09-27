@@ -75,7 +75,10 @@ _LEARN = {
     "learn_receipt": _READ,
     "learn_dry_run": {**_MAIN, "reason": "Checks a workflow step by step without running "
                                          "it; reads the file the caller names."},
-    "learn_tutor_plan": {**_MAIN, "effect": "state_write", "reason": _SESSION},
+    "learn_tutor_plan": {**_MAIN, "effect": "state_write",
+                         "reason": _SESSION + " The engine refuses a plan for a session "
+                                              "that already has a file, so a T1 plan "
+                                              "cannot reset what the T2 record wrote."},
     "learn_tutor_record": {"tier": "T2", "effect": "state_write",
                            "reason": _SESSION + " Section 1a puts it at T2."},
     "learn_tutor_mastery": _READ, "learn_visualize_dry_run": _READ, "learn_tutor_due": _READ,

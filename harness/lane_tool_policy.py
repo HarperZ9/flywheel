@@ -67,6 +67,11 @@ SETUP_ITEMS = {
 #: approval. writing's diagnose writes into the engine's journey store (C-5).
 GRANTED_MAIN_LANES = frozenset(("writing",))
 ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
+#: Windows opens these names as devices whatever the extension, so a lane that
+#: joins an id into ``<id>.json`` must never receive one (any letter case).
+WINDOWS_DEVICE_STEMS = frozenset(
+    ("CON", "PRN", "AUX", "NUL", *(f"COM{n}" for n in range(1, 10)),
+     *(f"LPT{n}" for n in range(1, 10))))
 READS_ONLY_LANES = {
     "calibrate-pro": "Reads the panel catalog. Calibration runs in Calibrate Pro itself.",
 }

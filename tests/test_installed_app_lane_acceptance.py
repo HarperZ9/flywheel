@@ -226,3 +226,13 @@ def test_index_map_needs_a_repository_it_could_read():
     check = next(c for c in CASES["index"].checks if c.name == "setup_map")
     assert check.assert_({"metadata_status": "ok", "repo_count": 1}) is True
     assert check.assert_({"metadata_status": "ok", "repo_count": 0}) is False
+
+
+def test_the_held_telos_check_calls_a_tool_telos_has():
+    """telos v0.4.1 names its catalog tool ``telos.catalog``; the check used to
+    call ``telos_catalog``, an unlisted name that the tier gate refused before
+    the held path ran. It now calls the listed tool and expects the held lane's
+    launch refusal."""
+    check = next(c for c in CASES["telos"].checks if c.kind == "call")
+    assert tool_policy("telos", check.tool) is not None
+    assert check.expect_code == "LANE_CANNOT_LAUNCH"
