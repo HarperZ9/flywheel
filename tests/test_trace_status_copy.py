@@ -30,7 +30,19 @@ def test_lane_deletion_is_stated_as_the_pinned_release_does_it(tmp_path, monkeyp
     text = _text(tmp_path, monkeypatch)
     assert "erases through its own forget" not in text
     assert "purges through its own context purge" not in text
-    assert "raw turn" in text and "canon has no deletion" in text
+    # mneme 0.5.1 erases source turns and derived rows; canon 0.4.2 purges from
+    # its own command line, and Flywheel never calls it.
+    assert "erases a memory with its source turns" in text
+    assert "purges context records from its own command line" in text
+    assert "Flywheel never calls purge" in text
+    assert "raw turn" not in text and "canon has no deletion" not in text
+
+
+def test_the_lane_copy_follows_the_pins_it_describes():
+    """The deletion copy above describes these releases. A pin that moves fails
+    here, so the copy is read again with the new release before this changes."""
+    from harness.lanes_registry import LANES
+    assert (LANES["mneme"].version, LANES["canon"].version) == ("0.5.1", "0.4.2")
 
 
 def test_the_json_keeps_the_package_ids(tmp_path, monkeypatch):
