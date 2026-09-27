@@ -50,6 +50,7 @@ PHRASES = (
     ("data_location", re.compile(
         r"(?i)\byour data (?:stays|remains) (?:local|private|on[- ]device)\b")),
     ("gdpr", re.compile(r"(?i)\bGDPR[- ](?:style|erasure)\b")),
+    ("gdpr", re.compile(r"(?i)\btrue (?:erase|erasure|forget|deletion)\b")),
 )
 LOCAL_CLAIM = re.compile(
     r"(?i)\b(?:stays?|remains?|kept|stored only) (?:only )?on your (?:own )?"

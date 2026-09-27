@@ -40,7 +40,8 @@ def test_the_shipped_openings_are_flagged_including_the_wrapped_one():
 
 def test_gdpr_wording_for_a_deletion_is_flagged():
     for phrase in ("forget erases the text for GDPR-style deletion",
-                   "a GDPR erasure of the row", "GDPR style deletion"):
+                   "a GDPR erasure of the row", "GDPR style deletion",
+                   "From 0.5.0, forget is a true erase", "a true deletion of the row"):
         assert [v.rule for v in _violations(phrase + "\n")] == ["gdpr"], phrase
 
 

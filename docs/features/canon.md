@@ -125,11 +125,11 @@ Canon runs both as a standalone tool and as a Flywheel lane.
 
 1. Start the Flywheel engine. The Lanes view reports canon under install-presence
    status from the ambient poll; "Probe now" runs the real MCP handshake.
-2. Install when the card offers it, or ahead of time with
-   `flywheel install --lanes canon`, which installs the published
-   `flywheel-canon` package. A source checkout is the fallback:
-   `--profile source` resolves it from `public/canon` relative to the
-   workspace root. The lane records an install that differs from the registry
+2. The Windows app bundles canon. On a pip or source install, install it
+   ahead of time with `flywheel install --lanes canon`, which installs the
+   published `flywheel-canon` package. With `--profile source` the lane uses a
+   canon checkout at `public/canon` under `FLYWHEEL_WORKSPACE_ROOT`. The lane
+   records an install that differs from the registry
    pin as `installed_version_mismatch`. Under the default profile an install
    below the pin does not start (`installed_version_below_pin`), and the
    `package` profile requires the exact pin.

@@ -1,18 +1,11 @@
 <!--
-Draft of the Flywheel 1.1.0 release notes, for the release owner to review before any tag.
-Open before publishing:
-- Lane classes, the lane sentence and the method paragraph cite CI run 36302181098
-  (project-docs/lanes/evidence/installed-lanes-ci-36302181098.json, source ba371e6b).
-  Replace that summary, run id and commit with the windows-installed-acceptance.yml
-  run on the release commit (O-9); tests/test_release_drafts.py reads the summary.
-- The README lane sentence carries the same count (O-5).
-- Run 36302181098 predates the gather 1.9.1, relay 0.5.0, forum 1.15.1 and crucible
-  1.3.0 pins.
-- Installer size is from that CI build; re-measure it from the release workflow build.
-- The 1.0.4 known-issues page (RELEASE-NOTES-1.0.4-known-issues.md) publishes on its
-  own; the section below points to it.
-- Trace custody: manual checks X4, X6, X7, X8 and X18 were not run on hardware.
-Remove this comment before publishing.
+Draft of the Flywheel 1.1.0 release notes; the release owner reviews it before any tag.
+- Lane classes, the lane sentence, the README count (O-5) and the method paragraph cite
+  CI run 36302181098 (project-docs/lanes/evidence/installed-lanes-ci-36302181098.json),
+  which predates the gather 1.9.1, relay 0.5.0 and forum 1.15.1 pins. Replace them
+  from the windows-installed-acceptance.yml run on the release commit (O-9).
+- Re-measure the installer size from the release workflow build. The 1.0.4 known-issues
+  page publishes on its own. Trace manual checks X4, X6, X7, X8 and X18 were not run.
 -->
 
 # Flywheel 1.1.0
@@ -25,17 +18,21 @@ local-model and writing now start inside the installed app. Every lane tool the 
 call sits under one policy, listed tool by tool in
 `docs/features/lane-tool-policy.md`, and tools that write outside the lane's folder,
 spend a key, publish or act on your machine run only on a call you approve.
-Flywheel also takes custody of your agent traces (`docs/TRACE-OWNERSHIP.md`): it lists
-every store that holds them, encrypts them at rest, and exports or deletes them for you.
+The engine also takes custody of your agent traces (`docs/TRACE-OWNERSHIP.md`):
+`flywheel traces` lists every store that holds them, encrypts gateway traces, captured
+turns and imports at rest where an OS key store is available, and exports or deletes
+what Flywheel holds.
 
 ## Why this is 1.1.0
 
-A lane tool the policy does not list now needs an approval at T2 in every install: the
-Windows app, a pip install and a source checkout. Before, a pip or source install ran
-such a tool at the lane's default tier, T1 on most lanes, so a lane upgrade that added a
-tool opened it with no review. Now such a call answers with a governance denial until
-you approve it at T2. The Windows app refused these tools before and still does, even at
-T2. Existing pip and source setups change, so the release takes the minor number.
+A lane tool the policy does not list now needs an approval at T2 in every install:
+the Windows app, a pip install and a source checkout. Before, a pip or source install
+ran such a tool at the lane's default tier, T1 on most lanes, so a lane upgrade that
+added a tool opened it with no review. If you call lane tools from a pip or source
+install, a tool the policy does not name now answers with a governance denial until
+you approve that call at T2. The Windows app already refused these tools and still
+does, even at T2. This changes what existing pip and source setups do, so the release
+takes the minor number.
 
 ## Try it
 
@@ -43,8 +40,10 @@ Install the Windows app, open Tools and pick a lane card. Each card shows its st
 lists the lane's tools with a form for each, and runs the one you choose after you
 approve the call. A card that needs setup names the step: Git for Windows for index's
 repository history, a model server for local-model and relay, a project folder for
-local-model, a blocks folder for canon, a recorded draft for writing. For the engine
-alone: `python -m pip install -U flywheel-verify`, then `flywheel lanes --probe`.
+local-model, a blocks folder for canon, a recorded draft for writing.
+
+For the engine alone: `python -m pip install -U flywheel-verify`, then
+`flywheel lanes --probe`.
 
 ## What each lane does in the app
 
@@ -117,13 +116,10 @@ call you approve with the higher tier.
   (the panel catalog without numpy), learn 1.6.0, and Node.js v24.21.0 LTS to run it.
   forum 1.15.1 ships the data files it needs to start. `FLYWHEEL_NODE` or a node.exe you
   choose in the app still overrides the bundled Node; a chosen node.exe is checked by
-  hash again at every launch. The installer is about 23.7 MB larger, mostly the Node
-  runtime: 80,081,007 bytes in CI run 36302181098 against 56,355,754 bytes for 1.0.4.
-- **Lane updates.** relay 0.5.0, gather 1.9.1, forum 1.15.1, crucible 1.3.0, mneme
-  0.5.1 and canon 0.4.2, each frozen from its release tag. Each tool keeps its tier.
-  crucible 1.3.0 adds the one new tool, `crucible.recheck_template`, a read that returns
-  a replay template, at T1 with its path arguments kept out of the home. In the Windows
-  app, a pip install and a source checkout, relay
+  hash again at every launch.
+- **Lane updates.** relay 0.5.0, gather 1.9.1, forum 1.15.1, mneme 0.5.1 and canon
+  0.4.2, each frozen from its release tag. None adds a tool the app can call, and each
+  tool keeps its tier. In the Windows app, a pip install and a source checkout, relay
   keeps its saved sessions in `lanes/relay/sessions` and starts with write, exec, shell
   child variables and agent CLI tiers all off, gather starts with no network, command or
   credential grant, since the app's gather tools read a local document or corpus, and
@@ -136,8 +132,7 @@ call you approve with the higher tier.
   and `gate_reject` only when started with `--allow-gate-decisions`. The engine adds it
   only to the launch of one call you approve at T2 for one of them, so your approval
   decides each gate. The forum card lists what an ordinary launch lists, which leaves
-  the three out. The app has no control for them in this release; a lane call to the
-  engine at T2 runs them.
+  the three out. A lane call at T2 reaches them.
 - **relay starts from pip and source installs again.** With relay 0.3.0 or later, the
   engine's pip and source launch for relay exited at start. It now starts relay through its own
   command line. The Windows app was not affected.
@@ -152,8 +147,9 @@ call you approve with the higher tier.
   and says whether it is present, never its value, and the engine removes the value from
   the lane's reply.
 - **Long runs survive between calls.** relay background runs and index router jobs keep
-  one lane process alive from their start call to their result. It ends after ten idle
-  minutes (up to an hour while a run it started is active) or when the engine stops.
+  one lane process alive between the start, status and result calls. It ends after ten
+  idle minutes (up to an hour while a run it started is still active) or when the
+  engine stops.
 - **Error codes you can act on.** A failed lane call returns one of six fixed codes with
   a short reason slug, and the card offers one action for each: list tools again, show
   setup, check the lane or run again. A call refused at its tier says so and offers no
@@ -162,21 +158,29 @@ call you approve with the higher tier.
 - **License texts ship with the engine.** The engine folder now carries the Python
   license (with OpenSSL's), the texts for code compiled into Python, and each lane's
   license. The installer's third-party notice lists every one.
+- **Installer size.** The installer is about 23.7 MB larger, mostly the bundled Node
+  runtime: 80,081,007 bytes in CI run 36302181098 against 56,355,754 bytes for 1.0.4.
 
 ## Your traces
+
+These commands come with the engine from pip (`python -m pip install -U flywheel-verify`).
+The Windows installer adds no `flywheel` command and the app has no traces screen yet;
+the capture hooks need a Python with Flywheel installed.
 
 - `flywheel traces status` lists every store that holds data derived from your traces:
   where it is, how it is protected and kept, and whether it can be exported and deleted.
 - Gateway traces, captured turns, frozen pages, imported transcripts and bench tasks are
-  encrypted at rest, each under its own key: DPAPI on Windows, AES-256-GCM with a
-  keychain key on macOS and Linux with the `encryption` extra, or status says plaintext.
-- `flywheel traces delete` plans its closure, destroys keys before files and leaves a
-  tombstone. `export` writes a copy with a standard-library verifier, `import` copies
-  Claude Code and Codex transcripts into custody, and retention deletes only under a
-  rule you adopt; the default keeps everything.
-- The Claude Code and Codex capture hooks send salted commitments by default, over a
-  channel signed per request and bound to the engine's address, never the raw gateway
-  token. A turn's text is kept only after you turn content capture on.
+  encrypted at rest where an OS key store is available, each under its own key: DPAPI on
+  Windows; on macOS, and on Linux with `secret-tool`, AES-256-GCM with the `encryption`
+  extra, a path with no automated test yet. Otherwise status says plaintext.
+- `flywheel traces delete` plans its closure, destroys keys before files, leaves a
+  tombstone and names the copies it cannot reach: the model provider's, the client's own
+  transcript, backups and earlier exports. `export` writes a verifiable copy (never to a
+  network share), `import` copies Claude Code and Codex transcripts into custody, and
+  retention deletes only under a rule you adopt; the default keeps everything.
+- The capture hooks send salted commitments by default, over a channel signed per request
+  and bound to the engine's loopback address, never the raw gateway token. A turn's text
+  is kept only after you turn content capture on. Lane processes run with capture off.
 - Custody events land in a hash-chained, metadata-only ledger and the Windows event log.
   The desktop app keeps a conversation it cannot read, names it and asks before deletes.
 
@@ -195,12 +199,8 @@ call you approve with the higher tier.
 - forum 1.15.1 fixes GHSA-36gv-h885-fmjf (approvals not tied to a raised gate, executors
   given the working folder and the whole environment, an open local daemon) and
   GHSA-h6qh-49hv-4xcg (1.15.0's folder guard missed an alias, a repointed link and a
-  quoted PATH entry). Every advisory above except GHSA-h6qh-49hv-4xcg also covers the
-  gather 1.8.2, relay 0.2.5 or forum 1.14.0 that 1.0.4 pins. The 1.0.4 known-issues
-  page says where they run.
-- crucible 1.3.0 fixes GHSA-49qx-cj4f-wfqv (a measurement file could widen the tolerance
-  that decides MATCH, and status and doctor answered MATCH without measuring anything).
-  It also covers crucible 1.2.0, which 1.0.4 pins (see the 1.0.4 known-issues page).
+  quoted PATH entry). These three advisories also cover gather 1.8.2, relay 0.2.5 and
+  forum 1.14.0, which 1.0.4 pins. The 1.0.4 known-issues page says where they run.
 - mneme 0.5.1 fixes GHSA-j2pw-g7f4-9ppp (forget could keep erased text in its reason,
   erase another user's turn, and let the receipt confirm a guess of the erased text).
 - canon 0.4.2 fixes GHSA-48rq-xjfx-6j4f (the shared context store kept secrets from an
@@ -215,11 +215,9 @@ call you approve with the higher tier.
 
 - A path argument that names a Windows device path (`\\?\`, `\??\`) or a network
   share is refused before the lane starts, and so is such a value inside gather.run's
-  inline config. So is a path argument with a reserved device name such as `CON.md` or
-  `COM1` in it; gather refuses one inside a config itself. A folder is compared by
-  identity, so no spelling of the Flywheel home or the run root reaches a lane's read.
-  The Node and local-model folder settings refuse network paths and mapped network
-  drives too.
+  inline config. A folder is compared by identity, so no spelling of the Flywheel home
+  or the run root reaches a lane's read. The Node and local-model folder settings refuse
+  network paths and mapped network drives too.
 - A T2 call keeps the keys granted to its lane only when its tool spends a model call.
   A key you bind to the call still joins it. Plugins and the forum and relay screens run
   without granted keys, and those screens refuse a tool above T1.
@@ -233,7 +231,7 @@ call you approve with the higher tier.
 ## Breaking changes
 
 - A lane tool the policy does not list needs an approval at T2 on pip and source
-  installs, as it already did in the Windows app.
+  installs, as it already did in the Windows app; plugins and agent runs refuse it.
 - On pip and source installs, a call that carries T1 can now run the tools the policy
   lists at T1 on relay, local-model and accountable-surface, including
   `local_agent_run` and `perceive`. 1.0.4 required T2 for every tool on those lanes.
@@ -261,9 +259,6 @@ call you approve with the higher tier.
   line and is unchanged.
 - forum's `gate_approve`, `gate_edit` and `gate_reject` run only on a call you approve at
   T2, which starts forum with its decision grant for that call.
-- crucible 1.3.0's status and doctor answer `OK`, with each check `available` or `absent`,
-  where 1.2.0 answered `MATCH`. Replay packs must carry their assessment binding, and a
-  measurement whose tolerance differs from its claim's sealed tolerance is UNVERIFIABLE.
 - mneme 0.5.x forget takes two calls: the first returns a plan and deletes nothing,
   the second carries the plan's hash and erases. Each call needs your approval at T2.
   A writable open migrates the lane's memory database to schema 5. The 0.5.1 receipt
@@ -273,21 +268,20 @@ call you approve with the higher tier.
   sent again with a secret-shaped value is refused as a collision.
 - writing's `diagnose` now needs an approval at T2, because it works on the shared
   draft store outside the lane's folder.
-- Plugins and agent runs refuse a lane tool the policy does not list.
 - The capture hook mount is now `"<python>" -P -E -m harness.capture_hooks`, and
   `flywheel traces doctor` fails the old line. With `-E`, a mount that found Flywheel
   through `PYTHONPATH` stops working; install Flywheel for that Python instead.
 
-## Corrections to the 1.0.4 notes
+## Corrections to the 1.0.3 and 1.0.4 notes
 
 The 1.0.4 notes described the Windows app's lanes more strongly than the installed app
 delivered: one lane ran its main action, nine answered only status and doctor, forum,
 local-model and writing did not start, and a key granted with `env_allow` did not reach
 a bundled lane. The engine from pip was not affected. The 1.0.4 known-issues page lists
 each statement, what we measured and what to do on 1.0.4. This release is the fix.
-The 1.0.3 and 1.0.4 notes also said your keys and data stay on your machine. Keys and
-Flywheel's records do; the content of each request goes to the hosted provider you
-route it to.
+The 1.0.3 and 1.0.4 notes also overstated where your data goes. Your keys are stored
+only on your machine and sent only to their own provider, and Flywheel's records stay
+on your machine; the content of each request goes to the hosted provider you route it to.
 
 ## Limits
 
@@ -304,21 +298,19 @@ route it to.
 - The limits listed for 1.0.4 on the verifier still hold.
 - Custody presence defaults to `none`: any process running as you can confirm a custody
   operation. `flywheel traces delete` does not reach lane stores, such as mneme's.
-
-## What the lane check does not prove
-
-It ran on a GitHub-hosted Windows Server runner with only the Windows system folder on
-PATH and an administrator account, not on a consumer Windows 11 machine, which remains
-untested; the network was reachable and no host model server ran. It used a stub model
-server, so it shows a model lane reached a model and the engine's guards held, not
-answer quality. It used no provider key, posted nothing and actuated nothing. Each main
-tool has one fixture assertion. The desktop screens were not driven; the check calls
-the routes the app calls.
+- Desktop chat history stays plaintext. Windows Hello presence and Codex capture were not
+  exercised on real hardware or a real Codex install.
+- The lane check ran on a GitHub-hosted Windows Server runner with only the Windows
+  system folder on PATH and an administrator account; a consumer Windows 11 machine
+  remains untested. Its stub model server shows a model lane reached a model, not answer
+  quality. It used no provider key, posted nothing and actuated nothing, ran one fixture
+  assertion per main tool, and called the routes the app calls without driving screens.
 
 ## Upgrade
 
 - Engine: `python -m pip install -U flywheel-verify`
-- Desktop app: the Windows installer attached below. Verify it with the release checksums.
+- Desktop app: the Windows installer attached below. Verify it against the checksums
+  attached to the release.
 - If you granted keys to lanes with `env_allow` in `lanes.json`, they now reach the
   bundled lanes too, on a call you approve at T2.
 - If a script calls a lane tool the policy does not list on a pip or source install,

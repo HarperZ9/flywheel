@@ -192,6 +192,11 @@ records into the custody ledger (one count per client and project, the
 project as a keyed digest) and the witness when a hook next reaches it, and
 the doctor does the same and shows the counts.
 
+Flywheel starts every lane process with `FLYWHEEL_CAPTURE=off`, so a claude
+or codex CLI that a lane runs records no turn. If your hooks run there, the
+hook shows no notice, and those events count once per lane (`lane:<lane>`)
+rather than once per folder.
+
 ## What this does not protect against
 
 Other processes running as you can read the gateway token and speak this
