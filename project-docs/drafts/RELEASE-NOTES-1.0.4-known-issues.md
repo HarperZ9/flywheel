@@ -15,8 +15,8 @@ release's own freeze steps and ran it the way a fresh machine would: no Python, 
 Node and no lane packages on the PATH, and a throwaway profile. This page corrects
 five statements about the installed Windows app; the engine you get from
 `pip install flywheel-verify` is not affected by those. It also names the lane
-advisories that cover the lane releases 1.0.4 pins: canon 0.2.0's, in both the app and
-a pip install, and gather's, relay's and forum's, in a pip install.
+advisories that cover the lane releases 1.0.4 pins: canon 0.2.0's and crucible 1.2.0's,
+in both the app and a pip install, and gather's, relay's and forum's, in a pip install.
 
 ## What the notes said, and what we measured
 
@@ -66,6 +66,11 @@ included, returns query excerpts and pending references without scrubbing them, 
 lists recorded transcript paths, which then reach the next prompt your client sends
 to its model provider. canon 0.4.2 fixes this, and Flywheel 1.1.0 pins it.
 
+**crucible 1.2.0, which 1.0.4 pins, is inside the range of GHSA-49qx-cj4f-wfqv.**
+In the 1.0.4 app its status and doctor answers read MATCH without measuring anything,
+and a pip install runs assess, where a measurement file can widen the tolerance that
+decides MATCH. crucible 1.3.0 fixes both, and Flywheel 1.1.0 pins it.
+
 **gather 1.8.2, relay 0.2.5 and forum 1.14.0, which 1.0.4 pins, are inside eight lane
 advisories.** gather: GHSA-pxvv-rg3f-4v5w, GHSA-r4f3-9xrf-72m5, GHSA-j6j7-39vh-qrp4
 and GHSA-r38f-cr69-jpp8 (tool arguments that run commands, send secrets or reach a
@@ -89,7 +94,11 @@ Flywheel 1.1.0 pins gather 1.9.1, relay 0.5.0 and forum 1.15.1.
 - Do not send secrets through the context capture route on 1.0.4. If you did,
   treat the context database as holding them until you upgrade and purge it with
   canon 0.4.2.
-- On a pip install, move to Flywheel 1.1.0 for the fixed gather, relay and forum.
+- Read crucible's status and doctor MATCH as a capability probe, never as a verdict.
+  Before you trust a MATCH from crucible's assess on 1.0.4, compare each measurement's
+  tolerance with the one you registered.
+- On a pip install, move to Flywheel 1.1.0 for the fixed gather, relay, forum and
+  crucible.
   Upgrading relay alone on 1.0.4 stops that lane: 1.0.4 starts relay as
   `python -m relay.local_mcp --mcp`, which relay 0.3.0 and later refuse.
 - If Python is on your PATH and you use the app's local-model or writing lane, make

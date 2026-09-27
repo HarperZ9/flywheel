@@ -76,7 +76,7 @@ LANES: dict[str, Lane] = {
         "research intake + provenance receipts (verified-data flywheel intake)",
         "perception", source_repo="public/gather", py_module="gather.cli"),
     "crucible": Lane(
-        "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.2.0",
+        "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.3.0",
         "falsifiable verification + re-check (register -> steelman -> measure -> witness)",
         "verification", source_repo="public/crucible", py_module="crucible.cli"),
     "chorus": Lane(

@@ -6,7 +6,8 @@ Open before publishing:
   Replace that summary, run id and commit with the windows-installed-acceptance.yml
   run on the release commit (O-9); tests/test_release_drafts.py reads the summary.
 - The README lane sentence carries the same count (O-5).
-- Run 36302181098 predates the gather 1.9.1, relay 0.5.0 and forum 1.15.1 pins.
+- Run 36302181098 predates the gather 1.9.1, relay 0.5.0, forum 1.15.1 and crucible
+  1.3.0 pins.
 - Installer size is from that CI build; re-measure it from the release workflow build.
 - The 1.0.4 known-issues page (RELEASE-NOTES-1.0.4-known-issues.md) publishes on its
   own; the section below points to it.
@@ -26,14 +27,12 @@ spend a key, publish or act on your machine run only on a call you approve.
 
 ## Why this is 1.1.0
 
-A lane tool the policy does not list now needs an approval at T2 in every install:
-the Windows app, a pip install and a source checkout. Before, a pip or source install
-ran such a tool at the lane's default tier, T1 on most lanes, so a lane upgrade that
-added a tool opened it with no review. If you call lane tools from a pip or source
-install, a tool the policy does not name now answers with a governance denial until
-you approve that call at T2. The Windows app already refused these tools and still
-does, even at T2. This changes what existing pip and source setups do, so the release
-takes the minor number.
+A lane tool the policy does not list now needs an approval at T2 in every install: the
+Windows app, a pip install and a source checkout. Before, a pip or source install ran
+such a tool at the lane's default tier, T1 on most lanes, so a lane upgrade that added a
+tool opened it with no review. Now such a call answers with a governance denial until
+you approve it at T2. The Windows app refused these tools before and still does, even at
+T2. Existing pip and source setups change, so the release takes the minor number.
 
 ## Try it
 
@@ -41,10 +40,8 @@ Install the Windows app, open Tools and pick a lane card. Each card shows its st
 lists the lane's tools with a form for each, and runs the one you choose after you
 approve the call. A card that needs setup names the step: Git for Windows for index's
 repository history, a model server for local-model and relay, a project folder for
-local-model, a blocks folder for canon, a recorded draft for writing.
-
-For the engine alone: `python -m pip install -U flywheel-verify`, then
-`flywheel lanes --probe`.
+local-model, a blocks folder for canon, a recorded draft for writing. For the engine
+alone: `python -m pip install -U flywheel-verify`, then `flywheel lanes --probe`.
 
 ## What each lane does in the app
 
@@ -117,10 +114,13 @@ call you approve with the higher tier.
   (the panel catalog without numpy), learn 1.6.0, and Node.js v24.21.0 LTS to run it.
   forum 1.15.1 ships the data files it needs to start. `FLYWHEEL_NODE` or a node.exe you
   choose in the app still overrides the bundled Node; a chosen node.exe is checked by
-  hash again at every launch.
-- **Lane updates.** relay 0.5.0, gather 1.9.1, forum 1.15.1, mneme 0.5.1 and canon
-  0.4.2, each frozen from its release tag. None adds a tool the app can call, and each
-  tool keeps its tier. In the Windows app, a pip install and a source checkout, relay
+  hash again at every launch. The installer is about 23.7 MB larger, mostly the Node
+  runtime: 80,081,007 bytes in CI run 36302181098 against 56,355,754 bytes for 1.0.4.
+- **Lane updates.** relay 0.5.0, gather 1.9.1, forum 1.15.1, crucible 1.3.0, mneme
+  0.5.1 and canon 0.4.2, each frozen from its release tag. Each tool keeps its tier.
+  crucible 1.3.0 adds the one new tool, `crucible.recheck_template`, a read that returns
+  a replay template, at T1 with its path arguments kept out of the home. In the Windows
+  app, a pip install and a source checkout, relay
   keeps its saved sessions in `lanes/relay/sessions` and starts with write, exec, shell
   child variables and agent CLI tiers all off, gather starts with no network, command or
   credential grant, since the app's gather tools read a local document or corpus, and
@@ -133,7 +133,8 @@ call you approve with the higher tier.
   and `gate_reject` only when started with `--allow-gate-decisions`. The engine adds it
   only to the launch of one call you approve at T2 for one of them, so your approval
   decides each gate. The forum card lists what an ordinary launch lists, which leaves
-  the three out. A lane call at T2 reaches them.
+  the three out. The app has no control for them in this release; a lane call to the
+  engine at T2 runs them.
 - **relay starts from pip and source installs again.** With relay 0.3.0 or later, the
   engine's pip and source launch for relay exited at start. It now starts relay through its own
   command line. The Windows app was not affected.
@@ -148,9 +149,8 @@ call you approve with the higher tier.
   and says whether it is present, never its value, and the engine removes the value from
   the lane's reply.
 - **Long runs survive between calls.** relay background runs and index router jobs keep
-  one lane process alive between the start, status and result calls. It ends after ten
-  idle minutes (up to an hour while a run it started is still active) or when the
-  engine stops.
+  one lane process alive from their start call to their result. It ends after ten idle
+  minutes (up to an hour while a run it started is active) or when the engine stops.
 - **Error codes you can act on.** A failed lane call returns one of six fixed codes with
   a short reason slug, and the card offers one action for each: list tools again, show
   setup, check the lane or run again. A call refused at its tier says so and offers no
@@ -175,8 +175,12 @@ call you approve with the higher tier.
 - forum 1.15.1 fixes GHSA-36gv-h885-fmjf (approvals not tied to a raised gate, executors
   given the working folder and the whole environment, an open local daemon) and
   GHSA-h6qh-49hv-4xcg (1.15.0's folder guard missed an alias, a repointed link and a
-  quoted PATH entry). These three advisories also cover gather 1.8.2, relay 0.2.5 and
-  forum 1.14.0, which 1.0.4 pins. The 1.0.4 known-issues page says where they run.
+  quoted PATH entry). Every advisory above except GHSA-h6qh-49hv-4xcg also covers the
+  gather 1.8.2, relay 0.2.5 or forum 1.14.0 that 1.0.4 pins. The 1.0.4 known-issues
+  page says where they run.
+- crucible 1.3.0 fixes GHSA-49qx-cj4f-wfqv (a measurement file could widen the tolerance
+  that decides MATCH, and status and doctor answered MATCH without measuring anything).
+  It also covers crucible 1.2.0, which 1.0.4 pins (see the 1.0.4 known-issues page).
 - mneme 0.5.1 fixes GHSA-j2pw-g7f4-9ppp (forget could keep erased text in its reason,
   erase another user's turn, and let the receipt confirm a guess of the erased text).
 - canon 0.4.2 fixes GHSA-48rq-xjfx-6j4f (the shared context store kept secrets from an
@@ -235,6 +239,9 @@ call you approve with the higher tier.
   line and is unchanged.
 - forum's `gate_approve`, `gate_edit` and `gate_reject` run only on a call you approve at
   T2, which starts forum with its decision grant for that call.
+- crucible 1.3.0's status and doctor answer `OK`, with each check `available` or `absent`,
+  where 1.2.0 answered `MATCH`. Replay packs must carry their assessment binding, and a
+  measurement whose tolerance differs from its claim's sealed tolerance is UNVERIFIABLE.
 - mneme 0.5.x forget takes two calls: the first returns a plan and deletes nothing,
   the second carries the plan's hash and erases. Each call needs your approval at T2.
   A writable open migrates the lane's memory database to schema 5. The 0.5.1 receipt
@@ -253,11 +260,6 @@ delivered: one lane ran its main action, nine answered only status and doctor, f
 local-model and writing did not start, and a key granted with `env_allow` did not reach
 a bundled lane. The engine from pip was not affected. The 1.0.4 known-issues page lists
 each statement, what we measured and what to do on 1.0.4. This release is the fix.
-
-## Installer size
-
-The installer is about 23.7 MB larger, mostly the bundled Node runtime: 80,081,007 bytes
-in CI run 36302181098 against 56,355,754 bytes for the published 1.0.4 installer.
 
 ## Limits
 
@@ -286,8 +288,7 @@ the routes the app calls.
 ## Upgrade
 
 - Engine: `python -m pip install -U flywheel-verify`
-- Desktop app: the Windows installer attached below. Verify it against the checksums
-  attached to the release.
+- Desktop app: the Windows installer attached below. Verify it with the release checksums.
 - If you granted keys to lanes with `env_allow` in `lanes.json`, they now reach the
   bundled lanes too, on a call you approve at T2.
 - If a script calls a lane tool the policy does not list on a pip or source install,

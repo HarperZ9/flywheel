@@ -45,6 +45,8 @@ _CRUCIBLE = {
                              "and returns verdicts.", timeout_s=60),
     "crucible.recheck": _t("read", "Reads a registry and replays a pack the caller "
                            "names; writes nothing."),
+    "crucible.recheck_template": _t("read", "Reads a registry assessment and returns a "
+                                    "replay template; writes nothing."),
     "crucible.run": _t("outside_write", "Writes the registry, report, packet and bundle "
                        "paths the caller names.", tier="T2", timeout_s=120),
     "crucible.measurement_gate": _t("read", "Checks a packet against criteria."),

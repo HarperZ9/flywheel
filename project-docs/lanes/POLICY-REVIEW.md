@@ -4,12 +4,13 @@ Status: decided under O-4 (the agent decided under operator delegation, 2026-09-
 of record is `POLICY-DECISION.md` in the lanes mission folder; this file renders the table it
 adopted. Branch `feat/lanes-operational`.
 
-This review covers every tool of all 17 lanes: 233 tools. The engine admits 140 of them at T1 on
+This review covers every tool of all 17 lanes: 234 tools. The engine admits 141 of them at T1 on
 an ordinary lane call. 49 tools need a granted T2 call. 44 tools are out of this build with a
 reason slug. The decision counted 133, 45 and 55 before the articulate 0.5.0 pin moved judge,
 fix and polish from out of the build to T2. Long-lived lane sessions (WP10) then brought the
 five index router-job tools and relay's run status and result in at T1, and relay
-`local_agent_start` in at T2. The drop from the first draft (172, 45, 16) is telos
+`local_agent_start` in at T2. The crucible 1.3.0 pin added `crucible.recheck_template` at T1.
+The drop from the first draft (172, 45, 16) is telos
 (all 38 of its in-build tools held out under the O-8 hold), `writing.diagnose` (T1 to T2) and
 `accountable-surface.actuate` (T2 to out of the build). The 1.0.x rows admitted two tools per
 bundled lane (relay one), and nothing checked a tier unless the caller sent one.
@@ -110,6 +111,17 @@ reaches T2, since the model picks each inner call and its arguments.
   `lane_grant_required`). All three vendor safe_spawn 1.0.1; a PATH differential under
   the engine's lane environments, system folder only and a full developer PATH, found
   no program lost.
+- **crucible 1.3.0, 2026-09-27** (O-4, O-12). crucible 1.2.0 is inside
+  GHSA-49qx-cj4f-wfqv: a measurement file could widen the tolerance that decides MATCH,
+  and status and doctor answered MATCH without measuring anything. 1.3.0 fixes both and
+  adds one tool, `crucible.recheck_template`, which reads a registry assessment and
+  returns a `crucible.replay-template/1` object (`src/crucible/mcp_tools.py`,
+  `recheck_cmd.replay_template_payload`). It writes nothing, so it is `read` at T1, with
+  `dir` and `index` kept out of the home as on `crucible.report`; `crucible.recheck`
+  takes a `template` flag with the same effect. Through the engine's pip-mode launch
+  from each tag's source, the lane smoke fixture passes at both tags, the advisory's
+  widened-tolerance case reads MATCH at 1.2.0 and UNVERIFIABLE at 1.3.0, no write leaves
+  the lane folder, and a `dir` inside the Flywheel home answers `argument_refused`.
 - **Measured containment** (C-16). The frozen lane smoke snapshots its throwaway home around each
   lane's fixture and fails a lane that writes outside its folder.
 
@@ -168,9 +180,9 @@ Admitted at launch: 5 of 8 tools. T2 per granted call: 3. Not in this build: 0.
 | `gather.context` | T1 | main | read |  | `corpus` kept out of the home | Reads a corpus and returns bounded excerpts or a selection; writes nothing. |
 | `gather.pilot` | T2 |  | outside_write |  | `manifest` kept out of the home, `output` kept out of the home, `bundle_output` kept out of the home | Runs, refreshes or bundles a pilot into the output folders the caller names. |
 
-### crucible 1.2.0
+### crucible 1.3.0
 
-Admitted at launch: 10 of 13 tools. T2 per granted call: 3. Not in this build: 0.
+Admitted at launch: 11 of 14 tools. T2 per granted call: 3. Not in this build: 0.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
@@ -178,6 +190,7 @@ Admitted at launch: 10 of 13 tools. T2 per granted call: 3. Not in this build: 0
 | `crucible.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 | `crucible.assess` | T1 | main | read |  | `thesis` kept out of the home, `measurements` kept out of the home | Assesses a thesis against measurements in memory and returns verdicts. |
 | `crucible.recheck` | T1 |  | read |  | `dir` kept out of the home, `index` kept out of the home, `pack` kept out of the home | Reads a registry and replays a pack the caller names; writes nothing. |
+| `crucible.recheck_template` | T1 |  | read |  | `dir` kept out of the home, `index` kept out of the home | Reads a registry assessment and returns a replay template; writes nothing. |
 | `crucible.run` | T2 |  | outside_write |  | `thesis` kept out of the home, `registry` kept out of the home, `measurements` kept out of the home, `report` kept out of the home, `out` kept out of the home, `bundle` kept out of the home | Writes the registry, report, packet and bundle paths the caller names. |
 | `crucible.measurement_gate` | T1 |  | read |  | `packet` kept out of the home, `criteria` kept out of the home | Checks a packet against criteria. |
 | `crucible.review` | T1 |  | read |  | `bundle` kept out of the home | Validates a review bundle. |

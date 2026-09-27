@@ -51,6 +51,7 @@ ARG_POLICY: dict[str, dict[str, dict]] = {
                "gather.pilot": _paths("manifest", "output", "bundle_output")},
     "crucible": {"crucible.assess": _paths("thesis", "measurements"),
                  "crucible.recheck": _paths("dir", "index", "pack"),
+                 "crucible.recheck_template": _paths("dir", "index"),
                  "crucible.run": _paths("thesis", "registry", "measurements", "report",
                                         "out", "bundle"),
                  "crucible.measurement_gate": _paths("packet", "criteria"),

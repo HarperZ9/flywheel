@@ -58,9 +58,9 @@ Admitted at launch: 5 of 8 tools. T2 per granted call: 3. Not in this build: 0.
 | `gather.context` | T1 | main | read |  | `corpus` kept out of the home | Reads a corpus and returns bounded excerpts or a selection; writes nothing. |
 | `gather.pilot` | T2 |  | outside_write |  | `manifest` kept out of the home, `output` kept out of the home, `bundle_output` kept out of the home | Runs, refreshes or bundles a pilot into the output folders the caller names. |
 
-### crucible 1.2.0
+### crucible 1.3.0
 
-Admitted at launch: 10 of 13 tools. T2 per granted call: 3. Not in this build: 0.
+Admitted at launch: 11 of 14 tools. T2 per granted call: 3. Not in this build: 0.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
@@ -68,6 +68,7 @@ Admitted at launch: 10 of 13 tools. T2 per granted call: 3. Not in this build: 0
 | `crucible.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 | `crucible.assess` | T1 | main | read |  | `thesis` kept out of the home, `measurements` kept out of the home | Assesses a thesis against measurements in memory and returns verdicts. |
 | `crucible.recheck` | T1 |  | read |  | `dir` kept out of the home, `index` kept out of the home, `pack` kept out of the home | Reads a registry and replays a pack the caller names; writes nothing. |
+| `crucible.recheck_template` | T1 |  | read |  | `dir` kept out of the home, `index` kept out of the home | Reads a registry assessment and returns a replay template; writes nothing. |
 | `crucible.run` | T2 |  | outside_write |  | `thesis` kept out of the home, `registry` kept out of the home, `measurements` kept out of the home, `report` kept out of the home, `out` kept out of the home, `bundle` kept out of the home | Writes the registry, report, packet and bundle paths the caller names. |
 | `crucible.measurement_gate` | T1 |  | read |  | `packet` kept out of the home, `criteria` kept out of the home | Checks a packet against criteria. |
 | `crucible.review` | T1 |  | read |  | `bundle` kept out of the home | Validates a review bundle. |
