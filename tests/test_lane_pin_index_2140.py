@@ -177,6 +177,15 @@ def test_the_notes_name_the_release_and_drop_the_bundled_commit_limit():
     assert "2.13.0 plus one later commit" not in notes
 
 
+def test_the_known_issues_page_names_the_commit_the_1_0_x_apps_bundled():
+    """The 1.0.3 and 1.0.4 rows pin 71c26eab while their notes name index 2.13.0;
+    the notes' limit that said so left with the pin, so the 1.0.4 page carries it."""
+    known = _text("project-docs", "drafts", "RELEASE-NOTES-1.0.4-known-issues.md")
+    assert "six statements about the installed Windows app" in known
+    assert "bundled index 2.13.0 plus one later commit" in known
+    assert f"until {VERSION}, which Flywheel 1.1.0 pins" in known
+
+
 def test_the_feature_page_lists_the_pinned_tools():
     page = _text("docs", "features", "index.md")
     assert "the 23 the payload row lists" in page and "the 22 the payload row lists" not in page
