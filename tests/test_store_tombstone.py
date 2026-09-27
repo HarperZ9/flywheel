@@ -10,7 +10,7 @@ import pytest
 from harness import store
 from harness.store_tombstone import forget_entities
 from harness.trace_residual_scan import Needles, scan_paths
-from trace_enc_fakes import long_canary, plain_delete
+from trace_enc_fakes import long_canary, plain_delete, secure_delete_starts_off
 
 CANARY = long_canary(seed=31, size=12 * 1024)
 
@@ -44,7 +44,11 @@ def test_forgetting_keeps_both_verifiers_green(home):
     assert audit["op"] == "forget_entity" and audit["chain_hash_ok"]
 
 
-def test_the_scrub_removes_the_text_from_every_database_file(home):
+def test_the_scrub_removes_the_text_from_every_database_file(home, monkeypatch):
+    """Every connection starts with secure_delete off, as the control's DELETE
+    runs, so a build that defaults it on cannot clear the page in the scrub's
+    place."""
+    secure_delete_starts_off(monkeypatch)
     eid = _v1_receipt(home)
     forget_entities(home, [eid], "owner_request")
     assert scan_paths(_db_files(home), Needles.build([CANARY]))["total"] == 0

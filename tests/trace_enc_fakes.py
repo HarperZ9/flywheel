@@ -110,3 +110,20 @@ def plain_delete(db, sql: str, params=()) -> None:
         con.commit()
     finally:
         con.close()
+
+
+def secure_delete_starts_off(monkeypatch) -> None:
+    """Open every SQLite connection with secure_delete off, the default of
+    python.org's Windows build, on every platform. The Debian and Ubuntu
+    builds default it on, and there it zeroes the pages a DELETE frees even
+    when the scrub never asks: a test that the scrub leaves no residue passed
+    there with the scrub replaced by a plain DELETE. With every connection
+    starting off, only the scrub's own setting clears those pages, and the
+    scrubbed test runs under the same setting as its control."""
+    real = sqlite3.connect
+
+    def starts_off(*args, **kwargs):
+        opened = real(*args, **kwargs)
+        assert opened.execute("PRAGMA secure_delete=OFF").fetchone() == (0,)
+        return opened
+    monkeypatch.setattr(sqlite3, "connect", starts_off)

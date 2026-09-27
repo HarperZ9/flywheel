@@ -21,7 +21,7 @@ from harness.trace_sqlite_scrub import scrub
 from harness.trace_tombstones import TombstoneLedger
 from harness.trace_witness import MemorySink
 from plain_fixtures import plant_legacy_run, plant_note, plant_profile_trace, plant_v1_receipt
-from trace_enc_fakes import StreamTestProvider, using
+from trace_enc_fakes import StreamTestProvider, secure_delete_starts_off, using
 
 
 @pytest.fixture
@@ -35,6 +35,9 @@ def world(tmp_path, monkeypatch):
     monkeypatch.setenv("FLYWHEEL_HOME", str(home))
     monkeypatch.setenv("FLYWHEEL_RUN_ROOT", str(run))
     monkeypatch.setattr(store_tombstone, "scrub", functools.partial(scrub, retry_s=0.3))
+    # A build that defaults secure_delete on would clear freed pages in the
+    # scrub's place; starting every connection off leaves that to the scrub.
+    secure_delete_starts_off(monkeypatch)
     with using(StreamTestProvider()):
         yield home, run
 
