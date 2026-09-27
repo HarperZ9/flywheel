@@ -27,6 +27,10 @@ CANON_DELETE = Gap("flywheel traces delete does not reach it; in the pinned rele
                    "purges context records from its own command line; Flywheel never calls "
                    "purge, and the engine starts canon's context server with purge turned "
                    "off", "CA-01")
+#: Lane folders without a row of their own (mneme, canon, forum and relay have one).
+LANE_FOLDERS = ("accountable-surface", "articulate", "bulletin", "calibrate-pro", "chorus",
+                "crucible", "gather", "index", "learn", "local-model", "plexus", "telos",
+                "writing")
 CLIENT_DELETE = Gap("the client's own store; a deletion report names the file the client "
                     "keeps and how to remove it there (7.10)", "7.10")
 
@@ -86,6 +90,17 @@ STORES = (
     Store("L4", "forum lane folder", "lanes", ("forum",), None, LANE, LANE_EXPORT,
           NOT_DESIGNED, owner_binding="lane",
           note="forum ledger contents unknown until experiment X17"),
+    # The lanes layer starts every lane child in lanes/<lane> and points its
+    # temp and app-data folders there (lane_workdir), so each registered lane
+    # can own a folder here; test_trace_inventory_lanes ties this to the registry.
+    Store("LNr", "relay lane folder", "lanes", ("relay",), ("C1", "C2"), LANE,
+          LANE_EXPORT, NOT_DESIGNED, owner_binding="lane", evidence="inferred",
+          note="relay's saved sessions (task text and tool calls) live here, with its "
+               "temp and app-data files"),
+    Store("LNo", "other lane folders", "lanes", LANE_FOLDERS, None, LANE, LANE_EXPORT,
+          NOT_DESIGNED, owner_binding="lane", evidence="inferred",
+          note="each lane's temp and app-data files, plus index's caches and "
+               "accountable-surface's receipts and journal; contents unknown"),
     Store("L1", "mneme database", "env", ("mneme.db",), ("C1", "C5", "C8"), LANE,
           LANE_EXPORT, MNEME_DELETE, shape="file", env=("MNEME_STATE",),
           owner_binding="lane"),
