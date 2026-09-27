@@ -2,8 +2,10 @@
 
 A run reads the adopted policy. Keep does nothing and writes nothing. Under
 rules, the run selects the items the rules name and hands them to the
-deletion engine (7.10) as a saved plan. The first run after an adoption only
-plans. A later run whose plan would delete more than `max_share_per_run` of
+deletion engine (7.10) as a saved plan. The first run after an adoption that
+finds something due only plans; whether that preview happened is read from
+the verified custody ledger (a `retention_run` entry with reason
+`first_run_plan_only` after the adoption), never from a file. A later run whose plan would delete more than `max_share_per_run` of
 any store's items stops at the plan, which stays pending until the owner
 applies it with presence; otherwise the run applies its plan under the
 adopted policy's authority, with the same closure, verification and
@@ -11,7 +13,9 @@ tombstone as a manual delete. Each run writes one custody ledger entry and
 one witness event. A failed run keeps its plan pending and shows in status.
 
 The gateway starts the scheduler only when an adopted rule other than keep
-exists; it runs at start and every 24 hours.
+exists at gateway start; it runs then and every 24 hours. A policy adopted
+while the gateway runs takes effect from the next gateway start, and status
+says whether the running scheduler has picked it up.
 """
 from __future__ import annotations
 
@@ -95,10 +99,29 @@ def _plan(home, owner: str, doc: dict, now: float) -> dict:
             "share": share}
 
 
+def previewed(home, owner: str, policy_digest: str) -> bool:
+    """Whether a plan-only run happened under the current adoption of this
+    policy, read from the verified ledger. An unverifiable ledger says no."""
+    from .trace_custody_ledger import CustodyLedger, LedgerError
+    try:
+        entries = CustodyLedger(home, owner).entries()
+    except LedgerError:
+        return False
+    current, shown = None, False
+    for entry in entries:
+        fields = entry["fields"]
+        if entry["kind"] == "settings_adopted" and fields.get("settings") == "retention":
+            current, shown = fields.get("digest"), False
+        elif entry["kind"] == "retention_run" and fields.get("reason_code") == \
+                "first_run_plan_only":
+            shown = True
+    return current == policy_digest and shown
+
+
 def _decide(home, owner: str, doc: dict, runs: dict, planned: dict, sink) -> dict:
     if planned["plan_digest"] is None:
         return {"state": "NOTHING_DUE", "reason": "nothing_due"}
-    if runs.get("planned_for") != policy.digest(doc):
+    if not previewed(home, owner, policy.digest(doc)):
         return {"state": "PLANNED", "reason": "first_run_plan_only"}
     if any(v > doc["max_share_per_run"] for v in planned["share"].values()):
         return {"state": "STOPPED_AT_PLAN", "reason": "share_exceeded"}
@@ -116,7 +139,8 @@ def run(home, owner: str, *, now: float | None = None, sink=None) -> dict:
     pending = None if result["state"] in ("APPLIED", "NOTHING_DUE") else {
         "plan_digest": planned["plan_digest"], "items": planned["items"],
         "share": planned["share"], "reason": result["reason"], "created_at": _now_iso()}
-    _save(home, owner, {"planned_for": policy.digest(doc), "pending_plan": pending,
+    _save(home, owner, {**{k: v for k, v in runs.items() if k == "scheduler"},
+                        "pending_plan": pending,
                         "last_run": {"state": result["state"], "reason": result["reason"],
                                      "at": _now_iso()}})
     result["witness"] = _record(home, owner, result, METHOD, sink)["witness"]
@@ -159,18 +183,24 @@ def apply_pending(home, owner: str, plan_digest: str, presence_ref, *, sink=None
 
 
 def status(home, owner: str) -> dict:
+    """`scheduled` is true only when a gateway scheduler started under the
+    policy in effect; otherwise the rules run from the next gateway start."""
     runs = _load(home, owner)
     current = policy.effective(home, owner)
+    started = runs.get("scheduler") or {}
+    scheduled = current["action"] != "keep" and started.get("policy") == current["digest"]
     return {"action": current["action"], "rules": len(current["rules"]),
             "pending_change": current["pending_change"], "file_valid": current["file_valid"],
+            "tampered": current.get("tampered", False),
             "pending_plan": runs.get("pending_plan"), "last_run": runs.get("last_run"),
-            "scheduled": current["action"] != "keep"}
+            "scheduled": scheduled,
+            "scheduler_started_at": started.get("at") if scheduled else None}
 
 
 def needs_owner(home, owner: str) -> bool:
     """A policy change or a plan waits for the owner (the prompt hook says so)."""
     shown = status(home, owner)
-    return bool(shown["pending_change"] or shown["pending_plan"])
+    return bool(shown["pending_change"] or shown["pending_plan"] or shown["tampered"])
 
 
 class Scheduler:
@@ -199,5 +229,9 @@ def start_if_adopted(home) -> Scheduler | None:
     if owner is None or not should_schedule(home, owner):
         return None
     scheduler = Scheduler(home, owner)
+    runs = _load(home, owner)
+    runs["scheduler"] = {"policy": policy.digest(policy.adopted(home, owner)),
+                         "at": _now_iso()}
+    _save(home, owner, runs)
     scheduler.thread.start()
     return scheduler

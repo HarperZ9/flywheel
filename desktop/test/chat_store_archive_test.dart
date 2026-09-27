@@ -166,7 +166,35 @@ void main() {
     expect(record['reason_code'], 'CONVERSATION_OVER_LIMIT');
     expect(record['conversation_ref'], 'c7');
     expect(record['original'], 'drafts');
-    expect(file.existsSync(), isFalse, reason: 'nothing else was written');
+    final reopened = ChatStore(file: file);
+    expect(_ids(reopened.load()), isEmpty, reason: 'the oversize text was not written');
+  });
+
+  test('one oversize conversation does not stop the others from saving', () {
+    final home = _home();
+    final file = File('${home.path}/chats.json');
+    final store = ChatStore(file: file);
+    final small = _conversation(7, text: 'the stored copy');
+    final other = _conversation(1);
+    expect(store.save([small, other]), isTrue);
+
+    final grown = _conversation(7, text: 'GROWNCANARY${'y' * (1100 * 1024)}');
+    other.messages.add(ChatMessage(role: 'user', text: 'a later question'));
+    for (var i = 0; i < 3; i++) {
+      expect(store.save([grown, other]), isFalse);
+    }
+    expect(store.save([grown, other], require: 'c1'), isTrue);
+    expect(store.save([grown, other], require: 'c7'), isFalse);
+    expect(store.status.oversizeConversation, 'c7');
+
+    final reopened = ChatStore(file: file).load();
+    final byId = {for (final c in reopened) c.id: c};
+    expect(byId['c1']!.messages.last.text, 'a later question');
+    expect(byId['c7']!.messages.single.text, 'the stored copy');
+    expect(file.readAsStringSync(), isNot(contains('GROWNCANARY')));
+    final loss = Directory('${home.path}/desktop/loss/v1');
+    expect(loss.listSync().whereType<File>(), hasLength(1),
+        reason: 'one loss record per conversation, not one per save');
   });
 
   test('an unreadable archive segment is skipped, reported and kept', () {

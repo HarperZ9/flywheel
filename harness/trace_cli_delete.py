@@ -40,9 +40,12 @@ def _selection(args) -> dict:
 
 
 def _print_plan(plan: dict) -> None:
+    from .trace_enc import default_provider
+    encrypting = default_provider().name != "none"
     emit("Deletion plan")
     for store, count in sorted(plan["counts"].items()):
-        emit(f"  {store}: {count} items, keys destroyed first")
+        first = ", keys destroyed first" if encrypting and store in plan["keys"] else ""
+        emit(f"  {store}: {count} items{first}")
     if plan["receipts"]:
         emit(f"  store.db: {len(plan['receipts'])} turn receipts (commitments only)")
     for where, count in sorted(plan["out_of_reach"].items()):
@@ -65,8 +68,9 @@ def _apply(args, roots, owner) -> int:
     state = roots["home"] / "state"
     try:
         method = adopted_method(state, owner)
+        from .trace_presence_summary import describe
         ref = confirm(state, owner, "delete_apply", args.plan_digest,
-                      f"Delete the items of plan {args.plan_digest[:12]}",
+                      describe(roots["home"], owner, "delete_apply", args.plan_digest),
                       verifier=verifier_for(method, interactive=True))
         report = apply_plan(roots["home"], owner, args.plan_digest, ref)
     except (PresenceError, PlanError) as exc:
@@ -113,8 +117,16 @@ def verify_gone(args) -> int:
         emit(f"  {escape(label)}: {hits} hits")
     if report["structural_only"]:
         emit("The phrase is shorter than 16 bytes, so only structural checks apply.")
-    emit(f"{report['total']} hits in files Flywheel controls. Freed disk space, backups and "
-         "copies outside Flywheel are not searched.")
+    skipped = report["unsearched"]
+    if skipped["encrypted"]:
+        emit(f"{skipped['encrypted']} encrypted custody files were not searched: they are "
+             "ciphertext, so a zero count says nothing about them. A deleted item's key is "
+             "destroyed; flywheel traces status shows what custody still holds.")
+    if skipped["compressed"]:
+        emit(f"{skipped['compressed']} compressed files could not be opened and were not "
+             "searched.")
+    emit(f"{report['total']} hits in the plaintext files Flywheel controls. Freed disk space, "
+         "backups and copies outside Flywheel are not searched.")
     return 0 if report["total"] == 0 else 1
 
 
@@ -122,7 +134,8 @@ def register(sub) -> None:
     parser = sub.add_parser("delete", help="plan, then apply, a deletion with its closure")
     parser.add_argument("--trace-ref", action="append", default=[])
     parser.add_argument("--turn-ref", action="append", default=[])
-    parser.add_argument("--session", help="client:session-id, every turn of that session")
+    parser.add_argument("--session", help="client:session-id: every captured turn and "
+                                          "imported transcript of that session")
     parser.add_argument("--import-ref", action="append", default=[])
     parser.add_argument("--receipt-eid", action="append", default=[])
     parser.add_argument("--note-ref", action="append", default=[])

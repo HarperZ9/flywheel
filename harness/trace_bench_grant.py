@@ -63,6 +63,8 @@ def plan_grant(home, owner: str, endpoints) -> dict:
     grant = {"schema": "flywheel.bench-replay-grant/v1", "endpoints": endpoints, "tasks": rows}
     lines = [f"Replay {len(tasks)} tasks on {', '.join(endpoints)}. {STATEMENT}"]
     lines += [f"- [{t['content_trust']}] {t['goal']} -> {', '.join(endpoints)}" for t in tasks]
+    from .trace_presence_summary import remember
+    remember("bench_replay", canonical_sha256(grant), "\n".join(lines))
     return {"grant_digest": canonical_sha256(grant), "grant": grant,
             "summary": [{"task_ref": t["task_ref"], "goal": t["goal"],
                          "content_trust": t["content_trust"], "endpoints": endpoints}

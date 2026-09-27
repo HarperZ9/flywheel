@@ -44,7 +44,10 @@ def test_deleting_an_imported_session_removes_items_index_and_keys(imported):
     keystore = Keystore(home / "state", OWNER)
     assert not any(keystore.present("IM", r) for r in refs)
     assert not list((home / "state" / "imports").rglob("chunk-*.enc"))
-    assert len(exclusion.entries(home, OWNER)) == 5
+    listed = exclusion.entries(home, OWNER)
+    assert len([e for e in listed if e.get("kind") != "session"]) == 5
+    assert [e for e in listed if e.get("kind") == "session"] == [
+        {"kind": "session", "session": listed[0]["session"]}]
     assert report["remedies"] == {"claude-code": "claude project purge"}
 
 

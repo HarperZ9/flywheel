@@ -18,9 +18,10 @@ PENDING_RETENTION = ("Flywheel retention has a policy change or a deletion plan 
                      "for you. See: flywheel traces retention show.")
 
 
-def failure_line(code: str, spooled: bool) -> str:
+def failure_line(code: str, spooled: bool, *, event: str = "prompt") -> str:
     tail = "" if spooled else "; the failure record could not be written either"
-    return f"flywheel capture: turn not recorded ({code}{tail}). {DOCTOR}"
+    what = "session not archived" if event == "session-end" else "turn not recorded"
+    return f"flywheel capture: {what} ({code}{tail}). {DOCTOR}"
 
 
 def unacked_line(count: int, since: str | None) -> str:

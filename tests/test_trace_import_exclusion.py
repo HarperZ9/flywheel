@@ -76,3 +76,40 @@ def test_without_the_custody_key_import_fails_closed(tree, monkeypatch):
     plan = plan_claude(home, root=root)
     assert plan["state"] == "CUSTODY_KEY_UNAVAILABLE"
     assert run_import(home, plan)["imported"] == 0
+
+
+def test_an_empty_or_short_deleted_file_does_not_block_unrelated_sources(tree, tmp_path):
+    """A prefix match counts only for the same keyed path or session: a
+    deleted empty file (n=0) or one holding `{` matches nothing else."""
+    home, root, _ = tree
+    other = tmp_path / "elsewhere" / "tool-output.txt"
+    exclusion.add(home, OWNER, "claude-code", other, "0a0b0c0d-0000-4000-8000-000000000001",
+                  b"")
+    exclusion.add(home, OWNER, "claude-code", other, "0a0b0c0d-0000-4000-8000-000000000002",
+                  b"{")
+    plan = plan_claude(home, root=root)
+    assert _state_of(plan, f"projects/{PROJECT}/{SESSION}.jsonl")["state"] == "new"
+    assert run_import(home, plan)["skipped"].get("PREVIOUSLY_DELETED", 0) == 0
+
+
+def test_a_deleted_captured_session_is_not_imported_later(tree, monkeypatch):
+    """I19: the session was captured with content on and never imported;
+    deleting it adds a session entry, so its transcript does not come back."""
+    from delete_fixtures import plant_turn
+    from harness.trace_delete_apply import apply_plan
+    from harness.trace_delete_plan import make_plan
+    from harness.trace_presence import confirm
+    from harness.trace_witness import MemorySink
+    home, root, _ = tree
+    monkeypatch.setenv("FLYWHEEL_HOME", str(home))
+    plant_turn(home, text="the deleted prompt " * 8, session=SESSION)
+    plan = make_plan(home, OWNER, {"session": {"client": "claude-code", "session_id": SESSION}})
+    ref = confirm(home / "state", OWNER, "delete_apply", plan["plan_digest"], "delete")
+    assert apply_plan(home, OWNER, plan["plan_digest"], ref, sink=MemorySink())["state"] == (
+        "DELETED")
+    plan = plan_claude(home, root=root)
+    assert _state_of(plan, f"projects/{PROJECT}/{SESSION}.jsonl")["state"] == (
+        "PREVIOUSLY_DELETED_SESSION")
+    run_import(home, plan)
+    store = ImportStore(home, OWNER)
+    assert all(store.manifest(r).get("session_id") != SESSION for r in store.item_refs())
