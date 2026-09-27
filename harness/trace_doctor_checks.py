@@ -87,6 +87,9 @@ def _suppressed_by_project(records) -> list[tuple[str, int]]:
     counts: Counter = Counter()
     for record in records:
         where = "total"
+        if type(record.get("lane")) is str:
+            counts[f"lane:{record['lane']}"] += 1
+            continue
         blob = record.get("cwd_protected")
         if blob and protect.available():
             try:
