@@ -154,7 +154,7 @@ health tool. A missing canon never crashes the roster.
 **Generic lane caller.** `harness/lane_caller.py::call_lane_tool` spawns any
 registered lane and calls one tool, gated by the governance tier. Each canon
 tool takes the tier the lane tool policy table gives it, and a tool the table
-does not list is T2 (O-12). `list_available_lanes` returns canon with organ
+does not list is T2 (default deny, since 1.1.0). `list_available_lanes` returns canon with organ
 `continuity`, its min tier and each tool's tier.
 
 **Desktop identity card.** `desktop/lib/models/lane_identity.dart` holds

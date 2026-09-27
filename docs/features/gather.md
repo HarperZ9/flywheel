@@ -197,7 +197,7 @@ credentials (`GATHER_AUTH_ENV_ALLOW=NAME@HOST`); without one the call returns
 `GRANT_REQUIRED` before anything runs. Flywheel starts the gather lane with all
 four grant variables empty (`GATHER_CHILD_ENV` too): its app tools read a local
 document or corpus and need none, and the feed route runs the gather CLI,
-which keeps operator trust.
+which runs with the trust you give your own command line.
 
 ### Python API
 Stable seams re-exported from `gather/__init__.py`: `make_item`, `Item`,

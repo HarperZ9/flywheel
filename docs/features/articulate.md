@@ -6,7 +6,7 @@
 > `tests/test_lanes.py` asserts it in the expected set. Two wiring pieces are
 > still absent: it has no entry in `LANE_MIN_TIERS` (`harness/lane_caller.py`),
 > so the listing's headline tier is T1, and no admitted-tool manifest. Each tool's
-> tier comes from the lane tool policy table; an unlisted tool is T2 (O-12).
+> tier comes from the lane tool policy table; an unlisted tool is T2 (default deny, since 1.1.0).
 > Claims in "What it is" and "Feature reference" are observed from the repo
 > source. Claims under "How it composes" and "Wiring it needs" are **proposed**
 > and carry that label.
@@ -349,7 +349,7 @@ sit beside the other `public/*` checkouts, so the entry declares `articulate`.
 - **Tier floor.** Articulate has no entry in `LANE_MIN_TIERS`
   (`harness/lane_caller.py`), so the listing's headline tier is T1. The call
   tier comes from the policy table per tool, and a tool the table does not list
-  is T2 (O-12).
+  is T2 (default deny, since 1.1.0).
 - **Admitted-tool set.** A lane launch admits tools through
   `LaunchSpec.allowed_tools` (`harness/mcp_client.py` `launch_allows_tool`), and
   a tool outside the set returns `CAPABILITY_NOT_ADMITTED`. Proposed set:

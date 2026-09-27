@@ -2,7 +2,7 @@
 
 A lane is a companion tool that Flywheel runs as its own process: gather, crucible,
 index and the rest. This page lists, for each of the 17 lanes in the roster, the main
-action a person installs it for, the class an installed-app check measured, and the
+action a person installs it for, the class the installed-app check confirmed, and the
 setup the app's lane card states. It describes the build after 1.0.4; for 1.0.4 itself
 see the known-issues correction.
 
@@ -22,7 +22,7 @@ the approval sheet. Plugins and agent runs cannot reach a T2 tool.
 
 ## Per lane
 
-| Lane | Main action | Measured class | Setup the card states | Outside the class or untested |
+| Lane | Main action | Class the check confirmed | Setup the card states | Outside the class or untested |
 | :-- | :-- | :-- | :-- | :-- |
 | gather | catalog a local document | A | none; feeds and arXiv need the network | feeds were not run; run, pilot and federation need approval at T2 |
 | crucible | check a thesis against measurements | A | none | run, batch and refine need approval at T2 |
@@ -34,7 +34,7 @@ the approval sheet. Plugins and agent runs cannot reach a T2 tool.
 | telos | read the workstation catalog | not in this build | none | the release contents are under review, so no telos code ships |
 | local-model | run a local agent task in a project | B | choose a project folder outside the Flywheel home; start a model server (Ollama with a pulled model at 127.0.0.1:11434, or a server at 127.0.0.1:8765) | the check used a stub model server, so model quality is unmeasured; writes, commands and online models stay off |
 | writing | diagnose a draft | B | record a draft on the Writing screen | diagnose runs on a call you approve at T2 |
-| relay | run one agent task through a local model | B | start a model server | writes, commands and online models stay off; background runs start only at T2; the state before setup was not measurable on the check machine, which runs a model server |
+| relay | run one agent task through a local model | B | start a model server | writes, commands and online models stay off; background runs start only at T2 |
 | plexus | plan a route between lanes | A | none | none |
 | mneme | remember and recall a fact | A | none; key-backed extraction needs a provider key | extraction is untested; forget needs approval at T2 and cannot be undone |
 | calibrate-pro | look up a display panel profile | C | none; calibration runs in Calibrate Pro | list-targets is not in this build |
@@ -43,7 +43,9 @@ the approval sheet. Plugins and agent runs cannot reach a T2 tool.
 | accountable-surface | perceive a folder with provenance | A/C | none; actuation runs in Accountable Surface | actuate is not in this build |
 
 Tally: 8 lanes in A, 4 in B, 1 in C, 1 in A/B-untested, 1 in A/C, 1 below bar and 1 not
-in this build.
+in this build. The check confirms the class each lane is expected to reach: writing is
+expected at B because diagnose needs a recorded draft, and accountable-surface's
+actuation limit comes from the tool policy, not from a check.
 
 ## Where every lane keeps its files
 
@@ -56,24 +58,28 @@ the install folder before and after and found no change.
 
 ## How this was measured
 
-An installed-app check installs the Windows app, starts its engine the way the app does,
-under a throwaway profile with only the Windows system folder on PATH, and calls each
-lane through the same routes and approvals the app uses. It runs twice: once fresh, and
-once after it installs Git, starts a stub model server, picks a project folder, places a
-canon block and records a writing draft. The classes above come from its per-user run on
-2026-09-26 against a build with every final lane pin, summarized with the receipt's hash
-in `evidence/installed-lanes-local-1.1.0-review-20260926.json`. Two earlier builds on the
-same day measured the same classes (`evidence/installed-lanes-local-1.1.0-20260926.json`
-and `evidence/installed-lanes-local-20260926.json`). Of two earlier runs of the first
-build, one agrees and the other had local-model below bar in the setup leg; that
-difference is not yet explained.
+An installed-app check builds the release installer, installs the Windows app per user
+and then for all users on a GitHub-hosted Windows Server runner, starts its engine the
+way the app does, under a throwaway profile with only the Windows system folder on PATH,
+and calls each lane through the same routes and approvals the app uses. It runs twice
+per install: once fresh, and once after it installs Git, starts a stub model server,
+picks a project folder, places a canon block and records a writing draft. The classes
+above come from CI run 36302181098 on 2026-09-27 against commit ba371e6b, summarized
+with both receipts' hashes in `evidence/installed-lanes-ci-36302181098.json`; both
+install modes reached the same verdict for every lane. The check fails when a lane
+leaves its expected row in `packaging/installed-lane-expectations.json`.
+
+Local runs on 2026-09-26 measured the same classes per user
+(`evidence/installed-lanes-local-1.1.0-review-20260926.json` and two earlier builds).
+Of two earlier runs of the first build, one agrees and the other had local-model below
+bar in the setup leg; that difference is not yet explained.
 
 ## What this does not prove
 
-- The check ran on the build machine with a stripped PATH, not on a clean Windows 11
-  install or VM. Host libraries, the network and the host's own model server were
-  reachable.
-- The all-users install was not checked in this run.
+- The check ran on a GitHub-hosted Windows Server runner with a stripped PATH, not on a
+  consumer Windows 11 install. The network was reachable; no host model server ran.
+- Both legs ran as an administrator, so a standard user's read-only Program Files was
+  not exercised.
 - No provider key was used, so no key-backed action is shown to work.
 - The stub model server answers one fixed word; a model-lane pass shows the lane reached
   a model server and the engine's guards held, not answer quality.

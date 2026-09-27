@@ -25,9 +25,9 @@ starts it, one lane, bulletin, ran its main read actions. Nine bundled lanes (ga
 crucible, chorus, index, plexus, mneme, canon, relay and accountable-surface) answered
 only their status and doctor tools (relay answered `relay.status` only) and refused
 every other tool with `CAPABILITY_NOT_ADMITTED`. forum, local-model and writing did not
-start. articulate, calibrate-pro, learn and telos were not in the installer. The
-same machine ran read calls on 13 lanes from a pip install and on 16 from a source
-checkout.
+start. articulate, calibrate-pro, learn and telos were not in the installer. On the
+same machine, every lane that a pip install or a source checkout started answered its
+health tool and read tools with a real result.
 
 **"The installer bundles the current lanes," including forum 1.14.0.** forum 1.14.0
 is in the installer, but the bundled forum process exits as it starts, because the

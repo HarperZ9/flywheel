@@ -19,8 +19,10 @@ import pytest
 from scripts import check_claim_language, check_public_instructions
 
 REPO = Path(__file__).resolve().parents[1]
+# The CI run both legs of which the notes and the lane page count from. The
+# pre-release run on the release commit replaces it (and its run id in the copy).
 EVIDENCE = (REPO / "project-docs" / "lanes" / "evidence"
-            / "installed-lanes-local-1.1.0-review-20260926.json")
+            / "installed-lanes-ci-36302181098.json")
 KNOWN_ISSUES = REPO / "project-docs" / "drafts" / "RELEASE-NOTES-1.0.4-known-issues.md"
 NEXT_NOTES = REPO / "project-docs" / "drafts" / "RELEASE-NOTES-next.md"
 LANE_PAGE = REPO / "project-docs" / "lanes" / "LANES.md"
@@ -73,16 +75,29 @@ def test_the_evidence_summary_counts_seventeen_lanes_and_names_its_limits():
     assert evidence["summary"]["verdict"] in {"PASS", "BELOW_BAR"}
     assert evidence["does_not_prove"]
     assert all(evidence["guards"].values())
+    assert {leg["install_mode"] for leg in evidence["legs"].values()} == {
+        "per-user", "all-users"}
+
+
+@pytest.mark.parametrize("path", CLASS_PAGES, ids=lambda p: p.name)
+def test_the_copy_names_the_run_and_commit_its_classes_come_from(path):
+    text = " ".join(path.read_text(encoding="utf-8").split())
+    evidence = _evidence()
+    assert f"run {evidence['run']['run_id']}" in text
+    assert evidence["source_commit"][:8] in text
 
 
 def test_the_readme_lane_sentence_carries_the_receipt_count():
     readme = " ".join((REPO / "README.md").read_text(encoding="utf-8").split())
     lanes = _evidence()["lanes"]
     at_class = sum(1 for row in lanes.values() if row["verdict"] == "AT_CLASS")
-    assert f"In the Windows app, {at_class} measure at the class their card states" in readme
+    sentence = (f"In the Windows app's installed-app check, {at_class} of {len(lanes)} "
+                "lanes reach the class the check expects for them")
+    assert sentence in readme
     assert "About fifteen composable lanes" not in readme
+    assert "the class their card states" not in readme
     notes = " ".join(NEXT_NOTES.read_text(encoding="utf-8").split())
-    assert f"In the Windows app, {at_class} measure at the class their card states" in notes
+    assert sentence in notes
 
 
 def test_the_known_issues_draft_names_each_measured_1_0_4_gap():

@@ -231,7 +231,7 @@ From `harness/lanes_registry.py`:
   package install profile is live and the source checkout is the fallback.
 - Headline governance tier `T2` (`harness/lane_caller.py:LANE_MIN_TIERS`), because
   the lane can run code through `run`/exec. Each tool's tier comes from the lane
-  tool policy table, and a tool the table does not list is T2 (O-12).
+  tool policy table, and a tool the table does not list is T2 (default deny, since 1.1.0).
 
 ### Verdicts and honest nulls
 

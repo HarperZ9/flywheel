@@ -1,15 +1,12 @@
 <!--
 Draft of the Flywheel 1.1.0 release notes, for the release owner to review before any tag.
 Open before publishing:
-- Lane classes come from the per-user installed-app check on the build machine
-  (project-docs/lanes/evidence/installed-lanes-local-1.1.0-review-20260926.json,
-  source commit d5d771e2), a build with every final pin (relay 0.4.0, gather 1.9.0,
-  mneme 0.5.1, canon 0.4.2), the unlisted-tool change and the finish review's
-  security fixes. Confirm the table and the lane sentence against the receipt from
-  the pre-tag windows-installed-acceptance.yml run on the 1.1.0 candidate commit
-  (O-9), both install modes, before publishing.
-- The README lane sentence carries the same receipt's count (O-5).
-- Installer size is from that local build, not the release workflow.
+- Lane classes, the lane sentence and the method paragraph cite CI run 36302181098
+  (project-docs/lanes/evidence/installed-lanes-ci-36302181098.json, source ba371e6b).
+  Replace that summary, run id and commit with the windows-installed-acceptance.yml
+  run on the release commit (O-9); tests/test_release_drafts.py reads the summary.
+- The README lane sentence carries the same count (O-5).
+- Installer size is from that CI build; re-measure it from the release workflow build.
 - The 1.0.4 known-issues page (RELEASE-NOTES-1.0.4-known-issues.md) publishes on its
   own; the section below points to it.
 Remove this comment before publishing.
@@ -22,8 +19,8 @@ tells you the truth about it: whether the action is ready, what setup it still n
 and when it was last checked. articulate, calibrate-pro and learn join the installer,
 learn with a bundled Node runtime, so it runs with nothing else installed. forum,
 local-model and writing now start inside the installed app. Every lane tool the app can
-call sits under one policy, reviewed tool by tool in
-`project-docs/lanes/POLICY-REVIEW.md`, and tools that write outside the lane's folder,
+call sits under one policy, listed tool by tool in
+`docs/features/lane-tool-policy.md`, and tools that write outside the lane's folder,
 spend a key, publish or act on your machine run only on a call you approve.
 
 ## Why this is 1.1.0
@@ -50,19 +47,22 @@ For the engine alone: `python -m pip install -U flywheel-verify`, then
 
 ## What each lane does in the app
 
-Seventeen lanes ship in the roster. In the Windows app, 15 measure at the class their
-card states: 8 run their main action with no setup (A), 4 after the setup step the card names
-(B), 1 reads only by design (C), 1 runs with no setup and keeps actuation in its own
-app (A/C), and 1 runs with no setup while its provider-backed path is untested
-(A/B-untested). index is below that bar without Git, and telos is not in this build.
+Seventeen lanes ship in the roster. In the Windows app's installed-app check, 15 of 17
+lanes reach the class the check expects for them: 8 run their main action with no setup
+(A), 4 after the setup step the card names (B), 1 reads only by design (C), 1 runs with
+no setup and keeps actuation in its own app (A/C), and 1 runs with no setup while its
+provider-backed path is untested (A/B-untested). index is below that bar without Git,
+and telos is not in this build.
 
-Measured by an installed-app check that installs the app per user, starts its engine
-the way the app does under a throwaway profile, and calls each lane through the app's
-own routes and approvals, once fresh and once after setup. Classes: **A** runs with no
-setup; **B** runs after the setup step the card names; **C** reads only, by design, and
-the main action runs in the tool's own app.
+Measured by an installed-app check (CI run 36302181098, commit ba371e6b) that installs
+the release installer per user and then for all users on a GitHub-hosted Windows Server
+runner, starts the engine the way the app does under a throwaway profile, and calls each
+lane through the app's own routes and approvals, once fresh and once after setup. The
+check fails when a lane leaves its expected class. Classes: **A** runs with no setup;
+**B** runs after the setup step the card names; **C** reads only, by design, and the
+main action runs in the tool's own app.
 
-| Lane | Main action | Measured class | Note |
+| Lane | Main action | Class the check confirmed | Note |
 | :-- | :-- | :-- | :-- |
 | gather | catalog a local document | A | feeds need the network |
 | crucible | check a thesis against measurements | A | |
@@ -82,7 +82,10 @@ the main action runs in the tool's own app.
 | bulletin | read board rooms and the feed | A | needs the network; posting is untested |
 | accountable-surface | perceive a folder with provenance | A/C | actuation runs in Accountable Surface |
 
-"At T2" means the tool runs only on a call you approve with the higher tier.
+The check confirms the class each lane is expected to reach: writing is expected at B
+because diagnose needs a recorded draft, and accountable-surface's actuation limit
+comes from the tool policy, not from a check. "At T2" means the tool runs only on a
+call you approve with the higher tier.
 
 ## What changed
 
@@ -171,9 +174,10 @@ the main action runs in the tool's own app.
 ## Security changes in the engine
 
 - A path argument that names a Windows device path (`\\?\`, `\??\`) or a network
-  share is refused before the lane starts, and a folder is compared by identity, so no
-  spelling of the Flywheel home reaches a lane's read. The local-model folder setting
-  follows the same rule.
+  share is refused before the lane starts, and so is such a value inside gather.run's
+  inline config. A folder is compared by identity, so no spelling of the Flywheel home
+  or the run root reaches a lane's read. The Node and local-model folder settings refuse
+  network paths and mapped network drives too.
 - A T2 call keeps the keys granted to its lane only when its tool spends a model call.
   A key you bind to the call still joins it. Plugins and the forum and relay screens run
   without granted keys, and those screens refuse a tool above T1.
@@ -232,10 +236,8 @@ each statement, what we measured and what to do on 1.0.4. This release is the fi
 
 ## Installer size
 
-The installer grows by about 23.6 MB, mostly the bundled Node runtime: 79,995,954 bytes
-for a local build of this release against 56,355,754 bytes for the published 1.0.4
-installer. The installed engine folder is about 135 MB, of which the Node lane folder is
-about 94 MB.
+The installer is about 23.7 MB larger, mostly the bundled Node runtime: 80,081,007 bytes
+in CI run 36302181098 against 56,355,754 bytes for the published 1.0.4 installer.
 
 ## Limits
 
@@ -243,6 +245,8 @@ about 94 MB.
   Git, map lists the repository with its branch and head as unknown and a
   FileNotFoundError, instead of naming the Git step.
 - telos is not in this build while its release contents are reviewed.
+- The Windows app bundles index 2.13.0 plus one later commit (a bounded context-envelope
+  output), which no index release contains; a pip install gets PyPI 2.13.0.
 - Lanes still run as your user with no filesystem sandbox. The policy governs what a
   caller can ask a lane to do, not what a lane's own code can reach.
 - forum real rooms, mneme extraction and articulate's judge, fix and polish need a
@@ -251,9 +255,9 @@ about 94 MB.
 
 ## What the lane check does not prove
 
-It ran on a build machine with only the Windows system folder on PATH, not on a
-consumer Windows 11 machine, which remains untested; host libraries, the network and a
-host model server were reachable. It used a stub model server, so it shows a model lane
+It ran on a GitHub-hosted Windows Server runner with only the Windows system folder on
+PATH and an administrator account, not on a consumer Windows 11 machine, which remains
+untested; the network was reachable and no host model server ran. It used a stub model server, so it shows a model lane
 reached a model and the engine's guards held, not answer quality. It used no provider
 key, posted nothing and actuated nothing. Each main tool has one fixture assertion. The
 desktop screens were not driven; the check calls the routes the app calls.

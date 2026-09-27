@@ -14,9 +14,10 @@ surface, and your keys and data stay on your machine. Its desktop assistant,
 Rowan, takes a request in plain words and turns it into a task the app runs and
 records on the model you pick. A permission-gated coding agent, relay, runs over
 your own folders and checks each tool request before it acts. Seventeen
-composable lanes ship in the roster. In the Windows app, 15 measure at the class
-their card states, index is below that bar without Git, and telos is not in this
-build.
+composable lanes ship in the roster. In the Windows app's installed-app check, 15
+of 17 lanes reach the class the check expects for them; index is below that bar
+without Git, and telos is not in this build ([per-lane
+table](project-docs/lanes/LANES.md)).
 
 The command `flywheel check-output` checks a value against the source that
 decides it, ships finance, medicine, and law packs, and can emit the check as a
