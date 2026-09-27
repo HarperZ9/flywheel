@@ -73,7 +73,9 @@ custody. Error messages contain no supplied paths, source content, or credential
 Evidence records remain until the owner deletes them with
 `flywheel traces delete --trace-ref agt_...` (plan, then apply with presence);
 the key is destroyed before the files are removed, and a tombstone records the
-deletion. There is no automatic export, external fetch, or deletion policy.
+deletion. There is no automatic export or external fetch. No deletion runs on
+a timer unless the owner adopts a retention rule with presence
+(`flywheel traces retention`); keep is the default.
 Current upstream tools already bound retained output (including the default
 4000-character tool-output cap). This trace preserves their recorded values;
 it does not recover bytes discarded before ledger insertion.

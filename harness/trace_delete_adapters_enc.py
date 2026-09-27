@@ -79,6 +79,29 @@ def session_turns(home: Path, owner: str, client: str, session_id: str) -> list[
             if store.read_turn(t["turn_ref"]).get("session_ref") == session_ref]
 
 
+def turn_sessions(home: Path, owner: str, turn_refs) -> set[str]:
+    """Keyed session refs of these captured turns, leaving out turns that had
+    no session id (their ref would match every session-less source)."""
+    from .trace_turn_receipt import keyed_ref
+    store = _turn_store(home, owner)
+    refs = set()
+    for ref in turn_refs:
+        try:
+            doc = store.read_turn(ref)
+        except FileNotFoundError:
+            continue
+        client = "claude-code" if "/claude-code/" in _turn_rel(store, ref) else "codex"
+        if doc.get("session_ref") and doc["session_ref"] != keyed_ref(
+                store.keystore.custody_key(), "session", client, "none"):
+            refs.add(doc["session_ref"])
+    return refs
+
+
+def _turn_rel(store, turn_ref: str) -> str:
+    path = next(iter(store.base.glob(f"*/*/{turn_ref}.enc")), None)
+    return path.as_posix() if path else ""
+
+
 def session_pending(home: Path, owner: str, client: str, session_id: str) -> list[dict]:
     """Unpaired pending prompts of a session: they hold a prompt too."""
     store, state = _turn_store(home, owner), home / "state"

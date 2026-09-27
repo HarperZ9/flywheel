@@ -9,20 +9,25 @@ DRIFT and exits 1 naming each file that differs. Prints UNVERIFIABLE and
 exits 2 with the reason when something cannot be checked: a missing file or
 manifest, an unsafe member path, or a zip over a cap.
 
-Before opening anything it refuses manifest paths that are absolute, hold
-`..`, a drive letter, a UNC or device prefix, a backslash, a colon (an
-alternate data stream) or a reserved device name. A zip is read member by
-member in memory under caps on member count, total size and compression
-ratio, and is never extracted.
+Before opening anything it refuses manifest and trace paths that are
+absolute, hold `..`, a drive letter, a UNC or device prefix, a backslash, a
+colon (an alternate data stream), a control character or a reserved device
+name. A folder holding a link or junction is refused, not followed. A zip is
+read member by member in memory under caps on member count, total size and
+compression ratio, and is never extracted. Every printed reason has its
+control characters escaped.
 
 What MATCH does not prove: that the export holds everything custody held,
-that custody recorded what really happened, or who made the export. It shows
-the files are the ones the manifest names, unchanged since it was written.
+that custody recorded what really happened, or who made the export. Anyone
+can rewrite the files and the manifest together, so MATCH shows only that
+the files match this manifest; compare root_sha256 with the export entry in
+the owner's custody ledger.
 """
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -52,7 +57,7 @@ def root_digest(manifest: dict) -> str:
 def unsafe(path) -> bool:
     if type(path) is not str or not path or "\\" in path or ":" in path:
         return True
-    if path.startswith("/") or "\x00" in path:
+    if path.startswith("/") or any(ord(c) < 32 or ord(c) == 127 for c in path):
         return True
     parts = path.split("/")
     return any(p in ("", ".", "..") or _RESERVED.match(p) or p != p.rstrip(". ")
@@ -61,6 +66,13 @@ def unsafe(path) -> bool:
 
 class Unverifiable(Exception):
     pass
+
+
+def printable(text: str) -> str:
+    """Text with control characters escaped, safe to print to a terminal."""
+    return "".join(c if 32 <= ord(c) != 127 and not 0x80 <= ord(c) < 0xA0
+                   else "\\x%02x" % ord(c) if ord(c) < 256 else "\\u%04x" % ord(c)
+                   for c in str(text))
 
 
 def _zip_members(path: Path) -> dict:
@@ -78,8 +90,24 @@ def _zip_members(path: Path) -> dict:
         return {i.filename: archive.read(i) for i in infos}
 
 
+def _is_link(path: str) -> bool:
+    info = os.lstat(path)
+    return os.path.islink(path) or bool(getattr(info, "st_file_attributes", 0) & 0x400)
+
+
 def _dir_members(path: Path) -> dict:
-    return {p.relative_to(path).as_posix(): p for p in path.rglob("*") if p.is_file()}
+    if _is_link(str(path)):
+        raise Unverifiable("the export folder is a link")
+    members = {}
+    for folder, dirs, files in os.walk(path, followlinks=False):
+        for name in dirs + files:
+            full = os.path.join(folder, name)
+            if _is_link(full):
+                raise Unverifiable("link in export: " + Path(full).relative_to(path).as_posix())
+        for name in files:
+            full = Path(folder) / name
+            members[full.relative_to(path).as_posix()] = full
+    return members
 
 
 def _read(members: dict, rel: str) -> bytes | None:
@@ -134,7 +162,9 @@ def _chain(data: bytes, expected: dict) -> bool:
 def _traces(members: dict, manifest: dict) -> list:
     drift = []
     for trace in manifest.get("traces", []):
-        data = _read(members, trace.get("path", ""))
+        if type(trace) is not dict or unsafe(trace.get("path")):
+            raise Unverifiable("unsafe trace path in manifest")
+        data = _read(members, trace["path"])
         try:
             ok = data is not None and _chain(data, trace)
         except (ValueError, AttributeError):
@@ -155,12 +185,13 @@ def verify(target) -> tuple[str, list]:
     try:
         members = _zip_members(path) if path.is_file() else _dir_members(path)
         manifest = _manifest(members)
+        traces = _traces(members, manifest)
     except (Unverifiable, zipfile.BadZipFile, OSError) as exc:
         return "UNVERIFIABLE", [str(exc) or type(exc).__name__]
     drift, missing = _files(members, manifest)
     if root_digest(manifest) != manifest.get("root_sha256"):
         drift.append("manifest root does not re-derive: manifest.json")
-    drift += _traces(members, manifest)
+    drift += traces
     missing += _lineage(manifest)
     if missing:
         return "UNVERIFIABLE", missing + drift
@@ -175,7 +206,7 @@ def main(argv=None) -> int:
     code, reasons = verify(argv[0])
     print(code)
     for reason in reasons:
-        print("  " + reason)
+        print("  " + printable(reason))
     return {"MATCH": 0, "DRIFT": 1}.get(code, 2)
 
 

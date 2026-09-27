@@ -18,10 +18,8 @@ def _context():
 
 
 def _rule_text(rule: dict) -> str:
-    target = rule.get("store") or f"class {rule['data_class']}"
-    limits = ", ".join(f"{k} {rule[k]}" for k in ("max_age_days", "max_items", "max_bytes")
-                       if k in rule)
-    return f"{target}: {limits} ({rule['reason_code']})"
+    from .trace_retention import rule_text
+    return rule_text(rule)
 
 
 def show(args) -> int:
@@ -36,6 +34,9 @@ def show(args) -> int:
              "without your confirmation):")
         for rule in current["rules"]:
             emit(f"  {_rule_text(rule)}")
+    if current["tampered"]:
+        emit("SETTINGS_TAMPERED: the adopted policy file does not match your custody ledger, "
+             "so keep is in effect. Adopt the policy again with: flywheel traces retention adopt")
     if current["pending_change"]:
         emit("A change on disk is not in effect. Adopt it with: flywheel traces retention adopt")
     if state["pending_plan"]:
@@ -120,8 +121,9 @@ def apply(args) -> int:
     home, owner = _context()
     try:
         method = adopted_method(home / "state", owner)
+        from .trace_presence_summary import describe
         ref = confirm(home / "state", owner, "retention_apply", args.plan_digest,
-                      f"Apply retention plan {args.plan_digest[:12]}",
+                      describe(home, owner, "retention_apply", args.plan_digest),
                       verifier=verifier_for(method, interactive=True))
         result = apply_pending(home, owner, args.plan_digest, ref)
     except PresenceError as exc:

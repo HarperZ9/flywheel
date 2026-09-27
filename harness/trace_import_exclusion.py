@@ -1,11 +1,20 @@
 """The import exclusion list: deleted sources do not come back (7.6, I19, SP-16).
 
 One entry per deleted import keeps `HMAC(custody key, client, keyed path,
-session id)`, the deleted byte length `n`, and `HMAC(custody key, first n
-bytes)`. A source with the same keyed identity is PREVIOUSLY_DELETED; a
-source whose first n bytes match a deleted prefix, as a resumed session's
-transcript does, is PREVIOUSLY_DELETED_SESSION with the count of new bytes,
-and nothing of the deleted prefix is stored. This is the one keyed
+session id)`, the keyed path and keyed session on their own, the deleted
+byte length `n`, and `HMAC(custody key, first n bytes)`. A source with the
+same keyed identity is PREVIOUSLY_DELETED. A source at the same keyed path
+or in the same keyed session whose first n bytes match a deleted prefix, as
+a resumed session's transcript does, is PREVIOUSLY_DELETED_SESSION with the
+count of new bytes, and nothing of the deleted prefix is stored. A prefix
+never matches on its own: an empty or short deleted file would otherwise
+match every later source that starts with the same bytes.
+
+Deleting a captured session or any of its turns adds a session entry,
+`HMAC(custody key, "session", client, session id)`, the same keyed ref the
+turn store keeps. Every later source of that client and session is then
+PREVIOUSLY_DELETED_SESSION, so a transcript that was captured but never
+imported does not bring the deleted prompts back. This is the one keyed
 fingerprint design invariant I5 allows: confirming a guess needs the owner's
 custody key and the exact bytes. Without the custody key the list cannot
 match, so imports fail closed with CUSTODY_KEY_UNAVAILABLE. Deleting an
@@ -57,6 +66,12 @@ def prefix_ref(key: bytes, data: bytes) -> str:
     return _mac(key, "prefix", data)
 
 
+def session_ref(key: bytes, client: str, session_id) -> str | None:
+    """The keyed session ref the turn store uses; None without a session id."""
+    from .trace_turn_receipt import keyed_ref
+    return keyed_ref(key, "session", client, session_id) if session_id else None
+
+
 def entries(home, owner_ref: str) -> list[dict]:
     path = list_path(home, owner_ref)
     if not path.exists():
@@ -67,7 +82,8 @@ def entries(home, owner_ref: str) -> list[dict]:
 def add(home, owner_ref: str, client: str, path, session_id, data: bytes) -> dict:
     key = custody_key(home, owner_ref)
     entry = {"source": source_ref(key, client, path, session_id), "n": len(data),
-             "prefix": prefix_ref(key, data)}
+             "prefix": prefix_ref(key, data), "path": keyed_path(key, client, path),
+             "session": session_ref(key, client, session_id)}
     target = list_path(home, owner_ref)
     with custody_lock(Path(home) / "state"):
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -82,7 +98,8 @@ class PrefixProbe:
     """Keyed digests of a stream's first n bytes for every n on the list."""
 
     def __init__(self, key: bytes, lengths) -> None:
-        self.states = {n: hmac.new(key, b"prefix", hashlib.sha256) for n in set(lengths)}
+        self.states = {n: hmac.new(key, b"prefix", hashlib.sha256) for n in set(lengths)
+                       if n and n > 0}
         for state in self.states.values():
             state.update(b"\x00")
         self.seen = 0
@@ -94,15 +111,28 @@ class PrefixProbe:
         self.seen += len(chunk)
 
     def digest(self, n: int) -> str | None:
-        return self.states[n].hexdigest() if self.seen >= n else None
+        state = self.states.get(n)
+        return state.hexdigest() if state is not None and self.seen >= n else None
 
 
-def check(key: bytes, listed: list[dict], source: str, size: int, probe: PrefixProbe):
+def _bound(entry: dict, path_ref, session) -> bool:
+    """A prefix match counts only for the same keyed path or keyed session."""
+    return bool(path_ref and entry.get("path") == path_ref
+                or session and entry.get("session") == session)
+
+
+def check(key: bytes, listed: list[dict], source: str, size: int, probe: PrefixProbe, *,
+          path_ref: str | None = None, session: str | None = None):
     """(state, new bytes) or (None, 0)."""
     for entry in listed:
-        matches_prefix = probe.digest(entry["n"]) == entry["prefix"]
-        if entry["source"] == source or matches_prefix:
-            if matches_prefix and size > entry["n"]:
-                return "PREVIOUSLY_DELETED_SESSION", size - entry["n"]
+        if entry.get("kind") == "session":
+            if session and entry["session"] == session:
+                return "PREVIOUSLY_DELETED_SESSION", size
+            continue
+        n = entry.get("n", 0)
+        matches_prefix = n > 0 and probe.digest(n) == entry["prefix"]
+        if entry["source"] == source or matches_prefix and _bound(entry, path_ref, session):
+            if matches_prefix and size > n:
+                return "PREVIOUSLY_DELETED_SESSION", size - n
             return "PREVIOUSLY_DELETED", 0
     return None, 0

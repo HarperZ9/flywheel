@@ -13,6 +13,11 @@ flushed. Destroying a key rewrites its shard without it; older shard versions
 left in freed clusters are still sealed, which is what bounds the claim in
 design section 3.5. Rewrites run under the custody lock. Each instance caches
 decrypted shards and reloads one when its file changes.
+
+A shard written in plaintext (FWKEYS-PLAIN) because no key store was usable
+when it was written is resealed the first time it is read while a provider
+is available; status counts any still in plaintext as KEYSTORE_PLAINTEXT
+rather than calling custody encrypted.
 """
 from __future__ import annotations
 
@@ -75,6 +80,8 @@ class Keystore:
         raw = path.read_bytes()
         if raw.startswith(PLAIN):
             body = raw[len(PLAIN):]
+            if self.provider.name != "none":
+                return self._reseal(path, body)
         elif self.provider.name == "none":
             raise EncError("OS_KEY_UNAVAILABLE")  # sealed by a key store no longer here
         else:
@@ -84,6 +91,20 @@ class Keystore:
             raise EncError("ENC_INTEGRITY")
         keys = {k: base64.b64decode(v) for k, v in doc["keys"].items()}
         self._cache[str(path)] = (stamp, keys)
+        return keys
+
+    def _reseal(self, path: Path, body: bytes) -> dict:
+        doc = json.loads(body)
+        if type(doc) is not dict or doc.get("schema") != SCHEMA:
+            raise EncError("ENC_INTEGRITY")
+        keys = {k: base64.b64decode(v) for k, v in doc["keys"].items()}
+        try:
+            with custody_lock(self.state_root):
+                self._write(path, keys)
+        except (OSError, EncError) as exc:  # stays plaintext; status says so
+            import logging
+            logging.getLogger(__name__).warning("plaintext key shard not resealed (%s)",
+                                                type(exc).__name__)
         return keys
 
     def _write(self, path: Path, keys: dict) -> None:

@@ -97,3 +97,30 @@ def test_the_cli_prints_the_report(legacy, capsys, monkeypatch):
         assert trace_cli.main(["encrypt", "--legacy"]) == 0
     out = capsys.readouterr().out
     assert "6 files encrypted in 1 trace" in out and "freed clusters" in out
+
+
+def test_encrypting_keeps_the_record_times_retention_reads(legacy):
+    """C6: a trace 90 days old still reads 90 days old after migration."""
+    import os
+    import time
+    stamp = time.time() - 90 * 86400
+    for path in legacy.rglob("*.json"):
+        os.utime(path, (stamp, stamp))
+    with using(StreamTestProvider()):
+        migrate_legacy(legacy)
+    for path in legacy.rglob("*.json"):
+        assert abs(path.stat().st_mtime - stamp) < 2, path.name
+
+
+def test_one_unreadable_trace_does_not_stop_the_others(legacy):
+    """C7: a corrupt legacy trace is skipped as UNREADABLE; the rest convert."""
+    with using(NoProvider()):
+        other = AgentTrace(legacy, OWNER, JOURNEY, "op_" + "d" * 32)
+        other.append("progress", {"index": 9})
+    broken = next(p for p in legacy.rglob("head-00000001.json") if OPERATION in str(p))
+    broken.write_bytes(b"{not json")
+    with using(StreamTestProvider()):
+        report = migrate_legacy(legacy)
+    assert report["skipped"] == {"UNREADABLE": 1}
+    assert report["items"] == 1
+    assert "cannot be read" in " ".join(trace_enc_migrate.render(report))
