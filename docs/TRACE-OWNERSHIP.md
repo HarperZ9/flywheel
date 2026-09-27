@@ -286,9 +286,14 @@ deletes every segment that shares its prompt.
 
 Lane databases are not reached. The mneme database and the canon context
 database can hold the same content as your traces, and `flywheel traces
-delete` does not touch them. mneme's own forget, in the release Flywheel
-pins, removes the extracted memory only: the raw turn and an unsalted hash of
-it stay. canon has no deletion in the pinned release.
+delete` does not touch them; each lane deletes through its own tools. In the
+release Flywheel pins, mneme's forget erases a memory with its source turns
+and the rows derived from them. It returns a plan first and erases on a
+second call that confirms that plan, and Flywheel asks for your approval at
+T2 for each call. Earlier audit entries still name the memory by an id
+derived from its content. In the pinned release, canon purges context
+records from its own command line. Flywheel never calls purge, and the
+engine starts canon's context server with purge turned off.
 
 `flywheel traces verify-gone` asks for a phrase without showing it and
 reports how many times it still appears in the plaintext files of the

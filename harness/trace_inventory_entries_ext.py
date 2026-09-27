@@ -16,11 +16,17 @@ LANE = _plain("lane-owned; encryption at rest is the lane's own decision", "7.16
 OUTSIDE = Protection("outside-custody", "the client writes it and sweeps it on its own "
                      "schedule; Flywheel only reads it on import", "7.6")
 LANE_EXPORT = Gap("export of lane stores is not designed in this round", "7.16")
-MNEME_DELETE = Gap("flywheel traces delete does not reach it; mneme's forget in the pinned "
-                   "release removes the extracted memory only, and the raw turn and an "
-                   "unsalted hash of it stay", "MN-01")
-CANON_DELETE = Gap("flywheel traces delete does not reach it; canon has no deletion in the "
-                   "pinned release", "CA-01")
+#: What the pinned lane releases delete (lanes_registry pins; test_trace_status_copy
+#: fails when a pin moves, so this copy is read again with it).
+MNEME_DELETE = Gap("flywheel traces delete does not reach it; in the pinned release, "
+                   "mneme's forget erases a memory with its source turns and the rows "
+                   "derived from them, on a plan and a second call that confirms it; earlier "
+                   "audit entries still name the memory by an id derived from its content",
+                   "MN-01")
+CANON_DELETE = Gap("flywheel traces delete does not reach it; in the pinned release, canon "
+                   "purges context records from its own command line; Flywheel never calls "
+                   "purge, and the engine starts canon's context server with purge turned "
+                   "off", "CA-01")
 CLIENT_DELETE = Gap("the client's own store; a deletion report names the file the client "
                     "keeps and how to remove it there (7.10)", "7.10")
 
@@ -83,12 +89,16 @@ STORES = (
     Store("L1", "mneme database", "env", ("mneme.db",), ("C1", "C5", "C8"), LANE,
           LANE_EXPORT, MNEME_DELETE, shape="file", env=("MNEME_STATE",),
           owner_binding="lane"),
-    Store("L1a", "mneme replay snapshots", "temp", ("mneme-replay-*.db",),
-          ("C1", "C5", "C8"), LANE, LANE_EXPORT,
-          Gap("not reached by flywheel traces delete; mneme removes these copies at close, best "
-              "effort", "MN-01"),
+    Store("L1a", "mneme replay snapshots left by older releases", "temp",
+          ("mneme-replay-*.db",), ("C1", "C5", "C8"), LANE, LANE_EXPORT,
+          Gap("not reached by flywheel traces delete; the pinned release keeps its "
+              "snapshots in its own per-user state folder instead, removes them at erase "
+              "and sweeps the ones whose process is gone; on Windows that folder sits in "
+              "the mneme lane folder, and on macOS and Linux it is outside every store "
+              "this status counts", "MN-01"),
           shape="file", owner_binding="lane",
-          retention="removed best effort at close; a crash leaves the copy"),
+          retention="older releases removed them best effort at close; a crash left the "
+                    "copy"),
     Store("L2", "canon context database", "env", ("canon-context.db",), ("C1", "C4", "C5"),
           LANE, LANE_EXPORT, CANON_DELETE, shape="file",
           env=("CANON_CONTEXT_DB", "FLYWHEEL_CANON_CONTEXT_DB"), owner_binding="lane"),
