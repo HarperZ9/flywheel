@@ -30,6 +30,19 @@ def _content_hash(messages: list) -> str:
         json.dumps(messages, sort_keys=True, default=str).encode()).hexdigest()
 
 
+def _custody():
+    """The custody lock when a Flywheel state folder exists (a trace deletion
+    edits this file under it), else nothing: the index also runs standalone."""
+    import contextlib
+    import os
+    home = os.environ.get("FLYWHEEL_HOME")
+    state = Path(home) / "state" if home else Path.home() / ".flywheel" / "state"
+    if not state.is_dir():
+        return contextlib.nullcontext()
+    from .trace_custody_lock import custody_lock
+    return custody_lock(state)
+
+
 class FoldIndex:
     """Content-addressed store of folded message spans + an inverted term index."""
 
@@ -42,7 +55,15 @@ class FoldIndex:
             self._load()
 
     def add(self, span_hash: str, messages: list) -> None:
-        if not span_hash or span_hash in self.spans:
+        if not span_hash:
+            return
+        with _custody():
+            if self.path and self.path.exists():
+                self._load()                        # SP-15: never write back a span deleted since
+            self._add(span_hash, messages)
+
+    def _add(self, span_hash: str, messages: list) -> None:
+        if span_hash in self.spans:
             return                                  # content-addressed: never index the same span twice
         self.spans[span_hash] = messages
         self._content[span_hash] = _content_hash(messages)
@@ -100,8 +121,14 @@ class FoldIndex:
     def _save(self) -> None:
         if not self.path:
             return
+        import os
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(self._snapshot(), sort_keys=True), encoding="utf-8")
+        temporary = self.path.with_name("." + self.path.name + ".tmp")
+        with open(temporary, "w", encoding="utf-8") as stream:
+            stream.write(json.dumps(self._snapshot(), sort_keys=True))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, self.path)
 
     def _load(self) -> None:
         d = json.loads(self.path.read_text(encoding="utf-8"))

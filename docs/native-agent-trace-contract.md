@@ -27,7 +27,9 @@ correctness, source truth, or unlimited retention of original subprocess output.
 
 Records are immutable, hash chained, owner/Journey/operation bound, and written
 through the pinned private artifact filesystem before their metadata is emitted.
-Where an OS key store exists, each record and checkpoint file is encrypted below
+Where an OS key store is available (DPAPI on Windows; on macOS and Linux the
+`encryption` extra, and `secret-tool` on Linux), each record and checkpoint
+file is encrypted below
 the canonical bytes under a per-trace key; readers decrypt before every check
 below, so the canonical bytes, hashes and responses are the same in both modes.
 Each ledger append is persisted before the next model/tool step. Interrupted or
@@ -72,8 +74,8 @@ custody. Error messages contain no supplied paths, source content, or credential
 
 Evidence records remain until the owner deletes them with
 `flywheel traces delete --trace-ref agt_...` (plan, then apply with presence);
-the key is destroyed before the files are removed, and a tombstone records the
-deletion. There is no automatic export or external fetch. No deletion runs on
+for an encrypted trace the key is destroyed before the files are removed, and a
+tombstone records the deletion. There is no automatic export or external fetch. No deletion runs on
 a timer unless the owner adopts a retention rule with presence
 (`flywheel traces retention`); keep is the default.
 Current upstream tools already bound retained output (including the default

@@ -16,7 +16,7 @@ import argparse
 import json
 
 from . import trace_inventory as inv
-from .trace_cli_text import emit, escape
+from .trace_cli_text import emit, escape, public
 
 
 def _size(n: int) -> str:
@@ -31,15 +31,15 @@ def _protection(p: dict, encryption: dict | None = None) -> str:
     if p["kind"] == "encrypted" and encryption is not None:
         return encryption["protection"]
     if p["kind"] == "plaintext-exception":
-        return f"plaintext (exception: {p['reason']}; closes in {p['package']})"
+        return f"plaintext (exception: {public(p['reason'])})"
     if p["kind"] == "outside-custody":
-        return f"outside Flywheel custody ({p['reason']})"
+        return f"outside Flywheel custody ({public(p['reason'])})"
     return p["kind"].replace("-", " ")
 
 
 def _operation(op: dict) -> str:
     if op["state"] == "gap":
-        return f"none (gap: {op['package']}): {op['reason']}"
+        return f"none: {public(op['reason'])}"
     return "available"
 
 
@@ -57,13 +57,14 @@ def _store_lines(row: dict, encryption: dict | None = None) -> list[str]:
              f"      location    {escape(row['location'])}",
              f"      classes     {classes} ({row['evidence']})",
              f"      protection  {_protection(row['protection'], encryption)}",
-             f"      retention   {row['retention']}"]
-    lines += [f"      cap         {c['what']}: {c['behavior']}" for c in row["caps"]]
+             f"      retention   {public(row['retention'])}"]
+    lines += [f"      cap         {public(c['what'])}: {public(c['behavior'])}"
+              for c in row["caps"]]
     lines += [f"      observed    {_observed(row['observed'])}",
               f"      export      {_operation(row['operations']['export'])}",
               f"      delete      {_operation(row['operations']['delete'])}"]
     if row["note"]:
-        lines.append(f"      note        {row['note']}")
+        lines.append(f"      note        {public(row['note'])}")
     return lines
 
 
@@ -90,7 +91,7 @@ def render_status(doc: dict, roots: dict) -> list[str]:
         lines += _store_lines(row, encryption)
     lines.append("")
     by_id = {row["id"]: row for row in doc["stores"]}
-    lines += [f"UNCLASSIFIED {sid} {escape(by_id[sid]['name'])}: {by_id[sid]['note']}"
+    lines += [f"UNCLASSIFIED {sid} {escape(by_id[sid]['name'])}: {public(by_id[sid]['note'])}"
               for sid in doc["unclassified"]]
     lines += [f"UNREGISTERED {u['root']}/{escape(u['name'])} ({u['files']} files, "
               f"{_size(u['bytes'])})" for u in doc["unregistered"]]

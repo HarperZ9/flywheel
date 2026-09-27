@@ -77,4 +77,40 @@ void main() {
     await _pump(tester, store, (_) {});
     expect(find.byType(Text), findsNothing);
   });
+
+  testWidgets('the conversation delete asks first and Keep keeps it',
+      (tester) async {
+    bool? answer;
+    await tester.pumpWidget(MaterialApp(
+        theme: flywheelLightTheme(),
+        home: Scaffold(body: Builder(
+            builder: (context) => TextButton(
+                onPressed: () async =>
+                    answer = await confirmConversationDelete(context),
+                child: const Text('open'))))));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete this conversation?'), findsOneWidget);
+    expect(find.textContaining('no undo'), findsOneWidget);
+    await tester.tap(find.text('Keep'));
+    await tester.pumpAndSettle();
+    expect(answer, isFalse);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    expect(answer, isTrue);
+  });
+
+  testWidgets('deleting a set-aside file says it may still hold text',
+      (tester) async {
+    final file = File('${home.path}/chats.json')..writeAsStringSync('[oops');
+    final store = ChatStore(file: file);
+    await tester.runAsync(() async => store.load());
+    await _pump(tester, store, (_) {});
+    await tester.tap(find.text('Delete this file'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('could not parse it'), findsOneWidget);
+    expect(find.textContaining('nothing in it can be kept'), findsNothing);
+  });
 }

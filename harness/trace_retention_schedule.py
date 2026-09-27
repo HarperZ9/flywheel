@@ -54,10 +54,8 @@ def _save(home, owner: str, doc: dict) -> None:
     from .trace_custody_lock import custody_lock
     path = _state_path(home, owner)
     with custody_lock(Path(home) / "state"):
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name("runs.json.tmp")
-        temporary.write_bytes(canonical_bytes(doc))
-        temporary.replace(path)
+        from . import trace_durable
+        trace_durable.write_durable(path, canonical_bytes(doc))
 
 
 def _now_iso() -> str:

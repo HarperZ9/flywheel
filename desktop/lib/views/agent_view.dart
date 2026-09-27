@@ -150,6 +150,10 @@ class _AgentViewState extends State<AgentView> {
     });
   }
 
+  Future<void> _askDelete(Conversation c) async {
+    if (await confirmConversationDelete(context) && mounted) _delete(c);
+  }
+
   void _deleteArchived(String id) {
     final loaded = _conversations.where((c) => c.id == id).toList();
     if (loaded.isNotEmpty) return _delete(loaded.first);
@@ -217,7 +221,7 @@ class _AgentViewState extends State<AgentView> {
               streaming: _busy,
               onNew: _newChat,
               onSelect: _select,
-              onDelete: _delete,
+              onDelete: _askDelete,
               banner: _historyBanner()),
         Expanded(
             child: Column(children: [

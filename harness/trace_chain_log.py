@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 
 from .evidence_json import canonical_bytes, canonical_sha256
-from .journey_lock import ExclusiveJourneyLock, fsync_directory
+from .journey_lock import ExclusiveJourneyLock
 
 GENESIS = "0" * 64
 
@@ -60,11 +60,9 @@ class ChainedLog:
         return self._load(repair=False)[1]
 
     def _write_anchor(self, count: int, head: str) -> None:
-        temporary = self.anchor.with_name(self.anchor.name + ".tmp")
-        temporary.write_bytes(canonical_bytes({"schema": self.head_schema, "count": count,
-                                               "head_sha256": head}))
-        os.replace(temporary, self.anchor)
-        fsync_directory(self.dir)
+        from . import trace_durable
+        trace_durable.write_durable(self.anchor, canonical_bytes(
+            {"schema": self.head_schema, "count": count, "head_sha256": head}))
 
     def _load(self, *, repair: bool) -> tuple[list[dict], dict]:
         raw = self.path.read_bytes() if self.path.exists() else b""

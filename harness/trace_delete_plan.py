@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 
@@ -22,11 +23,22 @@ from .trace_delete_adapters_enc import (session_pending, session_turns, trace_en
                                         turn_entries, turn_sessions, valid_trace_ref,
                                         valid_turn_ref)
 from .trace_delete_adapters_import import entries_for as import_entries, valid_ref
-from .trace_delete_adapters_plain import (PROFILE_NOTE, selection_entries, trace_closure,
-                                          valid)
+from .trace_delete_adapters_plain import (PROFILE_NOTE, UNREAD_NOTE, selection_entries,
+                                          trace_closure, valid)
 
 _SESSION = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
-REMEDIES = {"claude-code": "claude project purge", "codex": "remove the rollout in Codex"}
+#: What each client keeps and how to remove it there. Claude Code's
+#: `claude project purge` has no per-session option (checked against its
+#: --help, 2.1.251): it deletes every session of the project, so it is named
+#: only as a warning.
+REMEDIES = {
+    "claude-code": ("its transcript <session id>.jsonl in the project's folder under "
+                    "~/.claude/projects; delete that file (claude project purge would "
+                    "delete every session of the project)"),
+    "codex": ("its rollout file for the session under ~/.codex/sessions or "
+              "archived_sessions; Codex has no "
+              "command that removes one session, so delete that file"),
+}
 ENCRYPTED = ("S1", "CT", "S8b", "IM", "BT")
 _LISTS = {"trace_refs": valid_trace_ref, "turn_refs": valid_turn_ref, "import_refs": valid_ref,
           "receipt_eids": lambda v: valid("receipt_eids", v),
@@ -116,14 +128,15 @@ def _check_receipts(home: Path, eids) -> None:
 def _collect(home: Path, owner: str, selection: dict, roots: dict) -> tuple:
     entries, receipts, clients, turns = _encrypted(home, owner, selection)
     from .trace_bench_tasks import task_entries
+    unread: list[str] = []
     for entry in [e for e in entries if e["store"] == "S1"]:
-        entries += trace_closure(home / "state", owner, entry)
+        entries += trace_closure(home / "state", owner, entry, unread)
         entries += task_entries(home, owner, entry["item"])
     _check_receipts(home, selection.get("receipt_eids", []))
     entries += selection_entries(roots, selection, receipts)
     unique = {(e["store"], e["item"]): e for e in entries}
     return sorted(unique.values(), key=lambda e: (e["store"], e["item"])), \
-        sorted(set(receipts)), clients, _sessions(home, owner, selection, turns)
+        sorted(set(receipts)), clients, _sessions(home, owner, selection, turns), unread
 
 
 def _not_covered() -> list[str]:
@@ -162,10 +175,16 @@ def _forecast(home: Path, entries: list[dict]) -> dict:
     return forecast
 
 
-def make_plan(home, owner: str, selection, *, save: bool = True, roots=None) -> dict:
+def make_plan(home, owner: str, selection, *, save: bool = True, roots=None,
+              nonce: str = "") -> dict:
+    """Plan a deletion. A saved plan mixes a fresh random nonce into its
+    digest and keeps it only with the saved selection, which the deletion
+    removes: the digest left in the tombstone, ledger and event log cannot be
+    recomputed from guessed content (content-derived refs, SP-oracle)."""
     home, selection = Path(home), validate(selection)
+    nonce = nonce or (os.urandom(32).hex() if save else "")
     roots = roots or roots_for(home)
-    entries, receipts, clients, sessions = _collect(home, owner, selection, roots)
+    entries, receipts, clients, sessions, unread = _collect(home, owner, selection, roots)
     keys: dict[str, list[str]] = {}
     for entry in (e for e in entries if e["store"] in ENCRYPTED):
         keys.setdefault(entry["store"], []).append(entry["item"])
@@ -176,32 +195,39 @@ def make_plan(home, owner: str, selection, *, save: bool = True, roots=None) -> 
                     **({"client_transcript": len(clients)} if clients else {})}
     digest = canonical_sha256({"schema": "flywheel.trace-delete-plan/v1", "owner_ref": owner,
                                "entries": [[e["store"], e["item"]] for e in entries],
-                               "receipts": receipts})
+                               "receipts": receipts, "nonce": nonce})
     plan = {"schema": "flywheel.trace-delete-plan/v1", "plan_digest": digest,
             "entries": entries, "receipts": receipts, "keys": keys, "counts": counts,
             "out_of_reach": out_of_reach, "remedies": {c: REMEDIES[c] for c in sorted(clients)},
             "sessions": sessions,
             "residue_forecast": _forecast(home, entries), "not_covered": _not_covered(),
-            "notes": [PROFILE_NOTE] if any(e["store"] == "S6" for e in entries) else []}
+            "notes": ([PROFILE_NOTE] if any(e["store"] == "S6" for e in entries) else [])
+            + ([UNREAD_NOTE.format(n=len(unread))] if unread else [])}
     if save:
-        _save(home, owner, digest, selection)
+        _save(home, owner, digest, selection, nonce)
     return plan
 
 
-def _save(home: Path, owner: str, digest: str, selection: dict) -> None:
+def _save(home: Path, owner: str, digest: str, selection: dict, nonce: str) -> None:
     folder = _plans(home, owner)
     folder.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
     (folder / f"{digest}.json").write_bytes(canonical_bytes(
         {"schema": "flywheel.trace-delete-selection/v1", "selection": selection,
-         "created_at": stamp}))
+         "nonce": nonce, "created_at": stamp}))
 
 
 def load_selection(home, owner: str, digest: str) -> dict:
+    return load_saved(home, owner, digest)[0]
+
+
+def load_saved(home, owner: str, digest: str) -> tuple[dict, str]:
+    """(selection, nonce) of a saved plan; replan with both to check drift."""
     if type(digest) is not str or not re.fullmatch(r"[0-9a-f]{64}", digest):
         raise PlanError("PLAN_NOT_FOUND")
     try:
-        return json.loads((_plans(home, owner) / f"{digest}.json").read_bytes())["selection"]
+        doc = json.loads((_plans(home, owner) / f"{digest}.json").read_bytes())
+        return doc["selection"], str(doc.get("nonce", ""))
     except (OSError, ValueError, KeyError):
         raise PlanError("PLAN_NOT_FOUND") from None
 

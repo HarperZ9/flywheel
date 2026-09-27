@@ -52,16 +52,13 @@ def _convert(trace: AgentTrace, item: Path, name: str) -> bool:
     raw = path.read_bytes()
     if is_encrypted(raw):
         return False
-    times = os.stat(path)
-    blob = trace.cipher.seal(name, raw)
-    temporary = item / f".{name}.enc-tmp"
-    temporary.write_bytes(blob)
+    from . import trace_durable
+    temporary = trace_durable.write_temp(path, trace.cipher.seal(name, raw), times=os.stat(path))
     trace.cipher.prefix.reset()
     if trace.cipher.open(name, temporary.read_bytes()) != raw:
         temporary.unlink()
         raise OSError("ENC_VERIFY_FAILED")
-    os.utime(temporary, ns=(times.st_atime_ns, times.st_mtime_ns))
-    os.replace(temporary, path)
+    trace_durable.commit(temporary, path)
     return True
 
 

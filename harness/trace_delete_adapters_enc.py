@@ -45,20 +45,38 @@ def _turn_store(home: Path, owner: str):
 
 
 def turn_entries(home: Path, owner: str, turn_ref: str) -> tuple[list[dict], list[str]]:
-    """(entries, receipt eids) for one captured turn and what goes with it."""
+    """(entries, receipt eids) for one captured turn and what goes with it.
+
+    Every Stop segment copies its prompt from the pending record, so the
+    closure takes the pending record and every segment it lists (SP-sibling:
+    a sibling left behind would still decrypt to the deleted prompt)."""
     store, state = _turn_store(home, owner), home / "state"
-    path = next(iter(store.base.glob(f"*/*/{turn_ref}.enc")), None)
-    if path is None:
+    doc = _turn_doc(store, turn_ref)
+    if doc is None:
         return [], []
-    doc = store.read_turn(turn_ref)
-    entries = [{"store": "CT", "item": turn_ref, "rel": path.relative_to(state).as_posix()}]
+    turns, entries = {turn_ref: doc}, []
     for pending_path, pending in store._pendings(doc.get("session_ref")):
         if turn_ref in pending.get("turn_refs", []):
             entries.append({"store": "CT", "item": pending_path.stem,
                             "rel": pending_path.relative_to(state).as_posix()})
             entries += _snapshots(state, owner, pending.get("freeze"))
-    entries += _snapshots(state, owner, doc.get("freeze"))
-    return entries, [doc["receipt_eid"]] if doc.get("receipt_eid") else []
+            for sibling in pending["turn_refs"]:
+                sibling_doc = turns.get(sibling) or _turn_doc(store, sibling)
+                if sibling_doc is not None:
+                    turns[sibling] = sibling_doc
+    receipts = []
+    for ref, turn in turns.items():
+        path = next(iter(store.base.glob(f"*/*/{ref}.enc")))
+        entries.insert(0, {"store": "CT", "item": ref, "rel": path.relative_to(state).as_posix()})
+        entries += _snapshots(state, owner, turn.get("freeze"))
+        receipts += [turn["receipt_eid"]] if turn.get("receipt_eid") else []
+    return entries, receipts
+
+
+def _turn_doc(store, turn_ref: str) -> dict | None:
+    if next(iter(store.base.glob(f"*/*/{turn_ref}.enc")), None) is None:
+        return None
+    return store.read_turn(turn_ref)
 
 
 def _snapshots(state: Path, owner: str, envelope) -> list[dict]:
@@ -106,8 +124,13 @@ def session_pending(home: Path, owner: str, client: str, session_id: str) -> lis
     """Unpaired pending prompts of a session: they hold a prompt too."""
     store, state = _turn_store(home, owner), home / "state"
     session_ref = store._session_ref(client, session_id)
-    return [{"store": "CT", "item": path.stem, "rel": path.relative_to(state).as_posix()}
-            for path, pending in store._pendings(session_ref) if not pending.get("turn_refs")]
+    out = [{"store": "CT", "item": path.stem, "rel": path.relative_to(state).as_posix()}
+           for path, pending in store._pendings(session_ref) if not pending.get("turn_refs")]
+    from .trace_turn_store import QUARANTINE
+    moved = store.base / QUARANTINE
+    out += [{"store": "CT", "item": path.stem, "rel": path.relative_to(state).as_posix()}
+            for path in (sorted(moved.glob(f"{session_ref}-*.enc")) if moved.is_dir() else [])]
+    return out
 
 
 def valid_trace_ref(value) -> bool:
