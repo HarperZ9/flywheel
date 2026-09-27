@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+REPO = Path(__file__).resolve().parents[1]
 
 # The production manifest binds each lane to a vendored source tree that is
 # staged outside the repository (on the authoring machine, or wherever
@@ -28,13 +29,14 @@ def _run(*args):
         capture_output=True,
         text=True,
         check=False,
+        cwd=REPO,
     )
 
 
 def _load_builder():
     spec = importlib.util.spec_from_file_location(
         "build_python_lane_payloads",
-        Path("scripts/build_python_lane_payloads.py"),
+        REPO / "scripts" / "build_python_lane_payloads.py",
     )
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
@@ -44,7 +46,7 @@ def _load_builder():
 
 def test_python_lane_payload_builder_rejects_c_drive_sources(tmp_path):
     manifest = tmp_path / "payloads.jsonl"
-    row = json.loads(Path("packaging/python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    row = json.loads((REPO / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()[0])
     row["local_source_root"] = "C:/dev/public/gather"
     manifest.write_text(json.dumps(row, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -139,14 +141,19 @@ def test_python_lane_payload_builder_names_a_fixture_for_every_manifest_row():
     # The receipt copies FIXTURES[lane] for each manifest row, so a row with no
     # entry crashes the build with a KeyError. The source-backed test below runs
     # only where the vendored sources are staged, so this check runs everywhere.
+    # Each fixture tool must be one the row admits, or the receipt names a
+    # workflow the bundled lane cannot serve.
     builder = _load_builder()
-    lanes = [json.loads(line)["lane"] for line in Path(
-        "packaging/python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
-        if line.strip()]
+    rows = [json.loads(line) for line in (REPO / "packaging" / "python-lane-payloads.jsonl")
+            .read_text(encoding="utf-8").splitlines() if line.strip()]
+    lanes = [row["lane"] for row in rows]
     assert sorted(builder.FIXTURES) == sorted(lanes)
-    for lane in lanes:
-        assert builder.FIXTURES[lane]["tool"], lane
-        assert builder.FIXTURES[lane]["workflow"], lane
+    for row in rows:
+        fixture = builder.FIXTURES[row["lane"]]
+        assert fixture["tool"] and fixture["workflow"], row["lane"]
+        admitted = set(row["component_descriptor"]["allowed_tools"])
+        for tool in fixture["tool"].split("+"):
+            assert tool in admitted, (row["lane"], tool)
 
 
 @pytest.mark.skipif(
@@ -196,7 +203,7 @@ def test_python_lane_fixture_script_lists_bounded_workflows():
 def test_python_lane_network_guard_blocks_socket(tmp_path):
     spec = importlib.util.spec_from_file_location(
         "python_lane_fixture_netguard",
-        Path("scripts/python_lane_fixture_netguard.py"),
+        REPO / "scripts" / "python_lane_fixture_netguard.py",
     )
     assert spec and spec.loader
     guard_module = importlib.util.module_from_spec(spec)
