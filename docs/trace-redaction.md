@@ -45,7 +45,10 @@ Every pattern runs in time linear in its input. A test feeds each one
 adversarial input shaped to be its worst case and holds it to 50 ms per MiB,
 a budget that scales on machines slower than the reference one. Input made
 of real matches, or of candidates a check must reject, costs one check per
-candidate; a second test holds its growth to linear. Long strings are
+candidate. A second test holds an eight-fold larger flood to at most 20 times
+the time of the smaller one, plus 10 ms, in one of up to three rounds. That
+separates linear from quadratic growth (8 against 64); it does not separate
+linear from slightly faster growth. Long strings are
 scanned in 64 KiB windows that overlap by 8 KiB. A scan that runs past its
 time budget stops with `SCAN_BUDGET_EXCEEDED`.
 
