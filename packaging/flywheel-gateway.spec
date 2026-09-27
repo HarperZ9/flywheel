@@ -71,6 +71,7 @@ from scripts.python_lane_freeze import (
 from scripts.frozen_payload_datas import (
     NODE_STAGE_ENV, check_pyz_slices, node_lane_stage_datas)
 from scripts.frozen_license_datas import frozen_license_datas
+from scripts.frozen_trace_imports import TRACE_CUSTODY_HIDDEN_IMPORTS
 import importlib.util
 
 
@@ -180,6 +181,9 @@ a = Analysis(
         "cryptography.hazmat.primitives.serialization",
         *python_lane_hidden,
         *studio_runtime.hiddenimports,
+        # Trace custody: the inventory resolves its adapters from dotted names,
+        # which the analysis cannot follow (scripts/frozen_trace_imports.py).
+        *TRACE_CUSTODY_HIDDEN_IMPORTS,
     ],
     excludes=["tkinter", "matplotlib", "numpy", "PIL"],
     noarchive=False,
