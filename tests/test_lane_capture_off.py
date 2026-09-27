@@ -79,6 +79,46 @@ def test_the_cli_bridge_turns_capture_off_even_when_the_call_asks_for_it(tmp_pat
     assert env["FLYWHEEL_CAPTURE"] == "off"
 
 
+@pytest.mark.parametrize("bundled", [False, True], ids=["pip", "frozen"])
+def test_forums_granted_gate_decision_launch_keeps_capture_off(tmp_path, monkeypatch,
+                                                               bundled):
+    """forum 1.15 runs a gate decision only on a launch the engine widens for one
+    approved T2 call (lane_tier_gate.widen_for_call). After confinement that launch
+    passes the key rule, credential binding and the grant; the child it starts is a
+    lane child like any other, so capture must still be off, even with an env_allow
+    grant naming the variable."""
+    import harness.mcp_client as mcp_client
+    from harness import lanes
+    from harness.lane_caller import call_lane_tool
+    argv = (("flywheel-gateway.exe", "--bundled-lane-mcp", "forum") if bundled
+            else ("python", "-I", "-m", "forum.cli", "mcp"))
+    confined, _codes = confine_lane_launch(
+        LANES["forum"], LaunchSpec(argv, inherit_env=not bundled), _parent(tmp_path),
+        {"env_allow": ["FLYWHEEL_CAPTURE"]})
+    spawned = []
+
+    class _Client:
+        def __init__(self, command, **_kw):
+            spawned.append(command)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return None
+
+        def call_text(self, name, args):
+            return {"ok": True, "text": "{}", "raw": {}}
+
+    monkeypatch.setattr(lanes, "resolve_mcp_launch", lambda name, *a, **k: confined)
+    monkeypatch.setattr(mcp_client, "MCPClient", _Client)
+    args = {"run_seq": 1, "wave": 0, "approver": "owner"}
+    assert call_lane_tool("forum", "gate_approve", args, governance_tier="T2") == {}
+    (launch,) = spawned
+    assert launch.argv == (*argv, "--allow-gate-decisions")
+    assert dict(launch.env_overrides)["FLYWHEEL_CAPTURE"] == "off"
+
+
 def test_a_granted_name_cannot_turn_capture_back_on(tmp_path):
     registry = {"articulate": {"env_allow": ["FLYWHEEL_CAPTURE"]}}
     env = lane_process_environment("articulate", environ=_parent(tmp_path),
