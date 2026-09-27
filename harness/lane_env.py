@@ -47,7 +47,8 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Mapping
 
-from .lane_workdir import ensure_lane_workdir, lane_state_defaults, pin_lane_workdir
+from .lane_workdir import (CAPTURE_OFF, ensure_lane_workdir, lane_state_defaults,
+                           pin_lane_workdir)
 from .mcp_client import LaunchSpec
 
 CONFINED_KINDS = frozenset(("pip", "npm"))
@@ -176,4 +177,5 @@ def lane_process_environment(lane_name: str, extra: Mapping[str, str] | None = N
     if lane is not None and lane_state_defaults(lane_name, Path(), env):
         folder = ensure_lane_workdir(lane_name, source)
         env.update(lane_state_defaults(lane_name, folder, env))
+    env.update(CAPTURE_OFF)
     return env
