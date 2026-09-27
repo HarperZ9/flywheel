@@ -376,7 +376,10 @@ its path. `--zip` writes one `.zip` file instead of a folder; the zip is
 created with the same owner-only ACL and not-indexed attribute before it is
 filled, and it is kept only when its verifier returns `MATCH`. A
 folder under OneDrive, Dropbox, Google Drive or iCloud Drive is refused
-unless you pass `--allow-sync-root` and confirm it. The folder gets an
+unless you pass `--allow-sync-root` and confirm it. A network share, as a
+`\\server\share` path or a drive letter mapped to one, is refused outright,
+before anything opens the path; export to a local folder and copy it from
+there. The folder gets an
 owner-only ACL and is excluded from search indexing before anything is
 written, and it keeps an `.incomplete` name until its own verifier returns
 `MATCH`. `export` shows what would leave custody and asks you to type yes,
