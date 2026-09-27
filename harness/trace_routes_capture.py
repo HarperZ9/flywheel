@@ -37,6 +37,16 @@ def _bound(handler) -> tuple[str, int]:
     return host, port
 
 
+def loopback_only(handler) -> bool:
+    """Both ends of the connection are loopback. Hooks only ever connect to a
+    loopback listener, and remote capture is not offered (I18), so a capture
+    route on a LAN or tailnet listener, or to a remote peer, does not exist:
+    no settings read, no spool fold, no share of the hello budget."""
+    server = handler.server.server_address[0]
+    client = (getattr(handler, "client_address", None) or ("",))[0]
+    return server in protocol.LOOPBACK and client in protocol.LOOPBACK
+
+
 def host_ok(handler) -> bool:
     return _host_of(handler.headers) in handler.allowed_hosts
 
