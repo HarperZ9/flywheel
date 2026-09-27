@@ -11,6 +11,7 @@ Open before publishing:
 - Installer size is from that CI build; re-measure it from the release workflow build.
 - The 1.0.4 known-issues page (RELEASE-NOTES-1.0.4-known-issues.md) publishes on its
   own; the section below points to it.
+- Trace custody: manual checks X4, X6, X7, X8 and X18 were not run on hardware.
 Remove this comment before publishing.
 -->
 
@@ -24,6 +25,8 @@ local-model and writing now start inside the installed app. Every lane tool the 
 call sits under one policy, listed tool by tool in
 `docs/features/lane-tool-policy.md`, and tools that write outside the lane's folder,
 spend a key, publish or act on your machine run only on a call you approve.
+Flywheel also takes custody of your agent traces (`docs/TRACE-OWNERSHIP.md`): it lists
+every store that holds them, encrypts them at rest, and exports or deletes them for you.
 
 ## Why this is 1.1.0
 
@@ -160,6 +163,23 @@ call you approve with the higher tier.
   license (with OpenSSL's), the texts for code compiled into Python, and each lane's
   license. The installer's third-party notice lists every one.
 
+## Your traces
+
+- `flywheel traces status` lists every store that holds data derived from your traces:
+  where it is, how it is protected and kept, and whether it can be exported and deleted.
+- Gateway traces, captured turns, frozen pages, imported transcripts and bench tasks are
+  encrypted at rest, each under its own key: DPAPI on Windows, AES-256-GCM with a
+  keychain key on macOS and Linux with the `encryption` extra, or status says plaintext.
+- `flywheel traces delete` plans its closure, destroys keys before files and leaves a
+  tombstone. `export` writes a copy with a standard-library verifier, `import` copies
+  Claude Code and Codex transcripts into custody, and retention deletes only under a
+  rule you adopt; the default keeps everything.
+- The Claude Code and Codex capture hooks send salted commitments by default, over a
+  channel signed per request and bound to the engine's address, never the raw gateway
+  token. A turn's text is kept only after you turn content capture on.
+- Custody events land in a hash-chained, metadata-only ledger and the Windows event log.
+  The desktop app keeps a conversation it cannot read, names it and asks before deletes.
+
 ## Security fixes in the lanes
 
 - relay 0.5.0 fixes GHSA-82fg-qprm-q5r7 (a PATH entry reaching a child's folder could
@@ -254,6 +274,9 @@ call you approve with the higher tier.
 - writing's `diagnose` now needs an approval at T2, because it works on the shared
   draft store outside the lane's folder.
 - Plugins and agent runs refuse a lane tool the policy does not list.
+- The capture hook mount is now `"<python>" -P -E -m harness.capture_hooks`, and
+  `flywheel traces doctor` fails the old line. With `-E`, a mount that found Flywheel
+  through `PYTHONPATH` stops working; install Flywheel for that Python instead.
 
 ## Corrections to the 1.0.4 notes
 
@@ -262,6 +285,9 @@ delivered: one lane ran its main action, nine answered only status and doctor, f
 local-model and writing did not start, and a key granted with `env_allow` did not reach
 a bundled lane. The engine from pip was not affected. The 1.0.4 known-issues page lists
 each statement, what we measured and what to do on 1.0.4. This release is the fix.
+The 1.0.3 and 1.0.4 notes also said your keys and data stay on your machine. Keys and
+Flywheel's records do; the content of each request goes to the hosted provider you
+route it to.
 
 ## Limits
 
@@ -276,6 +302,8 @@ each statement, what we measured and what to do on 1.0.4. This release is the fi
 - forum real rooms, mneme extraction and articulate's judge, fix and polish need a
   provider key or a signed-in claude CLI and were not exercised.
 - The limits listed for 1.0.4 on the verifier still hold.
+- Custody presence defaults to `none`: any process running as you can confirm a custody
+  operation. `flywheel traces delete` does not reach lane stores, such as mneme's.
 
 ## What the lane check does not prove
 
@@ -296,3 +324,5 @@ the routes the app calls.
 - If a script calls a lane tool the policy does not list on a pip or source install,
   send that call with an approval at T2, or ask for the tool to be reviewed into the
   policy.
+- If you mounted the capture hooks, paste the lines from `flywheel traces hooks
+  print-mount` again. `flywheel traces encrypt --legacy` encrypts older traces.
