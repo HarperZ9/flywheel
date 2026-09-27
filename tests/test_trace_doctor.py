@@ -118,3 +118,14 @@ def test_every_check_has_a_state_and_a_remedy_line(planted):
     for check in checks:
         assert check.state in ("PASS", "WARN", "FAIL", "UNKNOWN")
         assert check.remedy or check.state == "PASS"
+
+
+def test_print_mount_gives_codex_no_session_end_hook():
+    """P5: session import is Claude Code only, so the Codex block has no
+    SessionEnd hook (it would fail with REQUEST_REJECTED:422 every time)."""
+    import json
+    from harness.trace_doctor import print_mount
+    lines = print_mount()
+    claude = json.loads(lines[lines.index("Claude Code (settings.json):") + 1])
+    codex = json.loads(lines[lines.index("Codex (hooks.json):") + 1])
+    assert "SessionEnd" in claude["hooks"] and "SessionEnd" not in codex["hooks"]

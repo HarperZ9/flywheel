@@ -16,7 +16,7 @@ PLACEHOLDER = re.compile(r"\[REDACTED:([a-z0-9_]+):([0-9a-f]{8})\]")
 
 
 def test_catalog_version_is_exported_and_every_rule_has_a_fake():
-    assert rules.CATALOG_VERSION == "trace-redact/2026-09-26.2"
+    assert rules.CATALOG_VERSION == "trace-redact/2026-09-26.3"
     assert trace_redact.CATALOG_VERSION == rules.CATALOG_VERSION
     ids = {r.id for r in rules.RULES}
     assert ids == set(credential_fakes()) | set(personal_fakes())

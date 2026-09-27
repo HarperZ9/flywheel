@@ -13,7 +13,10 @@ keeps are subtracted, so kept text is not reported as residue.
 It reports hit counts per file label and never surrounding text. It shows
 that these byte patterns are absent from these files now; it does not look at
 freed clusters, NTFS metadata, backups, shadow copies, the pagefile or any
-transformation it does not search for.
+transformation it does not search for. Encrypted custody files are ciphertext,
+so a pattern can never be found in them: they are counted as not searched, and
+a zero count says nothing about them. A compressed file it cannot open (a
+.zst with no zstd module, or one over the zstd bounds) is counted the same way.
 """
 from __future__ import annotations
 
@@ -87,8 +90,22 @@ def scan_bytes(data: bytes, needles: Needles) -> int:
     return hits
 
 
-def _payloads(path: Path):
-    data = path.read_bytes()[:MAX_READ]
+class Unopened(Exception):
+    pass
+
+
+def _zst(data: bytes) -> bytes:
+    from .trace_zstd import InputBound, Stream
+    pieces: list[bytes] = []
+    try:
+        stream = Stream(pieces.append, max_output=MAX_READ)
+        stream.feed(data)
+    except InputBound:
+        raise Unopened() from None
+    return b"".join(pieces)
+
+
+def _payloads(path: Path, data: bytes):
     yield data
     name = path.name.lower()
     try:
@@ -99,22 +116,31 @@ def _payloads(path: Path):
                 for member in archive.infolist()[:10_000]:
                     yield archive.read(member)[:MAX_READ]
         elif name.endswith(".zst"):
-            from compression import zstd  # Python 3.14 and later
-            yield zstd.decompress(data)[:MAX_READ]
-    except (OSError, ValueError, EOFError, ImportError, zipfile.BadZipFile):
-        return
+            yield _zst(data)
+    except (OSError, ValueError, EOFError, zipfile.BadZipFile):
+        raise Unopened() from None
 
 
 def scan_paths(paths, needles: Needles, *, labels=None) -> dict:
+    from .trace_enc import is_encrypted
     labels = labels or {}
-    per_file, total = {}, 0
+    per_file, total, unsearched = {}, 0, {"encrypted": 0, "compressed": 0}
     for path in paths:
         path = Path(path)
         if not path.is_file():
             continue
-        hits = sum(scan_bytes(payload, needles) for payload in _payloads(path))
+        data = path.read_bytes()[:MAX_READ]
+        if is_encrypted(data):
+            unsearched["encrypted"] += 1
+            continue
+        hits = 0
+        try:
+            for payload in _payloads(path, data):
+                hits += scan_bytes(payload, needles)
+        except Unopened:
+            unsearched["compressed"] += 1
         if hits:
             per_file[labels.get(path, path.name)] = hits
             total += hits
-    return {"per_file": per_file, "total": total,
+    return {"per_file": per_file, "total": total, "unsearched": unsearched,
             "structural_only": needles.structural_only}

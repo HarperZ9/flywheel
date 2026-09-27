@@ -5,7 +5,11 @@ route returns, so their chains re-derive; they are never redacted. Captured
 turns (CT), capture snapshots (S8b) and imported transcript lines (IM) pass
 through the export's redactor. An imported item that is not a JSON-lines
 transcript cannot be redacted line by line; a redacted export omits it and
-says so, and `--no-redact` exports its exact bytes.
+says so, and `--no-redact` exports its exact bytes. A compressed Codex
+rollout is decompressed under the zstd bounds before it is redacted line by
+line; when it cannot be (no zstd module, or a bound), a redacted export
+omits it and says why, and `--no-redact` exports its exact compressed bytes
+as `.jsonl.zst`.
 """
 from __future__ import annotations
 
@@ -102,8 +106,38 @@ class Collector:
                 if source["snap_ref"] in done:
                     self.lineage.append([turn["turn_ref"], source["snap_ref"]])
 
+    def _omit(self, ref: str, reason: str) -> None:
+        self.omissions.append({"store": "IM", "item_ref": ref, "reason": reason})
+
+    def _compressed(self, ref: str, data: bytes) -> None:
+        from .trace_zstd import InputBound, Stream
+        if not self.redactor.active:
+            self.write(f"stores/IM/{ref}.jsonl.zst", data, "IM", ref)
+            return
+        pieces: list[bytes] = []
+        try:
+            stream = Stream(pieces.append)
+            stream.feed(data)
+            if not stream.decompressor.eof:
+                raise InputBound("truncated")
+        except InputBound as bound:
+            self._omit(ref, f"compressed rollout not decompressed ({bound.code}), so it "
+                            "cannot be redacted; exported only with --no-redact")
+            return
+        self._jsonl(ref, b"".join(pieces))
+
+    def _jsonl(self, ref: str, data: bytes) -> None:
+        if self.redactor.active:
+            text = "".join(self.redactor.line(line.decode("utf-8", "replace")) + "\n"
+                           for line in data.splitlines())
+            data = text.encode("utf-8")
+        self.write(f"stores/IM/{ref}.jsonl", data, "IM", ref)
+
     def _import_item(self, store, ref: str, manifest: dict) -> None:
         data = store.read_bytes(ref)
+        if manifest["kind"] == "compressed_rollout":
+            self._compressed(ref, data)
+            return
         if manifest["kind"] not in JSONL_KINDS:
             if self.redactor.active:
                 self.omissions.append({"store": "IM", "item_ref": ref, "reason":
@@ -112,11 +146,7 @@ class Collector:
                 return
             self.write(f"stores/IM/{ref}.bin", data, "IM", ref)
             return
-        if self.redactor.active:
-            text = "".join(self.redactor.line(line.decode("utf-8", "replace")) + "\n"
-                           for line in data.splitlines())
-            data = text.encode("utf-8")
-        self.write(f"stores/IM/{ref}.jsonl", data, "IM", ref)
+        self._jsonl(ref, data)
 
     def imports(self, home: Path, owner: str) -> None:
         from .trace_import_items import ImportStore

@@ -47,25 +47,28 @@ def _body(handler, allowed: set) -> dict | None:
     return doc if type(doc) is dict and set(doc) <= allowed else None
 
 
-def _presence_post(handler, path: str):
+def _presence_post(handler):
+    """A challenge answered by the adopted method, inside the gateway. The
+    prompt text comes from the plan, grant or settings bound to the digest,
+    never from the request (I17)."""
     from harness import trace_presence as presence
+    from harness.trace_presence_summary import describe
     state = handler.flywheel_home / "state"
-    body = _body(handler, {"ref"} if path.endswith("/approve") else {"kind", "plan_digest"})
+    body = _body(handler, {"kind", "plan_digest"})
     if body is None:
         return handler._json(capture.error("INVALID_REQUEST", "unexpected fields"), 422)
+    kind, digest = body.get("kind"), body.get("plan_digest")
     try:
-        if path.endswith("/approve"):
-            presence.approve_from_desktop(state, handler.owner_ref, body.get("ref"))
-            return handler._json({"schema": "flywheel.presence-approval/v1", "ok": True})
-        kind, digest = body.get("kind"), body.get("plan_digest")
-        ref = presence.confirm(state, handler.owner_ref, kind, digest,
-                               f"{kind} {str(digest)[:12]}")
+        if kind not in presence.KINDS or type(digest) is not str or len(digest) != 64:
+            raise presence.PresenceError("PRESENCE_INVALID")
+        summary = describe(handler.flywheel_home, handler.owner_ref, kind, digest)
+        ref = presence.confirm(state, handler.owner_ref, kind, digest, summary)
     except presence.PresenceError as exc:
-        code = 422 if exc.code == "PRESENCE_INVALID" else 403
+        code = {"PRESENCE_INVALID": 422, "PRESENCE_UNDESCRIBED": 404}.get(exc.code, 403)
         return handler._json(capture.error(exc.code, "presence refused"), code)
     status = presence.presence_status(state, handler.owner_ref)
     return handler._json({"schema": "flywheel.presence-challenge-result/v1", "ref": ref,
-                          "method": status["method"],
+                          "method": status["method"], "summary": summary,
                           "presence_statement": status["statement"]})
 
 
@@ -171,8 +174,8 @@ def route_post(handler, path: str):
         if path == protocol.SESSION_PATH:
             return capture.session(handler, raw)
         return capture.turn(handler, "prompt" if path == protocol.PROMPT_PATH else "stop", raw)
-    if path in ("/api/traces/presence", "/api/traces/presence/approve"):
-        return _presence_post(handler, path)
+    if path == "/api/traces/presence":
+        return _presence_post(handler)
     if path in ("/api/traces/delete/plan", "/api/traces/delete/apply"):
         return _delete_post(handler, path)
     if path == "/api/traces/export":
