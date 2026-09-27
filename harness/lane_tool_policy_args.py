@@ -12,11 +12,17 @@ of that tool (the Phase 3 ``tools/list`` captures and the pinned sources):
   a plain id (``lane_tool_policy.ID_PATTERN``, no ``..``), or the call is
   refused before a child spawns (C-4, finding F1: learn joins ``sessionId`` and
   ``runId`` into paths unchecked);
+- ``tree_args``: arguments that carry an inline structure (an object, a list
+  or its JSON text) whose values can name files, such as gather.run's inline
+  ``config``. Every string inside one is checked as a path argument is: a
+  Windows device or network path, or one that resolves into Flywheel's own
+  state outside the lane's folder, refuses the call;
 - ``open_egress``: the tool fetches a URL the caller names, an open outbound
   channel an agent run must not hold (C-12, finding F6).
 
-Stated limit: a path inside a nested object or a free-text field escapes a
-name-based list, and the write-containment probe measures writes, not reads.
+Stated limit: a path inside a free-text field, or inside a nested object of an
+argument not named here, escapes a name-based list, and the write-containment
+probe measures writes, not reads.
 """
 from __future__ import annotations
 
@@ -38,7 +44,7 @@ def _paths(*names: str) -> dict:
 ARG_POLICY: dict[str, dict[str, dict]] = {
     "gather": {"gather.docs": _paths("path"), "gather.context": _paths("corpus"),
                "gather.federation": _paths("registry"),
-               "gather.run": _paths("config_path"),
+               "gather.run": {**_paths("config_path"), "tree_args": ("config",)},
                "gather.pilot": _paths("manifest", "output", "bundle_output")},
     "crucible": {"crucible.assess": _paths("thesis", "measurements"),
                  "crucible.recheck": _paths("dir", "index", "pack"),

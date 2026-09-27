@@ -148,7 +148,7 @@ Admitted at launch: 5 of 8 tools. T2 per granted call: 3. Not in this build: 0.
 | `gather.docs` | T1 | main | read |  | `path` kept out of the home | Reads a local file or folder and returns catalog rows and digests; writes nothing. |
 | `gather.arxiv` | T1 |  | network_read |  |  | Fetches arXiv metadata and returns rows; writes nothing. |
 | `gather.federation` | T2 (rule alone: T1) |  | read |  | `registry` kept out of the home | Validates or plans a registry in memory. Section 1a puts it at T2. |
-| `gather.run` | T2 |  | outside_write |  | `config_path` kept out of the home | Runs a multi-source config over the network and writes the corpus store the config names. |
+| `gather.run` | T2 |  | outside_write |  | `config_path` kept out of the home, every value in `config` kept out of the home | Runs a multi-source config over the network and writes the corpus store the config names. |
 | `gather.context` | T1 | main | read |  | `corpus` kept out of the home | Reads a corpus and returns bounded excerpts or a selection; writes nothing. |
 | `gather.pilot` | T2 |  | outside_write |  | `manifest` kept out of the home, `output` kept out of the home, `bundle_output` kept out of the home | Runs, refreshes or bundles a pilot into the output folders the caller names. |
 

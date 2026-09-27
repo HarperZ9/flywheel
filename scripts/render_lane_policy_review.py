@@ -43,6 +43,7 @@ def _forced(entry: ToolPolicy) -> str:
               for name, value in entry.forced_args]
     parts += [f"`{name}` a plain id" for name in entry.id_args]
     parts += [f"`{name}` kept out of the home" for name in entry.path_args]
+    parts += [f"every value in `{name}` kept out of the home" for name in entry.tree_args]
     if entry.open_egress:
         parts.append("open egress: no agent run")
     return ", ".join(parts)

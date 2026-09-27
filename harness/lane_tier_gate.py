@@ -21,6 +21,7 @@ before anything spawns, then ``guard_args`` (allowlist, then forced values).
 """
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import replace
 from pathlib import Path
@@ -94,6 +95,40 @@ def _reaches_home(lane: str, value: object, environ: Mapping[str, str]) -> bool:
     return any(inside(target, root) for root in roots) and not inside(target, own_s)
 
 
+_TREE_LIMIT = 4096                  # strings checked in one tree argument
+
+
+def _tree_strings(value: object) -> list[str] | None:
+    """Every string inside an object, a list or its JSON text; None when the
+    tree holds more than ``_TREE_LIMIT`` strings (refused, not sampled)."""
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except ValueError:
+            parsed = None
+        if isinstance(parsed, (dict, list)):
+            value = parsed
+    found: list[str] = []
+    stack = [value]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, str):
+            found.append(item)
+        elif isinstance(item, dict):
+            stack.extend(item.keys())
+            stack.extend(item.values())
+        elif isinstance(item, (list, tuple)):
+            stack.extend(item)
+        if len(found) > _TREE_LIMIT:
+            return None
+    return found
+
+
+def _tree_reaches_home(lane: str, value: object, environ: Mapping[str, str]) -> bool:
+    strings = _tree_strings(value)
+    return strings is None or any(_reaches_home(lane, text, environ) for text in strings)
+
+
 def argument_refusal(lane: str, tool: str, args: Mapping[str, Any],
                      environ: Mapping[str, str] | None = None) -> dict | None:
     """None when the arguments pass the tool's id and path guards; else the
@@ -103,7 +138,8 @@ def argument_refusal(lane: str, tool: str, args: Mapping[str, Any],
         return None
     env = os.environ if environ is None else environ
     bad = any(name in args and not _plain_id(args[name]) for name in entry.id_args) or any(
-        name in args and _reaches_home(lane, args[name], env) for name in entry.path_args)
+        name in args and _reaches_home(lane, args[name], env) for name in entry.path_args) or any(
+        name in args and _tree_reaches_home(lane, args[name], env) for name in entry.tree_args)
     reason = "argument_refused" if bad else _create_only_refusal(lane, tool, args, env)
     if not reason:
         return None

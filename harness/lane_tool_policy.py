@@ -97,7 +97,8 @@ class ToolPolicy:
     ``forced_args``: (name, value) pairs the engine applies to every call on
     every route, after ``allowed_args``; ``None`` drops the argument.
     ``allowed_args``: when a tuple, the only argument names that pass.
-    ``id_args``, ``path_args``, ``open_egress``: see ``lane_tool_policy_args``.
+    ``id_args``, ``path_args``, ``tree_args``, ``open_egress``: see
+    ``lane_tool_policy_args``.
     """
     tier: str = "T1"
     timeout_s: int = DEFAULT_TIMEOUT_S
@@ -110,13 +111,14 @@ class ToolPolicy:
     allowed_args: tuple[str, ...] | None = None
     id_args: tuple[str, ...] = ()
     path_args: tuple[str, ...] = ()
+    tree_args: tuple[str, ...] = ()
     open_egress: bool = False
 
     @property
     def guarded(self) -> bool:
         """True when the engine rewrites or checks this tool's arguments."""
         return bool(self.forced_args or self.allowed_args is not None
-                    or self.id_args or self.path_args)
+                    or self.id_args or self.path_args or self.tree_args)
 
 
 def _build(tables: Mapping[str, Mapping[str, Mapping[str, Any]]]) -> dict[str, dict[str, ToolPolicy]]:
