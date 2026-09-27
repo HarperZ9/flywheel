@@ -163,6 +163,11 @@ and checks free space. `--apply` imports.
 - Not imported, and named in a plan when they exist: `history.jsonl` (every
   prompt you typed), `file-history/`, `paste-cache/`, `plans/`, `tasks/` and
   `shell-snapshots/`.
+- A session a Flywheel lane started is not yours to import: articulate runs
+  Claude Code from a folder under its lane folder, and Claude Code keeps that
+  session with your own. The plan names each such file `LANE_SPAWNED`, reading
+  the working directory the transcript records, and counts the sessions; the
+  copies stay in Claude Code's own store.
 - A junction or symbolic link inside the Claude Code folder is refused and
   never followed, so a link to your SSH keys cannot pull them in.
 - Sources are opened read-only and never renamed, rewritten or re-timed. A
