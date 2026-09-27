@@ -111,7 +111,7 @@ reaches T2, since the model picks each inner call and its arguments.
   `lane_grant_required`). All three vendor safe_spawn 1.0.1; a PATH differential under
   the engine's lane environments, system folder only and a full developer PATH, found
   no program lost.
-- **crucible 1.3.0, 2026-09-27** (O-4, O-12). crucible 1.2.0 is inside
+- **crucible 1.3.0, 2026-09-27.** crucible 1.2.0 is inside
   GHSA-49qx-cj4f-wfqv: a measurement file could widen the tolerance that decides MATCH,
   and status and doctor answered MATCH without measuring anything. 1.3.0 fixes both and
   adds one tool, `crucible.recheck_template`, which reads a registry assessment and

@@ -110,7 +110,7 @@ def test_the_known_issues_draft_names_each_measured_1_0_4_gap():
 
 def test_the_notes_class_breakdown_is_the_receipts_count_per_class():
     """The per-class clause follows the receipt's summary.by_class, so the
-    summary that replaces EVIDENCE cannot leave stale counts behind (O-5)."""
+    summary that replaces EVIDENCE cannot leave stale counts behind."""
     notes = " ".join(NEXT_NOTES.read_text(encoding="utf-8").split())
     start = notes.index("lanes reach the class the check expects for them:")
     clause = notes[start:notes.index(". ", start)]
