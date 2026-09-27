@@ -82,7 +82,6 @@ def expand_env(value: str, environ: Mapping[str, str]) -> str:
 
 
 _VERSIONS: dict[tuple[str, int, int], str] = {}
-_DIGESTS: dict[tuple[str, int, int], str] = {}
 
 
 def _cached_version(path: str, mtime_ns: int, size: int) -> str | None:
@@ -120,17 +119,16 @@ def node_version(path: str) -> str | None:
 
 
 def file_digest(path: Path) -> str | None:
-    """sha256 of a file, cached on its size and mtime; None when unreadable."""
+    """sha256 of a file, read in full on every call; None when unreadable.
+
+    Not cached on size and mtime: a replacement can keep both, and the saved
+    Node choice is only a pin if every launch hashes the bytes it will run."""
     try:
-        stat = Path(path).stat()
-        key = (str(path), stat.st_mtime_ns, stat.st_size)
-        if key not in _DIGESTS:
-            digest = hashlib.sha256()
-            with Path(path).open("rb") as handle:
-                for block in iter(lambda: handle.read(1 << 20), b""):
-                    digest.update(block)
-            _DIGESTS[key] = digest.hexdigest()
-        return _DIGESTS[key]
+        digest = hashlib.sha256()
+        with Path(path).open("rb") as handle:
+            for block in iter(lambda: handle.read(1 << 20), b""):
+                digest.update(block)
+        return digest.hexdigest()
     except OSError:
         return None
 

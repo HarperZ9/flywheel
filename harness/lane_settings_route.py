@@ -11,8 +11,13 @@ and the granted lane install.
   POLICY-DECISION C-15). Only an absolute path to a file named ``node.exe`` on
   Windows (``node`` elsewhere) is accepted, never ``node.cmd`` or ``node.bat``,
   which CreateProcess would run through cmd.exe. The file's sha256 is saved with
-  the path, and ``tool_discovery`` checks it again before every launch, so a
-  replaced file is not run under the old choice.
+  the path, and ``tool_discovery`` hashes the file again at every launch, so a
+  replaced file is not run under the old choice, even one that keeps its size
+  and time stamp.
+
+Both choices refuse a UNC, device or mapped network path before any filesystem
+call (``path_on_network``): the server behind a share controls what the file
+holds, and resolving the path would open an SMB session.
 
 - ``/api/lanes/install`` (action ``lane.install``): runs pip or npm for one lane
   at its pinned version (``lanes.install_lane``); lane-supplied build code that
@@ -28,6 +33,8 @@ import hashlib
 import os
 from pathlib import Path
 from typing import Callable, Mapping
+
+from . import path_identity
 
 NODE_PATH_ROUTE = "/api/settings/node_path"
 LOCAL_MODEL_ROOT_ROUTE = "/api/lanes/local-model/root"
@@ -53,6 +60,12 @@ def _bad(reason: str, status: int = 400) -> tuple[dict, int]:
             "reason": reason}, status
 
 
+def _on_network(raw: str, *, windows: bool | None = None) -> bool:
+    text = raw.strip().strip('"')
+    return (path_identity.device_or_unc(text, windows=windows)
+            or path_identity.remote_drive(text, windows=windows))
+
+
 def root_body(environ: Mapping[str, str]) -> dict:
     from .lane_setup import SetupChecks
     # the picked folder itself, as the installed app launches on it
@@ -70,6 +83,8 @@ def root_post(req: Mapping[str, object], environ: Mapping[str, str]) -> tuple[di
         return root_body(environ), 200
     if not isinstance(raw, str) or "\x00" in raw:
         return _bad("path_not_a_string")
+    if _on_network(raw):
+        return _bad("path_on_network")
     folder = Path(os.path.expanduser(raw.strip()))
     if not folder.is_absolute() or not folder.is_dir():
         return _bad("local_model_root_missing")
@@ -117,6 +132,8 @@ def node_path_post(req: Mapping[str, object], environ: Mapping[str, str] | None 
         return node_path_get(env), 200
     if not isinstance(raw, str) or "\x00" in raw:
         return _bad("path_not_a_string")
+    if _on_network(raw, windows=platform == "nt"):
+        return _bad("path_on_network")
     given = Path(raw.strip().strip('"'))
     if not given.is_absolute():
         return _bad("path_not_absolute")
