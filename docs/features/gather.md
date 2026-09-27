@@ -239,7 +239,7 @@ Gather is the `perception` organ in the lane layer. Observed in
 
 ```python
 "gather": Lane(
-    "gather", "gather-engine", "gather", ("mcp",), "pip", "1.6.1",
+    "gather", "gather-engine", "gather", ("mcp",), "pip", "1.9.1",
     "research intake + provenance receipts (verified-data flywheel intake)",
     "perception", source_repo="public/gather", py_module="gather.cli"),
 ```

@@ -140,8 +140,8 @@ Canon runs both as a standalone tool and as a Flywheel lane.
 **Lane registration.** `harness/lanes_registry.py` declares
 `LANES["canon"]` as a `pip` lane, command `canon`, args `("mcp",)`, organ
 `continuity`, module `canon.cli`, source repo `public/canon`, install name
-`flywheel-canon`, version `0.2.0` (read from the registry and from
-`pyproject.toml`, which agree). The role text records that the MCP surface is
+`flywheel-canon`. The version pin lives in that registry entry, the one
+place to read it. The role text records that the MCP surface is
 read-only and that reconcile stays a library call. `package_disabled_reason` is
 empty: the distribution is published, so the package install profile is live and
 a source checkout is the fallback.

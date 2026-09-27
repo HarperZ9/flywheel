@@ -114,7 +114,8 @@ local-model is registered in `harness/lanes_registry.py`:
 ```python
 "local-model": Lane(
     "local-model", "", "python", ("-m", "harness.local_mcp"), "bundled", "0.1.0",
-    "the trained 14B proposer + verified-inference harness (the engine lane)",
+    "a local agent loop on the model server you run, inside a project folder you pick, "
+    "with verified-inference receipts (no model ships with the app)",
     "propose-verify"),
 ```
 

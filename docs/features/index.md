@@ -120,7 +120,7 @@ curl -s localhost:PORT/api/index/summary -d '{"root":"path/to/workspace"}'
 | `index status` / `doctor` / `demo` | Operator envelopes, machine-readable with `--json`. |
 | `index mcp` | Serve the surfaces above as MCP tools. |
 
-**MCP tools** (from `src/index_graph/mcp.py` `_tool_defs()`): `index.map`, `index.context`, `index.context.envelope`, `index.select`, `index.invalidate`, `index.wiki`, `index.symbol-graph`, `index.symbol-definition`, `index.symbol-references`, `index.symbol-implementations`, `index.status`, `index.doctor`, `index_graph`, `index_focus`, `index_verify`, `index_router`, `index_internals`. Three tools cache behind fingerprints: `index.map`, `index.context`, `index.context.envelope`.
+**MCP tools** (from `src/index_graph/mcp.py` `_tool_defs()` at the pinned commit, the 22 the payload row lists): `index.map`, `index.context`, `index.context.envelope`, `index.select`, `index.invalidate`, `index.wiki`, `index.symbol-graph`, `index.symbol-definition`, `index.symbol-references`, `index.symbol-implementations`, `index.status`, `index.doctor`, `index_graph`, `index_focus`, `index_verify`, `index_router`, `index_internals`, `index.router.job.start`, `index.router.job.status`, `index.router.job.result`, `index.router.job.cancel`, `index.router.job.resume`. Three tools cache behind fingerprints: `index.map`, `index.context`, `index.context.envelope`.
 
 **Flywheel bridge functions** (`harness/index_bridge.py`): `index_view(root, view)` runs one of three views (`map`, `graph`, `symbols`) and returns the engine JSON under `result` (schema `flywheel.index-view/v1`); `index_summary(root)` returns a compact card (`repo_count`, `dirty_count`, `class_total`, `root_sha256_prefix`; schema `flywheel.index-summary/v1`). Durable workspace-map jobs live in `harness/index_jobs.py` (schema `flywheel.index-workspace-map-job/v1`).
 
@@ -134,7 +134,7 @@ curl -s localhost:PORT/api/index/summary -d '{"root":"path/to/workspace"}'
 
 ```python
 "index": Lane(
-    "index", "index-graph", "index", ("mcp",), "pip", "2.10.0",
+    "index", "index-graph", "index", ("mcp",), "pip", "2.13.0",
     "workspace map + symbol graph + verified wiki (the catalog lane)",
     "structure", source_repo="public/index", py_module="index_graph"),
 ```
@@ -162,8 +162,8 @@ The same seam works over MCP: a host calls `call_lane_tool("index", "index.conte
 **Wiring status against the chorus model.** The task's reference case, `chorus`, is wired as a bridge (`harness/chorus_bridge.py`), a gateway route (`/api/discourse`, `harness/gateway.py:1973`), and an expected-set test (`tests/test_chorus_bridge.py`), but it is not a lane. index carries that same bridge and route pattern and adds the two pieces that make it a full native lane:
 
 - **lanes_registry entry.** Present (`harness/lanes_registry.py:68-71`).
-- **Expected-set test.** Present (`tests/test_lanes.py:22-38` pins the roster membership, install-name-to-command asymmetry, and version 2.10.0).
+- **Expected-set test.** Present (`tests/test_lanes.py` pins the roster membership and the install-name-to-command asymmetry).
 - **Desktop card and route.** Present (`harness/index_bridge.py`, `harness/index_route.py`, `harness/index_jobs.py`, dispatched at `harness/gateway.py:1963`).
 - **Payload manifest and schemas.** Present: MCP tools declared in `src/index_graph/mcp.py`, artifact schemas in the index repo's `docs/PROTOCOL.md`, and the Flywheel wrapper schemas `flywheel.index-view/v1`, `flywheel.index-summary/v1`, `flywheel.index-workspace-map-job/v1`.
 
-No new lane wiring is required. The remaining items are corrections, not integration work, and are recorded in the integration-gap note: a version-string skew between the source (2.10.0) and the README/CHANGELOG (2.9.0), a dead `relation_count` field the project card reads but the summary never sets, and a desktop bridge that covers three of the CLI's surfaces while the rest reach Flywheel through the MCP lane and CLI.
+No new lane wiring is required. The remaining items are corrections, not integration work, and are recorded in the integration-gap note: a dead `relation_count` field the project card reads but the summary never sets, and a desktop bridge that covers three of the CLI's surfaces while the rest reach Flywheel through the MCP lane and CLI.

@@ -1,6 +1,6 @@
 # Accountable Surface (Flywheel lane)
 
-Lane id: `accountable-surface` · organ: `actuation` · tier floor: `T2` · version 0.1.0 · license FSL-1.1-MIT
+Lane id: `accountable-surface` · organ: `actuation` · tiers: per tool (`docs/features/lane-tool-policy.md`) · version 0.3.1 · license FSL-1.1-MIT
 
 > Feature registry: `harness/lanes_registry.py` · tier map: `harness/lane_caller.py` · desktop card: `desktop/lib/models/lane_identity.dart` · downstream consumer: `harness/lesson_mappers.py` · source repo: `public/accountable-surface` (composes `public/coherence-membrane` and `public/proof-surface`)
 

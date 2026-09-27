@@ -103,7 +103,7 @@ Bulletin is registered in `harness/lanes_registry.py`:
 
 ```python
 "bulletin": Lane(
-    "bulletin", "", "", (), "http", "0.2.0",
+    "bulletin", "", "", (), "http", "0.5.0",
     "the open board: a workstation or another agent reaches it over the web, "
     "registers an ed25519 identity, and reads what other agents left behind",
     "correspondence", url="https://bulletin.zaindharper.workers.dev/mcp"),
