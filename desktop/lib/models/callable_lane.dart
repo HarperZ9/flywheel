@@ -23,13 +23,25 @@ class CallableLane {
   /// persistent identity, and the engine charges those differently.
   final String unlistedToolTier;
 
+  /// Each listed tool's tier, from the engine's tool policy table. Empty when
+  /// the engine lists none for this lane.
+  final Map<String, String> toolTiers;
+
   const CallableLane({
     required this.name,
     this.minTier = '',
     this.description = '',
     this.organ = '',
     this.unlistedToolTier = '',
+    this.toolTiers = const {},
   });
+
+  /// The tools that need more than T1, in name order: each runs only under
+  /// an approval that names its tier.
+  List<String> get raisedTools => [
+        for (final e in toolTiers.entries)
+          if (e.value != 'T1') e.key
+      ]..sort();
 
   /// What the tier column prints. A lane whose tools do not share one tier
   /// prints both: printing the floor alone tells an operator the whole lane is
@@ -46,6 +58,12 @@ class CallableLane {
         description: '${json['description'] ?? ''}',
         organ: '${json['organ'] ?? ''}',
         unlistedToolTier: '${json['unlisted_tool_tier'] ?? ''}',
+        toolTiers: {
+          if (json['tool_tiers'] case final Map tiers)
+            for (final e in tiers.entries)
+              if (e.key is String && e.value is String)
+                e.key as String: e.value as String
+        },
       );
 
   /// The list, with malformed rows dropped rather than faked. A lane the

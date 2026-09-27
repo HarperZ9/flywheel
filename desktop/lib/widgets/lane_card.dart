@@ -20,7 +20,11 @@ class LaneCard extends StatelessWidget {
 
   /// Probe this one lane now (`POST /api/lanes/<lane>/check`).
   final void Function(String name)? onCheck;
-  const LaneCard({super.key, required this.lane, this.onCheck});
+
+  /// The lane console, shown last when the card is open. It carries the
+  /// setup list, so the card then leaves its own setup lines out.
+  final Widget? console;
+  const LaneCard({super.key, required this.lane, this.onCheck, this.console});
 
   @override
   Widget build(BuildContext context) {
@@ -47,13 +51,15 @@ class LaneCard extends StatelessWidget {
                         fontSize: 15.5, fontWeight: FontWeight.w700)),
               ),
               const SizedBox(width: FwLayout.s2),
-              VerdictPill(laneStateLabel(lane),
-                  status: laneCountVerdict(key)),
+              VerdictPill(laneStateLabel(lane), status: laneCountVerdict(key)),
             ]),
-            subtitle: _Summary(lane: lane, surface: id?.surface, onCheck: onCheck),
+            subtitle:
+                _Summary(lane: lane, surface: id?.surface, onCheck: onCheck),
             children: [
-              for (final item in lane.setup.where((i) => !i.met))
-                _detailLine(t, 'setup', _setupText(item)),
+              // With a console mounted, its setup list states every item.
+              if (console == null)
+                for (final item in lane.setup.where((i) => !i.met))
+                  _detailLine(t, 'setup', _setupText(item)),
               if (lane.mainAction.isNotEmpty)
                 _detailLine(t, 'action', lane.mainAction),
               _detailLine(
@@ -68,6 +74,11 @@ class LaneCard extends StatelessWidget {
                 _detailLine(t, 'identity', id.identity),
               ] else if (lane.organ.isNotEmpty || lane.role.isNotEmpty)
                 _detailLine(t, 'role', '${lane.organ} · ${lane.role}'),
+              if (console != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: FwLayout.s3),
+                  child: Align(alignment: Alignment.centerLeft, child: console),
+                ),
             ],
           ),
         ),

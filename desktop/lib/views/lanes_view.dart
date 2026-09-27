@@ -1,8 +1,8 @@
 // lanes_view.dart — the Tools view: installed/readiness truth for every lane.
 //
 // The gateway owns lane state. This surface reads the roster, probes on user
-// request, and keeps executable lane calls behind the existing grant-bound
-// advanced panel. It intentionally does not expose the unpinned install helper
+// request, and runs lane tools from each card's console, one approval per
+// call. It intentionally does not expose the unpinned install helper
 // as a public repair path. The headline, the counts and the order come from
 // each row's `state` (D2, D9); an engine with no state keeps the old wording.
 
@@ -77,7 +77,7 @@ class LanesView extends StatelessWidget {
             detail: readiness,
             stateCounts: byState),
         const SizedBox(height: FwLayout.s4),
-        LaneRosterPanel(lanes: lanes, onCheck: onCheck),
+        LaneRosterPanel(lanes: lanes, onCheck: onCheck, client: client),
         if (client != null) ...[
           const SizedBox(height: FwLayout.s4),
           AdvancedLaneTools(client: client!, alive: alive),

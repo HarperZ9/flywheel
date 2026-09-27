@@ -36,8 +36,33 @@ extension GatewayLaneClient on GatewayClient {
   ///
   /// Choosing node.exe is a granted action (settings.node_path): the engine
   /// runs the file it names, so a POST needs an exact owner grant, like
-  /// plugin.register. The Node picker sends it through the grant flow when
-  /// the lane console lands (WP9b); there is no ungranted setter here.
+  /// plugin.register. The lane setup list sends it through the grant flow
+  /// with [postLaneAnswer]; there is no ungranted setter here.
   Future<Map<String, dynamic>> nodePath() async =>
       _decode(await _http.get(Uri.parse('$baseUrl/api/settings/node_path')));
+
+  /// `GET /api/lanes/<lane>/setup`: every setup item the lane's card states.
+  Future<Map<String, dynamic>> laneSetup(String name) =>
+      getJson('/api/lanes/${Uri.encodeComponent(name)}/setup');
+
+  /// POST [body] to [path] and keep the status and the decoded body, whatever
+  /// the status. The lane console sends granted bodies through it: a lane
+  /// tool may answer any JSON value, and a refusal is one fixed code the
+  /// console states, not a transport fault.
+  Future<({int status, Object? body})> postLaneAnswer(
+      String path, Map<String, dynamic> body,
+      {required Duration timeout}) async {
+    final r = await _http
+        .post(Uri.parse('$baseUrl$path'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body))
+        .timeout(timeout);
+    Object? decoded;
+    try {
+      decoded = jsonDecode(r.body);
+    } on FormatException {
+      decoded = null;
+    }
+    return (status: r.statusCode, body: decoded);
+  }
 }

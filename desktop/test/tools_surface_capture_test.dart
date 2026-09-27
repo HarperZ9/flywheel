@@ -73,7 +73,8 @@ void main() {
     expect(
         find.text('VISUAL QA FIXTURE - not live gateway data'), findsOneWidget);
     expect(find.text('Tools'), findsWidgets);
-    expect(find.text('Advanced lane calls'), findsOneWidget);
+    expect(find.text('Lane tool tiers'), findsOneWidget);
+    expect(find.text('Advanced lane calls'), findsNothing);
     expect(find.text('Install'), findsNothing);
     await _capture(tester, key, 'wide-shell-tools-fixture', output, frames);
 

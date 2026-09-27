@@ -1,6 +1,7 @@
 // lane_health_panel.dart — compact lane readiness and details widgets for the
-// public Tools surface. Rows show state and facts first; executable calls stay
-// in the explicit advanced section. One lane's card lives in lane_card.dart.
+// public Tools surface. Rows show state and facts first; each open card holds
+// that lane's console, where every tool call goes through its own approval.
+// One lane's card lives in lane_card.dart, its console in lane_console.dart.
 
 import 'package:flutter/material.dart';
 
@@ -11,8 +12,8 @@ import '../models/lane_state.dart';
 import '../theme/flywheel_theme.dart';
 import 'callable_lanes_panel.dart';
 import 'fw.dart';
-import 'lane_call_panel.dart';
 import 'lane_card.dart';
+import 'lane_console.dart';
 
 class LaneReadinessPanel extends StatelessWidget {
   final int total;
@@ -81,7 +82,12 @@ Iterable<MapEntry<String, int>> _statusEntries(Map<String, int> counts) sync* {
 class LaneRosterPanel extends StatelessWidget {
   final List<Lane> lanes;
   final void Function(String name)? onCheck;
-  const LaneRosterPanel({super.key, required this.lanes, this.onCheck});
+
+  /// With a client, each card mounts its lane console. A lane this build
+  /// holds back gets none: it has no tool to list.
+  final GatewayClient? client;
+  const LaneRosterPanel(
+      {super.key, required this.lanes, this.onCheck, this.client});
 
   @override
   Widget build(BuildContext context) {
@@ -92,13 +98,25 @@ class LaneRosterPanel extends StatelessWidget {
       const Kicker('details'),
       const SizedBox(height: FwLayout.s2),
       for (final lane in lanes) ...[
-        LaneCard(lane: lane, onCheck: onCheck),
+        LaneCard(
+          lane: lane,
+          onCheck: onCheck,
+          console: client == null || isLaneHeld(lane)
+              ? null
+              : LaneConsole(
+                  key: ValueKey('console-${lane.name}'),
+                  client: client!,
+                  lane: lane,
+                  onCheck: onCheck),
+        ),
         const SizedBox(height: FwLayout.s2),
       ],
     ]);
   }
 }
 
+/// The tier every lane tool costs, folded under the cards. Runs happen in
+/// each card's console; this lists what a call demands.
 class AdvancedLaneTools extends StatelessWidget {
   final GatewayClient client;
   final bool alive;
@@ -117,15 +135,14 @@ class AdvancedLaneTools extends StatelessWidget {
               horizontal: FwLayout.s4, vertical: FwLayout.s2),
           childrenPadding: const EdgeInsets.fromLTRB(
               FwLayout.s4, 0, FwLayout.s4, FwLayout.s4),
-          title: const Text('Advanced lane calls'),
+          title: const Text('Lane tool tiers'),
           subtitle: Text(
-            'Grant-bound callable tools and exact lane/tool execution.',
+            'The tier each lane tool needs before it runs. Open a lane '
+            'above to run its tools.',
             style: TextStyle(fontSize: 12.5, color: t.inkMuted),
           ),
           children: [
             CallableLanesPanel(client: client, alive: alive),
-            const SizedBox(height: FwLayout.s3),
-            LaneCallPanel(client: client),
           ],
         ),
       ),
