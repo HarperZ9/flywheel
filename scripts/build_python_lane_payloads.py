@@ -38,6 +38,8 @@ FIXTURES = {
     "chorus": {"tool": "chorus.run", "workflow": "synthesize a synthetic three-source corpus"},
     "relay": {"tool": "local_agent_health", "workflow": "report the local agent backend health"},
     "accountable-surface": {"tool": "accountable-surface.propose", "workflow": "propose an action with no actuation"},
+    "articulate": {"tool": "score", "workflow": "score one synthetic sentence"},
+    "calibrate-pro": {"tool": "calibrate-pro.list-panels", "workflow": "list the catalog slice's panels"},
 }
 
 

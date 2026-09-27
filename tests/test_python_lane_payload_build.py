@@ -135,6 +135,20 @@ def test_python_lane_payload_builder_writes_source_closure_from_synthetic_source
     assert written["verdict"] == "PASS"
 
 
+def test_python_lane_payload_builder_names_a_fixture_for_every_manifest_row():
+    # The receipt copies FIXTURES[lane] for each manifest row, so a row with no
+    # entry crashes the build with a KeyError. The source-backed test below runs
+    # only where the vendored sources are staged, so this check runs everywhere.
+    builder = _load_builder()
+    lanes = [json.loads(line)["lane"] for line in Path(
+        "packaging/python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()]
+    assert sorted(builder.FIXTURES) == sorted(lanes)
+    for lane in lanes:
+        assert builder.FIXTURES[lane]["tool"], lane
+        assert builder.FIXTURES[lane]["workflow"], lane
+
+
 @pytest.mark.skipif(
     not _SOURCES_PRESENT,
     reason="production vendored sources are staged only where "
