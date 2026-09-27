@@ -42,8 +42,11 @@ prefix that reaches the end of a string value is redacted even when it is
 shorter than the full token.
 
 Every pattern runs in time linear in its input. A test feeds each one
-adversarial input shaped to be its worst case and holds it to 50 ms per MiB,
-a budget that scales on machines slower than the reference one. Input made
+adversarial input shaped to be its worst case and holds it to 8 times the
+time of a plain linear scan of the same length, timed beside it in the same
+process. The slowest rule takes about 4 times that scan. A pattern with
+catastrophic backtracking takes hundreds of times as long on 16 KiB, and a
+control test holds the check to that. Input made
 of real matches, or of candidates a check must reject, costs one check per
 candidate. A second test holds an eight-fold larger flood to at most 20 times
 the time of the smaller one, plus 10 ms, in one of up to three rounds. That
