@@ -1,9 +1,11 @@
 // A lane.call proposal summary carries the engine's lane_policy block (the
 // tier, effect and plain arguments the owner approves). The summary model
-// accepts it for lane.call only; the approval sheet renders it in WP9b.
+// accepts it for lane.call only, and the approval sheet renders it (WP9b).
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flywheel_desktop/models/gateway_grant_models.dart';
+import 'package:flywheel_desktop/widgets/lane_policy_review.dart';
 
 const _head =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -36,14 +38,15 @@ void main() {
   };
 
   test('a lane.call summary keeps its lane policy block', () {
-    final summary = GatewayGrantSummary.fromJson(
-        _summary('lane.call', lanePolicy: review));
+    final summary =
+        GatewayGrantSummary.fromJson(_summary('lane.call', lanePolicy: review));
     expect(summary.invalidResponse, isFalse);
     expect(summary.lanePolicy?['required_tier'], 'T1');
     expect(summary.lanePolicy?['dropped_arguments'], ['check']);
   });
 
-  test('a lane policy block on another action, or not an object, is refused', () {
+  test('a lane policy block on another action, or not an object, is refused',
+      () {
     expect(
         GatewayGrantSummary.fromJson(
                 _summary('plugin.probe', lanePolicy: review))
@@ -53,6 +56,31 @@ void main() {
         GatewayGrantSummary.fromJson(_summary('lane.call', lanePolicy: 'T2'))
             .invalidResponse,
         isTrue);
+  });
+
+  test('the sheet lines state tier, forced and dropped arguments', () {
+    final lines = lanePolicyLines(const {
+      'required_tier': 'T1',
+      'requested_tier': 'T1',
+      'effect': 'model_call',
+      'forced_arguments': {'allow_exec': false},
+      'dropped_arguments': ['check'],
+      'arguments': {'goal': 'g', 'allow_exec': false},
+    });
+    expect(lines, [
+      'Tier: needs T1, asks T1',
+      'Effect: model_call',
+      'Engine sets: {"allow_exec":false}',
+      'Engine drops: check',
+      'Lane receives: {"goal":"g","allow_exec":false}',
+    ]);
+  });
+
+  testWidgets('the approval sheet block renders every line', (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+        home: Scaffold(body: LanePolicyReview(policy: review))));
+    expect(find.text('Lane tool policy'), findsOneWidget);
+    expect(find.text('Engine drops: check'), findsOneWidget);
   });
 
   test('a lane.call summary without the block still parses', () {
