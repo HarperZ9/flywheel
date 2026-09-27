@@ -1,12 +1,9 @@
-<!--
-Draft of the Flywheel 1.1.0 release notes; the release owner reviews it before any tag.
-- Lane classes, the lane sentence, the README count (O-5) and the method paragraph cite
-  CI run 36302181098 (project-docs/lanes/evidence/installed-lanes-ci-36302181098.json),
-  which predates the gather 1.9.1, relay 0.5.0 and forum 1.15.1 pins. Replace them
-  from the windows-installed-acceptance.yml run on the release commit (O-9).
-- Re-measure the installer size from the release workflow build. The 1.0.4 known-issues
-  page publishes on its own. Trace manual checks X4, X6, X7, X8 and X18 were not run.
--->
+<!-- Draft 1.1.0 notes; reviewed before any tag. Lane classes, lane sentence, README count
+(O-5) and method paragraph cite CI run 36302181098 (installed-lanes-ci-36302181098.json),
+which predates the gather 1.9.1, relay 0.5.0 and forum 1.15.1 pins: replace them from the
+windows-installed-acceptance.yml run on the release commit (O-9). Re-measure the installer
+size from the release build. The 1.0.4 known-issues page publishes on its own. Trace
+manual checks X4, X6, X7, X8 and X18 were not run. -->
 
 # Flywheel 1.1.0
 
@@ -296,8 +293,9 @@ on your machine; the content of each request goes to the hosted provider you rou
 - forum real rooms, mneme extraction and articulate's judge, fix and polish need a
   provider key or a signed-in claude CLI and were not exercised.
 - The limits listed for 1.0.4 on the verifier still hold.
-- Custody presence defaults to `none`: any process running as you can confirm a custody
-  operation. `flywheel traces delete` does not reach lane stores, such as mneme's.
+- Custody presence defaults to `none`: any process running as you, a lane's own code
+  included, can read the gateway token and confirm a custody operation. `flywheel traces
+  delete` does not reach lane stores, such as mneme's.
 - Desktop chat history stays plaintext. Windows Hello presence and Codex capture were not
   exercised on real hardware or a real Codex install.
 - The lane check ran on a GitHub-hosted Windows Server runner with only the Windows
