@@ -29,8 +29,8 @@ _GATHER = {
                          "and digests; writes nothing.", timeout_s=60),
     "gather.arxiv": _t("network_read", "Fetches arXiv metadata and returns rows; writes "
                        "nothing.", timeout_s=45),
-    "gather.federation": _t("read", "Validates or plans a registry in memory. Section 1a "
-                            "puts it at T2.", tier="T2"),
+    "gather.federation": _t("read", "Validates or plans a registry in memory. The policy "
+                            "review keeps it at T2.", tier="T2"),
     "gather.run": _t("outside_write", "Runs a multi-source config over the network and "
                      "writes the corpus store the config names.", tier="T2", timeout_s=120),
     "gather.context": _main("read", "Reads a corpus and returns bounded excerpts or a "
@@ -74,7 +74,7 @@ _CHORUS = {
 _ARTICULATE_MODEL = ("Runs the signed-in claude CLI, a model call on the person's account. "
                      "articulate 0.5.0 runs it in a fresh empty folder with settings, MCP "
                      "servers and tools off, from the path the engine passes in "
-                     "ARTICULATE_CLAUDE_CLI (O-14).")
+                     "ARTICULATE_CLAUDE_CLI.")
 _ARTICULATE = {
     "check": _main("read", "Local detector; no network."),
     "score": _main("read", "Local score; no network."),
@@ -84,7 +84,7 @@ _ARTICULATE = {
     **_health("articulate"),
 }
 
-_ROUTER_JOB = ("Runs on the index lane session (WP10), so the job's worker outlives the "
+_ROUTER_JOB = ("Runs on the index lane's long-lived session, so the job's worker outlives the "
                "call that started it; in a frozen engine the worker runs as "
                "--bundled-lane-worker. Job state and caches stay in the lane folder.")
 _JOB_READ = _ROUTER_JOB + " The job id must be a plain id."
@@ -96,8 +96,8 @@ _INDEX = {
     "index.context.envelope": _t("read", "Builds a budgeted context envelope.",
                                  timeout_s=120),
     "index.select": _t("read", "Selects paths with rejection receipts."),
-    "index.invalidate": _t("read", "Mints or checks a tree pin and returns it. Section 1a "
-                           "puts it at T2.", tier="T2"),
+    "index.invalidate": _t("read", "Mints or checks a tree pin and returns it. The policy "
+                           "review keeps it at T2.", tier="T2"),
     "index.wiki": _t("read", "Builds or verifies a wiki pack and returns it.",
                      timeout_s=120),
     "index.symbol-graph": _t("read", "Builds a symbol graph for one repo.", timeout_s=60),
@@ -134,7 +134,8 @@ _CANON = {
     **_health("canon"),
     "canon.blocks": _t("read", "Lists the authored blocks."),
     "canon.render": _t("read", "Returns the rendered region text and writes no file "
-                       "(canon's own words). Section 1a puts it at T2.", tier="T2"),
+                       "(canon's own words). The policy review keeps it at T2.",
+                       tier="T2"),
     "canon.validate": _main("read", "Validates one record or the block folder.",
                             needs=("canon_blocks",)),
     "canon.check": _main("read", "Runs the wired check legs over the blocks.",
@@ -143,8 +144,9 @@ _CANON = {
 
 _CALIBRATE = {
     **_health("calibrate-pro"),
-    "calibrate-pro.list-targets": _t("read", "Needs numpy, which the catalog slice leaves "
-                                     "out (O-2).", not_in_build="numpy_not_in_build"),
+    "calibrate-pro.list-targets": _t("read", "Needs numpy, which the Windows app's "
+                                     "catalog slice leaves out.",
+                                     not_in_build="numpy_not_in_build"),
     "calibrate-pro.list-panels": _main("read", "Lists the characterized panel catalog."),
     "calibrate-pro.panel-info": _main("read", "Returns one panel's stored "
                                       "characterization."),

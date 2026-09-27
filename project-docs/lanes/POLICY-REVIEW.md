@@ -147,7 +147,7 @@ Admitted at launch: 5 of 8 tools. T2 per granted call: 3. Not in this build: 0.
 | `gather.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 | `gather.docs` | T1 | main | read |  | `path` kept out of the home | Reads a local file or folder and returns catalog rows and digests; writes nothing. |
 | `gather.arxiv` | T1 |  | network_read |  |  | Fetches arXiv metadata and returns rows; writes nothing. |
-| `gather.federation` | T2 (rule alone: T1) |  | read |  | `registry` kept out of the home | Validates or plans a registry in memory. Section 1a puts it at T2. |
+| `gather.federation` | T2 (rule alone: T1) |  | read |  | `registry` kept out of the home | Validates or plans a registry in memory. The policy review keeps it at T2. |
 | `gather.run` | T2 |  | outside_write |  | `config_path` kept out of the home, every value in `config` kept out of the home | Runs a multi-source config over the network and writes the corpus store the config names. |
 | `gather.context` | T1 | main | read |  | `corpus` kept out of the home | Reads a corpus and returns bounded excerpts or a selection; writes nothing. |
 | `gather.pilot` | T2 |  | outside_write |  | `manifest` kept out of the home, `output` kept out of the home, `bundle_output` kept out of the home | Runs, refreshes or bundles a pilot into the output folders the caller names. |
@@ -193,9 +193,9 @@ Admitted at launch: 4 of 7 tools. T2 per granted call: 3. Not in this build: 0.
 |---|---|---|---|---|---|---|
 | `check` | T1 | main | read |  |  | Local detector; no network. |
 | `score` | T1 | main | read |  |  | Local score; no network. |
-| `judge` | T2 |  | spend | claude_cli |  | Runs the signed-in claude CLI, a model call on the person's account. articulate 0.5.0 runs it in a fresh empty folder with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI (O-14). |
-| `fix` | T2 |  | spend | claude_cli |  | Runs the signed-in claude CLI, a model call on the person's account. articulate 0.5.0 runs it in a fresh empty folder with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI (O-14). |
-| `polish` | T2 |  | spend | claude_cli |  | Runs the signed-in claude CLI, a model call on the person's account. articulate 0.5.0 runs it in a fresh empty folder with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI (O-14). |
+| `judge` | T2 |  | spend | claude_cli |  | Runs the signed-in claude CLI, a model call on the person's account. articulate 0.5.0 runs it in a fresh empty folder with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
+| `fix` | T2 |  | spend | claude_cli |  | Runs the signed-in claude CLI, a model call on the person's account. articulate 0.5.0 runs it in a fresh empty folder with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
+| `polish` | T2 |  | spend | claude_cli |  | Runs the signed-in claude CLI, a model call on the person's account. articulate 0.5.0 runs it in a fresh empty folder with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
 | `articulate.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `articulate.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 
@@ -209,7 +209,7 @@ Admitted at launch: 21 of 22 tools. T2 per granted call: 1. Not in this build: 0
 | `index.context` | T1 |  | read |  | `root` kept out of the home | Builds a dependency context pack. |
 | `index.context.envelope` | T1 |  | read |  | `root` kept out of the home | Builds a budgeted context envelope. |
 | `index.select` | T1 |  | read |  | `root` kept out of the home | Selects paths with rejection receipts. |
-| `index.invalidate` | T2 (rule alone: T1) |  | read |  | `root` kept out of the home | Mints or checks a tree pin and returns it. Section 1a puts it at T2. |
+| `index.invalidate` | T2 (rule alone: T1) |  | read |  | `root` kept out of the home | Mints or checks a tree pin and returns it. The policy review keeps it at T2. |
 | `index.wiki` | T1 |  | read |  | `root` kept out of the home | Builds or verifies a wiki pack and returns it. |
 | `index.symbol-graph` | T1 |  | read |  | `root` kept out of the home | Builds a symbol graph for one repo. |
 | `index.symbol-definition` | T1 | main | read |  | `root` kept out of the home | Finds a symbol's definition from the AST. |
@@ -222,11 +222,11 @@ Admitted at launch: 21 of 22 tools. T2 per granted call: 1. Not in this build: 0
 | `index_verify` | T1 |  | read |  | `root` kept out of the home | Grounds a structural claim with file:line evidence. |
 | `index_router` | T1 |  | read |  | `root` kept out of the home | Builds a workspace map and returns it; its cache stays in the lane folder (INDEX_MCP_CACHE_DIR). |
 | `index_internals` | T1 |  | read |  | `root` kept out of the home | Builds one repo's module graph. |
-| `index.router.job.start` | T1 |  | state_write |  | `root` kept out of the home | Runs on the index lane session (WP10), so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. |
-| `index.router.job.status` | T1 |  | read |  | `job_id` a plain id | Runs on the index lane session (WP10), so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
-| `index.router.job.result` | T1 |  | read |  | `job_id` a plain id | Runs on the index lane session (WP10), so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
-| `index.router.job.cancel` | T1 |  | state_write |  | `job_id` a plain id | Runs on the index lane session (WP10), so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
-| `index.router.job.resume` | T1 |  | state_write |  | `job_id` a plain id | Runs on the index lane session (WP10), so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
+| `index.router.job.start` | T1 |  | state_write |  | `root` kept out of the home | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. |
+| `index.router.job.status` | T1 |  | read |  | `job_id` a plain id | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
+| `index.router.job.result` | T1 |  | read |  | `job_id` a plain id | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
+| `index.router.job.cancel` | T1 |  | state_write |  | `job_id` a plain id | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
+| `index.router.job.resume` | T1 |  | state_write |  | `job_id` a plain id | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
 
 ### forum 1.14.0
 
@@ -242,13 +242,13 @@ Admitted at launch: 14 of 21 tools. T2 per granted call: 7. Not in this build: 0
 | `ledger_get` | T1 |  | read |  |  | Reads one ledger entry. |
 | `forum.submit` | T2 |  | spend |  |  | Runs a plan through the executor. With FORUM_RUN_REAL and a granted key it spends model calls. |
 | `forum.route` | T1 | main | read |  |  | Scores a request against the roster with no model and returns the decided lane. |
-| `forum.prose.humanize` | T2 (rule alone: T1) |  | read |  |  | Rewrites prose by fixed rules, no model. Section 1a puts it at T2. |
+| `forum.prose.humanize` | T2 (rule alone: T1) |  | read |  |  | Rewrites prose by fixed rules, no model. The policy review keeps it at T2. |
 | `forum.prose.contract` | T1 |  | read |  |  | Returns the deterministic communication contract. |
 | `forum.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `forum.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 | `forum.ledger.summary` | T1 |  | read |  |  | Summarizes the ledger. |
 | `forum.ledger.capsule` | T1 |  | read |  |  | Compacts the ledger into a capsule and returns it. |
-| `forum.run.room` | T2 (rule alone: T1) |  | read |  |  | Projects the latest run into a snapshot. Section 1a puts it at T2. |
+| `forum.run.room` | T2 (rule alone: T1) |  | read |  |  | Projects the latest run into a snapshot. The policy review keeps it at T2. |
 | `forum.runtime.inspect` | T1 |  | read |  |  | Reports the executor policy without running a model. |
 | `forum.context.preflight` | T1 |  | read |  |  | Estimates context pressure before a submit. |
 | `gate_list` | T1 |  | read |  |  | Lists paused approval gates. |
@@ -268,7 +268,7 @@ Admitted at launch: 14 of 15 tools. T2 per granted call: 1. Not in this build: 0
 | `learn_receipt` | T1 |  | read | node | `runId` a plain id | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 | `learn_dry_run` | T1 | main | read | node | `workflowPath` kept out of the home | Checks a workflow step by step without running it; reads the file the caller names. |
 | `learn_tutor_plan` | T1 | main | state_write | node | `sessionId` a plain id | Writes one session file under <home>/lanes/learn/tutor/, the lane's own folder. The engine refuses a plan for a session that already has a file, so a T1 plan cannot reset what the T2 record wrote. |
-| `learn_tutor_record` | T2 (rule alone: T1) |  | state_write | node | `sessionId` a plain id | Writes one session file under <home>/lanes/learn/tutor/, the lane's own folder. Section 1a puts it at T2. |
+| `learn_tutor_record` | T2 (rule alone: T1) |  | state_write | node | `sessionId` a plain id | Writes one session file under <home>/lanes/learn/tutor/, the lane's own folder. The policy review keeps it at T2. |
 | `learn_tutor_mastery` | T1 |  | read | node | `sessionId` a plain id | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 | `learn_visualize_dry_run` | T1 |  | read | node |  | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 | `learn_tutor_due` | T1 |  | read | node | `sessionId` a plain id | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
@@ -284,47 +284,47 @@ Admitted at launch: 0 of 41 tools. T2 per granted call: 0. Not in this build: 41
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
-| `telos.status` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.room` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.workflow` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.catalog` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.server.manifest` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.mcp.freshness` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.ci.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.ci.triage` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.presentation.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.accessibility.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.performance.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.compatibility.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.operator.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.admission.telemetry` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.context.envelope` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.context.pack` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.action.receipt` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.loop.ledger` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.objective.monitor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.model.foundry` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.learning.forge` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.learning.labs` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.research.seed` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.research.thermodynamic` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.rendering.research` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.rendering.capabilities` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.measurement.layers` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.creative.engine` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.creative.kernels` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.revival.registry` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.second_level.queue` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.workstation.substrate` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.display.calibration` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
+| `telos.status` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.room` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.workflow` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.catalog` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.server.manifest` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.mcp.freshness` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.ci.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.ci.triage` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.presentation.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.accessibility.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.performance.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.compatibility.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.operator.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.admission.telemetry` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.context.envelope` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.context.pack` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.action.receipt` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.loop.ledger` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.objective.monitor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.model.foundry` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.learning.forge` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.learning.labs` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.research.seed` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.research.thermodynamic` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.rendering.research` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.rendering.capabilities` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.measurement.layers` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.creative.engine` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.creative.kernels` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.revival.registry` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.second_level.queue` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.workstation.substrate` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.display.calibration` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
 | `telos.native.control` | T2, not in build: `actuation_outside_app` |  | actuate | node |  | The Chrome DevTools and UI Automation driver; mail, post and listing actions sit behind other arguments. Left out rather than admitted at T2. |
-| `telos.browser.evidence` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.showcase.scout` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.proof` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.proof.research` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.proof.visual` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
-| `telos.proof.build` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build (O-8). |
+| `telos.browser.evidence` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.showcase.scout` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.proof` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.proof.research` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.proof.visual` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.proof.build` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
 
 ### local-model 0.1.0
 
@@ -337,10 +337,10 @@ Admitted at launch: 8 of 9 tools. T2 per granted call: 1. Not in this build: 0.
 | `local_agent_run` | T1 | main | model_call | model_server, project_folder | passes only `goal`, `root`, `max_steps`, `max_tokens`, `backend`, `allow_write=false`, `allow_exec=false`, `online=false`, `root` kept out of the home | Runs an agent task inside the picked project folder. Write and exec come from the launch and default off; the engine passes only the listed arguments and forces write, exec and online off in the call. |
 | `local-model.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `local-model.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
-| `flywheel.context.health` | T1 |  | read |  |  | Reports the Canon context bridge status. Not named in section 1a. |
+| `flywheel.context.health` | T1 |  | read |  |  | Reports the Canon context bridge status. |
 | `flywheel.context.capture` | T2 |  | outside_write |  |  | Writes captured context into the Canon context store, outside the lane folder. |
-| `flywheel.context.preflight` | T1 |  | read |  |  | Searches the Canon context store. Not named in section 1a. |
-| `receipt.verify_inclusion` | T1 |  | read |  |  | Checks a receipt digest against the Merkle log. Not named in section 1a. |
+| `flywheel.context.preflight` | T1 |  | read |  |  | Searches the Canon context store. |
+| `receipt.verify_inclusion` | T1 |  | read |  |  | Checks a receipt digest against the Merkle log. |
 
 ### writing 0.1.0
 
@@ -350,18 +350,18 @@ Admitted at launch: 3 of 14 tools. T2 per granted call: 10. Not in this build: 1
 |---|---|---|---|---|---|---|
 | `writing.status` | T1 |  | read |  | drops `home` | Lists the owner's writing projects. |
 | `writing.doctor` | T1 |  | read |  | drops `home` | Reports writing workflow readiness. |
-| `writing.project_init` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. Section 1a puts the records at T2. |
-| `writing.section_record` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. Section 1a puts the records at T2. |
-| `writing.revision_record` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. Section 1a puts the records at T2. |
-| `writing.diagnose` | T2 | main | outside_write | writing_draft | drops `home` | Prepares a reader-flow diagnostic proposal for a recorded revision in the engine's journey store under <home>/state, outside the lane folder, so it runs on a call the owner approves at T2 (C-5). |
-| `writing.card_record` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. Section 1a puts the records at T2. |
-| `writing.candidate_record` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. Section 1a puts the records at T2. |
-| `writing.decision_record` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. Section 1a puts the records at T2. |
-| `writing.review_prepare` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. Section 1a puts the records at T2. |
-| `writing.export_prepare` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. Section 1a puts the records at T2. |
+| `writing.project_init` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. The policy review keeps the records at T2. |
+| `writing.section_record` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. The policy review keeps the records at T2. |
+| `writing.revision_record` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. The policy review keeps the records at T2. |
+| `writing.diagnose` | T2 | main | outside_write | writing_draft | drops `home` | Prepares a reader-flow diagnostic proposal for a recorded revision in the engine's journey store under <home>/state, outside the lane folder, so it runs on a call the owner approves at T2. |
+| `writing.card_record` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. The policy review keeps the records at T2. |
+| `writing.candidate_record` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. The policy review keeps the records at T2. |
+| `writing.decision_record` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. The policy review keeps the records at T2. |
+| `writing.review_prepare` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. The policy review keeps the records at T2. |
+| `writing.export_prepare` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Prepares a proposal in the writing workspace under the Flywheel home; nothing changes until a commit. The policy review keeps the records at T2. |
 | `writing.proposal_get` | T1 |  | read |  | drops `home` | Reads one proposal preview. |
 | `writing.proposal_approve` | T2, not in build: `approval_cli_only` |  | approve |  | drops `home` | Unavailable over MCP by design; approval runs from the CLI. |
-| `writing.proposal_commit` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Commits a proposal that an approval outside MCP granted; changes the manuscript in the writing workspace. Section 1a puts the records at T2. |
+| `writing.proposal_commit` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Commits a proposal that an approval outside MCP granted; changes the manuscript in the writing workspace. The policy review keeps the records at T2. |
 
 ### relay 0.4.0
 
@@ -372,7 +372,7 @@ Admitted at launch: 9 of 10 tools. T2 per granted call: 1. Not in this build: 0.
 | `local_agent_health` | T1 |  | network_read |  | passes only no argument, `online=false` | Pings the local model tiers; online tiers are forced off. |
 | `local_agent_chat` | T1 |  | model_call | model_server | passes only `prompt`, `backend`, `online=false` | One completion from the first healthy local tier; online tiers are forced off. |
 | `local_agent_run` | T1 | main | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Runs an agent task on the model server the person set up. relay 0.4.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine also passes only the listed arguments, so root, check, test_cmd and online never reach the run, and forces write, exec and online off. |
-| `local_agent_start` | T2 (rule alone: T1) |  | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Starts the same agent run in the background on the relay lane session (WP10) and returns its run id at once. T2: it holds the model server for minutes with no call waiting on it. relay 0.4.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine passes only the listed arguments and forces write, exec and online off. |
+| `local_agent_start` | T2 (rule alone: T1) |  | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Starts the same agent run in the background on the relay lane's long-lived session and returns its run id at once. T2: it holds the model server for minutes with no call waiting on it. relay 0.4.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine passes only the listed arguments and forces write, exec and online off. |
 | `local_agent_status` | T1 |  | read |  | passes only `run_id`, `run_id` a plain id | Reads a background run from the relay lane session, where the run lives; the run id must be a plain id. |
 | `local_agent_result` | T1 |  | read |  | passes only `run_id`, `run_id` a plain id | Reads a background run from the relay lane session, where the run lives; the run id must be a plain id. |
 | `local_agent_runs` | T1 |  | read |  | passes only `limit` | Lists the runs the relay lane session holds. |
@@ -402,8 +402,8 @@ Admitted at launch: 8 of 11 tools. T2 per granted call: 3. Not in this build: 0.
 | `mneme.remember` | T1 | main | state_write |  |  | Records turns and facts in the lane's own database. A granted key makes extraction a model call. |
 | `mneme.recall` | T1 | main | read |  |  | Retrieves memories with a ranking receipt. |
 | `mneme.drift` | T1 |  | read |  |  | Verdicts every memory against the store. |
-| `mneme.to_crucible` | T2 (rule alone: T1) |  | read |  |  | Exports memories read-only and returns them. Section 1a puts it at T2. |
-| `mneme.replay_crucible` | T2 (rule alone: T1) |  | read |  |  | Replays a template on a read-only snapshot. Section 1a puts it at T2. |
+| `mneme.to_crucible` | T2 (rule alone: T1) |  | read |  |  | Exports memories read-only and returns them. The policy review keeps it at T2. |
+| `mneme.replay_crucible` | T2 (rule alone: T1) |  | read |  |  | Replays a template on a read-only snapshot. The policy review keeps it at T2. |
 | `mneme.provenance` | T1 |  | read |  |  | Shows one memory's provenance receipt. |
 | `mneme.origin_recheck` | T1 |  | read |  | `allowed_root` kept out of the home | Re-reads a source file under an allowed root. |
 | `mneme.forget` | T2 (rule alone: T1) |  | state_write |  |  | Erases a memory, its source turns and what derives from them, and cannot be undone. mneme 0.5.1 returns a plan first and deletes only on a second call that carries its confirm_plan_sha256; each call is its own T2 approval. |
@@ -420,7 +420,7 @@ Reads only (class C): Reads the panel catalog. Calibration runs in Calibrate Pro
 |---|---|---|---|---|---|---|
 | `calibrate-pro.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `calibrate-pro.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
-| `calibrate-pro.list-targets` | T1, not in build: `numpy_not_in_build` |  | read |  |  | Needs numpy, which the catalog slice leaves out (O-2). |
+| `calibrate-pro.list-targets` | T1, not in build: `numpy_not_in_build` |  | read |  |  | Needs numpy, which the Windows app's catalog slice leaves out. |
 | `calibrate-pro.list-panels` | T1 | main | read |  |  | Lists the characterized panel catalog. |
 | `calibrate-pro.panel-info` | T1 | main | read |  |  | Returns one panel's stored characterization. |
 
@@ -433,7 +433,7 @@ Admitted at launch: 5 of 6 tools. T2 per granted call: 1. Not in this build: 0.
 | `canon.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `canon.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 | `canon.blocks` | T1 |  | read |  |  | Lists the authored blocks. |
-| `canon.render` | T2 (rule alone: T1) |  | read |  |  | Returns the rendered region text and writes no file (canon's own words). Section 1a puts it at T2. |
+| `canon.render` | T2 (rule alone: T1) |  | read |  |  | Returns the rendered region text and writes no file (canon's own words). The policy review keeps it at T2. |
 | `canon.validate` | T1 | main | read | canon_blocks | `record` kept out of the home | Validates one record or the block folder. |
 | `canon.check` | T1 | main | read | canon_blocks |  | Runs the wired check legs over the blocks. |
 
@@ -482,8 +482,8 @@ Admitted at launch: 6 of 8 tools. T2 per granted call: 1. Not in this build: 1.
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
 | `accountable-surface.perceive` | T1 | main | network_read |  | `subject` kept out of the home, open egress: no agent run | Witnesses a folder, file or web page with its provenance digest. No gate, no act. |
-| `accountable-surface.propose` | T2 (rule alone: T1) |  | state_write |  |  | Runs the pre-execution gate against the operator's grants and journals the decision; never acts. Section 1a puts it at T2. |
-| `accountable-surface.actuate` | T2, not in build: `actuation_outside_app` |  | actuate |  |  | The full act loop for a wired verb. It runs an external native-control driver, so it stays in Accountable Surface itself (C-6, O-13 class C). |
+| `accountable-surface.propose` | T2 (rule alone: T1) |  | state_write |  |  | Runs the pre-execution gate against the grants you set and journals the decision; never acts. The policy review keeps it at T2. |
+| `accountable-surface.actuate` | T2, not in build: `actuation_outside_app` |  | actuate |  |  | The full act loop for a wired verb. It runs an external native-control driver, so it stays in Accountable Surface itself; in Flywheel this lane reads only. |
 | `accountable-surface.device_ls` | T1 |  | read |  | `path` kept out of the home | The shipped read-only verb: lists a folder, with a receipt in the lane folder. |
 | `accountable-surface.journal` | T1 |  | read |  |  | Returns this session's journal. |
 | `accountable-surface.receipt` | T1 |  | read |  |  | Re-derives the receipt store. |

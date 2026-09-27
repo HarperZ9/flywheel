@@ -62,7 +62,8 @@ _TELOS_HOLD = "release_on_hold"
 def _telos_entry(name: str) -> dict:
     if name in TELOS_NOT_IN_BUILD:
         return {"not_in_build": TELOS_NOT_IN_BUILD[name], **_TELOS_OUT[name]}
-    return {"reason": _TELOS_READ + " Held out of this build (O-8).",
+    return {"reason": _TELOS_READ + " Held out of this build while its release contents "
+                      "are reviewed.",
             "not_in_build": _TELOS_HOLD}
 
 
@@ -80,7 +81,7 @@ _LEARN = {
                                               "that already has a file, so a T1 plan "
                                               "cannot reset what the T2 record wrote."},
     "learn_tutor_record": {"tier": "T2", "effect": "state_write",
-                           "reason": _SESSION + " Section 1a puts it at T2."},
+                           "reason": _SESSION + " The policy review keeps it at T2."},
     "learn_tutor_mastery": _READ, "learn_visualize_dry_run": _READ, "learn_tutor_due": _READ,
     "learn_tutor_studyplan": _READ, "learn_tutor_misconceptions": _READ,
     "learn_tutor_reverify": _READ, "learn_tutor_derive_schedule": _READ,

@@ -38,14 +38,14 @@ _FORUM = {
     "forum.submit": _t("spend", _SUBMIT, tier="T2", timeout_s=120),
     "forum.route": _main("read", "Scores a request against the roster with no model and "
                          "returns the decided lane."),
-    "forum.prose.humanize": _t("read", "Rewrites prose by fixed rules, no model. Section "
-                               "1a puts it at T2.", tier="T2"),
+    "forum.prose.humanize": _t("read", "Rewrites prose by fixed rules, no model. The policy "
+                               "review keeps it at T2.", tier="T2"),
     "forum.prose.contract": _t("read", "Returns the deterministic communication contract."),
     **_health("forum"),
     "forum.ledger.summary": _t("read", "Summarizes the ledger."),
     "forum.ledger.capsule": _t("read", "Compacts the ledger into a capsule and returns it."),
-    "forum.run.room": _t("read", "Projects the latest run into a snapshot. Section 1a "
-                         "puts it at T2.", tier="T2"),
+    "forum.run.room": _t("read", "Projects the latest run into a snapshot. The policy "
+                         "review keeps it at T2.", tier="T2"),
     "forum.runtime.inspect": _t("read", "Reports the executor policy without running a "
                                 "model."),
     "forum.context.preflight": _t("read", "Estimates context pressure before a submit."),
@@ -60,10 +60,10 @@ _MNEME = {
                             "database. A granted key makes extraction a model call."),
     "mneme.recall": _main("read", "Retrieves memories with a ranking receipt."),
     "mneme.drift": _t("read", "Verdicts every memory against the store."),
-    "mneme.to_crucible": _t("read", "Exports memories read-only and returns them. Section "
-                            "1a puts it at T2.", tier="T2"),
+    "mneme.to_crucible": _t("read", "Exports memories read-only and returns them. The policy "
+                            "review keeps it at T2.", tier="T2"),
     "mneme.replay_crucible": _t("read", "Replays a template on a read-only snapshot. "
-                                "Section 1a puts it at T2.", tier="T2"),
+                                "The policy review keeps it at T2.", tier="T2"),
     "mneme.provenance": _t("read", "Shows one memory's provenance receipt."),
     "mneme.origin_recheck": _t("read", "Re-reads a source file under an allowed root."),
     "mneme.forget": _t("state_write", "Erases a memory, its source turns and what derives "
@@ -83,12 +83,12 @@ _RELAY_RUN = ("Runs an agent task on the model server the person set up. relay 0
               "root at the lane folder; the engine also passes only the listed arguments, so "
               "root, check, test_cmd and online never reach the run, and forces write, exec "
               "and online off.")
-_RELAY_START = ("Starts the same agent run in the background on the relay lane session "
-                "(WP10) and returns its run id at once. T2: it holds the model server for "
-                "minutes with no call waiting on it. relay 0.4.0 takes write and exec from "
-                "its launch, which the engine starts with both off and its root at the lane "
-                "folder; the engine passes only the listed arguments and forces write, exec "
-                "and online off.")
+_RELAY_START = ("Starts the same agent run in the background on the relay lane's "
+                "long-lived session and returns its run id at once. T2: it holds the model "
+                "server for minutes with no call waiting on it. relay 0.4.0 takes write and "
+                "exec from its launch, which the engine starts with both off and its root at "
+                "the lane folder; the engine passes only the listed arguments and forces "
+                "write, exec and online off.")
 _RELAY_READ = ("Reads a background run from the relay lane session, where the run lives; "
                "the run id must be a plain id.")
 _CHAT = "One completion from the first healthy local tier; online tiers are forced off."
@@ -124,19 +124,19 @@ _LOCAL_MODEL = {
                                            "backend"),
                              forced_args=_NO_GRANTS),
     **_health("local-model"),
-    "flywheel.context.health": _t("read", "Reports the Canon context bridge status. Not "
-                                  "named in section 1a."),
+    "flywheel.context.health": _t("read", "Reports the Canon context bridge "
+                                  "status."),
     "flywheel.context.capture": _t("outside_write", "Writes captured context into the "
                                    "Canon context store, outside the lane folder.",
                                    tier="T2"),
-    "flywheel.context.preflight": _t("read", "Searches the Canon context store. Not named "
-                                     "in section 1a."),
-    "receipt.verify_inclusion": _t("read", "Checks a receipt digest against the Merkle log. "
-                                   "Not named in section 1a."),
+    "flywheel.context.preflight": _t("read", "Searches the Canon context "
+                                     "store."),
+    "receipt.verify_inclusion": _t("read", "Checks a receipt digest against the Merkle "
+                                   "log."),
 }
 
 _PREPARE = ("Prepares a proposal in the writing workspace under the Flywheel home; nothing "
-            "changes until a commit. Section 1a puts the records at T2.")
+            "changes until a commit. The policy review keeps the records at T2.")
 _NO_HOME = (("home", None),)   # the engine picks the writing home, never the caller (C-5)
 _WRITING = {
     "writing.status": _t("read", "Lists the owner's writing projects."),
@@ -147,7 +147,7 @@ _WRITING = {
     "writing.diagnose": _main("outside_write", "Prepares a reader-flow diagnostic proposal "
                               "for a recorded revision in the engine's journey store under "
                               "<home>/state, outside the lane folder, so it runs on a call "
-                              "the owner approves at T2 (C-5).", tier="T2",
+                              "the owner approves at T2.", tier="T2",
                               needs=("writing_draft",)),
     "writing.card_record": _t("state_write", _PREPARE, tier="T2"),
     "writing.candidate_record": _t("state_write", _PREPARE, tier="T2"),
@@ -160,7 +160,8 @@ _WRITING = {
                                    not_in_build="approval_cli_only"),
     "writing.proposal_commit": _t("state_write", "Commits a proposal that an approval "
                                   "outside MCP granted; changes the manuscript in the "
-                                  "writing workspace. Section 1a puts the records at T2.",
+                                  "writing workspace. The policy review keeps the "
+                                  "records at T2.",
                                   tier="T2"),
 }
 _WRITING = {name: {**entry, "forced_args": _NO_HOME} for name, entry in _WRITING.items()}
@@ -170,11 +171,12 @@ _AS = {
                                           "page with its provenance digest. No gate, no "
                                           "act.", timeout_s=45),
     "accountable-surface.propose": _t("state_write", "Runs the pre-execution gate against "
-                                      "the operator's grants and journals the decision; "
-                                      "never acts. Section 1a puts it at T2.", tier="T2"),
+                                      "the grants you set and journals the decision; "
+                                      "never acts. The policy review keeps it at T2.", tier="T2"),
     "accountable-surface.actuate": _t("actuate", "The full act loop for a wired verb. It "
                                       "runs an external native-control driver, so it stays "
-                                      "in Accountable Surface itself (C-6, O-13 class C).",
+                                      "in Accountable Surface itself; in Flywheel this "
+                                      "lane reads only.",
                                       tier="T2", not_in_build="actuation_outside_app"),
     "accountable-surface.device_ls": _t("read", "The shipped read-only verb: lists a "
                                         "folder, with a receipt in the lane folder."),
