@@ -61,10 +61,12 @@ under a throwaway profile with only the Windows system folder on PATH, and calls
 lane through the same routes and approvals the app uses. It runs twice: once fresh, and
 once after it installs Git, starts a stub model server, picks a project folder, places a
 canon block and records a writing draft. The classes above come from its per-user run on
-2026-09-26, summarized with the receipt's hash in
-`evidence/installed-lanes-local-20260926.json`. Of two earlier runs of the same build,
-one agrees and the other had local-model below bar in the setup leg; that difference is
-not yet explained.
+2026-09-26 against a build with every final lane pin, summarized with the receipt's hash
+in `evidence/installed-lanes-local-1.1.0-review-20260926.json`. Two earlier builds on the
+same day measured the same classes (`evidence/installed-lanes-local-1.1.0-20260926.json`
+and `evidence/installed-lanes-local-20260926.json`). Of two earlier runs of the first
+build, one agrees and the other had local-model below bar in the setup leg; that
+difference is not yet explained.
 
 ## What this does not prove
 

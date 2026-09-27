@@ -2,15 +2,14 @@
 Draft of the Flywheel 1.1.0 release notes, for the release owner to review before any tag.
 Open before publishing:
 - Lane classes come from the per-user installed-app check on the build machine
-  (project-docs/lanes/evidence/installed-lanes-local-20260926.json, source commit
-  5940abfc). That build predates the relay 0.4.0, gather 1.9.0, mneme 0.5.0 and
-  canon 0.4.1 pins and the unlisted-tool change. Replace the table and the lane
-  sentence with the receipt from the pre-tag windows-installed-acceptance.yml run on
-  the 1.1.0 candidate commit (O-9), both install modes, before publishing.
-- The README sentence "About fifteen composable lanes ship in the roster, ten of
-  them bundled natively from source." stays until that receipt exists. The sentence
-  this draft carries is the one the current receipt supports (O-5).
-- Installer size is from a local build before the late pins, not the release workflow.
+  (project-docs/lanes/evidence/installed-lanes-local-1.1.0-review-20260926.json,
+  source commit d5d771e2), a build with every final pin (relay 0.4.0, gather 1.9.0,
+  mneme 0.5.1, canon 0.4.2), the unlisted-tool change and the finish review's
+  security fixes. Confirm the table and the lane sentence against the receipt from
+  the pre-tag windows-installed-acceptance.yml run on the 1.1.0 candidate commit
+  (O-9), both install modes, before publishing.
+- The README lane sentence carries the same receipt's count (O-5).
+- Installer size is from that local build, not the release workflow.
 - The 1.0.4 known-issues page (RELEASE-NOTES-1.0.4-known-issues.md) publishes on its
   own; the section below points to it.
 Remove this comment before publishing.
@@ -233,10 +232,10 @@ each statement, what we measured and what to do on 1.0.4. This release is the fi
 
 ## Installer size
 
-The installer grows by about 23.4 MB, mostly the bundled Node runtime: 79,771,311 bytes
-for a local build of this release before the lane updates against 56,355,754 bytes for
-the 1.0.4 candidate. The installed engine folder is about 135 MB, of which the Node lane
-folder is about 94 MB.
+The installer grows by about 23.6 MB, mostly the bundled Node runtime: 79,995,954 bytes
+for a local build of this release against 56,355,754 bytes for the published 1.0.4
+installer. The installed engine folder is about 135 MB, of which the Node lane folder is
+about 94 MB.
 
 ## Limits
 

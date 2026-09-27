@@ -20,7 +20,7 @@ from scripts import check_claim_language, check_public_instructions
 
 REPO = Path(__file__).resolve().parents[1]
 EVIDENCE = (REPO / "project-docs" / "lanes" / "evidence"
-            / "installed-lanes-local-1.1.0-20260926.json")
+            / "installed-lanes-local-1.1.0-review-20260926.json")
 KNOWN_ISSUES = REPO / "project-docs" / "drafts" / "RELEASE-NOTES-1.0.4-known-issues.md"
 NEXT_NOTES = REPO / "project-docs" / "drafts" / "RELEASE-NOTES-next.md"
 LANE_PAGE = REPO / "project-docs" / "lanes" / "LANES.md"

@@ -1,0 +1,210 @@
+{
+ "schema": "flywheel.installed-lanes-evidence-summary/v1",
+ "what": "Per-lane classes from the installed-app lane acceptance, per-user leg, run on the build machine on 2026-09-26 through desktop/tool/run_installed_lane_acceptance.ps1 against a local 1.1.0 installer built from a clean worktree after the mneme 0.5.1 and canon 0.4.2 pins and the finish review's security fixes. The dispatched windows-installed-acceptance.yml run on a release candidate (O-9) and the all-users leg have not run.",
+ "source_receipt": "installed-lanes-per-user.json",
+ "source_receipt_sha256": "fee7d6275eedd467a1e8de60596fc8ecc93c7cb85961cce585e452f27fda066e",
+ "engine_sha256": "f1f188a5c7ef6e2a38825fd67a5161a990353b5da0377a12cb13dd523dccf812",
+ "source_commit": "d5d771e27078812855c78810369799222f2fea46",
+ "engine_freeze_commit": "d5d771e27078812855c78810369799222f2fea46",
+ "install_mode": "per-user",
+ "summary": {
+  "below_bar": [
+   "index",
+   "telos"
+  ],
+  "by_class": {
+   "A": 8,
+   "A/B-untested": 1,
+   "A/C": 1,
+   "B": 4,
+   "C": 1
+  },
+  "guards_failed": [],
+  "verdict": "BELOW_BAR"
+ },
+ "guards": {
+  "fresh_d1_unchanged": true,
+  "fresh_settled": true,
+  "install_folder_unchanged": true,
+  "setup_d1_unchanged": true,
+  "token_absent_from_receipt": true
+ },
+ "lanes": {
+  "accountable-surface": {
+   "class_plan": "A/C",
+   "class_measured": "A/C",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  },
+  "articulate": {
+   "class_plan": "A",
+   "class_measured": "A",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  },
+  "bulletin": {
+   "class_plan": "A",
+   "class_measured": "A",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [
+    "board writes need a registered identity"
+   ],
+   "not_measurable": []
+  },
+  "calibrate-pro": {
+   "class_plan": "C",
+   "class_measured": "C",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  },
+  "canon": {
+   "class_plan": "B",
+   "class_measured": "B",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  },
+  "chorus": {
+   "class_plan": "A",
+   "class_measured": "A",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  },
+  "crucible": {
+   "class_plan": "A",
+   "class_measured": "A",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  },
+  "forum": {
+   "class_plan": "A/B-untested",
+   "class_measured": "A/B-untested",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [
+    "real rooms need FORUM_RUN_REAL and a provider key"
+   ],
+   "not_measurable": []
+  },
+  "gather": {
+   "class_plan": "A",
+   "class_measured": "A",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  },
+  "index": {
+   "class_plan": "A/B",
+   "class_measured": null,
+   "verdict": "BELOW_BAR",
+   "failed_checks": [
+    {
+     "check": "fresh_map_needs_git",
+     "code": null,
+     "status": 200
+    }
+   ],
+   "untested": [],
+   "not_measurable": []
+  },
+  "learn": {
+   "class_plan": "A",
+   "class_measured": "A",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  },
+  "local-model": {
+   "class_plan": "B",
+   "class_measured": "B",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  },
+  "mneme": {
+   "class_plan": "A",
+   "class_measured": "A",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  },
+  "plexus": {
+   "class_plan": "A",
+   "class_measured": "A",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  },
+  "relay": {
+   "class_plan": "B",
+   "class_measured": "B",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": [
+    "fresh_state"
+   ]
+  },
+  "telos": {
+   "class_plan": "B",
+   "class_measured": null,
+   "verdict": "HELD",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  },
+  "writing": {
+   "class_plan": "A",
+   "class_measured": "B",
+   "verdict": "AT_CLASS",
+   "failed_checks": [],
+   "untested": [],
+   "not_measurable": []
+  }
+ },
+ "compared_with": {
+  "receipt": "installed-lanes-local-1.1.0-20260926.json",
+  "class_changes": [],
+  "check_changes": [
+   "telos fresh_catalog_refused: the check now calls telos.catalog, the tool telos v0.4.1 names, and gets 503 LANE_CANNOT_LAUNCH lane_held; the c49e79b6 run called the misspelled telos_catalog and got 403 governance_denied. The lane state is still cannot_launch with code lane_held and the verdict is still HELD."
+  ]
+ },
+ "runs": [
+  {
+   "run": "review-fix-local",
+   "receipt_sha256": "fee7d6275eedd467a1e8de60596fc8ecc93c7cb85961cce585e452f27fda066e",
+   "verdict": "BELOW_BAR",
+   "below_bar": [
+    "index",
+    "telos"
+   ],
+   "install_mode": "per-user"
+  }
+ ],
+ "does_not_prove": [
+  "A throwaway profile on the build machine with a System32-only PATH, not a consumer Windows 11 install or a clean VM; host DLLs, the network and any model server the host runs were reachable.",
+  "The acceptance installer differs from the release installer in its AppId, Start menu group and output name only, so it cannot touch the Flywheel already installed here.",
+  "No provider-backed success: no real provider key was used; key-backed tools stay 'after setup: untested'.",
+  "No model quality: the stub model server answers one fixed word; a model-lane pass shows the lane reached a model server and the engine's guards held.",
+  "No bulletin write and no actuation; a board read contacts the public board.",
+  "One fixture assertion per main tool; not result correctness in general.",
+  "The desktop UI was not driven: the checks call the engine routes the app calls."
+ ]
+}
