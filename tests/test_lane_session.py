@@ -30,7 +30,7 @@ def pid_alive(pid: int) -> bool:
             os.kill(pid, 0)
         except OSError:
             return False
-        return True
+        return not _zombie(pid)
     import ctypes
     handle = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)  # QUERY_LIMITED_INFO
     if not handle:
@@ -41,6 +41,19 @@ def pid_alive(pid: int) -> bool:
     finally:
         ctypes.windll.kernel32.CloseHandle(handle)
     return code.value == 259  # STILL_ACTIVE
+
+
+def _zombie(pid: int) -> bool:
+    """A killed child the pool has not reaped yet still answers kill(pid, 0),
+    until the pool polls it on the next call. Its state is Z: it has exited.
+    Same reading as test_exec_oracle; ps covers a host with no /proc."""
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        out = subprocess.run(["ps", "-o", "stat=", "-p", str(pid)],
+                             capture_output=True, text=True, timeout=10)
+        return out.stdout.strip().startswith("Z")
+    return stat.rsplit(")", 1)[1].split()[0] == "Z"
 
 
 def wait_dead(pid: int, seconds: float = 10.0) -> bool:
