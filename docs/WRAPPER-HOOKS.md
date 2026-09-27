@@ -110,12 +110,17 @@ and still freezes the URLs a prompt names; the hooks no longer use it.
 
 ## How the hook finds and trusts the gateway
 
-- **The home.** From `--home`, else a pointer file the gateway writes in a
-  per-user folder that the hook finds through the operating system, else your
-  profile folder plus `.flywheel`. `FLYWHEEL_HOME` is only compared: a
-  different value stops the hook with `HOME_MISMATCH`, so a repository's
-  settings cannot redirect capture. A home inside a git work tree, or a
-  `--home` inside the working directory, stops it with `HOME_IN_WORKTREE`.
+- **The home.** From `--home`, else a pointer file the gateway writes in your
+  local app-data folder, else your profile folder plus `.flywheel`.
+  `FLYWHEEL_HOME` is only compared: a different value stops the hook with
+  `HOME_MISMATCH`. A home inside a git work tree, or a `--home` inside the
+  working directory, stops it with `HOME_IN_WORKTREE`, and a network or device
+  path stops it with `HOME_NOT_LOCAL` before anything opens it. On Windows the
+  app-data folder follows `USERPROFILE`, so a repository's settings can choose
+  which pointer file the hook reads, but not a home these rules refuse. A
+  gateway does not take the pointer from another home whose gateway is
+  running, and `flywheel traces doctor` warns when the pointer names another
+  home. Mount the hooks with `--home` to take the pointer out of the path.
 - **The gateway.** From `gateway.endpoint` in the home, written by the gateway
   after it binds and removed when it stops. There is no fallback port: with no
   file, or a file naming a process that is not running, the hook reports

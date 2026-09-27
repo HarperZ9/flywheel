@@ -178,7 +178,19 @@ def location_check(home: Path, environ):
         return "WARN", "the home is inside a git work tree", "move FLYWHEEL_HOME out of it"
     if synced:
         return "WARN", "the home is inside a sync folder", "move FLYWHEEL_HOME out of it"
+    elsewhere = _pointer_elsewhere(home)
+    if elsewhere:
+        return ("WARN", "the home pointer names another home, so a hook mounted without "
+                "--home records there", "add --home to the mount lines "
+                "(flywheel traces hooks print-mount), or restart this home's gateway")
     return "PASS", "the home is outside sync folders and git work trees", ""
+
+
+def _pointer_elsewhere(home: Path) -> bool:
+    from harness.capture_hooks.home import read_pointer
+    named = read_pointer()
+    return named is not None and os.path.normcase(os.path.abspath(str(named))) != \
+        os.path.normcase(os.path.abspath(str(home)))
 
 
 def synthetic_check(home: Path, run: bool):
