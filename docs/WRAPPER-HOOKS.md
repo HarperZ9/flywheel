@@ -126,7 +126,9 @@ and still freezes the URLs a prompt names; the hooks no longer use it.
   file, or a file naming a process that is not running, the hook reports
   `GATEWAY_NOT_RUNNING` and connects nowhere. Only `127.0.0.1` and `::1` are
   accepted; remote capture is not offered, and `FLYWHEEL_GATEWAY_URL` and
-  `FLYWHEEL_CAPTURE_ALLOW_REMOTE` are ignored.
+  `FLYWHEEL_CAPTURE_ALLOW_REMOTE` are ignored. The gateway answers the capture
+  routes only on a loopback listener to a loopback client, so a gateway also
+  bound to a LAN or tailnet address shows those routes to no one there.
 - **The listener.** On Windows the hook reads the TCP listener table, requires
   the listening process to be the one the endpoint file names, and requires it
   to run as your user. On Linux it requires the listening socket's uid to be

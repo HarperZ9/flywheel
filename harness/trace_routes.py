@@ -141,7 +141,16 @@ def _turns(handler, path: str):
         return handler._json(capture.error("NOT_FOUND", "no such turn"), 404)
 
 
+def _off_loopback(handler, path: str):
+    if path.startswith(protocol.PREFIX) and not capture.loopback_only(handler):
+        return handler._json(capture.error("NOT_FOUND", "no such trace route"), 404)
+    return None
+
+
 def route_get(handler, path: str, qs: str):
+    refused = _off_loopback(handler, path)
+    if refused is not None:
+        return refused
     if path.startswith(protocol.PREFIX) and not capture.host_ok(handler):
         return handler._json(capture.REFUSED, 401)
     if path == protocol.HELLO_PATH:
@@ -162,6 +171,9 @@ def route_get(handler, path: str, qs: str):
 def route_post(handler, path: str):
     if path == "/api/scaffold":
         return _scaffold(handler)
+    refused = _off_loopback(handler, path)
+    if refused is not None:
+        return refused
     if path.startswith(protocol.PREFIX) and not capture.host_ok(handler):
         return handler._json(capture.REFUSED, 401)
     if path in (protocol.PROMPT_PATH, protocol.STOP_PATH, protocol.FREEZE_PATH,
