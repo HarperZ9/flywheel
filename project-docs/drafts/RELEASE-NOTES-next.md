@@ -198,11 +198,10 @@ These commands come with the engine from pip; the Windows app has no traces scre
 ## Security changes in the engine
 
 - A path argument that names a Windows device path (`\\?\`, `\??\`), a reserved device
-  name such as `CON.md` or a network share is refused before the lane starts, and so is a
-  device path or share inside gather.run's inline config. A folder is compared by
-  identity, so no spelling of the Flywheel home or the run root reaches a lane's read.
-  The Node and local-model folder settings refuse network paths and mapped network
-  drives too.
+  name such as `CON.md` or a network share is refused before the lane starts, and so is
+  a device path or share inside gather.run's inline config. A folder is compared by
+  identity, so no spelling of one in the Flywheel home or the run root passes. The Node
+  and local-model folder settings refuse network paths and mapped network drives too.
 - A T2 call keeps the keys granted to its lane only when its tool spends a model call.
   A key you bind to the call still joins it. Plugins and the forum and relay screens run
   without granted keys, and those screens refuse a tool above T1.
@@ -272,7 +271,8 @@ on your machine; the content of each request goes to the hosted provider you rou
 - index maps a repository's history only with Git for Windows; see its row in the table.
 - telos is not in this build while its release contents are reviewed.
 - Lanes still run as your user with no filesystem sandbox. The policy governs what a
-  caller can ask a lane to do, not what a lane's own code can reach.
+  caller can ask a lane to do, not what a lane's own code can reach. An index root above
+  the Flywheel home, such as your user folder, reads the repositories inside the home.
 - forum real rooms, mneme extraction and articulate's judge, fix and polish need a
   provider key or a signed-in claude CLI and were not exercised.
 - The limits listed for 1.0.4 on the verifier still hold.

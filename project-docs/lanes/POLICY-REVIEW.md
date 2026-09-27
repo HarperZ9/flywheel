@@ -147,6 +147,15 @@ reaches T2, since the model picks each inner call and its arguments.
   answers MATCH; a `paths` entry spelled as a share or inside the home's state, and a
   `root` inside the home outside the lane folder, answer `argument_refused` before any
   child starts.
+- **Path spellings, 2026-09-27.** Checking the tree base above found that the engine
+  expanded `~` and stripped blanks before its home check, while index reads a path as
+  given: `Path(root).resolve()` with no expanduser, from the lane folder. A `root` of
+  `~/../../../state` expanded to a folder outside the home and passed, and index read
+  it as the home's state and built a graph of the repository there; a `root` with a
+  leading blank did the same. Some lanes call expanduser, so the engine now checks a
+  path argument both as given and stripped with `~` expanded, and refuses the call when
+  either reaches the state. A relative tree base stays relative and is read from the
+  lane folder the same way. A `root` of `~/work` still passes.
 - **Measured containment** (C-16). The frozen lane smoke snapshots its throwaway home around each
   lane's fixture and fails a lane that writes outside its folder.
 
