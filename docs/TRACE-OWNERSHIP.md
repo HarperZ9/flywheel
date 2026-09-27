@@ -405,7 +405,10 @@ fsmonitor command and hooks and leave `.git/index` untouched. A task is
 reproducible when its commit is known and still present and nothing tracked
 or untracked had changed at start; ignored files such as `.venv` do not
 count. Otherwise it is marked unreproducible with the reason, and runs from
-before this change have no git identity. A goal built from selected source
+before this change have no git identity. A replay runs the agent loop with
+file tools only, so a run that used lane tools, a native CLI session or the
+native tool protocol is marked unreproducible too, rather than replayed with
+less and counted as a regression. A goal built from selected source
 context is marked untrusted. A run without a test command is counted and
 skipped. Deleting a trace deletes its tasks and their replay results.
 
