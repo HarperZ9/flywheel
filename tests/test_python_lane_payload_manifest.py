@@ -72,13 +72,16 @@ def test_python_lane_payload_pins_accepted_index_and_plexus_sources():
     by_lane = {row["lane"]: row for row in rows}
 
     index = by_lane["index"]
-    assert index["owner_commit"] == "71c26eabde266b394370392816aaa74e1a55d88b"
+    # index 2.14.0 (tag v2.14.0) holds the bounded context envelope and index.route
+    assert index["owner_commit"] == "665ea7e24055266a9f3c26c5c84f0f3555b8234c"
     assert index["component_descriptor"]["source"]["commit"] == index["owner_commit"]
-    assert "index_graph.context.envelope" in index["hidden_imports"]
-    assert any(
-        item["path"] == "src/index_graph/context/envelope.py"
-        for item in index["component_descriptor"]["source"]["files"]
-    )
+    for module in ("index_graph.context.envelope", "index_graph.route"):
+        assert module in index["hidden_imports"]
+    for path in ("src/index_graph/context/envelope.py", "src/index_graph/route.py"):
+        assert any(
+            item["path"] == path
+            for item in index["component_descriptor"]["source"]["files"]
+        ), path
 
     plexus = by_lane["plexus"]
     assert plexus["owner_commit"] == "aa7cef0eb541b14376f3b4de93f7a4aadceed8f4"

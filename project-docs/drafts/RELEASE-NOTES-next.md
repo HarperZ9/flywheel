@@ -1,7 +1,7 @@
 <!-- Draft 1.1.0 notes, reviewed before any tag. The lane classes, lane sentence, README
-count (O-5), method paragraph and installer size cite CI run 36302181098, which predates
-the gather 1.9.1, relay 0.5.0, forum 1.15.1 and crucible 1.3.0 pins: replace them from the
-release commit's windows-installed-acceptance.yml run (O-9). The 1.0.4 known-issues page
+count, method paragraph and installer size cite CI run 36302181098, which predates the
+gather 1.9.1, relay 0.5.0, forum 1.15.1, crucible 1.3.0 and index 2.14.0 pins: replace them
+from the release commit's windows-installed-acceptance.yml run. The 1.0.4 known-issues page
 publishes on its own. Trace manual checks X4, X6, X7, X8 and X18 were not run. -->
 
 # Flywheel 1.1.0
@@ -103,17 +103,19 @@ runs only on a call you approve with the higher tier.
 - **License texts ship with the engine.** The engine folder now carries the Python
   license (with OpenSSL's), the texts for code compiled into Python, and each lane's
   license. The installer's third-party notice lists every one.
-- **Lane updates.** relay 0.5.0, gather 1.9.1, forum 1.15.1, crucible 1.3.0, mneme 0.5.1
-  and canon 0.4.2, each frozen from its release tag. Each tool keeps its tier, and
-  crucible 1.3.0 adds one, `crucible.recheck_template`, a T1 read that returns a replay
-  template with its path arguments kept out of the home. In the Windows app, a pip
-  install and a source checkout, relay keeps its saved sessions in `lanes/relay/sessions`
-  and starts with write, exec, shell child variables and agent CLI tiers all off, gather
-  starts with no network, command or credential grant and forum with its command
-  variables empty. mneme's forget erases a memory with the rows derived from it and
-  returns a receipt that names any residue it finds. canon's context store redacts every
-  ingest and can purge records from its own command line; the engine starts canon's
-  context server with purge disabled, so it can only plan one.
+- **Lane updates.** relay 0.5.0, gather 1.9.1, forum 1.15.1, crucible 1.3.0, index
+  2.14.0, mneme 0.5.1 and canon 0.4.2, each frozen from its release tag. Each tool keeps
+  its tier. Two releases add a T1 read with its path arguments kept out of the home:
+  crucible 1.3.0 `crucible.recheck_template`, which returns a replay template, and index
+  2.14.0 `index.route`, which builds a context envelope for the repositories you name
+  under a root. The Windows app and a pip install now get the same index release. In the
+  Windows app, a pip install and a source checkout, relay keeps its saved sessions in
+  `lanes/relay/sessions` and starts with write, exec, shell child variables and agent
+  CLI tiers all off, gather starts with no network, command or credential grant and
+  forum with its command variables empty. mneme's forget erases a memory with the rows
+  derived from it and returns a receipt that names any residue it finds. canon's context
+  store redacts every ingest and can purge records from its own command line; the engine
+  starts canon's context server with purge disabled, so it can only plan one.
 - **Gate decisions stay with your approval.** forum 1.15 runs `gate_approve`, `gate_edit`
   and `gate_reject` only when started with `--allow-gate-decisions`. The engine adds it
   only to the launch of one call you approve at T2 for one of them, so your approval
@@ -269,8 +271,6 @@ on your machine; the content of each request goes to the hosted provider you rou
 
 - index maps a repository's history only with Git for Windows; see its row in the table.
 - telos is not in this build while its release contents are reviewed.
-- The Windows app bundles index 2.13.0 plus one later commit (a bounded context-envelope
-  output), which no index release contains; a pip install gets PyPI 2.13.0.
 - Lanes still run as your user with no filesystem sandbox. The policy governs what a
   caller can ask a lane to do, not what a lane's own code can reach.
 - forum real rooms, mneme extraction and articulate's judge, fix and polish need a
