@@ -13,7 +13,7 @@ The 1.0.4 notes describe the Windows installer's lanes more strongly than the
 installed app delivered. We rebuilt the 1.0.4 engine from its release tag with the
 release's own freeze steps and ran it the way a fresh machine would: no Python, no
 Node and no lane packages on the PATH, and a throwaway profile. This page corrects
-five statements about the installed Windows app; the engine you get from
+six statements about the installed Windows app; the engine you get from
 `pip install flywheel-verify` is not affected by those. It also names the lane
 advisories that cover the lane releases 1.0.4 pins: canon 0.2.0's and crucible 1.2.0's,
 in both the app and a pip install, and gather's, relay's and forum's, in a pip install.
@@ -59,6 +59,12 @@ the grant cases.
 natively from source."** Ten lanes are bundled from source. In the 1.0.4 app, nine
 of them answer a health check only and the tenth, forum, does not start, so the
 sentence reads as more than the app delivers.
+
+**"The frozen app now carries the versions the lane registry pins," with index 2.13.0
+"already current."** The 1.0.4 app, like the 1.0.3 app, bundled index 2.13.0 plus one
+later commit, a bounded context-envelope output in four source files. No index release
+held that commit until 2.14.0, which Flywheel 1.1.0 pins. A pip install of 1.0.4 got
+index 2.13.0 from PyPI, as the registry pins.
 
 **canon 0.2.0, which 1.0.4 ships, is inside the range of GHSA-48rq-xjfx-6j4f.**
 Its shared context store keeps an ingested event as sent, secret-shaped values
