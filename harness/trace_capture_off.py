@@ -8,6 +8,12 @@ per client and project with its count, and one witness event per entry. The
 project is a keyed digest of the working directory (custody key), so the
 ledger names no path; without the key it reads `unknown`. The names of the
 records already folded in are kept beside them, so each is counted once.
+
+A record from a lane process names its lane and no directory. Its project is
+`lane:<lane>`, so every call a lane makes folds into one entry per fold, and
+the record is removed once its count is in the ledger: the engine starts every
+lane child with capture off, and those records would otherwise grow the spool
+without bound and bury an owner's own opt-out.
 """
 from __future__ import annotations
 
@@ -24,7 +30,10 @@ DONE = ".ledgered"
 
 
 def _project(record: dict, key: bytes | None) -> str:
-    from .capture_hooks import protect
+    from .capture_hooks import protect, spool
+    lane = record.get("lane")
+    if type(lane) is str and spool._LANE.fullmatch(lane):
+        return f"lane:{lane}"
     blob = record.get("cwd_protected")
     if not blob or key is None or not protect.available():
         return "unknown"
@@ -61,7 +70,7 @@ def record_suppressions(home, owner: str, *, sink=None) -> int:
         new = [p for p in sorted(folder.glob("s-*.json")) if p.name not in done]
         if not new:
             return 0
-        key, groups = _key(home, owner), Counter()
+        key, groups, lane_records = _key(home, owner), Counter(), []
         for path in new:
             try:
                 record = json.loads(path.read_bytes())
@@ -69,7 +78,10 @@ def record_suppressions(home, owner: str, *, sink=None) -> int:
                 record = {}
             client = record.get("client") if record.get("client") in ("claude-code",
                                                                         "codex") else "unknown"
-            groups[(client, _project(record, key))] += 1
+            project = _project(record, key)
+            groups[(client, project)] += 1
+            if project.startswith("lane:"):
+                lane_records.append(path)
         ledger, sink = CustodyLedger(home, owner), sink or default_sink()
         for (client, project), count in sorted(groups.items()):
             fields = {"client": client, "project_ref": project, "count": count}
@@ -79,6 +91,14 @@ def record_suppressions(home, owner: str, *, sink=None) -> int:
                     "capture_suppressed", entry["seq"], owner, {"items": count}, "none"))
             except OSError as exc:
                 _log.warning("capture-off witness event not written (%s)", type(exc).__name__)
-        with open(done_path, "a", encoding="ascii") as stream:
-            stream.write("".join(p.name + "\n" for p in new))
+        kept = [p for p in new if p not in lane_records]
+        if kept:
+            with open(done_path, "a", encoding="ascii") as stream:
+                stream.write("".join(p.name + "\n" for p in kept))
+        for path in lane_records:          # counted in the ledger; nothing else in it
+            try:
+                path.unlink()
+            except OSError as exc:
+                _log.warning("a folded lane suppression record stays (%s)",
+                             type(exc).__name__)
     return len(new)

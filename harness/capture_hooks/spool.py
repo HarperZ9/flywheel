@@ -10,6 +10,13 @@ With FLYWHEEL_CAPTURE=off, every suppressed event appends a suppression
 record, and the first one per session leaves a marker so the notice shows
 once. The working directory in a suppression record is DPAPI-encrypted on
 Windows and omitted elsewhere.
+
+An event from a lane process (a working directory under `<home>/lanes/<lane>`,
+where the engine starts every lane child with capture off) records the lane
+name instead, leaves no marker and shows no notice: a lane that runs a claude
+CLI per call would otherwise print the notice into the lane's own output and
+leave a marker per call. The gateway folds these into one ledger count per
+lane and removes them.
 """
 from __future__ import annotations
 
@@ -29,6 +36,7 @@ SUPPRESSION_SCHEMA = "flywheel.capture-suppression/v1"
 _SESSION = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
 _KEY = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z")
 _CODE = re.compile(r"[A-Z_]{3,40}(:[0-9]{3})?\Z")
+_LANE = re.compile(r"[a-z0-9][a-z0-9-]{0,39}\Z")
 
 
 def spool_dir(home: Path) -> Path:
@@ -82,11 +90,28 @@ def _session_marker(session_id) -> str:
     return hashlib.sha256(("flywheel.capture.session.v1\0" + raw).encode()).hexdigest()[:32]
 
 
+def lane_of(home: Path, cwd) -> str | None:
+    """The lane whose folder under `<home>/lanes` holds `cwd`, or None."""
+    try:
+        lanes = os.path.normcase(os.path.realpath(os.path.join(str(home), "lanes")))
+        here = os.path.normcase(os.path.realpath(str(cwd)))
+        relative = os.path.relpath(here, lanes)
+    except (OSError, ValueError):
+        return None
+    first = relative.split(os.sep)[0]
+    return first if first not in ("", ".", "..") and _LANE.fullmatch(first) else None
+
+
 def note_suppression(home: Path, client: str, session_id, cwd: str) -> bool:
-    """Count one suppressed event. True when it is the first of its session."""
+    """Count one suppressed event. True when it is the first of its session;
+    always False for a lane process, which shows no notice."""
     directory = spool_dir(home)
     doc = {"schema": SUPPRESSION_SCHEMA, "client": client, "at": _now(),
            "session_id": clean_session(session_id)}
+    lane = lane_of(home, cwd)
+    if lane:
+        _write_new(directory / "suppressed", f"s-{_stamp()}.json", {**doc, "lane": lane})
+        return False
     if protect.available():
         try:
             doc["cwd_protected"] = base64.b64encode(
