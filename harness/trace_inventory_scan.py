@@ -18,13 +18,29 @@ MAX_ENTRIES = 1_000_000
 _REPARSE = 0x400
 
 
+def user_state_root(env) -> Path:
+    """The per-user state folder a lane keeps state in outside its own folder:
+    the local app-data Known Folder on Windows (as mneme reads it), else
+    $XDG_STATE_HOME when absolute, else ~/.local/state."""
+    if os.name == "nt":
+        from .capture_hooks.home import _LOCAL_APPDATA, _known_folder
+        try:
+            base = _known_folder(_LOCAL_APPDATA)
+        except (OSError, AttributeError):
+            base = None
+        return base or Path.home() / "AppData" / "Local"
+    xdg = env.get("XDG_STATE_HOME", "")
+    return Path(xdg) if os.path.isabs(xdg) else Path.home() / ".local" / "state"
+
+
 def resolve_roots(environ=None) -> dict:
     from .run_paths import run_root_default
     env = os.environ if environ is None else environ
     home = Path(env.get("FLYWHEEL_HOME") or Path.home() / ".flywheel")
     run = Path(env.get("FLYWHEEL_RUN_ROOT") or run_root_default())
     return {"home": home, "state": home / "state", "run": run, "lanes": home / "lanes",
-            "temp": Path(tempfile.gettempdir()), "env": env}
+            "temp": Path(tempfile.gettempdir()), "userstate": user_state_root(env),
+            "env": env}
 
 
 def _is_link(entry: os.DirEntry) -> bool:
@@ -106,6 +122,9 @@ def store_paths(store: inv.Store, roots: dict) -> list[Path]:
     if store.root == "env":
         found = {roots["env"].get(k) for k in store.env} - {None, ""}
         return [Path(p) for p in sorted(found)]
+    if store.root == "userstate":
+        return [roots["userstate"] / p for p in store.patterns
+                if os.path.lexists(roots["userstate"] / p)]
     if store.root == "client":
         name = {"CLAUDE_CONFIG_DIR": ".claude", "CODEX_HOME": ".codex"}[store.env[0]]
         base = Path(roots["env"].get(store.env[0]) or Path.home() / name)
@@ -129,6 +148,9 @@ def location_text(store: inv.Store) -> str:
         return " or ".join(f"${k}" for k in store.env)
     if store.root == "temp":
         return f"<temp>/{joined}"
+    if store.root == "userstate":
+        return " or ".join(f"{base}/{joined}" for base in (
+            "<local app data>", "$XDG_STATE_HOME", "~/.local/state"))
     if store.root == "client":
         return f"${store.env[0]}/{joined}"
     return joined
