@@ -32,6 +32,9 @@ def test_both_settings_are_granted_actions_with_fixed_scopes():
     assert dict(node.destination) == {"kind": "setting", "ref": "node_path"}
     root = canonicalize_operation("lane.root", dict(REFS))
     assert root.scopes == ("write",)
+    # The desktop reads a ref ending in "/root" as a private path and refuses
+    # the proposal, so the folder setting names itself without a slash.
+    assert dict(root.destination) == {"kind": "setting", "ref": "local-model-root"}
 
 
 def test_the_check_route_is_private():

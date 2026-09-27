@@ -32,7 +32,7 @@ SETTING_FIELDS = {
 }
 SETTING_PATHS = {NODE_PATH_ROUTE: "settings.node_path", LOCAL_MODEL_ROOT_ROUTE: "lane.root"}
 SETTING_DESTINATIONS = {"settings.node_path": {"kind": "setting", "ref": "node_path"},
-                        "lane.root": {"kind": "lane", "ref": "local-model/root"}}
+                        "lane.root": {"kind": "setting", "ref": "local-model-root"}}
 SETTING_SCOPES = {"settings.node_path": ("write", "exec"), "lane.root": ("write",)}
 
 
