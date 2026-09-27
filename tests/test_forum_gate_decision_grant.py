@@ -212,3 +212,25 @@ def test_forum_1_15_1_serves_decisions_only_on_the_granted_launch(tmp_path):
         decided = client.call_text("gate_approve", args)
     assert set(DECISIONS) <= names
     assert decided["raw"]["structuredContent"]["code"] == "NOT_FOUND"   # no gate pending
+
+
+def test_the_docs_count_the_tools_an_ordinary_forum_launch_lists():
+    """An ordinary launch lists the row's tools minus the ones that need a launch
+    grant; the forum page, the policy review and the notes carry that count."""
+    import json
+    root = Path(__file__).resolve().parents[1]
+    row = next(json.loads(line) for line in (root / "packaging" / "python-lane-payloads.jsonl")
+               .read_text(encoding="utf-8").splitlines()
+               if line.strip() and json.loads(line)["lane"] == "forum")
+    served = row["mcp"]["static_tool_names"]
+    granted = [t for t in served if (policy.tool_policy("forum", t) or
+                                     SimpleNamespace(launch_grant="")).launch_grant]
+    assert sorted(granted) == sorted(DECISIONS)
+    ordinary = len(served) - len(granted)
+    for parts in (("docs", "features", "forum.md"), ("project-docs", "lanes", "POLICY-REVIEW.md")):
+        text = " ".join(root.joinpath(*parts).read_text(encoding="utf-8").split())
+        assert f"lists the {ordinary} tools of an ordinary launch" in text, parts
+    notes = " ".join((root / "project-docs" / "drafts" / "RELEASE-NOTES-next.md")
+                     .read_text(encoding="utf-8").split())
+    assert len(granted) == 3 and "which leaves the three out" in notes
+    assert "The app has no control for them in this release" in notes

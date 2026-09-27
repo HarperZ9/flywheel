@@ -24,8 +24,9 @@ ROWS = [json.loads(line) for line in (ROOT / "packaging" / "python-lane-payloads
         .read_text(encoding="utf-8").splitlines() if line.strip()]
 NOTICE = (ROOT / "desktop" / "release" / "THIRD-PARTY-NOTICES.txt").read_text(encoding="utf-8")
 
-#: Rows pinned past their tag, reviewed and disclosed. Cutting a release at the
-#: pinned commit and repinning removes the entry (index: cut 2.13.1).
+#: Rows pinned past their tag, reviewed and disclosed. Cutting a release that
+#: contains the pinned commit and repinning to its tag removes the entry (index:
+#: 2.14.0 contains 71c26eab; repin once PyPI serves it).
 UNRELEASED = {"index": "v2.13.0-1-g71c26ea"}
 
 
