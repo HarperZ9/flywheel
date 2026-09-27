@@ -82,3 +82,13 @@ snapshots. The headless cleanup row requires a Windows Job Object assigned befor
 the child can run, then records job termination, wait, active-process query,
 captured descendant identities, and handle closure; it still does not prove
 native UI process ownership or installer post-install launch behavior.
+
+# Installed lane acceptance runner
+
+`run_installed_lane_acceptance.ps1` is the lane step of the pre-tag installed acceptance (`run_ci_installed_acceptance.ps1` calls it). It runs `scripts/installed_app_lane_acceptance.py` on the per-user install, uninstalls it, installs the same installer with `/ALLUSERS` under Program Files, runs the lane acceptance again and uninstalls. Receipts land in `-AcceptanceDir`; the throwaway homes and the `.detail.json` files stay under `-WorkRoot` (the runner temp folder). `-SkipAllUsers` runs the per-user leg only. `-DefineOnly` loads the functions for tests.
+
+To run the lane acceptance by hand against any installed folder:
+
+```powershell
+python scripts/installed_app_lane_acceptance.py --install-root <install folder> --work <new empty folder> --receipt <receipt.json>
+```

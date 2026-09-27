@@ -56,6 +56,8 @@ function Assert-RequiredTargetFiles() {
     "scripts\stage_node_lanes.py",
     "scripts\check_frozen_gateway.py",
     "scripts\check_installed_canon_context.py",
+    "scripts\installed_app_lane_acceptance.py",
+    "desktop\tool\run_installed_lane_acceptance.ps1",
     "packaging\flywheel-gateway.spec",
     "tests\fixtures\inspect\v1\single-success.fixture.json"
   )
@@ -280,6 +282,7 @@ $inspectArgs = New-InstalledAcceptanceCommandArgs $runner $common $inspectDir $i
 Invoke-Checked "full installed acceptance" "powershell" $fullArgs
 Invoke-Checked "inspect installed acceptance" "powershell" $inspectArgs
 Invoke-Checked "installed Canon context acceptance" "python" @("scripts/check_installed_canon_context.py", "--install-root", $requestedInstallRoot, "--expected-engine-sha256", $engineHash, "--expected-version", $version, "--source-commit", $targetCommit, "--receipt", $canonReceipt)
+Invoke-Checked "installed lane acceptance" "powershell" @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $scriptRoot "run_installed_lane_acceptance.ps1"), "-InstallRoot", $requestedInstallRoot, "-Installer", $installer.FullName, "-AcceptanceDir", $acceptanceDir, "-SourceCommit", $targetCommit, "-EngineSha256", $engineHash)
 Assert-TrackedAndSubmodulesUnchanged "after acceptance"
 $summary = [ordered]@{
   schema = "flywheel.windows-installed-acceptance-ci/v1"
@@ -290,7 +293,7 @@ $summary = [ordered]@{
   app_sha256 = $appHash
   engine_sha256 = $engineHash
   payload_sha256 = $payloadHash
-  receipts = [ordered]@{ full = "installed-acceptance/installed-launch-full.json"; inspect = "installed-acceptance/installed-launch-inspect.json"; canon_context = "installed-acceptance/installed-canon-context.json" }
+  receipts = [ordered]@{ full = "installed-acceptance/installed-launch-full.json"; inspect = "installed-acceptance/installed-launch-inspect.json"; canon_context = "installed-acceptance/installed-canon-context.json"; lanes_per_user = "installed-acceptance/installed-lanes-per-user.json"; lanes_all_users = "installed-acceptance/installed-lanes-all-users.json" }
   limits = @("rebuilt CI candidate only", "native UI not launched", "device, signing, provider, and publication acceptance not claimed")
 }
 $summary | ConvertTo-Json -Depth 12 | Out-File -LiteralPath (Join-Path $installerDir "ci-installed-acceptance-summary.json") -Encoding utf8
