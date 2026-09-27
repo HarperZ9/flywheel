@@ -11,6 +11,12 @@ undocumented (kept as bytes). A directory entry that is a reparse point
 `shell-snapshots/` are named in every plan and not imported. The entry
 format is internal to Claude Code and changes between versions, so bytes are
 kept exactly and views are derived separately.
+
+A session a Flywheel lane started (articulate runs `claude -p` from a folder
+under its lane folder) is not the owner's: its transcript records a working
+directory under `<home>/lanes/`, read from the records themselves because the
+project folder name is a lossy slug. Every file of such a session is named
+LANE_SPAWNED in the plan and not imported, and the plan counts the sessions.
 """
 from __future__ import annotations
 
@@ -103,6 +109,32 @@ class _Walk:
             self.add(path, "transcript" if exact else "variant", session)
 
 
+def _recorded_cwd(path: Path, limit: int = 256 * 1024) -> str | None:
+    """The first working directory a transcript's records name, from its head."""
+    try:
+        with open(path, "rb") as stream:
+            head = stream.read(limit)
+    except OSError:
+        return None
+    for line in head.splitlines():
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue
+        cwd = record.get("cwd") if type(record) is dict else None
+        if type(cwd) is str and cwd:
+            return cwd
+    return None
+
+
+def lane_sessions(home: Path, sources: list[dict]) -> set[str]:
+    """Sessions whose transcript ran in a folder under `<home>/lanes/`."""
+    from .capture_hooks.spool import lane_of
+    return {s["session_id"] for s in sources
+            if s["kind"] == "transcript" and s["session_id"]
+            and (cwd := _recorded_cwd(s["path"])) and lane_of(home, cwd)}
+
+
 def discover(root: Path) -> _Walk:
     walk = _Walk(root)
     for project in walk.entries(root / "projects") if (root / "projects").is_dir() else []:
@@ -140,8 +172,15 @@ def plan_claude(home, *, root=None, environ=None, now=None, free_space=None,
         from .operation_grants import load_or_create_owner_ref
         owner = load_or_create_owner_ref(Path(home))
     walk = discover(root)
-    plan = core.build_plan(home, owner, CLIENT, walk.sources, refused=walk.refused,
-                           not_imported=_named(root) + walk.over, now=now,
-                           free_space=free_space, live_window_s=live_window_s, root=root)
+    lanes = lane_sessions(Path(home), walk.sources)
+    spawned = sorted((s for s in walk.sources if s["session_id"] in lanes),
+                     key=lambda s: s["rel"])
+    sources = [s for s in walk.sources if s["session_id"] not in lanes]
+    plan = core.build_plan(home, owner, CLIENT, sources, refused=walk.refused,
+                           not_imported=_named(root) + walk.over + [
+                               {"name": s["rel"], "reason": "LANE_SPAWNED"} for s in spawned],
+                           now=now, free_space=free_space, live_window_s=live_window_s,
+                           root=root)
     plan["sweep"] = sweep_risk(root, plan["items"], now)
+    plan["lane_spawned"] = len(lanes)
     return plan
