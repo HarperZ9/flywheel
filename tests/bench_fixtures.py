@@ -42,7 +42,8 @@ def git_repo(base: Path) -> Path:
 
 
 def plant_run(home: Path, repo: Path, *, operation: str, goal="make add work",
-              test_cmd=GATE, tests_pass=False, identity=True, source_context=None) -> str:
+              test_cmd=GATE, tests_pass=False, identity=True, source_context=None,
+              binding_extra=None) -> str:
     """A gateway trace shaped like a real agent run against `repo`."""
     from harness.gateway_agent_trace import AgentTrace, TraceLedger
     from harness.workspace_git_identity import git_identity
@@ -51,7 +52,7 @@ def plant_run(home: Path, repo: Path, *, operation: str, goal="make add work",
     op = {"goal": goal, **({"test_cmd": test_cmd} if test_cmd else {})}
     binding = {"endpoint": {"name": "ep-one"}, "model": {"model_id": "model-one"},
                "capabilities": {"allow_write": True, "allow_exec": True},
-               "workspace": {"root": str(repo)}}
+               "workspace": {"root": str(repo)}, **(binding_extra or {})}
     trace.append("request", {"operation": op, "source_context": source_context,
                              "execution_binding": binding})
     found = git_identity(repo) if identity else None

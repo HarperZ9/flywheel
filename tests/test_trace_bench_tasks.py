@@ -94,3 +94,21 @@ def test_deleting_the_trace_deletes_its_tasks(world):
     assert report["state"] == "DELETED", report
     assert BenchTasks(home, OWNER).index() == []
     assert not list((home / "state" / "trace-bench").rglob("*.enc"))
+
+
+@pytest.mark.parametrize("extra,reason", [
+    ({"mcp_admission": {"servers": ["gather"]}}, "MCP_NOT_REPLAYED"),
+    ({"tool_protocol": {"protocol": "native"}}, "PROTOCOL_NOT_REPLAYED"),
+    ({"execution_mode": "native_cli_session"}, "PROTOCOL_NOT_REPLAYED"),
+])
+def test_a_run_the_replay_cannot_reproduce_is_not_counted_reproducible(world, extra, reason):
+    """Correctness review F9 of 1.1.0: a replay runs the router loop with file
+    tools only, so a run that used lane tools through MCP admission, a native
+    CLI session or the native tool protocol would replay with less and read as
+    a regression on its endpoint."""
+    home, repo = world
+    plant_run(home, repo, operation=_op(40), binding_extra=extra)
+    plant_run(home, repo, operation=_op(41))                      # control: a router run
+    build_tasks(home, OWNER)
+    rows = {r["reason"]: r["class"] for r in BenchTasks(home, OWNER).index()}
+    assert rows == {reason: "UNREPRODUCIBLE", None: "REPRODUCIBLE"}
