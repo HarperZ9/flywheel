@@ -152,10 +152,10 @@ optionally spawns `canon mcp`, and looks for a `canon.status` or `canon.doctor`
 health tool. A missing canon never crashes the roster.
 
 **Generic lane caller.** `harness/lane_caller.py::call_lane_tool` spawns any
-registered lane and calls one tool, gated by the governance tier. Canon is not
-listed in `LANE_MIN_TIERS`, so it defaults to tier T1 (open), which fits a
-read-only door. `list_available_lanes` returns canon with organ `continuity` and
-its min tier.
+registered lane and calls one tool, gated by the governance tier. Each canon
+tool takes the tier the lane tool policy table gives it, and a tool the table
+does not list is T2 (O-12). `list_available_lanes` returns canon with organ
+`continuity`, its min tier and each tool's tier.
 
 **Desktop identity card.** `desktop/lib/models/lane_identity.dart` holds
 `laneIdentities['canon']` with title "Canon", a one-line identity taken from
@@ -269,8 +269,9 @@ checklist names, with the fourth correctly absent:
 
 Remaining honest nulls, none of which are lane-wiring defects:
 
-- Canon is absent from `LANE_MIN_TIERS`, so it takes the T1 default tier with no
-  explicit entry. This fits a read-only door but is implicit.
+- Canon is absent from `LANE_MIN_TIERS`, so the listing's headline tier is T1.
+  Every call takes its tool's tier from the policy table, and an unlisted tool is
+  T2.
 - No dedicated desktop deep-view. Chorus has a `DiscourseView` destination; canon
   is reached through the lane card and the generic `/api/lane` caller only.
 - The reconcile write-path is intentionally not exposed over MCP or the lane

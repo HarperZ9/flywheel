@@ -17,10 +17,9 @@ class CallableLane {
   /// verification, structure, orchestration, and so on).
   final String organ;
 
-  /// The tier a tool on this lane costs when it is not in the lane's open set.
-  /// Empty when every tool on the lane costs [minTier]. bulletin is the live
-  /// case: reading the board is open, writing to it publishes under a
-  /// persistent identity, and the engine charges those differently.
+  /// The tier a tool on this lane costs when the engine's policy table does
+  /// not list it. The engine sends T2 for every lane (default deny); an older
+  /// engine sent it for bulletin only. Empty when the engine sends none.
   final String unlistedToolTier;
 
   /// Each listed tool's tier, from the engine's tool policy table. Empty when

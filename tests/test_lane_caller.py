@@ -7,7 +7,7 @@ import pytest
 
 from harness.lane_caller import (
     LANE_MIN_TIERS,
-    SPLIT_DEFAULT_TIER,
+    UNLISTED_TOOL_TIER,
     TOOL_MIN_TIERS,
     _tier_allows,
     call_lane_tool,
@@ -196,8 +196,9 @@ def test_a_tool_nobody_listed_is_refused_rather_than_opened():
     assert required_tier("bulletin", "board_tool_that_does_not_exist_yet") == "T2"
 
 
-def test_a_lane_with_one_tier_is_untouched_by_the_split():
-    assert required_tier("gather", "anything_at_all") == "T1"
+def test_an_unlisted_tool_is_t2_on_every_lane():
+    """O-12: default deny holds on T1-floor lanes too, not only on bulletin."""
+    assert required_tier("gather", "anything_at_all") == "T2"
     assert required_tier("local-model", "anything_at_all") == "T2"
 
 
@@ -231,7 +232,7 @@ def test_only_reviewed_tools_sit_below_their_lane_floor():
 
 
 def test_every_tier_named_in_either_map_is_a_tier():
-    assert SPLIT_DEFAULT_TIER in ("T1", "T2", "T3")
+    assert UNLISTED_TOOL_TIER == "T2"
     for tier in LANE_MIN_TIERS.values():
         assert tier in ("T1", "T2", "T3")
     for tools in TOOL_MIN_TIERS.values():
@@ -259,4 +260,4 @@ def test_the_listing_says_when_a_lane_charges_two_tiers():
     listing = {row["name"]: row for row in list_available_lanes()}
     assert listing["bulletin"]["unlisted_tool_tier"] == "T2"
     assert listing["bulletin"]["tool_tiers"]["board_feed"] == "T1"
-    assert "unlisted_tool_tier" not in listing["gather"]
+    assert listing["gather"]["unlisted_tool_tier"] == "T2"   # O-12

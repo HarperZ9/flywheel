@@ -41,6 +41,9 @@ def call_lane_tool(
     restricted launch for its one tool (lane_tier_gate). credential_bindings
     carries the values a grant bound for this call; they join this child only.
     """
+    from .lanes_registry import LANES
+    if lane_name not in LANES:   # before the tier: an unknown lane is not a denial
+        return _unknown_lane(lane_name)
     tier = governance_tier or "T1"
     min_tier = required_tier(lane_name, tool_name)
     from .lane_credentials import binds_any_key
@@ -76,8 +79,7 @@ def _launch_for_call(lane_name: str, tool_name: str, tier: str,
     """The launch for this one call, or the refusal dict to return."""
     from harness.lanes import resolve_mcp_launch, LANES
     if lane_name not in LANES:
-        return {"error": f"unknown lane: {lane_name!r}. "
-                         f"Available: {sorted(LANES.keys())}"}
+        return _unknown_lane(lane_name)
     try:
         command = resolve_mcp_launch(lane_name)
     except Exception as e:
@@ -93,6 +95,11 @@ def _launch_for_call(lane_name: str, tool_name: str, tier: str,
     from .lane_tier_gate import admission_refusal, widen_for_call
     command = widen_for_call(command, lane_name, tool_name, tier)
     return admission_refusal(command, lane_name, tool_name) or command
+
+
+def _unknown_lane(lane_name: str) -> dict[str, Any]:
+    from .lanes_registry import LANES
+    return {"error": f"unknown lane: {lane_name!r}. Available: {sorted(LANES.keys())}"}
 
 
 def _call(lane_name: str, tool_name: str, command: Any, args: dict[str, Any],
@@ -120,9 +127,12 @@ def _call(lane_name: str, tool_name: str, command: Any, args: dict[str, Any],
         return {"error": f"lane {lane_name!r} {stage}: {type(e).__name__}: {e}"}
 
 
-# Lane floors: the TADR tier for a tool the policy table does not list.
-# Most lanes are T1 (open access). Lanes that can make real-world changes
-# or access sensitive infrastructure require T2+. The kill switch requires T3.
+# Lane floors: the headline tier the lane listing shows for each lane. Most
+# lanes are T1. Lanes that can make real-world changes or reach sensitive
+# infrastructure show T2. A floor no longer decides any call: a listed tool takes
+# the tier the table gives it, and an unlisted tool takes UNLISTED_TOOL_TIER. The
+# floor stays as the bar a table entry must be reviewed to go below
+# (tests/test_lane_caller.py REVIEWED_BELOW_FLOOR).
 LANE_MIN_TIERS: dict[str, str] = {
     "gather": "T1",
     "crucible": "T1",
@@ -135,18 +145,16 @@ LANE_MIN_TIERS: dict[str, str] = {
     "relay": "T2",  # the execution lane: a gated agent loop that runs code (run/exec)
 }
 
-# The lane floor is the tier for a tool the policy table does not list, which on
-# a pip or source install is a tool a newer lane release added (O-12 keeps those
-# at the floor). A listed tool takes the tier the table gives it, above or below
-# the floor: the table is reviewed per tool (project-docs/lanes/POLICY-REVIEW.md).
-#
-# bulletin runs on another host and grows on its own, so an unlisted bulletin
-# tool takes SPLIT_DEFAULT_TIER, never the floor. A write tool added to the
-# board later would otherwise arrive open at T1, and a gate that widens on its
-# own when the far side grows is not a gate. The cost is that a new read tool is
-# refused until the table lists it, which is the safe direction.
-SPLIT_DEFAULT_TIER = "T2"
-UNLISTED_T2_LANES = frozenset({"bulletin"})
+# Default deny (O-12, DECISIONS.json): a tool the policy table does not list is
+# T2 on every lane and in every install mode. On a pip or source install such a
+# tool is one a newer lane release added, and a server's tool definitions are
+# untrusted until reviewed, so it runs only on a call the owner approved at T2.
+# A frozen build admits listed tools only, so there it is refused even at T2.
+# Plugins and agent runs refuse it outright (lane_tier_gate, C-11). The cost is
+# that a new read tool needs a T2 approval until the table lists it, which is
+# the safe direction: a gate that widens on its own when a lane grows is not a
+# gate.
+UNLISTED_TOOL_TIER = "T2"
 
 TOOL_MIN_TIERS: dict[str, dict[str, str]] = {
     lane: {name: entry.tier for name, entry in tools.items()}
@@ -157,13 +165,9 @@ _RANKS = {"T1": 1, "T2": 2, "T3": 3}
 
 
 def required_tier(lane_name: str, tool_name: str) -> str:
-    """The tier one call needs: the table's entry, else the unlisted default."""
+    """The tier one call needs: the table's entry, else T2 (O-12)."""
     entry = tool_policy(lane_name, tool_name)
-    if entry is not None:
-        return entry.tier
-    if lane_name in UNLISTED_T2_LANES:
-        return SPLIT_DEFAULT_TIER
-    return LANE_MIN_TIERS.get(lane_name, "T1")
+    return entry.tier if entry is not None else UNLISTED_TOOL_TIER
 
 
 def _tier_allows(governance_tier: str, required: str) -> bool:
@@ -174,9 +178,9 @@ def _tier_allows(governance_tier: str, required: str) -> bool:
 def list_available_lanes() -> list[dict[str, object]]:
     """Return the list of lanes with their minimum tier requirements.
 
-    Each lane carries its tool tiers from the policy table, so a client reading
-    the floor alone cannot conclude that every tool on that lane shares it; a
-    lane whose unlisted tools take a different default says so.
+    Each lane carries its tool tiers from the policy table and the tier an
+    unlisted tool costs, so a client reading the floor alone cannot conclude
+    that every tool on that lane shares it.
     """
     from harness.lanes import LANES
     listing: list[dict[str, object]] = []
@@ -190,8 +194,7 @@ def list_available_lanes() -> list[dict[str, object]]:
         per_tool = TOOL_MIN_TIERS.get(name)
         if per_tool:
             entry["tool_tiers"] = dict(per_tool)
-        if name in UNLISTED_T2_LANES:
-            entry["unlisted_tool_tier"] = SPLIT_DEFAULT_TIER
+        entry["unlisted_tool_tier"] = UNLISTED_TOOL_TIER
         if name == "bulletin":
             from .bulletin_access import policy_summary
             entry["bulletin_access_policy"] = policy_summary()

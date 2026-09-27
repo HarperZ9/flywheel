@@ -89,12 +89,13 @@ def test_a_listed_t1_tool_runs_without_a_tier_on_a_t2_floor_lane(lane_calls):
                  {"subject": "."}) == {"ok": True}
 
 
-def test_an_unlisted_tool_takes_the_lane_floor(lane_calls):
+def test_an_unlisted_tool_is_t2_whatever_the_lane_floor(lane_calls):
     from harness.lane_caller import required_tier
     assert required_tier("local-model", "a_tool_added_later") == "T2"
-    assert required_tier("gather", "a_tool_added_later") == "T1"
+    assert required_tier("gather", "a_tool_added_later") == "T2"   # O-12
     assert required_tier("bulletin", "a_tool_added_later") == "T2"
     assert _call("local-model", "a_tool_added_later").get("governance_denied") is True
+    assert _call("gather", "a_tool_added_later").get("governance_denied") is True
 
 
 @pytest.mark.parametrize("lane", ["relay", "local-model"])
@@ -213,4 +214,4 @@ def test_the_listing_carries_each_lane_tool_tier():
     assert listing["gather"]["tool_tiers"]["gather.run"] == "T2"
     assert listing["relay"]["tool_tiers"]["local_agent_run"] == "T1"
     assert listing["bulletin"]["unlisted_tool_tier"] == "T2"
-    assert "unlisted_tool_tier" not in listing["gather"]
+    assert listing["gather"]["unlisted_tool_tier"] == "T2"   # O-12

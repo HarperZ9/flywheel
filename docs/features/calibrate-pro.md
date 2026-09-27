@@ -101,7 +101,7 @@ Calibrate Pro is registered in `harness/lanes_registry.py`:
     "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
 ```
 
-Organ `calibration`, role the read-only catalog and doctor surface. It launches with argv `["calibrate-pro", "mcp"]` (`resolve_mcp_command("calibrate-pro")`). Flywheel leaves it at the default tier T1 in `harness/lane_caller.py`: it is not listed in `LANE_MIN_TIERS` or `TOOL_MIN_TIERS`, so `required_tier` returns the T1 floor. That is correct for a lane that only reads, and it sits below the T2 actuation lanes (`local-model`, `relay`, `accountable-surface`).
+Organ `calibration`, role the read-only catalog and doctor surface. It launches with argv `["calibrate-pro", "mcp"]` (`resolve_mcp_command("calibrate-pro")`). The lane tool policy table (`harness/lane_tool_policy.py`) lists its catalog reads at T1, and `required_tier` returns T2 for any tool the table does not list (O-12), so a calibration tool added by a later release arrives gated.
 
 Native wiring that is present and tested:
 

@@ -223,8 +223,9 @@ From `harness/lanes_registry.py`:
   `relay.local_mcp`, source_repo `public/relay`.
 - `package_disabled_reason` is empty: `flywheel-relay` is published, so the
   package install profile is live and the source checkout is the fallback.
-- Minimum governance tier `T2` (`harness/lane_caller.py:LANE_MIN_TIERS`), because
-  the lane can run code through `run`/exec.
+- Headline governance tier `T2` (`harness/lane_caller.py:LANE_MIN_TIERS`), because
+  the lane can run code through `run`/exec. Each tool's tier comes from the lane
+  tool policy table, and a tool the table does not list is T2 (O-12).
 
 ### Verdicts and honest nulls
 

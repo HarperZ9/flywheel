@@ -51,6 +51,10 @@ reaches T2, since the model picks each inner call and its arguments.
   folders inside its lane folder; index and accountable-surface keep caches, receipts and journal
   there. Git joins only index's PATH, and only from FLYWHEEL_GIT, a Git for Windows `cmd` folder
   or Program Files.
+- **Unlisted tools** (O-12, after the decision). A tool the table does not list is T2 on every
+  lane and in every install mode. On a pip or source install it runs only on a `lane.call` the
+  owner approved at T2. The frozen build admits listed tools only, so there it is refused even at
+  T2. Before this, a pip or source install ran it at the lane floor, T1 on most lanes.
 - **Routes** (C-11, C-12, C-15). Plugins and agent runs refuse a tool the table does not list.
   Agent runs also refuse state writes, open egress and path arguments. The node path and the
   local-model project folder are granted actions (`settings.node_path`, `lane.root`), and the
@@ -82,8 +86,7 @@ reaches T2, since the model picks each inner call and its arguments.
   clamps a caller's value to 1 .. `timeout_s`.
 - bulletin is an http lane; its launch carries no `allowed_tools`, so the tier gate is its only
   tool filter.
-- O-12 (unlisted tools on a pip or source `lane.call`) and O-13 (class C for calibrate-pro and
-  actuation) stay with the operator.
+- O-13 (class C for calibrate-pro and actuation) is recorded as the default in DECISIONS.json.
 - `mneme.forget` leaves raw turn text (known finding 4).
 
 ## Node lane evidence (learn 1.6.0; telos 0.4.1 held)
