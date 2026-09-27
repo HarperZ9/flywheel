@@ -50,9 +50,13 @@ The keyed lines exist so many reports add up to a number with a denominator.
 Fork, branch, and open it against `main`. A person reads every change.
 
 ```bash
-python -m pip install pytest pytest-timeout pynacl pillow numpy scipy
+python -m pip install pytest pytest-timeout pynacl pillow numpy scipy $(python scripts/ci_lane_pins.py index)
 python -m pytest tests/test_<the_feature_you_touched>.py -q
 ```
+
+The last argument installs index-graph at the version the lane registry pins,
+the same one CI installs. The index lane tests launch it, and a package older
+than its pin does not launch.
 
 Run the slice that covers what you changed. The full collection is 11,212 tests
 across 969 files and takes long enough that nobody runs it while iterating.
