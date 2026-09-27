@@ -44,6 +44,7 @@ from harness.gateway_auth import (authenticate_owner as _auth_owner,
     load_or_create_owner_ref, load_or_create_token, check as _auth_check, DEFAULT_HOSTS)
 from harness import gateway_openai_route as _openai_route
 from harness.plan_run_store import forge_recheck, persist_forge_seal
+from harness.gateway_body_drain import BodyDrainMixin
 def _resolve_credential(key_env: str) -> str:
     """Env first, OS keychain second; '' when neither. Import is lazy so a
     stripped deployment without keychain.py still serves env-only."""
@@ -535,7 +536,7 @@ def openai_models() -> dict:
     return _openai_route.openai_models(unified_roster=_unified_roster)
 
 
-class _Handler(BaseHTTPRequestHandler):
+class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is drained before close (Windows resets otherwise)
     root = REPO
     serve_url = "http://127.0.0.1:8765"
     ollama_url = "http://127.0.0.1:11434"
@@ -550,8 +551,7 @@ class _Handler(BaseHTTPRequestHandler):
         lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
     operation_service = operation_process_factory = None
     session_token_store = _session_token_state_root = None
-    def log_message(self, *a):  # quiet
-        pass
+    def log_message(self, *a): pass  # quiet
 
     def _cors(self):
         """Emit permissive CORS headers only when the operator opted in with --cors.
