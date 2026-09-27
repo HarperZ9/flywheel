@@ -9,6 +9,7 @@ in the runner's temp folder.
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -57,16 +58,21 @@ def test_lane_step_runs_per_user_then_all_users_and_uninstalls_each():
 
 
 def test_lane_step_keeps_detail_and_homes_out_of_the_uploaded_folder():
-    out = _ps("""
+    # Path.Combine joins with the host's separator: a backslash on the Windows
+    # runner the step runs on, a slash under PowerShell on a Linux runner. The
+    # folders each path lands in are what this test checks.
+    sep, out = _ps("""
 $a = Get-LaneAcceptanceArgs -Root 'C:\\Fw' -Mode 'all-users' -AcceptanceDir 'D:\\up' `
   -WorkRoot 'T:\\tmp' -SourceCommit ('a' * 40) -EngineSha256 ('b' * 64)
+[System.IO.Path]::DirectorySeparatorChar
 $a -join '|'
-""").strip()
+""").strip().splitlines()
+    assert sep == ("\\" if os.name == "nt" else "/")
     parts = out.split("|")
     assert parts[0] == "scripts/installed_app_lane_acceptance.py"
-    assert parts[parts.index("--receipt") + 1] == "D:\\up\\installed-lanes-all-users.json"
-    assert parts[parts.index("--work") + 1].startswith("T:\\tmp\\")
-    assert parts[parts.index("--detail") + 1].startswith("T:\\tmp\\")
+    assert parts[parts.index("--receipt") + 1] == "D:\\up" + sep + "installed-lanes-all-users.json"
+    assert parts[parts.index("--work") + 1].startswith("T:\\tmp" + sep)
+    assert parts[parts.index("--detail") + 1].startswith("T:\\tmp" + sep)
     assert parts[parts.index("--install-mode") + 1] == "all-users"
     assert "source_commit=" + "a" * 40 in parts
 
