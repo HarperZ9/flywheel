@@ -6,9 +6,11 @@ another character is refused. The gateway resolves the file under its own
 client root, walking project folders without entering links, then refuses
 UNC paths, `\\\\?\\` and `\\\\.\\` prefixes, alternate data streams and reserved
 device names before any open. The read itself opens by handle, refuses a
-reparse point and proves the file unchanged; afterwards the final path of the
-handle must lie inside the client root. One import per session id per
-minute. An ended session skips the live-writer rule.
+reparse point and proves the file unchanged; the final path of the open
+handle must lie inside the client root (OUTSIDE_ROOT otherwise), checked on
+the handle itself after the open, not on the path before it. One import per
+session id per minute. An ended session skips the live-writer rule. Only
+Claude Code sessions are archived; a Codex SessionEnd is not mounted.
 """
 from __future__ import annotations
 
@@ -102,7 +104,7 @@ def run(home, owner_ref: str, client: str, session_id, root: Path, path: Path) -
     source = {"rel": path.relative_to(root).as_posix(), "kind": "transcript",
               "session_id": session_id, "size": info.st_size, "mtime": info.st_mtime,
               "path": path}
-    plan = core.build_plan(home, owner_ref, client, [source], live_window_s=0)
+    plan = core.build_plan(home, owner_ref, client, [source], live_window_s=0, root=root)
     result = core.run_import(home, plan)
     return {"imported": result["imported"], "state": result["state"],
             "skipped": result["skipped"], "refused": result["refused"]}

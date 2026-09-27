@@ -7,8 +7,11 @@ holds `content`, `archive_transcripts` and `freeze_urls` (each off or on) and
 digest differs from the adopted one, the change is pending: the gateway keeps
 the adopted settings and the hello response says so, and the prompt hook
 tells the owner. Adoption needs presence bound to the new settings' digest
-and writes a custody ledger entry and a witness event. Hooks follow the
-effective settings from the hello response and never read the file.
+and writes a custody ledger entry and a witness event. An adopted file whose
+digest is not the latest capture adoption in the verified custody ledger is
+SETTINGS_TAMPERED: the gateway runs the defaults (everything off) and the
+hello response says so. Hooks follow the effective settings from the hello
+response and never read the file.
 """
 from __future__ import annotations
 
@@ -61,18 +64,30 @@ def read_file(home) -> tuple[dict | None, bool]:
     return merged, merged is not None
 
 
-def adopted(home, owner_ref: str) -> dict:
+def _adopted(home, owner_ref: str) -> tuple[dict, bool]:
+    """(settings in effect, whether the adopted file failed the ledger check)."""
+    from .trace_settings_guard import matches
     try:
-        return _valid(json.loads(_adopted_path(home, owner_ref).read_bytes())) or dict(DEFAULTS)
+        doc = _valid(json.loads(_adopted_path(home, owner_ref).read_bytes()))
     except (OSError, ValueError):
-        return dict(DEFAULTS)
+        return dict(DEFAULTS), False
+    if doc is None:
+        return dict(DEFAULTS), False
+    if not matches(home, owner_ref, "capture", digest(doc)):
+        return dict(DEFAULTS), True
+    return doc, False
+
+
+def adopted(home, owner_ref: str) -> dict:
+    return _adopted(home, owner_ref)[0]
 
 
 def effective(home, owner_ref: str) -> dict:
-    current = adopted(home, owner_ref)
+    current, tampered = _adopted(home, owner_ref)
     on_disk, valid = read_file(home)
     pending = (not valid) or (on_disk is not None and digest(on_disk) != digest(current))
-    return {**current, "pending_change": pending, "file_valid": valid}
+    return {**current, "pending_change": pending or tampered, "file_valid": valid,
+            "tampered": tampered}
 
 
 def write_file(home, changes: dict) -> dict:
@@ -106,18 +121,28 @@ def adopt(home, owner_ref: str, presence_ref, *, sink=None) -> dict:
                                 {"settings": "capture", "digest": value}, method, sink=sink)
 
 
-def data_flow(settings: dict) -> list[str]:
+def kept() -> str:
+    """How custody keeps content on this machine: encrypted, or plaintext."""
+    from .trace_enc import default_provider
+    return ("kept encrypted" if default_provider().name != "none" else
+            "kept in plaintext (no OS key store; status says so)")
+
+
+def data_flow(settings: dict, *, home=None) -> list[str]:
     """One sentence per setting: what gets stored where."""
+    how = kept()
     return [
-        "Content capture " + ("on: prompts and final answers are sent to the local gateway "
-                              "and kept encrypted." if settings["content"] == "on" else
+        "Content capture " + (f"on: prompts and final answers are sent to the local gateway "
+                              f"and {how}." if settings["content"] == "on" else
                               "off: hooks send salted commitments only; no text leaves the "
                               "hook."),
-        "Transcript archive " + ("on: each ended session's transcript is imported into "
-                                 "encrypted custody."
+        "Transcript archive " + (f"on: each ended Claude Code session's transcript is "
+                                 f"imported into custody and {how}."
                                  if settings["archive_transcripts"] == "on" else
                                  "off: transcripts stay only where the client keeps them."),
-        "URL freezing " + ("on: URLs a prompt names are sent to the gateway and fetched."
+        "URL freezing " + (f"on: URLs a prompt names are sent to the gateway and fetched; "
+                           f"the pages are {how}, and the URLs with their sha256 digests go "
+                           f"into the model context, so to the model provider."
                            if settings["freeze_urls"] == "on" else
                            "off: no URL leaves the hook and nothing is fetched."),
     ]

@@ -38,12 +38,30 @@ def test_a_challenge_needs_the_bearer_token(gateway):
 
 
 def test_a_challenge_is_confirmed_with_the_method_in_effect(gateway):
+    from harness.trace_presence import method_digest
+    port, token = gateway
+    status, body = _post(port, "/api/traces/presence",
+                         {"kind": "presence_method",
+                          "plan_digest": method_digest("windows-hello")}, token)
+    assert status == 200
+    assert body["ref"].startswith("prs_") and body["method"] == "none"
+    assert body["summary"] == "Change the presence method to windows-hello."
+    assert "agents included" in body["presence_statement"]
+
+
+def test_a_digest_the_gateway_cannot_describe_is_refused(gateway):
+    """The prompt text comes from the plan or grant behind the digest; a
+    digest with nothing behind it would be a bare prefix, so it is refused."""
     port, token = gateway
     status, body = _post(port, "/api/traces/presence",
                          {"kind": "export", "plan_digest": DIGEST}, token)
-    assert status == 200
-    assert body["ref"].startswith("prs_") and body["method"] == "none"
-    assert "agents included" in body["presence_statement"]
+    assert status == 404 and body["error"]["code"] == "PRESENCE_UNDESCRIBED"
+
+
+def test_there_is_no_approval_route(gateway):
+    port, token = gateway
+    status, _ = _post(port, "/api/traces/presence/approve", {"ref": "prs_" + "0" * 32}, token)
+    assert status == 404
 
 
 @pytest.mark.parametrize("extra", [{"owner_ref": "owner_" + "b" * 32},

@@ -1,11 +1,10 @@
 // gateway_traces.dart - trace custody: owner presence for custody operations.
 //
-// When the owner picks the desktop dialog as the presence method, deleting,
-// exporting or changing capture settings waits for a confirmation the app
-// gives. These calls list the confirmations waiting and approve one by ref.
-// Any process holding the gateway token can make the same call, so the dialog
-// reduces exposure to an agent and does not block one; the gateway records
-// the method with every operation.
+// A presence challenge is answered by the method in effect (Windows Hello or
+// none) inside the gateway, never by an approval call: a route any process
+// holding the gateway token could call would approve for an agent too. This
+// call lists the challenges waiting for that answer, so the app can say that
+// a prompt is open.
 
 import 'gateway_client.dart';
 
@@ -20,11 +19,5 @@ extension GatewayTraces on GatewayClient {
       for (final row in rows)
         if (row is Map<String, dynamic>) row,
     ];
-  }
-
-  /// POST /api/traces/presence/approve - approve one waiting confirmation.
-  Future<bool> approvePresence(String ref) async {
-    final doc = await postJson('/api/traces/presence/approve', {'ref': ref});
-    return doc['ok'] == true;
   }
 }

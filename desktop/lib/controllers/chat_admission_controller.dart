@@ -118,7 +118,7 @@ final class ChatAdmissionController {
     ]);
     conversation.titleFromFirstMessage();
     conversation.touch();
-    if (!historyStore.save(conversations)) {
+    if (!historyStore.save(conversations, require: conversation.id)) {
       conversation.messages.removeRange(
           conversation.messages.length - 2, conversation.messages.length);
       conversation.title = priorTitle;
@@ -181,7 +181,7 @@ final class ChatAdmissionController {
       conversation.titleFromFirstMessage();
       conversation.touch();
     }
-    if (!historyStore.save(conversations)) {
+    if (!historyStore.save(conversations, require: conversation.id)) {
       if (!pairExists) {
         conversation.messages.removeRange(
             conversation.messages.length - 2, conversation.messages.length);

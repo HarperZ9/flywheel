@@ -8,6 +8,8 @@ and unescaped, with the redaction applied to the raw bytes.
 """
 import json
 
+import pytest
+
 from harness import trace_redact
 from trace_redact_fakes import credential_fakes
 
@@ -85,3 +87,27 @@ def test_credential_named_keys_redact_their_values_at_any_depth_up_to_four():
 def test_redacted_keys_with_short_or_non_string_values_are_kept():
     line = _line({"password": "", "token_count": 42, "api_key": None})
     assert trace_redact.redact_line(line, key=KEY) == (line, {})
+
+
+@pytest.mark.parametrize("line,rule", [
+    ('SECRET_KEY = "planted-fake-value-001"', "credential_assignment"),
+    ('{"SECRET_KEY": "planted-fake-value-002"}', "credential_assignment"),
+    ('{"signing_key": "planted-fake-value-003"}', "credential_assignment"),
+    ("django_secret_value: planted-fake-value-004", "credential_assignment"),
+    ('{"gh' + 'p_' + "y" * 36 + '": true}', "github_token"),
+], ids=["secret-key-assignment", "secret-key-json", "any-name-key-json",
+        "name-holding-secret", "token-as-a-json-key"])
+def test_names_and_keys_the_catalog_used_to_miss(line, rule):
+    out, counts = trace_redact.redact_line(line, key=b"planted-fake-redaction-key-000000")
+    assert counts.get(rule) == 1 and "planted-fake-value" not in out
+    assert "y" * 36 not in out
+
+
+def test_a_number_is_scanned_under_personal_rules():
+    line = '{"card": 4111111111111111, "count": 42}'
+    out, counts = trace_redact.redact_line(line, key=b"planted-fake-redaction-key-000000",
+                                           personal=True)
+    assert counts == {"card_number": 1} and "4111111111111111" not in out
+    assert '"count": 42' in out
+    assert trace_redact.redact_line(line, key=b"planted-fake-redaction-key-000000") == (
+        line, {})

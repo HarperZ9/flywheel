@@ -102,10 +102,13 @@ def print_mount() -> list[str]:
     import sys
     base = f'"{sys.executable}" -m harness.capture_hooks'
 
-    def block(client):
-        events = (("UserPromptSubmit", "prompt"), ("Stop", "stop"), ("SessionEnd", "session-end"))
+    def block(client, events):
         return {"hooks": {event: [{"hooks": [{"type": "command",
                 "command": f"{base} {arg} --client {client}"}]}] for event, arg in events}}
-    return ["Claude Code (settings.json):", json.dumps(block("claude-code"), indent=2), "",
-            "Codex (hooks.json):", json.dumps(block("codex"), indent=2), "",
+    turns = (("UserPromptSubmit", "prompt"), ("Stop", "stop"))
+    claude = turns + (("SessionEnd", "session-end"),)
+    return ["Claude Code (settings.json):", json.dumps(block("claude-code", claude), indent=2),
+            "", "Codex (hooks.json):", json.dumps(block("codex", turns), indent=2), "",
+            "The transcript archive (SessionEnd) is Claude Code only; the Codex block has "
+            "no SessionEnd hook.",
             "Flywheel never edits client settings. Paste one block into the client's file."]

@@ -76,8 +76,15 @@ def pending(args) -> int:
     from .capture_hooks import spool
     from .operation_grants import load_or_create_owner_ref
     from .trace_import_session import SessionRefused, import_session
+    from .trace_capture_settings import effective
     home = _home()
     owner = load_or_create_owner_ref(home)
+    if effective(home, owner)["archive_transcripts"] != "on":
+        emit("The transcript archive is off, so nothing was imported. A hook spools a "
+             "session end whenever the gateway is down, whatever the setting; turn the "
+             "archive on (flywheel traces capture archive on) to import them, or clear "
+             "them with flywheel traces doctor --ack.")
+        return 0
     directory, done = spool.spool_dir(home), 0
     for path in sorted(directory.glob("f-*.json")) if directory.is_dir() else []:
         record = json.loads(path.read_bytes())
