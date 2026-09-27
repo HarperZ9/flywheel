@@ -1,7 +1,11 @@
 """Where an export may be written (7.5, SP-36, I12).
 
 A destination comes from the local CLI or from a grant the CLI wrote naming
-the exact path; no HTTP request supplies one. It is refused inside
+the exact path; no HTTP request supplies one. A network share (a UNC path, or
+a drive letter mapped to a share) is refused with DESTINATION_NETWORK before
+any filesystem call: checking such a path opens an SMB session, which can
+carry the owner's NTLM response, and the plaintext copy would leave the
+machine with no confirmation. It is refused inside
 FLYWHEEL_HOME, refused when any existing folder on its path is a link or
 junction (so the path checked is the path written), refused when it exists
 at all (an empty folder too: the export renames into place), and refused under a
@@ -64,10 +68,15 @@ def _links_on(path: Path) -> bool:
 def check(out, home, *, allow_sync_root: bool = False) -> tuple[Path, str | None]:
     """(absolute destination, sync client or None); raises ExportError."""
     from .trace_fs_attrs import sync_root
+    from . import path_identity
     text = str(out)
     if _DEVICE.match(text):
         raise ExportError("DESTINATION_DEVICE")
+    if path_identity.device_or_unc(text) or path_identity.remote_drive(text):
+        raise ExportError("DESTINATION_NETWORK")
     path = Path(os.path.abspath(text))
+    if path_identity.remote_drive(str(path)):       # a relative path on a mapped drive
+        raise ExportError("DESTINATION_NETWORK")
     for zipped in (path, path.with_name(path.name + ".zip")):
         if _links_on(zipped):
             raise ExportError("DESTINATION_LINK")
