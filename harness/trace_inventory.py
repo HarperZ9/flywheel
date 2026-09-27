@@ -23,7 +23,7 @@ DEFAULT_RETENTION = "keep until you delete"
 CLASS_NAMES = {"C1": "content", "C2": "tool I/O", "C3": "reasoning",
                "C4": "metadata", "C5": "hashes and derived ids",
                "C6": "credentials", "C7": "personal data", "C8": "derived forms"}
-ROOTS = ("home", "state", "run", "lanes", "env", "temp", "client")
+ROOTS = ("home", "state", "run", "lanes", "env", "temp", "client", "userstate")
 PROTECTIONS = ("encrypted", "plaintext-exception", "metadata-only", "outside-custody")
 OPERATIONS = ("inventory", "export", "delete")
 PACKAGE = re.compile(r"(FW-[0-9]{2}[a-z0-9]*|MN-0[1-3]|CA-0[1-3]|7\.[0-9]{1,2}|D[0-9]{1,2})\Z")
