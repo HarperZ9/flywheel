@@ -33,7 +33,7 @@ from typing import Callable, Mapping
 from .bundled_lane_env import UTF8_ENV, bundled_child_environment
 from .frozen_lane_modes import LANE_CLI_FLAG, LANE_CLIS, cli_args_allowed
 from .lane_env import BASE_NAMES, lane_process_environment
-from .lane_workdir import ensure_lane_workdir
+from .lane_workdir import CAPTURE_OFF, ensure_lane_workdir
 from .lane_worker_mode import WORKER_FLAG
 
 # lane -> (console script, module run with ``python -m``) outside a frozen build
@@ -116,7 +116,8 @@ def lane_cli_environment(lane: str, extra: Mapping[str, str] | None = None, *,
                          environ: Mapping[str, str] | None = None) -> dict[str, str]:
     """The child env: the lane environment, or for a frozen self-child the
     bundled child set plus the lane's declared, granted and extra names. Both
-    end with the UTF-8 settings."""
+    end with capture off (a call's extra values cannot turn it back on) and
+    the UTF-8 settings."""
     source = os.environ if environ is None else environ
     env = lane_process_environment(lane, extra, environ=source)
     if bundled:
@@ -125,6 +126,7 @@ def lane_cli_environment(lane: str, extra: Mapping[str, str] | None = None, *,
         base.update({key: value for key, value in env.items()
                      if key.upper() not in BASE_NAMES and key.upper() not in taken})
         base.update({str(k): str(v) for k, v in (extra or {}).items()})
+        base.update(CAPTURE_OFF)
         env = base
     env.update(UTF8_ENV)
     return env

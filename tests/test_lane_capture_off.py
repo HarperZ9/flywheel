@@ -69,6 +69,16 @@ def test_a_bridge_child_turns_capture_off_even_when_the_call_asks_for_it(tmp_pat
     assert env["FLYWHEEL_CAPTURE"] == "off"
 
 
+@pytest.mark.parametrize("bundled", [False, True])
+def test_the_cli_bridge_turns_capture_off_even_when_the_call_asks_for_it(tmp_path, bundled):
+    """The frozen self-child (bundled) rebuilds its env from the bundled child
+    set and a call's extra values; capture must still end off."""
+    from harness.lane_cli import lane_cli_environment
+    env = lane_cli_environment("index", {"FLYWHEEL_CAPTURE": "on"}, bundled=bundled,
+                               environ=_parent(tmp_path))
+    assert env["FLYWHEEL_CAPTURE"] == "off"
+
+
 def test_a_granted_name_cannot_turn_capture_back_on(tmp_path):
     registry = {"articulate": {"env_allow": ["FLYWHEEL_CAPTURE"]}}
     env = lane_process_environment("articulate", environ=_parent(tmp_path),
