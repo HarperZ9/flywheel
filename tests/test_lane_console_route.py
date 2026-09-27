@@ -66,6 +66,15 @@ def test_unfiltered_listing_marks_what_the_launch_does_not_admit():
     assert rows["gather.status"]["admitted"] is True
 
 
+def test_each_row_names_the_arguments_the_desktop_may_fill_with_a_local_path():
+    # The desktop keeps local paths out of an operation unless the field is
+    # declared to carry one; for a lane tool, the policy's path_args declare it.
+    body, _ = tools_listing("gather", LAUNCH, client_factory=FakeClient)
+    rows = {row["name"]: row for row in body["tools"]}
+    assert rows["gather.docs"]["path_args"] == ["path"]
+    assert rows["gather.status"]["path_args"] == []
+
+
 def test_not_in_build_tools_are_listed_disabled_with_their_reason():
     body, _ = tools_listing("calibrate-pro", LaunchSpec(("x",), allowed_tools=(
         "calibrate-pro.list-panels",)), client_factory=FakeClient)

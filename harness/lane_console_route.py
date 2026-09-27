@@ -7,7 +7,8 @@ check, lane install, and the two setup choices a person makes in the app.
   It spawns the lane, so it sits under private custody (S6).
 - ``POST /api/lanes/<lane>/tools``: every tool the lane's server lists, from
   an unfiltered ``tools/list`` (``MCPClient.list_tools`` filters, so it cannot
-  be used as is), each marked ``admitted``, ``tier``, ``not_in_build``. It
+  be used as is), each marked ``admitted``, ``tier``, ``not_in_build`` and
+  ``path_args`` (the arguments the desktop may fill with a local path). It
   spawns the lane, so it carries the same approval as ``plugin.probe``: the
   body is a ``plugin.probe`` grant envelope naming this lane (O-4 keeps POST
   with the grant; there is no GET).
@@ -112,7 +113,8 @@ def _tool_row(lane: str, spec: Mapping[str, object], launch) -> dict:
             "admitted": bool(launch_allows_tool(launch, name) and tier == "T1" and not gone),
             "tier": tier, "not_in_build": gone, "main": bool(entry and entry.main),
             "timeout_s": entry.timeout_s if entry else 20,
-            "needs": list(entry.needs) if entry else []}
+            "needs": list(entry.needs) if entry else [],
+            "path_args": list(entry.path_args) if entry else []}
 
 
 def tools_listing(lane: str, launch, *, client_factory=None) -> tuple[dict, int]:
