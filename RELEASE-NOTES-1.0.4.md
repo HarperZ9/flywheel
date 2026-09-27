@@ -6,9 +6,10 @@ data stay on your machine. An answer is accepted only when a real check passes, 
 test run or a Lean proof. Each accepted answer carries a sealed receipt, and the witness
 re-runs that receipt offline to return MATCH, DRIFT, or UNVERIFIABLE.
 
-Correction, 2026-09-26: the opening says keys and data stay on your machine. Keys and
-Flywheel's records do. The content of each request goes to the hosted provider you
-route it to.
+Correction, 2026-09-26: the opening says keys and data stay on your machine. Your keys
+are stored only on your machine and sent only to their own provider; Flywheel's records
+stay on your machine. The content of each request goes to the hosted provider you route
+it to.
 
 1.0.4 brings the Windows installer level with a pip install and closes three security gaps
 in how Flywheel starts its lanes and its local agent. It also makes `flywheel --version`
