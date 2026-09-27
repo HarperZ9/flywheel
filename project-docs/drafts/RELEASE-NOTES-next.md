@@ -257,10 +257,11 @@ in CI run 36302181098 against 56,355,754 bytes for the published 1.0.4 installer
 
 It ran on a GitHub-hosted Windows Server runner with only the Windows system folder on
 PATH and an administrator account, not on a consumer Windows 11 machine, which remains
-untested; the network was reachable and no host model server ran. It used a stub model server, so it shows a model lane
-reached a model and the engine's guards held, not answer quality. It used no provider
-key, posted nothing and actuated nothing. Each main tool has one fixture assertion. The
-desktop screens were not driven; the check calls the routes the app calls.
+untested; the network was reachable and no host model server ran. It used a stub model
+server, so it shows a model lane reached a model and the engine's guards held, not
+answer quality. It used no provider key, posted nothing and actuated nothing. Each main
+tool has one fixture assertion. The desktop screens were not driven; the check calls
+the routes the app calls.
 
 ## Upgrade
 
