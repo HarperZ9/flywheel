@@ -84,3 +84,33 @@ def test_an_ungranted_install_post_installs_nothing(tmp_path, monkeypatch):
         server.shutdown()
         server.server_close()
     assert status in (403, 422) and ran == []
+
+
+def _install_after_grant(body: dict) -> dict:
+    """What POST /api/lanes/install does once the gateway consumed its lane.install
+    grant: the approved operation is the request body."""
+    from harness import gateway
+    from harness.lane_console_route import _install
+    handler = gateway._Handler.__new__(gateway._Handler)
+    handler._gateway_operation = body
+    sent = {}
+    handler._json = lambda payload, code=200: sent.update(body=payload, code=code)
+    _install(handler)
+    return sent
+
+
+def test_a_granted_install_still_requires_a_name():
+    sent = _install_after_grant({**REFS})
+    assert sent["code"] == 400 and "name" in sent["body"]["error"]
+
+
+def test_a_granted_install_reports_an_unknown_lane_honestly():
+    sent = _install_after_grant({**REFS, "name": "no-such-lane"})
+    assert sent["code"] == 200 and sent["body"]["installed"] is False
+    assert "unknown lane" in sent["body"]["detail"]
+
+
+def test_a_granted_install_of_a_bundled_lane_is_a_noop():
+    sent = _install_after_grant({**REFS, "name": "local-model"})
+    assert sent["code"] == 200 and sent["body"]["installed"] is True
+    assert "bundled" in sent["body"]["detail"]
