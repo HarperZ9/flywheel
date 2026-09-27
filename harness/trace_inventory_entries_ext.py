@@ -107,13 +107,21 @@ STORES = (
     Store("L1a", "mneme replay snapshots left by older releases", "temp",
           ("mneme-replay-*.db",), ("C1", "C5", "C8"), LANE, LANE_EXPORT,
           Gap("not reached by flywheel traces delete; the pinned release keeps its "
-              "snapshots in its own per-user state folder instead, removes them at erase "
-              "and sweeps the ones whose process is gone; on Windows that folder sits in "
-              "the mneme lane folder, and on macOS and Linux it is outside every store "
-              "this status counts", "MN-01"),
+              "snapshots in its per-user state folder instead (store L1b)", "MN-01"),
           shape="file", owner_binding="lane",
           retention="older releases removed them best effort at close; a crash left the "
                     "copy"),
+    # mneme 0.5.x reads the local app-data folder through the Known Folder API on
+    # Windows, and the lanes layer keeps the user's profile for a lane child, so
+    # these copies land outside the mneme lane folder on every platform.
+    Store("L1b", "mneme replay snapshots", "userstate", ("mneme/snapshots",),
+          ("C1", "C5", "C8"), LANE, LANE_EXPORT,
+          Gap("not reached by flywheel traces delete; the pinned release removes a "
+              "store's snapshots at erase and sweeps the ones whose process is gone", "MN-01"),
+          owner_binding="lane", evidence="inferred",
+          retention="kept while a replay runs; a crash can leave one until the next sweep",
+          note="full copies of the memory database made for a replay, outside the mneme "
+               "lane folder"),
     Store("L2", "canon context database", "env", ("canon-context.db",), ("C1", "C4", "C5"),
           LANE, LANE_EXPORT, CANON_DELETE, shape="file",
           env=("CANON_CONTEXT_DB", "FLYWHEEL_CANON_CONTEXT_DB"), owner_binding="lane"),
@@ -143,6 +151,8 @@ EXEMPTIONS = (
     Exemption("home", ".custody-label-v1", f"marks the custody tree as labeled; {_NO_TRACE}"),
     Exemption("home", "owner.ref", f"owner identity; {_NO_TRACE}"),
     Exemption("home", "lanes.json", f"lane install registry; {_NO_TRACE}"),
+    Exemption("home", "node_path", f"the node.exe chosen for the Node lanes, a local path "
+              f"and its sha256; {_NO_TRACE}"),
     Exemption("home", "plugins.json", f"plugin configuration; {_NO_TRACE}"),
     Exemption("home", "projects.json", f"project roots; {_NO_TRACE}"),
     Exemption("home", "catalog.json", f"marketplace catalog; {_NO_TRACE}"),
@@ -156,6 +166,8 @@ EXEMPTIONS = (
               f"opaque handles; secrets live only in the OS keychain; {_NO_TRACE}"),
     Exemption("state", "credential-locks", f"lock files; {_NO_TRACE}"),
     Exemption("state", "custody.lock", f"the custody lock file; {_NO_TRACE}"),
+    Exemption("state", "lane-probes.json", f"the engine's own lane checks: outcome, code, "
+              f"tool names and the key names a call used; {_NO_TRACE}"),
     Exemption("run", "router_stats.json", f"per-provider success counts; {_NO_TRACE}"),
     Exemption("run", "packs", f"admitted data-only domain-pack manifests; {_NO_TRACE}"),
     Exemption("run", "runners", f"runner pool membership chain; {_NO_TRACE}"),

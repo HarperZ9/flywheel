@@ -27,6 +27,8 @@ def _plant(store, home, run_root, tmp, env):
         target = tmp / "client" / store.id / name
     elif store.root == "temp":
         target = tmp / "temp" / name
+    elif store.root == "userstate":
+        target = tmp / "userstate" / name
     else:
         base = {"home": home, "state": home / "state", "run": run_root,
                 "lanes": home / "lanes"}[store.root]
@@ -46,6 +48,8 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "no-codex"))
     (tmp_path / "temp").mkdir()
     monkeypatch.setattr(tempfile, "tempdir", str(tmp_path / "temp"))
+    monkeypatch.setattr(trace_inventory_scan, "user_state_root",
+                        lambda _env: tmp_path / "userstate")
     return tmp_path
 
 
