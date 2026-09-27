@@ -14,8 +14,12 @@ verdict and reproducibility class. A task is REPRODUCIBLE when the run
 recorded a git identity with no tracked change and no untracked file at
 start and the commit is still in the repository; otherwise UNREPRODUCIBLE
 with a reason (NOT_A_GIT_TREE, which includes runs from before git
-identities were recorded, DIRTY_AT_START or COMMIT_MISSING). Only
-reproducible tasks can count as regressions.
+identities were recorded, DIRTY_AT_START or COMMIT_MISSING). A replay runs the
+router loop with file tools only, so a run that used lane tools through MCP
+admission is MCP_NOT_REPLAYED, and one that ran as a native CLI session or
+with the native tool protocol is PROTOCOL_NOT_REPLAYED: replaying either with
+less would read as a regression. Only reproducible tasks can count as
+regressions.
 """
 from __future__ import annotations
 
@@ -114,6 +118,17 @@ def _facts(records: list[dict]) -> dict | None:
             "content_trust": "untrusted" if context else "owner"}
 
 
+def replayable(binding: dict) -> tuple[str, str | None] | None:
+    """The class of a run the replay cannot run the same way; None otherwise."""
+    if binding.get("mcp_admission"):
+        return "UNREPRODUCIBLE", "MCP_NOT_REPLAYED"
+    protocol = binding.get("tool_protocol")
+    if binding.get("execution_mode") == "native_cli_session" or (
+            type(protocol) is dict and protocol.get("protocol") == "native"):
+        return "UNREPRODUCIBLE", "PROTOCOL_NOT_REPLAYED"
+    return None
+
+
 def classify(git: dict | None, workspace: str | None) -> tuple[str, str | None]:
     from .workspace_git_identity import commit_exists
     if not git:
@@ -128,7 +143,7 @@ def classify(git: dict | None, workspace: str | None) -> tuple[str, str | None]:
 def _task(trace_ref: str, facts: dict) -> dict:
     binding = facts["binding"]
     workspace = (binding.get("workspace") or {}).get("root")
-    cls, reason = classify(facts["git"], workspace)
+    cls, reason = replayable(binding) or classify(facts["git"], workspace)
     return {"schema": SCHEMA, "task_ref": "tsk_" + secrets.token_hex(16),
             "trace_ref": trace_ref, "lineage": {"source_trace_ref": trace_ref},
             "goal": facts["goal"], "gate_cmd": facts["gate_cmd"],
