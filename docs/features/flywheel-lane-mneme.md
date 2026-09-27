@@ -169,7 +169,7 @@ Each capability, with its interface, module, output schema, and stated bound.
 ### forget, update, audit
 - CLI `mneme forget MEMORY_ID [--reason R]`, `mneme update MEMORY_ID TEXT [--reason R]`, `mneme audit`. Library `AgentMemory.forget/update/audit`. MCP `mneme.forget`, `mneme.audit`.
 - Module: `src/mneme/store.py`, `src/mneme/memory.py`. Audit schema: `mneme.audit/1`.
-- `forget` erases text and leaves a tombstone; `update` edits text, keeps provenance, records before and after hashes. `audit` reports `chain_intact` from `verify_audit`.
+- `forget` removes the extracted memory and leaves a tombstone. In the pinned release the raw turn the memory came from stays in the store and the tombstone keeps an unsalted hash of the forgotten text. `update` edits text, keeps provenance, and records before and after hashes, so prior-version hashes stay in the audit log. `audit` reports `chain_intact` from `verify_audit`.
 
 ### supersede and history (temporal)
 - CLI `mneme supersede MEMORY_ID TEXT [--reason R]`, `mneme history [--contains X] [--predicate P] [--user U]`. Library `AgentMemory.supersede/history`, and `recall(as_of=N)`.

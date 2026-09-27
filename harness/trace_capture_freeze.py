@@ -38,33 +38,52 @@ def _snapshot(store, url: str, fetched) -> dict:
     return {"snap_ref": ref, "sha256": digest, "url": url}
 
 
-def freeze(store, client: str, session_id, prompt_key, urls) -> dict:
-    """Fetch and store the URLs of the newest waiting prompt of this session."""
+def _waiting(store, session_ref, prompt_key):
+    waiting = [(p, d) for p, d in store._pendings(session_ref) if d["state"] == "pending"
+               and d["prompt_key"] == prompt_key]
+    return waiting[-1] if waiting else (None, None)
+
+
+def _fetch_all(urls, manifest) -> list:
+    """Fetch outside the custody lock; returns (url, fetched) for each page kept."""
     from . import web_fetch_pinned
-    from .trace_custody_lock import custody_lock
     from .trace_redact import first_credential_rule
+    pages = []
+    for url in [u for u in urls if type(u) is str][:MAX_URLS]:
+        if first_credential_rule(url) != "unclassified":
+            manifest["refused"] += 1
+            continue
+        try:
+            fetched = web_fetch_pinned.fetch_pinned(url, timeout=20, max_bytes=25_000_000)
+        except (OSError, ValueError):
+            fetched = None
+        if not fetched or fetched[0] != 200 or len(fetched[2]) > 25_000_000:
+            manifest["failed"] += 1
+            continue
+        pages.append((url, fetched))
+    return pages
+
+
+def freeze(store, client: str, session_id, prompt_key, urls) -> dict:
+    """Fetch and store the URLs of the newest waiting prompt of this session.
+
+    The fetches run without the custody lock (a slow page must not block
+    capture, key writes or deletion). The snapshots and the envelope are
+    written under it, and only when the same prompt record still waits."""
+    from .trace_custody_lock import custody_lock
     manifest = {"frozen": 0, "refused": 0, "failed": 0, "sources": []}
     session_ref = store._session_ref(client, session_id)
     with custody_lock(store.state):
-        waiting = [(p, d) for p, d in store._pendings(session_ref) if d["state"] == "pending"
-                   and d["prompt_key"] == prompt_key]
-        if not waiting:
-            return {**manifest, "reason": "NO_PENDING_PROMPT"}
-        path, pending = waiting[-1]
-        kept = []
-        for url in [u for u in urls if type(u) is str][:MAX_URLS]:
-            if first_credential_rule(url) != "unclassified":
-                manifest["refused"] += 1
-                continue
-            try:
-                fetched = web_fetch_pinned.fetch_pinned(url, timeout=20, max_bytes=25_000_000)
-            except (OSError, ValueError):
-                fetched = None
-            if not fetched or fetched[0] != 200 or len(fetched[2]) > 25_000_000:
-                manifest["failed"] += 1
-                continue
-            kept.append(_snapshot(store, url, fetched))
-            manifest["frozen"] += 1
+        path, _ = _waiting(store, session_ref, prompt_key)
+    if path is None:
+        return {**manifest, "reason": "NO_PENDING_PROMPT"}
+    pages = _fetch_all(urls, manifest)
+    with custody_lock(store.state):
+        again, pending = _waiting(store, session_ref, prompt_key)
+        if again != path:
+            return {**manifest, "reason": "PROMPT_NO_LONGER_WAITING"}
+        kept = [_snapshot(store, url, fetched) for url, fetched in pages]
+        manifest["frozen"] = len(kept)
         manifest["sources"] = [{"url": k["url"], "sha256": k["sha256"]} for k in kept]
         envelope = {"sources": [{"snap_ref": k["snap_ref"], "sha256": k["sha256"]}
                                 for k in kept],

@@ -57,3 +57,25 @@ def emit(line: str = "", *, stream=None) -> None:
     """Print one already-escaped line. Callers escape names, not whole lines,
     so the layout they chose (indentation, columns) survives."""
     print(line, file=stream or sys.stdout)
+
+
+#: Internal references (package ids, design sections, experiments, decisions,
+#: source lines, issue numbers) that belong in `--json` and the project docs,
+#: never on the status text a user reads.
+_REF = r"(?:\b(?:MN|CA|FW|EN|F|D|X)-?[A-Z]?\d+[a-z]?\b|\b\d{1,2}\.\d{1,2}\b|\S+\.py:[\d,\-]+|#\d+|\w+\.py\b)"
+_REF_PARENS = re.compile(r"\s*\((?:[^()]*?)" + _REF + r"[^()]*\)")
+_REF_WORDS = (
+    (re.compile(r"until experiment X\d+"), "until classified"),
+    (re.compile(r"classified by FW-\d+"), "classified"),
+    (re.compile(r"from before #\d+"), "from an earlier release"),
+    (re.compile(r" with F-\d+"), ""),
+    (re.compile(r"moved into encrypted custody in phase 2"), "encrypted custody is planned"),
+    (re.compile(r"engine-side deletion waits for phase 2"), "engine-side deletion is planned"),
+)
+
+
+def public(text: str) -> str:
+    """`text` without internal references, for the status a user reads."""
+    for pattern, plain in _REF_WORDS:
+        text = pattern.sub(plain, text)
+    return _REF_PARENS.sub("", text)
