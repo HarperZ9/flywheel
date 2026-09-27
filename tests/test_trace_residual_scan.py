@@ -100,3 +100,24 @@ def test_the_report_names_files_by_label_and_never_quotes(tmp_path, canary):
     report = scan_paths([target], Needles.build([canary]), labels={target: "S7 store.db"})
     assert report["per_file"] == {"S7 store.db": report["total"]} and report["total"] > 0
     assert canary[:32] not in json.dumps(report)
+
+
+def test_encrypted_files_are_counted_as_not_searched(tmp_path):
+    from harness.trace_enc import MAGIC
+    sealed = tmp_path / "item.enc"
+    sealed.write_bytes(MAGIC + b"{}\n" + b"\x00" * 64)
+    report = scan_paths([sealed], Needles.build(["a long deleted phrase " * 4]))
+    assert report["total"] == 0 and report["unsearched"]["encrypted"] == 1
+
+
+def test_a_zst_file_is_searched_through_the_bounded_stream(tmp_path, monkeypatch):
+    from codex_fixtures import FAKE_MAGIC, FakeZstd
+    from harness import trace_zstd
+    canary = "a deleted phrase that is long enough to window " * 3
+    target = tmp_path / "rollout.jsonl.zst"
+    target.write_bytes(FAKE_MAGIC + canary.encode())
+    monkeypatch.setattr(trace_zstd, "module", lambda: FakeZstd())
+    assert scan_paths([target], Needles.build([canary]))["total"] > 0
+    monkeypatch.setattr(trace_zstd, "module", lambda: None)
+    report = scan_paths([target], Needles.build([canary]))
+    assert report["unsearched"]["compressed"] == 1

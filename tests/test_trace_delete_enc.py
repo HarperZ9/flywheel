@@ -98,3 +98,42 @@ def test_a_trace_whose_run_still_writes_is_not_deleted(home):
         report = _apply(home, plan)
     assert report["state"] == "DELETE_PENDING" and report["reason"] == "ITEM_BUSY"
     assert AgentTrace(home / "state", OWNER, JOURNEY, OPERATION).read()
+
+
+def test_a_turn_deletion_names_the_provider_copy(home):
+    """The model provider saw the prompt too; the plan names that copy for
+    a captured turn, not only for a gateway trace."""
+    turn = plant_turn(home)
+    plan = make_plan(home, OWNER, {"turn_refs": [turn["turn_ref"]]})
+    assert plan["out_of_reach"]["provider"] == 1
+
+
+def test_plaintext_items_are_not_counted_as_ciphertext_residue():
+    """With no OS key store the stores are plaintext; the residue forecast
+    and the CLI plan must not call them ciphertext or promise key destruction."""
+    import tempfile
+    from pathlib import Path
+    from harness.trace_enc import NoProvider
+    with tempfile.TemporaryDirectory() as folder, using(NoProvider()):
+        home = Path(folder)
+        refs = [plant_trace(home, operation=f"op_{i:032x}") for i in range(2)]
+        plan = make_plan(home, OWNER, {"trace_refs": refs})
+        assert "ciphertext_freed_clusters" not in plan["residue_forecast"]
+        assert plan["residue_forecast"]["freed_clusters"] == len(plan["entries"])
+
+
+def test_a_custody_lock_timeout_is_not_called_a_busy_item(home, monkeypatch):
+    """C12: another custody writer holding the lock past the timeout is
+    CUSTODY_BUSY; ITEM_BUSY stays for a trace whose run holds its writer lock."""
+    import contextlib
+    from harness.journey_lock import JourneyLockBusy
+
+    @contextlib.contextmanager
+    def busy(*a, **k):
+        raise JourneyLockBusy()
+        yield
+    trace_ref = plant_trace(home)
+    plan = make_plan(home, OWNER, {"trace_refs": [trace_ref]})
+    monkeypatch.setattr(trace_delete_apply, "custody_lock", busy)
+    report = _apply(home, plan)
+    assert report["state"] == "DELETE_PENDING" and report["reason"] == "CUSTODY_BUSY"

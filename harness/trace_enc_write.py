@@ -24,6 +24,7 @@ from .trace_enc import EncError, decode, encode, is_encrypted
 from .trace_enc_floor import PrefixCheck, has_floor, set_floor
 
 _log = logging.getLogger(__name__)
+SINGLE_FILE = ("CT", "S8b", "BT", "deletions")
 _REPORTED: set[tuple[str, str, str]] = set()
 _REPORTED_LOCK = threading.Lock()
 
@@ -57,6 +58,8 @@ class ItemCipher:
 
     def open(self, file: str, blob: bytes) -> bytes:
         if not self.prefix.feed(blob):
+            if self._downgraded(file):
+                raise EncError("ENC_DOWNGRADE")
             return blob
         if not self.encrypting:
             raise EncError("OS_KEY_UNAVAILABLE")
@@ -67,6 +70,21 @@ class ItemCipher:
             if exc.code == "OS_KEY_UNAVAILABLE":
                 self._report_loss()
             raise
+
+    def _downgraded(self, file: str) -> bool:
+        """Plaintext where ciphertext is due: a one-file item (or an import's
+        manifest) whose store has a floor and whose key exists was written
+        encrypted, so a plaintext copy is a swap (S18). A trace's records are
+        exempt: a trace begun before the upgrade keeps its plaintext prefix."""
+        single = self.store in SINGLE_FILE or (self.store == "IM" and file in (
+            "manifest", "index", "redaction"))
+        if not single or not self.encrypting or not has_floor(
+                self.state_root, self.owner_ref, self.store):
+            return False
+        try:
+            return self.keystore.present(self.store, self.item)
+        except EncError:
+            return False
 
     def _report_loss(self) -> None:
         key = (str(self.state_root), self.store, self.item)

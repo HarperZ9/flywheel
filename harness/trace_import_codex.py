@@ -69,7 +69,7 @@ def _source(path: Path, root: Path, archived: bool, live: set) -> dict | None:
 
 
 def _not_imported(root: Path) -> list[dict]:
-    rows = [{"name": name, "reason": "NOT_IMPORTED_BY_DEFAULT", "flag": None}
+    rows = [{"name": name, "reason": "NOT_IMPORTED"}
             for name in _NAMED if (root / name).exists()]
     for path in sorted(root.glob("*.sqlite")):
         rows.append({"name": path.name, "reason": "SQLITE_NOT_READ",
@@ -101,4 +101,4 @@ def plan_codex(home, *, root=None, environ=None, now=None, free_space=None,
     sources, refused = discover(root)
     return core.build_plan(home, owner, CLIENT, sources, refused=refused,
                            not_imported=_not_imported(root), now=now or time.time(),
-                           free_space=free_space, live_window_s=live_window_s)
+                           free_space=free_space, live_window_s=live_window_s, root=root)

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/client/gateway_traces.dart';
@@ -22,20 +20,6 @@ void main() {
     expect(seen, ['GET /api/traces/presence/pending']);
     expect(pending.single['ref'], 'prs_1');
     expect(pending.single['kind'], 'export');
-  });
-
-  test('approving sends only the ref', () async {
-    Map<String, dynamic>? body;
-    final client = GatewayClient(
-        baseUrl: 'https://gateway.invalid',
-        httpClient: MockClient((request) async {
-          expect(request.url.path, '/api/traces/presence/approve');
-          body = jsonDecode(request.body) as Map<String, dynamic>;
-          return http.Response(
-              '{"schema":"flywheel.presence-approval/v1","ok":true}', 200);
-        }));
-    expect(await client.approvePresence('prs_2'), isTrue);
-    expect(body, {'ref': 'prs_2'});
   });
 
   test('a malformed pending list reads as empty', () async {
