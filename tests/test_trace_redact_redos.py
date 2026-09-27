@@ -17,6 +17,7 @@ interrupt one catastrophic pattern, which is why every pattern is written
 linear and tested here.
 """
 from functools import lru_cache
+import gc
 import re
 import time
 
@@ -119,14 +120,26 @@ FLOODS = {
 def _flood_pair(rule, unit):
     """Best of five for a quarter MiB and for 2 MiB, measured alternately so
     load on the machine hits both sizes alike. Linear cost gives a ratio near
-    8; quadratic cost gives 64."""
+    8; quadratic cost gives 64.
+
+    The heap already in the process is frozen while the pair is timed. A full
+    garbage collection walks every live object, and the 2 MiB scan allocates
+    enough to set off collections the quarter MiB scan does not, so in a
+    process that already ran thousands of tests the ratio measured that heap,
+    not the rule: with 8 million live objects github_token measured 26.6,
+    and 8.7 with them frozen."""
     texts = [(unit * (size // len(unit) + 1))[:size] for size in (MIB // 4, 2 * MIB)]
     best = [float("inf"), float("inf")]
-    for _ in range(5):
-        for index, text in enumerate(texts):
-            start = time.perf_counter()
-            trace_redact.scan(text, rules_=(rule,))
-            best[index] = min(best[index], time.perf_counter() - start)
+    gc.collect()
+    gc.freeze()
+    try:
+        for _ in range(5):
+            for index, text in enumerate(texts):
+                start = time.perf_counter()
+                trace_redact.scan(text, rules_=(rule,))
+                best[index] = min(best[index], time.perf_counter() - start)
+    finally:
+        gc.unfreeze()
     return best
 
 
@@ -143,9 +156,8 @@ def _linear_in_some_round(rule, unit) -> tuple[bool, list]:
     bound. Memory traffic from other processes slows the 2 MiB scan more than
     the quarter MiB one, which fits in cache: 24 processes streaming 64 MiB
     each pushed one github_token round to 26.6 while the next five stayed
-    between 14 and 19.6, and a full test suite on the same machine did the
-    same. A rule whose cost grows faster than linear misses every round, so a
-    repeat cannot pass it (see the quadratic control below)."""
+    between 14 and 19.6. A rule whose cost grows faster than linear misses
+    every round, so a repeat cannot pass it (see the quadratic control below)."""
     rounds = []
     for _ in range(ROUNDS):
         small, large = _flood_pair(rule, unit)
