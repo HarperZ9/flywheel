@@ -6,6 +6,10 @@ import sys
 
 CANON_CONTEXT_DB = "CANON_CONTEXT_DB"
 CANON_CONTEXT_SCOPE = "CANON_CONTEXT_SCOPE"
+#: canon 0.4.x applies a context purge plan only on a server started with this
+#: set to ``apply``. The engine calls health, ingest and query and never starts
+#: the context child with it, whatever the environment or an env_allow grant says.
+CANON_CONTEXT_MCP_PURGE = "CANON_CONTEXT_MCP_PURGE"
 TRUSTED_SCOPE = "trusted-local-process"
 PRIVATE_CHILD_ARGV = ("--canon-context-mcp",)
 SOURCE_CHILD_ARGV = ("-m", "canon.context_mcp")
@@ -35,5 +39,7 @@ def context_mcp_environment(env: dict[str, str], db: str) -> dict[str, str]:
     if not context_db_configured(db):
         raise ValueError("Canon context database path must be absolute")
     from .lane_env import lane_process_environment
-    return lane_process_environment(
+    child = lane_process_environment(
         "canon", {CANON_CONTEXT_DB: db, CANON_CONTEXT_SCOPE: TRUSTED_SCOPE}, environ=env)
+    return {key: value for key, value in child.items()
+            if key.upper() != CANON_CONTEXT_MCP_PURGE}

@@ -70,8 +70,11 @@ ARG_POLICY: dict[str, dict[str, dict]] = {
               "learn_tutor_prooflesson": _paths("packetPath")},
     "local-model": {"local_agent_run": _paths("root")},
     # WP10: the session tools join an id into the session's run or job lookup
-    "relay": {name: {"id_args": ("run_id",)}
-              for name in ("local_agent_status", "local_agent_result")},
+    "relay": {**{name: {"id_args": ("run_id",)}
+                 for name in ("local_agent_status", "local_agent_result")},
+              # relay 0.4.0 refuses a session_id that is not a bare name; the
+              # engine checks it first (GHSA-phjr-6qrc-39mw read any ledger file)
+              "local_agent_sessions": {"id_args": ("session_id",)}},
 }
 for _action in ("status", "result", "cancel", "resume"):
     ARG_POLICY["index"][f"index.router.job.{_action}"] = {"id_args": ("job_id",)}

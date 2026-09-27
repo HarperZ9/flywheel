@@ -182,8 +182,10 @@ The server (`src/relay/local_mcp.py`) speaks JSON-RPC 2.0 over stdio and exposes
   background run once done; reports `running` until then.
 - **`local_agent_runs`**: lists recent background runs. A run cut off mid-flight
   lists as `interrupted`; persisted runs (`RELAY_RUN_ROOT`) survive a restart.
-- **`local_agent_sessions`**: lists saved sessions under `RELAY_SESSION_DIR`,
-  each re-verified on load; pass `session_id` for the transcript.
+- **`local_agent_sessions`**: lists saved sessions under `RELAY_SESSION_DIR`
+  (from 0.4.0 a per-user folder when it is unset; Flywheel sets it to
+  `<home>/lanes/relay/sessions`), each re-verified on load; pass `session_id`, a
+  bare name, for the transcript.
 - **`relay.status`**: liveness and identity (`ok`, `server`, `version`,
   `protocol`). Network-free. This is the lane's declared health tool.
 - **`relay.doctor`**: identity plus the configured local tiers, the exposed tool
@@ -211,6 +213,10 @@ From `src/relay/local_agent_cli.py`:
   `<PROVIDER>_CLOUD_BASE_URL`, `<PROVIDER>_CLOUD_KEY`: feed the endpoint ladder.
 - `RELAY_RUN_ROOT`: persist background runs across a restart.
 - `RELAY_SESSION_DIR`: where saved session ledgers live.
+- `RELAY_CHILD_ENV`, `RELAY_ALLOW_EXEC_CLI`, `RELAY_CLAUDE_CLI`,
+  `RELAY_CODEX_CLI` (0.4.0, launch-only): the names shell children may see,
+  unproven CLI tiers allowed to start, and the CLI executables. Flywheel starts
+  relay with exec off, `RELAY_CHILD_ENV` and `RELAY_ALLOW_EXEC_CLI` empty.
 - `FLYWHEEL_RELAY_URL`: points the lane at a remote deployment (from the lane's
   `env_url_var`, applicable when the lane is reached remotely).
 

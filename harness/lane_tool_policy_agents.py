@@ -66,9 +66,11 @@ _MNEME = {
                                 "Section 1a puts it at T2.", tier="T2"),
     "mneme.provenance": _t("read", "Shows one memory's provenance receipt."),
     "mneme.origin_recheck": _t("read", "Re-reads a source file under an allowed root."),
-    "mneme.forget": _t("state_write", "Deletes a memory in the lane's database and cannot "
-                       "be undone; raw turn text stays (known finding 4). Section 1a puts "
-                       "it at T2.", tier="T2"),
+    "mneme.forget": _t("state_write", "Erases a memory, its source turns and what derives "
+                       "from them, and cannot be undone. mneme 0.5.0 returns a plan first "
+                       "and deletes only on a second call that carries its "
+                       "confirm_plan_sha256; each call is its own T2 approval.",
+                       tier="T2"),
     "mneme.audit": _t("read", "Returns the forget and update history."),
     **_health("mneme"),
 }
@@ -76,14 +78,14 @@ _MNEME = {
 _OFFLINE = (("online", False),)
 _NO_GRANTS = (("allow_write", False), ("allow_exec", False), *_OFFLINE)
 _RELAY_RUN_ARGS = ("goal", "max_steps", "max_tokens", "model", "backend", "compact_budget")
-_RELAY_RUN = ("Runs an agent task on the model server the person set up. relay 0.3.0 takes "
+_RELAY_RUN = ("Runs an agent task on the model server the person set up. relay 0.4.0 takes "
               "write and exec from its launch, which the engine starts with both off and its "
               "root at the lane folder; the engine also passes only the listed arguments, so "
               "root, check, test_cmd and online never reach the run, and forces write, exec "
               "and online off.")
 _RELAY_START = ("Starts the same agent run in the background on the relay lane session "
                 "(WP10) and returns its run id at once. T2: it holds the model server for "
-                "minutes with no call waiting on it. relay 0.3.0 takes write and exec from "
+                "minutes with no call waiting on it. relay 0.4.0 takes write and exec from "
                 "its launch, which the engine starts with both off and its root at the lane "
                 "folder; the engine passes only the listed arguments and forces write, exec "
                 "and online off.")

@@ -183,7 +183,7 @@ def _relay(home: Path, work: Path) -> list[Call]:
 
 
 def _relay_ok(reply: object) -> bool:
-    # Shape from relay 0.3.0 ``run_projection``: the binding says what the run
+    # Shape from relay ``run_projection`` (unchanged from 0.3.0 to 0.4.0): the binding says what the run
     # asked for and got. The launch grants nothing, so a reply that asked for
     # or got write, exec, online, a check or a test command fails here.
     binding = reply.get("request_binding") if isinstance(reply, dict) else None

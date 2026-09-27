@@ -1,11 +1,12 @@
-"""The 2026-09-26 pins: relay 0.3.0, articulate 0.5.0, canon 0.3.0.
+"""The 2026-09-26 pins: articulate 0.5.0 (relay and canon moved on).
 
-- relay 0.3.0 takes write, exec and root from its launch; the submodule, the
-  payload row, the descriptor expectation and the registry agree on it;
+relay 0.3.0 and canon 0.3.0 were pinned here first; relay 0.4.0 and canon
+0.4.1 replaced them the same day (tests/test_lane_pins_20260926_late.py).
+The relay descriptor keeps the launch-grant boundary this file checked.
+
 - articulate 0.5.0 reads the claude CLI path from ARTICULATE_CLAUDE_CLI, so
   judge, fix and polish are in the build at T2 behind the ``claude_cli`` item,
-  and the engine passes the CLI it found to the articulate child only;
-- canon 0.3.0 is the pinned payload and the context smoke's pin.
+  and the engine passes the CLI it found to the articulate child only.
 """
 from __future__ import annotations
 
@@ -20,9 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
     ROOT / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
     if line.strip()}
-PINS = {"relay": ("0.3.0", "v0.3.0", "786c62506223594f5c6a19975649236e24a34ca8"),
-        "articulate": ("0.5.0", "v0.5.0", "d7d5244db98c251fc7808f7a5eec4d5163c368a9"),
-        "canon": ("0.3.0", "v0.3.0", "078758b981df2983f089c269584865d5222a689b")}
+PINS = {"articulate": ("0.5.0", "v0.5.0", "d7d5244db98c251fc7808f7a5eec4d5163c368a9")}
 
 
 def test_registry_rows_and_expectations_carry_each_pin():
@@ -32,14 +31,13 @@ def test_registry_rows_and_expectations_carry_each_pin():
         assert LANES[lane].version == version, lane
         assert (row["owner_tag"], row["owner_commit"]) == (tag, commit), lane
         assert row["flywheel_registry_expected_version"] == version, lane
-    relay = expected_bundled_lane("relay")
-    assert (relay["version"], relay["source_commit"]) == PINS["relay"][::2]
+    assert expected_bundled_lane("relay")["allowed_tools"] == tuple(
+        policy.admitted_tools("relay"))
 
 
 def test_the_relay_descriptor_names_the_launch_grant_boundary():
     descriptor = json.loads((ROOT / "packaging" / "bundled-lanes" / "relay.json").read_text(
         encoding="utf-8"))
-    assert descriptor["version"] == "0.3.0"
     text = " ".join(descriptor["does_not_prove"])
     assert "still reads both from tool arguments" not in text
     assert "launch" in text and "root, check" in text

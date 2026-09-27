@@ -43,11 +43,12 @@ DOES_NOT_PROVE = (
     "and transport, not that Relay completes model-backed work.",
     "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: no provider credential rides the "
     "launch; a model server is a separate setup item.",
-    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.3.0 takes write and exec from its "
-    "launch, and the engine launches it with both off and its root at the lane "
-    "folder; the engine also passes only listed arguments, so root, check, "
-    "test_cmd and online never reach a run. relay's shell is not path-confined "
-    "when a launch grants exec, which this build never does.",
+    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.4.0 takes write and exec from its "
+    "launch, and the engine launches it with both off, its root at the lane "
+    "folder, no RELAY_CHILD_ENV names and no unproven CLI tier allowed; the "
+    "engine also passes only listed arguments, so root, check, test_cmd and "
+    "online never reach a run. relay's shell is not path-confined when a launch "
+    "grants exec, which this build never does.",
     "NOT_PROVES_BACKGROUND_RUN_DURABILITY: a local_agent_start run lives in the "
     "memory of the relay lane session; when that session ends (idle, a crash, "
     "an engine stop) the run ends with it and its id reads unknown.",

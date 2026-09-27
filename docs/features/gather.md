@@ -191,6 +191,14 @@ Seven tools, observed in `src/gather/mcp.py` and declared in
 - `gather.run`: run a multi-source session from an inline or file config.
 - `gather.pilot`: run / refresh / verify / bundle a pilot evidence root.
 
+From 1.9.0, `gather.run` and `gather.pilot` need launch grants for network
+sources (`GATHER_ALLOW_NETWORK`), commands (`GATHER_ALLOW_EXEC`) and
+credentials (`GATHER_AUTH_ENV_ALLOW=NAME@HOST`); without one the call returns
+`GRANT_REQUIRED` before anything runs. Flywheel starts the gather lane with all
+four grant variables empty (`GATHER_CHILD_ENV` too): its app tools read a local
+document or corpus and need none, and the feed route runs the gather CLI,
+which keeps operator trust.
+
 ### Python API
 Stable seams re-exported from `gather/__init__.py`: `make_item`, `Item`,
 `Provenance`, `content_hash`, `Corpus`, `Digest`, `digest`, `digest_of_receipts`,
@@ -314,7 +322,7 @@ Gather is already a native lane, so most of the wiring the question asks about
 exists. Present and verified:
 
 - **Lane registry entry**: `LANES["gather"]` in `harness/lanes_registry.py`,
-  organ `perception`, version `1.6.1`, `py_module="gather.cli"`,
+  organ `perception`, version `1.9.0`, `py_module="gather.cli"`,
   `source_repo="public/gather"`.
 - **Expected-set test**: `tests/test_lanes.py::test_registry_covers_the_expected_lanes`
   asserts `gather` is in the lane set, and

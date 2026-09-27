@@ -13,7 +13,7 @@ if str(ROOT) not in sys.path:
 
 from scripts import check_installed_canon_context as installed
 
-PIN = "078758b981df2983f089c269584865d5222a689b"
+PIN = "583e0ceea333ef6acfef492254b2b31a13baad5a"
 COMMIT = "a" * 40
 VERSION = "1.0.0"
 

@@ -6,21 +6,34 @@ and telos state), so an engine started from an install folder wrote lane state
 into that folder, and an all-users install puts it under Program Files.
 
 Every spawned lane child now starts in ``<home>/lanes/<lane>/``, created on
-launch. Four lanes get state defaults inside that folder when the operator has
+launch. Five lanes get state defaults inside that folder when the operator has
 not set the variable: mneme's database (``MNEME_STATE``), canon's blocks folder
 (``CANON_BLOCKS_DIR``, created too, since canon answers "not a directory" for
 a missing one), index's three caches under ``cache/`` (which otherwise land
-under ``%LOCALAPPDATA%``) and accountable-surface's receipts and journal
-(receipts otherwise land in the temp folder).
+under ``%LOCALAPPDATA%``), accountable-surface's receipts and journal
+(receipts otherwise land in the temp folder) and relay's session store
+(``RELAY_SESSION_DIR``, created; relay 0.4.0 otherwise keeps it in a per-user
+folder, which on Linux and macOS is outside the lane folder).
 
 articulate's child gets ARTICULATE_CLAUDE_CLI, the claude CLI the engine found
 (claude_discovery), since its own PATH is the system folder.
 
-relay 0.3.0 takes its write and exec grants and its root from its launch. Its
+relay 0.4.0 takes its write and exec grants and its root from its launch. Its
 child always starts with RELAY_ALLOW_WRITE=0, RELAY_ALLOW_EXEC=0 and
 RELAY_MCP_ROOT at the lane folder, whatever the engine's environment or an
 env_allow grant says, so a run can neither write, run a shell nor read outside
-the lane folder through relay's file tools (PINS_2026-09-26, O-3).
+the lane folder through relay's file tools (PINS_2026-09-26, O-3). It also
+starts with RELAY_CHILD_ENV and RELAY_ALLOW_EXEC_CLI empty: with exec off no
+shell child or CLI tier starts, and an empty value keeps it that way if a later
+release loosens that.
+
+gather 1.9.0 takes its network, exec and credential grants from its launch
+(GATHER_ALLOW_NETWORK, GATHER_ALLOW_EXEC, GATHER_AUTH_ENV_ALLOW) and passes a
+synthesizer only the names in GATHER_CHILD_ENV. The app's gather tools read a
+local document or corpus and need none of them, so all four start empty,
+whatever the engine's environment or an env_allow grant says. A granted T2
+gather.run whose config names a network source, a command or a credential
+answers GRANT_REQUIRED (PINS_2026-09-26_LATE).
 
 A spawned MCP child also gets TEMP, TMP, TMPDIR, APPDATA and LOCALAPPDATA
 inside its lane folder, always, so a lane's temp and app-data writes stay in the
@@ -50,6 +63,7 @@ _SAFE_LANE = re.compile(r"[a-z][a-z0-9_-]{0,63}\Z")
 _STATE_DEFAULTS = {
     "mneme": (("MNEME_STATE", "mneme.db", False),),
     "canon": (("CANON_BLOCKS_DIR", "blocks", True),),
+    "relay": (("RELAY_SESSION_DIR", "sessions", True),),
     "index": (("INDEX_CACHE_DIR", "cache/index", True),
               ("INDEX_MCP_CACHE_DIR", "cache/mcp", True),
               ("INDEX_GRAPH_REPO_CACHE_DIR", "cache/graph", True)),
@@ -62,7 +76,10 @@ SCOPED_DIRS = (("TEMP", "tmp"), ("TMP", "tmp"), ("TMPDIR", "tmp"),
 _SCOPED_NAMES = frozenset(name for name, _rel in SCOPED_DIRS)
 # Always set for a lane's spawned MCP child: the launch grants a lane takes.
 _FORCED_ENV = {"relay": (("RELAY_ALLOW_WRITE", "0"), ("RELAY_ALLOW_EXEC", "0"),
-                         ("RELAY_ALLOW_REMOTE_EXEC", "0"), ("RELAY_MCP_ROOT", "."))}
+                         ("RELAY_ALLOW_REMOTE_EXEC", "0"), ("RELAY_MCP_ROOT", "."),
+                         ("RELAY_CHILD_ENV", ""), ("RELAY_ALLOW_EXEC_CLI", "")),
+               "gather": (("GATHER_ALLOW_NETWORK", ""), ("GATHER_ALLOW_EXEC", ""),
+                          ("GATHER_AUTH_ENV_ALLOW", ""), ("GATHER_CHILD_ENV", ""))}
 
 
 def forced_env(lane_name: str, folder: Path,

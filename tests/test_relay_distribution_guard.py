@@ -175,7 +175,7 @@ def test_relay_source_still_resolves_and_installs(monkeypatch, tmp_path):
     monkeypatch.setattr(lanes, "_frozen", lambda: False)
     launch = lanes.resolve_mcp_launch("relay")
     assert launch.cwd == str(source.resolve())
-    assert "relay.local_mcp" in launch.argv
+    assert launch.argv[-3:] == ("-m", "relay", "--mcp")   # relay.local_mcp refuses --mcp
     calls = []
     monkeypatch.setattr(lanes.subprocess, "run", lambda *a, **k: (
         calls.append(a[0]) or SimpleNamespace(returncode=0, stdout="", stderr="")))

@@ -14,7 +14,7 @@
     "NOT_PROVES_REPLACEMENT_OF_TRUSTED_EXECUTABLE: the descriptor binds the reviewed Relay source included in this build, not a later replacement of the whole gateway executable.",
     "NOT_PROVES_AGENTIC_TASK_SUCCESS: admitting Relay's T1 tools checks identity and transport, not that Relay completes model-backed work.",
     "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: no provider credential rides the launch; a model server is a separate setup item.",
-    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.3.0 takes write and exec from its launch, and the engine launches it with both off and its root at the lane folder; the engine also passes only listed arguments, so root, check, test_cmd and online never reach a run. relay's shell is not path-confined when a launch grants exec, which this build never does.",
+    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.4.0 takes write and exec from its launch, and the engine launches it with both off, its root at the lane folder, no RELAY_CHILD_ENV names and no unproven CLI tier allowed; the engine also passes only listed arguments, so root, check, test_cmd and online never reach a run. relay's shell is not path-confined when a launch grants exec, which this build never does.",
     "NOT_PROVES_BACKGROUND_RUN_DURABILITY: a local_agent_start run lives in the memory of the relay lane session; when that session ends (idle, a crash, an engine stop) the run ends with it and its id reads unknown."
   ],
   "entrypoint": {
@@ -30,19 +30,29 @@
   "schema": "flywheel.bundled-lane-component/v1",
   "source": {
     "algorithm": "sha256-canonical-source-manifest/v1",
-    "bytes": 302981,
-    "commit": "786c62506223594f5c6a19975649236e24a34ca8",
-    "file_count": 43,
+    "bytes": 330318,
+    "commit": "ac4d79877f19e3e4c439c15d4781c3896e2f33db",
+    "file_count": 47,
     "files": [
       {
         "bytes": 1055,
         "path": "src/relay/__init__.py",
-        "sha256": "sha256:c00ce8b896fb573d89e4d2fe72dc297f583f2f87b399bece16173255bab32ef3"
+        "sha256": "sha256:100b2d71bf07c0890c1d440461f3c2f7f88f35364a4e017a1c701230590037b6"
       },
       {
         "bytes": 100,
         "path": "src/relay/__main__.py",
         "sha256": "sha256:e92b876d9c42674ffe6f8746df7ad7c9e63689910b30509658a2fccc06338f5e"
+      },
+      {
+        "bytes": 93,
+        "path": "src/relay/_vendor/__init__.py",
+        "sha256": "sha256:17c8bc3f66b9589270b874f4f339f5e19d2ee03d391bea09c5fdbbd4965fe904"
+      },
+      {
+        "bytes": 13267,
+        "path": "src/relay/_vendor/safe_spawn.py",
+        "sha256": "sha256:cb2dfa9447380f637d294244c6bdf591db1a4a1abf40312a4671b785b8e1bea6"
       },
       {
         "bytes": 2537,
@@ -60,9 +70,9 @@
         "sha256": "sha256:d7d18eca2b3a872203d852663f13912048d8e67d635f74dc0d22ce4725d7d54f"
       },
       {
-        "bytes": 4524,
+        "bytes": 4579,
         "path": "src/relay/bisect.py",
-        "sha256": "sha256:18bb24b8e2de4eeeed658c7d2a78c68676884de8686d9d97d0f33854373ca14e"
+        "sha256": "sha256:ff542a6565cc737cc87797a9941f95618d305b989223f12eb9fe45e374ba2ec7"
       },
       {
         "bytes": 6104,
@@ -70,9 +80,19 @@
         "sha256": "sha256:0e285954efab18cd6c12113e0acc4e88db4e3b09bf9f8b2c3058586131bd1443"
       },
       {
+        "bytes": 2871,
+        "path": "src/relay/child_env.py",
+        "sha256": "sha256:91723a557e738d157cea0dbb444c59617742d54099958aa028d5608bc92ec596"
+      },
+      {
         "bytes": 5793,
         "path": "src/relay/claim_grounding.py",
         "sha256": "sha256:005557f16c5be3e19528ca1019b02dc03c7563204cb69be7cdffba7b374a7e80"
+      },
+      {
+        "bytes": 3552,
+        "path": "src/relay/cli_tiers.py",
+        "sha256": "sha256:db83426ff75490ac1a846c2cd16c803b8769e60b2be17b7f91fda798d086ead1"
       },
       {
         "bytes": 9613,
@@ -95,9 +115,9 @@
         "sha256": "sha256:8379d18c7ab06a8ae964648c8cdc95bd4d7efcbcb0033628b78834d791e0444d"
       },
       {
-        "bytes": 12780,
+        "bytes": 14388,
         "path": "src/relay/endpoints.py",
-        "sha256": "sha256:940c7caf9d5bf208b141ff6bb2c3db361037eedc12ca0d3d881246f0bff3d49b"
+        "sha256": "sha256:0924f778d55f5e1be16be608c20e0f9b6f345ca999663c5853594ca53f51c67c"
       },
       {
         "bytes": 2556,
@@ -130,19 +150,19 @@
         "sha256": "sha256:9d7638969ae860f856d8c515139150726b22e395deb6ceb9d06998ebacb90d27"
       },
       {
-        "bytes": 3383,
+        "bytes": 3626,
         "path": "src/relay/local_git.py",
-        "sha256": "sha256:5e138e5827c15c475c3adc8a610847dedbd45575f10e4dd96fee08d32cf957fd"
+        "sha256": "sha256:4d01d2851f6c1d24da66f0fe3608394eca24d45782b91ca3f449233d59ec389f"
       },
       {
-        "bytes": 15652,
+        "bytes": 15715,
         "path": "src/relay/local_loop.py",
-        "sha256": "sha256:7a537ce53d56a274938d3dd8f4aafa58cb47d4fec56668863a76739fcf2f9883"
+        "sha256": "sha256:5a2f3197b8a3c688aca144411d3c7ce45d824a45aaf5315a29393db0b2628917"
       },
       {
-        "bytes": 11870,
+        "bytes": 12245,
         "path": "src/relay/local_mcp.py",
-        "sha256": "sha256:be601209dadd19319a84f5571d6e9130bc82cdd233196273f1b41d6440a76064"
+        "sha256": "sha256:56659ac764f8f1a4c9e0df7cc92b4c083df843495325206bd28423639adb64da"
       },
       {
         "bytes": 9492,
@@ -160,29 +180,29 @@
         "sha256": "sha256:b20485ba06fd3d7386a7caf3f62fb61d7ecc0f77070b0991de2d15720157cfbd"
       },
       {
-        "bytes": 13771,
+        "bytes": 13750,
         "path": "src/relay/local_tools.py",
-        "sha256": "sha256:4dcab629ded7b64ef76099af5183c43b48b6db687c3bcfeaabb3395fce3d8aec"
+        "sha256": "sha256:a07341168a7a47ca8ce3b8a4e118978a8128a991b5f3a1f2ec1f758bcdf61e5b"
       },
       {
-        "bytes": 7317,
+        "bytes": 7581,
         "path": "src/relay/mcp_grants.py",
-        "sha256": "sha256:812b9ea7c296bdaf8d96b687673c14bf53aaceeb16608cd55eb56a1d33dfc6bb"
+        "sha256": "sha256:9a1b007fe76bf3f035e6e22e1271ac6b6e9161a5f38f54eb982cca2b7873c137"
       },
       {
-        "bytes": 4844,
+        "bytes": 5412,
         "path": "src/relay/mcp_paths.py",
-        "sha256": "sha256:6d434f50491cf997eb90ff79b0d6d75e6603f3ab67af2c58981375f16928e205"
+        "sha256": "sha256:d6084b6b844fabb1b458115a647691be5cd970b765acf0ebd67bd3d6e02265d9"
       },
       {
-        "bytes": 7283,
+        "bytes": 7878,
         "path": "src/relay/mcp_request.py",
-        "sha256": "sha256:313e5dc306b34418109377478cdeb3d3e16d7d923c707ba8292f90d59dba3615"
+        "sha256": "sha256:84593050af4dc6de98b7f8cd0526a7bc62a073e060370516d8e8e76e942db46d"
       },
       {
-        "bytes": 6218,
+        "bytes": 6469,
         "path": "src/relay/mcp_schema.py",
-        "sha256": "sha256:8bcba067bcb1289f9104811499260fb94fffd301b3eedb70e10e598fcf2c4289"
+        "sha256": "sha256:6edb20920c1a136c74be9765f079b4d9c47202e96a3bb3a2bf021ccea03f6876"
       },
       {
         "bytes": 7021,
@@ -210,9 +230,9 @@
         "sha256": "sha256:a9a7ea55dad49b837d41c97e9c6326132816fef5d4420fe1d522a272baef6428"
       },
       {
-        "bytes": 7585,
+        "bytes": 8164,
         "path": "src/relay/remote_state.py",
-        "sha256": "sha256:66aafff7a1fc56bd1115b2921d9570ec3dbe93151b73e1537e7d9d2bb30cd308"
+        "sha256": "sha256:b71e95db6e5be4ddd81ae4bff58c8188081079b92721f4d4fd88044a85981d53"
       },
       {
         "bytes": 7101,
@@ -225,9 +245,9 @@
         "sha256": "sha256:ae226f7cc2dc437a6b37755b48282c514062bc063ec0a323b5c00379f55ddba6"
       },
       {
-        "bytes": 2536,
+        "bytes": 5510,
         "path": "src/relay/session_store.py",
-        "sha256": "sha256:7294b6bf17dc9f1a13bcad144eb776b1ac652d1f363fcfb6334999826b481bcf"
+        "sha256": "sha256:3c9600ee74c45f3e79c2f3c86375e6e086b203fd0759661097b2837cb194a427"
       },
       {
         "bytes": 2141,
@@ -250,9 +270,9 @@
         "sha256": "sha256:3b09ddd111107eeb6515eb8df8a6d8f12e2352a4925f83e6dfae5790cf0877be"
       }
     ],
-    "manifest_sha256": "sha256:1c9f26d64754ee811f493868931831ea2d39f9a7675e2197b8a42072eae84693",
+    "manifest_sha256": "sha256:d196d6d0c2cebb6b19bd6f5b83432b38f02a606f304040df9ebd9fd5320725cb",
     "path": "src/relay",
     "repo": "https://github.com/HarperZ9/relay"
   },
-  "version": "0.3.0"
+  "version": "0.4.0"
 }

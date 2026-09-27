@@ -72,7 +72,7 @@ class Lane:
 # lane_runtime_frozen picks the engine's own child modes instead.
 LANES: dict[str, Lane] = {
     "gather": Lane(
-        "gather", "gather-engine", "gather", ("mcp",), "pip", "1.8.2",
+        "gather", "gather-engine", "gather", ("mcp",), "pip", "1.9.0",
         "research intake + provenance receipts (verified-data flywheel intake)",
         "perception", source_repo="public/gather", py_module="gather.cli"),
     "crucible": Lane(
@@ -138,10 +138,14 @@ LANES: dict[str, Lane] = {
         "private author workspace: scoped revisions, exact approval, and export receipts",
         "authoring"),
     "relay": Lane(
-        "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.3.0",
+        "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.4.0",
         "accountable agent loop on a local model server, witnessed runs (in the app: "
         "write and exec off, the two fixed local addresses only)",
-        "execution", source_repo="public/relay", py_module="relay.local_mcp",
+        "execution", source_repo="public/relay", py_module="relay",
+        # `python -m relay --mcp` serves MCP through relay's CLI; relay.local_mcp has
+        # parsed its own flags since 0.3.0 and refuses --mcp. The frozen build
+        # serves relay.local_mcp in process.
+        bundled_mcp_module="relay.local_mcp",
         # The online tier reads <PROVIDER>_MODEL, _PROVIDER_BASE_URL and
         # _CLOUD_BASE_URL; its keys stay operator grants (env_allow).
         env_vars=("RELAY_RUN_ROOT", "RELAY_SESSION_DIR", *(
@@ -153,7 +157,7 @@ LANES: dict[str, Lane] = {
         "capability discovery + auto-wiring of the tool mesh (the layer above a flat tool list)",
         "wiring", source_repo="public/plexus", py_module="plexus.cli"),
     "mneme": Lane(
-        "mneme", "flywheel-mneme", "mneme", ("mcp",), "pip", "0.4.2",
+        "mneme", "flywheel-mneme", "mneme", ("mcp",), "pip", "0.5.0",
         "accountable memory: recall with re-derivable ranking receipts + drift verdicts",
         "memory", source_repo="public/mneme", py_module="mneme.cli",
         env_vars=("MNEME_STATE", "MNEME_CRUCIBLE_SRC", "MNEME_GATHER_SRC",
@@ -164,7 +168,7 @@ LANES: dict[str, Lane] = {
         "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
         "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
     "canon": Lane(
-        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.3.0",
+        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.4.1",
         "provider-neutral memory bank + personality container: one envelope, "
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",

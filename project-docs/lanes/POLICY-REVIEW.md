@@ -65,11 +65,22 @@ reaches T2, since the model picks each inner call and its arguments.
 - **Lane sessions** (WP10, after the decision). A relay background run and an index router job
   live in one long-lived child per lane, so start, status and result sent as separate calls reach
   the same child. `local_agent_start` is T2: it runs only on a call a granted T2 operation carries,
-  on a relay launched with write and exec off (relay 0.3.0 takes both only from its launch). The
+  on a relay launched with write and exec off (relay 0.3.0 and later take both only from their
+  launch). The
   run and job ids must be plain ids. Plugins and agent runs cannot reach a session tool, and no
   provider key joins a session child, since it outlives the call. A session ends after 10 idle
   minutes unless its work is still running (then at most one hour after the last call), when its
   child exits, and when the engine stops.
+- **Late pins** (PINS_2026-09-26_LATE, after the decision). relay 0.4.0, gather 1.9.0, mneme
+  0.5.0 and canon 0.4.1 add no lane tool; each tool keeps its row. The launches adapt: relay keeps
+  its session store in `<lane>/sessions` and starts with no `RELAY_CHILD_ENV` names and no
+  unproven CLI tier allowed; relay's `session_id` must be a plain id. gather starts with its four
+  launch grants (`GATHER_ALLOW_NETWORK`, `GATHER_ALLOW_EXEC`, `GATHER_AUTH_ENV_ALLOW`,
+  `GATHER_CHILD_ENV`) empty, since its app tools read a local document or corpus; a T2
+  `gather.run` that names a network source, a command or a credential answers `GRANT_REQUIRED`.
+  `mneme.forget` stays T2 as a two-step erase. canon's context purge lives on the context
+  server, which the engine calls only for health, ingest and query and never starts with
+  `CANON_CONTEXT_MCP_PURGE`.
 - **Measured containment** (C-16). The frozen lane smoke snapshots its throwaway home around each
   lane's fixture and fails a lane that writes outside its folder.
 
@@ -87,7 +98,9 @@ reaches T2, since the model picks each inner call and its arguments.
 - bulletin is an http lane; its launch carries no `allowed_tools`, so the tier gate is its only
   tool filter.
 - O-13 (class C for calibrate-pro and actuation) is recorded as the default in DECISIONS.json.
-- `mneme.forget` leaves raw turn text (known finding 4).
+- `mneme.forget` erases source turns and derived rows from mneme 0.5.0 on (known finding 4 closed
+  in the lane); its receipt names the residue it cannot reach, such as exports and freed disk
+  blocks.
 
 ## Node lane evidence (learn 1.6.0; telos 0.4.1 held)
 
@@ -110,7 +123,7 @@ checks, and open egress. "Needs" lists setup item ids from `lane_tool_policy.SET
 
 <!-- policy-tables:start (scripts/render_lane_policy_review.py) -->
 
-### gather 1.8.2
+### gather 1.9.0
 
 Admitted at launch: 5 of 8 tools. T2 per granted call: 3. Not in this build: 0.
 
@@ -336,7 +349,7 @@ Admitted at launch: 3 of 14 tools. T2 per granted call: 10. Not in this build: 1
 | `writing.proposal_approve` | T2, not in build: `approval_cli_only` |  | approve |  | drops `home` | Unavailable over MCP by design; approval runs from the CLI. |
 | `writing.proposal_commit` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Commits a proposal that an approval outside MCP granted; changes the manuscript in the writing workspace. Section 1a puts the records at T2. |
 
-### relay 0.3.0
+### relay 0.4.0
 
 Admitted at launch: 9 of 10 tools. T2 per granted call: 1. Not in this build: 0.
 
@@ -344,12 +357,12 @@ Admitted at launch: 9 of 10 tools. T2 per granted call: 1. Not in this build: 0.
 |---|---|---|---|---|---|---|
 | `local_agent_health` | T1 |  | network_read |  | passes only no argument, `online=false` | Pings the local model tiers; online tiers are forced off. |
 | `local_agent_chat` | T1 |  | model_call | model_server | passes only `prompt`, `backend`, `online=false` | One completion from the first healthy local tier; online tiers are forced off. |
-| `local_agent_run` | T1 | main | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Runs an agent task on the model server the person set up. relay 0.3.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine also passes only the listed arguments, so root, check, test_cmd and online never reach the run, and forces write, exec and online off. |
-| `local_agent_start` | T2 (rule alone: T1) |  | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Starts the same agent run in the background on the relay lane session (WP10) and returns its run id at once. T2: it holds the model server for minutes with no call waiting on it. relay 0.3.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine passes only the listed arguments and forces write, exec and online off. |
+| `local_agent_run` | T1 | main | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Runs an agent task on the model server the person set up. relay 0.4.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine also passes only the listed arguments, so root, check, test_cmd and online never reach the run, and forces write, exec and online off. |
+| `local_agent_start` | T2 (rule alone: T1) |  | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Starts the same agent run in the background on the relay lane session (WP10) and returns its run id at once. T2: it holds the model server for minutes with no call waiting on it. relay 0.4.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine passes only the listed arguments and forces write, exec and online off. |
 | `local_agent_status` | T1 |  | read |  | passes only `run_id`, `run_id` a plain id | Reads a background run from the relay lane session, where the run lives; the run id must be a plain id. |
 | `local_agent_result` | T1 |  | read |  | passes only `run_id`, `run_id` a plain id | Reads a background run from the relay lane session, where the run lives; the run id must be a plain id. |
 | `local_agent_runs` | T1 |  | read |  | passes only `limit` | Lists the runs the relay lane session holds. |
-| `local_agent_sessions` | T1 |  | read |  |  | Lists saved sessions and re-verifies each. |
+| `local_agent_sessions` | T1 |  | read |  | `session_id` a plain id | Lists saved sessions and re-verifies each. |
 | `relay.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `relay.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 
@@ -366,7 +379,7 @@ Admitted at launch: 6 of 6 tools. T2 per granted call: 0. Not in this build: 0.
 | `plexus.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `plexus.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 
-### mneme 0.4.2
+### mneme 0.5.0
 
 Admitted at launch: 8 of 11 tools. T2 per granted call: 3. Not in this build: 0.
 
@@ -379,7 +392,7 @@ Admitted at launch: 8 of 11 tools. T2 per granted call: 3. Not in this build: 0.
 | `mneme.replay_crucible` | T2 (rule alone: T1) |  | read |  |  | Replays a template on a read-only snapshot. Section 1a puts it at T2. |
 | `mneme.provenance` | T1 |  | read |  |  | Shows one memory's provenance receipt. |
 | `mneme.origin_recheck` | T1 |  | read |  | `allowed_root` kept out of the home | Re-reads a source file under an allowed root. |
-| `mneme.forget` | T2 (rule alone: T1) |  | state_write |  |  | Deletes a memory in the lane's database and cannot be undone; raw turn text stays (known finding 4). Section 1a puts it at T2. |
+| `mneme.forget` | T2 (rule alone: T1) |  | state_write |  |  | Erases a memory, its source turns and what derives from them, and cannot be undone. mneme 0.5.0 returns a plan first and deletes only on a second call that carries its confirm_plan_sha256; each call is its own T2 approval. |
 | `mneme.audit` | T1 |  | read |  |  | Returns the forget and update history. |
 | `mneme.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `mneme.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
@@ -397,7 +410,7 @@ Reads only (class C): Reads the panel catalog. Calibration runs in Calibrate Pro
 | `calibrate-pro.list-panels` | T1 | main | read |  |  | Lists the characterized panel catalog. |
 | `calibrate-pro.panel-info` | T1 | main | read |  |  | Returns one panel's stored characterization. |
 
-### canon 0.3.0
+### canon 0.4.1
 
 Admitted at launch: 5 of 6 tools. T2 per granted call: 1. Not in this build: 0.
 
