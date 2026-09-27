@@ -11,7 +11,7 @@ import pytest
 
 from harness.trace_residual_scan import Needles, scan_bytes, scan_paths
 from harness.trace_sqlite_scrub import scrub
-from trace_enc_fakes import long_canary
+from trace_enc_fakes import long_canary, plain_delete
 
 
 @pytest.fixture
@@ -51,6 +51,8 @@ def test_a_short_value_is_found_whole_and_flagged_structural():
 
 
 def _db_with_deleted_canary(path, canary, *, scrubbed):
+    """Unscrubbed, the DELETE runs with secure_delete and auto_vacuum set off,
+    since either one would clear the freed pages the scan has to find."""
     con = sqlite3.connect(path)
     con.execute("PRAGMA journal_mode=WAL")
     con.execute("CREATE TABLE t(id INTEGER PRIMARY KEY, body TEXT)")
@@ -61,10 +63,7 @@ def _db_with_deleted_canary(path, canary, *, scrubbed):
     con.close()
     if scrubbed:
         return scrub(path, lambda c: c.execute("DELETE FROM t WHERE id = 1"))
-    con = sqlite3.connect(path)
-    con.execute("DELETE FROM t WHERE id = 1")
-    con.commit()
-    con.close()
+    plain_delete(path, "DELETE FROM t WHERE id = 1")
     return None
 
 
