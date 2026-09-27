@@ -5,12 +5,18 @@ calls it made and what they returned. Flywheel, its lanes and the agent
 clients you run keep copies of that record on your disk. This page says where
 those copies are and which of them you control today.
 
+The `flywheel traces` commands on this page come with the engine from pip
+(`python -m pip install -U flywheel-verify`). The Windows installer adds no
+`flywheel` command and the app has no traces screen yet; the capture hooks
+need a Python with Flywheel installed.
+
 ## Where your data goes
 
 - **Stored only on your machine:** every record Flywheel keeps: agent
   traces, receipts, the custody ledger and desktop history. Your provider keys
-  are stored only on your machine too, and each one is sent to its own
-  provider with every request to that provider.
+  are stored only on your machine too. Flywheel sends each one only to its own
+  provider, and a key you bind to a lane call reaches that lane's process for
+  that one call; what a lane's own code does with it is up to the lane.
 - **Goes to the model provider you pick:** the whole content of each request.
   That is your prompt, the system text, any files or context attached or
   recalled for the request, and in an agent run every tool result sent back
@@ -289,9 +295,10 @@ deleted from its folder and header; the plan notes that the profile folders
 named inside it could not be found. Deleting one segment of a captured turn
 deletes every segment that shares its prompt.
 
-Lane databases are not reached. The mneme database and the canon context
-database can hold the same content as your traces, and `flywheel traces
-delete` does not touch them; each lane deletes through its own tools. In the
+Lane stores are not reached. The mneme database and its replay snapshots, the
+canon context database and relay's saved sessions under `lanes/relay/sessions`
+can hold the same content as your traces, and `flywheel traces delete` does not
+touch them; each lane deletes through its own tools. In the
 release Flywheel pins, mneme's forget erases a memory with its source turns
 and the rows derived from them. It returns a plan first and erases on a
 second call that confirms that plan, and Flywheel asks for your approval at
