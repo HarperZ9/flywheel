@@ -1,9 +1,8 @@
-<!-- Draft 1.1.0 notes; reviewed before any tag. Lane classes, lane sentence, README count
-(O-5) and method paragraph cite CI run 36302181098 (installed-lanes-ci-36302181098.json),
-which predates the gather 1.9.1, relay 0.5.0 and forum 1.15.1 pins: replace them from the
-windows-installed-acceptance.yml run on the release commit (O-9). Re-measure the installer
-size from the release build. The 1.0.4 known-issues page publishes on its own. Trace
-manual checks X4, X6, X7, X8 and X18 were not run. -->
+<!-- Draft 1.1.0 notes, reviewed before any tag. The lane classes, lane sentence, README
+count (O-5), method paragraph and installer size cite CI run 36302181098, which predates
+the gather 1.9.1, relay 0.5.0, forum 1.15.1 and crucible 1.3.0 pins: replace them from the
+release commit's windows-installed-acceptance.yml run (O-9). The 1.0.4 known-issues page
+publishes on its own. Trace manual checks X4, X6, X7, X8 and X18 were not run. -->
 
 # Flywheel 1.1.0
 
@@ -30,29 +29,25 @@ T2. Existing pip and source setups change, so the release takes the minor number
 
 ## Try it
 
-Install the Windows app, open Tools and pick a lane card. Each card shows its state,
-lists the lane's tools with a form for each, and runs the one you choose after you
-approve the call. A card that needs setup names the step: Git for Windows for index's
-repository history, a model server for local-model and relay, a project folder for
-local-model, a blocks folder for canon, a recorded draft for writing. For the engine
-alone: `python -m pip install -U flywheel-verify`, then `flywheel lanes --probe`.
+Install the Windows app, open Tools and pick a lane card. Each card shows its state and
+runs the tool you choose after you approve the call; a card that needs setup names the
+step. For the engine alone: `python -m pip install -U flywheel-verify`, then
+`flywheel lanes --probe`.
 
 ## What each lane does in the app
 
-Seventeen lanes ship in the roster. In the Windows app's installed-app check, 15 of 17
-lanes reach the class the check expects for them: 8 run their main action with no setup
-(A), 4 after the setup step the card names (B), 1 reads only by design (C), 1 runs with
-no setup and keeps actuation in its own app (A/C), and 1 runs with no setup while its
-provider-backed path is untested (A/B-untested). index is below that bar without Git,
-and telos is not in this build.
+In the Windows app's installed-app check, 15 of 17 lanes reach the class the check
+expects for them: 8 run their main action with no setup (A), 4 after the setup step the
+card names (B), 1 reads only by design (C), 1 runs with no setup and keeps actuation in
+its own app (A/C), and 1 runs with no setup while its provider-backed path is untested
+(A/B-untested). index is below that bar without Git, and telos is not in this build.
 
 Measured by an installed-app check (CI run 36302181098, commit ba371e6b) that installs
 the release installer per user and then for all users on a GitHub-hosted Windows Server
 runner, starts the engine the way the app does under a throwaway profile, and calls each
 lane through the app's own routes and approvals, once fresh and once after setup. The
-check fails when a lane leaves its expected class. Classes: **A** runs with no setup;
-**B** runs after the setup step the card names; **C** reads only, by design, and the
-main action runs in the tool's own app.
+check fails when a lane leaves its expected class. For a class C lane, the main action
+runs in the tool's own app.
 
 | Lane | Main action | Class the check confirmed | Note |
 | :-- | :-- | :-- | :-- |
@@ -74,10 +69,9 @@ main action runs in the tool's own app.
 | bulletin | read board rooms and the feed | A | needs the network; posting is untested |
 | accountable-surface | perceive a folder with provenance | A/C | actuation runs in Accountable Surface |
 
-The check confirms the class each lane is expected to reach: writing is expected at B
-because diagnose needs a recorded draft, and accountable-surface's actuation limit
-comes from the tool policy, not from a check. "At T2" means the tool runs only on a
-call you approve with the higher tier.
+The check confirms the class each lane is expected to reach; accountable-surface's
+actuation limit comes from the tool policy, not from a check. "At T2" means the tool
+runs only on a call you approve with the higher tier.
 
 ## What changed
 
@@ -109,21 +103,23 @@ call you approve with the higher tier.
 - **License texts ship with the engine.** The engine folder now carries the Python
   license (with OpenSSL's), the texts for code compiled into Python, and each lane's
   license. The installer's third-party notice lists every one.
-- **Lane updates.** relay 0.5.0, gather 1.9.1, forum 1.15.1, mneme 0.5.1 and canon
-  0.4.2, each frozen from its release tag. None adds a tool the app can call, and each
-  tool keeps its tier. In the Windows app, a pip install and a source checkout, relay
-  keeps its saved sessions in `lanes/relay/sessions` and starts with write, exec, shell
-  child variables and agent CLI tiers all off, gather starts with no network, command or
-  credential grant, since the app's gather tools read a local document or corpus, and
-  forum starts with its command variables empty. mneme's forget erases a memory with the
-  rows derived from it and returns a receipt that names any residue it finds. canon's
-  context store redacts every ingest and can purge records from its own command line;
-  the engine starts canon's context server with purge disabled, so it can only plan one.
+- **Lane updates.** relay 0.5.0, gather 1.9.1, forum 1.15.1, crucible 1.3.0, mneme 0.5.1
+  and canon 0.4.2, each frozen from its release tag. Each tool keeps its tier, and
+  crucible 1.3.0 adds one, `crucible.recheck_template`, a T1 read that returns a replay
+  template with its path arguments kept out of the home. In the Windows app, a pip
+  install and a source checkout, relay keeps its saved sessions in `lanes/relay/sessions`
+  and starts with write, exec, shell child variables and agent CLI tiers all off, gather
+  starts with no network, command or credential grant and forum with its command
+  variables empty. mneme's forget erases a memory with the rows derived from it and
+  returns a receipt that names any residue it finds. canon's context store redacts every
+  ingest and can purge records from its own command line; the engine starts canon's
+  context server with purge disabled, so it can only plan one.
 - **Gate decisions stay with your approval.** forum 1.15 runs `gate_approve`, `gate_edit`
   and `gate_reject` only when started with `--allow-gate-decisions`. The engine adds it
   only to the launch of one call you approve at T2 for one of them, so your approval
   decides each gate. The forum card lists what an ordinary launch lists, which leaves
-  the three out. A lane call at T2 reaches them.
+  the three out. The app has no control for them in this release; a lane call to the
+  engine at T2 runs them.
 - **relay starts from pip and source installs again.** With relay 0.3.0 or later, the
   engine's pip and source launch for relay exited at start. It now starts relay through its own
   command line. The Windows app was not affected.
@@ -150,8 +146,7 @@ call you approve with the higher tier.
 
 ## Your traces
 
-These commands come with the engine from pip. The Windows installer adds no `flywheel`
-command and the app no traces screen yet; the capture hooks need a Python with Flywheel.
+These commands come with the engine from pip; the Windows app has no traces screen yet.
 
 - `flywheel traces status` lists every store that holds data derived from your traces:
   where it is, how it is protected and kept, and whether it can be exported and deleted.
@@ -185,24 +180,27 @@ command and the app no traces screen yet; the capture hooks need a Python with F
 - forum 1.15.1 fixes GHSA-36gv-h885-fmjf (approvals not tied to a raised gate, executors
   given the working folder and the whole environment, an open local daemon) and
   GHSA-h6qh-49hv-4xcg (1.15.0's folder guard missed an alias, a repointed link and a
-  quoted PATH entry). These three advisories also cover gather 1.8.2, relay 0.2.5 and
-  forum 1.14.0, which 1.0.4 pins. The 1.0.4 known-issues page says where they run.
+  quoted PATH entry). Every advisory above except GHSA-h6qh-49hv-4xcg also covers the
+  gather 1.8.2, relay 0.2.5 or forum 1.14.0 that 1.0.4 pins. The 1.0.4 known-issues
+  page says where they run.
+- crucible 1.3.0 fixes GHSA-49qx-cj4f-wfqv (a measurement file could widen the tolerance
+  that decides MATCH, and status and doctor answered MATCH without measuring anything).
+  It also covers crucible 1.2.0, which 1.0.4 pins (see the 1.0.4 known-issues page).
 - mneme 0.5.1 fixes GHSA-j2pw-g7f4-9ppp (forget could keep erased text in its reason,
   erase another user's turn, and let the receipt confirm a guess of the erased text).
 - canon 0.4.2 fixes GHSA-48rq-xjfx-6j4f (the shared context store kept secrets from an
   MCP ingest, returned the start of a secret in query excerpts, and put transcript
   paths into the next prompt). The same advisory covers canon 0.2.0, which 1.0.4
   shipped; the 1.0.4 known-issues page says what to do there.
-- A pip or npm lane older than its pin no longer starts, so an older package cannot skip
-  these fixes. `flywheel install` and the install route ask for the pinned version.
 
 ## Security changes in the engine
 
-- A path argument that names a Windows device path (`\\?\`, `\??\`) or a network
-  share is refused before the lane starts, and so is such a value inside gather.run's
-  inline config. A folder is compared by identity, so no spelling of the Flywheel home
-  or the run root reaches a lane's read. The Node and local-model folder settings refuse
-  network paths and mapped network drives too.
+- A path argument that names a Windows device path (`\\?\`, `\??\`), a reserved device
+  name such as `CON.md` or a network share is refused before the lane starts, and so is a
+  device path or share inside gather.run's inline config. A folder is compared by
+  identity, so no spelling of the Flywheel home or the run root reaches a lane's read.
+  The Node and local-model folder settings refuse network paths and mapped network
+  drives too.
 - A T2 call keeps the keys granted to its lane only when its tool spends a model call.
   A key you bind to the call still joins it. Plugins and the forum and relay screens run
   without granted keys, and those screens refuse a tool above T1.
@@ -210,7 +208,6 @@ command and the app no traces screen yet; the capture hooks need a Python with F
   cannot reset what an approved `learn_tutor_record` wrote. An id may not be a Windows
   device name such as `CON` or `NUL`.
 - Context capture and preflight refuse a flywheel-canon older than its pin.
-- Installing a lane through the engine's install route now takes an approval.
 
 ## Breaking changes
 
@@ -221,7 +218,8 @@ command and the app no traces screen yet; the capture hooks need a Python with F
   `local_agent_run` and `perceive`. 1.0.4 required T2 for every tool on those lanes.
   Their write, exec and actuation paths stay at T2 or off.
 - A pip or npm lane older than its pin reports `installed_version_below_pin` and does
-  not start. Run `flywheel install` for that lane to get the pinned version.
+  not start, so an older package cannot skip the lane security fixes above. Run
+  `flywheel install` for that lane; it and the install route ask for the pinned version.
 - A source checkout now starts each lane in `lanes/<lane>` with the same forced grants
   as a pip install. An `env_allow` of `GATHER_ALLOW_NETWORK` or `RELAY_ALLOW_EXEC` no
   longer reaches the lane there either.
@@ -241,6 +239,8 @@ command and the app no traces screen yet; the capture hooks need a Python with F
   line and is unchanged.
 - forum's `gate_approve`, `gate_edit` and `gate_reject` run only on a call you approve at
   T2, which starts forum with its decision grant for that call.
+- crucible 1.3.0's status and doctor answer `OK` (1.2.0: `MATCH`). Replay packs need their
+  assessment binding, and a measurement off its claim's sealed tolerance is UNVERIFIABLE.
 - mneme 0.5.x forget takes two calls: the first returns a plan and deletes nothing,
   the second carries the plan's hash and erases. Each call needs your approval at T2.
   A writable open migrates the lane's memory database to schema 5. The 0.5.1 receipt
@@ -267,8 +267,7 @@ on your machine; the content of each request goes to the hosted provider you rou
 
 ## Limits
 
-- index maps a repository's history only when Git for Windows is installed. Without Git,
-  map does not name the Git step. Its row in the table above says what it shows instead.
+- index maps a repository's history only with Git for Windows; see its row in the table.
 - telos is not in this build while its release contents are reviewed.
 - The Windows app bundles index 2.13.0 plus one later commit (a bounded context-envelope
   output), which no index release contains; a pip install gets PyPI 2.13.0.
@@ -283,10 +282,11 @@ on your machine; the content of each request goes to the hosted provider you rou
 - Desktop chat history stays plaintext. Windows Hello presence and Codex capture were not
   exercised on real hardware or a real Codex install.
 - The lane check ran on a GitHub-hosted Windows Server runner with only the Windows
-  system folder on PATH and an administrator account; a consumer Windows 11 machine
-  remains untested. Its stub model server shows a model lane reached a model, not answer
-  quality. It used no provider key, posted nothing and actuated nothing, ran one fixture
-  assertion per main tool, and called the routes the app calls without driving screens.
+  system folder on PATH, an administrator account, the network reachable and no host
+  model server; a consumer Windows 11 machine and offline use remain untested. Its stub
+  model server shows a model lane reached a model and the engine's guards held, not
+  answer quality. It used no provider key, posted nothing and actuated nothing, and ran
+  one fixture assertion per main tool through the app's routes, without driving screens.
 
 ## Upgrade
 
