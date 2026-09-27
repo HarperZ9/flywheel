@@ -7,10 +7,12 @@ lacks a grant (GRANT_REQUIRED). The lane call route passes no tool text on
 shape: LANE_TOOL_ERROR with ``argument_refused`` or ``lane_grant_required``,
 whichever check caught it. Any other lane error keeps the generic answer.
 
-The last test starts the real gather 1.9.1 from its tag's source, where a
-checkout is present (FLYWHEEL_LANE_CHECKOUT_ROOT, default C:/dev): a reserved
-device name passes the engine's guard (it is neither a UNC nor a device
-namespace spelling) and gather refuses it.
+The last tests start the real gather 1.9.1 from its tag's source, where a
+checkout is present (FLYWHEEL_LANE_CHECKOUT_ROOT, default C:/dev). The engine
+refuses a reserved device name in a path argument itself, before the lane
+starts (tests/test_lane_reserved_device_names.py). Inside gather.run's inline
+config it leaves one to gather, since a config also holds text that is not a
+path, and gather refuses it.
 """
 from __future__ import annotations
 
@@ -95,8 +97,9 @@ def _fake_lane(monkeypatch, result: dict) -> None:
 
 
 def test_the_call_route_passes_no_lane_text_with_a_refusal(monkeypatch):
+    # A path the engine's own guard passes, so the refusal is the lane's.
     _fake_lane(monkeypatch, _refused("NON_LOCAL_PATH", detail="secret-looking lane text"))
-    got = call_lane_tool("gather", "gather.docs", {"path": "C:/docs/CON.md"})
+    got = call_lane_tool("gather", "gather.docs", {"path": "C:/docs/a.md"})
     assert got["reason"] == "argument_refused"
     assert "secret-looking" not in json.dumps(got)
 
@@ -125,10 +128,9 @@ def _gather_source(tmp_path: Path) -> Path:
     return tmp_path / "gather" / "src"
 
 
-@pytest.mark.timeout(180)
-def test_gather_1_9_1_refuses_a_device_name_the_engine_guard_passes(monkeypatch, tmp_path):
+def _gather_launch(monkeypatch, tmp_path: Path) -> list:
+    """Point the engine at the real gather 1.9.1; returns the list of launches."""
     import harness.lanes as lanes
-    from harness.lane_tier_gate import argument_refusal
     src = _gather_source(tmp_path)
     work = tmp_path / "lane"
     work.mkdir()
@@ -137,9 +139,32 @@ def test_gather_1_9_1_refuses_a_device_name_the_engine_guard_passes(monkeypatch,
     launch = LaunchSpec((sys.executable, "-m", "gather.cli", "mcp"), cwd=str(work),
                         env_overrides=tuple(env.items()), inherit_env=False)
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path / "home"))
-    monkeypatch.setattr(lanes, "resolve_mcp_launch", lambda name, *a, **k: launch)
-    path = r"C:\docs\CON.md"
-    assert argument_refusal("gather", "gather.docs", {"path": path}) is None
-    got = call_lane_tool("gather", "gather.docs", {"path": path}, timeout=60)
+    launched: list = []
+    monkeypatch.setattr(lanes, "resolve_mcp_launch",
+                        lambda name, *a, **k: launched.append(name) or launch)
+    return launched
+
+
+@pytest.mark.timeout(180)
+def test_gather_1_9_1_refuses_a_device_name_the_engine_guard_leaves_to_it(monkeypatch, tmp_path):
+    from harness.lane_tier_gate import argument_refusal
+    launched = _gather_launch(monkeypatch, tmp_path)
+    config = {"jobs": [{"source": "docs", "target": r"C:\docs\CON.md"}]}
+    assert argument_refusal("gather", "gather.run", {"config": config}) is None
+    got = call_lane_tool("gather", "gather.run", {"config": config}, governance_tier="T2",
+                         timeout=60)
+    assert launched == ["gather"]
     assert (got.get("code"), got.get("reason")) == ("LANE_TOOL_ERROR", "argument_refused")
     assert got["error"] == "the lane refused a network or device path"
+
+
+@pytest.mark.timeout(180)
+def test_the_engine_refuses_a_device_name_path_before_gather_starts(monkeypatch, tmp_path):
+    from harness.lane_tier_gate import argument_refusal
+    launched = _gather_launch(monkeypatch, tmp_path)
+    path = r"C:\docs\CON.md"
+    assert argument_refusal("gather", "gather.docs", {"path": path})["reason"] ==         "argument_refused"
+    got = call_lane_tool("gather", "gather.docs", {"path": path}, timeout=60)
+    assert (got.get("code"), got.get("reason")) == ("LANE_TOOL_ERROR", "argument_refused")
+    assert got["error"] == "the engine refused an argument of this lane tool"
+    assert launched == []

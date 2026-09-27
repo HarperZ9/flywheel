@@ -81,18 +81,20 @@ def _plain_id(value: object) -> bool:
             and value.split(".", 1)[0].upper() not in WINDOWS_DEVICE_STEMS)
 
 
-def _reaches_home(lane: str, value: object, environ: Mapping[str, str]) -> bool:
+def _reaches_home(lane: str, value: object, environ: Mapping[str, str], *,
+                  device_names: bool = True) -> bool:
     """True when a path argument resolves inside Flywheel's own state (the home
     or the run root, flywheel_state_roots) outside the lane's own folder, or is
-    a Windows device or UNC spelling (path_identity). A relative path resolves
-    from the lane folder, the child's working directory in every install mode
-    (lane_workdir). A URL is not a local path."""
+    a Windows device or UNC spelling, or (``device_names``) names a reserved
+    Windows device such as ``C:\\docs\\CON.md`` (path_identity). A relative path
+    resolves from the lane folder, the child's working directory in every
+    install mode (lane_workdir). A URL is not a local path."""
     from .flywheel_state_roots import state_roots
     from .lane_workdir import flywheel_home
-    from .path_identity import device_or_unc, inside
+    from .path_identity import device_or_unc, inside, reserved_device_name
     if not isinstance(value, str) or not value.strip() or "://" in value:
         return False
-    if device_or_unc(value):
+    if device_or_unc(value) or (device_names and reserved_device_name(value)):
         return True
     own = flywheel_home(environ) / "lanes" / lane
     try:
@@ -135,8 +137,12 @@ def _tree_strings(value: object) -> list[str] | None:
 
 
 def _tree_reaches_home(lane: str, value: object, environ: Mapping[str, str]) -> bool:
+    """A tree also holds text that is not a path, such as a query that reads
+    "aux", so a reserved device name there is left to the lane: gather 1.9.1
+    refuses one in any path it opens (NON_LOCAL_PATH, argument_refused)."""
     strings = _tree_strings(value)
-    return strings is None or any(_reaches_home(lane, text, environ) for text in strings)
+    return strings is None or any(_reaches_home(lane, text, environ, device_names=False)
+                                  for text in strings)
 
 
 def argument_refusal(lane: str, tool: str, args: Mapping[str, Any],

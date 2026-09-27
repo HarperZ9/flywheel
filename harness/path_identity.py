@@ -17,13 +17,27 @@ network grant. Two rules close both:
 - ``inside``: containment is decided by identity as well as by string. The
   target's existing ancestors are compared with ``os.path.samefile``, so a
   junction, a hard-linked folder or another spelling of the same folder counts.
+- ``reserved_device_name``: Windows opens a device, not a file, for a path
+  component whose base name is ``CON``, ``PRN``, ``AUX``, ``NUL``, ``CONIN$``,
+  ``CONOUT$``, ``COM1``-``COM9`` or ``LPT1``-``LPT9`` (and the superscript 1, 2
+  and 3 forms), in any folder and with any extension: ``C:\\docs\\CON.md`` is
+  the console. A read tool pointed at a serial or console device can block
+  until its timeout. The rule mirrors gather 1.9.1's own ``localpath._reserved``.
 """
 from __future__ import annotations
 
+import ntpath
 import os
+import re
 
 _WINDOWS = os.name == "nt"
 _SEPARATORS = ("\\", "/")
+_SPLIT = re.compile(r"[\\/]+")
+_DRIVE = re.compile(r"^[A-Za-z]:")
+# COM0 and LPT0 stay ordinary file names, so they are not refused.
+_RESERVED = frozenset(
+    {"CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$"}
+    | {f"{port}{n}" for port in ("COM", "LPT") for n in "123456789\u00b9\u00b2\u00b3"})
 
 
 def device_or_unc(value: str, *, windows: bool | None = None) -> bool:
@@ -35,6 +49,22 @@ def device_or_unc(value: str, *, windows: bool | None = None) -> bool:
         return True
     return len(text) >= 4 and text[0] in _SEPARATORS and text[1:3] == "??" \
         and text[3] in _SEPARATORS
+
+
+def reserved_device_name(value: str, *, windows: bool | None = None) -> bool:
+    """True when a component of a Windows path names a reserved device.
+
+    The base name before any dot or colon, trimmed of spaces, is compared:
+    ``CON``, ``nul.txt``, ``AUX . .``, ``COM1:`` all match, ``COM0`` and
+    ``CONTRIBUTING.md`` do not. On Windows every value is read this way;
+    elsewhere only Windows-style text (a backslash or a drive prefix) is, so a
+    POSIX file named ``con.md`` stays a file."""
+    text = value.strip()
+    if not ((_WINDOWS if windows is None else windows) or "\\" in text or _DRIVE.match(text)):
+        return False
+    tail = ntpath.splitdrive(text)[1]
+    return any(part.split(".", 1)[0].split(":", 1)[0].strip(" ").upper() in _RESERVED
+               for part in _SPLIT.split(tail) if part)
 
 
 _DRIVE_REMOTE = 4                 # GetDriveTypeW: a drive letter mapped to a share

@@ -195,9 +195,11 @@ call you approve with the higher tier.
 
 - A path argument that names a Windows device path (`\\?\`, `\??\`) or a network
   share is refused before the lane starts, and so is such a value inside gather.run's
-  inline config. A folder is compared by identity, so no spelling of the Flywheel home
-  or the run root reaches a lane's read. The Node and local-model folder settings refuse
-  network paths and mapped network drives too.
+  inline config. So is a path argument with a reserved device name such as `CON.md` or
+  `COM1` in it; gather refuses one inside a config itself. A folder is compared by
+  identity, so no spelling of the Flywheel home or the run root reaches a lane's read.
+  The Node and local-model folder settings refuse network paths and mapped network
+  drives too.
 - A T2 call keeps the keys granted to its lane only when its tool spends a model call.
   A key you bind to the call still joins it. Plugins and the forum and relay screens run
   without granted keys, and those screens refuse a tool above T1.
