@@ -32,6 +32,9 @@ def _summary(plan: dict) -> list[str]:
     if sweep:
         lines.append(f"  sweep risk: {sweep['at_risk']} transcripts within 7 days of Claude "
                      f"Code's {sweep['cleanup_period_days']}-day cleanup ({sweep['source']})")
+    if plan.get("lane_spawned"):
+        lines.append(f"  {plan['lane_spawned']} sessions a Flywheel lane started are not "
+                     "imported; the client's own store still holds them")
     for row in plan["refused"]:
         lines.append(f"  refused {escape(row['rel'])}: {row['reason']}")
     for row in plan["not_imported"]:
