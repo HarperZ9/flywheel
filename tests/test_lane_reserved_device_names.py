@@ -77,9 +77,14 @@ def test_a_posix_file_named_like_a_device_passes_off_windows(environ):
 def test_a_tree_argument_keeps_text_that_reads_like_a_device(environ):
     """gather.run's inline config also holds text that is not a path, such as a
     query; a reserved name there is left to gather, which refuses one in any
-    path it opens. A UNC path in the tree is still refused by the engine."""
+    path it opens. The tree check itself still holds: a path into the Flywheel
+    home is refused everywhere, and a UNC path on Windows."""
     config = {"sources": [{"kind": "arxiv", "query": "aux"}]}
     assert argument_refusal("gather", "gather.run", {"config": config}, environ) is None
-    unc = {"sources": [{"kind": "docs", "path": BS + BS + "srv" + BS + "share"}]}
-    refused = argument_refusal("gather", "gather.run", {"config": unc}, environ)
+    home = {"sources": [{"kind": "docs", "path": environ["FLYWHEEL_HOME"] + "/keys"}]}
+    refused = argument_refusal("gather", "gather.run", {"config": home}, environ)
     assert refused is not None and refused["reason"] == "argument_refused"
+    if os.name == "nt":
+        unc = {"sources": [{"kind": "docs", "path": BS + BS + "srv" + BS + "share"}]}
+        refused = argument_refusal("gather", "gather.run", {"config": unc}, environ)
+        assert refused is not None and refused["reason"] == "argument_refused"
