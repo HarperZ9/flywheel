@@ -1,13 +1,17 @@
 """SP-14, N-29: the checked SQLite scrub. An open reader keeps the WAL, so the
 scrub ends DELETE_PENDING with DB_BUSY instead of claiming success; the second
-checkpoint empties the WAL. The VACUUM temp-file check, watched while VACUUM
-runs, is in test_trace_sqlite_scrub_tempfile.py."""
+checkpoint empties the WAL; the pages a pending scrub freed hold no deleted
+text whatever SQLite's build default for secure_delete. The VACUUM temp-file
+check, watched while VACUUM runs, is in test_trace_sqlite_scrub_tempfile.py."""
 import os
 import sqlite3
 
 import pytest
 
+from harness import trace_sqlite_scrub
+from harness.trace_residual_scan import Needles, scan_paths
 from harness.trace_sqlite_scrub import scrub
+from trace_enc_fakes import long_canary
 
 
 def _db(path, rows=50):
@@ -74,3 +78,43 @@ def test_a_rollback_journal_database_is_scrubbed_too(tmp_path):
     result = scrub(db, lambda c: c.execute("DELETE FROM t"))
     assert result["state"] == "SCRUBBED" and result["checkpoint"] is None
     assert not os.path.exists(str(db) + "-journal")
+
+
+def test_a_pending_scrub_leaves_no_text_in_the_pages_it_freed(tmp_path, monkeypatch):
+    """A scrub that stops DB_BUSY never reaches VACUUM, so secure_delete is
+    what keeps the deleted text out of the pages the DELETE freed once a later
+    checkpoint copies them into the database. secure_delete is a build-time
+    default, ON in the Debian and Ubuntu SQLite and OFF in python.org's
+    Windows build; the scrub's connection starts with it OFF here on every
+    platform, so the scrub has to set it itself."""
+    canary = long_canary(seed=23)
+    db = tmp_path / "pending.db"
+    con = sqlite3.connect(db)
+    con.execute("PRAGMA journal_mode=WAL")
+    con.execute("CREATE TABLE t(id INTEGER PRIMARY KEY, body TEXT)")
+    con.executemany("INSERT INTO t(body) VALUES (?)", [(canary,), ("kept row",)])
+    con.commit()
+    con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    con.close()
+    reader = sqlite3.connect(db)
+    reader.execute("BEGIN")
+    reader.execute("SELECT count(*) FROM t").fetchone()
+    real = sqlite3.connect
+
+    def starts_off(*args, **kwargs):
+        opened = real(*args, **kwargs)
+        opened.execute("PRAGMA secure_delete=OFF")
+        return opened
+    monkeypatch.setattr(trace_sqlite_scrub.sqlite3, "connect", starts_off)
+    try:
+        result = scrub(db, lambda c: c.execute("DELETE FROM t WHERE id = 1"), retry_s=0.3)
+    finally:
+        monkeypatch.undo()
+        reader.close()
+    assert result["state"] == "DELETE_PENDING" and result["reason"] == "DB_BUSY"
+    con = sqlite3.connect(db)
+    assert con.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone() == (0, 0, 0)
+    assert con.execute("SELECT body FROM t").fetchall() == [("kept row",)]
+    con.close()
+    paths = [db, *(db.with_name(db.name + s) for s in ("-wal", "-shm", "-journal"))]
+    assert scan_paths(paths, Needles.build([canary]))["total"] == 0

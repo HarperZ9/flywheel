@@ -10,7 +10,7 @@ import pytest
 from harness import store
 from harness.store_tombstone import forget_entities
 from harness.trace_residual_scan import Needles, scan_paths
-from trace_enc_fakes import long_canary
+from trace_enc_fakes import long_canary, plain_delete
 
 CANARY = long_canary(seed=31, size=12 * 1024)
 
@@ -51,12 +51,10 @@ def test_the_scrub_removes_the_text_from_every_database_file(home):
 
 
 def test_control_without_the_scrub_the_text_stays_in_a_free_page(home):
+    """The DELETE runs with secure_delete and auto_vacuum set off, since
+    either one would clear the freed page the scan has to find."""
     eid = _v1_receipt(home)
-    con = sqlite3.connect(home / "store.db")
-    con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-    con.execute("DELETE FROM entities WHERE eid = ?", (eid,))
-    con.commit()
-    con.close()
+    plain_delete(home / "store.db", "DELETE FROM entities WHERE eid = ?", (eid,))
     assert scan_paths(_db_files(home), Needles.build([CANARY]))["total"] > 0
 
 

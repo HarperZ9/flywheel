@@ -3,7 +3,12 @@
 
 1. `busy_timeout=5000`, `secure_delete=ON`, `temp_store=MEMORY`. With the
    default temp store, VACUUM wrote an `etilqs_*` transient database into the
-   temporary directory, outside custody (experiment X10).
+   temporary directory, outside custody (experiment X10). secure_delete
+   zeroes the pages the DELETE frees, so a scrub that stops DELETE_PENDING
+   before VACUUM still keeps the deleted text out of them once a later
+   checkpoint copies them into the database. Its default is chosen when
+   SQLite is built (ON in Debian and Ubuntu, OFF in python.org's Windows
+   build), so the scrub sets it on its own connection.
 2. `BEGIN IMMEDIATE`; the caller deletes rows and appends its audit rows;
    commit, or roll back and re-raise.
 3. For WAL databases, `wal_checkpoint(TRUNCATE)` must return (0, 0, 0) and

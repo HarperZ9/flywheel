@@ -1,4 +1,4 @@
-"""Test-only encryption providers and a fixture helper.
+"""Test-only encryption providers and fixture helpers.
 
 `StreamTestProvider` is an HMAC-SHA256 keystream with an HMAC tag, standard
 library only, so the format, keystore, prefix and tamper logic run on every
@@ -13,6 +13,7 @@ import hashlib
 import hmac
 import os
 import random
+import sqlite3
 import string
 
 from harness import trace_enc
@@ -88,3 +89,24 @@ def long_canary(seed: int = 7, size: int = 10 * 1024) -> str:
 def shingles(text: str, width: int = 16, step: int = 997) -> list[bytes]:
     raw = text.encode("utf-8")
     return [raw[i:i + width] for i in range(0, len(raw) - width, step)]
+
+
+def plain_delete(db, sql: str, params=()) -> None:
+    """Run one DELETE with nothing set to clear the pages it frees, the
+    precondition of every control that shows the residue a plain delete
+    leaves. SQLite's secure_delete, which zeroes freed pages, is a build-time
+    default: ON in the Debian and Ubuntu builds, OFF in python.org's Windows
+    build. auto_vacuum, which moves freed pages to the end of the file and cuts
+    them off, is one too. So this sets both off on the database and the
+    connection instead of trusting the platform, and checks that they took."""
+    con = sqlite3.connect(db)
+    try:
+        con.execute("PRAGMA auto_vacuum=NONE")
+        con.execute("VACUUM")
+        con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        assert con.execute("PRAGMA auto_vacuum").fetchone() == (0,)
+        assert con.execute("PRAGMA secure_delete=OFF").fetchone() == (0,)
+        con.execute(sql, params)
+        con.commit()
+    finally:
+        con.close()
