@@ -4,12 +4,13 @@ Status: decided under O-4 (the agent decided under operator delegation, 2026-09-
 of record is `POLICY-DECISION.md` in the lanes mission folder; this file renders the table it
 adopted. Branch `feat/lanes-operational`.
 
-This review covers every tool of all 17 lanes: 234 tools. The engine admits 141 of them at T1 on
+This review covers every tool of all 17 lanes: 235 tools. The engine admits 142 of them at T1 on
 an ordinary lane call. 49 tools need a granted T2 call. 44 tools are out of this build with a
 reason slug. The decision counted 133, 45 and 55 before the articulate 0.5.0 pin moved judge,
 fix and polish from out of the build to T2. Long-lived lane sessions (WP10) then brought the
 five index router-job tools and relay's run status and result in at T1, and relay
-`local_agent_start` in at T2. The crucible 1.3.0 pin added `crucible.recheck_template` at T1.
+`local_agent_start` in at T2. The crucible 1.3.0 pin added `crucible.recheck_template` at T1,
+and the index 2.14.0 pin added `index.route` at T1.
 The drop from the first draft (172, 45, 16) is telos
 (all 38 of its in-build tools held out under the O-8 hold), `writing.diagnose` (T1 to T2) and
 `accountable-surface.actuate` (T2 to out of the build). The 1.0.x rows admitted two tools per
@@ -122,6 +123,24 @@ reaches T2, since the model picks each inner call and its arguments.
   from each tag's source, the lane smoke fixture passes at both tags, the advisory's
   widened-tolerance case reads MATCH at 1.2.0 and UNVERIFIABLE at 1.3.0, no write leaves
   the lane folder, and a `dir` inside the Flywheel home answers `argument_refused`.
+- **index 2.14.0, 2026-09-27.** 2.14.0 is the first release that holds the bounded
+  context-envelope commit the Windows app bundled past 2.13.0, so the row pins a
+  release tag again, v2.14.0. It adds one tool, `index.route` (`src/index_graph/route.py`,
+  `call_route` and `build_route`). It resolves `root` and each entry of `paths` (an
+  absolute entry as given, a relative one under `root`), keeps each entry that names an
+  existing repository folder inside `root` once and rejects any other with a typed code,
+  builds the graph and a context envelope over the kept ones, and returns an `index.route/v1` receipt with no
+  absolute path. It writes no file of its own; the per-repository graph cache goes to
+  `INDEX_GRAPH_REPO_CACHE_DIR`, which the engine sets inside the lane folder. So it is
+  `read` at T1, with `root` kept out of the home as on the other index tools and
+  `paths` a tree argument: index resolves each entry before it checks the entry is
+  inside `root`, so a network spelling would reach its share first. Through the
+  engine's pip-mode launch of the PyPI 2.14.0 wheel, the lane lists 23 tools, a route
+  over two repositories and four bad entries answers PARTIAL with each rejection
+  typed, the only writes are the graph cache in the lane folder, and a T1 lane call
+  answers MATCH; a `paths` entry spelled as a share or inside the home's state, and a
+  `root` inside the home outside the lane folder, answer `argument_refused` before any
+  child starts.
 - **Measured containment** (C-16). The frozen lane smoke snapshots its throwaway home around each
   lane's fixture and fails a lane that writes outside its folder.
 
@@ -228,9 +247,9 @@ Admitted at launch: 4 of 7 tools. T2 per granted call: 3. Not in this build: 0.
 | `articulate.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `articulate.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 
-### index 2.13.0
+### index 2.14.0
 
-Admitted at launch: 21 of 22 tools. T2 per granted call: 1. Not in this build: 0.
+Admitted at launch: 22 of 23 tools. T2 per granted call: 1. Not in this build: 0.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
@@ -250,6 +269,7 @@ Admitted at launch: 21 of 22 tools. T2 per granted call: 1. Not in this build: 0
 | `index_focus` | T1 |  | read |  | `root` kept out of the home | Returns one repo's dependency neighborhood. |
 | `index_verify` | T1 |  | read |  | `root` kept out of the home | Grounds a structural claim with file:line evidence. |
 | `index_router` | T1 |  | read |  | `root` kept out of the home | Builds a workspace map and returns it; its cache stays in the lane folder (INDEX_MCP_CACHE_DIR). |
+| `index.route` | T1 |  | read |  | `root` kept out of the home, every value in `paths` kept out of the home | Builds a context envelope for the repositories `paths` names under `root` and returns a route receipt; its graph cache stays in the lane folder (INDEX_GRAPH_REPO_CACHE_DIR). |
 | `index_internals` | T1 |  | read |  | `root` kept out of the home | Builds one repo's module graph. |
 | `index.router.job.start` | T1 |  | state_write |  | `root` kept out of the home | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. |
 | `index.router.job.status` | T1 |  | read |  | `job_id` a plain id | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |

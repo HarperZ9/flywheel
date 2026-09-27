@@ -100,7 +100,7 @@ LANES: dict[str, Lane] = {
         "writing-quality + AI-tell detector and editor with content-free audit receipts (stdlib-only MCP server; the FastMCP surface stays under the [mcp] extra)",
         "authoring", source_repo="articulate", py_module="articulate.local_mcp"),
     "index": Lane(
-        "index", "index-graph", "index", ("mcp",), "pip", "2.13.0",
+        "index", "index-graph", "index", ("mcp",), "pip", "2.14.0",
         "workspace map + symbol graph + verified wiki (the catalog lane)",
         "structure", source_repo="public/index", py_module="index_graph",
         env_vars=("INDEX_CACHE_DIR", "INDEX_CACHE_TTL_SECONDS", "INDEX_GRAPH_REPO_CACHE_DIR",

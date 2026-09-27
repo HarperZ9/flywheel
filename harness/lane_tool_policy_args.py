@@ -36,7 +36,7 @@ _INDEX_ROOT = ("index.map", "index.context", "index.context.envelope", "index.se
                "index.invalidate", "index.wiki", "index.symbol-graph",
                "index.symbol-definition", "index.symbol-references",
                "index.symbol-implementations", "index_graph", "index_focus",
-               "index_verify", "index_router", "index_internals",
+               "index_verify", "index_router", "index.route", "index_internals",
                "index.router.job.start")
 
 
@@ -92,6 +92,11 @@ ARG_POLICY: dict[str, dict[str, dict]] = {
 }
 for _action in ("status", "result", "cancel", "resume"):
     ARG_POLICY["index"][f"index.router.job.{_action}"] = {"id_args": ("job_id",)}
+# index 2.14.0: index.route resolves every entry of `paths` (an absolute one as
+# given, a relative one under `root`) before it checks the entry is inside `root`,
+# so a network spelling would reach its share first. Each entry is checked as a
+# path argument is.
+ARG_POLICY["index"]["index.route"]["tree_args"] = ("paths",)
 
 #: Tools that create a lane file named by an id argument and overwrite it
 #: unchecked: lane -> tool -> (id argument, file under the lane folder). The

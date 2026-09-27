@@ -11,6 +11,9 @@ notice said "tag v2.13.0 @ 71c26eabde26", which reads as the tag.
   notice line must name the describe and say no release contains it.
 - A listed row that becomes a tagged release again fails, so the list cannot
   go stale after a repin.
+
+index 2.14.0 contains 71c26eab, and the row now pins the v2.14.0 tag, so no
+row is listed and every row must name its tag.
 """
 from __future__ import annotations
 
@@ -25,9 +28,9 @@ ROWS = [json.loads(line) for line in (ROOT / "packaging" / "python-lane-payloads
 NOTICE = (ROOT / "desktop" / "release" / "THIRD-PARTY-NOTICES.txt").read_text(encoding="utf-8")
 
 #: Rows pinned past their tag, reviewed and disclosed. Cutting a release that
-#: contains the pinned commit and repinning to its tag removes the entry (index:
-#: 2.14.0 contains 71c26eab; repin once PyPI serves it).
-UNRELEASED = {"index": "v2.13.0-1-g71c26ea"}
+#: contains the pinned commit and repinning to its tag removes the entry. Empty
+#: since the index 2.14.0 pin.
+UNRELEASED: dict[str, str] = {}
 
 
 def _line(row: dict) -> str:

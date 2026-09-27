@@ -116,6 +116,10 @@ _INDEX = {
                        timeout_s=60),
     "index_router": _t("read", "Builds a workspace map and returns it; its cache stays "
                        "in the lane folder (INDEX_MCP_CACHE_DIR).", timeout_s=120),
+    "index.route": _t("read", "Builds a context envelope for the repositories `paths` "
+                      "names under `root` and returns a route receipt; its graph "
+                      "cache stays in the lane folder (INDEX_GRAPH_REPO_CACHE_DIR).",
+                      timeout_s=120),
     "index_internals": _t("read", "Builds one repo's module graph.", timeout_s=60),
     "index.router.job.start": _t("state_write", _ROUTER_JOB, timeout_s=30),
     "index.router.job.status": _t("read", _JOB_READ),

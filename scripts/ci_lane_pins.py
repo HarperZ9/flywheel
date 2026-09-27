@@ -8,7 +8,7 @@ registry moved to 2.13.0 while ci.yml stayed on 2.10.0, and once an
 auto-profile package older than its pin stopped launching, every test that
 launches the index lane failed on the runner. This script reads the one copy.
 
-    python scripts/ci_lane_pins.py index      ->  index-graph==2.13.0
+    python scripts/ci_lane_pins.py index      ->  index-graph==2.14.0
 
 Stdlib only, so it runs before pip has installed anything.
 """
