@@ -37,6 +37,7 @@ from scripts.installed_lane_cases import CASES, Ctx  # noqa: E402
 from scripts.installed_lane_client import Gateway, GrantedCalls  # noqa: E402
 from scripts.installed_lane_engine import (  # noqa: E402
     profile_env, start_engine, stop_engine, tree_changes, tree_snapshot)
+from scripts.installed_lane_expectations import judge  # noqa: E402
 from scripts.installed_lane_verdict import (  # noqa: E402
     DOES_NOT_PROVE, lane_verdict, redact, summary)
 from scripts.lane_smoke_fixtures import model_server_answering  # noqa: E402
@@ -144,7 +145,15 @@ def _receipt(ns, host, fresh, setup, stub_counts, changes) -> dict:
     detail, detail_hits = redact(detail, secrets)
     body["guards"]["token_absent_from_receipt"] = hits == 0
     body["summary"] = summary(lanes, body["guards"])
+    body["expected"] = judge(body["lanes"])
     return {"receipt": body, "detail": detail, "detail_redactions": detail_hits}
+
+
+def exit_code(receipt: dict) -> int:
+    """0 only when every guard held and every lane matched its expected row
+    (installed_lane_expectations); BELOW_BAR alone is no longer a green run."""
+    expected = receipt.get("expected") or judge(receipt["lanes"])
+    return 0 if receipt["summary"]["verdict"] != "FAIL" and expected["matches"] else 1
 
 
 def main(argv=None) -> int:
@@ -159,8 +168,9 @@ def main(argv=None) -> int:
                            encoding="utf-8")
     s = out["receipt"]["summary"]
     print(json.dumps({"verdict": s["verdict"], "by_class": s["by_class"],
-                      "below_bar": s["below_bar"], "guards_failed": s["guards_failed"]}))
-    return 0 if s["verdict"] in ("PASS", "BELOW_BAR") else 1
+                      "below_bar": s["below_bar"], "guards_failed": s["guards_failed"],
+                      "departures": out["receipt"]["expected"]["departures"]}))
+    return exit_code(out["receipt"])
 
 
 if __name__ == "__main__":

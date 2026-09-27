@@ -67,7 +67,9 @@ leg repeats the class B checks after Git, the stub model server
 canon block and a writing draft are in place. The receipts
 `installed-lanes-per-user.json` and `installed-lanes-all-users.json` name each
 lane's class or `BELOW_BAR`/`HELD` with the failed checks, and fail the step
-when the install folder changes, the roster moves on its own, or the token
-appears in a receipt. The detail files and throwaway homes stay in the runner's
+when any lane departs from its row in `packaging/installed-lane-expectations.json`
+(in either direction, or a held lane with a failed check), when the install
+folder changes, the roster moves on its own, or the token appears in a receipt.
+A tier refusal check passes only on the governance gate's own 403. The detail files and throwaway homes stay in the runner's
 temp folder. The run proves the installed engine's lane routes on a Windows
 Server runner, not native UI rendering, provider-backed calls or model quality.

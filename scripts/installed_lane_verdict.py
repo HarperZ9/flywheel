@@ -52,6 +52,9 @@ def _code(body: object) -> object:
 
 
 def evaluate_call(check, status: int, body: object, *, stub_delta: int | None = None) -> Outcome:
+    """A 200 check needs its assertion; a 403 (``DENIED``) check needs the
+    governance gate's own refusal; any other refusal check needs its code, so a
+    dead engine or a misspelled tool never passes as a refusal."""
     evidence = {"status": status, "code": _code(body)}
     if stub_delta is not None:
         evidence["stub_generate_requests"] = stub_delta
@@ -59,8 +62,12 @@ def evaluate_call(check, status: int, body: object, *, stub_delta: int | None = 
         ok = status == 200 and (check.assert_ is None or bool(_safe(check.assert_, body)))
         if ok and check.stub_hit:
             ok = bool(stub_delta)
+    elif check.expect_status == 403:
+        denied = isinstance(body, dict) and body.get("governance_denied") is True
+        evidence["governance_denied"] = denied
+        ok = status == 403 and denied
     else:
-        ok = status != 200 and (not check.expect_code or _code(body) == check.expect_code)
+        ok = status != 200 and bool(check.expect_code) and _code(body) == check.expect_code
     return Outcome("pass" if ok else "fail", evidence)
 
 

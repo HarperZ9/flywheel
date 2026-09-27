@@ -24,7 +24,8 @@ from typing import Callable
 from scripts.lane_smoke_fixtures import FIXTURES
 from scripts.stub_model_server import REPLY_TEXT as STUB_REPLY
 
-REFUSED = -1          # any non-200 answer, optionally with ``expect_code``
+REFUSED = -1          # a non-200 answer; a refusal check must name ``expect_code``
+DENIED = 403          # the governance gate's tier refusal: 403 with governance_denied
 Call = tuple[str, dict]
 
 
@@ -160,7 +161,7 @@ CASES: dict[str, LaneCase] = {c.lane: c for c in (
     _read_lane("articulate", basis="PLAN 1a; judge, fix and polish are T2 behind a "
                "signed-in claude CLI (O-14, articulate 0.5.0)", extra=(
         call("fresh_judge_t1_refused", "fresh", "judge", lambda c: {"text": "x"},
-             status=REFUSED),)),
+             status=DENIED),)),
     LaneCase("index", "A/B", "A/B", "PLAN 1a: symbols A, map B (Git)", (
         st("fresh", "limited"), tools("fresh"), fx("fresh", "index"),
         call("fresh_map_needs_git", "fresh", "index.map", _repo, status=REFUSED,
@@ -192,7 +193,7 @@ CASES: dict[str, LaneCase] = {c.lane: c for c in (
         st("fresh", "needs_setup", confound="model_server"), tools("fresh"),
         st("setup", *RUNS), fx("setup", "relay", stub_hit=True),
         call("setup_start_t1_refused", "setup", "local_agent_start",
-             lambda c: dict(_GOAL), status=REFUSED))),
+             lambda c: dict(_GOAL), status=DENIED))),
     _read_lane("plexus"),
     _read_lane("mneme", extra=(
         Check("fresh_state_in_lane_folder", "fresh", "home_path",
@@ -212,5 +213,5 @@ CASES: dict[str, LaneCase] = {c.lane: c for c in (
              "(O-13 default)", (
         st("fresh", *RUNS), tools("fresh"), fx("fresh", "accountable-surface"),
         call("fresh_actuate_refused", "fresh", "accountable-surface.actuate",
-             lambda c: {}, status=REFUSED))),
+             lambda c: {}, status=DENIED))),
 )}
