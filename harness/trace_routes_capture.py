@@ -51,15 +51,28 @@ def effective(handler) -> dict:
     return settings_in_effect(handler.flywheel_home, _owner(handler))
 
 
+def _fold_suppressions(handler) -> None:
+    """Capture-off records from the spool into the ledger and witness (I15)."""
+    from harness.trace_capture_off import record_suppressions
+    try:
+        record_suppressions(handler.flywheel_home, _owner(handler))
+    except Exception:  # the hello still answers; the next one retries, logged
+        import logging
+        logging.getLogger(__name__).exception("capture-off records not folded in")
+
+
 def hello(handler, qs: str):
     from urllib.parse import parse_qs
     if not handler.auth_token:
         return handler._json(error("CAPTURE_UNAVAILABLE", "the gateway has no token"), 503)
     cn = (parse_qs(qs).get("cn") or [""])[0]
+    if not protocol.is_nonce(cn):
+        return handler._json(error("INVALID_REQUEST", "malformed client nonce"), 422)
     host, port = _bound(handler)
     body = STATE.hello(handler.auth_token, cn, host, port)
     if body is None:
-        return handler._json(error("INVALID_REQUEST", "hello refused"), 429)
+        return handler._json(error("HELLO_RATE_LIMITED", "too many hellos this second"), 429)
+    _fold_suppressions(handler)
     from harness.trace_retention_schedule import needs_owner
     waiting = needs_owner(handler.flywheel_home, _owner(handler))
     return handler._json({**body, "effective": {**effective(handler),

@@ -26,12 +26,5 @@ def export_records(home) -> list[dict]:
 
 
 def delete_all(home) -> dict:
-    root = Path(home) / "state" / "keys"
-    removed = 0
-    for path in sorted(root.rglob("*"), reverse=True) if root.exists() else []:
-        if path.is_file() or path.is_symlink():
-            path.unlink()
-            removed += 1
-        elif path.is_dir():
-            path.rmdir()
-    return {"removed": removed}
+    from .trace_meta_adapters import remove_tree
+    return {"removed": remove_tree(Path(home) / "state" / "keys")}

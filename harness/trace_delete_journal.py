@@ -8,7 +8,10 @@ deleted, so a deletion interrupted between apply and verify can still check
 for residue. Both are encrypted under a per-deletion key in the keystore's
 `deletions` shard. Each step is marked done durably after it runs, so a rerun
 resumes at the first step not done. Only a verified deletion writes a
-tombstone; writing it destroys the scan-set key and removes the journal. With
+tombstone. Finishing writes the tombstone (once: a tombstone for the plan
+already in the ledger is reused), removes the scan set and journal and syncs
+the folder, and only then destroys the scan-set key, so a crash at any gap
+leaves either a readable journal or a tombstone that marks the plan done. With
 no OS key store the scan set is not written and verification falls back to
 structural checks, which the tombstone names.
 """
@@ -98,11 +101,48 @@ class DeletionJournal:
 
     def finish(self, fields: dict) -> dict:
         with custody_lock(self.state_root):
-            entry = TombstoneLedger(self.state_root, self.owner_ref).append(**fields)
+            entry = tombstone_for(self.state_root, self.owner_ref, self.plan)
+            if entry is None:
+                entry = TombstoneLedger(self.state_root, self.owner_ref).append(**fields)
+            _remove_files(self)
             self.cipher.keystore.destroy(STORE, [self.plan])
-            for path in (self.scan_path, self.path):
-                path.unlink(missing_ok=True)
         return entry
+
+
+def _remove_files(journal: DeletionJournal) -> None:
+    for path in (journal.scan_path, journal.path):
+        path.unlink(missing_ok=True)
+    if os.name != "nt" and journal.dir.is_dir():
+        descriptor = os.open(journal.dir, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+
+
+def tombstone_for(state_root, owner_ref: str, plan_digest: str) -> dict | None:
+    for entry in TombstoneLedger(state_root, owner_ref).entries():
+        if entry.get("plan_digest") == plan_digest:
+            return entry
+    return None
+
+
+def finished(state_root, owner_ref: str, plan_digest: str) -> dict | None:
+    """A plan whose tombstone is written is done: clear any journal files and
+    scan-set key a crash left, and report it; None when it is not done."""
+    entry = tombstone_for(state_root, owner_ref, plan_digest)
+    if entry is None:
+        return None
+    journal = DeletionJournal(state_root, owner_ref, plan_digest)
+    with custody_lock(journal.state_root):
+        _remove_files(journal)
+        journal.cipher.keystore.destroy(STORE, [plan_digest])
+    return {"state": "DELETED", "tombstone_ref": entry["tombstone_ref"],
+            "checks": entry.get("checks", [])}
+
+
+def resume_or_done(journal: DeletionJournal, rerun) -> dict:
+    return finished(journal.state_root, journal.owner_ref, journal.plan) or rerun()
 
 
 def _tombstone_fields(journal: DeletionJournal, doc: dict, verdict: dict) -> dict:
@@ -118,6 +158,9 @@ def apply_journaled(journal: DeletionJournal, steps, verify, *, scan_set=None,
                     tombstone=None, extra=None) -> dict:
     """Run `steps` (name, callable) under the journal, then `verify(scan_set)`.
     Faults propagate and leave the journal for a rerun to resume."""
+    done = finished(journal.state_root, journal.owner_ref, journal.plan)
+    if done:
+        return done
     if not journal.exists():
         journal.begin([name for name, _ in steps], scan_set, dict(tombstone or {}), extra)
     done = journal.done_steps()

@@ -6,9 +6,9 @@
   and passes the summary on stdin. Whether it works from a non-packaged
   process, surfaces in front, and resists same-integrity input for a known PIN
   is experiment X7, a manual check; no automated test runs the real prompt.
-- `desktop-dialog`: the desktop app shows the summary and approves through
-  the presence route. Same-user UI automation can press its button, so it
-  reduces exposure and does not block a determined agent.
+- `desktop-dialog` is retired: no dialog was built, and approving over the
+  bearer-token route would have let any process holding the token approve.
+  A method file that still names it reads as `none`.
 - `none`: a typed confirmation at the CLI, or nothing over the authenticated
   route. An agent can type too; the records say so.
 """
@@ -50,13 +50,6 @@ class WindowsHelloVerifier:
         return done.returncode == 0 and done.stdout.strip() == b"Verified"
 
 
-class DesktopDialogVerifier:
-    name = "desktop-dialog"
-
-    def ask(self, summary: str) -> bool:
-        return False  # approval arrives through the presence route, not here
-
-
 class NoneVerifier:
     name = "none"
 
@@ -75,6 +68,4 @@ class NoneVerifier:
 def verifier_for(method: str, *, interactive: bool = False):
     if method == "windows-hello":
         return WindowsHelloVerifier()
-    if method == "desktop-dialog":
-        return DesktopDialogVerifier()
     return NoneVerifier(interactive=interactive)

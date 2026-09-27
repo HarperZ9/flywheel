@@ -1,6 +1,7 @@
 """An append-only witness outside Flywheel's files (7.15, G19, I15).
 
-Deletions, exports, retention runs and settings adoptions append one ledger
+Deletions, exports, retention runs, settings adoptions and capture-off
+events (folded in from the spool, trace_capture_off) append one ledger
 entry and also write one event to the Windows Application log, source
 `Flywheel`. The event text holds the operation kind, the ledger sequence, a
 16-hex prefix of the plan or root digest, the presence method, a count and an
@@ -22,7 +23,7 @@ from .trace_custody_ledger import CustodyLedger
 
 _log = logging.getLogger(__name__)
 SOURCE = "Flywheel"
-WITNESSED = ("deletion", "export", "retention_run", "settings_adopted")
+WITNESSED = ("deletion", "export", "retention_run", "settings_adopted", "capture_suppressed")
 _EVENT_IDS = {kind: 1000 + i for i, kind in enumerate(WITNESSED)}
 _FIELD = re.compile(r"(kind|seq|plan|presence|items|owner)=([A-Za-z0-9_.:\-]+)")
 

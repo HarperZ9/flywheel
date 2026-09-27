@@ -39,8 +39,9 @@ class ChatHistoryBanner extends StatelessWidget {
             const HonestNull('Chat history could not be read, so saving is '
                 'paused and the file is not replaced.'),
           if (status.oversizeConversation != null)
-            const HonestNull('This conversation is too large for history. '
-                'The latest turn stays in drafts.'),
+            const HonestNull('A conversation is too large for history (over 1 MiB '
+                'or 4096 JSON nodes). Its last saved copy is kept and its latest turn '
+                'stays in drafts; other conversations still save.'),
           if (status.deleteIncomplete)
             const HonestNull('A delete did not reach every history file. '
                 'The conversation may appear again when history reloads.'),
@@ -163,7 +164,9 @@ Future<void> _showReadOnly(BuildContext context, Conversation conversation,
               onPressed: () async {
                 if (await _confirm(readerContext, 'Delete this conversation?',
                     'It is removed from the archive, the active history and '
-                    'the drafts.')) {
+                    'the drafts. Old bytes in freed disk space, the gateway '
+                    'traces of these turns and the model provider\'s copy are '
+                    'not reached.')) {
                   onDelete();
                   if (readerContext.mounted) Navigator.of(readerContext).pop();
                 }

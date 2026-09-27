@@ -53,13 +53,14 @@ def _confirm_text(args) -> bool:
 def _run(home, owner, args, options) -> int:
     from .trace_export import export, export_digest
     from .trace_presence import adopted_method, confirm
+    from .trace_presence_summary import export_summary
     from .trace_presence_verifiers import verifier_for
     state, digest = home / "state", export_digest(args.out, options)
     verifier = verifier_for(adopted_method(state, owner), interactive=True)
-    ref = confirm(state, owner, "export", digest, f"Export traces to {args.out}",
-                  verifier=verifier)
+    summary = export_summary(args.out, options)
+    ref = confirm(state, owner, "export", digest, summary, verifier=verifier)
     sync_ref = confirm(state, owner, "export_allow_sync_root", digest,
-                       f"Allow the export under a sync folder: {args.out}",
+                       "Allow a destination under a sync folder. " + summary,
                        verifier=verifier) if args.allow_sync_root else None
     report = export(home, owner, args.out, ref, sync_presence_ref=sync_ref, **options)
     if report["state"] != "EXPORTED":
@@ -102,7 +103,7 @@ def verify_command(args) -> int:
 
 def register(sub) -> None:
     parser = sub.add_parser("export", help="write a verifiable plaintext copy of your traces")
-    parser.add_argument("--out", required=True, help="an empty or new folder outside custody")
+    parser.add_argument("--out", required=True, help="a new folder outside custody (it must not exist yet)")
     parser.add_argument("--no-redact", action="store_true",
                         help="keep credentials as stored (they are redacted by default)")
     parser.add_argument("--redact-personal", action="store_true",

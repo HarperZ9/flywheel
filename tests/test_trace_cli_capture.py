@@ -15,7 +15,7 @@ def test_show_then_switch_content_on_with_presence(tmp_path, monkeypatch, capsys
     monkeypatch.setattr("builtins.input", lambda *a: "yes")
     assert trace_cli.main(["capture", "content", "on"]) == 0
     out = capsys.readouterr().out
-    assert "second, encrypted copy" in out and "Adopted (presence: none" in out
+    assert "second copy" in out and "Adopted (presence: none" in out
     trace_cli.main(["capture", "show"])
     assert "Content capture on" in capsys.readouterr().out
 
@@ -46,3 +46,18 @@ def test_the_turn_adapters_export_and_delete_with_keys(tmp_path):
         assert delete_all(tmp_path)["removed"] >= 2
         assert not Keystore(tmp_path / "state", OWNER).present("CT", result["turn_ref"])
     assert not list((tmp_path / "state" / "captured-turns").rglob("*.enc"))
+
+
+def test_the_copy_says_plaintext_when_there_is_no_os_key_store(tmp_path, monkeypatch, capsys):
+    """D5: with no key store content is kept in plaintext; no string says encrypted."""
+    from harness.trace_enc import NoProvider
+    from trace_enc_fakes import using
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    monkeypatch.setattr(trace_witness, "default_sink", trace_witness.MemorySink)
+    monkeypatch.setattr("builtins.input", lambda *a: "yes")
+    with using(NoProvider()):
+        assert trace_cli.main(["capture", "content", "on"]) == 0
+    out = capsys.readouterr().out
+    assert "kept in plaintext (no OS key store" in out
+    assert "encrypted" not in out.replace("kept encrypted", "!")
+    assert "kept encrypted" not in out

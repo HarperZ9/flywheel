@@ -15,12 +15,14 @@ those copies are and which of them you control today.
   for the next step. The provider keeps what its terms allow. Flywheel's
   native agent path to the OpenAI Responses API asks the provider not to
   store the request (`store: false`); what a provider does behind that flag
-  is not something Flywheel can check. With a local model, nothing leaves
-  your machine.
+  is not something Flywheel can check. With a local model, the request
+  content stays on your machine. URL freezing and bench replays, when you
+  turn them on, still reach the network.
 - **Kept by your agent clients on their own:** Claude Code and Codex write
-  their own transcripts of every session to your disk and remove old ones on
-  their own schedule. `flywheel traces status` counts them and marks them as
-  outside Flywheel's custody.
+  their own transcripts of every session to your disk. Claude Code removes
+  old ones after `cleanupPeriodDays`; whether Codex removes old rollouts is
+  not known. `flywheel traces status` counts them and marks them as outside
+  Flywheel's custody.
 
 ## See every store
 
@@ -74,8 +76,12 @@ confirmation. A file edited by hand does nothing until `flywheel traces
 retention adopt`; until then `status` and the next prompt say a change is
 waiting.
 
-The gateway runs an adopted rule at start and every 24 hours. The first run
-after an adoption only plans. A later run hands its plan to the deletion
+The gateway runs an adopted rule at gateway start and every 24 hours after,
+so a rule adopted while the gateway runs takes effect from its next start;
+`retention show` says whether the running gateway has picked the rule up.
+The first run after an adoption that finds something due only plans, and
+that preview is read from the custody ledger, not from a file an agent could
+edit. A later run hands its plan to the deletion
 engine, so the closure, the checks and the tombstone are the same as for
 `flywheel traces delete`. A run that would delete more than
 `max_share_per_run` of a store's items (10 percent by default) stops at its
@@ -84,8 +90,14 @@ one custody ledger entry and one witness event, and a failed run keeps its
 plan pending and shows in `status`.
 
 An item's age is the time Flywheel stored it, read from the file's
-modification time. Restoring custody from a backup resets that time, so
-restored items count as new. Retention covers the three stores above; the
+modification time. Encrypting a legacy trace keeps its times. Restoring
+custody from a backup resets that time, so restored items count as new.
+
+The adopted policy file counts only when it matches the latest adoption in
+the custody ledger. A policy file written straight to disk, without your
+confirmation, reads as `SETTINGS_TAMPERED`: keep runs instead, and `status`
+and the next prompt say so. The same check guards the capture settings and
+the presence method. Retention covers the three stores above; the
 other stores keep until you delete, and their inventory entries say so.
 
 ## The custody ledger
@@ -108,19 +120,22 @@ Mount the Flywheel hook module in Claude Code or Codex
 (`flywheel traces hooks print-mount` prints the lines) and each finished turn
 leaves a receipt paired with its prompt: salted commitments to the answer and
 prompt, not their text, and nothing that confirms a guess of either without
-the salts. `flywheel traces capture content on` also keeps the text,
-encrypted, once you confirm it. A turn
+the salts. `flywheel traces capture content on` also keeps the text once you
+confirm it, encrypted where an OS key store is available and in plaintext
+otherwise, and the confirmation says which. A turn
 that cannot be recorded shows an error in the client, in the same turn, and
 leaves a metadata record that `flywheel traces doctor` lists until you
 acknowledge it. The hook sends nothing until the local gateway has proved it
 knows the gateway token, and it never sends the token itself.
 `FLYWHEEL_CAPTURE=off` stops capture for a session and says so once in the
-client. `docs/WRAPPER-HOOKS.md` has the details and the limits.
+client; the gateway counts those events in the custody ledger and the
+witness the next time a hook reaches it. `docs/WRAPPER-HOOKS.md` has the details and the limits.
 
 ## Import your Claude Code history
 
 Claude Code deletes transcripts older than `cleanupPeriodDays` (30 days by
-default). Copy them into encrypted custody before that:
+default). Copy them into custody (encrypted where an OS key store is
+available) before that:
 
 ```
 flywheel traces import claude-code
@@ -147,7 +162,11 @@ and checks free space. `--apply` imports.
   session was resumed, is stored as a new version linked to the earlier one.
 - The importer skips every source on its exclusion list, including a resumed
   session that extends a listed transcript. Deleting an import adds it to
-  that list.
+  that list, and deleting a captured session or any of its turns adds the
+  whole session. A deleted prefix counts only for the same file or the same
+  session, so a short deleted file never blocks an unrelated one.
+- The file an import reads is checked on the open handle: a folder swapped
+  for a junction between the check and the read is refused (`OUTSIDE_ROOT`).
 
 `flywheel traces import codex` does the same for Codex rollouts under
 `sessions/` and `archived_sessions/`. Compressed `.jsonl.zst` rollouts need a
@@ -172,13 +191,23 @@ also checked with a key-bound digest, so a changed byte is reported as
 tampering. On macOS and Linux, installing the `encryption` extra encrypts with
 AES-256-GCM under a key kept in the system keychain; that keychain path has no
 automated test yet. Without either, traces stay plaintext and
-`flywheel traces status` says `plaintext (no OS key store)`.
+`flywheel traces status` says `plaintext (unavailable: <reason>)`, for
+example `plaintext (unavailable: NO_OS_KEY_STORE)`. A keychain lookup that
+fails or times out never creates a new key, since a new key would orphan
+every shard the old one sealed.
 
 - A trace started before encryption keeps reading, and its new records are
-  encrypted. An encrypted record followed by a plaintext one is refused.
+  encrypted. An encrypted record followed by a plaintext one is refused, and
+  so is a one-file item (a captured turn, a frozen page, a bench task, an
+  import's manifest) whose file was swapped for plaintext.
+- A key shard written in plaintext, because no key store worked when it was
+  written, is resealed the next time it is used with one; until then status
+  says `KEYSTORE_PLAINTEXT` with the count.
 - `flywheel traces encrypt --legacy` encrypts traces written before this
   release, newest file first, so a trace reads at every step. A trace whose
-  run is still writing is skipped. The old plaintext stays in freed disk
+  run is still writing is skipped, and so is one that cannot be read
+  (`UNREADABLE`); the others still convert, and each file keeps its times.
+  The old plaintext stays in freed disk
   space until something overwrites it, and the command says so; only volume
   encryption (BitLocker or Device Encryption) covers that.
 - Once a store holds an encrypted record, a plaintext write to it is refused
@@ -195,8 +224,8 @@ automated test yet. Without either, traces stay plaintext and
 
 What this protects: files copied off the machine without your Windows
 password, and disks read by another account where file permissions do not
-apply. Destroying a trace's key makes its ciphertext unreadable; the command
-that deletes a trace comes with the deletion change. What it does not
+apply. Destroying a trace's key makes its ciphertext unreadable, which is
+what `flywheel traces delete` does first. What it does not
 protect: any program running as you, agents included, can ask Windows to
 decrypt, just as you can. A backup that includes your Windows profile's
 protection keys, plus your password, decrypts everything in it.
@@ -213,20 +242,29 @@ flywheel traces delete --apply --plan-digest <digest>
 The first form only plans. The plan lists everything that goes together:
 an agent trace with its checkpoints, a captured turn with its pending prompt
 and any pages frozen for it, and the key of each. It names the copies
-Flywheel cannot reach (the model provider for an agent run, Claude Code's or
-Codex's own transcript, with the command that removes it there, and your
-backups) and prints a plan digest. `--apply` runs exactly that plan after
-your confirmation; a plan whose items changed since is refused. Each key is
-destroyed first, then the files are removed without following any link,
-then Flywheel checks that files and keys are gone and records a tombstone:
-when, why, which stores and how many items, and no content, digest of
-content, path or session id. A trace whose agent run is still writing is
-left alone and the deletion stays pending.
+Flywheel cannot reach (the model provider for an agent run or a captured
+turn, Claude Code's or Codex's own transcript, with the remedy there, and
+your backups) and prints a plan digest. `--apply` runs exactly that plan
+after your confirmation, and the confirmation shows the item counts per
+store, the session and clients, and says so when the plan is every item you
+hold in a store; a plan whose items changed since is refused. For encrypted
+items each key is destroyed first; then the files are removed without
+following any link, then Flywheel checks that files and keys are gone and
+records a tombstone: when, why, which stores and how many items, and no
+content, digest of content, path or session id. The residue forecast counts
+ciphertext and plaintext files apart, so a plaintext item is never called
+ciphertext. A trace whose agent run is still writing is left alone
+(`ITEM_BUSY`), and a deletion that could not take the custody lock in time
+says `CUSTODY_BUSY`; either way it stays pending until you apply the plan
+again with a fresh confirmation. A crash after the tombstone is written
+leaves nothing stuck: applying the plan again reports it done.
 
 `flywheel traces verify-gone` asks for a phrase without showing it and
-reports how many times it still appears in the files Flywheel controls,
-per file, never the text. Freed disk space, backups and copies outside
-Flywheel are not searched.
+reports how many times it still appears in the plaintext files Flywheel
+controls, per file, never the text. Encrypted custody files are ciphertext,
+so the phrase can never be found in them; they are counted as not searched,
+and a zero count says nothing about them. Freed disk space, backups and
+copies outside Flywheel are not searched.
 
 Imported transcripts are deleted the same way: `--import-ref imp_...` selects
 one item, and `--session` covers the imported files of that session as well
@@ -241,9 +279,10 @@ Plaintext stores are covered too: `--receipt-eid`, `--note-ref` and
 private traces, and a deleted trace also takes its operation's sealed
 results and the CLI profile folder it names. Rows leave store.db through a
 checked scrub (secure delete, an emptied write-ahead log, VACUUM), and an
-audit entry records each removal, so the store's own verification still
-passes. If another program has store.db open, the deletion waits
-(`DB_BUSY`) and finishes on the next run. Plaintext leaves its old bytes in
+audit entry records each removal (and each relation that named it), so the
+store's own verification still passes; only turn receipts can be selected.
+If another program has store.db open, the deletion stops (`DB_BUSY`) and
+stays pending until you apply the plan again. Plaintext leaves its old bytes in
 freed disk space until something overwrites them, and every report says so.
 Receipts written before this release kept content-derived ids and digests in
 the audit log; those rows stay and are counted. Pages frozen by old receipts
@@ -253,7 +292,7 @@ the stores no deletion covers yet.
 ## Export
 
 ```
-flywheel traces export --out <empty folder>
+flywheel traces export --out <new folder>
 python <folder>/verify.py <folder>
 flywheel traces verify-export <folder or zip>
 ```
@@ -268,38 +307,54 @@ the manifest root re-derives and every gateway trace chain re-derives record
 by record; `DRIFT` naming each changed file; or `UNVERIFIABLE` with the
 reason, such as a missing file. It refuses unsafe paths in a manifest
 (absolute, `..`, drive letters, UNC and device prefixes, alternate data
-streams, reserved device names) before opening anything, and reads a zip in
-memory under caps on member count, size and compression ratio without
-extracting it.
+streams, control characters, reserved device names) before opening
+anything, refuses a folder that holds a link or junction instead of
+following it, prints every reason with control characters escaped, and reads
+a zip in memory under caps on member count, size and compression ratio
+without extracting it. Anyone can rewrite the files and the manifest
+together, so `MATCH` shows only that the files match this manifest; to tie a
+copy to your custody, compare its `root_sha256` with the export entry in
+your custody ledger.
 
 Credentials are redacted by default, and `--no-redact` keeps them as stored.
 `--redact-personal` also redacts personal data. In a redacted export, paths
-under your home folder read `~`, and placeholder tags come from a key made
+under your home folder read `~` (Claude Code's dash-named project folders
+too), and placeholder tags come from a key made
 for that export alone, so two exports cannot be linked through their tags
 (`--stable-tags` makes them match). Gateway traces are exported unredacted,
 because redaction would break their chain, and the manifest lists each one
 that holds a catalog hit with its counts. An imported file that is not a
 JSON-lines transcript is left out of a redacted export and listed as an
-omission.
+omission. A compressed Codex rollout is decompressed under the zstd bounds
+and redacted line by line; without a zstd module it is listed as an
+omission, and `--no-redact` exports its exact `.jsonl.zst` bytes.
 
-The destination must be new or empty and outside your Flywheel home. A
+The destination must not exist yet (an empty folder is refused too) and
+must lie outside your Flywheel home, with no link or junction anywhere on
+its path. `--zip` writes one `.zip` file instead of a folder; the zip is
+created with the same owner-only ACL and not-indexed attribute before it is
+filled, and it is kept only when its verifier returns `MATCH`. A
 folder under OneDrive, Dropbox, Google Drive or iCloud Drive is refused
 unless you pass `--allow-sync-root` and confirm it. The folder gets an
 owner-only ACL and is excluded from search indexing before anything is
 written, and it keeps an `.incomplete` name until its own verifier returns
 `MATCH`. `export` shows what would leave custody and asks you to type yes,
-then asks your presence for that exact destination and those options. The
+then asks your presence for that exact destination and those options; the
+prompt names the resolved destination and whether credentials are redacted. The
 gateway's export route never takes a path: `--grant` writes a one-use grant
 naming the destination, and the route runs it after your presence. Each
 export writes one ledger entry and one witness event with the root digest
 and a keyed digest of the destination; the ledger is the only custody file
 an export changes. Once written, an export is outside custody, and deleting
-a trace later does not reach it.
+a trace later does not reach it. An export that stops part way leaves its
+`.incomplete` folder, and the ledger records that a partial plaintext copy
+exists.
 
 ## Bench tasks
 
-Each gateway trace of a run with a test command becomes one bench task, kept
-encrypted beside your other traces: the goal as the run saw it, the test
+When the bench route is called, each gateway trace of a run with a test
+command becomes one bench task, kept beside your other traces (encrypted
+where an OS key store is available): the goal as the run saw it, the test
 command, the verdict the run recorded, the endpoint and model, and the git
 identity of the workspace. That identity is recorded at run start when the
 workspace is a git work tree: the commit, a digest of the tracked files and
@@ -320,7 +375,8 @@ the task unreproducible. The goal runs through the agent loop in the clone,
 then the test command runs in the low-integrity sandbox with a short
 allowlisted environment (`PATH`, `SYSTEMROOT`, `COMSPEC`, `PATHEXT`, and
 `HOME`, `TEMP` and `TMP` inside the run's scratch folder), so provider keys
-in the gateway's environment never reach code from an old commit. Each
+in the gateway's environment never reach code from an old commit. On a host
+with no sandbox the test command is not run and the verdict says so. Each
 verdict is kept encrypted with a link to its task, the clone is removed with
 junctions and symbolic links deleted as links, and a clone left by a crash
 is removed when the gateway starts. The regression report compares each
@@ -341,10 +397,13 @@ legacy run files and wrote task text to the run root is removed.
 
 An agent you run works as you: it can call every command you can. So each
 custody operation that destroys or sends out data (deletion, export,
-retention and capture-setting changes, as each one lands) needs a
-confirmation bound to that one operation's plan, valid once and for five
-minutes, from a channel an agent's shell should not reach. Changing the
-presence method itself is the first operation gated this way.
+retention adoption and runs over the share limit, capture-setting changes,
+bench replays and a change of the presence method) needs a confirmation
+bound to that one operation's plan, valid once and for five minutes, from a
+channel an agent's shell should not reach. The prompt text is built from the
+plan itself, never taken from the request. A confirmation counts only inside
+the process that asked for it (the CLI command, or the gateway for a route):
+a file on disk that says "confirmed" confirms nothing.
 
 ```
 flywheel traces presence show
@@ -354,22 +413,27 @@ flywheel traces presence set windows-hello
 - `windows-hello` asks Windows for your PIN, fingerprint or face. Whether the
   prompt works from the gateway and resists automated input has not been
   checked on real hardware yet; until it is, treat it as untested.
-- `desktop-dialog` asks in the Flywheel desktop app. Software that can drive
-  your screen can press its button, so it slows an agent down and does not
-  stop one.
 - `none` is the default. Status, every report and every custody ledger entry
   then say that any process running as you, agents included, can perform
   these operations.
 
-The method changes only after the method already in effect confirms the
-change, and a deleted method file is refused rather than read as `none`.
+A desktop-dialog method is planned and not built: an approval any process
+holding the gateway token could send would approve for an agent too.
 
-Deletions, exports, retention runs and settings changes are also written to
-the Windows Application event log, source `Flywheel`, as one line with the
-operation kind, a sequence number, a digest prefix and the presence method:
-no content and no path. A standard program can add to that log and cannot
-clear it without elevation. `flywheel traces doctor` names every custody
-ledger entry that has no matching event. A missing event is a sign of
+The method changes only after the method already in effect confirms the
+change. A deleted method file is refused rather than read as `none`, and a
+method file that does not match the latest adoption in the custody ledger
+reads as `SETTINGS_TAMPERED`, which refuses every gated operation until you
+set the method again. Presence gates the CLI commands and the gateway's
+routes. It does not stop code running as you that calls Flywheel's library
+directly; the custody ledger and the witness are how such a change shows.
+
+Deletions, exports, retention runs, settings changes and capture-off events
+are also written to the Windows Application event log, source `Flywheel`, as
+one line with the operation kind, a sequence number, a digest prefix and the
+presence method: no content and no path. A standard program can add to that
+log and cannot clear it without elevation. `flywheel traces doctor` reports
+how many custody ledger entries have no matching event. A missing event is a sign of
 tampering or loss, not proof; the log keeps about 20 MiB and drops its
 oldest events first. Other systems have no witness yet, and status says so.
 
@@ -379,7 +443,7 @@ The desktop app keeps your conversations in `chats.json` in your Flywheel
 home. That file holds the newest conversations that fit: at most 60, and at
 most 768 KiB, so a conversation that keeps growing has room. Older
 conversations move to archive files in `chats-archive/` before the active
-file shrinks. Nothing is dropped. The conversation list shows how many
+file shrinks, so no conversation is dropped for lack of room. The conversation list shows how many
 conversations are archived and opens them read-only.
 
 - If `chats.json` cannot be parsed, it is renamed to
@@ -388,12 +452,15 @@ conversations are archived and opens them read-only.
   that file from the list once you no longer need it.
 - If `chats.json` exists but cannot be read at all, saving pauses, so the
   file is never replaced.
-- A single conversation larger than 1 MiB cannot be saved. The latest turn
-  stays in your drafts, the list says so, and a record under
-  `desktop/loss/v1/` notes the conversation id and the reason. The record
-  holds no text.
+- A single conversation larger than 1 MiB or 4096 JSON nodes cannot be
+  saved. Its last saved copy is kept, every other conversation still saves,
+  the latest turn stays in your drafts, the list says so, and one record per
+  conversation under `desktop/loss/v1/` notes its id and the reason. The
+  record holds no text.
 - Deleting a conversation removes it from `chats.json`, from every archive
-  file and from your drafts, so it does not come back on the next start.
+  file and from your drafts, so it does not come back on the next start. It
+  does not reach old bytes in freed disk space, the gateway traces of those
+  turns or the model provider's copy, and the confirmation says so.
 
 The history and its archive are plaintext files that inherit your Flywheel
 home's permissions. Moving them into encrypted custody is planned and not

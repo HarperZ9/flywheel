@@ -110,3 +110,17 @@ def test_web_snapshot_delegates_its_connection_to_the_pinned_fetcher(monkeypatch
                         lambda url, **kw: seen.append(url) or (200, {}, b"x", url))
     doc = web_snapshot.snapshot_url("https://example.org/p", tmp_path)
     assert seen == ["https://example.org/p"] and doc["sha256"]
+
+
+@pytest.mark.parametrize("address", ["100.64.0.1", "100.100.100.100", "100.127.255.254",
+                                     "::ffff:10.0.0.1", "::ffff:100.64.0.9", "192.0.2.5"])
+def test_shared_and_mapped_addresses_are_not_global(address):
+    """S15: tailnet and carrier-grade NAT addresses (100.64.0.0/10) are not
+    fetched, nor a private address mapped into IPv6."""
+    from harness.web_fetch_pinned import is_global
+    assert is_global(address) is False
+
+
+def test_an_ordinary_public_address_is_global():
+    from harness.web_fetch_pinned import is_global
+    assert is_global("93.184.216.34") is True

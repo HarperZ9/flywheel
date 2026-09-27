@@ -22,7 +22,7 @@ from .private_artifact_remove import remove
 from .trace_custody_lock import custody_lock
 from .trace_delete_adapters_import import exclude
 from .trace_delete_apply_plain import ScrubPending, remove_plain, scrub_store, verify_plain
-from .trace_delete_journal import DeletionJournal, apply_journaled
+from .trace_delete_journal import DeletionJournal, apply_journaled, finished
 from .trace_delete_plan import (ENCRYPTED, PlanError, drop_selection, load_selection,
                                 make_plan, roots_for)
 
@@ -33,7 +33,12 @@ _CLASSES = {"S1": ("C1", "C2", "C4", "C5"), "CT": ("C1", "C4", "C5"), "S8b": ("C
 
 
 def register_invalidator(fn) -> None:
-    """A running store registers how to drop its cached copies (SP-15)."""
+    """A store that keeps deletable content in this process's memory registers
+    how to drop it (SP-15). Nothing registers one today: the fold index is
+    read from disk on every call and notes are written under the custody
+    lock, and no production path keeps a long-lived index in memory. A
+    deletion made from the CLI cannot reach another process's memory, so a
+    store that starts caching content must re-read after a deletion itself."""
     if fn not in INVALIDATORS:
         INVALIDATORS.append(fn)
 
@@ -98,7 +103,8 @@ def _steps(home: Path, owner: str, plan: dict, roots: dict, reason: str) -> list
         for entry in encrypted:
             remove(state, entry["rel"], expected=identity)
     return [("invalidate", invalidate),
-            ("exclude_imports", lambda: exclude(home, owner, encrypted)),
+            ("exclude_imports", lambda: exclude(home, owner, encrypted,
+                                                plan.get("sessions", []))),
             ("destroy_keys", destroy_keys), ("remove_files", remove_files),
             ("drop_index_rows", lambda: _drop_rows(home, owner, encrypted)),
             ("scrub_store_db", lambda: scrub_store(
@@ -139,15 +145,29 @@ def _execute(home: Path, owner: str, plan: dict, roots: dict, method: str, reaso
         home, roots, [e for e in plan["entries"] if e["store"] not in ENCRYPTED])
     try:
         with custody_lock(state):
-            _check_writers(state, plan)
+            try:
+                _check_writers(state, plan)
+            except JourneyLockBusy:
+                return {"state": "DELETE_PENDING", "reason": "ITEM_BUSY", "checks": []}
             return apply_journaled(journal, _steps(home, owner, plan, roots, reason),
                                    _verifier(home, owner, plan, roots), scan_set=scan_set,
                                    tombstone=_template(plan, method, reason),
                                    extra={"plan": plan})
-    except JourneyLockBusy:
-        return {"state": "DELETE_PENDING", "reason": "ITEM_BUSY", "checks": []}
+    except JourneyLockBusy:  # another custody writer held the lock past the timeout
+        return {"state": "DELETE_PENDING", "reason": "CUSTODY_BUSY", "checks": []}
     except ScrubPending as pending:
         return {"state": "DELETE_PENDING", "reason": pending.reason, "checks": []}
+
+
+def _already_done(home: Path, owner: str, plan_digest: str) -> dict | None:
+    """A crash after the tombstone: nothing is left to confirm or delete."""
+    done = finished(home / "state", owner, plan_digest)
+    if not done:
+        return None
+    drop_selection(home, owner, plan_digest)
+    return {**done, "plan_digest": plan_digest, "reason": "ALREADY_DELETED",
+            "presence": "none", "presence_statement": "", "residue": {},
+            "out_of_reach": {}, "stores": [], "counts": {}, "items": 0}
 
 
 def apply_plan(home, owner: str, plan_digest: str, presence_ref, *, sink=None,
@@ -155,6 +175,9 @@ def apply_plan(home, owner: str, plan_digest: str, presence_ref, *, sink=None,
     """Run a saved plan after presence bound to its digest."""
     from .trace_presence import require
     home = Path(home)
+    done = _already_done(home, owner, plan_digest)
+    if done:
+        return done
     _plan_for(home, owner, plan_digest, roots_for(home))  # drift is refused before presence
     method = require(home / "state", owner, "delete_apply", plan_digest, presence_ref)
     return apply_authorized(home, owner, plan_digest, method, reason=reason, sink=sink)
@@ -168,6 +191,9 @@ def apply_authorized(home, owner: str, plan_digest: str, method: str, *, sink=No
     from .trace_presence import STATEMENT
     from .trace_witness import record_custody_event
     home = Path(home)
+    done = _already_done(home, owner, plan_digest)
+    if done:
+        return done
     roots = roots_for(home)
     plan = _plan_for(home, owner, plan_digest, roots)
     result = _execute(home, owner, plan, roots, method, reason)

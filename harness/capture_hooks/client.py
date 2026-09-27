@@ -5,8 +5,12 @@ the endpoint file the gateway wrote after binding (no file, or a process that
 is not running: GATEWAY_NOT_RUNNING, and no connection at all); a literal
 loopback host (anything else: REMOTE_NOT_SUPPORTED); the listener owner check;
 a hello that carries no credential and no body, answered with a proof bound
-to the connected address (SERVER_PROOF_FAILED otherwise). Only then does a
-request with a body go out, signed, never carrying the token.
+to the connected address (SERVER_PROOF_FAILED otherwise; a gateway that is
+rate-limiting hellos answers 429, retried once, then HELLO_RATE_LIMITED).
+Only then does a request with a body go out, signed, never carrying the
+token. Each request opens its own connection (the gateway speaks HTTP/1.0),
+so the listener owner check runs again right before every send: a listener
+swapped after the hello is refused before it gets a body.
 """
 from __future__ import annotations
 
@@ -83,8 +87,14 @@ class Channel:
         refused = listener_owner.check_listener(self.host, self.port, self.pid)
         if refused:
             raise CaptureFailure(refused)
-        cn = secrets.token_hex(16)
-        status, raw = self._exchange("GET", f"{protocol.HELLO_PATH}?v=1&cn={cn}", None, {})
+        for attempt in range(2):
+            cn = secrets.token_hex(16)
+            status, raw = self._exchange("GET", f"{protocol.HELLO_PATH}?v=1&cn={cn}", None, {})
+            if status != 429:
+                break
+            if attempt:
+                raise CaptureFailure("HELLO_RATE_LIMITED")
+            time.sleep(0.25)
         try:
             doc = json.loads(raw) if status == 200 and len(raw) <= _MAX_RESPONSE else None
         except ValueError:
@@ -102,6 +112,9 @@ class Channel:
     def request(self, method: str, path: str, payload=None) -> dict:
         if self.sn is None:
             raise CaptureFailure("SERVER_PROOF_FAILED")
+        refused = listener_owner.check_listener(self.host, self.port, self.pid)
+        if refused:
+            raise CaptureFailure(refused)
         body = b"" if payload is None else json.dumps(payload).encode("utf-8")
         header = protocol.auth_header(self.k_c, method, path, body, int(time.time()),
                                       secrets.token_hex(16), self.sn, self.host, self.port)

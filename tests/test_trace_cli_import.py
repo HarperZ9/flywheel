@@ -21,7 +21,8 @@ def test_the_default_run_plans_and_imports_nothing(tmp_path, monkeypatch, capsys
         assert trace_cli.main(["import", "claude-code"]) == 0
     out = capsys.readouterr().out
     assert "new: 5 files" in out and "sweep risk: 0 transcripts" in out
-    assert "not imported history.jsonl: NOT_IMPORTED_BY_DEFAULT (--with-prompt-history)" in out
+    assert "not imported history.jsonl: NOT_IMPORTED" in out
+    assert "--with-" not in out  # no option this release does not have
     assert "Nothing was imported" in out
     assert not (home / "state" / "imports").exists()
 

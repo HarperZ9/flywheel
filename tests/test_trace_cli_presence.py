@@ -13,6 +13,14 @@ def test_status_and_show_name_the_method_and_what_none_means(tmp_path, monkeypat
     assert "Presence method: none" in capsys.readouterr().out
 
 
+def test_desktop_dialog_is_not_offered(tmp_path, monkeypatch, capsys):
+    """No dialog was built, and an approval route would let any token holder approve."""
+    import pytest
+    monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
+    with pytest.raises(SystemExit):
+        trace_cli.main(["presence", "set", "desktop-dialog"])
+
+
 def test_set_is_confirmed_by_the_current_method(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
     monkeypatch.setattr("builtins.input", lambda *a: "yes")
@@ -28,7 +36,7 @@ def test_set_is_confirmed_by_the_current_method(tmp_path, monkeypatch, capsys):
 def test_a_typed_no_changes_nothing(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("FLYWHEEL_HOME", str(tmp_path))
     monkeypatch.setattr("builtins.input", lambda *a: "no")
-    assert trace_cli.main(["presence", "set", "desktop-dialog"]) == 1
+    assert trace_cli.main(["presence", "set", "windows-hello"]) == 1
     capsys.readouterr()
     trace_cli.main(["presence", "show"])
     assert "Presence method: none" in capsys.readouterr().out

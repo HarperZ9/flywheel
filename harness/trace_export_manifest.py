@@ -17,8 +17,10 @@ from .trace_export_verify import SCHEMA, UNHASHED, root_digest
 
 DOES_NOT_PROVE = [
     "that the export holds everything custody held: excluded stores and omissions are listed",
-    "that custody recorded what really happened; only that these files are unchanged since "
-    "the export was written",
+    "that custody recorded what really happened",
+    "that these files are the ones Flywheel wrote: anyone can rewrite the files and this "
+    "manifest together. MATCH shows only that the files match this manifest; compare "
+    "root_sha256 with the export entry in your custody ledger",
     "who made the export, unless it was signed",
 ]
 
@@ -61,8 +63,10 @@ def readme(header: dict) -> str:
         "sha256, the stores left out and why, and the omissions.", "",
         "Verify it with nothing but Python:", "",
         "    python verify.py .", "",
-        "MATCH means every file is the one the manifest names and each gateway trace",
-        "chain re-derives. It does not prove the export is complete, that custody",
+        "MATCH means every file matches the manifest and each gateway trace chain",
+        "re-derives. Anyone can rewrite the files and the manifest together, so to tie",
+        "this copy to your custody, compare root_sha256 with the export entry in your",
+        "custody ledger. MATCH does not prove the export is complete, that custody",
         "recorded what really happened, or who made the export.", "",
         f"Redaction: {redaction}. Placeholders read [REDACTED:<rule>:<tag>]. In a",
         "redacted export, paths under your home folder read ~.",

@@ -76,6 +76,11 @@ def test_with_the_gateway_down_a_spool_record_allows_a_later_import(setup, monke
         ("claude-code", "session-end", SESSION)]
     monkeypatch.setenv("FLYWHEEL_HOME", str(home))
     assert trace_cli.main(["import", "--pending"]) == 0
+    assert "The transcript archive is off, so nothing was imported" in (
+        capsys.readouterr().out)
+    assert _imported(home) == []
+    _archive_on(home)
+    assert trace_cli.main(["import", "--pending"]) == 0
     assert "1 pending session imported" in capsys.readouterr().out
     assert len(_imported(home)) == 1
     assert list((home / "state" / "capture-failures" / "v1").glob("f-*.json")) == []

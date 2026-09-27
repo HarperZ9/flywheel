@@ -19,7 +19,8 @@ import shutil
 import time
 
 from .trace_import_exclusion import (ExclusionUnavailable, PrefixProbe, check,
-                                     custody_key, entries, keyed_path, source_ref)
+                                     custody_key, entries, keyed_path, session_ref,
+                                     source_ref)
 from .trace_import_items import ImportStore
 
 __all__ = ["ImportStore", "build_plan", "run_import"]
@@ -35,25 +36,21 @@ PARSER_VERSION = "flywheel.import-lines/1"
 
 
 def _prefix_mac(key: bytes, path: Path, n: int) -> str:
+    from .trace_import_read import read_prefix
     probe = PrefixProbe(key, [n])
-    with open(path, "rb") as stream:
-        remaining = n
-        while remaining > 0 and (chunk := stream.read(min(remaining, 1024 * 1024))):
-            probe.feed(chunk)
-            remaining -= len(chunk)
+    read_prefix(path, n, probe.feed)
     return probe.digest(n)
 
 
 def _state(key, listed, stored, client, source, now, live_window_s) -> dict:
     path, size = source["path"], source["size"]
     ref = source_ref(key, client, path, source.get("session_id"))
-    probe = PrefixProbe(key, [e["n"] for e in listed if e["n"] <= size])
-    with open(path, "rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            probe.feed(chunk)
-            if probe.seen >= max(probe.states or [0]):
-                break
-    excluded, new_bytes = check(key, listed, ref, size, probe)
+    from .trace_import_read import read_prefix
+    probe = PrefixProbe(key, [e.get("n", 0) for e in listed if e.get("n", 0) <= size])
+    read_prefix(path, max(probe.states or [0]), probe.feed)
+    excluded, new_bytes = check(key, listed, ref, size, probe,
+                                path_ref=keyed_path(key, client, path),
+                                session=session_ref(key, client, source.get("session_id")))
     if excluded:
         return {"state": excluded, "new_bytes": new_bytes}
     if source.get("forced_state"):
@@ -68,12 +65,24 @@ def _state(key, listed, stored, client, source, now, live_window_s) -> dict:
     return {"state": "new"}
 
 
+def _safe_state(*args) -> dict:
+    from .trace_import_read import SourceRefused
+    try:
+        return _state(*args)
+    except SourceRefused as refused:
+        return {"state": refused.code}
+    except OSError:
+        return {"state": "UNREADABLE"}
+
+
 def build_plan(home, owner_ref: str, client: str, sources, *, refused=(), not_imported=(),
-               sweep=None, now=None, free_space=None, live_window_s=LIVE_WINDOW_S) -> dict:
+               sweep=None, now=None, free_space=None, live_window_s=LIVE_WINDOW_S,
+               root=None) -> dict:
     now = now or time.time()
     plan = {"schema": "flywheel.import-plan/v1", "client": client, "owner_ref": owner_ref,
             "state": "OK", "items": [], "refused": list(refused),
-            "not_imported": list(not_imported), "sweep": sweep}
+            "not_imported": list(not_imported), "sweep": sweep,
+            "root": str(root) if root is not None else None}
     try:
         key = custody_key(home, owner_ref)
         listed, stored = entries(home, owner_ref), ImportStore(home, owner_ref).index()
@@ -82,8 +91,8 @@ def build_plan(home, owner_ref: str, client: str, sources, *, refused=(), not_im
     for source in sources:
         rel = {k: v for k, v in source.items() if k != "path"}
         rel["path"] = str(source["path"])
-        plan["items"].append({**rel, **_state(key, listed, stored, client, source, now,
-                                              live_window_s)})
+        plan["items"].append({**rel, **_safe_state(key, listed, stored, client, source, now,
+                                                   live_window_s)})
     need = sum(i["size"] for i in plan["items"] if i["state"] in ("new", "grown"))
     free = (free_space or (lambda p: shutil.disk_usage(p).free))(Path(home))
     plan.update(need=need, free=free)
@@ -100,7 +109,7 @@ class _Sink:
         from .trace_import_lines import LineAnalyzer
         from .trace_zstd import Stream
         self.staged = staged
-        self.probe = PrefixProbe(key, [e["n"] for e in listed])
+        self.probe = PrefixProbe(key, [e.get("n", 0) for e in listed])
         self.whole = hmac.new(key, b"prefix\x00", hashlib.sha256)  # prefix_ref of all bytes
         self.lines = (LineAnalyzer(LINE_BOUND, DEPTH_BOUND, turn_ids=item["kind"] in CODEX_KINDS)
                       if item["kind"] in JSONL_KINDS else None)
@@ -134,9 +143,11 @@ def _import_one(store, key, listed, item, on_read) -> tuple[str | None, int]:
     path, staged = Path(item["path"]), store.stage(item["client"])
     try:
         sink = _Sink(key, listed, item, staged)
-        read = read_source(path, sink.take, on_read=on_read)
+        read = read_source(path, sink.take, on_read=on_read, root=item.get("root"))
         ref = source_ref(key, item["client"], path, item.get("session_id"))
-        excluded, _ = check(key, listed, ref, read["bytes"], sink.probe)
+        excluded, _ = check(key, listed, ref, read["bytes"], sink.probe,
+                            path_ref=keyed_path(key, item["client"], path),
+                            session=session_ref(key, item["client"], item.get("session_id")))
         if excluded:
             staged.discard()
             return excluded, 0
@@ -166,7 +177,8 @@ def run_import(home, plan: dict, *, on_read=None) -> dict:
         if item["state"] not in ("new", "grown"):
             result["skipped"][item["state"]] = result["skipped"].get(item["state"], 0) + 1
             continue
-        code, size = _import_one(store, key, listed, {**item, "client": plan["client"]}, on_read)
+        code, size = _import_one(store, key, listed, {**item, "client": plan["client"],
+                                                      "root": plan.get("root")}, on_read)
         if code:
             bucket = "skipped" if code.startswith("PREVIOUSLY") else "refused"
             result[bucket][code] = result[bucket].get(code, 0) + 1

@@ -24,8 +24,7 @@ from . import trace_import_core as core
 
 CLIENT = "claude-code"
 _UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
-_NAMED = {"history.jsonl": "--with-prompt-history", "file-history": "--with-file-history",
-          "paste-cache": None, "plans": None, "tasks": None, "shell-snapshots": None}
+_NAMED = ("history.jsonl", "file-history", "paste-cache", "plans", "tasks", "shell-snapshots")
 _REPARSE = 0x400
 
 
@@ -113,8 +112,8 @@ def discover(root: Path) -> _Walk:
 
 
 def _named(root: Path) -> list[dict]:
-    return [{"name": name, "reason": "NOT_IMPORTED_BY_DEFAULT", "flag": flag}
-            for name, flag in _NAMED.items() if (root / name).exists()]
+    return [{"name": name, "reason": "NOT_IMPORTED"}
+            for name in _NAMED if (root / name).exists()]
 
 
 def sweep_risk(root: Path, items: list[dict], now: float) -> dict:
@@ -143,6 +142,6 @@ def plan_claude(home, *, root=None, environ=None, now=None, free_space=None,
     walk = discover(root)
     plan = core.build_plan(home, owner, CLIENT, walk.sources, refused=walk.refused,
                            not_imported=_named(root) + walk.over, now=now,
-                           free_space=free_space, live_window_s=live_window_s)
+                           free_space=free_space, live_window_s=live_window_s, root=root)
     plan["sweep"] = sweep_risk(root, plan["items"], now)
     return plan

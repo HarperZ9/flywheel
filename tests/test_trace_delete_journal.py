@@ -116,3 +116,51 @@ def test_the_scan_set_is_ciphertext_on_disk(state):
         _run(state, fail_verify=True)
     raw = b"".join(p.read_bytes() for p in (state / "trace-deletions").rglob("*") if p.is_file())
     assert b'"gone"' not in raw and b"gone" not in raw
+
+
+@pytest.mark.parametrize("crash_at", ["after_tombstone", "after_unlink"])
+def test_a_crash_inside_finish_resumes_to_one_tombstone(state, monkeypatch, crash_at):
+    """finish writes the tombstone, removes the journal, then destroys the
+    scan-set key. A crash at either gap leaves a state a rerun finishes, with
+    exactly one tombstone and no stuck journal."""
+    from harness import trace_delete_journal as journal_module
+    real_destroy = Keystore.destroy
+    real_unlink = journal_module._remove_files
+
+    def crash_destroy(self, store, items):
+        raise Fault("crash before the key is destroyed")
+
+    def crash_unlink(journal):
+        raise Fault("crash before the journal is removed")
+    if crash_at == "after_tombstone":
+        monkeypatch.setattr(journal_module, "_remove_files", crash_unlink)
+    else:
+        monkeypatch.setattr(Keystore, "destroy", crash_destroy)
+    with pytest.raises(Fault):
+        _run(state)
+    monkeypatch.setattr(Keystore, "destroy", real_destroy)
+    monkeypatch.setattr(journal_module, "_remove_files", real_unlink)
+    assert len(TombstoneLedger(state, OWNER).entries()) == 1
+    result = journal_module.resume_or_done(_journal(state), lambda: _run(state))
+    assert result["state"] == "DELETED"
+    assert len(TombstoneLedger(state, OWNER).entries()) == 1
+    assert pending(state, OWNER) == []
+    assert not Keystore(state, OWNER).present("deletions", PLAN)
+
+
+def test_a_journal_whose_key_is_gone_after_its_tombstone_counts_as_done(state):
+    """The old order destroyed the key before removing the journal; a crash
+    there left a journal nobody could read. With a matching tombstone it is done."""
+    with pytest.raises(Fault):
+        _run(state, fail_verify=True)
+    journal = _journal(state)
+    TombstoneLedger(state, OWNER).append(
+        plan_digest=PLAN, stores=["X1"], counts={}, reason_code="owner_request",
+        started_at="2026-09-26T00:00:00Z", residual={}, residue={}, out_of_reach={},
+        presence="none", checks=["scan_set"])
+    Keystore(state, OWNER).destroy("deletions", [PLAN])
+    from harness.trace_delete_journal import resume_or_done
+    result = resume_or_done(journal, lambda: _run(state))
+    assert result["state"] == "DELETED"
+    assert pending(state, OWNER) == []
+    assert len(TombstoneLedger(state, OWNER).entries()) == 1

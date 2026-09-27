@@ -79,6 +79,7 @@ class FakeDecompressor:
         self.needs_input = True
         if self.seen.startswith(FAKE_MAGIC):
             out, self.seen = self.seen[len(FAKE_MAGIC):], FAKE_MAGIC
+            self.eof = self.eof or bool(out)  # a real frame ends; this one ends at its data
             return out
         return b""
 

@@ -19,7 +19,8 @@ import re
 
 from .evidence_json import canonical_bytes, canonical_sha256
 from .trace_delete_adapters_enc import (session_pending, session_turns, trace_entries,
-                                        turn_entries, valid_trace_ref, valid_turn_ref)
+                                        turn_entries, turn_sessions, valid_trace_ref,
+                                        valid_turn_ref)
 from .trace_delete_adapters_import import entries_for as import_entries, valid_ref
 from .trace_delete_adapters_plain import (PROFILE_NOTE, selection_entries, trace_closure,
                                           valid)
@@ -63,7 +64,18 @@ def roots_for(home) -> dict:
     return {"home": home, "state": home / "state", "run": resolve_roots()["run"]}
 
 
-def _encrypted(home: Path, owner: str, selection: dict) -> tuple[list, list, set]:
+def _sessions(home: Path, owner: str, selection: dict, turns: list) -> list[str]:
+    """Keyed refs of every captured session this plan deletes from (I19)."""
+    refs = turn_sessions(home, owner, turns)
+    session = selection.get("session")
+    if session:
+        from .trace_import_exclusion import custody_key, session_ref
+        refs.add(session_ref(custody_key(home, owner), session["client"],
+                             session["session_id"]))
+    return sorted(refs)
+
+
+def _encrypted(home: Path, owner: str, selection: dict) -> tuple:
     entries, receipts, clients = [], [], set()
     for ref in selection.get("trace_refs", []):
         found = trace_entries(home / "state", owner, ref)
@@ -85,19 +97,33 @@ def _encrypted(home: Path, owner: str, selection: dict) -> tuple[list, list, set
                                               session)
     if selection.get("import_refs") and not imported:
         raise PlanError("NOT_FOUND")
-    return entries + imported, receipts, clients | import_clients
+    return entries + imported, receipts, clients | import_clients, turns
 
 
-def _collect(home: Path, owner: str, selection: dict, roots: dict) -> tuple[list, list, set]:
-    entries, receipts, clients = _encrypted(home, owner, selection)
+def _check_receipts(home: Path, eids) -> None:
+    """A selected store.db id must be a turn receipt that exists: nothing
+    else in store.db (academy, retention, loop entities) is a trace."""
+    from .store_tombstone import RECEIPT_KINDS, kinds
+    if not eids:
+        return
+    found = kinds(home, eids)
+    if set(eids) - set(found):
+        raise PlanError("NOT_FOUND")
+    if any(kind not in RECEIPT_KINDS for kind in found.values()):
+        raise PlanError("INVALID_SELECTION")
+
+
+def _collect(home: Path, owner: str, selection: dict, roots: dict) -> tuple:
+    entries, receipts, clients, turns = _encrypted(home, owner, selection)
     from .trace_bench_tasks import task_entries
     for entry in [e for e in entries if e["store"] == "S1"]:
         entries += trace_closure(home / "state", owner, entry)
         entries += task_entries(home, owner, entry["item"])
+    _check_receipts(home, selection.get("receipt_eids", []))
     entries += selection_entries(roots, selection, receipts)
     unique = {(e["store"], e["item"]): e for e in entries}
     return sorted(unique.values(), key=lambda e: (e["store"], e["item"])), \
-        sorted(set(receipts)), clients
+        sorted(set(receipts)), clients, _sessions(home, owner, selection, turns)
 
 
 def _not_covered() -> list[str]:
@@ -105,10 +131,25 @@ def _not_covered() -> list[str]:
     return sorted(s.id for s in stores() if isinstance(s.delete, Gap))
 
 
+def _is_ciphertext(state: Path, rel: str) -> bool:
+    """Whether the item's first file is FWENC1 ciphertext (a legacy trace, or
+    any item written with no OS key store, is plaintext)."""
+    from .trace_enc import MAGIC
+    target = state / rel
+    first = target if target.is_file() else next(
+        (p for p in sorted(target.rglob("*")) if p.is_file()), None) if target.is_dir() else None
+    try:
+        with open(first, "rb") as stream:
+            return stream.read(len(MAGIC)) == MAGIC
+    except (OSError, TypeError):
+        return False
+
+
 def _forecast(home: Path, entries: list[dict]) -> dict:
-    encrypted = [e for e in entries if e["store"] in ENCRYPTED]
-    plain = [e for e in entries if e["store"] not in ENCRYPTED]
-    forecast = {"ciphertext_freed_clusters": len(encrypted)}
+    sealed = [e for e in entries if e["store"] in ENCRYPTED
+              and _is_ciphertext(home / "state", e["rel"])]
+    plain = [e for e in entries if e not in sealed]
+    forecast = {"ciphertext_freed_clusters": len(sealed)} if sealed else {}
     if plain:
         forecast["freed_clusters"] = len(plain)
     legacy = [e for e in plain if e["store"] == "S7" and not e["item"].startswith("tr2_")]
@@ -124,14 +165,14 @@ def _forecast(home: Path, entries: list[dict]) -> dict:
 def make_plan(home, owner: str, selection, *, save: bool = True, roots=None) -> dict:
     home, selection = Path(home), validate(selection)
     roots = roots or roots_for(home)
-    entries, receipts, clients = _collect(home, owner, selection, roots)
+    entries, receipts, clients, sessions = _collect(home, owner, selection, roots)
     keys: dict[str, list[str]] = {}
     for entry in (e for e in entries if e["store"] in ENCRYPTED):
         keys.setdefault(entry["store"], []).append(entry["item"])
     counts: dict[str, int] = {}
     for entry in entries:
         counts[entry["store"]] = counts.get(entry["store"], 0) + 1
-    out_of_reach = {"backups": 1, **({"provider": 1} if keys.get("S1") else {}),
+    out_of_reach = {"backups": 1, **({"provider": 1} if keys.get("S1") or clients else {}),
                     **({"client_transcript": len(clients)} if clients else {})}
     digest = canonical_sha256({"schema": "flywheel.trace-delete-plan/v1", "owner_ref": owner,
                                "entries": [[e["store"], e["item"]] for e in entries],
@@ -139,6 +180,7 @@ def make_plan(home, owner: str, selection, *, save: bool = True, roots=None) -> 
     plan = {"schema": "flywheel.trace-delete-plan/v1", "plan_digest": digest,
             "entries": entries, "receipts": receipts, "keys": keys, "counts": counts,
             "out_of_reach": out_of_reach, "remedies": {c: REMEDIES[c] for c in sorted(clients)},
+            "sessions": sessions,
             "residue_forecast": _forecast(home, entries), "not_covered": _not_covered(),
             "notes": [PROFILE_NOTE] if any(e["store"] == "S6" for e in entries) else []}
     if save:

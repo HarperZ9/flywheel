@@ -12,7 +12,6 @@ archive pretending to be evidence would be worse than none.
 from __future__ import annotations
 
 import hashlib
-import ipaddress
 import json
 import socket
 import urllib.parse
@@ -24,12 +23,11 @@ _MAX_BYTES = 25_000_000
 
 
 def _ip_blocked(ip_str: str) -> bool:
-    try:
-        ip = ipaddress.ip_address(ip_str)
-    except ValueError:
-        return True   # unresolvable is refused, not guessed
-    return (ip.is_loopback or ip.is_private or ip.is_link_local
-            or ip.is_multicast or ip.is_reserved or ip.is_unspecified)
+    """Anything but a global unicast address is refused, the same rule the
+    pinned fetcher uses (shared 100.64.0.0/10 tailnet space included);
+    unresolvable is refused, not guessed."""
+    from .web_fetch_pinned import is_global
+    return not is_global(ip_str)
 
 
 def _guard_url(url: str) -> "str | None":

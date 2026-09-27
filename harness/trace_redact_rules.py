@@ -24,7 +24,7 @@ from .trace_redact_finders import (basic_value, bearer_value, cookie_value, iban
                                    ipv6_valid, jwt_header_valid, luhn_valid, oauth_codes,
                                    pem_blocks, putty_blocks, userinfo_value)
 
-CATALOG_VERSION = "trace-redact/2026-09-26.2"
+CATALOG_VERSION = "trace-redact/2026-09-26.3"
 
 
 @dataclass(frozen=True)
@@ -55,7 +55,9 @@ _KEYWORDS = ("password", "passwd", "pwd", "secret", "token", "credential") + tup
     k.replace("_", sep) for k in _SEPARATED for sep in ("_", "-", ""))
 _VALUE = (r"s?[\"']?[ \t]{0,8}+[:=][ \t]{0,8}+(?:\"([^\"\r\n]{8,512}+)\"|"
           r"'([^'\r\n]{8,512}+)'|([^\s\"',;&]{8,512}+))")
-ASSIGNMENTS = tuple(_c(re.escape(k) + _VALUE) for k in _KEYWORDS)
+ASSIGNMENTS = tuple(_c(re.escape(k) + _VALUE) for k in _KEYWORDS) + (
+    _c(r"(?<![a-z0-9_\-])[a-z0-9]{1,32}+[_\-]key" + _VALUE),
+    _c(r"(?<![a-z0-9_\-])[a-z0-9_\-]{0,32}?secret[_\-][a-z0-9_\-]{1,32}+" + _VALUE))
 
 
 def _credential(rule_id, pattern, note, *, tail=None, group=(0,), validator=None,
@@ -108,7 +110,8 @@ CREDENTIAL_RULES = (
                 "userinfo with a password, or a user part of 16 or more characters",
                 group=(1,), validator=userinfo_value),
     _credential("credential_assignment", ASSIGNMENTS, "a value of 8 or more characters "
-                "assigned to a credential-named key; example code such as token = "
+                "assigned to a credential-named key, including any name ending in _key or "
+                "-key and any name holding secret; example code such as token = "
                 "get_token(user) also matches, and so does PWD=/path", group=(1, 2, 3),
                 lower=True),
     _credential("azure_key_assignment", _c(r"(?<![a-z0-9])(?:accountkey|sharedaccesskey)"

@@ -6,6 +6,12 @@ Windows the identity comes from the handle (trace_import_open_win); on POSIX
 the file is opened with O_NOFOLLOW and `fstat` gives device, inode, size,
 mtime and ctime. On FAT and exFAT the file index is not stable, so the file
 is hashed a second time after the read and the manifest says so.
+
+With `root`, the path the open handle actually reached (GetFinalPathName on
+Windows, the descriptor's link in /proc elsewhere) must lie inside it, so a
+folder swapped for a junction between the check and the open is refused as
+OUTSIDE_ROOT. `read_prefix` reads the first bytes the same way, for the
+exclusion and idempotence probes, instead of a plain open that follows links.
 """
 from __future__ import annotations
 
@@ -40,10 +46,18 @@ def _read_posix(path, on_chunk, on_read) -> dict:
             total += len(chunk)
             on_chunk(chunk)
         after = _posix_identity(fd)
+        final = _posix_final(fd, path)
     finally:
         os.close(fd)
     return {"before": before, "after": after, "bytes": total, "sha256": digest.hexdigest(),
-            "second_hash": False}
+            "second_hash": False, "final": final}
+
+
+def _posix_final(fd: int, path) -> str:
+    try:
+        return os.readlink(f"/proc/self/fd/{fd}")
+    except OSError:
+        return os.path.realpath(path)
 
 
 def _read_windows(path, on_chunk, on_read) -> dict:
@@ -70,14 +84,55 @@ def _read_windows(path, on_chunk, on_read) -> dict:
     finally:
         win.close(handle)
     return {"before": before, "after": after, "bytes": total, "sha256": digest.hexdigest(),
-            "second_hash": unstable}
+            "second_hash": unstable, "final": before[5]}
 
 
-def read_source(path, on_chunk, *, on_read=None) -> dict:
+class _Enough(Exception):
+    pass
+
+
+def read_prefix(path, limit: int, on_chunk) -> None:
+    """Pass at most `limit` leading bytes to `on_chunk`, opening by handle
+    without following a link (REPARSE_REFUSED or UNREADABLE otherwise)."""
+    seen = [0]
+
+    def take(chunk):
+        room = limit - seen[0]
+        if room > 0:
+            on_chunk(chunk[:room])
+        seen[0] += len(chunk)
+        if seen[0] >= limit:
+            raise _Enough()
+    reader = _read_windows if sys.platform == "win32" else _read_posix
+    if limit > 0:
+        try:
+            reader(path, take, None)
+        except _Enough:
+            pass
+
+
+def _inside(final: str, root) -> bool:
+    text = final
+    for prefix in ("\\\\?\\UNC\\", "\\\\?\\"):
+        if text.startswith(prefix):
+            if prefix.endswith("UNC\\"):
+                return False
+            text = text[len(prefix):]
+    base = os.path.normcase(os.path.realpath(root))
+    try:
+        return os.path.normcase(os.path.commonpath([os.path.normcase(text), base])) == base
+    except ValueError:
+        return False
+
+
+def read_source(path, on_chunk, *, on_read=None, root=None) -> dict:
     """Stream `path` to `on_chunk`; raise SourceRefused("SOURCE_CHANGED") when
-    its identity moved during the read."""
+    its identity moved during the read, and OUTSIDE_ROOT when the handle
+    reached a file outside `root`."""
     reader = _read_windows if sys.platform == "win32" else _read_posix
     result = reader(path, on_chunk, on_read)
+    if root is not None and not _inside(result["final"], root):
+        raise SourceRefused("OUTSIDE_ROOT")
     if result["before"] != result["after"] or result["bytes"] != result["before"][2]:
         raise SourceRefused("SOURCE_CHANGED")
     if result["second_hash"]:

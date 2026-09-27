@@ -33,7 +33,7 @@ KINDS = {
     "settings_adopted": {"settings", "digest"} | _PRESENCE,
     "import": {"client", "items", "bytes", "skipped", "refused"} | _PRESENCE,
     "export": {"root_digest", "items", "bytes", "stores", "redaction",
-               "destination_digest"} | _PRESENCE,
+               "destination_digest", "reason_code"} | _PRESENCE,
     "retention_run": {"plan_digest", "items", "applied", "reason_code"} | _PRESENCE,
     "deletion": {"plan_digest", "stores", "items", "reason_code", "residue",
                  "out_of_reach"} | _PRESENCE,

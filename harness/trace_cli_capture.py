@@ -24,7 +24,11 @@ def show(args) -> int:
     for line in data_flow(current):
         emit(line)
     emit(f"Unanswered prompts become unpaired turns after {current['pending_ttl_hours']} hours.")
-    if current["pending_change"]:
+    if current.get("tampered"):
+        emit("SETTINGS_TAMPERED: the adopted settings file does not match your custody ledger, "
+             "so everything is off. Confirm the settings again with: "
+             "flywheel traces capture confirm")
+    elif current["pending_change"]:
         emit("A change on disk is not in effect. Confirm with: flywheel traces capture confirm")
     return 0
 
@@ -57,15 +61,20 @@ def confirm_file(args) -> int:
     return _adopt(home, owner)
 
 
-_FIRST_ON = {
-    "content": "Content capture keeps a second, encrypted copy of each prompt and final "
-               "answer in your Flywheel home, beside the copy your client already keeps.",
-    "archive_transcripts": "The transcript archive copies each ended session's transcript "
-                           "into encrypted custody when the SessionEnd hook is mounted.",
-    "freeze_urls": "URL freezing sends the URLs each prompt names to the local gateway, "
-                   "which fetches them and keeps the pages encrypted; links that carry "
-                   "credentials are refused and never fetched.",
-}
+def _first_on(switch: str) -> str:
+    from .trace_capture_settings import kept
+    how = kept()
+    return {
+        "content": "Content capture keeps a second copy of each prompt and final answer in "
+                   f"your Flywheel home, {how}, beside the copy your client already keeps.",
+        "archive_transcripts": "The transcript archive copies each ended Claude Code "
+                               f"session's transcript into custody, {how}, when the "
+                               "SessionEnd hook is mounted. Codex sessions are not archived.",
+        "freeze_urls": "URL freezing sends the URLs each prompt names to the local gateway, "
+                       f"which fetches them; the pages are {how}. Links that carry "
+                       "credentials are refused and never fetched. The URLs and their sha256 "
+                       "digests go into the model context, so to the model provider.",
+    }[switch]
 
 
 def set_switch(args) -> int:
@@ -73,7 +82,7 @@ def set_switch(args) -> int:
     home, owner = _context()
     write_file(home, {args.switch: args.value})
     if args.value == "on":
-        emit(_FIRST_ON[args.switch])
+        emit(_first_on(args.switch))
     return _adopt(home, owner)
 
 
@@ -84,9 +93,9 @@ def register(sub) -> None:
         run=show)
     commands.add_parser("confirm", help="adopt the settings file, with presence").set_defaults(
         run=confirm_file)
-    for name, switch, text in (("content", "content", "keep prompt and answer text, encrypted"),
+    for name, switch, text in (("content", "content", "keep prompt and answer text"),
                                ("archive", "archive_transcripts",
-                                "import each ended session's transcript"),
+                                "import each ended Claude Code session's transcript"),
                                ("freeze", "freeze_urls", "fetch and keep the URLs prompts name")):
         command = commands.add_parser(name, help=text)
         command.add_argument("value", choices=("on", "off"))

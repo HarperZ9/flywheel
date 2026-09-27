@@ -1,12 +1,13 @@
 # Trace redaction
 
 Flywheel redacts credentials, and on request personal data, when trace
-content leaves your custody: in an export, or when stored content is sent to
-a model. The copy you keep is stored as it arrived, so redaction never costs
-you your own record.
+content leaves your custody in an export. When stored content would be sent
+to a model (a bench replay), a credential in it refuses the whole send
+instead of being redacted. The copy you keep is stored as it arrived, so
+redaction never costs you your own record.
 
 One catalog serves every Flywheel redaction path. Its version is
-`trace-redact/2026-09-26.2`, and every redaction report names it.
+`trace-redact/2026-09-26.3`, and every redaction report names it.
 
 ## How a match is replaced
 
@@ -22,10 +23,14 @@ lines affected. It never contains the matched text.
 ## How lines are read
 
 A transcript line is JSON. The line is parsed and every decoded string value
-is scanned, so escapes such as `\n` inside a PEM block or `g` for a
+is scanned, so escapes such as `\n` inside a PEM block or `\u0067` for a
 letter do not hide a secret. A string that is itself JSON is parsed and
-walked too, up to four levels. A value stored under a credential-named key,
-such as `api_key`, `password` or `authorization`, is replaced whole. A line
+walked too, up to four levels. Object keys are scanned as well, since a token
+can be a key, and a number is scanned as its decimal text, so a card number
+stored as a JSON number is found. A value stored under a credential-named
+key, such as `api_key`, `password`, `authorization`, any name ending in
+`_key` or `-key` after a prefix (`SECRET_KEY`, `signing_key`) or any name
+containing `secret`, is replaced whole. A line
 that does not parse is scanned as raw text and again with its JSON escapes
 decoded, and each match is replaced in the raw bytes.
 
@@ -44,7 +49,9 @@ time budget stops with `SCAN_BUDGET_EXCEEDED`.
 ## Rules
 
 Credential rules run by default. Personal-data rules run when you ask for
-them, and the IP address and coordinate rules also need to be named.
+them. The IP address and coordinate rules are off in every Flywheel command
+today: no option turns them on, and only code that calls the library can
+name them.
 
 | Rule | Class | Default | Matches, and known false positives |
 | --- | --- | --- | --- |
@@ -60,7 +67,7 @@ them, and the IP address and coordinate rules also need to be named.
 | `bearer_token` | credential | on | A bearer value of 16 or more characters holding a digit or a symbol |
 | `basic_auth` | credential | on | A Basic value that decodes to user:password |
 | `url_userinfo` | credential | on | URL userinfo with a password, or a user part of 16 or more characters |
-| `credential_assignment` | credential | on | A value of 8 or more characters assigned to a credential-named key. Example code such as `token = get_token(user)` also matches, and so does `PWD=/path` |
+| `credential_assignment` | credential | on | A value of 8 or more characters assigned to a credential-named key, including any name ending in `_key` or `-key` and any name holding `secret`. Example code such as `token = get_token(user)` also matches, and so does `PWD=/path` |
 | `azure_key_assignment` | credential | on | Azure AccountKey= and SharedAccessKey= values |
 | `npm_token` | credential | on | npm access tokens |
 | `pypi_token` | credential | on | PyPI API tokens |
@@ -106,6 +113,7 @@ secrets or personal data.
 - Export: credential rules on by default, personal rules with
   `--redact-personal`, and none with `--no-redact`.
 - Content sent to a model from stored traces passes the credential guard
-  first. Guards that refuse content use credential rules only; a personal-data
-  rule never stops a run.
+  first, and a hit refuses the send; nothing is redacted on that path.
+  Guards that refuse content use credential rules only; a personal-data rule
+  never stops a run.
 - The desktop app keeps its own detector for chat text in this release.

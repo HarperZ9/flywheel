@@ -8,12 +8,15 @@ transcripts) or a data class, with `max_age_days`, `max_items` or
 gateway runs only the adopted copy under
 `state/trace-retention/v1/owners/<owner>/adopted.json`; a file whose digest
 differs is a pending change until `adopt`, which needs presence bound to the
-new policy's digest and writes a ledger entry and a witness event.
+new policy's digest and writes a ledger entry and a witness event. An
+adopted file whose digest is not the latest retention adoption in the
+verified custody ledger is SETTINGS_TAMPERED: the gateway runs keep and
+status says so.
 
 An item's age is the time Flywheel stored it: the modification time of a
-trace's first record, of a turn's record, or of an import's manifest, none of
-which is rewritten after it is written. Restoring files from a backup resets
-that time, so restored items look new.
+trace's first record, of a turn's record, or of an import's manifest.
+Encrypting a legacy trace keeps its record's original times. Restoring files
+from a backup resets that time, so restored items look new.
 """
 from __future__ import annotations
 
@@ -84,26 +87,49 @@ def read_file(home) -> tuple[dict | None, bool]:
     return merged, merged is not None
 
 
-def adopted(home, owner_ref: str) -> dict:
+def _adopted(home, owner_ref: str) -> tuple[dict, bool]:
+    """(policy in effect, whether the adopted file failed the ledger check)."""
+    from .trace_settings_guard import matches
     try:
         doc = validate(json.loads(_adopted_path(home, owner_ref).read_bytes()))
     except FileNotFoundError:
-        return dict(DEFAULT)
+        return dict(DEFAULT), False
     except (OSError, ValueError) as exc:
         _log.warning("adopted retention policy unreadable (%s); running keep",
                      type(exc).__name__)
-        return dict(DEFAULT)
+        return dict(DEFAULT), False
     if doc is None:
         _log.warning("adopted retention policy invalid; running keep")
-    return doc or dict(DEFAULT)
+        return dict(DEFAULT), False
+    if not matches(home, owner_ref, "retention", digest(doc)):
+        _log.warning("adopted retention policy does not match the custody ledger; running keep")
+        return dict(DEFAULT), True
+    return doc, False
+
+
+def adopted(home, owner_ref: str) -> dict:
+    return _adopted(home, owner_ref)[0]
 
 
 def effective(home, owner_ref: str) -> dict:
-    current = adopted(home, owner_ref)
+    current, tampered = _adopted(home, owner_ref)
     on_disk, valid = read_file(home)
     pending = (not valid) or (on_disk is not None and digest(on_disk) != digest(current))
     return {**current, "digest": digest(current), "pending_change": pending,
-            "file_valid": valid}
+            "file_valid": valid, "tampered": tampered}
+
+
+def rule_text(rule: dict) -> str:
+    target = rule.get("store") or f"class {rule['data_class']}"
+    limits = ", ".join(f"{k} {rule[k]}" for k in LIMITS if k in rule)
+    return f"{target}: {limits} ({rule['reason_code']})"
+
+
+def describe(doc: dict) -> str:
+    if doc["action"] == "keep":
+        return "keep until you delete; nothing is deleted on a timer."
+    return ("; ".join(rule_text(r) for r in doc["rules"])
+            + f"; at most {doc['max_share_per_run']:.0%} of a store per run without you.")
 
 
 def write_file(home, doc: dict) -> dict:

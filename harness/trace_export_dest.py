@@ -2,7 +2,9 @@
 
 A destination comes from the local CLI or from a grant the CLI wrote naming
 the exact path; no HTTP request supplies one. It is refused inside
-FLYWHEEL_HOME, refused when it exists and is not empty, and refused under a
+FLYWHEEL_HOME, refused when any existing folder on its path is a link or
+junction (so the path checked is the path written), refused when it exists
+at all (an empty folder too: the export renames into place), and refused under a
 sync root (the OneDrive variables and folder names, which also cover Desktop
 and Documents folders that Known Folder Move redirected into OneDrive, and
 the Dropbox, Google Drive and iCloudDrive folder names) unless the owner
@@ -19,9 +21,11 @@ import os
 from pathlib import Path
 import re
 import secrets
+import stat
 
 _DEVICE = re.compile(r"^(\\\\[?.]\\|//[?.]/)")
 _GRANT = re.compile(r"xgr_[0-9a-f]{32}\Z")
+_REPARSE = 0x400
 
 
 class ExportError(Exception):
@@ -36,6 +40,27 @@ def _inside(path: Path, root: Path) -> bool:
     return a == b or a.startswith(b.rstrip(os.sep) + os.sep)
 
 
+def _is_link(path: str) -> bool:
+    try:
+        info = os.lstat(path)
+    except OSError:
+        return False
+    return stat.S_ISLNK(info.st_mode) or bool(
+        getattr(info, "st_file_attributes", 0) & _REPARSE)
+
+
+def _links_on(path: Path) -> bool:
+    """Whether the path or any existing folder above it is a link or junction."""
+    current = str(path)
+    while True:
+        if _is_link(current):
+            return True
+        parent = os.path.dirname(current)
+        if parent == current:
+            return False
+        current = parent
+
+
 def check(out, home, *, allow_sync_root: bool = False) -> tuple[Path, str | None]:
     """(absolute destination, sync client or None); raises ExportError."""
     from .trace_fs_attrs import sync_root
@@ -43,23 +68,29 @@ def check(out, home, *, allow_sync_root: bool = False) -> tuple[Path, str | None
     if _DEVICE.match(text):
         raise ExportError("DESTINATION_DEVICE")
     path = Path(os.path.abspath(text))
-    if _inside(path, Path(home)) or _inside(Path(home), path):
-        raise ExportError("DESTINATION_IN_CUSTODY")
-    synced = sync_root(path)
+    for zipped in (path, path.with_name(path.name + ".zip")):
+        if _links_on(zipped):
+            raise ExportError("DESTINATION_LINK")
+    real, home_real = Path(os.path.realpath(path)), Path(os.path.realpath(home))
+    for a, b in ((path, Path(home)), (real, home_real)):
+        if _inside(a, b) or _inside(b, a):
+            raise ExportError("DESTINATION_IN_CUSTODY")
+    synced = sync_root(path) or sync_root(real)
     if synced and not allow_sync_root:
         raise ExportError("DESTINATION_SYNC_ROOT")
-    if path.exists() and (not path.is_dir() or any(path.iterdir())):
-        raise ExportError("DESTINATION_NOT_EMPTY")
+    if os.path.lexists(path) or os.path.lexists(path.with_name(path.name + ".zip")):
+        raise ExportError("DESTINATION_EXISTS")
     return path, synced
 
 
-def protect(folder: Path) -> None:
-    """Owner-only ACL and not-indexed, on the folder before files go in."""
+def protect(target: Path, *, directory: bool = True) -> None:
+    """Owner-only ACL and not-indexed, on the folder before files go in (or
+    on the zip file before it is written)."""
     from .operation_grants import _secure_owner_only
     from .trace_fs_attrs import set_not_indexed
     try:
-        _secure_owner_only(folder, directory=True)
-        set_not_indexed(folder)
+        _secure_owner_only(target, directory=directory)
+        set_not_indexed(target)
     except (OSError, PermissionError) as exc:
         raise ExportError("DESTINATION_PROTECTION_FAILED") from exc
 
@@ -74,8 +105,11 @@ def destination_digest(home, owner: str, path: Path) -> str | None:
     return hmac.new(key, b"export-destination\x00" + message, hashlib.sha256).hexdigest()
 
 
-def _grants(home, owner: str) -> Path:
+def grant_folder(home, owner: str) -> Path:
     return Path(home) / "state" / "trace-export" / "v1" / "owners" / owner / "grants"
+
+
+_grants = grant_folder
 
 
 def create_grant(home, owner: str, out, options: dict) -> dict:

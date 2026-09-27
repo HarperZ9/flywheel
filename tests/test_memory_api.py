@@ -58,3 +58,33 @@ def test_duplicate_note_never_double_stores(tmp_path):
 
 def test_empty_note_is_refused(tmp_path):
     assert "error" in memory_note(tmp_path, "   ")
+
+
+def test_a_note_written_during_a_deletion_does_not_restore_deleted_notes(tmp_path):
+    """S20: the note waits for the custody lock and reads the index inside it,
+    so it cannot write back a copy read before the deletion rewrote the file."""
+    import os
+    import threading
+    import time
+    from harness.fold_index import FoldIndex
+    from harness.trace_custody_lock import custody_lock
+    state = tmp_path / "home" / "state"
+    state.mkdir(parents=True)
+    run = tmp_path / "run"
+    memory_note(run, "a note the owner deletes", state_root=state)
+    done = threading.Event()
+    with custody_lock(state):
+        worker = threading.Thread(target=lambda: (memory_note(
+            run, "a note written during the deletion", state_root=state), done.set()))
+        worker.start()
+        time.sleep(0.3)
+        assert not done.is_set()
+        index = FoldIndex(run / "fold_index.json")
+        index.spans.clear()
+        index._content.clear()
+        index.postings.clear()
+        index._save()
+    worker.join(15)
+    contents = {s["messages"][0]["content"] for s in memory_list(run)["spans"]}
+    assert contents == {"a note written during the deletion"}
+    assert os.path.exists(state / "custody.lock")

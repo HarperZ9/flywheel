@@ -6,8 +6,10 @@
 // file shrinks; nothing is dropped. An active file that cannot be parsed is
 // renamed aside byte for byte and never written again; one that cannot be
 // read at all pauses saving so it is never replaced. A conversation too
-// large for any envelope is refused with a metadata-only loss record, and
-// its latest turn stays in drafts, where the caller already keeps it.
+// large for any envelope (1 MiB or 4096 JSON nodes) is not written: its last
+// stored copy is carried forward, every other conversation is still saved,
+// one metadata-only loss record is written per conversation, and its latest
+// turn stays in drafts, where the caller already keeps it.
 
 import 'dart:convert';
 import 'dart:io';
@@ -46,6 +48,7 @@ class ChatStore {
       temporaryFile: temporaryFile,
       clock: _clock);
   var _activeIds = <String>{};
+  final _lossRecorded = <String>{};
 
   static File _defaultFile() =>
       File('${flywheelHome()}${Platform.pathSeparator}chats.json');
@@ -62,18 +65,25 @@ class ChatStore {
     return active;
   }
 
-  bool save(List<Conversation> conversations) {
+  /// Saves every conversation that fits. An oversize one keeps its last
+  /// stored copy. True when the write succeeded and nothing was oversize,
+  /// or, with [require], when the conversation named there was saved.
+  bool save(List<Conversation> conversations, {String? require}) {
     if (status.savingPaused) return false;
-    final items = [
-      for (final c in conversations)
-        if (!c.isEmpty) c.toJson()
-    ];
-    final sizes = [for (final item in items) chatJsonSize(item)];
-    for (var index = 0; index < items.length; index++) {
-      if (!chatFitsAlone(sizes[index])) {
-        return _refuseOversize(items[index]['id'] as String);
+    final oversize = <String>[];
+    final items = <Map<String, dynamic>>[];
+    for (final c in conversations) {
+      if (c.isEmpty) continue;
+      final item = c.toJson();
+      if (chatFitsAlone(chatJsonSize(item))) {
+        items.add(item);
+        continue;
       }
+      oversize.add(c.id);
+      final previous = _lastStored(c.id);
+      if (previous != null) items.add(previous);
     }
+    final sizes = [for (final item in items) chatJsonSize(item)];
     final split = _window(sizes);
     try {
       if (split < items.length) archive.upsert(items.sublist(split));
@@ -87,9 +97,36 @@ class ChatStore {
       return false;
     }
     _activeIds = {for (final item in items.take(split)) item['id'] as String};
-    status.oversizeConversation = null;
+    status.oversizeConversation = oversize.isEmpty ? null : oversize.first;
+    for (final id in oversize) {
+      _recordLoss(id);
+    }
     _refresh();
-    return true;
+    if (oversize.isEmpty) return true;
+    return require != null && !oversize.contains(require);
+  }
+
+  /// The copy of `id` last written to the active file or an archive
+  /// segment, so an oversize conversation is never dropped from history.
+  Map<String, dynamic>? _lastStored(String id) {
+    if (storageFile.existsSync()) {
+      try {
+        final active = readJourneyLocalObject(storageFile)['conversations'];
+        if (active is List) {
+          for (final item in active) {
+            if (item is Map<String, dynamic> && item['id'] == id) return item;
+          }
+        }
+      } catch (_) {
+        debugPrint('chat history active file not readable for carry-forward');
+      }
+    }
+    try {
+      return archive.latestById(archive.read())[id];
+    } catch (_) {
+      debugPrint('chat history archive not readable for carry-forward');
+      return null;
+    }
   }
 
   /// Archived conversations not in the active file, newest segment first,
@@ -224,12 +261,10 @@ class ChatStore {
     return count;
   }
 
-  bool _refuseOversize(String conversationRef) {
+  void _recordLoss(String conversationRef) {
+    if (!_lossRecorded.add(conversationRef)) return;
     writeChatLossRecord(storageFile.parent,
         conversationRef: conversationRef, at: _clock());
-    status.oversizeConversation = conversationRef;
-    status.changed();
-    return false;
   }
 
   void _refresh() {

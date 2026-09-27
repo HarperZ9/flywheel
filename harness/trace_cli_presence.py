@@ -53,5 +53,5 @@ def register(sub) -> None:
     commands = parser.add_subparsers(dest="presence_command", required=True)
     commands.add_parser("show", help="the method in effect").set_defaults(run=show)
     change = commands.add_parser("set", help="change the method, confirmed by the current one")
-    change.add_argument("method", choices=("windows-hello", "desktop-dialog", "none"))
+    change.add_argument("method", choices=("windows-hello", "none"))
     change.set_defaults(run=set_method)
