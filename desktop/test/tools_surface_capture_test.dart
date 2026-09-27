@@ -84,7 +84,8 @@ void main() {
     expect(find.text('More'), findsOneWidget);
     await tester.tap(find.text('Bulletin'));
     await tester.pump(const Duration(milliseconds: 200));
-    expect(find.textContaining('Declared by the registry'), findsOneWidget);
+    expect(find.text('Not checked yet.'), findsOneWidget);
+    expect(find.textContaining('Declared by the registry'), findsNothing);
     await _capture(tester, key, 'narrow-tools-detail-fixture', output, frames);
 
     final semantics = tester.ensureSemantics();
@@ -232,6 +233,10 @@ final _fixtureRoster = LaneRoster(
       role: 'engine shell',
       detail: 'Fixture live lane with two callable tools.',
       tools: 2,
+      state: 'ready',
+      sentence: 'Ready to answer its fixture status tool.',
+      lastChecked: '2026-09-26T10:00:00Z',
+      checkedThisSession: true,
     ),
     Lane(
       name: 'bulletin',
@@ -242,6 +247,7 @@ final _fixtureRoster = LaneRoster(
       role: 'open board',
       detail:
           'Fixture declared lane; run Probe now to verify endpoint reachability.',
+      state: 'not_checked',
     ),
     Lane(
       name: 'mneme',
@@ -253,6 +259,8 @@ final _fixtureRoster = LaneRoster(
       detail:
           'Fixture missing lane; no reviewed native setup action is exposed.',
       packageInstallable: false,
+      state: 'cannot_launch',
+      code: 'not_installed',
     ),
     Lane(
       name: 'plexus',
@@ -264,6 +272,9 @@ final _fixtureRoster = LaneRoster(
       role: 'agent mesh',
       detail: 'Fixture stale lane; repair remains a reviewed backend concern.',
       tools: 1,
+      state: 'needs_setup',
+      sentence: 'Choose a fixture folder.',
+      secondLine: 'Answers its health check.',
     ),
   ],
 );

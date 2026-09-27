@@ -14,7 +14,22 @@ extension GatewayLaneClient on GatewayClient {
     if (body['n_lanes'] is! int || body['by_status'] is! Map) {
       throw const FormatException('Lane inventory was not reported');
     }
-    return LaneRoster.fromJson(body);
+    return LaneRoster.fromJson(body, probed: probe);
+  }
+
+  /// `POST /api/lanes/<lane>/check`: probe one lane now; its row with state.
+  Future<Lane> checkLane(String name) async {
+    // A private POST needs a JSON content type, or the engine answers 401.
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/lanes/${Uri.encodeComponent(name)}/check'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    final body = _decode(r);
+    if (body['name'] != name || body['state'] is! String) {
+      throw const FormatException('Lane check was not reported');
+    }
+    return Lane.fromJson(body);
   }
 
   /// GET /api/settings/node_path: the node the Node lanes use and its source.

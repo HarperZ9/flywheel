@@ -3,22 +3,27 @@
 // The gateway owns lane state. This surface reads the roster, probes on user
 // request, and keeps executable lane calls behind the existing grant-bound
 // advanced panel. It intentionally does not expose the unpinned install helper
-// as a public repair path.
+// as a public repair path. The headline, the counts and the order come from
+// each row's `state` (D2, D9); an engine with no state keeps the old wording.
 
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
 import '../models/lane_readiness.dart';
+import '../models/lane_state.dart';
 import '../widgets/fw.dart';
 import '../widgets/lane_health_panel.dart';
 
-export '../widgets/lane_health_panel.dart' show LaneCard;
+export '../widgets/lane_card.dart' show LaneCard;
 
 class LanesView extends StatelessWidget {
   final LaneRoster? roster;
   final bool alive;
   final VoidCallback? onProbe;
+
+  /// Probe one lane now; the card offers it on a lane not yet checked.
+  final void Function(String name)? onCheck;
 
   /// Preserved for shell compatibility while the public Tools surface stops
   /// offering unreviewed per-lane install actions.
@@ -34,6 +39,7 @@ class LanesView extends StatelessWidget {
     this.roster,
     required this.alive,
     this.onProbe,
+    this.onCheck,
     this.onInstall,
     this.client,
   });
@@ -50,9 +56,9 @@ class LanesView extends StatelessWidget {
       return const Center(child: CircularProgressIndicator(strokeWidth: 2));
     }
     final lanes = [...roster!.lanes]..sort(_laneSort);
-    final by = roster!.byStatus;
-    final readiness =
-        laneReadinessDetail(roster!.nLanes, by, probeRequested: true);
+    final byState = rosterReportsState(roster!);
+    final counts = byState ? laneStateCounts(lanes) : roster!.byStatus;
+    final readiness = laneRosterDetail(roster!);
     return ViewScroll(
       storageKey: 'tools-lanes-view',
       children: [
@@ -66,9 +72,12 @@ class LanesView extends StatelessWidget {
         ),
         const SizedBox(height: FwLayout.s3),
         LaneReadinessPanel(
-            total: roster!.nLanes, counts: by, detail: readiness),
+            total: roster!.nLanes,
+            counts: counts,
+            detail: readiness,
+            stateCounts: byState),
         const SizedBox(height: FwLayout.s4),
-        LaneRosterPanel(lanes: lanes),
+        LaneRosterPanel(lanes: lanes, onCheck: onCheck),
         if (client != null) ...[
           const SizedBox(height: FwLayout.s4),
           AdvancedLaneTools(client: client!, alive: alive),
@@ -79,6 +88,8 @@ class LanesView extends StatelessWidget {
 }
 
 int _laneSort(Lane a, Lane b) {
+  final byState = laneStateRank(a).compareTo(laneStateRank(b));
+  if (byState != 0) return byState;
   final byStatus = _statusRank(a.status).compareTo(_statusRank(b.status));
   if (byStatus != 0) return byStatus;
   return a.name.compareTo(b.name);
