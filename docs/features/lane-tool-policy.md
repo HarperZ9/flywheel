@@ -35,6 +35,9 @@ argument.
   value inside an inline configuration where the column says so, and a flag the
   engine adds to the lane's launch for one approved call only (forum's
   `--allow-gate-decisions`, which forum 1.15 needs before it runs a gate decision).
+  The engine checks a path both as given and with `~` expanded, since lanes read it
+  either way. An index `root` above the home, such as your user folder, still lets
+  index read the repositories inside the home.
 - **Reason**: why the tool has its tier, from reading the lane's source.
 
 The tables come from the engine's policy table (`harness/lane_tool_policy.py`),
