@@ -18,6 +18,7 @@ entry that the absolute spelling of the same folder would not pass.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -181,3 +182,20 @@ def test_the_feature_page_lists_the_pinned_tools():
     assert "the 23 the payload row lists" in page and "the 22 the payload row lists" not in page
     assert f"`index_router`, `{NEW_TOOL}`, `index_internals`" in page
     assert "18 tool definitions" not in page
+
+
+def test_the_feature_page_names_the_tools_the_pinned_index_caches():
+    """The cache sentence names the tools the pinned mcp.py caches
+    (``_CACHEABLE_TOOLS``), and the page cites no test count: the pinned
+    README carries none."""
+    index_graph = pytest.importorskip("index_graph")
+    if index_graph.__version__ != VERSION:
+        pytest.skip(f"index-graph {index_graph.__version__} installed, not {VERSION}")
+    from index_graph.mcp import _CACHEABLE_TOOLS
+    page = _text("docs", "features", "index.md")
+    assert "tools cache their result" in page
+    sentence = page.split("tools cache their result", 1)[1].split(". ", 1)[0]
+    named = set(re.findall(r"`([^`]+)`", sentence)) - {"bounded_output"}
+    assert named == set(_CACHEABLE_TOOLS)
+    assert "index.map" not in sentence
+    assert not re.search(r"\b\d+ tests\b", page)
