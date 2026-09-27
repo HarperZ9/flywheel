@@ -12,9 +12,10 @@
 Flywheel runs any model, frontier or local, behind a single OpenAI-compatible
 surface. Flywheel's records stay on your machine. Your provider keys are
 stored only there: Flywheel sends each one only to its own provider, and a key
-you bind to a lane call reaches that lane's process for that one call. The
-content of each request, including files and tool output the agent reads, goes
-to the model provider you pick, under that provider's terms. With a local model
+you bind to a lane call, or grant a lane with `env_allow`, reaches that lane's
+process only on a call you approve at T2. The content of each request,
+including files and tool output the agent reads, goes to the model provider you
+pick, under that provider's terms. With a local model
 it stays on your machine. Flywheel's desktop assistant, Rowan, takes a request
 in plain words and turns it into a task the app runs and records on the model
 you pick. A permission-gated coding agent, relay, runs over your own folders and
