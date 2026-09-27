@@ -182,10 +182,10 @@ Copyright 2026 Zain Dana Harper.
 Lanes frozen from pinned source
 Each lane's license ships at licenses/python-lanes/<lane>/, hash-checked against
 its pin when the engine is frozen. Source: https://github.com/HarperZ9/<repo>
-at the tag named. Copyright 2026 Zain Dana Harper.
+at the tag or commit named. Copyright 2026 Zain Dana Harper.
 gather-engine 1.9.0 (lane gather), tag v1.9.0 @ 335452827727, LicenseRef-FSL-1.1-MIT
 crucible-bench 1.2.0 (lane crucible), tag v1.2.0 @ 9aea59a8b705, LicenseRef-Fair-Source
-index-graph 2.13.0 (lane index), tag v2.13.0 @ 71c26eabde26, FSL-1.1-MIT
+index-graph 2.13.0 (lane index), v2.13.0-1-g71c26ea @ 71c26eabde26, one commit past tag v2.13.0; no release contains it, FSL-1.1-MIT
 forum-engine 1.14.0 (lane forum), tag v1.14.0 @ 7f8ae5e0dc37, LicenseRef-FSL-1.1-MIT
 plexus-mesh 0.2.2 (lane plexus), tag v0.2.2 @ aa7cef0eb541, LicenseRef-FSL-1.1-MIT
 flywheel-mneme 0.5.1 (lane mneme), tag v0.5.1 @ 3009bedeaee6, LicenseRef-FSL-1.1-MIT
