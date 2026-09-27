@@ -2,17 +2,21 @@
 
 mneme 0.5.0 and canon 0.4.1 were pinned here first; mneme 0.5.1 and canon
 0.4.2 replaced them the same night (tests/test_lane_pins_20260926_final.py).
+relay 0.5.0 and gather 1.9.1 replaced relay 0.4.0 and gather 1.9.0 on
+2026-09-27 (tests/test_lane_pins_20260927.py); PINS names the current pins, so
+the launch checks below run against the releases that ship, and the relay
+descriptor check refuses the version it replaced.
 
 Every place the branch pins one of these lanes agrees on the release: the
 registry, the payload row, the relay submodule, descriptor and compiled
 expectation, the notices and the canon context checks. The launch adapts to
 what each release changed:
 
-- relay 0.4.0 keeps its session store in a per-user folder unless
+- relay 0.4.0 and later keep the session store in a per-user folder unless
   RELAY_SESSION_DIR names one; the engine names ``<lane>/sessions``. Shell
   children and CLI tiers need exec, which the app never grants, so the child
   also starts with no RELAY_CHILD_ENV names and no unproven CLI allowed;
-- gather 1.9.0 reads network, exec and credential grants from its launch; the
+- gather 1.9.0 and later read network, exec and credential grants from the launch; the
   app's main action (a local document, a corpus) needs none, so every gather
   grant starts empty whatever the engine's environment or an env_allow says;
 - mneme 0.5.0 makes forget a two-step erase; it stays T2;
@@ -35,8 +39,8 @@ ROOT = Path(__file__).resolve().parents[1]
 ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
     ROOT / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
     if line.strip()}
-PINS = {"relay": ("0.4.0", "v0.4.0", "ac4d79877f19e3e4c439c15d4781c3896e2f33db"),
-        "gather": ("1.9.0", "v1.9.0", "335452827727bdb76d577dd7e84313f987c2ab15")}
+PINS = {"relay": ("0.5.0", "v0.5.0", "ba1e4f21f05ff610a182f9b4665bb82f05a969f8"),
+        "gather": ("1.9.1", "v1.9.1", "6b5d4dd5920a248bafaeefef4f596e67a42889fb")}
 GATHER_GRANTS = ("GATHER_ALLOW_NETWORK", "GATHER_ALLOW_EXEC", "GATHER_AUTH_ENV_ALLOW",
                  "GATHER_CHILD_ENV")
 
@@ -60,7 +64,8 @@ def test_the_relay_expectation_descriptor_and_submodule_agree():
         encoding="utf-8"))
     assert (descriptor["version"], descriptor["source"]["commit"]) == PINS["relay"][::2]
     text = " ".join(descriptor["does_not_prove"])
-    assert "relay 0.3.0" not in text and "relay 0.4.0" in text
+    assert "relay 0.3.0" not in text and "relay 0.4.0" not in text
+    assert "relay 0.5.0" in text
     gitlink = (ROOT / ".gitmodules").read_text(encoding="utf-8")
     assert "path = relay" in gitlink
 

@@ -93,7 +93,8 @@ def test_forum_row_serves_mcp_surface_and_hashes_its_package_data():
     files = {item["path"]: item for item in forum["component_descriptor"]["source"]["files"]}
     data = {path for path in files if not path.endswith(".py")}
     assert data == FORUM_DATA_FILES
-    assert sum(files[path]["bytes"] for path in data) == 18_917
+    # forum 1.15.1: the roster and the route-preflight skill files at the tag
+    assert sum(files[path]["bytes"] for path in data) == 18_789
 
 
 def test_calibrate_pro_row_is_a_reviewed_catalog_slice():

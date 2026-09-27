@@ -199,6 +199,16 @@ four grant variables empty (`GATHER_CHILD_ENV` too): its app tools read a local
 document or corpus and need none, and the feed route runs the gather CLI,
 which runs with the trust you give your own command line.
 
+From 1.9.1, gather refuses a network or device path itself before anything opens
+it: a UNC or `\\?\` path, a reserved device name such as `CON` or `con.md` in any
+component, and a link whose target is one. The call returns `NON_LOCAL_PATH`, which
+Flywheel answers as `argument_refused`, the answer its own path guard gives for a
+UNC or device-namespace path. 1.9.1 also leaves a PATH entry that reaches its
+working folder out of an external tool's lookup and PATH. The gather lane starts in
+its own lane folder, which holds no tool. With the system folder alone on PATH and
+with a full developer PATH, every program checked that 1.9.0's lookup found, 1.9.1's
+found too, some under the real folder a linked PATH entry points to.
+
 ### Python API
 Stable seams re-exported from `gather/__init__.py`: `make_item`, `Item`,
 `Provenance`, `content_hash`, `Corpus`, `Digest`, `digest`, `digest_of_receipts`,
@@ -322,7 +332,7 @@ Gather is already a native lane, so most of the wiring the question asks about
 exists. Present and verified:
 
 - **Lane registry entry**: `LANES["gather"]` in `harness/lanes_registry.py`,
-  organ `perception`, version `1.9.0`, `py_module="gather.cli"`,
+  organ `perception`, version `1.9.1`, `py_module="gather.cli"`,
   `source_repo="public/gather"`.
 - **Expected-set test**: `tests/test_lanes.py::test_registry_covers_the_expected_lanes`
   asserts `gather` is in the lane set, and

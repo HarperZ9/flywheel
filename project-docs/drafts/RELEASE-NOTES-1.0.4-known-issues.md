@@ -14,8 +14,9 @@ installed app delivered. We rebuilt the 1.0.4 engine from its release tag with t
 release's own freeze steps and ran it the way a fresh machine would: no Python, no
 Node and no lane packages on the PATH, and a throwaway profile. This page corrects
 five statements about the installed Windows app; the engine you get from
-`pip install flywheel-verify` is not affected by those. It also names one lane
-advisory, for canon 0.2.0, that covers both the app and a pip install of 1.0.4.
+`pip install flywheel-verify` is not affected by those. It also names the lane
+advisories that cover the lane releases 1.0.4 pins: canon 0.2.0's, in both the app and
+a pip install, and gather's, relay's and forum's, in a pip install.
 
 ## What the notes said, and what we measured
 
@@ -65,6 +66,19 @@ included, returns query excerpts and pending references without scrubbing them, 
 lists recorded transcript paths, which then reach the next prompt your client sends
 to its model provider. canon 0.4.2 fixes this, and Flywheel 1.1.0 pins it.
 
+**gather 1.8.2, relay 0.2.5 and forum 1.14.0, which 1.0.4 pins, are inside eight lane
+advisories.** gather: GHSA-pxvv-rg3f-4v5w, GHSA-r4f3-9xrf-72m5, GHSA-j6j7-39vh-qrp4
+and GHSA-r38f-cr69-jpp8 (tool arguments that run commands, send secrets or reach a
+network share, and programs planted in the working folder). relay: GHSA-phjr-6qrc-39mw,
+GHSA-xxcc-grhg-v9g7 and GHSA-82fg-qprm-q5r7 (session files outside the store, planted
+CLI binaries and PATH entries, provider keys in shell children). forum:
+GHSA-36gv-h885-fmjf (approvals not tied to a raised gate, command executors given the
+working folder and the whole environment, an open local daemon).
+
+In the 1.0.4 app, gather and relay answer only status and doctor and forum does not
+start, so the affected tools do not run there. A pip install of 1.0.4 runs them.
+Flywheel 1.1.0 pins gather 1.9.1, relay 0.5.0 and forum 1.15.1.
+
 ## If you run 1.0.4 today
 
 - For lane work, use the engine from pip: `python -m pip install -U flywheel-verify`,
@@ -75,6 +89,9 @@ to its model provider. canon 0.4.2 fixes this, and Flywheel 1.1.0 pins it.
 - Do not send secrets through the context capture route on 1.0.4. If you did,
   treat the context database as holding them until you upgrade and purge it with
   canon 0.4.2.
+- On a pip install, move to Flywheel 1.1.0 for the fixed gather, relay and forum.
+  Upgrading relay alone on 1.0.4 stops that lane: 1.0.4 starts relay as
+  `python -m relay.local_mcp --mcp`, which relay 0.3.0 and later refuse.
 - If Python is on your PATH and you use the app's local-model or writing lane, make
   sure that Python has flywheel-verify 1.0.4, because the app runs that copy:
   `python -m pip install -U flywheel-verify`.

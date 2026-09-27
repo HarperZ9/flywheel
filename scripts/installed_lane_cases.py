@@ -189,7 +189,7 @@ CASES: dict[str, LaneCase] = {c.lane: c for c in (
         st("fresh", "needs_setup"), tools("fresh"), st("setup", *RUNS),
         call("setup_main", "setup", "writing.diagnose", _diagnose_args, tier="T2",
              assert_=lambda r: isinstance(find_key(r, "proposal_ref"), str)))),
-    LaneCase("relay", "B", "B", "PLAN 1a: model server; relay 0.4.0 pinned", (
+    LaneCase("relay", "B", "B", "PLAN 1a: model server; relay 0.5.0 pinned", (
         st("fresh", "needs_setup", confound="model_server"), tools("fresh"),
         st("setup", *RUNS), fx("setup", "relay", stub_hit=True),
         call("setup_start_t1_refused", "setup", "local_agent_start",

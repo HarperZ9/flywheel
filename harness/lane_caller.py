@@ -13,6 +13,12 @@ a key. Argument guards run before any child spawns (``lane_tier_gate``).
 A tool whose work outlives the call (a relay background run, an index router
 job) goes to the lane's long-lived session instead of a per-call child
 (``lane_session``), after the same checks.
+
+A lane that refuses a call with one of the closed codes in ``LANE_REFUSALS``
+(gather 1.9.1's ``NON_LOCAL_PATH``; ``GRANT_REQUIRED`` from gather and forum)
+answers with the engine's own fixed refusal and a reason slug, the same shape
+as the engine's argument refusal, so the card names the cause whichever check
+caught it. The lane's own text is not passed on.
 """
 from __future__ import annotations
 
@@ -116,8 +122,9 @@ def _call(lane_name: str, tool_name: str, command: Any, args: dict[str, Any],
             started = True
             res = c.call_text(tool_name, args)
             if not res["ok"]:
-                return {"error": f"{lane_name}.{tool_name} error: "
-                                 f"{res['text'][:200]}"}
+                return (lane_refusal(lane_name, tool_name, res.get("raw"))
+                        or {"error": f"{lane_name}.{tool_name} error: "
+                                     f"{res['text'][:200]}"})
             try:
                 return json.loads(res["text"])
             except json.JSONDecodeError:
@@ -162,6 +169,25 @@ TOOL_MIN_TIERS: dict[str, dict[str, str]] = {
 }
 
 _RANKS = {"T1": 1, "T2": 2, "T3": 3}
+
+# A lane's closed refusal code -> (engine reason slug, fixed message).
+LANE_REFUSALS = {
+    "NON_LOCAL_PATH": ("argument_refused", "the lane refused a network or device path"),
+    "GRANT_REQUIRED": ("lane_grant_required",
+                       "the lane was not started with the grant this call needs"),
+}
+
+
+def lane_refusal(lane_name: str, tool_name: str, raw: object) -> dict[str, Any] | None:
+    """The fixed refusal for a tool result that carries a closed lane code in
+    ``structuredContent``, or None for any other result."""
+    content = raw.get("structuredContent") if isinstance(raw, dict) else None
+    code = content.get("code") if isinstance(content, dict) else None
+    if not isinstance(code, str) or code not in LANE_REFUSALS:
+        return None
+    reason, message = LANE_REFUSALS[code]
+    return {"code": "LANE_TOOL_ERROR", "error": message, "status": "unavailable",
+            "name": lane_name, "tool": tool_name, "reason": reason}
 
 
 def required_tier(lane_name: str, tool_name: str) -> str:

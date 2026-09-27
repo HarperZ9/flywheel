@@ -43,12 +43,13 @@ DOES_NOT_PROVE = (
     "and transport, not that Relay completes model-backed work.",
     "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: no provider credential rides the "
     "launch; a model server is a separate setup item.",
-    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.4.0 takes write and exec from its "
+    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.5.0 takes write and exec from its "
     "launch, and the engine launches it with both off, its root at the lane "
     "folder, no RELAY_CHILD_ENV names and no unproven CLI tier allowed; the "
     "engine also passes only listed arguments, so root, check, test_cmd and "
-    "online never reach a run. relay's shell is not path-confined when a launch "
-    "grants exec, which this build never does.",
+    "online never reach a run, and no shell, bisect or git child starts. relay's "
+    "shell is not path-confined when a launch grants exec, which this build "
+    "never does.",
     "NOT_PROVES_BACKGROUND_RUN_DURABILITY: a local_agent_start run lives in the "
     "memory of the relay lane session; when that session ends (idle, a crash, "
     "an engine stop) the run ends with it and its id reads unknown.",
@@ -121,8 +122,13 @@ def dispatch_bundled_lane_mcp(
 ) -> int | None:
     """Serve one bundled lane child mode, or return None for the normal gateway.
 
-    The child mode is exactly ``--bundled-lane-mcp <lane>`` (two tokens, a safe
-    lane name). Any manifest lane admits and serves through this one path; the
+    The child mode is ``--bundled-lane-mcp <lane>`` (a safe lane name),
+    followed only by launch grants the policy names for that lane, each at most
+    once (``lane_tool_policy_args.LAUNCH_GRANTS``; the engine adds one to the
+    launch of a granted T2 call). Each grant reaches the callable as its keyword
+    set to True, the way forum's ``--allow-gate-decisions`` reaches
+    ``serve_stdio(allow_gate_decisions=True)``. Any other token refuses the child.
+    Any manifest lane admits and serves through this one path; the
     lane must clear the same admission as launch, and its declared callable is
     run. A synchronous callable runs directly; an async coroutine callable (such
     as forum's ``serve_stdio``) runs to completion under ``asyncio.run`` in this
@@ -131,9 +137,12 @@ def dispatch_bundled_lane_mcp(
     args = list(sys.argv[1:] if argv is None else argv)
     if not args or args[0] != "--bundled-lane-mcp":
         return None
-    if len(args) != 2 or not _SAFE_LANE.fullmatch(args[1]):
+    if len(args) < 2 or not _SAFE_LANE.fullmatch(args[1]):
         return 2
     name = args[1]
+    grants = _launch_grant_keywords(name, args[2:])
+    if grants is None:
+        return 2
     expected_row = _descriptor.resolve_expected(
         name, expected=expected, manifest_rows=manifest_rows)
     if expected_row is None:
@@ -154,13 +163,23 @@ def dispatch_bundled_lane_mcp(
     serve = getattr(module, str(expected_row["callable"]), None)
     if not callable(serve):
         return 2
-    result = serve()
+    result = serve(**grants)
     if inspect.iscoroutine(result):
         return int(asyncio.run(result) or 0)
     if inspect.isawaitable(result):
         getattr(result, "close", lambda: None)()
         return 2
     return int(result or 0)
+
+
+def _launch_grant_keywords(lane: str, extra: list[str]) -> dict[str, bool] | None:
+    """The serve keywords for the launch grants after the lane name, or None
+    when a token is not a grant the policy names for this lane or repeats."""
+    from .lane_tool_policy_args import LAUNCH_GRANTS
+    known = LAUNCH_GRANTS.get(lane, {})
+    if len(set(extra)) != len(extra) or any(flag not in known for flag in extra):
+        return None
+    return {known[flag]: True for flag in extra}
 
 
 def build_relay_descriptor(source_root: Path, *, commit: str) -> dict:

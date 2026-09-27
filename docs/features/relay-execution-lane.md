@@ -220,13 +220,20 @@ From `src/relay/local_agent_cli.py`:
 - `FLYWHEEL_RELAY_URL`: points the lane at a remote deployment (from the lane's
   `env_url_var`, applicable when the lane is reached remotely).
 
+From 0.5.0, a PATH entry that reaches the server's folder or a child's folder leaves
+that child's lookup and PATH, for git's own children and a bisect check's shell too.
+Flywheel starts relay with write and exec off and passes no `check` or `test_cmd`, so
+the app starts no shell, git or bisect child through relay.
+
 ### Lane declaration
 
 From `harness/lanes_registry.py`:
 
 - name `relay`, install_name `flywheel-relay`, command `relay`, args
-  `("--mcp",)`, kind `pip`, version `0.2.5`, organ `execution`, py_module
-  `relay.local_mcp`, source_repo `public/relay`.
+  `("--mcp",)`, kind `pip`, version `0.5.0`, organ `execution`, py_module
+  `relay` (a pip or source launch runs `python -m relay --mcp`), bundled_mcp_module
+  `relay.local_mcp` (the frozen build serves it in process), source_repo
+  `public/relay`.
 - `package_disabled_reason` is empty: `flywheel-relay` is published, so the
   package install profile is live and the source checkout is the fallback.
 - Headline governance tier `T2` (`harness/lane_caller.py:LANE_MIN_TIERS`), because
@@ -251,13 +258,10 @@ From `harness/lanes_registry.py`:
 - The `run` denylist refuses a few literal destructive spellings; the README
   states it is a guardrail against a small model wrecking the tree. It is not a
   security boundary.
-- Version note (observed 2026-09-18): the lane registry and the bundled-lane
-  expectation declare relay `0.2.0`, while the read source checkout's package
-  manifest and MCP server report `0.1.0`. A live probe compares the reported
-  version against `0.2.0`, so until the source version is aligned the probe can
-  return `stale` on the version check even when the server answers
-  (`harness/lanes.py:_health_verdict`). This is a version-pin mismatch in the read
-  checkout. The runtime has not failed.
+- Version note: the lane registry, the payload row, the bundled-lane expectation
+  and the relay submodule all name relay `0.5.0`, and
+  `tests/test_lane_pins_20260927.py` checks them against one another. A pip or npm
+  lane older than its pin does not start under the default profile.
 
 ## Composition
 

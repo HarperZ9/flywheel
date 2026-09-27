@@ -6,7 +6,9 @@ that table where a call is made:
 
 - ``/api/lane/<lane>/<tool>`` (``lane_caller.call_lane_tool``): the engine
   computes the tier; a granted T2 call widens the frozen launch for its one
-  tool and that call only; a tool the build leaves out answers ``NOT_IN_BUILD``;
+  tool and that call only, and adds the tool's launch grant, if it has one, to
+  that one launch (forum's ``--allow-gate-decisions``); a tool the build leaves
+  out answers ``NOT_IN_BUILD``;
 - Plugins (``plugins.call_plugin``): no tier travels with a plugin call, so a
   lane tool is reachable there only when the table lists it at T1;
 - agent runs (``gateway_agent_mcp_cache.restricted_catalog_launch``): an agent
@@ -44,15 +46,23 @@ def not_in_build(lane: str, tool: str) -> dict[str, str]:
 def widen_for_call(launch: Any, lane: str, tool: str, granted_tier: str) -> Any:
     """The launch for one call: a granted T2 call admits its own T2 tool.
 
-    Only a restricted launch changes, only for a tool the table lists at T2 and
-    keeps in the build, and only when the call carries T2 or higher. The
-    widened launch serves this call and is dropped with it."""
-    allowed = getattr(launch, "allowed_tools", None)
+    Only a tool the table lists at T2 and keeps in the build, and only when the
+    call carries T2 or higher. A restricted launch admits the tool; a tool with
+    a ``launch_grant`` gets that flag at the end of the argv, in every install
+    mode. The widened launch serves this call and is dropped with it, so no
+    other call, listing, probe, plugin or agent run starts the lane with the
+    grant. An unlisted tool never gets one."""
     entry = tool_policy(lane, tool)
-    if (allowed is None or tool in allowed or entry is None or entry.tier != "T2"
-            or entry.not_in_build or granted_tier not in ("T2", "T3")):
+    if (entry is None or entry.tier != "T2" or entry.not_in_build
+            or granted_tier not in ("T2", "T3")):
         return launch
-    return replace(launch, allowed_tools=(*allowed, tool))
+    allowed = getattr(launch, "allowed_tools", None)
+    if allowed is not None and tool not in allowed:
+        launch = replace(launch, allowed_tools=(*allowed, tool))
+    argv = tuple(getattr(launch, "argv", ()) or ())
+    if entry.launch_grant and argv and entry.launch_grant not in argv:
+        launch = replace(launch, argv=(*argv, entry.launch_grant))
+    return launch
 
 
 def admission_refusal(launch: Any, lane: str, tool: str) -> dict | None:

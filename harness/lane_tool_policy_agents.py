@@ -24,7 +24,9 @@ def _health(lane: str) -> dict:
 
 _SUBMIT = ("Runs a plan through the executor. With FORUM_RUN_REAL and a granted key it "
            "spends model calls.")
-_GATE = "Resolves a paused human-approval gate. An agent must not approve its own wave."
+_GATE = ("Resolves a paused human-approval gate. An agent must not approve its own wave. "
+         "forum 1.15 serves it only on a launch with --allow-gate-decisions, which the "
+         "engine adds for this one approved call; every other forum launch has it off.")
 _FORUM = {
     "submit": _t("spend", _SUBMIT, tier="T2", timeout_s=120),
     "route": _t("read", "Older name for forum.route: scores a request against the roster "
@@ -78,14 +80,14 @@ _MNEME = {
 _OFFLINE = (("online", False),)
 _NO_GRANTS = (("allow_write", False), ("allow_exec", False), *_OFFLINE)
 _RELAY_RUN_ARGS = ("goal", "max_steps", "max_tokens", "model", "backend", "compact_budget")
-_RELAY_RUN = ("Runs an agent task on the model server the person set up. relay 0.4.0 takes "
+_RELAY_RUN = ("Runs an agent task on the model server the person set up. relay 0.5.0 takes "
               "write and exec from its launch, which the engine starts with both off and its "
               "root at the lane folder; the engine also passes only the listed arguments, so "
               "root, check, test_cmd and online never reach the run, and forces write, exec "
               "and online off.")
 _RELAY_START = ("Starts the same agent run in the background on the relay lane's "
                 "long-lived session and returns its run id at once. T2: it holds the model "
-                "server for minutes with no call waiting on it. relay 0.4.0 takes write and "
+                "server for minutes with no call waiting on it. relay 0.5.0 takes write and "
                 "exec from its launch, which the engine starts with both off and its root at "
                 "the lane folder; the engine passes only the listed arguments and forces "
                 "write, exec and online off.")

@@ -6,6 +6,7 @@ Open before publishing:
   Replace that summary, run id and commit with the windows-installed-acceptance.yml
   run on the release commit (O-9); tests/test_release_drafts.py reads the summary.
 - The README lane sentence carries the same count (O-5).
+- Run 36302181098 predates the gather 1.9.1, relay 0.5.0 and forum 1.15.1 pins.
 - Installer size is from that CI build; re-measure it from the release workflow build.
 - The 1.0.4 known-issues page (RELEASE-NOTES-1.0.4-known-issues.md) publishes on its
   own; the section below points to it.
@@ -114,19 +115,25 @@ call you approve with the higher tier.
   call lane commands do the same.
 - **New in the installer.** articulate 0.5.0, calibrate-pro 2.0.0 as a catalog slice
   (the panel catalog without numpy), learn 1.6.0, and Node.js v24.21.0 LTS to run it.
-  forum 1.14.0 ships the data files it needs to start. `FLYWHEEL_NODE` or a node.exe you
+  forum 1.15.1 ships the data files it needs to start. `FLYWHEEL_NODE` or a node.exe you
   choose in the app still overrides the bundled Node; a chosen node.exe is checked by
   hash again at every launch.
-- **Lane updates.** relay 0.4.0, gather 1.9.0, mneme 0.5.1 and canon 0.4.2, each
-  frozen from its release tag. None adds a tool the app can call, and each tool keeps
-  its tier. In the Windows app, a pip install and a source checkout, relay keeps its
-  saved sessions in `lanes/relay/sessions` and starts with write, exec, shell child
-  variables and agent CLI tiers all off, and gather starts with no network, command or
-  credential grant, since the app's gather tools read a local document or corpus.
+- **Lane updates.** relay 0.5.0, gather 1.9.1, forum 1.15.1, mneme 0.5.1 and canon
+  0.4.2, each frozen from its release tag. None adds a tool the app can call, and each
+  tool keeps its tier. In the Windows app, a pip install and a source checkout, relay
+  keeps its saved sessions in `lanes/relay/sessions` and starts with write, exec, shell
+  child variables and agent CLI tiers all off, gather starts with no network, command or
+  credential grant, since the app's gather tools read a local document or corpus, and
+  forum starts with its command variables empty.
   mneme's forget erases a memory with the rows derived from it and returns a receipt
   that names any residue it finds. canon's context store redacts every ingest and can
   purge records from its own command line; the engine starts canon's context server
   with purge disabled, so it can only plan one.
+- **Gate decisions stay with your approval.** forum 1.15 runs `gate_approve`, `gate_edit`
+  and `gate_reject` only when started with `--allow-gate-decisions`. The engine adds it
+  only to the launch of one call you approve at T2 for one of them, so your approval
+  decides each gate. The forum card lists what an ordinary launch lists, which leaves
+  the three out. A lane call at T2 reaches them.
 - **relay starts from pip and source installs again.** With relay 0.3.0 or later, the
   engine's pip and source launch for relay exited at start. It now starts relay through its own
   command line. The Windows app was not affected.
@@ -147,20 +154,29 @@ call you approve with the higher tier.
 - **Error codes you can act on.** A failed lane call returns one of six fixed codes with
   a short reason slug, and the card offers one action for each: list tools again, show
   setup, check the lane or run again. A call refused at its tier says so and offers no
-  action.
+  action. A lane that refuses a network or device path reads `argument_refused`, and a
+  lane whose launch lacks the grant a call needs reads `lane_grant_required`.
 - **License texts ship with the engine.** The engine folder now carries the Python
   license (with OpenSSL's), the texts for code compiled into Python, and each lane's
   license. The installer's third-party notice lists every one.
 
 ## Security fixes in the lanes
 
-- relay 0.4.0 fixes GHSA-phjr-6qrc-39mw (a session listing could read ledger files
-  outside the session store) and GHSA-xxcc-grhg-v9g7 (agent CLI tiers could run a
-  planted binary or project hooks, and shell children inherited provider keys). The
-  engine also refuses a session id that is not a plain name before relay sees it.
-- gather 1.9.0 fixes GHSA-pxvv-rg3f-4v5w (tool arguments could run commands and send
-  environment secrets to a chosen host) and GHSA-r4f3-9xrf-72m5 (external tools started
-  by bare name from the working folder).
+- relay 0.5.0 fixes GHSA-82fg-qprm-q5r7 (a PATH entry reaching a child's folder could
+  start a planted program, git's children included) and, from 0.4.0, GHSA-phjr-6qrc-39mw
+  (a session listing could read ledger files outside the store) and GHSA-xxcc-grhg-v9g7
+  (CLI tiers could run a planted binary or project hooks, and shell children got
+  provider keys). The engine also refuses a session id that is not a plain name.
+- gather 1.9.1 fixes GHSA-j6j7-39vh-qrp4 (a path argument over MCP could make Windows
+  sign in to a share a model named) and GHSA-r38f-cr69-jpp8 (a PATH entry reaching the
+  working folder could start a planted program) and, from 1.9.0, GHSA-pxvv-rg3f-4v5w
+  (tool arguments could run commands and send secrets to a chosen host) and
+  GHSA-r4f3-9xrf-72m5 (tools started by bare name from the working folder).
+- forum 1.15.1 fixes GHSA-36gv-h885-fmjf (approvals not tied to a raised gate, executors
+  given the working folder and the whole environment, an open local daemon) and
+  GHSA-h6qh-49hv-4xcg (1.15.0's folder guard missed an alias, a repointed link and a
+  quoted PATH entry). These three advisories also cover gather 1.8.2, relay 0.2.5 and
+  forum 1.14.0, which 1.0.4 pins. The 1.0.4 known-issues page says where they run.
 - mneme 0.5.1 fixes GHSA-j2pw-g7f4-9ppp (forget could keep erased text in its reason,
   erase another user's turn, and let the receipt confirm a guess of the erased text).
 - canon 0.4.2 fixes GHSA-48rq-xjfx-6j4f (the shared context store kept secrets from an
@@ -212,9 +228,13 @@ call you approve with the higher tier.
   only narrow them. From 0.4.0 its shell children see an allowlist of variables and
   its saved sessions default to a per-user folder. The app starts relay with write and
   exec off and its sessions in the lane folder.
-- gather 1.9.0 needs launch grants for network sources, commands and credentials in
-  `gather.run` and `gather.pilot`. Flywheel grants none, so such a run answers
-  `GRANT_REQUIRED`. The feeds screen uses gather's command line and is unchanged.
+- gather 1.9.0 and later need launch grants for network sources, commands and
+  credentials in `gather.run` and `gather.pilot`. Flywheel grants none, so such a run
+  answers `lane_grant_required`. gather 1.9.1 also refuses a network or device path,
+  including a reserved name such as `con.md`. The feeds screen uses gather's command
+  line and is unchanged.
+- forum's `gate_approve`, `gate_edit` and `gate_reject` run only on a call you approve at
+  T2, which starts forum with its decision grant for that call.
 - mneme 0.5.x forget takes two calls: the first returns a plan and deletes nothing,
   the second carries the plan's hash and erases. Each call needs your approval at T2.
   A writable open migrates the lane's memory database to schema 5. The 0.5.1 receipt

@@ -97,8 +97,8 @@ class ToolPolicy:
     ``forced_args``: (name, value) pairs the engine applies to every call on
     every route, after ``allowed_args``; ``None`` drops the argument.
     ``allowed_args``: when a tuple, the only argument names that pass.
-    ``id_args``, ``path_args``, ``tree_args``, ``open_egress``: see
-    ``lane_tool_policy_args``.
+    ``id_args``, ``path_args``, ``tree_args``, ``open_egress``,
+    ``launch_grant``: see ``lane_tool_policy_args``.
     """
     tier: str = "T1"
     timeout_s: int = DEFAULT_TIMEOUT_S
@@ -113,6 +113,7 @@ class ToolPolicy:
     path_args: tuple[str, ...] = ()
     tree_args: tuple[str, ...] = ()
     open_egress: bool = False
+    launch_grant: str = ""
 
     @property
     def guarded(self) -> bool:
@@ -166,7 +167,8 @@ def guard_args(lane: str, tool: str, args: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _entry_problems(where: str, entry: ToolPolicy, granted_main: bool = False) -> list[str]:
+def _entry_problems(where: str, entry: ToolPolicy, granted_main: bool = False,
+                    lane: str = "") -> list[str]:
     problems: list[str] = []
     if entry.tier not in TIERS:
         problems.append(f"{where}: tier {entry.tier!r} not in {TIERS}")
@@ -186,6 +188,13 @@ def _entry_problems(where: str, entry: ToolPolicy, granted_main: bool = False) -
     if any(not (isinstance(pair, tuple) and len(pair) == 2 and isinstance(pair[0], str))
            for pair in entry.forced_args):
         problems.append(f"{where}: forced_args must be (name, value) pairs")
+    if entry.launch_grant:
+        from .lane_tool_policy_args import LAUNCH_GRANTS
+        if entry.launch_grant not in LAUNCH_GRANTS.get(lane, {}):
+            problems.append(f"{where}: launch grant {entry.launch_grant!r} is not one "
+                            "the lane takes")
+        if entry.tier != "T2" or entry.not_in_build:
+            problems.append(f"{where}: a launch grant needs a T2 tool in the build")
     return problems
 
 
@@ -202,5 +211,6 @@ def validate_policy(
             if not isinstance(entry, ToolPolicy):
                 problems.append(f"{where}: not a ToolPolicy")
                 continue
-            problems.extend(_entry_problems(where, entry, lane in GRANTED_MAIN_LANES))
+            problems.extend(_entry_problems(where, entry, lane in GRANTED_MAIN_LANES,
+                                            lane))
     return problems

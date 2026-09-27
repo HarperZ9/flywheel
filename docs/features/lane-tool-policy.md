@@ -32,7 +32,9 @@ argument.
 - **Engine sets**: what the engine does to the arguments before the lane sees them:
   an argument it drops or fixes, an id that must be a plain name, and a path argument
   it keeps out of Flywheel's own state (the home and the run root), including every
-  value inside an inline configuration where the column says so.
+  value inside an inline configuration where the column says so, and a flag the
+  engine adds to the lane's launch for one approved call only (forum's
+  `--allow-gate-decisions`, which forum 1.15 needs before it runs a gate decision).
 - **Reason**: why the tool has its tier, from reading the lane's source.
 
 The tables come from the engine's policy table (`harness/lane_tool_policy.py`),
@@ -41,7 +43,7 @@ table differ.
 
 <!-- policy-tables:start (scripts/render_lane_policy_review.py) -->
 
-### gather 1.9.0
+### gather 1.9.1
 
 Admitted at launch: 5 of 8 tools. T2 per granted call: 3. Not in this build: 0.
 
@@ -132,7 +134,7 @@ Admitted at launch: 21 of 22 tools. T2 per granted call: 1. Not in this build: 0
 | `index.router.job.cancel` | T1 |  | state_write |  | `job_id` a plain id | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
 | `index.router.job.resume` | T1 |  | state_write |  | `job_id` a plain id | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
 
-### forum 1.14.0
+### forum 1.15.1
 
 Admitted at launch: 14 of 21 tools. T2 per granted call: 7. Not in this build: 0.
 
@@ -156,9 +158,9 @@ Admitted at launch: 14 of 21 tools. T2 per granted call: 7. Not in this build: 0
 | `forum.runtime.inspect` | T1 |  | read |  |  | Reports the executor policy without running a model. |
 | `forum.context.preflight` | T1 |  | read |  |  | Estimates context pressure before a submit. |
 | `gate_list` | T1 |  | read |  |  | Lists paused approval gates. |
-| `gate_approve` | T2 |  | approve |  |  | Resolves a paused human-approval gate. An agent must not approve its own wave. |
-| `gate_edit` | T2 |  | approve |  |  | Resolves a paused human-approval gate. An agent must not approve its own wave. |
-| `gate_reject` | T2 |  | approve |  |  | Resolves a paused human-approval gate. An agent must not approve its own wave. |
+| `gate_approve` | T2 |  | approve |  | `--allow-gate-decisions` on this call's launch only | Resolves a paused human-approval gate. An agent must not approve its own wave. forum 1.15 serves it only on a launch with --allow-gate-decisions, which the engine adds for this one approved call; every other forum launch has it off. |
+| `gate_edit` | T2 |  | approve |  | `--allow-gate-decisions` on this call's launch only | Resolves a paused human-approval gate. An agent must not approve its own wave. forum 1.15 serves it only on a launch with --allow-gate-decisions, which the engine adds for this one approved call; every other forum launch has it off. |
+| `gate_reject` | T2 |  | approve |  | `--allow-gate-decisions` on this call's launch only | Resolves a paused human-approval gate. An agent must not approve its own wave. forum 1.15 serves it only on a launch with --allow-gate-decisions, which the engine adds for this one approved call; every other forum launch has it off. |
 
 ### learn 1.6.0
 
@@ -267,7 +269,7 @@ Admitted at launch: 3 of 14 tools. T2 per granted call: 10. Not in this build: 1
 | `writing.proposal_approve` | T2, not in build: `approval_cli_only` |  | approve |  | drops `home` | Unavailable over MCP by design; approval runs from the CLI. |
 | `writing.proposal_commit` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Commits a proposal that an approval outside MCP granted; changes the manuscript in the writing workspace. The policy review keeps the records at T2. |
 
-### relay 0.4.0
+### relay 0.5.0
 
 Admitted at launch: 9 of 10 tools. T2 per granted call: 1. Not in this build: 0.
 
@@ -275,8 +277,8 @@ Admitted at launch: 9 of 10 tools. T2 per granted call: 1. Not in this build: 0.
 |---|---|---|---|---|---|---|
 | `local_agent_health` | T1 |  | network_read |  | passes only no argument, `online=false` | Pings the local model tiers; online tiers are forced off. |
 | `local_agent_chat` | T1 |  | model_call | model_server | passes only `prompt`, `backend`, `online=false` | One completion from the first healthy local tier; online tiers are forced off. |
-| `local_agent_run` | T1 | main | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Runs an agent task on the model server the person set up. relay 0.4.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine also passes only the listed arguments, so root, check, test_cmd and online never reach the run, and forces write, exec and online off. |
-| `local_agent_start` | T2 (rule alone: T1) |  | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Starts the same agent run in the background on the relay lane's long-lived session and returns its run id at once. T2: it holds the model server for minutes with no call waiting on it. relay 0.4.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine passes only the listed arguments and forces write, exec and online off. |
+| `local_agent_run` | T1 | main | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Runs an agent task on the model server the person set up. relay 0.5.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine also passes only the listed arguments, so root, check, test_cmd and online never reach the run, and forces write, exec and online off. |
+| `local_agent_start` | T2 (rule alone: T1) |  | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Starts the same agent run in the background on the relay lane's long-lived session and returns its run id at once. T2: it holds the model server for minutes with no call waiting on it. relay 0.5.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine passes only the listed arguments and forces write, exec and online off. |
 | `local_agent_status` | T1 |  | read |  | passes only `run_id`, `run_id` a plain id | Reads a background run from the relay lane session, where the run lives; the run id must be a plain id. |
 | `local_agent_result` | T1 |  | read |  | passes only `run_id`, `run_id` a plain id | Reads a background run from the relay lane session, where the run lives; the run id must be a plain id. |
 | `local_agent_runs` | T1 |  | read |  | passes only `limit` | Lists the runs the relay lane session holds. |

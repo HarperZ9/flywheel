@@ -72,7 +72,7 @@ class Lane:
 # lane_runtime_frozen picks the engine's own child modes instead.
 LANES: dict[str, Lane] = {
     "gather": Lane(
-        "gather", "gather-engine", "gather", ("mcp",), "pip", "1.9.0",
+        "gather", "gather-engine", "gather", ("mcp",), "pip", "1.9.1",
         "research intake + provenance receipts (verified-data flywheel intake)",
         "perception", source_repo="public/gather", py_module="gather.cli"),
     "crucible": Lane(
@@ -107,7 +107,7 @@ LANES: dict[str, Lane] = {
                   "INDEX_MCP_CACHE_DIR", "INDEX_MCP_CACHE_TTL_SECONDS",
                   "INDEX_MCP_DEBUG_ERRORS")),
     "forum": Lane(
-        "forum", "forum-engine", "forum", ("mcp",), "pip", "1.14.0",
+        "forum", "forum-engine", "forum", ("mcp",), "pip", "1.15.1",
         "witnessed causal ledger + model-agnostic routing",
         "orchestration", source_repo="public/forum", py_module="forum.cli",
         bundled_mcp_module="forum.mcp_surface",
@@ -138,7 +138,7 @@ LANES: dict[str, Lane] = {
         "private author workspace: scoped revisions, exact approval, and export receipts",
         "authoring"),
     "relay": Lane(
-        "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.4.0",
+        "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.5.0",
         "accountable agent loop on a local model server, witnessed runs (in the app: "
         "write and exec off, the two fixed local addresses only)",
         "execution", source_repo="public/relay", py_module="relay",

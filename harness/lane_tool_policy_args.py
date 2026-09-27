@@ -18,7 +18,10 @@ of that tool (the Phase 3 ``tools/list`` captures and the pinned sources):
   Windows device or network path, or one that resolves into Flywheel's own
   state outside the lane's folder, refuses the call;
 - ``open_egress``: the tool fetches a URL the caller names, an open outbound
-  channel an agent run must not hold (C-12, finding F6).
+  channel an agent run must not hold (C-12, finding F6);
+- ``launch_grant``: a flag the lane reads only from how it is started, never
+  from a tool argument (``LAUNCH_GRANTS``). The engine adds it to the launch of
+  one granted T2 call of that tool and to no other launch.
 
 Stated limit: a path inside a free-text field, or inside a nested object of an
 argument not named here, escapes a name-based list, and the write-containment
@@ -78,9 +81,13 @@ ARG_POLICY: dict[str, dict[str, dict]] = {
     # WP10: the session tools join an id into the session's run or job lookup
     "relay": {**{name: {"id_args": ("run_id",)}
                  for name in ("local_agent_status", "local_agent_result")},
-              # relay 0.4.0 refuses a session_id that is not a bare name; the
+              # relay 0.4.0 and later refuse a session_id that is not a bare name; the
               # engine checks it first (GHSA-phjr-6qrc-39mw read any ledger file)
               "local_agent_sessions": {"id_args": ("session_id",)}},
+    # forum 1.15 lists and runs its gate decision tools only on a launch that
+    # carries --allow-gate-decisions (LAUNCH_GRANTS)
+    "forum": {name: {"launch_grant": "--allow-gate-decisions"}
+              for name in ("gate_approve", "gate_edit", "gate_reject")},
 }
 for _action in ("status", "result", "cancel", "resume"):
     ARG_POLICY["index"][f"index.router.job.{_action}"] = {"id_args": ("job_id",)}
@@ -92,4 +99,17 @@ for _action in ("status", "result", "cancel", "resume"):
 #: learn_tutor_record wrote.
 CREATE_ONLY: dict[str, dict[str, tuple[str, str]]] = {
     "learn": {"learn_tutor_plan": ("sessionId", "tutor/{}.json")},
+}
+
+#: Launch grants: lane -> flag -> the keyword the frozen build passes to the
+#: lane's serve callable for it (``bundled_lane_admission``). A lane reads each
+#: flag only from how it is started, so a model that controls tool arguments
+#: cannot turn one on. The engine starts the lane without any of them; a tool
+#: whose entry names one (``launch_grant``) gets it on the launch of one call
+#: the owner approved at T2, and that launch ends with the call
+#: (``lane_tier_gate.widen_for_call``). forum 1.15 serves gate_approve,
+#: gate_edit and gate_reject only with --allow-gate-decisions, so the engine's
+#: T2 approval is what decides a gate, never the model a launch serves.
+LAUNCH_GRANTS: dict[str, dict[str, str]] = {
+    "forum": {"--allow-gate-decisions": "allow_gate_decisions"},
 }
