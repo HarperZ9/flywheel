@@ -102,7 +102,10 @@ def test_user_path_then_machine_path_from_the_registry(tmp_path):
 def test_registry_values_expand_percent_variables_from_the_environment(tmp_path):
     node = _exe(tmp_path / "Programs" / "nodejs")
     env = _env(tmp_path, LOCALAPPDATA=str(tmp_path))
-    found = _find(tmp_path, env, read_registry_path=_registry(user=r"%LocalAppData%\Programs\nodejs"),
+    # A real registry value reads %LocalAppData%\Programs\nodejs. This one joins
+    # the folder with the host separator, since a Linux runner has no backslash paths.
+    value = str(Path("%LocalAppData%") / "Programs" / "nodejs")
+    found = _find(tmp_path, env, read_registry_path=_registry(user=value),
                   node_version=_versions({node: "v24.0.0"}))
     assert found.found and found.path == str(node)
 
