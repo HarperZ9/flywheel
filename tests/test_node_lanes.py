@@ -27,7 +27,7 @@ PINS = {row["lane"]: row for row in json.loads(
 def _stage(tmp_path: Path, verdict: str = "PASS") -> Path:
     stage = tmp_path / "node-lanes"
     (stage / "node").mkdir(parents=True)
-    (stage / "node" / "node.exe").write_bytes(b"")
+    (stage / "node" / nl.bundled_node_name()).write_bytes(b"")
     for lane, entry in (("learn", "src/mcp.mjs"), ("telos", "demo/telos-mcp.mjs")):
         script = stage / lane / entry
         script.parent.mkdir(parents=True)
@@ -55,13 +55,23 @@ def test_frozen_learn_launches_the_bundled_node_on_an_absolute_script(tmp_path):
     res = nl.resolve_node_lane(LANES["learn"], "frozen", _env(tmp_path),
                                stage_root=stage, find=_finder())
     assert res.codes == () and res.setup == ()
-    assert res.launch.argv == (str(stage / "node" / "node.exe"),
+    assert res.launch.argv == (str(stage / "node" / nl.bundled_node_name()),
                                str(stage / "learn" / "src" / "mcp.mjs"))
     assert all(Path(arg).is_absolute() for arg in res.launch.argv)
     folder = tmp_path / "home" / "lanes" / "learn"
     assert res.launch.cwd == str(folder) and folder.is_dir()
     assert res.node.source == "bundled"
     assert res.launch.hide_window is True
+
+
+def test_windows_looks_for_the_node_the_stage_extracts():
+    # The fixtures stage the host's name (node on a Linux runner). This keeps
+    # the Windows name tied to the member the pinned win-x64 zip gives the stage.
+    runtime = json.loads((REPO / "packaging" / "node-lane-payloads.json").read_text(
+        encoding="utf-8"))["node_runtime"]
+    assert runtime["platform"].startswith("win-")
+    assert nl.bundled_node_name("nt") == "node.exe" and "node.exe" in runtime["members"]
+    assert nl.bundled_node_name("posix") == "node"
 
 
 def test_frozen_launch_carries_the_policy_t1_tools_only(tmp_path):

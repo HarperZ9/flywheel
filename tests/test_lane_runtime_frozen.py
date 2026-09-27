@@ -16,6 +16,7 @@ import pytest
 
 import harness.lanes as ln
 from harness import lane_runtime_frozen as lrf
+from harness import node_lanes as nl
 from harness import tool_discovery as td
 from harness.lane_runtime import LaneRuntimeError
 from harness.lane_tool_policy import admitted_tools
@@ -27,7 +28,7 @@ _NODE_ENTRIES = (("learn", "src/mcp.mjs"), ("telos", "demo/telos-mcp.mjs"))
 def _stage(tmp_path: Path) -> Path:
     stage = tmp_path / "stage" / "node-lanes"
     (stage / "node").mkdir(parents=True)
-    (stage / "node" / "node.exe").write_bytes(b"")
+    (stage / "node" / nl.bundled_node_name()).write_bytes(b"")
     for lane, entry in _NODE_ENTRIES:
         script = stage / lane / entry
         script.parent.mkdir(parents=True)
@@ -86,7 +87,7 @@ def test_no_frozen_argv_starts_with_python_node_or_a_console_script(frozen):
         # the frozen exe refuses -m (gateway_entry), so no argv may carry it (C15),
         # and the head is the engine itself or the staged node
         assert launch.argv[1:2] != ("-m",), f"{name} launches -m"
-        staged_node = str(frozen["stage"] / "node" / "node.exe")
+        staged_node = str(frozen["stage"] / "node" / nl.bundled_node_name())
         assert head in (ln.sys.executable, staged_node), f"{name} launches {head!r}"
         launched.append(name)
     assert {"learn", "local-model", "writing", "gather"} <= set(launched)
@@ -98,7 +99,7 @@ def test_frozen_learn_runs_the_staged_script_on_the_bundled_node_and_telos_is_he
     assert runtime.launch is None and runtime.blocking_codes == ("lane_held",)
     for name, entry in _NODE_ENTRIES[:1]:
         launch = ln.resolve_mcp_launch(name)
-        assert launch.argv == (str(frozen["stage"] / "node" / "node.exe"),
+        assert launch.argv == (str(frozen["stage"] / "node" / nl.bundled_node_name()),
                                str((frozen["stage"] / name / entry).resolve()))
         assert launch.allowed_tools == tuple(admitted_tools(name)), name
         assert launch.inherit_env is False, name

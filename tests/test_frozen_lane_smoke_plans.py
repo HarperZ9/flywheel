@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from harness.node_lanes import bundled_node_name
 from scripts import frozen_lane_smoke_plans as plans_mod
 from scripts.frozen_gateway_lane_smoke import smoke_environ
 
@@ -19,7 +20,7 @@ def _build(tmp_path: Path) -> Path:
     exe = tmp_path / "dist" / "flywheel-gateway" / "flywheel-gateway.exe"
     stage = exe.parent / "_internal" / "node-lanes"
     (stage / "node").mkdir(parents=True)
-    (stage / "node" / "node.exe").write_bytes(b"")
+    (stage / "node" / bundled_node_name()).write_bytes(b"")
     for lane, entry in (("learn", "src/mcp.mjs"), ("telos", "demo/telos-mcp.mjs")):
         (stage / lane / entry).parent.mkdir(parents=True)
         (stage / lane / entry).write_text("", encoding="utf-8")
@@ -51,7 +52,7 @@ def test_every_frozen_lane_without_a_payload_row_gets_a_plan(tmp_path, monkeypat
         assert plan.health_tool == plans_mod.HEALTH_TOOLS[name]
     assert plans["writing"].launch.argv == (str(exe), "--lane-mcp", "writing")
     assert plans["learn"].launch.argv[0] == str(exe.parent / "_internal" / "node-lanes"
-                                                / "node" / "node.exe")
+                                                / "node" / bundled_node_name())
 
 
 def test_local_model_gets_a_project_folder_outside_the_smoke_home(tmp_path, monkeypatch):

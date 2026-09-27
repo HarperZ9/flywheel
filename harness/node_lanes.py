@@ -67,11 +67,17 @@ def frozen_stage_root() -> Path | None:
     return Path(meipass) / STAGE_DEST
 
 
+def bundled_node_name(platform: str = os.name) -> str:
+    """The file ``bundled_node`` looks for under ``<stage>/node``. The stage
+    holds the pinned win-x64 zip's ``node.exe``; elsewhere the name is ``node``."""
+    return "node.exe" if platform == "nt" else "node"
+
+
 def bundled_node(stage_root: Path | None) -> Path | None:
     """The staged Node executable, when the stage holds one."""
     if stage_root is None:
         return None
-    path = Path(stage_root) / "node" / ("node.exe" if os.name == "nt" else "node")
+    path = Path(stage_root) / "node" / bundled_node_name()
     return path if path.is_file() else None
 
 
