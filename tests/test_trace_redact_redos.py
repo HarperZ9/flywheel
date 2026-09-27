@@ -10,8 +10,8 @@ fixed calibration scan runs there; it never drops below 50 ms per MiB.
 Floods are measured apart: input made of real matches, or of candidates a
 validator must reject (IBAN-shaped strings that fail mod 97). Their cost is
 one Python-level check per candidate, so it is linear but not bounded by the
-pattern budget; the flood test asserts that 1 MiB costs at most six times
-256 KiB. A scan that runs past its per-call budget stops with
+pattern budget; the flood test asserts that 2 MiB costs at most 20 times a
+quarter MiB (linear is 8, quadratic 64) in one of up to three rounds. A scan that runs past its per-call budget stops with
 SCAN_BUDGET_EXCEEDED; that check sits between windows and rules, so it cannot
 interrupt one catastrophic pattern, which is why every pattern is written
 linear and tested here.
@@ -135,14 +135,35 @@ def _linear(small, large) -> bool:
     return large <= 20 * small + 0.010
 
 
+ROUNDS = 3
+
+
+def _linear_in_some_round(rule, unit) -> tuple[bool, list]:
+    """Up to ROUNDS measurements of the pair; stops at the first one inside the
+    bound. Memory traffic from other processes slows the 2 MiB scan more than
+    the quarter MiB one, which fits in cache: 24 processes streaming 64 MiB
+    each pushed one github_token round to 26.6 while the next five stayed
+    between 14 and 19.6, and a full test suite on the same machine did the
+    same. A rule whose cost grows faster than linear misses every round, so a
+    repeat cannot pass it (see the quadratic control below)."""
+    rounds = []
+    for _ in range(ROUNDS):
+        small, large = _flood_pair(rule, unit)
+        rounds.append((small, large))
+        if _linear(small, large):
+            return True, rounds
+    return False, rounds
+
+
 @pytest.mark.timeout(240)
 @pytest.mark.parametrize("rule_id", sorted(FLOODS))
 def test_match_and_candidate_floods_scale_linearly(rule_id):
     rule = next(r for r in rules.RULES if r.id == rule_id)
-    small, large = _flood_pair(rule, FLOODS[rule_id])
-    assert _linear(small, large), (rule_id, small, large)
+    ok, rounds = _linear_in_some_round(rule, FLOODS[rule_id])
+    assert ok, (rule_id, rounds)
 
 
+@pytest.mark.timeout(120)
 def test_the_linearity_check_fails_a_quadratic_rule():
     """False-success control: a rule whose cost grows with the square of its
     input must fail the ratio the flood test applies."""
@@ -151,8 +172,10 @@ def test_the_linearity_check_fails_a_quadratic_rule():
         return iter(())
     rule = rules.Rule("quadratic_injected", "credential", "secret", None, note="test only",
                       finder=quadratic)
-    small, large = _flood_pair(rule, "x")
-    assert not _linear(small, large)
+    # Every round misses, so the repeat the flood test allows cannot rescue it.
+    ok, rounds = _linear_in_some_round(rule, "x")
+    assert not ok and len(rounds) == ROUNDS
+    assert not any(_linear(small, large) for small, large in rounds)
 
 
 def test_an_injected_slow_rule_stops_the_scan_with_the_budget_code():
