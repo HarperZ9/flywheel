@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -39,7 +40,7 @@ from scripts.installed_lane_engine import (  # noqa: E402
     profile_env, start_engine, stop_engine, tree_changes, tree_snapshot)
 from scripts.installed_lane_expectations import judge  # noqa: E402
 from scripts.installed_lane_verdict import (  # noqa: E402
-    DOES_NOT_PROVE, lane_verdict, redact, summary)
+    does_not_prove, lane_verdict, redact, summary)
 from scripts.lane_smoke_fixtures import model_server_answering  # noqa: E402
 
 SCHEMA = "flywheel.installed-app-lane-acceptance/v1"
@@ -138,7 +139,7 @@ def _receipt(ns, host, fresh, setup, stub_counts, changes) -> dict:
             "legs": {name: {k: leg[k] for k in ("journey_status", "setup_steps", "guard",
                                                 "final_states")}
                      for name, leg in (("fresh", fresh), ("setup", setup))},
-            "lanes": lanes, "does_not_prove": list(DOES_NOT_PROVE)}
+            "lanes": lanes, "does_not_prove": does_not_prove(os.environ)}
     detail = {"fresh": fresh["detail"], "setup": setup["detail"]}
     secrets = tuple(fresh["secrets"] + setup["secrets"])
     body, hits = redact(body, secrets)

@@ -108,3 +108,17 @@ def test_every_refusal_check_names_a_tool_the_policy_knows_and_expects_a_reason(
             assert check.expect_status == DENIED or check.expect_code, (lane, check.name)
             if check.expect_status == DENIED:
                 assert entry.tier == "T2" and check.tier == "T1", (lane, check.name)
+
+
+def test_the_receipt_limits_follow_where_the_check_ran():
+    """Acceptance audit F7: the CI receipt said the acceptance installer differs
+    from the release installer, which is false on CI (it builds and accepts the
+    release installer) and named "the build machine" for a hosted runner."""
+    ci = " ".join(verdict.does_not_prove({"GITHUB_ACTIONS": "true"}))
+    local = " ".join(verdict.does_not_prove({}))
+    assert "AppId" not in ci and "GitHub-hosted" in ci and "administrator" in ci
+    assert "AppId" in local and "build machine" in local
+    for text in (ci, local):
+        for phrase in ("provider", "model quality", "bulletin write", "actuation",
+                       "consumer Windows"):
+            assert phrase in text
