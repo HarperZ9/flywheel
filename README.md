@@ -48,6 +48,10 @@ For the native desktop app, download the Windows installer from the
 [latest release](https://github.com/HarperZ9/flywheel/releases/latest) and verify it
 against the checksums attached to that release. It carries its own engine, so the app
 runs on a clean machine with no Python installed, and it starts that engine itself.
+Each lane card in the Tools view states whether the lane is ready and names any setup
+it still needs: Git for Windows for index's repository history, a local model server
+for local-model and relay, a project folder for local-model, and a blocks folder for
+canon. The Node runtime that learn uses ships with the app.
 
 The app's assistant is **Rowan**. Open Chat and ask for work in plain
 words, and Rowan turns the request into a task the app runs and records.
