@@ -182,11 +182,17 @@ def _launch_grant_keywords(lane: str, extra: list[str]) -> dict[str, bool] | Non
     return {known[flag]: True for flag in extra}
 
 
-def build_relay_descriptor(source_root: Path, *, commit: str) -> dict:
-    """Build the canonical descriptor for the Relay source tree at ``source_root``."""
+def build_relay_descriptor(source_root: Path, *, commit: str,
+                           files: list[dict[str, object]] | None = None) -> dict:
+    """Build the canonical descriptor for the Relay source tree at ``source_root``.
+
+    ``files`` is the source manifest when the caller read it from the commit
+    itself (``check_bundled_lane_descriptors`` reads the LF bytes a
+    reproducible checkout writes); without it the working tree is hashed."""
     source_root = source_root.resolve()
     version = _pyproject_version(source_root / "pyproject.toml")
-    files = source_manifest(source_root / "src" / "relay", relative_to=source_root)
+    if files is None:
+        files = source_manifest(source_root / "src" / "relay", relative_to=source_root)
     source = {
         "repo": "https://github.com/HarperZ9/relay",
         "commit": commit,

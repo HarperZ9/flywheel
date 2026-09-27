@@ -30,24 +30,24 @@
   "schema": "flywheel.bundled-lane-component/v1",
   "source": {
     "algorithm": "sha256-canonical-source-manifest/v1",
-    "bytes": 338695,
+    "bytes": 331731,
     "commit": "ba1e4f21f05ff610a182f9b4665bb82f05a969f8",
     "file_count": 47,
     "files": [
       {
-        "bytes": 1055,
+        "bytes": 1026,
         "path": "src/relay/__init__.py",
-        "sha256": "sha256:62e3b7cfda0433b9a3fedf2dc1eac1a7b58a552ca58ba76a9b672bd8d59a8091"
+        "sha256": "sha256:189032c3797860f4ee7ac88f79f863fba072f189703d368ad30a628aff7081f4"
       },
       {
-        "bytes": 100,
+        "bytes": 96,
         "path": "src/relay/__main__.py",
-        "sha256": "sha256:e92b876d9c42674ffe6f8746df7ad7c9e63689910b30509658a2fccc06338f5e"
+        "sha256": "sha256:7f98da94785265ae4bf2e043957093c087d1fe53c45bc26db2e8ea770b85cebe"
       },
       {
-        "bytes": 93,
+        "bytes": 92,
         "path": "src/relay/_vendor/__init__.py",
-        "sha256": "sha256:17c8bc3f66b9589270b874f4f339f5e19d2ee03d391bea09c5fdbbd4965fe904"
+        "sha256": "sha256:10cc6afc2e6db3fe1e5a506dd7c67c0916d0dcd630148961865fedb00ffad6b5"
       },
       {
         "bytes": 18858,
@@ -55,222 +55,222 @@
         "sha256": "sha256:557d223ba51807a7a2ab89b9bda5c6291a4b4aa2392680e7916c3fdd61bc0a48"
       },
       {
-        "bytes": 2537,
+        "bytes": 2480,
         "path": "src/relay/approvals.py",
-        "sha256": "sha256:5ef4c946fe72fdc1ad570b3b189685d9ac85b7003d8035108a355fd4d57a5793"
+        "sha256": "sha256:ed8c007f66c6e59cac78ae1663134f71c249fbe61bd745d75450d6309d293d05"
       },
       {
-        "bytes": 1366,
+        "bytes": 1334,
         "path": "src/relay/architect.py",
-        "sha256": "sha256:652730106dec37ce9a9e6cb56dc606dab274b59fef85adc1c9cc9a0e23d9dbd4"
+        "sha256": "sha256:014c3c4f6e1202616bbd5c6c42b2448fa841097cd53de2d3cb0aa6f1f01a4392"
       },
       {
-        "bytes": 14565,
+        "bytes": 14237,
         "path": "src/relay/async_runs.py",
-        "sha256": "sha256:d7d18eca2b3a872203d852663f13912048d8e67d635f74dc0d22ce4725d7d54f"
+        "sha256": "sha256:8405a2d9cc81887795ab34a1fb81dfe53cf0f16c56c56c3ad8d558cb2bff413e"
       },
       {
-        "bytes": 5018,
+        "bytes": 4903,
         "path": "src/relay/bisect.py",
-        "sha256": "sha256:0363f84ad61208cdbfb543325a19f5589c7b40eef915b9edd91de4c7b034cf4c"
+        "sha256": "sha256:dba910a979ccc70bc19495457977af23716e749e3d6128bb202efc91cbc539e0"
       },
       {
-        "bytes": 6104,
+        "bytes": 5962,
         "path": "src/relay/cert.py",
-        "sha256": "sha256:0e285954efab18cd6c12113e0acc4e88db4e3b09bf9f8b2c3058586131bd1443"
+        "sha256": "sha256:edbbc034578b48687e403de68441688e6c10b90ec178f6ccebcefaed15150047"
       },
       {
-        "bytes": 4386,
+        "bytes": 4292,
         "path": "src/relay/child_env.py",
-        "sha256": "sha256:eca5a85c8d50e8d2b28a0ac4aabc54d46e0c5f354bc81e0a2ba4f150c6dfc93f"
+        "sha256": "sha256:e714424fdc7a09c9d0198847657da804754b15eda2af4590d5be08378c5c7066"
       },
       {
-        "bytes": 5793,
+        "bytes": 5658,
         "path": "src/relay/claim_grounding.py",
-        "sha256": "sha256:005557f16c5be3e19528ca1019b02dc03c7563204cb69be7cdffba7b374a7e80"
+        "sha256": "sha256:475f30be0c436c5309cbf5d3a8601abd837a99c663ad3ba2b589d962e4dba469"
       },
       {
-        "bytes": 3552,
+        "bytes": 3473,
         "path": "src/relay/cli_tiers.py",
-        "sha256": "sha256:db83426ff75490ac1a846c2cd16c803b8769e60b2be17b7f91fda798d086ead1"
+        "sha256": "sha256:339ac4867cc0e7dcd60af9032d9f6e038264333fae5df44715b6e905ddb0a029"
       },
       {
-        "bytes": 9613,
+        "bytes": 9392,
         "path": "src/relay/compaction.py",
-        "sha256": "sha256:d513b4d27bb0637ae504e8f32209fa7d6b16b17f4507b25b69c9e7844d779493"
+        "sha256": "sha256:0b83b9801e5ee64420ef70f04339b8c8756cabdc74430b9e49e2a476306f7146"
       },
       {
-        "bytes": 6178,
+        "bytes": 6032,
         "path": "src/relay/contract.py",
-        "sha256": "sha256:52e23699b47851a250c6b364d618cf564db6655bcf056a722af4ebd770b8ee60"
+        "sha256": "sha256:cf28e392a36cec1b31ce66a58c7c2ad0e40dcca73a1748302be1fb2aa33bf9d5"
       },
       {
-        "bytes": 1918,
+        "bytes": 1875,
         "path": "src/relay/conventions.py",
-        "sha256": "sha256:54299eea5a0773906fc867253e87c2224a51f8b96ea27eefe4f41af0cec6ce84"
+        "sha256": "sha256:0a1519547209c80085517e95e5177bdffb4991cc96d4087ae0eaee1a773cf103"
       },
       {
-        "bytes": 5136,
+        "bytes": 5028,
         "path": "src/relay/edit_plan.py",
-        "sha256": "sha256:8379d18c7ab06a8ae964648c8cdc95bd4d7efcbcb0033628b78834d791e0444d"
+        "sha256": "sha256:fd9f3678f1ef8dff3d74a707a7f4d69fbb37358a9f769c6c3642481a85127e97"
       },
       {
-        "bytes": 14388,
+        "bytes": 14093,
         "path": "src/relay/endpoints.py",
-        "sha256": "sha256:0924f778d55f5e1be16be608c20e0f9b6f345ca999663c5853594ca53f51c67c"
+        "sha256": "sha256:ee66843d5a0347cd45a229002efafc9ded755e7f904abb39e4d5e512823387ea"
       },
       {
-        "bytes": 2556,
+        "bytes": 2496,
         "path": "src/relay/hashline.py",
-        "sha256": "sha256:872a4224a6c031c7169b3bbf329c6f02c11db431f394d2fc727df9e796508de0"
+        "sha256": "sha256:6b3d5f1ce0050b649f42608feeecb61dfe09453a4ef735c3e0f8db35f4ff11dc"
       },
       {
-        "bytes": 5695,
+        "bytes": 5594,
         "path": "src/relay/injection_probe.py",
-        "sha256": "sha256:cc57227ad4d91bbff7cd1484b9b8a286f03bd41adcc81ed47c1bb179b18dc6e5"
+        "sha256": "sha256:000826250abfedc501bddb3410d856c96933f62bec2a7b93025e9e8a9d43079a"
       },
       {
-        "bytes": 6696,
+        "bytes": 6540,
         "path": "src/relay/integrity.py",
-        "sha256": "sha256:c3ca56f9edee9e6a510605801093c20c09383a2701f6dd747b0d9d18d534b6f4"
+        "sha256": "sha256:9a563acd877561161e14554cef338b44d7d38e5ffe4f439bbf8e913177cbbddf"
       },
       {
-        "bytes": 6319,
+        "bytes": 6170,
         "path": "src/relay/intent_audit.py",
-        "sha256": "sha256:394ab33d14339ba9d27325e91988ef5e67bd372675c60d1b77c653342ce69248"
+        "sha256": "sha256:c2adf0154d54c1220bf34cc6b4ad1e71ae3f321e4d0e902d63054234b12f6529"
       },
       {
-        "bytes": 14601,
+        "bytes": 14288,
         "path": "src/relay/local_agent.py",
-        "sha256": "sha256:b5d8204290decf4b98d75ea56855f2455169a9042c6926b5ea3c14b61089c059"
+        "sha256": "sha256:2b688223c09aa0ac02a193de55f0470cd4c795371b8c66d621f9985f05b8c6c1"
       },
       {
-        "bytes": 26192,
+        "bytes": 25657,
         "path": "src/relay/local_agent_cli.py",
-        "sha256": "sha256:9d7638969ae860f856d8c515139150726b22e395deb6ceb9d06998ebacb90d27"
+        "sha256": "sha256:e92bc3c018a73f264dee476c8ff5830c2e7c1f4715c3ba77c214c0976593bf50"
       },
       {
-        "bytes": 4393,
+        "bytes": 4302,
         "path": "src/relay/local_git.py",
-        "sha256": "sha256:114a99e2cd5e6376ff5c1b99ba2d6194753b3c1402a0606cf6200e0f1c197c20"
+        "sha256": "sha256:ef68b92f53a4f974913bf6816125308c54d7a8ea1d68637ad73901a65d2d1810"
       },
       {
-        "bytes": 15767,
+        "bytes": 15469,
         "path": "src/relay/local_loop.py",
-        "sha256": "sha256:7913046c01d9ba984b07542bec7b5476bb1882d7b379823e548b03460d4caf61"
+        "sha256": "sha256:7c59241466c533c97f63fade3d1da5fb1a078b9fdefdd7c4a9cf6070b4740143"
       },
       {
-        "bytes": 12245,
+        "bytes": 11960,
         "path": "src/relay/local_mcp.py",
-        "sha256": "sha256:f549ba08f6597dd6b4eddfb80dd1486e0d7f1d1b946c3f3dd5c140772194fd23"
+        "sha256": "sha256:2841c09a1e94b5edf9f711d78a0ddfdcf1edb86ea8b6b6ddbd0b885df4b5e022"
       },
       {
-        "bytes": 9492,
+        "bytes": 9273,
         "path": "src/relay/local_repomap.py",
-        "sha256": "sha256:f91850922a24826c1335771db8247f96fcb1f13fb20d6af55faea1fa2d5a06cd"
+        "sha256": "sha256:a845ffb3a94186456abfc68ffc0742dcf6e0ebc809815b0b2423c67d70a330e5"
       },
       {
-        "bytes": 4517,
+        "bytes": 4424,
         "path": "src/relay/local_review_agent.py",
-        "sha256": "sha256:103f5e4adc4ede4a4933246bfb31153d61c4ae8eac906863f0481959924315d4"
+        "sha256": "sha256:722cba4489fe03ca3366d4c0a00cb08e7cec384b26dd16d2080f744f2b68ccd5"
       },
       {
-        "bytes": 3675,
+        "bytes": 3580,
         "path": "src/relay/local_session.py",
-        "sha256": "sha256:b20485ba06fd3d7386a7caf3f62fb61d7ecc0f77070b0991de2d15720157cfbd"
+        "sha256": "sha256:b3c58c325ea56a5abd40dc8640182f54435822f8324a4f4dcb8748a4ddff51df"
       },
       {
-        "bytes": 13763,
+        "bytes": 13463,
         "path": "src/relay/local_tools.py",
-        "sha256": "sha256:d1845416a3cf67474aba864c1e46111065476fcafe431735ea729913997e2238"
+        "sha256": "sha256:71a3f1dc434ca6df639a3b7d61b5c059ed43c2ed840c912321692c7362cd71f3"
       },
       {
-        "bytes": 7581,
+        "bytes": 7424,
         "path": "src/relay/mcp_grants.py",
-        "sha256": "sha256:9a1b007fe76bf3f035e6e22e1271ac6b6e9161a5f38f54eb982cca2b7873c137"
+        "sha256": "sha256:c379e29a32a935bac604222a55f9bb773573bb17ede02734b65be6c41185c25f"
       },
       {
-        "bytes": 5412,
+        "bytes": 5291,
         "path": "src/relay/mcp_paths.py",
-        "sha256": "sha256:d6084b6b844fabb1b458115a647691be5cd970b765acf0ebd67bd3d6e02265d9"
+        "sha256": "sha256:e0db969ee3c9d8a42baf7464d6efc4eceace0a13c88b397d033ca18134c26d25"
       },
       {
-        "bytes": 7878,
+        "bytes": 7708,
         "path": "src/relay/mcp_request.py",
-        "sha256": "sha256:84593050af4dc6de98b7f8cd0526a7bc62a073e060370516d8e8e76e942db46d"
+        "sha256": "sha256:c8438b6a0b0996216474ddcad561e13e2786931975f03bad111d45b67b52a86c"
       },
       {
-        "bytes": 6469,
+        "bytes": 6394,
         "path": "src/relay/mcp_schema.py",
-        "sha256": "sha256:6edb20920c1a136c74be9765f079b4d9c47202e96a3bb3a2bf021ccea03f6876"
+        "sha256": "sha256:be2fb11e424fcb03e63b26a47d6504a17f52fbff42973c456cf253274892181d"
       },
       {
-        "bytes": 7021,
+        "bytes": 6877,
         "path": "src/relay/messages_api.py",
-        "sha256": "sha256:a40c8ed618d23fd272defa71e53f8da366d3cc85a92fd0f4f1da34c8c05b2865"
+        "sha256": "sha256:91caf30b5e2a76bc1a9550d09fc2e7150cbb264fdb685fe81027d474b2ce2d9b"
       },
       {
-        "bytes": 10849,
+        "bytes": 10582,
         "path": "src/relay/oauth.py",
-        "sha256": "sha256:dda6d9f788f9f8673b47841a9250a49351a03389df88b81012f1f91c54760308"
+        "sha256": "sha256:d630a411964e37432e9cb0739c93dd65f459b683a66915cdf516446c3c96e609"
       },
       {
-        "bytes": 3100,
+        "bytes": 3032,
         "path": "src/relay/remote_cli.py",
-        "sha256": "sha256:6e3c19fdcd925e27164c35e1e399af822606e9f1536205b969394ca10423c84d"
+        "sha256": "sha256:d80abd7f34da959da2edd763ccf7f7ad5bdf5c4440fb4068a78d6f850b330c52"
       },
       {
-        "bytes": 12369,
+        "bytes": 12092,
         "path": "src/relay/remote_mcp.py",
-        "sha256": "sha256:288eca8ef1ffc202df6c5152a648cdf55f9b4a427e51d19f1419ff87e11d2951"
+        "sha256": "sha256:ba5ccb3f1060ebb9b8f2c1375c283aa7359fbba2f73f85905e24973074acf2a5"
       },
       {
-        "bytes": 7122,
+        "bytes": 6940,
         "path": "src/relay/remote_oauth.py",
-        "sha256": "sha256:a9a7ea55dad49b837d41c97e9c6326132816fef5d4420fe1d522a272baef6428"
+        "sha256": "sha256:b68555c7b0c89618a9cca1d1d461373e4a44f2dd8a000bab3da9110eb2687fb9"
       },
       {
-        "bytes": 8164,
+        "bytes": 7986,
         "path": "src/relay/remote_state.py",
-        "sha256": "sha256:b71e95db6e5be4ddd81ae4bff58c8188081079b92721f4d4fd88044a85981d53"
+        "sha256": "sha256:350a9051da32cc7ebab9ce90120434662b68681bd5c2b73f4f1dc43f67c24e83"
       },
       {
-        "bytes": 7101,
+        "bytes": 6933,
         "path": "src/relay/review.py",
-        "sha256": "sha256:1d32ee127855ffcbd02c4b9d58538e1c26bf23f7e11b3656ae7c18e79648dfee"
+        "sha256": "sha256:a17a1469e35c1ca64ed7e0543d15f780a433c92d3d6d24ba2163195ffd50e60e"
       },
       {
-        "bytes": 9132,
+        "bytes": 8925,
         "path": "src/relay/run_view.py",
-        "sha256": "sha256:ae226f7cc2dc437a6b37755b48282c514062bc063ec0a323b5c00379f55ddba6"
+        "sha256": "sha256:d51b14f79f4e53b4838ac67f6866ba9846b180f34d588f08e835feb57648e171"
       },
       {
-        "bytes": 5510,
+        "bytes": 5382,
         "path": "src/relay/session_store.py",
-        "sha256": "sha256:3c9600ee74c45f3e79c2f3c86375e6e086b203fd0759661097b2837cb194a427"
+        "sha256": "sha256:6e65bd2c3a9134218fc9782d9488c5e308cd234c3222498654b9662de95cdb6c"
       },
       {
-        "bytes": 2141,
+        "bytes": 2107,
         "path": "src/relay/tools_prompt.py",
-        "sha256": "sha256:5f35e69ab14e0a10ea9d99498afb527bff3f898fb22de0fd9b636edfafee7a03"
+        "sha256": "sha256:62d3847b490d4a859be1b5c11491fed78f80be5ca29033efc276622117f6b458"
       },
       {
-        "bytes": 3338,
+        "bytes": 3258,
         "path": "src/relay/udiff.py",
-        "sha256": "sha256:c56d79f71b6e9bc2ccfd9146dbd2cc3eb84b400642399e1e9d2f36560b626ac2"
+        "sha256": "sha256:4f9d7275eac437b202a74babf504eb1fdb16e65719f4acfa508682d66e0d2da0"
       },
       {
-        "bytes": 5256,
+        "bytes": 5145,
         "path": "src/relay/verified_bon.py",
-        "sha256": "sha256:b8694c0b421e92bc5f8a86bda51b65ec46dbc4efbea683e95c56d81f1ad1aaf9"
+        "sha256": "sha256:eebdc9d6d6cd0a25fdafd68e968d8f092af14c54ddb9caeb7615290780aee623"
       },
       {
-        "bytes": 3681,
+        "bytes": 3608,
         "path": "src/relay/watch.py",
-        "sha256": "sha256:3b09ddd111107eeb6515eb8df8a6d8f12e2352a4925f83e6dfae5790cf0877be"
+        "sha256": "sha256:d3338660edbb16ef4b1dfe6aa65d4f905db066798d7ef5afae31a8eb18794b5c"
       }
     ],
-    "manifest_sha256": "sha256:93c31fd35a5e6a8e42bd3f26baba65275efb9179992b1fe4938f8688ee51501f",
+    "manifest_sha256": "sha256:5ac76b4ee50fc7ec22e244c9333d0593b9dc99d39cd8b020a98775b760b6112d",
     "path": "src/relay",
     "repo": "https://github.com/HarperZ9/relay"
   },
