@@ -50,13 +50,8 @@ class DeletionJournal:
         self.cipher = ItemCipher(self.state_root, owner_ref, STORE, plan_digest, provider=provider)
 
     def _write(self, path: Path, name: str, payload: bytes) -> None:
-        self.dir.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name(path.name + ".tmp")
-        with open(temporary, "wb") as stream:
-            stream.write(self.cipher.seal(name, payload))
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, path)
+        from . import trace_durable
+        trace_durable.write_durable(path, self.cipher.seal(name, payload))
 
     def _read(self, path: Path, name: str) -> bytes | None:
         try:
@@ -155,23 +150,29 @@ def _tombstone_fields(journal: DeletionJournal, doc: dict, verdict: dict) -> dic
 
 
 def apply_journaled(journal: DeletionJournal, steps, verify, *, scan_set=None,
-                    tombstone=None, extra=None) -> dict:
+                    tombstone=None, extra=None, lock=None) -> dict:
     """Run `steps` (name, callable) under the journal, then `verify(scan_set)`.
-    Faults propagate and leave the journal for a rerun to resume."""
-    done = finished(journal.state_root, journal.owner_ref, journal.plan)
-    if done:
-        return done
-    if not journal.exists():
-        journal.begin([name for name, _ in steps], scan_set, dict(tombstone or {}), extra)
-    done = journal.done_steps()
-    for name, run in steps:
-        if name not in done:
-            run()
-            journal.mark(name)
+    Faults propagate and leave the journal for a rerun to resume. With `lock`
+    (a context-manager factory) the steps and the finish run under it and the
+    verification does not, so a long residual scan never holds up captures."""
+    import contextlib
+    lock = lock or contextlib.nullcontext
+    with lock():
+        done = finished(journal.state_root, journal.owner_ref, journal.plan)
+        if done:
+            return done
+        if not journal.exists():
+            journal.begin([name for name, _ in steps], scan_set, dict(tombstone or {}), extra)
+        done = journal.done_steps()
+        for name, run in steps:
+            if name not in done:
+                run()
+                journal.mark(name)
     verdict = verify(journal.scan_set())
     if not verdict.get("ok"):
         return {"state": "DELETE_PENDING", "reason": verdict.get("reason", "RESIDUE_FOUND"),
                 "checks": verdict.get("checks", [])}
-    entry = journal.finish(_tombstone_fields(journal, journal.state(), verdict))
+    with lock():
+        entry = journal.finish(_tombstone_fields(journal, journal.state(), verdict))
     return {"state": "DELETED", "tombstone_ref": entry["tombstone_ref"],
             "checks": verdict.get("checks", [])}

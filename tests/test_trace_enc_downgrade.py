@@ -38,3 +38,23 @@ def test_a_plaintext_key_shard_is_resealed_and_counted_until_then(tmp_path):
         assert Keystore(state, OWNER).custody_key() == key
         assert not shard.read_bytes().startswith(PLAIN)
         assert encryption_status(state)["plaintext_shards"] == 0
+
+
+def test_a_planted_plaintext_shard_is_refused_once_any_store_has_a_floor(tmp_path):
+    """S18: a writer of custody files could plant a plaintext shard holding a
+    key it knows. Once anything was encrypted (a floor exists), a plaintext
+    shard is refused, never read and resealed."""
+    import base64
+    from harness.evidence_json import canonical_bytes
+    from harness.trace_keystore import SCHEMA
+    state = tmp_path / "state"
+    with using(StreamTestProvider()):
+        plant_turn(tmp_path)
+        shard = state / "keys" / "v1" / "owners" / OWNER / CUSTODY
+        known = b"k" * 32
+        shard.write_bytes(PLAIN + canonical_bytes({"schema": SCHEMA, "keys": {
+            "custody": base64.b64encode(known).decode("ascii")}}))
+        with pytest.raises(EncError) as refused:
+            Keystore(state, OWNER).custody_key()
+    assert refused.value.code == "ENC_DOWNGRADE"
+    assert shard.read_bytes().startswith(PLAIN), "not resealed"

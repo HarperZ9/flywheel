@@ -133,8 +133,58 @@ def imports(home, run_root):
     assert result["imported"] == 5, result
 
 
+def delete_plan(home, run_root):
+    """The real plan and apply, so the saved selection, journal, tombstone
+    and ledger are written where a deletion writes them."""
+    from delete_fixtures import plant_trace
+    from harness.trace_delete_apply import apply_plan
+    from harness.trace_delete_plan import make_plan
+    from harness.trace_presence import confirm
+    from harness.trace_witness import MemorySink
+    ref = plant_trace(home, operation="op_" + "d" * 32)
+    plan = make_plan(home, OWNER, {"trace_refs": [ref]})
+    token = confirm(home / "state", OWNER, "delete_apply", plan["plan_digest"], "sweep")
+    report = apply_plan(home, OWNER, plan["plan_digest"], token, sink=MemorySink())
+    assert report["state"] == "DELETED", report
+
+
+def export_all(home, run_root):
+    import tempfile
+    from pathlib import Path
+    from harness.trace_export import export, export_digest
+    from harness.trace_presence import confirm
+    from harness.trace_witness import MemorySink
+    out = Path(tempfile.mkdtemp(prefix="sweep-export-")) / "exported"
+    token = confirm(home / "state", OWNER, "export", export_digest(out, {}), "sweep")
+    export(home, OWNER, out, token, sink=MemorySink())
+
+
+def retention(home, run_root):
+    from harness import trace_retention as policy
+    from harness import trace_retention_schedule as schedule
+    from harness.trace_presence import confirm
+    from harness.trace_witness import MemorySink
+    policy.write_file(home, {"action": "rules", "rules": [
+        {"store": "S1", "max_age_days": 30, "reason_code": "older_than_30_days"}]})
+    digest = policy.digest(policy.read_file(home)[0])
+    token = confirm(home / "state", OWNER, "retention_adopt", digest, "sweep")
+    policy.adopt(home, OWNER, token, sink=MemorySink())
+    schedule.run(home, OWNER, sink=MemorySink())
+
+
+def bench(home, run_root):
+    import tempfile
+    from pathlib import Path
+    from bench_fixtures import git_repo, plant_run
+    from harness.trace_bench_tasks import build_tasks
+    repo = git_repo(Path(tempfile.mkdtemp(prefix="sweep-bench-")))
+    plant_run(home, repo, operation="op_" + "e" * 32)
+    assert build_tasks(home, OWNER)["tasks"] == 1
+
+
 DRIVERS = (agent_trace, scaffold, memory_note, operations, grants,
-           continuation, source_context, capture_spool, presence, deletion, turns, imports)
+           continuation, source_context, capture_spool, presence, deletion, turns, imports,
+           delete_plan, export_all, retention, bench)
 
 
 def run_all(home, run_root):
