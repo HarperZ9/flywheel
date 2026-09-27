@@ -70,6 +70,7 @@ from scripts.python_lane_freeze import (
     python_lane_freeze_datas, python_lane_freeze_inputs)
 from scripts.frozen_payload_datas import (
     NODE_STAGE_ENV, check_pyz_slices, node_lane_stage_datas)
+from scripts.frozen_license_datas import frozen_license_datas
 import importlib.util
 
 
@@ -132,6 +133,9 @@ python_lane_datas = python_lane_freeze_datas(repo, lane_source_root)
 # stages, under _internal/node-lanes. A build without that stage, or with a stage
 # that lists a held lane (telos, the O-8 hold), fails here, not at run time.
 node_lane_datas = node_lane_stage_datas(os.environ.get(NODE_STAGE_ENV))
+# The Python runtime's license (PSF, with OpenSSL's Apache License 2.0) and each
+# lane's pinned license ship under _internal/licenses; a missing text fails here.
+license_datas = frozen_license_datas(repo, lane_source_root)
 
 a = Analysis(
     [str(repo / "packaging" / "gateway_entry.py")],
@@ -144,6 +148,7 @@ a = Analysis(
            *canon_context_datas,
            *python_lane_datas,
            *node_lane_datas,
+           *license_datas,
            *studio_runtime.datas,
            *distribution_data],
     hiddenimports=[
