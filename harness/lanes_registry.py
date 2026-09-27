@@ -124,7 +124,7 @@ LANES: dict[str, Lane] = {
         "reconciliation", source_repo="public/telos",
         package_disabled_reason=("No published npm distribution is available, and this build "
                                  "holds Telos out while its release contents are reviewed. "
-                                 "Use a Telos source checkout."),
+                                 "Nothing needs installing; the other lanes run without it."),
         env_vars=("TELOS_CHROME_PATH", "TELOS_CHROME_PROFILE", "TELOS_EMET_CLI",
                   "TELOS_EMET_DISABLE_FALLBACKS", "LEARN_CLI", "CAPTCHA_VENV_PY",
                   "TELOS_CONSO_FONT_ZIP", "TELOS_KILON_FONT_ZIP")),

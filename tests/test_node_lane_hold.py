@@ -117,6 +117,9 @@ def test_the_registry_reason_makes_no_shipping_claim():
     reason = LANES["telos"].package_disabled_reason
     assert "ships" not in reason
     assert "holds Telos out" in reason
+    # the hold exists because of what the release contains; the reason must not
+    # route a person to the same content another way
+    assert "source checkout" not in reason.lower()
 
 
 def test_the_smoke_row_expects_the_hold():

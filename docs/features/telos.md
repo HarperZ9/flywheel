@@ -268,10 +268,12 @@ Telos is the `reconciliation` organ in the lane layer. Observed in
 
 ```python
 "telos": Lane(
-    "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.2.0",
+    "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.1",
     "the reconciliation lane: five-tool workflow + creative engine + doctors",
     "reconciliation", source_repo="public/telos",
-    package_disabled_reason="No published npm distribution is available. Use a Telos source checkout."),
+    package_disabled_reason=("No published npm distribution is available, and this build "
+                             "holds Telos out while its release contents are reviewed. "
+                             "Nothing needs installing; the other lanes run without it."),
 ```
 
 It sits third in the flagship spine, `SPINE = ("flywheel", "local-model",
