@@ -165,7 +165,9 @@ def test_unreadable_registry_grants_nothing(tmp_path, monkeypatch):
     env = lane_process_environment("index", environ={
         "PATH": "p", "FLYWHEEL_HOME": str(tmp_path / "home"),
         "ANTHROPIC_API_KEY": "sk-test-not-a-real-key"})
-    # index's caches default into its lane folder (POLICY-DECISION C-9); no key
+    # index's caches default into its lane folder (POLICY-DECISION C-9); no key.
+    # Every lane child also runs with trace capture off (lane_workdir.CAPTURE_OFF).
     caches = {"INDEX_CACHE_DIR", "INDEX_MCP_CACHE_DIR", "INDEX_GRAPH_REPO_CACHE_DIR"}
-    assert set(env) == {"PATH", "FLYWHEEL_HOME"} | caches
+    assert set(env) == {"PATH", "FLYWHEEL_HOME", "FLYWHEEL_CAPTURE"} | caches
+    assert env["FLYWHEEL_CAPTURE"] == "off"
     assert env["PATH"] == "p" and "ANTHROPIC_API_KEY" not in env

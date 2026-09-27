@@ -106,14 +106,20 @@ _FORCED_ENV = {"relay": (("RELAY_ALLOW_WRITE", "0"), ("RELAY_ALLOW_EXEC", "0"),
                "forum": (("FORUM_CHILD_ENV", ""), ("FORUM_ALLOW_EXEC_CLI", "")),
                "gather": (("GATHER_ALLOW_NETWORK", ""), ("GATHER_ALLOW_EXEC", ""),
                           ("GATHER_AUTH_ENV_ALLOW", ""), ("GATHER_CHILD_ENV", ""))}
+#: Set for every lane child, whatever the engine's environment says. A claude or
+#: codex CLI that a lane starts (articulate's judge, a relay CLI tier) inherits
+#: it, so the owner's capture hooks count the lane's own calls as suppressed
+#: events instead of recording them as the owner's turns (trace ownership 7.1).
+CAPTURE_OFF = {"FLYWHEEL_CAPTURE": "off"}
 
 
 def forced_env(lane_name: str, folder: Path,
                environ: Mapping[str, str] | None = None) -> dict[str, str]:
-    """What a lane's child always starts with: relay's launch grants ("." is the
-    lane folder), and for articulate the claude CLI the engine found (O-14)."""
-    out = {name: str(folder) if value == "." else value
-           for name, value in _FORCED_ENV.get(lane_name, ())}
+    """What a lane's child always starts with: capture off (CAPTURE_OFF), relay's
+    launch grants ("." is the lane folder), and for articulate the claude CLI
+    the engine found (O-14)."""
+    out = {**CAPTURE_OFF, **{name: str(folder) if value == "." else value
+                             for name, value in _FORCED_ENV.get(lane_name, ())}}
     if lane_name == "articulate" and environ is not None:
         from .claude_discovery import ENV_VAR, find_claude
         found = find_claude(environ)
