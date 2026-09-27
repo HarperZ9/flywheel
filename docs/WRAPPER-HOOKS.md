@@ -17,15 +17,20 @@ this (in `settings.json`, or a project `.claude/settings.json`):
 ```json
 {"hooks": {
   "UserPromptSubmit": [{"hooks": [{"type": "command",
-    "command": "\"<python>\" -m harness.capture_hooks prompt --client claude-code"}]}],
+    "command": "\"<python>\" -P -E -m harness.capture_hooks prompt --client claude-code"}]}],
   "Stop": [{"hooks": [{"type": "command",
-    "command": "\"<python>\" -m harness.capture_hooks stop --client claude-code"}]}]
+    "command": "\"<python>\" -P -E -m harness.capture_hooks stop --client claude-code"}]}]
 }}
 ```
 
 Codex takes the same blocks in `hooks.json` with `--client codex`. Flywheel
 never edits a client's settings. `--home <path>` on the mount line names a
 Flywheel home other than the default.
+
+Hooks run inside the project folder. `-P` keeps that folder off Python's
+import path and `-E` ignores `PYTHONPATH`, so a repository that holds its own
+`harness` package, or a settings `env` block, cannot replace the hook. The
+doctor fails a module mount that lacks them (`-I` also passes).
 
 Check the result with:
 
@@ -51,8 +56,8 @@ else first in, first out within the session, and chains a receipt
 (`flywheel.turn-receipt/v2`) into `store.db`. The receipt holds the two
 commitments, the pairing mode and segment, and a session ref keyed with your
 custody key. It holds no text, no URL, no path and no plain digest, and its
-id is random. The salts sit in an encrypted turn record under
-`state/captured-turns/`. To prove a turn later, reveal the text and the
+id is random. The salts sit in a turn record under
+`state/captured-turns/`, encrypted where an OS key store is available. To prove a turn later, reveal the text and the
 salt; anything else learns nothing from the receipt.
 
 - A continued Stop (`stop_hook_active`) adds a segment to the same prompt.

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 from pathlib import Path
 import shutil
 import time
@@ -22,6 +23,8 @@ from .trace_import_exclusion import (ExclusionUnavailable, PrefixProbe, check,
                                      custody_key, entries, keyed_path, session_ref,
                                      source_ref)
 from .trace_import_items import ImportStore
+
+_log = logging.getLogger(__name__)
 
 __all__ = ["ImportStore", "build_plan", "run_import"]
 
@@ -138,22 +141,34 @@ def _manifest(item, read, ref, sink) -> dict:
 
 
 def _import_one(store, key, listed, item, on_read) -> tuple[str | None, int]:
-    from .trace_import_read import SourceRefused, read_source
+    """Stage, check and finalize one item. Any failure before the item is
+    finalized discards the staging folder and its key, then re-raises."""
+    from .trace_import_read import SourceRefused
     from .trace_zstd import InputBound
-    path, staged = Path(item["path"]), store.stage(item["client"])
+    staged = store.stage(item["client"])
     try:
-        sink = _Sink(key, listed, item, staged)
-        read = read_source(path, sink.take, on_read=on_read, root=item.get("root"))
-        ref = source_ref(key, item["client"], path, item.get("session_id"))
-        excluded, _ = check(key, listed, ref, read["bytes"], sink.probe,
-                            path_ref=keyed_path(key, item["client"], path),
-                            session=session_ref(key, item["client"], item.get("session_id")))
-        if excluded:
-            staged.discard()
-            return excluded, 0
+        return _stage_one(staged, key, listed, item, on_read)
     except (SourceRefused, InputBound) as refused:
         staged.discard()
         return refused.code, 0
+    except BaseException:
+        _log.warning("import of one %s item failed; staging discarded", item["kind"])
+        staged.discard()
+        raise
+
+
+def _stage_one(staged, key, listed, item, on_read) -> tuple[str | None, int]:
+    from .trace_import_read import read_source
+    path = Path(item["path"])
+    sink = _Sink(key, listed, item, staged)
+    read = read_source(path, sink.take, on_read=on_read, root=item.get("root"))
+    ref = source_ref(key, item["client"], path, item.get("session_id"))
+    excluded, _ = check(key, listed, ref, read["bytes"], sink.probe,
+                        path_ref=keyed_path(key, item["client"], path),
+                        session=session_ref(key, item["client"], item.get("session_id")))
+    if excluded:
+        staged.discard()
+        return excluded, 0
     row = {"kind": item["kind"], "bytes": read["bytes"], "source_ref": ref,
            "content_ref": sink.whole.hexdigest(),
            "keyed_path": keyed_path(key, item["client"], path)}

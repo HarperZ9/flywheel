@@ -50,8 +50,8 @@ def _print_plan(plan: dict) -> None:
         emit(f"  store.db: {len(plan['receipts'])} turn receipts (commitments only)")
     for where, count in sorted(plan["out_of_reach"].items()):
         emit(f"  outside reach: {where} x{count}")
-    for client, command in plan["remedies"].items():
-        emit(f"  {client} keeps its own transcript; remove it with: {escape(command)}")
+    for client, remedy in plan["remedies"].items():
+        emit(f"  {client} keeps its own copy: {escape(remedy)}")
     emit(f"  residue: {plan['residue_forecast']}")
     for note in plan["notes"]:
         emit(f"  note: {note}")
