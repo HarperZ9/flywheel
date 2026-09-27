@@ -57,3 +57,23 @@ def test_a_call_that_binds_a_key_is_shown_as_t2():
 def test_an_unlisted_tool_is_shown_as_unlisted():
     review = _summary({"name": "gather", "tool": "gather.new", "args": {}})["lane_policy"]
     assert review["listed"] is False and review["effect"] == "not reviewed: effect unknown"
+
+
+def test_a_gate_decision_names_the_launch_grant_its_approval_carries():
+    """A T2 gate_approve, gate_edit or gate_reject approval also starts forum with
+    --allow-gate-decisions for that call (widen_for_call); the sheet says so."""
+    args = {"run_seq": 1, "wave": 0, "approver": "owner"}
+    for tool in ("gate_approve", "gate_edit", "gate_reject"):
+        review = _summary({"name": "forum", "tool": tool, "governance_tier": "T2",
+                           "args": dict(args)})["lane_policy"]
+        assert review["launch_grant"] == "--allow-gate-decisions", tool
+        assert review["required_tier"] == "T2", tool
+
+
+def test_no_other_call_names_a_launch_grant():
+    for name, tool in (("forum", "gate_list"), ("forum", "forum.gate.approve"),
+                       ("forum", "forum.submit"), ("relay", "local_agent_start"),
+                       ("gather", "gather.run")):
+        review = _summary({"name": name, "tool": tool, "governance_tier": "T2",
+                           "args": {}})["lane_policy"]
+        assert review["launch_grant"] == "", (name, tool)

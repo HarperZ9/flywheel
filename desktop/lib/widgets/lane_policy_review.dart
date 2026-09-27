@@ -4,9 +4,10 @@
 // The engine builds this block (harness/lane_tier_gate.lane_policy_review,
 // POLICY-DECISION C-13): the tier the tool needs and the tier the call asks
 // for, its effect (an unlisted tool reads "not reviewed"), whether the lane's
-// granted keys reach the child, what the engine forces or drops, and the
-// arguments the lane child receives. The sheet shows it as sent; nothing is
-// recomputed.
+// granted keys reach the child, what the engine forces or drops, the flag it
+// adds to this call's launch (forum's --allow-gate-decisions on a gate
+// decision), and the arguments the lane child receives. The sheet shows it as
+// sent; nothing is recomputed.
 
 import 'dart:convert';
 
@@ -31,6 +32,8 @@ List<String> lanePolicyLines(Map<String, Object?> policy) {
     if (forced is Map && forced.isNotEmpty) 'Engine sets: ${_plain(forced)}',
     if (dropped is List && dropped.isNotEmpty)
       'Engine drops: ${dropped.join(', ')}',
+    if ('${policy['launch_grant'] ?? ''}'.isNotEmpty)
+      "Engine adds to this call's launch: ${_plain(policy['launch_grant'])}",
     'Lane receives: ${_plain(policy['arguments'] ?? const {})}',
   ];
 }

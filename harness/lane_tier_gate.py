@@ -216,8 +216,10 @@ def lane_policy_review(operation: Mapping[str, Any]) -> dict:
     """What a lane.call approval authorizes, for the owner's approval sheet
     (POLICY-DECISION C-13): the tier the tool needs and the tier requested,
     its effect and reason (an unlisted tool reads as not reviewed), whether the
-    lane's granted keys reach the child, what the engine forces or drops, and
-    the arguments the child receives, in plain form. Raw secrets never reach an operation
+    lane's granted keys reach the child, what the engine forces or drops, the
+    flag the engine adds to this call's launch (``launch_grant``, forum's
+    ``--allow-gate-decisions`` on a gate decision), and the arguments the child
+    receives, in plain form. Raw secrets never reach an operation
     (``validate_no_raw_secrets``), so the arguments carry none."""
     from .lane_caller import required_tier
     lane, tool = str(operation.get("name", "")), str(operation.get("tool", ""))
@@ -240,6 +242,7 @@ def lane_policy_review(operation: Mapping[str, Any]) -> dict:
             "reason": entry.reason if entry else _UNLISTED_REASON,
             "not_in_build": entry.not_in_build if entry else "",
             "forced_arguments": forced,
+            "launch_grant": entry.launch_grant if entry else "",
             "dropped_arguments": sorted(set(args) - set(sent)),
             "arguments": sent, "requested_arguments": dict(args)}
 

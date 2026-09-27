@@ -104,4 +104,30 @@ void main() {
     expect(summary.invalidResponse, isFalse);
     expect(summary.lanePolicy, isNull);
   });
+
+  test('a gate decision names the flag the engine adds to its launch', () {
+    final lines = lanePolicyLines(const {
+      'required_tier': 'T2',
+      'requested_tier': 'T2',
+      'effect': 'approve',
+      'launch_grant': '--allow-gate-decisions',
+      'arguments': {'run_seq': 1},
+    });
+    expect(lines, [
+      'Tier: needs T2, asks T2',
+      'Effect: approve',
+      "Engine adds to this call's launch: --allow-gate-decisions",
+      'Lane receives: {"run_seq":1}',
+    ]);
+  });
+
+  test('an empty launch grant adds no line', () {
+    final lines = lanePolicyLines(const {
+      'required_tier': 'T2',
+      'requested_tier': 'T2',
+      'launch_grant': '',
+      'arguments': {},
+    });
+    expect(lines.where((line) => line.contains('launch')), isEmpty);
+  });
 }
