@@ -22,13 +22,23 @@ USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
               "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
 
 
+_SHARED = ipaddress.ip_network("100.64.0.0/10")  # CGNAT, and Tailscale tailnets
+
+
 def is_global(address: str) -> bool:
+    """Only globally routable unicast: private, loopback, link-local, shared
+    (100.64.0.0/10, which tailnets use) and the rest are refused. An IPv4
+    address mapped into IPv6 is judged as the IPv4 address."""
     try:
         ip = ipaddress.ip_address(address)
     except ValueError:
         return False
-    return not (ip.is_loopback or ip.is_private or ip.is_link_local or ip.is_multicast
-                or ip.is_reserved or ip.is_unspecified)
+    if ip.version == 6 and ip.ipv4_mapped is not None:
+        ip = ip.ipv4_mapped
+    if ip.version == 4 and ip in _SHARED:
+        return False
+    return ip.is_global and not (ip.is_loopback or ip.is_private or ip.is_link_local
+                                 or ip.is_multicast or ip.is_reserved or ip.is_unspecified)
 
 
 class _PinnedHTTPS(http.client.HTTPSConnection):

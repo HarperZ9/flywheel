@@ -21,15 +21,17 @@ def json_records(directory: Path, pattern: str = "*.json") -> list[dict]:
 
 
 def remove_tree(root: Path) -> int:
-    """Remove files bottom-up; links are removed as links, never followed."""
-    removed = 0
-    for path in sorted(root.rglob("*"), reverse=True) if root.exists() else []:
-        if path.is_symlink() or path.is_file():
-            path.unlink()
-            removed += 1
-        elif path.is_dir():
-            path.rmdir()
-    return removed
+    """Remove the tree at `root` by handle (private_artifact_remove): a
+    junction or symbolic link inside is removed as a link and its target
+    stays. `rglob` would descend into a junction and delete the target's
+    files. Returns the files and links removed."""
+    import os
+    from .private_artifact_remove import remove
+    root = Path(root)
+    if not os.path.lexists(root):
+        return 0
+    counts = remove(root.parent, root.name)
+    return counts["files"] + counts["links"]
 
 
 def presence_export(home) -> list[dict]:

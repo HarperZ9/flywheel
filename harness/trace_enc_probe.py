@@ -38,8 +38,26 @@ def encryption_status(state_root) -> dict:
     from .trace_enc_floor import floors
     provider = default_provider()
     status = provider.status()
-    return {"provider": status["provider"], "protection": status["protection"],
-            "floors": floors(state_root)}
+    protection = status["protection"]
+    plain = plaintext_shards(state_root) if provider.name != "none" else 0
+    if plain:
+        protection += (f"; KEYSTORE_PLAINTEXT: {plain} key shards are plaintext until "
+                       "their next use reseals them")
+    return {"provider": status["provider"], "protection": protection,
+            "floors": floors(state_root), "plaintext_shards": plain}
+
+
+def plaintext_shards(state_root) -> int:
+    from .trace_keystore import PLAIN
+    root = Path(state_root) / "keys" / "v1" / "owners"
+    count = 0
+    for path in root.rglob("*.keys") if root.is_dir() else []:
+        try:
+            with open(path, "rb") as stream:
+                count += stream.read(len(PLAIN)) == PLAIN
+        except OSError:
+            continue
+    return count
 
 
 def startup(home) -> dict:

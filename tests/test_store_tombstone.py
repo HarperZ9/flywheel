@@ -80,3 +80,37 @@ def test_a_forgotten_row_that_reappears_is_reported(home):
     con.close()
     broken = store.verify_records(home=home)["broken"]
     assert [b["reason"] for b in broken] == ["forgotten record is present"]
+
+
+def test_forgetting_an_entity_with_relations_keeps_verify_records_green(home):
+    """S19: a relation naming the entity goes with it and gets its own
+    forget_entity row, so verify_records does not read it as a deletion."""
+    eid = _v1_receipt(home)
+    other = store.put_entity("note", {"text": "related note"}, home=home)["eid"]
+    store.put_relation(eid, other, "cites")
+    forget_entities(home, [eid], "owner_request")
+    assert store.verify_records(home=home)["ok"], store.verify_records(home=home)
+    assert store.verify_chain(home=home)["ok"]
+
+
+def test_a_rerun_adds_no_duplicate_forget_rows(home):
+    """A DB_BUSY retry forgets the same ids again; the audit gets one row each."""
+    eid = _v1_receipt(home)
+    forget_entities(home, [eid], "owner_request")
+    forget_entities(home, [eid], "owner_request")
+    con = sqlite3.connect(home / "store.db")
+    rows = con.execute("SELECT COUNT(*) FROM audit WHERE op='forget_entity' AND ref=?",
+                       (eid,)).fetchone()[0]
+    con.close()
+    assert rows == 1
+
+
+def test_only_turn_receipts_can_be_selected_for_deletion(home):
+    from harness.trace_delete_plan import PlanError, make_plan
+    note = store.put_entity("note", {"text": "not a trace"}, home=home)["eid"]
+    with pytest.raises(PlanError) as refused:
+        make_plan(home, "owner_" + "a" * 32, {"receipt_eids": [note]}, save=False)
+    assert refused.value.code == "INVALID_SELECTION"
+    with pytest.raises(PlanError) as missing:
+        make_plan(home, "owner_" + "a" * 32, {"receipt_eids": ["f" * 24]}, save=False)
+    assert missing.value.code == "NOT_FOUND"

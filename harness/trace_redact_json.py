@@ -3,8 +3,12 @@
 A secret in a JSON line can hide behind escapes (`\\n` inside a PEM block,
 `\\u0067` for a letter) or inside a string that is itself JSON. So the line is
 parsed and every decoded string value is scanned; a string that parses as a
-JSON object or array is walked in turn, up to four levels. A value under a
-credential-named key is redacted whole. Redacted values are written back and
+JSON object or array is walked in turn, up to four levels. Object keys are
+scanned too (a token can be a key), and a number is scanned as its decimal
+text (a card number stored as a JSON number). A value under a
+credential-named key is redacted whole: the credential words, any name
+ending in `_key` or `-key` after a prefix (SECRET_KEY, signing_key), and any
+name containing `secret`. Redacted values are written back and
 the line is re-serialized; a line with no hit comes back unchanged.
 
 A line that does not parse is scanned twice, as raw text and as an unescaped
@@ -21,9 +25,10 @@ from .trace_redact import apply, merge, raw_hits
 
 MAX_NESTED = 4
 _SECRET_KEY = re.compile(
-    r"(?i)(?:[A-Za-z0-9_\-]{0,64}[_\-])?(?:password|passwd|pwd|secret|token|api[_\-]?key|"
+    r"(?i)(?:(?:[A-Za-z0-9_\-]{0,64}[_\-])?(?:password|passwd|pwd|secret|token|api[_\-]?key|"
     r"access[_\-]?key|private[_\-]?key|client[_\-]?secret|credentials?|authorization|"
-    r"cookie|set[_\-]cookie|auth[_\-]?token|refresh[_\-]?token|access[_\-]?token)s?\Z")
+    r"cookie|set[_\-]cookie|auth[_\-]?token|refresh[_\-]?token|access[_\-]?token)s?|"
+    r"[A-Za-z0-9]{1,64}[_\-]key|[A-Za-z0-9_\-]{0,64}secret[A-Za-z0-9_\-]{0,64})\Z")
 _B64 = re.compile(r"[A-Za-z0-9+/]{8,4096}={0,2}\Z")
 _ESC = re.compile(r'\\(?:u([0-9a-fA-F]{4})|(["\\/bfnrt]))')
 _SIMPLE = {'"': '"', "\\": "\\", "/": "/", "b": "\b", "f": "\f", "n": "\n", "r": "\r",
@@ -59,13 +64,18 @@ class _Redactor:
             out = {}
             for name, child in value.items():
                 rule_id = key_rule(name, child)
-                out[name] = (self.redact_whole(rule_id, child) if rule_id in self.allowed
-                             else self.walk(child, level))
+                shown = self.string(name, MAX_NESTED) if type(name) is str else name
+                out[shown] = (self.redact_whole(rule_id, child) if rule_id in self.allowed
+                              else self.walk(child, level))
             return out
         if type(value) is list:
             return [self.walk(child, level) for child in value]
         if type(value) is str:
             return self.string(value, level)
+        if type(value) in (int, float):
+            text = str(value)
+            redacted = self.string(text, MAX_NESTED)
+            return redacted if redacted != text else value
         return value
 
     def redact_whole(self, rule_id, value):

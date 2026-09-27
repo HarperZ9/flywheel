@@ -58,6 +58,10 @@ class Redactor:
         flags = re.IGNORECASE if os.name == "nt" else 0
         self.home = re.compile("(?:" + "|".join(re.escape(v) for v in variants)
                                + ")(?![A-Za-z0-9_.-])", flags)
+        # Claude Code names project folders after the path with every
+        # non-alphanumeric character as "-": C:\Users\x -> C--Users-x.
+        encoded = re.sub(r"[^A-Za-z0-9]", "-", text)
+        self.encoded = re.compile(re.escape(encoded) + "(?![A-Za-z0-9_.])", flags)
 
     def line(self, text: str) -> str:
         if not self.active:
@@ -66,7 +70,7 @@ class Redactor:
         new, counts = redact_line(text, key=self.key, personal=self.personal)
         for rule, n in counts.items():
             self.counts[rule] = self.counts.get(rule, 0) + n
-        return self.home.sub("~", new)
+        return self.encoded.sub("~", self.home.sub("~", new))
 
 
 def _stable_key(home, owner: str) -> bytes:
@@ -124,6 +128,20 @@ def _authorize(home: Path, owner: str, out, opts: dict, presence_ref, sync_prese
     return path, method
 
 
+def _zip(folder: Path, archive: Path) -> None:
+    """Create the zip new, protect it, then fill it without re-creating it,
+    so it keeps the owner-only ACL and the not-indexed attribute."""
+    import zipfile
+    descriptor = os.open(archive, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(
+        os, "O_BINARY", 0), 0o600)
+    os.close(descriptor)
+    protect(archive, directory=False)
+    with open(archive, "r+b") as stream, zipfile.ZipFile(stream, "w",
+                                                         zipfile.ZIP_DEFLATED) as bundle:
+        for member in sorted(p for p in folder.rglob("*") if p.is_file()):
+            bundle.write(member, member.relative_to(folder).as_posix())
+
+
 def _finish(path: Path, staging: Path, opts: dict) -> tuple[Path, str | None]:
     """Rename into place; with zip, keep the zip only if it verifies too
     (a zip over the verifier's caps would be one nobody could check)."""
@@ -132,7 +150,7 @@ def _finish(path: Path, staging: Path, opts: dict) -> tuple[Path, str | None]:
     if not opts["zip"]:
         return path, None
     archive = path.with_name(path.name + ".zip")
-    shutil.make_archive(str(path), "zip", root_dir=str(path))
+    _zip(path, archive)
     code, reasons = verify(archive)
     if code != "MATCH":
         _log.warning("zip export did not verify (%s); the folder is kept instead", code)
@@ -140,6 +158,17 @@ def _finish(path: Path, staging: Path, opts: dict) -> tuple[Path, str | None]:
         return path, "; ".join(reasons) or code
     shutil.rmtree(path)
     return archive, None
+
+
+def _incomplete(home: Path, owner: str, path: Path, method: str, reason: str, sink, *,
+                path_: Path) -> dict:
+    """A partial plaintext copy exists outside custody: the ledger says so."""
+    from .trace_witness import record_custody_event
+    code = reason if reason.replace("_", "").isalnum() else "EXPORT_FAILED"
+    event = record_custody_event(home, owner, "export", {
+        "items": 0, "reason_code": code[:64],
+        "destination_digest": destination_digest(home, owner, path)}, method, sink=sink)
+    return {"state": "INCOMPLETE", "reason": reason, "path": str(path_), **event}
 
 
 def export(home, owner: str, out, presence_ref, *, sink=None, sync_presence_ref=None,
@@ -150,18 +179,26 @@ def export(home, owner: str, out, presence_ref, *, sink=None, sync_presence_ref=
     path, method = _authorize(home, owner, out, opts, presence_ref, sync_presence_ref)
     staging = path.with_name(path.name + ".incomplete")
     if staging.exists():
-        raise ExportError("DESTINATION_NOT_EMPTY")
+        raise ExportError("DESTINATION_EXISTS")
     staging.mkdir(parents=True)
     protect(staging)
     try:
         manifest = _write(home, owner, staging, opts)
     except (OSError, ValueError) as exc:
         _log.exception("export stopped; the partial folder stays as .incomplete")
-        return {"state": "INCOMPLETE", "reason": type(exc).__name__, "path": str(staging)}
+        return _incomplete(home, owner, path, method, type(exc).__name__, sink,
+                           path_=staging)
     code, reasons = verify(staging)
     if code != "MATCH":
-        return {"state": "INCOMPLETE", "reason": code, "details": reasons, "path": str(staging)}
-    final, zip_refused = _finish(path, staging, opts)
+        return {**_incomplete(home, owner, path, method, code, sink, path_=staging),
+                "details": reasons}
+    try:
+        final, zip_refused = _finish(path, staging, opts)
+    except (OSError, ExportError) as exc:
+        _log.exception("export verified but was not moved into place")
+        where = path if path.exists() else staging
+        return _incomplete(home, owner, path, method, getattr(exc, "code", type(exc).__name__),
+                           sink, path_=where)
     stores = sorted({f["store"] for f in manifest["files"] if f["store"]})
     items = len({f["item_ref"] for f in manifest["files"] if f["item_ref"]})
     size = sum(f["bytes"] for f in manifest["files"])

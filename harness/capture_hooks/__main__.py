@@ -4,9 +4,11 @@ Mounted on a client's prompt and Stop hooks. It finds the home and the
 gateway without trusting the environment, proves the listener before sending
 anything, signs each request, and fails visibly: a Claude Code Stop hook exits
 1 with one stderr line, every other shape exits 0 with a `systemMessage`.
-Each failure leaves one metadata record in the spool. With
-FLYWHEEL_CAPTURE=off it contacts no gateway, says so once per session and
-counts the suppression.
+Each failure leaves one metadata record in the spool. An event over 16 MiB
+or one that is not a JSON object is EVENT_UNREADABLE, and a prompt event
+with no prompt field is PROMPT_MISSING: the hook never commits to an empty
+prompt it did not read. With FLYWHEEL_CAPTURE=off it contacts no gateway,
+says so once per session and counts the suppression.
 """
 from __future__ import annotations
 
@@ -56,12 +58,15 @@ def _text(event: dict, keys) -> str:
     return ""
 
 
-def _event(raw: bytes) -> dict:
+def _event(raw: bytes) -> tuple[dict, str | None]:
+    """(event, None), or ({}, EVENT_UNREADABLE) for an oversized or malformed one."""
+    if len(raw) > MAX_EVENT:
+        return {}, "EVENT_UNREADABLE"
     try:
-        doc = json.loads(raw[:MAX_EVENT].decode("utf-8") or "{}")
+        doc = json.loads(raw.decode("utf-8"))
     except (UnicodeError, ValueError):
-        return {}
-    return doc if type(doc) is dict else {}
+        return {}, "EVENT_UNREADABLE"
+    return (doc, None) if type(doc) is dict else ({}, "EVENT_UNREADABLE")
 
 
 def _suppressed(args, event, environ, cwd):
@@ -82,7 +87,7 @@ def _fail(args, event, home, code):
         spooled = spool.write_failure(home, args.client, args.event, event.get("session_id"),
                                       event.get("prompt_id") or event.get("turn_id"), code)
     return output.render(args.client, args.event,
-                         failure=output.failure_line(code, spooled))
+                         failure=output.failure_line(code, spooled, event=args.event))
 
 
 def _turn_payload(args, event, kind: str, text, content_on: bool) -> dict:
@@ -122,6 +127,8 @@ def _act(args, event, home) -> tuple[dict, list[str]]:
         channel.request("POST", STOP_PATH, _turn_payload(args, event, "answer", answer,
                                                          content_on))
         return {}, messages
+    if not any(type(event.get(key)) is str for key in _PROMPT_KEYS):
+        raise CaptureFailure("PROMPT_MISSING")
     prompt = _text(event, _PROMPT_KEYS)
     payload = _turn_payload(args, event, "prompt", prompt, content_on)
     channel.request("POST", PROMPT_PATH, payload)
@@ -141,12 +148,12 @@ def run(argv, raw: bytes, environ, cwd) -> tuple[int, str, str]:
         args = _parse(argv)
     except _Usage:
         return 1, "", "flywheel capture: hook mount is invalid (USAGE). Run: flywheel traces doctor\n"
-    event = _event(raw)
+    event, unreadable = _event(raw)
     if environ.get("FLYWHEEL_CAPTURE", "").strip().lower() == "off":
         return _suppressed(args, event, environ, cwd)
     home, refusal = resolve_home(args.home, environ, cwd)
-    if refusal:
-        return _fail(args, event, home, refusal)
+    if refusal or unreadable:
+        return _fail(args, event, home, refusal or unreadable)
     try:
         result, messages = _act(args, event, home)
     except CaptureFailure as failure:

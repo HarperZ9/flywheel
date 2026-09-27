@@ -107,32 +107,50 @@ def test_none_is_recorded_in_the_response_the_ledger_and_the_report(state):
     assert entry["kind"] == "deletion" and entry["fields"]["presence"] == "none"
 
 
-def test_the_desktop_dialog_approves_a_pending_challenge(state, monkeypatch):
-    monkeypatch.setattr(presence, "adopted_method", lambda *a: "desktop-dialog")
+def test_a_forged_satisfied_challenge_file_confirms_nothing(state):
+    """A process running as the owner writes a challenge file that says
+    satisfied by windows-hello; only the verifier's own process can satisfy."""
+    import json
+    ref = "prs_" + "f" * 32
+    forged = presence.PresenceStore(state, OWNER).dir / f"{ref}.json"
+    forged.parent.mkdir(parents=True)
+    forged.write_text(json.dumps({"schema": "flywheel.presence-challenge/v1", "ref": ref,
+                                  "kind": "delete_apply", "plan_digest": DIGEST,
+                                  "created_at": 0, "expires_at": 4_000_000_000,
+                                  "state": "satisfied", "method": "windows-hello",
+                                  "synthetic": False}))
+    assert _code(lambda: presence.require(state, OWNER, "delete_apply", DIGEST, ref)) == (
+        "PRESENCE_REQUIRED")
+
+
+def test_a_real_challenge_rewritten_on_disk_stays_pending(state):
+    import json
     store = presence.PresenceStore(state, OWNER)
-    challenge = store.create("export", DIGEST)
-    assert [c["ref"] for c in store.pending()] == [challenge["ref"]]
-    presence.approve_from_desktop(state, OWNER, challenge["ref"])
-    assert presence.require(state, OWNER, "export", DIGEST, challenge["ref"]) == (
-        "desktop-dialog")
+    challenge = store.create("delete_apply", DIGEST)
+    path = store.dir / f"{challenge['ref']}.json"
+    path.write_text(json.dumps({**challenge, "state": "satisfied", "method": "windows-hello"}))
+    assert _code(lambda: presence.require(state, OWNER, "delete_apply", DIGEST,
+                                          challenge["ref"])) == "PRESENCE_REQUIRED"
 
 
-def test_the_desktop_route_cannot_approve_when_another_method_is_adopted(state, monkeypatch):
-    monkeypatch.setattr(presence, "adopted_method", lambda *a: "windows-hello")
-    challenge = presence.PresenceStore(state, OWNER).create("export", DIGEST)
-    assert _code(lambda: presence.approve_from_desktop(state, OWNER, challenge["ref"])) == (
-        "PRESENCE_METHOD")
+def test_desktop_dialog_is_not_a_method_and_has_no_approval_call(state):
+    assert "desktop-dialog" not in presence.METHODS
+    assert not hasattr(presence, "approve_from_desktop")
+    assert _code(lambda: presence.set_method(state, OWNER, "desktop-dialog", None)) == (
+        "PRESENCE_INVALID")
 
 
-def test_doctor_synthetic_applies_only_to_records_the_doctor_made(state):
+def test_doctor_synthetic_is_given_only_to_a_doctor_session(state):
+    """No public call satisfies a challenge as doctor-synthetic; confirm_synthetic
+    refuses a session that is not the doctor's own."""
     store = presence.PresenceStore(state, OWNER)
+    assert not hasattr(store, "satisfy")
     ordinary = store.create("delete_apply", DIGEST)
-    assert _code(lambda: store.satisfy(ordinary["ref"], "doctor-synthetic")) == (
+    assert _code(lambda: store._satisfy(ordinary["ref"], "doctor-synthetic")) == (
         "PRESENCE_METHOD")
-    synthetic = store.create("delete_apply", DIGEST, synthetic=True)
-    store.satisfy(synthetic["ref"], "doctor-synthetic")
-    assert presence.require(state, OWNER, "delete_apply", DIGEST, synthetic["ref"]) == (
-        "doctor-synthetic")
+    for session in ("0f0e0d0c-0b0a-0908-0706-050403020100", "flywheel-doctor-x", None):
+        assert _code(lambda: presence.confirm_synthetic(state.parent, OWNER, session)) == (
+            "PRESENCE_METHOD")
 
 
 def test_status_names_the_method_and_what_none_means(state):
@@ -151,3 +169,23 @@ def test_changing_the_method_needs_presence_and_a_missing_file_does_not_downgrad
     assert presence.adopted_method(state, OWNER) == "windows-hello"
     presence.method_path(state, OWNER).unlink()
     assert _code(lambda: presence.adopted_method(state, OWNER)) == "PRESENCE_CONFIG_MISSING"
+
+
+def test_a_method_file_written_without_an_adoption_is_tampered(state):
+    """Writing method.json directly does not change the method: it must
+    match the latest adoption in the verified custody ledger."""
+    presence._write(presence.method_path(state, OWNER),
+                    {"schema": "flywheel.presence-method/v1", "method": "windows-hello"})
+    assert _code(lambda: presence.adopted_method(state, OWNER)) == "SETTINGS_TAMPERED"
+    assert presence.presence_status(state, OWNER)["method"] == "unknown"
+    assert _code(lambda: _confirmed(state)) == "SETTINGS_TAMPERED"
+
+
+def test_a_method_file_swapped_after_adoption_is_tampered(state):
+    ref = presence.confirm(state, OWNER, "presence_method",
+                           presence.method_digest("windows-hello"), "set method",
+                           verifier=Verifier("none"))
+    presence.set_method(state, OWNER, "windows-hello", ref)
+    presence._write(presence.method_path(state, OWNER),
+                    {"schema": "flywheel.presence-method/v1", "method": "none"})
+    assert _code(lambda: presence.adopted_method(state, OWNER)) == "SETTINGS_TAMPERED"

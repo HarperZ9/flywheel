@@ -64,8 +64,13 @@ def settings_check(home: Path):
 
 def failures_check(home: Path, ack: bool):
     from harness.capture_hooks import spool
+    from harness.trace_capture_off import record_suppressions
+    from harness.trace_custody_ledger import read_owner_ref
     if ack:
         spool.acknowledge(home)
+    owner = read_owner_ref(home)
+    if owner:
+        record_suppressions(home, owner)
     reasons = Counter(r.get("reason_code", "UNKNOWN") for r in spool.failures(home))
     suppressed = _suppressed_by_project(spool.suppressions(home))
     detail = ", ".join(f"{code} x{n}" for code, n in sorted(reasons.items())) or "none"
@@ -197,20 +202,17 @@ def synthetic_check(home: Path, run: bool):
 
 def _remove_synthetic(home: Path, session: str) -> str:
     """Delete what the doctor itself made, through the deletion engine, with
-    presence method doctor-synthetic, which applies only to these records."""
+    presence method doctor-synthetic, which `confirm_synthetic` gives only to
+    a plan it builds from this doctor session's own turns."""
     from harness.trace_custody_ledger import read_owner_ref
-    from harness.trace_delete_adapters_enc import session_turns
     from harness.trace_delete_apply import apply_plan
-    from harness.trace_delete_plan import make_plan
-    from harness.trace_presence import PresenceStore
+    from harness.trace_presence import PresenceError, confirm_synthetic
     owner = read_owner_ref(home)
-    turns = session_turns(home, owner, "claude-code", session) if owner else []
-    if not turns:
+    try:
+        digest, ref = confirm_synthetic(home, owner, session) if owner else (None, None)
+    except PresenceError:
+        digest = None
+    if digest is None:
         return "no synthetic record was found to remove"
-    plan = make_plan(home, owner, {"turn_refs": turns})
-    store = PresenceStore(home / "state", owner)
-    challenge = store.create("delete_apply", plan["plan_digest"], synthetic=True)
-    store.satisfy(challenge["ref"], "doctor-synthetic")
-    report = apply_plan(home, owner, plan["plan_digest"], challenge["ref"],
-                        reason="doctor_synthetic")
+    report = apply_plan(home, owner, digest, ref, reason="doctor_synthetic")
     return f"its records were removed ({report['state']})"
