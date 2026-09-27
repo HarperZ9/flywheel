@@ -158,6 +158,8 @@ def run(argv, raw: bytes, environ, cwd) -> tuple[int, str, str]:
         result, messages = _act(args, event, home)
     except CaptureFailure as failure:
         return _fail(args, event, home, failure.code)
+    except Exception:  # still a named, spooled failure rendered per client
+        return _fail(args, event, home, "HOOK_ERROR")
     return output.render(args.client, args.event, messages=messages,
                          context=result.get("context"))
 

@@ -48,7 +48,8 @@ def test_deleting_an_imported_session_removes_items_index_and_keys(imported):
     assert len([e for e in listed if e.get("kind") != "session"]) == 5
     assert [e for e in listed if e.get("kind") == "session"] == [
         {"kind": "session", "session": listed[0]["session"]}]
-    assert report["remedies"] == {"claude-code": "claude project purge"}
+    from harness.trace_delete_plan import REMEDIES
+    assert report["remedies"] == {"claude-code": REMEDIES["claude-code"]}
 
 
 def test_a_resumed_transcript_does_not_bring_the_deleted_prefix_back(imported):

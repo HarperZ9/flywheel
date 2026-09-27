@@ -6,7 +6,10 @@ to a model (a bench replay), a credential in it refuses the whole send
 instead of being redacted. The copy you keep is stored as it arrived, so
 redaction never costs you your own record.
 
-One catalog serves every Flywheel redaction path. Its version is
+One catalog serves trace export and the bench replay guard. Other paths keep
+their own detectors for now: the cross-harness adapters, credential handles,
+the gateway trace write guard (`validate_no_raw_secrets`) and the desktop app.
+The catalog's version is
 `trace-redact/2026-09-26.3`, and every redaction report names it.
 
 ## How a match is replaced

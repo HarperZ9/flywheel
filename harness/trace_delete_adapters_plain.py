@@ -18,8 +18,8 @@ import re
 _EID = re.compile(r"(tr2_[0-9a-f]{24}|[0-9a-f]{24})\Z")
 _NOTE = re.compile(r"[0-9a-f]{64}\Z")
 _RUN = re.compile(r"[0-9a-f]{16}\Z")
-PROFILE_NOTE = ("native CLI profile folder contents were never classified (experiment "
-                "X5); the whole folder was removed")
+PROFILE_NOTE = ("native CLI profile folder contents were never classified; the whole "
+                "folder was removed")
 
 
 def valid(kind: str, value) -> bool:
@@ -38,10 +38,31 @@ def _trace_records(state: Path, owner: str, entry: dict) -> list[dict]:
     return AgentTrace(state, owner, journey, entry["operation"]).read()
 
 
-def trace_closure(state: Path, owner: str, entry: dict) -> list[dict]:
-    """S6 profile folders named in the trace and S2 results of its operation."""
+UNREAD_NOTE = ("{n} selected trace(s) could not be read (damaged, or the OS key is "
+               "unavailable); each is still deleted, but profile folders named inside "
+               "it were not found and stay")
+
+
+def _readable_records(state: Path, owner: str, entry: dict, unread: list | None) -> list:
+    """The trace's records, or [] when it cannot be read: a damaged trace or a
+    lost OS key must never block its own deletion (the S1 entry comes from
+    the folder and header alone)."""
+    from .gateway_agent_trace import TraceError
+    from .trace_enc import EncError
+    try:
+        return _trace_records(state, owner, entry)
+    except (OSError, ValueError, KeyError, TypeError, TraceError, EncError):
+        if unread is not None:
+            unread.append(entry["item"])
+        return []
+
+
+def trace_closure(state: Path, owner: str, entry: dict, unread: list | None = None
+                  ) -> list[dict]:
+    """S6 profile folders named in the trace and S2 results of its operation.
+    A trace that cannot be read adds its ref to `unread`."""
     out = []
-    for record in _trace_records(state, owner, entry):
+    for record in _readable_records(state, owner, entry, unread):
         payload = record.get("payload") or {}
         name = payload.get("profile_dir") if payload.get("type") == "cli_profile" else None
         if isinstance(name, str) and name.startswith("native-cli-profile-") and "/" not in name:

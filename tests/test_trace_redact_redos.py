@@ -116,23 +116,31 @@ FLOODS = {
 }
 
 
-def _flood_seconds(rule, unit, size):
-    text = (unit * (size // len(unit) + 1))[:size]
-    best = float("inf")
-    for _ in range(3):
-        start = time.perf_counter()
-        trace_redact.scan(text, rules_=(rule,))
-        best = min(best, time.perf_counter() - start)
+def _flood_pair(rule, unit):
+    """Best of five for a quarter MiB and for 2 MiB, measured alternately so
+    load on the machine hits both sizes alike. Linear cost gives a ratio near
+    8; quadratic cost gives 64."""
+    texts = [(unit * (size // len(unit) + 1))[:size] for size in (MIB // 4, 2 * MIB)]
+    best = [float("inf"), float("inf")]
+    for _ in range(5):
+        for index, text in enumerate(texts):
+            start = time.perf_counter()
+            trace_redact.scan(text, rules_=(rule,))
+            best[index] = min(best[index], time.perf_counter() - start)
     return best
 
 
-@pytest.mark.timeout(120)
+def _linear(small, large) -> bool:
+    """2.5 times the linear ratio of 8, and still 3 times under quadratic."""
+    return large <= 20 * small + 0.010
+
+
+@pytest.mark.timeout(240)
 @pytest.mark.parametrize("rule_id", sorted(FLOODS))
 def test_match_and_candidate_floods_scale_linearly(rule_id):
     rule = next(r for r in rules.RULES if r.id == rule_id)
-    small = _flood_seconds(rule, FLOODS[rule_id], MIB // 4)
-    large = _flood_seconds(rule, FLOODS[rule_id], MIB)
-    assert large <= 6 * small + 0.005, (rule_id, small, large)
+    small, large = _flood_pair(rule, FLOODS[rule_id])
+    assert _linear(small, large), (rule_id, small, large)
 
 
 def test_the_linearity_check_fails_a_quadratic_rule():
@@ -143,9 +151,8 @@ def test_the_linearity_check_fails_a_quadratic_rule():
         return iter(())
     rule = rules.Rule("quadratic_injected", "credential", "secret", None, note="test only",
                       finder=quadratic)
-    small = _flood_seconds(rule, "x", MIB // 4)
-    large = _flood_seconds(rule, "x", MIB)
-    assert large > 6 * small + 0.005
+    small, large = _flood_pair(rule, "x")
+    assert not _linear(small, large)
 
 
 def test_an_injected_slow_rule_stops_the_scan_with_the_budget_code():

@@ -29,9 +29,9 @@ def _names() -> dict[str, str]:
 
 
 def delete_summary(home, owner: str, digest: str, *, verb: str = "Delete") -> str:
-    from .trace_delete_plan import load_selection, make_plan
-    selection = load_selection(home, owner, digest)
-    plan = make_plan(home, owner, selection, save=False)
+    from .trace_delete_plan import load_saved, make_plan
+    selection, nonce = load_saved(home, owner, digest)
+    plan = make_plan(home, owner, selection, save=False, nonce=nonce)
     names = _names()
     counts = "; ".join(f"{names.get(s, s)}: {n}" for s, n in sorted(plan["counts"].items()))
     lines = [f"{verb} {len(plan['entries'])} items ({counts})."]

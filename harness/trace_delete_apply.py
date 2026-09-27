@@ -23,7 +23,7 @@ from .trace_custody_lock import custody_lock
 from .trace_delete_adapters_import import exclude
 from .trace_delete_apply_plain import ScrubPending, remove_plain, scrub_store, verify_plain
 from .trace_delete_journal import DeletionJournal, apply_journaled, finished
-from .trace_delete_plan import (ENCRYPTED, PlanError, drop_selection, load_selection,
+from .trace_delete_plan import (ENCRYPTED, PlanError, drop_selection, load_saved,
                                 make_plan, roots_for)
 
 INVALIDATORS: list = []
@@ -48,8 +48,8 @@ def _plan_for(home: Path, owner: str, digest: str, roots: dict) -> dict:
     if journal.exists() and journal.state().get("plan"):
         return journal.state()["plan"]
     try:
-        plan = make_plan(home, owner, load_selection(home, owner, digest), save=False,
-                         roots=roots)
+        selection, nonce = load_saved(home, owner, digest)
+        plan = make_plan(home, owner, selection, save=False, roots=roots, nonce=nonce)
     except PlanError as exc:
         raise PlanError("PLAN_DRIFTED" if exc.code == "NOT_FOUND" else exc.code) from None
     if plan["plan_digest"] != digest:
@@ -149,10 +149,10 @@ def _execute(home: Path, owner: str, plan: dict, roots: dict, method: str, reaso
                 _check_writers(state, plan)
             except JourneyLockBusy:
                 return {"state": "DELETE_PENDING", "reason": "ITEM_BUSY", "checks": []}
-            return apply_journaled(journal, _steps(home, owner, plan, roots, reason),
-                                   _verifier(home, owner, plan, roots), scan_set=scan_set,
-                                   tombstone=_template(plan, method, reason),
-                                   extra={"plan": plan})
+        return apply_journaled(journal, _steps(home, owner, plan, roots, reason),
+                               _verifier(home, owner, plan, roots), scan_set=scan_set,
+                               tombstone=_template(plan, method, reason),
+                               extra={"plan": plan}, lock=lambda: custody_lock(state))
     except JourneyLockBusy:  # another custody writer held the lock past the timeout
         return {"state": "DELETE_PENDING", "reason": "CUSTODY_BUSY", "checks": []}
     except ScrubPending as pending:

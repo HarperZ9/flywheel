@@ -69,6 +69,17 @@ def _interpreter_problem(program: str) -> str:
     return "" if found else "interpreter not found"
 
 
+ISOLATION = ("the project folder or PYTHONPATH can replace the hook: "
+             "mount with -P -E as flywheel traces hooks print-mount shows")
+
+
+def _isolated(flags: list[str]) -> bool:
+    """True when the interpreter flags before -m include -I, or both -P
+    and -E (single or combined, as in -PE)."""
+    letters = "".join(f[1:] for f in flags if f.startswith("-") and not f.startswith("--"))
+    return "I" in letters or ("P" in letters and "E" in letters)
+
+
 def classify(label: str, event: str, command: str) -> Mount | None:
     try:
         words = shlex.split(command, posix=os.name != "nt")
@@ -81,6 +92,8 @@ def classify(label: str, event: str, command: str) -> Mount | None:
             problem = _interpreter_problem(words[0])
             if module != MODULE or importlib.util.find_spec(MODULE) is None:
                 problem = problem or "module not importable"
+            if not _isolated(words[1:words.index("-m")]):
+                problem = problem or ISOLATION
             return Mount(label, event, "module", problem, module)
     for word in words:
         name = Path(word).name

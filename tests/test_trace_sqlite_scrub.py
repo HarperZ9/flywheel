@@ -1,7 +1,7 @@
 """SP-14, N-29: the checked SQLite scrub. An open reader keeps the WAL, so the
-scrub ends DELETE_PENDING with DB_BUSY instead of claiming success; VACUUM
-writes no transient database into the temporary directory; the second
-checkpoint empties the WAL."""
+scrub ends DELETE_PENDING with DB_BUSY instead of claiming success; the second
+checkpoint empties the WAL. The VACUUM temp-file check, watched while VACUUM
+runs, is in test_trace_sqlite_scrub_tempfile.py."""
 import os
 import sqlite3
 
@@ -48,17 +48,6 @@ def test_a_clean_scrub_empties_the_wal_twice_and_keeps_live_rows(tmp_path):
     assert con.execute("SELECT count(*) FROM t").fetchone()[0] == 25
     assert con.execute("PRAGMA freelist_count").fetchone()[0] == 0
     con.close()
-
-
-def test_vacuum_leaves_no_transient_file_in_the_temporary_directory(tmp_path, monkeypatch):
-    scratch = tmp_path / "scanned-temp"
-    scratch.mkdir()
-    for name in ("TMP", "TEMP", "SQLITE_TMPDIR"):
-        monkeypatch.setenv(name, str(scratch))
-    db = tmp_path / "vacuum.db"
-    _db(db, rows=2000)
-    assert scrub(db, _delete_half)["state"] == "SCRUBBED"
-    assert list(scratch.iterdir()) == []
 
 
 def test_a_failing_delete_rolls_back_and_raises(tmp_path):

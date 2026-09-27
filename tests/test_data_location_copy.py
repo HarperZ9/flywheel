@@ -101,3 +101,36 @@ def test_the_script_exits_nonzero_on_a_violation(tmp_path):
                             capture_output=True, text=True)
     assert result.returncode == 1
     assert "README.md:2" in result.stdout
+
+
+QUALIFIED_README = ("Flywheel runs any model, frontier or local, behind a single "
+                    "OpenAI-compatible\nsurface. Flywheel's records stay on your machine, "
+                    "and your provider keys are\nstored only there and sent only to their "
+                    "own provider. The content of each\nrequest goes to the model provider "
+                    "you pick, under that provider's terms.\n")
+
+
+def test_a_local_claim_passes_only_with_the_provider_qualifier_nearby():
+    """Red test for the qualifier: the README opening passes with its
+    provider sentence and fails once that sentence is deleted."""
+    assert _violations(QUALIFIED_README) == []
+    stripped = QUALIFIED_README.split(" The content of each")[0] + "\n"
+    assert [v.rule for v in _violations(stripped)] == ["unqualified_local"]
+    for phrase in ("Records stay on your machine.", "Nothing leaves your machine.",
+                   "Your history never leaves your computer."):
+        assert [v.rule for v in _violations(phrase + "\n")] == ["unqualified_local"], phrase
+
+
+def test_a_local_model_sentence_is_not_a_claim_about_hosted_providers():
+    assert _violations("With a local model, the request content stays on your machine.\n") \
+        == []
+
+
+def test_a_correction_must_name_where_content_goes():
+    unrelated = SHIPPED_104 + "Correction, 2026-09-26: a typo in the install line.\n"
+    assert [v.rule for v in _violations(unrelated)] == ["data_location"]
+
+
+def test_the_desktop_docs_are_surfaces_too():
+    names = {p.relative_to(ROOT).as_posix() for p in copy.surfaces(ROOT)}
+    assert "desktop/docs/MOBILE-SETUP.md" in names

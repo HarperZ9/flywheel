@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import re
 import secrets
 
 from .evidence_json import canonical_bytes
@@ -23,6 +24,7 @@ from .trace_enc_write import ItemCipher
 from .trace_keystore import Keystore
 
 STORE = "IM"
+_REF = re.compile(r"imp_[0-9a-f]{32}\Z")
 CHUNK = 8 * 1024 * 1024
 
 
@@ -47,10 +49,9 @@ class ImportStore:
         return self._read_json(path, "index", "index") if path.exists() else []
 
     def _write_index(self, rows: list[dict]) -> None:
-        self.base.mkdir(parents=True, exist_ok=True)
-        temporary = self.base / ".index.enc.tmp"
-        temporary.write_bytes(self.cipher("index").seal("index", canonical_bytes(rows)))
-        os.replace(temporary, self.base / "index.enc")
+        from . import trace_durable
+        trace_durable.write_durable(self.base / "index.enc",
+                                    self.cipher("index").seal("index", canonical_bytes(rows)))
 
     def item_refs(self) -> list[str]:
         return [row["item_ref"] for row in self.index()]
@@ -114,11 +115,38 @@ class StagedItem:
         return self.ref
 
     def discard(self) -> None:
+        """Destroy the key, then remove the staging folder (and the final
+        folder, when a failure came after the rename but before the index)."""
         from .trace_meta_adapters import remove_tree
-        remove_tree(self.dir)
-        if self.dir.exists():
-            self.dir.rmdir()
         self.store.keystore.destroy(STORE, [self.ref])
+        for folder in (self.dir, self.store.base / self.client / self.ref):
+            remove_tree(folder)
+
+
+def sweep_staging(home, *, min_age_s: float = 3600.0, now: float | None = None) -> int:
+    """Gateway start: staging folders a crash left behind hold decryptable
+    chunks that no index row, plan or deletion reaches. Each one untouched for
+    `min_age_s` (an import still running keeps writing) loses its key, then
+    its folder. Returns the folders removed."""
+    import time
+    from .trace_meta_adapters import remove_tree
+    now, removed = time.time() if now is None else now, 0
+    for owner in _owners(home):
+        store = ImportStore(home, owner)
+        for folder in sorted(store.base.glob(".staging-imp_*")):
+            ref = folder.name[len(".staging-"):]
+            if not _REF.fullmatch(ref) or now - _newest(folder) < min_age_s:
+                continue
+            store.keystore.destroy(STORE, [ref])
+            remove_tree(folder)
+            removed += 1
+    return removed
+
+
+def _newest(folder: Path) -> float:
+    stamps = [folder.lstat().st_mtime]
+    stamps += [p.lstat().st_mtime for p in folder.iterdir()]
+    return max(stamps)
 
 
 def _owners(home) -> list[str]:

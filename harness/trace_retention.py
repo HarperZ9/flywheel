@@ -150,11 +150,9 @@ def adopt(home, owner_ref: str, presence_ref, *, sink=None) -> dict:
         raise PresenceError("POLICY_INVALID")
     value = digest(on_disk)
     method = require(Path(home) / "state", owner_ref, "retention_adopt", value, presence_ref)
-    path = _adopted_path(home, owner_ref)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name("adopted.json.tmp")
-    temporary.write_bytes(canonical_bytes({"schema": SCHEMA, **on_disk}))
-    temporary.replace(path)
+    from . import trace_durable
+    trace_durable.write_durable(_adopted_path(home, owner_ref),
+                                canonical_bytes({"schema": SCHEMA, **on_disk}))
     return record_custody_event(Path(home), owner_ref, "settings_adopted",
                                 {"settings": "retention", "digest": value}, method, sink=sink)
 

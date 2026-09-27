@@ -68,10 +68,8 @@ def method_digest(method: str) -> str:
 
 
 def _write(path: Path, doc: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(path.name + ".tmp")
-    temporary.write_bytes(canonical_bytes(doc))
-    os.replace(temporary, path)
+    from . import trace_durable
+    trace_durable.write_durable(path, canonical_bytes(doc))
 
 
 def _scope(state_root, owner_ref: str) -> str:

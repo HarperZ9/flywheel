@@ -29,3 +29,18 @@ def test_the_keystore_delete_does_not_follow_a_junction(tmp_path):
     keys_delete_all(tmp_path / "home")
     assert (outside / "keep.txt").exists()
     assert remove_tree(tmp_path / "missing") == 0
+
+
+def test_the_spool_delete_does_not_follow_a_junction(tmp_path):
+    from harness.capture_hooks.spool import spool_dir
+    from harness.trace_spool_adapters import delete_all as spool_delete_all
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "keep.txt").write_bytes(b"not custody")
+    spool = spool_dir(tmp_path / "home")
+    spool.mkdir(parents=True)
+    (spool / "f.json").write_bytes(b"{}")
+    assert link_dir(spool / "linked", outside)
+    assert spool_delete_all(tmp_path / "home")["removed"] >= 1
+    assert (outside / "keep.txt").read_bytes() == b"not custody"
+    assert not spool.exists()

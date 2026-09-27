@@ -100,7 +100,10 @@ def print_mount() -> list[str]:
     """The exact mount lines, with this interpreter's absolute path."""
     import json
     import sys
-    base = f'"{sys.executable}" -m harness.capture_hooks'
+    # -P keeps the hook's working directory (the project) off sys.path and
+    # -E ignores PYTHONPATH, so neither a repository's `harness` package nor
+    # a settings `env` block can stand in for the hook (SP-03).
+    base = f'"{sys.executable}" -P -E -m harness.capture_hooks'
 
     def block(client, events):
         return {"hooks": {event: [{"hooks": [{"type": "command",

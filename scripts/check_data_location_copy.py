@@ -10,12 +10,17 @@ deletion "GDPR-style" when it does not reach every derived form.
 The check reads the product surfaces (root pages, docs, release notes, the
 site, harness docstrings and runtime strings, desktop strings, shipped model
 pages and plugin readmes) with whitespace normalized, so a phrase wrapped
-across a line break is found. Two escapes exist:
+across a line break is found. A broader rule (`unqualified_local`) catches
+any "stays on / never leaves / nothing leaves your machine" wording and
+passes it only when a sentence naming the model or hosted provider sits within
+QUALIFIER_WINDOW lines, or when the sentence itself is about a local model.
+Two escapes exist for every rule:
 
   * a sentence listed in ALLOWED for one file, each with its reason. These are
     local-model pages, where the statement is true because nothing is sent;
   * a line starting `Correction, <YYYY-MM-DD>:` within ten lines after the
-    phrase, so a shipped release note keeps its text and carries the fix.
+    phrase, whose paragraph names the provider, so a shipped release note
+    keeps its text and carries the fix.
 
 What this cannot see: a phrase split across string concatenations in code, a
 paraphrase the patterns do not name, and pages outside the surface list.
@@ -34,7 +39,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SURFACE_GLOBS = (
     "*.md", "docs/**/*.md", "site/**/*.html", "site/**/*.md", "harness/**/*.py",
     "desktop/lib/**/*.dart", "project-docs/releases/**/*.md", "plugins/**/*.md",
-    "packages/**/*.md",
+    "packages/**/*.md", "desktop/*.md", "desktop/docs/**/*.md",
 )
 PHRASES = (
     ("data_location", re.compile(
@@ -46,6 +51,15 @@ PHRASES = (
         r"(?i)\byour data (?:stays|remains) (?:local|private|on[- ]device)\b")),
     ("gdpr", re.compile(r"(?i)\bGDPR[- ](?:style|erasure)\b")),
 )
+LOCAL_CLAIM = re.compile(
+    r"(?i)\b(?:stays?|remains?|kept|stored only) (?:only )?on your (?:own )?"
+    r"(?:machine|computer|device|disk)\b|\b(?:nothing|never) leaves? your (?:own )?"
+    r"(?:machine|computer|device|disk)\b|\bnever leaves? your (?:own )?"
+    r"(?:machine|computer|device|disk)\b")
+QUALIFIER = re.compile(r"(?i)\b(?:model|hosted) provider|provider you "
+                       r"(?:pick|route)")
+LOCAL_MODEL = re.compile(r"(?i)\blocal model")
+QUALIFIER_WINDOW = 8
 CORRECTION = re.compile(r"^\s*(?:[*_>]+\s*)?Correction, \d{4}-\d{2}-\d{2}:")
 CORRECTION_WINDOW = 10
 _LOCAL = ("the local model runs on the owner's machine and sends nothing, so the "
@@ -99,9 +113,28 @@ def _sentence(flat: str, start: int, end: int) -> str:
     return flat[begin + 1:stop].strip()
 
 
+def _paragraph(raw_lines: list[str], index: int) -> str:
+    out = []
+    while index < len(raw_lines) and raw_lines[index].strip():
+        out.append(raw_lines[index])
+        index += 1
+    return " ".join(out)
+
+
 def _corrected(raw_lines: list[str], line: int) -> bool:
-    window = raw_lines[line:line + CORRECTION_WINDOW]
-    return any(CORRECTION.match(candidate) for candidate in window)
+    """A dated correction within the window whose paragraph names the provider."""
+    for offset, candidate in enumerate(raw_lines[line:line + CORRECTION_WINDOW]):
+        if CORRECTION.match(candidate) and QUALIFIER.search(
+                _paragraph(raw_lines, line + offset)):
+            return True
+    return False
+
+
+def _qualified(raw_lines: list[str], line: int, sentence: str) -> bool:
+    if LOCAL_MODEL.search(sentence):
+        return True
+    low, high = max(0, line - 1 - QUALIFIER_WINDOW), line + QUALIFIER_WINDOW
+    return QUALIFIER.search(" ".join(raw_lines[low:high])) is not None
 
 
 def _inside_correction(raw_lines: list[str], line: int) -> bool:
@@ -128,7 +161,17 @@ def violations_in(text: str, name: str) -> list[Violation]:
                     or _inside_correction(raw_lines, lines[match.start()])):
                 continue
             found.append(Violation(name, lines[match.start()], rule, sentence))
-    return sorted(found, key=lambda v: (v.line, v.rule))
+    strict = {(v.line, v.sentence) for v in found}
+    for match in LOCAL_CLAIM.finditer(flat):
+        sentence = _sentence(flat, match.start(), match.end())
+        line = lines[match.start()]
+        if ((line, sentence) in strict or (name, sentence) in ALLOWED
+                or _qualified(raw_lines, line, sentence)
+                or _corrected(raw_lines, lines[match.end() - 1])
+                or _inside_correction(raw_lines, line)):
+            continue
+        found.append(Violation(name, line, "unqualified_local", sentence))
+    return sorted(set(found), key=lambda v: (v.line, v.rule))
 
 
 def surfaces(root: Path) -> list[Path]:

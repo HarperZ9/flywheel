@@ -73,4 +73,16 @@ def startup(home) -> dict:
         _log.warning("custody tree attributes not applied (%s)", type(exc).__name__)
     if status["provider"] == "none":
         _log.warning("trace custody is %s", status["protection"])
+    _sweep_import_staging(home)
     return status
+
+
+def _sweep_import_staging(home) -> None:
+    from .trace_import_items import sweep_staging
+    try:
+        swept = sweep_staging(home)
+    except Exception as exc:  # start must not fail on a sweep; logged with context
+        _log.warning("import staging sweep failed (%s)", type(exc).__name__)
+        return
+    if swept:
+        _log.info("removed %d import staging folders a crash left", swept)

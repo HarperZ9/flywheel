@@ -17,6 +17,7 @@ from __future__ import annotations
 import base64
 from datetime import datetime, timezone
 import json
+import logging
 import os
 from pathlib import Path
 import secrets
@@ -30,6 +31,8 @@ from .trace_keystore import Keystore
 from .trace_turn_receipt import build, keyed_ref, store_receipt
 
 STORE = "CT"
+QUARANTINE = "pending-quarantine"
+_log = logging.getLogger(__name__)
 
 
 def _b64(raw) -> str | None:
@@ -52,10 +55,8 @@ class TurnStore:
                           keystore=self.keystore)
 
     def _write(self, path: Path, item: str, doc: dict) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name("." + path.name + ".tmp")
-        temporary.write_bytes(self._cipher(item).seal("record", canonical_bytes(doc)))
-        os.replace(temporary, path)
+        from . import trace_durable
+        trace_durable.write_durable(path, self._cipher(item).seal("record", canonical_bytes(doc)))
 
     def _read(self, path: Path, item: str) -> dict:
         return json.loads(self._cipher(item).open("record", path.read_bytes()))
@@ -64,10 +65,34 @@ class TurnStore:
         return keyed_ref(self.keystore.custody_key(), "session", client, session_id or "none")
 
     def _pendings(self, session_ref: str | None = None) -> list[tuple[Path, dict]]:
+        """Readable pending records. One that cannot be read (zero-filled by
+        an unclean shutdown, or its key unavailable) is moved aside with a
+        loss record, so it never stops capture in other sessions."""
+        from .trace_enc import EncError
         directory = self.base / "pending"
         pattern = f"{session_ref}-*.enc" if session_ref else "*.enc"
         found = sorted(directory.glob(pattern)) if directory.is_dir() else []
-        return [(path, self._read(path, path.stem)) for path in found]
+        out = []
+        for path in found:
+            try:
+                out.append((path, self._read(path, path.stem)))
+            except (EncError, ValueError, KeyError, OSError) as exc:
+                self._quarantine(path, getattr(exc, "code", "PENDING_UNREADABLE"))
+        return out
+
+    def _quarantine(self, path: Path, code: str) -> None:
+        """Keep the file and its key (an OS key may come back) under
+        `pending-quarantine/`, same name, so a session deletion still finds it."""
+        from .trace_custody_ledger import CustodyLedger
+        target = self.base / QUARANTINE / path.name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        os.replace(path, target)
+        try:
+            CustodyLedger(self.home, self.owner_ref).append("loss", {
+                "store": STORE, "items": 1, "reason_code": code, "original": "quarantined"})
+        except Exception as exc:  # the move stands; the missing record is logged
+            _log.warning("loss record for a pending prompt not written (%s)",
+                         type(exc).__name__)
 
     @staticmethod
     def _commit(kind: str, text, given, salt):

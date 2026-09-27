@@ -20,12 +20,7 @@ def export_records(home) -> list[dict]:
 
 
 def delete_all(home) -> dict:
-    root = spool.spool_dir(Path(home))
-    removed = 0
-    for path in sorted(root.rglob("*"), reverse=True) if root.exists() else []:
-        if path.is_file() or path.is_symlink():
-            path.unlink()
-            removed += 1
-        elif path.is_dir():
-            path.rmdir()
-    return {"removed": removed}
+    """Remove the spool by handle: a junction or link inside it is removed as
+    a link and its target keeps its files."""
+    from .trace_meta_adapters import remove_tree
+    return {"removed": remove_tree(spool.spool_dir(Path(home)))}

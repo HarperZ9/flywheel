@@ -10,7 +10,8 @@
 ![deps: none (core)](https://img.shields.io/badge/core%20deps-none-success?style=flat-square&labelColor=14041b)
 
 Flywheel runs any model, frontier or local, behind a single OpenAI-compatible
-surface. Your provider keys and Flywheel's records stay on your machine. The
+surface. Flywheel's records stay on your machine, and your provider keys are
+stored only there and sent only to their own provider. The
 content of each request, including files and tool output the agent reads, goes
 to the model provider you pick, under that provider's terms. With a local model
 it stays on your machine. Flywheel's desktop assistant, Rowan, takes a request

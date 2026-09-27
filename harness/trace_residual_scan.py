@@ -16,12 +16,15 @@ freed clusters, NTFS metadata, backups, shadow copies, the pagefile or any
 transformation it does not search for. Encrypted custody files are ciphertext,
 so a pattern can never be found in them: they are counted as not searched, and
 a zero count says nothing about them. A compressed file it cannot open (a
-.zst with no zstd module, or one over the zstd bounds) is counted the same way.
+.zst with no zstd module, or one over the zstd bounds) is counted the same way,
+and so is a .gz file or zip member that inflates past MAX_READ: it is read
+through a bounded stream and never inflated whole.
 """
 from __future__ import annotations
 
 import base64
 import gzip
+import io
 import json
 from pathlib import Path
 import unicodedata
@@ -105,16 +108,27 @@ def _zst(data: bytes) -> bytes:
     return b"".join(pieces)
 
 
+def _bounded(stream) -> bytes:
+    """Read at most MAX_READ bytes; a stream with more is not searched, so a
+    decompression bomb never inflates past the bound."""
+    data = stream.read(MAX_READ + 1)
+    if len(data) > MAX_READ:
+        raise Unopened()
+    return data
+
+
 def _payloads(path: Path, data: bytes):
     yield data
     name = path.name.lower()
     try:
         if name.endswith(".gz"):
-            yield gzip.decompress(data)[:MAX_READ]
+            with gzip.GzipFile(fileobj=io.BytesIO(data)) as stream:
+                yield _bounded(stream)
         elif name.endswith(".zip"):
             with zipfile.ZipFile(path) as archive:
                 for member in archive.infolist()[:10_000]:
-                    yield archive.read(member)[:MAX_READ]
+                    with archive.open(member) as stream:
+                        yield _bounded(stream)
         elif name.endswith(".zst"):
             yield _zst(data)
     except (OSError, ValueError, EOFError, zipfile.BadZipFile):

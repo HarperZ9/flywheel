@@ -24,13 +24,14 @@ from __future__ import annotations
 import base64
 from datetime import datetime, timezone
 import json
+import logging
 import os
 from pathlib import Path
-import sys
 
 from .evidence_json import canonical_bytes
 from .journey_lock import fsync_directory
 from .trace_custody_lock import custody_lock
+from .trace_durable import replace_through as _replace
 from .trace_enc import EncError, default_provider
 
 MAX_SHARD_ENTRIES = 4096
@@ -39,20 +40,10 @@ CUSTODY = "custody.keys"
 #: With no OS key store, shards are plain JSON behind this marker: the custody
 #: key still works for keyed references, and status says nothing is encrypted.
 PLAIN = b"FWKEYS-PLAIN\n"
-
-
-def _replace(source: Path, target: Path) -> None:
-    """Rename with write-through (MoveFileExW on Windows, rename elsewhere)."""
-    if sys.platform != "win32":
-        os.replace(source, target)
-        return
-    import ctypes
-    from ctypes import wintypes
-    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel.MoveFileExW.argtypes = (wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD)
-    kernel.MoveFileExW.restype = wintypes.BOOL
-    if not kernel.MoveFileExW(str(source), str(target), 0x1 | 0x8):
-        raise ctypes.WinError(ctypes.get_last_error())
+#: A new item key first waits the usual lock timeout, then up to KEY_WAIT_S more.
+FIRST_WAIT_S = 10.0
+KEY_WAIT_S = 120.0
+_log = logging.getLogger(__name__)
 
 
 class Keystore:
@@ -81,6 +72,10 @@ class Keystore:
         if raw.startswith(PLAIN):
             body = raw[len(PLAIN):]
             if self.provider.name != "none":
+                if self._any_floor():
+                    # S18: something was encrypted since, so a key store worked;
+                    # a plaintext shard now may be planted with a known key.
+                    raise EncError("ENC_DOWNGRADE")
                 return self._reseal(path, body)
         elif self.provider.name == "none":
             raise EncError("OS_KEY_UNAVAILABLE")  # sealed by a key store no longer here
@@ -92,6 +87,12 @@ class Keystore:
         keys = {k: base64.b64decode(v) for k, v in doc["keys"].items()}
         self._cache[str(path)] = (stamp, keys)
         return keys
+
+    def _any_floor(self) -> bool:
+        """Whether any store of this owner holds an encrypted item. Same-user
+        code can delete floor markers, so this guards against a planted
+        shard only while the markers stand (design 3.5)."""
+        return any(self.dir.glob("*.floor"))
 
     def _reseal(self, path: Path, body: bytes) -> dict:
         doc = json.loads(body)
@@ -133,10 +134,23 @@ class Keystore:
         return None, None
 
     def item_key(self, store: str, item: str, *, create: bool = False) -> bytes | None:
+        """An item's key; with `create`, a new one when it has none. A new key
+        waits past the usual lock timeout for a custody writer (a deletion's
+        steps can take tens of seconds), and the log says that it waits."""
         path, keys = self._find(store, item)
         if path is not None or not create:
             return keys[item] if path is not None else None
-        with custody_lock(self.state_root):
+        from .journey_lock import JourneyLockBusy
+        try:
+            return self._create(store, item, FIRST_WAIT_S)
+        except JourneyLockBusy:
+            _log.warning("custody lock busy for %.0f s (a deletion or import is running); "
+                         "waiting up to %.0f s more for a new %s key", FIRST_WAIT_S,
+                         KEY_WAIT_S, store)
+            return self._create(store, item, KEY_WAIT_S)
+
+    def _create(self, store: str, item: str, timeout_s: float) -> bytes:
+        with custody_lock(self.state_root, timeout_s):
             path, keys = self._find(store, item)
             if path is not None:
                 return keys[item]
