@@ -32,6 +32,18 @@ def _load_gateway_entry():
     return module
 
 
+@pytest.fixture(autouse=True)
+def _restore_index_worker_spawn(monkeypatch):
+    """The index cases install the worker shim in-process
+    (``lane_worker_mode.install_worker_spawn``); put ``router_jobs.subprocess``
+    back afterwards so no later test inherits it."""
+    try:
+        import index_graph.router_jobs as rj
+    except ImportError:
+        return
+    monkeypatch.setattr(rj, "subprocess", rj.subprocess)
+
+
 @pytest.fixture
 def admitted(monkeypatch):
     calls = []

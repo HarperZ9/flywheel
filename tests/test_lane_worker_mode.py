@@ -32,15 +32,25 @@ class _Popen:
         return _P()
 
 
+def _shim(monkeypatch, executable):
+    """index_graph.router_jobs with a fresh worker shim over a fake Popen.
+
+    The module starts from the real ``subprocess``: a shim an earlier test left
+    in place (the frozen CLI and MCP modes install one in-process) must not
+    decide which executable this test sees. Whatever was there is restored
+    after the test."""
+    import index_graph.router_jobs as rj
+    fake = _Popen()
+    monkeypatch.setattr(rj, "subprocess", subprocess)
+    monkeypatch.setattr(subprocess, "Popen", fake)
+    assert lwm.install_worker_spawn("index", executable=executable)
+    return rj, fake
+
+
 @pytest.fixture
 def shimmed(monkeypatch):
     """index_graph.router_jobs with the worker shim over a fake Popen."""
-    import index_graph.router_jobs as rj
-    fake = _Popen()
-    monkeypatch.setattr(rj, "subprocess", rj.subprocess)       # restored after the test
-    monkeypatch.setattr(subprocess, "Popen", fake)
-    assert lwm.install_worker_spawn("index", executable="C:/F/flywheel-gateway.exe")
-    return rj, fake
+    return _shim(monkeypatch, "C:/F/flywheel-gateway.exe")
 
 
 def test_lane_cli_builds_the_worker_argv():
@@ -66,6 +76,28 @@ def test_installing_twice_keeps_one_shim(shimmed):
     first = rj.subprocess
     assert lwm.install_worker_spawn("index")
     assert rj.subprocess is first
+
+
+def test_a_second_install_takes_its_own_executable(monkeypatch, tmp_path):
+    rj, fake = _shim(monkeypatch, None)            # the frozen modes install with no executable
+    assert lwm.install_worker_spawn("index", executable="C:/F/second.exe")
+    rj._spawn_worker(tmp_path, TOKEN)
+    (worker, _kw), = fake.calls
+    assert worker[:3] == ["C:/F/second.exe", "--bundled-lane-worker", "index"]
+
+
+def test_a_shim_an_earlier_test_left_does_not_leak_into_the_fixture(monkeypatch, tmp_path):
+    """What ``test_frozen_lane_modes`` leaves behind when both files run in one
+    process: its index cases install a shim with no executable."""
+    import index_graph.router_jobs as rj
+    monkeypatch.setattr(rj, "subprocess", rj.subprocess)     # put back whatever is there now
+    assert lwm.install_worker_spawn("index")
+    left = rj.subprocess
+    rj2, fake = _shim(monkeypatch, "C:/F/flywheel-gateway.exe")
+    assert rj2.subprocess is not left
+    rj2._spawn_worker(tmp_path, TOKEN)
+    (worker, _kw), = fake.calls
+    assert worker[0] == "C:/F/flywheel-gateway.exe"
 
 
 def test_only_index_has_a_worker():

@@ -82,12 +82,16 @@ class _SubprocessShim:
 
 def install_worker_spawn(lane: str, *, executable: str | None = None) -> bool:
     """Route ``lane``'s worker spawn through the engine's worker mode; False
-    for a lane with no worker. Installing twice keeps one shim."""
+    for a lane with no worker. Installing twice keeps one shim, and the later
+    call's ``executable`` is the one the shim uses (None: the spawner's own
+    ``argv[0]``, which in a frozen child is the engine)."""
     spec = WORKERS.get(lane)
     if spec is None:
         return False
     module = importlib.import_module(spec.module)
-    if not isinstance(module.subprocess, _SubprocessShim):
+    if isinstance(module.subprocess, _SubprocessShim):
+        module.subprocess._executable = executable
+    else:
         module.subprocess = _SubprocessShim(module.subprocess, lane, spec.marker, executable)
     return True
 
