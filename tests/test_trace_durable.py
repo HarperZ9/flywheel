@@ -3,6 +3,7 @@ it replaces the record, and the folder is flushed after, so an unclean
 shutdown cannot leave a zero-filled record where the old one was. Each
 custody writer goes through the one helper."""
 import os
+import stat
 
 import pytest
 
@@ -11,11 +12,17 @@ from harness import trace_durable
 from trace_enc_fakes import StreamTestProvider, using
 
 
+def _fsync_event(fd) -> str:
+    """A file flush and a folder flush both call os.fsync on POSIX
+    (journey_lock.fsync_directory opens the folder); tell them apart."""
+    return "fsync-dir" if stat.S_ISDIR(os.fstat(fd).st_mode) else "fsync"
+
+
 def test_the_file_is_flushed_before_the_replace_and_the_folder_after(tmp_path, monkeypatch):
     events = []
     real_fsync, real_replace, real_dir = os.fsync, trace_durable.replace_through, \
         trace_durable.fsync_directory
-    monkeypatch.setattr(os, "fsync", lambda fd: events.append("fsync") or real_fsync(fd))
+    monkeypatch.setattr(os, "fsync", lambda fd: events.append(_fsync_event(fd)) or real_fsync(fd))
     monkeypatch.setattr(trace_durable, "replace_through",
                         lambda a, b: events.append("replace") or real_replace(a, b))
     monkeypatch.setattr(trace_durable, "fsync_directory",
@@ -24,7 +31,10 @@ def test_the_file_is_flushed_before_the_replace_and_the_folder_after(tmp_path, m
     target.write_bytes(b"old")
     trace_durable.write_durable(target, b"new")
     assert target.read_bytes() == b"new"
-    assert events == ["fsync", "replace", "dir"]
+    # Windows flushes the folder through FlushFileBuffers, POSIX through an
+    # fsync of the folder's descriptor, which must come inside the folder step.
+    tail = [] if os.name == "nt" else ["fsync-dir"]
+    assert events == ["fsync", "replace", "dir", *tail]
     assert not list(tmp_path.glob("*.tmp"))
 
 
