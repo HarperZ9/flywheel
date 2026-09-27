@@ -71,25 +71,27 @@ def _plain_id(value: object) -> bool:
 
 
 def _reaches_home(lane: str, value: object, environ: Mapping[str, str]) -> bool:
-    """True when a path argument resolves inside the Flywheel home, outside the
-    lane's own folder, or is a Windows device or UNC spelling (path_identity).
-    A relative path resolves from the lane folder, the child's working
-    directory in every install mode (lane_workdir). A URL is not a local path."""
+    """True when a path argument resolves inside Flywheel's own state (the home
+    or the run root, flywheel_state_roots) outside the lane's own folder, or is
+    a Windows device or UNC spelling (path_identity). A relative path resolves
+    from the lane folder, the child's working directory in every install mode
+    (lane_workdir). A URL is not a local path."""
+    from .flywheel_state_roots import state_roots
     from .lane_workdir import flywheel_home
     from .path_identity import device_or_unc, inside
     if not isinstance(value, str) or not value.strip() or "://" in value:
         return False
     if device_or_unc(value):
         return True
-    home = flywheel_home(environ)
-    own = home / "lanes" / lane
+    own = flywheel_home(environ) / "lanes" / lane
     try:
         raw = Path(os.path.expanduser(value.strip()))
         target = os.path.realpath(raw if raw.is_absolute() else own / raw)
-        home_s, own_s = (os.path.realpath(p) for p in (home, own))
+        own_s = os.path.realpath(own)
+        roots = state_roots(environ)
     except (OSError, ValueError):
         return True   # an unresolvable path is refused, not guessed at
-    return inside(target, home_s) and not inside(target, own_s)
+    return any(inside(target, root) for root in roots) and not inside(target, own_s)
 
 
 def argument_refusal(lane: str, tool: str, args: Mapping[str, Any],

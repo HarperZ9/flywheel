@@ -130,8 +130,8 @@ def local_model_root(environ: Mapping[str, str]) -> tuple[str | None, str]:
 
     Unset or empty: ``local_model_root_unset``. Not an existing absolute folder:
     ``local_model_root_missing``. The home folder itself, or a folder inside or
-    holding the Flywheel home: ``local_model_root_protected``, the same rule
-    local_agent_grants applies at start (WORKSPACE_PROTECTED)."""
+    holding the Flywheel home or the run root: ``local_model_root_protected``,
+    the same rule local_agent_grants applies at start (WORKSPACE_PROTECTED)."""
     try:
         text = local_model_root_file(environ).read_text(encoding="utf-8").strip()
     except (OSError, UnicodeDecodeError):

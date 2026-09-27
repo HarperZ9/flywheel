@@ -2298,7 +2298,7 @@ def main(argv=None) -> int:
     pin_gateway_workspace(_Handler.root)  # the local-model lane's run workspace
     _Handler.serve_url = a.serve_url
     _Handler.ollama_url = a.ollama_url
-    _Handler.run_root = a.run_root
+    _Handler.run_root = os.environ["FLYWHEEL_RUN_ROOT"] = a.run_root  # the lane path guards read it (flywheel_state_roots)
     _Handler.cors = a.cors
     from harness.telos_browser_registration import configure_telos_browser
     if configure_telos_browser(os.environ.get("FLYWHEEL_TELOS_BROWSER_CONFIG"))["available"] is None: raise SystemExit("browser registration state unknown; gateway not started")
