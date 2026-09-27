@@ -116,3 +116,17 @@ def test_the_notes_class_breakdown_is_the_receipts_count_per_class():
     clause = notes[start:notes.index(". ", start)]
     found = {cls: int(n) for n, cls in re.findall(r"(\d+) [^,()]*?\(([^()]+)\)", clause)}
     assert found == _evidence()["summary"]["by_class"]
+
+
+@pytest.mark.parametrize("path", CLASS_PAGES, ids=lambda p: p.name)
+def test_the_copy_keeps_where_the_lane_check_ran(path):
+    """The receipt's first does_not_prove says where the run ran: a Windows
+    Server runner, an administrator account, the network reachable and no host
+    model server. The notes and the lane page keep each part, so a reader does
+    not take the classes as measured offline or on a consumer machine."""
+    text = " ".join(path.read_text(encoding="utf-8").split()).lower()
+    limit = _evidence()["does_not_prove"][0].lower()
+    for part in ("windows server", "administrator", "network", "reachable",
+                 "no host model server"):
+        assert part in limit, part
+        assert part in text, (path.name, part)
