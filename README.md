@@ -10,8 +10,9 @@
 ![deps: none (core)](https://img.shields.io/badge/core%20deps-none-success?style=flat-square&labelColor=14041b)
 
 Flywheel runs any model, frontier or local, behind a single OpenAI-compatible
-surface. Flywheel's records stay on your machine, and your provider keys are
-stored only there and sent only to their own provider. The
+surface. Flywheel's records stay on your machine. Your provider keys are
+stored only there: Flywheel sends each one only to its own provider, and a key
+you bind to a lane call reaches that lane's process for that one call. The
 content of each request, including files and tool output the agent reads, goes
 to the model provider you pick, under that provider's terms. With a local model
 it stays on your machine. Flywheel's desktop assistant, Rowan, takes a request
@@ -412,6 +413,9 @@ against the checksums attached to that release.
 - [GETTING-STARTED.md](GETTING-STARTED.md): install, sign in, first run, and the owner-bound state model
 - [docs/FLYWHEEL-1.0.0-OVERVIEW.md](docs/FLYWHEEL-1.0.0-OVERVIEW.md): the 1.0 overview, full feature set, and install-to-first-verdict walkthrough
 - [docs/features/](docs/features/README.md): per-feature docs and how the lanes compose into the application
+- [docs/TRACE-OWNERSHIP.md](docs/TRACE-OWNERSHIP.md): where your agent traces are, and status, encryption, export, deletion, import and retention for them
+- [docs/WRAPPER-HOOKS.md](docs/WRAPPER-HOOKS.md): the capture hooks for Claude Code and Codex, and how they find and trust the gateway
+- [docs/trace-redaction.md](docs/trace-redaction.md): what trace redaction catches, and what it misses
 - [WALKTHROUGH.md](WALKTHROUGH.md): guided tour
 - [desktop/README.md](desktop/README.md): native desktop development and packaging notes
 - [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory owner/project binding

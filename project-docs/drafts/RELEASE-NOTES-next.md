@@ -1,17 +1,11 @@
 <!--
-Draft of the Flywheel 1.1.0 release notes, for the release owner to review before any tag.
-Open before publishing:
-- Lane classes, the lane sentence and the method paragraph cite CI run 36302181098
-  (project-docs/lanes/evidence/installed-lanes-ci-36302181098.json, source ba371e6b).
-  Replace that summary, run id and commit with the windows-installed-acceptance.yml
-  run on the release commit (O-9); tests/test_release_drafts.py reads the summary.
-- The README lane sentence carries the same count (O-5).
-- Run 36302181098 predates the gather 1.9.1, relay 0.5.0 and forum 1.15.1 pins.
-- Installer size is from that CI build; re-measure it from the release workflow build.
-- The 1.0.4 known-issues page (RELEASE-NOTES-1.0.4-known-issues.md) publishes on its
-  own; the section below points to it.
-- Trace custody: manual checks X4, X6, X7, X8 and X18 were not run on hardware.
-Remove this comment before publishing.
+Draft of the Flywheel 1.1.0 release notes; the release owner reviews it before any tag.
+- Lane classes, the lane sentence, the README count (O-5) and the method paragraph cite
+  CI run 36302181098 (project-docs/lanes/evidence/installed-lanes-ci-36302181098.json),
+  which predates the gather 1.9.1, relay 0.5.0 and forum 1.15.1 pins. Replace them
+  from the windows-installed-acceptance.yml run on the release commit (O-9).
+- Re-measure the installer size from the release workflow build. The 1.0.4 known-issues
+  page publishes on its own. Trace manual checks X4, X6, X7, X8 and X18 were not run.
 -->
 
 # Flywheel 1.1.0
@@ -24,8 +18,10 @@ local-model and writing now start inside the installed app. Every lane tool the 
 call sits under one policy, listed tool by tool in
 `docs/features/lane-tool-policy.md`, and tools that write outside the lane's folder,
 spend a key, publish or act on your machine run only on a call you approve.
-Flywheel also takes custody of your agent traces (`docs/TRACE-OWNERSHIP.md`): it lists
-every store that holds them, encrypts them at rest, and exports or deletes them for you.
+The engine also takes custody of your agent traces (`docs/TRACE-OWNERSHIP.md`):
+`flywheel traces` lists every store that holds them, encrypts gateway traces, captured
+turns and imports at rest where an OS key store is available, and exports or deletes
+what Flywheel holds.
 
 ## Why this is 1.1.0
 
@@ -162,21 +158,29 @@ call you approve with the higher tier.
 - **License texts ship with the engine.** The engine folder now carries the Python
   license (with OpenSSL's), the texts for code compiled into Python, and each lane's
   license. The installer's third-party notice lists every one.
+- **Installer size.** The installer is about 23.7 MB larger, mostly the bundled Node
+  runtime: 80,081,007 bytes in CI run 36302181098 against 56,355,754 bytes for 1.0.4.
 
 ## Your traces
+
+These commands come with the engine from pip (`python -m pip install -U flywheel-verify`).
+The Windows installer adds no `flywheel` command and the app has no traces screen yet;
+the capture hooks need a Python with Flywheel installed.
 
 - `flywheel traces status` lists every store that holds data derived from your traces:
   where it is, how it is protected and kept, and whether it can be exported and deleted.
 - Gateway traces, captured turns, frozen pages, imported transcripts and bench tasks are
-  encrypted at rest, each under its own key: DPAPI on Windows, AES-256-GCM with a
-  keychain key on macOS and Linux with the `encryption` extra, or status says plaintext.
-- `flywheel traces delete` plans its closure, destroys keys before files and leaves a
-  tombstone. `export` writes a copy with a standard-library verifier, `import` copies
-  Claude Code and Codex transcripts into custody, and retention deletes only under a
-  rule you adopt; the default keeps everything.
-- The Claude Code and Codex capture hooks send salted commitments by default, over a
-  channel signed per request and bound to the engine's address, never the raw gateway
-  token. A turn's text is kept only after you turn content capture on.
+  encrypted at rest where an OS key store is available, each under its own key: DPAPI on
+  Windows; on macOS, and on Linux with `secret-tool`, AES-256-GCM with the `encryption`
+  extra, a path with no automated test yet. Otherwise status says plaintext.
+- `flywheel traces delete` plans its closure, destroys keys before files, leaves a
+  tombstone and names the copies it cannot reach: the model provider's, the client's own
+  transcript, backups and earlier exports. `export` writes a verifiable copy (never to a
+  network share), `import` copies Claude Code and Codex transcripts into custody, and
+  retention deletes only under a rule you adopt; the default keeps everything.
+- The capture hooks send salted commitments by default, over a channel signed per request
+  and bound to the engine's loopback address, never the raw gateway token. A turn's text
+  is kept only after you turn content capture on. Lane processes run with capture off.
 - Custody events land in a hash-chained, metadata-only ledger and the Windows event log.
   The desktop app keeps a conversation it cannot read, names it and asks before deletes.
 
@@ -227,7 +231,7 @@ call you approve with the higher tier.
 ## Breaking changes
 
 - A lane tool the policy does not list needs an approval at T2 on pip and source
-  installs, as it already did in the Windows app.
+  installs, as it already did in the Windows app; plugins and agent runs refuse it.
 - On pip and source installs, a call that carries T1 can now run the tools the policy
   lists at T1 on relay, local-model and accountable-surface, including
   `local_agent_run` and `perceive`. 1.0.4 required T2 for every tool on those lanes.
@@ -264,26 +268,20 @@ call you approve with the higher tier.
   sent again with a secret-shaped value is refused as a collision.
 - writing's `diagnose` now needs an approval at T2, because it works on the shared
   draft store outside the lane's folder.
-- Plugins and agent runs refuse a lane tool the policy does not list.
 - The capture hook mount is now `"<python>" -P -E -m harness.capture_hooks`, and
   `flywheel traces doctor` fails the old line. With `-E`, a mount that found Flywheel
   through `PYTHONPATH` stops working; install Flywheel for that Python instead.
 
-## Corrections to the 1.0.4 notes
+## Corrections to the 1.0.3 and 1.0.4 notes
 
 The 1.0.4 notes described the Windows app's lanes more strongly than the installed app
 delivered: one lane ran its main action, nine answered only status and doctor, forum,
 local-model and writing did not start, and a key granted with `env_allow` did not reach
 a bundled lane. The engine from pip was not affected. The 1.0.4 known-issues page lists
 each statement, what we measured and what to do on 1.0.4. This release is the fix.
-The 1.0.3 and 1.0.4 notes also said your keys and data stay on your machine. Keys and
-Flywheel's records do; the content of each request goes to the hosted provider you
-route it to.
-
-## Installer size
-
-The installer is about 23.7 MB larger, mostly the bundled Node runtime: 80,081,007 bytes
-in CI run 36302181098 against 56,355,754 bytes for the published 1.0.4 installer.
+The 1.0.3 and 1.0.4 notes also overstated where your data goes. Your keys are stored
+only on your machine and sent only to their own provider, and Flywheel's records stay
+on your machine; the content of each request goes to the hosted provider you route it to.
 
 ## Limits
 
@@ -300,16 +298,13 @@ in CI run 36302181098 against 56,355,754 bytes for the published 1.0.4 installer
 - The limits listed for 1.0.4 on the verifier still hold.
 - Custody presence defaults to `none`: any process running as you can confirm a custody
   operation. `flywheel traces delete` does not reach lane stores, such as mneme's.
-
-## What the lane check does not prove
-
-It ran on a GitHub-hosted Windows Server runner with only the Windows system folder on
-PATH and an administrator account, not on a consumer Windows 11 machine, which remains
-untested; the network was reachable and no host model server ran. It used a stub model
-server, so it shows a model lane reached a model and the engine's guards held, not
-answer quality. It used no provider key, posted nothing and actuated nothing. Each main
-tool has one fixture assertion. The desktop screens were not driven; the check calls
-the routes the app calls.
+- Desktop chat history stays plaintext. Windows Hello presence and Codex capture were not
+  exercised on real hardware or a real Codex install.
+- The lane check ran on a GitHub-hosted Windows Server runner with only the Windows
+  system folder on PATH and an administrator account; a consumer Windows 11 machine
+  remains untested. Its stub model server shows a model lane reached a model, not answer
+  quality. It used no provider key, posted nothing and actuated nothing, ran one fixture
+  assertion per main tool, and called the routes the app calls without driving screens.
 
 ## Upgrade
 
