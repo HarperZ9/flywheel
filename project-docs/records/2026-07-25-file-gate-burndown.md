@@ -12,7 +12,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/classifier_friction_bench.py | 454 |
 | harness/cross_harness_manifest.py | 342 |
 | harness/endpoints.py | 492 |
-| harness/gateway.py | 2358 |
+| harness/gateway.py | 2357 |
 | harness/governed_agent_bench.py | 734 |
 | harness/lanes.py | 361 |
 | harness/local_agent.py | 360 |
@@ -47,3 +47,7 @@ The lane console hooks send every `/api/lanes/` request and the node path
 setting through one line per method, the lane install and callable routes moved
 into `harness/lane_console_route.py`, and `--desktop-launch` registers through
 `lane_probe_cache.add_desktop_flag`.
+
+Shrink note, 2026-09-26 (feat/lanes-operational, WP10): gateway.py moves 2358 to 2357.
+The stop step that closes the lane sessions moved into
+`gateway_lane_calls._stop_serving` with the operation service and socket close.

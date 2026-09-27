@@ -84,8 +84,10 @@ _ARTICULATE = {
     **_health("articulate"),
 }
 
-_ROUTER_JOB = ("A background router job dies with the per-call lane child. Out of this "
-               "build until long-lived lane sessions land (WP10).")
+_ROUTER_JOB = ("Runs on the index lane session (WP10), so the job's worker outlives the "
+               "call that started it; in a frozen engine the worker runs as "
+               "--bundled-lane-worker. Job state and caches stay in the lane folder.")
+_JOB_READ = _ROUTER_JOB + " The job id must be a plain id."
 _INDEX = {
     "index.map": _main("read", "Maps a repository. Needs Git for branch and history. The "
                        "engine drops `resume_state`, which would write a file.",
@@ -113,14 +115,11 @@ _INDEX = {
     "index_router": _t("read", "Builds a workspace map and returns it; its cache stays "
                        "in the lane folder (INDEX_MCP_CACHE_DIR).", timeout_s=120),
     "index_internals": _t("read", "Builds one repo's module graph.", timeout_s=60),
-    "index.router.job.start": _t("state_write", _ROUTER_JOB,
-                                 not_in_build="per_call_child_ends_job"),
-    "index.router.job.status": _t("read", _ROUTER_JOB, not_in_build="per_call_child_ends_job"),
-    "index.router.job.result": _t("read", _ROUTER_JOB, not_in_build="per_call_child_ends_job"),
-    "index.router.job.cancel": _t("state_write", _ROUTER_JOB,
-                                  not_in_build="per_call_child_ends_job"),
-    "index.router.job.resume": _t("state_write", _ROUTER_JOB,
-                                  not_in_build="per_call_child_ends_job"),
+    "index.router.job.start": _t("state_write", _ROUTER_JOB, timeout_s=30),
+    "index.router.job.status": _t("read", _JOB_READ),
+    "index.router.job.result": _t("read", _JOB_READ, timeout_s=60),
+    "index.router.job.cancel": _t("state_write", _JOB_READ),
+    "index.router.job.resume": _t("state_write", _JOB_READ, timeout_s=30),
 }
 
 _PLEXUS = {

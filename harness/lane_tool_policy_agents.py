@@ -81,9 +81,14 @@ _RELAY_RUN = ("Runs an agent task on the model server the person set up. relay 0
               "root at the lane folder; the engine also passes only the listed arguments, so "
               "root, check, test_cmd and online never reach the run, and forces write, exec "
               "and online off.")
-_RELAY_SESSION = ("A background run dies with the per-call lane child. Out of this build "
-                  "until long-lived lane sessions land (WP10) and relay start is allowed "
-                  "(O-3).")
+_RELAY_START = ("Starts the same agent run in the background on the relay lane session "
+                "(WP10) and returns its run id at once. T2: it holds the model server for "
+                "minutes with no call waiting on it. relay 0.3.0 takes write and exec from "
+                "its launch, which the engine starts with both off and its root at the lane "
+                "folder; the engine passes only the listed arguments and forces write, exec "
+                "and online off.")
+_RELAY_READ = ("Reads a background run from the relay lane session, where the run lives; "
+               "the run id must be a plain id.")
 _CHAT = "One completion from the first healthy local tier; online tiers are forced off."
 _PING = "Pings the local model tiers; online tiers are forced off."
 _RELAY = {
@@ -93,12 +98,13 @@ _RELAY = {
     "local_agent_run": _main("model_call", _RELAY_RUN, needs=("model_server",),
                              timeout_s=300, allowed_args=_RELAY_RUN_ARGS,
                              forced_args=_NO_GRANTS),
-    "local_agent_start": _t("model_call", _RELAY_SESSION, tier="T2",
-                            not_in_build="per_call_child_ends_run",
-                            allowed_args=_RELAY_RUN_ARGS, forced_args=_NO_GRANTS),
-    "local_agent_status": _t("read", _RELAY_SESSION, not_in_build="per_call_child_ends_run"),
-    "local_agent_result": _t("read", _RELAY_SESSION, not_in_build="per_call_child_ends_run"),
-    "local_agent_runs": _t("read", "Lists recorded runs."),
+    "local_agent_start": _t("model_call", _RELAY_START, tier="T2", needs=("model_server",),
+                            timeout_s=30, allowed_args=_RELAY_RUN_ARGS,
+                            forced_args=_NO_GRANTS),
+    "local_agent_status": _t("read", _RELAY_READ, allowed_args=("run_id",)),
+    "local_agent_result": _t("read", _RELAY_READ, allowed_args=("run_id",)),
+    "local_agent_runs": _t("read", "Lists the runs the relay lane session holds.",
+                           allowed_args=("limit",)),
     "local_agent_sessions": _t("read", "Lists saved sessions and re-verifies each."),
     **_health("relay"),
 }

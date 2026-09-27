@@ -5,7 +5,8 @@ MCP servers. Both calls degrade rather than raise: a lane that is down turns
 into an error dict the view can draw, because a dead lane must not take the
 whole origin with it.
 
-These live outside gateway.py so the handler module stays under the file gate.
+These live outside gateway.py so the handler module stays under the file gate,
+with the stop step the gateway runs when it stops serving.
 gateway.py imports both names, so `gateway._forum_mcp_call` still resolves and a
 test that patches `gateway._relay_mcp_call` still reaches the dispatch sites.
 """
@@ -55,11 +56,17 @@ def _relay_mcp_call(tool: str, args: dict) -> dict:
     to it here makes the gateway the single phone-facing origin: a phone drives the
     gateway (one auth, one tunnel), and a relay-backed run comes back with relay's
     verifiable run_id and ledger checkpoint, the same receipts a desktop run gets.
+    Status, result and the run list read the relay lane session, where a run
+    started on the lane route lives (lane_session_calls).
     """
     from harness.lanes import resolve_mcp_launch, LaneRuntimeError
     from harness.mcp_client import (
         MCPClient, MCPError, capability_not_admitted, launch_allows_tool)
     try:
+        from harness.lane_session import is_session_tool
+        if is_session_tool("relay", tool):   # a background run lives in the session
+            from harness.lane_session_calls import relay_session_call
+            return relay_session_call(tool, args)
         command = resolve_mcp_launch("relay")
         if not launch_allows_tool(command, tool):
             return capability_not_admitted("relay", tool)
@@ -77,3 +84,13 @@ def _relay_mcp_call(tool: str, args: dict) -> dict:
         return unavailable_response("relay")
     except (MCPError, FileNotFoundError, OSError) as e:
         return {"error": f"relay lane unavailable: {e}"}
+
+
+def _stop_serving(operation_service, servers) -> None:
+    """Stop the operation service, close every lane session (their children
+    end with the engine, lane_session) and close every socket."""
+    operation_service.shutdown()
+    from harness import lane_session
+    lane_session.close_lane_sessions()
+    for s in servers:
+        s.server_close()

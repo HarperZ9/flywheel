@@ -69,4 +69,9 @@ ARG_POLICY: dict[str, dict[str, dict]] = {
               "learn_dry_run": _paths("workflowPath"),
               "learn_tutor_prooflesson": _paths("packetPath")},
     "local-model": {"local_agent_run": _paths("root")},
+    # WP10: the session tools join an id into the session's run or job lookup
+    "relay": {name: {"id_args": ("run_id",)}
+              for name in ("local_agent_status", "local_agent_result")},
 }
+for _action in ("status", "result", "cancel", "resume"):
+    ARG_POLICY["index"][f"index.router.job.{_action}"] = {"id_args": ("job_id",)}

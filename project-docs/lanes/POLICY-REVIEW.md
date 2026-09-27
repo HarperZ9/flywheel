@@ -4,10 +4,12 @@ Status: decided under O-4 (the agent decided under operator delegation, 2026-09-
 of record is `POLICY-DECISION.md` in the lanes mission folder; this file renders the table it
 adopted. Branch `feat/lanes-operational`.
 
-This review covers every tool of all 17 lanes: 233 tools. The engine admits 133 of them at T1 on
-an ordinary lane call. 48 tools need a granted T2 call. 52 tools are out of this build with a
+This review covers every tool of all 17 lanes: 233 tools. The engine admits 140 of them at T1 on
+an ordinary lane call. 49 tools need a granted T2 call. 44 tools are out of this build with a
 reason slug. The decision counted 133, 45 and 55 before the articulate 0.5.0 pin moved judge,
-fix and polish from out of the build to T2. The drop from the first draft (172, 45, 16) is telos
+fix and polish from out of the build to T2. Long-lived lane sessions (WP10) then brought the
+five index router-job tools and relay's run status and result in at T1, and relay
+`local_agent_start` in at T2. The drop from the first draft (172, 45, 16) is telos
 (all 38 of its in-build tools held out under the O-8 hold), `writing.diagnose` (T1 to T2) and
 `accountable-surface.actuate` (T2 to out of the build). The 1.0.x rows admitted two tools per
 bundled lane (relay one), and nothing checked a tier unless the caller sent one.
@@ -56,6 +58,14 @@ reaches T2, since the model picks each inner call and its arguments.
 - **The approval sheet** (C-13). A `lane.call` proposal carries a `lane_policy` block: the tier
   needed and requested, the effect, the arguments forced or dropped, and the arguments in plain
   form. The desktop sheet that renders it lands in WP9b.
+- **Lane sessions** (WP10, after the decision). A relay background run and an index router job
+  live in one long-lived child per lane, so start, status and result sent as separate calls reach
+  the same child. `local_agent_start` is T2: it runs only on a call a granted T2 operation carries,
+  on a relay launched with write and exec off (relay 0.3.0 takes both only from its launch). The
+  run and job ids must be plain ids. Plugins and agent runs cannot reach a session tool, and no
+  provider key joins a session child, since it outlives the call. A session ends after 10 idle
+  minutes unless its work is still running (then at most one hour after the last call), when its
+  child exits, and when the engine stops.
 - **Measured containment** (C-16). The frozen lane smoke snapshots its throwaway home around each
   lane's fixture and fails a lane that writes outside its folder.
 
@@ -161,7 +171,7 @@ Admitted at launch: 4 of 7 tools. T2 per granted call: 3. Not in this build: 0.
 
 ### index 2.13.0
 
-Admitted at launch: 16 of 22 tools. T2 per granted call: 1. Not in this build: 5.
+Admitted at launch: 21 of 22 tools. T2 per granted call: 1. Not in this build: 0.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
@@ -182,11 +192,11 @@ Admitted at launch: 16 of 22 tools. T2 per granted call: 1. Not in this build: 5
 | `index_verify` | T1 |  | read |  | `root` kept out of the home | Grounds a structural claim with file:line evidence. |
 | `index_router` | T1 |  | read |  | `root` kept out of the home | Builds a workspace map and returns it; its cache stays in the lane folder (INDEX_MCP_CACHE_DIR). |
 | `index_internals` | T1 |  | read |  | `root` kept out of the home | Builds one repo's module graph. |
-| `index.router.job.start` | T1, not in build: `per_call_child_ends_job` |  | state_write |  | `root` kept out of the home | A background router job dies with the per-call lane child. Out of this build until long-lived lane sessions land (WP10). |
-| `index.router.job.status` | T1, not in build: `per_call_child_ends_job` |  | read |  |  | A background router job dies with the per-call lane child. Out of this build until long-lived lane sessions land (WP10). |
-| `index.router.job.result` | T1, not in build: `per_call_child_ends_job` |  | read |  |  | A background router job dies with the per-call lane child. Out of this build until long-lived lane sessions land (WP10). |
-| `index.router.job.cancel` | T1, not in build: `per_call_child_ends_job` |  | state_write |  |  | A background router job dies with the per-call lane child. Out of this build until long-lived lane sessions land (WP10). |
-| `index.router.job.resume` | T1, not in build: `per_call_child_ends_job` |  | state_write |  |  | A background router job dies with the per-call lane child. Out of this build until long-lived lane sessions land (WP10). |
+| `index.router.job.start` | T1 |  | state_write |  | `root` kept out of the home | Runs on the index lane session (WP10), so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. |
+| `index.router.job.status` | T1 |  | read |  | `job_id` a plain id | Runs on the index lane session (WP10), so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
+| `index.router.job.result` | T1 |  | read |  | `job_id` a plain id | Runs on the index lane session (WP10), so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
+| `index.router.job.cancel` | T1 |  | state_write |  | `job_id` a plain id | Runs on the index lane session (WP10), so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
+| `index.router.job.resume` | T1 |  | state_write |  | `job_id` a plain id | Runs on the index lane session (WP10), so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
 
 ### forum 1.14.0
 
@@ -325,17 +335,17 @@ Admitted at launch: 3 of 14 tools. T2 per granted call: 10. Not in this build: 1
 
 ### relay 0.3.0
 
-Admitted at launch: 7 of 10 tools. T2 per granted call: 0. Not in this build: 3.
+Admitted at launch: 9 of 10 tools. T2 per granted call: 1. Not in this build: 0.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
 | `local_agent_health` | T1 |  | network_read |  | passes only no argument, `online=false` | Pings the local model tiers; online tiers are forced off. |
 | `local_agent_chat` | T1 |  | model_call | model_server | passes only `prompt`, `backend`, `online=false` | One completion from the first healthy local tier; online tiers are forced off. |
 | `local_agent_run` | T1 | main | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Runs an agent task on the model server the person set up. relay 0.3.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine also passes only the listed arguments, so root, check, test_cmd and online never reach the run, and forces write, exec and online off. |
-| `local_agent_start` | T2 (rule alone: T1), not in build: `per_call_child_ends_run` |  | model_call |  | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | A background run dies with the per-call lane child. Out of this build until long-lived lane sessions land (WP10) and relay start is allowed (O-3). |
-| `local_agent_status` | T1, not in build: `per_call_child_ends_run` |  | read |  |  | A background run dies with the per-call lane child. Out of this build until long-lived lane sessions land (WP10) and relay start is allowed (O-3). |
-| `local_agent_result` | T1, not in build: `per_call_child_ends_run` |  | read |  |  | A background run dies with the per-call lane child. Out of this build until long-lived lane sessions land (WP10) and relay start is allowed (O-3). |
-| `local_agent_runs` | T1 |  | read |  |  | Lists recorded runs. |
+| `local_agent_start` | T2 (rule alone: T1) |  | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Starts the same agent run in the background on the relay lane session (WP10) and returns its run id at once. T2: it holds the model server for minutes with no call waiting on it. relay 0.3.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine passes only the listed arguments and forces write, exec and online off. |
+| `local_agent_status` | T1 |  | read |  | passes only `run_id`, `run_id` a plain id | Reads a background run from the relay lane session, where the run lives; the run id must be a plain id. |
+| `local_agent_result` | T1 |  | read |  | passes only `run_id`, `run_id` a plain id | Reads a background run from the relay lane session, where the run lives; the run id must be a plain id. |
+| `local_agent_runs` | T1 |  | read |  | passes only `limit` | Lists the runs the relay lane session holds. |
 | `local_agent_sessions` | T1 |  | read |  |  | Lists saved sessions and re-verifies each. |
 | `relay.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `relay.doctor` | T1 |  | read |  |  | Readiness report; network-free. |

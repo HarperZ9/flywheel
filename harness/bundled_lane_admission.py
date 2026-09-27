@@ -48,6 +48,9 @@ DOES_NOT_PROVE = (
     "folder; the engine also passes only listed arguments, so root, check, "
     "test_cmd and online never reach a run. relay's shell is not path-confined "
     "when a launch grants exec, which this build never does.",
+    "NOT_PROVES_BACKGROUND_RUN_DURABILITY: a local_agent_start run lives in the "
+    "memory of the relay lane session; when that session ends (idle, a crash, "
+    "an engine stop) the run ends with it and its id reads unknown.",
 )
 
 
@@ -144,6 +147,8 @@ def dispatch_bundled_lane_mcp(
     )
     if admission.blocking_codes:
         return 2
+    from . import lane_worker_mode
+    lane_worker_mode.install_worker_spawn(name)   # a router job's worker (WP10)
     module = import_module_fn(str(expected_row["module"]))
     serve = getattr(module, str(expected_row["callable"]), None)
     if not callable(serve):

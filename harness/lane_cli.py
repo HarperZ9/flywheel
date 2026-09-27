@@ -34,6 +34,7 @@ from .bundled_lane_env import UTF8_ENV, bundled_child_environment
 from .frozen_lane_modes import LANE_CLI_FLAG, LANE_CLIS, cli_args_allowed
 from .lane_env import BASE_NAMES, lane_process_environment
 from .lane_workdir import ensure_lane_workdir
+from .lane_worker_mode import WORKER_FLAG
 
 # lane -> (console script, module run with ``python -m``) outside a frozen build
 DEV_CLIS: dict[str, tuple[str, str]] = {
@@ -89,6 +90,14 @@ def lane_cli_argv(lane: str, *, frozen: bool | None = None,
     if script:
         return [script]
     return module_argv(lane, frozen=False, importable=importable)
+
+
+def lane_worker_argv(lane: str, worker_args: list[str], *,
+                     executable: str | None = None) -> list[str]:
+    """The argv that runs ``lane``'s background worker in the frozen engine:
+    ``[<engine.exe>, --bundled-lane-worker, <lane>, <worker args...>]``
+    (lane_worker_mode). The index child's worker spawn is rewritten to this."""
+    return [executable or sys.executable, WORKER_FLAG, lane, *worker_args]
 
 
 def is_bundled_cli(prefix: list[str]) -> bool:

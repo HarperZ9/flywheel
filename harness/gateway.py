@@ -2278,7 +2278,7 @@ def _bind_hosts(hosts, port):
 def _serve_all(servers):
     """Serve every bound socket. All but the last run in daemon threads; the last
     blocks the main thread so Ctrl-C still stops the process. On shutdown the
-    operation service is stopped once and every socket is closed."""
+    operation service is stopped once, lane sessions close, sockets close."""
     import threading
     for s in servers[:-1]:
         threading.Thread(target=s.serve_forever, daemon=True).start()
@@ -2287,9 +2287,8 @@ def _serve_all(servers):
     except KeyboardInterrupt:
         pass
     finally:
-        _Handler.operation_service.shutdown()
-        for s in servers:
-            s.server_close()
+        from harness.gateway_lane_calls import _stop_serving
+        _stop_serving(_Handler.operation_service, servers)
 
 
 def main(argv=None) -> int:

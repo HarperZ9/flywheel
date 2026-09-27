@@ -9,6 +9,10 @@ The key rule (POLICY-DECISION C-8): a call whose child would receive a
 provider key needs T2. A bound credential makes the call T2; below T2 the
 child's key-shaped ``env_allow`` names are stripped, so a T1 call never spends
 a key. Argument guards run before any child spawns (``lane_tier_gate``).
+
+A tool whose work outlives the call (a relay background run, an index router
+job) goes to the lane's long-lived session instead of a per-call child
+(``lane_session``), after the same checks.
 """
 from __future__ import annotations
 
@@ -59,8 +63,12 @@ def call_lane_tool(
     command = _launch_for_call(lane_name, tool_name, tier, credential_bindings)
     if isinstance(command, dict):
         return command
-    return _call(lane_name, tool_name, command, guard_args(lane_name, tool_name, args or {}),
-                 timeout)
+    args = guard_args(lane_name, tool_name, args or {})
+    from .lane_session import is_session_tool
+    if is_session_tool(lane_name, tool_name):   # the work outlives the call (WP10)
+        from .lane_session_calls import session_call
+        return session_call(lane_name, tool_name, command, args, timeout, credential_bindings)
+    return _call(lane_name, tool_name, command, args, timeout)
 
 
 def _launch_for_call(lane_name: str, tool_name: str, tier: str,

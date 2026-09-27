@@ -83,9 +83,7 @@ MAIN = {
 }
 
 NOT_IN_BUILD = {
-    "index": {"index.router.job.start", "index.router.job.status", "index.router.job.result",
-              "index.router.job.cancel", "index.router.job.resume"},
-    "relay": {"local_agent_start", "local_agent_status", "local_agent_result"},
+    "index": set(), "relay": set(),   # WP10: router jobs and relay runs run on lane sessions
     "calibrate-pro": {"calibrate-pro.list-targets"},
     "telos": {name for name in policy.LANE_TOOL_POLICY["telos"]},  # every tool: O-8 hold
     "writing": {"writing.proposal_approve"},

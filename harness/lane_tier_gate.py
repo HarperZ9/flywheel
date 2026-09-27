@@ -13,7 +13,8 @@ that table where a call is made:
   may select a lane tool only when the table lists it at T1, in the build,
   with no argument guard, no state write and no open egress, since the agent
   runtime passes the model's arguments through and no inner call has a grant
-  of its own (POLICY-DECISION C-11, C-12).
+  of its own (POLICY-DECISION C-11, C-12). Neither route reaches a lane
+  session tool (``lane_session``): only the lane call route holds the session.
 
 Argument guards apply on the lane call and Plugins routes: ``argument_refusal``
 before anything spawns, then ``guard_args`` (allowlist, then forced values).
@@ -111,14 +112,17 @@ def plugin_refusal(lane: str, tool: str) -> dict | None:
     """None when Plugins may call this lane tool; else the refusal.
 
     A plugin call carries no tier, so it runs at T1. A lane tool that needs more,
-    or that the table does not list (C-11), is refused before anything is
-    spawned, with the route that can carry it."""
+    that the table does not list (C-11), or whose work lives in a lane session
+    (a per-call plugin child would lose it, lane_session) is refused before
+    anything is spawned, with the route that can carry it."""
     from .lane_caller import required_tier
     from .lanes_registry import LANES
     if lane not in LANES:
         return None
+    from .lane_session import is_session_tool
     required = required_tier(lane, tool)
-    if required == "T1" and tool_policy(lane, tool) is not None:
+    if (required == "T1" and tool_policy(lane, tool) is not None
+            and not is_session_tool(lane, tool)):
         return None
     from .mcp_client import capability_not_admitted
     return {**capability_not_admitted(lane, tool), "required_tier": required,
@@ -132,10 +136,12 @@ def agent_tool_refusal(catalog: str, plugin_kind: str | None,
     if plugin_kind != "lane" or catalog not in LANES:
         return None
     from .lane_caller import required_tier
+    from .lane_session import is_session_tool
     for tool in tools:
         entry = tool_policy(catalog, tool)
         if (entry is None or required_tier(catalog, tool) != "T1" or entry.not_in_build
-                or entry.guarded or entry.effect == "state_write" or entry.open_egress):
+                or entry.guarded or entry.effect == "state_write" or entry.open_egress
+                or is_session_tool(catalog, tool)):
             return "CAPABILITY_NOT_ADMITTED"
     return None
 

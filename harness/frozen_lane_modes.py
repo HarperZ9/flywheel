@@ -12,8 +12,10 @@ surfaces therefore run as fixed modes of the engine itself:
 ``--bundled-lane-cli <lane> <args...>``
     A payload lane's CLI, for the native screens (feeds, science bench,
     discourse, workspace map). Only the subcommands in ``LANE_CLIS``,
-    ``--version`` and ``index router-job --help`` pass; the lane then clears
-    the same descriptor admission as ``--bundled-lane-mcp``. stdout and stderr
+    ``--version``, ``index router-job --help`` and the five ``index
+    router-job`` actions pass; the lane then clears the same descriptor
+    admission as ``--bundled-lane-mcp``. A router job's worker runs through
+    the engine's worker mode (lane_worker_mode), installed before index runs. stdout and stderr
     are switched to UTF-8 first, since a pipe on Windows otherwise encodes
     with the code page and a non-ASCII feed title raises.
 
@@ -46,6 +48,12 @@ LANE_CLIS: dict[str, tuple[str, str, tuple[str, ...]]] = {
 EXACT_ARGVS: dict[str, tuple[tuple[str, ...], ...]] = {
     "index": (("router-job", "--help"),),
 }
+# Two-token subcommands allowed with any further arguments: the Projects
+# workspace-map jobs (index_jobs), whose worker runs in the engine's worker mode.
+PREFIX_ARGVS: dict[str, tuple[tuple[str, ...], ...]] = {
+    "index": tuple(("router-job", action)
+                   for action in ("start", "status", "result", "cancel", "resume")),
+}
 
 
 def _serve_writing() -> int:
@@ -66,10 +74,13 @@ def dispatch_lane_mcp(argv: list[str]) -> int | None:
 
 
 def cli_args_allowed(lane: str, args: list[str]) -> bool:
-    """True when ``args`` is a listed subcommand, ``--version`` or an exact argv."""
+    """True when ``args`` is a listed subcommand, ``--version``, an exact argv
+    or starts with a listed two-token prefix."""
     if lane not in LANE_CLIS or not args:
         return False
     if tuple(args) == ("--version",) or tuple(args) in EXACT_ARGVS.get(lane, ()):
+        return True
+    if any(tuple(args[:2]) == prefix for prefix in PREFIX_ARGVS.get(lane, ())):
         return True
     return args[0] in LANE_CLIS[lane][2]
 
@@ -98,6 +109,8 @@ def dispatch_bundled_lane_cli(argv: list[str]) -> int | None:
     admission = admit_bundled_lane(lane, executable=sys.executable, environ=os.environ)
     if admission.blocking_codes:
         return 2
+    from . import lane_worker_mode
+    lane_worker_mode.install_worker_spawn(lane)   # a router job's worker (WP10)
     utf8_stdio()
     module_name, callable_name, _subcommands = LANE_CLIS[lane]
     try:

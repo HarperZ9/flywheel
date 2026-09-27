@@ -5,7 +5,9 @@ a clean machine needs no Python and no `flywheel` on PATH. Everything else --
 routes, receipts, the plugins registry, static shell -- is the same code the
 pip install runs; the freeze changes distribution, not behavior. The Relay
 status probe is a fixed self-child mode so the gateway never consults PATH or a
-collided package name for the first bundled Relay admission."""
+collided package name for the first bundled Relay admission. A lane's
+background worker (an index router job) runs as `--bundled-lane-worker`, since
+the exe refuses `-m`."""
 import multiprocessing
 import sys
 
@@ -69,6 +71,9 @@ def main(argv=None) -> int:
     lane_mode = frozen_lane_modes.dispatch_lane_mcp(args)
     if lane_mode is None:
         lane_mode = frozen_lane_modes.dispatch_bundled_lane_cli(args)
+    if lane_mode is None:
+        from harness import lane_worker_mode
+        lane_mode = lane_worker_mode.dispatch_bundled_lane_worker(args)
     if lane_mode is not None:
         return lane_mode
     canon_context = _dispatch_canon_context_mcp(args)

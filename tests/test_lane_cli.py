@@ -115,7 +115,7 @@ def test_bundled_run_refuses_an_unlisted_subcommand_without_spawning(registry, m
     monkeypatch.setattr(lane_cli.subprocess, "run", capture)
     prefix = ["C:/F/flywheel-gateway.exe", LANE_CLI_FLAG, "index"]
     with pytest.raises(lane_cli.LaneCliUnavailable) as err:
-        lane_cli.run_lane_cli("index", ["router-job", "start"], timeout=5, prefix=prefix)
+        lane_cli.run_lane_cli("index", ["router-job", "serve"], timeout=5, prefix=prefix)
     assert err.value.code == "not_in_build"
     assert capture.calls == []
     lane_cli.run_lane_cli("index", ["router-job", "--help"], timeout=5, prefix=prefix)
@@ -214,18 +214,31 @@ def test_bridges_pass_absolute_paths_since_the_child_runs_elsewhere(registry, tm
     assert chorus_argv[2] == str((tmp_path / "corpus.jsonl").resolve())
 
 
-def test_index_jobs_report_not_in_build_on_a_frozen_engine(registry, tmp_path, monkeypatch):
+def test_index_jobs_run_router_jobs_through_the_frozen_engine(registry, tmp_path,
+                                                              monkeypatch):
+    """WP10: the frozen index child starts its worker through the engine's
+    worker mode, so the workspace map jobs run in a frozen build."""
     from harness import index_jobs
-    capture = _Capture(stdout="index 2.12.0")
-    monkeypatch.setattr(lane_cli.subprocess, "run", capture)
+    calls = []
+
+    def run(cmd, *args, **kwargs):
+        calls.append(list(cmd))
+        if cmd[3:5] == ["router-job", "start"]:
+            out = json.dumps({"job_id": "j1", "status": "running", "phase": "started",
+                              "root": str((tmp_path / "repo").resolve())})
+        else:
+            out = "index 2.13.0"
+        return subprocess.CompletedProcess(cmd, 0, stdout=out, stderr="")
+
+    monkeypatch.setattr(lane_cli.subprocess, "run", run)
     monkeypatch.setattr(index_jobs, "_index_argv",
                         lambda: ["C:/F/flywheel-gateway.exe", LANE_CLI_FLAG, "index"])
     monkeypatch.setattr(index_jobs, "_module_argv", lambda: None)
     (tmp_path / "repo").mkdir()
     out = index_jobs.start_workspace_map(tmp_path / "repo", run_root=tmp_path / "run")
-    assert out["error_type"] == "NOT_IN_BUILD"
-    assert all(argv[3:4] != ["router-job"] or argv[4:5] == ["--help"]
-               for argv, _ in capture.calls)
+    assert out["job_id"] == "j1" and out["status"] == "running"
+    assert calls[-1][:5] == ["C:/F/flywheel-gateway.exe", LANE_CLI_FLAG, "index",
+                             "router-job", "start"]
 
 
 def test_frozen_index_module_fallback_is_never_dash_m(monkeypatch):

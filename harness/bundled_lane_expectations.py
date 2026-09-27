@@ -15,16 +15,19 @@ EXPECTED_BUNDLED_LANES: dict[str, dict[str, object]] = {
             "b8a42072eae84693"
         ),
         "descriptor_sha256": (
-            "sha256:40d6eeb3db3e4b7d9975ab3d8a560537c128e875206f7c15"
-            "039edef57640ae8e"
+            "sha256:866c07d056cf43c6dd1ec8783f51c6d131f5cd07f3e70c71"
+            "55623f3c499f4ad0"
         ),
         "module": "relay.local_mcp",
         "callable": "serve",
         "health_tool": "relay.status",
         # Relay's T1 tools in the lane tool policy (lane_tool_policy_agents).
+        # local_agent_status and local_agent_result read the relay lane session
+        # (WP10); local_agent_start is T2 and joins only a granted call's launch.
         "allowed_tools": (
             "local_agent_health", "local_agent_chat", "local_agent_run",
-            "local_agent_runs", "local_agent_sessions", "relay.status", "relay.doctor",
+            "local_agent_status", "local_agent_result", "local_agent_runs",
+            "local_agent_sessions", "relay.status", "relay.doctor",
         ),
     },
 }
