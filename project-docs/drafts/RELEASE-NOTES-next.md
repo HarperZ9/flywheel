@@ -2,7 +2,7 @@
 count, method paragraph and installer size cite CI run 36302181098, which predates the
 gather 1.9.1, relay 0.5.0, forum 1.15.1, crucible 1.3.0 and index 2.14.0 pins: replace them
 from the release commit's windows-installed-acceptance.yml run. The 1.0.4 known-issues page
-publishes on its own. Trace manual checks X4, X6, X7, X8 and X18 were not run. -->
+publishes on its own. Five trace manual checks were not run. -->
 
 # Flywheel 1.1.0
 
