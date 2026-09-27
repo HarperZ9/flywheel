@@ -7,9 +7,13 @@ fixed port, so a squatter on 127.0.0.1:8799 while the gateway is down gets
 nothing. The file is removed on clean shutdown; a stale one names a process
 that is not running, which hooks check.
 
-The gateway also writes a home pointer in a per-user folder found through the
-OS (not through environment variables), so a hook mounted without `--home`
-finds a non-default FLYWHEEL_HOME.
+The gateway also writes a home pointer in the per-user local app-data folder
+(capture_hooks.home.pointer_path), so a hook mounted without `--home` finds a
+non-default FLYWHEEL_HOME. It does not take the pointer from another home whose
+gateway is running: two engines with different homes for one user would
+otherwise move the owner's capture to whichever started last. The engine logs
+that it left the pointer, and `flywheel traces doctor` reports a pointer that
+names another home.
 """
 from __future__ import annotations
 
@@ -20,8 +24,8 @@ import logging
 import os
 from pathlib import Path
 
-from .capture_hooks.client import ENDPOINT_SCHEMA
-from .capture_hooks.home import POINTER_SCHEMA, pointer_path
+from .capture_hooks.client import ENDPOINT_SCHEMA, CaptureFailure, read_endpoint
+from .capture_hooks.home import POINTER_SCHEMA, not_local, pointer_path, read_pointer
 from .capture_hooks.protocol import LOOPBACK
 
 FILENAME = "gateway.endpoint"
@@ -71,6 +75,22 @@ def write_pointer(home, target: Path | None = None) -> Path | None:
     return target
 
 
+def pointer_held_elsewhere(home, target: Path | None = None) -> Path | None:
+    """The other home the pointer names while that home's gateway is running
+    (its endpoint names a live process other than this one); else None."""
+    other = read_pointer(target or pointer_path())
+    if other is None or not_local(other):   # never open a network path to ask
+        return None
+    if os.path.normcase(os.path.abspath(str(other))) == \
+            os.path.normcase(os.path.abspath(str(home))):
+        return None
+    try:
+        doc = read_endpoint(other)
+    except CaptureFailure:
+        return None
+    return None if doc.get("pid") == os.getpid() else other
+
+
 def publish_endpoint(home, servers) -> Path | None:
     """After bind: name the first loopback listener, write the pointer, and
     remove the endpoint file at a clean exit. Nothing is published when only
@@ -80,7 +100,11 @@ def publish_endpoint(home, servers) -> Path | None:
         if host in LOOPBACK:
             path = write_endpoint(home, host, port, os.getpid())
             try:
-                write_pointer(home)
+                if pointer_held_elsewhere(home) is None:
+                    write_pointer(home)
+                else:
+                    _log.warning("home pointer left in place: it names another home "
+                                 "whose gateway is running; mount hooks with --home")
             except OSError as exc:  # hooks fall back to the profile default
                 _log.warning("home pointer not written (%s)", type(exc).__name__)
             atexit.register(remove_endpoint, home)

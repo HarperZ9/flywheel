@@ -4,15 +4,22 @@ A repository can set environment variables for the hooks a client runs in it
 (a settings `env` block), so the home is not read from `FLYWHEEL_HOME`. It
 comes from, in order: an explicit `--home` on the mount line (code in a
 settings file, like the hook command itself), the pointer file the gateway
-writes at start in a per-user folder located through the operating system,
-or the profile folder plus `.flywheel`. `FLYWHEEL_HOME` is read only to
-compare: a different value refuses with HOME_MISMATCH.
+writes at start in the per-user local app-data folder, or the profile folder
+plus `.flywheel`. `FLYWHEEL_HOME` is read only to compare: a different value
+refuses with HOME_MISMATCH.
 
-A home inside a git work tree is refused with HOME_IN_WORKTREE, so a
-repository cannot make the spool land in files that get committed. A `--home`
-inside the current working directory is refused the same way. The profile
-default is exempt from the working-directory rule only: an owner who starts a
-session in the profile folder would otherwise lose every capture.
+The pointer folder comes from the OS known-folder API. On Windows that API
+expands the local app-data folder from the process's `USERPROFILE`, so an
+`env` block can choose which pointer file a hook reads (the lane acceptance
+runs use this to keep a throwaway engine off the owner's pointer). The home a
+pointer names is therefore checked like any other: a network or device path
+is refused with HOME_NOT_LOCAL before anything opens it, since resolving it
+would start an SMB session, and a home inside a git work tree is refused with
+HOME_IN_WORKTREE, so a repository cannot make the spool land in files that get
+committed. A `--home` inside the current working directory is refused the same
+way. The profile default is exempt from the working-directory rule only: an
+owner who starts a session in the profile folder would otherwise lose every
+capture.
 """
 from __future__ import annotations
 
@@ -22,6 +29,8 @@ from pathlib import Path
 import sys
 
 POINTER_SCHEMA = "flywheel.home-pointer/v1"
+_WINDOWS = sys.platform == "win32"
+_SEPARATORS = ("\\", "/")
 _LOCAL_APPDATA = "F1B32785-6FBA-4FCF-9D55-7B8E7F157091"
 _PROFILE = "5E6C858F-0E22-4760-9AFE-EA3317B67173"
 
@@ -78,6 +87,19 @@ def read_pointer(path: Path | None = None) -> Path | None:
     return Path(home) if type(home) is str and os.path.isabs(home) else None
 
 
+def not_local(value) -> bool:
+    """A Windows UNC, device or NT-object spelling (the rule of
+    harness.path_identity.device_or_unc, kept here so the hook package stays
+    standard library only)."""
+    text = str(value).strip()
+    if not _WINDOWS:
+        return False
+    if len(text) >= 2 and text[0] in _SEPARATORS and text[1] in _SEPARATORS:
+        return True
+    return len(text) >= 4 and text[0] in _SEPARATORS and text[1:3] == "??" \
+        and text[3] in _SEPARATORS
+
+
 def _norm(path) -> str:
     return os.path.normcase(os.path.abspath(str(path)))
 
@@ -112,9 +134,13 @@ def resolve_home(arg_home, environ, cwd, *, pointer: Path | None = None
     except when no home can be found at all."""
     explicit = bool(arg_home)
     if explicit:
+        if not_local(arg_home):
+            return None, "HOME_NOT_LOCAL"
         home = Path(os.path.abspath(str(arg_home)))
     else:
         home = read_pointer(pointer)
+        if home is not None and not_local(home):
+            return None, "HOME_NOT_LOCAL"
         if home is None:
             profile = profile_dir()
             home = profile / ".flywheel" if profile else None
