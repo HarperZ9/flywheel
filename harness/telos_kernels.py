@@ -14,6 +14,7 @@ import os
 import subprocess
 
 from .lanes import LANES, REPO
+from . import safe_program
 
 SCHEMA = "flywheel.telos-kernel-run/v1"
 
@@ -58,7 +59,7 @@ def run_kernel(kernel: str, args: "dict | None" = None,
     try:
         from .lane_env import lane_process_environment
         r = subprocess.run(
-            ["node", "--input-type=module", "-e", shim],
+            safe_program.argv(["node", "--input-type=module", "-e", shim]),
             input=json.dumps(args or {}),
             capture_output=True, text=True, timeout=timeout,
             env=lane_process_environment("telos"))

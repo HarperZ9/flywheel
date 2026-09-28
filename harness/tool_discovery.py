@@ -33,6 +33,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Callable, Iterable, Mapping
 
+from . import safe_program
 from .lane_workdir import flywheel_home
 
 MIN_NODE_MAJOR = 20
@@ -151,14 +152,19 @@ def _exe_name(tool: str, platform: str) -> str:
 
 def _as_exe(value: str, tool: str, platform: str) -> Path | None:
     path = Path(os.path.expanduser(value.strip().strip('"')))
+    if not path.is_absolute():  # a relative name would be read from the working folder
+        return None
     if path.is_dir():
         path = path / _exe_name(tool, platform)
     return path if path.is_file() else None
 
 
 def _path_dirs(raw: str | None, environ: Mapping[str, str], platform: str) -> list[str]:
+    expanded = expand_env(raw or "", environ)
+    if platform == os.name:  # this host: only the folders the guarded lookup walks
+        return safe_program.path_folders(expanded)
     sep = ";" if platform == "nt" else os.pathsep
-    return [part for part in expand_env(raw or "", environ).split(sep) if part.strip()]
+    return [part for part in expanded.split(sep) if part.strip()]
 
 
 def _search_places(environ: Mapping[str, str], reader: RegistryReader,

@@ -38,6 +38,7 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
+from . import safe_program
 
 CITATION = "citation"
 TABLE = "table"
@@ -111,7 +112,8 @@ def _command_resolver(spec, base: Path, allow: bool, timeout: float, _pinned):
                 "field is unchecked rather than confirmed")
         # The answer goes on stdin, never in argv. Arguments are readable by
         # every process on the machine and an answer is the caller's data.
-        done = subprocess.run(argv, input=json.dumps(answer), capture_output=True,
+        done = subprocess.run(safe_program.argv(argv, cwd=base), input=json.dumps(answer),
+                              capture_output=True,
                               text=True, timeout=timeout, shell=False, cwd=base,
                               check=False)
         if done.returncode == DECLINED:

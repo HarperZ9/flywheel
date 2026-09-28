@@ -14,6 +14,7 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Callable, Mapping
 
 from .lanes_registry import Lane
+from . import safe_program
 from .mcp_client import LaunchSpec
 
 UNPROBED_CAPABILITY = {
@@ -76,9 +77,8 @@ def frozen() -> bool:
 @functools.lru_cache(maxsize=1)
 def _npm_global_root() -> Path | None:
     try:
-        npm = "npm.cmd" if os.name == "nt" else "npm"
         result = subprocess.run(
-            [npm, "root", "-g"], capture_output=True, text=True, timeout=20,
+            safe_program.argv(["npm", "root", "-g"]), capture_output=True, text=True, timeout=20,
             creationflags=0x08000000 if os.name == "nt" else 0)  # CREATE_NO_WINDOW
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return None

@@ -17,7 +17,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 import subprocess
 
 _TIMEOUT = 300
@@ -88,7 +87,8 @@ def manimgl_available() -> bool:
 
 
 def _manimgl_argv() -> "list | None":
-    exe = shutil.which("manimgl")
+    from . import safe_program
+    exe = safe_program.which("manimgl")
     return [exe] if exe else None
 
 

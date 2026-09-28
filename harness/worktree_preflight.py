@@ -64,8 +64,10 @@ def _gather_and_assess(repo_dir: str = ".") -> dict:
     out to git; a git failure is reported, not swallowed."""
     import subprocess
 
+    from . import safe_program
+
     def git(*args):
-        return subprocess.run(["git", "-C", repo_dir, *args],
+        return subprocess.run(safe_program.argv(["git", "-C", repo_dir, *args]),
                               capture_output=True, text=True).stdout.strip()
 
     core_bare = git("config", "--get", "core.bare").lower() == "true"
@@ -79,8 +81,8 @@ def _gather_and_assess(repo_dir: str = ".") -> dict:
             head = line[len("HEAD "):]
             if head != session_head:
                 anc = subprocess.run(
-                    ["git", "-C", repo_dir, "merge-base",
-                     "--is-ancestor", session_head, head],
+                    safe_program.argv(["git", "-C", repo_dir, "merge-base",
+                                       "--is-ancestor", session_head, head]),
                     capture_output=True)
                 descends = anc.returncode == 0
             else:

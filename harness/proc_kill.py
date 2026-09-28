@@ -39,6 +39,10 @@ def spawn_killable(*args, **kwargs) -> subprocess.Popen:
     """
     if os.name != "nt":
         kwargs.setdefault("start_new_session", True)
+    if args and not isinstance(args[0], (str, bytes)) and not kwargs.get("shell"):
+        # An argv names its program: resolve it without the working folder.
+        from .safe_program import argv
+        args = (argv(args[0], cwd=kwargs.get("cwd"), env=kwargs.get("env")), *args[1:])
     proc = subprocess.Popen(*args, **kwargs)
     if os.name != "nt" and kwargs.get("start_new_session"):
         setattr(proc, _PGID_ATTR, proc.pid)
@@ -78,7 +82,10 @@ def _kill_tree(proc: subprocess.Popen) -> None:
     to address.
     """
     if os.name == "nt":
-        subprocess.run(f"taskkill /T /F /PID {proc.pid}", shell=True,
+        # By full path and without a shell: cmd.exe would look for taskkill in
+        # the working folder first, and that folder holds the candidate's files.
+        from .safe_program import system_tool
+        subprocess.run([system_tool("taskkill.exe"), "/T", "/F", "/PID", str(proc.pid)],
                        capture_output=True, timeout=15)
         return
     pgid = getattr(proc, _PGID_ATTR, None)

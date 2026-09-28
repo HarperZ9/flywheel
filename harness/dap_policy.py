@@ -198,5 +198,7 @@ def _spawn_detached(argv: list[str], cwd: Path, env: Any) -> int:
                 environment.pop(str(name), None)
             else:
                 environment[str(name)] = str(value)
-    process = subprocess.Popen(argv, cwd=str(cwd), env=environment)
+    from . import safe_program
+    process = subprocess.Popen(safe_program.argv(argv, cwd=cwd, env=environment),
+                               cwd=str(cwd), env=environment)
     return process.pid

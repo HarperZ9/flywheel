@@ -170,12 +170,13 @@ def lean_axioms(source: str, *, lean: str = "lean", timeout: int = 180) -> dict:
     for these scripts means the property held. A missing toolchain returns
     ok=None with a note, never a false pass: absence of a checker is not a check.
     """
-    import shutil
     import subprocess
     import tempfile
     from pathlib import Path
 
-    if shutil.which(lean) is None:
+    from . import safe_program
+    resolved = safe_program.which(lean)
+    if resolved is None:
         return {"ok": None, "axioms": [], "note": f"{lean} not on PATH; the "
                 "emitted script was not checked here. It is self-contained and a "
                 "stranger with a Lean toolchain can check it."}
@@ -183,7 +184,7 @@ def lean_axioms(source: str, *, lean: str = "lean", timeout: int = 180) -> dict:
         p = Path(d) / "cert.lean"
         p.write_text(source, encoding="utf-8")
         try:
-            r = subprocess.run([lean, str(p)], capture_output=True, text=True,
+            r = subprocess.run([resolved, str(p)], capture_output=True, text=True,
                                timeout=timeout)
         except subprocess.TimeoutExpired:
             return {"ok": None, "axioms": [], "note": f"lean did not finish in "

@@ -5,7 +5,6 @@ import json
 import os
 import base64
 import tempfile
-import shutil
 import subprocess
 import urllib.error
 import urllib.parse
@@ -16,6 +15,7 @@ from dataclasses import dataclass, field
 from .local_agent import BackendError
 from .endpoints_http import _http, _guard, _k
 from .endpoint_opencode import OpenCodeBackend  # noqa: F401 (re-exported)
+from . import safe_program
 
 
 def _credential(env_name: str, direct: str | None) -> str:
@@ -250,7 +250,7 @@ class CliBackend:
     cwd: "str | None" = None         # the directory the CLI runs in (its file tools see it)
 
     def health(self) -> bool:
-        return bool(self.argv) and shutil.which(self.argv[0]) is not None
+        return bool(self.argv) and safe_program.which(self.argv[0], cwd=self.cwd) is not None
 
     def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
         prompt = (system + "\n\n" if system else "") + "\n".join(
@@ -272,7 +272,8 @@ class CliBackend:
                 rc, out, err = self.runner(cmd)
             else:
                 from .lane_workdir import CAPTURE_OFF
-                p = subprocess.run(cmd, capture_output=True, timeout=self.timeout, cwd=self.cwd,
+                p = subprocess.run(safe_program.argv(cmd, cwd=self.cwd),
+                                   capture_output=True, timeout=self.timeout, cwd=self.cwd,
                                    env={**os.environ, **CAPTURE_OFF},
                                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
                 rc, out, err = p.returncode, p.stdout, p.stderr

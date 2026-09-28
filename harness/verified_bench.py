@@ -238,17 +238,16 @@ def subprocess_gate(gate_cmd: str, proposed: str, *,
 
     proposal_path = workspace / "PROPOSED.md"
     proposal_path.write_text(proposed, encoding="utf-8")
+    from . import safe_program
     argv = shlex.split(gate_cmd)
     if not argv:
         return {"passed": False, "gate_ref": ""}
     import os
     repo_root = str(Path(__file__).resolve().parent.parent)
-    inherited_pythonpath = os.environ.get("PYTHONPATH", "")
-    pythonpath = repo_root + (os.pathsep + inherited_pythonpath
-                              if inherited_pythonpath else "")
+    pythonpath = os.pathsep.join(p for p in (repo_root, os.environ.get("PYTHONPATH", "")) if p)
     try:
         completed = subprocess.run(
-            argv, cwd=workspace, capture_output=True,
+            safe_program.argv(argv, cwd=workspace), cwd=workspace, capture_output=True,
             timeout=timeout_s,
             env={**os.environ, "PYTHONPATH": pythonpath,
                  "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"})

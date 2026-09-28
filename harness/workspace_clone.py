@@ -35,6 +35,8 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import safe_program
+
 SCHEMA = "flywheel.workspace-clone/v1"
 
 #: What each platform tries, best first. `copy` is last everywhere and never
@@ -96,7 +98,7 @@ def ladder(platform: str | None = None) -> tuple:
 def _sh(argv: list) -> str | None:
     """Run one copy command. None means it worked."""
     try:
-        done = subprocess.run(argv, capture_output=True, text=True,
+        done = subprocess.run(safe_program.argv(argv), capture_output=True, text=True,
                               timeout=600)
     except (OSError, subprocess.SubprocessError) as exc:
         return f"{type(exc).__name__}: {exc}"

@@ -45,7 +45,6 @@ process listing.
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -55,6 +54,7 @@ from .sandbox_confinement import SCHEMA, Confinement
 from .sandbox_policy import (ProfileRefused, posix_path, sbpl_profile,
                              seatbelt_argv)
 from .sandbox_probe import sandbox_starts
+from . import safe_program
 from .sandbox_protected_paths import bwrap_hide_args, host_protected_paths
 
 #: `SCHEMA` and `Confinement` moved next door and are re-exported, because
@@ -94,7 +94,7 @@ def backend_for(platform: str | None = None, which=None) -> str | None:
     for a host with neither program installed.
     """
     plat = platform if platform is not None else sys.platform
-    look = which if which is not None else shutil.which
+    look = which if which is not None else safe_program.which
     for known, names in BACKENDS.items():
         if plat.startswith(known):
             for name in names:
@@ -210,7 +210,7 @@ def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
     backend = backend_for(platform, which)
     if backend is None:
         return None
-    found = (which if which is not None else shutil.which)(PROGRAM[backend])
+    found = (which if which is not None else safe_program.which)(PROGRAM[backend])
     program = found if isinstance(found, str) else PROGRAM[backend]
     if not (probe if probe is not None else sandbox_starts)(backend, program):
         return None

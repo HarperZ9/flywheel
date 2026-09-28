@@ -154,6 +154,12 @@ def _start_proc(root: Path, run_root: Path, fake_bin: Path,
                 *, save_sleep: float = 0, admission_role: str = "") -> subprocess.Popen:
     env = os.environ.copy()
     env["PATH"] = str(fake_bin) + os.pathsep + env.get("PATH", "")
+    if os.name == "nt":
+        # The program lookup prefers a native index.exe anywhere on PATH over a
+        # batch file, and an installed index-graph ships one, so the fake
+        # index.cmd must be the only index the child can find.
+        system32 = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32")
+        env["PATH"] = str(fake_bin) + os.pathsep + system32
     env["PYTHONPATH"] = (
         str(_repo_path()) + os.pathsep + env.get("PYTHONPATH", ""))
     env["FAKE_INDEX_START_SLEEP"] = "0.2"

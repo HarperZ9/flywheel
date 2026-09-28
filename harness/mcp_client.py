@@ -20,6 +20,7 @@ import subprocess
 import threading
 from dataclasses import dataclass
 
+from . import safe_program
 from .mcp_stderr import StderrTail
 
 PROTOCOL_VERSION = "2025-06-18"
@@ -74,12 +75,12 @@ class StdioTransport:
         if isinstance(command, LaunchSpec):
             child_env = os.environ.copy() if command.inherit_env else {}
             child_env.update(command.env_overrides)
-            argv = list(command.argv)
+            argv = safe_program.argv(command.argv, cwd=command.cwd, env=child_env)
             popen_kwargs.update(cwd=command.cwd, env=child_env)
             if command.hide_window and os.name == "nt":
                 popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
         else:
-            argv = command
+            argv = safe_program.argv(command)
         self.proc = subprocess.Popen(
             argv, **popen_kwargs)
         self._q: "queue.Queue" = queue.Queue()
@@ -127,7 +128,8 @@ class StdioTransport:
                 # survives and orphans pile up one per timed-out call.
                 # taskkill /T takes the whole tree.
                 subprocess.run(
-                    ["taskkill", "/PID", str(self.proc.pid), "/T", "/F"],
+                    [safe_program.system_tool("taskkill.exe"), "/PID", str(self.proc.pid),
+                     "/T", "/F"],
                     capture_output=True, timeout=10)
             else:
                 self.proc.terminate()

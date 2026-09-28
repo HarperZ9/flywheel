@@ -32,6 +32,12 @@ _HELLO_SCRIPT = (
     "$null=$task.Wait(120000);[Console]::Out.Write($task.Result.ToString())")
 
 
+def _powershell() -> str:
+    """Windows PowerShell from System32, never a powershell.exe in the working folder."""
+    from .safe_program import system_tool
+    return system_tool(r"WindowsPowerShell\v1.0\powershell.exe")
+
+
 class WindowsHelloVerifier:
     name = "windows-hello"
 
@@ -42,7 +48,7 @@ class WindowsHelloVerifier:
         if sys.platform != "win32":
             return False
         try:
-            done = self.runner(["powershell.exe", "-NoProfile", "-NonInteractive",
+            done = self.runner([_powershell(), "-NoProfile", "-NonInteractive",
                                 "-Command", _HELLO_SCRIPT], input=summary.encode("utf-8"),
                                capture_output=True, timeout=150)
         except (OSError, subprocess.TimeoutExpired):

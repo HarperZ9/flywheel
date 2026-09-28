@@ -32,6 +32,7 @@ from pathlib import Path
 
 from .receipt import Receipt
 from .receipt_sign import SignedReceipt, ed25519_attach
+from . import safe_program
 
 # A signer keeps its key outside every repo, under the user's own home.
 _log = logging.getLogger(__name__)
@@ -129,7 +130,7 @@ def _lock_down(path: Path) -> None:
         if user:
             try:
                 subprocess.run(
-                    ["icacls", str(path), "/inheritance:r",
+                    [safe_program.system_tool("icacls.exe"), str(path), "/inheritance:r",
                      "/grant:r", f"{user}:F"],
                     capture_output=True, text=True, check=False)
             except OSError:
@@ -171,8 +172,8 @@ def generate_signing_key(dest, *, comment: str,
         for p in (priv, pub):
             p.unlink(missing_ok=True)
     proc = subprocess.run(
-        ["ssh-keygen", "-t", "ed25519", "-f", str(priv), "-N", "",
-         "-C", comment, "-q"],
+        safe_program.argv(["ssh-keygen", "-t", "ed25519", "-f", str(priv), "-N", "",
+                           "-C", comment, "-q"]),
         capture_output=True, text=True)
     if proc.returncode != 0 or not priv.exists() or not pub.exists():
         raise SigningKeyError(

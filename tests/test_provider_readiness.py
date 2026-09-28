@@ -43,7 +43,7 @@ def test_safe_base_url_preserves_ordinary_valid_urls(url):
 
 
 def test_codex_cli_binary_only_is_account_unknown_not_usable(monkeypatch):
-    monkeypatch.setattr(endpoint_registry.shutil, "which",
+    monkeypatch.setattr(endpoint_registry.safe_program, "which",
                         lambda binary: f"/usr/bin/{binary}")
     monkeypatch.setattr(
         endpoint_registry.claude_cli_auth,

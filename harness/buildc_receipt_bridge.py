@@ -23,6 +23,8 @@ from pathlib import Path
 import subprocess
 from typing import Any
 
+from . import safe_program
+
 
 SCHEMA = "buildlang-flywheel-byte-witness/v1"
 MATCH = "MATCH"
@@ -156,7 +158,7 @@ def run_buildc_verify(
     cwd = str(repo_root or receipt_path.parent)
     try:
         proc = subprocess.run(
-            command,
+            safe_program.argv(command, cwd=cwd),
             cwd=cwd,
             text=True,
             capture_output=True,
@@ -164,7 +166,7 @@ def run_buildc_verify(
             check=False,
         )
         return CommandResult(command, cwd, proc.returncode, proc.stdout, proc.stderr)
-    except FileNotFoundError as exc:
+    except (FileNotFoundError, safe_program.ProgramRefused) as exc:
         return CommandResult(command, cwd, 127, "", str(exc))
     except subprocess.TimeoutExpired as exc:
         return CommandResult(

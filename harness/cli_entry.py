@@ -46,59 +46,10 @@ def find_repo_root() -> Path:
         "could not locate the flywheel repo root; set FLYWHEEL_REPO to the "
         "checkout containing scripts/run_harness_cli.py and harness/"
     )
-def _parse_lane_args(argv: list[str]) -> tuple[str, str]:
-    """Parse --lanes <list|all> and --profile <source|package> from argv.
-    Defaults: all lanes, package profile."""
-    lanes = "all"
-    profile = "package"
-    i = 0
-    while i < len(argv):
-        a = argv[i]
-        if a in ("--lanes",) and i + 1 < len(argv):
-            lanes = argv[i + 1]; i += 2; continue
-        if a in ("--profile",) and i + 1 < len(argv):
-            profile = argv[i + 1]; i += 2; continue
-        i += 1
-    return lanes, profile
-
-
-def _cmd_install(argv: list[str]) -> int:
-    """`flywheel install [--lanes all|index,gather,...] [--profile source|package]`.
-
-    Pip/npm install the flagship lanes and record the result in the lane
-    registry (~/.flywheel/lanes.json). Idempotent: re-runs upgrade a lane."""
-    import json as _json
-    from harness.lanes import LANES, install_lane, write_registry, read_registry, LANE_REGISTRY_PATH
-    lanes_arg, profile = _parse_lane_args(argv)
-    if lanes_arg == "all":
-        names = [n for n, l in LANES.items() if l.kind not in ("bundled", "http")]
-    else:
-        names = [n.strip() for n in lanes_arg.split(",") if n.strip()]
-        bad = [n for n in names if n not in LANES]
-        if bad:
-            print(f"unknown lane(s): {bad}; known: {list(LANES)}", file=sys.stderr)
-            return 2
-    print(f"Flywheel install -- {len(names)} lane(s), profile={profile}")
-    registry = read_registry()
-    n_ok = 0
-    for name in names:
-        lane = LANES[name]
-        print(f"  installing {name} ({lane.kind}: {lane.install_name}) ...", end=" ", flush=True)
-        r = install_lane(name, profile=profile)
-        ok = r["installed"]
-        print("OK" if ok else "FAILED")
-        if not ok:
-            det = r.get("detail", "")
-            print(f"    {det[:200]}", file=sys.stderr)
-        kept = registry.get(name) if isinstance(registry.get(name), dict) else {}  # keeps env_allow
-        registry[name] = {**kept, "install_name": lane.install_name, "kind": lane.kind,
-                          "profile": profile, "installed": ok,
-                          "version": lane.version}
-        if ok:
-            n_ok += 1
-    write_registry(registry)
-    print(f"\n{n_ok}/{len(names)} lanes installed. Registry: {LANE_REGISTRY_PATH}")
-    return 0 if n_ok == len(names) else 1
+# `flywheel install` parses strictly and lives in its own module; the names
+# stay here because callers and tests reach them through cli_entry.
+from harness.lane_install_cli import cmd_install as _cmd_install  # noqa: E402
+from harness.lane_install_cli import parse_lane_args as _parse_lane_args  # noqa: E402,F401
 
 
 def _launch_gateway(gateway_argv: list[str]) -> int:

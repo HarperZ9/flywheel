@@ -11,8 +11,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import shutil
 import subprocess
+from . import safe_program
 
 _STATUS_TIMEOUT = 8.0
 _LOGIN_METHOD = "claude.ai"
@@ -65,7 +65,7 @@ def _candidate(path: str, *, is_windows=None, content_identity=False) -> dict:
 def resolve_official_cli(*, which=None, is_windows=None,
                          content_identity: bool = False) -> dict:
     """Resolve a native Claude Code CLI without treating wrappers as proof."""
-    which = which or shutil.which
+    which = which or safe_program.which
     names = ("claude.exe", "claude") if _windows(is_windows) else ("claude",)
     unsupported = None
     for name in names:

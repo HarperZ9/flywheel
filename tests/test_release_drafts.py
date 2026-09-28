@@ -28,7 +28,9 @@ EVIDENCE = (REPO / "project-docs" / "lanes" / "evidence"
 KNOWN_ISSUES = REPO / "RELEASE-NOTES-1.0.4-known-issues.md"
 NEXT_NOTES = REPO / "RELEASE-NOTES-1.1.0.md"
 LANE_PAGE = REPO / "project-docs" / "lanes" / "LANES.md"
-DRAFTS = (KNOWN_ISSUES, NEXT_NOTES, LANE_PAGE)
+# The notes for the release after 1.1.0, drafted before they move to the root.
+PATCH_DRAFT = REPO / "project-docs" / "drafts" / "RELEASE-NOTES-next.md"
+DRAFTS = (KNOWN_ISSUES, NEXT_NOTES, LANE_PAGE, PATCH_DRAFT)
 CLASS_PAGES = (NEXT_NOTES, LANE_PAGE)
 LABELS = {"BELOW_BAR": "below bar", "HELD": "not in this build"}
 OVERCLAIMS = (

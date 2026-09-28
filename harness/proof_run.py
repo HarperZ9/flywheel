@@ -23,12 +23,12 @@ command authority is asked for rather than assumed.
 from __future__ import annotations
 
 import re
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
 from .verdict import Verdict
+from . import safe_program
 
 # `#print axioms Some.Name` prints one of these two lines. Both are matched
 # rather than only the first, because a file resting on nothing is the good
@@ -53,7 +53,7 @@ def lean_path(explicit=None) -> str | None:
     if explicit:
         found = Path(explicit)
         return str(found) if found.exists() else None
-    return shutil.which("lean")
+    return safe_program.which("lean")
 
 
 def lean_version(lean: str) -> str:

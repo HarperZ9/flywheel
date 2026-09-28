@@ -81,6 +81,14 @@ def _isolated_run_root(tmp_path_factory, monkeypatch):
     monkeypatch.setenv("FLYWHEEL_RUN_ROOT", str(scratch))
     monkeypatch.setenv("FLYWHEEL_HOME", str(home))
     monkeypatch.setenv("PIP_CACHE_DIR", str(pip_cache))
+    # The lane registry path is fixed when harness.lanes is imported, which can
+    # be before FLYWHEEL_HOME above is set, so it would read the owner's real
+    # ~/.flywheel/lanes.json (its runtime_python pins and env_allow grants).
+    try:
+        from harness import lanes
+        monkeypatch.setattr(lanes, "LANE_REGISTRY_PATH", home / "lanes.json")
+    except Exception:
+        pass  # lanes may be unimportable in a narrow slice; the env still guards
     try:
         from harness import gateway
         monkeypatch.setattr(gateway._Handler, "run_root", str(scratch),

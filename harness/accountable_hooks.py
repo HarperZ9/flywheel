@@ -179,10 +179,12 @@ def subprocess_runner(timeout_s: float = 30.0):
     import os
     import subprocess
 
+    from . import safe_program
+
     def runner(argv: list) -> dict:
         try:
             completed = subprocess.run(
-                argv, capture_output=True, timeout=timeout_s,
+                safe_program.argv(argv), capture_output=True, timeout=timeout_s,
                 env={**os.environ, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"})
         except subprocess.TimeoutExpired:
             raise TimeoutError("timeout") from None

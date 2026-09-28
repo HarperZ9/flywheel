@@ -12,6 +12,8 @@ from __future__ import annotations
 import subprocess
 from dataclasses import dataclass
 
+from . import safe_program
+
 
 @dataclass
 class GitRepo:
@@ -21,7 +23,7 @@ class GitRepo:
     def _run(self, *args):
         if self.run is not None:
             return self.run(list(args))
-        return subprocess.run(["git", "-C", self.root, *args],
+        return subprocess.run(safe_program.argv(["git", "-C", self.root, *args]),
                               capture_output=True, text=True, timeout=30)
 
     def is_repo(self) -> bool:

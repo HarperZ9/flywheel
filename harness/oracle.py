@@ -35,6 +35,7 @@ from .junit_report import (FORCED_EXIT_NOTE, JUNIT_NAME, bind_report,  # noqa: F
                            discard_report, exit_zero_note, grade)
 from .task import Task
 from .workdir_restore import restore, snapshot
+from . import safe_program
 from .verdict import Verdict, Execution, Attribution, is_dispositive, attribution_for
 
 NO_REPORT_NOTE = ("[oracle] exit 0 with no fresh JUnit report: the process "
@@ -70,7 +71,8 @@ def run_env(extra: dict | None = None) -> dict:
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     if extra:
         env.update(extra)
-    return env
+    # The shell looks up `python` by name beside the candidate's files; see safe_program.
+    return safe_program.shell_env(env)
 
 
 class NonDispositiveVerdict(Exception):

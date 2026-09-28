@@ -23,6 +23,8 @@ import logging
 import os
 import subprocess
 
+from . import safe_program
+
 _log = logging.getLogger(__name__)
 SCHEMA = "flywheel.workspace-git/v1"
 TIMEOUT_S = 30
@@ -40,7 +42,8 @@ def git(root, *args: str, check: bool = True) -> bytes | None:
                "-c", f"core.hooksPath={os.devnull}", "-c", "core.untrackedCache=false",
                "-C", str(root), *args]
     try:
-        done = subprocess.run(command, capture_output=True, env=_env(), timeout=TIMEOUT_S,
+        done = subprocess.run(safe_program.argv(command), capture_output=True, env=_env(),
+                              timeout=TIMEOUT_S,
                               stdin=subprocess.DEVNULL)
     except (OSError, subprocess.TimeoutExpired) as exc:
         _log.warning("git %s did not run (%s)", args[0], type(exc).__name__)

@@ -8,10 +8,10 @@ helpers, and validate_executable_path is the shared check that a resolved
 path is a real native binary rather than a shim script on PATH.
 """
 from __future__ import annotations
-import shutil
 from pathlib import Path
 from typing import Callable
 
+from . import safe_program
 from .cross_harness_process import run_process
 
 REASONING_EFFORT_UNSPECIFIED = "unspecified"
@@ -33,7 +33,7 @@ def resolve_binary(candidates: tuple[str, ...]) -> str:
     an unavailable arm rather than measuring something else.
     """
     for name in candidates:
-        found = shutil.which(name)
+        found = safe_program.which(name)
         if found and not found.lower().endswith(_SHIM_SUFFIXES): return found
     return ""
 

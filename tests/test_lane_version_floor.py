@@ -10,7 +10,9 @@ it adds. ``install_lane`` asks the package manager for the pinned version.
 """
 from __future__ import annotations
 
+import os
 import subprocess
+import sys
 
 import pytest
 
@@ -75,10 +77,17 @@ def test_version_below_orders_release_numbers(installed, pin, below):
 
 
 @pytest.mark.parametrize(("lane", "expected"), [
-    ("gather", ["pip", "install", f"gather-engine=={LANES['gather'].version}"]),
-    ("learn", ["npm", "install", "-g", f"{LANES['learn'].install_name}@{LANES['learn'].version}"])])
+    ("gather", ["-m", "pip", "install", f"gather-engine=={LANES['gather'].version}"]),
+    ("learn", ["install", "-g", f"{LANES['learn'].install_name}@{LANES['learn'].version}"])])
 def test_install_lane_asks_for_the_pinned_version(lane, expected, tmp_path, monkeypatch):
     monkeypatch.setattr(ln, "LANE_REGISTRY_PATH", tmp_path / "lanes.json")
+    # pip runs under this interpreter; npm comes from PATH, here a stand-in.
+    npm = tmp_path / "bin" / ("npm.cmd" if os.name == "nt" else "npm")
+    npm.parent.mkdir()
+    npm.write_text("exit 0" + chr(10), encoding="utf-8")
+    npm.chmod(0o755)
+    monkeypatch.setenv("PATH", str(npm.parent))
+    program = sys.executable if lane == "gather" else os.path.realpath(npm)
     seen = []
 
     def fake_run(cmd, *args, **kwargs):
@@ -89,4 +98,6 @@ def test_install_lane_asks_for_the_pinned_version(lane, expected, tmp_path, monk
     if LANES[lane].package_disabled_reason:
         pytest.skip(f"{lane} has no package distribution")
     assert ln.install_lane(lane, profile="package")["installed"] is True
-    assert seen == [expected]
+    (cmd,) = seen
+    assert os.path.normcase(cmd[0]) == os.path.normcase(program)
+    assert cmd[1:] == expected

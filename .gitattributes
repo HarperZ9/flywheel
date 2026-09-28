@@ -53,3 +53,6 @@ desktop/linux/flutter/generated_plugins.cmake text eol=lf
 desktop/macos/Flutter/GeneratedPluginRegistrant.swift text eol=lf
 desktop/windows/flutter/generated_plugin_registrant.* text eol=lf
 desktop/windows/flutter/generated_plugins.cmake text eol=lf
+
+# Vendored helpers are hash-pinned (VENDORED.sha256); keep their bytes exactly as copied.
+**/_vendor/safe_spawn.py -text

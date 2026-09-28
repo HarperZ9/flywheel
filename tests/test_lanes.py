@@ -5,6 +5,7 @@ and the install-name -> command asymmetry must map correctly (pip install
 gather-engine exposes the `gather` command, etc.). A missing lane never
 crashes the roster; it reports `missing`/`declared`.
 """
+import sys
 from pathlib import Path
 
 import harness.lanes as lanes
@@ -273,4 +274,4 @@ def test_source_install_uses_matching_container_checkout(tmp_path, monkeypatch):
         lambda command, **kwargs: calls.append(command) or Installed())
     result = install_lane("gather", profile="source")
     assert result["installed"] is True
-    assert calls == [["pip", "install", "-e", str(source.resolve())]]
+    assert calls == [[sys.executable, "-m", "pip", "install", "-e", str(source.resolve())]]

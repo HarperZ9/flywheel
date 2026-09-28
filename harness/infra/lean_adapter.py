@@ -23,6 +23,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .. import safe_program
+
 SCHEMA = "flywheel.lean-check/v1"
 
 MATCH = "MATCH"
@@ -62,7 +64,8 @@ def _probe_lean() -> str:
     """
     try:
         result = subprocess.run(
-            ["lean", "--version"], capture_output=True, text=True, timeout=10)
+            safe_program.argv(["lean", "--version"]), capture_output=True, text=True,
+            timeout=10)
         if result.returncode == 0:
             return result.stdout.strip().split("\n")[0]
     except (OSError, subprocess.SubprocessError):
@@ -135,7 +138,7 @@ def check_lean_file(path: Path, *, timeout: int = 60) -> LeanCheckResult:
     start = time.monotonic()
     try:
         result = subprocess.run(
-            ["lean", str(path)],
+            safe_program.argv(["lean", str(path)], cwd=path.parent),
             capture_output=True, text=True, timeout=timeout,
             cwd=str(path.parent),
         )

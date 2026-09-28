@@ -37,6 +37,7 @@ import re
 import subprocess
 
 from .summary_validation import HOLD, read_validation, validation_answers
+from . import safe_program
 
 SCHEMA = "harness.session-summary/v1"
 SCOPES = ("task", "goal", "session")
@@ -54,7 +55,8 @@ _MARKER_LIMIT = 20
 def _git(root: Path, *args: str) -> str:
     """Run one read-only git command, returning "" rather than raising."""
     try:
-        done = subprocess.run(["git", *args], cwd=str(root), capture_output=True,
+        done = subprocess.run(safe_program.argv(["git", *args], cwd=root), cwd=str(root),
+                              capture_output=True,
                               text=True, encoding="utf-8", errors="replace", check=False)
     except OSError:
         return ""
