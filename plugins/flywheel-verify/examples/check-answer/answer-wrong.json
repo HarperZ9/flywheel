@@ -1,0 +1,5 @@
+{
+  "tier": {"value": "standard"},
+  "unit_rate": {"value": 135, "source": "rate-card-2026"},
+  "rate_source": {"value": "2026 rate card", "source": "rate-card-2026"}
+}

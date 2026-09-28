@@ -1,0 +1,11 @@
+{
+  "fields": [
+    {"name": "unit_rate", "authority": "TABLE", "source": "rate-card-2026",
+     "criticality": "critical", "describes": "hourly rate for the service tier"},
+    {"name": "rate_source", "authority": "CITED", "source": "rate-card-2026",
+     "describes": "the answer names the rate card it used"}
+  ],
+  "authorities": {
+    "rate-card-2026": {"kind": "table", "path": "rates.json", "key_field": "tier"}
+  }
+}

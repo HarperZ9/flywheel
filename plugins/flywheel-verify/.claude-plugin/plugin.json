@@ -1,0 +1,19 @@
+{
+  "name": "flywheel-verify",
+  "displayName": "Flywheel Verify",
+  "version": "1.1.0",
+  "description": "Check the values in an answer against the source that decides them before Claude hands the answer over, and recheck a Flywheel receipt bundle offline. Every tool is read-only.",
+  "author": {
+    "name": "Zain Dana Harper",
+    "url": "https://github.com/HarperZ9"
+  },
+  "homepage": "https://github.com/HarperZ9/flywheel/tree/main/plugins/flywheel-verify",
+  "repository": "https://github.com/HarperZ9/flywheel",
+  "license": "FSL-1.1-MIT",
+  "keywords": ["verification", "fact-check", "receipts", "offline", "mcp"],
+  "metadata": {
+    "privacy_policies": [
+      "https://github.com/HarperZ9/flywheel/blob/main/plugins/flywheel-verify/README.md#privacy-policy"
+    ]
+  }
+}

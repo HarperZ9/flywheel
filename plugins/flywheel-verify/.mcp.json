@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "check": {
+      "command": "uvx",
+      "args": ["--from", "flywheel-verify==1.1.0", "flywheel-check-mcp"]
+    }
+  }
+}
