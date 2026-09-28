@@ -36,7 +36,7 @@ card names (B), 1 reads only by design (C), 1 runs with no setup and keeps actua
 its own app (A/C), and 1 runs with no setup while its provider-backed path is untested
 (A/B-untested). index is below that bar without Git, and telos is not in this build.
 
-Measured by an installed-app check (CI run 36302181098, commit ba371e6b) that installs
+Measured by an installed-app check (CI run 36374922901, commit 337c326f) that installs
 the release installer per user and then for all users on a GitHub-hosted Windows Server
 runner, starts the engine the way the app does under a throwaway profile, and calls each
 lane through the app's own routes and approvals, once fresh and once after setup. The
@@ -92,8 +92,8 @@ runs only on a call you approve with the higher tier.
   (the panel catalog without numpy), learn 2.0.0, and Node.js v24.21.0 LTS to run it.
   forum 1.15.1 ships the data files it needs to start. `FLYWHEEL_NODE` or a node.exe you
   choose in the app still overrides the bundled Node; a chosen node.exe is checked by
-  hash again at every launch. The installer is about 23.7 MB larger, mostly the Node
-  runtime: 80,081,007 bytes in CI run 36302181098 against 56,355,754 bytes for 1.0.4.
+  hash again at every launch. The installer is about 25.6 MB larger, mostly the Node
+  runtime: 81,914,414 bytes in CI run 36374922901 against 56,355,754 bytes for 1.0.4.
 - **License texts ship with the engine.** The engine folder now carries the Python
   license (with OpenSSL's), the texts for code compiled into Python, and each lane's
   license. The installer's third-party notice lists every one.

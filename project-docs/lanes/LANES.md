@@ -64,8 +64,8 @@ way the app does, under a throwaway profile with only the Windows system folder 
 and calls each lane through the same routes and approvals the app uses. It runs twice
 per install: once fresh, and once after it installs Git, starts a stub model server,
 picks a project folder, places a canon block and records a writing draft. The classes
-above come from CI run 36302181098 on 2026-09-27 against commit ba371e6b, summarized
-with both receipts' hashes in `evidence/installed-lanes-ci-36302181098.json`; both
+above come from CI run 36374922901 on 2026-09-28 against commit 337c326f, summarized
+with both receipts' hashes in `evidence/installed-lanes-ci-36374922901.json`; both
 install modes reached the same verdict for every lane. The check fails when a lane
 leaves its expected row in `packaging/installed-lane-expectations.json`.
 
