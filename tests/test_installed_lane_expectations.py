@@ -19,8 +19,8 @@ import pytest
 from scripts import installed_app_lane_acceptance as acceptance
 from scripts import installed_lane_expectations as expected
 from scripts import installed_lane_verdict as verdict
-from scripts.installed_lane_cases import CASES, DENIED, Check
-from harness.lane_tool_policy import tool_policy
+from scripts.installed_lane_cases import CASES, DENIED, Check, LaneCase, st
+from harness.lane_tool_policy import HELD_LANES, tool_policy
 
 
 def _lanes(failing: dict[str, tuple[str, ...]] | None = None, *, everything_fails=False):
@@ -55,16 +55,40 @@ def test_every_lane_below_the_bar_exits_1():
     lanes = _lanes(everything_fails=True)
     judged = expected.judge(lanes)
     assert judged["matches"] is False
-    assert {d["lane"] for d in judged["departures"]} >= set(CASES) - {"telos"}
+    assert {d["lane"] for d in judged["departures"]} == set(CASES)
     assert acceptance.exit_code(_receipt(lanes)) == 1
+
+
+def test_telos_is_expected_at_class_now_that_it_ships():
+    """telos 0.4.2 ended the hold, so its row expects AT_CLASS: a run where the
+    lane stayed held, or failed any of its checks, departs."""
+    rows = expected.load()
+    assert rows["telos"]["verdict"] == "AT_CLASS" and not rows["telos"].get("failed")
+    assert not any(row["verdict"] == "HELD" for name, row in rows.items()
+                   if name not in HELD_LANES)
+    for check in CASES["telos"].checks:
+        lanes = _lanes({"index": ("fresh_map_needs_git",), "telos": (check.name,)})
+        assert [d["lane"] for d in expected.judge(lanes)["departures"]] == ["telos"], check.name
+        assert acceptance.exit_code(_receipt(lanes)) == 1
+    held = _lanes({"index": ("fresh_map_needs_git",)})
+    held["telos"] = {**held["telos"], "verdict": "HELD", "failed": []}
+    assert [d["lane"] for d in expected.judge(held)["departures"]] == ["telos"]
 
 
 def test_a_held_lane_with_a_failed_check_exits_1():
-    lanes = _lanes({"index": ("fresh_map_needs_git",), "telos": ("fresh_catalog_refused",)})
-    assert lanes["telos"]["verdict"] == "HELD"
-    departures = expected.judge(lanes)["departures"]
-    assert [d["lane"] for d in departures] == ["telos"]
-    assert acceptance.exit_code(_receipt(lanes)) == 1
+    # No lane is held today; the rule still has to hold for one that is.
+    case = LaneCase("held-lane", "B", "held", "a stated hold",
+                    (st("fresh", "cannot_launch", code="lane_held"),))
+    rows = {**expected.load(), "held-lane": {"verdict": "HELD", "failed": []}}
+    lanes = _lanes({"index": ("fresh_map_needs_git",)})
+    lanes["held-lane"] = verdict.lane_verdict(case, {"fresh_state": verdict.Outcome("pass")})
+    assert expected.judge(lanes, rows) == {"matches": True, "departures": []}
+    lanes["held-lane"] = verdict.lane_verdict(case, {"fresh_state": verdict.Outcome("fail")})
+    assert lanes["held-lane"]["verdict"] == "HELD"
+    departures = expected.judge(lanes, rows)["departures"]
+    assert [d["lane"] for d in departures] == ["held-lane"]
+    receipt = {**_receipt(lanes), "expected": expected.judge(lanes, rows)}
+    assert acceptance.exit_code(receipt) == 1
 
 
 @pytest.mark.parametrize("failing", [

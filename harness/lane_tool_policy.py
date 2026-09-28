@@ -77,9 +77,8 @@ READS_ONLY_LANES = {
 }
 #: Lanes held out of this build, with the card's sentence. A held lane admits no
 #: tool and has no main tool; the frozen engine reports ``lane_held`` for it.
-#: telos: the O-8 hold (DECISIONS.json) while its release contents are reviewed.
+#: Private lanes that have no freeze payload and cannot launch on CI.
 HELD_LANES = {
-    "telos": "Not in this build: Telos is held while its release contents are reviewed.",
     "isomorph": "Private lane. Use an Isomorph source checkout.",
     "sofer": "Private lane. Use a Sofer source checkout.",
     "array": "Private lane. Use an Array source checkout.",

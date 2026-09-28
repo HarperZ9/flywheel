@@ -37,8 +37,8 @@ def _tier(entry: ToolPolicy) -> str:
 def _forced(entry: ToolPolicy) -> str:
     parts = []
     if entry.allowed_args is not None:
-        names = ", ".join(f"`{n}`" for n in entry.allowed_args) or "no argument"
-        parts.append(f"passes only {names}")
+        names = ", ".join(f"`{n}`" for n in entry.allowed_args)
+        parts.append(f"passes only {names}" if names else "passes no argument")
     parts += [f"drops `{name}`" if value is None else f"`{name}={str(value).lower()}`"
               for name, value in entry.forced_args]
     parts += [f"`{name}` a plain id" for name in entry.id_args]

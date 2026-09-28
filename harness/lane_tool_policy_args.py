@@ -33,6 +33,8 @@ probe measures writes, not reads.
 """
 from __future__ import annotations
 
+from .lane_tool_policy_node import NODE_LANE_POLICY
+
 _TUTOR = ("learn_tutor_plan", "learn_tutor_record", "learn_tutor_mastery",
           "learn_tutor_due", "learn_tutor_studyplan", "learn_tutor_misconceptions",
           "learn_tutor_reverify", "learn_tutor_derive_schedule")
@@ -103,6 +105,13 @@ for _action in ("status", "result", "cancel", "resume"):
 # under a `root` that contains the home, a relative entry can name the home's state.
 ARG_POLICY["index"]["index.route"]["tree_args"] = ("paths",)
 ARG_POLICY["index"]["index.route"]["tree_base"] = "root"
+# telos 0.4.2 serves every tool with an inputSchema that declares no property
+# (additionalProperties false), and its server never reads a call's arguments.
+# The engine passes none on the lane call and Plugins routes, so a later release
+# that starts reading one gets nothing until a review lists it, and the approval
+# sheet shows every argument a caller sent as dropped. An agent run passes the
+# model's arguments through, so it cannot select a telos tool (agent_tool_refusal).
+ARG_POLICY["telos"] = {name: {"allowed_args": ()} for name in NODE_LANE_POLICY["telos"]}
 
 #: Tools that create a lane file named by an id argument and overwrite it
 #: unchecked: lane -> tool -> (id argument, file under the lane folder). The

@@ -90,20 +90,30 @@ def test_no_frozen_argv_starts_with_python_node_or_a_console_script(frozen):
         staged_node = str(frozen["stage"] / "node" / nl.bundled_node_name())
         assert head in (ln.sys.executable, staged_node), f"{name} launches {head!r}"
         launched.append(name)
-    assert {"learn", "local-model", "writing", "gather"} <= set(launched)
-    assert "telos" not in launched  # held (O-8): no launch, a stated hold code
+    assert {"learn", "telos", "local-model", "writing", "gather"} <= set(launched)
 
 
-def test_frozen_learn_runs_the_staged_script_on_the_bundled_node_and_telos_is_held(frozen):
-    runtime = ln.resolve_lane_runtime("telos")
-    assert runtime.launch is None and runtime.blocking_codes == ("lane_held",)
-    for name, entry in _NODE_ENTRIES[:1]:
+def test_frozen_node_lanes_run_the_staged_script_on_the_bundled_node(frozen):
+    for name, entry in _NODE_ENTRIES:
         launch = ln.resolve_mcp_launch(name)
         assert launch.argv == (str(frozen["stage"] / "node" / nl.bundled_node_name()),
                                str((frozen["stage"] / name / entry).resolve()))
         assert launch.allowed_tools == tuple(admitted_tools(name)), name
         assert launch.inherit_env is False, name
         assert Path(launch.cwd) == frozen["home"] / "lanes" / name
+    # telos 0.4.2's launch leaves off the tools that start programs outside the
+    # package and the device driver, which is not in the build at all
+    telos = ln.resolve_mcp_launch("telos").allowed_tools
+    assert "telos.catalog" in telos
+    assert not {"telos.room", "telos.workflow", "telos.proof", "telos.native.control"} & set(telos)
+
+
+def test_a_held_lane_states_the_hold_before_any_node_lookup(frozen, monkeypatch):
+    """The hold mechanism outlives the telos hold: a lane named in HELD_LANES
+    gets no launch and the stated code, even with its script staged."""
+    monkeypatch.setitem(lrf.HELD_LANES, "telos", "Not in this build.")
+    runtime = ln.resolve_lane_runtime("telos")
+    assert runtime.launch is None and runtime.blocking_codes == ("lane_held",)
 
 
 def test_frozen_node_lane_without_node_needs_setup(frozen, monkeypatch):
@@ -198,7 +208,8 @@ def test_registry_fixes_ride_with_the_launch_paths():
     assert LANES["chorus"].py_module == "chorus"  # chorus.cli has no main guard
     assert LANES["canon"].py_module == "canon"    # PyPI canon.cli has no main guard
     assert LANES["bulletin"].version == "0.5.0"   # what the live board reports
-    assert LANES["telos"].version == "0.4.1"      # the held GitHub release (O-8 hold)
+    assert LANES["telos"].version == "0.4.2"      # the first release without the CAPTCHA code
+    assert not LANES["telos"].package_disabled_reason
 
 
 def test_pip_chorus_and_canon_launch_through_their_package_main(monkeypatch):

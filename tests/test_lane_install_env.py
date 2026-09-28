@@ -11,8 +11,10 @@ allowlist drops it silently.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -97,8 +99,7 @@ def test_python_m_lane_found_through_parent_pythonpath_still_starts(tmp_path, mo
 # manifest is dropped by the allowlist with no error, so this table is the check.
 EXPECTED_DECLARED = {
     "canon": {"CANON_HOME", "CANON_WORKSPACE", "CANON_BLOCKS_DIR", "CANON_CONTEXT_DB"},
-    "telos": {"TELOS_CHROME_PATH", "TELOS_CHROME_PROFILE", "TELOS_EMET_CLI",
-              "TELOS_EMET_DISABLE_FALLBACKS", "LEARN_CLI", "CAPTCHA_VENV_PY"},
+    "telos": {"TELOS_EMET_CLI", "TELOS_EMET_DISABLE_FALLBACKS"},
     "relay": {f"{p}_{s}" for p in ("CODEX", "CLAUDE", "GLM", "GEMINI", "DEEPSEEK")
               for s in ("MODEL", "PROVIDER_BASE_URL", "CLOUD_BASE_URL")},
 }
@@ -108,6 +109,32 @@ EXPECTED_DECLARED = {
 def test_lane_declares_the_configuration_it_reads(name):
     missing = EXPECTED_DECLARED[name] - set(ln.LANES[name].env_vars)
     assert not missing, (name, sorted(missing))
+
+
+def test_telos_declares_no_variable_for_the_code_0_4_2_removed():
+    # telos 0.4.2 removed the CAPTCHA code and the variable that located its
+    # interpreter; a lane launch must not pass it on.
+    assert not [name for name in ln.LANES["telos"].env_vars if "CAPTCHA" in name.upper()]
+
+
+def test_telos_declares_only_what_a_tool_it_serves_reads():
+    # In the 0.4.2 package only the proof witness reads a variable a served tool
+    # reaches. The Chrome and learn names are the native-control driver's, which
+    # over MCP only prints its verb catalog, and the font names belong to a
+    # repository script the package does not ship, so none of them is passed on.
+    assert set(ln.LANES["telos"].env_vars) == EXPECTED_DECLARED["telos"]
+
+
+def test_no_page_offers_telos_a_credential():
+    # The 0.4.2 package reads no credential, so the credential table names no
+    # telos row, and no page names a variable of the removed CAPTCHA code.
+    root = Path(__file__).resolve().parents[1]
+    table = (root / "docs" / "lane-runtime-selection.md").read_text(encoding="utf-8")
+    assert not [line for line in table.splitlines() if line.startswith("| telos |")]
+    pages = [root / "README.md", root / "CONTRIBUTING.md", *(root / "docs").rglob("*.md")]
+    named = [page.relative_to(root).as_posix() for page in pages
+             if re.search(r"CAPTCHA_(SERVICE_KEY|VENV_PY)", page.read_text(encoding="utf-8"))]
+    assert named == []
 
 
 def test_canon_launch_carries_its_blocks_dir(tmp_path, monkeypatch):

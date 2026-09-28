@@ -44,6 +44,10 @@ MUST_BE_T2 = {
     "forum": ("submit", "forum.submit", "forum.run.room", "forum.prose.humanize",
               "gate_approve", "gate_edit", "gate_reject"),
     "learn": ("learn_tutor_record",),
+    # telos 0.4.2: these start programs from outside the package (python from
+    # PATH, the sibling source folders, a witness script); native.control is
+    # the device driver and stays out of the build as well.
+    "telos": ("telos.room", "telos.workflow", "telos.proof", "telos.native.control"),
     "mneme": ("mneme.forget", "mneme.to_crucible", "mneme.replay_crucible"),
     "canon": ("canon.render",),
     "writing": ("writing.diagnose", "writing.project_init", "writing.section_record",
@@ -70,7 +74,8 @@ MAIN = {
     "index": {"index.map", "index.symbol-definition", "index.symbol-references"},
     "forum": {"forum.route", "plan"},
     "learn": {"learn_dry_run", "learn_tutor_plan"},
-    "telos": set(),  # held out of this build (O-8); no main tool until a reviewed release
+    "telos": {"telos.catalog", "telos.proof.research", "telos.proof.visual",
+              "telos.proof.build"},  # the catalog and the proofs with no witness stage
     "local-model": {"local_agent_run", "local_agent_chat"},
     "writing": {"writing.diagnose"},
     "relay": {"local_agent_run"},
@@ -85,7 +90,7 @@ MAIN = {
 NOT_IN_BUILD = {
     "index": set(), "relay": set(),   # WP10: router jobs and relay runs run on lane sessions
     "calibrate-pro": {"calibrate-pro.list-targets"},
-    "telos": {name for name in policy.LANE_TOOL_POLICY["telos"]},  # every tool: O-8 hold
+    "telos": {"telos.native.control"},   # the device driver; 0.4.2 ended the hold
     "writing": {"writing.proposal_approve"},
     "accountable-surface": {"accountable-surface.actuate"},   # C-6, class C
 }

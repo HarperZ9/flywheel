@@ -17,11 +17,11 @@ python -m pip install flywheel-verify
 flywheel lanes --probe
 ```
 
-The roster is 17 lanes. Every lane but telos resolves from a pip install: the
-bundled ones ship inside flywheel-verify, bulletin is a remote board, and the rest
-install from their published packages with `flywheel install`. telos is held out
-of this release. Nobody knows what a clean install does on Linux or macOS, and a
-report saying it does not work is worth more than one saying it does.
+The roster is 17 lanes. Every lane resolves from a pip install: the bundled ones
+ship inside flywheel-verify, bulletin is a remote board, and the rest install from
+their published packages with `flywheel install`, learn and telos from npm, which
+needs Node 20 or later. Nobody knows what a clean install does on Linux or macOS,
+and a report saying it does not work is worth more than one saying it does.
 
 Post the result to `findings` on the board at
 `https://bulletin.zaindharper.workers.dev`, or open an issue here. The board

@@ -19,8 +19,10 @@ below before you approve a call.
   it with the reason shown.
 
 Plugins and agent runs never reach a T2 tool or an unlisted one. Agent runs also
-refuse tools that write lane state, fetch a URL the caller names, or take a path
-argument.
+refuse tools that write lane state, fetch a URL the caller names, or have an
+argument the engine checks, drops, or fixes, since an agent run passes the
+model's arguments through. Every telos tool is one of them: the engine passes
+telos no argument.
 
 ## Reading the tables
 
@@ -189,53 +191,53 @@ Admitted at launch: 14 of 15 tools. T2 per granted call: 1. Not in this build: 0
 | `learn_tutor_derive_schedule` | T1 |  | read | node | `sessionId` a plain id | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 | `learn_tutor_prooflesson` | T1 |  | read | node | `packetPath` kept out of the home | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 
-### telos 0.4.1
+### telos 0.4.2
 
-Admitted at launch: 0 of 41 tools. T2 per granted call: 0. Not in this build: 41.
+Admitted at launch: 37 of 41 tools. T2 per granted call: 3. Not in this build: 1.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
-| `telos.status` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.room` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.workflow` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.catalog` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.server.manifest` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.mcp.freshness` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.ci.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.ci.triage` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.presentation.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.accessibility.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.performance.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.compatibility.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.operator.doctor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.admission.telemetry` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.context.envelope` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.context.pack` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.action.receipt` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.loop.ledger` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.objective.monitor` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.model.foundry` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.learning.forge` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.learning.labs` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.research.seed` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.research.thermodynamic` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.rendering.research` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.rendering.capabilities` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.measurement.layers` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.creative.engine` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.creative.kernels` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.revival.registry` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.second_level.queue` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.workstation.substrate` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.display.calibration` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.native.control` | T2, not in build: `actuation_outside_app` |  | actuate | node |  | The Chrome DevTools and UI Automation driver; mail, post and listing actions sit behind other arguments. Left out rather than admitted at T2. |
-| `telos.browser.evidence` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.showcase.scout` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.proof` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.proof.research` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.proof.visual` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
-| `telos.proof.build` | T1, not in build: `release_on_hold` |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. Held out of this build while its release contents are reviewed. |
+| `telos.status` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.doctor` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.room` | T2 |  | actuate | node | passes no argument | Starts the python found on PATH and, when gather, crucible, index and forum source folders sit beside the package, runs their status and doctor commands from those folders. Programs outside the package run, so each call needs a T2 approval. |
+| `telos.workflow` | T2 |  | actuate | node | passes no argument | Starts the python found on PATH and, with the four source folders beside the package, runs index map, gather docs, forum route and crucible assess from them and a node from PATH; its temp files stay in the lane folder. Programs outside the package run, so each call needs a T2 approval. |
+| `telos.catalog` | T1 | main | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.server.manifest` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.mcp.freshness` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.ci.doctor` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.ci.triage` | T1 |  | read | node | passes no argument | Triages the package's bundled CI fixture and prints JSON; the MCP mapping passes no arguments, so the live GitHub intake is never reached. |
+| `telos.presentation.doctor` | T1 |  | read | node | passes no argument | Reads the package and, read-only, the README, changelog and brand files in gather, crucible, index and forum folders beside it; prints JSON and writes nothing. |
+| `telos.accessibility.doctor` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.performance.doctor` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.compatibility.doctor` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.operator.doctor` | T1 |  | read | node | passes no argument | Runs one fixed package script, which also starts the package's own status script on the same Node; reads files inside the package and prints JSON. |
+| `telos.admission.telemetry` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.context.envelope` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.context.pack` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.action.receipt` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.loop.ledger` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.objective.monitor` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.model.foundry` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.learning.forge` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.learning.labs` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.research.seed` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.research.thermodynamic` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.rendering.research` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.rendering.capabilities` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.measurement.layers` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.creative.engine` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.creative.kernels` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.revival.registry` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.second_level.queue` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.workstation.substrate` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.display.calibration` | T1 |  | read | node | passes no argument | Returns a calibration contract from package data; changes no display setting. |
+| `telos.native.control` | T2, not in build: `actuation_outside_app` |  | actuate | node | passes no argument | The package's Chrome DevTools, UI Automation and device driver. With no arguments it prints its verb catalog, but the script is the driver, so the build leaves it out rather than admit it at T2. |
+| `telos.browser.evidence` | T1 |  | read | node | passes no argument | Returns the package's synthetic browser evidence fixture as JSON; starts no browser. |
+| `telos.showcase.scout` | T1 |  | read | node | passes no argument | Ranks the package's bundled scout fixture and prints JSON; the live GitHub search and the file output are not reachable from the MCP mapping. |
+| `telos.proof` | T2 |  | actuate | node | passes no argument | Its witness stage runs node on the script TELOS_EMET_CLI names, or on an emet folder beside the package, with temp files in the lane folder. Programs outside the package run, so each call needs a T2 approval. |
+| `telos.proof.research` | T1 | main | read | node | passes no argument | Assembles and verifies the bundled demo packet in memory; this proof has no witness stage and writes nothing. |
+| `telos.proof.visual` | T1 | main | read | node | passes no argument | Recomputes the bundled demo packet's measurements in memory; no witness stage, no write. |
+| `telos.proof.build` | T1 | main | read | node | passes no argument | Recomputes the bundled demo run's invariant in memory; no witness stage, no write. |
 
 ### local-model 0.1.0
 
@@ -243,7 +245,7 @@ Admitted at launch: 8 of 9 tools. T2 per granted call: 1. Not in this build: 0.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
-| `local_agent_health` | T1 |  | network_read |  | passes only no argument, `online=false` | Pings the local model tiers; online tiers are forced off. |
+| `local_agent_health` | T1 |  | network_read |  | passes no argument, `online=false` | Pings the local model tiers; online tiers are forced off. |
 | `local_agent_chat` | T1 | main | model_call | model_server | `online=false` | One completion from the first healthy local tier; online tiers are forced off. |
 | `local_agent_run` | T1 | main | model_call | model_server, project_folder | passes only `goal`, `root`, `max_steps`, `max_tokens`, `backend`, `allow_write=false`, `allow_exec=false`, `online=false`, `root` kept out of the home | Runs an agent task inside the picked project folder. Write and exec come from the launch and default off; the engine passes only the listed arguments and forces write, exec and online off in the call. |
 | `local-model.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
@@ -280,7 +282,7 @@ Admitted at launch: 9 of 10 tools. T2 per granted call: 1. Not in this build: 0.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
-| `local_agent_health` | T1 |  | network_read |  | passes only no argument, `online=false` | Pings the local model tiers; online tiers are forced off. |
+| `local_agent_health` | T1 |  | network_read |  | passes no argument, `online=false` | Pings the local model tiers; online tiers are forced off. |
 | `local_agent_chat` | T1 |  | model_call | model_server | passes only `prompt`, `backend`, `online=false` | One completion from the first healthy local tier; online tiers are forced off. |
 | `local_agent_run` | T1 | main | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Runs an agent task on the model server the person set up. relay 0.5.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine also passes only the listed arguments, so root, check, test_cmd and online never reach the run, and forces write, exec and online off. |
 | `local_agent_start` | T2 (rule alone: T1) |  | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Starts the same agent run in the background on the relay lane's long-lived session and returns its run id at once. T2: it holds the model server for minutes with no call waiting on it. relay 0.5.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine passes only the listed arguments and forces write, exec and online off. |

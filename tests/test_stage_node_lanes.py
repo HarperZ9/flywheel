@@ -108,11 +108,12 @@ def test_stage_extracts_node_and_both_lanes_and_writes_a_passing_receipt(tmp_pat
     assert receipt["node_runtime"]["version"] == "v0.0.0"
     on_disk = json.loads((stage / NODE_STAGE_RECEIPT).read_text(encoding="utf-8"))
     assert on_disk == receipt
-    # the fixture holds nothing, so the freeze accepts this folder; the committed
-    # manifest holds telos (O-8), so the default freeze refuses it
+    # no committed row holds a lane, so the default freeze accepts this folder;
+    # a hold, if one returned, would refuse it
+    assert node_lane_stage_datas(str(stage)) == [(str(stage.resolve()), "node-lanes")]
     assert node_lane_stage_datas(str(stage), held=()) == [(str(stage.resolve()), "node-lanes")]
     with pytest.raises(FreezeInputError, match="held"):
-        node_lane_stage_datas(str(stage))
+        node_lane_stage_datas(str(stage), held=("telos",))
 
 
 def test_a_telos_archive_that_differs_from_its_pin_refuses(tmp_path):
@@ -269,9 +270,15 @@ def test_the_committed_manifest_pins_the_reviewed_releases():
     assert node["members"]["node.exe"] == (
         "ba4e6d110e8c1592a1ecd390f6b05f3da124b13871a5be62b341a07a853c6c32")
     lanes = {row["lane"]: row for row in manifest["lanes"]}
-    assert lanes["telos"]["sha256"] == (
-        "9797ea6bacb7a62cee0aee23c2a81b000e51117a5b2bcde4e218d9df81a56264")
-    assert lanes["telos"]["tag"] == "v0.4.1" and lanes["telos"]["version"] == "0.4.1"
+    telos = lanes["telos"]  # the npm tarball, byte-identical to the v0.4.2 release asset
+    assert telos["sha256"] == "ce2a452492cecea307d8725a6c60dad9f56f44f02db01a7f437a177561fe4e70"
+    assert telos["integrity"] == (
+        "sha512-ptaAO/O/jM1WbprxurqDfZKmtSU8x9a5bWE+bwMLOoCtDbSlYqhSz7tgZlEcCDcAPJSDdKPJHLKQqQR/h1EsTA==")
+    assert (telos["tag"], telos["version"], telos["tag_commit"]) == (
+        "v0.4.2", "0.4.2", "b9f59788c280315904457ff695ff3525b9f56eba")
+    assert telos["url"] == "https://registry.npmjs.org/project-telos-mcp/-/project-telos-mcp-0.4.2.tgz"
+    assert telos["checksums_url"].endswith("/v0.4.2/SHA256SUMS.txt")
+    assert "hold" not in telos and "hold_reason" not in telos
     assert lanes["learn"]["version"] == "2.0.0"
     assert lanes["learn"]["integrity"] == (
         "sha512-WDkBRhqnl1EEhN1EUr2ipZUYw9Sucyykl/LeP/vBdZf7s2Q8+Dz6saq3e+rv1IDWxS/N0xFs9UbhYloXmeUH/Q==")

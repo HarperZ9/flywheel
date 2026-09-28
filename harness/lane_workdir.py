@@ -53,8 +53,8 @@ network or device path itself (NON_LOCAL_PATH), after the engine's own path
 guard; ``lane_caller`` answers either code as a fixed refusal.
 
 Each of the three vendors safe_spawn 1.0.1, which drops a PATH entry that
-reaches the lane's folder from a child's lookup and PATH. A frozen lane's PATH
-is the system folder (and Git's cmd folder for index), and a pip or source
+reaches the lane's folder from a child's lookup and PATH. A frozen Python lane's
+PATH is the system folder (and Git's cmd folder for index), and a pip or source
 lane's is the engine's own; neither points into a lane folder, which holds no
 tool. Measured on Windows for gather, relay and forum under both, 1.0.1 dropped
 no entry, and every program 1.0.0 found it found too.
