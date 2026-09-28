@@ -4,7 +4,7 @@ A lane is a companion tool that Flywheel runs as its own process: gather, crucib
 index and the rest. This page lists, for each of the 17 lanes in the roster, the main
 action a person installs it for, the class the installed-app check confirmed, and the
 setup the app's lane card states. It describes the build after 1.0.4; for 1.0.4 itself
-see the known-issues correction.
+see the [known-issues correction](../../RELEASE-NOTES-1.0.4-known-issues.md).
 
 ## Classes
 

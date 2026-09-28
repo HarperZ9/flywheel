@@ -230,7 +230,7 @@ def test_the_docs_count_the_tools_an_ordinary_forum_launch_lists():
     for parts in (("docs", "features", "forum.md"), ("project-docs", "lanes", "POLICY-REVIEW.md")):
         text = " ".join(root.joinpath(*parts).read_text(encoding="utf-8").split())
         assert f"lists the {ordinary} tools of an ordinary launch" in text, parts
-    notes = " ".join((root / "project-docs" / "drafts" / "RELEASE-NOTES-next.md")
+    notes = " ".join((root / "RELEASE-NOTES-1.1.0.md")
                      .read_text(encoding="utf-8").split())
     assert len(granted) == 3 and "which leaves the three out" in notes
     assert "The app has no control for them in this release" in notes

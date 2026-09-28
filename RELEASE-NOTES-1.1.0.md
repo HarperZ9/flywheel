@@ -1,9 +1,3 @@
-<!-- Draft 1.1.0 notes, reviewed before any tag. The lane classes, lane sentence, README
-count, method paragraph and installer size cite CI run 36302181098, which predates the
-gather 1.9.1, relay 0.5.0, forum 1.15.1, crucible 1.3.0 and index 2.14.0 pins: replace them
-from the release commit's windows-installed-acceptance.yml run. The 1.0.4 known-issues page
-publishes on its own. Five trace manual checks were not run. -->
-
 # Flywheel 1.1.0
 
 The Windows app now runs each lane's main action from the lane's card, and the card

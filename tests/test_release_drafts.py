@@ -1,12 +1,14 @@
-"""The release drafts for the lanes work say only what the evidence shows.
+"""The release pages for the lanes work say only what the evidence shows.
 
-Three drafts go to the operator: the 1.0.4 known-issues correction (O-6), the
-next release notes and the lane page. They are public once published, so the
-two public-surface gates run on them here, although neither gate's file list
-includes project-docs/drafts. Each lane's class is read from the committed
-evidence summary of the installed-app acceptance, so a draft cannot state a
-class the receipt did not measure, and the README lane sentence carries the
-receipt's own count (O-5: public lane wording comes only from the receipt).
+Three pages carry the lane claims: the 1.0.4 known-issues correction, the 1.1.0
+release notes and the lane page. They are public, so the two public-surface
+gates run on them here, although neither gate's file list names them. Each
+lane's class is read from the committed evidence summary of the installed-app
+acceptance, so a page cannot state a class the receipt did not measure, and the
+README lane sentence carries the receipt's own count: public lane wording comes
+only from the receipt. scripts/make_installed_lanes_evidence.py writes the
+summary from a run's artifact, and its --update-copy moves EVIDENCE and the
+run, commit and installer size the pages name.
 """
 from __future__ import annotations
 
@@ -19,12 +21,12 @@ import pytest
 from scripts import check_claim_language, check_data_location_copy, check_public_instructions
 
 REPO = Path(__file__).resolve().parents[1]
-# The CI run both legs of which the notes and the lane page count from. The
-# pre-release run on the release commit replaces it (and its run id in the copy).
+# The CI run both legs of which the notes and the lane page count from: the
+# installed-app acceptance run on the release source commit.
 EVIDENCE = (REPO / "project-docs" / "lanes" / "evidence"
             / "installed-lanes-ci-36302181098.json")
-KNOWN_ISSUES = REPO / "project-docs" / "drafts" / "RELEASE-NOTES-1.0.4-known-issues.md"
-NEXT_NOTES = REPO / "project-docs" / "drafts" / "RELEASE-NOTES-next.md"
+KNOWN_ISSUES = REPO / "RELEASE-NOTES-1.0.4-known-issues.md"
+NEXT_NOTES = REPO / "RELEASE-NOTES-1.1.0.md"
 LANE_PAGE = REPO / "project-docs" / "lanes" / "LANES.md"
 DRAFTS = (KNOWN_ISSUES, NEXT_NOTES, LANE_PAGE)
 CLASS_PAGES = (NEXT_NOTES, LANE_PAGE)
@@ -48,8 +50,8 @@ def _label(row: dict) -> str:
 def test_draft_passes_both_public_surface_gates(path):
     assert check_claim_language.scan(path) == []
     assert check_public_instructions.scan(path, REPO) == []
-    # The drafts publish at the repository root, where the data-location gate
-    # reads them; project-docs/drafts is outside its surface list (PT-3).
+    # The notes pages sit at the repository root, inside the data-location
+    # gate's surface list; the lane page is outside it, so check all three here.
     text = path.read_text(encoding="utf-8")
     assert check_data_location_copy.violations_in(text, path.name) == []
 

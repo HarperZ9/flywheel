@@ -79,10 +79,10 @@ def test_one_tag_triggers_both_shipping_workflows():
 
 
 def test_the_next_release_notes_name_the_declared_version():
-    # The draft notes and the three declarations move together: a bump that
-    # leaves the draft on another number (or the draft ahead of the sites)
+    # The release notes and the three declarations move together: a bump that
+    # leaves the notes on another number (or the notes ahead of the sites)
     # fails here before a tag is cut from either.
-    draft = ROOT / "project-docs" / "drafts" / "RELEASE-NOTES-next.md"
+    draft = ROOT / f"RELEASE-NOTES-{_pyproject_version()}.md"
     heading = next(line for line in draft.read_text(encoding="utf-8").splitlines()
                    if line.startswith("# "))
     assert heading == f"# Flywheel {_pyproject_version()}", heading

@@ -65,7 +65,7 @@ def test_the_canon_context_checks_name_the_final_pin():
 
 
 def test_the_release_notes_name_both_advisories_as_fixed():
-    notes = (ROOT / "project-docs" / "drafts" / "RELEASE-NOTES-next.md").read_text(
+    notes = (ROOT / "RELEASE-NOTES-1.1.0.md").read_text(
         encoding="utf-8")
     fixes = notes.split("Security fixes in the lanes", 1)[1].split("\n## ", 1)[0]
     for lane, advisory in ADVISORIES.items():
