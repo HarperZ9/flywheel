@@ -4,7 +4,7 @@ A lane is a companion tool that Flywheel runs as its own process: gather, crucib
 index and the rest. This page lists, for each of the 17 lanes in the roster, the main
 action a person installs it for, the class the installed-app check confirmed, and the
 setup the app's lane card states. It describes the build after 1.0.4; for 1.0.4 itself
-see the known-issues correction.
+see the [known-issues correction](../../RELEASE-NOTES-1.0.4-known-issues.md).
 
 ## Classes
 
@@ -28,7 +28,7 @@ the approval sheet. Plugins and agent runs cannot reach a T2 tool.
 | crucible | check a thesis against measurements | A | none | run, batch and refine need approval at T2 |
 | chorus | digest a corpus into themes | A | none | none |
 | articulate | score and check prose | A | none for score and check; judge, fix and polish need the claude CLI, signed in with claude login | judge, fix and polish need approval at T2 and were not run |
-| index | find symbols; map a repository | below bar | Git for Windows, to read branch and history | symbols run with no setup, and map passes once Git is found; without Git, map lists the repository with its branch and head as unknown and a FileNotFoundError, instead of naming the Git step |
+| index | find symbols; map a repository | below bar | Git for Windows, to read branch and history | symbols run with no setup, and map passes once Git is found; without Git, map answers instead of naming the Git step |
 | forum | route a question to a plan | A/B-untested | real rooms need a provider key granted to the lane by name | route and plan run on the built-in echo executor; real rooms are untested |
 | learn | plan and check a study step | A | none; Node ships with the app | tutor_record needs approval at T2; tools that call out to crucible or gather were not checked |
 | telos | read the workstation catalog | not in this build | none | the release contents are under review, so no telos code ships |
@@ -58,16 +58,17 @@ the install folder before and after and found no change.
 
 ## How this was measured
 
-An installed-app check builds the release installer, installs the Windows app per user
-and then for all users on a GitHub-hosted Windows Server runner, starts its engine the
-way the app does, under a throwaway profile with only the Windows system folder on PATH,
-and calls each lane through the same routes and approvals the app uses. It runs twice
-per install: once fresh, and once after it installs Git, starts a stub model server,
-picks a project folder, places a canon block and records a writing draft. The classes
-above come from CI run 36302181098 on 2026-09-27 against commit ba371e6b, summarized
-with both receipts' hashes in `evidence/installed-lanes-ci-36302181098.json`; both
-install modes reached the same verdict for every lane. The check fails when a lane
-leaves its expected row in `packaging/installed-lane-expectations.json`.
+An installed-app check builds an installer from the source commit with the release build
+steps, installs it per user and then for all users on a GitHub-hosted Windows Server
+runner, starts its engine the way the app does, under a throwaway profile with only the
+Windows system folder on PATH, and calls each lane through the same routes and approvals
+the app uses. It runs twice per install: once fresh, and once after it installs Git,
+starts a stub model server, picks a project folder, places a canon block and records a
+writing draft. The classes above come from CI run 36393571307 on 2026-09-28 against
+commit 9a68e07f, summarized with both receipts' hashes in
+`evidence/installed-lanes-ci-36393571307.json`; both install modes reached the same
+verdict for every lane. The check fails when a lane leaves its expected row in
+`packaging/installed-lane-expectations.json`.
 
 Local runs on 2026-09-26 measured the same classes per user
 (`evidence/installed-lanes-local-1.1.0-review-20260926.json` and two earlier builds).

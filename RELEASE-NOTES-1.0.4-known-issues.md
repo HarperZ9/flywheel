@@ -1,12 +1,3 @@
-<!--
-Draft of the 1.0.4 known-issues correction for the release owner to review and publish.
-Evidence: the 1.0.4 engine rebuilt from tag v1.0.4 with the release workflow's freeze
-steps, run with a System32-only PATH and a throwaway profile, plus the 1.0.4 release's
-own smoke receipt. The released installer binary was not re-measured; PyInstaller output
-is not byte-reproducible, so the rebuild's digest differs from the release's. Remove this
-comment before publishing.
--->
-
 # Flywheel 1.0.4: known issues in the Windows app's lanes
 
 The 1.0.4 notes describe the Windows installer's lanes more strongly than the
@@ -16,7 +7,8 @@ Node and no lane packages on the PATH, and a throwaway profile. This page correc
 six statements about the installed Windows app; the engine you get from
 `pip install flywheel-verify` is not affected by those. It also names the lane
 advisories that cover the lane releases 1.0.4 pins: canon 0.2.0's and crucible 1.2.0's,
-in both the app and a pip install, and gather's, relay's and forum's, in a pip install.
+in both the app and a pip install, and gather's, relay's, forum's and learn's, in a pip install.
+It also corrects what the notes say about where your data goes, for both installs.
 
 ## What the notes said, and what we measured
 
@@ -39,7 +31,7 @@ overall result of PASS.
 **"A lane now starts with a base set ... and any variable you grant it by name with
 `env_allow` in `lanes.json`."** This holds for lanes that run from pip or npm. The
 ten lanes bundled inside the Windows app start with a fixed set of eleven system
-variables instead. A variable you grant with `env_allow` does not reach them, and
+variables. A variable you grant with `env_allow` does not reach them, and
 neither do `FLYWHEEL_HOME` or a lane's own declared settings. A key saved in the
 app's Keys panel reaches no lane. The Upgrade step that says to add
 `"env_allow": ["ANTHROPIC_API_KEY"]` to the forum or accountable-surface row has no
@@ -66,6 +58,13 @@ later commit, a bounded context-envelope output in four source files. No index r
 held that commit until 2.14.0, which Flywheel 1.1.0 pins. A pip install of 1.0.4 got
 index 2.13.0 from PyPI, as the registry pins.
 
+**"... your keys and data stay on your machine."** The 1.0.4 notes open with this.
+
+Correction, 2026-09-26: Flywheel's records and your keys stay on your machine, and each
+key is sent only to its own provider. The content of each request, including files and
+tool output the agent reads, goes to the model provider you route it to, under that
+provider's terms. With a local model it stays on your machine.
+
 **canon 0.2.0, which 1.0.4 ships, is inside the range of GHSA-48rq-xjfx-6j4f.**
 Its shared context store keeps an ingested event as sent, secret-shaped values
 included, returns query excerpts and pending references without scrubbing them, and
@@ -90,6 +89,15 @@ In the 1.0.4 app, gather and relay answer only status and doctor and forum does 
 start, so the affected tools do not run there. A pip install of 1.0.4 runs them.
 Flywheel 1.1.0 pins gather 2.0.0, relay 0.5.0 and forum 1.15.1.
 
+**learn 1.6.0, which 1.0.4's lane registry pins, is inside two advisories published on
+27 September.** GHSA-2cf9-7hp2-ffh7: learn's MCP tools could read and write files outside
+its folder, and `learn resume` submitted and paid without the opt-in. GHSA-wq39-vc75-wxcr:
+learn started peer commands in the folder it ran in, so a Python package planted there
+could run. The 1.0.4 app does not ship learn. On a pip install, `flywheel install learn`
+installs the newest learn, so one installed before learn 2.0.0 came out on 27 September
+is 1.6.0 or older; `npm ls -g @harperz9/learn` shows which. learn 2.0.0 fixes both.
+Flywheel 1.1.0 pins learn 2.0.0.
+
 ## If you run 1.0.4 today
 
 - For lane work, use the engine from pip: `python -m pip install -U flywheel-verify`,
@@ -107,13 +115,17 @@ Flywheel 1.1.0 pins gather 2.0.0, relay 0.5.0 and forum 1.15.1.
   crucible.
   Upgrading relay alone on 1.0.4 stops that lane: 1.0.4 starts relay as
   `python -m relay.local_mcp --mcp`, which relay 0.3.0 and later refuse.
+- If you installed learn, upgrade to learn 2.0.0. Until then, follow the workarounds
+  in GHSA-2cf9-7hp2-ffh7 and GHSA-wq39-vc75-wxcr: run `learn assist` and `learn visualize`
+  from a folder you control, and do not run `learn resume --native` on a workflow with
+  a submit or cost step.
 - If Python is on your PATH and you use the app's local-model or writing lane, make
   sure that Python has flywheel-verify 1.0.4, because the app runs that copy:
   `python -m pip install -U flywheel-verify`.
 
-## What changes next
+## What 1.1.0 changes
 
-The next release rebuilds how the app runs lanes: each lane's main tools are admitted
+Flywheel 1.1.0 rebuilds how the app runs lanes: each lane's main tools are admitted
 under a reviewed policy, local-model and writing run inside the bundled engine, forum
 ships its data files, articulate, calibrate-pro and learn join the installer with a
 bundled Node runtime, and each lane card states its setup. Its notes list what an

@@ -1,12 +1,14 @@
-"""The release drafts for the lanes work say only what the evidence shows.
+"""The release pages for the lanes work say only what the evidence shows.
 
-Three drafts go to the operator: the 1.0.4 known-issues correction (O-6), the
-next release notes and the lane page. They are public once published, so the
-two public-surface gates run on them here, although neither gate's file list
-includes project-docs/drafts. Each lane's class is read from the committed
-evidence summary of the installed-app acceptance, so a draft cannot state a
-class the receipt did not measure, and the README lane sentence carries the
-receipt's own count (O-5: public lane wording comes only from the receipt).
+Three pages carry the lane claims: the 1.0.4 known-issues correction, the 1.1.0
+release notes and the lane page. They are public, so the two public-surface
+gates run on them here, although neither gate's file list names them. Each
+lane's class is read from the committed evidence summary of the installed-app
+acceptance, so a page cannot state a class the receipt did not measure, and the
+README lane sentence carries the receipt's own count: public lane wording comes
+only from the receipt. scripts/make_installed_lanes_evidence.py writes the
+summary from a run's artifact, and its --update-copy moves EVIDENCE and the
+run, commit and installer size the pages name.
 """
 from __future__ import annotations
 
@@ -19,12 +21,12 @@ import pytest
 from scripts import check_claim_language, check_data_location_copy, check_public_instructions
 
 REPO = Path(__file__).resolve().parents[1]
-# The CI run both legs of which the notes and the lane page count from. The
-# pre-release run on the release commit replaces it (and its run id in the copy).
+# The CI run both legs of which the notes and the lane page count from: the
+# installed-app acceptance run on the release source commit.
 EVIDENCE = (REPO / "project-docs" / "lanes" / "evidence"
-            / "installed-lanes-ci-36302181098.json")
-KNOWN_ISSUES = REPO / "project-docs" / "drafts" / "RELEASE-NOTES-1.0.4-known-issues.md"
-NEXT_NOTES = REPO / "project-docs" / "drafts" / "RELEASE-NOTES-next.md"
+            / "installed-lanes-ci-36393571307.json")
+KNOWN_ISSUES = REPO / "RELEASE-NOTES-1.0.4-known-issues.md"
+NEXT_NOTES = REPO / "RELEASE-NOTES-1.1.0.md"
 LANE_PAGE = REPO / "project-docs" / "lanes" / "LANES.md"
 DRAFTS = (KNOWN_ISSUES, NEXT_NOTES, LANE_PAGE)
 CLASS_PAGES = (NEXT_NOTES, LANE_PAGE)
@@ -48,8 +50,8 @@ def _label(row: dict) -> str:
 def test_draft_passes_both_public_surface_gates(path):
     assert check_claim_language.scan(path) == []
     assert check_public_instructions.scan(path, REPO) == []
-    # The drafts publish at the repository root, where the data-location gate
-    # reads them; project-docs/drafts is outside its surface list (PT-3).
+    # The notes pages sit at the repository root, inside the data-location
+    # gate's surface list; the lane page is outside it, so check all three here.
     text = path.read_text(encoding="utf-8")
     assert check_data_location_copy.violations_in(text, path.name) == []
 
@@ -134,3 +136,31 @@ def test_the_copy_keeps_where_the_lane_check_ran(path):
                  "no host model server"):
         assert part in limit, part
         assert part in text, (path.name, part)
+
+
+# learn < 2.0.0 is inside both (published 27 September 2026, fixed in learn 2.0.0).
+LEARN_ADVISORIES = ("GHSA-2cf9-7hp2-ffh7", "GHSA-wq39-vc75-wxcr")
+
+
+def test_the_limits_name_the_learn_advisories_while_the_pin_is_below_the_fix():
+    """The notes' limits name both learn advisories, and say that `flywheel
+    install learn` installs the pinned learn globally, for as long as the
+    registry pins learn below 2.0.0, and drop the line once the pin moves. The
+    1.0.4 page names both either way, since 1.0.4 pins learn 1.6.0, and says
+    1.1.0 still pins it only while that holds."""
+    from harness.lanes_registry import LANES
+    version = LANES["learn"].version
+    notes = " ".join(NEXT_NOTES.read_text(encoding="utf-8").split())
+    limits = notes.split("## Limits", 1)[1].split(" ## ", 1)[0]
+    line = f"learn {version}, bundled and pinned here, is inside"
+    known = " ".join(KNOWN_ISSUES.read_text(encoding="utf-8").split())
+    still = f"Flywheel 1.1.0 still pins {version}."
+    if tuple(int(part) for part in version.split(".")) < (2, 0, 0):
+        assert line in limits and all(a in limits for a in LEARN_ADVISORIES)
+        assert f"`flywheel install learn` puts learn {version}" in limits
+        assert still in known
+    else:
+        assert "bundled and pinned here, is inside" not in limits
+        assert "still pins" not in known
+    assert "learn 1.6.0, which 1.0.4's lane registry pins" in known
+    assert all(a in known for a in LEARN_ADVISORIES)
