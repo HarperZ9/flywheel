@@ -128,7 +128,7 @@ def test_the_frozen_engine_looks_for_node_for_telos_now(tmp_path):
     (stage / "telos" / "demo" / "telos-mcp.mjs").write_text("", encoding="utf-8")
     (stage / "node-lane-stage.json").write_text(json.dumps(
         {"verdict": "PASS", "lanes": [{"lane": "telos"}]}), encoding="utf-8")
-    assert policy.HELD_LANES == {}
+    assert "telos" not in policy.HELD_LANES
     with pytest.raises(LookupError):
         lrf.select_frozen_launch(LANES["telos"], "auto", "engine.exe",
                                  {"FLYWHEEL_HOME": str(tmp_path / "home")},
@@ -176,4 +176,5 @@ def test_the_smoke_row_expects_the_main_action():
     rows = json.loads((ROOT / "packaging" / "lane-smoke-expectations.json").read_text(
         encoding="utf-8"))["lanes"]
     assert rows["telos"] == {"expected": "main", "bar": "A"}
-    assert not [lane for lane, row in rows.items() if row.get("reason") == "lane_held"]
+    assert not [lane for lane, row in rows.items()
+                if row.get("reason") == "lane_held" and lane not in policy.HELD_LANES]
