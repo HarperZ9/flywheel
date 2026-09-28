@@ -48,6 +48,13 @@ LEAKS = [
     (r"\b[A-Za-z]:[\\/]local-model-run\b", "a local run-drive path"),
     (r"\bworkspace root\b", "the workspace root (absent from a standalone clone)"),
     (r"\binherited from the parent\b", "a parent that will not exist on clone"),
+    # Private held-lane names must not surface on a public prose surface. These
+    # are word-boundary, case-insensitive name patterns (generic and public-safe:
+    # they name no capability). They ship in this public file so a fresh clone
+    # and CI block a regression, not only the gitignored operator denylist.
+    (r"(?i)\bisomorph\b", "a private held lane name"),
+    (r"(?i)\bsofer\b", "a private held lane name"),
+    (r"(?i)\barray\b", "a private held lane name"),
 ]
 
 # Private PROJECT NAMES are deliberately NOT listed in this public file (naming

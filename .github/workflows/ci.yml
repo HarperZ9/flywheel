@@ -250,6 +250,8 @@ jobs:
         run: python scripts/check_claim_language.py
       - name: Copy says where request content goes; no GDPR wording for a deletion
         run: python scripts/check_data_location_copy.py
+      - name: Private held lanes carry no capability description on public artifacts
+        run: python scripts/check_private_lane_prose.py
 
   file_gate:
     name: 300-line gate, burn-down only shrinks
