@@ -94,8 +94,9 @@ Flywheel 1.1.0 pins gather 2.0.0, relay 0.5.0 and forum 1.15.1.
 its folder, and `learn resume` submitted and paid without the opt-in. GHSA-wq39-vc75-wxcr:
 learn started peer commands in the folder it ran in, so a Python package planted there
 could run. The 1.0.4 app does not ship learn. On a pip install, `flywheel install learn`
-installs the newest learn, so one installed before 27 September is 1.6.0 or older;
-`npm ls -g @harperz9/learn` shows which. learn 2.0.0 fixes both.
+installs the newest learn, so one installed before learn 2.0.0 came out on 27 September
+is 1.6.0 or older; `npm ls -g @harperz9/learn` shows which. learn 2.0.0 fixes both.
+Flywheel 1.1.0 still pins 1.6.0.
 
 ## If you run 1.0.4 today
 
@@ -114,6 +115,9 @@ installs the newest learn, so one installed before 27 September is 1.6.0 or olde
   crucible.
   Upgrading relay alone on 1.0.4 stops that lane: 1.0.4 starts relay as
   `python -m relay.local_mcp --mcp`, which relay 0.3.0 and later refuse.
+- If you installed learn, follow the workarounds in GHSA-2cf9-7hp2-ffh7 and
+  GHSA-wq39-vc75-wxcr: run `learn assist` and `learn visualize` from a folder you control,
+  and do not run `learn resume --native` on a workflow with a submit or cost step.
 - If Python is on your PATH and you use the app's local-model or writing lane, make
   sure that Python has flywheel-verify 1.0.4, because the app runs that copy:
   `python -m pip install -U flywheel-verify`.

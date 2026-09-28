@@ -3,7 +3,8 @@
   "A GitHub-hosted Windows Server runner with a System32-only PATH and an administrator account, not a consumer Windows 11 install; the network was reachable and no host model server ran.",
   "The run built the source commit named here; a later commit that changes code the build or the app runs needs its own run.",
   "No provider-backed success, no model quality (a stub model server answers one fixed word), no bulletin write and no actuation.",
-  "One fixture assertion per main tool; the desktop UI was not driven."
+  "One fixture assertion per main tool; the desktop UI was not driven.",
+  "A CI build of the source commit, not the installer attached to the release; two builds of one source tree gave different installer bytes."
  ],
  "engine_sha256": "26b96e8d7ca681c40cb67cb0fcdf1e89bf087c8e02418bcbe0eb05908c9783cd",
  "guards": {
@@ -260,5 +261,5 @@
   "guards_failed": [],
   "verdict": "BELOW_BAR"
  },
- "what": "Per-lane verdicts from the installed-app lane acceptance in GitHub Actions workflow windows-installed-acceptance.yml, run 36374922901 on 2026-09-28, which built the release installer from the source commit below, installed it per user and then for all users on a GitHub-hosted Windows Server runner, and ran the lane check against each install. Both legs reached the same verdict for every lane."
+ "what": "Per-lane verdicts from the installed-app lane acceptance in GitHub Actions workflow windows-installed-acceptance.yml, run 36374922901 on 2026-09-28, which built an installer from the source commit below with the release build steps, installed it per user and then for all users on a GitHub-hosted Windows Server runner, and ran the lane check against each install. Both legs reached the same verdict for every lane."
 }

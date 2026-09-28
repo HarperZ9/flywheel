@@ -10,11 +10,15 @@ project-docs/lanes/evidence/installed-lanes-ci-<run id>.json. This writes it:
         --artifact DIR --from-gh [--update-copy]
 
 It writes nothing and exits 1 when a file is missing, a receipt departs from its
-expected row or from packaging/installed-lane-expectations.json, a guard is false,
-the two legs disagree on a lane, a file names a commit other than --commit, the
-installer checksum disagrees with the run summary, the version is not the
-project's, or a string in the artifact holds a local path, an e-mail address,
-a token or an account name (the runner account, the local user and --deny).
+expected row or from packaging/installed-lane-expectations.json, a guard is
+missing or false, the two legs disagree on a lane, a receipt, the run summary
+or the build manifest names a commit other than --commit, a launch receipt is
+incomplete or holds a FAIL, the canon-context or source-stage receipt is not
+PASS, the frozen smoke is neither PASS nor BELOW_BAR_EXPECTED, the installer
+checksum disagrees with the run summary, the version is not the project's, or a
+string in the artifact holds a local path, an e-mail address, a token or an
+account name (the runner account, the local user and --deny;
+scripts/installed_lanes_privacy.py).
 
 --from-gh reads the job id, the date and the artifact digest with read-only gh
 calls, downloads the artifact zip, checks it against that digest and against
@@ -40,6 +44,7 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from scripts import installed_lanes_gh  # noqa: E402
+from scripts.installed_lanes_privacy import private_detail  # noqa: E402
 
 SCHEMA = "flywheel.installed-lanes-ci-evidence-summary/v1"
 RECEIPT_SCHEMA = "flywheel.installed-app-lane-acceptance/v1"
@@ -52,14 +57,11 @@ LEGS = {"per-user": "installed-lanes-per-user.json",
 EVIDENCE_DIR = Path("project-docs") / "lanes" / "evidence"
 EXPECTATIONS = Path("packaging") / "installed-lane-expectations.json"
 RUNNER_ACCOUNT = "runneradmin"
-PRIVATE = (
-    ("local path", re.compile(r"(?<![A-Za-z0-9])[A-Za-z]:[\\/]")),
-    ("user folder", re.compile(r"(?i)[\\/](?:users|home)[\\/]")),
-    ("network path", re.compile(r"^(?:\\\\|//)[^\\/]")),
-    ("e-mail address", re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")),
-    ("token", re.compile(r"\b(?:gh[opsur]_[A-Za-z0-9]{20,}|github_pat_\w{20,}"
-                         r"|sk-[A-Za-z0-9_-]{16,})")),
-)
+GUARDS = frozenset({"fresh_settled", "fresh_d1_unchanged", "setup_d1_unchanged",
+                    "install_folder_unchanged", "token_absent_from_receipt"})
+LAUNCH_SCHEMA = "flywheel.installed-launch-acceptance/v1"
+LAUNCH = ("installed-launch-full.json", "installed-launch-inspect.json")
+CANON = "installed-canon-context.json"
 DOES_NOT_PROVE = (
     "A GitHub-hosted Windows Server runner with a System32-only PATH and an administrator "
     "account, not a consumer Windows 11 install; the network was reachable and no host "
@@ -69,6 +71,8 @@ DOES_NOT_PROVE = (
     "No provider-backed success, no model quality (a stub model server answers one fixed "
     "word), no bulletin write and no actuation.",
     "One fixture assertion per main tool; the desktop UI was not driven.",
+    "A CI build of the source commit, not the installer attached to the release; two "
+    "builds of one source tree gave different installer bytes.",
 )
 
 
@@ -88,37 +92,6 @@ def artifact_root(folder: Path) -> Path:
     return found[0]
 
 
-def _strings(node, where: str):
-    if isinstance(node, dict):
-        for key, value in node.items():
-            yield f"{where}.{key}", str(key)
-            yield from _strings(value, f"{where}.{key}")
-    elif isinstance(node, list):
-        for i, value in enumerate(node):
-            yield from _strings(value, f"{where}[{i}]")
-    elif isinstance(node, str):
-        yield where, node
-
-
-def private_detail(root: Path, deny: list[str]) -> list[str]:
-    """Every string in the artifact's files that holds a path, address, token or name."""
-    names = [re.compile(rf"(?i)(?<![A-Za-z0-9]){re.escape(n)}(?![A-Za-z0-9])")
-             for n in deny if n]
-    found = []
-    for path in sorted(p for p in root.rglob("*") if p.is_file()):
-        rel = path.relative_to(root).as_posix()
-        if path.suffix == ".json":
-            strings = _strings(read_json(path), "$")
-        else:
-            lines = path.read_bytes().decode("utf-8-sig").splitlines()
-            strings = ((f"line {i + 1}", line) for i, line in enumerate(lines))
-        for where, text in strings:
-            rules = [rule for rule, rx in PRIVATE if rx.search(text)]
-            rules += ["account name" for rx in names if rx.search(text)]
-            found.extend(f"{rel}: {where}: {rule}" for rule in rules)
-    return found
-
-
 def _lane_key(row: dict) -> tuple:
     return (row["verdict"], row["class_measured"], sorted(f["check"] for f in row["failed"]),
             row["untested"], row["not_measurable"])
@@ -131,8 +104,8 @@ def check_leg(mode: str, receipt: dict, commit: str, expected: dict) -> list[str
     if receipt.get("expected") != {"departures": [], "matches": True}:
         out.append(f"{mode}: expected.matches is not true with no departures")
     guards = receipt.get("guards") or {}
-    if not guards or not all(value is True for value in guards.values()):
-        out.append(f"{mode}: a guard is not true: {guards}")
+    if set(guards) != GUARDS or not all(value is True for value in guards.values()):
+        out.append(f"{mode}: a guard is missing or not true: {guards}")
     summary = receipt.get("summary") or {}
     if summary.get("guards_failed") != []:
         out.append(f"{mode}: summary.guards_failed is not empty")
@@ -146,7 +119,7 @@ def check_leg(mode: str, receipt: dict, commit: str, expected: dict) -> list[str
         if got is None:
             continue
         failed = sorted(f["check"] for f in got["failed"])
-        if got["verdict"] != row["verdict"] or failed != sorted(row.get("failed", failed)):
+        if got["verdict"] != row["verdict"] or failed != sorted(row.get("failed", [])):
             out.append(f"{mode}: {lane} is {got['verdict']} {failed}, expected {row}")
     counted = Counter(r["class_measured"] for r in lanes.values() if r["verdict"] == "AT_CLASS")
     if dict(counted) != summary.get("by_class"):
@@ -175,6 +148,27 @@ def check_run(root: Path, run: dict, commit: str, version: str, engines: set) ->
     return out
 
 
+def check_other_receipts(root: Path, commit: str) -> list[str]:
+    """The launch, canon-context, source-stage and frozen-smoke receipts."""
+    out = []
+    for name in LAUNCH:
+        got = read_json(root / RECEIPTS / name)
+        failed = [a.get("id") for a in got.get("assertions") or [] if a.get("state") == "FAIL"]
+        if (got.get("schema") != LAUNCH_SCHEMA or got.get("complete") is not True
+                or got.get("source_commit_expected") != commit or failed):
+            out.append(f"{name}: not a complete {LAUNCH_SCHEMA} receipt of {commit} "
+                       f"without FAIL {failed}")
+    canon = read_json(root / RECEIPTS / CANON)
+    if (canon.get("source") or {}).get("commit") != commit or canon.get("verdict") != "PASS":
+        out.append(f"{CANON}: source.commit is not {commit}, or the verdict is not PASS")
+    if read_json(root / "python-lane-source-stage.json").get("verdict") != "PASS":
+        out.append("python-lane-source-stage.json: the verdict is not PASS")
+    smoke = read_json(root / "frozen-gateway-smoke.json").get("verdict")
+    if smoke not in ("PASS", "BELOW_BAR_EXPECTED"):
+        out.append(f"frozen-gateway-smoke.json: verdict {smoke}")
+    return out
+
+
 def check_artifact(root: Path, commit: str, expected: dict, version: str,
                    deny: list[str]) -> tuple[list[str], dict, dict]:
     receipts = {m: read_json(root / RECEIPTS / name) for m, name in LEGS.items()}
@@ -188,6 +182,7 @@ def check_artifact(root: Path, commit: str, expected: dict, version: str,
         problems.append("the two legs' summaries differ")
     engines = {r.get("meta", {}).get("engine_sha256") for r in receipts.values()}
     problems += check_run(root, run, commit, version, engines)
+    problems += check_other_receipts(root, commit)
     problems += private_detail(root, deny)
     return problems, receipts, run
 
@@ -211,10 +206,10 @@ def build_summary(root: Path, receipts: dict, run: dict, meta: dict) -> dict:
         "schema": SCHEMA,
         "what": ("Per-lane verdicts from the installed-app lane acceptance in GitHub Actions "
                  f"workflow {WORKFLOW}, run {meta['run_id']} on {meta['date']}, which built "
-                 "the release installer from the source commit below, installed it per user "
-                 "and then for all users on a GitHub-hosted Windows Server runner, and ran "
-                 "the lane check against each install. Both legs reached the same verdict "
-                 "for every lane."),
+                 "an installer from the source commit below with the release build steps, "
+                 "installed it per user and then for all users on a GitHub-hosted Windows "
+                 "Server runner, and ran the lane check against each install. Both legs "
+                 "reached the same verdict for every lane."),
         "run": {"workflow": WORKFLOW, "run_id": meta["run_id"], "job_id": meta["job_id"],
                 "date": meta["date"], "artifact_zip_sha256": meta["artifact_zip_sha256"]},
         "source_commit": first["meta"]["source_commit"],

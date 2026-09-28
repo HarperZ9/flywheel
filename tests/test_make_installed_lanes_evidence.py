@@ -16,6 +16,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from scripts import installed_lanes_copy
 from scripts import installed_lanes_gh as gh
 from scripts import make_installed_lanes_evidence as mk
 
@@ -38,7 +39,7 @@ def _receipt(mode: str) -> dict:
     at_class = sum(1 for r in lanes.values() if r["verdict"] == "AT_CLASS")
     return {"schema": mk.RECEIPT_SCHEMA, "install_mode": mode,
             "expected": {"departures": [], "matches": True},
-            "guards": {"fresh_settled": True, "token_absent_from_receipt": True},
+            "guards": dict.fromkeys(sorted(mk.GUARDS), True),
             "host": {"model_server": False},
             "meta": {"source_commit": COMMIT, "engine_sha256": "cd" * 32},
             "summary": {"below_bar": ["index", "telos"], "by_class": {"A": at_class},
@@ -46,8 +47,18 @@ def _receipt(mode: str) -> dict:
             "lanes": lanes}
 
 
+def _others() -> dict:
+    """The launch, canon-context, source-stage and smoke receipts, by artifact path."""
+    launch = {"schema": mk.LAUNCH_SCHEMA, "complete": True, "source_commit_expected": COMMIT,
+              "assertions": [{"id": "H01", "state": "PASS"}, {"id": "H02", "state": "SKIP"}]}
+    return {f"{mk.RECEIPTS}/{mk.LAUNCH[0]}": launch, f"{mk.RECEIPTS}/{mk.LAUNCH[1]}": launch,
+            f"{mk.RECEIPTS}/{mk.CANON}": {"source": {"commit": COMMIT}, "verdict": "PASS"},
+            "python-lane-source-stage.json": {"verdict": "PASS"},
+            "frozen-gateway-smoke.json": {"verdict": "BELOW_BAR_EXPECTED"}}
+
+
 def _write(root: Path, receipts: dict | None = None, run: dict | None = None,
-           manifest_commit: str = COMMIT) -> Path:
+           manifest_commit: str = COMMIT, others: dict | None = None) -> Path:
     receipts = receipts or {mode: _receipt(mode) for mode in mk.LEGS}
     run = run or {"schema": mk.RUN_SCHEMA, "source_commit": COMMIT, "version": "9.9.9",
                   "installer": INSTALLER, "engine_sha256": "cd" * 32}
@@ -58,6 +69,8 @@ def _write(root: Path, receipts: dict | None = None, run: dict | None = None,
     (root / "SHA256SUMS.txt").write_text(f"{INSTALLER['sha256']}  {INSTALLER['name']}\n")
     (root / "installed-build-manifest.json").write_text(
         json.dumps({"source_commit": manifest_commit}), encoding="utf-8")
+    for rel, body in (others or _others()).items():
+        (root / rel).write_text(json.dumps(body), encoding="utf-8")
     return root
 
 
@@ -71,7 +84,7 @@ def test_a_clean_artifact_passes_and_matches_the_committed_shape(tmp_path):
     assert problems == []
     meta = {"run_id": 1, "job_id": 2, "date": "2026-01-01", "artifact_zip_sha256": "ef" * 32}
     summary = mk.build_summary(root, receipts, run, meta)
-    committed = json.loads(next((REPO / mk.EVIDENCE_DIR).glob("installed-lanes-ci-*.json"))
+    committed = json.loads((REPO / mk.EVIDENCE_DIR / installed_lanes_copy.current_evidence(REPO))
                            .read_text(encoding="utf-8"))
     assert summary.keys() == committed.keys()
     assert summary["run"].keys() == committed["run"].keys()
@@ -86,6 +99,9 @@ def test_a_clean_artifact_passes_and_matches_the_committed_shape(tmp_path):
     (lambda r: r["per-user"]["expected"].update(matches=False), "expected.matches"),
     (lambda r: r["all-users"]["expected"]["departures"].append("gather"), "departures"),
     (lambda r: r["per-user"]["guards"].update(fresh_settled=False), "guard"),
+    (lambda r: [r[m]["guards"].pop("install_folder_unchanged") for m in r], "guard is missing"),
+    (lambda r: [r[m]["lanes"]["crucible"].update(failed=[{"check": "fresh_main"}]) for m in r],
+     "crucible is AT_CLASS ['fresh_main']"),
     (lambda r: r["per-user"]["meta"].update(source_commit="f" * 40), "meta.source_commit"),
     (lambda r: r["all-users"]["lanes"]["gather"].update(verdict="BELOW_BAR"), "gather"),
     (lambda r: r["per-user"]["lanes"].pop("canon"), "lanes differ"),
@@ -112,6 +128,23 @@ def test_a_run_summary_off_the_receipts_is_refused(tmp_path, change, words):
     assert any(words in p for p in _problems(_write(tmp_path, run=run)))
 
 
+@pytest.mark.parametrize("rel, change, words", [
+    (f"{mk.RECEIPTS}/{mk.LAUNCH[0]}", {"source_commit_expected": "f" * 40}, mk.LAUNCH[0]),
+    (f"{mk.RECEIPTS}/{mk.LAUNCH[1]}", {"complete": False}, mk.LAUNCH[1]),
+    (f"{mk.RECEIPTS}/{mk.LAUNCH[1]}", {"assertions": [{"id": "H20", "state": "FAIL"}]}, "H20"),
+    (f"{mk.RECEIPTS}/{mk.CANON}", {"source": {"commit": "f" * 40}}, mk.CANON),
+    (f"{mk.RECEIPTS}/{mk.CANON}", {"verdict": "FAIL"}, mk.CANON),
+    ("python-lane-source-stage.json", {"verdict": "FAIL"}, "python-lane-source-stage.json"),
+    ("frozen-gateway-smoke.json", {"verdict": "FAIL"}, "frozen-gateway-smoke.json: verdict FAIL"),
+])
+def test_a_launch_canon_stage_or_smoke_receipt_off_the_run_is_refused(tmp_path, rel, change,
+                                                                      words):
+    others = _others()
+    others[rel] = {**others[rel], **change}
+    problems = _problems(_write(tmp_path, others=others))
+    assert len(problems) == 1 and words in problems[0], problems
+
+
 def test_a_manifest_off_the_commit_or_a_missing_file_is_refused(tmp_path):
     assert any("installed-build-manifest.json" in p
                for p in _problems(_write(tmp_path / "a", manifest_commit="f" * 40)))
@@ -131,6 +164,7 @@ def test_a_manifest_off_the_commit_or_a_missing_file_is_refused(tmp_path):
     ("see D:/a/flywheel", "local path"),
     ("/home/someone/x", "user folder"),
     ("\\\\server\\share", "network path"),
+    ("copied from \\\\fileserver\\share\\flywheel", "network path"),
     ("mail me@example.com", "e-mail address"),
     ("ghp_" + "a" * 30, "token"),
     ("user RunnerAdmin", "account name"),

@@ -143,18 +143,24 @@ LEARN_ADVISORIES = ("GHSA-2cf9-7hp2-ffh7", "GHSA-wq39-vc75-wxcr")
 
 
 def test_the_limits_name_the_learn_advisories_while_the_pin_is_below_the_fix():
-    """The notes' limits name both learn advisories for as long as the registry
-    pins learn below 2.0.0, and drop the line once the pin moves. The 1.0.4 page
-    names both either way, since 1.0.4 pins learn 1.6.0."""
+    """The notes' limits name both learn advisories, and say that `flywheel
+    install learn` installs the pinned learn globally, for as long as the
+    registry pins learn below 2.0.0, and drop the line once the pin moves. The
+    1.0.4 page names both either way, since 1.0.4 pins learn 1.6.0, and says
+    1.1.0 still pins it only while that holds."""
     from harness.lanes_registry import LANES
     version = LANES["learn"].version
     notes = " ".join(NEXT_NOTES.read_text(encoding="utf-8").split())
     limits = notes.split("## Limits", 1)[1].split(" ## ", 1)[0]
     line = f"learn {version}, bundled and pinned here, is inside"
+    known = " ".join(KNOWN_ISSUES.read_text(encoding="utf-8").split())
+    still = f"Flywheel 1.1.0 still pins {version}."
     if tuple(int(part) for part in version.split(".")) < (2, 0, 0):
         assert line in limits and all(a in limits for a in LEARN_ADVISORIES)
+        assert f"`flywheel install learn` puts learn {version}" in limits
+        assert still in known
     else:
         assert "bundled and pinned here, is inside" not in limits
-    known = " ".join(KNOWN_ISSUES.read_text(encoding="utf-8").split())
+        assert "still pins" not in known
     assert "learn 1.6.0, which 1.0.4's lane registry pins" in known
     assert all(a in known for a in LEARN_ADVISORIES)

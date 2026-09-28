@@ -23,10 +23,9 @@ T2. Existing pip and source setups change, so the release takes the minor number
 
 ## Try it
 
-Install the Windows app, open Tools and pick a lane card. Each card shows its state and
-runs the tool you choose after you approve the call; a card that needs setup names the
-step. For the engine alone: `python -m pip install -U flywheel-verify`, then
-`flywheel lanes --probe`.
+Install the Windows app, open Tools and pick a lane card. Each card shows its state and runs
+the tool you choose after you approve the call; a card that needs setup names the step. For
+the engine alone: `python -m pip install -U flywheel-verify`, then `flywheel lanes --probe`.
 
 ## What each lane does in the app
 
@@ -36,12 +35,12 @@ card names (B), 1 reads only by design (C), 1 runs with no setup and keeps actua
 its own app (A/C), and 1 runs with no setup while its provider-backed path is untested
 (A/B-untested). index is below that bar without Git, and telos is not in this build.
 
-Measured by an installed-app check (CI run 36374922901, commit 337c326f) that installs
-the release installer per user and then for all users on a GitHub-hosted Windows Server
-runner, starts the engine the way the app does under a throwaway profile, and calls each
-lane through the app's own routes and approvals, once fresh and once after setup. The
-check fails when a lane leaves its expected class. For a class C lane, the main action
-runs in the tool's own app.
+Measured by an installed-app check (CI run 36374922901, commit 337c326f) that builds an
+installer from that commit with the release build steps, installs it per user and then
+for all users on a GitHub-hosted Windows Server runner, starts the engine the way the app
+does under a throwaway profile, and calls each lane through the app's own routes and
+approvals, once fresh and once after setup. The check fails when a lane leaves its
+expected class. For a class C lane, the main action runs in the tool's own app.
 
 | Lane | Main action | Class the check confirmed | Note |
 | :-- | :-- | :-- | :-- |
@@ -49,7 +48,7 @@ runs in the tool's own app.
 | crucible | check a thesis against measurements | A | |
 | chorus | digest a corpus into themes | A | |
 | articulate | score and check prose | A | judge, fix and polish need a signed-in claude CLI and your approval at T2 |
-| index | find symbols; map a repository | below bar | symbols run with no setup and map runs with Git; without Git, map lists the repository with its branch and head as unknown and a FileNotFoundError, instead of naming the Git step |
+| index | find symbols; map a repository | below bar | symbols run with no setup and map runs with Git; without Git, map answers instead of naming the Git step |
 | forum | route a question to a plan | A/B-untested | real rooms need a provider key and are untested |
 | learn | plan and check a study step | A | Node ships with the app |
 | telos | read the workstation catalog | not in this build | its release contents are under review |
@@ -269,7 +268,8 @@ on your machine; the content of each request goes to the hosted provider you rou
 - learn 1.6.0, bundled and pinned here, is inside GHSA-2cf9-7hp2-ffh7 and GHSA-wq39-vc75-wxcr,
   which learn 2.0.0 fixes. Flywheel runs learn as an MCP server and refuses a session or run
   id that is not a plain id, or a network or device path, before learn starts. Its read tools
-  still reach files outside the Flywheel home, and its own command line is affected.
+  still reach files outside the Flywheel home. On a pip install, `flywheel install learn` puts
+  learn 1.6.0 and its affected command line on your PATH with npm, replacing a newer learn.
 - Lanes still run as your user with no filesystem sandbox. The policy governs what a
   caller can ask a lane to do, not what a lane's own code can reach. An index root above
   the Flywheel home, such as your user folder, reads the repositories inside the home.
@@ -279,8 +279,8 @@ on your machine; the content of each request goes to the hosted provider you rou
 - Custody presence defaults to `none`: any process running as you, a lane's own code
   included, can read the gateway token and confirm a custody operation. `flywheel traces
   delete` does not reach lane stores, such as mneme's.
-- Desktop chat history stays plaintext. Windows Hello presence and Codex capture were not
-  exercised on real hardware or a real Codex install.
+- Desktop chat history stays plaintext. Trace encryption in the installed app, Windows Hello
+  presence and capture from a real Claude Code or Codex install were not exercised.
 - The lane check ran on a GitHub-hosted Windows Server runner with only the Windows
   system folder on PATH, an administrator account, the network reachable and no host
   model server; a consumer Windows 11 machine and offline use remain untested. Its stub
@@ -292,8 +292,8 @@ on your machine; the content of each request goes to the hosted provider you rou
 
 - Engine: `python -m pip install -U flywheel-verify`
 - Desktop app: the Windows installer attached below. Verify it with the release checksums.
-- If you granted keys to lanes with `env_allow` in `lanes.json`, they now reach the
-  bundled lanes too, on a call you approve at T2.
+- Keys you granted to lanes with `env_allow` in `lanes.json` now reach the bundled lanes
+  too, on a T2 call to a tool that spends a model call; bind a key to any other call.
 - If a script calls a lane tool the policy does not list on a pip or source install,
   approve that call at T2, or ask for the tool to be reviewed into the policy.
 - If you mounted the capture hooks, paste the lines from `flywheel traces hooks
