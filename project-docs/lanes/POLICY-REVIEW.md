@@ -214,7 +214,9 @@ and network call in the server and every Node child. Three runs: a System32 PATH
 lane's), the full developer PATH, and the full PATH with harmless stand-ins beside the package
 (gather, crucible, index and forum source folders and an emet script, each printing fixed JSON).
 The package folder hashed the same before and after every run, no run left a file in the lane
-folder, and no tool made a network call in any run.
+folder, and no tool made a network call in any run. The hook sees Node processes only: what a
+python child or a real witness script would do is not measured, which is why the three tools
+that start them are T2.
 
 - 37 tools start no other program and write nothing, and read only the package, with one
   exception: `telos.presentation.doctor` reads the README, changelog and brand files in gather,

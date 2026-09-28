@@ -42,9 +42,11 @@ newer; CI runs on node 24. Observed.
   server (protocol `2025-06-18`) that lists 41 `telos.*` tools and dispatches
   each to one `demo/*.mjs` script with fixed flags through `spawnSync`, returning
   both a text block and `structuredContent`. It never reads a call's arguments.
-  Every tool is zero-auth. Measured on 0.4.2 in Flywheel: no tool writes outside
-  the lane folder or uses the network, and `telos.room`, `telos.workflow` and
-  `telos.proof` start programs from outside the package. Observed:
+  Every tool is zero-auth. Measured on 0.4.2 in Flywheel, one call per tool: no
+  call used the network or wrote outside the lane folder, and `telos.room`,
+  `telos.workflow` and `telos.proof` start programs from outside the package.
+  The measurement used stand-ins for those programs, so what the real ones do is
+  not measured. Observed:
   `demo/telos-mcp.mjs`,
   `project-docs/lanes/evidence/telos-0.4.2-tool-measurement.json`.
 - **A verdict on every call.** Each tool emits a
@@ -420,9 +422,10 @@ What is bounded or in flight:
 
 ## Boundary
 
-Telos tools are zero-auth and emit JSON. Measured on 0.4.2, no tool call used
-the network or wrote outside the lane folder, and the three that start programs
-outside the package need a T2 approval. Native workstation actuation lives in
+Telos tools are zero-auth and emit JSON. Measured on 0.4.2 with one call per
+tool, no call used the network or wrote outside the lane folder. The three that
+start programs outside the package need a T2 approval, since what those
+programs do was not measured. Native workstation actuation lives in
 the Telos CLI (`demo/native-control.mjs`), and Flywheel leaves
 `telos.native.control` out of its build. The browser adapter fences request and result bytes and caps
 the timeout at ten seconds, pins the reviewed CDP module by sha256, and refuses a
