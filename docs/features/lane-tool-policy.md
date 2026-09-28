@@ -35,6 +35,9 @@ argument.
   value inside an inline configuration where the column says so, and a flag the
   engine adds to the lane's launch for one approved call only (forum's
   `--allow-gate-decisions`, which forum 1.15 needs before it runs a gate decision).
+  The engine checks a path both as given and with `~` expanded, since lanes read it
+  either way. An index `root` above the home, such as your user folder, still lets
+  index read the repositories inside the home.
 - **Reason**: why the tool has its tier, from reading the lane's source.
 
 The tables come from the engine's policy table (`harness/lane_tool_policy.py`),
@@ -106,9 +109,9 @@ Admitted at launch: 4 of 7 tools. T2 per granted call: 3. Not in this build: 0.
 | `articulate.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `articulate.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 
-### index 2.13.0
+### index 2.14.0
 
-Admitted at launch: 21 of 22 tools. T2 per granted call: 1. Not in this build: 0.
+Admitted at launch: 22 of 23 tools. T2 per granted call: 1. Not in this build: 0.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
@@ -128,6 +131,7 @@ Admitted at launch: 21 of 22 tools. T2 per granted call: 1. Not in this build: 0
 | `index_focus` | T1 |  | read |  | `root` kept out of the home | Returns one repo's dependency neighborhood. |
 | `index_verify` | T1 |  | read |  | `root` kept out of the home | Grounds a structural claim with file:line evidence. |
 | `index_router` | T1 |  | read |  | `root` kept out of the home | Builds a workspace map and returns it; its cache stays in the lane folder (INDEX_MCP_CACHE_DIR). |
+| `index.route` | T1 |  | read |  | `root` kept out of the home, every value in `paths` kept out of the home, a relative one checked under `root` | Builds a context envelope for the repositories `paths` names under `root` and returns a route receipt; its graph cache stays in the lane folder (INDEX_GRAPH_REPO_CACHE_DIR). |
 | `index_internals` | T1 |  | read |  | `root` kept out of the home | Builds one repo's module graph. |
 | `index.router.job.start` | T1 |  | state_write |  | `root` kept out of the home | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. |
 | `index.router.job.status` | T1 |  | read |  | `job_id` a plain id | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |

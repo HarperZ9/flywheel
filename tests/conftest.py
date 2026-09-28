@@ -6,6 +6,7 @@ history. These fixtures remove the failure mode as a class instead of
 patching it test by test: every test runs against a session-scoped scratch
 root, and forgetting to set `h.run_root` writes there, never into E:."""
 
+import os
 import shutil
 import tempfile
 import time
@@ -86,6 +87,42 @@ def _isolated_run_root(tmp_path_factory, monkeypatch):
                             raising=False)
     except Exception:
         pass  # gateway may be unimportable in narrow slices; env still guards
+    yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _real_home_pointer_left_alone(tmp_path_factory):
+    """Fail the session if any test (a subprocess gateway included) pointed
+    the owner's real home pointer at a pytest home."""
+    try:
+        from harness.capture_hooks import home
+        real = home.pointer_path()
+        before = real.read_bytes() if real and real.is_file() else None
+    except Exception:
+        real = None
+    yield
+    if real is None or not real.is_file() or real.read_bytes() == before:
+        return
+    named = home.read_pointer(real)
+    base = Path(tmp_path_factory.getbasetemp()).resolve().parent
+    if named is not None and Path(os.path.abspath(named)).is_relative_to(base):
+        pytest.fail(f"a test pointed the real home pointer at a pytest home: {named}")
+
+
+@pytest.fixture(autouse=True)
+def _isolated_home_pointer(tmp_path_factory, monkeypatch):
+    """The per-user home pointer is the owner's machine state: a hook mounted
+    without --home follows it to a home. A test that starts a gateway reaches
+    publish_endpoint, which rewrites it, so every test gets its own pointer
+    file. gateway_endpoint_file imports the name, so both are patched."""
+    target = tmp_path_factory.mktemp("home-pointer") / "home.json"
+    try:
+        from harness import gateway_endpoint_file
+        from harness.capture_hooks import home
+        monkeypatch.setattr(home, "pointer_path", lambda: target)
+        monkeypatch.setattr(gateway_endpoint_file, "pointer_path", lambda: target)
+    except Exception:
+        pass  # the hook package may be absent in a narrow slice
     yield
 
 

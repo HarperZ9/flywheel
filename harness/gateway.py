@@ -30,15 +30,16 @@ import os
 import sys
 import urllib.parse
 import urllib.request
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 # Ensure `from harness.X import ...` resolves even when run as `python
 # harness/gateway.py` (script mode puts harness/ on the path, not the repo root),
 # so the on-demand endpoint_registry / context_forge imports work in both modes.
 if str(REPO) not in sys.path: sys.path.insert(0, str(REPO))
+from harness.gateway_bind import ExclusiveThreadingHTTPServer  # no second socket can share the port (N-23)
 from harness.run_paths import run_root_default
-from harness.gateway_custody import is_private
+from harness.gateway_custody import is_private, is_signed
 from harness.gateway_lane_calls import _forum_mcp_call, _relay_mcp_call, _relay_start_not_admitted
 from harness.gateway_auth import (authenticate_owner as _auth_owner,
     load_or_create_owner_ref, load_or_create_token, check as _auth_check, DEFAULT_HOSTS)
@@ -798,6 +799,7 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
         """Refuse before dispatch; public auth-off compatibility stays available,
         while private custody always requires a configured bearer token."""
         path = self.path.split("?", 1)[0]
+        if is_signed(path): return True  # signed capture channel: trace_routes verifies before any body is read
         private = is_private(path)
         if not self.auth_token and not private: return True
         if private:
@@ -832,6 +834,7 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
     def _get(self):
         p = self.path.split("?", 1)[0]
         qs = self.path.split("?", 1)[1] if "?" in self.path else ""
+        if p.startswith("/api/traces/"): from harness.trace_routes import route_get; return route_get(self, p, qs)  # trace custody: the capture channel hello and ping, and later status, export and deletion
         if p.startswith("/api/codex/"): from harness.codex_account_gateway_mount import account_get; return account_get(self, p)  # Private Codex account status and login result
         if p == "/api/import/inspect" or p.startswith("/api/import/inspect/"):  # list or reopen owner-bound Inspect evidence
             from harness.import_route import handle_import_get
@@ -1211,6 +1214,7 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
                                     countersign=_countersign_workflow)
     def _post(self):
         p = self.path.split("?", 1)[0]
+        if p == "/api/scaffold" or p.startswith("/api/traces/"): from harness.trace_routes import route_post; return route_post(self, p)  # the turn guarantee for external wrappers, and trace custody (capture, and later export and deletion)
         if p.startswith("/api/codex/"): from harness.codex_account_gateway_mount import account_post; return account_post(self, p)  # Explicit Codex login, cancellation, and logout requests
         if p == "/api/import/inspect":              # raw exact-byte Inspect upload
             from harness.import_route import handle_import_post
@@ -1647,21 +1651,6 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
                 return self._json({"error": "'offset' must be a non-negative integer"}, 400)
             from harness.conjecture_forge import forge_round
             return self._json(forge_round(k, offset=offset))
-        if p == "/api/scaffold":                      # the full turn guarantee for external wrappers
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            prompt = str(req.get("prompt") or "")
-            answer = str(req.get("answer") or "")
-            if not prompt and not answer:
-                return self._json({"error": "provide 'prompt' and/or 'answer'"}, 400)
-            from harness.scaffold import scaffold_answer, scaffold_turn
-            env = scaffold_turn(prompt)
-            cites = req.get("citations")
-            doc = scaffold_answer(answer, env,
-                                  citations=cites if isinstance(cites, list)
-                                  else None)
-            return self._json(doc)
         if p == "/api/suite":                         # can this acceptance suite refuse wrong code?
             req, bad = self._req_json()
             if bad:
@@ -2261,7 +2250,7 @@ def _resolve_hosts(requested):
 
 
 def _bind_hosts(hosts, port):
-    """Bind one ThreadingHTTPServer per host, all sharing the one _Handler class.
+    """Bind one exclusive HTTP server per host, all sharing the one _Handler class.
     A host whose address this machine does not hold (e.g. the Tailscale interface
     is down) is reported and skipped, so a working interface still serves instead
     of the whole gateway refusing to start. Returns the bound servers in order;
@@ -2269,7 +2258,7 @@ def _bind_hosts(hosts, port):
     servers = []
     for h in hosts:
         try:
-            servers.append(ThreadingHTTPServer((h, port), _Handler))
+            servers.append(ExclusiveThreadingHTTPServer((h, port), _Handler))
         except OSError as e:
             print(f"  SKIP      cannot bind {h}:{port}: {e}")
     return servers
@@ -2312,6 +2301,10 @@ def main(argv=None) -> int:
     if not servers:
         print(f"no interface bound on port {a.port}; nothing to serve")
         return 1
+    from harness.gateway_endpoint_file import publish_endpoint; publish_endpoint(flywheel_home, servers)  # hooks find this listener, never a fixed port
+    from harness.trace_enc_probe import startup as custody_startup; custody_startup(flywheel_home)  # encryption probe, custody tree label
+    from harness.trace_retention_schedule import start_if_adopted; start_if_adopted(flywheel_home)  # retention runs only under an adopted rule other than keep
+    from harness.trace_bench_replay import sweep_all; sweep_all(flywheel_home)  # remove bench clones a crash left (7.8)
     bound = [s.server_address[0] for s in servers]
     remote = [h for h in bound if h not in ("127.0.0.1", "localhost", "::1")]
     if remote:

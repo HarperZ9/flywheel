@@ -28,7 +28,7 @@ PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
                     "/api/import/inspect",
                     "/api/credential-handles", "/api/session-tokens",
                     "/api/bulletin-identity", "/api/operations/", "/api/hooks/",
-                    "/api/settings/")
+                    "/api/settings/", "/api/traces/")
 
 #: Exact paths held under private custody. Model calls and anything that runs
 #: an agent, installs a plugin, or reaches the marketplace.
@@ -52,6 +52,16 @@ PRIVATE_PATHS = frozenset({
 #: a check spawns the lane (for bulletin it contacts the remote board), and an
 #: install runs pip or npm.
 PRIVATE_LANE_SUFFIXES = ("/tools", "/local-model/root", "/check", "/install")
+
+
+#: Capture routes authenticate by a signature over each request instead of the
+#: bearer token (harness/gateway_request_sig.py); the gateway lets them through
+#: its bearer check and trace_routes verifies before reading any body.
+SIGNED_PREFIXES = ("/api/traces/capture/",)
+
+
+def is_signed(path: str) -> bool:
+    return path.startswith(SIGNED_PREFIXES)
 
 
 def is_private(path: str) -> bool:

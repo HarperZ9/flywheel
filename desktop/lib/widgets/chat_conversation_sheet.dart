@@ -11,6 +11,7 @@ Future<void> showChatConversationSheet(
   required VoidCallback onNew,
   required ValueChanged<Conversation> onSelect,
   required ValueChanged<Conversation> onDelete,
+  Widget? banner,
 }) =>
     showModalBottomSheet<void>(
       context: context,
@@ -26,6 +27,7 @@ Future<void> showChatConversationSheet(
           current: current,
           streaming: streaming,
           scrollController: ctrl,
+          banner: banner,
           onNew: () {
             onNew();
             Navigator.of(sheetContext).pop();

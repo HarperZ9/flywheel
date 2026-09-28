@@ -17,6 +17,10 @@ of that tool (the Phase 3 ``tools/list`` captures and the pinned sources):
   ``config``. Every string inside one is checked as a path argument is: a
   Windows device or network path, or one that resolves into Flywheel's own
   state outside the lane's folder, refuses the call;
+- ``tree_base``: the path argument a lane joins each relative string of the
+  tool's tree arguments to (index.route reads a relative ``paths`` entry under
+  ``root``). The engine then checks such a string from the lane folder and
+  under that argument too, so the check reads the folder the lane opens;
 - ``open_egress``: the tool fetches a URL the caller names, an open outbound
   channel an agent run must not hold (C-12, finding F6);
 - ``launch_grant``: a flag the lane reads only from how it is started, never
@@ -36,7 +40,7 @@ _INDEX_ROOT = ("index.map", "index.context", "index.context.envelope", "index.se
                "index.invalidate", "index.wiki", "index.symbol-graph",
                "index.symbol-definition", "index.symbol-references",
                "index.symbol-implementations", "index_graph", "index_focus",
-               "index_verify", "index_router", "index_internals",
+               "index_verify", "index_router", "index.route", "index_internals",
                "index.router.job.start")
 
 
@@ -92,6 +96,13 @@ ARG_POLICY: dict[str, dict[str, dict]] = {
 }
 for _action in ("status", "result", "cancel", "resume"):
     ARG_POLICY["index"][f"index.router.job.{_action}"] = {"id_args": ("job_id",)}
+# index 2.14.0: index.route resolves every entry of `paths` (an absolute one as
+# given, a relative one under `root`) before it checks the entry is inside `root`,
+# so a network spelling would reach its share first. Each entry is checked as a
+# path argument is, and a relative one under `root` as well, where index reads it:
+# under a `root` that contains the home, a relative entry can name the home's state.
+ARG_POLICY["index"]["index.route"]["tree_args"] = ("paths",)
+ARG_POLICY["index"]["index.route"]["tree_base"] = "root"
 
 #: Tools that create a lane file named by an id argument and overwrite it
 #: unchecked: lane -> tool -> (id argument, file under the lane folder). The

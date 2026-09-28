@@ -11,17 +11,17 @@ Mneme fills the `memory` role in the Flywheel lane layer. It records raw turns, 
 Flywheel treats each engine as a lane with a declared role. Mneme is declared in `harness/lanes_registry.py` under the key `mneme`:
 
 - Role: `memory`. Lane summary: "accountable memory: recall with re-derivable ranking receipts + drift verdicts".
-- Organ field: `mneme`. Install name: `flywheel-mneme`. Command: `mneme`. MCP args: `("mcp",)`. Kind: `pip`. Version: `0.5.1`.
+- Organ field: `mneme`. Install name: `flywheel-mneme`. Command: `mneme`. MCP args: `("mcp",)`. Kind: `pip`. The version pin lives in the registry entry itself (`harness/lanes_registry.py`).
 - Source repo: `public/mneme`. Python module entry: `mneme.cli`.
-- `package_disabled_reason` is empty. The lane publishes as `flywheel-mneme` because the bare name `mneme-memory` was never admitted, so `pip install flywheel-mneme` installs it and `resolve_mcp_command("mneme")` returns a real argv. A source checkout still works and stays the fallback profile.
+- `package_disabled_reason` is empty, so the published package is the install path. The lane publishes as `flywheel-mneme` because the bare name `mneme-memory` was never admitted; `pip install flywheel-mneme` installs it and `resolve_mcp_command("mneme")` returns a real argv. A source checkout is the fallback profile.
 
 The lane advertises its wiring in `mneme.interop.json` at the repo root, which names the invoke surfaces (`cli: mneme`, `mcp_server: mneme.mcp:serve`, `python_import: mneme`) and lists what the lane emits and consumes. The Flywheel application also lists `mneme` in the platform spine tuple in `harness/gateway.py` and in the lesson-source set in `harness/lesson.py`.
 
-Version note: the lane registry and `pyproject.toml` both pin `0.5.1`, and that is the version on PyPI. `resolve_lane_runtime` records any difference between the declared and the installed version as `installed_version_mismatch`. Under the default profile an installed version below the pin does not launch (`installed_version_below_pin`), since the pin carries the fix for GHSA-j2pw-g7f4-9ppp; a newer one launches. The `package` profile still requires the exact pin. `flywheel install` asks pip for `flywheel-mneme==0.5.1`.
+Version note: `harness/lanes_registry.py` is the one place that states the version Flywheel expects, so this page does not repeat it. `resolve_lane_runtime` records any difference between the declared and the installed version as `installed_version_mismatch`. Under the default profile an installed version below the pin does not launch (`installed_version_below_pin`), since the pin carries the fix for GHSA-j2pw-g7f4-9ppp; a newer one launches. The `package` profile still requires the exact pin. `flywheel install` asks pip for the pinned version.
 
 Distribution facts, from `pyproject.toml`:
 
-- Package name `flywheel-mneme`, version `0.5.1`, `requires-python >= 3.11`. Install with `pip install flywheel-mneme==0.5.1`; the console script is `mneme` and `mneme mcp` serves the lane over stdio.
+- Package name `flywheel-mneme`, `requires-python >= 3.11`. The console script is `mneme`, and `mneme mcp` serves the lane over stdio.
 - `dependencies = []`. The only runtime import is the standard-library `sqlite3`. `pytest` is the sole declared test dependency.
 - License `LicenseRef-FSL-1.1-MIT` (fair-source: readable and runnable, commercial use reserved). This is an independent project; it does not depend on the other lanes to run.
 
@@ -49,7 +49,7 @@ Each feature is bound to the module that implements it. Paths are relative to th
 
 10. **Accountable forgetting and editing.** `src/mneme/store.py` `forget` and `update` leave a tombstone in an append-only, hash-chained audit log (schema `mneme.audit/1` via `memory.audit()`). `verify_audit` re-derives the chain and checks it still ends at the committed head anchor (count plus last entry hash), so a deleted, edited, reordered, or truncated tombstone breaks the chain.
 
-11. **Temporal memory.** `src/mneme/temporal.py` and `src/mneme/store.py` keep a changed fact with a validity window. `supersede` closes the old memory's validity and keeps it for history; `forget` erases the text for GDPR-style deletion and keeps only a tombstone. `history` returns the ordered timeline; `recall(as_of=N)` reconstructs the memory state at ordinal `N`. When an unscoped history spans more than one tenant, the scalar `current` and `transitions` are withheld as null, because a single-subject answer cannot span tenants.
+11. **Temporal memory.** `src/mneme/temporal.py` and `src/mneme/store.py` keep a changed fact with a validity window. `supersede` closes the old memory's validity and keeps it for history; `forget` erases the memory and keeps a tombstone in the audit log. In the mneme release this lane pins, `forget` also erases the source turns and every row derived from them, and each erase entry names a random reference and keeps a salted commitment whose salt is never stored; earlier audit entries still name the memory by its content-derived id (see "forget, update, audit" below). `history` returns the ordered timeline; `recall(as_of=N)` reconstructs the memory state at ordinal `N`. When an unscoped history spans more than one tenant, the scalar `current` and `transitions` are withheld as null, because a single-subject answer cannot span tenants.
 
 12. **Multi-user and multi-session isolation.** The `memories` table carries a `user` column. `add_memory` refuses a cross-tenant overwrite and refuses a same-id write with different content (that routes through `update`). `recall(user=..., session=...)` scopes retrieval; `user=X, session=None` recalls across one tenant's sessions. Consolidation, persona, scenarios, and the entity graph partition by tenant even when the read is unscoped.
 
@@ -83,13 +83,13 @@ Test coverage: 24 test files under `tests/`, one per behavior above (for example
 
 ### Install
 
-Inside Flywheel the lane runs from a source checkout, because the PyPI name is disabled in the lane registry. From the README:
+Install the published package:
 
 ```bash
-pip install git+https://github.com/HarperZ9/mneme.git
+pip install flywheel-mneme
 ```
 
-Or clone the repo and `pip install -e .`. Python 3.11 or newer is required. There are no runtime dependencies to resolve.
+A source checkout is the fallback: `pip install git+https://github.com/HarperZ9/mneme.git`, or clone the repo and `pip install -e .`. Python 3.11 or newer is required. There are no runtime dependencies to resolve.
 
 ### Library
 
@@ -169,7 +169,7 @@ Each capability, with its interface, module, output schema, and stated bound.
 ### forget, update, audit
 - CLI `mneme forget MEMORY_ID [--reason R]`, `mneme update MEMORY_ID TEXT [--reason R]`, `mneme audit`. Library `AgentMemory.forget/update/audit`. MCP `mneme.forget`, `mneme.audit`.
 - Module: `src/mneme/store.py`, `src/mneme/memory.py`. Audit schema: `mneme.audit/1`.
-- `forget` erases text and leaves a tombstone; `update` edits text, keeps provenance, records before and after hashes. `audit` reports `chain_intact` from `verify_audit`.
+- `forget` erases the memory and leaves a tombstone (the next item describes the pinned release's erase). `update` edits text and keeps provenance. From schema 5 its audit entry stores a salted commitment to each version instead of the plain content hash; entries written before schema 5 keep their plain hashes, and every entry still names the memory by its content-derived id. `audit` reports `chain_intact` from `verify_audit`.
 - From 0.5.0, `forget` erases the memory, its source turns and every derived row in one transaction, and the receipt reports what the erase could not reach, including audit entries that still name the memory by its content-derived id and the MCP client's own session history. MCP `mneme.forget` returns a plan and deletes only on a second call that carries `confirm_plan_sha256`. Flywheel keeps `mneme.forget` at T2, so each of the two calls is its own approval. Schema 5 migrates an older database on open. 0.5.1 closes GHSA-j2pw-g7f4-9ppp: a reason that quotes the erased text is refused, another user's turn is no longer taken as a duplicate, the receipt drops `plan_sha256` and reports `erased_residue_found` when a kept row still holds erased text.
 
 ### supersede and history (temporal)

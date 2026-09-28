@@ -167,10 +167,11 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         shard: [0, 1, 2, 3]
     runs-on: ${{ matrix.os }}
-    # The slowest shard takes under four minutes. Same reason as the slice
-    # above: `--timeout=300` is already on the pytest call and a stopped
-    # process never receives it.
-    timeout-minutes: 15
+    # Ubuntu shards take four to seven minutes. Windows shard 0 took 14m01s and
+    # 14m00s on two green runs and was cancelled at 15m11s on a third, so the
+    # job budget is 25 minutes. Same reason as the slice above: `--timeout=300`
+    # is already on the pytest call and a stopped process never receives it.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
@@ -247,6 +248,8 @@ jobs:
           python-version: "3.13"
       - name: Every checker verifies a SUBMITTED object; none decides optimality
         run: python scripts/check_claim_language.py
+      - name: Copy says where request content goes; no GDPR wording for a deletion
+        run: python scripts/check_data_location_copy.py
 
   file_gate:
     name: 300-line gate, burn-down only shrinks

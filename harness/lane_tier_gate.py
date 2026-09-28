@@ -88,7 +88,15 @@ def _reaches_home(lane: str, value: object, environ: Mapping[str, str], *,
     a Windows device or UNC spelling, or (``device_names``) names a reserved
     Windows device such as ``C:\\docs\\CON.md`` (path_identity). A relative path
     resolves from the lane folder, the child's working directory in every
-    install mode (lane_workdir). A URL is not a local path."""
+    install mode (lane_workdir). A URL is not a local path.
+
+    Lanes differ on "~" and on blanks: a lane that calls expanduser reads the
+    user's folder, and index reads the text as given, "~" as a folder name
+    under the lane folder and a leading blank as part of a name. So the value
+    is checked both as given and stripped with "~" expanded, and either one
+    reaching the state refuses the call: a root of ``~/../../../state`` expands
+    to a folder outside the home, while index reads it from the lane folder as
+    the home's state."""
     from .flywheel_state_roots import state_roots
     from .lane_workdir import flywheel_home
     from .path_identity import device_or_unc, inside, reserved_device_name
@@ -98,13 +106,15 @@ def _reaches_home(lane: str, value: object, environ: Mapping[str, str], *,
         return True
     own = flywheel_home(environ) / "lanes" / lane
     try:
-        raw = Path(os.path.expanduser(value.strip()))
-        target = os.path.realpath(raw if raw.is_absolute() else own / raw)
+        spellings = {value, os.path.expanduser(value.strip())}
+        targets = [os.path.realpath(raw if raw.is_absolute() else own / raw)
+                   for raw in map(Path, spellings)]
         own_s = os.path.realpath(own)
         roots = state_roots(environ)
     except (OSError, ValueError):
         return True   # an unresolvable path is refused, not guessed at
-    return any(inside(target, root) for root in roots) and not inside(target, own_s)
+    return any(any(inside(target, root) for root in roots) and not inside(target, own_s)
+               for target in targets)
 
 
 _TREE_LIMIT = 4096                  # strings checked in one tree argument
@@ -136,13 +146,31 @@ def _tree_strings(value: object) -> list[str] | None:
     return found
 
 
-def _tree_reaches_home(lane: str, value: object, environ: Mapping[str, str]) -> bool:
+def _tree_base(base_arg: str, args: Mapping[str, Any]) -> Path | None:
+    """The folder the lane joins a relative tree string to, spelled as the lane
+    reads it: the ``tree_base`` argument as given. index.route does
+    ``Path(root)`` and then ``root / entry`` for a relative entry. A relative
+    base stays relative, and ``_reaches_home`` reads the joined string from the
+    lane folder, the child's working directory. None when the tool names no
+    base or the call carries no string for it."""
+    raw = args.get(base_arg) if base_arg else None
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    return Path(raw)
+
+
+def _tree_reaches_home(lane: str, value: object, environ: Mapping[str, str],
+                       base: Path | None = None) -> bool:
     """A tree also holds text that is not a path, such as a query that reads
     "aux", so a reserved device name there is left to the lane: gather 1.9.1
-    refuses one in any path it opens (NON_LOCAL_PATH, argument_refused)."""
+    refuses one in any path it opens (NON_LOCAL_PATH, argument_refused). With a
+    ``base``, each string is also checked joined to it, as the lane joins it."""
     strings = _tree_strings(value)
-    return strings is None or any(_reaches_home(lane, text, environ, device_names=False)
-                                  for text in strings)
+    return strings is None or any(
+        _reaches_home(lane, text, environ, device_names=False)
+        or (base is not None and _reaches_home(lane, str(base / text), environ,
+                                               device_names=False))
+        for text in strings)
 
 
 def argument_refusal(lane: str, tool: str, args: Mapping[str, Any],
@@ -153,9 +181,11 @@ def argument_refusal(lane: str, tool: str, args: Mapping[str, Any],
     if entry is None:
         return None
     env = os.environ if environ is None else environ
+    base = _tree_base(entry.tree_base, args)
     bad = any(name in args and not _plain_id(args[name]) for name in entry.id_args) or any(
         name in args and _reaches_home(lane, args[name], env) for name in entry.path_args) or any(
-        name in args and _tree_reaches_home(lane, args[name], env) for name in entry.tree_args)
+        name in args and _tree_reaches_home(lane, args[name], env, base)
+        for name in entry.tree_args)
     reason = "argument_refused" if bad else _create_only_refusal(lane, tool, args, env)
     if not reason:
         return None

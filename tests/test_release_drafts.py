@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts import check_claim_language, check_public_instructions
+from scripts import check_claim_language, check_data_location_copy, check_public_instructions
 
 REPO = Path(__file__).resolve().parents[1]
 # The CI run both legs of which the notes and the lane page count from. The
@@ -48,6 +48,10 @@ def _label(row: dict) -> str:
 def test_draft_passes_both_public_surface_gates(path):
     assert check_claim_language.scan(path) == []
     assert check_public_instructions.scan(path, REPO) == []
+    # The drafts publish at the repository root, where the data-location gate
+    # reads them; project-docs/drafts is outside its surface list (PT-3).
+    text = path.read_text(encoding="utf-8")
+    assert check_data_location_copy.violations_in(text, path.name) == []
 
 
 @pytest.mark.parametrize("path", DRAFTS, ids=lambda p: p.name)
