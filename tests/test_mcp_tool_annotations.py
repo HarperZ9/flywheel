@@ -30,7 +30,7 @@ HARNESS = ROOT / "harness"
 HINTS = ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint")
 NAME_RX = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 KNOWN_SERVERS = {"harness.writing_lint.mcp", "harness.writing_mcp",
-                 "harness.local_mcp"}
+                 "harness.local_mcp", "harness.check_mcp"}
 
 OVERCLAIMS = (
     r"\bguarantee[sd]?\b", r"\balways (?:correct|right|accurate|safe)\b",
@@ -116,7 +116,7 @@ ALL_TOOLS = [(m, t) for m in SERVERS for t in _tools(m)]
 def test_discovery_finds_every_known_server():
     # A discovery that found nothing would let every test below pass vacuously.
     assert KNOWN_SERVERS <= set(SERVERS)
-    assert len(ALL_TOOLS) >= 26
+    assert len(ALL_TOOLS) >= 29
 
 
 @pytest.mark.parametrize("module_name,tool", ALL_TOOLS,
@@ -167,6 +167,17 @@ OFFLINE_CALLS = {
                                  "writing.lint": {"text": "A short draft."},
                                  "writing.delta": {"old_text": "a b", "new_text": "a b c"}},
     "harness.local_mcp": {"local-model.status": {}, "local-model.doctor": {}},
+    "harness.check_mcp": {"domain_packs": {"name": "finance"},
+                          "check_answer": {
+                              "contract": {"fields": [{"name": "rate", "authority": "TABLE",
+                                                       "source": "rates"}],
+                                           "authorities": {"rates": {
+                                               "kind": "table", "path": "rates.json",
+                                               "key_field": "plan"}}},
+                              "answer": {"plan": {"value": "basic"},
+                                         "rate": {"value": 10, "source": "rates"}},
+                              "sources": {"rates.json": {"basic": 10}}},
+                          "verify_bundle": {"path": "missing-bundle"}},
 }
 
 

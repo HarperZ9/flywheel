@@ -1,0 +1,89 @@
+{
+ "receipt": {
+  "analysis_script_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "attribution": "CANDIDATE",
+  "base_weights_digest": "",
+  "budget": {
+   "declared": true,
+   "exhausted": false,
+   "retries_limit": 0,
+   "tokens_limit": 0,
+   "wall_seconds_limit": 60
+  },
+  "candidate_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "checker_module": "checker/sample_checker.py",
+  "checker_source_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "claim_sha256": "sha256:2cfe27bb1dc42287774b27a61bb0400f5f804c8a1057b833255b6532a7c6ef46",
+  "coverage": {
+   "enumerated_fraction": "1",
+   "guarantee_weakens_above": null,
+   "predicate_exact": true,
+   "search_space_enumerated": true,
+   "stop_reason": "complete"
+  },
+  "criterion_id": "demo.sample-bundle",
+  "criterion_sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "criterion_version": 1,
+  "denominator": {
+   "attempts": 4,
+   "cache_hit_tokens": 0,
+   "filter_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "filter_id": "demo.none",
+   "filter_is_learned": false,
+   "group_size": 4,
+   "hits": 1,
+   "oracle_calls_consumed": 4,
+   "oracle_feedback_visible": false,
+   "parse_failures": 0,
+   "retries": 0,
+   "tasks_filtered_out": 0,
+   "tasks_proposed": 1,
+   "timeouts": 0,
+   "tokens_in": 0,
+   "tokens_out": 0,
+   "undecided": 0,
+   "unverifiable": 0
+  },
+  "does_not_prove": [
+   "NOT_PROVES_PUBLICATION_COMPLETENESS",
+   "NOT_PROVES_NOVELTY",
+   "NOT_PROVES_WHICH_WEIGHTS"
+  ],
+  "evidence_kind": "CONSTRUCTIVE",
+  "executes_candidate_code": false,
+  "extra_does_not_prove": [],
+  "family": "demo",
+  "family_instance_id": "demo-21",
+  "generator_id": "demo",
+  "generator_seed": 0,
+  "graded_score": null,
+  "harness_version": "demo",
+  "held_out_agreement": "AGREE",
+  "incumbent_objective": "21",
+  "incumbent_source": "demo",
+  "input_tier_multiset": [],
+  "model_ref": "demo",
+  "novelty_verdict": "UNKNOWN",
+  "objective": "21",
+  "oracle_qa_card_hash": "demo",
+  "prompt_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "raw_stdout_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "schema": "flywheel.receipt/v4",
+  "subject_sha256": "sha256:b09d3ad07a8f35a6957fc6604b205bf312b68fa1b1f8b1d9b9b2f8cd190ab7b0",
+  "tier": "construction_certificate",
+  "undecided_reason": "",
+  "unverifiable_reason": "",
+  "verdict": "PASS"
+ },
+ "schema": "flywheel.signed-receipt/v1",
+ "signature": {
+  "exportable": true,
+  "key_id": "demo-key",
+  "public_key": "fd274cc08a9c40dd7e7514fc9bf16c72f5da65ed2ab40fda3b2084ee2b0f36b8",
+  "sig": "e7f625af19cab3eca1ddb54c7edfdcd1664502107b9869f57a4808e3dc3eb9bca543953e86a74d5c67f287f470d31ea2737b2376b493fcae97a9b20e9e71c30f",
+  "sig_alg": "ed25519",
+  "signed_over": [
+   "claim_sha256"
+  ]
+ }
+}

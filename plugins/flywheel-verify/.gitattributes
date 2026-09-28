@@ -1,0 +1,4 @@
+# The sample bundle's manifest binds every file by its SHA-256, so its bytes must
+# reach every checkout unchanged. -text turns off line-ending conversion for
+# these files; it rewrites nothing.
+examples/bundle/** -text

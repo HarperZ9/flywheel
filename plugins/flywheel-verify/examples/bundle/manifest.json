@@ -1,0 +1,45 @@
+{
+ "does_not_prove": [
+  "NOT_PROVES_PUBLICATION_COMPLETENESS: this bundle shows what it contains and cannot show what was left out of it.",
+  "NOT_PROVES_RECEIPT_CORRECTNESS: the manifest shows nothing was altered after packing. A bundle of forged receipts with intact hashes verifies structurally.",
+  "NOT_PROVES_CHECKER_CORRECTNESS: the checker source ships so it can be read. That it was shipped is not evidence that it implements the right predicate."
+ ],
+ "files": [
+  {
+   "bytes": 128,
+   "path": "checker/sample_checker.py",
+   "sha256": "afcf8df16470c6eb63908f1939b0e9a9df6d9fadd153bf600faf802a463d1fee"
+  },
+  {
+   "bytes": 123,
+   "path": "criterion.json",
+   "sha256": "c77f234e72db92abfd08eba21b88a53053861d3361a6ccdd9201f0236fb1ba51"
+  },
+  {
+   "bytes": 114,
+   "path": "qa_card.json",
+   "sha256": "09df3f0324d797236751695b545cb9c6334c2f6a2d4840c262ebcdfdaf50b911"
+  },
+  {
+   "bytes": 2953,
+   "path": "receipts/0000-2cfe27bb1dc42287.json",
+   "sha256": "4625a6d272046bb4d51a462b107b0f9543603a30fe2c7dcc0782f2f97da5edf8"
+  },
+  {
+   "bytes": 2617,
+   "path": "receipts/0001-63f68e1ebc05f7cf.json",
+   "sha256": "6e5c1048d069f6b043e964af2047ca6882de5ef6bc50e378b907519f9975d058"
+  },
+  {
+   "bytes": 1308,
+   "path": "reproduce.py",
+   "sha256": "fc43b7491cb18c9b0eca3517872e35be72bcc6c077789f00bb67fa33ec124b25"
+  },
+  {
+   "bytes": 134,
+   "path": "tree_head.json",
+   "sha256": "681b50d9d0f2b7848b7b7b9d659b7f8e49f4f50fd37ca04b79f18c7ef95706b8"
+  }
+ ],
+ "schema": "flywheel.bundle/v1"
+}

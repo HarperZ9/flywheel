@@ -64,6 +64,9 @@ flywheel = "harness.cli_entry:main"
 # a model-side config cannot silently create or mutate the default owner state.
 flywheel-writing-lint-mcp = "harness.writing_lint.mcp:serve"
 flywheel-writing-workspace-mcp = "harness.writing_workspace_mcp:main"
+# Read-only answer checks and offline bundle rechecks; the command the Claude
+# plugin in plugins/flywheel-verify launches through a pinned uvx.
+flywheel-check-mcp = "harness.check_mcp:main"
 
 [tool.setuptools]
 # Explicit package + data discovery. Keep py_modules minimal.
