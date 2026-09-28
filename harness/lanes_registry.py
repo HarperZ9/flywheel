@@ -72,7 +72,7 @@ class Lane:
 # lane_runtime_frozen picks the engine's own child modes instead.
 LANES: dict[str, Lane] = {
     "gather": Lane(
-        "gather", "gather-engine", "gather", ("mcp",), "pip", "1.9.1",
+        "gather", "gather-engine", "gather", ("mcp",), "pip", "2.0.0",
         "research intake + provenance receipts (verified-data flywheel intake)",
         "perception", source_repo="public/gather", py_module="gather.cli"),
     "crucible": Lane(
@@ -113,7 +113,7 @@ LANES: dict[str, Lane] = {
         bundled_mcp_module="forum.mcp_surface",
         env_vars=("FORUM_RUN_REAL", "OTEL_EXPORTER_OTLP_ENDPOINT")),
     "learn": Lane(
-        "learn", "@harperz9/learn", "node", ("src/mcp.mjs",), "npm", "1.6.0",
+        "learn", "@harperz9/learn", "node", ("src/mcp.mjs",), "npm", "2.0.0",
         "accountable learning forge (spaced repetition + retrieval practice)",
         "learning", source_repo="public/learn",
         env_vars=("LEARN_CRUCIBLE_CMD", "LEARN_GATHER_CMD", "LEARN_NATIVE_CONTROL",
@@ -122,8 +122,8 @@ LANES: dict[str, Lane] = {
         "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.1",
         "the reconciliation lane: five-tool workflow + creative engine + doctors",
         "reconciliation", source_repo="public/telos",
-        package_disabled_reason=("No published npm distribution is available, and this build "
-                                 "holds Telos out while its release contents are reviewed. "
+        package_disabled_reason=("This build holds Telos out while its release contents "
+                                 "are reviewed. "
                                  "Nothing needs installing; the other lanes run without it."),
         env_vars=("TELOS_CHROME_PATH", "TELOS_CHROME_PROFILE", "TELOS_EMET_CLI",
                   "TELOS_EMET_DISABLE_FALLBACKS", "LEARN_CLI", "CAPTCHA_VENV_PY",

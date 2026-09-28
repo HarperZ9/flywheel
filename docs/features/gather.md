@@ -239,7 +239,7 @@ Gather is the `perception` organ in the lane layer. Observed in
 
 ```python
 "gather": Lane(
-    "gather", "gather-engine", "gather", ("mcp",), "pip", "1.9.1",
+    "gather", "gather-engine", "gather", ("mcp",), "pip", "2.0.0",
     "research intake + provenance receipts (verified-data flywheel intake)",
     "perception", source_repo="public/gather", py_module="gather.cli"),
 ```
@@ -332,7 +332,7 @@ Gather is already a native lane, so most of the wiring the question asks about
 exists. Present and verified:
 
 - **Lane registry entry**: `LANES["gather"]` in `harness/lanes_registry.py`,
-  organ `perception`, version `1.9.1`, `py_module="gather.cli"`,
+  organ `perception`, version `2.0.0`, `py_module="gather.cli"`,
   `source_repo="public/gather"`.
 - **Expected-set test**: `tests/test_lanes.py::test_registry_covers_the_expected_lanes`
   asserts `gather` is in the lane set, and

@@ -3,7 +3,7 @@
 > Native-feature documentation for the `telos` lane as it lives inside Flywheel.
 > Scope note: statements are marked observed (read from code in `public/telos`
 > and `public/flywheel/harness`) or proposed (a change not yet in the code).
-> Version claims track telos `0.2.0` and the lane registry entry at that version.
+> The registry names telos `0.4.1`, held for contents review; older capability descriptions below do not establish admission.
 
 ## One sentence
 
@@ -23,10 +23,10 @@ lane ships four proof lanes (agent-action, research, visual, build) where the
 verdict folds out of checks the verifier recomputes, so a packet that carries
 its own MATCH cannot win with it. Telos is registered as the `telos` lane in
 `harness/lanes_registry.py` (organ `reconciliation`) and sits third in the
-gateway spine after `flywheel` and `local-model`. It is a node lane, so Flywheel
-launches `demo/telos-mcp.mjs` from a Telos source checkout at `public/telos`; no
-npm distribution is admitted, and the public roster reports an empty launch hint
-for it. Beyond the MCP surface, Flywheel runs telos's own creative-kernel code in
+gateway spine after `flywheel` and `local-model`. It is a node lane, but the
+release hold prevents its MCP tools from running in this build. The public roster
+reports an empty launch hint for it. Beyond the MCP surface, Flywheel runs
+telos's own creative-kernel code in
 place through `harness/telos_kernels.py` and registers a Telos browser-admission
 driver behind the effector seam. The Telos core is zero-dependency and node 20 or
 newer; CI runs on node 24. Observed.
@@ -271,18 +271,17 @@ Telos is the `reconciliation` organ in the lane layer. Observed in
     "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.1",
     "the reconciliation lane: five-tool workflow + creative engine + doctors",
     "reconciliation", source_repo="public/telos",
-    package_disabled_reason=("No published npm distribution is available, and this build "
-                             "holds Telos out while its release contents are reviewed. "
+    package_disabled_reason=("This build holds Telos out while its release contents "
+                             "are reviewed. "
                              "Nothing needs installing; the other lanes run without it.")),
 ```
 
 It sits third in the flagship spine, `SPINE = ("flywheel", "local-model",
 "telos", "index", "forum", "gather", "crucible", "learn", "mneme", "relay",
-"plexus")` in `harness/gateway.py`. Because no npm distribution is admitted, the
-public roster reports an empty launch hint: `tests/test_lanes.py` asserts
-`resolve_mcp_command("telos") == []`, and Flywheel spawns the child from the
-`public/telos` source checkout at runtime. Observed: `harness/lanes.py`,
-`harness/lane_runtime.py`, `tests/test_lanes.py`.
+"plexus")` in `harness/gateway.py`. The published npm package remains held, so
+the public roster reports an empty launch hint and the lane cannot launch.
+The hold also applies to source installs. Observed: `harness/lanes_registry.py`,
+`harness/lane_tool_policy_node.py`, `tests/test_node_lane_hold.py`.
 
 ### What it consumes from peers
 - **Sibling lane checkouts.** `telos.room`, `telos.workflow`,
@@ -383,16 +382,15 @@ Telos is a native lane, so the roster wiring exists. Present and verified:
 
 What is bounded or in flight:
 
-- **No published distribution.** `package_disabled_reason` records that no npm
-  distribution is admitted. Flywheel launches telos from a source checkout, and a
-  clean machine without that checkout has no telos lane. Observed:
-  `harness/lanes_registry.py`.
+- **Release contents held.** npm publishes `project-telos-mcp@0.4.1`, but Flywheel
+  keeps its tools out while its release contents are reviewed. Publication does
+  not clear that hold. Observed: `harness/lanes_registry.py`.
 - **No Python payload pin.** `packaging/python-lane-payloads.jsonl` and its
   checker `scripts/check_python_lane_payload_manifest.py` cover Python lanes
   (schema `flywheel.python-lane-payload/v1`). Telos is a node lane, so it is not
   in that manifest and carries no source-pin row there. For a node lane this is a
   natural non-entry.
-- **Version lockstep.** The `0.2.0` string in `lanes_registry.py` is a
+- **Version lockstep.** The `0.4.1` string in `lanes_registry.py` is a
   hand-maintained constant. It must be bumped in the same change as telos's
   `package.json` version, or `lane_status` reports STALE against the checkout.
 - **Reconciliation tools need the siblings.** `telos.room` and `telos.workflow`

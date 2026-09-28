@@ -156,3 +156,19 @@ def test_bridge_children_share_the_lane_state_defaults(tmp_path):
     assert mine["CANON_BLOCKS_DIR"] == "D:/b"
     assert "MNEME_STATE" not in lane_process_environment(
         "gather", environ=env, registry={})
+
+
+@pytest.mark.parametrize("bundled", [True, False], ids=["frozen", "npm"])
+def test_learn_state_uses_the_folder_checked_by_argument_guards(tmp_path, bundled):
+    from harness.lane_env import confine_lane_launch
+
+    home, env = _home(tmp_path)
+    env["LEARN_HOME"] = str(tmp_path / "outside")
+    argv = (("engine.exe", "--bundled-lane-mcp", "learn") if bundled else
+            ("node", "src/mcp.mjs"))
+    launch = LaunchSpec(argv, inherit_env=not bundled)
+    confined, _ = confine_lane_launch(LANES["learn"], launch, env,
+                                      {"env_allow": ["LEARN_HOME"]})
+    folder = home.resolve() / "lanes" / "learn"
+    assert dict(confined.env_overrides)["LEARN_HOME"] == str(folder)
+    assert confined.cwd == str(folder) and folder.is_dir()

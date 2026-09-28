@@ -40,7 +40,7 @@ ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
     ROOT / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
     if line.strip()}
 PINS = {"relay": ("0.5.0", "v0.5.0", "ba1e4f21f05ff610a182f9b4665bb82f05a969f8"),
-        "gather": ("1.9.1", "v1.9.1", "6b5d4dd5920a248bafaeefef4f596e67a42889fb")}
+        "gather": ("2.0.0", "v2.0.0", "d75f0fd86cbfc8fcfe9868e2e008f0e678b76b70")}
 GATHER_GRANTS = ("GATHER_ALLOW_NETWORK", "GATHER_ALLOW_EXEC", "GATHER_AUTH_ENV_ALLOW",
                  "GATHER_CHILD_ENV")
 
