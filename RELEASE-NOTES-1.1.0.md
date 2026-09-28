@@ -1,9 +1,3 @@
-<!-- Draft 1.1.0 notes, reviewed before any tag. The lane classes, lane sentence, README
-count, method paragraph and installer size cite CI run 36302181098, which predates the
-gather 2.0.0, relay 0.5.0, forum 1.15.1, crucible 1.3.0 and index 2.14.0 pins: replace them
-from the release commit's windows-installed-acceptance.yml run. The 1.0.4 known-issues page
-publishes on its own. Five trace manual checks were not run. -->
-
 # Flywheel 1.1.0
 
 The Windows app now runs each lane's main action from the lane's card, and the card
@@ -270,6 +264,9 @@ on your machine; the content of each request goes to the hosted provider you rou
 
 - index maps a repository's history only with Git for Windows; see its row in the table.
 - telos is not in this build while its release contents are reviewed.
+- The bundled gather 1.9.1 source includes an optional TLS-impersonation fetch backend.
+  It cannot load in the app, because its library (curl_cffi) is not bundled, and
+  gather's next release removes it.
 - Lanes still run as your user with no filesystem sandbox. The policy governs what a
   caller can ask a lane to do, not what a lane's own code can reach. An index root above
   the Flywheel home, such as your user folder, reads the repositories inside the home.

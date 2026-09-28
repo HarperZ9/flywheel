@@ -74,13 +74,13 @@ def test_the_notice_names_the_tag_and_drops_the_old_release():
 
 
 def test_the_notes_and_the_known_issues_page_name_the_advisory():
-    notes = _text("project-docs", "drafts", "RELEASE-NOTES-next.md")
+    notes = _text("RELEASE-NOTES-1.1.0.md")
     fixes = notes.split("Security fixes in the lanes", 1)[1].split("## ", 1)[0]
     assert f"crucible {VERSION} fixes {ADVISORY}" in fixes
     assert "crucible 1.2.0, which 1.0.4 pins" in fixes
     assert f"`{NEW_TOOL}`" in notes.split("**Lane updates.**", 1)[1].split("- **", 1)[0]
     assert "None adds a tool" not in notes
-    known = _text("project-docs", "drafts", "RELEASE-NOTES-1.0.4-known-issues.md")
+    known = _text("RELEASE-NOTES-1.0.4-known-issues.md")
     assert f"crucible 1.2.0, which 1.0.4 pins, is inside the range of {ADVISORY}" in known
 
 

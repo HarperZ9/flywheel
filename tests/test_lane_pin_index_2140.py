@@ -170,7 +170,7 @@ def test_the_notice_names_the_tag_and_drops_the_describe():
 
 
 def test_the_notes_name_the_release_and_drop_the_bundled_commit_limit():
-    notes = _text("project-docs", "drafts", "RELEASE-NOTES-next.md")
+    notes = _text("RELEASE-NOTES-1.1.0.md")
     updates = notes.split("**Lane updates.**", 1)[1].split("- **", 1)[0]
     assert f"index {VERSION}" in updates and f"`{NEW_TOOL}`" in updates
     assert "no index release contains" not in notes
@@ -180,7 +180,7 @@ def test_the_notes_name_the_release_and_drop_the_bundled_commit_limit():
 def test_the_known_issues_page_names_the_commit_the_1_0_x_apps_bundled():
     """The 1.0.3 and 1.0.4 rows pin 71c26eab while their notes name index 2.13.0;
     the notes' limit that said so left with the pin, so the 1.0.4 page carries it."""
-    known = _text("project-docs", "drafts", "RELEASE-NOTES-1.0.4-known-issues.md")
+    known = _text("RELEASE-NOTES-1.0.4-known-issues.md")
     assert "six statements about the installed Windows app" in known
     assert "bundled index 2.13.0 plus one later commit" in known
     assert f"until {VERSION}, which Flywheel 1.1.0 pins" in known
