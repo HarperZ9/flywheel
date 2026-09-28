@@ -45,6 +45,9 @@ if str(REPO) not in sys.path:
 
 from scripts import installed_lanes_gh  # noqa: E402
 from scripts.installed_lanes_privacy import private_detail  # noqa: E402
+from desktop.tool.installed_launch_acceptance_contract import (  # noqa: E402
+    validate_receipt_semantics,
+)
 
 SCHEMA = "flywheel.installed-lanes-ci-evidence-summary/v1"
 RECEIPT_SCHEMA = "flywheel.installed-app-lane-acceptance/v1"
@@ -153,11 +156,15 @@ def check_other_receipts(root: Path, commit: str) -> list[str]:
     out = []
     for name in LAUNCH:
         got = read_json(root / RECEIPTS / name)
-        failed = [a.get("id") for a in got.get("assertions") or [] if a.get("state") == "FAIL"]
+        errors = validate_receipt_semantics(got)
+        rows = got.get("assertions") or []
+        failed = [a.get("id") for a in rows if isinstance(a, dict) and a.get("state") == "FAIL"]
+        mode = name.removeprefix("installed-launch-").removesuffix(".json")
         if (got.get("schema") != LAUNCH_SCHEMA or got.get("complete") is not True
-                or got.get("source_commit_expected") != commit or failed):
+                or got.get("source_commit_expected") != commit or got.get("mode") != mode
+                or failed or errors):
             out.append(f"{name}: not a complete {LAUNCH_SCHEMA} receipt of {commit} "
-                       f"without FAIL {failed}")
+                       f"in mode {mode} without FAIL {failed}; {'; '.join(errors)}")
     canon = read_json(root / RECEIPTS / CANON)
     if (canon.get("source") or {}).get("commit") != commit or canon.get("verdict") != "PASS":
         out.append(f"{CANON}: source.commit is not {commit}, or the verdict is not PASS")
@@ -245,7 +252,8 @@ def _args(argv):
 
 def _meta(args) -> dict:
     if args.from_gh:
-        return installed_lanes_gh.fetch_and_verify(args.repo, args.run_id, args.artifact)
+        return installed_lanes_gh.fetch_and_verify(
+            args.repo, args.run_id, args.artifact, expected_commit=args.commit)
     given = {"job_id": args.job_id, "date": args.date,
              "artifact_zip_sha256": args.artifact_zip_sha256}
     missing = [k for k, v in given.items() if v is None]

@@ -1,7 +1,8 @@
 """Read one installed-app acceptance run from GitHub, read-only, and check its artifact.
 
-make_installed_lanes_evidence.py --from-gh uses this. It asks the gh CLI for
-the run (it must be completed with success and have one successful job), the
+make_installed_lanes_evidence.py --from-gh uses this. It checks the workflow path,
+repository, branch and source SHA against GitHub and the artifact's workflow_source.
+The run must be completed with success and have one successful job. It reads the
 run's artifact and that artifact's sha256 digest, downloads the artifact zip,
 and checks the zip against the digest. When the local artifact folder already
 holds the artifact, every file in it must equal its zip member byte for byte,
@@ -13,11 +14,13 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import re
 import subprocess
 import zipfile
 from pathlib import Path, PurePosixPath
 
 ARTIFACT_PREFIX = "windows-installed-acceptance-"
+WORKFLOW_PATH = ".github/workflows/windows-installed-acceptance.yml"
 
 
 def _gh(args: list[str], runner=subprocess.run) -> bytes:
@@ -34,6 +37,16 @@ def run_meta(repo: str, run_id: int, runner=subprocess.run) -> dict:
                            "status,conclusion,headSha,jobs"], runner))
     if (view.get("status"), view.get("conclusion")) != ("completed", "success"):
         raise SystemExit(f"run {run_id} is {view.get('status')}/{view.get('conclusion')}")
+    source = json.loads(_gh(["api", f"repos/{repo}/actions/runs/{run_id}"], runner))
+    if source.get("path") != WORKFLOW_PATH:
+        raise SystemExit(f"run {run_id}: workflow path is not {WORKFLOW_PATH}")
+    repository = source.get("repository")
+    branch, sha = source.get("head_branch"), source.get("head_sha")
+    if (not isinstance(repository, dict) or repository.get("full_name") != repo
+            or not isinstance(branch, str) or not branch
+            or not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha)
+            or sha != view.get("headSha")):
+        raise SystemExit(f"run {run_id}: workflow source repository, branch or SHA mismatch")
     jobs = view.get("jobs") or []
     if len(jobs) != 1 or jobs[0].get("conclusion") != "success":
         raise SystemExit(f"run {run_id}: expected one successful job, found {jobs}")
@@ -47,6 +60,7 @@ def run_meta(repo: str, run_id: int, runner=subprocess.run) -> dict:
         raise SystemExit(f"run {run_id}: artifact {name} has no sha256 digest")
     return {"run_id": run_id, "job_id": jobs[0]["databaseId"],
             "date": jobs[0]["startedAt"][:10], "head_sha": view.get("headSha"),
+            "workflow_source": {"repository": repo, "ref": f"refs/heads/{branch}", "sha": sha},
             "artifact_id": found[0]["id"], "artifact_name": name,
             "artifact_zip_sha256": digest.split(":", 1)[1]}
 
@@ -90,11 +104,17 @@ def match_or_extract(data: bytes, sha256: str, folder: Path, name: str) -> Path:
     return target
 
 
-def fetch_and_verify(repo: str, run_id: int, folder: Path, runner=subprocess.run) -> dict:
+def fetch_and_verify(repo: str, run_id: int, folder: Path, runner=subprocess.run,
+                     *, expected_commit: str) -> dict:
     meta = run_meta(repo, run_id, runner)
+    if meta["head_sha"] != expected_commit:
+        raise SystemExit(f"run {run_id}: workflow head SHA is not {expected_commit}")
     data = _gh(["api", f"repos/{repo}/actions/artifacts/{meta['artifact_id']}/zip"], runner)
     folder.mkdir(parents=True, exist_ok=True)
-    match_or_extract(data, meta["artifact_zip_sha256"], folder, meta["artifact_name"])
+    target = match_or_extract(data, meta["artifact_zip_sha256"], folder, meta["artifact_name"])
+    summary = json.loads((target / "ci-installed-acceptance-summary.json").read_text("utf-8-sig"))
+    if summary.get("workflow_source") != meta["workflow_source"]:
+        raise SystemExit(f"run {run_id}: artifact workflow_source differs from GitHub metadata")
     print(f"run {run_id}: job {meta['job_id']}, {meta['date']}, head {meta['head_sha']}, "
           f"artifact zip sha256 {meta['artifact_zip_sha256']} matches")
     return {k: meta[k] for k in ("run_id", "job_id", "date", "artifact_zip_sha256")}

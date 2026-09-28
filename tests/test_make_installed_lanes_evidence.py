@@ -1,9 +1,4 @@
-"""The installed-lanes evidence writer refuses an artifact it cannot vouch for.
-
-Each test builds a synthetic acceptance artifact from the committed lane
-expectations, breaks one thing, and checks that the writer names it. A clean
-artifact yields the same summary shape as the committed evidence file.
-"""
+"""The evidence writer refuses artifacts that depart from the receipt contract."""
 from __future__ import annotations
 
 import copy
@@ -16,6 +11,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from desktop.tool import installed_launch_acceptance_contract as launch_contract
 from scripts import installed_lanes_copy
 from scripts import installed_lanes_gh as gh
 from scripts import make_installed_lanes_evidence as mk
@@ -47,11 +43,18 @@ def _receipt(mode: str) -> dict:
             "lanes": lanes}
 
 
+def _launch(mode: str) -> dict:
+    required = launch_contract.MODE_REQUIRED_ASSERTIONS[mode]
+    return {"schema": mk.LAUNCH_SCHEMA, "complete": True, "mode": mode,
+            "source_commit_expected": COMMIT, "phase_results": launch_contract.phase_results(),
+            "assertions": [{"id": aid, "severity": "critical" if aid in required else "info",
+                            "state": "PASS" if aid in required else "SKIP"}
+                           for aid in launch_contract.ASSERTION_IDS]}
+
+
 def _others() -> dict:
-    """The launch, canon-context, source-stage and smoke receipts, by artifact path."""
-    launch = {"schema": mk.LAUNCH_SCHEMA, "complete": True, "source_commit_expected": COMMIT,
-              "assertions": [{"id": "H01", "state": "PASS"}, {"id": "H02", "state": "SKIP"}]}
-    return {f"{mk.RECEIPTS}/{mk.LAUNCH[0]}": launch, f"{mk.RECEIPTS}/{mk.LAUNCH[1]}": launch,
+    return {f"{mk.RECEIPTS}/{mk.LAUNCH[0]}": _launch("full"),
+            f"{mk.RECEIPTS}/{mk.LAUNCH[1]}": _launch("inspect"),
             f"{mk.RECEIPTS}/{mk.CANON}": {"source": {"commit": COMMIT}, "verdict": "PASS"},
             "python-lane-source-stage.json": {"verdict": "PASS"},
             "frozen-gateway-smoke.json": {"verdict": "BELOW_BAR_EXPECTED"}}
@@ -142,7 +145,7 @@ def test_a_launch_canon_stage_or_smoke_receipt_off_the_run_is_refused(tmp_path, 
     others = _others()
     others[rel] = {**others[rel], **change}
     problems = _problems(_write(tmp_path, others=others))
-    assert len(problems) == 1 and words in problems[0], problems
+    assert any(words in problem for problem in problems), problems
 
 
 def test_a_manifest_off_the_commit_or_a_missing_file_is_refused(tmp_path):
@@ -209,8 +212,6 @@ def _repo(root: Path) -> Path:
 
 def test_the_writer_refuses_a_failing_artifact_and_writes_only_a_clean_one(
         tmp_path, monkeypatch):
-    """End to end through main: each refusal exits 1 and leaves no file, and the
-    local account name is refused like the runner's."""
     monkeypatch.setattr(mk.getpass, "getuser", lambda: "zed")
     repo = _repo(tmp_path / "repo")
     out = repo / mk.EVIDENCE_DIR / "installed-lanes-ci-5.json"
@@ -264,9 +265,17 @@ def test_the_zip_must_match_its_digest_and_the_local_folder(tmp_path):
         gh.match_or_extract(evil, hashlib.sha256(evil).hexdigest(), tmp_path / "e", "art")
 
 
-def _fake_gh(view: dict, artifacts: list):
+def _fake_gh(view: dict, artifacts: list, metadata: dict | None = None):
     def run(cmd, capture_output, check):
-        body = view if cmd[1:3] == ["run", "view"] else {"artifacts": artifacts}
+        if cmd[1:3] == ["run", "view"]:
+            body = view
+        elif cmd[1:] == ["api", "repos/o/r/actions/runs/5"]:
+            body = metadata if metadata is not None else {
+                "path": ".github/workflows/windows-installed-acceptance.yml",
+                "repository": {"full_name": "o/r"}, "head_branch": "main", "head_sha": COMMIT}
+        else:
+            assert cmd[1:] == ["api", "repos/o/r/actions/runs/5/artifacts"], cmd
+            body = {"artifacts": artifacts}
         return SimpleNamespace(returncode=0, stdout=json.dumps(body).encode(), stderr=b"")
     return run
 

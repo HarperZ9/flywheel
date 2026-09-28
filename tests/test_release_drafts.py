@@ -24,7 +24,7 @@ REPO = Path(__file__).resolve().parents[1]
 # The CI run both legs of which the notes and the lane page count from: the
 # installed-app acceptance run on the release source commit.
 EVIDENCE = (REPO / "project-docs" / "lanes" / "evidence"
-            / "installed-lanes-ci-36374922901.json")
+            / "installed-lanes-ci-36393571307.json")
 KNOWN_ISSUES = REPO / "RELEASE-NOTES-1.0.4-known-issues.md"
 NEXT_NOTES = REPO / "RELEASE-NOTES-1.1.0.md"
 LANE_PAGE = REPO / "project-docs" / "lanes" / "LANES.md"
