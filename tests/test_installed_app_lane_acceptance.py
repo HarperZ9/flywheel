@@ -17,7 +17,7 @@ from harness.lane_tool_policy import admitted_tools, main_tools, tool_policy
 from harness.lanes_registry import LANES
 from scripts import installed_lane_engine as engine
 from scripts import installed_lane_verdict as verdict
-from scripts.installed_lane_cases import CASES, Check
+from scripts.installed_lane_cases import CASES, DENIED, REFUSED, Check, LaneCase, st
 
 
 def test_profile_env_is_stripped_and_throwaway(tmp_path, monkeypatch):
@@ -144,10 +144,18 @@ def test_not_measurable_is_listed_and_does_not_fail_the_lane():
     assert row["verdict"] == "AT_CLASS" and row["not_measurable"] == [confounded.name]
 
 
+def _held_case() -> LaneCase:
+    # No lane is held today (telos 0.4.2 ended its hold); the verdict for one
+    # still has to hold, so the case is built here.
+    return LaneCase("held-lane", "B", "held", "a stated hold",
+                    (st("fresh", "cannot_launch", code="lane_held"),))
+
+
 def test_a_held_lane_is_below_the_bar():
-    case = CASES["telos"]
+    case = _held_case()
     row = verdict.lane_verdict(case, _outcomes(case))
     assert row["verdict"] == "HELD" and row["class_measured"] is None
+    assert not any(c.class_expected == "held" for c in CASES.values())
 
 
 def test_summary_passes_only_when_every_lane_is_in_its_class():
@@ -228,11 +236,26 @@ def test_index_map_needs_a_repository_it_could_read():
     assert check.assert_({"metadata_status": "ok", "repo_count": 0}) is False
 
 
-def test_the_held_telos_check_calls_a_tool_telos_has():
-    """telos v0.4.1 names its catalog tool ``telos.catalog``; the check used to
-    call ``telos_catalog``, an unlisted name that the tier gate refused before
-    the held path ran. It now calls the listed tool and expects the held lane's
-    launch refusal."""
-    check = next(c for c in CASES["telos"].checks if c.kind == "call")
-    assert tool_policy("telos", check.tool) is not None
-    assert check.expect_code == "LANE_CANNOT_LAUNCH"
+def test_the_telos_checks_cover_each_tier_with_tools_telos_has():
+    """telos 0.4.2 at class A: the catalog runs at T1, workflow is refused at T1
+    and answers at T2 with its own envelope (no sibling folder beside the staged
+    package), and the device driver answers NOT_IN_BUILD even at T2."""
+    case = CASES["telos"]
+    assert (case.class_plan, case.class_expected) == ("A", "A")
+    checks = {c.name: c for c in case.checks}
+    for check in checks.values():
+        if check.kind == "call":
+            assert tool_policy("telos", check.tool) is not None, check.name
+    assert checks["fresh_main"].tool == "telos.catalog"
+    refused = checks["fresh_workflow_t1_refused"]
+    assert (refused.tool, refused.tier, refused.expect_status) == ("telos.workflow", "T1", DENIED)
+    ran = checks["fresh_workflow_t2_runs"]
+    assert (ran.tool, ran.tier, ran.expect_status) == ("telos.workflow", "T2", 200)
+    good = {"status": "UNVERIFIABLE", "native": {"reason": "flagship_workflow_unjoinable"}}
+    assert ran.assert_(good) is True
+    for bad in ({"status": "MATCH", "native": {"reason": "flagship_workflow_unjoinable"}},
+                {"status": "UNVERIFIABLE", "native": {"reason": "other"}}, [], None):
+        assert ran.assert_(bad) is False, bad
+    out = checks["fresh_native_control_not_in_build"]
+    assert (out.tool, out.tier, out.expect_status, out.expect_code) == (
+        "telos.native.control", "T2", REFUSED, "NOT_IN_BUILD")

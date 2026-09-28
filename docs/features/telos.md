@@ -3,15 +3,20 @@
 > Native-feature documentation for the `telos` lane as it lives inside Flywheel.
 > Scope note: statements are marked observed (read from code in `public/telos`
 > and `public/flywheel/harness`) or proposed (a change not yet in the code).
-> The registry names telos `0.4.1`, held for contents review; older capability descriptions below do not establish admission.
+> The registry pins telos `0.4.2`, the first release without the CAPTCHA and
+> fingerprint code, and the lane tool policy classifies each of its 41 tools from
+> the 0.4.2 code. A capability described below is admitted only as far as the
+> policy table in [lane-tool-policy.md](lane-tool-policy.md) says.
 
 ## One sentence
 
-Telos is Flywheel's reconciliation lane: it exposes one read-only MCP surface of
-41 `telos.*` tools that report workbench readiness, run the golden five-flagship
+Telos is Flywheel's reconciliation lane: it exposes one MCP surface of 41
+`telos.*` tools that report workbench readiness, run the golden five-flagship
 workflow across sibling lanes, run doctors over CI and presentation and
 accessibility state, and assemble proof packets whose verdict recomputes from
-the packet's own materials.
+the packet's own materials. In Flywheel, 37 of them run on an ordinary lane
+call, the three that start programs outside the package run only on a call you
+approve at T2, and `telos.native.control` is not in the build.
 
 ## One paragraph
 
@@ -23,9 +28,9 @@ lane ships four proof lanes (agent-action, research, visual, build) where the
 verdict folds out of checks the verifier recomputes, so a packet that carries
 its own MATCH cannot win with it. Telos is registered as the `telos` lane in
 `harness/lanes_registry.py` (organ `reconciliation`) and sits third in the
-gateway spine after `flywheel` and `local-model`. It is a node lane, but the
-release hold prevents its MCP tools from running in this build. The public roster
-reports an empty launch hint for it. Beyond the MCP surface, Flywheel runs
+gateway spine after `flywheel` and `local-model`. It is a node lane: the Windows
+app runs the pinned npm package on the Node it bundles, and a pip or source
+install runs it on the Node you have. Beyond the MCP surface, Flywheel runs
 telos's own creative-kernel code in
 place through `harness/telos_kernels.py` and registers a Telos browser-admission
 driver behind the effector seam. The Telos core is zero-dependency and node 20 or
@@ -33,11 +38,15 @@ newer; CI runs on node 24. Observed.
 
 ## Feature list (each bound to code)
 
-- **One MCP surface, 41 read-only tools.** `demo/telos-mcp.mjs` serves a stdio
-  MCP server (protocol `2025-06-18`) that lists 41 `telos.*` tools and dispatches
-  each to a `demo/*.mjs` script through `spawnSync`, returning both a text block
-  and `structuredContent`. Every tool is read-only and zero-auth. Observed:
-  `public/telos/demo/telos-mcp.mjs`.
+- **One MCP surface, 41 tools.** `demo/telos-mcp.mjs` serves a stdio MCP
+  server (protocol `2025-06-18`) that lists 41 `telos.*` tools and dispatches
+  each to one `demo/*.mjs` script with fixed flags through `spawnSync`, returning
+  both a text block and `structuredContent`. It never reads a call's arguments.
+  Every tool is zero-auth. Measured on 0.4.2 in Flywheel: no tool writes outside
+  the lane folder or uses the network, and `telos.room`, `telos.workflow` and
+  `telos.proof` start programs from outside the package. Observed:
+  `demo/telos-mcp.mjs`,
+  `project-docs/lanes/evidence/telos-0.4.2-tool-measurement.json`.
 - **A verdict on every call.** Each tool emits a
   `project-telos.flagship-action/v1` envelope carrying MATCH, DRIFT, or
   UNVERIFIABLE and a next action. A missing dependency returns UNVERIFIABLE
@@ -107,12 +116,12 @@ newer; CI runs on node 24. Observed.
   controls and named non-claims. Observed: `demo/research-seed.mjs`,
   `demo/thermodynamic-ai-chip-receipt.mjs`, `demo/rendering-research.mjs`,
   `public/telos/README.md`.
-- **Native workstation control, catalog-only over MCP.**
-  `telos.native.control` returns the read-only capability and verb catalog for
-  browser (Chrome DevTools Protocol) and native-app (Windows UI Automation)
-  actuation; `telos.browser.evidence` returns a redacted browser-evidence packet.
-  The actuation itself runs through the CLI (`demo/native-control.mjs`); over
-  MCP the tool returns only the catalog. Observed: `demo/native-control.mjs`,
+- **Native workstation control stays out of Flywheel.** Over MCP,
+  `telos.native.control` returns the verb catalog of the package's browser
+  (Chrome DevTools Protocol), native-app (Windows UI Automation) and device
+  driver; the driver itself runs only from the Telos CLI. Flywheel leaves the
+  tool out of its build. `telos.browser.evidence` returns a synthetic
+  browser-evidence fixture. Observed: `demo/native-control.mjs`,
   `demo/browser-evidence.mjs`.
 - **Registry, queue, and substrate intake.** `telos.revival.registry`,
   `telos.second_level.queue`, `telos.workstation.substrate`, and
@@ -133,13 +142,15 @@ larger count as a composed total, not telos's own surface.
 
 ## Stepwise usage (how a user runs it)
 
-Telos runs the same way whether or not Flywheel is present, from a source
-checkout (no npm distribution is admitted).
+Telos runs the same way whether or not Flywheel is present. The Windows app
+bundles the pinned package; `flywheel install telos` installs
+`project-telos-mcp@0.4.2` from npm; the steps below run it from a checkout.
 
 1. **Get the checkout.**
    ```bash
    git clone https://github.com/HarperZ9/telos.git
    cd telos
+   git checkout v0.4.2
    ```
    Node 20 or newer. There is nothing to install: the core is zero-dependency.
 
@@ -177,8 +188,8 @@ checkout (no npm distribution is admitted).
    ```bash
    npm start            # node demo/telos-mcp.mjs, stdio MCP
    ```
-   Inside Flywheel this launch is what the lane layer spawns from the source
-   checkout; a user rarely runs it by hand.
+   Inside Flywheel the lane layer spawns this server from the bundled package,
+   the npm install or the source checkout; a user rarely runs it by hand.
 
 Most commands accept `--summary` for a compact terminal view and `--json` for
 IDE, app, and automation hosts. Observed: `public/telos/README.md`, `USAGE.md`,
@@ -214,8 +225,10 @@ Observed in `public/telos/demo/` and the README command surface.
 
 ### MCP tools
 41 tools, observed in `demo/telos-mcp.mjs` (the `tools` array and the
-`toolScripts` dispatch map). Each is read-only, zero-auth, and returns a JSON
-action envelope.
+`toolScripts` dispatch map). Each is zero-auth and returns JSON. The lane tool
+policy gives each its tier in Flywheel: `telos.room`, `telos.workflow` and
+`telos.proof` need a T2 approval, `telos.native.control` is not in the build,
+and the rest run at T1.
 
 - Orientation: `telos.status`, `telos.doctor`, `telos.room`, `telos.workflow`,
   `telos.catalog`, `telos.server.manifest`, `telos.mcp.freshness`.
@@ -268,27 +281,26 @@ Telos is the `reconciliation` organ in the lane layer. Observed in
 
 ```python
 "telos": Lane(
-    "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.1",
+    "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.2",
     "the reconciliation lane: five-tool workflow + creative engine + doctors",
-    "reconciliation", source_repo="public/telos",
-    package_disabled_reason=("This build holds Telos out while its release contents "
-                             "are reviewed. "
-                             "Nothing needs installing; the other lanes run without it.")),
+    "reconciliation", source_repo="public/telos"),
 ```
 
 It sits third in the flagship spine, `SPINE = ("flywheel", "local-model",
 "telos", "index", "forum", "gather", "crucible", "learn", "mneme", "relay",
-"plexus")` in `harness/gateway.py`. The published npm package remains held, so
-the public roster reports an empty launch hint and the lane cannot launch.
-The hold also applies to source installs. Observed: `harness/lanes_registry.py`,
-`harness/lane_tool_policy_node.py`, `tests/test_node_lane_hold.py`.
+"plexus")` in `harness/gateway.py`. The Windows app stages the pinned npm
+tarball (`packaging/node-lane-payloads.json`) and runs it on its bundled Node;
+the public roster's launch hint is `node demo/telos-mcp.mjs`. Observed:
+`harness/lanes_registry.py`, `harness/node_lanes.py`,
+`harness/lane_tool_policy_node.py`.
 
 ### What it consumes from peers
-- **Sibling lane checkouts.** `telos.room`, `telos.workflow`,
-  `telos.server.manifest`, and `telos.mcp.freshness` read the gather, crucible,
-  index, and forum source checkouts and a local python interpreter to reconcile
-  them into one map. A missing sibling becomes an UNVERIFIABLE envelope naming
-  the gap.
+- **Sibling lane checkouts.** `telos.room` and `telos.workflow` run the
+  gather, crucible, index, and forum source checkouts beside the package on the
+  python found on PATH, and `telos.presentation.doctor` reads their READMEs and
+  brand files. A missing sibling becomes an UNVERIFIABLE envelope naming the
+  gap. The Windows app stages no sibling beside the package, so there both tools
+  answer that envelope.
 - **A witness reader.** The proof lanes' witness stage is a second reader (Emet)
   over the packet's canonical bytes. When it is unreachable, the packet records
   coverage as lost and the verdict stands on the verifier alone.
@@ -368,12 +380,16 @@ kernel's `receipt_hash` into the pipeline's chained receipt. Observed:
 Telos is a native lane, so the roster wiring exists. Present and verified:
 
 - **Lane registry entry.** `LANES["telos"]` in `harness/lanes_registry.py`,
-  organ `reconciliation`, version `0.4.1`, `source_repo="public/telos"`, kind
+  organ `reconciliation`, version `0.4.2`, `source_repo="public/telos"`, kind
   `npm`.
 - **Spine slot.** `SPINE` in `harness/gateway.py`, position three.
 - **Expected-set and launch-hint tests.** `tests/test_lanes.py` lists `telos` in
-  the expected lane set and asserts `resolve_mcp_command("telos") == []`, since
-  the unpublished package exposes no public launch hint.
+  the expected lane set and asserts its public launch hint,
+  `node demo/telos-mcp.mjs`.
+- **Payload pin.** The telos row of `packaging/node-lane-payloads.json` pins the
+  npm tarball by sha512 integrity and sha256, cross-checked against the v0.4.2
+  GitHub release's `SHA256SUMS.txt`; `scripts/stage_node_lanes.py` checks all
+  three before it extracts anything.
 - **Desktop app card.** `laneIdentities['telos']` in
   `desktop/lib/models/lane_identity.dart`.
 - **In-process bridges with tests.** `harness/telos_kernels.py`,
@@ -382,15 +398,15 @@ Telos is a native lane, so the roster wiring exists. Present and verified:
 
 What is bounded or in flight:
 
-- **Release contents held.** npm publishes `project-telos-mcp@0.4.1`, but Flywheel
-  keeps its tools out while its release contents are reviewed. Publication does
-  not clear that hold. Observed: `harness/lanes_registry.py`.
+- **Three tools need an approval.** `telos.room`, `telos.workflow` and
+  `telos.proof` start programs from outside the package, so each runs only on a
+  call you approve at T2, and `telos.native.control` is not in the build.
+  Observed: `harness/lane_tool_policy_node.py`.
 - **No Python payload pin.** `packaging/python-lane-payloads.jsonl` and its
   checker `scripts/check_python_lane_payload_manifest.py` cover Python lanes
-  (schema `flywheel.python-lane-payload/v1`). Telos is a node lane, so it is not
-  in that manifest and carries no source-pin row there. For a node lane this is a
-  natural non-entry.
-- **Version lockstep.** The `0.4.1` string in `lanes_registry.py` is a
+  (schema `flywheel.python-lane-payload/v1`). Telos is a node lane, so its pin is
+  the Node payload row above.
+- **Version lockstep.** The `0.4.2` string in `lanes_registry.py` is a
   hand-maintained constant. It must be bumped in the same change as telos's
   `package.json` version, or `lane_status` reports STALE against the checkout.
 - **Reconciliation tools need the siblings.** `telos.room` and `telos.workflow`
@@ -404,10 +420,11 @@ What is bounded or in flight:
 
 ## Boundary
 
-Telos tools are read-only, zero-auth, and emit JSON envelopes; the MCP surface
-performs no external writes. Native workstation actuation lives in the CLI
-(`demo/native-control.mjs`), and over MCP `telos.native.control` returns only the
-capability catalog. The browser adapter fences request and result bytes and caps
+Telos tools are zero-auth and emit JSON. Measured on 0.4.2, no tool call used
+the network or wrote outside the lane folder, and the three that start programs
+outside the package need a T2 approval. Native workstation actuation lives in
+the Telos CLI (`demo/native-control.mjs`), and Flywheel leaves
+`telos.native.control` out of its build. The browser adapter fences request and result bytes and caps
 the timeout at ten seconds, pins the reviewed CDP module by sha256, and refuses a
 dispatched request that lacks a trustworthy terminal acknowledgement. Research
 packets are deterministic preflights with named non-claims: the causal packet

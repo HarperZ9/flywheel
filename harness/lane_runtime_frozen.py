@@ -7,9 +7,9 @@ frozen engine can perform for each lane:
 
 - a payload lane admits from its reviewed payload through ``--bundled-lane-mcp``
   (bundled_lane_admission);
-- learn runs the staged script on an absolute Node (node_lanes); a lane the
-  policy holds out of the build (telos, the O-8 hold) reports ``lane_held``
-  before any Node lookup;
+- learn and telos run the staged script on an absolute Node (node_lanes); a
+  lane the policy holds out of the build (``HELD_LANES``, empty today) reports
+  ``lane_held`` before any Node lookup;
 - local-model runs the engine's ``--mcp --root <folder>`` mode on the project
   folder the person picked, read from ``<home>/lanes/local-model/root``;
 - writing runs the engine's ``--lane-mcp writing`` mode (frozen_lane_modes);

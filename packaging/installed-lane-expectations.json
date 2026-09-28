@@ -18,8 +18,8 @@
     "mneme": {"verdict": "AT_CLASS"},
     "plexus": {"verdict": "AT_CLASS"},
     "relay": {"verdict": "AT_CLASS"},
-    "telos": {"verdict": "HELD", "failed": [],
-              "why": "held out of this build; the lane must not launch"},
+    "telos": {"verdict": "AT_CLASS",
+              "why": "telos 0.4.2 is staged on the bundled Node: the catalog answers at T1, workflow is refused at T1 and answers its own UNVERIFIABLE envelope at T2, native.control answers NOT_IN_BUILD"},
     "writing": {"verdict": "AT_CLASS"}
   }
 }

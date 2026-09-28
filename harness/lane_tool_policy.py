@@ -77,10 +77,10 @@ READS_ONLY_LANES = {
 }
 #: Lanes held out of this build, with the card's sentence. A held lane admits no
 #: tool and has no main tool; the frozen engine reports ``lane_held`` for it.
-#: telos: the O-8 hold (DECISIONS.json) while its release contents are reviewed.
-HELD_LANES = {
-    "telos": "Not in this build: Telos is held while its release contents are reviewed.",
-}
+#: None is held: telos was, until 0.4.2 removed the release contents under review
+#: and its tools were classified one by one (lane_tool_policy_node). The
+#: mechanism stays for a lane that needs it again.
+HELD_LANES: dict[str, str] = {}
 
 
 @dataclass(frozen=True)

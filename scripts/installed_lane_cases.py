@@ -139,6 +139,14 @@ def _has_rooms(reply: object) -> bool:
     return isinstance(rooms, list) and len(rooms) > 0
 
 
+def _workflow_unjoinable(reply: object) -> bool:
+    # The installed app has no gather, crucible, index or forum source folder
+    # beside the staged package, so an approved workflow call answers with the
+    # lane's own UNVERIFIABLE envelope and starts none of their programs.
+    return (isinstance(reply, dict) and reply.get("status") == "UNVERIFIABLE"
+            and find_key(reply, "reason") == "flagship_workflow_unjoinable")
+
+
 def _diagnose_args(ctx: Ctx) -> dict:
     w = ctx.writing
     return {"journey_ref": w.get("journey_ref"), "expected_event_head": w.get("event_head"),
@@ -172,10 +180,15 @@ CASES: dict[str, LaneCase] = {c.lane: c for c in (
         st("fresh", *RUNS), tools("fresh"), fx("fresh", "forum")),
         untested=("real rooms need FORUM_RUN_REAL and a provider key",)),
     _read_lane("learn", basis="PLAN 1a said B (Node); O-1 b bundles Node, so A"),
-    LaneCase("telos", "B", "held", "O-8 hold: no telos payload in any freeze", (
-        st("fresh", "cannot_launch", code="lane_held"),
-        call("fresh_catalog_refused", "fresh", "telos.catalog", lambda c: {},
-             status=REFUSED, code="LANE_CANNOT_LAUNCH"))),
+    _read_lane("telos", basis="PLAN 1a said B (Node); telos 0.4.2 runs on the bundled "
+               "Node, so A. room, workflow and proof start programs outside the package "
+               "and run only at T2; native.control stays out of the build", extra=(
+        call("fresh_workflow_t1_refused", "fresh", "telos.workflow", lambda c: {},
+             status=DENIED),
+        call("fresh_workflow_t2_runs", "fresh", "telos.workflow", lambda c: {}, tier="T2",
+             assert_=_workflow_unjoinable),
+        call("fresh_native_control_not_in_build", "fresh", "telos.native.control",
+             lambda c: {}, tier="T2", status=REFUSED, code="NOT_IN_BUILD"))),
     LaneCase("local-model", "B", "B", "PLAN 1a: model server and project folder", (
         st("fresh", "needs_setup"),
         call("fresh_run_needs_setup", "fresh", "local_agent_run",

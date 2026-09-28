@@ -119,14 +119,14 @@ LANES: dict[str, Lane] = {
         env_vars=("LEARN_CRUCIBLE_CMD", "LEARN_GATHER_CMD", "LEARN_NATIVE_CONTROL",
                   "LEARN_TELOS_CMD")),
     "telos": Lane(
-        "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.1",
+        # 0.4.2 is the first release without the CAPTCHA and fingerprint code, so
+        # its lane variable is gone too. Its tools are classified one by one in
+        # lane_tool_policy_node.
+        "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.2",
         "the reconciliation lane: five-tool workflow + creative engine + doctors",
         "reconciliation", source_repo="public/telos",
-        package_disabled_reason=("This build holds Telos out while its release contents "
-                                 "are reviewed. "
-                                 "Nothing needs installing; the other lanes run without it."),
         env_vars=("TELOS_CHROME_PATH", "TELOS_CHROME_PROFILE", "TELOS_EMET_CLI",
-                  "TELOS_EMET_DISABLE_FALLBACKS", "LEARN_CLI", "CAPTCHA_VENV_PY",
+                  "TELOS_EMET_DISABLE_FALLBACKS", "LEARN_CLI",
                   "TELOS_CONSO_FONT_ZIP", "TELOS_KILON_FONT_ZIP")),
     "local-model": Lane(
         "local-model", "", "python", ("-m", "harness.local_mcp"), "bundled", "0.1.0",

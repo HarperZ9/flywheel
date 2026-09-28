@@ -21,8 +21,8 @@ in plain words and turns it into a task the app runs and records on the model
 you pick. A permission-gated coding agent, relay, runs over your own folders and
 checks each tool request before it acts. Seventeen composable lanes ship in the
 roster. In the Windows app's installed-app check, 15 of 17 lanes reach the class
-the check expects for them; index is below that bar without Git, and telos is
-not in this build ([per-lane table](project-docs/lanes/LANES.md)).
+the check expects for them; index is below that bar without Git, and 1.1.0 left
+telos out. The next release pins telos 0.4.2 ([per-lane table](project-docs/lanes/LANES.md)).
 
 The command `flywheel check-output` checks a value against the source that
 decides it, ships finance, medicine, and law packs, and can emit the check as a

@@ -1,0 +1,2232 @@
+{
+ "method": "Each of the 41 tools called once through the package's own stdio MCP server, the way the engine calls a Node lane: the bundled Node, the lane folder as working folder, TEMP, TMP and the app-data folders inside it, and a stray argument in every call. A preload module recorded every child process, file write, file read or probe, and network call (net, http, https, tls, dgram, fetch, WebSocket) in the server and in every Node child. The package folder was hashed before and after.",
+ "package": "project-telos-mcp 0.4.2",
+ "runs": {
+  "full_path": {
+   "lane_files_left": [],
+   "node": "v24.21.0",
+   "package_unchanged": true,
+   "setting": "PATH is the developer machine's full PATH",
+   "tools": {
+    "telos.accessibility.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\accessibility-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.accessibility-doctor/v1",
+     "writes": []
+    },
+    "telos.action.receipt": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\action-receipt.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.action-receipt/v1",
+     "writes": []
+    },
+    "telos.admission.telemetry": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\admission-telemetry.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.admission-telemetry/v1",
+     "writes": []
+    },
+    "telos.browser.evidence": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\browser-evidence.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.browser-evidence/v1",
+     "writes": []
+    },
+    "telos.catalog": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\catalog.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.mcp-tool-catalog/v1",
+     "writes": []
+    },
+    "telos.ci.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\ci-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.ci-doctor/v1",
+     "writes": []
+    },
+    "telos.ci.triage": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\ci-triage.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.ci-triage/v1",
+     "writes": []
+    },
+    "telos.compatibility.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\compatibility-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.compatibility-doctor/v1",
+     "writes": []
+    },
+    "telos.context.envelope": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\context-envelope.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.context-envelope/v1",
+     "writes": []
+    },
+    "telos.context.pack": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\context-pack.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.context-pack/v1",
+     "writes": []
+    },
+    "telos.creative.engine": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\creative-engine.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.creative-engine/v1",
+     "writes": []
+    },
+    "telos.creative.kernels": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\creative-kernels.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.creative-kernels/v1",
+     "writes": []
+    },
+    "telos.display.calibration": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\display-calibration.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.display-calibration/v1",
+     "writes": []
+    },
+    "telos.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.flagship-action/v1",
+     "writes": []
+    },
+    "telos.learning.forge": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\learning-forge.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.learning-forge/youtube-research-seed/v1",
+     "writes": []
+    },
+    "telos.learning.labs": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\learning-forge-labs.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.learning-forge/labs/v1",
+     "writes": []
+    },
+    "telos.loop.ledger": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\loop-ledger.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.loop-ledger/v1",
+     "writes": []
+    },
+    "telos.mcp.freshness": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\mcp-freshness.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.mcp-freshness/v1",
+     "writes": []
+    },
+    "telos.measurement.layers": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\measurement-layers.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.measurement-layers/v1",
+     "writes": []
+    },
+    "telos.model.foundry": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\model-foundry.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.model-foundry/v1",
+     "writes": []
+    },
+    "telos.native.control": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\native-control.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.native-control/v1",
+     "writes": []
+    },
+    "telos.objective.monitor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\objective-monitor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.objective-monitor/v1",
+     "writes": []
+    },
+    "telos.operator.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\operator-doctor.mjs"
+       ],
+       "cmd": "node"
+      },
+      {
+       "args": [
+        "<package>\\demo\\status.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.operator-doctor/v1",
+     "writes": []
+    },
+    "telos.performance.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\performance-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.performance-doctor/v1",
+     "writes": []
+    },
+    "telos.presentation.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\presentation-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [
+      "<beside-package>\\crucible",
+      "<beside-package>\\forum",
+      "<beside-package>\\gather",
+      "<beside-package>\\index"
+     ],
+     "schema": "project-telos.presentation-doctor/v1",
+     "writes": []
+    },
+    "telos.proof": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\proof.mjs",
+        "agent-action",
+        "--demo",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [
+      "<beside-package>\\emet\\impl\\js\\emet.js"
+     ],
+     "schema": "project-telos.proof-packet/v1",
+     "writes": []
+    },
+    "telos.proof.build": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\proof.mjs",
+        "build",
+        "--demo",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.build-proof-packet/v1",
+     "writes": []
+    },
+    "telos.proof.research": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\proof.mjs",
+        "research",
+        "--demo",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.research-proof-packet/v1",
+     "writes": []
+    },
+    "telos.proof.visual": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\proof.mjs",
+        "visual",
+        "--demo",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.visual-proof-packet/v1",
+     "writes": []
+    },
+    "telos.rendering.capabilities": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\rendering-capabilities.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.rendering-capabilities/v1",
+     "writes": []
+    },
+    "telos.rendering.research": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\rendering-research.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.research-seed/v1",
+     "writes": []
+    },
+    "telos.research.seed": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\research-seed.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.research-seed/v1",
+     "writes": []
+    },
+    "telos.research.thermodynamic": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\thermodynamic-ai-chip-receipt.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.research-intake/youtube-verified-transcript-v1",
+     "writes": []
+    },
+    "telos.revival.registry": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\revival-registry.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.revival-registry/v1",
+     "writes": []
+    },
+    "telos.room": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\room.mjs",
+        "--json"
+       ],
+       "cmd": "node"
+      },
+      {
+       "args": [
+        "--version"
+       ],
+       "cmd": "python"
+      }
+     ],
+     "reads_outside_package": [
+      "<beside-package>\\crucible",
+      "<beside-package>\\forum",
+      "<beside-package>\\gather",
+      "<beside-package>\\index"
+     ],
+     "schema": "project-telos.flagship-action/v1",
+     "writes": []
+    },
+    "telos.second_level.queue": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\second-level-flagship-queue.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.second-level-flagship-queue/v1",
+     "writes": []
+    },
+    "telos.server.manifest": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\server-manifest.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.mcp-server-manifest/v1",
+     "writes": []
+    },
+    "telos.showcase.scout": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\showcase.mjs",
+        "scout",
+        "--fixture",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.oss-scout/v1",
+     "writes": []
+    },
+    "telos.status": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\status.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.flagship-action/v1",
+     "writes": []
+    },
+    "telos.workflow": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\flagship-workflow.mjs"
+       ],
+       "cmd": "node"
+      },
+      {
+       "args": [
+        "--version"
+       ],
+       "cmd": "python"
+      }
+     ],
+     "reads_outside_package": [
+      "<beside-package>\\crucible",
+      "<beside-package>\\forum",
+      "<beside-package>\\gather",
+      "<beside-package>\\index"
+     ],
+     "schema": "project-telos.flagship-action/v1",
+     "writes": []
+    },
+    "telos.workstation.substrate": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\workstation-substrate.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.workstation-substrate/v1",
+     "writes": []
+    }
+   }
+  },
+  "stand_ins_beside_package": {
+   "lane_files_left": [],
+   "node": "v24.21.0",
+   "package_unchanged": true,
+   "setting": "full PATH, plus stand-in gather, crucible, index and forum source folders and an emet script beside the package; each stand-in prints fixed JSON and writes nothing",
+   "tools": {
+    "telos.accessibility.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\accessibility-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.accessibility-doctor/v1",
+     "writes": []
+    },
+    "telos.action.receipt": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\action-receipt.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.action-receipt/v1",
+     "writes": []
+    },
+    "telos.admission.telemetry": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\admission-telemetry.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.admission-telemetry/v1",
+     "writes": []
+    },
+    "telos.browser.evidence": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\browser-evidence.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.browser-evidence/v1",
+     "writes": []
+    },
+    "telos.catalog": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\catalog.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.mcp-tool-catalog/v1",
+     "writes": []
+    },
+    "telos.ci.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\ci-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.ci-doctor/v1",
+     "writes": []
+    },
+    "telos.ci.triage": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\ci-triage.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.ci-triage/v1",
+     "writes": []
+    },
+    "telos.compatibility.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\compatibility-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.compatibility-doctor/v1",
+     "writes": []
+    },
+    "telos.context.envelope": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\context-envelope.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.context-envelope/v1",
+     "writes": []
+    },
+    "telos.context.pack": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\context-pack.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.context-pack/v1",
+     "writes": []
+    },
+    "telos.creative.engine": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\creative-engine.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.creative-engine/v1",
+     "writes": []
+    },
+    "telos.creative.kernels": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\creative-kernels.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.creative-kernels/v1",
+     "writes": []
+    },
+    "telos.display.calibration": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\display-calibration.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.display-calibration/v1",
+     "writes": []
+    },
+    "telos.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.flagship-action/v1",
+     "writes": []
+    },
+    "telos.learning.forge": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\learning-forge.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.learning-forge/youtube-research-seed/v1",
+     "writes": []
+    },
+    "telos.learning.labs": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\learning-forge-labs.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.learning-forge/labs/v1",
+     "writes": []
+    },
+    "telos.loop.ledger": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\loop-ledger.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.loop-ledger/v1",
+     "writes": []
+    },
+    "telos.mcp.freshness": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\mcp-freshness.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.mcp-freshness/v1",
+     "writes": []
+    },
+    "telos.measurement.layers": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\measurement-layers.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.measurement-layers/v1",
+     "writes": []
+    },
+    "telos.model.foundry": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\model-foundry.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.model-foundry/v1",
+     "writes": []
+    },
+    "telos.native.control": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\native-control.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.native-control/v1",
+     "writes": []
+    },
+    "telos.objective.monitor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\objective-monitor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.objective-monitor/v1",
+     "writes": []
+    },
+    "telos.operator.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\operator-doctor.mjs"
+       ],
+       "cmd": "node"
+      },
+      {
+       "args": [
+        "<package>\\demo\\status.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.operator-doctor/v1",
+     "writes": []
+    },
+    "telos.performance.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\performance-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.performance-doctor/v1",
+     "writes": []
+    },
+    "telos.presentation.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\presentation-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [
+      "<beside-package>\\crucible",
+      "<beside-package>\\crucible\\CHANGELOG.md",
+      "<beside-package>\\crucible\\README.md",
+      "<beside-package>\\crucible\\docs\\brand\\README.md",
+      "<beside-package>\\crucible\\docs\\brand\\crucible-hero.png",
+      "<beside-package>\\crucible\\docs\\brand\\crucible-hero.svg",
+      "<beside-package>\\crucible\\docs\\brand\\crucible-mark.svg",
+      "<beside-package>\\forum",
+      "<beside-package>\\forum\\CHANGELOG.md",
+      "<beside-package>\\forum\\README.md",
+      "<beside-package>\\forum\\docs\\brand\\README.md",
+      "<beside-package>\\forum\\docs\\brand\\forum-hero.png",
+      "<beside-package>\\forum\\docs\\brand\\forum-hero.svg",
+      "<beside-package>\\forum\\docs\\brand\\forum-mark.svg",
+      "<beside-package>\\gather",
+      "<beside-package>\\gather\\CHANGELOG.md",
+      "<beside-package>\\gather\\README.md",
+      "<beside-package>\\gather\\docs\\brand\\README.md",
+      "<beside-package>\\gather\\docs\\brand\\gather-hero.png",
+      "<beside-package>\\gather\\docs\\brand\\gather-hero.svg",
+      "<beside-package>\\gather\\docs\\brand\\gather-mark.svg",
+      "<beside-package>\\index",
+      "<beside-package>\\index\\CHANGELOG.md",
+      "<beside-package>\\index\\README.md",
+      "<beside-package>\\index\\docs\\brand\\README.md",
+      "<beside-package>\\index\\docs\\brand\\index-hero.png",
+      "<beside-package>\\index\\docs\\brand\\index-hero.svg",
+      "<beside-package>\\index\\docs\\brand\\index-mark.svg"
+     ],
+     "schema": "project-telos.presentation-doctor/v1",
+     "writes": []
+    },
+    "telos.proof": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\proof.mjs",
+        "agent-action",
+        "--demo",
+        "--json"
+       ],
+       "cmd": "node"
+      },
+      {
+       "args": [
+        "<beside-package>\\emet\\impl\\js\\emet.js",
+        "coherence",
+        "--json",
+        "<lane>\\tmp\\telos-proof-witness-XXXXXX\\source.bytes",
+        "<lane>\\tmp\\telos-proof-witness-XXXXXX\\view.bytes"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [
+      "<beside-package>\\emet\\impl\\js\\emet.js"
+     ],
+     "schema": "project-telos.proof-packet/v1",
+     "writes": [
+      "lane",
+      "lane",
+      "lane",
+      "lane"
+     ]
+    },
+    "telos.proof.build": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\proof.mjs",
+        "build",
+        "--demo",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.build-proof-packet/v1",
+     "writes": []
+    },
+    "telos.proof.research": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\proof.mjs",
+        "research",
+        "--demo",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.research-proof-packet/v1",
+     "writes": []
+    },
+    "telos.proof.visual": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\proof.mjs",
+        "visual",
+        "--demo",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.visual-proof-packet/v1",
+     "writes": []
+    },
+    "telos.rendering.capabilities": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\rendering-capabilities.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.rendering-capabilities/v1",
+     "writes": []
+    },
+    "telos.rendering.research": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\rendering-research.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.research-seed/v1",
+     "writes": []
+    },
+    "telos.research.seed": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\research-seed.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.research-seed/v1",
+     "writes": []
+    },
+    "telos.research.thermodynamic": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\thermodynamic-ai-chip-receipt.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.research-intake/youtube-verified-transcript-v1",
+     "writes": []
+    },
+    "telos.revival.registry": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\revival-registry.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.revival-registry/v1",
+     "writes": []
+    },
+    "telos.room": {
+     "answered": false,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\room.mjs",
+        "--json"
+       ],
+       "cmd": "node"
+      },
+      {
+       "args": [
+        "--version"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "-c",
+        "<import the sibling cli module and run main>",
+        "<beside-package>\\gather\\src",
+        "[\"status\",\"--json\"]",
+        "gather"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "-c",
+        "<import the sibling cli module and run main>",
+        "<beside-package>\\crucible\\src",
+        "[\"status\",\"--json\"]",
+        "crucible"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "-c",
+        "<import the sibling cli module and run main>",
+        "<beside-package>\\index\\src",
+        "[\"status\",\"--json\"]",
+        "index_graph"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "-c",
+        "<import the sibling cli module and run main>",
+        "<beside-package>\\forum\\src",
+        "[\"status\",\"--json\"]",
+        "forum"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "<package>\\demo\\status.mjs"
+       ],
+       "cmd": "node"
+      },
+      {
+       "args": [
+        "-c",
+        "<import the sibling cli module and run main>",
+        "<beside-package>\\gather\\src",
+        "[\"doctor\",\"--json\"]",
+        "gather"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "-c",
+        "<import the sibling cli module and run main>",
+        "<beside-package>\\crucible\\src",
+        "[\"doctor\",\"--json\"]",
+        "crucible"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "-c",
+        "<import the sibling cli module and run main>",
+        "<beside-package>\\index\\src",
+        "[\"doctor\",\"--json\"]",
+        "index_graph"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "-c",
+        "<import the sibling cli module and run main>",
+        "<beside-package>\\forum\\src",
+        "[\"doctor\",\"--json\"]",
+        "forum"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "<package>\\demo\\doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [
+      "<beside-package>\\crucible",
+      "<beside-package>\\crucible\\src",
+      "<beside-package>\\forum",
+      "<beside-package>\\forum\\src",
+      "<beside-package>\\gather",
+      "<beside-package>\\gather\\src",
+      "<beside-package>\\index",
+      "<beside-package>\\index\\src"
+     ],
+     "schema": null,
+     "writes": []
+    },
+    "telos.second_level.queue": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\second-level-flagship-queue.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.second-level-flagship-queue/v1",
+     "writes": []
+    },
+    "telos.server.manifest": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\server-manifest.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.mcp-server-manifest/v1",
+     "writes": []
+    },
+    "telos.showcase.scout": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\showcase.mjs",
+        "scout",
+        "--fixture",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.oss-scout/v1",
+     "writes": []
+    },
+    "telos.status": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\status.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.flagship-action/v1",
+     "writes": []
+    },
+    "telos.workflow": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\flagship-workflow.mjs"
+       ],
+       "cmd": "node"
+      },
+      {
+       "args": [
+        "--version"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "-c",
+        "<import the sibling cli module and run main>",
+        "<beside-package>\\index\\src",
+        "[\"map\",\"--root\",\"<package>\",\"--json\"]",
+        "index_graph"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "-c",
+        "<import the sibling cli module and run main>",
+        "<beside-package>\\gather\\src",
+        "[\"docs\",\"<package>\\docs\\superpowers\\specs\\2026-06-27-flagship-operator-spine-design.md\",\"--json\"]",
+        "gather"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "-c",
+        "<import the sibling cli module and run main>",
+        "<beside-package>\\forum\\src",
+        "[\"route\",\"improve Project Telos flagship gather crucible index forum provenance workflow\"]",
+        "forum"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "-c",
+        "<import the sibling cli module and run main>",
+        "<beside-package>\\crucible\\src",
+        "[\"assess\",\"<lane>\\tmp\\telos-flagship-workflow-XXXXXX\\thesis.json\",\"--measurements\",\"<lane>\\tmp\\telos-flagship-workflow-XXXXXX\\measurements.json\",\"--json\"]",
+        "crucible"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "demo\\run.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [
+      "<beside-package>\\crucible",
+      "<beside-package>\\crucible\\src",
+      "<beside-package>\\forum",
+      "<beside-package>\\forum\\src",
+      "<beside-package>\\gather",
+      "<beside-package>\\gather\\src",
+      "<beside-package>\\index",
+      "<beside-package>\\index\\src"
+     ],
+     "schema": "project-telos.flagship-action/v1",
+     "writes": [
+      "lane",
+      "lane",
+      "lane",
+      "lane"
+     ]
+    },
+    "telos.workstation.substrate": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\workstation-substrate.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.workstation-substrate/v1",
+     "writes": []
+    }
+   }
+  },
+  "system_path": {
+   "lane_files_left": [],
+   "node": "v24.21.0",
+   "package_unchanged": true,
+   "setting": "PATH is the system folder only, as for a frozen lane child",
+   "tools": {
+    "telos.accessibility.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\accessibility-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.accessibility-doctor/v1",
+     "writes": []
+    },
+    "telos.action.receipt": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\action-receipt.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.action-receipt/v1",
+     "writes": []
+    },
+    "telos.admission.telemetry": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\admission-telemetry.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.admission-telemetry/v1",
+     "writes": []
+    },
+    "telos.browser.evidence": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\browser-evidence.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.browser-evidence/v1",
+     "writes": []
+    },
+    "telos.catalog": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\catalog.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.mcp-tool-catalog/v1",
+     "writes": []
+    },
+    "telos.ci.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\ci-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.ci-doctor/v1",
+     "writes": []
+    },
+    "telos.ci.triage": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\ci-triage.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.ci-triage/v1",
+     "writes": []
+    },
+    "telos.compatibility.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\compatibility-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.compatibility-doctor/v1",
+     "writes": []
+    },
+    "telos.context.envelope": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\context-envelope.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.context-envelope/v1",
+     "writes": []
+    },
+    "telos.context.pack": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\context-pack.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.context-pack/v1",
+     "writes": []
+    },
+    "telos.creative.engine": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\creative-engine.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.creative-engine/v1",
+     "writes": []
+    },
+    "telos.creative.kernels": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\creative-kernels.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.creative-kernels/v1",
+     "writes": []
+    },
+    "telos.display.calibration": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\display-calibration.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.display-calibration/v1",
+     "writes": []
+    },
+    "telos.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.flagship-action/v1",
+     "writes": []
+    },
+    "telos.learning.forge": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\learning-forge.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.learning-forge/youtube-research-seed/v1",
+     "writes": []
+    },
+    "telos.learning.labs": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\learning-forge-labs.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.learning-forge/labs/v1",
+     "writes": []
+    },
+    "telos.loop.ledger": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\loop-ledger.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.loop-ledger/v1",
+     "writes": []
+    },
+    "telos.mcp.freshness": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\mcp-freshness.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.mcp-freshness/v1",
+     "writes": []
+    },
+    "telos.measurement.layers": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\measurement-layers.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.measurement-layers/v1",
+     "writes": []
+    },
+    "telos.model.foundry": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\model-foundry.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.model-foundry/v1",
+     "writes": []
+    },
+    "telos.native.control": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\native-control.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.native-control/v1",
+     "writes": []
+    },
+    "telos.objective.monitor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\objective-monitor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.objective-monitor/v1",
+     "writes": []
+    },
+    "telos.operator.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\operator-doctor.mjs"
+       ],
+       "cmd": "node"
+      },
+      {
+       "args": [
+        "<package>\\demo\\status.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.operator-doctor/v1",
+     "writes": []
+    },
+    "telos.performance.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\performance-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.performance-doctor/v1",
+     "writes": []
+    },
+    "telos.presentation.doctor": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\presentation-doctor.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [
+      "<beside-package>\\crucible",
+      "<beside-package>\\forum",
+      "<beside-package>\\gather",
+      "<beside-package>\\index"
+     ],
+     "schema": "project-telos.presentation-doctor/v1",
+     "writes": []
+    },
+    "telos.proof": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\proof.mjs",
+        "agent-action",
+        "--demo",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [
+      "<beside-package>\\emet\\impl\\js\\emet.js"
+     ],
+     "schema": "project-telos.proof-packet/v1",
+     "writes": []
+    },
+    "telos.proof.build": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\proof.mjs",
+        "build",
+        "--demo",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.build-proof-packet/v1",
+     "writes": []
+    },
+    "telos.proof.research": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\proof.mjs",
+        "research",
+        "--demo",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.research-proof-packet/v1",
+     "writes": []
+    },
+    "telos.proof.visual": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\proof.mjs",
+        "visual",
+        "--demo",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.visual-proof-packet/v1",
+     "writes": []
+    },
+    "telos.rendering.capabilities": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\rendering-capabilities.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.rendering-capabilities/v1",
+     "writes": []
+    },
+    "telos.rendering.research": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\rendering-research.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.research-seed/v1",
+     "writes": []
+    },
+    "telos.research.seed": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\research-seed.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.research-seed/v1",
+     "writes": []
+    },
+    "telos.research.thermodynamic": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\thermodynamic-ai-chip-receipt.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.research-intake/youtube-verified-transcript-v1",
+     "writes": []
+    },
+    "telos.revival.registry": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\revival-registry.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.revival-registry/v1",
+     "writes": []
+    },
+    "telos.room": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\room.mjs",
+        "--json"
+       ],
+       "cmd": "node"
+      },
+      {
+       "args": [
+        "--version"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "--version"
+       ],
+       "cmd": "python3"
+      }
+     ],
+     "reads_outside_package": [
+      "<beside-package>\\crucible",
+      "<beside-package>\\forum",
+      "<beside-package>\\gather",
+      "<beside-package>\\index"
+     ],
+     "schema": "project-telos.flagship-action/v1",
+     "writes": []
+    },
+    "telos.second_level.queue": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\second-level-flagship-queue.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.second-level-flagship-queue/v1",
+     "writes": []
+    },
+    "telos.server.manifest": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\server-manifest.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.mcp-server-manifest/v1",
+     "writes": []
+    },
+    "telos.showcase.scout": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\showcase.mjs",
+        "scout",
+        "--fixture",
+        "--json"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.oss-scout/v1",
+     "writes": []
+    },
+    "telos.status": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\status.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.flagship-action/v1",
+     "writes": []
+    },
+    "telos.workflow": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\flagship-workflow.mjs"
+       ],
+       "cmd": "node"
+      },
+      {
+       "args": [
+        "--version"
+       ],
+       "cmd": "python"
+      },
+      {
+       "args": [
+        "--version"
+       ],
+       "cmd": "python3"
+      }
+     ],
+     "reads_outside_package": [
+      "<beside-package>\\crucible",
+      "<beside-package>\\forum",
+      "<beside-package>\\gather",
+      "<beside-package>\\index"
+     ],
+     "schema": "project-telos.flagship-action/v1",
+     "writes": []
+    },
+    "telos.workstation.substrate": {
+     "answered": true,
+     "network": 0,
+     "processes": [
+      {
+       "args": [
+        "<package>\\demo\\workstation-substrate.mjs"
+       ],
+       "cmd": "node"
+      }
+     ],
+     "reads_outside_package": [],
+     "schema": "project-telos.workstation-substrate/v1",
+     "writes": []
+    }
+   }
+  }
+ },
+ "schema": "flywheel.telos-tool-measurement/v1",
+ "tarball_sha256": "ce2a452492cecea307d8725a6c60dad9f56f44f02db01a7f437a177561fe4e70"
+}

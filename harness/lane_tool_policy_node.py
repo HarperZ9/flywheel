@@ -1,4 +1,4 @@
-"""Tool policy data for the Node lanes (learn 1.6.0, telos 0.4.1).
+"""Tool policy data for the Node lanes (learn, and telos 0.4.2).
 
 Plain data, merged into ``lane_tool_policy.LANE_TOOL_POLICY``; each entry holds
 the ``ToolPolicy`` fields that differ from the default (T1, 20 s, no needs, not
@@ -9,16 +9,17 @@ of the pinned archives.
 Measured on the pinned archives (the review notes in
 ``project-docs/lanes/POLICY-REVIEW.md`` give the evidence):
 
-- telos: held out of this build (the O-8 hold, POLICY-DECISION C-7), so every
-  tool is ``NOT_IN_BUILD`` with slug ``release_on_hold`` and none is main. A
-  contained telos release gets a new tool-by-tool review before any tool
-  returns to T1. The notes below describe the held 0.4.1 archive: every MCP
-  tool ignores its arguments and runs one fixed script of the
-  package with fixed flags, so a tool's reach is its script. ``native.control``
-  is the Chrome DevTools and Windows UI Automation driver (it also holds mail,
-  post and listing actions behind other arguments), so the build leaves it out
-  rather than admit it at T2. ``room`` and ``workflow`` shell out to ``python``
-  and the sibling source checkouts, which an installed app does not have.
+- telos 0.4.2: every MCP tool ignores its arguments and runs one fixed package
+  script with fixed flags (``demo/telos-mcp.mjs``, ``toolScripts``), so a tool's
+  reach is its script. Each was read in the 0.4.2 source and measured with every
+  call instrumented for processes, writes, reads and network use. 37 tools read
+  the package (``presentation.doctor`` also reads the four sibling source
+  folders) and print JSON: T1. ``room``, ``workflow`` and ``proof`` start
+  programs from outside the package (python from PATH, the sibling source
+  folders, a witness script), so they act on the machine and run only on a T2
+  call. ``native.control`` is the Chrome DevTools, UI Automation and device
+  driver; over MCP it prints its verb catalog, and the build still leaves it
+  out. No tool used the network, a browser or the screen.
 - learn: the crucible, gather and telos interop commands are CLI only in 1.6.0
   (``src/cli.mjs``); none of the 15 MCP tools reaches them, so no learn tool is
   out of the build for that reason. ``tutor_plan`` and ``tutor_record`` write a
@@ -29,42 +30,86 @@ from __future__ import annotations
 
 _MAIN = {"main": True}
 
-TELOS_NOT_IN_BUILD = {"telos.native.control": "actuation_outside_app"}
-_TELOS_OUT = {
+_PKG = ("Runs one fixed package script that reads files inside the package and "
+        "prints JSON; the MCP mapping passes no arguments.")
+_PROGRAMS = " Programs outside the package run, so each call needs a T2 approval."
+_TELOS = {
+    "telos.status": {"reason": _PKG},
+    "telos.doctor": {"reason": _PKG},
+    "telos.room": {
+        "tier": "T2", "effect": "actuate", "timeout_s": 60,
+        "reason": "Starts the python found on PATH and, when gather, crucible, index and "
+                  "forum source folders sit beside the package, runs their status and "
+                  "doctor commands from those folders." + _PROGRAMS},
+    "telos.workflow": {
+        "tier": "T2", "effect": "actuate", "timeout_s": 60,
+        "reason": "Starts the python found on PATH and, with the four source folders "
+                  "beside the package, runs index map, gather docs, forum route and "
+                  "crucible assess from them and a node from PATH; its temp files stay "
+                  "in the lane folder." + _PROGRAMS},
+    "telos.catalog": {**_MAIN, "reason": _PKG},
+    "telos.server.manifest": {"reason": _PKG},
+    "telos.mcp.freshness": {"reason": _PKG},
+    "telos.ci.doctor": {"reason": _PKG},
+    "telos.ci.triage": {"reason": "Triages the package's bundled CI fixture and prints "
+                                  "JSON; the MCP mapping passes no arguments, so the "
+                                  "live GitHub intake is never reached."},
+    "telos.presentation.doctor": {
+        "reason": "Reads the package and, read-only, the README, changelog and brand "
+                  "files in gather, crucible, index and forum folders beside it; prints "
+                  "JSON and writes nothing."},
+    "telos.accessibility.doctor": {"reason": _PKG},
+    "telos.performance.doctor": {"reason": _PKG},
+    "telos.compatibility.doctor": {"reason": _PKG},
+    "telos.operator.doctor": {
+        "reason": "Runs one fixed package script, which also starts the package's own "
+                  "status script on the same Node; reads files inside the package and "
+                  "prints JSON."},
+    "telos.admission.telemetry": {"reason": _PKG},
+    "telos.context.envelope": {"reason": _PKG},
+    "telos.context.pack": {"reason": _PKG},
+    "telos.action.receipt": {"reason": _PKG},
+    "telos.loop.ledger": {"reason": _PKG},
+    "telos.objective.monitor": {"reason": _PKG},
+    "telos.model.foundry": {"reason": _PKG},
+    "telos.learning.forge": {"reason": _PKG},
+    "telos.learning.labs": {"reason": _PKG},
+    "telos.research.seed": {"reason": _PKG},
+    "telos.research.thermodynamic": {"reason": _PKG},
+    "telos.rendering.research": {"reason": _PKG},
+    "telos.rendering.capabilities": {"reason": _PKG},
+    "telos.measurement.layers": {"reason": _PKG},
+    "telos.creative.engine": {"reason": _PKG},
+    "telos.creative.kernels": {"reason": _PKG},
+    "telos.revival.registry": {"reason": _PKG},
+    "telos.second_level.queue": {"reason": _PKG},
+    "telos.workstation.substrate": {"reason": _PKG},
+    "telos.display.calibration": {"reason": "Returns a calibration contract from package "
+                                            "data; changes no display setting."},
     "telos.native.control": {
+        "tier": "T2", "effect": "actuate", "not_in_build": "actuation_outside_app",
+        "reason": "The package's Chrome DevTools, UI Automation and device driver. With no "
+                  "arguments it prints its verb catalog, but the script is the driver, so "
+                  "the build leaves it out rather than admit it at T2."},
+    "telos.browser.evidence": {"reason": "Returns the package's synthetic browser evidence "
+                                         "fixture as JSON; starts no browser."},
+    "telos.showcase.scout": {"reason": "Ranks the package's bundled scout fixture and "
+                                       "prints JSON; the live GitHub search and the file "
+                                       "output are not reachable from the MCP mapping."},
+    "telos.proof": {
         "tier": "T2", "effect": "actuate",
-        "reason": "The Chrome DevTools and UI Automation driver; mail, post and listing "
-                  "actions sit behind other arguments. Left out rather than admitted at T2."},
+        "reason": "Its witness stage runs node on the script TELOS_EMET_CLI names, or on "
+                  "an emet folder beside the package, with temp files in the lane "
+                  "folder." + _PROGRAMS},
+    "telos.proof.research": {**_MAIN, "reason": "Assembles and verifies the bundled demo "
+                                                "packet in memory; this proof has no "
+                                                "witness stage and writes nothing."},
+    "telos.proof.visual": {**_MAIN, "reason": "Recomputes the bundled demo packet's "
+                                              "measurements in memory; no witness stage, "
+                                              "no write."},
+    "telos.proof.build": {**_MAIN, "reason": "Recomputes the bundled demo run's invariant "
+                                             "in memory; no witness stage, no write."},
 }
-_TELOS_READ = ("Runs one fixed package script that reads files inside the package and "
-               "prints JSON; the MCP mapping passes no arguments.")
-
-_TELOS_TOOLS = (
-    "telos.status", "telos.doctor", "telos.room", "telos.workflow", "telos.catalog",
-    "telos.server.manifest", "telos.mcp.freshness", "telos.ci.doctor", "telos.ci.triage",
-    "telos.presentation.doctor", "telos.accessibility.doctor", "telos.performance.doctor",
-    "telos.compatibility.doctor", "telos.operator.doctor", "telos.admission.telemetry",
-    "telos.context.envelope", "telos.context.pack", "telos.action.receipt",
-    "telos.loop.ledger", "telos.objective.monitor", "telos.model.foundry",
-    "telos.learning.forge", "telos.learning.labs", "telos.research.seed",
-    "telos.research.thermodynamic", "telos.rendering.research",
-    "telos.rendering.capabilities", "telos.measurement.layers", "telos.creative.engine",
-    "telos.creative.kernels", "telos.revival.registry", "telos.second_level.queue",
-    "telos.workstation.substrate", "telos.display.calibration", "telos.native.control",
-    "telos.browser.evidence", "telos.showcase.scout", "telos.proof", "telos.proof.research",
-    "telos.proof.visual", "telos.proof.build",
-)
-
-
-_TELOS_HOLD = "release_on_hold"
-
-
-def _telos_entry(name: str) -> dict:
-    if name in TELOS_NOT_IN_BUILD:
-        return {"not_in_build": TELOS_NOT_IN_BUILD[name], **_TELOS_OUT[name]}
-    return {"reason": _TELOS_READ + " Held out of this build while its release contents "
-                      "are reviewed.",
-            "not_in_build": _TELOS_HOLD}
 
 
 _READ = {"reason": "Reads a saved run or session in the lane folder, or a file the "
@@ -94,5 +139,5 @@ _NEEDS = {"needs": ("node",)}
 
 NODE_LANE_POLICY: dict[str, dict[str, dict]] = {
     "learn": {name: {**_NEEDS, **fields} for name, fields in _LEARN.items()},
-    "telos": {name: {**_NEEDS, **_telos_entry(name)} for name in _TELOS_TOOLS},
+    "telos": {name: {**_NEEDS, **fields} for name, fields in _TELOS.items()},
 }

@@ -18,9 +18,9 @@ Four jobs, each fed by the pinned manifest rows in
   outside the review, and a missing one means a tool in the slice cannot load.
 - The Node-lane stage folder. ``FLYWHEEL_NODE_LANE_STAGE_ROOT`` must name the
   folder ``scripts/stage_node_lanes.py`` staged, holding a passing
-  ``node-lane-stage.json`` receipt that lists no held lane (the O-8 hold on
-  telos, ``packaging/node-lane-payloads.json``). The freeze ships it as
-  ``node-lanes``.
+  ``node-lane-stage.json`` receipt that lists no held lane (a row with a
+  ``hold`` in ``packaging/node-lane-payloads.json``; none has one today). The
+  freeze ships it as ``node-lanes``.
 """
 from __future__ import annotations
 
