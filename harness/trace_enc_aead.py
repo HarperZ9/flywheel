@@ -85,8 +85,8 @@ def _run(argv, stdin: bytes | None = None) -> bytes | None:
 def _run_status(argv, stdin: bytes | None = None):
     """(exit code, stdout, stderr), or None when the tool did not run or timed out."""
     try:
-        done = subprocess.run(safe_program.argv(argv), input=stdin, capture_output=True,
-                              timeout=20)
+        command, env = safe_program.launch(argv)
+        done = subprocess.run(command, input=stdin, capture_output=True, timeout=20, env=env)
     except (OSError, subprocess.TimeoutExpired):
         return None
     return done.returncode, done.stdout, done.stderr

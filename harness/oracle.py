@@ -60,19 +60,20 @@ ENV_ALLOWLIST = frozenset({
 })
 
 
-def run_env(extra: dict | None = None) -> dict:
+def run_env(extra: dict | None = None, *, cwd=None) -> dict:
     """The child's environment: an allowlist, never an inheritance.
 
     A secret exported in the operator's shell must not be readable by a
     candidate the model wrote. `extra` is the explicit, auditable way to pass
-    something in.
+    something in. `cwd` is the folder the shell runs in: a PATH entry reaching
+    it leaves, as one reaching this process's folder does.
     """
     env = {k: v for k, v in os.environ.items() if k in ENV_ALLOWLIST}
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     if extra:
         env.update(extra)
     # The shell looks up `python` by name beside the candidate's files; see safe_program.
-    return safe_program.shell_env(env)
+    return safe_program.shell_env(env, cwd=cwd)
 
 
 class NonDispositiveVerdict(Exception):
@@ -268,7 +269,7 @@ class PytestOracle:
         # must cost one timeout, never a wedged harness.
         out: bytes = b""
         proc = spawn_killable(
-            cmd, cwd=cwd, shell=True, env=run_env(),
+            cmd, cwd=cwd, shell=True, env=run_env(cwd=cwd),
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
             out, _ = proc.communicate(timeout=self.timeout)

@@ -87,9 +87,10 @@ def verify_sources(manifest, repository):
                            (Path(manifest["paths"]["bulletin_source"]), manifest["bulletin_source_commit"])):
         with open_artifact_root(repo):
             def git(*args):
-                return subprocess.run(safe_program.argv(
-                    ["git", "-c", "core.fsmonitor=false", "-C", str(repo), *args]),
-                    capture_output=True, check=True, timeout=15, text=True).stdout.strip()
+                command, env = safe_program.launch(
+                    ["git", "-c", "core.fsmonitor=false", "-C", str(repo), *args], cwd=repo)
+                return subprocess.run(command, env=env, capture_output=True, check=True,
+                                      timeout=15, text=True).stdout.strip()
             _need(git("rev-parse", "HEAD") == expected)
             _need(git("status", "--porcelain", "--untracked-files=all") == "")
     for key in FILE_FIELDS:

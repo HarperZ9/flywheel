@@ -229,9 +229,9 @@ def write_json_with_hash(path: str | Path, obj: Any) -> str:
 def _git_head(repo_root: Path) -> str:
     try:
         from . import safe_program
+        command, env = safe_program.launch(["git", "rev-parse", "HEAD"], cwd=repo_root)
         return subprocess.check_output(
-            safe_program.argv(["git", "rev-parse", "HEAD"], cwd=repo_root),
-            cwd=repo_root, text=True, timeout=10
+            command, cwd=repo_root, env=env, text=True, timeout=10
         ).strip()
     except Exception:
         return ""

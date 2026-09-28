@@ -55,7 +55,8 @@ _MARKER_LIMIT = 20
 def _git(root: Path, *args: str) -> str:
     """Run one read-only git command, returning "" rather than raising."""
     try:
-        done = subprocess.run(safe_program.argv(["git", *args], cwd=root), cwd=str(root),
+        command, env = safe_program.launch(["git", *args], cwd=root)
+        done = subprocess.run(command, cwd=str(root), env=env,
                               capture_output=True,
                               text=True, encoding="utf-8", errors="replace", check=False)
     except OSError:

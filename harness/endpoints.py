@@ -272,9 +272,11 @@ class CliBackend:
                 rc, out, err = self.runner(cmd)
             else:
                 from .lane_workdir import CAPTURE_OFF
-                p = subprocess.run(safe_program.argv(cmd, cwd=self.cwd),
+                argv, env = safe_program.launch(cmd, cwd=self.cwd,
+                                                env={**os.environ, **CAPTURE_OFF})
+                p = subprocess.run(argv,
                                    capture_output=True, timeout=self.timeout, cwd=self.cwd,
-                                   env={**os.environ, **CAPTURE_OFF},
+                                   env=env,
                                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
                 rc, out, err = p.returncode, p.stdout, p.stderr
         except (OSError, subprocess.SubprocessError) as e:

@@ -62,7 +62,10 @@ def pip_interpreter(lane_name: str, profile: str) -> str:
 
 
 def package_manager_argv(lane, profile: str, repo, *, env, cwd) -> list[str]:
-    """The full argv for one install. Raises PackageManagerUnavailable."""
+    """The full argv for one install. Raises PackageManagerUnavailable.
+
+    ``run_install`` starts it with ``safe_program.child_env``: npm on Windows is
+    a batch file."""
     if lane.kind == "pip":
         target = ["-e", str(repo)] if profile == "source" else [
             f"{lane.install_name}=={lane.version}"]
@@ -94,8 +97,9 @@ def run_install(lane, profile: str, repo=None) -> dict:
             return {"name": lane.name, "installed": False, "code": error.code,
                     "detail": error.detail}
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True,
-                                    timeout=TIMEOUT_S, env=env, cwd=folder)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT_S,
+                                    env=safe_program.child_env(cmd, env, cwd=folder),
+                                    cwd=folder)
         except (OSError, subprocess.TimeoutExpired) as error:
             return {"name": lane.name, "installed": False, "cmd": cmd,
                     "detail": f"install failed: {error}"}

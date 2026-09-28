@@ -23,8 +23,8 @@ class GitRepo:
     def _run(self, *args):
         if self.run is not None:
             return self.run(list(args))
-        return subprocess.run(safe_program.argv(["git", "-C", self.root, *args]),
-                              capture_output=True, text=True, timeout=30)
+        command, env = safe_program.launch(["git", "-C", self.root, *args], cwd=self.root)
+        return subprocess.run(command, env=env, capture_output=True, text=True, timeout=30)
 
     def is_repo(self) -> bool:
         try:

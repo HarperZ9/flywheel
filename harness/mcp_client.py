@@ -75,12 +75,14 @@ class StdioTransport:
         if isinstance(command, LaunchSpec):
             child_env = os.environ.copy() if command.inherit_env else {}
             child_env.update(command.env_overrides)
-            argv = safe_program.argv(command.argv, cwd=command.cwd, env=child_env)
+            argv, child_env = safe_program.launch(command.argv, cwd=command.cwd, env=child_env)
             popen_kwargs.update(cwd=command.cwd, env=child_env)
             if command.hide_window and os.name == "nt":
                 popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
         else:
-            argv = safe_program.argv(command)
+            argv, env = safe_program.launch(command)
+            if env is not None:
+                popen_kwargs["env"] = env
         self.proc = subprocess.Popen(
             argv, **popen_kwargs)
         self._q: "queue.Queue" = queue.Queue()

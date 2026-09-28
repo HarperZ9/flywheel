@@ -145,3 +145,25 @@ def test_the_oracle_shell_does_not_run_a_python_planted_beside_the_candidate(tmp
     monkeypatch.setenv("PATH", os.pathsep.join(([] if WINDOWS else ["."]) + [ORIGINAL_PATH]))
     PytestOracle(timeout=30)._run("python --version", str(work))
     assert not marker.exists(), "the oracle's shell ran the planted python"
+
+
+def test_the_oracle_shell_skips_a_path_entry_inside_the_task_folder(tmp_path, work,
+                                                                   monkeypatch):
+    """The engine runs elsewhere; PATH names a folder inside the task folder (a
+    candidate's own bin). Its planted python must not answer the oracle."""
+    from harness.oracle import PytestOracle
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    marker = tmp_path / "planted-ran.txt"
+    tools = work / "tools"
+    tools.mkdir()
+    if WINDOWS:
+        (tools / "python.cmd").write_text(f'@echo ran> "{marker}"\r\n', encoding="utf-8")
+    else:
+        _plant(tools, "python", f'echo ran > "{marker}"')
+    monkeypatch.setenv("PATH", os.pathsep.join((str(tools), ORIGINAL_PATH)))
+    assert shutil.which("python") and Path(shutil.which("python")).parent == tools, \
+        "control: the plant is first on PATH"
+    PytestOracle(timeout=30)._run("python --version", str(work))
+    assert not marker.exists(), "the oracle's shell ran the python planted in the task folder"

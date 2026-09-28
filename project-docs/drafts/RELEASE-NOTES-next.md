@@ -57,7 +57,9 @@ happen.
   absolute PATH entries, none that reaches the current folder or the folder the program
   will run in, directly or through a link or junction, and no drive-relative name such
   as `C:tool`. A shell the engine starts gets the same PATH, and on Windows it is told
-  not to search its own folder first. Windows system tools (taskkill, icacls, wevtutil,
+  not to search its own folder first. So does a batch file the engine starts on
+  Windows, such as the shim npm installs for a tool, because `cmd.exe` runs it and
+  would otherwise find the `node` it names in the folder it runs in. Windows system tools (taskkill, icacls, wevtutil,
   wsl, Windows PowerShell) come from the System32 folder.
 
 ## What you may notice

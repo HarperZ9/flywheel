@@ -42,7 +42,8 @@ def git(root, *args: str, check: bool = True) -> bytes | None:
                "-c", f"core.hooksPath={os.devnull}", "-c", "core.untrackedCache=false",
                "-C", str(root), *args]
     try:
-        done = subprocess.run(safe_program.argv(command), capture_output=True, env=_env(),
+        argv, env = safe_program.launch(command, cwd=root, env=_env())
+        done = subprocess.run(argv, capture_output=True, env=env,
                               timeout=TIMEOUT_S,
                               stdin=subprocess.DEVNULL)
     except (OSError, subprocess.TimeoutExpired) as exc:

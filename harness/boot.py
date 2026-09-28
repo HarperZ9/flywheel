@@ -90,9 +90,10 @@ def _root_hash(files: list[Path], root: Path) -> str:
 
 def _git_head(root: Path) -> str | None:
     try:
-        r = subprocess.run(
-            safe_program.argv(["git", "rev-parse", "HEAD"], cwd=root), cwd=str(root),
-            capture_output=True, timeout=5, env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
+        command, env = safe_program.launch(
+            ["git", "rev-parse", "HEAD"], cwd=root,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
+        r = subprocess.run(command, cwd=str(root), capture_output=True, timeout=5, env=env)
         if r.returncode == 0:
             return r.stdout.decode().strip()[:16]
     except Exception:

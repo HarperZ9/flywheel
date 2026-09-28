@@ -77,8 +77,9 @@ def frozen() -> bool:
 @functools.lru_cache(maxsize=1)
 def _npm_global_root() -> Path | None:
     try:
+        command, env = safe_program.launch(["npm", "root", "-g"])
         result = subprocess.run(
-            safe_program.argv(["npm", "root", "-g"]), capture_output=True, text=True, timeout=20,
+            command, capture_output=True, text=True, timeout=20, env=env,
             creationflags=0x08000000 if os.name == "nt" else 0)  # CREATE_NO_WINDOW
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return None

@@ -19,6 +19,9 @@ colon, and on Windows prefers a ``.exe`` anywhere on PATH over a batch shim.
 - ``shell_env(env)``: the environment for a ``shell=True`` child. PATH keeps what
   the lookup keeps, and on Windows ``NoDefaultCurrentDirectoryInExePath=1`` stops
   cmd.exe searching the working folder first.
+- ``child_env(argv, env)``: ``shell_env`` when the resolved program is a Windows
+  batch file (cmd.exe runs it, and looks up the names it runs), else ``env``.
+  ``launch(command)`` returns both the argv and this environment.
 - ``system_tool(name)``: a Windows system program from the System32 folder.
 
 Which PATH is read follows subprocess. On Windows CreateProcess searches the
@@ -119,6 +122,29 @@ def argv(command: Sequence, *, cwd=None, env: Mapping[str, str] | None = None) -
                              f"{os.path.basename(parts[0])} is a batch file and an "
                              "argument holds characters cmd.exe would reinterpret")
     return out
+
+
+def child_env(command: Sequence, env: Mapping[str, str] | None = None, *,
+              cwd=None) -> Mapping[str, str] | None:
+    """The environment to start ``command`` (an argv from ``argv``) with.
+
+    A Windows batch file runs inside cmd.exe, and cmd.exe looks up each bare
+    name the script runs in its working folder before PATH: npm's shim for a
+    global tool runs ``node`` that way when node.exe is not beside it. A batch
+    child therefore gets ``shell_env``, as a ``shell=True`` child does. Any
+    other program gets ``env`` back unchanged (None: this process's).
+    """
+    parts = [os.fspath(part) for part in command]
+    if parts and safe_spawn.is_batch(parts[0]):
+        return shell_env(env, cwd=cwd)
+    return env
+
+
+def launch(command: Sequence, *, cwd=None,
+           env: Mapping[str, str] | None = None) -> tuple[list[str], Mapping[str, str] | None]:
+    """``(argv(command), child_env(...))``: the argv and environment to start with."""
+    out = argv(command, cwd=cwd, env=env)
+    return out, child_env(out, env, cwd=cwd)
 
 
 def shell_env(env: Mapping[str, str] | None = None, *, cwd=None) -> dict[str, str]:

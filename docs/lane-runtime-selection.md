@@ -142,7 +142,11 @@ Windows prefers a `.exe` anywhere on PATH over a batch shim. A batch-file target
 whose arguments hold a cmd.exe metacharacter is refused before it starts. A shell
 the engine starts, including the oracle's, gets `safe_program.shell_env()`: PATH
 keeps what the lookup keeps, and on Windows `NoDefaultCurrentDirectoryInExePath=1`
-stops cmd.exe searching its own folder first. Windows system tools come from the
+stops cmd.exe searching its own folder first. A Windows batch-file program (npm's
+shim for a global tool, for example) runs inside cmd.exe, which looks up the names
+the script runs, such as `node`, in its working folder; such a child gets the same
+environment (`safe_program.child_env()`, or `launch()` for the argv and environment
+together). Windows system tools come from the
 System32 folder (`safe_program.system_tool`). On Windows the lookup reads the
 parent's PATH, as CreateProcess does; on POSIX it reads the PATH handed to the
 child, as subprocess does.

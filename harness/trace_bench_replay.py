@@ -58,7 +58,8 @@ def _git(cwd: Path, *args: str) -> None:
     command = ["git", "-c", f"core.hooksPath={os.devnull}", "-c", "core.fsmonitor=false",
                *args]
     try:
-        done = subprocess.run(safe_program.argv(command, cwd=cwd, env=env), cwd=cwd,
+        argv, env = safe_program.launch(command, cwd=cwd, env=env)
+        done = subprocess.run(argv, cwd=cwd,
                               capture_output=True, env=env, timeout=300,
                               stdin=subprocess.DEVNULL)
     except (OSError, subprocess.TimeoutExpired) as exc:

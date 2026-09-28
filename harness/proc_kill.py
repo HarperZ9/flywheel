@@ -40,9 +40,13 @@ def spawn_killable(*args, **kwargs) -> subprocess.Popen:
     if os.name != "nt":
         kwargs.setdefault("start_new_session", True)
     if args and not isinstance(args[0], (str, bytes)) and not kwargs.get("shell"):
-        # An argv names its program: resolve it without the working folder.
-        from .safe_program import argv
-        args = (argv(args[0], cwd=kwargs.get("cwd"), env=kwargs.get("env")), *args[1:])
+        # An argv names its program: resolve it without the working folder. A
+        # batch file gets the environment a shell child gets (safe_program).
+        from .safe_program import launch
+        command, env = launch(args[0], cwd=kwargs.get("cwd"), env=kwargs.get("env"))
+        args = (command, *args[1:])
+        if env is not None:
+            kwargs["env"] = env
     proc = subprocess.Popen(*args, **kwargs)
     if os.name != "nt" and kwargs.get("start_new_session"):
         setattr(proc, _PGID_ATTR, proc.pid)

@@ -50,7 +50,7 @@ def witness_envelope(envelope: ProofEnvelope, *, workdir: str | Path,
     before = snapshot(workdir)
     try:
         p = subprocess.run(
-            run_cmd, cwd=str(workdir), shell=True, env=run_env(),
+            run_cmd, cwd=str(workdir), shell=True, env=run_env(cwd=workdir),
             capture_output=True, timeout=timeout)
         reproduced, graded = rerun_outcome(envelope.oracle, p.returncode, report)
     except subprocess.TimeoutExpired:

@@ -67,8 +67,8 @@ def _gather_and_assess(repo_dir: str = ".") -> dict:
     from . import safe_program
 
     def git(*args):
-        return subprocess.run(safe_program.argv(["git", "-C", repo_dir, *args]),
-                              capture_output=True, text=True).stdout.strip()
+        command, env = safe_program.launch(["git", "-C", repo_dir, *args], cwd=repo_dir)
+        return subprocess.run(command, env=env, capture_output=True, text=True).stdout.strip()
 
     core_bare = git("config", "--get", "core.bare").lower() == "true"
     session_head = git("rev-parse", "HEAD")
@@ -80,10 +80,10 @@ def _gather_and_assess(repo_dir: str = ".") -> dict:
         elif line.startswith("HEAD ") and path:
             head = line[len("HEAD "):]
             if head != session_head:
-                anc = subprocess.run(
-                    safe_program.argv(["git", "-C", repo_dir, "merge-base",
-                                       "--is-ancestor", session_head, head]),
-                    capture_output=True)
+                command, env = safe_program.launch(
+                    ["git", "-C", repo_dir, "merge-base", "--is-ancestor", session_head, head],
+                    cwd=repo_dir)
+                anc = subprocess.run(command, env=env, capture_output=True)
                 descends = anc.returncode == 0
             else:
                 descends = True

@@ -171,10 +171,9 @@ def generate_signing_key(dest, *, comment: str,
     if overwrite:
         for p in (priv, pub):
             p.unlink(missing_ok=True)
-    proc = subprocess.run(
-        safe_program.argv(["ssh-keygen", "-t", "ed25519", "-f", str(priv), "-N", "",
-                           "-C", comment, "-q"]),
-        capture_output=True, text=True)
+    command, env = safe_program.launch(["ssh-keygen", "-t", "ed25519", "-f", str(priv),
+                                        "-N", "", "-C", comment, "-q"])
+    proc = subprocess.run(command, env=env, capture_output=True, text=True)
     if proc.returncode != 0 or not priv.exists() or not pub.exists():
         raise SigningKeyError(
             f"ssh-keygen failed ({proc.returncode}): {proc.stderr.strip()}")

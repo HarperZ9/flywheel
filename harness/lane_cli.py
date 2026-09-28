@@ -162,7 +162,8 @@ def run_lane_cli(lane: str, args: list[str], *, timeout: float,
         raise LaneCliUnavailable(NOT_IN_BUILD, f"{lane} {verb} is not in this build")
     env = lane_cli_environment(lane, extra_env, bundled=bundled, environ=source)
     folder = ensure_lane_workdir(lane, source)
-    return subprocess.run(safe_program.argv(argv + list(args), cwd=folder, env=env),
+    command, env = safe_program.launch(argv + list(args), cwd=folder, env=env)
+    return subprocess.run(command,
                           capture_output=True, text=True,
                           encoding="utf-8", errors="replace", timeout=timeout,
                           env=env, cwd=str(folder), shell=False, **_window_flags())

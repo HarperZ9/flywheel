@@ -74,8 +74,9 @@ def spawn(argv: Sequence[str], cwd: Path | str, *,
     if not directory.is_dir():
         raise NotADirectoryError(f"working directory does not exist: {directory}")
     environment = env if env is not None else child_env()
+    command, environment = safe_program.launch(argv, cwd=directory, env=environment)
     process = subprocess.Popen(
-        safe_program.argv(argv, cwd=directory, env=environment), cwd=str(directory),
+        command, cwd=str(directory),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env=environment, bufsize=0)
     collected: list[bytes] = []

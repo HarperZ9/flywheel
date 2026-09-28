@@ -72,7 +72,11 @@ class CodexAppServerStdioTransport:
         if os.name == "nt":
             kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
         # A real spawn resolves codex safely; an injected popen sees the argv as given.
-        argv = list(self.argv) if popen is not subprocess.Popen else safe_program.argv(self.argv)
+        if popen is not subprocess.Popen:
+            return popen(list(self.argv), **kwargs)
+        argv, env = safe_program.launch(self.argv)
+        if env is not None:
+            kwargs["env"] = env
         return popen(argv, **kwargs)
 
     def _read_stdout(self) -> None:

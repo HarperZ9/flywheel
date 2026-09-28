@@ -157,9 +157,11 @@ def run_buildc_verify(
         command.append("--json")
     cwd = str(repo_root or receipt_path.parent)
     try:
+        argv, env = safe_program.launch(command, cwd=cwd)
         proc = subprocess.run(
-            safe_program.argv(command, cwd=cwd),
+            argv,
             cwd=cwd,
+            env=env,
             text=True,
             capture_output=True,
             timeout=timeout_seconds,

@@ -246,11 +246,11 @@ def subprocess_gate(gate_cmd: str, proposed: str, *,
     repo_root = str(Path(__file__).resolve().parent.parent)
     pythonpath = os.pathsep.join(p for p in (repo_root, os.environ.get("PYTHONPATH", "")) if p)
     try:
-        completed = subprocess.run(
-            safe_program.argv(argv, cwd=workspace), cwd=workspace, capture_output=True,
-            timeout=timeout_s,
-            env={**os.environ, "PYTHONPATH": pythonpath,
-                 "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"})
+        command, env = safe_program.launch(
+            argv, cwd=workspace, env={**os.environ, "PYTHONPATH": pythonpath,
+                                      "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"})
+        completed = subprocess.run(command, cwd=workspace, capture_output=True,
+                                   timeout=timeout_s, env=env)
         passed = completed.returncode == 0
         output = (completed.stdout + completed.stderr).decode(
             "utf-8", "replace")[-4000:]
