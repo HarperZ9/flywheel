@@ -753,27 +753,6 @@ def test_robustness_inject_route_honestly_opens_on_granted_flags():
     assert len(body["receipt"]) == 16                  # a re-derivable receipt rides the result
 
 
-def test_lanes_install_route_requires_a_name():
-    sent = _post_route("/api/lanes/install", {})
-    assert sent["code"] == 400
-    assert "name" in sent["body"]["error"]
-
-
-def test_lanes_install_route_reports_an_unknown_lane_honestly():
-    sent = _post_route("/api/lanes/install", {"name": "no-such-lane"})
-    assert sent["code"] == 200
-    assert sent["body"]["installed"] is False
-    assert "unknown lane" in sent["body"]["detail"]
-
-
-def test_lanes_install_route_bundled_lane_is_a_noop():
-    # the bundled lane needs no package manager; the route must not shell out
-    sent = _post_route("/api/lanes/install", {"name": "local-model"})
-    assert sent["code"] == 200
-    assert sent["body"]["installed"] is True
-    assert "bundled" in sent["body"]["detail"]
-
-
 # --- the exec-lane proxy: the gateway is the one origin, relay is a route ---
 
 def test_relay_get_routes_forward_to_the_exec_lane(monkeypatch):

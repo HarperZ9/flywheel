@@ -12,33 +12,26 @@ bad corpus is a named error; nothing is synthesized until a view asks.
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
-import sys
 from pathlib import Path
+
+from . import lane_cli
 
 _TIMEOUT = 120
 
 
-def _lane_env() -> dict:
-    """The chorus lane environment: the chorus CLI is lane code (lane_env.py)."""
-    from .lane_env import lane_process_environment
-    return lane_process_environment("chorus")
-
-
 def _chorus_argv() -> "list | None":
-    """The argv that runs the chorus CLI: the console script if on PATH, else
-    `python -m chorus` if the module is importable. None when neither works."""
-    exe = shutil.which("chorus")
-    if exe:
-        return [exe]
-    try:
-        import importlib.util
-        if importlib.util.find_spec("chorus") is not None:
-            return [sys.executable, "-m", "chorus"]
-    except Exception:
-        pass
-    return None
+    """The argv that runs the chorus CLI (lane_cli): the console script or
+    `python -m chorus` in a source or pip install, the engine's
+    `--bundled-lane-cli chorus` mode in a frozen build. None when neither runs."""
+    return lane_cli.lane_cli_argv("chorus")
+
+
+def _spawn(argv: list, args: list) -> tuple:
+    """Run the chorus CLI in its lane folder, UTF-8 and without a console
+    window; returns (rc, stdout, stderr)."""
+    proc = lane_cli.run_lane_cli("chorus", args, prefix=argv, timeout=_TIMEOUT)
+    return proc.returncode, proc.stdout, proc.stderr
 
 
 def chorus_available() -> bool:
@@ -57,14 +50,12 @@ def discourse_digest(corpus: str, *, runner=None) -> dict:
         # chorus stand-in, so the install gate must not fire ahead of it — or
         # the seam is untestable anywhere the satellite is not installed (CI).
         return {"error": "the chorus satellite is not installed; pip install chorus-discourse"}
-    cmd = (argv or ["chorus"]) + ["run", str(corpus), "--verify"]
+    cmd = (argv or ["chorus"]) + ["run", lane_cli.absolute(str(corpus)), "--verify"]
     try:
         if runner is not None:
             rc, out, err = runner(cmd)
         else:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=_TIMEOUT,
-                                  env=_lane_env())
-            rc, out, err = proc.returncode, proc.stdout, proc.stderr
+            rc, out, err = _spawn(argv, cmd[len(argv):])
     except subprocess.TimeoutExpired:
         return {"error": f"chorus timed out after {_TIMEOUT}s"}
     except (OSError, ValueError) as e:
@@ -90,14 +81,12 @@ def list_corpora(root: str, *, runner=None) -> dict:
     if argv is None and runner is None:
         # Same seam: the injected runner stands in for the CLI.
         return {"error": "the chorus satellite is not installed; pip install chorus-discourse"}
-    cmd = (argv or ["chorus"]) + ["corpora", str(root)]
+    cmd = (argv or ["chorus"]) + ["corpora", lane_cli.absolute(str(root))]
     try:
         if runner is not None:
             rc, out, err = runner(cmd)
         else:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=_TIMEOUT,
-                                  env=_lane_env())
-            rc, out, err = proc.returncode, proc.stdout, proc.stderr
+            rc, out, err = _spawn(argv, cmd[len(argv):])
     except subprocess.TimeoutExpired:
         return {"error": f"chorus corpora timed out after {_TIMEOUT}s"}
     except (OSError, ValueError) as e:
@@ -123,14 +112,13 @@ def recent_digests(store: str, *, limit: int = 20, runner=None) -> dict:
         # Same seam as discourse_digest: an injected runner stands in for the
         # CLI, so the install gate must not fire ahead of it.
         return {"error": "the chorus satellite is not installed; pip install chorus-discourse"}
-    cmd = (argv or ["chorus"]) + ["digests", str(store), "--limit", str(int(limit))]
+    cmd = (argv or ["chorus"]) + ["digests", lane_cli.absolute(str(store)),
+                                  "--limit", str(int(limit))]
     try:
         if runner is not None:
             rc, out, err = runner(cmd)
         else:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=_TIMEOUT,
-                                  env=_lane_env())
-            rc, out, err = proc.returncode, proc.stdout, proc.stderr
+            rc, out, err = _spawn(argv, cmd[len(argv):])
     except subprocess.TimeoutExpired:
         return {"error": f"chorus digests timed out after {_TIMEOUT}s"}
     except (OSError, ValueError) as e:

@@ -1,0 +1,25 @@
+{
+  "schema": "flywheel.installed-lane-expectations/v1",
+  "what": "The outcome each lane is expected to reach in the installed-app lane acceptance. The step exits 1 when a lane departs from its row in either direction, or when a held lane fails a check. A change here is a change to what the release claims, so it goes with the notes and the evidence it rests on.",
+  "lanes": {
+    "accountable-surface": {"verdict": "AT_CLASS"},
+    "articulate": {"verdict": "AT_CLASS"},
+    "bulletin": {"verdict": "AT_CLASS"},
+    "calibrate-pro": {"verdict": "AT_CLASS"},
+    "canon": {"verdict": "AT_CLASS"},
+    "chorus": {"verdict": "AT_CLASS"},
+    "crucible": {"verdict": "AT_CLASS"},
+    "forum": {"verdict": "AT_CLASS"},
+    "gather": {"verdict": "AT_CLASS"},
+    "index": {"verdict": "BELOW_BAR", "failed": ["fresh_map_needs_git"],
+              "why": "index.map answers 200 without Git where the check expects the named Git setup step"},
+    "learn": {"verdict": "AT_CLASS"},
+    "local-model": {"verdict": "AT_CLASS"},
+    "mneme": {"verdict": "AT_CLASS"},
+    "plexus": {"verdict": "AT_CLASS"},
+    "relay": {"verdict": "AT_CLASS"},
+    "telos": {"verdict": "HELD", "failed": [],
+              "why": "held out of this build; the lane must not launch"},
+    "writing": {"verdict": "AT_CLASS"}
+  }
+}

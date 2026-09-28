@@ -6,7 +6,8 @@ import os
 import subprocess
 
 from .canon_context_runtime import (
-    context_db_configured, context_mcp_command, context_mcp_environment)
+    context_db_configured, context_mcp_command, context_mcp_environment,
+    context_version_refusal)
 from .context_memory_destination import (
     ContextMemoryConfig,
     DestinationBindingError,
@@ -97,6 +98,8 @@ class CanonContextMcpClient:
         return self._call("canon.context.query", args)
 
     def _call(self, name: str, args: dict) -> dict:
+        if name != "canon.context.health" and (code := context_version_refusal()):
+            raise ContextMemoryError(code, "Canon context needs the pinned flywheel-canon", 503)
         req = {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
                "params": {"name": name, "arguments": args}}
         try:

@@ -176,8 +176,16 @@ jobs:
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: "3.13"
+      # index-graph comes from the lane registry, not a version typed here. A
+      # hand-typed copy stayed on 2.10.0 after the registry pinned 2.13.0, and a
+      # package older than its pin does not launch, so every test that starts
+      # the index lane failed. The assignment on its own line fails the step if
+      # the script fails, where an inline substitution would install nothing.
       - name: Test-only dependencies
-        run: python -m pip install pytest pytest-timeout pynacl pillow numpy scipy "setuptools>=68" wheel "index-graph==2.10.0"
+        shell: bash
+        run: |
+          LANE_PINS=$(python scripts/ci_lane_pins.py index)
+          python -m pip install pytest pytest-timeout pynacl pillow numpy scipy "setuptools>=68" wheel $LANE_PINS
       - name: Every test, no file list to fall behind
         shell: bash
         run: |

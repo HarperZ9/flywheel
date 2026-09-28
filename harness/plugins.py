@@ -160,8 +160,10 @@ def plugin_execution_plan(name: str):
     """Freeze launch and credential metadata from one registry read."""
     if name == "tools":
         return None, "builtin", (), ()
-    if name in LANES:
-        return require_lane_launch(name, resolve_mcp_launch), "lane", (), ()
+    if name in LANES:   # a plugin call runs at T1, so it runs key-free (C-8)
+        from .lane_credentials import strip_key_grants
+        launch = strip_key_grants(name, require_lane_launch(name, resolve_mcp_launch))
+        return launch, "lane", (), ()
     entry = next((row for row in _load_custom() if row.get("name") == name), None)
     if entry is None or not entry.get("enabled", True):
         raise PluginPermissionError
@@ -189,6 +191,9 @@ def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
         return {"error": "the builtin tool set runs inside gated agent "
                          "runs, not through this route"}
     refusal = None if execution_plan is not None else _direct_refusal(name, False)
+    from .lane_tier_gate import argument_refusal, guard_args, plugin_refusal  # T1 only here
+    refusal = plugin_refusal(name, tool) if refusal is None else refusal
+    refusal = refusal or (argument_refusal(name, tool, arguments or {}) if name in LANES else None)
     if refusal is not None:
         return refusal
     try:
@@ -208,7 +213,7 @@ def call_plugin(name: str, tool: str, arguments: "dict | None" = None,
     try:
         with factory(command, timeout=timeout,
                      client_name="flywheel-plugins") as c:
-            out = c.call_text(tool, arguments or {})
+            out = c.call_text(tool, guard_args(name, tool, arguments or {}))
             return {"name": name, "kind": kind, "tool": tool, "result": out}
     except (MCPError, FileNotFoundError, OSError) as error:
         return {"error": f"{type(error).__name__}: {error}", "name": name,

@@ -5,6 +5,7 @@ import 'plan_run_models.dart';
 export 'gateway_grant_summary.dart';
 
 part 'gateway_operation_internals.dart';
+part 'gateway_operation_targets.dart';
 part 'gateway_operation_agent_mcp.dart';
 part 'gateway_operation_inspect.dart';
 
@@ -24,8 +25,10 @@ final _secretKey = RegExp(
 
 Never _invalid() => throw ArgumentError('Gateway operation is invalid');
 
+/// [pathKeys]: the lane tool's own path arguments (its `path_args`), which
+/// may carry a local path like the fields in [_pathFields].
 Object? _snapshot(Object? value, List<int> budget, int depth,
-    {String key = '', String action = ''}) {
+    {String key = '', String action = '', Set<String> pathKeys = const {}}) {
   if (depth > 16 || --budget[0] < 0) _invalid();
   if (value == null || value is bool || value is int) return value;
   if (value is num) return value.isFinite ? value : _invalid();
@@ -35,15 +38,17 @@ Object? _snapshot(Object? value, List<int> budget, int depth,
     if (!isSafePublicText(value) &&
         !(key == 'base_url' && isSafePublicBaseUrl(value)) &&
         !(key == 'bulletin_base_url' && isCanonicalBulletinOrigin(value)) &&
-        !(_pathFields.contains(key) && isSafeLocalPath(value)) &&
+        !((_pathFields.contains(key) || pathKeys.contains(key)) &&
+            isSafeLocalPath(value)) &&
         !agentRemoteRoot) {
       _invalid();
     }
     return value;
   }
   if (value is List) {
-    return List.unmodifiable(value.map((item) =>
-        _snapshot(item, budget, depth + 1, key: key, action: action)));
+    return List.unmodifiable(value.map((item) => _snapshot(
+        item, budget, depth + 1,
+        key: key, action: action, pathKeys: pathKeys)));
   }
   if (value is Map && value.keys.every((item) => item is String)) {
     final result = <String, Object?>{};
@@ -54,8 +59,8 @@ Object? _snapshot(Object? value, List<int> budget, int depth,
           !(name == 'credential_values' && entry.value == 'never included')) {
         _invalid();
       }
-      result[name] =
-          _snapshot(entry.value, budget, depth + 1, key: name, action: action);
+      result[name] = _snapshot(entry.value, budget, depth + 1,
+          key: name, action: action, pathKeys: pathKeys);
     }
     return Map<String, Object?>.unmodifiable(result);
   }
@@ -69,9 +74,11 @@ final class GatewayOperation {
   final List<String> scopes, dataRefs, credentialRefs;
 
   GatewayOperation._(this.action, this.clientRequestId, this.destination,
-      this.tool, Map<String, Object?> raw)
+      this.tool, Map<String, Object?> raw,
+      {Set<String> pathKeys = const {}})
       : operation =
-            _snapshot(raw, [4096], 0, action: action) as Map<String, Object?>,
+            _snapshot(raw, [4096], 0, action: action, pathKeys: pathKeys)
+                as Map<String, Object?>,
         scopes = List<String>.unmodifiable(_scopes(action, raw)),
         dataRefs = List<String>.unmodifiable(raw['data_refs'] as List<String>),
         credentialRefs =
@@ -215,7 +222,8 @@ final class GatewayOperation {
           GatewayDestination? destination,
           String? tool,
           List<String>? dataRefs,
-          List<String>? credentialRefs}) =>
+          List<String>? credentialRefs,
+          Set<String> pathKeys = const {}}) =>
       GatewayOperation._withRefs(
           action,
           clientRequestId,
@@ -223,11 +231,14 @@ final class GatewayOperation {
           tool ?? _tool(action, operation),
           operation,
           dataRefs: dataRefs,
-          credentialRefs: credentialRefs);
+          credentialRefs: credentialRefs,
+          pathKeys: pathKeys);
 
   factory GatewayOperation._withRefs(String action, String request,
       GatewayDestination destination, String tool, Map<String, Object?> raw,
-      {List<String>? dataRefs, List<String>? credentialRefs}) {
+      {List<String>? dataRefs,
+      List<String>? credentialRefs,
+      Set<String> pathKeys = const {}}) {
     final inspectSha = action == 'import.inspect' ? _inspectSha256(raw) : null;
     final inferredDataRefs = inspectSha == null
         ? dataRefs
@@ -235,7 +246,8 @@ final class GatewayOperation {
     final data = _refs(raw, 'data_refs', inferredDataRefs);
     final credentials = _refs(raw, 'credential_refs', credentialRefs);
     return GatewayOperation._(action, request, destination, tool,
-        {...raw, 'data_refs': data, 'credential_refs': credentials});
+        {...raw, 'data_refs': data, 'credential_refs': credentials},
+        pathKeys: pathKeys);
   }
 
   Map<String, dynamic> prepareBody(GatewayJourneyBinding binding) => {

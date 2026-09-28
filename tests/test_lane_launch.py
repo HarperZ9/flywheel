@@ -4,7 +4,7 @@ A pip lane's console script is only as healthy as the interpreter its shim was
 built for; a stale shim made every lane read `unreachable` with a bare "server
 closed the connection" while the real cause (ModuleNotFoundError) went to a
 discarded stderr. These tests keep public commands portable, runtime launches
-source-aware, frozen launches bare, and unreachable stderr visible."""
+source-aware, frozen launches vetted, and unreachable stderr visible."""
 import os
 import subprocess
 import sys
@@ -20,8 +20,10 @@ from harness.plugins import probe_plugin
 
 def _confined(launch, argv):
     """A pip or npm lane launch keeps its argv and every other field, and starts
-    without ambient env: only env_overrides differs from the bare launch."""
-    assert replace(launch, env_overrides=()) == LaunchSpec(tuple(argv), inherit_env=False)
+    without ambient env in its own lane folder: only env_overrides and the lane
+    folder differ from the bare launch."""
+    assert replace(launch, env_overrides=(), cwd=None) == LaunchSpec(tuple(argv), inherit_env=False)
+    assert Path(launch.cwd).parent.name == "lanes"
     assert "PATH" in {key.upper() for key, _ in launch.env_overrides}
     return True
 
@@ -75,6 +77,7 @@ def test_extra_source_repos_join_the_child_pythonpath(tmp_path, monkeypatch):
 
 
 def test_package_launch_carries_the_parent_pythonpath(monkeypatch):
+    monkeypatch.setattr(ln, "_installed_version", lambda lane: lane.version)
     # a package launch has no PYTHONPATH of its own; the child keeps the
     # parent's import path, as it did when it inherited the whole environment.
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
@@ -92,6 +95,7 @@ def test_public_pip_command_stays_portable_when_importable(monkeypatch):
 
 
 def test_runtime_pip_lane_prefers_this_interpreter_when_importable(monkeypatch):
+    monkeypatch.setattr(ln, "_installed_version", lambda lane: lane.version)
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
     monkeypatch.setattr(ln, "_importable", lambda top: True)
     launch = ln.resolve_mcp_launch("gather")
@@ -99,6 +103,7 @@ def test_runtime_pip_lane_prefers_this_interpreter_when_importable(monkeypatch):
 
 
 def test_runtime_pip_lane_falls_back_to_console_script(monkeypatch):
+    monkeypatch.setattr(ln, "_installed_version", lambda lane: lane.version)
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: None)
     monkeypatch.setattr(ln, "_importable", lambda top: False)
     launch = ln.resolve_mcp_launch("gather")
@@ -106,6 +111,7 @@ def test_runtime_pip_lane_falls_back_to_console_script(monkeypatch):
 
 
 def test_importable_checks_top_package_only(monkeypatch):
+    monkeypatch.setattr(ln, "_installed_version", lambda lane: lane.version)
     seen = []
     monkeypatch.setattr(ln, "_importable",
                         lambda top: (seen.append(top), False)[1])
@@ -131,7 +137,7 @@ def test_python_source_launch_has_child_cwd_and_pythonpath(
     monkeypatch.setenv("PYTHONPATH", "existing-path")
     launch = ln.resolve_mcp_launch("gather")
     assert launch.argv == (sys.executable, "-m", "gather.cli", "mcp")
-    assert launch.cwd == str(source.resolve())
+    assert Path(launch.cwd).parts[-2:] == ("lanes", "gather")   # not the checkout
     assert dict(launch.env_overrides)["PYTHONPATH"] == (
         str(source.resolve()) + os.pathsep + "existing-path")
     child_env = os.environ.copy()
@@ -170,7 +176,7 @@ def test_python_source_launch_precedes_importable_package(tmp_path, monkeypatch)
     monkeypatch.setenv("PYTHONPATH", "installed-path")
     launch = ln.resolve_mcp_launch("gather")
     assert launch.argv == (sys.executable, "-m", "gather.cli", "mcp")
-    assert launch.cwd == str(source.resolve())
+    assert Path(launch.cwd).parts[-2:] == ("lanes", "gather")   # not the checkout
     assert dict(launch.env_overrides)["PYTHONPATH"] == (
         str(source.resolve()) + os.pathsep + "installed-path")
 
@@ -207,11 +213,12 @@ def test_unreachable_probe_without_stderr_stays_plain(monkeypatch):
     assert "server stderr" not in out["detail"]   # no words, no fabricated words
 
 
-def test_frozen_build_relaunches_only_via_bundled_admission(monkeypatch):
+def test_frozen_build_relaunches_only_via_vetted_child_modes(monkeypatch):
     # In a PyInstaller bundle sys.executable IS the gateway. A lane may relaunch
-    # it only through the vetted --bundled-lane-mcp admission path (a safe lane
-    # name, descriptor- and hash-checked, status and doctor tools only). No lane
-    # relaunches the gateway any other way.
+    # it only in a vetted child mode: the --bundled-lane-mcp admission path (a
+    # safe lane name, descriptor- and hash-checked, policy tools only), the
+    # engine's --mcp --root <picked folder> for local-model, and --lane-mcp
+    # writing. No lane relaunches the gateway any other way.
     from harness.bundled_lane_descriptor import bundled_payload_lane_names
     monkeypatch.setattr(ln, "_frozen", lambda: True)
     monkeypatch.setattr(ln, "_importable", lambda top: True)  # even if importable
@@ -224,11 +231,18 @@ def test_frozen_build_relaunches_only_via_bundled_admission(monkeypatch):
         if name in bundled:
             assert launch.argv == (sys.executable, "--bundled-lane-mcp", name), name
             assert launch.inherit_env is False, name
-            assert launch.allowed_tools, name  # status and doctor tools only
-            if name == "relay":
-                assert launch.allowed_tools == ("relay.status",)
+            # the lane tool policy's T1 tools that are in the build, nothing more
+            from harness.lane_tool_policy import admitted_tools
+            assert launch.allowed_tools == tuple(admitted_tools(name)), name
+        elif launch.argv and launch.argv[0] == sys.executable:
+            assert (name, launch.argv[1:2]) in {
+                ("local-model", ("--mcp",)), ("writing", ("--lane-mcp",))}, name
+            if name == "local-model":
+                assert launch.argv[2] == "--root" and len(launch.argv) == 4
+            else:
+                assert launch.argv[1:] == ("--lane-mcp", "writing")
         elif launch.argv:
-            assert launch.argv[0] != sys.executable, f"{name} would relaunch the gateway"
+            assert Path(launch.argv[0]).is_absolute(), f"{name} launches a bare argv"
         else:                              # an http lane spawns nothing at all
             assert ln.LANES[name].kind == "http", f"{name} lost its argv"
 
@@ -241,14 +255,19 @@ def test_frozen_bundled_lane_admits_from_payload(monkeypatch):
     monkeypatch.setattr(ln, "_importable", lambda top: True)
     launch = ln.resolve_mcp_launch("gather")
     assert launch.argv == (sys.executable, "--bundled-lane-mcp", "gather")
-    assert launch.allowed_tools == ("gather.status", "gather.doctor")
+    assert launch.allowed_tools == ("gather.status", "gather.doctor", "gather.docs",
+                                    "gather.arxiv", "gather.context")  # T1 only
     assert launch.inherit_env is False
 
 
-def test_frozen_node_lane_keeps_bare_declared_command(tmp_path, monkeypatch):
+def test_frozen_node_lane_without_its_stage_never_launches_bare_node(tmp_path, monkeypatch):
+    # A frozen build launches learn only from its staged folder on an absolute
+    # Node (lane_runtime_frozen); a source checkout does not change that.
     monkeypatch.setattr(ln, "_frozen", lambda: True)
     monkeypatch.setattr(ln, "resolve_source_repo", lambda lane: tmp_path)
-    assert _confined(ln.resolve_mcp_launch("learn"), ("node", "src/mcp.mjs"))
+    runtime = ln.resolve_lane_runtime("learn")
+    assert runtime.launch is None
+    assert runtime.blocking_codes == ("node_lane_not_staged",)
 
 
 def test_gateway_forum_proxy_uses_runtime_launch_spec(monkeypatch):

@@ -20,6 +20,7 @@ try:
         reserve_port, same_path, sha256_file, status_state,
     )
     from .installed_launch_inspect import inspect_after_restart, inspect_before_restart, inspect_not_checked
+    from .installed_launch_redact import ACCOUNT_KEYS, USER, redact_text
 except ImportError:
     from installed_launch_acceptance_contract import (  # type: ignore
         completion_from_rows, evaluate_build_binding, phase_results,
@@ -32,6 +33,7 @@ except ImportError:
         reserve_port, same_path, sha256_file, status_state,
     )
     from installed_launch_inspect import inspect_after_restart, inspect_before_restart, inspect_not_checked  # type: ignore
+    from installed_launch_redact import ACCOUNT_KEYS, USER, redact_text  # type: ignore
 class AcceptanceHarness:
     def __init__(self, config: HarnessConfig, *, fs, windows, http, process, clock=None):
         self.c = config
@@ -276,17 +278,15 @@ class AcceptanceHarness:
 
     def _redact(self, value):
         if isinstance(value, dict):
-            return {k: self._redact(v) for k, v in value.items() if "token" not in k.lower()}
+            local = self.c.include_local_paths
+            return {k: (USER if k in ACCOUNT_KEYS and not local else self._redact(v))
+                    for k, v in value.items() if "token" not in k.lower()}
         if isinstance(value, list):
             return [self._redact(v) for v in value]
         if isinstance(value, Path):
             return self._path(value)
         if isinstance(value, str) and not self.c.include_local_paths:
-            root = str(full_path(self.c.install_root))
-            if root.lower() in value.lower():
-                return value.replace(root, "<install_root>").replace("\\", "/")
-            if len(value) > 2 and value[1] == ":" and value[2] in ("\\", "/"):
-                return "<redacted-local-path>"
+            return redact_text(value, str(full_path(self.c.install_root)))
         return value
 
 def _wait_token(path: Path, deadline_seconds: float = 2.0) -> str | None:

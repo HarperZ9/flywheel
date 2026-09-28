@@ -25,6 +25,11 @@ from .evidence_json import canonical_sha256, strict_load_json
 SCHEMA = "flywheel.bundled-lane-component/v1"
 SOURCE_ALGORITHM = "sha256-canonical-source-manifest/v1"
 _MANIFEST_RELATIVE = ("packaging", "python-lane-payloads.jsonl")
+# Python modules plus the package data a pinned lane reads at run time (forum's
+# roster toml and skill files, articulate's py.typed). Hash-pinned like the
+# modules; a native extension or an executable is never a source file.
+SOURCE_FILE_SUFFIXES = (".py", ".toml", ".json", ".md", ".yaml", ".yml", ".sha256",
+                        ".txt", ".typed")
 
 
 def base_dir() -> Path:
@@ -251,7 +256,7 @@ def manifest_file_row(value: object, *, path_prefix: str) -> bool:
         set(value) == {"path", "bytes", "sha256"}
         and isinstance(value.get("path"), str)
         and value["path"].startswith(path_prefix)
-        and value["path"].endswith(".py")
+        and value["path"].endswith(SOURCE_FILE_SUFFIXES)
         and isinstance(value.get("bytes"), int)
         and value["bytes"] >= 0
         and isinstance(value.get("sha256"), str)

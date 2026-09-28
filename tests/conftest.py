@@ -134,3 +134,11 @@ def _isolated_claude_cli_status(request, monkeypatch):
     except Exception:
         pass
     yield
+
+
+@pytest.fixture
+def lanes_at_their_pins(monkeypatch):
+    """Every pip or npm lane reads as installed at its pin. A lane below its pin
+    does not launch, so a test that freezes a lane launch must not depend on
+    which lane packages the host happens to have installed."""
+    monkeypatch.setattr("harness.lanes._installed_version", lambda lane: lane.version)

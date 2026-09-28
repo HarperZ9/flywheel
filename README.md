@@ -13,8 +13,11 @@ Flywheel runs any model, frontier or local, behind a single OpenAI-compatible
 surface, and your keys and data stay on your machine. Its desktop assistant,
 Rowan, takes a request in plain words and turns it into a task the app runs and
 records on the model you pick. A permission-gated coding agent, relay, runs over
-your own folders and checks each tool request before it acts. About fifteen
-composable lanes ship in the roster, ten of them bundled natively from source.
+your own folders and checks each tool request before it acts. Seventeen
+composable lanes ship in the roster. In the Windows app's installed-app check, 15
+of 17 lanes reach the class the check expects for them; index is below that bar
+without Git, and telos is not in this build ([per-lane
+table](project-docs/lanes/LANES.md)).
 
 The command `flywheel check-output` checks a value against the source that
 decides it, ships finance, medicine, and law packs, and can emit the check as a
@@ -48,6 +51,11 @@ For the native desktop app, download the Windows installer from the
 [latest release](https://github.com/HarperZ9/flywheel/releases/latest) and verify it
 against the checksums attached to that release. It carries its own engine, so the app
 runs on a clean machine with no Python installed, and it starts that engine itself.
+Each lane card in the Tools view states whether the lane is ready and names any setup
+it still needs: Git for Windows for index's repository history, a local model server
+for local-model and relay, a project folder for local-model, a blocks folder for
+canon, and a recorded draft for writing. The Node runtime that learn uses ships with
+the app.
 
 The app's assistant is **Rowan**. Open Chat and ask for work in plain
 words, and Rowan turns the request into a task the app runs and records.

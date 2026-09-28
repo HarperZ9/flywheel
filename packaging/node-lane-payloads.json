@@ -1,0 +1,77 @@
+{
+  "schema": "flywheel.node-lane-payloads/v1",
+  "note": "Pinned inputs for scripts/stage_node_lanes.py. Every archive is checked against the pin here before anything is extracted; a checksum file published next to an archive is a cross-check only, since it comes from the same release.",
+  "node_runtime": {
+    "name": "node",
+    "version": "v24.21.0",
+    "lts": "Krypton",
+    "release_date": "2026-09-07",
+    "platform": "win-x64",
+    "url": "https://nodejs.org/dist/v24.21.0/node-v24.21.0-win-x64.zip",
+    "file": "node-v24.21.0-win-x64.zip",
+    "sha256": "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541",
+    "checksums_url": "https://nodejs.org/dist/v24.21.0/SHASUMS256.txt",
+    "checksums_file": "SHASUMS256-node-v24.21.0.txt",
+    "archive_root": "node-v24.21.0-win-x64",
+    "members": {
+      "node.exe": "ba4e6d110e8c1592a1ecd390f6b05f3da124b13871a5be62b341a07a853c6c32",
+      "LICENSE": "ed34dd8e3f0a78dbaf00d0444ce8e285b015b765379c2e17880455f70370f8e9"
+    },
+    "license": "MIT (Node.js core) plus the bundled third-party licenses listed in LICENSE"
+  },
+  "lanes": [
+    {
+      "lane": "learn",
+      "package": "@harperz9/learn",
+      "version": "1.6.0",
+      "source": "npm",
+      "url": "https://registry.npmjs.org/@harperz9/learn/-/learn-1.6.0.tgz",
+      "file": "learn-1.6.0.tgz",
+      "integrity": "sha512-n1IPaGKosdu8nwats4/7hXT/WnNYsONKR+Kc5TZUKmYwd7gx6NZehDttigJtXskE5VE7XZTLSzt9nJJ/9wprfw==",
+      "entry": "src/mcp.mjs",
+      "engines_node": ">=20",
+      "license": "LicenseRef-fair-source",
+      "static_tool_names": [
+        "learn_doctor", "learn_status", "learn_verify", "learn_receipt", "learn_dry_run",
+        "learn_tutor_plan", "learn_tutor_record", "learn_tutor_mastery",
+        "learn_visualize_dry_run", "learn_tutor_due", "learn_tutor_studyplan",
+        "learn_tutor_misconceptions", "learn_tutor_reverify", "learn_tutor_derive_schedule",
+        "learn_tutor_prooflesson"
+      ]
+    },
+    {
+      "lane": "telos",
+      "hold": "O-8",
+      "hold_reason": "Held out of every freeze and installer while the release contents are reviewed (DECISIONS.json O-8). scripts/stage_node_lanes.py skips a held row unless --include-held is passed, and the freeze refuses a stage that lists one.",
+      "package": "project-telos-mcp",
+      "version": "0.4.1",
+      "source": "github-release",
+      "repo": "HarperZ9/telos",
+      "tag": "v0.4.1",
+      "tag_commit": "3cb786d0023dc24ab4c1bc8eaf5696f3076cb58f",
+      "url": "https://github.com/HarperZ9/telos/releases/download/v0.4.1/project-telos-mcp-0.4.1.tgz",
+      "file": "project-telos-mcp-0.4.1.tgz",
+      "sha256": "9797ea6bacb7a62cee0aee23c2a81b000e51117a5b2bcde4e218d9df81a56264",
+      "checksums_url": "https://github.com/HarperZ9/telos/releases/download/v0.4.1/SHA256SUMS.txt",
+      "checksums_file": "SHA256SUMS-telos-v0.4.1.txt",
+      "entry": "demo/telos-mcp.mjs",
+      "engines_node": ">=20",
+      "license": "FSL-1.1-ALv2",
+      "static_tool_names": [
+        "telos.status", "telos.doctor", "telos.room", "telos.workflow", "telos.catalog",
+        "telos.server.manifest", "telos.mcp.freshness", "telos.ci.doctor", "telos.ci.triage",
+        "telos.presentation.doctor", "telos.accessibility.doctor", "telos.performance.doctor",
+        "telos.compatibility.doctor", "telos.operator.doctor", "telos.admission.telemetry",
+        "telos.context.envelope", "telos.context.pack", "telos.action.receipt",
+        "telos.loop.ledger", "telos.objective.monitor", "telos.model.foundry",
+        "telos.learning.forge", "telos.learning.labs", "telos.research.seed",
+        "telos.research.thermodynamic", "telos.rendering.research",
+        "telos.rendering.capabilities", "telos.measurement.layers", "telos.creative.engine",
+        "telos.creative.kernels", "telos.revival.registry", "telos.second_level.queue",
+        "telos.workstation.substrate", "telos.display.calibration", "telos.native.control",
+        "telos.browser.evidence", "telos.showcase.scout", "telos.proof", "telos.proof.research",
+        "telos.proof.visual", "telos.proof.build"
+      ]
+    }
+  ]
+}

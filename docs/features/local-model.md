@@ -114,11 +114,12 @@ local-model is registered in `harness/lanes_registry.py`:
 ```python
 "local-model": Lane(
     "local-model", "", "python", ("-m", "harness.local_mcp"), "bundled", "0.1.0",
-    "the trained 14B proposer + verified-inference harness (the engine lane)",
+    "a local agent loop on the model server you run, inside a project folder you pick, "
+    "with verified-inference receipts (no model ships with the app)",
     "propose-verify"),
 ```
 
-Organ `propose-verify`, role the propose-then-verify engine. It launches with argv `["python", "-m", "harness.local_mcp"]` (`resolve_mcp_command("local-model")`, pinned by `tests/test_lanes.py::test_public_commands_are_portable_declared_argv`). Because it is bundled, `install_lane` is a no-op and `lane_status(..., probe=False)` reports `declared`, both covered by `tests/test_lanes.py`. Flywheel floors the whole lane at governance tier T2 in `harness/lane_caller.py` (`LANE_MIN_TIERS["local-model"] = "T2"`), alongside `accountable-surface` and `relay`, because it can run code. The lane carries no per-tool tier split, so when a governance tier is supplied every local-model tool needs at least T2, including the network-free status and doctor probes. That is the conservative direction: a gate that widened on its own would not be a gate.
+Organ `propose-verify`, role the propose-then-verify engine. It launches with argv `["python", "-m", "harness.local_mcp"]` (`resolve_mcp_command("local-model")`, pinned by `tests/test_lanes.py::test_public_commands_are_portable_declared_argv`). Because it is bundled, `install_lane` is a no-op and `lane_status(..., probe=False)` reports `declared`, both covered by `tests/test_lanes.py`. Flywheel shows the lane at headline tier T2 in `harness/lane_caller.py` (`LANE_MIN_TIERS["local-model"] = "T2"`), alongside `accountable-surface` and `relay`, because it can run code. Each call takes its tool's tier from the lane tool policy table (`harness/lane_tool_policy.py`), which opens the reviewed health, chat and run tools at T1 with write, exec and online forced off. A tool the table does not list is T2 (default deny, since 1.1.0). That is the conservative direction: a gate that widened on its own would not be a gate.
 
 Native wiring is present and tested:
 

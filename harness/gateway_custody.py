@@ -27,7 +27,8 @@ PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
                     "/api/lane/",
                     "/api/import/inspect",
                     "/api/credential-handles", "/api/session-tokens",
-                    "/api/bulletin-identity", "/api/operations/", "/api/hooks/")
+                    "/api/bulletin-identity", "/api/operations/", "/api/hooks/",
+                    "/api/settings/")
 
 #: Exact paths held under private custody. Model calls and anything that runs
 #: an agent, installs a plugin, or reaches the marketplace.
@@ -45,6 +46,15 @@ PRIVATE_PATHS = frozenset({
     "/api/runners/tickets"})
 
 
+#: Lane console routes under the public /api/lanes/ prefix that are private:
+#: the tool listing consumes an owner's plugin.probe grant, the project folder
+#: names a local path and decides where the local agent may read and write,
+#: a check spawns the lane (for bulletin it contacts the remote board), and an
+#: install runs pip or npm.
+PRIVATE_LANE_SUFFIXES = ("/tools", "/local-model/root", "/check", "/install")
+
+
 def is_private(path: str) -> bool:
     """Does this path sit under private custody? One rule, two readers."""
-    return path.startswith(PRIVATE_PREFIXES) or path in PRIVATE_PATHS
+    lane_console = path.startswith("/api/lanes/") and path.endswith(PRIVATE_LANE_SUFFIXES)
+    return path.startswith(PRIVATE_PREFIXES) or path in PRIVATE_PATHS or lane_console

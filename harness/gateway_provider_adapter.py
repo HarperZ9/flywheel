@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 from .bulletin_origin import BulletinOriginError, checked_bulletin_origin
+from . import lane_credentials as _lane_keys
 from .credential_handles import CredentialHandleStore
 from .evidence_json import canonical_sha256
 from .gateway_operation import GatewayOperationError
@@ -67,6 +68,8 @@ def freeze_execution_plan(operation, *, owner_ref: str | None = None,
             operation, owner_ref, state_root)
         slot = thaw_json(agent_binding)["endpoint"]["slot"]
         required, refs = ((slot,) if slot else ()), ()
+    elif _lane_keys.binds_lane_keys(operation):  # a saved key bound to one lane call
+        required, refs = _lane_keys.lane_call_credential_plan(operation, owner_ref, state_root)
     else:
         required, refs = _credential_plan(operation)
         workflow_sha = profile_sha = None

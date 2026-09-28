@@ -15,7 +15,9 @@ def test_python_lane_payload_manifest_check_passes():
     report = json.loads(result.stdout)
     assert report["verdict"] == "PASS"
     assert report["async_lanes"] == ["forum"]
-    assert report["registry_updates"] == ["forum", "index"]
+    # The registry caught up with index 2.13.0 and forum 1.14.0, so no row
+    # is ahead of it.
+    assert report["registry_updates"] == []
 
 
 def test_python_lane_payload_manifest_rejects_descriptor_tamper(tmp_path):
@@ -42,11 +44,13 @@ def test_canon_payload_pins_context_source_without_expanding_public_tools():
     ).read_text(encoding="utf-8").splitlines() if line]
     canon = next(row for row in rows if row["lane"] == "canon")
 
-    assert canon["owner_commit"] == "de598d4002ad019a73d4b3a4afb5de1c55800d64"
+    assert canon["owner_commit"] == "8e0098aa802c0a21649c7a26e6998ab29a747cda"
     assert canon["component_descriptor"]["source"]["commit"] == canon["owner_commit"]
     assert canon["component_descriptor"]["entrypoint"]["module"] == "canon.local_mcp"
+    # Admission follows the lane tool policy: T1 tools only, so canon.render
+    # (T2 in the reviewed draft) stays out.
     assert canon["component_descriptor"]["allowed_tools"] == [
-        "canon.status", "canon.doctor"]
+        "canon.status", "canon.doctor", "canon.blocks", "canon.validate", "canon.check"]
     assert canon["mcp"]["static_tool_names"] == [
         "canon.status", "canon.doctor", "canon.blocks",
         "canon.render", "canon.validate", "canon.check"]

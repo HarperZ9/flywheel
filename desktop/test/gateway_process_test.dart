@@ -39,7 +39,7 @@ void main() {
     expect(await gateway.start(port: 8801), isNull);
     expect(calls.single.executable,
         'C:/Apps With Spaces/engine/flywheel-gateway.exe');
-    expect(calls.single.arguments, ['--port', '8801']);
+    expect(calls.single.arguments, ['--port', '8801', '--desktop-launch']);
     expect(calls.single.mode, ProcessStartMode.normal);
     expect(calls.single.shell, isFalse);
     gateway.stopIfOwned();
@@ -52,6 +52,10 @@ void main() {
     expect(await gateway.start(), isNull);
     expect(calls.single.executable,
         Platform.isWindows ? 'flywheel.exe' : 'flywheel');
+    // A PATH engine may predate --desktop-launch, and `flywheel up` picks
+    // its own folder, so the fallback passes neither.
+    expect(calls.single.arguments, ['up', '--port', '8799']);
+    expect(calls.single.workingDirectory, isNull);
     expect(calls.single.mode, ProcessStartMode.normal);
     expect(calls.single.shell, isFalse);
     gateway.stopIfOwned();
@@ -72,7 +76,7 @@ void main() {
     final gateway = GatewayProcess(
       bundledEngineResolver: () => null,
       processStarter: (executable, args,
-          {required mode, required runInShell}) async {
+          {required mode, required runInShell, workingDirectory}) async {
         throw ProcessException(
             executable, args, 'synthetic missing executable');
       },
@@ -86,7 +90,7 @@ void main() {
     var starts = 0;
     final gateway = GatewayProcess(
       bundledEngineResolver: () => 'C:/Apps/engine.exe',
-      processStarter: (_, __, {required mode, required runInShell}) {
+      processStarter: (_, __, {required mode, required runInShell, workingDirectory}) {
         starts++;
         return pending.future;
       },
@@ -107,7 +111,7 @@ void main() {
     var starts = 0;
     final gateway = GatewayProcess(
       bundledEngineResolver: () => 'C:/Apps/engine.exe',
-      processStarter: (_, __, {required mode, required runInShell}) {
+      processStarter: (_, __, {required mode, required runInShell, workingDirectory}) {
         starts++;
         return pending.future;
       },
@@ -141,7 +145,7 @@ void main() {
     var starts = 0;
     final gateway = GatewayProcess(
       bundledEngineResolver: () => 'C:/Apps/engine.exe',
-      processStarter: (_, __, {required mode, required runInShell}) async =>
+      processStarter: (_, __, {required mode, required runInShell, workingDirectory}) async =>
           starts++ == 0 ? first : second,
     );
     await gateway.start();
@@ -203,7 +207,7 @@ void main() {
     var attempts = 0;
     final gateway = GatewayProcess(
       bundledEngineResolver: () => 'C:/Apps/engine.exe',
-      processStarter: (exe, args, {required mode, required runInShell}) async {
+      processStarter: (exe, args, {required mode, required runInShell, workingDirectory}) async {
         if (attempts++ == 0) throw ProcessException(exe, args);
         return _Child();
       },
@@ -235,15 +239,17 @@ GatewayProcess _gateway(_Child child, List<_Call> calls,
             'C:/Apps With Spaces/engine/flywheel-gateway.exe'}) =>
     GatewayProcess(
       bundledEngineResolver: () => bundled,
-      processStarter: (exe, args, {required mode, required runInShell}) async {
-        calls.add(_Call(exe, args, mode, runInShell));
+      processStarter: (exe, args, {required mode, required runInShell, workingDirectory}) async {
+        calls.add(_Call(exe, args, mode, runInShell, workingDirectory));
         return child;
       },
     );
 
 class _Call {
-  _Call(this.executable, this.arguments, this.mode, this.shell);
+  _Call(this.executable, this.arguments, this.mode, this.shell,
+      this.workingDirectory);
   final String executable;
+  final String? workingDirectory;
   final List<String> arguments;
   final ProcessStartMode mode;
   final bool shell;

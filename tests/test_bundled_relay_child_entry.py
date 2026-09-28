@@ -39,7 +39,7 @@ def test_gateway_entry_rejects_unknown_lane_extra_args_and_module_selectors(monk
 
     cases = [
         ["--bundled-lane-mcp", "relay", "--module", "os"],
-        ["--bundled-lane-mcp", "mneme"],
+        ["--bundled-lane-mcp", "not-a-lane"],
         ["--bundled-lane-mcp"],
     ]
     for argv in cases:

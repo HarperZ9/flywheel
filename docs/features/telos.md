@@ -268,10 +268,12 @@ Telos is the `reconciliation` organ in the lane layer. Observed in
 
 ```python
 "telos": Lane(
-    "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.2.0",
+    "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.1",
     "the reconciliation lane: five-tool workflow + creative engine + doctors",
     "reconciliation", source_repo="public/telos",
-    package_disabled_reason="No published npm distribution is available. Use a Telos source checkout."),
+    package_disabled_reason=("No published npm distribution is available, and this build "
+                             "holds Telos out while its release contents are reviewed. "
+                             "Nothing needs installing; the other lanes run without it.")),
 ```
 
 It sits third in the flagship spine, `SPINE = ("flywheel", "local-model",
@@ -367,7 +369,7 @@ kernel's `receipt_hash` into the pipeline's chained receipt. Observed:
 Telos is a native lane, so the roster wiring exists. Present and verified:
 
 - **Lane registry entry.** `LANES["telos"]` in `harness/lanes_registry.py`,
-  organ `reconciliation`, version `0.2.0`, `source_repo="public/telos"`, kind
+  organ `reconciliation`, version `0.4.1`, `source_repo="public/telos"`, kind
   `npm`.
 - **Spine slot.** `SPINE` in `harness/gateway.py`, position three.
 - **Expected-set and launch-hint tests.** `tests/test_lanes.py` lists `telos` in

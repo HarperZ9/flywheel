@@ -161,9 +161,10 @@ def source_launch(lane: Lane, source: Path, python_executable: str,
         inherited = environ.get("PYTHONPATH", "")
         if inherited:
             roots.append(inherited)
+        # No cwd: the import root travels in PYTHONPATH with PYTHONSAFEPATH=1,
+        # so the child starts in its lane folder like a pip launch (lane_workdir).
         return LaunchSpec(
-            (python_executable, "-m", lane.py_module, *lane.mcp_args),
-            str(source.resolve()),
+            (python_executable, "-m", lane.py_module, *lane.mcp_args), None,
             (("PYTHONPATH", os.pathsep.join(roots)), ("PYTHONSAFEPATH", "1")),
         )
     return LaunchSpec(tuple(lane.mcp_command()))

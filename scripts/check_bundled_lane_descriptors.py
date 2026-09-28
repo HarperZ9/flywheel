@@ -1,7 +1,17 @@
-"""Validate source-bound descriptors for bundled frozen gateway lanes."""
+"""Validate source-bound descriptors for bundled frozen gateway lanes.
+
+The relay descriptor hashes the bytes a reproducible checkout of the pinned
+commit writes, read with ``git cat-file --filters`` under ``core.autocrlf=false``
+and ``core.eol=lf``, the way ``generate_python_lane_payload_row.py`` reads every
+payload row. Hashing the working tree instead pinned the CRLF form a Windows
+checkout with ``core.autocrlf=true`` writes, so the pin depended on the build
+host's git setting and differed from the tag's bytes and the relay payload row.
+A clean status still ties the working tree the freeze compiles to that commit.
+"""
 from __future__ import annotations
 
 import argparse
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
@@ -48,9 +58,10 @@ def check_lane_descriptor(
     elif status:
         codes.append("bundled_source_dirty")
     try:
-        computed = build_relay_descriptor(relay_root, commit=head or str(
-            expected["source_commit"]))
-    except (OSError, ValueError) as exc:
+        commit = head or str(expected["source_commit"])
+        computed = build_relay_descriptor(relay_root, commit=commit,
+                                          files=committed_source_files(relay_root, commit))
+    except (OSError, ValueError, subprocess.SubprocessError):
         computed = None
         codes.append("bundled_source_manifest_unavailable")
     if write and computed is not None:
@@ -94,6 +105,49 @@ def check_lane_descriptor(
             computed["source"]["manifest_sha256"] if computed is not None else None),
     })
     return receipt
+
+
+def committed_source_files(relay_root: Path, commit: str,
+                           subdir: str = "src/relay") -> list[dict[str, object]] | None:
+    """The ``*.py`` manifest of ``subdir`` at ``commit``, as LF checkout bytes.
+
+    None when ``relay_root`` is no git checkout (a source tree without its
+    ``.git``), so the caller hashes the working tree; a real build always has
+    one, and a checkout that cannot be read raises ValueError."""
+    if not (Path(relay_root) / ".git").exists():
+        return None
+    root = str(relay_root)
+    listing = subprocess.run(
+        ["git", "-C", root, "ls-tree", "-r", "-z", commit, "--", subdir],
+        capture_output=True, timeout=60, check=False)
+    if listing.returncode != 0:
+        raise ValueError("relay source listing unavailable")
+    pairs = []
+    for entry in listing.stdout.decode("utf-8").split("\0"):
+        if not entry:
+            continue
+        meta, path = entry.split("\t", 1)
+        if meta.split()[1] == "blob" and path.endswith(".py"):
+            pairs.append((path, meta.split()[2]))
+    pairs.sort()
+    stdin = "".join(f"{sha} {path}\n" for path, sha in pairs).encode("utf-8")
+    batch = subprocess.run(
+        ["git", "-C", root, "-c", "core.autocrlf=false", "-c", "core.eol=lf",
+         "cat-file", "--batch", "--filters"],
+        input=stdin, capture_output=True, timeout=120, check=False)
+    if batch.returncode != 0:
+        raise ValueError("relay source bytes unavailable")
+    out, pos, rows = batch.stdout, 0, []
+    for path, sha in pairs:
+        end = out.index(b"\n", pos)
+        header = out[pos:end].split()
+        if len(header) != 3 or header[0].decode() != sha:
+            raise ValueError(f"unexpected cat-file header for {path}")
+        data = out[end + 1:end + 1 + int(header[2])]
+        pos = end + 1 + int(header[2]) + 1
+        rows.append({"path": path, "bytes": len(data),
+                     "sha256": "sha256:" + sha256(data).hexdigest()})
+    return rows
 
 
 def _receipt(lane: str, codes: list[str]) -> dict:

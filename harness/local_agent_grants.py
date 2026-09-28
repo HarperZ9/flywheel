@@ -31,6 +31,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, MutableMapping
 
+from .path_identity import device_or_unc, inside
+
 _TRUE = frozenset(("1", "true", "yes", "on"))
 WORKSPACE_ENV = "FLYWHEEL_LOCAL_AGENT_WORKSPACE"
 
@@ -77,10 +79,14 @@ def grants_from_config(environ: Mapping[str, str] | None = None, *,
     narrower root."""
     env = os.environ if environ is None else environ
     chosen = workspace or env.get(WORKSPACE_ENV) or None
+    if chosen is not None and device_or_unc(chosen):
+        raise GrantRefusal("WORKSPACE_PROTECTED",
+                           "the workspace is a device or network path; pick a local folder")
     resolved = os.path.realpath(os.path.expanduser(chosen or os.getcwd()))
     if chosen is not None and _protected(resolved, env):
         raise GrantRefusal("WORKSPACE_PROTECTED",
-                           "the workspace is the home directory or holds the Flywheel home")
+                           "the workspace is the home directory, or holds or sits in "
+                           "the Flywheel home or run root")
     return AgentRunGrants(
         workspace=resolved,
         allow_write=_flag(env, "FLYWHEEL_LOCAL_AGENT_ALLOW_WRITE", allow_write),
@@ -130,8 +136,8 @@ def check_online(args: Mapping[str, object], grants: AgentRunGrants,
 
 
 def _inside(path: str, root: str) -> bool:
-    path, root = os.path.normcase(path), os.path.normcase(root)
-    return path == root or path.startswith(root.rstrip(os.sep) + os.sep)
+    """By string after realpath, or by the identity of an existing ancestor."""
+    return inside(path, root)
 
 
 def _flywheel_home(env: Mapping[str, str]) -> str:
@@ -140,10 +146,14 @@ def _flywheel_home(env: Mapping[str, str]) -> str:
 
 
 def _protected(path: str, env: Mapping[str, str]) -> bool:
-    home = os.path.normcase(os.path.realpath(os.path.expanduser("~")))
-    fw_home = _flywheel_home(env)
-    return (os.path.normcase(path) == home or _inside(fw_home, path)
-            or _inside(path, fw_home))
+    """The user's home folder itself, or a folder inside or holding Flywheel's
+    own state: the Flywheel home or the run root (flywheel_state_roots)."""
+    from .flywheel_state_roots import state_roots
+    home = os.path.realpath(os.path.expanduser("~"))
+    same_as_home = os.path.normcase(path) == os.path.normcase(home) or (
+        os.path.isdir(path) and os.path.isdir(home) and os.path.samefile(path, home))
+    roots = (_flywheel_home(env), *state_roots(env))
+    return same_as_home or any(_inside(root, path) or _inside(path, root) for root in roots)
 
 
 def resolve_run(args: Mapping[str, object], grants: AgentRunGrants,
@@ -160,6 +170,9 @@ def resolve_run(args: Mapping[str, object], grants: AgentRunGrants,
     raw = args.get("root", ".")
     if not isinstance(raw, str) or not raw or "\x00" in raw:
         raise GrantRefusal("INVALID_ROOT", "root must be a non-empty path string")
+    if device_or_unc(raw):
+        raise GrantRefusal("INVALID_ROOT", "root must be a local folder, not a device "
+                           "or network path")
     workspace = os.path.realpath(grants.workspace)
     root = os.path.realpath(os.path.join(workspace, os.path.expanduser(raw)))
     if not _inside(root, workspace):
@@ -167,8 +180,8 @@ def resolve_run(args: Mapping[str, object], grants: AgentRunGrants,
                            "root resolves outside the operator's workspace")
     if _protected(root, env):
         raise GrantRefusal("ROOT_PROTECTED",
-                           "root is the home directory or holds the Flywheel home; "
-                           "pass a narrower root")
+                           "root is the home directory, or holds or sits in the "
+                           "Flywheel home or run root; pass a narrower root")
     if not os.path.isdir(root):
         raise GrantRefusal("INVALID_ROOT", "root is not an existing directory")
     return root, allow_write, allow_exec

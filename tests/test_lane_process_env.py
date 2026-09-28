@@ -163,5 +163,9 @@ def test_unreadable_registry_grants_nothing(tmp_path, monkeypatch):
     from harness.lane_env import lane_process_environment
     monkeypatch.setattr(ln, "LANE_REGISTRY_PATH", Path(tmp_path))  # a directory
     env = lane_process_environment("index", environ={
-        "PATH": "p", "ANTHROPIC_API_KEY": "sk-test-not-a-real-key"})
-    assert env == {"PATH": "p"}
+        "PATH": "p", "FLYWHEEL_HOME": str(tmp_path / "home"),
+        "ANTHROPIC_API_KEY": "sk-test-not-a-real-key"})
+    # index's caches default into its lane folder (POLICY-DECISION C-9); no key
+    caches = {"INDEX_CACHE_DIR", "INDEX_MCP_CACHE_DIR", "INDEX_GRAPH_REPO_CACHE_DIR"}
+    assert set(env) == {"PATH", "FLYWHEEL_HOME"} | caches
+    assert env["PATH"] == "p" and "ANTHROPIC_API_KEY" not in env

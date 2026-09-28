@@ -4,7 +4,8 @@ These lock in that the relay-only special case now covers any lane in the
 python-lane-payloads manifest, without weakening the controls: the staged source
 is still hash-checked against the descriptor (fail-closed on mismatch), admission
 still cross-checks the descriptor against a trusted expectation, and the admitted
-launch still exposes only the lane's declared health tools.
+launch exposes exactly the tools its reviewed row declares, which for every real
+row is the lane tool policy's T1 set and no T2 tool.
 """
 import hashlib
 import importlib.util
@@ -141,8 +142,8 @@ def _descriptor(lane: str, *, version: str = "1.0.0") -> dict:
         "entrypoint": {"argv": ["--bundled-lane-mcp", lane],
                        "module": f"{lane}.mcp", "callable": "serve",
                        "health_tool": f"{lane}.status"},
-        "allowed_tools": [f"{lane}.status", f"{lane}.doctor"],
-        "does_not_prove": ["NOT_PROVES_FULL_LANE_WORKFLOW: status/doctor only."],
+        "allowed_tools": [f"{lane}.status", f"{lane}.doctor", f"{lane}.read"],
+        "does_not_prove": ["NOT_PROVES_FULL_LANE_WORKFLOW: admission is not a result."],
     }
 
 
@@ -152,8 +153,8 @@ def _rows(lane: str, **kw) -> dict:
                    "component_descriptor_sha256": "sha256:" + canonical_sha256(cd)}}
 
 
-def test_admit_non_relay_manifest_lane_exposes_only_declared_health_tools():
-    """A manifest lane admits from its row and admits status+doctor only."""
+def test_admit_non_relay_manifest_lane_exposes_only_the_row_allowed_tools():
+    """A manifest lane admits from its row and admits exactly the row's tools."""
     from harness.bundled_lane_admission import admit_bundled_lane
 
     rows = _rows("widget")
@@ -164,12 +165,27 @@ def test_admit_non_relay_manifest_lane_exposes_only_declared_health_tools():
     assert result.blocking_codes == ()
     assert result.launch.argv == (
         "D:/app/flywheel-gateway.exe", "--bundled-lane-mcp", "widget")
-    assert result.launch.allowed_tools == ("widget.status", "widget.doctor")
+    assert result.launch.allowed_tools == ("widget.status", "widget.doctor", "widget.read")
     assert result.launch.inherit_env is False
     assert result.launch.hide_window is True
-    assert result.component["allowed_tools"] == ["widget.status", "widget.doctor"]
+    assert result.component["allowed_tools"] == [
+        "widget.status", "widget.doctor", "widget.read"]
     assert result.component["descriptor_sha256"] == (
         rows["widget"]["component_descriptor_sha256"])
+
+
+def test_every_real_row_admits_the_policy_t1_tools_and_no_t2_tool():
+    """The shipped rows carry the policy's admission, never a T2 or left-out tool."""
+    from harness.bundled_lane_descriptor import load_manifest_rows
+    from harness.lane_tool_policy import admitted_tools, lane_policy
+
+    rows = load_manifest_rows()
+    assert len(rows) == 12
+    for lane, row in rows.items():
+        allowed = row["component_descriptor"]["allowed_tools"]
+        assert allowed == admitted_tools(lane), lane
+        table = lane_policy(lane)
+        assert all(table[t].tier == "T1" and not table[t].not_in_build for t in allowed), lane
 
 
 def test_admit_non_relay_rejects_descriptor_digest_mismatch():

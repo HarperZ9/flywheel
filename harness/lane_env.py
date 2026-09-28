@@ -18,6 +18,13 @@ purpose, since a proxy URL can carry a user name and password; grant them by nam
 when a lane needs them. The launch's own overrides (PYTHONPATH for a source
 checkout) are applied last and win.
 
+A frozen build's bundled lane child starts from its own smaller base set
+(bundled_lane_env.py) and gains sources 2 and 3 here, so a grant reaches a
+bundled lane the same way it reaches a pip lane. A key saved in the app's
+keychain reaches a lane only per call, through a bound credential slot
+(lane_credentials.py). Every spawned lane child starts in its lane folder
+(lane_workdir.py).
+
 Two entry points use this. confine_lane_launch rewrites a lane's MCP server
 launch, and lane_process_environment builds the env for every other place the
 gateway runs lane code as a child process (the index, chorus, gather, crucible
@@ -37,8 +44,10 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import replace
+from pathlib import Path
 from typing import Mapping
 
+from .lane_workdir import ensure_lane_workdir, lane_state_defaults, pin_lane_workdir
 from .mcp_client import LaunchSpec
 
 CONFINED_KINDS = frozenset(("pip", "npm"))
@@ -64,6 +73,7 @@ BASE_NAMES = frozenset((
     "FLYWHEEL_HOME", "FLYWHEEL_WORKSPACE_ROOT", "FLYWHEEL_WORKSPACE_ROOTS",
 ))
 _NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,127}\Z")
+_USERINFO = re.compile(r"://[^/@\s]+@")
 
 
 def operator_grants(row: Mapping[str, object]) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -83,27 +93,59 @@ def lane_child_environment(environ: Mapping[str, str], declared: tuple[str, ...]
     """Keep only allowlisted, declared and granted names from ``environ``.
 
     Names match case-insensitively, so ``Path`` on Windows and ``PATH`` on POSIX
-    both count; the parent's own spelling is kept."""
+    both count; the parent's own spelling is kept. A lane-declared value that
+    carries ``user:token@`` in a URL is dropped: a declared base URL passes at
+    every tier, so it must not smuggle a credential. A granted name is the
+    operator's own choice and keeps its value."""
     wanted = BASE_NAMES | {name.upper() for name in (*declared, *granted)}
+    chosen = BASE_NAMES | {name.upper() for name in granted}
     return {key: str(value) for key, value in environ.items()
-            if isinstance(key, str) and key.upper() in wanted}
+            if isinstance(key, str) and key.upper() in wanted
+            and (key.upper() in chosen or not _USERINFO.search(str(value)))}
 
 
 def confine_lane_launch(lane, launch: LaunchSpec | None, environ: Mapping[str, str],
                         row: Mapping[str, object]) -> tuple[LaunchSpec | None, tuple[str, ...]]:
-    """Return the launch with ambient inheritance replaced by the minimal env.
+    """Return the launch with its lane environment and lane folder.
 
-    Only a spawned pip or npm launch that still inherits is changed. A launch
-    that already carries its own environment (bundled admission) and an http
-    lane (nothing spawned) pass through unchanged."""
+    A spawned pip or npm launch that still inherits is rebuilt from the minimal
+    env. A bundled self-child keeps its own small env and gains the lane's
+    declared names and the operator's grant, so both kinds of lane see the same
+    names. Every spawned lane child then starts in its lane folder
+    (lane_workdir.py). An http lane (nothing spawned) passes through."""
     granted, codes = operator_grants(row)
-    if (launch is None or not launch.argv or not launch.inherit_env
-            or lane.kind not in CONFINED_KINDS):
+    if launch is None or not launch.argv:
         return launch, codes
-    env = lane_child_environment(environ, tuple(lane.env_vars), granted)
-    env.update(launch.env_overrides)
-    return replace(launch, env_overrides=tuple(sorted(env.items())),
-                   inherit_env=False), codes
+    if is_bundled_child(launch):
+        launch = _grant_bundled(launch, environ, tuple(lane.env_vars), granted)
+    elif launch.inherit_env and lane.kind in CONFINED_KINDS:
+        env = lane_child_environment(environ, tuple(lane.env_vars), granted)
+        env.update(launch.env_overrides)
+        launch = replace(launch, env_overrides=tuple(sorted(env.items())),
+                         inherit_env=False)
+    return pin_lane_workdir(lane, launch, environ), codes
+
+
+def is_bundled_child(launch: LaunchSpec) -> bool:
+    """A frozen build's self-child launch of one payload lane."""
+    return (not launch.inherit_env
+            and tuple(launch.argv[1:2]) == ("--bundled-lane-mcp",))
+
+
+def _grant_bundled(launch: LaunchSpec, environ: Mapping[str, str],
+                   declared: tuple[str, ...], granted: tuple[str, ...]) -> LaunchSpec:
+    """Add declared and granted names to a bundled child's own env. A name the
+    bundled env already sets (PATH, the home, UTF-8) keeps its bundled value."""
+    own = dict(launch.env_overrides)
+    taken = {key.upper() for key in own}
+    wanted = {name.upper() for name in (*declared, *granted)}
+    chosen = {name.upper() for name in granted}
+    for key, value in environ.items():
+        if (isinstance(key, str) and key.upper() in wanted
+                and key.upper() not in taken
+                and (key.upper() in chosen or not _USERINFO.search(str(value)))):
+            own[key] = str(value)
+    return replace(launch, env_overrides=tuple(sorted(own.items())))
 
 
 def lane_process_environment(lane_name: str, extra: Mapping[str, str] | None = None, *,
@@ -114,7 +156,9 @@ def lane_process_environment(lane_name: str, extra: Mapping[str, str] | None = N
     It applies the same three sources as a lane launch: BASE_NAMES, the lane's
     declared env_vars and the operator's env_allow grant for that lane. ``extra``
     carries the few values the call itself sets (a job directory, a database
-    path) and wins. An unknown lane gets the base set only."""
+    path) and wins. mneme and canon get their state defaults in the lane
+    folder when neither the engine nor ``extra`` sets them. An unknown lane
+    gets the base set only."""
     from .lanes_registry import LANES
     source = os.environ if environ is None else environ
     if registry is None:
@@ -129,4 +173,7 @@ def lane_process_environment(lane_name: str, extra: Mapping[str, str] | None = N
     declared = tuple(lane.env_vars) if lane is not None else ()
     env = lane_child_environment(source, declared, granted)
     env.update({str(key): str(value) for key, value in (extra or {}).items()})
+    if lane is not None and lane_state_defaults(lane_name, Path(), env):
+        folder = ensure_lane_workdir(lane_name, source)
+        env.update(lane_state_defaults(lane_name, folder, env))
     return env
