@@ -33,7 +33,8 @@ def _registry(monkeypatch, tmp_path, rows):
 
 @pytest.mark.parametrize("name", ("gather", "learn"))
 def test_install_lane_runs_the_package_manager_without_provider_keys(
-        name, tmp_path, monkeypatch):
+        name, tmp_path, monkeypatch, programs_on_path):
+    programs_on_path("npm")  # npm lanes resolve npm before the (faked) run
     monkeypatch.setenv("OPENROUTER_API_KEY", FAKE_KEY)
     monkeypatch.setenv("PIP_INDEX_URL", "https://example.invalid/simple")
     _registry(monkeypatch, tmp_path, {name: {"env_allow": ["PIP_INDEX_URL"]}})

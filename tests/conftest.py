@@ -187,3 +187,25 @@ def lanes_at_their_pins(monkeypatch):
     does not launch, so a test that freezes a lane launch must not depend on
     which lane packages the host happens to have installed."""
     monkeypatch.setattr("harness.lanes._installed_version", lambda lane: lane.version)
+
+
+@pytest.fixture
+def programs_on_path(tmp_path_factory, monkeypatch):
+    """Put stand-in executables for the named programs first on PATH.
+
+    The program lookup (harness/safe_program.py) starts only real files in
+    absolute PATH folders, so a test that replaces subprocess still needs each
+    program it names to exist, whatever the host has installed. The folder sits
+    outside the test's tmp_path, which a test may use as the child's working
+    folder. Returns {name: the path the lookup resolves it to}."""
+    def make(*names: str) -> dict:
+        folder = tmp_path_factory.mktemp("stand-in-bin")
+        found = {}
+        for name in names:
+            path = folder / (f"{name}.exe" if os.name == "nt" else name)
+            path.write_bytes(b"MZ")
+            path.chmod(0o755)
+            found[name] = os.path.join(os.path.realpath(folder), path.name)
+        monkeypatch.setenv("PATH", os.pathsep.join((str(folder), os.environ.get("PATH", ""))))
+        return found
+    return make

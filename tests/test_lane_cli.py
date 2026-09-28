@@ -211,8 +211,10 @@ def test_science_bench_and_feeds_route_through_the_launcher(registry, monkeypatc
 
 
 def test_bridges_pass_absolute_paths_since_the_child_runs_elsewhere(registry, tmp_path,
-                                                                     monkeypatch):
+                                                                     monkeypatch,
+                                                                     programs_on_path):
     from harness import chorus_bridge, index_bridge
+    programs_on_path("index", "chorus")
     (tmp_path / "repo").mkdir()
     (tmp_path / "corpus.jsonl").write_text("", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
