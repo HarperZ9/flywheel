@@ -161,4 +161,29 @@ const Map<String, LaneIdentity> laneIdentities = {
         'records the whole path.',
     surface: 'grant gate + action journal',
   ),
+  'isomorph': LaneIdentity(
+    title: 'Isomorph',
+    identity:
+        'Harness-agnostic semantic transformation boundary. Prose bypass, '
+        'circumvention calibration, evasion apparatus, and browser surface '
+        'assessment. The outermost layer: wraps any harness, feeds '
+        'transformed input into Flywheel.',
+    surface: 'technique catalog + transform receipts',
+  ),
+  'sofer': LaneIdentity(
+    title: 'Sofer',
+    identity:
+        'An 88-agent routing ecosystem. Classify, dispatch, coordinate, and '
+        'synthesize across responsible-handling, defensive, engineering, '
+        'research, investigative, and compliance divisions.',
+    surface: 'agent roster + routing decisions',
+  ),
+  'array': LaneIdentity(
+    title: 'Array',
+    identity:
+        'Offensive assessment orchestration. Campaigns, waves, containment, '
+        'and an engagement model with approval gates and evidence hashes. '
+        'Every action is receipt-backed and ledger-chained.',
+    surface: 'campaign ledger + containment receipts',
+  ),
 };

@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from harness.lane_tool_policy import admitted_tools, main_tools, tool_policy
+from harness.lane_tool_policy import HELD_LANES, admitted_tools, main_tools, tool_policy
 from harness.lanes_registry import LANES
 from scripts import installed_lane_engine as engine
 from scripts import installed_lane_verdict as verdict
@@ -155,7 +155,8 @@ def test_a_held_lane_is_below_the_bar():
     case = _held_case()
     row = verdict.lane_verdict(case, _outcomes(case))
     assert row["verdict"] == "HELD" and row["class_measured"] is None
-    assert not any(c.class_expected == "held" for c in CASES.values())
+    assert not any(c.class_expected == "held" for c in CASES.values()
+                   if c.lane not in HELD_LANES)
 
 
 def test_summary_passes_only_when_every_lane_is_in_its_class():

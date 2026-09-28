@@ -205,4 +205,27 @@ LANES: dict[str, Lane] = {
         env_vars=("ACCOUNTABLE_SURFACE_GRANTS", "ACCOUNTABLE_SURFACE_JOURNAL",
                   "ACCOUNTABLE_SURFACE_NATIVE_CONTROL_SCRIPT", "ACCOUNTABLE_SURFACE_RECEIPTS",
                   "ANTHROPIC_MODEL", "OLLAMA_HOST", "OLLAMA_MODEL")),
+    "isomorph": Lane(
+        "isomorph", "", "python", ("-m", "tools.isomorph_mcp"), "pip", "0.3.0",
+        "harness-agnostic semantic transformation boundary: prose bypass, "
+        "circumvention calibration, evasion apparatus, browser surface assessment "
+        "(the outermost layer; wraps any harness, feeds into Flywheel)",
+        "transform", source_repo="state/isomorph", py_module="tools.isomorph_mcp",
+        package_disabled_reason="Private lane. Use an Isomorph source checkout."),
+    "sofer": Lane(
+        "sofer", "", "python", ("-m", "sofer.mcp.sov_server"), "pip", "0.1.0",
+        "88-agent routing ecosystem: classify, dispatch, coordinate, synthesize "
+        "(Flywheel-composed; receives transformed input through the lane layer)",
+        "dispatch", source_repo="state/sofer", py_module="sofer.mcp.sov_server",
+        extra_source_repos=("state/isomorph",),
+        package_disabled_reason="Private lane. Use a Sofer source checkout."),
+    "array": Lane(
+        "array", "", "python", ("-m", "red_team_platform.mcp_server"), "pip", "1.0.0",
+        "offensive assessment orchestration: campaigns, waves, containment, "
+        "engagement model with approval gates and evidence hashes "
+        "(Flywheel-composed; receives transformed input through the lane layer)",
+        "assessment", source_repo="state/array",
+        py_module="red_team_platform.mcp_server",
+        extra_source_repos=("state/isomorph",),
+        package_disabled_reason="Private lane. Use an Array source checkout."),
 }

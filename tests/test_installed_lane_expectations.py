@@ -20,7 +20,7 @@ from scripts import installed_app_lane_acceptance as acceptance
 from scripts import installed_lane_expectations as expected
 from scripts import installed_lane_verdict as verdict
 from scripts.installed_lane_cases import CASES, DENIED, Check, LaneCase, st
-from harness.lane_tool_policy import tool_policy
+from harness.lane_tool_policy import HELD_LANES, tool_policy
 
 
 def _lanes(failing: dict[str, tuple[str, ...]] | None = None, *, everything_fails=False):
@@ -64,7 +64,8 @@ def test_telos_is_expected_at_class_now_that_it_ships():
     lane stayed held, or failed any of its checks, departs."""
     rows = expected.load()
     assert rows["telos"]["verdict"] == "AT_CLASS" and not rows["telos"].get("failed")
-    assert not any(row["verdict"] == "HELD" for row in rows.values())
+    assert not any(row["verdict"] == "HELD" for name, row in rows.items()
+                   if name not in HELD_LANES)
     for check in CASES["telos"].checks:
         lanes = _lanes({"index": ("fresh_map_needs_git",), "telos": (check.name,)})
         assert [d["lane"] for d in expected.judge(lanes)["departures"]] == ["telos"], check.name

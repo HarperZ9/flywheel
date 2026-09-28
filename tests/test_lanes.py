@@ -22,7 +22,7 @@ def test_registry_covers_the_expected_lanes():
     assert set(LANES) == {"gather", "crucible", "chorus", "articulate", "index", "forum",
                           "learn", "telos", "local-model", "relay", "plexus", "mneme",
                           "calibrate-pro", "accountable-surface", "canon", "bulletin",
-                          "writing"}
+                          "writing", "isomorph", "sofer", "array"}
 
 
 def test_install_name_to_command_asymmetry_is_mapped():
