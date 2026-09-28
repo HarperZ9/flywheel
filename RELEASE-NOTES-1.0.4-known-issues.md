@@ -7,7 +7,7 @@ Node and no lane packages on the PATH, and a throwaway profile. This page correc
 six statements about the installed Windows app; the engine you get from
 `pip install flywheel-verify` is not affected by those. It also names the lane
 advisories that cover the lane releases 1.0.4 pins: canon 0.2.0's and crucible 1.2.0's,
-in both the app and a pip install, and gather's, relay's and forum's, in a pip install.
+in both the app and a pip install, and gather's, relay's, forum's and learn's, in a pip install.
 It also corrects what the notes say about where your data goes, for both installs.
 
 ## What the notes said, and what we measured
@@ -88,6 +88,14 @@ working folder and the whole environment, an open local daemon).
 In the 1.0.4 app, gather and relay answer only status and doctor and forum does not
 start, so the affected tools do not run there. A pip install of 1.0.4 runs them.
 Flywheel 1.1.0 pins gather 2.0.0, relay 0.5.0 and forum 1.15.1.
+
+**learn 1.6.0, which 1.0.4's lane registry pins, is inside two advisories published on
+27 September.** GHSA-2cf9-7hp2-ffh7: learn's MCP tools could read and write files outside
+its folder, and `learn resume` submitted and paid without the opt-in. GHSA-wq39-vc75-wxcr:
+learn started peer commands in the folder it ran in, so a Python package planted there
+could run. The 1.0.4 app does not ship learn. On a pip install, `flywheel install learn`
+installs the newest learn, so one installed before 27 September is 1.6.0 or older;
+`npm ls -g @harperz9/learn` shows which. learn 2.0.0 fixes both.
 
 ## If you run 1.0.4 today
 

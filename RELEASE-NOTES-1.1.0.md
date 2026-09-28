@@ -264,9 +264,12 @@ on your machine; the content of each request goes to the hosted provider you rou
 
 - index maps a repository's history only with Git for Windows; see its row in the table.
 - telos is not in this build while its release contents are reviewed.
-- The bundled gather 1.9.1 source includes an optional TLS-impersonation fetch backend.
-  It cannot load in the app, because its library (curl_cffi) is not bundled, and
-  gather's next release removes it.
+- The bundled gather 1.9.1 source has an optional TLS-impersonation fetch backend. It cannot
+  load in the app, because curl_cffi is not bundled; gather's next release removes it.
+- learn 1.6.0, bundled and pinned here, is inside GHSA-2cf9-7hp2-ffh7 and GHSA-wq39-vc75-wxcr,
+  which learn 2.0.0 fixes. Flywheel runs learn as an MCP server and refuses a session or run
+  id that is not a plain id, or a network or device path, before learn starts. Its read tools
+  still reach files outside the Flywheel home, and its own command line is affected.
 - Lanes still run as your user with no filesystem sandbox. The policy governs what a
   caller can ask a lane to do, not what a lane's own code can reach. An index root above
   the Flywheel home, such as your user folder, reads the repositories inside the home.
