@@ -173,6 +173,30 @@ reaches T2, since the model picks each inner call and its arguments.
   owner approves. `telos.native.control` stays out of the build. The registry pins 0.4.2 with
   no distribution hold, `CAPTCHA_VENV_PY` leaves the lane's variables, the staging script
   stages telos by default, and the installed acceptance now expects telos at class.
+- **telos arguments and variables, 2026-09-28.** A review of the pin found no argument guard
+  on any telos tool: a caller's arguments reached the child and the approval sheet unchanged,
+  inert only because the pinned server never reads them. Every telos tool now passes no
+  argument (`allowed_args` empty, which matches the served schemas: each declares no property
+  and `additionalProperties` false). The lane call and Plugins routes drop whatever a caller
+  sends, the approval sheet lists it as dropped, and an agent run, which passes the model's
+  arguments through, cannot select a telos tool. `tests/test_telos_lane_arguments.py` binds
+  the measurement to the pinned tarball, so a re-pin fails until the tools are measured again,
+  and fails a served schema that declares an argument the policy drops. The lane's variables
+  are now the two the proof witness reads (`TELOS_EMET_CLI`, `TELOS_EMET_DISABLE_FALLBACKS`):
+  the Chrome and learn names belong to native-control, which over MCP only prints its verb
+  catalog, and the font names to a repository script the package does not ship. The same
+  review found the credential table in `docs/lane-runtime-selection.md` still offered telos
+  `CAPTCHA_SERVICE_KEY`; the row is gone and a test keeps any page from naming it.
+- **Native-control files in the Windows payload, 2026-09-28.** Staging extracts the whole
+  tarball, so the Windows app now carries `demo/native-control/*`, `tools/uia.ps1` and
+  `tools/device.ps1`. No admitted tool reaches them: the frozen launch refuses
+  `telos.native.control` with `NOT_IN_BUILD` even at T2, and no T1 script imports the driver
+  (`browser-evidence.mjs` imports only the evidence validator). The staged
+  `demo/native-control/cdp.mjs` has the sha256 the `telos-browser` driver pins
+  (`SUPPORTED_CDP_SHA256`). Decided: a person who opts in to that driver with
+  `FLYWHEEL_TELOS_BROWSER_CONFIG` may point it at the staged copy, since the driver pins the
+  module by content, not location; its acts follow the browser session policy
+  (`harness/browser_control.py`), not a lane tier.
 - **Measured containment** (C-16). The frozen lane smoke snapshots its throwaway home around each
   lane's fixture and fails a lane that writes outside its folder.
 
@@ -210,8 +234,10 @@ script and fixed flags (`toolScripts`) and never reads `params.arguments`. Each 
 once through that server on the bundled Node v24.21.0, from the staged package, with the lane
 folder as working folder and TEMP, TMP and the app-data folders inside it, and a stray argument
 in every call. A preload module recorded every child process, file write, file read or probe
-and network call in the server and every Node child. Three runs: a System32 PATH (the frozen
-lane's), the full developer PATH, and the full PATH with harmless stand-ins beside the package
+and network call in the server and every Node child. Three runs: a System32 PATH (the one the
+frozen lane smoke and the installed-app check give the engine; the desktop app passes a Node
+lane child the engine's own PATH), the full developer PATH, and the full PATH with harmless
+stand-ins beside the package
 (gather, crucible, index and forum source folders and an emet script, each printing fixed JSON).
 The package folder hashed the same before and after every run, no run left a file in the lane
 folder, and no tool made a network call in any run. The hook sees Node processes only: what a
@@ -228,7 +254,8 @@ that start them are T2.
 - `telos.room` starts `python --version` (then `python3`) from PATH in every run. With the four
   source folders beside the package it ran 12 processes in all: the room script, the python
   probe, python on each folder's `status` and `doctor` command, and the package's status and
-  doctor scripts.
+  doctor scripts. In that run room returned no envelope, so its answer with real source
+  folders beside the package is unmeasured.
 - `telos.workflow` does the same probe; with the folders present it ran index `map`, gather
   `docs`, forum `route` and crucible `assess` from them and `node demo/run.mjs` from PATH, and
   wrote and removed two temp files in the lane folder.
@@ -237,9 +264,13 @@ that start them are T2.
   after.
 - `telos.native.control` imports the Chrome DevTools, UI Automation and device driver modules;
   with no arguments it printed its verb catalog and started nothing. It stays out of the build.
-- None of the three T2 tools reaches anything in the installed app: the staged package has only
-  `learn` and `node` beside it, python is not on the frozen PATH, and the engine passes
-  `TELOS_EMET_CLI` only when the person sets it.
+- In the installed app none of the three T2 tools finds the programs it looks for: the staged
+  package has only `learn` and `node` beside it, so room and workflow answer UNVERIFIABLE, and
+  the witness runs only when the person sets `TELOS_EMET_CLI`. A Node lane child gets the
+  engine's own PATH (`lane_env.confine_lane_launch` keeps `PATH` from the engine's
+  environment), so an approved room or workflow call still starts `python --version`, then
+  `python3`, when python is on that PATH. The frozen smoke and the installed-app check give the
+  engine a System32 PATH and cannot show this.
 - learn: `learn_tutor_plan` and `learn_tutor_record` write one session file under
   `<home>/lanes/learn/tutor/`, joining the caller's `sessionId` into the path, which is why the id
   guard exists. `learn_dry_run`, `learn_tutor_reverify` and `learn_tutor_prooflesson` read a path
@@ -402,47 +433,47 @@ Admitted at launch: 37 of 41 tools. T2 per granted call: 3. Not in this build: 1
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
-| `telos.status` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.doctor` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.room` | T2 |  | actuate | node |  | Starts the python found on PATH and, when gather, crucible, index and forum source folders sit beside the package, runs their status and doctor commands from those folders. Programs outside the package run, so each call needs a T2 approval. |
-| `telos.workflow` | T2 |  | actuate | node |  | Starts the python found on PATH and, with the four source folders beside the package, runs index map, gather docs, forum route and crucible assess from them and a node from PATH; its temp files stay in the lane folder. Programs outside the package run, so each call needs a T2 approval. |
-| `telos.catalog` | T1 | main | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.server.manifest` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.mcp.freshness` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.ci.doctor` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.ci.triage` | T1 |  | read | node |  | Triages the package's bundled CI fixture and prints JSON; the MCP mapping passes no arguments, so the live GitHub intake is never reached. |
-| `telos.presentation.doctor` | T1 |  | read | node |  | Reads the package and, read-only, the README, changelog and brand files in gather, crucible, index and forum folders beside it; prints JSON and writes nothing. |
-| `telos.accessibility.doctor` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.performance.doctor` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.compatibility.doctor` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.operator.doctor` | T1 |  | read | node |  | Runs one fixed package script, which also starts the package's own status script on the same Node; reads files inside the package and prints JSON. |
-| `telos.admission.telemetry` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.context.envelope` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.context.pack` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.action.receipt` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.loop.ledger` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.objective.monitor` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.model.foundry` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.learning.forge` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.learning.labs` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.research.seed` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.research.thermodynamic` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.rendering.research` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.rendering.capabilities` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.measurement.layers` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.creative.engine` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.creative.kernels` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.revival.registry` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.second_level.queue` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.workstation.substrate` | T1 |  | read | node |  | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
-| `telos.display.calibration` | T1 |  | read | node |  | Returns a calibration contract from package data; changes no display setting. |
-| `telos.native.control` | T2, not in build: `actuation_outside_app` |  | actuate | node |  | The package's Chrome DevTools, UI Automation and device driver. With no arguments it prints its verb catalog, but the script is the driver, so the build leaves it out rather than admit it at T2. |
-| `telos.browser.evidence` | T1 |  | read | node |  | Returns the package's synthetic browser evidence fixture as JSON; starts no browser. |
-| `telos.showcase.scout` | T1 |  | read | node |  | Ranks the package's bundled scout fixture and prints JSON; the live GitHub search and the file output are not reachable from the MCP mapping. |
-| `telos.proof` | T2 |  | actuate | node |  | Its witness stage runs node on the script TELOS_EMET_CLI names, or on an emet folder beside the package, with temp files in the lane folder. Programs outside the package run, so each call needs a T2 approval. |
-| `telos.proof.research` | T1 | main | read | node |  | Assembles and verifies the bundled demo packet in memory; this proof has no witness stage and writes nothing. |
-| `telos.proof.visual` | T1 | main | read | node |  | Recomputes the bundled demo packet's measurements in memory; no witness stage, no write. |
-| `telos.proof.build` | T1 | main | read | node |  | Recomputes the bundled demo run's invariant in memory; no witness stage, no write. |
+| `telos.status` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.doctor` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.room` | T2 |  | actuate | node | passes no argument | Starts the python found on PATH and, when gather, crucible, index and forum source folders sit beside the package, runs their status and doctor commands from those folders. Programs outside the package run, so each call needs a T2 approval. |
+| `telos.workflow` | T2 |  | actuate | node | passes no argument | Starts the python found on PATH and, with the four source folders beside the package, runs index map, gather docs, forum route and crucible assess from them and a node from PATH; its temp files stay in the lane folder. Programs outside the package run, so each call needs a T2 approval. |
+| `telos.catalog` | T1 | main | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.server.manifest` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.mcp.freshness` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.ci.doctor` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.ci.triage` | T1 |  | read | node | passes no argument | Triages the package's bundled CI fixture and prints JSON; the MCP mapping passes no arguments, so the live GitHub intake is never reached. |
+| `telos.presentation.doctor` | T1 |  | read | node | passes no argument | Reads the package and, read-only, the README, changelog and brand files in gather, crucible, index and forum folders beside it; prints JSON and writes nothing. |
+| `telos.accessibility.doctor` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.performance.doctor` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.compatibility.doctor` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.operator.doctor` | T1 |  | read | node | passes no argument | Runs one fixed package script, which also starts the package's own status script on the same Node; reads files inside the package and prints JSON. |
+| `telos.admission.telemetry` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.context.envelope` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.context.pack` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.action.receipt` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.loop.ledger` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.objective.monitor` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.model.foundry` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.learning.forge` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.learning.labs` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.research.seed` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.research.thermodynamic` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.rendering.research` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.rendering.capabilities` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.measurement.layers` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.creative.engine` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.creative.kernels` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.revival.registry` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.second_level.queue` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.workstation.substrate` | T1 |  | read | node | passes no argument | Runs one fixed package script that reads files inside the package and prints JSON; the MCP mapping passes no arguments. |
+| `telos.display.calibration` | T1 |  | read | node | passes no argument | Returns a calibration contract from package data; changes no display setting. |
+| `telos.native.control` | T2, not in build: `actuation_outside_app` |  | actuate | node | passes no argument | The package's Chrome DevTools, UI Automation and device driver. With no arguments it prints its verb catalog, but the script is the driver, so the build leaves it out rather than admit it at T2. |
+| `telos.browser.evidence` | T1 |  | read | node | passes no argument | Returns the package's synthetic browser evidence fixture as JSON; starts no browser. |
+| `telos.showcase.scout` | T1 |  | read | node | passes no argument | Ranks the package's bundled scout fixture and prints JSON; the live GitHub search and the file output are not reachable from the MCP mapping. |
+| `telos.proof` | T2 |  | actuate | node | passes no argument | Its witness stage runs node on the script TELOS_EMET_CLI names, or on an emet folder beside the package, with temp files in the lane folder. Programs outside the package run, so each call needs a T2 approval. |
+| `telos.proof.research` | T1 | main | read | node | passes no argument | Assembles and verifies the bundled demo packet in memory; this proof has no witness stage and writes nothing. |
+| `telos.proof.visual` | T1 | main | read | node | passes no argument | Recomputes the bundled demo packet's measurements in memory; no witness stage, no write. |
+| `telos.proof.build` | T1 | main | read | node | passes no argument | Recomputes the bundled demo run's invariant in memory; no witness stage, no write. |
 
 ### local-model 0.1.0
 
@@ -450,7 +481,7 @@ Admitted at launch: 8 of 9 tools. T2 per granted call: 1. Not in this build: 0.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
-| `local_agent_health` | T1 |  | network_read |  | passes only no argument, `online=false` | Pings the local model tiers; online tiers are forced off. |
+| `local_agent_health` | T1 |  | network_read |  | passes no argument, `online=false` | Pings the local model tiers; online tiers are forced off. |
 | `local_agent_chat` | T1 | main | model_call | model_server | `online=false` | One completion from the first healthy local tier; online tiers are forced off. |
 | `local_agent_run` | T1 | main | model_call | model_server, project_folder | passes only `goal`, `root`, `max_steps`, `max_tokens`, `backend`, `allow_write=false`, `allow_exec=false`, `online=false`, `root` kept out of the home | Runs an agent task inside the picked project folder. Write and exec come from the launch and default off; the engine passes only the listed arguments and forces write, exec and online off in the call. |
 | `local-model.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
@@ -487,7 +518,7 @@ Admitted at launch: 9 of 10 tools. T2 per granted call: 1. Not in this build: 0.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
-| `local_agent_health` | T1 |  | network_read |  | passes only no argument, `online=false` | Pings the local model tiers; online tiers are forced off. |
+| `local_agent_health` | T1 |  | network_read |  | passes no argument, `online=false` | Pings the local model tiers; online tiers are forced off. |
 | `local_agent_chat` | T1 |  | model_call | model_server | passes only `prompt`, `backend`, `online=false` | One completion from the first healthy local tier; online tiers are forced off. |
 | `local_agent_run` | T1 | main | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Runs an agent task on the model server the person set up. relay 0.5.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine also passes only the listed arguments, so root, check, test_cmd and online never reach the run, and forces write, exec and online off. |
 | `local_agent_start` | T2 (rule alone: T1) |  | model_call | model_server | passes only `goal`, `max_steps`, `max_tokens`, `model`, `backend`, `compact_budget`, `allow_write=false`, `allow_exec=false`, `online=false` | Starts the same agent run in the background on the relay lane's long-lived session and returns its run id at once. T2: it holds the model server for minutes with no call waiting on it. relay 0.5.0 takes write and exec from its launch, which the engine starts with both off and its root at the lane folder; the engine passes only the listed arguments and forces write, exec and online off. |

@@ -1,9 +1,11 @@
 """Launches for the Node lanes (learn, telos): absolute node, absolute script.
 
 The registry declares each Node lane as ``node <entry>``, which fails twice on
-an installed app: a frozen lane child's PATH is the system folder, so a bare
-``node`` is not found, and the entry is relative to whatever folder the engine
-started in. This module resolves both to absolute paths:
+an installed app: the PATH a lane child gets need not hold a Node (the app
+bundles its own), so a bare ``node`` may not be found, and the entry is
+relative to whatever folder the engine started in. A Node lane child keeps the
+engine's own PATH (``lane_env.confine_lane_launch``); only a bundled Python
+lane's is cut to the system folder. This module resolves both to absolute paths:
 
 - frozen: the script under the staged ``_internal/node-lanes/<lane>/`` folder
   (``scripts/stage_node_lanes.py``), which carries a passing receipt;

@@ -147,6 +147,19 @@ def _workflow_unjoinable(reply: object) -> bool:
             and find_key(reply, "reason") == "flagship_workflow_unjoinable")
 
 
+def _build_proof_match(reply: object) -> bool:
+    # telos.proof.build recomputes the bundled demo run's invariant in memory;
+    # the verifier's own verdict must be MATCH with no failed check.
+    verifier = reply.get("verifier") if isinstance(reply, dict) else None
+    return (isinstance(verifier, dict)
+            and reply.get("schema") == "project-telos.build-proof-packet/v1"
+            and verifier.get("verdict") == "MATCH" and verifier.get("failures") == [])
+
+
+# A caller's arguments to a telos tool: the engine passes none of them on.
+_STRAY = {"stray": "x", "--out": "stray.json"}
+
+
 def _diagnose_args(ctx: Ctx) -> dict:
     w = ctx.writing
     return {"journey_ref": w.get("journey_ref"), "expected_event_head": w.get("event_head"),
@@ -182,7 +195,14 @@ CASES: dict[str, LaneCase] = {c.lane: c for c in (
     _read_lane("learn", basis="PLAN 1a said B (Node); O-1 b bundles Node, so A"),
     _read_lane("telos", basis="PLAN 1a said B (Node); telos 0.4.2 runs on the bundled "
                "Node, so A. room, workflow and proof start programs outside the package "
-               "and run only at T2; native.control stays out of the build", extra=(
+               "and run only at T2; native.control stays out of the build; the engine "
+               "passes telos no argument", extra=(
+        call("fresh_catalog_drops_arguments", "fresh", "telos.catalog",
+             lambda c: dict(_STRAY), assert_=FIXTURES["telos"].check),
+        call("fresh_proof_build", "fresh", "telos.proof.build", lambda c: {},
+             assert_=_build_proof_match),
+        call("fresh_room_t1_refused", "fresh", "telos.room", lambda c: {}, status=DENIED),
+        call("fresh_proof_t1_refused", "fresh", "telos.proof", lambda c: {}, status=DENIED),
         call("fresh_workflow_t1_refused", "fresh", "telos.workflow", lambda c: {},
              status=DENIED),
         call("fresh_workflow_t2_runs", "fresh", "telos.workflow", lambda c: {}, tier="T2",

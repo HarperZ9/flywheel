@@ -78,8 +78,9 @@ const Map<String, LaneIdentity> laneIdentities = {
   'telos': LaneIdentity(
     title: 'Telos',
     identity:
-        'The shared workbench: durable state, native workstation control, a '
-        'discovery forge. One MCP surface over the whole flagship family.',
+        'Reads the workstation catalog, runs doctors over the package, and '
+        'replays proof packets that recompute their own verdict. Room, '
+        'workflow and the agent-action proof run only on a call you approve.',
     surface: 'workbench map',
   ),
   'local-model': LaneIdentity(

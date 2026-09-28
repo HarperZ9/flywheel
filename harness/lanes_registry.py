@@ -121,13 +121,16 @@ LANES: dict[str, Lane] = {
     "telos": Lane(
         # 0.4.2 is the first release without the CAPTCHA and fingerprint code, so
         # its lane variable is gone too. Its tools are classified one by one in
-        # lane_tool_policy_node.
+        # lane_tool_policy_node. The two names below are the only ones a 0.4.2
+        # tool the lane serves reads (the proof witness). The Chrome and learn
+        # names belong to the native-control driver, which over MCP only prints
+        # its verb catalog, and the font names to a repository script the
+        # package does not ship.
         "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.2",
-        "the reconciliation lane: five-tool workflow + creative engine + doctors",
+        "the reconciliation lane: workstation catalog, doctors and proof packets; "
+        "room and workflow need the sibling checkouts",
         "reconciliation", source_repo="public/telos",
-        env_vars=("TELOS_CHROME_PATH", "TELOS_CHROME_PROFILE", "TELOS_EMET_CLI",
-                  "TELOS_EMET_DISABLE_FALLBACKS", "LEARN_CLI",
-                  "TELOS_CONSO_FONT_ZIP", "TELOS_KILON_FONT_ZIP")),
+        env_vars=("TELOS_EMET_CLI", "TELOS_EMET_DISABLE_FALLBACKS")),
     "local-model": Lane(
         "local-model", "", "python", ("-m", "harness.local_mcp"), "bundled", "0.1.0",
         "a local agent loop on the model server you run, inside a project folder you pick, "

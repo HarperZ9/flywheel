@@ -1,5 +1,5 @@
 {
- "method": "Each of the 41 tools called once through the package's own stdio MCP server, the way the engine calls a Node lane: the bundled Node, the lane folder as working folder, TEMP, TMP and the app-data folders inside it, and a stray argument in every call. A preload module recorded every child process, file write, file read or probe, and network call (net, http, https, tls, dgram, fetch, WebSocket) in the server and in every Node child. The package folder was hashed before and after.",
+ "method": "Each of the 41 tools called once through the package's own stdio MCP server, the way the engine calls a Node lane: the bundled Node, the lane folder as working folder, TEMP, TMP and the app-data folders inside it, and a stray argument in every call. A preload module recorded every child process, file write, file read or probe, and network call (net, http, https, tls, dgram, fetch, WebSocket) in the server and in every Node child. The package folder was hashed before and after. The inputSchema of each tool is the one tools/list served from the staged package on the bundled Node.",
  "package": "project-telos-mcp 0.4.2",
  "runs": {
   "full_path": {
@@ -1544,7 +1544,7 @@
    "lane_files_left": [],
    "node": "v24.21.0",
    "package_unchanged": true,
-   "setting": "PATH is the system folder only, as for a frozen lane child",
+   "setting": "PATH is the system folder only, as the frozen lane smoke and the installed-app check start the engine; the desktop app passes a Node lane child the engine's own PATH",
    "tools": {
     "telos.accessibility.doctor": {
      "answered": true,
@@ -2228,5 +2228,212 @@
   }
  },
  "schema": "flywheel.telos-tool-measurement/v1",
+ "served_input_schemas": {
+  "telos.accessibility.doctor": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.action.receipt": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.admission.telemetry": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.browser.evidence": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.catalog": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.ci.doctor": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.ci.triage": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.compatibility.doctor": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.context.envelope": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.context.pack": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.creative.engine": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.creative.kernels": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.display.calibration": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.doctor": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.learning.forge": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.learning.labs": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.loop.ledger": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.mcp.freshness": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.measurement.layers": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.model.foundry": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.native.control": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.objective.monitor": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.operator.doctor": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.performance.doctor": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.presentation.doctor": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.proof": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.proof.build": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.proof.research": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.proof.visual": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.rendering.capabilities": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.rendering.research": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.research.seed": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.research.thermodynamic": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.revival.registry": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.room": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.second_level.queue": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.server.manifest": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.showcase.scout": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.status": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.workflow": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  },
+  "telos.workstation.substrate": {
+   "additionalProperties": false,
+   "properties": {},
+   "type": "object"
+  }
+ },
  "tarball_sha256": "ce2a452492cecea307d8725a6c60dad9f56f44f02db01a7f437a177561fe4e70"
 }

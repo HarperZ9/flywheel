@@ -259,3 +259,31 @@ def test_the_telos_checks_cover_each_tier_with_tools_telos_has():
     out = checks["fresh_native_control_not_in_build"]
     assert (out.tool, out.tier, out.expect_status, out.expect_code) == (
         "telos.native.control", "T2", REFUSED, "NOT_IN_BUILD")
+    for name, tool in (("fresh_room_t1_refused", "telos.room"),
+                       ("fresh_proof_t1_refused", "telos.proof")):
+        check = checks[name]
+        assert (check.tool, check.tier, check.expect_status) == (tool, "T1", DENIED)
+
+
+def test_the_telos_checks_run_a_proof_and_send_a_stray_argument():
+    """The card says catalog and proofs: an installed call runs the build proof
+    and needs the verifier's own MATCH. A catalog call with arguments must
+    still answer the catalog, since the engine passes telos none."""
+    checks = {c.name: c for c in CASES["telos"].checks}
+    proof = checks["fresh_proof_build"]
+    assert (proof.tool, proof.tier, proof.expect_status) == ("telos.proof.build", "T1", 200)
+    good = {"schema": "project-telos.build-proof-packet/v1",
+            "verifier": {"verdict": "MATCH", "failures": []}}
+    assert proof.assert_(good) is True
+    for bad in ({**good, "verifier": {"verdict": "DRIFT", "failures": []}},
+                {**good, "verifier": {"verdict": "MATCH", "failures": ["check.drift"]}},
+                {**good, "schema": "project-telos.proof-packet/v1"},
+                {"schema": good["schema"]}, [], None):
+        assert proof.assert_(bad) is False, bad
+    stray = checks["fresh_catalog_drops_arguments"]
+    assert (stray.tool, stray.tier, stray.expect_status) == ("telos.catalog", "T1", 200)
+    ((tool, args),) = stray.calls(None)
+    assert tool == "telos.catalog" and args
+    assert stray.assert_({"schema": "project-telos.mcp-tool-catalog/v1",
+                          "tools": [{"name": "telos.status"}]}) is True
+    assert stray.assert_({"schema": "project-telos.mcp-tool-catalog/v1", "tools": []}) is False

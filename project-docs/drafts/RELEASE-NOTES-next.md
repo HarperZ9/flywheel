@@ -29,8 +29,11 @@ paragraph or a lane count ships. Merge with any other draft for the same release
   the package. No call used the network or wrote outside the lane folder. It does not
   show what the programs `telos.room`, `telos.workflow` and `telos.proof` start would
   do, which is why those three need your approval.
-- In the Windows app no source folder sits beside the bundled package and python is
-  not on the lane's PATH, so an approved `telos.room` or `telos.workflow` call answers
-  UNVERIFIABLE and names what is missing.
+- In the Windows app no source folder sits beside the bundled package, so an approved
+  `telos.room` or `telos.workflow` call answers UNVERIFIABLE and names what is missing.
+  It still starts `python --version` from your PATH when python is on it.
+- The engine passes no telos tool an argument: the lane call and Plugins drop what a
+  caller sends, and the approval sheet lists it as dropped. An agent run passes the
+  model's arguments through, so it cannot select a telos tool.
 - The Node the installer bundles is the Windows x64 build. On Linux and macOS, Telos
   runs on the Node you install.
