@@ -214,4 +214,10 @@ CASES: dict[str, LaneCase] = {c.lane: c for c in (
         st("fresh", *RUNS), tools("fresh"), fx("fresh", "accountable-surface"),
         call("fresh_actuate_refused", "fresh", "accountable-surface.actuate",
              lambda c: {}, status=DENIED))),
+    LaneCase("isomorph", "B", "held", "private lane; source checkout only", (
+        st("fresh", "cannot_launch", code="lane_held"),)),
+    LaneCase("sofer", "B", "held", "private lane; source checkout only", (
+        st("fresh", "cannot_launch", code="lane_held"),)),
+    LaneCase("array", "B", "held", "private lane; source checkout only", (
+        st("fresh", "cannot_launch", code="lane_held"),)),
 )}

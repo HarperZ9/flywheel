@@ -19,7 +19,7 @@ from harness import lane_runtime_frozen as lrf
 from harness.lanes_registry import LANES
 from tests.test_lane_runtime_frozen import _finder, _pick_root, _stage
 
-NO_PROCESS = {"bulletin", "telos"}
+NO_PROCESS = {"bulletin", "telos", "isomorph", "sofer", "array"}
 
 
 def _capture(name: str) -> str:
