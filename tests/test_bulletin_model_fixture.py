@@ -11,6 +11,26 @@ from harness.bulletin_model_exchange import ExchangeError, PrivateExchange
 from harness.bulletin_model_fixture import FixtureError, OwnedBulletinFixture
 from harness.cross_harness_process import ProcessOutcome
 from harness.evidence_json import canonical_bytes
+from harness import bulletin_model_fixture as fixture_module
+
+
+@pytest.fixture(autouse=True)
+def fixture_clock(monkeypatch):
+    """Fake children use logical time; OS scheduling is not the behavior under test."""
+    class Clock:
+        now = 100.0
+
+        def monotonic(self):
+            return self.now
+
+        def sleep(self, seconds):
+            assert seconds >= 0
+            self.now += seconds
+
+    clock = Clock()
+    # Replace only this module's dependency, never the shared time module.
+    monkeypatch.setattr(fixture_module, "time", clock)
+    return clock
 
 
 def spec(decoy=False):
@@ -156,11 +176,47 @@ def test_existing_source_root_and_oversize_contract_input_never_launch(tmp_path)
             assert setup.events == []
 
 
-def test_setup_deadline_closes_stalled_owned_source(tmp_path):
+def test_setup_deadline_closes_stalled_owned_source(tmp_path, fixture_clock):
     with PrivateExchange.create(tmp_path / "slot") as store:
         setup = FakeSetup(spec(), "never_ready")
-        with pytest.raises(FixtureError): start(store, setup, .3)
+        with pytest.raises(FixtureError) as failure: start(store, setup, .3)
+        assert str(failure.value.__cause__) == "fixture_setup_timeout"
+        assert fixture_clock.now == pytest.approx(100.3)
         assert [e[:2] for e in setup.events if e[0] == "kill"] == [("kill", "source-a")]
+
+
+def test_deadline_expiring_during_launch_closes_child_without_resume(tmp_path, fixture_clock):
+    with PrivateExchange.create(tmp_path / "slot") as store:
+        setup = FakeSetup(spec())
+        launch = setup.launch
+
+        def delayed_launch(*args, **kwargs):
+            child = launch(*args, **kwargs)
+            fixture_clock.sleep(1)
+            return child
+
+        setup.launch = delayed_launch
+        with pytest.raises(FixtureError): start(store, setup)
+        assert not any(e[0] == "resume" for e in setup.events)
+        assert [e[:2] for e in setup.events if e[0] == "kill"] == [("kill", "source-a")]
+        assert not (store.path / "contract.json").exists()
+
+
+def test_deadline_expiring_during_source_read_prevents_contract(tmp_path, fixture_clock):
+    with PrivateExchange.create(tmp_path / "slot") as store:
+        setup = FakeSetup(spec())
+        reader_factory = setup.reader
+
+        def delayed_reader(*args, **kwargs):
+            reader = reader_factory(*args, **kwargs)
+            fixture_clock.sleep(1)
+            return reader
+
+        setup.reader = delayed_reader
+        with pytest.raises(FixtureError): start(store, setup)
+        assert [e[:2] for e in setup.events if e[0] == "kill"] == [
+            ("kill", "native-b"), ("kill", "source-a")]
+        assert not (store.path / "contract.json").exists()
 
 
 def test_cleanup_attempts_every_owned_child_after_one_failure(tmp_path):

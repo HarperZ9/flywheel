@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "flywheel-writing-workspace": {
+      "command": "flywheel-writing-workspace-mcp",
+      "args": [],
+      "env": {
+        "FLYWHEEL_HOME": "${FLYWHEEL_HOME}"
+      }
+    }
+  }
+}

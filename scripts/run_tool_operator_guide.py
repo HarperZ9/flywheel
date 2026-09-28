@@ -30,13 +30,17 @@ def _operation_summary(row: dict[str, Any]) -> str:
     commands = (row.get("entrypoints") or {}).get("harness_commands") or []
     cli = (row.get("entrypoints") or {}).get("cli") or []
     mcp = (row.get("entrypoints") or {}).get("mcp") or []
+    metadata = row.get("entrypoint_metadata") or {}
     pieces = []
     if commands:
         pieces.append("Use harness commands " + ", ".join(f"`{item}`" for item in commands))
     if cli:
-        pieces.append("direct CLI " + ", ".join(f"`{item}`" for item in cli))
+        label = "declared CLI metadata" if metadata.get("cli_source") == "pyproject_project_scripts" else "direct CLI profile"
+        pieces.append(label + " " + ", ".join(f"`{item}`" for item in cli))
     if mcp:
         pieces.append("MCP server/module " + ", ".join(f"`{item}`" for item in mcp))
+    if metadata.get("cli_limit"):
+        pieces.append(str(metadata["cli_limit"]))
     if not pieces:
         pieces.append("Operate through `readiness tools`, `mcp-health`, and `tool-contract` until a direct adapter is promoted")
     return _sentence(pieces)
@@ -55,6 +59,7 @@ def _tool_row(row: dict[str, Any]) -> dict[str, Any]:
         "root": str(row.get("root", "")),
         "root_exists": bool(row.get("root_exists")),
         "state_contracts": row.get("state_contracts") or [],
+        "entrypoint_metadata": row.get("entrypoint_metadata") or {},
         "readiness": {
             "verdict": readiness.get("verdict"),
             "score": readiness.get("score"),
@@ -95,6 +100,9 @@ def render_markdown(guide: dict[str, Any]) -> str:
         "",
         f"- Schema: `{guide['schema']}`",
         f"- Source contract: `{guide['source_contract']}`",
+        f"- Dependency posture: {guide['dependency_posture']}",
+        "- Metadata declaration only means a package script was read from pyproject.toml, not installed or exercised.",
+        "- Unverified fallback profile means the guide is rendering a built-in profile after metadata was absent, empty, or invalid.",
         f"- Tools: `{summary['tools']}`",
         f"- Roots existing: `{summary['roots_existing']}`",
         f"- Enterprise-ready static tools: `{summary['enterprise_ready']}`",

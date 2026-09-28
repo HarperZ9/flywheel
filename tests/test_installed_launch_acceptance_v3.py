@@ -156,6 +156,8 @@ def test_job_cleanup_kills_child_created_after_initial_descendant_snapshot(
     marker = tmp_path / "spawn child.flag"
     child_pid = tmp_path / "child pid.txt"
     publish = tmp_path / "publish pid.flag"
+    parent_ready = tmp_path / "parent ready.flag"
+    parent_events = tmp_path / "parent events.txt"
     empty_reads = []
     original_read = Path.read_text
 
@@ -174,12 +176,22 @@ def test_job_cleanup_kills_child_created_after_initial_descendant_snapshot(
         marker = pathlib.Path(sys.argv[1])
         pidfile = pathlib.Path(sys.argv[2])
         code = sys.argv[3]
+        ready = pathlib.Path(sys.argv[6])
+        events = pathlib.Path(sys.argv[7])
+        def event(text):
+            with events.open("a", encoding="utf-8") as stream:
+                stream.write(text + "\\n")
+        event("parent-started")
+        ready.write_text("ready", encoding="utf-8")
         deadline = time.time() + 10
         while not marker.exists() and time.time() < deadline:
             time.sleep(0.02)
         assert marker.exists(), "snapshot did not release child"
+        event("marker-seen")
         child = subprocess.Popen([sys.executable, "-c", code])
+        event(f"child-started:{child.pid}")
         with pidfile.open("w", encoding="utf-8") as stream:
+            event("pidfile-opened")
             if sys.argv[4] == "gated":
                 release = pathlib.Path(sys.argv[5])
                 deadline = time.monotonic() + 10
@@ -187,6 +199,8 @@ def test_job_cleanup_kills_child_created_after_initial_descendant_snapshot(
                     time.sleep(0.01)
                 assert release.exists(), "PID publication was never released"
             stream.write(str(child.pid))
+            stream.flush()
+            event("pidfile-written")
         time.sleep(60)
     """)
 
@@ -201,8 +215,11 @@ def test_job_cleanup_kills_child_created_after_initial_descendant_snapshot(
             if not self.triggered:
                 self.triggered = True
                 marker.write_text("go", encoding="utf-8")
-                self.late_pid = int(text_once_written(
-                    child_pid, timeout=5, why="late child did not publish its PID"))
+                try:
+                    self.late_pid = int(text_once_written(
+                        child_pid, timeout=5, why="late child did not publish its PID"))
+                except AssertionError as exc:
+                    raise AssertionError(f"{exc}; {parent_diagnostics()}") from exc
                 assert self.late_pid > 0 and self.late_pid != pid
                 assert _pid_is_running(self.late_pid), "late child was not alive before cleanup"
                 active, query_error = handle.proc.active_pids()
@@ -216,11 +233,29 @@ def test_job_cleanup_kills_child_created_after_initial_descendant_snapshot(
     handle = controller.start_engine(
         Path(sys.executable),
         ["-c", parent_code, str(marker), str(child_pid), child_code,
-         publication, str(publish)],
+         publication, str(publish), str(parent_ready), str(parent_events)],
         env, tmp_path, stdout, stderr,
     )
+    def parent_diagnostics():
+        poll = handle.proc.poll() if handle.proc is not None else "missing"
+        return {
+            "parent_exit": poll,
+            "parent_ready": parent_ready.exists(),
+            "marker": marker.exists(),
+            "child_pid_exists": child_pid.exists(),
+            "parent_events": parent_events.read_text(encoding="utf-8", errors="replace")
+            if parent_events.exists() else "",
+            "stdout": stdout.read_text(encoding="utf-8", errors="replace")
+            if stdout.exists() else "",
+            "stderr": stderr.read_text(encoding="utf-8", errors="replace")
+            if stderr.exists() else "",
+        }
     try:
         assert handle.job_object_assigned, handle.job_error
+        try:
+            text_once_written(parent_ready, timeout=15, why="parent did not enter marker wait")
+        except AssertionError as exc:
+            raise AssertionError(f"{exc}; {parent_diagnostics()}") from exc
         result = controller.cleanup(handle, _reserve_port())
         pid = controller.late_pid
         assert result["state"] == "PASS"

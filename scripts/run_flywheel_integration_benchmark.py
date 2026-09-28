@@ -13,6 +13,7 @@ Runs a deterministic, integration-focused benchmark pass that exercises:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -21,8 +22,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
-
-import hashlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -147,7 +146,17 @@ class RouteStubProposer:
         )
 
 
+def _turn_stats(trace: Any) -> dict[str, Any]:
+    return {
+        "turn": trace.turn,
+        "pass_rate": trace.pass_rate,
+        "cache_hit_rate": trace.cache_hit_rate,
+        "avg_oracle_calls": trace.avg_oracle_calls,
+    }
+
+
 def run_spin_benchmark(root: Path, turns: int) -> dict[str, Any]:
+    root = Path(root).resolve()  # the chdir below must not re-root a relative path
     tasks, routes = build_bench_tasks(root / "spin")
     proposer = RouteStubProposer(routes)
     catalog = [
@@ -175,30 +184,19 @@ def run_spin_benchmark(root: Path, turns: int) -> dict[str, Any]:
             )
         finally:
             os.chdir(previous_cwd)
-    first, last = traces[0], traces[-1]
+    first, last = _turn_stats(traces[0]), _turn_stats(traces[-1])
     return {
         "schema": "flywheel.spin/integration/v1",
         "n_tasks": len(tasks),
         "turns": turns,
-        "first_turn": {
-            "turn": first.turn,
-            "pass_rate": first.pass_rate,
-            "cache_hit_rate": first.cache_hit_rate,
-            "avg_oracle_calls": first.avg_oracle_calls,
-        },
-        "last_turn": {
-            "turn": last.turn,
-            "pass_rate": last.pass_rate,
-            "cache_hit_rate": last.cache_hit_rate,
-            "avg_oracle_calls": last.avg_oracle_calls,
-        },
+        "first_turn": first,
+        "last_turn": last,
         "deltas": {
-            "pass_rate": round(last.pass_rate - first.pass_rate, 3),
-            "cache_hit_rate": round(last.cache_hit_rate - first.cache_hit_rate, 3),
-            "avg_oracle_calls": round(last.avg_oracle_calls - first.avg_oracle_calls, 3),
+            key: round(last[key] - first[key], 3)
+            for key in ("pass_rate", "cache_hit_rate", "avg_oracle_calls")
         },
-        "auto_apply_candidates": len(last.auto_apply_candidates),
-        "cycle_summary": last.cycle_summary,
+        "auto_apply_candidates": len(traces[-1].auto_apply_candidates),
+        "cycle_summary": traces[-1].cycle_summary,
     }
 
 

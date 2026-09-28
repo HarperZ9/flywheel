@@ -1,8 +1,3 @@
-// receipts_view.dart — the Receipts view: the ledger of re-checkable
-// artifacts. Two registers: the in-repo catalog (the files that define the
-// world state, re-hashed on every read) and the proof envelopes the loop
-// writes when verified work is accepted. No receipt, no accept.
-
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
@@ -11,17 +6,18 @@ import '../models/render_status.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/action_witness_panel.dart';
 import '../widgets/fw.dart';
+import '../widgets/inspect_evidence_import_panel.dart';
 import '../widgets/packet_recheck_panel.dart';
+import '../widgets/output_check_panel.dart';
 import '../widgets/receipt_proof_panel.dart';
 import '../widgets/scaffold_panel.dart';
 import '../widgets/service_desk_review_panel.dart';
+import '../widgets/process_audit_review_panel.dart';
 
 class ReceiptsView extends StatefulWidget {
   final GatewayClient client;
   final bool alive;
 
-  /// A 64-hex leaf handed in from another view (a tapped hash): the view
-  /// proves its inclusion on arrival.
   final String? focusLeaf;
   const ReceiptsView({
     super.key,
@@ -211,7 +207,13 @@ class _ReceiptsViewState extends State<ReceiptsView> {
         const SizedBox(height: FwLayout.s4),
         ServiceDeskReviewPanel(client: widget.client),
         const SizedBox(height: FwLayout.s4),
+        ProcessAuditReviewPanel(client: widget.client),
+        const SizedBox(height: FwLayout.s4),
+        InspectEvidenceImportPanel(client: widget.client),
+        const SizedBox(height: FwLayout.s4),
         PacketRecheckPanel(client: widget.client),
+        const SizedBox(height: FwLayout.s4),
+        OutputCheckPanel(client: widget.client),
         const SizedBox(height: FwLayout.s4),
         ScaffoldPanel(client: widget.client),
       ],
@@ -291,9 +293,7 @@ class _ReceiptsViewState extends State<ReceiptsView> {
   }
 
   static String _fmtSize(int bytes) {
-    if (bytes >= 1048576) {
-      return '${(bytes / 1048576).toStringAsFixed(1)} MB';
-    }
+    if (bytes >= 1048576) return '${(bytes / 1048576).toStringAsFixed(1)} MB';
     if (bytes >= 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '$bytes B';
   }

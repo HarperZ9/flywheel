@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 
 from .evidence_json import canonical_sha256
-from .gateway_secret_boundary import validate_no_raw_secrets
+from .gateway_secret_validation import validate_no_raw_secrets
 
 SCHEMA = "flywheel.gateway-agent-projection/v1"
 OMISSIONS = ["PRIVATE_CONTENT", "CREDENTIAL_VALUES", "UPSTREAM_OUTPUT_LIMITS"]

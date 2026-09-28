@@ -45,7 +45,7 @@ isolated validation profile on loopback.
 The runner creates a fresh `run_id`, invokes the stdlib Python harness, then
 rejects a zero-exit run if the receipt is missing, stale, malformed,
 incomplete, source-mismatched, semantically incomplete, missing any exact
-H01-H20 or P0-P6 row, or lacks the H20 source-binding row.
+H01-H29 or P0-P7 row, or lacks the H20 source-binding row.
 
 H20 requires an operator-supplied build manifest that binds the expected source
 commit, product version, installed app SHA-256, and installed engine SHA-256 to
@@ -65,12 +65,30 @@ Useful commands:
 ./tool/run_installed_launch_acceptance.ps1 -SelfTest
 ./tool/run_installed_launch_acceptance.ps1 -InstallRoot <Flywheel install dir> -Out <receipt.json> -BuildManifest <manifest.json>
 ./tool/run_installed_launch_acceptance.ps1 -InstallRoot <Flywheel install dir> -Out <receipt.json> -BuildManifest <manifest.json> -StartEngine
+./tool/run_installed_launch_acceptance.ps1 -InstallRoot <Flywheel install dir> -Out <receipt.json> -BuildManifest <manifest.json> -Mode inspect -InspectImport -InspectFixture <inspect-report.json>
 ```
 
+`-InspectImport` exercises the installed backend API path only. It starts the
+installed gateway in an isolated profile, seeds a local Journey owner, prepares
+and approves the import grant, uploads exact Inspect JSON bytes with
+`Content-Type: application/json`, reopens the stored record after an engine
+restart, checks list redaction, and verifies missing-grant, changed-source, and
+store-tamper controls. The Inspect receipt rows are H21-H29 in phase P7.
+
 The receipt explicitly does not prove native Start-menu launch, first-run UI,
-deep links, provider OAuth, model endpoint readiness, Relay readiness, or
-upgrade behavior without before/after installed snapshots. The headless cleanup
-row requires a Windows Job Object assigned before the child can run, then records
-job termination, wait, active-process query, captured descendant identities, and
-handle closure; it still does not prove native UI process ownership or installer
-post-install launch behavior.
+desktop file-picker behavior, deep links, provider OAuth, model endpoint
+readiness, Relay readiness, or upgrade behavior without before/after installed
+snapshots. The headless cleanup row requires a Windows Job Object assigned before
+the child can run, then records job termination, wait, active-process query,
+captured descendant identities, and handle closure; it still does not prove
+native UI process ownership or installer post-install launch behavior.
+
+# Installed lane acceptance runner
+
+`run_installed_lane_acceptance.ps1` is the lane step of the pre-tag installed acceptance (`run_ci_installed_acceptance.ps1` calls it). It runs `scripts/installed_app_lane_acceptance.py` on the per-user install, uninstalls it, installs the same installer with `/ALLUSERS` under Program Files, runs the lane acceptance again and uninstalls. Receipts land in `-AcceptanceDir`; the throwaway homes and the `.detail.json` files stay under `-WorkRoot` (the runner temp folder). `-SkipAllUsers` runs the per-user leg only. `-DefineOnly` loads the functions for tests.
+
+To run the lane acceptance by hand against any installed folder:
+
+```powershell
+python scripts/installed_app_lane_acceptance.py --install-root <install folder> --work <new empty folder> --receipt <receipt.json>
+```

@@ -1,5 +1,8 @@
-// chat_welcome.dart — the fresh-conversation welcome state with tappable
-// starter chips so the user can begin with one tap instead of a cold blank.
+// chat_welcome.dart — the fresh-conversation welcome frame.
+//
+// The current Chat destination supplies StartTaskPrelude as [child] so a new
+// user starts with a plain task. The older starter-chip body stays available
+// for focused Rowan identity tests and any caller that still wants it.
 
 import 'package:flutter/material.dart';
 
@@ -10,10 +13,13 @@ import 'rowan_avatar.dart';
 
 class ChatWelcome extends StatelessWidget {
   final ValueChanged<String>? onStarter;
-  const ChatWelcome({super.key, this.onStarter});
+  final Widget? child;
+  const ChatWelcome({super.key, this.onStarter, this.child});
 
   @override
   Widget build(BuildContext context) {
+    final body = child;
+    if (body != null) return body;
     final t = context.fw;
     return Center(
       child: ConstrainedBox(

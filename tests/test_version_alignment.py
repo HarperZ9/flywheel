@@ -76,3 +76,28 @@ def test_one_tag_triggers_both_shipping_workflows():
         assert tag_pattern.search(text), (
             f"{name} must trigger on v* tag pushes; one tag ships the platform"
         )
+
+
+def test_the_next_release_notes_name_the_declared_version():
+    # The release notes and the three declarations move together: a bump with
+    # no root notes for the new number, notes whose heading names another
+    # number, or root notes for a number above the declared one (the notes
+    # ahead of the sites) fails here before a tag is cut from either.
+    version = _pyproject_version()
+    notes = ROOT / f"RELEASE-NOTES-{version}.md"
+    heading = next(line for line in notes.read_text(encoding="utf-8").splitlines()
+                   if line.startswith("# "))
+    assert heading == f"# Flywheel {version}", heading
+    declared = tuple(int(part) for part in version.split("."))
+    ahead = [path.name for path in ROOT.glob("RELEASE-NOTES-*.md")
+             if (m := re.fullmatch(r"RELEASE-NOTES-(\d+)\.(\d+)\.(\d+)\.md", path.name))
+             and tuple(int(part) for part in m.groups()) > declared]
+    assert ahead == [], ahead
+
+
+def test_the_minor_number_moved_for_the_unlisted_tool_change():
+    # O-12 changes what pip and source installs do with an unlisted lane tool,
+    # so the release carrying it is 1.1.0, not a 1.0.x patch.
+    from harness.lane_caller import UNLISTED_TOOL_TIER
+    major, minor, _patch = (int(part) for part in _pyproject_version().split("."))
+    assert UNLISTED_TOOL_TIER == "T2" and (major, minor) >= (1, 1)

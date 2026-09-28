@@ -21,6 +21,7 @@ inference availability and is not proof of native-tool capability.
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 import urllib.error
@@ -57,6 +58,16 @@ def _spec(name: str) -> "tuple[str, str, str] | None":
     return None
 
 
+def _configured_base_url(name: str, base_url: str) -> "tuple[str, str]":
+    raw = (base_url or "").strip()
+    if not raw and name == "openai-compatible":
+        raw = os.environ.get("OPENAI_BASE_URL", "").strip()
+    if not raw:
+        return "", "missing"
+    safe = providers.safe_base_url(raw)
+    return (safe, "") if safe else ("", "invalid")
+
+
 def _native_spec(name: str) -> "tuple[str, str, str, str, str] | None":
     """One row from endpoint_registry._NATIVE without building unified_roster."""
     try:
@@ -75,7 +86,6 @@ def _credential(key_env: str) -> str:
         from .keychain import resolve_credential
         return resolve_credential(key_env)
     except Exception:
-        import os
         return os.environ.get(key_env or "", "")
 
 
@@ -103,8 +113,8 @@ def _fetch_ids(base_url: str, key: str, timeout: float) -> list[str]:
         body = json.loads(r.read().decode("utf-8", "replace"))
     ids: list[str] = []
     for row in (body.get("data") or []) if isinstance(body, dict) else []:
-        mid = row.get("id") if isinstance(row, dict) else None
-        if isinstance(mid, str) and mid and mid not in ids:
+        mid = _safe_model_id(row.get("id") if isinstance(row, dict) else None)
+        if mid and mid not in ids:
             ids.append(mid)
     return ids
 
@@ -118,9 +128,13 @@ def list_models(endpoint: str, *, timeout: float = 3.0) -> dict:
     if spec is None:
         return _native_or_unknown(name, timeout=timeout)
     base_url, key_env, default_model = spec
+    base_url, base_status = _configured_base_url(name, base_url)
     if not base_url:
+        reason = ("listing unavailable: invalid base_url configured"
+                  if base_status == "invalid"
+                  else "listing unavailable: no base_url configured")
         return _default_only(name, default_model,
-                             "listing unavailable: no base_url configured")
+                             reason)
     key = ""
     if key_env:
         key = _credential(key_env)
@@ -129,8 +143,8 @@ def list_models(endpoint: str, *, timeout: float = 3.0) -> dict:
     try:
         ids = _fetch_ids(base_url, key, timeout)
     except Exception as e:
-        return _default_only(
-            name, default_model, f"listing unavailable: {type(e).__name__}: {e}")
+        return _default_only(name, default_model,
+                             f"listing unavailable: {_safe_error(e)}")
     models = [{"id": default_model, "default": "true"}] if default_model else []
     models += [{"id": m, "default": "false"} for m in ids if m != default_model]
     return {"endpoint": name, "models": models, "reason": ""}

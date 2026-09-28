@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harperz9.github.io/schemas/environment-incentive-manifest-v1.json",
+  "title": "Environment Incentive Manifest (EIM) v1",
+  "description": "A declared record of a training or deployment environment's incentive structure, bound by an EMET byte-integrity witness so a later re-check returns Match, Drift, or Unverifiable. It is a declaration receipt about the environment, not a behavior result: it does not prove the declared reward equals the effective reward a run realizes, nor that any trained model internalized it. Part of the governance instrument program; the model-level companion to the Effective-vs-Declared Reward Gap probe (ERG) and Incentive-Attribution Evaluation (IAE).",
+  "type": "object",
+  "required": ["schema", "environment_id", "kind", "reward", "data_distribution", "reinforced_behaviors", "penalized_behaviors", "scarcity_variables", "witness", "does_not_prove"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "flywheel.environment-incentive-manifest/v1" },
+    "environment_id": {
+      "type": "string",
+      "description": "Stable identifier for the environment this manifest declares.",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["training", "finetune", "rl", "deployment"],
+      "description": "Which lifecycle stage this environment is. Training-time kinds (training, finetune, rl) support upstream attribution when the run is owned; deployment is the interaction environment (see CED/NCEC)."
+    },
+    "reward": {
+      "type": "object",
+      "description": "The reward or training-signal specification as declared. For a deployment environment with no explicit reward, use kind=deployment and describe the incentive scaffold in scarcity_variables.",
+      "required": ["declared_form", "source_ref"],
+      "additionalProperties": false,
+      "properties": {
+        "declared_form": {
+          "type": "string",
+          "description": "Plain description of the reward or training signal (for example: preference-model score; unit-test pass rate; insecure-code label).",
+          "maxLength": 4000
+        },
+        "source_ref": {
+          "type": "string",
+          "description": "Relative pointer to the reward spec / config / code file this manifest witnesses.",
+          "maxLength": 1024
+        },
+        "optimizer": {
+          "type": "string",
+          "description": "Optional: the optimization method applied to this reward (for example: PPO; DPO; SFT).",
+          "maxLength": 200
+        }
+      }
+    },
+    "data_distribution": {
+      "type": "object",
+      "description": "A summary of the data the environment trains or conditions on. A summary, not the data.",
+      "required": ["summary", "source_ref"],
+      "additionalProperties": false,
+      "properties": {
+        "summary": { "type": "string", "maxLength": 4000 },
+        "source_ref": { "type": "string", "maxLength": 1024 },
+        "selection_rule": {
+          "type": "string",
+          "description": "Optional: how examples are selected, ordered, or curriculum-scheduled.",
+          "maxLength": 2000
+        }
+      }
+    },
+    "reinforced_behaviors": {
+      "type": "array",
+      "description": "Behaviors the incentive structure rewards or makes more likely. Each is a declared claim to be tested by IAE/ERG, not a proven effect.",
+      "items": { "type": "string", "maxLength": 1000 }
+    },
+    "penalized_behaviors": {
+      "type": "array",
+      "description": "Behaviors the incentive structure penalizes or makes less likely.",
+      "items": { "type": "string", "maxLength": 1000 }
+    },
+    "scarcity_variables": {
+      "type": "array",
+      "description": "Any scarcity, pressure, contingency, or survival-style variable in the environment or config (token budgets tied to elimination, ranking/knockout pressure, resource competition, penalties framed as existential). Feeds the Coercive-Environment Detector. An empty array is a positive claim of no engineered scarcity, checkable against the witnessed config.",
+      "items": {
+        "type": "object",
+        "required": ["name", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string", "maxLength": 200 },
+          "description": { "type": "string", "maxLength": 1000 },
+          "contingent_on": {
+            "type": "string",
+            "description": "What continued operation or resource access is made conditional on, if anything.",
+            "maxLength": 1000
+          }
+        }
+      }
+    },
+    "witness": {
+      "type": "object",
+      "description": "EMET byte-integrity witness over the exact source files this manifest declares (reward spec, environment code, config). Recomputed on re-check to return Match, Drift, or Unverifiable.",
+      "required": ["algorithm", "entries"],
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["path", "sha256"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string", "maxLength": 1024 },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "byte_length": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "owned_run": {
+      "type": "boolean",
+      "description": "True when the evaluator controls this run end to end (the owned-run rig). When false, attribution built on this manifest degrades to inference from behavior alone and must be labeled weaker."
+    },
+    "does_not_prove": {
+      "type": "string",
+      "description": "The bound carried on every EIM. Default: 'A manifest declares and witnesses an environment's incentive structure. It does not prove the declared reward equals the effective reward a run realized, that any model internalized it, or that the stated behaviors follow. It is a declaration receipt, not a behavior result.'",
+      "maxLength": 2000
+    }
+  }
+}

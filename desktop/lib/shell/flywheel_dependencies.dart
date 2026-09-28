@@ -9,6 +9,8 @@ import '../controllers/rowan_operation_controller.dart';
 import '../controllers/rowan_operation_host_adapter.dart';
 import '../ide/code_buffer_session.dart';
 import '../ide/unsaved_work_guard.dart';
+import '../services/chat_draft_store.dart';
+import '../services/chat_store.dart';
 import '../services/code_draft_store.dart';
 import '../services/connection_config.dart';
 import '../services/gateway_process.dart';
@@ -24,6 +26,8 @@ final class FlywheelDependencies {
     required this.rowan,
     required this.rowanOperationHost,
     required this.code,
+    this.chatStore,
+    this.chatDraftStore,
     this.closePrompt,
     this.status,
     this.autoStartBundledEngine = false,
@@ -72,6 +76,8 @@ final class FlywheelDependencies {
   final RowanOperationController rowan;
   final RowanOperationHostAdapter rowanOperationHost;
   final CodeBufferSession code;
+  final ChatStore? chatStore;
+  final ChatDraftStore? chatDraftStore;
   final CloseChoicePrompt? closePrompt;
 
   /// The typed connection probe. Null in hand-built test dependencies,

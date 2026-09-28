@@ -1,0 +1,33 @@
+{
+  "name": "flywheel-writing-workspace",
+  "version": "0.1.0",
+  "description": "Portable Flywheel Writing Workspace MCP server.",
+  "author": {
+    "name": "Zain Dana Harper",
+    "url": "https://github.com/HarperZ9"
+  },
+  "homepage": "https://github.com/HarperZ9/flywheel",
+  "repository": "https://github.com/HarperZ9/flywheel",
+  "license": "FSL-1.1-MIT",
+  "keywords": [
+    "flywheel",
+    "writing",
+    "workspace",
+    "mcp",
+    "grants"
+  ],
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Flywheel Writing Workspace",
+    "shortDescription": "Prepare and commit owner-local writing receipts over MCP.",
+    "longDescription": "A stateful MCP companion for Flywheel Writing Workspace. It prepares proposal-backed writing mutations and can commit an already approved grant. The server cannot approve its own proposals; set FLYWHEEL_HOME to bind an operator-owned state directory before use. Per-call home arguments cannot redirect that bound state.",
+    "developerName": "Zain Dana Harper",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/HarperZ9/flywheel",
+    "defaultPrompt": "Prepare this Writing Workspace change as a Flywheel proposal; do not approve it through MCP."
+  }
+}

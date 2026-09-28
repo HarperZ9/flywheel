@@ -1,0 +1,6 @@
+#ifndef RUNNER_OWNED_GATEWAY_CLEANUP_H_
+#define RUNNER_OWNED_GATEWAY_CLEANUP_H_
+
+void StopOwnedGatewayProcessesOnExit();
+
+#endif  // RUNNER_OWNED_GATEWAY_CLEANUP_H_

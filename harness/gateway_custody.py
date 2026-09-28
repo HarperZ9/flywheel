@@ -15,20 +15,26 @@ from __future__ import annotations
 
 #: Everything under these prefixes is private, however deep.
 PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
-                    "/api/auth/",
+                    "/api/auth/", "/api/codex/",
                     "/api/continuation/",
                     "/api/writing/",
+                    "/api/studio/body/", "/api/live-screen/",
+                    "/api/agent/mcp/",
+                    "/api/context-memory/",
+                    "/api/incident-sim/",
                     "/api/gateway-grants/", "/api/pm/",
                     "/api/enterprise-envs/",
                     "/api/lane/",
+                    "/api/import/inspect",
                     "/api/credential-handles", "/api/session-tokens",
-                    "/api/bulletin-identity", "/api/operations/", "/api/hooks/")
+                    "/api/bulletin-identity", "/api/operations/", "/api/hooks/",
+                    "/api/settings/", "/api/traces/")
 
 #: Exact paths held under private custody. Model calls and anything that runs
 #: an agent, installs a plugin, or reaches the marketplace.
 PRIVATE_PATHS = frozenset({
     "/api/auth", "/api/agent/run", "/api/agent/runs",
-    "/v1/chat/completions", "/api/agent", "/api/workflow",
+    "/v1/chat/completions", "/api/agent", "/api/output/check", "/api/workflow",
     "/api/hooks", "/api/operations",
     "/api/plugins/probe", "/api/plugins/call", "/api/plugins/register",
     "/api/plugins/toggle", "/api/plugins/remove",
@@ -40,6 +46,25 @@ PRIVATE_PATHS = frozenset({
     "/api/runners/tickets"})
 
 
+#: Lane console routes under the public /api/lanes/ prefix that are private:
+#: the tool listing consumes an owner's plugin.probe grant, the project folder
+#: names a local path and decides where the local agent may read and write,
+#: a check spawns the lane (for bulletin it contacts the remote board), and an
+#: install runs pip or npm.
+PRIVATE_LANE_SUFFIXES = ("/tools", "/local-model/root", "/check", "/install")
+
+
+#: Capture routes authenticate by a signature over each request instead of the
+#: bearer token (harness/gateway_request_sig.py); the gateway lets them through
+#: its bearer check and trace_routes verifies before reading any body.
+SIGNED_PREFIXES = ("/api/traces/capture/",)
+
+
+def is_signed(path: str) -> bool:
+    return path.startswith(SIGNED_PREFIXES)
+
+
 def is_private(path: str) -> bool:
     """Does this path sit under private custody? One rule, two readers."""
-    return path.startswith(PRIVATE_PREFIXES) or path in PRIVATE_PATHS
+    lane_console = path.startswith("/api/lanes/") and path.endswith(PRIVATE_LANE_SUFFIXES)
+    return path.startswith(PRIVATE_PREFIXES) or path in PRIVATE_PATHS or lane_console

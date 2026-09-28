@@ -46,14 +46,21 @@ def _exercise(tmp_path, monkeypatch, *, different_ids, expires):
     real_time, real_thread = time.monotonic, threading.Thread
     release, owner_entered = threading.Event(), threading.Event()
     contended, refused = threading.Event(), threading.Event()
+    concurrent_wave = threading.Event()
+    concurrent_wave.set()
     guard = threading.Lock()
     callers_ready = threading.Barrier(CALLERS)
+    outer_ready = threading.Barrier(CALLERS)
     contenders, early_results = set(), []
     creates = 0
 
     @contextmanager
     def observed_acquire(path, timeout_s=2.0):
-        lock = str(Path(path).relative_to(state))
+        current_path = Path(path)
+        lock = str(current_path.relative_to(state))
+        if concurrent_wave.is_set() and current_path == outer_path:
+            probe.record("lock.ready", lock=lock)
+            outer_ready.wait(timeout=WATCHDOG)
         probe.record("lock.waiting", lock=lock)
         with clock.acquire(real_acquire, path, timeout_s, outer_path=outer_path):
             probe.record("lock.acquired", lock=lock)
@@ -108,7 +115,9 @@ def _exercise(tmp_path, monkeypatch, *, different_ids, expires):
         futures = [pool.submit(start_one, index) for index in range(CALLERS)]
         try:
             assert owner_entered.wait(WATCHDOG), "owner never reached create"
-            assert contended.wait(WATCHDOG), "all peers must fail a real outer lock attempt"
+            assert contended.wait(WATCHDOG), (
+                "all peers must fail a real outer lock attempt: "
+                f"{len(contenders)} of {CALLERS - 1} " + probe.diagnostic(futures))
             if expires:
                 assert refused.wait(WATCHDOG), "expired contenders did not return"
                 assert all(status == 503 and body["error"] == {
@@ -123,6 +132,7 @@ def _exercise(tmp_path, monkeypatch, *, different_ids, expires):
         finally:
             release.set()
         results = collect_results(futures, timeout=WATCHDOG, probe=probe)
+    concurrent_wave.clear()
 
     assert time.monotonic is real_time and threading.Thread is real_thread
     accepted = [(index, body) for index, (body, status) in enumerate(results) if status == 200]

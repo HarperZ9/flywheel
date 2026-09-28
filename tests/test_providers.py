@@ -90,6 +90,14 @@ def test_local_provider_speaks_openai_protocol_against_live_mock(mock_server):
     assert out.model_ref == "ollama:test-model"
 
 
+def test_local_make_proposer_suppresses_ambient_openai_key(mock_server, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "ambient-marker-must-not-be-used")
+    p = make_proposer("ollama", model="test-model", base_url=mock_server)
+    p.generate("write add(a,b)", seed=7, temperature=0.0, max_new_tokens=64)
+    (req,) = _MockOpenAI.seen
+    assert req["auth"] == ""
+
+
 def test_no_key_in_env_sends_no_secret(mock_server, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     p = make_proposer("vllm", model="m", base_url=mock_server)

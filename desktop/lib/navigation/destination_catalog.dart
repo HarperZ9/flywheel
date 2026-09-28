@@ -4,6 +4,7 @@ import '../assistant/assistant_identity.dart';
 import 'app_route.dart';
 
 enum DestinationGroup { work, chat, code, evidence, advanced }
+
 class DestinationSpec {
   final DestinationId id;
   final String label;
@@ -239,9 +240,9 @@ const destinationCatalog = <DestinationSpec>[
   ),
   DestinationSpec(
     DestinationId.lanes,
-    'Lanes',
-    abbr: 'LN',
-    group: DestinationGroup.advanced,
+    'Tools',
+    abbr: 'TL',
+    group: DestinationGroup.evidence,
   ),
   DestinationSpec(
     DestinationId.forum,
@@ -295,6 +296,5 @@ DestinationSpec? specFor(DestinationId id) {
 }
 
 /// Bottom-bar destinations in catalog order, followed by More for the full set.
-final List<DestinationSpec> mobilePrimaryDestinations = destinationCatalog
-    .where((spec) => spec.mobilePrimary)
-    .toList();
+final List<DestinationSpec> mobilePrimaryDestinations =
+    destinationCatalog.where((spec) => spec.mobilePrimary).toList();

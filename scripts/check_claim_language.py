@@ -44,6 +44,9 @@ PUBLIC_GLOBS = (
     # already scanned and a test holds the two to the same record, but
     # the markdown is what a reader on GitHub sees first.
     "docs/BENCHMARKS.md",
+    # The standards-conformance statement is a reader-facing claim about what
+    # the tooling does against AEF-1 and MHS, so it is gated like a shipped page.
+    "docs/STANDARDS-CONFORMANCE.md",
 )
 
 # A claim, and the honest phrasing it must be replaced by.

@@ -12,6 +12,7 @@ diversified-N + gate either finds the right answer (diversity broke the
 attractor) or returns UNVERIFIABLE — never confident-wrong.
 """
 from __future__ import annotations
+import time
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -32,6 +33,11 @@ class Candidate:
     temperature: float
     prompt_hash: str
     oracle_result: OracleResult | None = None
+    cache: str = ""
+    usage: dict | None = None
+    served_model: str = ""
+    generation_duration_ns: int | None = None
+    oracle_duration_ns: int | None = None
 
     @property
     def passed(self) -> bool:
@@ -75,19 +81,30 @@ def max_pairwise_correlation(texts: list[str]) -> float:
 
 def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
               temps: list[float] | None = None,
-              seeds: list[int] | None = None) -> SearchResult:
+              seeds: list[int] | None = None,
+              collect_detail: bool = False) -> SearchResult:
     temps = list(temps or DEFAULT_TEMPS)
     n = len(temps)
     seeds = seeds or [task.seed + i for i in range(n)]
     res = SearchResult(diversified=len(set(temps)) > 1)
     for i, (t, s) in enumerate(zip(temps, seeds)):
+        gen_start = time.perf_counter_ns()
         out = proposer.generate(
             task.prompt, seed=s, temperature=t,
             max_new_tokens=task.max_new_tokens, system=task.system)
+        gen_ns = time.perf_counter_ns() - gen_start
+        oracle_start = time.perf_counter_ns()
         orc = oracle.verify(out.text, task)
+        oracle_ns = time.perf_counter_ns() - oracle_start
         c = Candidate(text=out.text, model_ref=out.model_ref, seed=s,
                       temperature=t, prompt_hash=out.prompt_hash,
                       oracle_result=orc)
+        if collect_detail:
+            c.cache = out.cache
+            c.usage = out.usage
+            c.served_model = out.served_model
+            c.generation_duration_ns = gen_ns
+            c.oracle_duration_ns = oracle_ns
         res.candidates.append(c)
         if c.passed and res.accepted is None:
             res.accepted = c

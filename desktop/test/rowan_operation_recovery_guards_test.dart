@@ -82,6 +82,7 @@ JourneySessionStore _store(
   String name,
   String requestHash, {
   String? operationRef,
+  String? operationExecutionMode,
 }) {
   final directory = Directory.systemTemp.createTempSync(name);
   addTearDown(() => directory.deleteSync(recursive: true));
@@ -93,6 +94,7 @@ JourneySessionStore _store(
       operationRef: operationRef,
       operationEventHeadSha256: operationRef == null ? null : _head,
       operationRequestSha256: requestHash,
+      operationExecutionMode: operationExecutionMode,
     ));
 }
 
@@ -111,7 +113,11 @@ void main() {
         return http.Response('{}', 404);
       }),
     );
-    final store = _store('blocked-', requestHash);
+    final store = _store(
+      'blocked-',
+      requestHash,
+      operationExecutionMode: 'native_cli_session',
+    );
     final rowan = RowanOperationController(client, sessionStore: store)
       ..setEndpoint('local');
     addTearDown(rowan.dispose);
@@ -129,6 +135,11 @@ void main() {
 
     rowan.dismissRecoveryBlock();
     expect(store.load()?.operationRequestSha256, isNull);
+    expect(store.load()?.operationExecutionMode, 'native_cli_session');
+    rowan
+      ..setEndpoint('claude-cli')
+      ..setModel('fixture-model-exact')
+      ..setWorkspaceRoot(r'C:\fixture\workspace');
     expect(
         (await rowan.start(context, 'explicit new operation')).denied, isTrue);
     expect((authorizes, posts), (1, 0));

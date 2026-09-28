@@ -29,6 +29,21 @@ _FORGE_FIELDS = {"goal", "examples", "documentation", "context",
                  "success_criterion"}
 
 
+def gateway_plan_request(handler, path, *, resolve_root, countersign):
+    """Read the gateway envelope and dispatch through the existing Plan route."""
+    length = handler._content_length()
+    if length is None:
+        return handler._json({"schema": "flywheel.evidence-transport-error/v1",
+            "error": {"code": "INVALID_REQUEST",
+                      "message": "gateway operation is invalid"}}, 422)
+    body, code = plan_post(
+        path, handler.rfile.read(length), owner_ref=handler.owner_ref,
+        state_root=handler.flywheel_home / "state", default_root=handler.root,
+        run_root=handler.run_root, clock=handler.clock,
+        resolve_root=resolve_root, countersign=countersign)
+    return handler._json(body, code)
+
+
 def plan_run_ref_for(owner_ref: str, journey_ref: str,
                      client_request_id: str) -> str:
     digest = canonical_sha256({"owner_ref": owner_ref,

@@ -35,7 +35,8 @@ void main() {
   });
 
   test('partial Chat and Compare closure remains explicitly unknown', () {
-    final chat = File('lib/views/agent_view.dart').readAsStringSync();
+    final chat = File('lib/views/agent_view.dart').readAsStringSync() +
+        File('lib/views/agent_view_admission.dart').readAsStringSync();
     final compare = File('lib/views/compare_view.dart').readAsStringSync();
     expect(chat.contains('_assistant!.receipt == null'), isTrue);
     expect(compare.contains('assistant.receipt == null'), isTrue);

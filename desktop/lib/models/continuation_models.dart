@@ -1,6 +1,7 @@
 import 'journey_models.dart';
 
 final _previewRef = RegExp(r'^cpv_[0-9a-f]{32}$');
+final _gitObjectId = RegExp(r'^(?:[0-9a-f]{40}|[0-9a-f]{64})$');
 const continuationAgentHandoffSchema =
     'flywheel.native-continuation-agent-handoff/v1';
 
@@ -278,7 +279,7 @@ class ContinuationPreview extends DefensiveModel {
         'head',
         issues,
         optional: true,
-        pattern: sha256Pattern,
+        pattern: _gitObjectId,
       ),
       providerNativeState: readText(provider, 'state', issues),
       providerNativeReason: readDetail(provider, 'reason', issues),

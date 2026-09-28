@@ -45,3 +45,11 @@ desktop/release/payload-policy.json text eol=lf
 
 # Shader capture receipts bind source bytes across host platforms.
 desktop/shaders/*.frag text eol=lf
+
+# Flutter rewrites generated plugin registrants with LF on every platform, so
+# pin their checkout bytes to the canonical Git bytes as well.
+desktop/linux/flutter/generated_plugin_registrant.* text eol=lf
+desktop/linux/flutter/generated_plugins.cmake text eol=lf
+desktop/macos/Flutter/GeneratedPluginRegistrant.swift text eol=lf
+desktop/windows/flutter/generated_plugin_registrant.* text eol=lf
+desktop/windows/flutter/generated_plugins.cmake text eol=lf

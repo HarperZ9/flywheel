@@ -5,12 +5,18 @@
 // VoiceInput and VoiceOutput interfaces the panel is written against, so the phone
 // build plugs them in and nothing in the tested core changes. Desktop builds keep
 // the SilentVoice stub, so only a device with a microphone grows a microphone.
+//
+// FlutterTtsVoiceOutput tunes the engine to Rowan's voice once, before the first
+// line, using RowanVoiceProfile. The tuning is best effort: a device that cannot
+// report or set a voice still speaks in its own default, so a reply is spoken
+// rather than dropped.
 
 import 'dart:async';
 
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+import 'rowan_voice_profile.dart';
 import 'voice.dart';
 
 /// Listens for one spoken command with the platform speech engine. It initializes
@@ -47,14 +53,39 @@ class SpeechVoiceInput implements VoiceInput {
   }
 }
 
-/// Speaks a line back through the platform text-to-speech engine.
+/// Speaks a line back through the platform text-to-speech engine, in Rowan's
+/// voice where the device can supply one.
 class FlutterTtsVoiceOutput implements VoiceOutput {
   FlutterTtsVoiceOutput({FlutterTts? engine}) : _tts = engine ?? FlutterTts();
 
   final FlutterTts _tts;
+  bool _tuned = false;
+
+  /// Applies Rowan's voice profile once. A failure still counts as tuned, so the
+  /// engine is never re-probed on every line, and the device default carries the
+  /// reply.
+  Future<void> _tune() async {
+    if (_tuned) return;
+    _tuned = true;
+    try {
+      await _tts.setPitch(RowanVoiceProfile.pitch);
+      await _tts.setSpeechRate(RowanVoiceProfile.speechRate);
+      final voices = RowanVoiceProfile.normalize(await _tts.getVoices);
+      final chosen = RowanVoiceProfile.select(voices);
+      if (chosen != null) {
+        await _tts.setVoice(
+            {'name': chosen['name']!, 'locale': chosen['locale']!});
+      } else {
+        await _tts.setLanguage(RowanVoiceProfile.preferredLocales.first);
+      }
+    } catch (_) {
+      // A device without these controls still speaks in its default voice.
+    }
+  }
 
   @override
   Future<void> speak(String text) async {
+    await _tune();
     await _tts.speak(text);
   }
 }

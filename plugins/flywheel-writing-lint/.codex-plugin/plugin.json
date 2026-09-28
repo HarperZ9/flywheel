@@ -1,0 +1,32 @@
+{
+  "name": "flywheel-writing-lint",
+  "version": "0.1.0",
+  "description": "Portable Flywheel prose-form linter MCP server.",
+  "author": {
+    "name": "Zain Dana Harper",
+    "url": "https://github.com/HarperZ9"
+  },
+  "homepage": "https://github.com/HarperZ9/flywheel",
+  "repository": "https://github.com/HarperZ9/flywheel",
+  "license": "FSL-1.1-MIT",
+  "keywords": [
+    "flywheel",
+    "writing",
+    "lint",
+    "mcp",
+    "verification"
+  ],
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Flywheel Writing Lint",
+    "shortDescription": "Score prose form from any MCP-capable harness.",
+    "longDescription": "A stateless MCP companion for Flywheel's writing standard. It scores prose form against register profiles and reports limits; it does not judge truth, quality, authorship, or publication readiness.",
+    "developerName": "Zain Dana Harper",
+    "category": "Productivity",
+    "capabilities": [
+      "Read"
+    ],
+    "websiteURL": "https://github.com/HarperZ9/flywheel",
+    "defaultPrompt": "Score this draft's prose form with Flywheel Writing Lint and keep the does-not-prove limits visible."
+  }
+}

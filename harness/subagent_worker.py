@@ -24,13 +24,17 @@ EXIT_BAD_SPEC = 3
 def write_result(workspace: Path, spec: dict, status: str, **extra) -> None:
     payload = {"schema": RESULT_SCHEMA,
                "spec_sha256": spec["spec_sha256"],
-               "role": spec["role"], "status": status}
+               "role": spec.get("role", ""), "status": status}
     payload.update(extra)
     (Path(workspace) / "result.json").write_text(
         json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
 def execute(spec: dict, *, agent=None) -> int:
+    if spec.get("schema") == "flywheel.subagent-spec/v2":
+        write_result(Path(spec.get("workspace", ".")), spec, "failed",
+                     error="GATEWAY_CHILD_OPERATION_REQUIRED")
+        return EXIT_FAILED
     agent = agent or run_router_agent
     workspace = Path(spec["workspace"])
     workspace.mkdir(parents=True, exist_ok=True)

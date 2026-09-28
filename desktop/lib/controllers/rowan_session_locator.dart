@@ -5,6 +5,7 @@ void _saveRowanSessionLocator({
   OperationSnapshot? snapshot,
   String? requestSha256,
   String? pendingRequestSha256,
+  String? operationExecutionMode,
 }) {
   if (store == null) return;
   try {
@@ -26,6 +27,9 @@ void _saveRowanSessionLocator({
         operationRequestSha256: requestSha256 ??
             pendingRequestSha256 ??
             prior?.operationRequestSha256,
+        operationExecutionMode: startingNewOperation
+            ? operationExecutionMode
+            : operationExecutionMode ?? prior?.operationExecutionMode,
         detailsExpanded: prior?.detailsExpanded ?? false,
         recoveryVisible: prior?.recoveryVisible ?? false,
       ),

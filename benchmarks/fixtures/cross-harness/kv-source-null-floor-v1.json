@@ -1,0 +1,59 @@
+{
+  "schema": "flywheel.kv-source-only-fixture/v1",
+  "task_id": "kv-msr-001-incident-reconstruction",
+  "family": "null-floor supported KV source case",
+  "question": "Derive kv-msr-001-incident-reconstruction from source records.",
+  "citation_order": "unordered_set",
+  "source_input_ref": "model_inputs/kv-msr-001-incident-reconstruction.source.jsonl",
+  "source_input_sha256": "b03ef236d1787f4a0bda30ff8fcb56176c43010d58c6c0be573374ea7d4b5e7b",
+  "source_records": [
+    {
+      "record_id": "asset-catalog:omega-742",
+      "record_type": "asset",
+      "fields": {
+        "case_id": "OMEGA-742",
+        "owner": "ops",
+        "component": "pump"
+      }
+    },
+    {
+      "record_id": "event-ledger:e9001",
+      "record_type": "event",
+      "fields": {
+        "case_id": "OMEGA-742",
+        "state": "triage",
+        "sequence": 1,
+        "superseded_by": "event-ledger:e9107"
+      }
+    },
+    {
+      "record_id": "event-ledger:e9107",
+      "record_type": "event",
+      "fields": {
+        "case_id": "OMEGA-742",
+        "state": "repair",
+        "sequence": 2,
+        "supersedes": "event-ledger:e9001"
+      }
+    },
+    {
+      "record_id": "exception-table:x42",
+      "record_type": "exception",
+      "fields": {
+        "case_id": "OMEGA-742",
+        "when_state": "repair",
+        "required_action": "replace seal",
+        "due_date": "2026-01-17"
+      }
+    },
+    {
+      "record_id": "event-ledger:decoy",
+      "record_type": "event",
+      "fields": {
+        "case_id": "OTHER",
+        "state": "complete",
+        "sequence": 99
+      }
+    }
+  ]
+}

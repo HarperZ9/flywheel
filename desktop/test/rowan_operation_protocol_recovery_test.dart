@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/controllers/gateway_operation_controller.dart';
 import 'package:flywheel_desktop/controllers/rowan_operation_controller.dart';
+import 'package:flywheel_desktop/models/agent_execution_mode.dart';
 import 'package:flywheel_desktop/models/agent_tool_protocol.dart';
 import 'package:flywheel_desktop/models/evidence_state.dart';
 import 'package:flywheel_desktop/models/operation_models.dart';
@@ -54,10 +55,8 @@ Map<String, Object?> _snapshot(
       'result_sha256': null,
     };
 
-JourneySessionStore _store(
-  String name,
-  String requestHash,
-) {
+JourneySessionStore _store(String name, String requestHash,
+    {String? operationExecutionMode}) {
   final directory = Directory.systemTemp.createTempSync(name);
   addTearDown(() => directory.deleteSync(recursive: true));
   return JourneySessionStore(
@@ -66,6 +65,7 @@ JourneySessionStore _store(
       journeyRef: _journey,
       lens: JourneyLens.verify,
       operationRequestSha256: requestHash,
+      operationExecutionMode: operationExecutionMode,
     ));
 }
 
@@ -151,11 +151,16 @@ void main() {
       }),
     );
     final rowan = RowanOperationController(client,
-        sessionStore: _store('page-', requestHash));
+        sessionStore: _store(
+          'page-',
+          requestHash,
+          operationExecutionMode: 'native_cli_session',
+        ));
     addTearDown(rowan.dispose);
 
     expect(await rowan.recoverFromSession(), isTrue);
     await Future<void>.delayed(Duration.zero);
+    expect(rowan.executionMode, AgentExecutionMode.nativeCliSession);
     expect(rowan.snapshot?.operationRef, _operation);
     expect((posts, lists, snapshots, watches), (0, 2, 1, 1));
     client.close();

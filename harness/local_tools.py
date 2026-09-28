@@ -42,7 +42,6 @@ _DENY = re.compile(
     r":\(\)\s*\{|curl[^|]*\|\s*(sh|bash)|wget[^|]*\|\s*(sh|bash)|>\s*/dev/sd)",
     re.IGNORECASE)
 
-
 @dataclass
 class ToolResult:
     name: str
@@ -258,11 +257,12 @@ class ToolExecutor:
         "run": "builtin-exec", "read_file": "builtin-read",
         "list_dir": "builtin-read", "grep": "builtin-read"}
 
-    def _classify_capability(self, name: str) -> "tuple[str, str]":
-        """Return (capability_class, admission) for a tool call."""
-        if name in self.external:
-            return "external-mcp", "ALLOWED"
-        return self._BUILTIN_CAPABILITY.get(name, "unknown"), "ALLOWED"
+    def _classify_capability(self, name: str) -> "tuple[str, str, dict]":
+        if name not in self.external:
+            return self._BUILTIN_CAPABILITY.get(name, "unknown"), "ALLOWED", {}
+        from .local_tools_mcp_witness import mcp_admission_context
+        spec = self.external[name]; admission = spec.get("admission")
+        return "external-mcp", admission if isinstance(admission, str) else "ALLOWED", mcp_admission_context(spec)
 
     def _emit_tool_receipt(
         self, name: str, args: dict, result: ToolResult,
@@ -277,12 +277,12 @@ class ToolExecutor:
         if not self._receipt_run_id:
             return
         from .tool_witness import seal_call, witness_call
-        cap, admission = self._classify_capability(name)
+        cap, admission, witness_meta = self._classify_capability(name)
         outcome = "COMPLETED" if result.ok else ("BLOCKED" if result.output.startswith("[gate]") else "ERROR")
         self._receipt_seq += 1
         witness_call(self._action_log, tool=name, args=args, output=result.output,
                      ok=result.ok, seq=self._receipt_seq, capability=cap,
-                     outcome=outcome)
+                     outcome=outcome, context=witness_meta)
         if not self.receipt_dir:
             return
         self._receipt_prev_sha256 = seal_call(

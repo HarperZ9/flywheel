@@ -1,0 +1,67 @@
+{
+  "does_not_prove": [
+    "NOT_SEMANTIC_TRUTH",
+    "NOT_UNLIMITED_TOOL_OUTPUT",
+    "ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED"
+  ],
+  "effect_evidence": {
+    "action_witness": {
+      "status": "absent"
+    },
+    "basis": {
+      "record_count": 1,
+      "terminal_basis_event_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "terminal_basis_event_type": "cancel_requested",
+      "terminal_state": "cancelled",
+      "trace_head_sha256": "a2e1ebaddef373672f4f3d8016f9eda03775225b9e0255f5444d64f37170b983",
+      "trace_ref": "agt_3e2197a3f63109a97f701d387b758689"
+    },
+    "does_not_prove": [
+      "semantic correctness",
+      "complete workstation observation",
+      "current filesystem state",
+      "absence of effects outside the accepted trace prefix",
+      "rollback or remote cancellation"
+    ],
+    "known_observation_count": 1,
+    "known_observations": [
+      {
+        "json_pointer": "/payload/meta/edited",
+        "kind": "tool_result_edit_fingerprint",
+        "payload_kind": "tool_result",
+        "record_kind": "ledger",
+        "record_sha256": "a2e1ebaddef373672f4f3d8016f9eda03775225b9e0255f5444d64f37170b983",
+        "trace_sequence": 0,
+        "value_sha256": "c4eeaad21bc73469ce758d39a74aa854141fcd93497f4eaf0747bf27de7b007f"
+      }
+    ],
+    "known_observations_digest": "858e93b5d3d3aa8eee80b9a42e5a56ab2a060d202e409636e6aca71fc7f81340",
+    "known_observations_omitted": 0,
+    "schema": "flywheel.gateway-effect-evidence/v1",
+    "scope": "owner_private_trace_prefix",
+    "tool_call_receipts": {
+      "status": "absent"
+    },
+    "unknown_effect_scope": [
+      "NOT_ROLLBACK",
+      "NOT_EFFECT_ABSENCE",
+      "NOT_CURRENT_FILESYSTEM_STATE",
+      "UNRECORDED_ACTIONS_NOT_EXCLUDED",
+      "TOOLS_WITHOUT_POST_EFFECT_FINGERPRINTS_REMAIN_UNKNOWN",
+      "EFFECTS_AFTER_TRACE_HEAD_REMAIN_UNKNOWN"
+    ]
+  },
+  "journey_ref": "jrn_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "omissions": [
+    "PRIVATE_CONTENT",
+    "CREDENTIAL_VALUES",
+    "UPSTREAM_OUTPUT_LIMITS"
+  ],
+  "operation_ref": "op_cccccccccccccccccccccccccccccccc",
+  "projection_sha256": "b2c1cbd18ec276f97ba05ab3289da4f679b2192b41b19574ccf345c7cb33d56f",
+  "record_count": 1,
+  "schema": "flywheel.gateway-agent-projection/v1",
+  "state": "cancelled",
+  "trace_head_sha256": "a2e1ebaddef373672f4f3d8016f9eda03775225b9e0255f5444d64f37170b983",
+  "trace_ref": "agt_3e2197a3f63109a97f701d387b758689"
+}

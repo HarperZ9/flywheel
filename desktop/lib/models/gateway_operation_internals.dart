@@ -36,6 +36,7 @@ const _fixedDestinations = {
   'invent.round': GatewayDestination('forge', 'conjecture-forge'),
   'lean.check': GatewayDestination('oracle', 'lean'),
   'infra.isolation': GatewayDestination('boundary', 'isolation'),
+  ..._settingDestinations,
 };
 
 /// Destinations whose ref is one named field of the operation: (kind, field).
@@ -88,6 +89,19 @@ GatewayDestination _destination(String action, Map<String, Object?> value) {
   if (action == 'packs.admit') {
     return GatewayDestination('pack', _packRef(value['manifest']));
   }
+  if (action == 'output.check') {
+    final contract = value['contract'];
+    final sha = contract is Map ? contract['sha256'] : null;
+    return sha is String && sha.length >= 16
+        ? GatewayDestination('output-check', sha.substring(0, 16))
+        : _invalid();
+  }
+  if (action == 'import.inspect') {
+    final sha = _inspectSha256(value);
+    return sha == null
+        ? _invalid()
+        : GatewayDestination('import', 'inspect-json:${sha.substring(0, 16)}');
+  }
   if (action == 'embeddings.create') {
     final ref = value['model'];
     return GatewayDestination(
@@ -100,61 +114,21 @@ GatewayDestination _destination(String action, Map<String, Object?> value) {
   final field = plugin || market
       ? 'name'
       : action == 'chat.complete'
-      ? 'model'
-      : 'endpoint';
+          ? 'model'
+          : 'endpoint';
   final ref = value[field];
   return ref is String
       ? GatewayDestination(
           plugin
               ? 'plugin'
               : market
-              ? 'marketplace'
-              : action == 'chat.complete'
-              ? 'model'
-              : 'endpoint',
+                  ? 'marketplace'
+                  : action == 'chat.complete'
+                      ? 'model'
+                      : 'endpoint',
           ref,
         )
       : _invalid();
-}
-
-bool _isBulletinBoardWrite(String action, Map<String, Object?> value) =>
-    action == 'lane.call' &&
-    value['name'] == 'bulletin' &&
-    value['tool'] == 'board_write_post';
-
-void _validateBulletinOriginBinding(
-  String action,
-  Map<String, Object?> value,
-  GatewayDestination destination,
-) {
-  final hasOrigin = value.containsKey('bulletin_base_url');
-  if (!_isBulletinBoardWrite(action, value)) {
-    if (hasOrigin || destination.bulletinBaseUrl != null) _invalid();
-    return;
-  }
-  if (_containsBulletinOriginField(value['args'])) _invalid();
-  final origin = value['bulletin_base_url'];
-  if (origin is! String || !isCanonicalBulletinOrigin(origin)) _invalid();
-  if (destination.kind != 'lane' ||
-      destination.ref != 'bulletin' ||
-      destination.bulletinBaseUrl != origin) {
-    _invalid();
-  }
-}
-
-bool _containsBulletinOriginField(Object? value) {
-  if (value is Map) {
-    for (final entry in value.entries) {
-      if (entry.key == 'bulletin_base_url' ||
-          _containsBulletinOriginField(entry.value)) {
-        return true;
-      }
-    }
-  }
-  if (value is List) {
-    return value.any(_containsBulletinOriginField);
-  }
-  return false;
 }
 
 /// The engine reads the operation's own tool field wherever one exists, which
@@ -166,6 +140,9 @@ String _tool(String action, Map<String, Object?> value) {
 }
 
 List<String> _scopes(String action, Map<String, Object?> value) {
+  if (action == 'live_screen.control') return const ['write'];
+  final setting = _settingScopes(action, value);
+  if (setting != null) return setting;
   if (action == 'operation.cancel') return const ['exec'];
   final selected = <String>{};
   if (const {
@@ -194,11 +171,29 @@ List<String> _scopes(String action, Map<String, Object?> value) {
     // The Lean kernel is a subprocess and the verdict is stored.
     selected.addAll(const ['exec', 'write']);
   }
+  if (action == 'output.check') {
+    if (value['allow_commands'] == true || value['verify_lean'] == true) {
+      selected.add('exec');
+    }
+    if (value['verify_lean'] == true ||
+        const {'out', 'report', 'lean', 'ledger'}
+            .any((field) => value.containsKey(field))) {
+      selected.add('write');
+    }
+    if ('${value['scope'] ?? ''}${value['subject'] ?? ''}'.isNotEmpty) {
+      selected.add('write');
+    }
+  }
   if (action == 'suite.audit') selected.add('exec');
   if (action == 'lane.call') {
     selected.addAll(const ['exec', 'network', 'plugin']);
   }
-  if (const {'packs.admit', 'store.put', 'import.config'}.contains(action)) {
+  if (const {
+    'packs.admit',
+    'store.put',
+    'import.config',
+    'import.inspect',
+  }.contains(action)) {
     selected.add('write');
   }
   // It reads the files and variables where credentials live. It records a
@@ -225,16 +220,15 @@ List<String> _scopes(String action, Map<String, Object?> value) {
       selected.add('exec');
     }
   }
+  if (action == 'agent.run' && value['mcp_admission'] != null) {
+    selected.add('mcp');
+  }
   if ((value['credential_refs'] as List).isNotEmpty) {
     selected.add('secrets');
   }
-  return const [
-    'write',
-    'exec',
-    'network',
-    'plugin',
-    'secrets',
-  ].where(selected.contains).toList();
+  return const ['write', 'exec', 'network', 'plugin', 'mcp', 'secrets']
+      .where(selected.contains)
+      .toList();
 }
 
 void _validateCancel(Map<String, Object?> value) {
@@ -242,7 +236,7 @@ void _validateCancel(Map<String, Object?> value) {
     'operation_ref',
     'timeout_ms',
     'data_refs',
-    'credential_refs',
+    'credential_refs'
   };
   final reference = value['operation_ref'];
   final timeout = value['timeout_ms'];

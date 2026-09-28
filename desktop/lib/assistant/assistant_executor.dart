@@ -10,6 +10,9 @@
 // device.
 
 import '../client/gateway_client.dart';
+import '../client/assistant_task_api.dart';
+import '../models/assistant_task.dart';
+import 'assistant_task_controller.dart';
 import 'assistant_intent.dart';
 import 'assistant_router.dart';
 
@@ -55,6 +58,9 @@ class AssistantExecutor {
   final DeviceSink device;
   final AssistantLinks _links;
 
+  AssistantTaskController? get tasks =>
+      agent is GatewayAgentSink ? (agent as GatewayAgentSink).tasks : null;
+
   /// What the assistant has carried out, newest last. A small, auditable trail.
   final List<AssistantRecord> log = [];
 
@@ -71,7 +77,11 @@ class AssistantExecutor {
     final record = AssistantRecord(
       command: command,
       channel: plan.channel,
-      reply: plan.spokenReply,
+      reply: plan.channel == AssistantChannel.agent
+          ? (runId == null
+              ? 'Submission outcome unknown. Check gateway tasks before trying again.'
+              : 'Submitted. Completion and the answer still need to be checked.')
+          : plan.spokenReply,
       ok: ok,
       deepLink: plan.deepLink,
       runId: runId,
@@ -92,16 +102,20 @@ class PreviewDeviceSink implements DeviceSink {
 /// Legacy relay-backed agent target, retained for Relay surfaces and tests that
 /// still exercise /api/relay/start directly.
 class GatewayAgentSink implements AgentSink {
-  GatewayAgentSink(this._client);
+  GatewayAgentSink(this._client)
+      : tasks = AssistantTaskController(GatewayAssistantTaskApi(_client));
 
   final GatewayClient _client;
+  final AssistantTaskController tasks;
 
   @override
   Future<String?> startTask(String goal) async {
     try {
       final res = await _client.startRelayRun({'goal': goal});
       final runId = res['run_id'];
-      return runId is String ? runId : null;
+      if (!isAssistantRunRef(runId) || res.containsKey('error')) return null;
+      tasks.submitted(runId as String);
+      return runId;
     } catch (_) {
       return null; // an unreachable gateway is an honest failure, not a crash
     }

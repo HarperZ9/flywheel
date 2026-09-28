@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flywheel_desktop/models/agent_execution_mode.dart';
 import 'package:flywheel_desktop/models/rowan_walkthrough_models.dart';
 import 'package:flywheel_desktop/widgets/rowan_walkthrough_panel.dart';
 
@@ -104,6 +105,27 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Run'));
     await tester.pumpAndSettle();
     expect(host.startCalls, 0);
+  });
+
+  testWidgets('walkthrough mode selector updates the shared operation host',
+      (tester) async {
+    final host = FakeRowanOperationHost();
+
+    await tester.pumpWidget(wrapRowanTest(RowanWalkthroughPanel(
+      alive: true,
+      operationHost: host,
+      currentBinding: rowanTestBinding,
+    )));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('rowan-walkthrough-execution-mode')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('native CLI session').last);
+    await tester.pumpAndSettle();
+
+    expect(host.executionMode, AgentExecutionMode.nativeCliSession);
+    expect(find.textContaining('CLI-owned auth'), findsOneWidget);
+    expect(find.textContaining('Codex CLI unavailable'), findsOneWidget);
   });
 
   testWidgets('failed reconnect keeps follow-up review disabled',

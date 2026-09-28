@@ -239,12 +239,15 @@ class GeminiBackend:
 class CliBackend:
     """A subscription tier via the official CLI's OWN auth (claude max / codex
     plan). It invokes the operator's authenticated client; it never proxies or
-    replays that client's tokens elsewhere."""
+    replays that client's tokens elsewhere. The CLI runs with trace capture
+    off: its prompts are the engine's own routed calls, which the gateway
+    trace already holds, not the owner's turns."""
     name: str
     argv: list                       # {prompt} replaced with the flattened prompt
     model: str = ""
     runner: "callable" = None        # inject (cmd)->(rc,out,err) for tests
     timeout: float = 300.0
+    cwd: "str | None" = None         # the directory the CLI runs in (its file tools see it)
 
     def health(self) -> bool:
         return bool(self.argv) and shutil.which(self.argv[0]) is not None
@@ -268,7 +271,10 @@ class CliBackend:
             if self.runner is not None:
                 rc, out, err = self.runner(cmd)
             else:
-                p = subprocess.run(cmd, capture_output=True, timeout=self.timeout, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+                from .lane_workdir import CAPTURE_OFF
+                p = subprocess.run(cmd, capture_output=True, timeout=self.timeout, cwd=self.cwd,
+                                   env={**os.environ, **CAPTURE_OFF},
+                                   creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
                 rc, out, err = p.returncode, p.stdout, p.stderr
         except (OSError, subprocess.SubprocessError) as e:
             raise BackendError(f"{self.name} cli failed: {e}") from e

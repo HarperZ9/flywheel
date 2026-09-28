@@ -8,10 +8,17 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Mapping
 
+try:
+    from .installed_launch_inspect_contract import INSPECT_ASSERTION_IDS, INSPECT_PHASE_ASSERTIONS, INSPECT_REQUIRED_ASSERTIONS
+    from .installed_payload_binding import TRUST_BOUNDARY as PAYLOAD_TRUST_BOUNDARY
+    from .installed_payload_binding import verify_installed_payload
+except ImportError:
+    from installed_launch_inspect_contract import INSPECT_ASSERTION_IDS, INSPECT_PHASE_ASSERTIONS, INSPECT_REQUIRED_ASSERTIONS  # type: ignore
+    from installed_payload_binding import TRUST_BOUNDARY as PAYLOAD_TRUST_BOUNDARY  # type: ignore
+    from installed_payload_binding import verify_installed_payload  # type: ignore
+
 BUILD_MANIFEST_SCHEMA = "flywheel.installed-build-manifest/v1"
-BUILD_MANIFEST_TRUST_BOUNDARY = (
-    "operator-supplied integrity binding; not external attestation"
-)
+BUILD_MANIFEST_TRUST_BOUNDARY = PAYLOAD_TRUST_BOUNDARY
 
 ASSERTION_IDS = (
     "H01_app_exe_exists",
@@ -34,7 +41,7 @@ ASSERTION_IDS = (
     "H18_known_unavailable_lanes_not_live",
     "H19_standalone_cli_separated_from_installed_engine",
     "H20_receipt_fresh_complete_and_source_bound",
-)
+) + INSPECT_ASSERTION_IDS
 
 PHASE_ASSERTIONS = {
     "P0_payload_manifest_preflight": (
@@ -67,9 +74,10 @@ PHASE_ASSERTIONS = {
         "H18_known_unavailable_lanes_not_live",
         "H19_standalone_cli_separated_from_installed_engine",
     ),
+    **INSPECT_PHASE_ASSERTIONS,
 }
 PHASE_IDS = tuple(PHASE_ASSERTIONS)
-VALID_MODES = {"preflight", "metadata", "engine", "full"}
+VALID_MODES = {"preflight", "metadata", "engine", "full", "inspect"}
 MODE_REQUIRED_ASSERTIONS = {
     "preflight": {
         "H01_app_exe_exists", "H02_engine_exe_exists_under_install_root",
@@ -103,6 +111,7 @@ MODE_REQUIRED_ASSERTIONS = {
         "H16_restart_same_isolated_profile",
         "H20_receipt_fresh_complete_and_source_bound",
     },
+    "inspect": INSPECT_REQUIRED_ASSERTIONS,
 }
 VALID_ASSERTION_STATES = {
     "PASS", "FAIL", "NOT_CHECKED", "UNTESTED", "UNSUPPORTED", "SKIP",
@@ -205,6 +214,7 @@ def _check_exact_ids(errors: list[str], rows: list[Any], expected: tuple[str, ..
 def evaluate_build_binding(
     *,
     manifest_path: Path | None,
+    install_root: Path | None = None,
     expected_source: str,
     expected_version: str,
     expected_app_sha256: str,
@@ -231,6 +241,12 @@ def evaluate_build_binding(
     _expect_equal(failures, observed_installed_version, expected_version, "installed_version")
     _expect_hash(failures, binding["app_sha256"], observed_app_sha256, "app_sha256")
     _expect_hash(failures, binding["engine_sha256"], observed_engine_sha256, "engine_sha256")
+    if install_root is None:
+        failures.append("install_root_missing_for_payload_binding")
+    else:
+        payload_report = verify_installed_payload(install_root, manifest)
+        observed["payload_binding"] = payload_report
+        failures.extend(payload_report["failures"])
     if expected_app_sha256:
         _expect_hash(failures, expected_app_sha256, observed_app_sha256, "expected_app_sha256")
     if expected_engine_sha256:

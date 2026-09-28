@@ -1,0 +1,250 @@
+{
+  "components": {
+    "accountable_surface": {
+      "license_notices": [
+        "LICENSE"
+      ],
+      "manifest": {
+        "entry_modules": [
+          "accountable_surface.api_effector",
+          "accountable_surface.authority_store",
+          "accountable_surface.effector",
+          "accountable_surface.read_authority",
+          "accountable_surface.registry",
+          "accountable_surface.remote_actuation",
+          "accountable_surface.surface"
+        ],
+        "file_hashes": {
+          "accountable_surface/api_effector.py": "5496ca97ed6d46c16305a6594de0b22799508dafc801c100e18ac4bd27fef76b",
+          "accountable_surface/api_transport.py": "5eb86fbf27b76af8aebfb4b0505881b27e50b66547c407aa185900ed0bef3eea",
+          "accountable_surface/authority_state.py": "6aa1f08a1b2d6a5ddddfab79258ca58893f1d35cdde57b0f8da2f68647ca4857",
+          "accountable_surface/authority_store.py": "d7a4d7abbceca47da20fa0867b2e561998265ad0dcd2684ab581a6912da73985",
+          "accountable_surface/authorized_actuation.py": "59cd98d6e0d715383d90a25fa4c0212b388382429622c0d8fea269cc7a17d4a8",
+          "accountable_surface/bounds.py": "03cd8590d023da4dcbc1ef0d03485266d033ebf6eda7e500568a5f687bebfa4d",
+          "accountable_surface/certify.py": "4bab5a56e1edaa8b9301189d150ba1321c99ba0faa37fef3764f6dcb549d62d8",
+          "accountable_surface/credentials.py": "3a13e27dfa37137a358ba77e77dfcd695444e1321ceb0c00c604b7021ab84d77",
+          "accountable_surface/effector.py": "9f75a6609a15c66eae0a99fe40e313d97612f6cfb4d3115a5d27b8e867d7f13c",
+          "accountable_surface/grant.py": "550ba9da2c3fa1a6ecb0724e9ee3437421cc1a4ece5ab687a3c48f81da9fb5cf",
+          "accountable_surface/journal_chain.py": "6583f432bf076b234fe44a414411303d1f344909b5aed541d2a7ca150e65d2f8",
+          "accountable_surface/preconditions.py": "79ec3655911edf6640c34c9c3feb7fe618fc542c46a0801b2caf68dc08dd6c6e",
+          "accountable_surface/protected_paths.py": "f29a67360dd8493fd734bc27159919d80af7de0eb004fafa8b16a17bfee83a32",
+          "accountable_surface/read_authority.py": "234f5ebd4b7ab770386b8c4bff10df1b1798cff3be95d1816c0cdf5e2439fd28",
+          "accountable_surface/read_scopes.py": "00ffc2cbf4c79bd9da1f6c9071d0fd9e268f5d374961f0f70f3c5b61e5d6f37d",
+          "accountable_surface/registry.py": "027003fc615a22f6b1a7b6829e905f0fb0d6cbe36c0c298f3e807b6f38c7497a",
+          "accountable_surface/remote_actuation.py": "024782745107b55e715e1d7f9b72a5573ade3fc1f9a26207e18e4def38be193c",
+          "accountable_surface/remote_durable.py": "4ee68efcad19a6ca28c1e74767d380c8ba947c1617f4abdf1dc045e17498a7fa",
+          "accountable_surface/surface.py": "002a5accb09b5d43dace19d0abf34902e01ff3d0d961d349bc98c160c6267bf0"
+        },
+        "files": [
+          "accountable_surface/api_effector.py",
+          "accountable_surface/api_transport.py",
+          "accountable_surface/authority_state.py",
+          "accountable_surface/authority_store.py",
+          "accountable_surface/authorized_actuation.py",
+          "accountable_surface/bounds.py",
+          "accountable_surface/certify.py",
+          "accountable_surface/credentials.py",
+          "accountable_surface/effector.py",
+          "accountable_surface/grant.py",
+          "accountable_surface/journal_chain.py",
+          "accountable_surface/preconditions.py",
+          "accountable_surface/protected_paths.py",
+          "accountable_surface/read_authority.py",
+          "accountable_surface/read_scopes.py",
+          "accountable_surface/registry.py",
+          "accountable_surface/remote_actuation.py",
+          "accountable_surface/remote_durable.py",
+          "accountable_surface/surface.py"
+        ],
+        "status": "ready"
+      },
+      "ref": "c73d745da67f74a2d08a47a5aafc4cc04044b562",
+      "repo": "https://github.com/HarperZ9/accountable-surface.git",
+      "source_subdir": "src"
+    },
+    "coherence_membrane": {
+      "license_notices": [
+        "LICENSE"
+      ],
+      "manifest": {
+        "entry_modules": [
+          "coherence_membrane.membrane",
+          "coherence_membrane.observation",
+          "coherence_membrane.organs.web"
+        ],
+        "file_hashes": {
+          "coherence_membrane/agent_loop.py": "f89f0ae2898a71bbb14e866811ef0e9945b4b649143276ac8b08cd9ce633403f",
+          "coherence_membrane/baseline.py": "145cc39f1b5c524eadefd527910ff23ae38477afdb8534b079a7aca9a62e346a",
+          "coherence_membrane/capture.py": "40715feded54253d7073a6aefb14c8c9b03196d71ae35e8cfd09ad90aaf71385",
+          "coherence_membrane/certificate.py": "426c22ef1eb5eebcab7bcf267b10431a0d22714d2cfb77d9c9608a17aa6a28c7",
+          "coherence_membrane/composition.py": "e6f972eab9a4ff9cf777eb7782d30cee8dde1c949e74423781cb75a9a5a0acb2",
+          "coherence_membrane/continuity.py": "3425bde97eab4c7239751dfb0517aa1748511b2d67af3be6969aa87bb8740537",
+          "coherence_membrane/lattice.py": "5f42a7a983f86abf9d31bf56fad8d9d1d9f2cd3cdff466251ff1d6f2fd4d8632",
+          "coherence_membrane/live.py": "c7ae3a117c908bd2aba999d6ac5ea1d023fddcb8b91a68a16b3c5d4f81b09b8a",
+          "coherence_membrane/membrane.py": "2b2f024c3fec4d1c45a7c24c079bdc4b5d7039c55405cdfb8d3a6306af3d2ac0",
+          "coherence_membrane/observation.py": "072c6d33a437fe3dda4485aa1bdd48f6b4529a50836d91e178b54add49a08531",
+          "coherence_membrane/organ.py": "38417006a7f44688c71c6e65dfb18c7e0440b8c48070b159e2fe4b09bc4b00de",
+          "coherence_membrane/organs/raw.py": "24b9761059cef7abbb570e56e68e422d71c08f2cb52c647630a4a960bc60fa16",
+          "coherence_membrane/organs/visual.py": "8a1fb23cb186ac9768b5797c204cf3ffe620bf6b4a91b467c020f20542fc5ffe",
+          "coherence_membrane/organs/web.py": "74a91c633ea5194b43e06a7d8e37a42293ad92efdb7de9127bd33aa606cdbe07",
+          "coherence_membrane/phash.py": "075150ff891d81024e2b6789c7fa299235d6057f9ab6b826bfcdd94a3adfb4c3",
+          "coherence_membrane/pngencode.py": "07b48207311e85c782a4593a5c60a8cd12147e3938b9a9f199c5fc0484411b04",
+          "coherence_membrane/pngview.py": "2a0221c9250d781002cb63284023dc41b4296471f8b6477ba4c2acb589503f9d",
+          "coherence_membrane/provenance.py": "bb08baf2e91be09af97439598eece91c2949279414e170ade09f5e6cc8d36605",
+          "coherence_membrane/receipt.py": "8e00947dcf53528842d328a292dd7c81a8b31391a219f6facda252727c158229",
+          "coherence_membrane/scope.py": "8e06310eec1115a41914154b4f10c410ed9352fa5f64b2364bbfbc97501d0c95"
+        },
+        "files": [
+          "coherence_membrane/agent_loop.py",
+          "coherence_membrane/baseline.py",
+          "coherence_membrane/capture.py",
+          "coherence_membrane/certificate.py",
+          "coherence_membrane/composition.py",
+          "coherence_membrane/continuity.py",
+          "coherence_membrane/lattice.py",
+          "coherence_membrane/live.py",
+          "coherence_membrane/membrane.py",
+          "coherence_membrane/observation.py",
+          "coherence_membrane/organ.py",
+          "coherence_membrane/organs/raw.py",
+          "coherence_membrane/organs/visual.py",
+          "coherence_membrane/organs/web.py",
+          "coherence_membrane/phash.py",
+          "coherence_membrane/pngencode.py",
+          "coherence_membrane/pngview.py",
+          "coherence_membrane/provenance.py",
+          "coherence_membrane/receipt.py",
+          "coherence_membrane/scope.py"
+        ],
+        "status": "ready"
+      },
+      "ref": "356c01b675978237c17c2b0579fabbe268c04828",
+      "repo": "https://github.com/HarperZ9/coherence-membrane.git",
+      "source_subdir": "src"
+    },
+    "proof_surface": {
+      "license_notices": [
+        "LICENSE"
+      ],
+      "manifest": {
+        "entry_modules": [
+          "proof_surface"
+        ],
+        "file_hashes": {
+          "proof_surface/__init__.py": "2c458105038667611ae1c3b22d7a4eb4891623231c40463c1cd41f9fc8bd569e",
+          "proof_surface/_strict_json.py": "678b315bc7c6ef3b01b713208593c4fe3ded31a7588de76fe4a79b8b2a54ad60",
+          "proof_surface/_validate.py": "44157d688313445fcdbfd66757ad81b8fb587878c8cc0e3f0509ceaa9fe88644",
+          "proof_surface/authorization_receipt.py": "5d295aadd2babae69858c6bb05ff8e70e6453ea147b4446279c1000e90a5a966",
+          "proof_surface/claim_ledger.py": "b07c98e9f3213feda8ae25507c3a244bde0e970d3a371b9026cf501240fa4c4c",
+          "proof_surface/delegation_chain.py": "748d4d41f56b56050e31e74c0a8039fc02e21633b002b28aba235708cee48660",
+          "proof_surface/evaluation_contract.py": "eff7f6057d3a8ab23de52bf96f8c53b2bf89b4337d636a85007eb3e6cb730c24",
+          "proof_surface/human_gap.py": "6963b37f362ed771ae4d16a7bebfa0c7c6c6dd8596e7a3cbc5682029a8bedaa5",
+          "proof_surface/organ_receipt_bundle.py": "b197b091b5b8b6ab2c0ac633e397498689a586691e4e6204b805910a0f5061c8",
+          "proof_surface/packet.py": "28fa83a0b0659bcb54cf628955c2be6818219aff5e6e3cd1640ea2ee211b6380",
+          "proof_surface/pre_execution_gate.py": "861b442cc325a18c6b941e4c4628c8e4335e828211cd0ac1d248d582a2737c93",
+          "proof_surface/witness_receipt.py": "fe8e05f8b872094e8ee3bc0fc303c9c8dc2f1ba6dc58d76be12f2f9c7c7232eb",
+          "proof_surface/work_record.py": "bc5c9c6d55b40c86843a56deb2eabe152ec1ff6d7cb33950b50ea17fe57f3654"
+        },
+        "files": [
+          "proof_surface/__init__.py",
+          "proof_surface/_strict_json.py",
+          "proof_surface/_validate.py",
+          "proof_surface/authorization_receipt.py",
+          "proof_surface/claim_ledger.py",
+          "proof_surface/delegation_chain.py",
+          "proof_surface/evaluation_contract.py",
+          "proof_surface/human_gap.py",
+          "proof_surface/organ_receipt_bundle.py",
+          "proof_surface/packet.py",
+          "proof_surface/pre_execution_gate.py",
+          "proof_surface/witness_receipt.py",
+          "proof_surface/work_record.py"
+        ],
+        "status": "ready"
+      },
+      "ref": "5b4907df8564d37da0f67cd8a0cfca0abbe72e7d",
+      "repo": "https://github.com/HarperZ9/proof-surface.git",
+      "source_subdir": "src"
+    },
+    "studio_engine": {
+      "license_notices": [
+        "LICENSE"
+      ],
+      "manifest": {
+        "basis": "env:STUDIO_ENGINE_SRC",
+        "distribution_name": null,
+        "expected_head": "81810e14c6902d3cb750c25c7c15d063ac723926",
+        "package_version": null,
+        "required_file_hashes": {
+          "pyproject.toml": "37590683d26f15ec084ee7777d4d10b0f64b14be7cb6e877987fb79f86a74a2d",
+          "studio_engine/__init__.py": "9b4960520e9392a898c070b65dca52a91f3909c5272a0c5e8c7bcde44d9ceb5a",
+          "studio_engine/certify.py": "7bbd08cdf9e63b9bf12f49523fc387a8af289dd521ee5ab77b52fbba73e2ed65",
+          "studio_engine/corpus.py": "e7013c7cd8aa895c7b268bd8318b0d711af32d1fc0a3d4ceb8058600c47749d2",
+          "studio_engine/criteria.py": "dacd9a5c7778375204d535e7eafacbc59553ec2f237fd2ace874c71a9f8cbca4",
+          "studio_engine/engine.py": "484a2a64858cd4b22b7a76b01caf2d201483dbcf71668fc264c44f1018ffd711",
+          "studio_engine/model.py": "c42892f16d9542e6fbe6ff6cf5689b67562c0759f9f25e0c78d46e093d8e4449",
+          "studio_engine/organs/__init__.py": "b46891df98003644a7f690d5172c21e771563182d0595371a2445e2bf9c9b7e8",
+          "studio_engine/organs/attractor.py": "538cffa5811cf346430187effa746a7abfb287163d7fd1421c9d5e32097e4d76",
+          "studio_engine/organs/fields.py": "e9485854d5dfa13a8e4d0603b518f8bd070e2d3cd34cc79bdd298950d9f1f52f",
+          "studio_engine/organs/flowfield.py": "346b1aae567d6d9ade8921c22413cd735871fb2e04e0c57d6a28051bf7e709c2",
+          "studio_engine/organs/geometry.py": "e2e10a61ba79b82ba2d94a1ba75a6a92b5f03c295f5bc819afe7331c8b4d6429",
+          "studio_engine/organs/harmonograph.py": "9847f15a59c05a2555571071c5bf0bbdd8f046818389161f5ea7107254e0acc2",
+          "studio_engine/organs/metaballs.py": "905f35471895ccde791cd0af218e3392ec6abc48a7f43c7e0a4683c2f75d9de7",
+          "studio_engine/organs/moire.py": "8bef429a57a6f35ffa54a0704c4346b915b58afab9a59f211c06b121ba35d541",
+          "studio_engine/organs/palette.py": "8428b6bbba09d7fd63f8bdec324ec119817e82b4e77fc26f116e9961b4c2e637",
+          "studio_engine/organs/program.py": "5a0482ab8eaa0775d8267f61bc51b5d09aef3c0f3a8b3073eec4394bc6c482ec",
+          "studio_engine/organs/raster.py": "8679f6a190c959db05bf114f42b40614e597c59a92cc6fc19a8d14490fa1d1c2",
+          "studio_engine/organs/rings.py": "d4c5866eefa4b6f7099952b8bedcb64f1755e6eb88b895fbe9839b40583d95a3",
+          "studio_engine/organs/sonify.py": "8141d1ca5316ea6315ddbd4bf62365a17049cd59267e0a8e87bd98017be56a49",
+          "studio_engine/organs/turbulence.py": "b531925b1fe5b12d3ecbe2482137d8be7ac970670d8ec5528dae108ed8f76823",
+          "studio_engine/raster_renderer.py": "5219738e5a9c324723d887469c847dfb5b88f68f601ffcc32b34fb4e19708bef",
+          "studio_engine/registry.py": "25efb004bce4703f69dfee344592ad6f7571e4ccd30f49100e639cbb3680c6e8",
+          "studio_engine/strand/__init__.py": "a29004333b0e982e9d9d05ffe2671c4e7e8308bfcd0a59e5b287af9495479f61",
+          "studio_engine/strand/expr.py": "a15dfd77a13cdb9912322636dbc8a2ad1e8bd991ad3f5734db55ea8ba449e44e",
+          "studio_engine/strand/glsl.py": "dcdb91fe6011281fa5a86239c8c6b773bbf73e1c3325759b0da30d5f896ec532",
+          "studio_engine/strand/recipe.py": "23677136800e4187d32ef688dd54a254d4cb13a70144006e0b50623d55700907",
+          "studio_engine/strand/webaudio.py": "c1e9702a423d5bba2ac0a268106eeea759ddc92f09be440c0d31a4f38aa6b161",
+          "studio_engine/temporal.py": "2bdded957bb936e7e6bc32833e5511a1820c52095df3c6982f4b802a4fbd82a2"
+        },
+        "required_files": [
+          "pyproject.toml",
+          "studio_engine/__init__.py",
+          "studio_engine/engine.py",
+          "studio_engine/model.py",
+          "studio_engine/certify.py",
+          "studio_engine/corpus.py",
+          "studio_engine/criteria.py",
+          "studio_engine/registry.py",
+          "studio_engine/temporal.py",
+          "studio_engine/raster_renderer.py",
+          "studio_engine/organs/__init__.py",
+          "studio_engine/organs/attractor.py",
+          "studio_engine/organs/fields.py",
+          "studio_engine/organs/flowfield.py",
+          "studio_engine/organs/geometry.py",
+          "studio_engine/organs/harmonograph.py",
+          "studio_engine/organs/metaballs.py",
+          "studio_engine/organs/moire.py",
+          "studio_engine/organs/palette.py",
+          "studio_engine/organs/program.py",
+          "studio_engine/organs/raster.py",
+          "studio_engine/organs/rings.py",
+          "studio_engine/organs/sonify.py",
+          "studio_engine/organs/turbulence.py",
+          "studio_engine/strand/__init__.py",
+          "studio_engine/strand/expr.py",
+          "studio_engine/strand/glsl.py",
+          "studio_engine/strand/recipe.py",
+          "studio_engine/strand/webaudio.py"
+        ],
+        "schema": "flywheel.studio-engine-runtime-resolution/v1",
+        "status": "ready"
+      },
+      "ref": "81810e14c6902d3cb750c25c7c15d063ac723926",
+      "repo": "https://github.com/HarperZ9/studio-engine.git",
+      "source_subdir": ""
+    }
+  },
+  "created_at": "2026-09-15T14:08:17.940124Z",
+  "schema": "flywheel.studio-runtime-sources/v1"
+}

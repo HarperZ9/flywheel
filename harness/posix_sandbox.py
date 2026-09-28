@@ -44,6 +44,7 @@ process listing.
 """
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -54,7 +55,7 @@ from .sandbox_confinement import SCHEMA, Confinement
 from .sandbox_policy import (ProfileRefused, posix_path, sbpl_profile,
                              seatbelt_argv)
 from .sandbox_probe import sandbox_starts
-from .sandbox_protected_paths import bwrap_hide_args, present_paths
+from .sandbox_protected_paths import bwrap_hide_args, host_protected_paths
 
 #: `SCHEMA` and `Confinement` moved next door and are re-exported, because
 #: every caller that had them from here still wants them from here and a
@@ -199,7 +200,8 @@ def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
     refusal reached, without a host that has either program.
 
     `protected` defaults to the credential denylist under this account's home
-    directory, narrowed to the paths that are actually there. Passing an empty
+    directory plus the gateway token and keys under a set FLYWHEEL_HOME,
+    narrowed to the paths that are actually there. Passing an empty
     tuple is how a caller asks for none, and passing a list of (kind, path)
     pairs is how a test asks for a path it just created. The default is read
     here rather than in the builders, which stay pure functions of what they
@@ -212,7 +214,8 @@ def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
     program = found if isinstance(found, str) else PROGRAM[backend]
     if not (probe if probe is not None else sandbox_starts)(backend, program):
         return None
-    hidden = present_paths(Path.home()) if protected is None else protected
+    hidden = (host_protected_paths(Path.home(), os.environ)
+              if protected is None else protected)
     plan = describe(backend, root, work, network=network, egress=egress,
                     protected=hidden)
     argv = build(backend, program, root, work, cmd, network=network,

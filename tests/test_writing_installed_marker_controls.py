@@ -1,11 +1,55 @@
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 
+import pytest
+
 PROJECT = "wpr_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 REPO = Path(__file__).resolve().parents[1]
+_FLYWHEEL_TIMEOUT_S = 45.0
+_DIAGNOSTIC_TEXT_LIMIT = 500
+_SECRET_ASSIGNMENT = re.compile(
+    r"\b([A-Za-z0-9_]*(?:TOKEN|PASSWORD|SECRET|API_KEY|ACCESS_KEY|PRIVATE_KEY))"
+    r"\s*[:=]\s*([^\s,;]+)",
+    re.IGNORECASE,
+)
+
+
+def _redact_diagnostic_text(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        text = value.decode("utf-8", "replace")
+    else:
+        text = str(value)
+    text = text.replace("\x00", "\\x00")
+    text = _SECRET_ASSIGNMENT.sub(r"\1=<redacted>", text)
+    if len(text) > _DIAGNOSTIC_TEXT_LIMIT:
+        return text[:_DIAGNOSTIC_TEXT_LIMIT] + "...<truncated>"
+    return text
+
+
+def _flywheel_phase(args: list[str]) -> str:
+    if not args:
+        return "writing"
+    if len(args) > 1 and not args[1].startswith("-"):
+        return f"{args[0]} {args[1]}"
+    return args[0]
+
+
+def _sanitized_args(args: list[str]) -> list[str]:
+    safe = []
+    for arg in args:
+        text = _redact_diagnostic_text(arg)
+        if "/" in text or "\\" in text or re.match(r"^[A-Za-z]:", text):
+            name = text.replace("\\", "/").rstrip("/").rsplit("/", 1)[-1]
+            safe.append(f"<path:{name or 'path'}>")
+        else:
+            safe.append(text)
+    return safe
 
 
 def _venv_python(root: Path) -> Path:
@@ -22,13 +66,25 @@ def _venv_python(root: Path) -> Path:
     return exe
 
 
-def _flywheel(root: Path, py: Path, home: Path, args: list[str]) -> dict:
+def _flywheel(root: Path, py: Path, home: Path, args: list[str],
+              timeout_s: float = _FLYWHEEL_TIMEOUT_S) -> dict:
     exe = root / ("Scripts/flywheel.exe" if os.name == "nt" else "bin/flywheel")
     cmd = [str(exe), "writing", *args] if exe.exists() else [
         str(py), "-m", "harness.cli_entry", "writing", *args]
     env = {**os.environ, "FLYWHEEL_HOME": str(home)}
     env.pop("PYTHONPATH", None); env.pop("FLYWHEEL_REPO", None)
-    run = subprocess.run(cmd, cwd=root, env=env, capture_output=True, text=True)
+    try:
+        run = subprocess.run(cmd, cwd=root, env=env, capture_output=True,
+                             text=True, timeout=timeout_s)
+    except subprocess.TimeoutExpired as exc:
+        phase = _flywheel_phase(args)
+        raise AssertionError(
+            "flywheel writing command timed out after "
+            f"{timeout_s:.1f}s during {phase}; "
+            f"args={json.dumps(_sanitized_args(args))}; "
+            f"stdout={_redact_diagnostic_text(exc.stdout)!r}; "
+            f"stderr={_redact_diagnostic_text(exc.stderr)!r}"
+        ) from None
     assert run.stdout.strip(), run.stderr
     result = json.loads(run.stdout)
     if run.returncode:
@@ -54,6 +110,39 @@ def _mcp_call(proc, name, arguments, ident):
                "params": {"name": name, "arguments": arguments}}
     response = _rpc(proc, request)
     return json.loads(response["result"]["content"][0]["text"])
+
+
+def test_flywheel_helper_timeout_reports_phase_and_sanitizes_child_output(tmp_path):
+    root = tmp_path / "fake-venv"
+    package = root / "harness"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (package / "cli_entry.py").write_text(
+        "import sys, time\n"
+        "print('stdout before hang SECRET_TOKEN=stdout-secret', flush=True)\n"
+        "print('stderr before hang PASSWORD=stderr-secret', file=sys.stderr, flush=True)\n"
+        "time.sleep(30)\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(AssertionError) as raised:
+        _flywheel(root, Path(sys.executable), tmp_path / "home",
+                  ["proposal", "approve", "prp_test", "--json"],
+                  timeout_s=3.0)
+
+    message = str(raised.value)
+    assert raised.value.__cause__ is None
+    assert raised.value.__suppress_context__
+    assert "proposal approve" in message
+    assert "timed out after" in message
+    assert "stdout before hang" in message
+    assert "stderr before hang" in message
+    assert "stdout-secret" not in message
+    assert "stderr-secret" not in message
+    assert "SECRET_TOKEN=<redacted>" in message
+    assert "PASSWORD=<redacted>" in message
+    assert "PYTHONPATH" not in message
+    assert "FLYWHEEL_HOME" not in message
 
 
 def test_installed_mcp_diagnoses_known_and_unknown_source_markers(tmp_path):

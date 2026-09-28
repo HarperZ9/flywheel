@@ -7,9 +7,9 @@ universally quantified equations; the Lean kernel (or an injected judge)
 is the sole acceptance authority; novelty is CORPUS-RELATIVE, measured
 by normalized-statement hash against everything the store already holds,
 so the forge never re-proposes the corpus. A refused conjecture is a
-count, never a stored fact. A DECLARED kernel (no toolchain) yields no
-claims at all. Novelty here means "absent from the corpus", nothing
-grander -- the receipt says so.
+count, never a stored fact. A DECLARED kernel (no toolchain, or no
+leanchecker replay) yields no claims at all. Novelty here means "absent
+from the corpus", nothing grander -- the receipt says so.
 """
 from __future__ import annotations
 

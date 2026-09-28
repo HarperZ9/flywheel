@@ -7,7 +7,7 @@ Offline suite seal `03f61e8e507d0767ab698c632c76974e` on python 3.12.10. Generat
 ## What ran
 
 | suite | question | headline |
-| --- | --- | --- |
+| :-- | :-- | :-- |
 | accountability | does an unaccountable system score badly here | dimensions 8; harness_overall 1.0; separation 0.99; strawman_overall 0.01 |
 | governed-agent | does a workflow refuse an action above its tier | failed 0; mean_quality_score 0.542; pass_rate 1.0; passed 6; scenarios 6 |
 | agent-recovery | does an injected fault recover without failing quietly | receipt_completeness 1.0; recovery_success_rate 1.0; scenarios 6; silent_failure_rate 0.0 |
@@ -32,7 +32,7 @@ Offline suite seal `03f61e8e507d0767ab698c632c76974e` on python 3.12.10. Generat
 A benchmark everything passes measures nothing. The strawman is a system with no receipts, scored on the same axes.
 
 | dimension | harness | strawman |
-| --- | --- | --- |
+| :-- | :-- | :-- |
 | re_checkability | 100% | 0% |
 | externalization | 100% | 0% |
 | adversarial_soundness | 100% | 7% |
@@ -144,7 +144,7 @@ Peers: codex, cursor, claude code, hermes, omp.
 - omp, read 2026-09-06, can1357/oh-my-pi README, docs/ and packages/metaharness/
 
 | capability | flywheel | codex | cursor | claude code | hermes | omp |
-| --- | --- | --- | --- | --- | --- | --- |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- |
 | any-provider-routing | witnessed | part | part | no | ships | ships |
 | receipt-on-every-answer * | witnessed | no | no | no | no | no |
 | integrity-guard * | witnessed | no | no | no | no | no |

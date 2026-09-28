@@ -8,9 +8,10 @@ from harness.cross_harness_artifacts import (bind_attempt_receipt, canonical_sha
     snapshot_source_tree, validate_execution_components, write_artifact_index)
 from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle
 from harness.cross_harness_policy import SHARED_TOOL_POLICY, attempt_metrics, tool_policy_for
+from harness.cross_harness_postrun_intent import attach_intent_matrix
 from harness.cross_harness_rejected_output import record_rejected_output; from harness.cross_harness_runtime_context import stage_runtime_context
 from harness.cross_harness_run_seal import seal_run, write_json as _write_json
-from harness.cross_harness_usage import recheck_inner_usage
+from harness.cross_harness_usage import recheck_inner_usage; from harness.cross_harness_output_diagnostics import diagnose_output_failure
 from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, model_observation_pair_error, sanitize_evidence,
     validate_elapsed_ms)
 class _MalformedAttempt(ValueError): pass
@@ -167,6 +168,8 @@ def execute_cross_harness_manifest(
         plans = expand_attempt_rows(manifest, runtime_matrix, artifact_root=root, run_id=run_id,
                                     phase=phase, selectors=selectors, roles=roles,
                                     repetitions=repetitions, compact_budget=compact_budget)
+        intent_path, intent_sha = attach_intent_matrix(run_root, manifest, plans, run_id=run_id, phase=phase, roles=roles,
+            repetitions=repetitions, execution_mode="focused_run", cache_state=cache_state, source_commit=source_commit, source_snapshot_sha256=before["sha256"]); indexed.append(intent_path)
         for plan in plans:
             task, attempt = plan["task"], Path(plan["attempt_dir"])
             files: dict[str, Path] = {}; workspace_before = None
@@ -240,7 +243,7 @@ def execute_cross_harness_manifest(
                                 if row["model_observation_basis"] == "unknown":
                                     row["limitations"].append("provider_request_accepted_not_model_attested")
                                 try: raw, artifacts = materialize_response_envelope(result.output_text, list(task.get("expected_artifacts", [])), attempt)
-                                except ValueError as exc: raise _MalformedAttempt(str(exc)) from exc
+                                except ValueError as exc: row["output_diagnostics"] = diagnose_output_failure(result.output_text, list(task.get("expected_artifacts", [])), verified_usage, plan["tool_policy"]); raise _MalformedAttempt(str(exc)) from exc
                                 files.update(artifacts); row.update(raw_output_path=str(raw), raw_output_sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
                                 provider_receipt = attempt / "provider-receipt.json"; _write_json(provider_receipt, {"model_observed": row["model_observed"], "model_observation_basis": row["model_observation_basis"], "elapsed_ms": elapsed_ms}); files[provider_receipt.name] = provider_receipt
                                 core = {"workspace_root": str(workspace), "attempt_dir": str(attempt),
@@ -290,10 +293,8 @@ def execute_cross_harness_manifest(
             if row["primary_outcome"] == "completed": clean.append(Path(row["workspace_root"]))
     finally:
         after = snapshot_source_tree(source)
-    run, state = seal_run(run_root, run_id=run_id, phase=phase, rows=rows,
-                          before=before, after=after, indexed=indexed)
-    # Raised after the documents land, and the workspaces stay: a drifted tree
-    # is a fact about the run rather than a reason to lose what it paid for.
+    run, state = seal_run(run_root, run_id=run_id, phase=phase, rows=rows, before=before, after=after, indexed=indexed,
+        intended_matrix_sha256=locals().get("intent_sha", ""), intended_matrix_path="intended-matrix.json" if locals().get("intent_sha", "") else "")
     if state == "drift": raise RuntimeError("source_tree_changed")
     for workspace in clean: remove_readonly_tree(workspace)
     return run

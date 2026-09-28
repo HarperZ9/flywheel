@@ -122,9 +122,11 @@ def package_runtime_version(lane: Lane, python_executable: str) -> str | None:
         " raise SystemExit(2)\n"
     )
     try:
+        from .lane_env import lane_process_environment
         result = subprocess.run(
             [python_executable, "-I", "-c", code, lane.install_name],
             capture_output=True, text=True, timeout=8,
+            env=lane_process_environment(getattr(lane, "name", "")),
             creationflags=0x08000000 if os.name == "nt" else 0)  # CREATE_NO_WINDOW
     except (FileNotFoundError, PermissionError, subprocess.TimeoutExpired, OSError):
         return None
@@ -159,9 +161,10 @@ def source_launch(lane: Lane, source: Path, python_executable: str,
         inherited = environ.get("PYTHONPATH", "")
         if inherited:
             roots.append(inherited)
+        # No cwd: the import root travels in PYTHONPATH with PYTHONSAFEPATH=1,
+        # so the child starts in its lane folder like a pip launch (lane_workdir).
         return LaunchSpec(
-            (python_executable, "-m", lane.py_module, *lane.mcp_args),
-            str(source.resolve()),
+            (python_executable, "-m", lane.py_module, *lane.mcp_args), None,
             (("PYTHONPATH", os.pathsep.join(roots)), ("PYTHONSAFEPATH", "1")),
         )
     return LaunchSpec(tuple(lane.mcp_command()))

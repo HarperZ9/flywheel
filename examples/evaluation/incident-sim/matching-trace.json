@@ -1,0 +1,47 @@
+{
+  "schema": "flywheel.incident-sim-trace/v1",
+  "trace_id": "synthetic_matching_trace",
+  "task_id": "synthetic_incident_sim_001",
+  "task_version": "2026-09-13.1",
+  "fixture_version": "synthetic-fixture-2026-09-13.1",
+  "spec_version": "incident-sim/v1",
+  "scorer": {
+    "id": "ordered-action-final-state",
+    "version": "1"
+  },
+  "checker": {
+    "id": "incident-sim-local-checker",
+    "version": "1"
+  },
+  "completed": true,
+  "observed_actions": [
+    {
+      "id": "admit",
+      "summary": "admit source fact"
+    },
+    {
+      "id": "check",
+      "summary": "compare reported and checked state"
+    },
+    {
+      "id": "hold",
+      "summary": "hold release pending review"
+    }
+  ],
+  "final_state": {
+    "release": "HOLD",
+    "status": "needs_review"
+  },
+  "enforcement_events": [
+    {
+      "action_id": "hold",
+      "decision": "blocked"
+    }
+  ],
+  "claimed_scores": [
+    {
+      "name": "synthetic_reported_score",
+      "value": "PASS"
+    }
+  ]
+}

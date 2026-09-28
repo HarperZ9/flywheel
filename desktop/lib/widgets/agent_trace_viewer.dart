@@ -4,6 +4,7 @@ import '../controllers/agent_trace_controller.dart';
 import '../models/agent_trace.dart';
 import '../theme/flywheel_theme.dart';
 import 'agent_trace_record_view.dart';
+import 'effect_evidence_panel.dart';
 import 'fw.dart';
 
 /// Opt-in private originals, confined to this widget's lifetime.
@@ -90,6 +91,13 @@ class _AgentTraceViewerState extends State<AgentTraceViewer> {
       SelectableText(
           'Operation ${p.operationRef}\nJourney ${p.journeyRef}\nTrace ${p.traceRef}',
           style: fwMono(t, size: 11)),
+      if (p.effectEvidence != null) ...[
+        const SizedBox(height: FwLayout.s2),
+        EffectEvidencePanel(
+            evidence: p.effectEvidence!,
+            records: records,
+            onSelect: (sequence) => setState(() => _selected = sequence)),
+      ],
       if (p.recordCount == 0)
         const Text('Unavailable: no private records were accepted.'),
       if (records.isNotEmpty) ...[

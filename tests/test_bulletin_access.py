@@ -251,5 +251,6 @@ def test_actual_gateway_lane_route_enforces_access_before_transport(
         assert calls == []
     else:
         assert payload == {"ok": True, "posts": []}
-        assert calls == [(('mcp', 'bulletin'), 20,
+        # the route applies the policy timeout of the board read (C4), 30 s
+        assert calls == [(('mcp', 'bulletin'), 30,
                           'flywheel-bulletin-proxy')]

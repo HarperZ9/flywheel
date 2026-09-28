@@ -14,6 +14,8 @@ import 'package:flywheel_desktop/controllers/rowan_operation_host_adapter.dart';
 import 'package:flywheel_desktop/ide/code_buffer_session.dart';
 import 'package:flywheel_desktop/ide/unsaved_work_guard.dart';
 import 'package:flywheel_desktop/models/journey_models.dart';
+import 'package:flywheel_desktop/services/chat_draft_store.dart';
+import 'package:flywheel_desktop/services/chat_store.dart';
 import 'package:flywheel_desktop/services/code_draft_store.dart';
 import 'package:flywheel_desktop/services/gateway_process.dart';
 import 'package:flywheel_desktop/services/journey_draft_store.dart';
@@ -23,7 +25,10 @@ import 'package:flywheel_desktop/shell/flywheel_dependencies.dart';
 import 'journey_controller_test.dart';
 
 class MemorySettings extends DesktopSettings {
-  MemorySettings({super.uiScale});
+  // Defaults to the returning-user state so a shell pumped through the harness
+  // does not raise the first-run walkthrough over steady-state assertions; the
+  // first-run path has its own tests. save() counts instead of writing disk.
+  MemorySettings({super.uiScale, super.firstRunSeen = true});
   int saves = 0;
   @override
   void save() => saves++;
@@ -79,11 +84,12 @@ class ShellHarness {
     this.directory, {
     JourneyLens lens = JourneyLens.verify,
     bool seedSession = true,
+    bool firstRunSeen = true,
     Future<http.Response> Function(http.Request)? handler,
     CountingGatewayProcess? gateway,
     CloseChoicePrompt? closePrompt,
   })  : api = ScriptedJourneyApi(),
-        settings = MemorySettings(),
+        settings = MemorySettings(firstRunSeen: firstRunSeen),
         transport = ClosingMockClient(handler),
         process = gateway ?? CountingGatewayProcess() {
     client = GatewayClient(
@@ -107,6 +113,9 @@ class ShellHarness {
     code = CodeBufferSession(
       draftStore: CodeDraftStore(root: Directory('${directory.path}/code')),
     );
+    chatStore = ChatStore(file: File('${directory.path}/chats.json'));
+    chatDraftStore =
+        ChatDraftStore(file: File('${directory.path}/chat-drafts.json'));
     dependencies = FlywheelDependencies(
       client: client,
       gateway: process,
@@ -114,6 +123,8 @@ class ShellHarness {
       rowan: rowan,
       rowanOperationHost: rowanHost,
       code: code,
+      chatStore: chatStore,
+      chatDraftStore: chatDraftStore,
       closePrompt: closePrompt,
     );
   }
@@ -129,6 +140,8 @@ class ShellHarness {
   late final RowanOperationController rowan;
   late final RowanOperationHostAdapter rowanHost;
   late final CodeBufferSession code;
+  late final ChatStore chatStore;
+  late final ChatDraftStore chatDraftStore;
   late final FlywheelDependencies dependencies;
 
   void replyReady({

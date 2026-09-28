@@ -192,7 +192,7 @@ void _threadTests() {
     ];
     await _pump(
         tester, ChatThread(messages: messages, controller: ScrollController()));
-    expect(find.text('present_unchecked'), findsOneWidget);
+    expect(find.text('Receipt not checked'), findsOneWidget);
   });
   testWidgets('empty streaming turn shows a placeholder', (tester) async {
     final messages = [

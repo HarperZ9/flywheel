@@ -18,6 +18,7 @@ Make Rowan present and control the existing supervised `agent.run` operation fro
 - [x] Compose the Rowan Studio walkthrough through a non-null shared operation host, with the walkthrough retaining guidance/oracle state only.
 - [x] Keep Android assistant work commands on the paired gateway plus supervised operation path, not the blocked Relay start route.
 - [x] Add an absent-by-default tool protocol selector and freeze `tool_protocol: native` only after explicit user selection.
+- [x] Add an explicit native CLI session execution mode that is distinct from API `tool_protocol: native`, filters to admitted `claude-cli`, never enables Codex CLI, and omits API-only `tool_protocol`, `max_tokens`, and `effort` fields.
 - [x] Treat failed reconnect and lost-response recovery as unavailable until a fresh snapshot succeeds; do not enable follow-up or submit a duplicate operation from cached data.
 - [x] Preserve product positioning: Flywheel is the primary coding app and full flagship surface; Rowan operates Flywheel. This slice adds no voice-provider behavior or provider claims.
 
@@ -30,6 +31,7 @@ Make Rowan present and control the existing supervised `agent.run` operation fro
 - Add `RowanOperationHostAdapter` so Studio walkthrough controls delegate to the same session-lived controller.
 - Update AgentPanel/AgentGates to share the exact model/budget body shape.
 - Add the `AgentToolProtocol` picker used by Rowan and AgentPanel. Compatibility mode omits `tool_protocol`; native mode sends the explicit `native` value for backend review.
+- Add `AgentExecutionMode` and the shared `agentRunOperation` builder so Rowan, AgentPanel, and the walkthrough use the same API/native-CLI request boundary. Native CLI mode sends `execution_mode: native_cli_session`, explicit endpoint/model/root, max steps, timeout and write grant; it keeps exec false and leaves token bounds/API effort/tool protocol absent.
 - Add private operation attachments through the composed PR186/PR194 seams. The host passes trusted `OperationSnapshot`, optional terminal result and progress to projection helpers before rendering trace and caption panels.
 - Recover lost initial POST responses by matching the persisted request hash across bounded Journey operation-list pages. If discovery is unavailable or the bound is exhausted, block duplicate starts until the operator explicitly dismisses the recovery blocker.
 
@@ -46,6 +48,7 @@ Make Rowan present and control the existing supervised `agent.run` operation fro
 - `desktop/lib/views/studio_view.dart`, `desktop/lib/widgets/rowan_studio_prelude.dart`, `rowan_walkthrough_panel.dart` - Studio host attachment.
 - `desktop/lib/ide/agent_panel.dart`, `agent_gates.dart` - exact model/budget controls.
 - `desktop/lib/models/agent_tool_protocol.dart` - compatibility/native protocol selector.
+- `desktop/lib/models/agent_execution_mode.dart`, `agent_run_operation.dart` - API/native CLI mode and shared request builder.
 - `desktop/lib/widgets/operation_trace_projection.dart`, `operation_trace_entry.dart`, `operation_caption_entry.dart`, `operation_private_attachments.dart`, `agent_caption_panel.dart` - accepted private trace/caption attachment.
 - `desktop/lib/models/agent_caption.dart` - inference lifecycle caption parser.
 - Focused desktop tests for parser, root validation, no duplicate start, reconnect, denial, model invalidation, session-store private-data boundary, walkthrough host delegation, and mobile-sized shell controls.
@@ -70,6 +73,7 @@ Make Rowan present and control the existing supervised `agent.run` operation fro
 - `C:/flutter/bin/flutter.bat test test/agent_caption_test.dart test/rowan_operation_protocol_recovery_test.dart test/rowan_private_attachments_test.dart test/agent_panel_tool_protocol_test.dart test/rowan_walkthrough_panel_test.dart` - focused trace, caption, tool protocol and recovery controls passed.
 - `C:/flutter/bin/flutter.bat test test/agent_caption_test.dart test/rowan_operation_protocol_recovery_test.dart test/rowan_private_attachments_test.dart test/agent_panel_tool_protocol_test.dart test/rowan_walkthrough_panel_test.dart` - 18 focused checks passed after independent-review recovery, stale direct-ref, and wording fixes.
 - `C:/flutter/bin/flutter.bat test test/rowan_operation_controller_test.dart test/agent_caption_test.dart test/rowan_operation_protocol_recovery_test.dart test/rowan_operation_recovery_guards_test.dart test/rowan_private_attachments_test.dart test/agent_panel_tool_protocol_test.dart test/rowan_walkthrough_panel_test.dart` - 24 focused checks passed after denial-locator, failed-reconnect, paged recovery, stale direct-ref, trace attachment, caption parser, and tool-protocol fixes.
+- `C:/flutter/bin/flutter.bat test test/rowan_operation_execution_mode_test.dart test/journey_session_operation_store_test.dart test/agent_panel_tool_protocol_test.dart test/rowan_walkthrough_panel_test.dart test/rowan_operation_protocol_recovery_test.dart` - 18 focused checks passed for native CLI request shape, Codex CLI pre-grant rejection, mode persistence/recovery, duplicate-blocker mode preservation, AgentPanel mode selector, and walkthrough shared-host mode selector.
 - `C:/flutter/bin/flutter.bat analyze` - no issues found after the final controller/session-locator split.
 - `C:/flutter/bin/flutter.bat test` - full desktop Flutter suite passed with 1056 checks and 8 skips after trace/caption/tool-protocol composition and review fixes.
 - `git diff --check` - no patch whitespace errors; Flutter platform registrant line-ending churn was restored and left out of the patch.

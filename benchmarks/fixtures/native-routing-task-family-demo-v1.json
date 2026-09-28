@@ -1,0 +1,155 @@
+{
+  "candidate_arms": [
+    {
+      "adapter_mode": "policy_table_single_choice",
+      "arm_class": "rules",
+      "arm_id": "arm_rules_001",
+      "execution_gate": "planned_only",
+      "pin_status": "pinned_non_model_baseline"
+    },
+    {
+      "adapter_mode": "constrained_single_choice",
+      "arm_class": "SLM",
+      "arm_id": "arm_slm_choice_001",
+      "execution_gate": "blocked_until_pinned",
+      "pin_status": "pin_required_before_execution"
+    }
+  ],
+  "cases": [
+    {
+      "case_group_id": "g_001",
+      "case_id": "c_001",
+      "family_id": "f_dev_a1",
+      "hard_policy_contract": {
+        "expected_option_id": "o_02",
+        "hidden_expected_fields": [
+          "AUTH-SENTINEL"
+        ],
+        "labels_are": "constraints_only"
+      },
+      "hidden_authority_refs": {
+        "raw_private_authority": "authority://AUTH-SENTINEL/permission"
+      },
+      "hidden_leakage_sentinels": [
+        "AUTH-SENTINEL"
+      ],
+      "option_set": [
+        {
+          "label": "Ask a follow-up question",
+          "option_id": "o_01"
+        },
+        {
+          "label": "Decline the unavailable action",
+          "option_id": "o_02"
+        }
+      ],
+      "policy_excerpt_ids": [
+        "p_001"
+      ],
+      "scenario_state": {
+        "redacted_account_state": "Plan allows read-only support.",
+        "redacted_action_log": "No prior action is recorded.",
+        "redacted_user_text": "Customer asks for an account action."
+      },
+      "split_role": "development",
+      "workflow_utility_contract": {
+        "measured": false,
+        "no_optimal_gold": true,
+        "status": "not_primary"
+      }
+    },
+    {
+      "case_group_id": "g_002",
+      "case_id": "c_002",
+      "family_id": "f_eval_b2",
+      "hard_policy_contract": {
+        "expected_option_id": "o_01",
+        "labels_are": "constraints_only"
+      },
+      "hidden_authority_refs": {
+        "raw_private_authority": "authority://UTILITY-SENTINEL/workflow"
+      },
+      "hidden_leakage_sentinels": [
+        "UTILITY-SENTINEL"
+      ],
+      "option_set": [
+        {
+          "label": "Use the rules baseline",
+          "option_id": "o_01"
+        },
+        {
+          "label": "Escalate to a pinned model arm",
+          "option_id": "o_02"
+        }
+      ],
+      "policy_excerpt_ids": [
+        "p_002"
+      ],
+      "scenario_state": {
+        "redacted_account_state": "All required context is present.",
+        "redacted_action_log": "No conflicting action is recorded.",
+        "redacted_user_text": "Customer asks which support path fits a bounded task."
+      },
+      "split_role": "unseen_family_evaluation",
+      "workflow_utility_contract": {
+        "measured": false,
+        "no_optimal_gold": true,
+        "reported_label": "best_observed_under_this_denominator",
+        "status": "planned_unmeasured"
+      }
+    }
+  ],
+  "dataset_status": "demo_fixture_not_180_case_benchmark",
+  "execution_denominator_schema": {
+    "required_per_case_attempt_fields": [
+      "host_region_or_locality",
+      "local_hardware",
+      "cache_hit_miss",
+      "concurrency_policy",
+      "option_count",
+      "retries_attempted",
+      "p50_ms",
+      "p95_ms",
+      "provider_cost_or_null",
+      "local_compute_cost_or_null",
+      "null_reason_for_unavailable_cost_or_tokens"
+    ]
+  },
+  "modality_scope": {
+    "current_manifest_scope": "text/account-state/action-log support and workflow routing only",
+    "does_not_test": [
+      "genuine_images",
+      "ui_frames",
+      "ocr_extraction",
+      "video_event_streams"
+    ]
+  },
+  "schema": "harness.native-routing-task-family-set/v1",
+  "split_policy": {
+    "ordering_claim": "ordering only; not independent preregistration",
+    "split_id": "native-routing-demo-split"
+  },
+  "task_families": [
+    {
+      "family_id": "f_dev_a1",
+      "private_human_label": "permission gate",
+      "semantic_family_tags": [
+        "permission-gate",
+        "development"
+      ],
+      "split_role": "development",
+      "target_cases": 1
+    },
+    {
+      "family_id": "f_eval_b2",
+      "private_human_label": "workflow utility",
+      "semantic_family_tags": [
+        "workflow-utility",
+        "unseen"
+      ],
+      "split_role": "unseen_family_evaluation",
+      "target_cases": 1
+    }
+  ],
+  "task_set_id": "native_routing_demo"
+}

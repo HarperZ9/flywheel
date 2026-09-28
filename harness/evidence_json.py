@@ -75,9 +75,9 @@ def _validate_json_value(value: object, active: set[int] | None = None) -> None:
     raise ValueError("value is outside the JSON data model")
 
 
-def strict_load_json(raw: bytes | str, *, max_bytes: int = 1_048_576,
-                     max_depth: int = 32) -> object:
-    """Load one bounded evidence object without JSON parser permissiveness."""
+def strict_load_json_value(raw: bytes | str, *, max_bytes: int = 1_048_576,
+                           max_depth: int = 32) -> object:
+    """Load one bounded evidence JSON value without parser permissiveness."""
     if max_bytes < 0 or max_depth < 0:
         raise ValueError("JSON limits must not be negative")
     if isinstance(raw, str):
@@ -96,12 +96,19 @@ def strict_load_json(raw: bytes | str, *, max_bytes: int = 1_048_576,
         )
     except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as exc:
         raise ValueError("invalid UTF-8 JSON") from exc
-    if not isinstance(value, dict):
-        raise ValueError("evidence JSON top-level must be an object")
     if _has_nonfinite_number(value):
         raise ValueError("non-finite JSON number")
     if _depth(value) > max_depth:
         raise ValueError("JSON exceeds depth limit")
+    return value
+
+
+def strict_load_json(raw: bytes | str, *, max_bytes: int = 1_048_576,
+                     max_depth: int = 32) -> object:
+    """Load one bounded evidence object without JSON parser permissiveness."""
+    value = strict_load_json_value(raw, max_bytes=max_bytes, max_depth=max_depth)
+    if not isinstance(value, dict):
+        raise ValueError("evidence JSON top-level must be an object")
     return value
 
 

@@ -18,9 +18,11 @@ import sys
 import types
 from pathlib import Path
 
+from . import higher_order as _ho
 from . import lists as writing_lists
 from . import profiles as _wp
 from . import pysource as _ps
+from . import structural as _struct
 from .lists import (
     BANNED, BE, HARD_DEFAULTS, HEDGE_WORDS, KNOWN_CATEGORIES, MARKETING,
     MODAL_HEDGE, PHRASAL, ING_MAIN as _ING_MAIN, NOMINAL as _NOMINAL,
@@ -125,6 +127,7 @@ def check_text(text: str, profile: dict) -> dict:
     low = re.sub(r"\s+", " ", prose.lower())
     words = count_words(prose)
     sents = sentences(prose)
+    paras = paragraphs(prose)
 
     v: dict[str, int] = {}
     mk = _count_phrases(low, MARKETING, keep)
@@ -163,18 +166,17 @@ def check_text(text: str, profile: dict) -> dict:
 
     # Phase 2 report-only checks. These heuristics are noisy, so they inform
     # and never gate; the comment above HARD_BY_SLOP is the contract.
-    pv = len(_PASSIVE.findall(prose))
-    if pv:
-        v["passive_voice"] = pv
-    ing = len(_ING_MAIN.findall(prose))
-    if ing:
-        v["ing_main_verb"] = ing
-    nom = len(_NOMINAL.findall(low))
-    if nom:
-        v["nominalization"] = nom
-    long_paras = sum(1 for p in paragraphs(prose) if len(sentences(p)) > 6)
-    if long_paras:
-        v["long_paragraph"] = long_paras
+    for cat, n in (("passive_voice", len(_PASSIVE.findall(prose))),
+                   ("ing_main_verb", len(_ING_MAIN.findall(prose))),
+                   ("nominalization", len(_NOMINAL.findall(low))),
+                   ("long_paragraph",
+                    sum(1 for p in paras if len(sentences(p)) > 6))):
+        if n:
+            v[cat] = n
+    # Structural and higher-order tells the phrase lists miss; same contract.
+    v.update(_struct.structural_counts(prose, paras, sentences))
+    ho = _ho.higher_order(prose, paras, sentences, low)
+    v.update(ho["counts"])
 
     if "unreferenced_entry" in hard_cats:
         # Raw text so an inline-code reference survives, but fenced blocks are
@@ -201,13 +203,15 @@ def check_text(text: str, profile: dict) -> dict:
     ease = reading_ease(prose)
     band = profile.get("readability_band") or (0, 100)
     in_band = None if ease is None else bool(band[0] <= ease <= band[1])
+    cadence = _struct.cadence_cv(sents)
 
     return {
         "words": words, "sentences": len(sents), "violations": v,
         "total": total, "per100w": per100w,
         "report_total": report_total, "report_per100w": report_per100w,
         "em_dash": em, "hard": hard,
-        "reading_ease": ease, "in_band": in_band,
+        "reading_ease": ease, "in_band": in_band, "cadence_cv": cadence,
+        "higher_order": ho["detail"],
     }
 
 
@@ -285,6 +289,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{r['path']}  profile={prof_name} words={r['words']} "
                   f"total={r['total']} per100w={r['per100w']} "
                   f"report_per100w={r['report_per100w']} "
+                  f"cadence={r.get('cadence_cv')} "
                   f"em_dash={r['em_dash']} hard={','.join(r['hard']) or '-'}")
         print(DOES_NOT_PROVE)
     return 1 if (args.gate and any_hard) else 0

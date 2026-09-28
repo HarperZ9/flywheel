@@ -1,11 +1,9 @@
 """run_m7_eval.py — the M7 eval runner. Fires when the trained model lands.
-
 Measures HARNESS LIFT on the held-out task set.
 Default mode runs local verified_inference vs local single_shot, plus flat-N and no-search ablations.
 Use --frontier to add an external frontier single-shot baseline and compare verified_inference against it.
 Use --frontier-all (or --frontier-providers) to compare against the full existing endpoint ladder
 across all configured providers/modes.
-
 Usage (real, after training + `serve.py` with ADAPTER_PATH set to the checkpoint):
     py scripts/run_m7_eval.py --serve http://127.0.0.1:8765 --out m7_scorecard.json
 Dry-run (no GPU, proves the runner end-to-end with reference solutions):
@@ -16,7 +14,6 @@ Pin/compare against a prior scorecard:
     py scripts/run_m7_eval.py ... --pinned prior_scorecard.json
 """
 from __future__ import annotations
-
 import argparse
 import hashlib
 import json
@@ -25,9 +22,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from harness.eval import (run_eval, compare, save_scorecard, load_scorecard,
                          delta_vs_pinned, ArmConfig, SINGLE_SHOT,
                          VERIFIED_INFERENCE, FLAT_N, NO_SEARCH)
@@ -37,6 +32,7 @@ from harness.extract import extract_code
 from harness.endpoints import build_endpoints, PROVIDERS
 from harness.agent_recovery_bench import DryEchoBackend
 from harness.benchmark_receipts import store_benchmark_outputs
+from harness.routing_collection import finalize_m7_collection, prepare_m7_collection
 from harness.tasks_lib import REGISTRY, materialize_all
 from harness.tasks_hard import HARD_REGISTRY
 from harness.tasks_expert import EXPERT_REGISTRY
@@ -63,21 +59,14 @@ from scripts.model_card_benchmark_shapes import (
     benchmark_cases,
     load_datasets,
 )
-
 FRONTIER_SINGLE_SHOT = ArmConfig(name="frontier_single_shot", n_candidates=1,
                                  label="frontier baseline analog")
 ARMS = [SINGLE_SHOT, VERIFIED_INFERENCE, FLAT_N, NO_SEARCH]
-
-
 def _split_csv(raw: str) -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
-
-
 def _canonical_hash(value: Any) -> str:
     body = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(body.encode("utf-8")).hexdigest()
-
-
 def _packet_integrity(data: dict[str, Any]) -> dict[str, Any]:
     stored = data.get("packet_sha256")
     if not isinstance(stored, str) or not stored:
@@ -791,6 +780,11 @@ def main() -> int:
     ap.add_argument("--run-id", default="")
     ap.add_argument("--pinned", default="")
     ap.add_argument("--workroot", default=str(Path(__file__).parent.parent / ".m7-run"))
+    for flag, help_text in (
+        ("--routing-collection-out", "optional m7-routing-collection/v1 artifact path"),
+        ("--routing-split-plan-out", "optional split-plan path; requires --routing-collection-out"),
+        ("--routing-split-id", "stable id for built-in retrospective diagnostic assignment")):
+        ap.add_argument(flag, default="", help=help_text)
     ap.add_argument("--frontier", action="store_true",
                     help="compare verified_inference against frontier single-shot")
     ap.add_argument("--frontier-provider", default="codex",
@@ -876,6 +870,7 @@ def main() -> int:
     n = a.n_tasks or len(_registry(tier))
     workroot = Path(a.workroot)
     task_set = build_task_set(workroot, n, tier=tier)
+    routing_collection = prepare_m7_collection(a, tier=tier, task_set=task_set)
 
     frontier_arms: list[ArmConfig] = []
     frontier_proposers: dict[str, object] = {}
@@ -1052,7 +1047,8 @@ def main() -> int:
     arms.extend(frontier_arms)
     arms.extend(local_arms)
 
-    reports = run_eval(arms, task_set, proposer_for, oracle_for)
+    reports = run_eval(arms, task_set, proposer_for, oracle_for,
+                       collect_detail=bool(routing_collection.get("enabled")))
     print("=== M7 eval (harness lift on the held-out set) ===")
     for name, r in reports.items():
         print("  " + r.summary())
@@ -1087,6 +1083,10 @@ def main() -> int:
         meta["local_arms"] = [arm.name for arm in local_arms]
         meta["local_model_refs"] = local_meta
 
+    artifact_paths = [(a.out, "m7-scorecard-json")]
+    finalize_m7_collection(
+        routing_collection, reports=reports, meta=meta, artifact_paths=artifact_paths,
+        tier=tier, run_id=a.run_id, repo_root=Path(__file__).resolve().parent.parent)
     save_scorecard(a.out, reports, meta=meta)
     print(f"  scorecard -> {a.out}")
     store_outputs = store_benchmark_outputs(
@@ -1104,7 +1104,7 @@ def main() -> int:
         kind="m7_scorecard",
         run_id=a.run_id,
         verdict="BENCHMARK_RECORDED",
-        artifact_paths=[(a.out, "m7-scorecard-json")],
+        artifact_paths=artifact_paths,
     )
     if store_outputs:
         print(f"  store_outputs -> {json.dumps(store_outputs, sort_keys=True)}")

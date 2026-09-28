@@ -83,7 +83,6 @@ void main() {
     expect(find.text('Pick a model and send a prompt.'), findsNWidgets(2));
   });
 }
-
 const _roster =
     '{"rows":[{"name":"local-public","backend":"local","credential":"local-none","provider_role":"","configured":true}]}';
 String _frames(List<String> values) =>
@@ -94,6 +93,11 @@ GatewayClient _client(String body, void Function() onChat) => GatewayClient(
       if (request.url.path == '/api/endpoints') {
         return http.Response(_roster, 200);
       }
+      if (request.url.path.startsWith('/api/context-memory/')) {
+        return http.Response(
+            '{"schema":"flywheel.context-memory-status/v1","scope_configured":false,"owner_binding_configured":false}',
+            200);
+      }
       onChat();
       return http.Response(body, 200);
     }));
@@ -102,7 +106,6 @@ Directory _temporary(String name) {
   addTearDown(() => directory.deleteSync(recursive: true));
   return directory;
 }
-
 Future<void> _pumpAgent(WidgetTester tester, GatewayClient client,
     ChatStore history, ChatDraftStore drafts) async {
   await _pump(
@@ -115,7 +118,6 @@ Future<void> _pumpAgent(WidgetTester tester, GatewayClient client,
           draftStore: drafts));
   await tester.pumpAndSettle();
 }
-
 void _historyAndAvatarTruthTests() {
   test('legacy and envelope history cannot carry a verifier verdict', () {
     final directory = _temporary('chat-history-truth-');
@@ -211,7 +213,6 @@ void _remoteRecoveryTests() {
     }
   });
 }
-
 Future<void> _exerciseRecovery(WidgetTester tester, String prompt,
     String answer, int draftFailure, int historyFailure) async {
   final directory = _temporary('chat-admission-recovery-');
@@ -290,7 +291,6 @@ Future<void> _exerciseRecovery(WidgetTester tester, String prompt,
         {ChatDraftState.dirty, ChatDraftState.submitting});
   }
 }
-
 List<String> _texts(ChatStore store) => [
       for (final conversation in store.load())
         for (final message in conversation.messages) message.text,

@@ -59,6 +59,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--before-receipt")
     parser.add_argument("--after-receipt")
     parser.add_argument("--port", type=int, default=0)
+    parser.add_argument("--inspect-import", action="store_true")
+    parser.add_argument("--inspect-fixture")
     return parser
 
 
@@ -83,6 +85,8 @@ def config_from_args(args) -> HarnessConfig:
         before_receipt=Path(args.before_receipt) if args.before_receipt else None,
         after_receipt=Path(args.after_receipt) if args.after_receipt else None,
         port=args.port,
+        inspect_import=args.inspect_import,
+        inspect_fixture=Path(args.inspect_fixture) if args.inspect_fixture else None,
     )
 
 

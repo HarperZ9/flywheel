@@ -18,6 +18,7 @@ silent default to somebody's cloud.
 from __future__ import annotations
 
 import os
+import urllib.parse
 from dataclasses import dataclass
 
 from .proposer import EnterpriseProposer, Proposer, ServeProposer, StubProposer
@@ -107,6 +108,26 @@ def credential_slots_for_provider(provider: str) -> tuple[str, ...]:
     return (spec.api_key_env,) if spec.api_key_env else ()
 
 
+def safe_base_url(url: str) -> str:
+    """Safe http(s) base URL, or empty when malformed/untrusted."""
+    raw = (url or "").strip()
+    if not raw or "\\" in raw or any(
+            ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in raw):
+        return ""
+    try:
+        parsed = urllib.parse.urlsplit(raw)
+        host = parsed.hostname
+        _port = parsed.port
+    except ValueError:
+        return ""
+    if (parsed.scheme not in ("http", "https") or not parsed.netloc or not host
+            or parsed.username or parsed.password or parsed.query or parsed.fragment):
+        return ""
+    if any(ch.isspace() or ord(ch) < 32 or ord(ch) == 127 for ch in host):
+        return ""
+    return raw.rstrip("/")
+
+
 def _binding_value(bindings, slot: str) -> str:
     try:
         return bindings.value_for(slot)
@@ -134,8 +155,9 @@ def make_proposer(provider: str, *, model: str | None = None,
     return EnterpriseProposer(
         base_url=url,
         model=model or spec.default_model,
-        api_key_env=spec.api_key_env or "OPENAI_API_KEY",
-        model_ref=provider)
+        api_key_env=spec.api_key_env,
+        model_ref=provider,
+        api_key=(None if spec.api_key_env else ""))
 
 
 def make_authorized_proposer(provider: str, *, credential_bindings,

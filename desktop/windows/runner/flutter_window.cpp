@@ -1,4 +1,5 @@
 #include "flutter_window.h"
+#include "owned_gateway_cleanup.h"
 
 #include <optional>
 
@@ -40,6 +41,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  StopOwnedGatewayProcessesOnExit();
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }

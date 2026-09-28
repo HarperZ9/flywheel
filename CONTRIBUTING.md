@@ -5,8 +5,8 @@ supported by evidence, and it refuses to say more than the evidence carries.
 Contributions are held to the same rule as the code: a result nobody can
 re-derive is not a result.
 
-One person maintains this. The scarce thing is not effort, it is a second
-machine. Every "it works" here was observed on one Windows workstation.
+One person maintains this. The scarce thing is a second machine. Every "it
+works" here was observed on one Windows workstation.
 
 ## The most useful thing you can send
 
@@ -17,10 +17,11 @@ python -m pip install flywheel-verify
 flywheel lanes --probe
 ```
 
-The roster reads 14 of 14 live on the maintainer's machine, and two of those
-lanes resolve through a local source checkout rather than an installed package.
-Nobody knows what a clean install does on Linux or macOS, and a report saying it
-does not work is worth more than one saying it does.
+The roster is 17 lanes. Every lane but telos resolves from a pip install: the
+bundled ones ship inside flywheel-verify, bulletin is a remote board, and the rest
+install from their published packages with `flywheel install`. telos is held out
+of this release. Nobody knows what a clean install does on Linux or macOS, and a
+report saying it does not work is worth more than one saying it does.
 
 Post the result to `findings` on the board at
 `https://bulletin.zaindharper.workers.dev`, or open an issue here. The board
@@ -39,35 +40,38 @@ platform: linux x86_64
 runtime: python 3.12.4
 result: partial
 command: flywheel lanes --probe
-observed: 12 of 14 lanes answered; canon and mneme reported not installed
+observed: <how many lanes answered, and what the others said>
 ```
 
-The keyed lines exist so many reports become a number with a denominator rather
-than a pile of anecdotes.
+The keyed lines exist so many reports add up to a number with a denominator.
 
 ## Opening a pull request
 
 Fork, branch, and open it against `main`. A person reads every change.
 
 ```bash
-python -m pip install pytest pytest-timeout pynacl pillow numpy scipy
+python -m pip install pytest pytest-timeout pynacl pillow numpy scipy $(python scripts/ci_lane_pins.py index)
 python -m pytest tests/test_<the_feature_you_touched>.py -q
 ```
 
-Run the slice that covers what you changed, not the whole suite. The full
-collection is 6908 tests across 549 files and takes long enough that nobody runs
-it while iterating. Continuous integration shards it four ways and runs all of
-it for you.
+The last argument installs index-graph at the version the lane registry pins,
+the same one CI installs. The index lane tests launch it, and a package older
+than its pin does not launch.
+
+Run the slice that covers what you changed. The full collection is more than a
+thousand test files and takes long enough that nobody runs it while iterating.
+Continuous integration shards it four ways and runs all of it for you.
 
 ## Gates that surprise people
 
 These run on every pull request and each one is runnable locally. A red here
-usually means a rule you had no way to guess, so the command is listed rather
-than left for the log.
+usually means a rule you had no way to guess, so the command is listed here.
 
 | What it checks | Run it |
-| --- | --- |
+| :-- | :-- |
 | No source file over 300 lines, and the burn-down list only shrinks | `python scripts/check_file_gate.py` |
+| No tracked path over 180 characters, so a Windows clone needs no long-path setting | `python scripts/check_path_length.py` |
+| No tracked JUnit report names a host or an absolute local path | `python scripts/check_tracked_junit.py` |
 | The accept path imports nothing outside the standard library | `python scripts/check_verifier_stdlib.py` |
 | A published repository's instructions name no local path | `python scripts/check_public_instructions.py` |
 | No checker claims optimality on a public surface | `python scripts/check_claim_language.py` |
@@ -81,10 +85,10 @@ old interpreter.
 ## What a good change looks like
 
 - A test that fails without it, named for the thing that would break in the
-  world rather than the function that was edited.
+  world.
 - A claim bounded by what was measured. A number arrives with its denominator,
   its interval, and what it does not prove.
-- An honest null kept rather than removed. "No uplift claimed" is a result.
+- An honest null kept. "No uplift claimed" is a result.
 - A comment saying why, where why is not obvious. Comments restating the code
   are noise.
 
@@ -97,13 +101,14 @@ the wider set is still correct.
 Nothing beyond the checkout. Workflows here trigger on `pull_request`, run on
 GitHub-hosted runners, and reference no repository secrets, so a fork builds
 with a read-only token. No agent has write access. That is what makes an open
-invitation safe to publish rather than a risk being accepted.
+invitation safe to publish.
 
 Tags are the exception and they are not yours to push: a `v*` tag publishes to
 PyPI and builds the installer. Version bumps are a maintainer action.
 
 ## Security
 
-Report anything exploitable privately rather than in a pull request. There is
-no published security policy here yet, so open an issue saying only that you
-have something to report and holding back the detail until someone answers.
+Report anything exploitable privately. Keep the detail out of a public pull
+request. There is no published security policy here yet, so open an issue saying
+only that you have something to report, and hold back the detail until someone
+answers.

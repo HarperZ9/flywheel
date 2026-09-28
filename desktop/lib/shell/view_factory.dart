@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../assistant/rowan_action_cue_controller.dart';
 import '../client/gateway_browser.dart';
 import '../client/gateway_client.dart';
 import '../client/gateway_roadmap.dart';
@@ -9,12 +10,15 @@ import '../client/gateway_schedule.dart';
 import '../client/gateway_swarms.dart';
 import '../client/writing_api.dart';
 import '../controllers/journey_controller.dart';
+import '../controllers/live_screen_sharing.dart';
 import '../controllers/rowan_walkthrough_operation_host.dart';
 import '../ide/code_buffer_session.dart';
 import '../ide/unsaved_work_guard.dart';
 import '../models/gateway_models.dart';
 import '../navigation/app_route.dart';
 import '../navigation/destination_catalog.dart';
+import '../services/chat_draft_store.dart';
+import '../services/chat_store.dart';
 import '../services/settings.dart';
 import '../views/academy_view.dart';
 import '../views/agent_view.dart';
@@ -59,6 +63,7 @@ import '../views/usage_view.dart';
 import '../views/workflows_view.dart';
 import '../views/writing_view.dart';
 import '../views/world_view.dart';
+import '../widgets/start_task_prelude.dart';
 import '../widgets/fw.dart';
 import '../widgets/side_rail.dart';
 
@@ -83,12 +88,17 @@ final class DestinationInputs {
     required this.client,
     required this.journey,
     this.rowanOperationHost,
+    this.screenSharing,
+    this.actionCueController,
     required this.code,
     required this.codeGuard,
     required this.alive,
     required this.settings,
+    this.chatStore,
+    this.chatDraftStore,
     required this.onProbe,
     required this.onInstall,
+    this.onCheckLane,
     this.onStartEngine,
     this.pendingArgument,
     this.roster,
@@ -98,15 +108,20 @@ final class DestinationInputs {
   final GatewayClient client;
   final JourneyController journey;
   final RowanWalkthroughOperationHost? rowanOperationHost;
+  final LiveScreenSharing? screenSharing;
+  final RowanActionCueController? actionCueController;
   final CodeBufferSession code;
   final UnsavedWorkGuard codeGuard;
   final bool alive;
   final DesktopSettings settings;
+  final ChatStore? chatStore;
+  final ChatDraftStore? chatDraftStore;
   final Object? pendingArgument;
   final LaneRoster? roster;
   final WorldDoc? world;
   final VoidCallback onProbe;
   final Future<Map<String, dynamic>> Function(String) onInstall;
+  final void Function(String)? onCheckLane;
   final VoidCallback? onStartEngine;
 }
 
@@ -175,6 +190,12 @@ Widget? _chat(DestinationId id, DestinationInputs i) => switch (id) {
           client: i.client,
           alive: i.alive,
           settings: i.settings,
+          chatStore: i.chatStore,
+          draftStore: i.chatDraftStore,
+          startTaskHandoff: i.pendingArgument is StartTaskHandoff
+              ? i.pendingArgument as StartTaskHandoff
+              : null,
+          actionCueController: i.actionCueController,
         ),
       DestinationId.compare => CompareView(
           client: i.client,
@@ -228,11 +249,20 @@ Widget? _evidence(DestinationId id, DestinationInputs i) => switch (id) {
         GovernanceView(client: i.client, alive: i.alive),
       DestinationId.usage => UsageView(client: i.client, alive: i.alive),
       DestinationId.infra => InfraView(client: i.client, alive: i.alive),
+      DestinationId.lanes => LanesView(
+          client: i.client,
+          roster: i.roster,
+          alive: i.alive,
+          onProbe: i.onProbe,
+          onCheck: i.onCheckLane,
+          onInstall: i.onInstall,
+        ),
       _ => null,
     };
 
 Widget? _advanced(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.studio => StudioView(
+          screenSharing: i.screenSharing,
           world: i.world,
           roster: i.roster,
           journey: i.journey,
@@ -259,13 +289,6 @@ Widget? _advanced(DestinationId id, DestinationInputs i) => switch (id) {
         ),
       DestinationId.forum => ForumView(client: i.client),
       DestinationId.registry => RegistryView(client: i.client, alive: i.alive),
-      DestinationId.lanes => LanesView(
-          client: i.client,
-          roster: i.roster,
-          alive: i.alive,
-          onProbe: i.onProbe,
-          onInstall: i.onInstall,
-        ),
       DestinationId.train => TrainView(client: i.client, alive: i.alive),
       DestinationId.uplift => UpliftView(client: i.client, alive: i.alive),
       DestinationId.family => FamilyView(client: i.client, alive: i.alive),

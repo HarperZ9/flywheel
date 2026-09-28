@@ -95,6 +95,9 @@ def build_spec(*, swarm_id: str, child_id: str, goal: str, endpoint: str,
 
 def validate_spec(data: dict) -> dict:
     """The child side trusts nothing: re-check every field it acts on."""
+    if isinstance(data, dict) and data.get("schema") == "flywheel.subagent-spec/v2":
+        from .subagent_gateway_bridge import validate_bound_spec
+        return validate_bound_spec(data)
     if not isinstance(data, dict) or data.get("schema") != SPEC_SCHEMA:
         _refuse("the file is not a subagent spec")
     validate_child(str(data.get("role")), str(data.get("prompt") or ""),

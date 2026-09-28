@@ -18,6 +18,8 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
+from harness.shared_task_artifact_v2 import SHARED_TASK_CHECKER_ID, shared_task_artifact_v2
+
 CHECKER_ID = "documentation_maintenance/v2"
 
 
@@ -112,6 +114,7 @@ def _digest_codes(row, field: str, actual: list[str], *, plural: bool = False,
 
 
 def register(checkers: dict) -> dict:
-    """Add the v2 checker to a registry, leaving every v1 entry untouched."""
+    """Add v2 checkers to a registry, leaving every v1 entry untouched."""
     checkers[CHECKER_ID] = documentation_maintenance_v2
+    checkers[SHARED_TASK_CHECKER_ID] = shared_task_artifact_v2
     return checkers

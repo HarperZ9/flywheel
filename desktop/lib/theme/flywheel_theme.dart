@@ -146,24 +146,64 @@ ThemeData _themeFrom(FwTokens t, Brightness brightness) {
 }
 
 TextTheme _textTheme(FwTokens t) {
+  // Every text style names its family explicitly. ThemeData(fontFamily:) only
+  // applies the family to the DEFAULT text theme at construction; the later
+  // .copyWith(textTheme: _textTheme(t)) in _themeFrom replaces that theme with
+  // this one, and copyWith does not re-apply fontFamily. Leaving a style's
+  // family null therefore ships it in the platform default font (Segoe UI,
+  // SF Pro) instead of Hanken Grotesk, which breaks the two-typeface canon.
+  // So the grotesk styles set t.textFamily and the mono styles set
+  // t.monoFamily, and neither depends on the constructor carrying it through.
   return TextTheme(
     // Display / titles: weight carries hierarchy.
     headlineMedium: TextStyle(
         color: t.ink,
+        fontFamily: t.textFamily,
         fontWeight: FontWeight.w800,
         fontSize: 26,
         height: 1.1,
         letterSpacing: -0.3),
     titleLarge: TextStyle(
-        color: t.ink, fontWeight: FontWeight.w700, fontSize: 19, height: 1.15),
+        color: t.ink,
+        fontFamily: t.textFamily,
+        fontWeight: FontWeight.w700,
+        fontSize: 19,
+        height: 1.15),
     titleMedium: TextStyle(
-        color: t.ink, fontWeight: FontWeight.w600, fontSize: 15, height: 1.2),
+        color: t.ink,
+        fontFamily: t.textFamily,
+        fontWeight: FontWeight.w600,
+        fontSize: 15,
+        height: 1.2),
     titleSmall: TextStyle(
-        color: t.inkSoft, fontWeight: FontWeight.w600, fontSize: 13.5),
+        color: t.inkSoft,
+        fontFamily: t.textFamily,
+        fontWeight: FontWeight.w600,
+        fontSize: 13.5),
     // Body
-    bodyLarge: TextStyle(color: t.inkSoft, fontSize: 14.5, height: 1.55),
-    bodyMedium: TextStyle(color: t.inkSoft, fontSize: 13.5, height: 1.5),
-    bodySmall: TextStyle(color: t.inkMuted, fontSize: 12.5, height: 1.45),
+    bodyLarge: TextStyle(
+        color: t.inkSoft,
+        fontFamily: t.textFamily,
+        fontSize: 14.5,
+        height: 1.55),
+    bodyMedium: TextStyle(
+        color: t.inkSoft, fontFamily: t.textFamily, fontSize: 13.5, height: 1.5),
+    bodySmall: TextStyle(
+        color: t.inkMuted,
+        fontFamily: t.textFamily,
+        fontSize: 12.5,
+        height: 1.45),
+    // Button and tab label default. Material reads labelLarge for a TextButton
+    // that sets no textStyle and for tab labels; FilledButton and
+    // OutlinedButton name their own family in their themes, so a null here
+    // shipped Skip / Back / Done and every plain TextButton in the platform
+    // default font. Metrics stay at the Material default; only the family is set.
+    labelLarge: TextStyle(
+        color: t.ink,
+        fontFamily: t.textFamily,
+        fontWeight: FontWeight.w500,
+        fontSize: 14,
+        letterSpacing: 0.1),
     // Mono voice
     labelSmall: TextStyle(
         color: t.inkFaint,

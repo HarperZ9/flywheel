@@ -30,6 +30,7 @@ $versionLine = (Get-Content "pubspec.yaml" | Where-Object { $_ -match '^version:
 $version = ($versionLine -replace 'version:\s*', '' -split '\+')[0].Trim()
 if (-not $version) { throw "could not read version from pubspec.yaml" }
 Write-Output "== Flywheel installer build, version $version =="
+$installerDir = Join-Path $repo "build\installer"
 
 Write-Output "-- validating desktop font provenance source"
 python scripts\check_font_provenance.py source --desktop-root $repo
@@ -63,8 +64,44 @@ $engineOut = Join-Path $repo "build\engine\flywheel-gateway"
 if (-not $SkipEngine) {
     $engineRepoFull = Resolve-Path $EngineRepo
     Write-Output "-- freezing engine from $engineRepoFull"
+    $pythonLaneSourceRoot = if ($env:RUNNER_TEMP) {
+        Join-Path $env:RUNNER_TEMP "flywheel-python-lane-sources"
+    } else {
+        Join-Path $engineRepoFull "build\python-lane-sources"
+    }
+    $pythonLaneStageReceipt = if ($env:RUNNER_TEMP) {
+        Join-Path $env:RUNNER_TEMP "python-lane-source-stage.full.json"
+    } else {
+        Join-Path $engineRepoFull "build\python-lane-source-stage.full.json"
+    }
+    $pythonLaneBoundedReceipt = Join-Path $installerDir "python-lane-source-stage.json"
+    New-Item -ItemType Directory -Force $installerDir | Out-Null
     Push-Location $engineRepoFull
     try {
+        if (-not (Test-Path -LiteralPath "scripts\stage_python_lane_sources.py")) {
+            throw "engine repo is missing scripts\stage_python_lane_sources.py"
+        }
+        if (-not (Test-Path -LiteralPath "scripts\stage_node_lanes.py")) {
+            throw "engine repo is missing scripts\stage_node_lanes.py"
+        }
+        # The gateway spec freezes every manifest lane but relay from its
+        # staged source (scripts\python_lane_freeze.py), so stage them all.
+        python scripts\stage_python_lane_sources.py `
+            --all `
+            --source-root $pythonLaneSourceRoot `
+            --receipt $pythonLaneStageReceipt `
+            --bounded-receipt $pythonLaneBoundedReceipt
+        if ($LASTEXITCODE -ne 0) { throw "Python lane source staging failed" }
+        $env:FLYWHEEL_PYTHON_LANE_SOURCE_ROOT = $pythonLaneSourceRoot
+        # The freeze refuses to run without the staged Node lanes.
+        $nodeLaneStageRoot = if ($env:RUNNER_TEMP) {
+            Join-Path $env:RUNNER_TEMP "flywheel-node-lanes"
+        } else {
+            Join-Path $engineRepoFull "build\node-lanes"
+        }
+        python scripts\stage_node_lanes.py --stage-root $nodeLaneStageRoot
+        if ($LASTEXITCODE -ne 0) { throw "Node lane staging failed" }
+        $env:FLYWHEEL_NODE_LANE_STAGE_ROOT = $nodeLaneStageRoot
         python -m PyInstaller packaging\flywheel-gateway.spec --noconfirm
         if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed" }
     } finally { Pop-Location }

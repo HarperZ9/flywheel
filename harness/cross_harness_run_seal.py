@@ -33,7 +33,8 @@ def write_json(path: Path, value: Any) -> Path:
 
 def seal_run(run_root: Path, *, run_id: str, phase: str, rows: list[dict[str, Any]],
              before: dict[str, Any], after: dict[str, Any],
-             indexed: list[Path]) -> tuple[dict[str, Any], str]:
+             indexed: list[Path], intended_matrix_sha256: str = "",
+             intended_matrix_path: str = "") -> tuple[dict[str, Any], str]:
     """Write run.json and comparison-input.json, and say whether the tree held.
 
     Returns the run receipt and the tree state. Raising on drift is left to the
@@ -42,11 +43,15 @@ def seal_run(run_root: Path, *, run_id: str, phase: str, rows: list[dict[str, An
     """
     run_root = Path(run_root)
     state = "drift" if before != after else "clean"
+    intent = ({"intended_matrix_sha256": intended_matrix_sha256,
+               "intended_matrix_path": intended_matrix_path}
+              if intended_matrix_sha256 else {})
     run = {"schema": RUN_SCHEMA, "run_id": run_id, "phase": phase, "rows": rows,
            "source_snapshot_before": before, "source_snapshot_after": after,
-           "source_tree_state": state}
+           "source_tree_state": state, **intent}
     comparison = write_json(run_root / "comparison-input.json",
-                            {"schema": SCORECARD_SCHEMA, "rows": rows, "source_tree_state": state})
+                            {"schema": SCORECARD_SCHEMA, "rows": rows,
+                             "source_tree_state": state, **intent})
     run_path = write_json(run_root / "run.json", run)
     write_artifact_index(run_root, [*indexed, comparison, run_path])
     return run, state

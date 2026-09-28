@@ -6,8 +6,14 @@ import 'rowan_avatar.dart';
 import 'rowan_shader.dart';
 
 class RowanPresenter extends StatefulWidget {
-  const RowanPresenter({super.key, this.loadProgram});
+  const RowanPresenter({super.key, this.loadProgram, this.showKicker = true});
   final Future<ui.FragmentProgram> Function()? loadProgram;
+
+  /// Whether to draw the ROWAN kicker above the caption. A host that already
+  /// shows the name (the launch tour leads with it) sets this false so the
+  /// kicker is not repeated.
+  final bool showKicker;
+
   @override
   State<RowanPresenter> createState() => _RowanPresenterState();
 }
@@ -52,8 +58,10 @@ class _RowanPresenterState extends State<RowanPresenter> {
           child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Kicker(AssistantIdentity.name),
-          const SizedBox(height: FwLayout.s2),
+          if (widget.showKicker) ...[
+            const Kicker(AssistantIdentity.name),
+            const SizedBox(height: FwLayout.s2),
+          ],
           Text(_failed
               ? 'Modeled renderer unavailable. Showing a simple drawing.'
               : !_ready

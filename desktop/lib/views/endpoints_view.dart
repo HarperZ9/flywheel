@@ -14,6 +14,7 @@ import '../models/gateway_models.dart';
 import '../models/render_status.dart';
 import '../services/oauth_status.dart';
 import '../theme/flywheel_theme.dart';
+import '../widgets/codex_account_panel.dart';
 import '../widgets/endpoint_details.dart';
 import '../widgets/frontier_panel.dart';
 import '../widgets/fw.dart';
@@ -168,6 +169,15 @@ class _EndpointsViewState extends State<EndpointsView> {
         const SizedBox(height: FwLayout.s3),
         ProviderRoster(roster: _roster),
         const SizedBox(height: FwLayout.s5),
+        const Kicker(
+            'Codex account · ChatGPT subscription and API billing stay separate'),
+        const SizedBox(height: FwLayout.s3),
+        CodexAccountPanel(
+          client: widget.client,
+          openUrl: _openCodexSignInUrl,
+          onAccountReady: _load,
+        ),
+        const SizedBox(height: FwLayout.s5),
         FrontierPanel(client: widget.client, endpoints: _roster),
         if (_authStatus.error != null) HonestNull(_authStatus.error!),
         if (_authStatus.doc != null) ...[
@@ -256,4 +266,6 @@ class _EndpointsViewState extends State<EndpointsView> {
       return false;
     }
   }
+
+  Future<bool> _openCodexSignInUrl(Uri uri) => _openSignInUrl(uri.toString());
 }

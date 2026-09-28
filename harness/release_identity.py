@@ -23,7 +23,7 @@ def _read_json(path: Path) -> dict:
     if not path.is_file():
         raise ValueError(f"missing preflight fact: {path.name} does not exist")
     try:
-        doc = json.loads(path.read_text(encoding="utf-8"))
+        doc = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as exc:
         raise ValueError(f"preflight fact {path.name} is unreadable") from exc
     if not isinstance(doc, dict):

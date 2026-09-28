@@ -116,6 +116,24 @@ class LocalHttpClient(NullHttpClient):
     def post_json(self, url: str, payload, token: str | None = None, timeout: float = 2.0):
         return self._request_json("POST", url, payload, token, timeout)
 
+
+    def post_bytes(self, url: str, raw: bytes, headers: dict[str, str],
+                   token: str | None = None, timeout: float = 20.0):
+        request_headers = {"Host": "127.0.0.1", **dict(headers)}
+        if token:
+            request_headers["Authorization"] = f"Bearer {token}"
+        try:
+            req = request.Request(url, data=raw, headers=request_headers, method="POST")
+            with request.urlopen(req, timeout=timeout) as response:
+                return response.status, json.loads(response.read().decode("utf-8"))
+        except error.HTTPError as exc:
+            try:
+                return exc.code, json.loads(exc.read().decode("utf-8"))
+            except Exception:
+                return exc.code, {"error": "http_error"}
+        except Exception as exc:
+            return 0, {"error": type(exc).__name__}
+
     def _request_json(self, method: str, url: str, payload, token: str | None, timeout: float):
         headers = {"Host": "127.0.0.1"}
         data = None

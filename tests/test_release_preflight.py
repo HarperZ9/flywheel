@@ -127,3 +127,36 @@ def test_missing_policy_files_are_typed_failures(tmp_path):
     with pytest.raises(ValueError) as e:
         _identity(tmp_path)
     assert "missing preflight fact" in str(e.value)
+
+
+@pytest.mark.parametrize("name", [
+    "windows-support.json", "toolchains.json", "release-policy.json",
+    "payload-policy.json",
+])
+def test_utf8_bom_policy_preserves_release_identity(tmp_path, name):
+    _policies(tmp_path)
+    plain_identity = _identity(tmp_path)
+    policy = tmp_path / "desktop" / "release" / name
+    policy.write_bytes(b"\xef\xbb\xbf" + policy.read_bytes())
+
+    assert _identity(tmp_path) == plain_identity
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "utf-8-sig"])
+def test_policy_encoding_does_not_bypass_blocking_facts(tmp_path, encoding):
+    _policies(tmp_path)
+    policy = tmp_path / "desktop" / "release" / "release-policy.json"
+    policy.write_text('{"blocked": ["key_custody"]}', encoding=encoding)
+
+    with pytest.raises(ValueError, match="blocking facts.*key_custody"):
+        _identity(tmp_path)
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "utf-8-sig"])
+def test_malformed_policy_still_fails_closed(tmp_path, encoding):
+    _policies(tmp_path)
+    policy = tmp_path / "desktop" / "release" / "release-policy.json"
+    policy.write_text('{"blocked": []', encoding=encoding)
+
+    with pytest.raises(ValueError, match="release-policy.json is unreadable"):
+        _identity(tmp_path)

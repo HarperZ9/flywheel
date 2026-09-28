@@ -1,0 +1,187 @@
+{
+  "schema": "flywheel.inspect-evidence/v1",
+  "source": {
+    "sha256": "543405e7bfb8a64c3f440965d70a5d4805d5b4ff14550e242f2d322384529607",
+    "byte_length": 510
+  },
+  "producer": {
+    "format": "inspect-json",
+    "version": 2
+  },
+  "reported_status": "success",
+  "assessment": "incomplete",
+  "invalidated": true,
+  "semantic_verification": "UNVERIFIABLE",
+  "counts": {
+    "total_samples": 4,
+    "completed_samples": 4,
+    "config_limit": null,
+    "config_limit_pointer": null,
+    "observed_samples": 4
+  },
+  "scoring_coverage": {
+    "coverage_complete": false,
+    "samples_with_scores": 4,
+    "sample_score_records": 4,
+    "result_scores": [
+      {
+        "name": "match",
+        "scorer": "match",
+        "scored_samples": 2,
+        "unscored_samples": 0
+      }
+    ]
+  },
+  "reported_error": null,
+  "samples": [
+    {
+      "id": "correct",
+      "epoch": 1,
+      "status": null,
+      "error": null,
+      "scores": [
+        {
+          "scorer": "match",
+          "value": "C"
+        }
+      ]
+    },
+    {
+      "id": "incorrect",
+      "epoch": 1,
+      "status": null,
+      "error": null,
+      "scores": [
+        {
+          "scorer": "match",
+          "value": "I"
+        }
+      ]
+    },
+    {
+      "id": "correct",
+      "epoch": 2,
+      "status": null,
+      "error": null,
+      "scores": [
+        {
+          "scorer": "match",
+          "value": "C"
+        }
+      ]
+    },
+    {
+      "id": "incorrect",
+      "epoch": 2,
+      "status": null,
+      "error": null,
+      "scores": [
+        {
+          "scorer": "match",
+          "value": "I"
+        }
+      ]
+    }
+  ],
+  "source_pointers": [
+    {
+      "json_pointer": "/version",
+      "source_value": 2
+    },
+    {
+      "json_pointer": "/status",
+      "source_value": "success"
+    },
+    {
+      "json_pointer": "/invalidated",
+      "source_value": true
+    },
+    {
+      "json_pointer": "/eval/task",
+      "source_value": "flywheel_inspect_import"
+    },
+    {
+      "json_pointer": "/eval/model",
+      "source_value": "mockllm/model"
+    },
+    {
+      "json_pointer": "/results/total_samples",
+      "source_value": 4
+    },
+    {
+      "json_pointer": "/results/completed_samples",
+      "source_value": 4
+    },
+    {
+      "json_pointer": "/samples/0/id",
+      "source_value": "correct"
+    },
+    {
+      "json_pointer": "/samples/0/epoch",
+      "source_value": 1
+    },
+    {
+      "json_pointer": "/samples/0/scores/match/value",
+      "source_value": "C"
+    },
+    {
+      "json_pointer": "/samples/1/id",
+      "source_value": "incorrect"
+    },
+    {
+      "json_pointer": "/samples/1/epoch",
+      "source_value": 1
+    },
+    {
+      "json_pointer": "/samples/1/scores/match/value",
+      "source_value": "I"
+    },
+    {
+      "json_pointer": "/samples/2/id",
+      "source_value": "correct"
+    },
+    {
+      "json_pointer": "/samples/2/epoch",
+      "source_value": 2
+    },
+    {
+      "json_pointer": "/samples/2/scores/match/value",
+      "source_value": "C"
+    },
+    {
+      "json_pointer": "/samples/3/id",
+      "source_value": "incorrect"
+    },
+    {
+      "json_pointer": "/samples/3/epoch",
+      "source_value": 2
+    },
+    {
+      "json_pointer": "/samples/3/scores/match/value",
+      "source_value": "I"
+    },
+    {
+      "json_pointer": "/results/scores/0/name",
+      "source_value": "match"
+    },
+    {
+      "json_pointer": "/results/scores/0/scorer",
+      "source_value": "match"
+    },
+    {
+      "json_pointer": "/results/scores/0/scored_samples",
+      "source_value": 2
+    },
+    {
+      "json_pointer": "/results/scores/0/unscored_samples",
+      "source_value": 0
+    }
+  ],
+  "does_not_prove": [
+    "Inspect status and scorer values are reported by the source log only.",
+    "This import does not independently rerun the task, scorer, model, or dataset.",
+    "A success status or score value is not independent semantic verification.",
+    "The source log is marked invalidated.",
+    "The source log reports incomplete or error coverage."
+  ]
+}

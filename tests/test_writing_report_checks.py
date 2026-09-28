@@ -191,3 +191,71 @@ def test_in_band_is_a_real_verdict_not_a_constant():
     assert r["in_band"] is False
     prof["readability_band"] = (0, 200)
     assert CW.check_text(simple, prof)["in_band"] is True
+
+
+# --- Structural report-only detectors (rhetorical tells the lists miss) ---
+
+def test_rule_of_three_is_counted():
+    r = CW.check_text("We support arms, legs, and heads.", WP.load("readme"))
+    assert r["violations"].get("rule_of_three", 0) >= 1
+
+
+def test_two_item_list_is_not_a_rule_of_three():
+    r = CW.check_text("We support arms and legs.", WP.load("readme"))
+    assert "rule_of_three" not in r["violations"]
+
+
+def test_corrective_negation_rather_than_is_counted():
+    r = CW.check_text("We chose to check rather than assert.", WP.load("readme"))
+    assert r["violations"].get("corrective_negation", 0) >= 1
+
+
+def test_corrective_negation_not_x_but_y_is_counted():
+    r = CW.check_text("It is not fast but correct.", WP.load("readme"))
+    assert r["violations"].get("corrective_negation", 0) >= 1
+
+
+def test_negative_anaphora_is_counted():
+    r = CW.check_text("There was no key, no clock, no exit.", WP.load("readme"))
+    assert r["violations"].get("negative_anaphora", 0) >= 1
+
+
+def test_landing_sentence_after_longer_ones_is_counted():
+    para = ("The parser walks through every token in the source file with care. "
+            "It records each branch decision it makes along the way. It stopped.")
+    r = CW.check_text(para, WP.load("readme"))
+    assert r["violations"].get("landing_sentence", 0) >= 1
+
+
+def test_uniform_short_paragraph_has_no_landing_sentence():
+    para = "One here now. Two here now. Three here now."
+    r = CW.check_text(para, WP.load("readme"))
+    assert "landing_sentence" not in r["violations"]
+
+
+def test_cadence_cv_is_a_float_on_enough_sentences_and_none_on_few():
+    varied = ("Short. This one runs a good deal longer than the first did. "
+              "Tiny. Another moderately long sentence sits in the middle here. "
+              "End.")
+    r = CW.check_text(varied, WP.load("readme"))
+    assert isinstance(r["cadence_cv"], float)
+    few = CW.check_text("Only two. Sentences here.", WP.load("readme"))
+    assert few["cadence_cv"] is None
+
+
+def test_structural_checks_are_never_hard_in_any_slop_level():
+    text = ("We measured arms, legs, and heads. We check rather than assert. "
+            "There was no key, no clock, no exit.")
+    for profile_name in ("procedure", "readme", "narrative"):
+        r = CW.check_text(text, WP.load(profile_name))
+        for cat in ("rule_of_three", "corrective_negation",
+                    "negative_anaphora", "landing_sentence"):
+            assert cat not in r["hard"], (profile_name, cat)
+
+
+def test_structural_counts_do_not_move_the_headline_number():
+    prof = WP.load("readme")
+    r = CW.check_text("We support arms, legs, and heads.", prof)
+    assert r["violations"].get("rule_of_three", 0) >= 1
+    assert r["per100w"] == 0.0
+    assert r["report_per100w"] > 0.0

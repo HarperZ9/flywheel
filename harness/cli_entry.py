@@ -10,6 +10,7 @@ import os
 import runpy
 import sys
 from pathlib import Path
+from harness.cli_version import print_version_if_asked
 # The new umbrella subcommands. Handled in cli_entry; everything else is
 # delegated to the existing run_harness_cli front controller.
 _UMBRELLA_COMMANDS = {"lanes", "loop-status", "install", "up", "down", "corpus-export",
@@ -45,9 +46,6 @@ def find_repo_root() -> Path:
         "could not locate the flywheel repo root; set FLYWHEEL_REPO to the "
         "checkout containing scripts/run_harness_cli.py and harness/"
     )
-
-
-
 def _parse_lane_args(argv: list[str]) -> tuple[str, str]:
     """Parse --lanes <list|all> and --profile <source|package> from argv.
     Defaults: all lanes, package profile."""
@@ -92,7 +90,8 @@ def _cmd_install(argv: list[str]) -> int:
         if not ok:
             det = r.get("detail", "")
             print(f"    {det[:200]}", file=sys.stderr)
-        registry[name] = {"install_name": lane.install_name, "kind": lane.kind,
+        kept = registry.get(name) if isinstance(registry.get(name), dict) else {}  # keeps env_allow
+        registry[name] = {**kept, "install_name": lane.install_name, "kind": lane.kind,
                           "profile": profile, "installed": ok,
                           "version": lane.version}
         if ok:
@@ -178,9 +177,8 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
         # The Phase 0 disproof gate: oracle -> group -> receipt -> re-witness,
         # end to end, with no model and no candidate code executed. Exit 0 only
         # on MATCH.
-        from harness.gate import run_gate
-        out = Path(argv[0]) if argv and not argv[0].startswith("-") else (
-            find_repo_root() / "artifacts" / "gate")
+        from harness.gate import run_gate, gate_output_directory
+        out = gate_output_directory(argv, find_repo_root)
         report = run_gate(out)
         for s in report.steps:
             detail = ", ".join(f"{k}={v}" for k, v in s.items() if k != "step")
@@ -223,10 +221,13 @@ _PACKAGED = {"acp": "harness.acp_cli", "dap": "harness.dap_cli",
              "evidence": "harness.evidence_cli", "import-norvane": "harness.norvane_capture_cli",
              "bulletin-identity": "harness.bulletin_identity_cli",
              "check-output": "harness.output_check_cli",
+             "import-inspect": "harness.inspect_evidence_cli",
+             "incident-sim": "harness.incident_sim_cli",
              "cross-harness-execute": "harness.cross_harness_cli",
              "workstream": "harness.workstream_cli",
              "journey": "harness.journey_cli", "grant": "harness.journey_cli",
-             "e2e-journey": "harness.e2e_cli", "endpoint-gate": "harness.model_endpoint_gate_cli", "writing": "harness.writing_cli"}
+             "e2e-journey": "harness.e2e_cli", "endpoint-gate": "harness.model_endpoint_gate_cli", "writing": "harness.writing_cli",
+             "gov": "harness.governance_cli", "traces": "harness.trace_cli"}
 def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
     module = _PACKAGED.get(command)
     if module is None:
@@ -238,10 +239,10 @@ def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
                                       if command in {"journey", "grant"} else rest)
 def main(argv: list[str] | None = None) -> int:
     raw = list(argv if argv is not None else sys.argv[1:])
-    # Peek at the first positional to decide umbrella-vs-passthrough. The
-    # existing run_harness_cli parser requires a subcommand, so the first
-    # non-flag token is the command name.
+    # The first non-flag token is the command: run_harness_cli requires a
+    # subcommand, so it decides umbrella versus passthrough.
     command = next((a for a in raw if not a.startswith("-")), None)
+    if command is None and print_version_if_asked(raw): return 0  # --version, -V
     packaged = _dispatch_packaged(command, raw)
     if packaged is not None:
         return packaged
@@ -276,7 +277,7 @@ def main(argv: list[str] | None = None) -> int:
                   "loop-status, install, corpus-export, gate, why, down, "
                   "remote, relay, grant, journey, evidence, bulletin-identity,\n"
                   "cross-harness-execute, check-output, packs, workstream, "
-                  "endpoint-gate, writing\n"
+                  "endpoint-gate, writing, import-inspect, incident-sim, traces\n"
                   "Passthrough commands need a source checkout "
                   "(scripts/run_harness_cli.py).",
                   file=sys.stdout if wants_help else sys.stderr)

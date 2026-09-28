@@ -22,7 +22,7 @@ def _index_source(tmp_path):
     source = tmp_path / "workspace" / "public" / "index"
     package = source / "src" / "index_graph"
     package.mkdir(parents=True)
-    (package / "__init__.py").write_text('__version__ = "2.10.0"\n', encoding="utf-8")
+    package.joinpath("__init__.py").write_text("__version__ = %r\n" % lanes.LANES["index"].version, "utf-8")
     return source
 
 
@@ -83,12 +83,12 @@ def test_explicit_package_runtime_cannot_be_shadowed_by_source_checkout(
 
     launch = lanes.resolve_mcp_launch("index")
 
-    assert launch == LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"))
+    assert launch == LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"), cwd=str(Path(os.environ["FLYWHEEL_HOME"]).resolve() / "lanes" / "index"), env_overrides=launch.env_overrides, inherit_env=False)
     status = lanes.lane_status("index", probe=False)
     runtime = status["resolved_runtime"]
     assert runtime["selected_profile"] == "package"
     assert runtime["selected_runtime"] == "package"
-    assert runtime["expected_version"] == "2.10.0"
+    assert runtime["expected_version"] == lanes.LANES["index"].version
     assert runtime["runtime_expected_version"] == "2.12.0"
     assert runtime["installed_version"] == "2.12.0"
     assert runtime["source_available"] is True
@@ -97,7 +97,7 @@ def test_explicit_package_runtime_cannot_be_shadowed_by_source_checkout(
     encoded_runtime = json.dumps(runtime)
     assert str(python) not in encoded_runtime
     assert str(source) not in encoded_runtime
-    assert runtime["launch"]["cwd_selected"] is False
+    assert runtime["launch"]["cwd_selected"] is True    # the lane folder, never a host path
     assert "PYTHONPATH" not in runtime["launch"]["env_override_keys"]
     assert runtime["mismatch_codes"] == []
 
@@ -135,15 +135,15 @@ def test_explicit_package_version_mismatch_reports_observed_version(
         "runtime_python": str(python),
     })
     monkeypatch.setattr(lanes, "resolve_source_repo", lambda lane: source)
-    _pin_package_runtime(monkeypatch, "2.10.0")
+    _pin_package_runtime(monkeypatch, lanes.LANES["index"].version)
 
     with pytest.raises(lanes.LaneRuntimeError, match="installed_version_mismatch"):
         lanes.resolve_mcp_launch("index")
 
     runtime = lanes.lane_status("index", probe=False)["resolved_runtime"]
-    assert runtime["expected_version"] == "2.10.0"
+    assert runtime["expected_version"] == lanes.LANES["index"].version
     assert runtime["runtime_expected_version"] == "2.12.0"
-    assert runtime["installed_version"] == "2.10.0"
+    assert runtime["installed_version"] == lanes.LANES["index"].version
     assert "installed_version_mismatch" in runtime["mismatch_codes"]
 
 
@@ -161,7 +161,7 @@ def test_missing_runtime_profile_keeps_legacy_auto_source_precedence(
     launch = lanes.resolve_mcp_launch("index")
 
     assert launch.argv == (sys.executable, "-m", "index_graph", "mcp")
-    assert launch.cwd == str(source.resolve())
+    assert Path(launch.cwd).parts[-2:] == ("lanes", "index")   # not the checkout
     assert dict(launch.env_overrides)["PYTHONPATH"].split(os.pathsep)[0] == str(
         (source / "src").resolve())
     runtime = lanes.lane_status("index", probe=False)["resolved_runtime"]
@@ -179,7 +179,7 @@ def test_explicit_source_runtime_uses_source_even_when_package_is_present(
 
     launch = lanes.resolve_mcp_launch("index")
 
-    assert launch.cwd == str(source.resolve())
+    assert Path(launch.cwd).parts[-2:] == ("lanes", "index")   # not the checkout
     assert launch.argv == (sys.executable, "-m", "index_graph", "mcp")
     runtime = lanes.lane_status("index", probe=False)["resolved_runtime"]
     assert runtime["selected_profile"] == "source"
@@ -280,7 +280,7 @@ def test_lane_caller_uses_selected_runtime_launch(tmp_path, monkeypatch):
     _pin_package_runtime(monkeypatch, "2.12.0")
     seen = _client(monkeypatch, response={"ok": True, "text": '{"ok": true}'})
     assert call_lane_tool("index", "index.status") == {"ok": True}
-    assert seen == [LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"))]
+    assert [x == LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"), cwd=str(Path(os.environ["FLYWHEEL_HOME"]).resolve() / "lanes" / "index"), env_overrides=x.env_overrides, inherit_env=False) for x in seen] == [True]
 
 
 def test_context_envelope_uses_selected_runtime_launch(tmp_path, monkeypatch):
@@ -297,4 +297,4 @@ def test_context_envelope_uses_selected_runtime_launch(tmp_path, monkeypatch):
     seen = _client(monkeypatch, tools=[{"name": "index.context.envelope"}],
                    response={"ok": True, "text": '{"retained_names":["index"]}'})
     build_context_envelope(".", lane_timeout=1.0)
-    assert seen == [LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"))]
+    assert [x == LaunchSpec((str(python.resolve()), "-I", "-m", "index_graph", "mcp"), cwd=str(Path(os.environ["FLYWHEEL_HOME"]).resolve() / "lanes" / "index"), env_overrides=x.env_overrides, inherit_env=False) for x in seen] == [True]

@@ -11,67 +11,118 @@ import 'package:flywheel_desktop/client/writing_api.dart';
 
 const _projectRef = 'wpr_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const _sectionRef = 'sec_recommendation';
+const _liveGatewayTimeout = Timeout(Duration(minutes: 2));
 
 void main() {
   test('GatewayWritingApi completes a live Writing gateway workflow', () async {
-    final gateway = await _LiveWritingGateway.start();
-    addTearDown(gateway.close);
-    final api = gateway.api;
+    final timings = <String, int>{};
+    _LiveWritingGateway? gateway;
+    Future<T> step<T>(String label, Future<T> Function() body) async {
+      final clock = Stopwatch()..start();
+      try {
+        return await body();
+      } finally {
+        clock.stop();
+        timings[label] = clock.elapsedMilliseconds;
+      }
+    }
 
-    expect((await api.status()).projects, isEmpty);
-    final init = await api.prepareInit(
-      brief: _brief(),
-      sourcePacket: _sourcePacket(),
-      clientRequestId: 'native-e2e-init',
+    addTearDown(() async {
+      printOnFailure('Writing gateway timings: $timings');
+      final activeGateway = gateway;
+      if (activeGateway != null) {
+        await activeGateway.close();
+      }
+    });
+    final startedGateway = await step(
+      'gateway.start',
+      () => _LiveWritingGateway.start(onStarted: (started) {
+        gateway = started;
+      }),
     );
+    gateway = startedGateway;
+    final api = startedGateway.api;
+
+    expect((await step('status.empty', api.status)).projects, isEmpty);
+    final init = await step(
+        'prepare.init',
+        () => api.prepareInit(
+              brief: _brief(),
+              sourcePacket: _sourcePacket(),
+              clientRequestId: 'native-e2e-init',
+            ));
     await expectLater(
-        api.commit(init.proposalRef, 'gnt_00000000000000000000000000000000'),
-        throwsA(isA<GatewayException>()
-            .having((error) => error.statusCode, 'statusCode', 422)
-            .having((error) => error.errorCode, 'errorCode',
-                'PERMISSION_REQUIRED')));
-    var ack = await api.commit(init.proposalRef,
-        (await api.approve(init.proposalRef))['grant_ref'] as String);
+      step(
+        'commit.permission_denied',
+        () => api.commit(
+          init.proposalRef,
+          'gnt_00000000000000000000000000000000',
+        ),
+      ),
+      throwsA(isA<GatewayException>()
+          .having((error) => error.statusCode, 'statusCode', 422)
+          .having(
+              (error) => error.errorCode, 'errorCode', 'PERMISSION_REQUIRED')),
+    );
+    var ack = await step(
+      'commit.init',
+      () => _approveCommit(api, init.proposalRef),
+    );
     final journeyRef = ack['journey_ref'] as String;
     var head = ack['event_head_sha256'] as String;
 
-    final section = await api.prepareSection(
-      journeyRef: journeyRef,
-      expectedEventHead: head,
-      section: _section(),
-      clientRequestId: 'native-e2e-section',
+    final section = await step(
+        'prepare.section',
+        () => api.prepareSection(
+              journeyRef: journeyRef,
+              expectedEventHead: head,
+              section: _section(),
+              clientRequestId: 'native-e2e-section',
+            ));
+    ack = await step(
+      'commit.section',
+      () => _approveCommit(api, section.proposalRef),
     );
-    ack = await _approveCommit(api, section.proposalRef);
     head = ack['event_head_sha256'] as String;
 
-    final revision = await api.prepareRevision(
-      journeyRef: journeyRef,
-      expectedEventHead: head,
-      projectRef: _projectRef,
-      sectionRef: _sectionRef,
-      body: 'Recommendation: hold.\n',
-      clientRequestId: 'native-e2e-draft',
+    final revision = await step(
+        'prepare.revision',
+        () => api.prepareRevision(
+              journeyRef: journeyRef,
+              expectedEventHead: head,
+              projectRef: _projectRef,
+              sectionRef: _sectionRef,
+              body: 'Recommendation: hold.\n',
+              clientRequestId: 'native-e2e-draft',
+            ));
+    ack = await step(
+      'commit.revision',
+      () => _approveCommit(api, revision.proposalRef),
     );
-    ack = await _approveCommit(api, revision.proposalRef);
     head = ack['event_head_sha256'] as String;
 
-    final review = await api.prepareReview(
-      journeyRef: journeyRef,
-      expectedEventHead: head,
-      projectRef: _projectRef,
-      clientRequestId: 'native-e2e-review',
-    );
+    final review = await step(
+        'prepare.review',
+        () => api.prepareReview(
+              journeyRef: journeyRef,
+              expectedEventHead: head,
+              projectRef: _projectRef,
+              clientRequestId: 'native-e2e-review',
+            ));
     expect(review.artifactKind, 'review');
-    ack = await _approveCommit(api, review.proposalRef);
+    ack = await step(
+      'commit.review',
+      () => _approveCommit(api, review.proposalRef),
+    );
     head = ack['event_head_sha256'] as String;
 
-    final status = await api.status();
+    final status = await step('status.final', api.status);
     expect(status.projects.single.journeyRef, journeyRef);
     expect(status.projects.single.eventHeadSha256, head);
-    final project = await api.project(journeyRef);
+    final project = await step('project.final', () => api.project(journeyRef));
     expect(project.sections.single.currentBody, 'Recommendation: hold.\n');
     expect(project.reviews.single['review_ref'], review.artifactId);
-  });
+  }, timeout: _liveGatewayTimeout);
 }
 
 Future<Map<String, dynamic>> _approveCommit(
@@ -131,8 +182,11 @@ final class _LiveWritingGateway {
   final GatewayWritingApi api;
   final StringBuffer _stdout, _stderr;
   final StreamSubscription<String> _stdoutSub, _stderrSub;
+  bool _closed = false;
 
-  static Future<_LiveWritingGateway> start() async {
+  static Future<_LiveWritingGateway> start({
+    void Function(_LiveWritingGateway gateway)? onStarted,
+  }) async {
     final repo = _repoRoot();
     final home =
         await Directory.systemTemp.createTemp('fw-writing-gateway-e2e-');
@@ -165,8 +219,14 @@ final class _LiveWritingGateway {
     final api = GatewayWritingApi(client);
     final gateway = _LiveWritingGateway._(
         process, home, client, api, stdout, stderr, stdoutSub, stderrSub);
-    await gateway._waitUntilReady();
-    return gateway;
+    onStarted?.call(gateway);
+    try {
+      await gateway._waitUntilReady();
+      return gateway;
+    } catch (_) {
+      await gateway.close();
+      rethrow;
+    }
   }
 
   Future<void> _waitUntilReady() async {
@@ -198,19 +258,25 @@ final class _LiveWritingGateway {
   }
 
   Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
     client.close();
-    if (!await _hasExited()) {
-      process.kill();
-    }
     try {
-      await process.exitCode.timeout(const Duration(seconds: 5));
-    } on TimeoutException {
-      process.kill(ProcessSignal.sigkill);
-    }
-    await _stdoutSub.cancel();
-    await _stderrSub.cancel();
-    if (home.existsSync()) {
-      home.deleteSync(recursive: true);
+      if (!await _hasExited()) {
+        process.kill();
+      }
+      try {
+        await process.exitCode.timeout(const Duration(seconds: 5));
+      } on TimeoutException {
+        process.kill(ProcessSignal.sigkill);
+        await process.exitCode.timeout(const Duration(seconds: 5));
+      }
+    } finally {
+      await _stdoutSub.cancel();
+      await _stderrSub.cancel();
+      if (home.existsSync()) {
+        home.deleteSync(recursive: true);
+      }
     }
   }
 }

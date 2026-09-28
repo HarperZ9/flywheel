@@ -22,6 +22,14 @@ class DesktopSettings {
   double uiScale;
   double railWidth; // width of the expanded side rail, drag-adjustable
 
+  /// False until the first-run Rowan walkthrough has been presented once. Set
+  /// the moment the tour is shown (not on completion), so a force-quit mid-tour
+  /// does not make it reappear every launch; replay stays available from the
+  /// rail. A brand-new install has no settings file, so load() returns a
+  /// default DesktopSettings with this false, which is the correct first-run
+  /// state.
+  bool firstRunSeen;
+
   /// Reusable prompts the user saved, newest first: [{title, text}]. A small
   /// shelf so nobody starts from a blank composer every time.
   List<Map<String, String>> savedPrompts;
@@ -41,6 +49,7 @@ class DesktopSettings {
       this.groundPreset,
       this.uiScale = 1.0,
       this.railWidth = 172,
+      this.firstRunSeen = false,
       List<Map<String, String>>? savedPrompts,
       Map<String, double>? splitFractions})
       : recentWorkspaces = recentWorkspaces ?? [],
@@ -117,6 +126,7 @@ class DesktopSettings {
         railWidth: j['rail_width'] is num
             ? (j['rail_width'] as num).toDouble().clamp(148.0, 320.0)
             : 172,
+        firstRunSeen: j['first_run_seen'] == true,
         savedPrompts: (j['saved_prompts'] is List)
             ? [
                 for (final p in j['saved_prompts'] as List)
@@ -157,6 +167,7 @@ class DesktopSettings {
         if (groundPreset != null) 'ground_preset': groundPreset,
         'ui_scale': uiScale,
         'rail_width': railWidth,
+        'first_run_seen': firstRunSeen,
         'saved_prompts': savedPrompts,
         'split_fractions': splitFractions,
       }));

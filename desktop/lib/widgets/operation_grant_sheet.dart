@@ -5,6 +5,7 @@ import '../controllers/journey_controller.dart';
 import '../models/bulletin_media_models.dart';
 import '../models/gateway_grant_models.dart';
 import 'agent_execution_grant_review.dart';
+import 'lane_policy_review.dart';
 export '../models/gateway_grant_models.dart'
     show GatewayDestination, GatewayOperation;
 
@@ -72,7 +73,10 @@ Future<Object?> _authorizeJourneyOperation(
   }
 
   final binding = currentBinding();
-  if (binding == null) return const GatewayAuthorizationOutcome.denied();
+  if (binding == null) {
+    return const GatewayAuthorizationOutcome.failure(GatewayOperationFailure(
+        'JOURNEY_REQUIRED', 'Select or create a Journey before approval.'));
+  }
   final prepared = await controller.prepare(operation,
       binding: binding,
       currentOperation: currentOperation,
@@ -180,6 +184,8 @@ final class _OperationGrantSheetState<T>
         _refs('Credential refs', proposal.summary.credentialRefs),
         _line('Effect', proposal.summary.effect),
         if (agentReview != null) AgentExecutionGrantReview(review: agentReview),
+        if (proposal.summary.lanePolicy case final policy?)
+          LanePolicyReview(policy: policy),
         if (approvalBlocked)
           const Padding(
             padding: EdgeInsets.only(bottom: 6),

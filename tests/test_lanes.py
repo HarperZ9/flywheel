@@ -19,7 +19,7 @@ def test_registry_covers_the_expected_lanes():
     # the six spine flagships + local-model (the engine) + relay (execution) +
     # plexus (wiring) + mneme (memory) + calibrate-pro (its own calibration lane)
     # + accountable-surface (actuation) + canon (continuity) + writing (authoring)
-    assert set(LANES) == {"gather", "crucible", "index", "forum",
+    assert set(LANES) == {"gather", "crucible", "chorus", "articulate", "index", "forum",
                           "learn", "telos", "local-model", "relay", "plexus", "mneme",
                           "calibrate-pro", "accountable-surface", "canon", "bulletin",
                           "writing", "isomorph", "sofer", "array"}
@@ -35,8 +35,16 @@ def test_install_name_to_command_asymmetry_is_mapped():
     assert LANES["crucible"].command == "crucible"
     assert LANES["forum"].install_name == "forum-engine"
     assert LANES["forum"].command == "forum"
-    assert LANES["index"].version == "2.10.0"
-    assert LANES["mneme"].version == "0.2.0"
+    # relay, mneme and canon publish under a flywheel- prefix: their bare names
+    # on PyPI belong to unrelated projects. The command stays the short name, so
+    # the asymmetry is wider here than a suffix change, and reverting one of
+    # these to the bare name would install a stranger's package.
+    assert LANES["relay"].install_name == "flywheel-relay"
+    assert LANES["relay"].command == "relay"
+    assert LANES["mneme"].install_name == "flywheel-mneme"
+    assert LANES["mneme"].command == "mneme"
+    assert LANES["canon"].install_name == "flywheel-canon"
+    assert LANES["canon"].command == "canon"
 
 
 def test_every_lane_has_an_mcp_command_and_organ():
@@ -190,15 +198,23 @@ def test_source_checkout_is_probed_when_package_is_absent(tmp_path, monkeypatch)
     monkeypatch.setattr(mcp_client, "MCPClient", _ProbeClient)
     result = lane_status("gather", probe=True)
     assert result["status"] == LIVE
-    assert _ProbeClient.launch.cwd == str(source.resolve())
+    assert Path(_ProbeClient.launch.cwd).parts[-2:] == ("lanes", "gather")
+    assert str(source.resolve()) in dict(_ProbeClient.launch.env_overrides)["PYTHONPATH"]
+
+
+def _installed_at_pin(monkeypatch):
+    """An installed package at its pin; one below the pin would not launch."""
+    monkeypatch.setattr(lanes, "_installed_version", lambda lane: lane.version)
+    monkeypatch.setattr(lanes, "resolve_source_repo", lambda lane: None)
 
 
 def test_presence_only_installed_lane_is_declared_not_live(monkeypatch):
-    monkeypatch.setattr(lanes, "_installed_version", lambda lane: "1.2.3")
+    monkeypatch.setattr(lanes, "_installed_version", lambda lane: lane.version)
     assert lane_status("gather", probe=False)["status"] == DECLARED
 
 
 def test_missing_health_tool_is_stale(monkeypatch):
+    _installed_at_pin(monkeypatch)
     monkeypatch.setattr(_ProbeClient, "tools", [{"name": "gather.run"}])
     monkeypatch.setattr(mcp_client, "MCPClient", _ProbeClient)
     result = lanes._probe_lane("gather", "1.2.3", 1.0, present=True)
@@ -207,6 +223,7 @@ def test_missing_health_tool_is_stale(monkeypatch):
 
 
 def test_health_tool_error_is_stale(monkeypatch):
+    _installed_at_pin(monkeypatch)
     monkeypatch.setattr(_ProbeClient, "tools", [{"name": "gather.status"}])
     monkeypatch.setattr(
         _ProbeClient, "response", {"ok": False, "text": "not healthy"})
@@ -217,6 +234,7 @@ def test_health_tool_error_is_stale(monkeypatch):
 
 
 def test_failed_probe_of_present_lane_is_declared(monkeypatch):
+    _installed_at_pin(monkeypatch)
     class FailingClient:
         def __init__(self, *args, **kwargs):
             raise OSError("cannot launch")

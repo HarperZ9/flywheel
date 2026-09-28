@@ -1,0 +1,207 @@
+{
+  "schema": "harness.cross-harness-fixture.shared-task-facts/v2",
+  "task_id": "agt-003-shared-task-artifact-v2-diagnostic",
+  "failure_code_vocabulary": {
+    "common": [
+      "artifact_set_mismatch",
+      "artifact_not_regular",
+      "artifact_not_utf8",
+      "artifact_empty",
+      "json_invalid",
+      "json_duplicate_key",
+      "task_id_mismatch",
+      "input_hash_mismatch",
+      "markdown_task_id_missing"
+    ],
+    "task": [
+      "prompt_hash_mismatch",
+      "tool_policy_hash_mismatch",
+      "raw_artifact_path_invalid",
+      "raw_artifact_hash_mismatch",
+      "pre_oracle_failure_modes_mismatch",
+      "receipt_path_invalid",
+      "forbidden_claim",
+      "unsupported_report_field",
+      "unsupported_claim_field",
+      "unsupported_claim_type",
+      "unsupported_claim_id",
+      "unsupported_limitation_id",
+      "unsupported_limitation_value",
+      "claim_subject_out_of_scope",
+      "claim_authority_mismatch",
+      "claim_bindings_missing",
+      "pre_oracle_status_claim_mismatch",
+      "final_status_claim_not_available",
+      "comparison_claim_out_of_scope",
+      "markdown_render_mismatch"
+    ]
+  },
+  "state_axes": [
+    {
+      "axis": "execution_state",
+      "failure_values": [
+        "internal_error",
+        "malformed",
+        "timeout",
+        "unavailable"
+      ]
+    },
+    {
+      "axis": "oracle_state",
+      "failure_values": [
+        "fail",
+        "unverifiable"
+      ]
+    },
+    {
+      "axis": "receipt_state",
+      "failure_values": [
+        "drift"
+      ]
+    }
+  ],
+  "artifact_facts": [
+    {
+      "path_field": "raw_artifact_path",
+      "hash_fact": "raw_artifact_sha256"
+    },
+    {
+      "path_field": "receipt_path",
+      "hash_fact": "receipt_sha256"
+    }
+  ],
+  "forbidden_claim_phrases": [
+    "same model behavior",
+    "identical controls",
+    "pure harness ablation"
+  ],
+  "supported_claim_types": [
+    "artifact_binding",
+    "limitation",
+    "pre_oracle_attempt_facts"
+  ],
+  "supported_claim_ids": [
+    "pre_oracle_attempt_state",
+    "raw_artifact_binding",
+    "receipt_binding",
+    "provider_superiority_boundary",
+    "cross_harness_comparison_boundary",
+    "final_completion_boundary"
+  ],
+  "limitation_ids": [
+    "does_not_prove_provider_superiority",
+    "does_not_prove_cross_harness_comparison",
+    "does_not_prove_final_no_failure_completion"
+  ],
+  "markdown_render_profile": "shared_task_artifact_v2_pre_oracle",
+  "participant_contract": {
+    "schema": "harness.cross-harness-fixture.shared-task-artifact-v2-participant/v1",
+    "context_path": "benchmark/context.json",
+    "fixture_path": "benchmarks/fixtures/cross-harness/shared-task-facts-v2.json",
+    "produces_json_fields": [
+      "claim_bindings",
+      "input_sha256s",
+      "pre_oracle_failure_modes",
+      "raw_artifact_path",
+      "raw_prompt_sha256",
+      "receipt_path",
+      "task_id",
+      "tool_policy_sha256"
+    ],
+    "json_serialization": "json.dumps(sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False)",
+    "claim_bindings": [
+      {
+        "claim_id": "pre_oracle_attempt_state",
+        "claim_type": "pre_oracle_attempt_facts",
+        "subject": "attempt",
+        "authority": "scorecard_core.orthogonal_states",
+        "facts": {
+          "execution_state": "{harness_values.orthogonal_states.execution_state}",
+          "oracle_state": "{harness_values.orthogonal_states.oracle_state}",
+          "receipt_state": "{harness_values.orthogonal_states.receipt_state}",
+          "pre_oracle_failure_modes": "{harness_values.pre_oracle_failure_modes}"
+        }
+      },
+      {
+        "claim_id": "raw_artifact_binding",
+        "claim_type": "artifact_binding",
+        "subject": "raw_artifact",
+        "authority": "scorecard_core.raw_artifact_sha256",
+        "path_field": "raw_artifact_path",
+        "sha256_field": "raw_artifact_sha256"
+      },
+      {
+        "claim_id": "receipt_binding",
+        "claim_type": "artifact_binding",
+        "subject": "receipt",
+        "authority": "scorecard_core.receipt_sha256",
+        "path_field": "receipt_path",
+        "sha256_field": "receipt_sha256"
+      },
+      {
+        "claim_id": "provider_superiority_boundary",
+        "claim_type": "limitation",
+        "subject": "attempt",
+        "authority": "shared_task_artifact/v2.closed_limitations",
+        "limitation_id": "does_not_prove_provider_superiority"
+      },
+      {
+        "claim_id": "cross_harness_comparison_boundary",
+        "claim_type": "limitation",
+        "subject": "attempt",
+        "authority": "shared_task_artifact/v2.closed_limitations",
+        "limitation_id": "does_not_prove_cross_harness_comparison"
+      },
+      {
+        "claim_id": "final_completion_boundary",
+        "claim_type": "limitation",
+        "subject": "attempt",
+        "authority": "shared_task_artifact/v2.closed_limitations",
+        "limitation_id": "does_not_prove_final_no_failure_completion"
+      }
+    ],
+    "markdown_template": [
+      "# {task_id}",
+      "",
+      "## Bound inputs",
+      "- input_sha256s: {input_sha256s}",
+      "- raw_prompt_sha256: {raw_prompt_sha256}",
+      "- tool_policy_sha256: {tool_policy_sha256}",
+      "",
+      "## Bound attempt artifacts",
+      "- raw_artifact_path: {raw_artifact_path}",
+      "- receipt_path: {receipt_path}",
+      "",
+      "## Pre-oracle states",
+      "- execution_state: {execution_state}",
+      "- oracle_state: {oracle_state}",
+      "- receipt_state: {receipt_state}",
+      "- pre_oracle_failure_modes: {pre_oracle_failure_modes}",
+      "",
+      "## Claim bindings",
+      "- pre_oracle_attempt_state: pre_oracle_attempt_facts from scorecard_core.orthogonal_states",
+      "- raw_artifact_binding: artifact_binding from raw_artifact_path to scorecard_core.raw_artifact_sha256",
+      "- receipt_binding: artifact_binding from receipt_path to scorecard_core.receipt_sha256",
+      "",
+      "## Closed limitations",
+      "- does_not_prove_provider_superiority: This attempt does not prove provider superiority.",
+      "- does_not_prove_cross_harness_comparison: This attempt does not prove a Codex-vs-Flywheel comparison.",
+      "- does_not_prove_final_no_failure_completion: This pre-oracle artifact does not prove final no-failure completion."
+    ]
+  },
+  "verifier_contract": {
+    "schema": "harness.cross-harness-fixture.shared-task-artifact-v2-verifier/v1",
+    "computes_evidence": [
+      "verifier_markdown_render_sha256"
+    ],
+    "hash": {
+      "algorithm": "sha256",
+      "encoding": "utf-8",
+      "preimage": "canonical Markdown render from participant JSON"
+    },
+    "compares": [
+      "submitted_markdown_bytes",
+      "canonical_markdown_render"
+    ]
+  }
+}

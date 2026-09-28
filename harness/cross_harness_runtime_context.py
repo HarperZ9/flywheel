@@ -22,6 +22,7 @@ def build_runtime_context(task: dict[str, Any], row: dict[str, Any], observed: d
             "task_id": row["task_id"], "input_sha256s": observed, "receipt_input_sha256s": observed,
             "raw_prompt_sha256": row["raw_prompt_sha256"], "tool_policy_sha256": row["tool_policy_sha256"],
             "raw_artifact_path": "output.txt", "receipt_path": "provider-receipt.json", "failure_modes": [],
+            "pre_oracle_failure_modes": [],
             "orthogonal_states": {"execution_state": "returned", "oracle_state": "not_run", "receipt_state": "not_emitted"},
         },
     }

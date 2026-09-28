@@ -24,7 +24,7 @@ def render_markdown(report: dict[str, Any], doc: dict[str, Any]) -> str:
            "`docs/benchmarks/report.json`; head-to-head numbers from "
            "`docs/benchmarks/graded-metrics.json`. Do not edit by hand.", "",
            lede(report), "", "## What ran", "",
-           "| suite | question | headline |", "| --- | --- | --- |"]
+           "| suite | question | headline |", "| :-- | :-- | :-- |"]
     for suite in report["suites"]:
         head = "; ".join(f"{k} {v}" for k, v in suite["headline"].items())
         out.append(f"| {suite['name']} | {suite['question']} | {head} |")
@@ -42,7 +42,7 @@ def render_markdown(report: dict[str, Any], doc: dict[str, Any]) -> str:
     out += ["", "## The falsifier", "",
             "A benchmark everything passes measures nothing. The strawman is a "
             "system with no receipts, scored on the same axes.", "",
-            "| dimension | harness | strawman |", "| --- | --- | --- |"]
+            "| dimension | harness | strawman |", "| :-- | :-- | :-- |"]
     for dim in acc["detail"]:
         straw = dim.get("strawman")
         out.append(f"| {dim['name']} | {dim['score']:.0%} | "
@@ -66,7 +66,7 @@ def render_markdown(report: dict[str, Any], doc: dict[str, Any]) -> str:
     out += ["",
             "| capability | flywheel | "
             + " | ".join(p["label"] for p in peers) + " |",
-            "| --- |" + " --- |" * (len(peers) + 1)]
+            "| :-- |" + " :-- |" * (len(peers) + 1)]
     unique = set(doc["summary"]["uniquely_witnessed"])
     for row in doc["rows"]:
         cells = " | ".join(CELL[row["competitors"][p["key"]]][1]
@@ -113,7 +113,7 @@ def render_readme_block(report: dict[str, Any], doc: dict[str, Any]) -> str:
     m7 = next(e for e in report["not_run"] if e["suite"] == "m7 capability arms")
     paired = next(s["headline"] for s in report["suites"]
                   if s["name"] == "paired-replication")
-    table = ["| suite | what it answers | headline |", "| --- | --- | --- |"]
+    table = ["| suite | what it answers | headline |", "| :-- | :-- | :-- |"]
     for suite in report["suites"]:
         head = "; ".join(f"{k} {v}" for k, v in suite["headline"].items())
         table.append(f"| {suite['name']} | {suite['question']} | {head} |")

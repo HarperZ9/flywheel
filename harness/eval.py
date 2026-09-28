@@ -19,6 +19,7 @@ from typing import Callable
 
 from .oracle import Oracle
 from .proposer import Proposer
+from .routing_collection import candidate_row, ns_to_ms, task_identity
 from .task import Task
 
 
@@ -41,6 +42,11 @@ class ArmResult:
     wall_clock_s: float
     verdict: str = "FAIL"
     receipt_reproducible: bool = True
+    prompt_sha256: str = ""
+    system_sha256: str = ""
+    task_identity: dict | None = None
+    candidate_rows: list = field(default_factory=list)
+    timing: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -54,6 +60,9 @@ class EvalReport:
     # Per-task outcomes enable paired statistics (bootstrap CIs on arm
     # differences). Optional so pre-existing constructions stay valid.
     per_task: list = field(default_factory=list)
+    # Detailed routing traces are opt-in and intentionally kept out of the
+    # default scorecard for compatibility.
+    per_task_detail: list = field(default_factory=list)
 
     def summary(self) -> str:
         return (f"{self.arm_name}: pass={self.pass_rate:.0%} "
@@ -70,32 +79,93 @@ NO_SEARCH = ArmConfig(name="no_search", n_candidates=1, label="single + oracle/w
 
 
 def run_arm(config: ArmConfig, task: Task, proposer: Proposer, oracle: Oracle,
-            *, cache=None) -> ArmResult:
-    t0 = time.time()
+            *, cache=None, collect_detail: bool = False) -> ArmResult:
+    t0 = time.perf_counter_ns()
     if config.n_candidates <= 1:
+        gen_start = time.perf_counter_ns()
         out = proposer.generate(
             task.prompt, seed=task.seed, temperature=0.0,
             max_new_tokens=task.max_new_tokens, system=task.system)
+        gen_ns = time.perf_counter_ns() - gen_start
+        oracle_start = time.perf_counter_ns()
         orc = oracle.verify(out.text, task)
+        oracle_ns = time.perf_counter_ns() - oracle_start
+        total_ns = time.perf_counter_ns() - t0
+        identity = task_identity(task) if collect_detail else None
+        candidates = []
+        if collect_detail:
+            candidates.append(candidate_row(
+                candidate_index=0,
+                text=out.text,
+                model_ref_requested=getattr(proposer, "model_ref", ""),
+                model_ref_observed=out.model_ref,
+                served_model=out.served_model,
+                seed=out.seed,
+                temperature=0.0,
+                prompt_hash_provider=out.prompt_hash,
+                usage=out.usage,
+                cache=out.cache,
+                oracle_result=orc,
+                generation_duration_ns=gen_ns,
+                oracle_duration_ns=oracle_ns,
+            ))
         return ArmResult(config.name, task.task_id, orc.passed, 1, 1,
-                         time.time() - t0, orc.verdict(),
-                         receipt_reproducible=True)
+                         total_ns / 1_000_000_000, orc.verdict(),
+                         receipt_reproducible=True,
+                         prompt_sha256=(identity or {}).get("prompt_sha256", ""),
+                         system_sha256=(identity or {}).get("system_sha256", ""),
+                         task_identity=identity,
+                         candidate_rows=candidates,
+                         timing={"task_arm_total_latency_ms": ns_to_ms(total_ns)}
+                         if collect_detail else {})
     from .search import best_of_n, DEFAULT_TEMPS
     sr = best_of_n(task, proposer, oracle,
-                   temps=config.temps or DEFAULT_TEMPS)
+                   temps=config.temps or DEFAULT_TEMPS,
+                   collect_detail=collect_detail)
+    total_ns = time.perf_counter_ns() - t0
+    identity = task_identity(task) if collect_detail else None
+    candidates = []
+    if collect_detail:
+        for index, c in enumerate(sr.candidates):
+            candidates.append(candidate_row(
+                candidate_index=index,
+                text=c.text,
+                model_ref_requested=getattr(proposer, "model_ref", ""),
+                model_ref_observed=c.model_ref,
+                served_model=c.served_model,
+                seed=c.seed,
+                temperature=c.temperature,
+                prompt_hash_provider=c.prompt_hash,
+                usage=c.usage,
+                cache=c.cache,
+                oracle_result=c.oracle_result,
+                generation_duration_ns=c.generation_duration_ns,
+                oracle_duration_ns=c.oracle_duration_ns,
+            ))
     return ArmResult(config.name, task.task_id, sr.accepted is not None,
                      len(sr.candidates), len(sr.candidates),
-                     time.time() - t0, sr.verdict,
-                     receipt_reproducible=True)
+                     total_ns / 1_000_000_000, sr.verdict,
+                     receipt_reproducible=True,
+                     prompt_sha256=(identity or {}).get("prompt_sha256", ""),
+                     system_sha256=(identity or {}).get("system_sha256", ""),
+                     task_identity=identity,
+                     candidate_rows=candidates,
+                     timing={
+                         "task_arm_total_latency_ms": ns_to_ms(total_ns),
+                         "search_correlation": sr.correlation,
+                         "search_reason": sr.reason,
+                     } if collect_detail else {})
 
 
 def run_eval(arms: list[ArmConfig], task_set: list[Task],
-             proposer_for: Callable[[ArmConfig, Task], Proposer],
-             oracle_for: Callable[[Task], Oracle]) -> dict[str, EvalReport]:
+              proposer_for: Callable[[ArmConfig, Task], Proposer],
+              oracle_for: Callable[[Task], Oracle],
+              *, collect_detail: bool = False) -> dict[str, EvalReport]:
     rows: dict[str, list[ArmResult]] = {a.name: [] for a in arms}
     for task in task_set:
         for arm in arms:
-            r = run_arm(arm, task, proposer_for(arm, task), oracle_for(task))
+            r = run_arm(arm, task, proposer_for(arm, task), oracle_for(task),
+                        collect_detail=collect_detail)
             rows[arm.name].append(r)
     return {name: _aggregate(name, rs) for name, rs in rows.items()}
 
@@ -105,13 +175,30 @@ def _aggregate(name: str, rs: list[ArmResult]) -> EvalReport:
     if n == 0:
         return EvalReport(name, 0, 0.0, 0.0, 0.0, 0.0)
     passed = sum(1 for r in rs if r.passed)
+    per_task_detail = []
+    for r in rs:
+        if r.candidate_rows:
+            per_task_detail.append({
+                "task_id": r.task_id,
+                "arm_name": r.arm_name,
+                "passed": bool(r.passed),
+                "verdict": r.verdict,
+                "oracle_calls": r.oracle_calls,
+                "candidates_generated": r.candidates_generated,
+                "prompt_sha256": r.prompt_sha256,
+                "system_sha256": r.system_sha256,
+                "task_identity": r.task_identity or {},
+                "timing": r.timing,
+                "candidate_rows": r.candidate_rows,
+            })
     return EvalReport(
         name, n, passed / n,
         sum(r.oracle_calls for r in rs) / n,
         sum(r.candidates_generated for r in rs) / n,
         sum(1 for r in rs if r.receipt_reproducible) / n,
         per_task=[{"task_id": r.task_id, "passed": bool(r.passed),
-                   "oracle_calls": r.oracle_calls} for r in rs])
+                   "oracle_calls": r.oracle_calls} for r in rs],
+        per_task_detail=per_task_detail)
 
 
 # F8: metric declarations {min, max, good-direction} so a scorecard reads without

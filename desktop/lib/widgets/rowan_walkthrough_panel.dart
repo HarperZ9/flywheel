@@ -4,6 +4,7 @@ import '../controllers/journey_controller.dart';
 import '../controllers/rowan_walkthrough_controller.dart';
 import '../controllers/rowan_walkthrough_operation_host.dart';
 import '../ide/live_run_tail.dart';
+import '../models/agent_execution_mode.dart';
 import '../models/gateway_grant_models.dart';
 import '../models/gateway_models.dart';
 import '../models/operation_models.dart';
@@ -107,6 +108,7 @@ class _RowanWalkthroughPanelState extends State<RowanWalkthroughPanel> {
     return widget.alive &&
         endpoint != null &&
         endpoint.isNotEmpty &&
+        agentExecutionModeSupportsEndpoint(_host.executionMode, endpoint) &&
         model != null &&
         model.isNotEmpty &&
         root != null &&
@@ -138,7 +140,17 @@ class _RowanWalkthroughPanelState extends State<RowanWalkthroughPanel> {
     try {
       await _host.loadEndpoints();
       if (_host.endpoint == null) {
-        final fallback = defaultEndpoint(_host.endpoints);
+        EndpointRow? fallback;
+        if (_host.executionMode.isNativeCli) {
+          for (final endpoint in _host.endpoints) {
+            if (endpoint.name == 'claude-cli') {
+              fallback = endpoint;
+              break;
+            }
+          }
+        } else {
+          fallback = defaultEndpoint(_host.endpoints);
+        }
         if (fallback != null) _host.setEndpoint(fallback.name);
       }
       await _host.recoverFromSession();

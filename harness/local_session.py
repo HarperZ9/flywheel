@@ -1,10 +1,10 @@
 """local_session.py — a witnessed, resumable session ledger for the local agent.
 
-The differentiator over aider / gptme / open-interpreter: the agent's whole
-trajectory (user turns, assistant turns, tool calls, tool results) is a
-hash-chained ledger. Each entry binds to its predecessor, so a saved session is
-tamper-evident and re-verifiable — you can prove the recorded run is the run that
-happened. Saves to / resumes from JSONL with zero dependencies.
+User turns, assistant turns, tool calls and tool results form a hash-chained
+ledger. Rechecking establishes internal consistency of the submitted entries.
+Detecting a consistently rewritten history requires comparison with a separately
+retained checkpoint. The chain alone does not authenticate the producer or prove
+that recorded actions happened. JSONL save/resume uses zero dependencies.
 """
 from __future__ import annotations
 

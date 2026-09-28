@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -64,9 +65,10 @@ def _expected(descriptor):
     }
 
 
-def test_valid_descriptor_admits_only_relay_status(tmp_path):
+def test_valid_descriptor_admits_only_relay_t1_tools(tmp_path):
     """Catches admission through PATH, registry python, or unbounded tools."""
     from harness.bundled_lane_admission import admit_bundled_lane
+    from harness.lane_tool_policy import admitted_tools
 
     descriptor = _descriptor(source_digest="sha256:" + canonical_sha256(
         _descriptor()["source"]["files"]))
@@ -81,7 +83,8 @@ def test_valid_descriptor_admits_only_relay_status(tmp_path):
     assert result.blocking_codes == ()
     assert result.launch.argv == (
         "D:/app/flywheel-gateway.exe", "--bundled-lane-mcp", "relay")
-    assert result.launch.allowed_tools == ("relay.status",)
+    assert result.launch.allowed_tools == tuple(admitted_tools("relay"))
+    assert "local_agent_start" not in result.launch.allowed_tools
     assert result.launch.inherit_env is False
     assert result.launch.hide_window is True
     assert result.component["descriptor_sha256"] == _expected(descriptor)["descriptor_sha256"]
@@ -191,30 +194,72 @@ def test_frozen_relay_auto_uses_gateway_self_child_and_not_path(monkeypatch):
     assert calls
     assert runtime.present is True
     assert runtime.selected_runtime == "bundled"
-    assert runtime.launch == admission.launch
+    from dataclasses import replace
+    assert replace(runtime.launch, cwd=None, env_overrides=()) == admission.launch
+    assert Path(runtime.launch.cwd).parts[-2:] == ("lanes", "relay")
+    # the lane folder's own temp and app-data folders (POLICY-DECISION C-9)
+    env = dict(runtime.launch.env_overrides)
+    assert Path(env["TEMP"]).parent == Path(runtime.launch.cwd)
     assert runtime.launch.allowed_tools == ("relay.status",)
-    assert lanes.resolve_mcp_command("relay") == []
+    # This used to assert resolve_mcp_command("relay") == [], which held only
+    # while relay carried package_disabled_reason and the roster offered no argv
+    # at all. relay publishes as flywheel-relay now, so the roster does offer
+    # `relay --mcp`, and that proxy no longer says anything about what the frozen
+    # app launches. Assert the property itself: the frozen launch is the
+    # gateway's own child, and it is not the PATH argv the roster advertises.
+    assert runtime.launch.argv[0] == "D:/app/flywheel-gateway.exe"
+    assert "--bundled-lane-mcp" in runtime.launch.argv
+    assert list(runtime.launch.argv) != lanes.LANES["relay"].mcp_command()
     assert runtime.to_dict()["bundled_component"]["descriptor_sha256"] == DESCRIPTOR_DIGEST
 
 
-def test_frozen_relay_package_profile_still_refuses_ambiguous_distribution(monkeypatch, tmp_path):
-    """Catches accidental removal of Relay's PyPI collision guard."""
+def test_frozen_relay_package_profile_still_runs_the_bundled_child(monkeypatch, tmp_path):
+    """A frozen gateway runs its own child, never a package the user installed.
+
+    This test used to assert `package_distribution_disabled`, because relay's
+    PyPI name belonged to another project and the disabled reason blocked the
+    package profile outright. relay publishes as flywheel-relay now, so that
+    reason is gone and the assertion would only prove the lane is still broken.
+
+    The property that mattered survives on its own. Even asked for the package
+    profile, a frozen gateway selects the bundled child, so an installed
+    flywheel-relay of any version cannot displace the shipped one. relay is not
+    special here: index and gather resolve the same way, which is the point.
+    Relay was only ever an exception because its name was ambiguous.
+    """
     from harness import lanes
 
-    metadata_calls = []
     monkeypatch.setattr(lanes, "read_registry", lambda: {
-        "relay": {"runtime_profile": "package",
-                  "runtime_python": str(tmp_path / "python.exe")}
+        name: {"runtime_profile": "package",
+               "runtime_python": str(tmp_path / "python.exe")}
+        for name in ("relay", "index", "gather")
     })
     monkeypatch.setattr(lanes, "resolve_source_repo", lambda _lane: None)
     monkeypatch.setattr(lanes, "_frozen", lambda: True)
-    monkeypatch.setattr(lanes, "_installed_version",
-                        lambda *args: metadata_calls.append(args) or "0.2.0")
-    monkeypatch.setattr(lanes, "_package_runtime_version",
-                        lambda *args: metadata_calls.append(args) or "0.2.0")
+    monkeypatch.setattr(lanes, "_installed_version", lambda *args: "9.9.9")
+    monkeypatch.setattr(lanes, "_package_runtime_version", lambda *args: "9.9.9")
 
     runtime = lanes.resolve_lane_runtime("relay")
 
-    assert metadata_calls == []
-    assert runtime.launch is None
-    assert runtime.blocking_codes == ("package_distribution_disabled",)
+    # The load-bearing assertion. Whatever else happens, the package profile the
+    # registry row asked for is not what gets selected.
+    assert runtime.selected_runtime == "bundled"
+
+    # Whether a launch comes back depends on the bundled payload being staged,
+    # which it is on an authoring checkout and is not on a CI runner. Both
+    # outcomes prove the same thing and neither is a fallback to the package, so
+    # the test states which one it saw instead of requiring the staged case.
+    if runtime.launch is None:
+        assert "bundled_module_missing" in runtime.blocking_codes
+        # Blocked, not quietly served from the installed package.
+        assert runtime.selected_runtime != "package"
+    else:
+        assert "--bundled-lane-mcp" in runtime.launch.argv
+        # Not the roster argv, and not the runtime_python the registry row named.
+        assert list(runtime.launch.argv) != lanes.LANES["relay"].mcp_command()
+        assert str(tmp_path / "python.exe") not in runtime.launch.argv
+
+    for peer in ("index", "gather"):
+        assert lanes.resolve_lane_runtime(peer).selected_runtime == "bundled", (
+            f"{peer} no longer resolves bundled when frozen, so relay matching it "
+            "proves nothing")

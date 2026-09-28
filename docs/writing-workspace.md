@@ -69,3 +69,101 @@ python -m harness.writing_mcp
 ```
 
 The server exposes `writing.status`, `writing.doctor`, `writing.diagnose`, prepare tools for project, section, revision, card, candidate, decision, review, and export, plus `writing.proposal_get` and `writing.proposal_commit`. `writing.proposal_approve` returns `APPROVAL_UNAVAILABLE`; approve with the local CLI. If a tool call omits `home`, the server uses `FLYWHEEL_HOME` and then falls back to the normal `~/.flywheel` state root.
+
+Installed packages also expose a portable command for MCP clients that start
+servers from `PATH` instead of from a source checkout:
+
+```powershell
+$env:FLYWHEEL_HOME = "C:\path\to\operator-owned-flywheel-home"
+flywheel-writing-workspace-mcp
+```
+
+The installed workspace launcher refuses to start without `FLYWHEEL_HOME` and
+binds that state home for the server lifetime. A tool call may omit `home` or
+repeat the same home, but it cannot redirect the installed server to another
+state root. This only binds Writing state custody; brief and source-packet
+paths are still caller-supplied local file reads, and broader filesystem object
+authority remains part of the shared storage work. The launcher does not add
+approval authority: `writing.proposal_approve` still returns
+`APPROVAL_UNAVAILABLE`, and approvals stay on the local CLI or another
+operator-controlled surface.
+
+## Prose linter: report-only structural detectors
+
+The prose linter lives beside the workspace at `harness/writing_lint/` and scores
+a draft's FORM against a register profile. Run it with
+`python scripts/check_writing.py --profile NAME FILE`, or compare two drafts with
+`--delta`. It scores form, never substance, and it does not try to defeat AI
+detection.
+
+The phrase-list engine sees vocabulary. Some tells in the writing standard live
+in structure, so a draft can score a clean `per100w` and still read as machine
+prose. `harness/writing_lint/structural.py` adds report-only detectors for those:
+
+- `rule_of_three`: the reflexive "A, B, and C" tricolon.
+- `corrective_negation`: "rather than", "instead of", and the "not X but Y" turn.
+- `negative_anaphora`: the "no X, no Y" repetition.
+- `landing_sentence`: a short sentence that seals a paragraph after longer ones.
+
+The engine also reports `cadence_cv`, the coefficient of variation of sentence
+lengths. A low value near or under 0.45 marks an even, machine-like beat.
+
+These are heuristics, so they inform and never gate. They stay out of the gated
+`per100w` headline and appear in `report_per100w` with the other Phase 2 checks,
+which keeps a noisy signal from becoming a gate someone switches off.
+
+## Prose linter over MCP (any harness)
+
+The linter also runs as a stateless MCP server, so any harness can score prose
+against the standard with no state root and no configuration. It is separate
+from the Writing Workspace custody server above: it holds nothing, needs no
+`FLYWHEEL_HOME`, and only reads text.
+
+```powershell
+python -m harness.writing_lint.mcp
+```
+
+When installed from the package, MCP clients can also run the linter without a
+source checkout:
+
+```powershell
+flywheel-writing-lint-mcp
+```
+
+Tools: `writing.profiles` lists the register profiles and the default;
+`writing.lint` scores a `text` or a `path` against a `profile` (omit the profile
+to infer it from a `writing-profile:` tag, the path, or the flavored default) and
+returns `per100w`, `report_per100w`, `hard`, `cadence_cv`, and the full violation
+counts; `writing.delta` scores two drafts and reports the `per100w` change.
+
+Claude Code, from an installed package:
+
+```json
+{
+  "mcpServers": {
+    "flywheel-writing-lint": {
+      "command": "flywheel-writing-lint-mcp",
+      "args": []
+    }
+  }
+}
+```
+
+Codex, in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.flywheel-writing-lint]
+command = "flywheel-writing-lint-mcp"
+args = []
+```
+
+The repo also carries companion Codex plugin templates at
+`plugins/flywheel-writing-lint` and `plugins/flywheel-writing-workspace`. The
+linter template invokes the installed linter command with no source `cwd`. The
+workspace template invokes `flywheel-writing-workspace-mcp` and expects the
+operator to provide a startup `FLYWHEEL_HOME`; the installed launcher binds that
+state home and does not grant approval authority.
+
+The server speaks JSON-RPC 2.0 over stdio (protocol `2025-06-18`) and depends on
+the standard library only. It scores FORM, not substance, and never tries to
+defeat AI detection.

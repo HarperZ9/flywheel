@@ -8,6 +8,7 @@ import pytest
 from harness.gateway_auth import (
     authenticate_owner, load_or_create_token, check, TOKEN_FILENAME, DEFAULT_HOSTS,
 )
+from harness.inspect_unit_contract_route import UNIT_CONTRACT_UPLOAD_MEDIA_TYPE
 
 TOK = "t" * 43
 
@@ -86,6 +87,28 @@ def test_content_type_parameters_are_tolerated():
     assert ok is True
 
 
+def test_documented_sidecar_vendor_json_content_type_is_tolerated():
+    ok, _ = check(_h(Authorization=f"Bearer {TOK}", Host="localhost:8799",
+                     Content_Type=f"{UNIT_CONTRACT_UPLOAD_MEDIA_TYPE}; charset=utf-8"),
+                  "POST", TOK, allowed_hosts=DEFAULT_HOSTS)
+    assert ok is True
+
+
+@pytest.mark.parametrize("content_type", [
+    "text/plain",
+    "application/x-www-form-urlencoded",
+    "multipart/form-data",
+    "application/vnd.flywheel.unknown+json",
+    "application/activity+json",
+])
+def test_state_changing_request_rejects_simple_and_undocumented_json_media_types(content_type):
+    ok, reason = check(_h(Authorization=f"Bearer {TOK}", Host="localhost:8799",
+                          Content_Type=content_type),
+                       "POST", TOK, allowed_hosts=DEFAULT_HOSTS)
+    assert ok is False
+    assert reason == "bad_content_type"
+
+
 def test_get_does_not_require_a_content_type():
     ok, _ = check(_h(Authorization=f"Bearer {TOK}", Host="localhost:8799"),
                   "GET", TOK, allowed_hosts=DEFAULT_HOSTS)
@@ -152,6 +175,8 @@ def test_owner_is_loaded_only_after_bearer_auth_and_survives_rotation(tmp_path, 
     ("POST", "/api/bulletin-identity/register"),
     ("GET", "/api/credential-handles"),
     ("POST", "/api/credential-handles/bind"),
+    ("POST", "/api/context-memory/capture"),
+    ("POST", "/api/context-memory/preflight"),
     ("POST", "/api/plugins/probe"),
     ("POST", "/v1/chat/completions"),
     ("GET", "/api/plugins/probe?name=gather"),

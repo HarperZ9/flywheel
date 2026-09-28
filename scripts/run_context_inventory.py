@@ -2,13 +2,14 @@
 
 This command records metadata only: paths, sizes, mtimes, suffixes, and coarse
 classification. It does not read file bodies, print secrets, or copy scanned
-source files into the store.
+source files into the store. Labels exclude host ancestors of the selected root.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -140,7 +141,7 @@ def inventory_root(root: Path, *, max_depth: int, max_entries: int) -> dict[str,
     rows: list[dict[str, Any]] = []
     if exists:
         for path, depth in _iter_limited(root, max_depth=max_depth, max_entries=max_entries):
-            labels = classify_path(path)
+            labels = classify_path(Path(os.path.abspath(root)).name / path.relative_to(root))
             rows.append({
                 "path": str(path),
                 "name": path.name,

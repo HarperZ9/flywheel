@@ -59,15 +59,23 @@ def native_tool_schemas(gate: ToolGate) -> list[dict]:
     return tools
 
 
-def native_tool_contract(capabilities: dict, endpoint: dict) -> dict:
-    gate = ToolGate(capabilities["allow_write"], capabilities["allow_exec"], False)
-    tools = native_tool_schemas(gate)
-    return {"schema": TOOL_PROTOCOL_SCHEMA, "protocol": "native",
+def native_tool_contract(capabilities: dict, endpoint: dict, mcp_admission=None) -> dict:
+    gate = ToolGate(capabilities["allow_write"], capabilities["allow_exec"],
+                    capabilities.get("allow_mcp", False))
+    from .gateway_agent_mcp_admission import native_mcp_tool_schemas
+    tools = native_tool_schemas(gate) + native_mcp_tool_schemas(mcp_admission)
+    if mcp_admission:
+        validate_openai_strict_tools(
+            tools, error_code="AGENT_MCP_SCHEMA_UNSUPPORTED")
+    contract = {"schema": TOOL_PROTOCOL_SCHEMA, "protocol": "native",
         "native_api_route": native_route(endpoint),
         "tool_schema_sha256": canonical_sha256({"tools": tools}),
         "tool_names": [t["name"] for t in tools], "strict_schemas": True,
         "parallel_tool_calls": False,
         "result_order_policy": "provider_order_sequential"}
+    if mcp_admission:
+        contract["mcp_admission_sha256"] = mcp_admission["admission_sha256"]
+    return contract
 
 
 def text_tool_contract() -> dict:
@@ -77,7 +85,8 @@ def text_tool_contract() -> dict:
         "result_order_policy": "text_tool_loop"}
 
 
-def validate_openai_strict_tools(tools: list[dict]) -> dict[str, dict]:
+def validate_openai_strict_tools(
+        tools: list[dict], *, error_code: str = "AGENT_BINDING_DRIFT") -> dict[str, dict]:
     result = {}
     try:
         for tool in tools:
@@ -94,7 +103,7 @@ def validate_openai_strict_tools(tools: list[dict]) -> dict[str, dict]:
         if len(result) != len(tools):
             raise ValueError
     except Exception:
-        raise GatewayOperationError("AGENT_BINDING_DRIFT") from None
+        raise GatewayOperationError(error_code) from None
     return result
 
 
@@ -122,43 +131,48 @@ def run_native_tool_agent(goal: str, binding: dict, credentials, root, ledger,
                           deadline: float, *, on_event=None, test_cmd=None) -> dict:
     endpoint = binding["endpoint"]
     contract = binding["tool_protocol"]
-    gate = ToolGate(binding["capabilities"]["allow_write"],
-                    binding["capabilities"]["allow_exec"], False)
-    tools = native_tool_schemas(gate)
-    if canonical_sha256({"tools": tools}) != contract["tool_schema_sha256"]:
-        raise GatewayOperationError("AGENT_BINDING_DRIFT")
-    props = validate_openai_strict_tools(tools)
-    slot = endpoint["slot"]
-    key = credentials.value_for(slot) if slot else ""
-    transport = BoundAgentTransport(base_url=endpoint["base_url"],
-        adapter=endpoint["adapter"], model=binding["model"]["model_id"],
-        deadline=deadline, max_tokens=binding["budget"]["max_tokens"],
-        max_calls=binding["transport"]["max_requests"],
-        native_protocol=contract["native_api_route"],
-        opener=_native_transport_opener(),
-        allow_omitted_temperature=contract["native_api_route"] == "anthropic_messages")
-    secret_guard = _native_private_guard(credentials, ledger)
-    executor = ToolExecutor(root=str(root), gate=gate,
-        runner=make_sandboxed_runner(bindings=credentials,
-                                     on_unavailable=fallback_from_env()))
-    if hasattr(executor, "init_receipt_chain"):
-        executor.init_receipt_chain(f"run-{ledger.checkpoint()[:12]}")
-    pre_state = _workspace_pre(str(root), gate.allow_write or gate.allow_exec, ledger)
-    started = time.perf_counter()
-    from . import tool_receipts
-    sign_key = tool_receipts.new_session_key()
-    ledger.append("user", goal)
-    final, steps = run_native_protocol_loop(contract["native_api_route"], goal,
-        binding, key, transport, executor, ledger, sign_key, deadline, on_event,
-        tools, props, secret_guard)
-    tests_pass = None
-    if test_cmd:
-        tests_pass = execute_native_test_command(
-            test_cmd, executor, ledger, sign_key, on_event, deadline,
-            secret_guard).ok
-    result = _done(final, steps, ledger, tests_pass=tests_pass,
-                   system="provider-native tool loop", goal=goal)
-    return _finalize_run(result, endpoint=endpoint["name"],
-        agent=SimpleNamespace(last_compaction=None), executor=executor,
-        receipt_dir=None, duration=round(time.perf_counter() - started, 3),
-        sign_key=sign_key, pre_state=pre_state, root=str(root), ledger=ledger)
+    from .gateway_agent_mcp_admission import open_mcp_runtime, native_mcp_tool_schemas
+    with open_mcp_runtime(binding.get("mcp_admission"), credentials=credentials,
+                          root=root, on_event=on_event,
+                          deadline=deadline) as mcp_runtime:
+        gate = ToolGate(binding["capabilities"]["allow_write"],
+                        binding["capabilities"]["allow_exec"],
+                        mcp_runtime["allow_mcp"])
+        tools = native_tool_schemas(gate) + native_mcp_tool_schemas(binding.get("mcp_admission"))
+        if canonical_sha256({"tools": tools}) != contract["tool_schema_sha256"]:
+            raise GatewayOperationError("AGENT_BINDING_DRIFT")
+        props = validate_openai_strict_tools(tools)
+        slot = endpoint["slot"]
+        key = credentials.value_for(slot) if slot else ""
+        transport = BoundAgentTransport(base_url=endpoint["base_url"],
+            adapter=endpoint["adapter"], model=binding["model"]["model_id"],
+            deadline=deadline, max_tokens=binding["budget"]["max_tokens"],
+            max_calls=binding["transport"]["max_requests"],
+            native_protocol=contract["native_api_route"],
+            opener=_native_transport_opener(),
+            allow_omitted_temperature=contract["native_api_route"] == "anthropic_messages")
+        secret_guard = _native_private_guard(credentials, ledger)
+        executor = ToolExecutor(root=str(root), gate=gate, external=mcp_runtime["external"],
+            runner=make_sandboxed_runner(bindings=credentials,
+                                         on_unavailable=fallback_from_env()))
+        if hasattr(executor, "init_receipt_chain"):
+            executor.init_receipt_chain(f"run-{ledger.checkpoint()[:12]}")
+        pre_state = _workspace_pre(str(root), gate.allow_write or gate.allow_exec, ledger)
+        started = time.perf_counter()
+        from . import tool_receipts
+        sign_key = tool_receipts.new_session_key()
+        ledger.append("user", goal)
+        final, steps = run_native_protocol_loop(contract["native_api_route"], goal,
+            binding, key, transport, executor, ledger, sign_key, deadline, on_event,
+            tools, props, secret_guard)
+        tests_pass = None
+        if test_cmd:
+            tests_pass = execute_native_test_command(
+                test_cmd, executor, ledger, sign_key, on_event, deadline,
+                secret_guard).ok
+        result = _done(final, steps, ledger, tests_pass=tests_pass,
+                       system="provider-native tool loop", goal=goal)
+        return _finalize_run(result, endpoint=endpoint["name"],
+            agent=SimpleNamespace(last_compaction=None), executor=executor,
+            receipt_dir=None, duration=round(time.perf_counter() - started, 3),
+            sign_key=sign_key, pre_state=pre_state, root=str(root), ledger=ledger)

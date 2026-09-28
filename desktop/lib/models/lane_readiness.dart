@@ -1,3 +1,6 @@
+import 'lane_models.dart';
+import 'lane_state.dart';
+
 /// Presence counts are distinct from successful MCP probes.
 String laneReadinessDetail(Object? total, Map<String, dynamic> counts,
     {bool unknown = false, bool probeRequested = false}) {
@@ -24,3 +27,33 @@ String laneReadinessDetail(Object? total, Map<String, dynamic> counts,
     if (stale > 0) '$stale stale',
   ].join(' · ');
 }
+
+/// The Tools headline. It counts each row's state (D2, D9). An engine that
+/// reports no state keeps the presence wording, and says "unverified" only
+/// after this app asked it to probe.
+String laneRosterDetail(LaneRoster roster) {
+  if (!rosterReportsState(roster)) {
+    return laneReadinessDetail(roster.nLanes, roster.byStatus,
+        probeRequested: roster.probed);
+  }
+  final counts = laneStateCounts(roster.lanes);
+  final total = roster.lanes.length;
+  if (counts['ready'] == total) return '$total of $total lanes ready';
+  return [
+    for (final entry in counts.entries)
+      '${entry.value} ${laneCountPhrase(entry.key, entry.value)}'
+  ].join(' · ');
+}
+
+/// The headline words after a count.
+String laneCountPhrase(String key, int count) => switch (key) {
+      'ready' => 'ready',
+      'limited' => 'limited',
+      'reads_only' => 'reads only',
+      'needs_setup' => count == 1 ? 'needs setup' : 'need setup',
+      'not_checked' => 'not checked',
+      'unreachable' => 'unreachable',
+      'cannot_launch' => 'cannot start',
+      'not_in_build' => 'not in this build',
+      _ => key,
+    };

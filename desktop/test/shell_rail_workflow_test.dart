@@ -8,6 +8,7 @@ Widget _rail({
   bool collapsed = false,
   VoidCallback? onOpenRecovery,
   VoidCallback? onOpenConnection,
+  VoidCallback? onOpenWalkthrough,
 }) =>
     MaterialApp(
       theme: flywheelLightTheme(),
@@ -26,14 +27,16 @@ Widget _rail({
             onOpenAppearance: () {},
             onOpenRecovery: onOpenRecovery ?? () {},
             onOpenConnection: onOpenConnection,
+            onOpenWalkthrough: onOpenWalkthrough,
           ),
         ),
       ),
     );
 
 void main() {
-  testWidgets('rail search accepts workflow terms, not only exact labels',
-      (tester) async {
+  testWidgets('rail search accepts workflow terms, not only exact labels', (
+    tester,
+  ) async {
     await tester.pumpWidget(_rail());
     final search = find.byType(TextField);
 
@@ -49,23 +52,50 @@ void main() {
     await tester.pump();
     expect(find.text('Projects'), findsOneWidget);
 
-    await tester.enterText(search, 'tools');
+    await tester.enterText(search, 'capabilities');
     await tester.pump();
-    expect(find.text('Lanes'), findsOneWidget);
+    expect(find.text('Tools'), findsOneWidget);
+
+    await tester.enterText(search, 'marketplace');
+    await tester.pump();
     expect(find.text('Plugins'), findsOneWidget);
   });
 
-  testWidgets('collapsed rail exposes recovery and connection actions',
-      (tester) async {
+  testWidgets('the walkthrough replay action fires when supplied', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    var replays = 0;
+    await tester.pumpWidget(_rail(onOpenWalkthrough: () => replays += 1));
+    await tester.tap(find.bySemanticsLabel('Replay the walkthrough'));
+    await tester.pump();
+    expect(replays, 1);
+    semantics.dispose();
+  });
+
+  testWidgets('the walkthrough replay action is absent when not supplied', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(_rail());
+    expect(find.bySemanticsLabel('Replay the walkthrough'), findsNothing);
+    semantics.dispose();
+  });
+
+  testWidgets('collapsed rail exposes recovery and connection actions', (
+    tester,
+  ) async {
     final semantics = tester.ensureSemantics();
     var recovery = 0;
     var connection = 0;
 
-    await tester.pumpWidget(_rail(
-      collapsed: true,
-      onOpenRecovery: () => recovery++,
-      onOpenConnection: () => connection++,
-    ));
+    await tester.pumpWidget(
+      _rail(
+        collapsed: true,
+        onOpenRecovery: () => recovery++,
+        onOpenConnection: () => connection++,
+      ),
+    );
 
     final recoveryAction = find.bySemanticsLabel('Open recovery center');
     final connectionAction = find.bySemanticsLabel('Pair a gateway connection');

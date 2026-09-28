@@ -16,6 +16,7 @@ import json
 
 import pytest
 
+from scripts import run_null_floor
 from harness.cross_harness_null_adapters import (
     BREACHED, HELD, MECHANICAL, PREAMBLE_REASONS, REJECTING, SCHEMA, STRATEGIES,
     build_null_floor_report, echo_report, hollow, rejected_at, write_null_submission,
@@ -124,6 +125,55 @@ def test_the_floor_report_carries_its_denominator_and_names_the_breach(tmp_path)
     assert report["checkers_never_reached"] == []
     assert len(report["rows_sha256"]) == 64
     assert len(report["does_not_prove"]) == 4
+
+
+def test_script_runner_has_a_good_case_for_every_registered_checker(tmp_path):
+    """The command denominator must not drift behind the checker registry."""
+    from harness.cross_harness_oracles import _CHECKERS
+
+    assert set(run_null_floor.checker_ids()) == set(_CHECKERS)
+    for checker in run_null_floor.checker_ids():
+        case_dir = tmp_path / checker.replace("/", "-")
+        context, _, _ = run_null_floor.build_case(case_dir, checker)
+        result = evaluate_task_oracle(context)
+        assert (result.state, result.failure_codes) == ("pass", []), checker
+
+
+def test_script_runner_missing_fixture_fails_explicitly(tmp_path):
+    """A missing fixture is a setup error, not an unhelpful registry KeyError."""
+    with pytest.raises(ValueError, match="fixture unavailable.*budgeted_evidence_selection/v1"):
+        run_null_floor.build_case(
+            tmp_path / "missing-fixture",
+            "budgeted_evidence_selection/v1",
+            repo_root=tmp_path / "empty-source",
+        )
+
+
+def test_script_runner_reports_full_denominator_and_accepting_checker_breach(tmp_path):
+    """The script writes a receipt even when --fail-on-breach returns nonzero."""
+    out = tmp_path / "null-floor.json"
+    markdown = tmp_path / "null-floor.md"
+    code = run_null_floor.main([
+        "--out", str(out),
+        "--markdown-out", str(markdown),
+        "--run-id", "registered-floor-test",
+        "--fail-on-breach",
+    ])
+    checkers = run_null_floor.checker_ids()
+    report = json.loads(out.read_text(encoding="utf-8"))
+    assert code == 1
+    assert report["schema"] == SCHEMA
+    assert report["denominator"] == {
+        "candidates": len(checkers) * len(STRATEGIES),
+        "checkers": len(checkers),
+        "strategies": len(STRATEGIES),
+        "checkers_reached": len(checkers),
+    }
+    assert report["checkers_never_reached"] == []
+    assert set(report["checkers"]) == set(checkers)
+    assert report["breaches"] == [{"checker_id": DOCS_V1, "strategy": "echo",
+                                   "oracle_state": "pass"}]
+    assert "documentation_maintenance/v1 scored the echo candidate pass" in markdown.read_text(encoding="utf-8")
 
 
 def test_a_breach_is_named_rather_than_averaged_away():

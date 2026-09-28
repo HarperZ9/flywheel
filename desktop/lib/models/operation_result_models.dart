@@ -25,7 +25,7 @@ final class OperationResult {
     final state = _serverState(json['state']);
     if (operation is! String ||
         !operationRefPattern.hasMatch(operation) ||
-        action != 'agent.run' ||
+        !const {'agent.run', 'output.check'}.contains(action) ||
         !state.isTerminal ||
         raw is! Map ||
         raw.keys.any((key) => key is! String)) {

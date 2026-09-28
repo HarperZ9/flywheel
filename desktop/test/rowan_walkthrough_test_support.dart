@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/controllers/gateway_operation_controller.dart';
 import 'package:flywheel_desktop/controllers/rowan_walkthrough_operation_host.dart';
+import 'package:flywheel_desktop/models/agent_execution_mode.dart';
 import 'package:flywheel_desktop/models/gateway_models.dart';
 import 'package:flywheel_desktop/models/operation_models.dart';
 import 'package:flywheel_desktop/models/rowan_walkthrough_models.dart';
@@ -43,6 +44,8 @@ class FakeRowanOperationHost extends ChangeNotifier
   List<EndpointRow> endpoints = const [];
   @override
   String? endpoint;
+  @override
+  AgentExecutionMode executionMode = AgentExecutionMode.api;
   @override
   String? selectedModel;
   @override
@@ -95,6 +98,12 @@ class FakeRowanOperationHost extends ChangeNotifier
   void setEndpoint(String? value) {
     endpoint = value;
     selectedModel = null;
+    notifyListeners();
+  }
+
+  @override
+  void setExecutionMode(AgentExecutionMode value) {
+    executionMode = value;
     notifyListeners();
   }
 

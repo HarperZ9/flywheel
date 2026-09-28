@@ -1,6 +1,9 @@
 // gateway_status_coordinator.dart -- owns the engine connection loop for
 // the shell: the typed status probe, the lane/world reads, and the
-// start/probe/install actions. The shell renders; this coordinates.
+// start/probe/check/install actions. The shell renders; this coordinates.
+//
+// Every roster read merges into the kept roster, so a probed row stays until
+// a newer probe replaces it; the 5 s poll used to erase it (D1).
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -9,6 +12,7 @@ import '../client/gateway_client.dart';
 import '../models/connection_state.dart';
 import '../models/gateway_models.dart';
 import '../models/lane_readiness.dart';
+import '../models/lane_state.dart';
 import '../services/gateway_status.dart';
 
 class GatewayStatusCoordinator extends ChangeNotifier {
@@ -136,10 +140,11 @@ class GatewayStatusCoordinator extends ChangeNotifier {
       if (_disposed) return;
       final nextWorld = await client.projectedWorld();
       if (_disposed) return;
-      roster = nextRoster;
+      final merged = mergeLaneRoster(roster, nextRoster);
+      roster = merged;
       world = nextWorld;
       startError = null;
-      message = laneReadinessDetail(nextRoster.nLanes, nextRoster.byStatus);
+      message = laneRosterDetail(merged);
     } catch (error) {
       if (_disposed) return;
       connection = ConnectionStatus.typed(ConnectionPhase.degraded,
@@ -180,12 +185,32 @@ class GatewayStatusCoordinator extends ChangeNotifier {
     try {
       final result = await client.laneRoster(probe: true);
       if (_disposed) return;
-      roster = result;
-      message = laneReadinessDetail(result.nLanes, result.byStatus,
-          probeRequested: true);
+      final merged = mergeLaneRoster(roster, result);
+      roster = merged;
+      message = laneRosterDetail(merged);
     } catch (error) {
       if (_disposed) return;
       message = 'probe failed: $error';
+    }
+    if (!_disposed) notifyListeners();
+  }
+
+  /// Probe one lane now and put its row in the roster.
+  Future<void> checkLane(String name) async {
+    if (_disposed) return;
+    final current = roster;
+    if (current == null) return;
+    message = 'checking $name…';
+    notifyListeners();
+    try {
+      final row = await client.checkLane(name);
+      if (_disposed) return;
+      final next = replaceLaneRow(roster ?? current, row);
+      roster = next;
+      message = laneRosterDetail(next);
+    } catch (error) {
+      if (_disposed) return;
+      message = 'check failed: $error';
     }
     if (!_disposed) notifyListeners();
   }

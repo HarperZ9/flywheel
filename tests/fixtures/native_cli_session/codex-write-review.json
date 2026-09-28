@@ -1,0 +1,53 @@
+{
+  "schema": "flywheel.gateway-agent-review/v3",
+  "binding_sha256": "395708dfb099843f3f793d7103c756869968ba9f182e1d8b74e796ac85c7a6c7",
+  "execution_mode": "native_cli_session",
+  "endpoint": "codex-cli",
+  "base_url": "",
+  "model": {
+    "requested_model_reference": "fixture-model-exact",
+    "model_id": "fixture-model-exact",
+    "selection": "explicit",
+    "observation_policy": "provider_reported",
+    "profile": null
+  },
+  "root": "C:\\fixture\\workspace",
+  "workspace_policy_sha256": "fef5e739facb303ff967113b65e3434a72919e47f11b7870a6a505746eacd840",
+  "budget": {
+    "max_steps": 4,
+    "max_tokens": null,
+    "timeout_s": 60
+  },
+  "capabilities": {
+    "allow_write": true,
+    "allow_exec": true,
+    "allow_mcp": false
+  },
+  "cli_session": {
+    "provider": "codex-cli",
+    "profile": "codex_windows_sandbox_v1",
+    "tools": [
+      "command_execution",
+      "file_change"
+    ],
+    "filesystem_scope": "os_read_scope_workspace_write_only",
+    "auth_mode": "official_cli_own_auth",
+    "controls": {
+      "timeout_s": "owned_process_deadline",
+      "max_steps": "unsupported",
+      "max_tokens": "unsupported",
+      "seed": "unsupported"
+    },
+    "limitations": [
+      "NO_OS_ADMINISTRATION",
+      "NO_PROVIDER_RESUME",
+      "PROVIDER_POLICY_APPLIES",
+      "NO_HARD_TOKEN_LIMIT",
+      "HIDDEN_REASONING_UNAVAILABLE",
+      "NO_HARD_NATIVE_TURN_LIMIT",
+      "READ_SCOPE_NOT_WORKSPACE_CONFINED",
+      "UNRECOGNIZED_SUMMARY_FIELDS_OMITTED"
+    ],
+    "version": "0.153.4"
+  }
+}

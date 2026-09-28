@@ -81,6 +81,51 @@ void main() {
         isTrue);
   });
 
+  test('agent v4 native MCP tools require matching admission', () {
+    final parsed = GatewayGrantProposal.fromJson(gatewayAgentProposal(
+        agentExecution: gatewayNativeMcpAgentExecutionReview));
+
+    expect(parsed.invalidResponse, isFalse);
+    final review = parsed.summary.agentExecution!;
+    expect(review.toolProtocol?.mcpAdmissionSha256, gatewayMcpAdmissionHash);
+    expect(review.toolProtocol?.toolNames,
+        const ['read_file', 'list_dir', 'grep', 'mcp_synthetic__echo']);
+
+    expect(
+        GatewayGrantProposal.fromJson(gatewayAgentProposal(agentExecution: {
+          ...gatewayNativeMcpAgentExecutionReview,
+          'capabilities': const {
+            'allow_exec': false,
+            'allow_mcp': false,
+            'allow_write': false,
+          },
+        })).invalidResponse,
+        isTrue);
+    expect(
+        GatewayGrantProposal.fromJson(gatewayAgentProposal(agentExecution: {
+          ...gatewayNativeMcpAgentExecutionReview,
+          'tool_protocol': {
+            ...gatewayNativeMcpToolProtocol,
+            'mcp_admission_sha256': gatewayAgentTestHash,
+          },
+        })).invalidResponse,
+        isTrue);
+    expect(
+        GatewayGrantProposal.fromJson(gatewayAgentProposal(agentExecution: {
+          ...gatewayNativeMcpAgentExecutionReview,
+          'tool_protocol': gatewayOpenAiNativeToolProtocol,
+        })).invalidResponse,
+        isTrue);
+    final missingAdmission =
+        Map<String, Object?>.from(gatewayNativeMcpAgentExecutionReview)
+          ..remove('mcp_admission');
+    expect(
+        GatewayGrantProposal.fromJson(
+                gatewayAgentProposal(agentExecution: missingAdmission))
+            .invalidResponse,
+        isTrue);
+  });
+
   test('agent v2 protocol review rejects malformed nested authority', () {
     Map<String, Object?> without(Map<String, Object?> source, String key) =>
         Map<String, Object?>.from(source)..remove(key);
@@ -187,6 +232,13 @@ void main() {
         'tool_protocol': {
           ...gatewayTextToolProtocol,
           'strict_schemas': true,
+        },
+      },
+      {
+        ...gatewayMcpAgentExecutionReview,
+        'tool_protocol': {
+          ...gatewayTextToolProtocol,
+          'mcp_admission_sha256': gatewayMcpAdmissionHash,
         },
       },
     ]) {

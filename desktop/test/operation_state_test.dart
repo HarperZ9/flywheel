@@ -169,6 +169,15 @@ void _resultTests() {
       }),
       throwsArgumentError,
     );
+    final outputCheck = OperationResult.fromJson({
+      'schema': 'flywheel.gateway-operation-result/v1',
+      'operation_ref': _operation,
+      'action': 'output.check',
+      'state': 'completed',
+      'result': {'verdict': 'PASS', 'cli_exit_code': 0},
+    });
+    expect(outputCheck.action, 'output.check');
+    expect(outputCheck.result['verdict'], 'PASS');
 
     final canonical = OperationResult.fromJson({
       'schema': operationResultSchema,

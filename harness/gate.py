@@ -102,6 +102,17 @@ def rewitness_envelope(path) -> str:
     return "MATCH"
 
 
+def gate_output_directory(argv: list[str], locate_repo) -> Path:
+    """Keep checkout defaults; bare installs write beneath their working directory."""
+    if argv and not argv[0].startswith("-"):
+        return Path(argv[0])
+    try:
+        root = locate_repo()
+    except FileNotFoundError:
+        root = Path.cwd()
+    return root / "artifacts" / "gate"
+
+
 def run_gate(out_dir) -> GateReport:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

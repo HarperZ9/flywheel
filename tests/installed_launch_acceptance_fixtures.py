@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from desktop.tool import installed_launch_acceptance as ila
+from desktop.tool import installed_payload_binding as ipb
 
 COMMIT = "276d399d37485ca63815cea1e629db06f123e839"
 TOKEN = "secret-token-that-must-never-appear"
@@ -33,14 +34,32 @@ def build_manifest(root: Path, install: Path, *, app_sha="", engine_sha="",
     engine_path = install / "engine" / "flywheel-gateway.exe"
     app_sha = app_sha or (ila.sha256_file(app_path) if app_path.exists() else "")
     engine_sha = engine_sha or (ila.sha256_file(engine_path) if engine_path.exists() else "")
+    try:
+        manifest = ipb.build_manifest([(install, "")], source_commit=source, version=version)
+    except ValueError as exc:
+        if not str(exc).startswith("required_build_payload_missing:"):
+            raise
+        files = []
+        for target in sorted(install.rglob("*")):
+            if target.is_file():
+                files.append({
+                    "path": target.relative_to(install).as_posix(),
+                    "origin": ipb.BUILD_ORIGIN,
+                    "sha256": ila.sha256_file(target),
+                    "size": target.stat().st_size,
+                })
+        manifest = {
+            "schema": ipb.MANIFEST_SCHEMA,
+            "source_commit": source,
+            "version": version,
+            "artifacts": {"app_sha256": app_sha, "engine_sha256": engine_sha},
+            "payload": {"schema": ipb.PAYLOAD_SCHEMA, "files": files},
+            "trust_boundary": ipb.TRUST_BOUNDARY,
+        }
+    manifest["artifacts"]["app_sha256"] = app_sha
+    manifest["artifacts"]["engine_sha256"] = engine_sha
     path = root / "build-manifest.json"
-    path.write_text(json.dumps({
-        "schema": "flywheel.installed-build-manifest/v1",
-        "source_commit": source,
-        "version": version,
-        "artifacts": {"app_sha256": app_sha, "engine_sha256": engine_sha},
-        "trust_boundary": "operator_supplied_integrity_binding",
-    }), encoding="utf-8")
+    path.write_text(json.dumps(manifest), encoding="utf-8")
     return path
 
 

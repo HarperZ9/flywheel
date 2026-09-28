@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "flywheel-writing-lint": {
+      "command": "flywheel-writing-lint-mcp",
+      "args": []
+    }
+  }
+}

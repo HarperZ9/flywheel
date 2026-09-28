@@ -1,0 +1,107 @@
+{
+  "schema": "flywheel.inspect-evidence/v1",
+  "source": {
+    "sha256": "70f9ae1757ea9f6d417c8cf15fbf626ae09dcac05d3f0837191ba7347e446be4",
+    "byte_length": 14698
+  },
+  "producer": {
+    "format": "inspect-json",
+    "version": 2
+  },
+  "reported_status": "success",
+  "assessment": "reported",
+  "invalidated": false,
+  "semantic_verification": "UNVERIFIABLE",
+  "counts": {
+    "total_samples": 1,
+    "completed_samples": 1,
+    "observed_samples": 1
+  },
+  "scoring_coverage": {
+    "coverage_complete": true,
+    "samples_with_scores": 1,
+    "sample_score_records": 1,
+    "score_history": {
+      "present": 1,
+      "empty": 0,
+      "missing": 0
+    },
+    "result_scores": [
+      {
+        "name": "match",
+        "scorer": "match",
+        "scored_samples": 1,
+        "unscored_samples": 0
+      }
+    ]
+  },
+  "samples": [
+    {
+      "id": "case",
+      "epoch": 1,
+      "status": null,
+      "error": null,
+      "scores": [
+        {
+          "scorer": "match",
+          "value": "I",
+          "score_history": {
+            "state": "present",
+            "events": [
+              {
+                "value": "C"
+              },
+              {
+                "value": "I",
+                "reason": "manual_review",
+                "provenance": {
+                  "timestamp": "2026-09-13T15:21:45Z",
+                  "author": "flywheel-test",
+                  "reason": "bounded edit provenance acceptance"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "source_pointers": [
+    {
+      "json_pointer": "/samples/0/scores/match/value",
+      "source_value": "I"
+    },
+    {
+      "json_pointer": "/samples/0/scores/match/reason",
+      "source_value": "manual_review"
+    },
+    {
+      "json_pointer": "/samples/0/scores/match/history/0/value",
+      "source_value": "C"
+    },
+    {
+      "json_pointer": "/samples/0/scores/match/history/1/value",
+      "source_value": "I"
+    },
+    {
+      "json_pointer": "/samples/0/scores/match/history/1/reason",
+      "source_value": "manual_review"
+    },
+    {
+      "json_pointer": "/samples/0/scores/match/history/1/provenance/author",
+      "source_value": "flywheel-test"
+    },
+    {
+      "json_pointer": "/samples/0/scores/match/history/1/provenance/reason",
+      "source_value": "bounded edit provenance acceptance"
+    },
+    {
+      "json_pointer": "/samples/0/scores/match/history/1/provenance/timestamp",
+      "source_value": "2026-09-13T15:21:45Z"
+    }
+  ],
+  "does_not_prove": [
+    "Inspect status and scorer values are reported by the source log only.",
+    "Score edit history is reported provenance, not independent semantic verification."
+  ]
+}

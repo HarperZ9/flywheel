@@ -86,8 +86,12 @@ def handle_subagents_get(path: str, qs: str, *,
                                          "unknown subagent route", 404))
 
 
-def handle_subagents_post(path: str, body: dict, *, run_root,
-                          clock=None) -> tuple[dict, int]:
+def handle_subagents_post(path: str, body: dict, *, run_root, clock=None,
+                          owner_ref=None, state_root=None,
+                          operation_service=None, process_factory=None,
+                          workspace_root=None,
+                          parent_authority_validator=None,
+                          handle_factory=None) -> tuple[dict, int]:
     action = path.rsplit("/", 1)[-1]
     if action not in ("spawn", "cancel"):
         return error_response(TransportError("NOT_FOUND",
@@ -105,6 +109,39 @@ def handle_subagents_post(path: str, body: dict, *, run_root,
         return res, 200
     if not isinstance(body, dict):
         return _invalid("the spawn request is a JSON object")
+    if body.get("schema") == "flywheel.subagent-spawn-request/v2":
+        try:
+            if operation_service is None or process_factory is None \
+                    or owner_ref is None or state_root is None:
+                raise ValueError("gateway operation service is required")
+            from .subagent_gateway_bridge import (
+                aggregate_child_budget, authorize_parent_authority,
+                parent_spawn_guard, preflight_child_credentials,
+                preview_parent_authority)
+            parent = preview_parent_authority(
+                body.get("parent_authority"), owner_ref=owner_ref,
+                state_root=Path(state_root), workspace_root=workspace_root)
+            aggregate_child_budget(body.get("children", []), parent,
+                                   body.get("timeout_s", 600.0))
+            preflight_child_credentials(body.get("children", []), parent,
+                goal=str(body.get("goal") or ""), state_root=Path(state_root),
+                workspace_root=workspace_root)
+            with parent_spawn_guard(Path(state_root), owner_ref):
+                authorized = authorize_parent_authority(
+                    body.get("parent_authority"), operation_service,
+                    owner_ref=owner_ref, workspace_root=workspace_root)
+                ack = _runner(Path(run_root), clock).spawn(
+                    goal=body.get("goal"), children=body.get("children"),
+                    parent_authority=authorized, quorum_policy=str(
+                        body.get("quorum_policy") or "majority"),
+                    timeout_s=body.get("timeout_s", 600.0),
+                    workspace_root=workspace_root, state_root=Path(state_root),
+                    operation_service=operation_service,
+                    process_factory=process_factory,
+                    handle_factory=handle_factory)
+            return ack, 200
+        except Exception as exc:
+            return _invalid(str(getattr(exc, "code", exc)))
     children_raw = body.get("children")
     if not isinstance(children_raw, list) \
             or not 1 <= len(children_raw) <= MAX_CHILDREN:

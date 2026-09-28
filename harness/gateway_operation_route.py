@@ -230,9 +230,9 @@ def _start_replay(service, owner_ref: str, envelope, journey):
     return service._snapshot(journey, ref, history)
 def _has_source_context_ref(data_refs) -> bool:
     return any(type(ref) is str and ref.startswith("data_source_context.") for ref in data_refs)
-def _start(raw: bytes, owner_ref: str, service, process_factory) -> RouteResponse:
+def _start(action: str, raw: bytes, owner_ref: str, service, process_factory) -> RouteResponse:
     from .gateway_envelope import parse_gateway_envelope
-    envelope = parse_gateway_envelope("agent.run", raw)
+    envelope = parse_gateway_envelope(action, raw)
     ref = operation_ref_for(owner_ref, envelope.journey_ref,
                             envelope.client_request_id)
     journey = service._journey(owner_ref)
@@ -240,7 +240,7 @@ def _start(raw: bytes, owner_ref: str, service, process_factory) -> RouteRespons
         replay = _start_replay(service, owner_ref, envelope, journey)
         if replay is None:
             authorized = service.authorizer(
-                "agent.run", raw, owner_ref=owner_ref,
+                action, raw, owner_ref=owner_ref,
                 state_root=service.state_root, clock=service.clock, **(
                     {"workspace_root": getattr(process_factory, "repo_root", None)} if getattr(service.authorizer, "__module__", "") == "harness.gateway_grant_route" else {}))
             authorized = service.credential_resolver(
@@ -249,7 +249,7 @@ def _start(raw: bytes, owner_ref: str, service, process_factory) -> RouteRespons
                 authorized, process_factory, already_guarded=True)
         else:
             snapshot = replay
-    if envelope.operation.operation["stream"]:
+    if envelope.operation.operation.get("stream") is True:
         return RouteResponse(200, stream=_stream(
             service, owner_ref, snapshot.operation_ref, snapshot))
     from .gateway_operation_route_reads import completed_result
@@ -259,10 +259,11 @@ def route_gateway_operation(
         method: str, path: str, *, owner_ref: str, service, process_factory,
         raw: bytes = b"", query: str = "", content_type: str = "") -> RouteResponse:
     try:
-        if path == "/api/agent":
+        if path in {"/api/agent", "/api/output/check"}:
             if method != "POST" or query or content_type != "application/json":
                 raise GatewayOperationError("INVALID_REQUEST")
-            return _start(raw, owner_ref, service, process_factory)
+            return _start("agent.run" if path == "/api/agent" else "output.check",
+                          raw, owner_ref, service, process_factory)
         if path == "/api/operations/cancel":
             if method != "POST" or query or content_type != "application/json":
                 raise GatewayOperationError("INVALID_REQUEST")

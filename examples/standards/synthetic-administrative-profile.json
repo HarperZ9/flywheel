@@ -1,0 +1,63 @@
+{
+  "schema": "flywheel.standards-profile/v1",
+  "profile_id": "synthetic-admin-assurance",
+  "title": "Synthetic Administrative Assurance Profile",
+  "version": "2026.09",
+  "owner": "Flywheel synthetic fixture",
+  "instrument": {
+    "instrument_id": "synthetic-admin-policy",
+    "title": "Synthetic Administrative Assurance Policy",
+    "edition": "2026",
+    "instrument_kind": "internal_policy",
+    "issuer_role": "internal_policy_owner",
+    "binding_basis": "internal_policy",
+    "binding_review_status": "reviewed_for_named_scope",
+    "jurisdiction": "SYNTHETIC"
+  },
+  "provenance": {
+    "source_status": "discovered",
+    "source_ref": "synthetic-fixture",
+    "source_url": null,
+    "retrieved_at": "2026-09-16",
+    "source_sha256": null,
+    "raw_source_hash_null_reason": "synthetic discovery metadata only",
+    "language": "en",
+    "translation": "not_translated",
+    "disclosure_tier": "public_metadata",
+    "review_status": "not_reviewed"
+  },
+  "effective": {
+    "published_on": "2026-09-01",
+    "effective_from": "2026-09-16",
+    "effective_to": null,
+    "supersedes": [],
+    "superseded_by": []
+  },
+  "applicability": {
+    "jurisdictions": ["SYNTHETIC"],
+    "operator_roles": ["operator"],
+    "covered_uses": ["administrative_review"]
+  },
+  "requirements": [
+    {
+      "requirement_id": "SYN-ADM-1",
+      "requirement_ref": "1.1",
+      "summary": "Name an accountable owner for administrative evidence review.",
+      "text_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "selectors": {
+        "jurisdictions": ["SYNTHETIC"],
+        "operator_roles": ["operator"],
+        "covered_uses": ["administrative_review"]
+      },
+      "maps_to_controls": ["tadr:T1:named-owner"],
+      "maps_to_evidence_claims": ["synthetic.owner-record"],
+      "evidence": {
+        "status": "partial",
+        "artifact_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "review_required": true,
+      "does_not_prove": "This synthetic requirement validates registry mechanics only; it does not prove legal compliance, certification, or official endorsement."
+    }
+  ],
+  "does_not_prove": "A structurally valid profile does not prove requirement truth, applicability in law, institutional approval, certification, or deployment compliance."
+}

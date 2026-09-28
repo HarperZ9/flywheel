@@ -1,6 +1,7 @@
 """Cross-restart swarm control: live-state persistence, adoption of
 detached swarms after a restart, and cancellation that seals what
 actually finished. Cancelled children are never silently successful."""
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -83,6 +84,35 @@ def test_spawn_persists_a_validated_live_state(tmp_path):
     assert all(c["workspace"] and len(c["spec_sha256"]) == 64
                for c in live["children"])
 
+
+
+def test_swarm_with_nonempty_child_output_seals_with_output_hash(tmp_path):
+    class _OutputHandle:
+        @property
+        def pid(self):
+            return None
+
+        def wait(self, timeout_s):
+            return 0, "child stdout"
+
+        def stop(self):
+            return True
+
+    def factory(spec_path, workspace):
+        spec = json.loads(Path(spec_path).read_text(encoding="utf-8"))
+        (Path(workspace) / "result.json").write_text(json.dumps({
+            "schema": subagents.RESULT_SCHEMA,
+            "spec_sha256": spec["spec_sha256"],
+            "role": spec["role"], "status": "completed"}),
+            encoding="utf-8")
+        return _OutputHandle()
+
+    runner = SwarmRunner(run_root=tmp_path)
+    ack = _spawn(runner, handle_factory=factory)
+    child = _await_sealed(runner, ack["swarm_id"])["receipt"]["children"][0]
+
+    assert child["status"] == "completed"
+    assert child["output_sha256"] == hashlib.sha256(b"child stdout").hexdigest()
 
 def test_snapshot_adopts_a_detached_swarm_and_seals_it(tmp_path):
     sid = "swarm_" + "a" * 12
