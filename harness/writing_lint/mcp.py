@@ -49,22 +49,34 @@ _DELTA_SCHEMA = {
     },
 }
 
+def _read_only(title: str) -> dict:
+    """Every lint tool reads text and scores it: no writes, no network, and the
+    same input gives the same score. Kept here rather than imported, so this
+    subpackage stays free of imports from its parent package."""
+    return {"title": title, "annotations": {
+        "title": title, "readOnlyHint": True, "destructiveHint": False,
+        "idempotentHint": True, "openWorldHint": False}}
+
+
 TOOLS = [
     {"name": "writing.profiles",
      "description": "List the register profiles the linter knows and the "
                     "default. No arguments.",
-     "inputSchema": {"type": "object", "properties": {}}},
+     "inputSchema": {"type": "object", "properties": {}},
+     **_read_only("List prose profiles")},
     {"name": "writing.lint",
      "description": "Score a draft's FORM against a register profile. Returns "
                     "per100w (the gated headline), report_per100w (report-only "
                     "checks, structural tells included), hard violations, the "
                     "cadence metric, and the full violation counts. It never "
                     "judges substance and never tries to defeat AI detection.",
-     "inputSchema": _LINT_SCHEMA},
+     "inputSchema": _LINT_SCHEMA,
+     **_read_only("Score prose form")},
     {"name": "writing.delta",
      "description": "Score two drafts and report the per100w change. The delta "
                     "is the signal when revising toward the standard.",
-     "inputSchema": _DELTA_SCHEMA},
+     "inputSchema": _DELTA_SCHEMA,
+     **_read_only("Compare two drafts")},
 ]
 
 DOES_NOT_PROVE = _check.DOES_NOT_PROVE

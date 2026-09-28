@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 from .local_agent import LocalAgent, available_backends, health_report
+from .local_mcp_hints import hinted
 from .local_agent_grants import (
     AgentRunGrants, GrantRefusal, check_online, grants_from_config, refused_grants,
     resolve_run,
@@ -36,7 +37,7 @@ __version__ = "0.1.0"
 
 _ONLINE = {"online": {"type": "boolean", "description": "include codex/claude/gemini/deepseek; for chat and run, true is refused unless the operator granted online tiers"}}
 
-TOOLS = [
+TOOLS = [hinted(tool) for tool in [
     {"name": "local_agent_health",
      "description": "Report which model tiers are live (local serve/ollama, plus online providers when online=true).",
      "inputSchema": {"type": "object", "properties": dict(_ONLINE)}},
@@ -46,7 +47,7 @@ TOOLS = [
                      "properties": {"prompt": {"type": "string"},
                                     "backend": {"type": "string"}, **_ONLINE}}},
     {"name": "local_agent_run",
-     "description": "Run a gated agentic task confined to the operator's workspace. Write and exec are granted by the operator when the server starts; the arguments can only narrow them. Returns the final answer and a verifiable ledger checkpoint.",
+     "description": "Run a gated agentic task confined to the operator's workspace. Write and exec are granted by the operator when the server starts; the arguments can only narrow them. Returns the final answer, the step count, and the head hash of the run's step ledger with a flag that says the chain re-derives. That flag shows the steps were recorded in order; it does not show the answer is correct.",
      "inputSchema": {"type": "object", "required": ["goal"],
                      "properties": {"goal": {"type": "string"},
                                     "root": {"type": "string", "description": "directory inside the operator's workspace; relative paths are taken from the workspace"},
@@ -59,7 +60,7 @@ TOOLS = [
     {"name": "local-model.doctor",
      "description": "Readiness diagnostic: identity plus the tiers this lane would try and the tools it exposes. Network-free, so it reports no reachability; local_agent_health is the tool that pings a tier.",
      "inputSchema": {"type": "object", "properties": {}}},
-] + context_memory_tool_descriptors() + receipt_mcp_tool_descriptors()
+] + context_memory_tool_descriptors() + receipt_mcp_tool_descriptors()]
 
 
 def _backends(args: dict) -> list:

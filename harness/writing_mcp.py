@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .evidence_public import TransportError
 from .writing_artifacts import WritingArtifactError
+from .writing_mcp_hints import hinted
 from .writing_operations import (
     SCHEMA, mcp_schemas, mcp_tool_descriptors, operation_for_mcp,
     validate_mcp_arguments)
@@ -16,7 +17,7 @@ from .writing_service import WritingError, WritingService
 PROTOCOL = "2025-06-18"
 __version__ = "0.1.0"
 
-TOOLS = mcp_tool_descriptors()
+TOOLS = [hinted(tool) for tool in mcp_tool_descriptors()]
 SCHEMAS = mcp_schemas()
 
 

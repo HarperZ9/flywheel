@@ -128,7 +128,7 @@ def context_memory_tool_descriptors() -> list[dict]:
                          "properties": dict(base, **destination, event={"type": "object"}),
                          "additionalProperties": False}},
         {"name": "flywheel.context.preflight",
-         "description": "Search the configured Canon context store before assuming context is new.",
+         "description": "Search the configured Canon context store for earlier context that matches a query.",
          "inputSchema": {"type": "object", "required": ["owner_ref", "schema", "project_ref", "query"],
                          "properties": dict(base, **destination,
                                             query={"type": "string"}, top_k={"type": "integer"},
