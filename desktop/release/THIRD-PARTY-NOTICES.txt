@@ -216,5 +216,8 @@ License file shipped: node-lanes/learn/LICENSE
 Source: https://registry.npmjs.org/@harperz9/learn/-/learn-2.0.0.tgz (npm integrity pinned in packaging/node-lane-payloads.json)
 Copyright (c) 2026 Zain Dana Harper.
 
-Telos (project-telos-mcp 0.4.1) is not in this build: its release contents are
-under review and the freeze refuses it.
+project-telos-mcp 0.4.2
+License: Functional Source License 1.1, Apache 2.0 future license, FSL-1.1-ALv2
+License file shipped: node-lanes/telos/LICENSE
+Source: https://registry.npmjs.org/project-telos-mcp/-/project-telos-mcp-0.4.2.tgz (npm integrity and sha256 pinned in packaging/node-lane-payloads.json; the same bytes as the v0.4.2 GitHub release asset, tag v0.4.2 @ b9f59788c280)
+Copyright 2026 Zain Dana Harper.

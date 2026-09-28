@@ -5,8 +5,7 @@ The frozen gateway ships this folder as ``_internal/node-lanes``
 
     <stage>/node/node.exe, LICENSE     Node LTS, from the pinned nodejs.org zip
     <stage>/learn/...                   @harperz9/learn, from the pinned npm tarball
-    <stage>/telos/...                   project-telos-mcp, from the pinned GitHub release,
-                                        only with --include-held (see below)
+    <stage>/telos/...                   project-telos-mcp, from the pinned npm tarball
     <stage>/node-lane-stage.json        the receipt; the freeze requires verdict PASS
 
 Every input is pinned in ``packaging/node-lane-payloads.json``. An archive is
@@ -20,9 +19,9 @@ Archives come from ``--artifact-dir`` when present there (the default is a
 stage ships). ``--offline`` refuses to download a missing one.
 
 A row with a ``hold`` field is skipped and listed under ``held`` in the receipt,
-unless ``--include-held`` is passed. telos carries the O-8 hold: its release
-contents are under review, so no freeze or installer stages it by default, and
-``scripts/frozen_payload_datas.py`` refuses a stage that lists a held lane.
+unless ``--include-held`` is passed, and ``scripts/frozen_payload_datas.py``
+refuses a stage that lists a held lane. No committed row carries a hold: telos
+did until 0.4.2, whose tools the lane policy now classifies one by one.
 """
 from __future__ import annotations
 

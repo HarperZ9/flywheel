@@ -4,9 +4,9 @@ Correctness review F11 of 1.1.0: the capture-off rule was tested per env
 builder, and no committed test resolved each lane's real launch. This one
 resolves all 17, frozen and from source, and requires FLYWHEEL_CAPTURE=off on
 every launch that spawns a process. In the frozen resolution, where the stage
-is forced present, exactly bulletin (a remote board over HTTP) and telos (held
-out of the build) spawn nothing, so a lane that silently loses its launch is
-seen too.
+is forced present, exactly bulletin (a remote board over HTTP) spawns nothing,
+so a lane that silently loses its launch is seen too. telos spawned nothing
+while it was held; from 0.4.2 it launches like learn and carries capture off.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from harness import lane_runtime_frozen as lrf
 from harness.lanes_registry import LANES
 from tests.test_lane_runtime_frozen import _finder, _pick_root, _stage
 
-NO_PROCESS = {"bulletin", "telos"}
+NO_PROCESS = {"bulletin"}
 
 
 def _capture(name: str) -> str:

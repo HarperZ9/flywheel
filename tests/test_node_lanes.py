@@ -33,7 +33,7 @@ def _stage(tmp_path: Path, verdict: str = "PASS") -> Path:
         script.parent.mkdir(parents=True)
         script.write_text("// entry\n", encoding="utf-8")
     receipt = {"verdict": verdict, "lanes": [{"lane": "learn", "version": "1.6.0"},
-                                             {"lane": "telos", "version": "0.4.1"}]}
+                                             {"lane": "telos", "version": "0.4.2"}]}
     (stage / "node-lane-stage.json").write_text(json.dumps(receipt), encoding="utf-8")
     return stage
 
@@ -81,10 +81,17 @@ def test_frozen_launch_carries_the_policy_t1_tools_only(tmp_path):
     assert res.launch.allowed_tools == tuple(admitted_tools("learn"))
     assert "learn_tutor_plan" in res.launch.allowed_tools
     assert "learn_tutor_record" not in res.launch.allowed_tools  # T2
-    # telos is held (O-8): its launch, if one were built, would admit nothing
-    held = nl.resolve_node_lane(LANES["telos"], "frozen", _env(tmp_path),
-                                stage_root=stage, find=_finder())
-    assert held.launch.allowed_tools == ()
+    # telos admits its T1 tools only: the three that start programs outside the
+    # package and the device driver are left off the launch.
+    telos = nl.resolve_node_lane(LANES["telos"], "frozen", _env(tmp_path),
+                                 stage_root=stage, find=_finder())
+    assert telos.codes == ()
+    assert telos.launch.allowed_tools == tuple(admitted_tools("telos"))
+    assert len(telos.launch.allowed_tools) == 37 and "telos.catalog" in telos.launch.allowed_tools
+    for name in ("telos.room", "telos.workflow", "telos.proof", "telos.native.control"):
+        assert name not in telos.launch.allowed_tools, name
+    assert telos.launch.argv[-1] == str(stage / "telos" / "demo" / "telos-mcp.mjs")
+    assert telos.launch.cwd == str(tmp_path / "home" / "lanes" / "telos")
 
 
 def test_no_node_gives_the_node_setup_item_and_no_launch(tmp_path):
@@ -193,10 +200,16 @@ def test_policy_covers_exactly_the_pinned_tool_names(lane):
 
 def test_policy_draft_for_the_node_lanes():
     telos = lane_policy("telos")
-    assert main_tools("telos") == []
+    assert main_tools("telos") == ["telos.catalog", "telos.proof.research",
+                                   "telos.proof.visual", "telos.proof.build"]
     assert telos["telos.native.control"].not_in_build == "actuation_outside_app"
-    assert telos["telos.room"].not_in_build == "release_on_hold"
-    assert admitted_tools("telos") == []
+    assert telos["telos.native.control"].tier == "T2"
+    assert {name for name, e in telos.items() if e.not_in_build} == {"telos.native.control"}
+    for name in ("telos.room", "telos.workflow", "telos.proof"):
+        assert (telos[name].tier, telos[name].effect, telos[name].not_in_build) == (
+            "T2", "actuate", ""), name
+    assert len(admitted_tools("telos")) == 37
+    assert all(telos[name].effect == "read" for name in admitted_tools("telos"))
     assert main_tools("learn") == ["learn_dry_run", "learn_tutor_plan"]
     assert lane_policy("learn")["learn_tutor_record"].tier == "T2"
     assert "learn_tutor_record" not in admitted_tools("learn")

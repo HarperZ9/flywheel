@@ -96,7 +96,7 @@ def test_bundled_lane_needs_no_install():
 
 def test_public_commands_are_portable_declared_argv():
     assert resolve_mcp_command("gather") == ["gather", "mcp"]
-    assert resolve_mcp_command("telos") == []  # unpublished package has no public launch hint
+    assert resolve_mcp_command("telos") == ["node", "demo/telos-mcp.mjs"]
     assert resolve_mcp_command("learn") == ["node", "src/mcp.mjs"]
     assert resolve_mcp_command("local-model") == [
         "python", "-m", "harness.local_mcp"]

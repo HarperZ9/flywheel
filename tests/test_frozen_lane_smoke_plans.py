@@ -42,8 +42,6 @@ def _plans(tmp_path, monkeypatch):
 def test_every_frozen_lane_without_a_payload_row_gets_a_plan(tmp_path, monkeypatch):
     exe, home, project, plans = _plans(tmp_path, monkeypatch)
     assert set(plans) == {"learn", "telos", "writing", "local-model"}
-    held = plans.pop("telos")  # the O-8 hold: no launch, a stated code
-    assert held.launch is None and held.blocking_codes == ("lane_held",)
     for name, plan in plans.items():
         assert plan.launch is not None and not plan.blocking_codes, name
         assert Path(plan.launch.argv[0]).is_absolute(), name
@@ -51,8 +49,11 @@ def test_every_frozen_lane_without_a_payload_row_gets_a_plan(tmp_path, monkeypat
         assert Path(plan.launch.cwd) == home / "lanes" / name
         assert plan.health_tool == plans_mod.HEALTH_TOOLS[name]
     assert plans["writing"].launch.argv == (str(exe), "--lane-mcp", "writing")
-    assert plans["learn"].launch.argv[0] == str(exe.parent / "_internal" / "node-lanes"
-                                                / "node" / bundled_node_name())
+    for lane in ("learn", "telos"):
+        assert plans[lane].launch.argv[0] == str(exe.parent / "_internal" / "node-lanes"
+                                                 / "node" / bundled_node_name()), lane
+    assert plans["telos"].launch.argv[1].endswith("telos-mcp.mjs")
+    assert plans["telos"].health_tool == "telos.status"
 
 
 def test_local_model_gets_a_project_folder_outside_the_smoke_home(tmp_path, monkeypatch):

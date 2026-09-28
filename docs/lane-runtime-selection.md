@@ -95,7 +95,6 @@ feature runs as if the variable were unset.
 | relay | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GLM_API_KEY`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`, `<PROVIDER>_PROVIDER_KEY`, `<PROVIDER>_CLOUD_KEY` | the online tier (`online=true`) | the names for the providers you use |
 | mneme | `OPENAI_API_KEY` (the default `api_key_env`) | model-assisted extraction (`llm_extract`) | `["OPENAI_API_KEY"]` |
 | gather | `GATHER_API_TOKEN` and the credential names a pilot manifest declares | `gather api` and credentialed pilot sources | the names the manifest declares |
-| telos | `CAPTCHA_SERVICE_KEY` | its captcha tooling | `["CAPTCHA_SERVICE_KEY"]` |
 
 On the admitted `agent.run` MCP path the gateway rebuilds a lane launch from its
 strict plugin set (seven names on Windows, five on POSIX) plus the launch's own
