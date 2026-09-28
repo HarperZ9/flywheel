@@ -45,7 +45,7 @@ def _run_suite(project: Path, oracle_cmd: str,
     from .oracle import _kill_tree, clear_bytecode, run_env, spawn_killable
     clear_bytecode(project)
     proc = spawn_killable(oracle_cmd, cwd=str(project), shell=True,
-                          env=run_env(), stdout=subprocess.PIPE,
+                          env=run_env(cwd=project), stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT)
     try:
         proc.communicate(timeout=timeout)

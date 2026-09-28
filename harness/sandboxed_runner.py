@@ -22,6 +22,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from . import safe_program
 from .credential_handles import CredentialBindings
 from .shell_admission import Decision, classify_command
 
@@ -191,7 +192,7 @@ def _build_posix_env(bindings: CredentialBindings | None,
     env.update({name: str(work) for name in ("TMPDIR", "TMP", "TEMP")})
     if scratch_home:
         env["HOME"] = str(work)
-    return env
+    return safe_program.shell_env(env)
 
 
 def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
@@ -205,8 +206,9 @@ def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
     from .execution_input_protection import (
         ExecutionInputProtectionUnavailable, protect_execution_namespace,
     )
-    argv = [os.environ.get("COMSPEC", "cmd.exe"), "/c", cmd]
-    argv[0] = str(Path(argv[0]).resolve())
+    comspec = os.environ.get("COMSPEC", "")
+    shell = comspec if os.path.isabs(comspec) else safe_program.system_tool("cmd.exe")
+    argv = [str(Path(shell).resolve()), "/c", cmd]
     try:
         with protect_execution_namespace(source, work) as runner:
             return runner.run(
@@ -218,7 +220,7 @@ def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
 
 def _build_env(bindings: CredentialBindings | None) -> dict[str, str]:
     active = bindings if bindings is not None else CredentialBindings({})
-    return active.child_environment(os.environ, platform="windows")
+    return safe_program.shell_env(active.child_environment(os.environ, platform="windows"))
 
 
 def _read_output(stdout_path: Path, stderr_path: Path) -> str:

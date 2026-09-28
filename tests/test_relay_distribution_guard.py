@@ -17,6 +17,7 @@ injected into the registry, so it cannot quietly stop running once the last real
 disabled lane is published. A parametrize over a list that has become empty
 reports success, not a gap.
 """
+import sys
 from types import SimpleNamespace
 
 from pathlib import Path
@@ -79,7 +80,8 @@ def test_reclaimed_lane_installs_the_distribution_we_publish(
         calls.append(a[0]) or SimpleNamespace(returncode=0, stdout="", stderr="")))
     result = lanes.install_lane(name)
     assert result["installed"] is True
-    assert calls == [["pip", "install", f"{distribution}=={LANES[name].version}"]]
+    assert calls == [[sys.executable, "-m", "pip", "install",
+                      f"{distribution}=={LANES[name].version}"]]
     assert LANES[name].command == name  # the short command survived the rename
 
 
@@ -183,7 +185,7 @@ def test_relay_source_still_resolves_and_installs(monkeypatch, tmp_path):
     monkeypatch.setattr(lanes.subprocess, "run", lambda *a, **k: (
         calls.append(a[0]) or SimpleNamespace(returncode=0, stdout="", stderr="")))
     assert lanes.install_lane("relay", profile="source")["installed"] is True
-    assert calls == [["pip", "install", "-e", str(source)]]
+    assert calls == [[sys.executable, "-m", "pip", "install", "-e", str(source)]]
 
 
 def test_other_package_install_keeps_its_distribution(monkeypatch):
@@ -191,7 +193,8 @@ def test_other_package_install_keeps_its_distribution(monkeypatch):
     monkeypatch.setattr(lanes.subprocess, "run", lambda *a, **k: (
         calls.append(a[0]) or SimpleNamespace(returncode=0, stdout="", stderr="")))
     assert lanes.install_lane("index")["installed"] is True
-    assert calls == [["pip", "install", f"index-graph=={LANES['index'].version}"]]
+    assert calls == [[sys.executable, "-m", "pip", "install",
+                      f"index-graph=={LANES['index'].version}"]]
 
 
 @pytest.mark.parametrize("profile,frozen", [

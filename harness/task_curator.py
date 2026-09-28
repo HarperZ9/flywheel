@@ -105,7 +105,7 @@ def _run_with(spec: TaskSpec, work_root: Path, solution_text: str,
     # blocks forever (the exact defect oracle.py documents and fixes; this
     # site had the old pattern and hung the full suite).
     proc = spawn_killable(spec.oracle_cmd, cwd=task.workdir, shell=True,
-                          env=run_env(), stdout=subprocess.PIPE,
+                          env=run_env(cwd=task.workdir), stdout=subprocess.PIPE,
                           stderr=subprocess.PIPE)
     try:
         proc.communicate(timeout=ORACLE_TIMEOUT)

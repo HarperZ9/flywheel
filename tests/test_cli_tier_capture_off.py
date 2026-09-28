@@ -18,7 +18,8 @@ from harness.cross_harness_process import _child_env
 
 
 @pytest.mark.parametrize("provider", ["claude", "codex"])
-def test_a_cli_tier_run_carries_capture_off(provider, monkeypatch):
+def test_a_cli_tier_run_carries_capture_off(provider, monkeypatch, programs_on_path):
+    programs_on_path(endpoints.PROVIDERS[provider]["cli"][0])
     seen = {}
 
     def fake_run(cmd, **kwargs):

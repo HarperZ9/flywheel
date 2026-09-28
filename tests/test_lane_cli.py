@@ -65,6 +65,15 @@ def _home() -> Path:
     return Path(os.environ["FLYWHEEL_HOME"]).resolve()
 
 
+def _program(folder: Path, name: str) -> Path:
+    """A stand-in executable file; the recorded argv must name it."""
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / (f"{name}.exe" if os.name == "nt" and not name.endswith(".exe") else name)
+    path.write_bytes(b"MZ")
+    path.chmod(0o755)
+    return path
+
+
 # -- which argv each mode runs -------------------------------------------------
 
 def test_dev_argv_prefers_the_console_script_then_the_module():
@@ -93,13 +102,16 @@ def test_frozen_argv_for_a_lane_without_a_cli_mode_is_none():
 
 # -- how a run starts ------------------------------------------------------------
 
-def test_run_starts_in_the_lane_folder_hidden_and_utf8(registry, monkeypatch):
+def test_run_starts_in_the_lane_folder_hidden_and_utf8(registry, tmp_path, monkeypatch):
     capture = _Capture()
     monkeypatch.setattr(lane_cli.subprocess, "run", capture)
+    gather = _program(tmp_path / "bin", "gather")
+    monkeypatch.setenv("PATH", str(gather.parent))
     lane_cli.run_lane_cli("gather", ["feed", "https://x", "--json"], timeout=5,
                           prefix=["gather"])
     ((argv, kwargs),) = capture.calls
-    assert argv == ["gather", "feed", "https://x", "--json"]
+    assert os.path.normcase(argv[0]) == os.path.normcase(os.path.realpath(gather))
+    assert argv[1:] == ["feed", "https://x", "--json"]
     folder = _home() / "lanes" / "gather"
     assert Path(kwargs["cwd"]) == folder and folder.is_dir()
     assert kwargs["encoding"] == "utf-8" and kwargs["timeout"] == 5
@@ -110,10 +122,11 @@ def test_run_starts_in_the_lane_folder_hidden_and_utf8(registry, monkeypatch):
         assert kwargs["creationflags"] & subprocess.CREATE_NO_WINDOW
 
 
-def test_bundled_run_refuses_an_unlisted_subcommand_without_spawning(registry, monkeypatch):
+def test_bundled_run_refuses_an_unlisted_subcommand_without_spawning(registry, tmp_path,
+                                                                     monkeypatch):
     capture = _Capture()
     monkeypatch.setattr(lane_cli.subprocess, "run", capture)
-    prefix = ["C:/F/flywheel-gateway.exe", LANE_CLI_FLAG, "index"]
+    prefix = [str(_program(tmp_path / "F", "flywheel-gateway.exe")), LANE_CLI_FLAG, "index"]
     with pytest.raises(lane_cli.LaneCliUnavailable) as err:
         lane_cli.run_lane_cli("index", ["router-job", "serve"], timeout=5, prefix=prefix)
     assert err.value.code == "not_in_build"
@@ -198,8 +211,10 @@ def test_science_bench_and_feeds_route_through_the_launcher(registry, monkeypatc
 
 
 def test_bridges_pass_absolute_paths_since_the_child_runs_elsewhere(registry, tmp_path,
-                                                                     monkeypatch):
+                                                                     monkeypatch,
+                                                                     programs_on_path):
     from harness import chorus_bridge, index_bridge
+    programs_on_path("index", "chorus")
     (tmp_path / "repo").mkdir()
     (tmp_path / "corpus.jsonl").write_text("", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
@@ -231,14 +246,13 @@ def test_index_jobs_run_router_jobs_through_the_frozen_engine(registry, tmp_path
         return subprocess.CompletedProcess(cmd, 0, stdout=out, stderr="")
 
     monkeypatch.setattr(lane_cli.subprocess, "run", run)
-    monkeypatch.setattr(index_jobs, "_index_argv",
-                        lambda: ["C:/F/flywheel-gateway.exe", LANE_CLI_FLAG, "index"])
+    engine = str(_program(tmp_path / "F", "flywheel-gateway.exe"))
+    monkeypatch.setattr(index_jobs, "_index_argv", lambda: [engine, LANE_CLI_FLAG, "index"])
     monkeypatch.setattr(index_jobs, "_module_argv", lambda: None)
     (tmp_path / "repo").mkdir()
     out = index_jobs.start_workspace_map(tmp_path / "repo", run_root=tmp_path / "run")
     assert out["job_id"] == "j1" and out["status"] == "running"
-    assert calls[-1][:5] == ["C:/F/flywheel-gateway.exe", LANE_CLI_FLAG, "index",
-                             "router-job", "start"]
+    assert calls[-1][:5] == [engine, LANE_CLI_FLAG, "index", "router-job", "start"]
 
 
 def test_frozen_index_module_fallback_is_never_dash_m(monkeypatch):

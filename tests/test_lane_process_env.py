@@ -81,8 +81,10 @@ def test_chorus_digest_child_does_not_see_provider_keys(parent_keys, tmp_path, m
     assert seen["PATH"] is True
 
 
-def test_chorus_corpora_and_digests_pass_the_lane_env(parent_keys, tmp_path, monkeypatch):
+def test_chorus_corpora_and_digests_pass_the_lane_env(parent_keys, tmp_path, monkeypatch,
+                                                      programs_on_path):
     import harness.chorus_bridge as cb
+    programs_on_path("chorus")
     capture = _Capture(stdout=json.dumps({"corpora": [], "digests": []}))
     monkeypatch.setattr(cb, "_chorus_argv", lambda: ["chorus"])
     monkeypatch.setattr(cb.subprocess, "run", capture)
@@ -122,8 +124,10 @@ def test_package_version_probe_passes_the_lane_env(parent_keys, monkeypatch):
     _assert_scrubbed(env)
 
 
-def test_telos_kernel_child_passes_the_lane_env(parent_keys, tmp_path, monkeypatch):
+def test_telos_kernel_child_passes_the_lane_env(parent_keys, tmp_path, monkeypatch,
+                                                programs_on_path):
     import harness.telos_kernels as tk
+    programs_on_path("node")
     capture = _Capture(stdout=json.dumps({"ok": True}))
     module = tmp_path / "kernels.mjs"
     module.write_text("", encoding="utf-8")
@@ -137,8 +141,9 @@ def test_telos_kernel_child_passes_the_lane_env(parent_keys, tmp_path, monkeypat
 
 @pytest.mark.parametrize("module_name", ("harness.live_feeds", "harness.science_bench"))
 def test_gather_and_crucible_cli_runners_pass_the_lane_env(parent_keys, monkeypatch,
-                                                          module_name):
+                                                          module_name, programs_on_path):
     import importlib
+    programs_on_path("gather", "crucible")
     module = importlib.import_module(module_name)
     capture = _Capture(stdout="{}")
     monkeypatch.setattr(module.subprocess, "run", capture)

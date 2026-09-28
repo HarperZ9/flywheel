@@ -142,7 +142,7 @@ def oracle_context_hash(task: Task, oracle_type: str = "") -> str:
         "schema": "flywheel.oracle-context/v1",
         "oracle": oracle_type,
         "cmd": task.oracle_cmd,
-        "env": sorted(run_env().items()),
+        "env": sorted(run_env(cwd=task.workdir).items()),
         "python": {"executable": sys.executable, "version": sys.version},
         "platform": sys.platform,
         "lockfiles": _lockfile_hashes(Path(task.workdir)),

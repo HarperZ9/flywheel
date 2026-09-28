@@ -31,6 +31,7 @@ import secrets
 import subprocess
 
 from .trace_bench_tasks import BenchTasks, ReplayResults
+from . import safe_program
 
 _log = logging.getLogger(__name__)
 SCHEMA = "flywheel.trace-replay-result/v1"
@@ -57,7 +58,9 @@ def _git(cwd: Path, *args: str) -> None:
     command = ["git", "-c", f"core.hooksPath={os.devnull}", "-c", "core.fsmonitor=false",
                *args]
     try:
-        done = subprocess.run(command, cwd=cwd, capture_output=True, env=env, timeout=300,
+        argv, env = safe_program.launch(command, cwd=cwd, env=env)
+        done = subprocess.run(argv, cwd=cwd,
+                              capture_output=True, env=env, timeout=300,
                               stdin=subprocess.DEVNULL)
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise ReplayError("CLONE_FAILED") from exc

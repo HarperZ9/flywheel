@@ -21,11 +21,11 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
-import shutil
 import subprocess
 import sys
 
 from .trace_enc import EncError
+from . import safe_program
 
 SERVICE = "flywheel-trace-custody"
 _NONCE = 12
@@ -85,7 +85,8 @@ def _run(argv, stdin: bytes | None = None) -> bytes | None:
 def _run_status(argv, stdin: bytes | None = None):
     """(exit code, stdout, stderr), or None when the tool did not run or timed out."""
     try:
-        done = subprocess.run(argv, input=stdin, capture_output=True, timeout=20)
+        command, env = safe_program.launch(argv)
+        done = subprocess.run(command, input=stdin, capture_output=True, timeout=20, env=env)
     except (OSError, subprocess.TimeoutExpired):
         return None
     return done.returncode, done.stdout, done.stderr
@@ -134,7 +135,7 @@ def keychain_provider():
         import cryptography.hazmat.primitives.ciphers.aead  # noqa: F401
     except ImportError:
         return None
-    if not shutil.which("security" if sys.platform == "darwin" else "secret-tool"):
+    if not safe_program.which("security" if sys.platform == "darwin" else "secret-tool"):
         return None
     opener, sealer = _masters(_keychain_lookup, _keychain_create)
     return AeadProvider(opener, sealing_key=sealer)

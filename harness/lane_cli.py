@@ -24,12 +24,12 @@ from __future__ import annotations
 
 import importlib.util
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import Callable, Mapping
 
+from . import safe_program
 from .bundled_lane_env import UTF8_ENV, bundled_child_environment
 from .frozen_lane_modes import LANE_CLI_FLAG, LANE_CLIS, cli_args_allowed
 from .lane_env import BASE_NAMES, lane_process_environment
@@ -77,7 +77,7 @@ def module_argv(lane: str, *, frozen: bool | None = None,
 
 def lane_cli_argv(lane: str, *, frozen: bool | None = None,
                   executable: str | None = None,
-                  which: Callable[[str], str | None] = shutil.which,
+                  which: Callable[[str], str | None] = safe_program.which,
                   importable: Callable[[str], bool] = _importable) -> list[str] | None:
     """The argv prefix that runs ``lane``'s CLI, or None when there is none."""
     if is_frozen() if frozen is None else frozen:
@@ -162,7 +162,9 @@ def run_lane_cli(lane: str, args: list[str], *, timeout: float,
         raise LaneCliUnavailable(NOT_IN_BUILD, f"{lane} {verb} is not in this build")
     env = lane_cli_environment(lane, extra_env, bundled=bundled, environ=source)
     folder = ensure_lane_workdir(lane, source)
-    return subprocess.run(argv + list(args), capture_output=True, text=True,
+    command, env = safe_program.launch(argv + list(args), cwd=folder, env=env)
+    return subprocess.run(command,
+                          capture_output=True, text=True,
                           encoding="utf-8", errors="replace", timeout=timeout,
                           env=env, cwd=str(folder), shell=False, **_window_flags())
 

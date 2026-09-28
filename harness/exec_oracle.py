@@ -62,7 +62,7 @@ class PythonExecutorOracle(DenseOracle):
         # gives the immediate child its own session so _kill_tree's killpg
         # reaps the whole tree, not just the shell.
         proc = spawn_killable(cmd, cwd=task.workdir, shell=True,
-                              env=run_env(), stdout=subprocess.PIPE,
+                              env=run_env(cwd=task.workdir), stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE)
         try:
             try:

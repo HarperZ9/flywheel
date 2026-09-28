@@ -31,6 +31,7 @@ import os
 import subprocess
 from typing import Callable, Mapping
 
+from . import safe_program
 from .credential_handles import CredentialBindings
 
 RunnerFn = Callable[[str, str], "tuple[bool, str]"]
@@ -142,7 +143,7 @@ def _bare_run(
 ) -> tuple[bool, str]:
     try:
         proc = subprocess.run(
-            cmd, shell=True, cwd=root,
+            cmd, shell=True, cwd=root, env=safe_program.shell_env(cwd=root),
             capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired as e:
         partial = ((e.stdout or "") if isinstance(e.stdout, str)

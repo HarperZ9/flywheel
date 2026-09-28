@@ -51,11 +51,12 @@ def test_lean_version_returns_string():
     assert len(v) > 0
 
 
-def test_one_subprocess_answers_both_probe_questions(monkeypatch):
+def test_one_subprocess_answers_both_probe_questions(monkeypatch, programs_on_path):
     """The cost that caused the flake. `check_lean_file` asked `lean --version`
     twice, through `lean_version` and again through `lean_available`, and the
     test asked a third time. Three extra timeouts around one proof is what
     collided with parallel workers, so the probe runs once per process."""
+    programs_on_path("lean")
     la.reset_lean_probe()
     calls: list = []
 
@@ -73,12 +74,13 @@ def test_one_subprocess_answers_both_probe_questions(monkeypatch):
         la.reset_lean_probe()
 
 
-def test_a_timeout_is_named_as_a_timeout(monkeypatch, tmp_path):
+def test_a_timeout_is_named_as_a_timeout(monkeypatch, tmp_path, programs_on_path):
     """UNVERIFIABLE has several causes and they are not interchangeable. Only
     a timeout moves with load, so only a timeout may be tolerated by a test
     without the test going vacuous."""
     src = tmp_path / "slow.lean"
     src.write_text("theorem t : 1 + 1 = 2 := by simp\n", encoding="utf-8")
+    programs_on_path("lean")
     la.reset_lean_probe()
 
     def timing_out_run(cmd, **kw):

@@ -95,7 +95,7 @@ def test_resolve_binary_takes_the_binary_out_of_the_npm_shim_layout(monkeypatch)
     """
     on_path = {"codex.cmd": "C:/npm/codex.cmd", "codex.ps1": "C:/npm/codex.ps1",
                "codex": "C:/npm/codex", "codex.exe": "C:/npm/vendor/codex.exe"}
-    monkeypatch.setattr("shutil.which", on_path.get)
+    monkeypatch.setattr("harness.safe_program.which", on_path.get)
     assert resolve_binary(("codex.exe", "codex")) == "C:/npm/vendor/codex.exe"
     assert resolve_binary(("codex.cmd", "codex.ps1")) == ""
     assert resolve_binary(("absent",)) == ""
@@ -104,10 +104,10 @@ def test_resolve_binary_takes_the_binary_out_of_the_npm_shim_layout(monkeypatch)
 def test_no_cli_resolver_returns_a_wrapper_when_that_is_all_it_finds(monkeypatch):
     """Every adapter resolves through one rule, so one test covers all of them."""
     resolvers = (_resolve_codex, _resolve_claude, _resolve_cursor)
-    monkeypatch.setattr("shutil.which", lambda name: f"C:/npm/{name}.cmd")
+    monkeypatch.setattr("harness.safe_program.which", lambda name: f"C:/npm/{name}.cmd")
     for resolve in resolvers:
         assert resolve() == "", f"{resolve.__name__} accepted a wrapper"
-    monkeypatch.setattr("shutil.which", lambda name: f"/usr/local/bin/{name}")
+    monkeypatch.setattr("harness.safe_program.which", lambda name: f"/usr/local/bin/{name}")
     for resolve in resolvers:
         assert resolve().startswith("/usr/local/bin/"), resolve.__name__
 

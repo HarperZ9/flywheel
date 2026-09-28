@@ -19,6 +19,7 @@ import subprocess
 import threading
 from pathlib import Path
 from typing import Sequence
+from . import safe_program
 
 #: How much of a child's error stream is worth keeping. A server in a loop can
 #: write megabytes, and the useful part is the start of it.
@@ -72,10 +73,12 @@ def spawn(argv: Sequence[str], cwd: Path | str, *,
     directory = Path(cwd).resolve()
     if not directory.is_dir():
         raise NotADirectoryError(f"working directory does not exist: {directory}")
+    environment = env if env is not None else child_env()
+    command, environment = safe_program.launch(argv, cwd=directory, env=environment)
     process = subprocess.Popen(
-        list(argv), cwd=str(directory), stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-        env=env if env is not None else child_env(), bufsize=0)
+        command, cwd=str(directory),
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        env=environment, bufsize=0)
     collected: list[bytes] = []
     reader = threading.Thread(target=drain, args=(process.stderr, collected),
                               name=f"{name}-stderr", daemon=True)

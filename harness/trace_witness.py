@@ -104,7 +104,9 @@ class WindowsEventLogSink:
         import xml.etree.ElementTree as ET
         query = f"*[System[Provider[@Name='{SOURCE}']]]"
         try:
-            done = subprocess.run(["wevtutil", "qe", "Application", f"/q:{query}", "/f:xml",
+            from .safe_program import system_tool
+            done = subprocess.run([system_tool("wevtutil.exe"), "qe", "Application",
+                                   f"/q:{query}", "/f:xml",
                                    "/rd:true", f"/c:{limit}"], capture_output=True, timeout=60)
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise OSError("event log unreadable") from exc

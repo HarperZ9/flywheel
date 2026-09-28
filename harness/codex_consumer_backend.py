@@ -6,9 +6,9 @@ route.
 """
 from __future__ import annotations
 
-import shutil
 from typing import Callable
 
+from . import safe_program
 from .codex_app_server_client import CodexAppServerClient
 from .codex_consumer_account import read_account_state
 
@@ -21,7 +21,7 @@ class CodexConsumerBackend:
             which: Callable[[str], str | None] | None = None,
             key_source: Callable[[str], str] | None = None):
         self.client_factory = client_factory or CodexAppServerClient.connect
-        self.which = which or shutil.which
+        self.which = which or safe_program.which
         self.key_source = key_source
         self._client = None
 

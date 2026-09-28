@@ -110,3 +110,43 @@ low-integrity command sandbox on Windows, and not a lane, which runs at medium
 integrity. A lane can also write `~/.flywheel/lanes.json` and grant itself an
 `env_allow` name that takes effect on its next launch. Closing those needs a
 filesystem boundary for lanes, which Flywheel does not have yet.
+
+## Installing a lane
+
+`flywheel install [--lanes all|NAME[,NAME...]] [--profile package|source]` parses
+its arguments strictly: `-h` and `--help` print the usage and exit 0, and any
+other argument it does not know, a flag without its value, a flag given twice, an
+unknown profile or an empty lane list prints the error and the usage and exits 2
+before anything installs. The gateway's `POST /api/lanes/install` calls the same
+`install_lane`.
+
+A pip lane installs with `<python> -m pip install`, where `<python>` is the
+interpreter running Flywheel, or the lane's `runtime_python` for a package install
+when the registry row pins one. A frozen build has no interpreter of its own, so a
+pip install there needs that pin and otherwise answers
+`pip_interpreter_unavailable`. An npm lane resolves `npm` through the shared
+program lookup below (`npm.cmd` on Windows) and answers `npm_unavailable` when no
+safe npm exists. The package manager runs in a new empty folder with the lane
+environment (`harness/lane_install.py`).
+
+## Program lookup
+
+Every program the engine starts by a bare name (git, lean, node, npm, a lane
+console script, an endpoint CLI, an MCP, LSP, DAP or ACP server, a hook or gate
+command) resolves through `harness/safe_program.py`, which wraps the vendored
+safe_spawn helper (`harness/_vendor/safe_spawn.py`, pinned by `VENDORED.sha256`).
+The lookup walks only absolute PATH entries, skips any entry that reaches the
+current folder or the folder the child will run in (directly, below it, or through
+a link or junction), refuses a name holding a colon such as `C:tool`, and on
+Windows prefers a `.exe` anywhere on PATH over a batch shim. A batch-file target
+whose arguments hold a cmd.exe metacharacter is refused before it starts. A shell
+the engine starts, including the oracle's, gets `safe_program.shell_env()`: PATH
+keeps what the lookup keeps, and on Windows `NoDefaultCurrentDirectoryInExePath=1`
+stops cmd.exe searching its own folder first. A Windows batch-file program (npm's
+shim for a global tool, for example) runs inside cmd.exe, which looks up the names
+the script runs, such as `node`, in its working folder; such a child gets the same
+environment (`safe_program.child_env()`, or `launch()` for the argv and environment
+together). Windows system tools come from the
+System32 folder (`safe_program.system_tool`). On Windows the lookup reads the
+parent's PATH, as CreateProcess does; on POSIX it reads the PATH handed to the
+child, as subprocess does.

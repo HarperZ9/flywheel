@@ -23,6 +23,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .. import safe_program
+
 SCHEMA = "flywheel.lean-check/v1"
 
 MATCH = "MATCH"
@@ -61,8 +63,8 @@ def _probe_lean() -> str:
     budget reached pytest's 60-second ceiling under parallel workers.
     """
     try:
-        result = subprocess.run(
-            ["lean", "--version"], capture_output=True, text=True, timeout=10)
+        command, env = safe_program.launch(["lean", "--version"])
+        result = subprocess.run(command, capture_output=True, text=True, timeout=10, env=env)
         if result.returncode == 0:
             return result.stdout.strip().split("\n")[0]
     except (OSError, subprocess.SubprocessError):
@@ -134,10 +136,10 @@ def check_lean_file(path: Path, *, timeout: int = 60) -> LeanCheckResult:
     import time
     start = time.monotonic()
     try:
+        command, env = safe_program.launch(["lean", str(path)], cwd=path.parent)
         result = subprocess.run(
-            ["lean", str(path)],
-            capture_output=True, text=True, timeout=timeout,
-            cwd=str(path.parent),
+            command, capture_output=True, text=True, timeout=timeout,
+            cwd=str(path.parent), env=env,
         )
         elapsed = time.monotonic() - start
         if result.returncode == 0:

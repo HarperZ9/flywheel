@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
+import subprocess  # noqa: F401  (tests patch lanes.subprocess.run)
 import sys
 from pathlib import Path
 
@@ -245,35 +245,17 @@ def install_lane(name: str, *, profile: str = "package") -> dict:
         return {"name": name, "installed": False,
                 "code": "package_distribution_disabled",
                 "detail": lane.package_disabled_reason}
-    try:
-        if profile == "source":
-            repo = resolve_source_repo(lane)
-            if repo is None:
-                return {"name": name, "installed": False,
-                        "detail": f"source checkout not found: {lane.source_repo}"}
-        # A package install asks for the pinned release: the pin carries the
-        # lane's security fixes, and an older package would not launch.
-        if lane.kind == "pip":
-            cmd = ["pip", "install", "-e", str(repo)] if profile == "source" else [
-                "pip", "install", f"{lane.install_name}=={lane.version}"]
-        elif lane.kind == "npm":
-            cmd = ["npm", "install", "-g", str(repo)] if profile == "source" else [
-                "npm", "install", "-g", f"{lane.install_name}@{lane.version}"]
-        else:
-            return {"name": name, "installed": False,
-                    "detail": f"unknown kind {lane.kind}"}
-        # pip build backends and npm install scripts are lane-supplied code, so
-        # the package manager gets the lane env; a private index or proxy is
-        # granted per lane through env_allow in lanes.json.
-        from .lane_env import lane_process_environment
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300,
-                                env=lane_process_environment(name))
-        ok = result.returncode == 0
-        return {"name": name, "installed": ok, "cmd": cmd,
-                "detail": (result.stdout[-200:] if ok else
-                           (result.stderr[-300:] or result.stdout[-300:])).strip()}
-    except (FileNotFoundError, subprocess.TimeoutExpired) as error:
-        return {"name": name, "installed": False, "detail": f"install failed: {error}"}
+    if lane.kind not in ("pip", "npm"):
+        return {"name": name, "installed": False, "detail": f"unknown kind {lane.kind}"}
+    repo = resolve_source_repo(lane) if profile == "source" else None
+    if profile == "source" and repo is None:
+        return {"name": name, "installed": False,
+                "detail": f"source checkout not found: {lane.source_repo}"}
+    # A package install asks for the pinned release: the pin carries the lane's
+    # security fixes. pip runs as `<interpreter> -m pip` and npm resolves from a
+    # safe PATH folder, in an empty folder with the lane env (lane_install).
+    from .lane_install import run_install
+    return run_install(lane, profile, repo)
 
 
 def write_registry(installed: dict) -> None:

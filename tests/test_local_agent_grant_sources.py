@@ -144,8 +144,9 @@ def test_granted_plan_backend_runs_in_the_resolved_root(workspace, runs, monkeyp
     assert os.path.normcase(cli.cwd) == os.path.normcase(os.path.realpath(workspace / "sub"))
 
 
-def test_cli_backend_passes_its_cwd_to_the_process(monkeypatch, tmp_path):
+def test_cli_backend_passes_its_cwd_to_the_process(monkeypatch, tmp_path, programs_on_path):
     import harness.endpoints as endpoints
+    programs_on_path("claude")
     seen = {}
 
     def fake_run(cmd, **kwargs):

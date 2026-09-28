@@ -22,7 +22,6 @@ from __future__ import annotations
 import hashlib
 import os
 import re
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -67,7 +66,8 @@ def _audit_footprint(out: str) -> tuple:
 
 
 def _lean_exe() -> "str | None":
-    exe = shutil.which("lean")
+    from . import safe_program
+    exe = safe_program.which("lean")
     if exe:
         return exe
     home = Path(os.path.expanduser("~")) / ".elan" / "bin" / "lean.exe"

@@ -14,7 +14,8 @@ import json
 import os
 from pathlib import Path
 import shlex
-import shutil
+
+from . import safe_program
 
 MODULE = "harness.capture_hooks"
 LEGACY = ("wrapper_turn_receipt_hook.py", "wrapper_scaffold_hook.py")
@@ -65,7 +66,7 @@ def _commands(doc) -> list[tuple[str, str]]:
 
 def _interpreter_problem(program: str) -> str:
     found = program if os.path.isabs(program) and os.path.isfile(program) else (
-        shutil.which(program))
+        safe_program.which(program))
     return "" if found else "interpreter not found"
 
 

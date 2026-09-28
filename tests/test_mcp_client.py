@@ -121,7 +121,19 @@ def test_construction_requires_command_or_transport():
         MCPClient()
 
 
-def test_stdio_transport_launch_spec_forwards_cwd_and_merged_child_env(monkeypatch):
+@pytest.fixture
+def python_on_path(tmp_path, monkeypatch):
+    """A stand-in `python` in an absolute PATH folder, the only one on PATH."""
+    exe = tmp_path / "bin" / ("python.exe" if os.name == "nt" else "python")
+    exe.parent.mkdir()
+    exe.write_bytes(b"MZ")
+    exe.chmod(0o755)
+    monkeypatch.setenv("PATH", str(exe.parent))
+    return os.path.join(os.path.realpath(exe.parent), exe.name)
+
+
+def test_stdio_transport_launch_spec_forwards_cwd_and_merged_child_env(monkeypatch,
+                                                                       python_on_path):
     seen = {}
     monkeypatch.setattr(
         subprocess,
@@ -133,12 +145,13 @@ def test_stdio_transport_launch_spec_forwards_cwd_and_merged_child_env(monkeypat
         LaunchSpec(("python", "-m", "demo"), "/repo", (("PYTHONPATH", "/repo"),))
     )
 
-    assert seen["argv"] == ["python", "-m", "demo"]
+    assert seen["argv"] == [python_on_path, "-m", "demo"]
     assert seen["cwd"] == "/repo"
     assert seen["env"]["PYTHONPATH"] == "/repo"
 
 
-def test_stdio_transport_launch_spec_does_not_mutate_parent_environment(monkeypatch):
+def test_stdio_transport_launch_spec_does_not_mutate_parent_environment(monkeypatch,
+                                                                         python_on_path):
     monkeypatch.setenv("FLYWHEEL_MCP_TEST_VALUE", "parent")
     parent_env = dict(os.environ)
     seen = {}
@@ -156,7 +169,7 @@ def test_stdio_transport_launch_spec_does_not_mutate_parent_environment(monkeypa
     assert seen["env"]["FLYWHEEL_MCP_TEST_VALUE"] == "child"
 
 
-def test_stdio_transport_plain_argv_keeps_existing_popen_contract(monkeypatch):
+def test_stdio_transport_plain_argv_keeps_existing_popen_contract(monkeypatch, python_on_path):
     seen = {}
     monkeypatch.setattr(
         subprocess,
@@ -167,7 +180,7 @@ def test_stdio_transport_plain_argv_keeps_existing_popen_contract(monkeypatch):
     StdioTransport(["python", "-m", "demo"])
 
     assert seen == {
-        "argv": ["python", "-m", "demo"],
+        "argv": [python_on_path, "-m", "demo"],
         "kwargs": {
             "stdin": subprocess.PIPE,
             "stdout": subprocess.PIPE,
