@@ -1,13 +1,13 @@
 """A lane's own closed refusal answers as the engine's fixed refusal.
 
-gather 1.9.1 refuses a network or device path itself (NON_LOCAL_PATH), after
+gather 2.0.0 refuses a network or device path itself (NON_LOCAL_PATH), after
 the engine's own path guard, and gather and forum refuse a call whose launch
 lacks a grant (GRANT_REQUIRED). The lane call route passes no tool text on
 (fixed codes, closed reason slugs), so these read as the engine's refusal
 shape: LANE_TOOL_ERROR with ``argument_refused`` or ``lane_grant_required``,
 whichever check caught it. Any other lane error keeps the generic answer.
 
-The last tests start the real gather 1.9.1 from its tag's source, where a
+The last tests start the real gather 2.0.0 from its tag's source, where a
 checkout is present (FLYWHEEL_LANE_CHECKOUT_ROOT, default C:/dev). The engine
 refuses a reserved device name in a path argument itself, before the lane
 starts (tests/test_lane_reserved_device_names.py). Inside gather.run's inline
@@ -31,7 +31,7 @@ from harness.lane_call_route import public_result
 from harness.lane_caller import LANE_REFUSALS, call_lane_tool, lane_refusal
 from harness.mcp_client import LaunchSpec
 
-GATHER_PIN = "6b5d4dd5920a248bafaeefef4f596e67a42889fb"
+GATHER_PIN = "d75f0fd86cbfc8fcfe9868e2e008f0e678b76b70"
 CHECKOUT_ROOT = Path(os.environ.get("FLYWHEEL_LANE_CHECKOUT_ROOT", "C:/dev"))
 DETAIL = "The path names a Windows device or namespace path"
 
@@ -129,7 +129,7 @@ def _gather_source(tmp_path: Path) -> Path:
 
 
 def _gather_launch(monkeypatch, tmp_path: Path) -> list:
-    """Point the engine at the real gather 1.9.1; returns the list of launches."""
+    """Point the engine at the real gather 2.0.0; returns the list of launches."""
     import harness.lanes as lanes
     src = _gather_source(tmp_path)
     work = tmp_path / "lane"
@@ -146,7 +146,7 @@ def _gather_launch(monkeypatch, tmp_path: Path) -> list:
 
 
 @pytest.mark.timeout(180)
-def test_gather_1_9_1_refuses_a_device_name_the_engine_guard_leaves_to_it(monkeypatch, tmp_path):
+def test_gather_2_0_0_refuses_a_device_name_the_engine_guard_leaves_to_it(monkeypatch, tmp_path):
     from harness.lane_tier_gate import argument_refusal
     launched = _gather_launch(monkeypatch, tmp_path)
     config = {"jobs": [{"source": "docs", "target": r"C:\docs\CON.md"}]}

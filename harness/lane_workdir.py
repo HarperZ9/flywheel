@@ -15,6 +15,10 @@ under ``%LOCALAPPDATA%``), accountable-surface's receipts and journal
 (``RELAY_SESSION_DIR``, created; relay 0.4.0 and later otherwise keep it in a
 per-user folder, which on Linux and macOS is outside the lane folder).
 
+learn 2.0.0 reads LEARN_HOME for its state. The MCP child always receives
+the lane folder so session writes match the engine's argument guards, including
+when the parent or an env_allow grant supplies another LEARN_HOME.
+
 articulate's child gets ARTICULATE_CLAUDE_CLI, the claude CLI the engine found
 (claude_discovery), since its own PATH is the system folder.
 
@@ -103,6 +107,7 @@ _SCOPED_NAMES = frozenset(name for name, _rel in SCOPED_DIRS)
 _FORCED_ENV = {"relay": (("RELAY_ALLOW_WRITE", "0"), ("RELAY_ALLOW_EXEC", "0"),
                          ("RELAY_ALLOW_REMOTE_EXEC", "0"), ("RELAY_MCP_ROOT", "."),
                          ("RELAY_CHILD_ENV", ""), ("RELAY_ALLOW_EXEC_CLI", "")),
+               "learn": (("LEARN_HOME", "."),),
                "forum": (("FORUM_CHILD_ENV", ""), ("FORUM_ALLOW_EXEC_CLI", "")),
                "gather": (("GATHER_ALLOW_NETWORK", ""), ("GATHER_ALLOW_EXEC", ""),
                           ("GATHER_AUTH_ENV_ALLOW", ""), ("GATHER_CHILD_ENV", ""))}

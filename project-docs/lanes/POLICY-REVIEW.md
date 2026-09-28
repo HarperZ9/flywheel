@@ -204,7 +204,7 @@ checks, and open egress. "Needs" lists setup item ids from `lane_tool_policy.SET
 
 <!-- policy-tables:start (scripts/render_lane_policy_review.py) -->
 
-### gather 1.9.1
+### gather 2.0.0
 
 Admitted at launch: 5 of 8 tools. T2 per granted call: 3. Not in this build: 0.
 
@@ -325,7 +325,7 @@ Admitted at launch: 14 of 21 tools. T2 per granted call: 7. Not in this build: 0
 | `gate_edit` | T2 |  | approve |  | `--allow-gate-decisions` on this call's launch only | Resolves a paused human-approval gate. An agent must not approve its own wave. forum 1.15 serves it only on a launch with --allow-gate-decisions, which the engine adds for this one approved call; every other forum launch has it off. |
 | `gate_reject` | T2 |  | approve |  | `--allow-gate-decisions` on this call's launch only | Resolves a paused human-approval gate. An agent must not approve its own wave. forum 1.15 serves it only on a launch with --allow-gate-decisions, which the engine adds for this one approved call; every other forum launch has it off. |
 
-### learn 1.6.0
+### learn 2.0.0
 
 Admitted at launch: 14 of 15 tools. T2 per granted call: 1. Not in this build: 0.
 

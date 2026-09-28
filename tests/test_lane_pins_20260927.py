@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
     ROOT / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
     if line.strip()}
-PINS = {"gather": ("1.9.1", "v1.9.1", "6b5d4dd5920a248bafaeefef4f596e67a42889fb"),
+PINS = {"gather": ("2.0.0", "v2.0.0", "d75f0fd86cbfc8fcfe9868e2e008f0e678b76b70"),
         "relay": ("0.5.0", "v0.5.0", "ba1e4f21f05ff610a182f9b4665bb82f05a969f8"),
         "forum": ("1.15.1", "v1.15.1", "86e1b12e20de1938d059eb6b264e20ea2a742c98")}
 REPLACED = {"gather": "1.9.0", "relay": "0.4.0", "forum": "1.14.0"}

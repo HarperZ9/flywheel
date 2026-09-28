@@ -183,7 +183,7 @@ Lanes frozen from pinned source
 Each lane's license ships at licenses/python-lanes/<lane>/, hash-checked against
 its pin when the engine is frozen. Source: https://github.com/HarperZ9/<repo>
 at the tag or commit named. Copyright 2026 Zain Dana Harper.
-gather-engine 1.9.1 (lane gather), tag v1.9.1 @ 6b5d4dd5920a, LicenseRef-FSL-1.1-MIT
+gather-engine 2.0.0 (lane gather), tag v2.0.0 @ d75f0fd86cbf, LicenseRef-FSL-1.1-MIT
 crucible-bench 1.3.0 (lane crucible), tag v1.3.0 @ a47ae7981ae5, LicenseRef-FSL-1.1-MIT
 index-graph 2.14.0 (lane index), tag v2.14.0 @ 665ea7e24055, FSL-1.1-MIT
 forum-engine 1.15.1 (lane forum), tag v1.15.1 @ 86e1b12e20de, LicenseRef-FSL-1.1-MIT
@@ -210,10 +210,10 @@ Source archive: https://nodejs.org/dist/v24.21.0/node-v24.21.0-win-x64.zip
 Source archive sha256: 158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541
 Copyright Node.js contributors. All rights reserved.
 
-@harperz9/learn 1.6.0
+@harperz9/learn 2.0.0
 License: Fair Source License (learn), LicenseRef-fair-source
 License file shipped: node-lanes/learn/LICENSE
-Source: https://registry.npmjs.org/@harperz9/learn/-/learn-1.6.0.tgz (npm integrity pinned in packaging/node-lane-payloads.json)
+Source: https://registry.npmjs.org/@harperz9/learn/-/learn-2.0.0.tgz (npm integrity pinned in packaging/node-lane-payloads.json)
 Copyright (c) 2026 Zain Dana Harper.
 
 Telos (project-telos-mcp 0.4.1) is not in this build: its release contents are

@@ -88,7 +88,7 @@ working folder and the whole environment, an open local daemon).
 
 In the 1.0.4 app, gather and relay answer only status and doctor and forum does not
 start, so the affected tools do not run there. A pip install of 1.0.4 runs them.
-Flywheel 1.1.0 pins gather 1.9.1, relay 0.5.0 and forum 1.15.1.
+Flywheel 1.1.0 pins gather 2.0.0, relay 0.5.0 and forum 1.15.1.
 
 ## If you run 1.0.4 today
 

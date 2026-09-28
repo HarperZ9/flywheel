@@ -1,6 +1,6 @@
 <!-- Draft 1.1.0 notes, reviewed before any tag. The lane classes, lane sentence, README
 count, method paragraph and installer size cite CI run 36302181098, which predates the
-gather 1.9.1, relay 0.5.0, forum 1.15.1, crucible 1.3.0 and index 2.14.0 pins: replace them
+gather 2.0.0, relay 0.5.0, forum 1.15.1, crucible 1.3.0 and index 2.14.0 pins: replace them
 from the release commit's windows-installed-acceptance.yml run. The 1.0.4 known-issues page
 publishes on its own. Five trace manual checks were not run. -->
 
@@ -95,7 +95,7 @@ runs only on a call you approve with the higher tier.
   whether the lane's granted keys reach the call and the arguments in plain form. A tool
   the policy does not list reads "not reviewed: effect unknown".
 - **New in the installer.** articulate 0.5.0, calibrate-pro 2.0.0 as a catalog slice
-  (the panel catalog without numpy), learn 1.6.0, and Node.js v24.21.0 LTS to run it.
+  (the panel catalog without numpy), learn 2.0.0, and Node.js v24.21.0 LTS to run it.
   forum 1.15.1 ships the data files it needs to start. `FLYWHEEL_NODE` or a node.exe you
   choose in the app still overrides the bundled Node; a chosen node.exe is checked by
   hash again at every launch. The installer is about 23.7 MB larger, mostly the Node
@@ -103,7 +103,7 @@ runs only on a call you approve with the higher tier.
 - **License texts ship with the engine.** The engine folder now carries the Python
   license (with OpenSSL's), the texts for code compiled into Python, and each lane's
   license. The installer's third-party notice lists every one.
-- **Lane updates.** relay 0.5.0, gather 1.9.1, forum 1.15.1, crucible 1.3.0, index
+- **Lane updates.** relay 0.5.0, gather 2.0.0, forum 1.15.1, crucible 1.3.0, index
   2.14.0, mneme 0.5.1 and canon 0.4.2, each frozen from its release tag. Each tool keeps
   its tier. Two releases add a T1 read with its path arguments kept out of the home:
   crucible 1.3.0 `crucible.recheck_template`, which returns a replay template, and index
@@ -174,7 +174,7 @@ These commands come with the engine from pip; the Windows app has no traces scre
   (a session listing could read ledger files outside the store) and GHSA-xxcc-grhg-v9g7
   (CLI tiers could run a planted binary or project hooks, and shell children got
   provider keys). The engine also refuses a session id that is not a plain name.
-- gather 1.9.1 fixes GHSA-j6j7-39vh-qrp4 (a path argument over MCP could make Windows
+- gather 2.0.0 fixes GHSA-j6j7-39vh-qrp4 (a path argument over MCP could make Windows
   sign in to a share a model named) and GHSA-r38f-cr69-jpp8 (a PATH entry reaching the
   working folder could start a planted program) and, from 1.9.0, GHSA-pxvv-rg3f-4v5w
   (tool arguments could run commands and send secrets to a chosen host) and
@@ -235,7 +235,7 @@ These commands come with the engine from pip; the Windows app has no traces scre
   sessions default to a per-user folder, which Flywheel sets to the lane folder.
 - gather 1.9.0 and later need launch grants for network sources, commands and
   credentials in `gather.run` and `gather.pilot`. Flywheel grants none, so such a run
-  answers `lane_grant_required`. gather 1.9.1 also refuses a network or device path,
+  answers `lane_grant_required`. gather 2.0.0 also refuses a network or device path,
   including a reserved name such as `con.md`. The feeds screen uses gather's command
   line and is unchanged.
 - forum's `gate_approve`, `gate_edit` and `gate_reject` run only on a call you approve at

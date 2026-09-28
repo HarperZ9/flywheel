@@ -272,7 +272,9 @@ def test_the_committed_manifest_pins_the_reviewed_releases():
     assert lanes["telos"]["sha256"] == (
         "9797ea6bacb7a62cee0aee23c2a81b000e51117a5b2bcde4e218d9df81a56264")
     assert lanes["telos"]["tag"] == "v0.4.1" and lanes["telos"]["version"] == "0.4.1"
-    assert lanes["learn"]["integrity"].startswith("sha512-n1IPaGKosdu8nwat")
+    assert lanes["learn"]["version"] == "2.0.0"
+    assert lanes["learn"]["integrity"] == (
+        "sha512-WDkBRhqnl1EEhN1EUr2ipZUYw9Sucyykl/LeP/vBdZf7s2Q8+Dz6saq3e+rv1IDWxS/N0xFs9UbhYloXmeUH/Q==")
     assert len(lanes["learn"]["static_tool_names"]) == 15
     assert len(lanes["telos"]["static_tool_names"]) == 41
 
