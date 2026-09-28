@@ -105,6 +105,10 @@ def _served_tools() -> dict[str, tuple[str, ...]]:
     served["local-model"] = tuple(t["name"] for t in local_mcp.TOOLS)
     served["writing"] = tuple(t["name"] for t in writing_mcp.TOOLS)
     served["bulletin"] = BULLETIN_050_TOOLS
+    # Private held lanes have no payload row; their tool table is empty.
+    for lane in LANES:
+        if lane not in served:
+            served[lane] = ()
     return served
 
 

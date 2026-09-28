@@ -263,6 +263,12 @@ NO_FIXTURE = {
                    "measure that machine",
     "writing": "writing.diagnose reads a recorded revision (project, section and "
                "revision records first), which a one-call fixture cannot build",
+    "isomorph": "private lane held out of this build; the frozen "
+                "engine reports lane_held and never launches it",
+    "sofer": "private lane held out of this build; the frozen "
+             "engine reports lane_held and never launches it",
+    "array": "private lane held out of this build; the frozen "
+             "engine reports lane_held and never launches it",
 }
 
 FIXTURES: dict[str, LaneFixture] = {

@@ -559,4 +559,25 @@ Admitted at launch: 6 of 8 tools. T2 per granted call: 1. Not in this build: 1.
 | `accountable-surface.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `accountable-surface.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 
+### isomorph 0.3.0
+
+Admitted at launch: 0 of 0 tools. T2 per granted call: 0. Not in this build: 0.
+
+| Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
+|---|---|---|---|---|---|---|
+
+### sofer 0.1.0
+
+Admitted at launch: 0 of 0 tools. T2 per granted call: 0. Not in this build: 0.
+
+| Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
+|---|---|---|---|---|---|---|
+
+### array 1.0.0
+
+Admitted at launch: 0 of 0 tools. T2 per granted call: 0. Not in this build: 0.
+
+| Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
+|---|---|---|---|---|---|---|
+
 <!-- policy-tables:end -->

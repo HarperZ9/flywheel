@@ -80,6 +80,9 @@ READS_ONLY_LANES = {
 #: telos: the O-8 hold (DECISIONS.json) while its release contents are reviewed.
 HELD_LANES = {
     "telos": "Not in this build: Telos is held while its release contents are reviewed.",
+    "isomorph": "Private lane. Use an Isomorph source checkout.",
+    "sofer": "Private lane. Use a Sofer source checkout.",
+    "array": "Private lane. Use an Array source checkout.",
 }
 
 
@@ -130,7 +133,13 @@ def _build(tables: Mapping[str, Mapping[str, Mapping[str, Any]]]) -> dict[str, d
 
 
 LANE_TOOL_POLICY: dict[str, dict[str, ToolPolicy]] = {
-    **_build(EVIDENCE_LANE_POLICY), **_build(AGENT_LANE_POLICY), **_build(NODE_LANE_POLICY)}
+    **_build(EVIDENCE_LANE_POLICY), **_build(AGENT_LANE_POLICY), **_build(NODE_LANE_POLICY),
+    # Private lanes held out of this build have no tools to list; the empty table
+    # satisfies `test_every_registry_lane_has_a_table` and validate_policy skips
+    # the "no tools" check for lanes in HELD_LANES.
+    **{lane: {} for lane in HELD_LANES if lane not in
+       {**EVIDENCE_LANE_POLICY, **AGENT_LANE_POLICY, **NODE_LANE_POLICY}},
+}
 
 
 def lane_policy(lane: str) -> dict[str, ToolPolicy]:
@@ -209,7 +218,8 @@ def validate_policy(
     problems: list[str] = []
     for lane, tools in (LANE_TOOL_POLICY if table is None else table).items():
         if not tools:
-            problems.append(f"{lane}: no tools")
+            if lane not in HELD_LANES:
+                problems.append(f"{lane}: no tools")
         for name, entry in tools.items():
             where = name if name.startswith(f"{lane}.") else f"{lane} {name}"
             if not isinstance(entry, ToolPolicy):

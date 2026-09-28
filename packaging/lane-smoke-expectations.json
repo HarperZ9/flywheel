@@ -19,6 +19,9 @@
     "calibrate-pro": {"expected": "main", "bar": "C"},
     "canon": {"expected": "main", "bar": "B"},
     "bulletin": {"expected": "no_frozen_launch", "bar": "A"},
-    "accountable-surface": {"expected": "main", "bar": "A/C"}
+    "accountable-surface": {"expected": "main", "bar": "A/C"},
+    "isomorph": {"expected": "cannot_launch", "bar": "B", "reason": "lane_held"},
+    "sofer": {"expected": "cannot_launch", "bar": "B", "reason": "lane_held"},
+    "array": {"expected": "cannot_launch", "bar": "B", "reason": "lane_held"}
   }
 }

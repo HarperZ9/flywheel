@@ -20,6 +20,12 @@
     "relay": {"verdict": "AT_CLASS"},
     "telos": {"verdict": "HELD", "failed": [],
               "why": "held out of this build; the lane must not launch"},
-    "writing": {"verdict": "AT_CLASS"}
+    "writing": {"verdict": "AT_CLASS"},
+    "isomorph": {"verdict": "HELD", "failed": [],
+                 "why": "private lane; source checkout only"},
+    "sofer": {"verdict": "HELD", "failed": [],
+              "why": "private lane; source checkout only"},
+    "array": {"verdict": "HELD", "failed": [],
+              "why": "private lane; source checkout only"}
   }
 }
