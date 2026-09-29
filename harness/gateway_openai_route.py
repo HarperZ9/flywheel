@@ -7,6 +7,7 @@ implementation that does not need direct access to the HTTP handler.
 from __future__ import annotations
 
 import json
+import math
 import time
 import urllib.error
 
@@ -174,7 +175,16 @@ def openai_chat(
     if not prompt:
         return {"error": {"message": "messages must include a user turn",
                           "type": "invalid_request_error"}}, 400, None, None, None
-    temperature = float(req.get("temperature", 0.0))
+    try:
+        raw_temperature = req.get("temperature", 0.0)
+        if isinstance(raw_temperature, bool):
+            raise ValueError("boolean temperature")
+        temperature = float(raw_temperature)
+        if not math.isfinite(temperature):
+            raise ValueError("non-finite temperature")
+    except (TypeError, ValueError, OverflowError):
+        return {"error": {"message": "temperature must be a finite number",
+                          "type": "invalid_request_error"}}, 400, None, None, None
     max_tokens = int(req.get("max_tokens", 512))
     seed = int(req.get("seed", 0))
     candidates = [m.strip() for m in str(req.get("model", "")).split(",")
