@@ -14,6 +14,8 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location(
     "priv_gate", ROOT / "scripts" / "check_private_lane_prose.py")
@@ -57,3 +59,28 @@ def test_the_gate_fails_on_a_non_neutral_role():
     # above is the role check firing and not an unrelated surface.
     ok_reg = {"zzprobe": SimpleNamespace(role=G.NEUTRAL_ROLE, organ=G.NEUTRAL_ORGAN)}
     assert G.run_checks(held, ok_reg, dart, "") == []
+
+
+def _neutral_doc(lane: str) -> str:
+    return (f"### {lane} 1.0.0\n\n"
+            "Admitted at launch: 0 of 0 tools. T2 per granted call: 0. "
+            "Not in this build: 0.\n\n"
+            "| Tool | Tier | Main | Effect | Needs | Engine sets | Reason |\n"
+            "|---|---|---|---|---|---|---|\n")
+
+
+@pytest.mark.parametrize("surface", ["heading", "table", "admission", "comment", "duplicate"])
+def test_doc_rejects_descriptions_in_structural_lines(surface):
+    text = _neutral_doc("zzprobe")
+    assert G.check_doc("zzprobe", text) == []
+    if surface == "heading":
+        text = text.replace("### zzprobe 1.0.0", "### zzprobe 1.0.0 descriptive text")
+    elif surface == "table":
+        text += "| descriptive text | | | | | | |\n"
+    elif surface == "admission":
+        text = text.replace("0 of 0 tools.", "0 of 0 tools. descriptive text")
+    elif surface == "comment":
+        text += "<!-- comment -->\ndescriptive text\n"
+    else:
+        text += "\n### zzprobe 1.0.0\ndescriptive text\n"
+    assert G.check_doc("zzprobe", text), surface
