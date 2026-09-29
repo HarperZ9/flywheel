@@ -58,6 +58,8 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+        env:
+          FLYWHEEL_HOME: ${{ runner.temp }}/flywheel-flutter-home
 
       - name: Preserve failed golden comparisons
         if: failure()

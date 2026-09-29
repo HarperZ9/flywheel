@@ -153,6 +153,10 @@ The long form: [The Unbundling](https://github.com/HarperZ9/flywheel/blob/main/d
 
 ## Build and test
 
+Set `FLYWHEEL_HOME` to a fresh temporary directory before running tests. Widget
+tests can save desktop preferences; this keeps those writes out of your normal
+Flywheel home. The gateway integration fixture also isolates the OS home pointer.
+
 ```
 flutter analyze
 flutter test
