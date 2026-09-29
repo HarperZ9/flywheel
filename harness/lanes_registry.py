@@ -209,18 +209,18 @@ LANES: dict[str, Lane] = {
     # neutralized and gated by scripts/check_private_lane_prose.py). Kept out of
     # this build via package_disabled_reason; launch only from a source checkout.
     "isomorph": Lane(
-        "isomorph", "", "python", ("-m", "tools.isomorph_mcp"), "pip", "0.3.0",
+        "isomorph", "", "python", ("-m", "tools.isomorph_mcp"), "pip", "1.2.0",
         "Private lane; source checkout only.",
         "held", source_repo="state/isomorph", py_module="tools.isomorph_mcp",
         package_disabled_reason="Private lane. Use an Isomorph source checkout."),
     "sofer": Lane(
-        "sofer", "", "python", ("-m", "sofer.mcp.sov_server"), "pip", "0.1.0",
+        "sofer", "", "python", ("-m", "sofer.mcp.sov_server"), "pip", "1.0.0",
         "Private lane; source checkout only.",
-        "held", source_repo="state/sofer", py_module="sofer.mcp.sov_server",
+        "held", source_repo="state/sofer/sofer", py_module="sofer.mcp.sov_server",
         extra_source_repos=("state/isomorph",),
         package_disabled_reason="Private lane. Use a Sofer source checkout."),
     "array": Lane(
-        "array", "", "python", ("-m", "red_team_platform.mcp_server"), "pip", "1.0.0",
+        "array", "", "python", ("-m", "red_team_platform.mcp_server"), "pip", "1.1.0",
         "Private lane; source checkout only.",
         "held", source_repo="state/array",
         py_module="red_team_platform.mcp_server",

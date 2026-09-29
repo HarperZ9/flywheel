@@ -154,6 +154,8 @@ jobs:
           Copy-Item -LiteralPath dist/flywheel-gateway -Destination desktop/build/engine/flywheel-gateway -Recurse
 
       - name: Gates + build + package
+        env:
+          FLYWHEEL_HOME: ${{ runner.temp }}/flywheel-flutter-home
         shell: pwsh
         working-directory: desktop
         run: |
