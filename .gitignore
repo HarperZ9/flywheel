@@ -130,3 +130,6 @@ desktop/android/key.properties
 !desktop/android/key.properties.example
 *.jks
 *.keystore
+
+# Private held-lane source checkouts (isomorph, sofer, array) live here; never track them in this public repo.
+state/

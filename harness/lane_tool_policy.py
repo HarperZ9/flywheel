@@ -78,10 +78,13 @@ READS_ONLY_LANES = {
 #: Lanes held out of this build, with the card's sentence. A held lane admits no
 #: tool and has no main tool; the frozen engine reports ``lane_held`` for it.
 #: Private lanes that have no freeze payload and cannot launch on CI.
+#: The card sentence is a fixed neutral string for every held lane: it carries no
+#: capability description. scripts/check_private_lane_prose.py gates this.
+_HELD_CARD = "Private lane. Held out of this build; available only from a source checkout."
 HELD_LANES = {
-    "isomorph": "Private lane. Use an Isomorph source checkout.",
-    "sofer": "Private lane. Use a Sofer source checkout.",
-    "array": "Private lane. Use an Array source checkout.",
+    "isomorph": _HELD_CARD,
+    "sofer": _HELD_CARD,
+    "array": _HELD_CARD,
 }
 
 
