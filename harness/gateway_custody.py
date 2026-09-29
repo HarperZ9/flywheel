@@ -35,7 +35,7 @@ PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
 PRIVATE_PATHS = frozenset({
     "/api/auth", "/api/agent/run", "/api/agent/runs",
     "/v1/chat/completions", "/api/agent", "/api/output/check", "/api/workflow",
-    "/api/hooks", "/api/operations",
+    "/api/hooks", "/api/operations", "/api/usage/live",
     "/api/plugins/probe", "/api/plugins/call", "/api/plugins/register",
     "/api/plugins/toggle", "/api/plugins/remove",
     "/api/marketplace/install", "/api/marketplace/add",

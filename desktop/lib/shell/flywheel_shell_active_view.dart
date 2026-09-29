@@ -23,6 +23,7 @@ extension _FlywheelShellActiveView on _FlywheelShellState {
             settings: widget.settings,
             chatStore: _dependencies.chatStore,
             chatDraftStore: _dependencies.chatDraftStore,
+            usageSelection: _dependencies.usageSelection,
             pendingArgument: argument,
             roster: _coordinator.roster,
             world: _coordinator.world,

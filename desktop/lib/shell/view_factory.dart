@@ -15,6 +15,7 @@ import '../controllers/rowan_walkthrough_operation_host.dart';
 import '../ide/code_buffer_session.dart';
 import '../ide/unsaved_work_guard.dart';
 import '../models/gateway_models.dart';
+import '../models/usage_live_selection.dart';
 import '../navigation/app_route.dart';
 import '../navigation/destination_catalog.dart';
 import '../services/chat_draft_store.dart';
@@ -82,7 +83,6 @@ DestinationId destinationForLabel(String label) => destinationCatalog
       orElse: () => destinationCatalog.first,
     )
     .id;
-
 final class DestinationInputs {
   const DestinationInputs({
     required this.client,
@@ -96,6 +96,7 @@ final class DestinationInputs {
     required this.settings,
     this.chatStore,
     this.chatDraftStore,
+    this.usageSelection,
     required this.onProbe,
     required this.onInstall,
     this.onCheckLane,
@@ -116,6 +117,7 @@ final class DestinationInputs {
   final DesktopSettings settings;
   final ChatStore? chatStore;
   final ChatDraftStore? chatDraftStore;
+  final UsageLiveSelectionController? usageSelection;
   final Object? pendingArgument;
   final LaneRoster? roster;
   final WorldDoc? world;
@@ -184,7 +186,6 @@ Widget? _work(DestinationId id, DestinationInputs i) => switch (id) {
         ),
       _ => null,
     };
-
 Widget? _chat(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.chat => AgentView(
           client: i.client,
@@ -192,6 +193,7 @@ Widget? _chat(DestinationId id, DestinationInputs i) => switch (id) {
           settings: i.settings,
           chatStore: i.chatStore,
           draftStore: i.chatDraftStore,
+          usageSelection: i.usageSelection,
           startTaskHandoff: i.pendingArgument is StartTaskHandoff
               ? i.pendingArgument as StartTaskHandoff
               : null,
@@ -245,9 +247,9 @@ Widget? _evidence(DestinationId id, DestinationInputs i) => switch (id) {
           client: i.client,
         ),
       DestinationId.memory => MemoryView(client: i.client, alive: i.alive),
-      DestinationId.governance =>
-        GovernanceView(client: i.client, alive: i.alive),
-      DestinationId.usage => UsageView(client: i.client, alive: i.alive),
+      DestinationId.governance => GovernanceView(client: i.client, alive: i.alive),
+      DestinationId.usage => UsageView(client: i.client, alive: i.alive,
+          usageSelection: i.usageSelection),
       DestinationId.infra => InfraView(client: i.client, alive: i.alive),
       DestinationId.lanes => LanesView(
           client: i.client,

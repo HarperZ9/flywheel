@@ -269,3 +269,12 @@ def handle_usage_summary(req_or_qs: Any, run_root: Any) -> tuple[dict, int]:
         "receipts": receipts,
     }
     return body, 200
+
+
+def handle_usage_get(path: str, qs: Any, run_root: Any) -> tuple[dict, int]:
+    if path == "/api/usage/live":
+        from .usage_live import handle_usage_live
+        return handle_usage_live(qs, run_root)
+    if path == "/api/usage":
+        return handle_usage_summary(qs, run_root)
+    return {"error": "unknown usage route"}, 404
