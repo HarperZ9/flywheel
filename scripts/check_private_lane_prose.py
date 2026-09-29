@@ -96,20 +96,23 @@ def check_dart(lane: str, text: str) -> list[str]:
 def check_doc(lane: str, text: str) -> list[str]:
     """The feature-doc section for a held lane must carry no descriptive line."""
     where = f"docs/features/lane-tool-policy.md [{lane}]"
-    m = re.search(r"^###\s+" + re.escape(lane) + r"\b.*?(?=^###\s|<!--|\Z)",
-                  text, re.S | re.M)
-    if not m:
+    sections = list(re.finditer(r"^###\s+" + re.escape(lane)
+                                + r"\b.*?(?=^###\s|^<!-- policy-tables:end -->\s*$|\Z)",
+                                text, re.S | re.M))
+    if not sections:
         # No section for the lane is fine: nothing to describe it.
         return []
-    for line in m.group(0).splitlines():
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if stripped.startswith("###") or stripped.startswith("|"):
-            continue
-        if re.match(r"^Admitted at launch:.*tools\.", stripped):
-            continue
-        return [f"{where}: a descriptive line is present in the lane's section"]
+    if len(sections) != 1:
+        return [f"{where}: duplicate lane sections"]
+    lines = [line.strip() for line in sections[0].group(0).splitlines() if line.strip()]
+    expected_body = [
+        "Admitted at launch: 0 of 0 tools. T2 per granted call: 0. Not in this build: 0.",
+        "| Tool | Tier | Main | Effect | Needs | Engine sets | Reason |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    if (not re.fullmatch(r"### " + re.escape(lane) + r" \d+\.\d+\.\d+", lines[0])
+            or lines[1:] != expected_body):
+        return [f"{where}: section is not the neutral empty tool table"]
     return []
 
 
