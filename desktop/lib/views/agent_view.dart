@@ -6,6 +6,7 @@ import '../controllers/chat_admission_controller.dart';
 import '../controllers/chat_context_controller.dart';
 import '../models/chat.dart';
 import '../models/gateway_models.dart';
+import '../models/usage_live_selection.dart';
 import '../navigation/app_route.dart';
 import '../services/chat_draft_store.dart';
 import '../services/chat_store.dart';
@@ -35,6 +36,7 @@ class AgentView extends StatefulWidget {
     required this.settings,
     this.chatStore,
     this.draftStore,
+    this.usageSelection,
     this.startTaskHandoff,
     this.actionCueController,
   });
@@ -43,6 +45,7 @@ class AgentView extends StatefulWidget {
   final DesktopSettings settings;
   final ChatStore? chatStore;
   final ChatDraftStore? draftStore;
+  final UsageLiveSelectionController? usageSelection;
   final StartTaskHandoff? startTaskHandoff;
   final RowanActionCueController? actionCueController;
   @override
@@ -116,6 +119,7 @@ class _AgentViewState extends State<AgentView> {
         _model ??= defaultEndpoint(rows)?.name;
         _current.model ??= _model;
       });
+      _publishUsageSelection();
     } catch (_) {/* offline empty state owns the presentation */}
   }
 
@@ -134,6 +138,7 @@ class _AgentViewState extends State<AgentView> {
       _current = c;
       _model = c.model ?? _model;
     });
+    _publishUsageSelection();
   }
 
   void _delete(Conversation c) {
@@ -166,7 +171,17 @@ class _AgentViewState extends State<AgentView> {
 
   void _draftChanged(String text) => _admission.changeDraft(_current, text);
 
-  void _refresh(VoidCallback fn) => setState(fn);
+  void _refresh(VoidCallback fn) {
+    setState(fn);
+    _publishUsageSelection();
+  }
+
+  void _publishUsageSelection() {
+    final endpoint = _model;
+    widget.usageSelection?.value = UsageLiveSelection(
+        endpoint: endpoint,
+        model: endpoint == null ? null : _chosenModels[endpoint]);
+  }
 
   void _applyStartTaskHandoff(StartTaskHandoff? handoff,
       {required bool notify}) {

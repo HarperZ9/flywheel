@@ -9,6 +9,7 @@ import '../controllers/rowan_operation_controller.dart';
 import '../controllers/rowan_operation_host_adapter.dart';
 import '../ide/code_buffer_session.dart';
 import '../ide/unsaved_work_guard.dart';
+import '../models/usage_live_selection.dart';
 import '../services/chat_draft_store.dart';
 import '../services/chat_store.dart';
 import '../services/code_draft_store.dart';
@@ -28,6 +29,7 @@ final class FlywheelDependencies {
     required this.code,
     this.chatStore,
     this.chatDraftStore,
+    this.usageSelection,
     this.closePrompt,
     this.status,
     this.autoStartBundledEngine = false,
@@ -61,6 +63,7 @@ final class FlywheelDependencies {
       ),
       rowan: rowan,
       rowanOperationHost: RowanOperationHostAdapter(rowan),
+      usageSelection: UsageLiveSelectionController(),
       status: GatewayStatusService.production(
         baseUrl: client.baseUrl,
         readToken: conn.tokenSource,
@@ -78,6 +81,7 @@ final class FlywheelDependencies {
   final CodeBufferSession code;
   final ChatStore? chatStore;
   final ChatDraftStore? chatDraftStore;
+  final UsageLiveSelectionController? usageSelection;
   final CloseChoicePrompt? closePrompt;
 
   /// The typed connection probe. Null in hand-built test dependencies,
@@ -90,6 +94,7 @@ final class FlywheelDependencies {
     journey.dispose();
     rowanOperationHost.dispose();
     rowan.dispose();
+    usageSelection?.dispose();
     code.dispose();
     client.close();
     gateway.stopIfOwned();
