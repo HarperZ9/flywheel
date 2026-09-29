@@ -17,7 +17,10 @@ injected into the registry, so it cannot quietly stop running once the last real
 disabled lane is published. A parametrize over a list that has become empty
 reports success, not a gap.
 """
+import sys
 from types import SimpleNamespace
+
+from pathlib import Path
 
 import pytest
 
@@ -77,7 +80,8 @@ def test_reclaimed_lane_installs_the_distribution_we_publish(
         calls.append(a[0]) or SimpleNamespace(returncode=0, stdout="", stderr="")))
     result = lanes.install_lane(name)
     assert result["installed"] is True
-    assert calls == [["pip", "install", distribution]]
+    assert calls == [[sys.executable, "-m", "pip", "install",
+                      f"{distribution}=={LANES[name].version}"]]
     assert LANES[name].command == name  # the short command survived the rename
 
 
@@ -104,14 +108,17 @@ def test_disabled_package_has_no_public_command_or_plugin_launch(monkeypatch, na
     row = next(r for r in plugins.plugin_roster()["plugins"] if r["name"] == name)
     assert row["enabled"] is False and row["command"] == []
     assert row["status"] == "unavailable"
-    with pytest.raises(GatewayOperationError, match="LANE_UNAVAILABLE") as failure:
+    # the grant path answers with a lane code from the closed set (S7)
+    with pytest.raises(GatewayOperationError, match="LANE_CANNOT_LAUNCH") as failure:
         plugins.plugin_execution_plan(name)
     response, status = gateway_error_response(failure.value)
-    assert status == 503 and response["error"]["code"] == "LANE_UNAVAILABLE"
-    for operation in (plugins.probe_plugin, lambda lane: plugins.call_plugin(lane, "status")):
-        result = operation(name)
-        assert result["code"] == "LANE_UNAVAILABLE"
-        assert result["status"] == "unavailable"
+    assert status == 503 and response["error"]["code"] == "LANE_CANNOT_LAUNCH"
+    probed = plugins.probe_plugin(name)
+    assert probed["code"] == "LANE_UNAVAILABLE" and probed["status"] == "unavailable"
+    # "status" is not in the lane's tool table, so Plugins refuse it before
+    # anything resolves (POLICY-DECISION C-11); either way nothing launches.
+    called = plugins.call_plugin(name, "status")
+    assert called["code"] in ("LANE_UNAVAILABLE", "CAPABILITY_NOT_ADMITTED")
 
 
 @pytest.mark.parametrize("profile,frozen", [
@@ -171,13 +178,14 @@ def test_relay_source_still_resolves_and_installs(monkeypatch, tmp_path):
     monkeypatch.setattr(lanes, "resolve_source_repo", lambda lane: source)
     monkeypatch.setattr(lanes, "_frozen", lambda: False)
     launch = lanes.resolve_mcp_launch("relay")
-    assert launch.cwd == str(source.resolve())
-    assert "relay.local_mcp" in launch.argv
+    assert Path(launch.cwd).parts[-2:] == ("lanes", "relay")   # not the checkout
+    assert str((source / "src").resolve()) in dict(launch.env_overrides)["PYTHONPATH"]
+    assert launch.argv[-3:] == ("-m", "relay", "--mcp")   # relay.local_mcp refuses --mcp
     calls = []
     monkeypatch.setattr(lanes.subprocess, "run", lambda *a, **k: (
         calls.append(a[0]) or SimpleNamespace(returncode=0, stdout="", stderr="")))
     assert lanes.install_lane("relay", profile="source")["installed"] is True
-    assert calls == [["pip", "install", "-e", str(source)]]
+    assert calls == [[sys.executable, "-m", "pip", "install", "-e", str(source)]]
 
 
 def test_other_package_install_keeps_its_distribution(monkeypatch):
@@ -185,7 +193,8 @@ def test_other_package_install_keeps_its_distribution(monkeypatch):
     monkeypatch.setattr(lanes.subprocess, "run", lambda *a, **k: (
         calls.append(a[0]) or SimpleNamespace(returncode=0, stdout="", stderr="")))
     assert lanes.install_lane("index")["installed"] is True
-    assert calls == [["pip", "install", "index-graph"]]
+    assert calls == [[sys.executable, "-m", "pip", "install",
+                      f"index-graph=={LANES['index'].version}"]]
 
 
 @pytest.mark.parametrize("profile,frozen", [

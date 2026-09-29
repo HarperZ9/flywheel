@@ -95,4 +95,26 @@ void main() {
         }).tierLabel,
         'T1');
   });
+
+  // The engine lists each tool's tier from its policy table. The panel names
+  // the tools above T1, since each runs only under an approval naming its tier.
+  test('tool tiers parse and the raised tools are named in order', () {
+    final lane = CallableLane.fromJson(const {
+      'name': 'gather',
+      'min_tier': 'T1',
+      'tool_tiers': {
+        'gather.run': 'T2',
+        'gather.docs': 'T1',
+        'gather.federation': 'T2',
+        'gather.bad': 7,
+      },
+    });
+    expect(lane.toolTiers, {
+      'gather.run': 'T2',
+      'gather.docs': 'T1',
+      'gather.federation': 'T2',
+    });
+    expect(lane.raisedTools, ['gather.federation', 'gather.run']);
+    expect(CallableLane.fromJson(const {'name': 'x'}).raisedTools, isEmpty);
+  });
 }

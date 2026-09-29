@@ -14,6 +14,7 @@ import os
 import subprocess
 
 from .lanes import LANES, REPO
+from . import safe_program
 
 SCHEMA = "flywheel.telos-kernel-run/v1"
 
@@ -56,10 +57,14 @@ def run_kernel(kernel: str, args: "dict | None" = None,
         "if (out && out.output) out.output = Array.from(out.output);\n"
         "process.stdout.write(JSON.stringify(out));\n")
     try:
+        from .lane_env import lane_process_environment
+        command, env = safe_program.launch(["node", "--input-type=module", "-e", shim],
+                                           env=lane_process_environment("telos"))
         r = subprocess.run(
-            ["node", "--input-type=module", "-e", shim],
+            command,
             input=json.dumps(args or {}),
-            capture_output=True, text=True, timeout=timeout)
+            capture_output=True, text=True, timeout=timeout,
+            env=env)
     except FileNotFoundError:
         return {"error": "node is not on PATH; the telos kernels run in node"}
     except subprocess.TimeoutExpired:

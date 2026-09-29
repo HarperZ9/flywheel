@@ -9,15 +9,23 @@ from typing import Any
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+for _p in (str(ROOT), str(ROOT / "scripts")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
+from harness.bundled_lane_descriptor import SOURCE_FILE_SUFFIXES
 from harness.evidence_json import canonical_sha256
+from harness.lane_tool_policy import admitted_tools, validate_policy
+from _lane_payload_slice import PAYLOAD_SLICES, module_of
 
-EXPECTED_LANES = ("gather", "crucible", "index", "forum", "plexus", "mneme", "canon", "chorus", "relay", "accountable-surface")
-REGISTRY_UPDATES = {"gather", "index", "forum", "mneme", "canon", "relay"}
+EXPECTED_LANES = ("gather", "crucible", "index", "forum", "plexus", "mneme", "canon", "chorus", "relay", "accountable-surface", "articulate", "calibrate-pro")
+# Lanes whose pinned release is ahead of the registry version. Empty since the
+# registry caught up with index 2.13.0 and forum 1.14.0.
+REGISTRY_UPDATES: set[str] = set()
 ASYNC_LANES = {"forum"}
 MANIFEST = Path("packaging/python-lane-payloads.jsonl")
+STUDIO_SOURCES = ROOT / "packaging" / "studio-runtime-sources.json"
+_DEP_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 SOURCE_ALGORITHM = "sha256-canonical-source-manifest/v1"
 SHA256_URI = re.compile(r"sha256:[0-9a-f]{64}\Z")
 
@@ -50,67 +58,138 @@ def _digest(value: dict[str, Any] | list[Any]) -> str:
     return "sha256:" + canonical_sha256(value)
 
 
+def studio_supplied_packages(path: Path = STUDIO_SOURCES) -> set[str]:
+    """Import names the pinned Studio runtime payload stages beside the lanes."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ManifestError(f"studio runtime sources unreadable: {exc}") from exc
+    return set(doc.get("components", {}))
+
+
+def _dependency_import_name(requirement: str) -> str:
+    match = _DEP_NAME.match(requirement.strip())
+    if not match:
+        raise ManifestError(f"unparseable runtime dependency: {requirement!r}")
+    return match.group(0).lower().replace("-", "_").replace(".", "_")
+
+
+def _check_source(lane: str, row: dict[str, Any]) -> dict[str, Any]:
+    descriptor = row.get("component_descriptor")
+    _require(isinstance(descriptor, dict), f"{lane}: component_descriptor missing")
+    source = descriptor.get("source")
+    _require(isinstance(source, dict), f"{lane}: source missing")
+    files = source.get("files")
+    _require(isinstance(files, list) and files, f"{lane}: source files missing")
+    _require(source.get("algorithm") == SOURCE_ALGORITHM, f"{lane}: source algorithm mismatch")
+    _require(source.get("file_count") == len(files), f"{lane}: file_count mismatch")
+    _require(source.get("bytes") == sum(int(item["bytes"]) for item in files), f"{lane}: bytes mismatch")
+    _require(source.get("manifest_sha256") == _digest(files), f"{lane}: source manifest digest mismatch")
+    odd = [item["path"] for item in files if not str(item["path"]).endswith(SOURCE_FILE_SUFFIXES)]
+    _require(not odd, f"{lane}: source files the runtime refuses: {odd!r}")
+    _require(row.get("component_descriptor_sha256") == _digest(descriptor), f"{lane}: descriptor digest mismatch")
+    _require(descriptor.get("schema") == "flywheel.bundled-lane-component/v1", f"{lane}: descriptor schema mismatch")
+    _require(descriptor.get("name") == lane, f"{lane}: descriptor name mismatch")
+    _require(descriptor.get("version") == row["owner_project"]["version"], f"{lane}: descriptor version mismatch")
+    return descriptor
+
+
+def _check_entry(lane: str, row: dict[str, Any], descriptor: dict[str, Any]) -> bool:
+    """Entrypoint and admitted tools; returns True for an async lane."""
+    entrypoint = descriptor.get("entrypoint")
+    _require(isinstance(entrypoint, dict), f"{lane}: entrypoint missing")
+    _require(entrypoint.get("argv") == ["--bundled-lane-mcp", lane], f"{lane}: public argv mismatch")
+    mcp = row.get("mcp")
+    _require(isinstance(mcp, dict), f"{lane}: mcp block missing")
+    _require(entrypoint.get("module") == mcp.get("module"), f"{lane}: module mismatch")
+    _require(entrypoint.get("callable") == mcp.get("callable"), f"{lane}: callable mismatch")
+    _require(entrypoint.get("health_tool") == mcp.get("health_tool"), f"{lane}: health tool mismatch")
+    allowed = admitted_tools(lane)
+    _require(bool(allowed) and mcp.get("health_tool") in allowed,
+             f"{lane}: tool policy does not admit the health tool")
+    _require(descriptor.get("allowed_tools") == allowed, f"{lane}: allowed tools mismatch")
+    _require(mcp.get("allowed_tools_for_initial_admission") == allowed,
+             f"{lane}: initial admission differs from the tool policy")
+    tools = set(mcp.get("static_tool_names") or [])
+    _require(set(allowed) <= tools, f"{lane}: allowed tool not in static tool list")
+    _require(mcp.get("callable_style") in {"sync", "async"}, f"{lane}: callable style invalid")
+    if mcp.get("callable_style") == "async":
+        _require(mcp.get("contract_status") == "async_coroutine_runtime_dispatch", f"{lane}: async contract not recorded")
+        return True
+    _require(mcp.get("contract_status") == "compatible_with_sync_dispatcher", f"{lane}: sync status mismatch")
+    return False
+
+
+def _check_project(lane: str, row: dict[str, Any], studio_supplied: set[str]) -> None:
+    project = row.get("owner_project")
+    _require(isinstance(project, dict), f"{lane}: project block missing")
+    # A lane's runtime dependencies must be explicit, and each one must be a
+    # package the pinned Studio runtime payload stages beside the lanes
+    # (accountable-surface 0.3 imports coherence_membrane and proof_surface).
+    deps = project.get("runtime_dependencies")
+    _require(isinstance(deps, list), f"{lane}: runtime dependencies must be an explicit list")
+    unsupplied = sorted(d for d in deps if _dependency_import_name(d) not in studio_supplied)
+    _require(not unsupplied, f"{lane}: runtime dependencies not staged by the Studio runtime: {unsupplied!r}")
+    license_files = project.get("license_files")
+    _require(isinstance(license_files, list) and bool(license_files),
+             f"{lane}: license file evidence missing")
+    for notice in license_files:
+        _require(isinstance(notice, dict), f"{lane}: license notice shape")
+        _require(isinstance(notice.get("path"), str) and notice["path"],
+                 f"{lane}: license notice path missing")
+        _require(isinstance(notice.get("bytes"), int) and notice["bytes"] > 0,
+                 f"{lane}: license notice bytes missing")
+        _require(isinstance(notice.get("sha256"), str)
+                 and SHA256_URI.fullmatch(notice["sha256"]),
+                 f"{lane}: license notice hash invalid")
+    mcp = row.get("mcp") or {}
+    _require(mcp.get("module") in set(row.get("hidden_imports") or []), f"{lane}: mcp module absent from hidden imports")
+
+
+def _check_slice(lane: str, row: dict[str, Any]) -> bool:
+    """A slice or an excluded dependency only as reviewed; True for a sliced lane."""
+    spec = PAYLOAD_SLICES.get(lane)
+    excluded = row["owner_project"].get("excluded_runtime_dependencies")
+    reviewed = [dict(item) for item in spec["excluded_runtime_dependencies"]] if spec else None
+    _require(excluded == reviewed,
+             f"{lane}: excluded runtime dependencies differ from the reviewed slice")
+    expected = {"modules": list(spec["modules"]), "reason": spec["reason"]} if spec else None
+    _require(row.get("payload_slice") == expected,
+             f"{lane}: payload slice differs from the reviewed slice")
+    if spec is None:
+        return False
+    source = row["component_descriptor"]["source"]
+    pkg_dir = source["path"]
+    pkg = pkg_dir.rsplit("/", 1)[-1]
+    outside = [item["path"] for item in source["files"]
+               if module_of(item["path"], pkg, pkg_dir) not in set(spec["modules"])]
+    _require(not outside, f"{lane}: source files outside the reviewed slice: {outside!r}")
+    return True
+
+
 def validate_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
     lanes = [str(row.get("lane")) for row in rows]
     _require(tuple(lanes) == EXPECTED_LANES, f"unexpected lane order/set: {lanes!r}")
+    policy_problems = validate_policy()
+    _require(not policy_problems, f"tool policy invalid: {policy_problems!r}")
     seen_registry_updates: set[str] = set()
     seen_async: set[str] = set()
+    sliced: list[str] = []
     descriptor_digests: dict[str, str] = {}
     source_digests: dict[str, str] = {}
+    studio_supplied = studio_supplied_packages()
     for row in rows:
         lane = str(row["lane"])
-        descriptor = row.get("component_descriptor")
-        _require(isinstance(descriptor, dict), f"{lane}: component_descriptor missing")
-        source = descriptor.get("source")
-        _require(isinstance(source, dict), f"{lane}: source missing")
-        files = source.get("files")
-        _require(isinstance(files, list) and files, f"{lane}: source files missing")
-        _require(source.get("algorithm") == SOURCE_ALGORITHM, f"{lane}: source algorithm mismatch")
-        _require(source.get("file_count") == len(files), f"{lane}: file_count mismatch")
-        _require(source.get("bytes") == sum(int(item["bytes"]) for item in files), f"{lane}: bytes mismatch")
-        _require(source.get("manifest_sha256") == _digest(files), f"{lane}: source manifest digest mismatch")
-        _require(row.get("component_descriptor_sha256") == _digest(descriptor), f"{lane}: descriptor digest mismatch")
-        _require(descriptor.get("schema") == "flywheel.bundled-lane-component/v1", f"{lane}: descriptor schema mismatch")
-        _require(descriptor.get("name") == lane, f"{lane}: descriptor name mismatch")
-        _require(descriptor.get("version") == row["owner_project"]["version"], f"{lane}: descriptor version mismatch")
-        entrypoint = descriptor.get("entrypoint")
-        _require(isinstance(entrypoint, dict), f"{lane}: entrypoint missing")
-        _require(entrypoint.get("argv") == ["--bundled-lane-mcp", lane], f"{lane}: public argv mismatch")
-        mcp = row.get("mcp")
-        _require(isinstance(mcp, dict), f"{lane}: mcp block missing")
-        _require(entrypoint.get("module") == mcp.get("module"), f"{lane}: module mismatch")
-        _require(entrypoint.get("callable") == mcp.get("callable"), f"{lane}: callable mismatch")
-        _require(entrypoint.get("health_tool") == mcp.get("health_tool"), f"{lane}: health tool mismatch")
-        allowed = [mcp.get("health_tool"), mcp.get("doctor_tool")]
-        _require(descriptor.get("allowed_tools") == allowed, f"{lane}: allowed tools mismatch")
-        tools = set(mcp.get("static_tool_names") or [])
-        _require(set(allowed) <= tools, f"{lane}: allowed tool not in static tool list")
-        _require(mcp.get("callable_style") in {"sync", "async"}, f"{lane}: callable style invalid")
-        if mcp.get("callable_style") == "async":
+        descriptor = _check_source(lane, row)
+        if _check_entry(lane, row, descriptor):
             seen_async.add(lane)
-            _require(mcp.get("contract_status") == "async_coroutine_runtime_dispatch", f"{lane}: async contract not recorded")
-        else:
-            _require(mcp.get("contract_status") == "compatible_with_sync_dispatcher", f"{lane}: sync status mismatch")
-        project = row.get("owner_project")
-        _require(isinstance(project, dict), f"{lane}: project block missing")
-        _require(project.get("runtime_dependencies") == [], f"{lane}: runtime dependencies must be explicit and empty")
-        license_files = project.get("license_files")
-        _require(isinstance(license_files, list) and bool(license_files),
-                 f"{lane}: license file evidence missing")
-        for notice in license_files:
-            _require(isinstance(notice, dict), f"{lane}: license notice shape")
-            _require(isinstance(notice.get("path"), str) and notice["path"],
-                     f"{lane}: license notice path missing")
-            _require(isinstance(notice.get("bytes"), int) and notice["bytes"] > 0,
-                     f"{lane}: license notice bytes missing")
-            _require(isinstance(notice.get("sha256"), str)
-                     and SHA256_URI.fullmatch(notice["sha256"]),
-                     f"{lane}: license notice hash invalid")
-        _require(mcp.get("module") in set(row.get("hidden_imports") or []), f"{lane}: mcp module absent from hidden imports")
+        _check_project(lane, row, studio_supplied)
+        if _check_slice(lane, row):
+            sliced.append(lane)
         if row.get("owner_project", {}).get("version") != row.get("flywheel_registry_expected_version"):
             seen_registry_updates.add(lane)
         descriptor_digests[lane] = str(row["component_descriptor_sha256"])
-        source_digests[lane] = str(source["manifest_sha256"])
+        source_digests[lane] = str(descriptor["source"]["manifest_sha256"])
     _require(
         seen_registry_updates == REGISTRY_UPDATES,
         f"registry update set changed: {sorted(seen_registry_updates)!r}",
@@ -122,6 +201,7 @@ def validate_manifest(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "lanes": lanes,
         "registry_updates": sorted(seen_registry_updates),
         "async_lanes": sorted(seen_async),
+        "sliced_lanes": sliced,
         "descriptor_sha256": descriptor_digests,
         "source_manifest_sha256": source_digests,
     }

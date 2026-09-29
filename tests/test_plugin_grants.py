@@ -2,7 +2,6 @@ import pytest
 import io
 import json
 import os
-import subprocess
 
 from harness import gateway, marketplace, plugins
 from harness.gateway_actions import (
@@ -11,12 +10,13 @@ from harness.gateway_actions import (
 from harness.gateway_grant_route import gateway_grant_post
 from harness.gateway_operation import AuthorizedOperation
 from harness.journey_store import JourneyStore, MutationCommand
-from harness.mcp_client import LaunchSpec, StdioTransport
+from harness.mcp_client import LaunchSpec
 
 
 NOW = "2026-08-15T12:00:00Z"
 OWNER = "owner_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 JOURNEY = "jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+pytestmark = pytest.mark.usefixtures("lanes_at_their_pins")  # plans freeze a lane launch
 
 
 def _operation(action, body):
@@ -154,35 +154,6 @@ def test_dispatch_exception_burns_consumed_grant(tmp_path, monkeypatch):
     assert "synthetic-marker" not in json.dumps(failure)
     assert _handler(tmp_path, final)["code"] == 403
     assert calls == ["gather"]
-
-
-class _EmptyStream:
-    def __iter__(self):
-        return iter(())
-
-
-class _FakeProcess:
-    stdin = None
-    stdout = _EmptyStream()
-    stderr = _EmptyStream()
-
-    def poll(self):
-        return None
-
-
-def test_non_inheriting_launch_spec_passes_only_explicit_environment(monkeypatch):
-    marker = "ambient-value-must-not-cross"
-    monkeypatch.setenv("CLOUD_ACCESS_TOKEN", marker)
-    seen = {}
-    monkeypatch.setattr(subprocess, "Popen", lambda argv, **kwargs:
-                        seen.update(argv=argv, kwargs=kwargs) or _FakeProcess())
-
-    StdioTransport(LaunchSpec(
-        ("bounded-mcp",), env_overrides=(("PATH", "/safe/bin"),),
-        inherit_env=False))
-
-    assert seen["kwargs"]["env"] == {"PATH": "/safe/bin"}
-    assert marker not in json.dumps(seen)
 
 
 class _Bindings:

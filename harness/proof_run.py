@@ -23,12 +23,12 @@ command authority is asked for rather than assumed.
 from __future__ import annotations
 
 import re
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
 from .verdict import Verdict
+from . import safe_program
 
 # `#print axioms Some.Name` prints one of these two lines. Both are matched
 # rather than only the first, because a file resting on nothing is the good
@@ -48,12 +48,13 @@ AXIOM_LINE = re.compile(r"^'[^']*' (?:depends on axioms|does not depend)", re.M)
 TIMEOUT = 180
 
 
-def lean_path(explicit=None) -> str | None:
-    """The Lean to run, or None. Never guesses beyond PATH."""
+def lean_path(explicit=None, *, cwd=None) -> str | None:
+    """The Lean to run, or None. Never guesses beyond PATH. ``cwd`` is the
+    folder Lean will work in; a PATH entry reaching it is skipped."""
     if explicit:
         found = Path(explicit)
         return str(found) if found.exists() else None
-    return shutil.which("lean")
+    return safe_program.which("lean", cwd=cwd)
 
 
 def lean_version(lean: str) -> str:
@@ -128,7 +129,7 @@ def read_result(output: str, returncode: int) -> dict:
 
 def run_proof(path, *, lean=None, timeout: int = TIMEOUT) -> dict:
     """Run Lean on a file already on disk and report what it decided."""
-    binary = lean_path(lean)
+    binary = lean_path(lean, cwd=Path(path).parent)
     if binary is None:
         return _unverifiable("lean is not on PATH, so the file was written but "
                              "not checked")

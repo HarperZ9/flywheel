@@ -1,4 +1,5 @@
 """Discovery must not allocate a console or change its command contract."""
+import os
 from types import SimpleNamespace
 
 import pytest
@@ -8,8 +9,15 @@ from harness import lane_runtime_support as support
 
 @pytest.mark.parametrize("platform,expected", [("nt", 0x08000000), ("posix", 0)])
 @pytest.mark.parametrize("probe", ["npm", "python"])
-def test_discovery_process_does_not_create_windows_console(monkeypatch, platform,
+def test_discovery_process_does_not_create_windows_console(monkeypatch, tmp_path, platform,
                                                           expected, probe):
+    # npm resolves through the guarded lookup (npm.cmd on Windows); the stand-in
+    # in the one PATH folder is what the probe must start.
+    npm = tmp_path / "bin" / ("npm.cmd" if os.name == "nt" else "npm")
+    npm.parent.mkdir()
+    npm.write_text("exit 0" + chr(10), encoding="utf-8")
+    npm.chmod(0o755)
+    monkeypatch.setenv("PATH", str(npm.parent))
     calls = []
     monkeypatch.setattr(support, "os", SimpleNamespace(name=platform))
     def run(command, **kwargs):
@@ -23,7 +31,9 @@ def test_discovery_process_does_not_create_windows_console(monkeypatch, platform
         finally:
             support._npm_global_root.cache_clear()
         command, options = calls[0]
-        assert command == ["npm.cmd" if platform == "nt" else "npm", "root", "-g"]
+        assert os.path.normcase(command[0]) == os.path.normcase(
+            os.path.join(os.path.realpath(npm.parent), npm.name))
+        assert command[1:] == ["root", "-g"]
         assert options["timeout"] == 20
     else:
         lane = SimpleNamespace(kind="pip", install_name="synthetic-package")

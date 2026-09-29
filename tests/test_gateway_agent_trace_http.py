@@ -86,6 +86,8 @@ def test_other_owner_and_tampered_terminal_trace_are_not_disclosed(server):
     assert status == 404 and MARKER not in json.dumps(value)
     (trace.root / "owner.ref").write_text(OWNER)
     path = trace.root / trace.base / "00000000.json"
-    path.write_text(path.read_text().replace(MARKER, "tampered"))
+    raw = bytearray(path.read_bytes())  # a flipped byte, in plaintext and encrypted modes
+    raw[len(raw) // 2] ^= 0x01
+    path.write_bytes(bytes(raw))
     status, value = request()
     assert status >= 400 and MARKER not in json.dumps(value)

@@ -15,6 +15,7 @@ from .continuation_context import (
 from .evidence_json import canonical_sha256
 from .evidence_public import TransportError, public_metadata
 from .import_adapters import import_config
+from . import safe_program
 
 PREVIEW_SCHEMA = "flywheel.native-continuation-preview/v1"
 INTAKE_SCHEMA = "flywheel.native-continuation-intake/v1"
@@ -46,7 +47,8 @@ def _file_sha(path: Path) -> str | None:
 
 def _run_git(root: Path, *args: str, strip: bool = True) -> tuple[int, str]:
     try:
-        proc = subprocess.run(["git", "-C", str(root), *args], check=False,
+        command, env = safe_program.launch(["git", "-C", str(root), *args], cwd=root)
+        proc = subprocess.run(command, check=False, env=env,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
             encoding="utf-8", errors="replace", timeout=5)
         out = proc.stdout.strip() if strip else proc.stdout.rstrip("\r\n")

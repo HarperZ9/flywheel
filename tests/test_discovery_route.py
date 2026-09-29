@@ -273,3 +273,26 @@ def test_the_version_is_resolved_and_not_typed_into_the_documents():
     assert disc.card()["version"] == version
     assert disc.openapi_document()["info"]["version"] == version
     assert version in disc.llms_txt().splitlines()[0]
+
+
+def test_the_lane_console_routes_are_served_and_described():
+    """WP8 adds /api/lanes/<lane>/tools, /api/lanes/<lane>/setup,
+    /api/lanes/<lane>/check, /api/lanes/local-model/root and
+    /api/settings/node_path. A templated path cannot be a dispatch literal, so
+    each one has to reach the document through a described route that serves
+    its method: the exact path, or the /api/lanes/ prefix."""
+    from harness.lane_console_route import CONSOLE_ROUTES
+    routes = {r.path: r for r in gateway_routes()}
+    prefix = routes["/api/lanes/"]
+    assert prefix.match == PREFIX and prefix.methods == ("GET", "POST")
+    for word in ("setup", "tools", "plugin.probe", "local-model/root", "check"):
+        assert word in prefix.description, word
+    node = routes["/api/settings/node_path"]
+    assert node.match == EXACT and node.methods == ("GET", "POST") and node.description
+    for method, path, note in CONSOLE_ROUTES:
+        assert note
+        served = routes.get(path) or prefix
+        assert path.startswith(served.path) and method in served.methods, path
+    assert is_private("/api/settings/node_path")
+    assert is_private("/api/lanes/{lane}/tools")
+    assert not is_private("/api/lanes/")

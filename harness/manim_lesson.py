@@ -17,7 +17,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 import subprocess
 
 _TIMEOUT = 300
@@ -87,8 +86,9 @@ def manimgl_available() -> bool:
     return _manimgl_argv() is not None
 
 
-def _manimgl_argv() -> "list | None":
-    exe = shutil.which("manimgl")
+def _manimgl_argv(cwd=None) -> "list | None":
+    from . import safe_program
+    exe = safe_program.which("manimgl", cwd=cwd)
     return [exe] if exe else None
 
 
@@ -100,7 +100,7 @@ def render_lesson(scene_src: str, scene: str, out_dir: str, *, runner=None) -> d
     path = os.path.join(out_dir, f"{scene}.py")
     with open(path, "w", encoding="utf-8") as f:
         f.write(scene_src)
-    argv = _manimgl_argv()
+    argv = _manimgl_argv(out_dir)
     if runner is None and argv is None:
         return {"error": "manimgl is not installed; pip install manimgl (needs FFmpeg + LaTeX)"}
     cmd = (argv or ["manimgl"]) + [path, scene, "-w"]

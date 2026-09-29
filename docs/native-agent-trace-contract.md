@@ -27,11 +27,25 @@ correctness, source truth, or unlimited retention of original subprocess output.
 
 Records are immutable, hash chained, owner/Journey/operation bound, and written
 through the pinned private artifact filesystem before their metadata is emitted.
+Where an OS key store is available (DPAPI on Windows; on macOS and Linux the
+`encryption` extra, and `secret-tool` on Linux), each record and checkpoint
+file is encrypted below
+the canonical bytes under a per-trace key; readers decrypt before every check
+below, so the canonical bytes, hashes and responses are the same in both modes.
 Each ledger append is persisted before the next model/tool step. Interrupted or
 cancelled runs retain the accepted prefix; recovery does not claim a final answer
 exists. Each record is bounded to 8 MiB, a trace to 32 MiB and 2048 records. A size,
 secret, or custody failure stops the run with a fixed failure; it never silently
 truncates evidence. Credentials are excluded from private records too.
+One record and 64 KiB are reserved for a failure record: regular records stop
+at 2047 and at 32 MiB minus 64 KiB, and after a refusal the trace accepts
+exactly one more record, of kind `failure`, with the fixed payload schema
+`flywheel.gateway-agent-failure/v1`: `class` (`credential_refused`,
+`size_bound`, `custody_error` or `schema_error`), `rule` (the redaction
+catalog rule the refused value matched, `unclassified`, or null) and
+`sequence` (the sequence the refused record would have taken). It is at most
+1 KiB and holds none of the refused value. The public projection keeps its
+fixed `PRIVATE_TRACE_UNAVAILABLE` code.
 Each accepted record has a separate immutable count/head checkpoint. A missing
 record, missing checkpoint, or gap fails closed, including an interrupted write
 between the two files. The hashes do not detect rollback of both all records and
@@ -58,8 +72,12 @@ Errors use existing operation codes: `AUTH_REQUIRED` (401), `INVALID_REQUEST`
 (422), `NOT_FOUND` (404), and `STORE_COMMIT_FAILED` (500) for corrupt or unsafe
 custody. Error messages contain no supplied paths, source content, or credentials.
 
-Evidence records remain until the operator removes the private runtime state;
-this change adds no automatic export, external fetch, or deletion policy.
+Evidence records remain until the owner deletes them with
+`flywheel traces delete --trace-ref agt_...` (plan, then apply with presence);
+for an encrypted trace the key is destroyed before the files are removed, and a
+tombstone records the deletion. There is no automatic export or external fetch. No deletion runs on
+a timer unless the owner adopts a retention rule with presence
+(`flywheel traces retention`); keep is the default.
 Current upstream tools already bound retained output (including the default
 4000-character tool-output cap). This trace preserves their recorded values;
 it does not recover bytes discarded before ledger insertion.

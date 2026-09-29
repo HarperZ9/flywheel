@@ -16,9 +16,18 @@ def test_injected_kernel_verdicts_shape_the_receipt():
     assert doc["schema"] == SCHEMA
     assert doc["passed"] is True
     assert len(doc["code_sha256"]) == 64
+    # The injected audit printed no footprint line for one_plus_one, so the
+    # axiom rung is not claimed; the level stops at the exit code.
+    assert doc["validation_level"] == "exit_code"
+    assert doc["validation_ladder"] == ["exit_code", "print_axioms",
+                                        "leanchecker_replay",
+                                        "comparator_external"]
+    assert doc["leanchecker"]["mode"] == "plain"
     fail = lean_check(BAD, runner=lambda argv, code: (1, "type mismatch"))
     assert fail["passed"] is False
     assert "type mismatch" in fail["kernel_output"]
+    assert fail["validation_level"] == "none"
+    assert fail["leanchecker"] is None
 
 
 def test_missing_toolchain_is_declared_not_faked(monkeypatch):

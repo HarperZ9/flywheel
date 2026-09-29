@@ -35,6 +35,11 @@ FIXTURES = {
     "plexus": {"tool": "plexus_plan", "workflow": "plan a built-in interop target"},
     "mneme": {"tool": "mneme.remember+mneme.recall", "workflow": "store and recall synthetic memory"},
     "canon": {"tool": "canon.validate", "workflow": "validate a synthetic canon record"},
+    "chorus": {"tool": "chorus.run", "workflow": "synthesize a synthetic three-source corpus"},
+    "relay": {"tool": "local_agent_health", "workflow": "report the local agent backend health"},
+    "accountable-surface": {"tool": "accountable-surface.perceive", "workflow": "perceive a synthetic note, no actuation"},
+    "articulate": {"tool": "score", "workflow": "score one synthetic sentence"},
+    "calibrate-pro": {"tool": "calibrate-pro.list-panels", "workflow": "list the catalog slice's panels"},
 }
 
 

@@ -23,17 +23,17 @@ def test_resolve_codex_rejects_extensionless_windows_wrapper_without_exe(monkeyp
     calls = []
     on_path = {"codex.exe": None, "codex": "C:/npm/codex"}
     monkeypatch.setattr(adapters_module, "os", SimpleNamespace(name="nt"))
-    monkeypatch.setattr(identity_module.shutil, "which", lambda name: calls.append(name) or on_path.get(name))
+    monkeypatch.setattr(identity_module.safe_program, "which", lambda name: calls.append(name) or on_path.get(name))
     assert _resolve_codex() == ""
     assert calls == ["codex.exe"]
 def test_resolve_codex_accepts_native_windows_exe(monkeypatch):
     monkeypatch.setattr(adapters_module, "os", SimpleNamespace(name="nt"))
-    monkeypatch.setattr(identity_module.shutil, "which",
+    monkeypatch.setattr(identity_module.safe_program, "which",
                         lambda name: "C:/npm/vendor/codex.exe" if name == "codex.exe" else None)
     assert _resolve_codex() == "C:/npm/vendor/codex.exe"
 def test_resolve_codex_keeps_extensionless_posix_executable(monkeypatch):
     monkeypatch.setattr(adapters_module, "os", SimpleNamespace(name="posix"))
-    monkeypatch.setattr(identity_module.shutil, "which", lambda name: f"/usr/local/bin/{name}")
+    monkeypatch.setattr(identity_module.safe_program, "which", lambda name: f"/usr/local/bin/{name}")
     assert _resolve_codex() == "/usr/local/bin/codex"
 def test_direct_codex_uses_stdin_hardened_read_only_argv_and_captures_jsonl(tmp_path):
     seen = {}

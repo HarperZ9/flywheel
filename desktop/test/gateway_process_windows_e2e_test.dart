@@ -42,11 +42,12 @@ void main() {
                 ? fixture['bundled_executable'] as String
                 : null,
         processStarter: (exe, args,
-            {required mode, required runInShell}) async {
+            {required mode, required runInShell, workingDirectory}) async {
           expect(mode, ProcessStartMode.normal);
           expect(runInShell, isFalse);
           if (!bundled) expect(exe, 'flywheel.exe');
           process = _ObservedProcess(await Process.start(exe, args,
+              workingDirectory: workingDirectory,
               mode: mode,
               runInShell: runInShell,
               includeParentEnvironment: false,

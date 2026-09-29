@@ -1,0 +1,27 @@
+{
+  "schema": "flywheel.lane-smoke-expectations/v1",
+  "levels": ["no_frozen_launch", "cannot_launch", "starts", "health", "main"],
+  "bar_level": "main",
+  "lanes": {
+    "gather": {"expected": "main", "bar": "A"},
+    "crucible": {"expected": "main", "bar": "A"},
+    "chorus": {"expected": "main", "bar": "A"},
+    "articulate": {"expected": "main", "bar": "A"},
+    "index": {"expected": "main", "bar": "A/B"},
+    "forum": {"expected": "main", "bar": "A/B-untested"},
+    "learn": {"expected": "main", "bar": "A"},
+    "telos": {"expected": "main", "bar": "A"},
+    "local-model": {"expected": "health", "bar": "B"},
+    "writing": {"expected": "health", "bar": "A"},
+    "relay": {"expected": "health", "bar": "B"},
+    "plexus": {"expected": "main", "bar": "A"},
+    "mneme": {"expected": "main", "bar": "A"},
+    "calibrate-pro": {"expected": "main", "bar": "C"},
+    "canon": {"expected": "main", "bar": "B"},
+    "bulletin": {"expected": "no_frozen_launch", "bar": "A"},
+    "accountable-surface": {"expected": "main", "bar": "A/C"},
+    "isomorph": {"expected": "no_frozen_launch", "bar": "B", "reason": "private lane, source checkout only; not bundled into the frozen build"},
+    "sofer": {"expected": "no_frozen_launch", "bar": "B", "reason": "private lane, source checkout only; not bundled into the frozen build"},
+    "array": {"expected": "no_frozen_launch", "bar": "B", "reason": "private lane, source checkout only; not bundled into the frozen build"}
+  }
+}

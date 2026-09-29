@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .local_read_file import READ_FILE_TOOL_GUIDANCE, read_file_tool
+from .safe_program import shell_env  # the shell never searches the project folder first
 
 _EXTERNAL_TIMEOUT = 120   # bound on an external/MCP tool call, seconds
 
@@ -411,11 +412,10 @@ class ToolExecutor:
         if self.runner is not None:
             return self.runner(cmd, self.root)
         try:
-            proc = subprocess.run(cmd, shell=True, cwd=self.root,
+            proc = subprocess.run(cmd, shell=True, cwd=self.root, env=shell_env(cwd=self.root),
                                   capture_output=True, text=True, timeout=120)
         except subprocess.TimeoutExpired as e:
-            # a timeout is its own failure class, not a test failure: name it
-            # and keep the partial output rather than discarding it
+            # a timeout is its own failure class: name it and keep the partial output
             partial = ((e.stdout or "") if isinstance(e.stdout, str)
                        else (e.stdout or b"").decode("utf-8", "replace")) + \
                       ((e.stderr or "") if isinstance(e.stderr, str)

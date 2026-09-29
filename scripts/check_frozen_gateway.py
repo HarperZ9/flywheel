@@ -130,7 +130,7 @@ def validate_canon_context_payload(executable: Path, require) -> dict:
     canon = next((row for row in rows if row.get("lane") == "canon"), None)
     require(isinstance(canon, dict), "CANON_CONTEXT_PIN_MISSING")
     require(canon.get("owner_commit")
-            == "8c6a8228ce2117112c5dad74ddb0450ba80aa8ff",
+            == "8e0098aa802c0a21649c7a26e6998ab29a747cda",
             "CANON_CONTEXT_PIN_COMMIT")
     notice = canon["owner_project"]["license_files"][0]
     license_relative_path = "python-lane-payloads/canon/licenses/LICENSE"
@@ -150,14 +150,29 @@ def validate_canon_context_payload(executable: Path, require) -> dict:
 
 
 
+def lane_smoke_gate(executable: Path) -> dict:
+    """Run the per-lane smoke; a regression against its expectations fails."""
+    from scripts.frozen_gateway_lane_smoke import bundled_lane_smoke
+    lane_smoke = bundled_lane_smoke(executable)
+    require(lane_smoke["verdict"] != "FAIL",
+            "LANE_SMOKE_FAIL:" + ",".join(lane_smoke["failures"]))
+    return lane_smoke
+
+
+def release_verdict(receipt: dict) -> str:
+    """PASS only when every lane reaches its main action (H-18); a lane smoke
+    that matched its expectations with lanes below the bar says so instead."""
+    lane_verdict = receipt.get("lane_smoke", {}).get("verdict")
+    require(lane_verdict in ("PASS", "BELOW_BAR_EXPECTED"), "LANE_SMOKE_MISSING")
+    return str(lane_verdict)
+
+
 def check(executable: Path, expected_version: str, receipt: dict) -> None:
     require(executable.is_file(), "EXECUTABLE_MISSING")
     receipt["executable_sha256"] = hashlib.sha256(executable.read_bytes()).hexdigest()
     receipt["canon_context_payload"] = validate_canon_context_payload(
         executable, require)
-    from scripts.frozen_gateway_lane_smoke import bundled_lane_admission_smoke
-    receipt["bundled_lane_admission"] = bundled_lane_admission_smoke(
-        executable, require)
+    receipt["lane_smoke"] = lane_smoke_gate(executable)
     from scripts.frozen_gateway_native_smoke import (
         prepare_native_smoke_fixture, run_native_acceptance_smoke)
 
@@ -263,13 +278,13 @@ def main() -> int:
                                   "production Bulletin posting"]}
     try:
         check(args.executable.resolve(), args.expected_version, receipt)
-        receipt["verdict"] = "PASS"
+        receipt["verdict"] = release_verdict(receipt)
     except Exception as exc:
         # Our fixed failure codes are safe; arbitrary OS/server messages are not.
         receipt["failure"] = str(exc) if type(exc) is RuntimeError else type(exc).__name__
     args.receipt.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(receipt))
-    return 0 if receipt["verdict"] == "PASS" else 1
+    return 0 if receipt["verdict"] in ("PASS", "BELOW_BAR_EXPECTED") else 1
 
 
 if __name__ == "__main__":

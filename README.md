@@ -10,11 +10,20 @@
 ![deps: none (core)](https://img.shields.io/badge/core%20deps-none-success?style=flat-square&labelColor=14041b)
 
 Flywheel runs any model, frontier or local, behind a single OpenAI-compatible
-surface, and your keys and data stay on your machine. Its desktop assistant,
-Rowan, takes a request in plain words and turns it into a task the app runs and
-records on the model you pick. A permission-gated coding agent, relay, runs over
-your own folders and checks each tool request before it acts. About fifteen
-composable lanes ship in the roster, ten of them bundled natively from source.
+surface. Flywheel's records stay on your machine. Your provider keys are
+stored only there: Flywheel sends each one only to its own provider, and a key
+you bind to a lane call, or grant a lane with `env_allow`, reaches that lane's
+process only on a call you approve at T2. The content of each request,
+including files and tool output the agent reads, goes to the model provider you
+pick, under that provider's terms. With a local model
+it stays on your machine. Flywheel's desktop assistant, Rowan, takes a request
+in plain words and turns it into a task the app runs and records on the model
+you pick. A permission-gated coding agent, relay, runs over your own folders and
+checks each tool request before it acts. Seventeen composable lanes ship in the
+roster. In the Windows app's installed-app check, 15 of 17 lanes reach the class
+the check expects for them; index is below that bar without Git, and telos was
+not in the build that check ran on. Flywheel now pins telos 0.4.2, which no
+installed-app check has run on yet ([per-lane table](project-docs/lanes/LANES.md)).
 
 The command `flywheel check-output` checks a value against the source that
 decides it, ships finance, medicine, and law packs, and can emit the check as a
@@ -48,6 +57,11 @@ For the native desktop app, download the Windows installer from the
 [latest release](https://github.com/HarperZ9/flywheel/releases/latest) and verify it
 against the checksums attached to that release. It carries its own engine, so the app
 runs on a clean machine with no Python installed, and it starts that engine itself.
+Each lane card in the Tools view states whether the lane is ready and names any setup
+it still needs: Git for Windows for index's repository history, a local model server
+for local-model and relay, a project folder for local-model, a blocks folder for
+canon, and a recorded draft for writing. The Node runtime that learn uses ships with
+the app.
 
 The app's assistant is **Rowan**. Open Chat and ask for work in plain
 words, and Rowan turns the request into a task the app runs and records.
@@ -401,6 +415,9 @@ against the checksums attached to that release.
 - [GETTING-STARTED.md](GETTING-STARTED.md): install, sign in, first run, and the owner-bound state model
 - [docs/FLYWHEEL-1.0.0-OVERVIEW.md](docs/FLYWHEEL-1.0.0-OVERVIEW.md): the 1.0 overview, full feature set, and install-to-first-verdict walkthrough
 - [docs/features/](docs/features/README.md): per-feature docs and how the lanes compose into the application
+- [docs/TRACE-OWNERSHIP.md](docs/TRACE-OWNERSHIP.md): where your agent traces are, and status, encryption, export, deletion, import and retention for them
+- [docs/WRAPPER-HOOKS.md](docs/WRAPPER-HOOKS.md): the capture hooks for Claude Code and Codex, and how they find and trust the gateway
+- [docs/trace-redaction.md](docs/trace-redaction.md): what trace redaction catches, and what it misses
 - [WALKTHROUGH.md](WALKTHROUGH.md): guided tour
 - [desktop/README.md](desktop/README.md): native desktop development and packaging notes
 - [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory owner/project binding

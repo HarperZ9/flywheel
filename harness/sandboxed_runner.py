@@ -22,6 +22,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from . import safe_program
 from .credential_handles import CredentialBindings
 from .shell_admission import Decision, classify_command
 
@@ -38,8 +39,12 @@ def sandboxed_run(
     *,
     bindings: CredentialBindings | None = None,
     timeout_seconds: int = 120,
+    scratch_home: bool = False,
 ) -> tuple[bool, str]:
     """Run `cmd` under this host's sandbox, rooted at `root`.
+
+    With `scratch_home`, `HOME`, `TEMP` and `TMP` point into the run's own
+    scratch directory rather than the caller's (the bench replay, 7.8).
 
     Returns (ok, output). `ok` is False for a denied command, a timeout, or a
     non-zero exit code. Raises SandboxUnavailable when the host cannot
@@ -54,14 +59,16 @@ def sandboxed_run(
         return False, (f"[denied] command requires escalation: "
                        f"{admission.reason_code}")
     if os.name != "nt":
-        return _posix_sandboxed_run(cmd, root, bindings, timeout_seconds)
+        return _posix_sandboxed_run(cmd, root, bindings, timeout_seconds, scratch_home)
 
     source = Path(root).resolve()
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_", dir=source.parent))
     stdout_path, stderr_path = work / "stdout.txt", work / "stderr.txt"
     try:
-        rc = _execute(source, work, cmd, _build_env(bindings),
-                     timeout_seconds, stdout_path, stderr_path)
+        env = _build_env(bindings)
+        if scratch_home:
+            env.update({name: str(work) for name in ("HOME", "TEMP", "TMP")})
+        rc = _execute(source, work, cmd, env, timeout_seconds, stdout_path, stderr_path)
         out = _redact(_read_output(stdout_path, stderr_path), bindings)
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -73,7 +80,7 @@ def sandboxed_run(
 
 def _posix_sandboxed_run(
     cmd: str, root: str, bindings: CredentialBindings | None,
-    timeout_seconds: int,
+    timeout_seconds: int, scratch_home: bool = False,
 ) -> tuple[bool, str]:
     """Run `cmd` under whichever POSIX backend this host has.
 
@@ -107,7 +114,7 @@ def _posix_sandboxed_run(
     # directory the run was told to use would be the one directory it could
     # not write to.
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_")).resolve()
-    env = _build_posix_env(bindings, work)
+    env = _build_posix_env(bindings, work, scratch_home)
     try:
         policy = from_env()
     except PolicyRefused as exc:
@@ -170,7 +177,7 @@ def _no_backend_reason() -> str:
 
 
 def _build_posix_env(bindings: CredentialBindings | None,
-                     work: Path) -> dict[str, str]:
+                     work: Path, scratch_home: bool = False) -> dict[str, str]:
     """The child's environment, with its temp directory inside the sandbox.
 
     The allowlist passes the host's `TMPDIR` through, and the host's is
@@ -183,7 +190,9 @@ def _build_posix_env(bindings: CredentialBindings | None,
     active = bindings if bindings is not None else CredentialBindings({})
     env = active.child_environment(os.environ, platform="posix")
     env.update({name: str(work) for name in ("TMPDIR", "TMP", "TEMP")})
-    return env
+    if scratch_home:
+        env["HOME"] = str(work)
+    return safe_program.shell_env(env)
 
 
 def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
@@ -197,8 +206,9 @@ def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
     from .execution_input_protection import (
         ExecutionInputProtectionUnavailable, protect_execution_namespace,
     )
-    argv = [os.environ.get("COMSPEC", "cmd.exe"), "/c", cmd]
-    argv[0] = str(Path(argv[0]).resolve())
+    comspec = os.environ.get("COMSPEC", "")
+    shell = comspec if os.path.isabs(comspec) else safe_program.system_tool("cmd.exe")
+    argv = [str(Path(shell).resolve()), "/c", cmd]
     try:
         with protect_execution_namespace(source, work) as runner:
             return runner.run(
@@ -210,7 +220,7 @@ def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
 
 def _build_env(bindings: CredentialBindings | None) -> dict[str, str]:
     active = bindings if bindings is not None else CredentialBindings({})
-    return active.child_environment(os.environ, platform="windows")
+    return safe_program.shell_env(active.child_environment(os.environ, platform="windows"))
 
 
 def _read_output(stdout_path: Path, stderr_path: Path) -> str:

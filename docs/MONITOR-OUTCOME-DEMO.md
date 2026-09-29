@@ -67,6 +67,12 @@ bytes, refuses a duplicate sample and epoch, and leaves every outcome absent
 until an independent source supplies it. An outcome taken from the log's own
 grader is marked `reported`, never `verified`, and is never comparable.
 
+Admission requires strict JSON, valid sample keys, a non-null JSON outcome,
+and a named checker. Exclusions require a text reason and evidence pointer.
+Failed attachment or exclusion batches leave the record unchanged. These
+checks validate the record's structure; they do not authenticate the checker
+or establish that its result is correct.
+
 The adapters under `harness/monitor_outcome_eval*.py` read the three Control
 Tower monitor formats as its writers emit them at revision `1cc91b7`: eval2,
 current eval1 and legacy eval1 folds. Each checks the declared format against
@@ -100,3 +106,7 @@ absent, draft and unsupported), and only scored values are ever compared.
 - Monitor quality belongs at a fixed review budget against a policy trying to
   evade the monitor. This demo does not measure that.
 - Usability for a first-time human reviewer has not been measured.
+
+Software integration does not complete the preregistered study or its human
+usability review. Those remain separate gates for claims about study results
+and usefulness to a reviewer.

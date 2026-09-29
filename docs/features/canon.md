@@ -125,10 +125,14 @@ Canon runs both as a standalone tool and as a Flywheel lane.
 
 1. Start the Flywheel engine. The Lanes view reports canon under install-presence
    status from the ambient poll; "Probe now" runs the real MCP handshake.
-2. Install from source when the card offers it, or ahead of time:
-   `flywheel install --lanes canon --profile source` (source profile, since the
-   package is not distributable). The lane resolves its checkout from
-   `public/canon` relative to the workspace root.
+2. The Windows app bundles canon. On a pip or source install, install it
+   ahead of time with `flywheel install --lanes canon`, which installs the
+   published `flywheel-canon` package. With `--profile source` the lane uses a
+   canon checkout at `public/canon` under `FLYWHEEL_WORKSPACE_ROOT`. The lane
+   records an install that differs from the registry
+   pin as `installed_version_mismatch`. Under the default profile an install
+   below the pin does not start (`installed_version_below_pin`), and the
+   `package` profile requires the exact pin.
 3. Probe or call the lane. A probe spawns `canon mcp` and calls `canon.status` or
    `canon.doctor` (the probe vocabulary in `harness/lanes.py`). A tool call goes
    through the gateway route `/api/lane/canon/<tool>`, handled by
@@ -140,8 +144,8 @@ Canon runs both as a standalone tool and as a Flywheel lane.
 **Lane registration.** `harness/lanes_registry.py` declares
 `LANES["canon"]` as a `pip` lane, command `canon`, args `("mcp",)`, organ
 `continuity`, module `canon.cli`, source repo `public/canon`, install name
-`flywheel-canon`, version `0.2.0` (read from the registry and from
-`pyproject.toml`, which agree). The role text records that the MCP surface is
+`flywheel-canon`. The version pin lives in that registry entry, the one
+place to read it. The role text records that the MCP surface is
 read-only and that reconcile stays a library call. `package_disabled_reason` is
 empty: the distribution is published, so the package install profile is live and
 a source checkout is the fallback.
@@ -152,10 +156,10 @@ optionally spawns `canon mcp`, and looks for a `canon.status` or `canon.doctor`
 health tool. A missing canon never crashes the roster.
 
 **Generic lane caller.** `harness/lane_caller.py::call_lane_tool` spawns any
-registered lane and calls one tool, gated by the governance tier. Canon is not
-listed in `LANE_MIN_TIERS`, so it defaults to tier T1 (open), which fits a
-read-only door. `list_available_lanes` returns canon with organ `continuity` and
-its min tier.
+registered lane and calls one tool, gated by the governance tier. Each canon
+tool takes the tier the lane tool policy table gives it, and a tool the table
+does not list is T2 (default deny, since 1.1.0). `list_available_lanes` returns canon with organ
+`continuity`, its min tier and each tool's tier.
 
 **Desktop identity card.** `desktop/lib/models/lane_identity.dart` holds
 `laneIdentities['canon']` with title "Canon", a one-line identity taken from
@@ -269,8 +273,9 @@ checklist names, with the fourth correctly absent:
 
 Remaining honest nulls, none of which are lane-wiring defects:
 
-- Canon is absent from `LANE_MIN_TIERS`, so it takes the T1 default tier with no
-  explicit entry. This fits a read-only door but is implicit.
+- Canon is absent from `LANE_MIN_TIERS`, so the listing's headline tier is T1.
+  Every call takes its tool's tier from the policy table, and an unlisted tool is
+  T2.
 - No dedicated desktop deep-view. Chorus has a `DiscourseView` destination; canon
   is reached through the lane card and the generic `/api/lane` caller only.
 - The reconcile write-path is intentionally not exposed over MCP or the lane

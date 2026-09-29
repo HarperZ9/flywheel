@@ -17,11 +17,14 @@ class CallableLane {
   /// verification, structure, orchestration, and so on).
   final String organ;
 
-  /// The tier a tool on this lane costs when it is not in the lane's open set.
-  /// Empty when every tool on the lane costs [minTier]. bulletin is the live
-  /// case: reading the board is open, writing to it publishes under a
-  /// persistent identity, and the engine charges those differently.
+  /// The tier a tool on this lane costs when the engine's policy table does
+  /// not list it. The engine sends T2 for every lane (default deny); an older
+  /// engine sent it for bulletin only. Empty when the engine sends none.
   final String unlistedToolTier;
+
+  /// Each listed tool's tier, from the engine's tool policy table. Empty when
+  /// the engine lists none for this lane.
+  final Map<String, String> toolTiers;
 
   const CallableLane({
     required this.name,
@@ -29,7 +32,15 @@ class CallableLane {
     this.description = '',
     this.organ = '',
     this.unlistedToolTier = '',
+    this.toolTiers = const {},
   });
+
+  /// The tools that need more than T1, in name order: each runs only under
+  /// an approval that names its tier.
+  List<String> get raisedTools => [
+        for (final e in toolTiers.entries)
+          if (e.value != 'T1') e.key
+      ]..sort();
 
   /// What the tier column prints. A lane whose tools do not share one tier
   /// prints both: printing the floor alone tells an operator the whole lane is
@@ -46,6 +57,12 @@ class CallableLane {
         description: '${json['description'] ?? ''}',
         organ: '${json['organ'] ?? ''}',
         unlistedToolTier: '${json['unlisted_tool_tier'] ?? ''}',
+        toolTiers: {
+          if (json['tool_tiers'] case final Map tiers)
+            for (final e in tiers.entries)
+              if (e.key is String && e.value is String)
+                e.key as String: e.value as String
+        },
       );
 
   /// The list, with malformed rows dropped rather than faked. A lane the

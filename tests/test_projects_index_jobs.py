@@ -7,7 +7,18 @@ import sys
 from harness import index_jobs
 
 
+def _grant_fake_settings(tmp_path, monkeypatch):
+    """The index child gets the lane env, so the fake CLI's settings arrive the
+    way an operator's would: as env_allow grants for the index lane."""
+    import harness.lanes as lanes
+    registry = tmp_path / "lanes.json"
+    registry.write_text(json.dumps({"index": {"env_allow": [
+        "FAKE_INDEX_ROOT", "FAKE_INDEX_STATUS", "FAKE_INDEX_PHASE"]}}), encoding="utf-8")
+    monkeypatch.setattr(lanes, "LANE_REGISTRY_PATH", registry)
+
+
 def _install_fake_cli(tmp_path, monkeypatch):
+    _grant_fake_settings(tmp_path, monkeypatch)
     script = tmp_path / "fake_index.py"
     script.write_text(
         "\n".join([

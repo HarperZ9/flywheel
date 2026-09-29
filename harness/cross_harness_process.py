@@ -39,8 +39,10 @@ def _child_env() -> dict[str, str]:
         "CODEX_HOME", "USERPROFILE", "LOCALAPPDATA", "APPDATA", "PROGRAMDATA",
         "LANG", "LC_ALL",
     }
-    return {key: value for key, value in os.environ.items()
-            if key.upper() in keep}
+    # A peer's run is the engine's own evaluation, not an owner turn, so the
+    # owner's capture hooks, if the peer loads any, record nothing.
+    return {**{key: value for key, value in os.environ.items()
+               if key.upper() in keep}, "FLYWHEEL_CAPTURE": "off"}
 
 
 def _windows_job(proc: subprocess.Popen):

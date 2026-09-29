@@ -153,9 +153,8 @@ def test_lean_checks_zarankiewicz_and_rejects_a_k22():
 def test_lean_axioms_is_honest_when_no_toolchain(monkeypatch):
     """Absence of a checker is not a check. A missing toolchain returns ok=None,
     never a false pass."""
-    import shutil
     import harness.lean_export as le
-    monkeypatch.setattr(shutil, "which", lambda _x: None)
+    monkeypatch.setattr("harness.safe_program.which", lambda *_a, **_k: None)
     res = le.lean_axioms("theorem t : True := trivial")
     assert res["ok"] is None
     assert "not on PATH" in res["note"]

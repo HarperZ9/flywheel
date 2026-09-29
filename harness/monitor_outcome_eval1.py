@@ -80,8 +80,9 @@ def _action_monitor(value: dict, metadata: dict, index: int, key: str) -> list[d
         if dumps is None or i >= len(dumps):
             # Only the value mapping exists. Its null covers both "no result"
             # and "ran but no usable score", and nothing here tells them apart.
-            status = SCORED if is_number(mapped) else UNSCORED
-            reason = None if status == SCORED else "null in the value mapping with no action_scores entry"
+            status, reason = _dump_status({"value": mapped})
+            if mapped is None:
+                status, reason = UNSCORED, "null in the value mapping with no action_scores entry"
             found.append(action(status=status, reason=reason, source_value=mapped,
                                 source_pointer=pointer(index, key, "value", i), **common))
             continue
@@ -149,6 +150,8 @@ def read_eval1_legacy(scores: dict, index: int, key: str) -> dict[str, Any]:
         raw = value[member]
         status = SCORED if is_number(raw) else (UNSCORED if raw is None else UNSUPPORTED)
         reason = None
+        if is_number(raw):
+            status, reason = _dump_status({"value": raw})
         if not match and member != "trajectory":
             status, reason = UNSUPPORTED, "fold key outside {max, action_<i>, trajectory}"
         found.append(action(
@@ -157,6 +160,8 @@ def read_eval1_legacy(scores: dict, index: int, key: str) -> dict[str, Any]:
             status=status, reason=reason, source_value=raw,
             source_pointer=pointer(index, key, "value", member),
             detail={"index_basis": "fold"}))
-    statuses = [a["status"] for a in found] + ([SCORED] if is_number(value.get("max")) else [])
+    statuses = [a["status"] for a in found]
+    if is_number(value.get("max")):
+        statuses.append(_dump_status({"value": value["max"]})[0])
     return {"status": fold_status(statuses), "summary_value": value, "actions": found,
             "source_pointer": pointer(index, key)}

@@ -16,6 +16,8 @@ import hashlib
 import json
 import subprocess
 
+from . import lane_cli
+
 SCHEMA = "flywheel.feeds/v1"
 _TIMEOUT = 60
 
@@ -46,9 +48,9 @@ FEED_ROSTER: dict = {
 
 
 def _shell(argv: list) -> tuple:
+    """Default runner: (rc, stdout) for ``[lane, *args]``."""
     try:
-        p = subprocess.run(argv, capture_output=True, text=True,
-                           timeout=_TIMEOUT, shell=False)
+        p = lane_cli.run_lane_cli(argv[0], list(argv[1:]), timeout=_TIMEOUT)
         return (p.returncode, p.stdout or p.stderr or "")
     except subprocess.TimeoutExpired:
         return (124, f"timed out after {_TIMEOUT}s")

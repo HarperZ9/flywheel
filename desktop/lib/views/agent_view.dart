@@ -12,6 +12,7 @@ import '../services/chat_store.dart';
 import '../services/settings.dart';
 import '../widgets/chat_composer.dart';
 import '../widgets/chat_context_status.dart';
+import '../widgets/chat_history_banner.dart';
 import '../widgets/chat_conversation_sheet.dart';
 import '../widgets/chat_header.dart';
 import '../widgets/chat_sidebar.dart';
@@ -138,7 +139,8 @@ class _AgentViewState extends State<AgentView> {
   void _delete(Conversation c) {
     if (_busy) return;
     setState(() {
-      _conversations.remove(c);
+      _admission.deleteConversation(c);
+      if (_conversations.contains(c)) return; // drafts kept it; banner says
       if (identical(c, _current)) {
         _current = _conversations.isEmpty
             ? _admission.blankConversation(_model)
@@ -146,8 +148,21 @@ class _AgentViewState extends State<AgentView> {
         if (_conversations.isEmpty) _conversations.add(_current);
       }
     });
-    _admission.persistHistory();
   }
+
+  Future<void> _askDelete(Conversation c) async {
+    if (await confirmConversationDelete(context) && mounted) _delete(c);
+  }
+
+  void _deleteArchived(String id) {
+    final loaded = _conversations.where((c) => c.id == id).toList();
+    if (loaded.isNotEmpty) return _delete(loaded.first);
+    if (_busy) return;
+    setState(() => _admission.deleteConversation(Conversation(id: id)));
+  }
+
+  Widget _historyBanner() => ChatHistoryBanner(
+      store: _admission.historyStore, onDeleteArchived: _deleteArchived);
 
   void _draftChanged(String text) => _admission.changeDraft(_current, text);
 
@@ -206,7 +221,8 @@ class _AgentViewState extends State<AgentView> {
               streaming: _busy,
               onNew: _newChat,
               onSelect: _select,
-              onDelete: _delete),
+              onDelete: _askDelete,
+              banner: _historyBanner()),
         Expanded(
             child: Column(children: [
           _header(showConversations: narrow && !_agentMode),

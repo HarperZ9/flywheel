@@ -53,8 +53,11 @@ function Assert-RequiredTargetFiles() {
     "desktop\scripts\build_installer.ps1",
     "scripts\studio_runtime_packaging.py",
     "scripts\stage_python_lane_sources.py",
+    "scripts\stage_node_lanes.py",
     "scripts\check_frozen_gateway.py",
     "scripts\check_installed_canon_context.py",
+    "scripts\installed_app_lane_acceptance.py",
+    "desktop\tool\run_installed_lane_acceptance.ps1",
     "packaging\flywheel-gateway.spec",
     "tests\fixtures\inspect\v1\single-success.fixture.json"
   )
@@ -217,8 +220,14 @@ $pythonLaneSourceRoot = Join-Path $env:RUNNER_TEMP "flywheel-python-lane-sources
 $pythonLaneStageReceipt = Join-Path $env:RUNNER_TEMP "python-lane-source-stage.full.json"
 $pythonLaneBoundedReceipt = Join-Path $installerDir "python-lane-source-stage.json"
 New-Item -ItemType Directory -Force -Path $installerDir | Out-Null
-Invoke-Checked "stage Canon Python lane source" "python" @("scripts/stage_python_lane_sources.py", "--lane", "canon", "--source-root", $pythonLaneSourceRoot, "--receipt", $pythonLaneStageReceipt, "--bounded-receipt", $pythonLaneBoundedReceipt)
+# The gateway spec freezes every manifest lane but relay from its staged source
+# (scripts/python_lane_freeze.py), so stage them all, as desktop-release does.
+Invoke-Checked "stage Python lane sources" "python" @("scripts/stage_python_lane_sources.py", "--all", "--source-root", $pythonLaneSourceRoot, "--receipt", $pythonLaneStageReceipt, "--bounded-receipt", $pythonLaneBoundedReceipt)
 $env:FLYWHEEL_PYTHON_LANE_SOURCE_ROOT = $pythonLaneSourceRoot
+# The freeze also refuses to run without the staged Node lanes (scripts/frozen_payload_datas.py).
+$nodeLaneStageRoot = Join-Path $env:RUNNER_TEMP "flywheel-node-lanes"
+Invoke-Checked "stage Node lanes" "python" @("scripts/stage_node_lanes.py", "--stage-root", $nodeLaneStageRoot)
+$env:FLYWHEEL_NODE_LANE_STAGE_ROOT = $nodeLaneStageRoot
 Find-InnoSetup
 Assert-CleanWorkspaceNoUntracked "before build"
 New-Item -ItemType Directory -Force -Path $installerDir, $acceptanceDir | Out-Null
@@ -273,6 +282,7 @@ $inspectArgs = New-InstalledAcceptanceCommandArgs $runner $common $inspectDir $i
 Invoke-Checked "full installed acceptance" "powershell" $fullArgs
 Invoke-Checked "inspect installed acceptance" "powershell" $inspectArgs
 Invoke-Checked "installed Canon context acceptance" "python" @("scripts/check_installed_canon_context.py", "--install-root", $requestedInstallRoot, "--expected-engine-sha256", $engineHash, "--expected-version", $version, "--source-commit", $targetCommit, "--receipt", $canonReceipt)
+Invoke-Checked "installed lane acceptance" "powershell" @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $scriptRoot "run_installed_lane_acceptance.ps1"), "-InstallRoot", $requestedInstallRoot, "-Installer", $installer.FullName, "-AcceptanceDir", $acceptanceDir, "-SourceCommit", $targetCommit, "-EngineSha256", $engineHash)
 Assert-TrackedAndSubmodulesUnchanged "after acceptance"
 $summary = [ordered]@{
   schema = "flywheel.windows-installed-acceptance-ci/v1"
@@ -283,7 +293,7 @@ $summary = [ordered]@{
   app_sha256 = $appHash
   engine_sha256 = $engineHash
   payload_sha256 = $payloadHash
-  receipts = [ordered]@{ full = "installed-acceptance/installed-launch-full.json"; inspect = "installed-acceptance/installed-launch-inspect.json"; canon_context = "installed-acceptance/installed-canon-context.json" }
+  receipts = [ordered]@{ full = "installed-acceptance/installed-launch-full.json"; inspect = "installed-acceptance/installed-launch-inspect.json"; canon_context = "installed-acceptance/installed-canon-context.json"; lanes_per_user = "installed-acceptance/installed-lanes-per-user.json"; lanes_all_users = "installed-acceptance/installed-lanes-all-users.json" }
   limits = @("rebuilt CI candidate only", "native UI not launched", "device, signing, provider, and publication acceptance not claimed")
 }
 $summary | ConvertTo-Json -Depth 12 | Out-File -LiteralPath (Join-Path $installerDir "ci-installed-acceptance-summary.json") -Encoding utf8

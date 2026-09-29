@@ -95,13 +95,13 @@ Calibrate Pro is registered in `harness/lanes_registry.py`:
 
 ```python
 "calibrate-pro": Lane(
-    "calibrate-pro", "calibrate-pro", "calibrate-pro", ("mcp",), "pip", "1.1.0",
+    "calibrate-pro", "calibrate-pro", "calibrate-pro", ("mcp",), "pip", "2.0.0",
     "evidence-labeled display calibration: color-target and characterized-panel "
     "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
     "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
 ```
 
-Organ `calibration`, role the read-only catalog and doctor surface. It launches with argv `["calibrate-pro", "mcp"]` (`resolve_mcp_command("calibrate-pro")`). Flywheel leaves it at the default tier T1 in `harness/lane_caller.py`: it is not listed in `LANE_MIN_TIERS` or `TOOL_MIN_TIERS`, so `required_tier` returns the T1 floor. That is correct for a lane that only reads, and it sits below the T2 actuation lanes (`local-model`, `relay`, `accountable-surface`).
+Organ `calibration`, role the read-only catalog and doctor surface. It launches with argv `["calibrate-pro", "mcp"]` (`resolve_mcp_command("calibrate-pro")`). The lane tool policy table (`harness/lane_tool_policy.py`) lists its catalog reads at T1, and `required_tier` returns T2 for any tool the table does not list (default deny, since 1.1.0), so a calibration tool added by a later release arrives gated.
 
 Native wiring that is present and tested:
 
@@ -112,7 +112,7 @@ Native wiring that is present and tested:
 
 Honest nulls at this revision:
 
-- The lane registry pins expected version `1.1.0`. The `calibrate-pro` repo sets `__version__ = "2.0.0"`, and the MCP `status` and `serverInfo` both report `2.0.0`. The probe does not gate this lane on version (only `relay` does), so it still reads live. The two numbers disagree, and the registry figure lags the package.
+- The lane registry pins version `2.0.0`, the version the `calibrate-pro` repo sets in `__version__` and the MCP `status` and `serverInfo` report.
 - Package distribution over PyPI is unverified here. The README documents install from the Windows release build or from source. It does not document a `pip install calibrate-pro` from a public index. The source profile (`install_lane(..., profile="source")`) installs the `public/calibrate-pro` checkout editable and is the path confirmed at this revision.
 - Emitted payloads other than the doctor report carry no versioned schema name. The doctor report has `schema_version` 1; the target, panel, and panel-info payloads are plain read-only JSON with a stable shape but no schema id. Calibrate Pro ships no `interop.json` contract file.
 

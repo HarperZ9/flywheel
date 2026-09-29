@@ -27,9 +27,9 @@ alongside the result rather than buried in a default.
 from __future__ import annotations
 
 import hashlib
-import json
 from typing import Any
 
+from .evidence_json import canonical_bytes, strict_load_json, strict_load_json_value
 from .monitor_outcome_adapters import (
     ABSENT,
     ADAPTERS,
@@ -45,6 +45,7 @@ from .monitor_outcome_adapters import (
 )
 
 SCHEMA = "flywheel.monitor-outcome/v1"
+MAX_BYTES = 16 * 1024 * 1024
 
 # Where an outcome came from. Only the first is independent of the log.
 INDEPENDENT = "independent_check"
@@ -68,6 +69,10 @@ class MonitorOutcomeError(ValueError):
 
 def _sample_key(sample_id: object, epoch: object) -> tuple:
     """The importer's own key shape, so a str "3" never collides with an int 3."""
+    if type(sample_id) not in (str, int):
+        raise MonitorOutcomeError("sample id must be a string or integer")
+    if type(epoch) is not int:
+        raise MonitorOutcomeError("sample epoch must be an integer")
     return ((type(sample_id).__name__, str(sample_id)), epoch)
 
 
@@ -81,8 +86,8 @@ def build_monitor_record(raw: bytes, *, adapter: str,
         raise MonitorOutcomeError("source must be raw bytes, so the hash matches the import")
     digest = hashlib.sha256(raw).hexdigest()
     try:
-        root = json.loads(raw.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        root = strict_load_json(raw, max_bytes=MAX_BYTES, max_depth=32)
+    except ValueError as error:
         raise MonitorOutcomeError(f"source is not UTF-8 JSON: {error}") from None
     if type(root) is not dict:
         raise MonitorOutcomeError("source root must be an object")
@@ -146,12 +151,22 @@ def attach_outcomes(record: dict[str, Any], outcomes: list[dict[str, Any]]) -> d
     if record.get("schema") != SCHEMA:
         raise MonitorOutcomeError(f"record schema must be {SCHEMA}")
     by_key = {_sample_key(s["id"], s["epoch"]): s for s in record["samples"]}
+    pending = {}
     for position, outcome in enumerate(outcomes):
         if type(outcome) is not dict:
             raise MonitorOutcomeError(f"outcome {position} must be an object")
         for field in ("id", "epoch", "value", "source", "checked_by"):
             if field not in outcome:
                 raise MonitorOutcomeError(f"outcome {position} requires {field!r}")
+        if type(outcome["checked_by"]) is not str or not outcome["checked_by"].strip():
+            raise MonitorOutcomeError(f"outcome {position} checked_by must name a checker")
+        try:
+            if outcome["value"] is None:
+                raise ValueError("missing outcome")
+            value = strict_load_json_value(canonical_bytes(outcome["value"]),
+                                           max_bytes=MAX_BYTES, max_depth=32)
+        except (ValueError, RecursionError) as error:
+            raise MonitorOutcomeError(f"outcome {position} value is invalid: {error}") from None
         source = outcome["source"]
         if source not in OUTCOME_SOURCES:
             raise MonitorOutcomeError(
@@ -161,15 +176,17 @@ def attach_outcomes(record: dict[str, Any], outcomes: list[dict[str, Any]]) -> d
         if target is None:
             raise MonitorOutcomeError(
                 f"outcome {position} names a sample absent from the log: {key}")
-        if target["outcome"]["status"] != ABSENT:
+        if key in pending or target["outcome"]["status"] != ABSENT:
             raise MonitorOutcomeError(
                 f"outcome {position} would overwrite an outcome already attached")
-        target["outcome"] = {
+        pending[key] = {
             "status": "verified" if source == INDEPENDENT else "reported",
-            "value": outcome["value"],
+            "value": value,
             "source": source,
             "checked_by": outcome["checked_by"],
         }
+    for key, value in pending.items():
+        by_key[key]["outcome"] = value
     record["coverage"] = _coverage(record["samples"])
     return record
 
@@ -187,21 +204,28 @@ def exclude_samples(record: dict[str, Any], exclusions: list[dict[str, Any]]) ->
     if record.get("schema") != SCHEMA:
         raise MonitorOutcomeError(f"record schema must be {SCHEMA}")
     by_key = {_sample_key(s["id"], s["epoch"]): s for s in record["samples"]}
+    pending = {}
     for position, item in enumerate(exclusions):
         if type(item) is not dict:
             raise MonitorOutcomeError(f"exclusion {position} must be an object")
         for field in ("id", "epoch", "reason", "evidence"):
-            if not item.get(field) and item.get(field) != 0:
+            if field not in item:
                 raise MonitorOutcomeError(f"exclusion {position} requires {field!r}")
-        target = by_key.get(_sample_key(item["id"], item["epoch"]))
+        for field in ("reason", "evidence"):
+            if type(item[field]) is not str or not item[field].strip():
+                raise MonitorOutcomeError(f"exclusion {position} requires text {field!r}")
+        key = _sample_key(item["id"], item["epoch"])
+        target = by_key.get(key)
         if target is None:
             raise MonitorOutcomeError(f"exclusion {position} names a sample absent from the log")
-        if target["outcome"]["status"] != ABSENT:
+        if key in pending or target["outcome"]["status"] != ABSENT:
             raise MonitorOutcomeError(
                 f"exclusion {position} would overwrite an outcome already attached")
-        target["outcome"] = {"status": "excluded", "value": None, "source": None,
+        pending[key] = {"status": "excluded", "value": None, "source": None,
                              "checked_by": None, "reason": item["reason"],
                              "evidence": item["evidence"]}
+    for key, value in pending.items():
+        by_key[key]["outcome"] = value
     record["coverage"] = _coverage(record["samples"])
     return record
 

@@ -4,9 +4,14 @@ One content-addressed store per run root (<run_root>/fold_index.json): the
 same index the compaction loop folds spans into, opened here for stats,
 recall, and durable notes. Recall is verbatim spans with provenance (the
 span hash IS the content address), never a paraphrase. An empty store
-reports itself empty."""
+reports itself empty.
+
+A note is written under the custody lock, and the index is read inside it,
+so a note written while a trace deletion runs cannot write the deleted notes
+back from a copy read before the deletion (SP-15)."""
 from __future__ import annotations
 
+import contextlib
 import hashlib
 from pathlib import Path
 
@@ -41,15 +46,20 @@ def memory_list(run_root: "Path | str", limit: int = 20) -> dict:
             "spans": idx.browse(limit), "total": len(idx.spans)}
 
 
-def memory_note(run_root: "Path | str", content: str, role: str = "note") -> dict:
+def memory_note(run_root: "Path | str", content: str, role: str = "note", *,
+                state_root=None) -> dict:
     """Store a durable note. Content-addressed: the same content is never
     stored twice, and the returned span hash re-derives from the content."""
     text = (content or "").strip()
     if not text:
         return {"error": "empty note"}
+    from .trace_custody_lock import custody_lock
+    from .trace_inventory_scan import resolve_roots
     span_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    idx = _store(run_root)
-    existed = span_hash in idx.spans
-    idx.add(span_hash, [{"role": role, "content": text}])
+    state = Path(state_root or resolve_roots()["state"])
+    with custody_lock(state) if state.is_dir() else contextlib.nullcontext():
+        idx = _store(run_root)
+        existed = span_hash in idx.spans
+        idx.add(span_hash, [{"role": role, "content": text}])
     return {"schema": "flywheel.memory-note/v1", "span_hash": span_hash,
             "existed": existed, "spans": len(idx.spans)}

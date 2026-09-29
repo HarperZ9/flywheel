@@ -30,20 +30,22 @@ import os
 import sys
 import urllib.parse
 import urllib.request
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 # Ensure `from harness.X import ...` resolves even when run as `python
 # harness/gateway.py` (script mode puts harness/ on the path, not the repo root),
 # so the on-demand endpoint_registry / context_forge imports work in both modes.
 if str(REPO) not in sys.path: sys.path.insert(0, str(REPO))
+from harness.gateway_bind import ExclusiveThreadingHTTPServer  # no second socket can share the port (N-23)
 from harness.run_paths import run_root_default
-from harness.gateway_custody import is_private
+from harness.gateway_custody import is_private, is_signed
 from harness.gateway_lane_calls import _forum_mcp_call, _relay_mcp_call, _relay_start_not_admitted
 from harness.gateway_auth import (authenticate_owner as _auth_owner,
     load_or_create_owner_ref, load_or_create_token, check as _auth_check, DEFAULT_HOSTS)
 from harness import gateway_openai_route as _openai_route
 from harness.plan_run_store import forge_recheck, persist_forge_seal
+from harness.gateway_body_drain import BodyDrainMixin
 def _resolve_credential(key_env: str) -> str:
     """Env first, OS keychain second; '' when neither. Import is lazy so a
     stripped deployment without keychain.py still serves env-only."""
@@ -535,7 +537,7 @@ def openai_models() -> dict:
     return _openai_route.openai_models(unified_roster=_unified_roster)
 
 
-class _Handler(BaseHTTPRequestHandler):
+class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is drained before close (Windows resets otherwise)
     root = REPO
     serve_url = "http://127.0.0.1:8765"
     ollama_url = "http://127.0.0.1:11434"
@@ -550,8 +552,7 @@ class _Handler(BaseHTTPRequestHandler):
         lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
     operation_service = operation_process_factory = None
     session_token_store = _session_token_state_root = None
-    def log_message(self, *a):  # quiet
-        pass
+    def log_message(self, *a): pass  # quiet
 
     def _cors(self):
         """Emit permissive CORS headers only when the operator opted in with --cors.
@@ -610,7 +611,7 @@ class _Handler(BaseHTTPRequestHandler):
     def _json(self, obj, code=200):
         error = obj.get("error") if isinstance(obj, dict) else None
         error_code = error.get("code") if isinstance(error, dict) else None
-        public_boundary = isinstance(obj, dict) and obj.get("code") in {"CAPABILITY_NOT_ADMITTED", "GATEWAY_ROUTE_MALFORMED", "GATEWAY_ROUTE_MISMATCH"}
+        public_boundary = isinstance(obj, dict) and obj.get("code") in {"CAPABILITY_NOT_ADMITTED", "GATEWAY_ROUTE_MALFORMED", "GATEWAY_ROUTE_MISMATCH", "NOT_IN_BUILD", "LANE_SETUP_REQUIRED", "LANE_CANNOT_LAUNCH", "LANE_TIMEOUT", "LANE_TOOL_ERROR"}
         if (getattr(self, "_gateway_guarded", False)
                 and error_code != "PERMISSION_REQUIRED"
                 and not (isinstance(obj, dict) and obj.get("governance_denied") is True)
@@ -798,6 +799,7 @@ class _Handler(BaseHTTPRequestHandler):
         """Refuse before dispatch; public auth-off compatibility stays available,
         while private custody always requires a configured bearer token."""
         path = self.path.split("?", 1)[0]
+        if is_signed(path): return True  # signed capture channel: trace_routes verifies before any body is read
         private = is_private(path)
         if not self.auth_token and not private: return True
         if private:
@@ -832,6 +834,7 @@ class _Handler(BaseHTTPRequestHandler):
     def _get(self):
         p = self.path.split("?", 1)[0]
         qs = self.path.split("?", 1)[1] if "?" in self.path else ""
+        if p.startswith("/api/traces/"): from harness.trace_routes import route_get; return route_get(self, p, qs)  # trace custody: the capture channel hello and ping, and later status, export and deletion
         if p.startswith("/api/codex/"): from harness.codex_account_gateway_mount import account_get; return account_get(self, p)  # Private Codex account status and login result
         if p == "/api/import/inspect" or p.startswith("/api/import/inspect/"):  # list or reopen owner-bound Inspect evidence
             from harness.import_route import handle_import_get
@@ -969,9 +972,7 @@ class _Handler(BaseHTTPRequestHandler):
                 # the word was wrong.
                 return self._json({"error": str(e)}, 400)
             return self._json(result.to_dict())
-        if p == "/api/lanes/callable":                # list lanes + their tier requirements
-            from harness.lane_caller import list_available_lanes
-            return self._json({"lanes": list_available_lanes()})
+        if p.startswith("/api/lanes/") or p == "/api/settings/node_path": from harness.lane_console_route import console_get; return self._json(*console_get(p))  # lane console: GET callable, <lane>/setup, local-model/root, node_path; POST install, <lane>/check, <lane>/tools (plugin.probe grant)
         if p == "/api/training/status":            # training lane status, read-only
             return self._json(_training_status(self.run_root))
         if p == "/api/train/duel":                    # verified-inference duel summary (read-only)
@@ -1213,6 +1214,7 @@ class _Handler(BaseHTTPRequestHandler):
                                     countersign=_countersign_workflow)
     def _post(self):
         p = self.path.split("?", 1)[0]
+        if p == "/api/scaffold" or p.startswith("/api/traces/"): from harness.trace_routes import route_post; return route_post(self, p)  # the turn guarantee for external wrappers, and trace custody (capture, and later export and deletion)
         if p.startswith("/api/codex/"): from harness.codex_account_gateway_mount import account_post; return account_post(self, p)  # Explicit Codex login, cancellation, and logout requests
         if p == "/api/import/inspect":              # raw exact-byte Inspect upload
             from harness.import_route import handle_import_post
@@ -1649,21 +1651,6 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "'offset' must be a non-negative integer"}, 400)
             from harness.conjecture_forge import forge_round
             return self._json(forge_round(k, offset=offset))
-        if p == "/api/scaffold":                      # the full turn guarantee for external wrappers
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            prompt = str(req.get("prompt") or "")
-            answer = str(req.get("answer") or "")
-            if not prompt and not answer:
-                return self._json({"error": "provide 'prompt' and/or 'answer'"}, 400)
-            from harness.scaffold import scaffold_answer, scaffold_turn
-            env = scaffold_turn(prompt)
-            cites = req.get("citations")
-            doc = scaffold_answer(answer, env,
-                                  citations=cites if isinstance(cites, list)
-                                  else None)
-            return self._json(doc)
         if p == "/api/suite":                         # can this acceptance suite refuse wrong code?
             req, bad = self._req_json()
             if bad:
@@ -2046,16 +2033,7 @@ class _Handler(BaseHTTPRequestHandler):
                 want_svg=bool(req.get("svg")),
                 want_pdf=bool(req.get("pdf")))
             return self._json(out, 400 if out.get("refused") else 200)
-        if p == "/api/lanes/install":                  # one lane, installed on request
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            name = str(req.get("name", "")).strip()
-            if not name:
-                return self._json({"error": "provide a lane 'name'"}, 400)
-            profile = str(req.get("profile", "package")).strip() or "package"
-            from harness.lanes import install_lane
-            return self._json(install_lane(name, profile=profile))
+        if p.startswith("/api/lanes/") or p == "/api/settings/node_path": from harness.lane_console_route import console_post_mount; return console_post_mount(self, p)  # lane console: POST install, <lane>/check, <lane>/tools (plugin.probe grant); granted settings local-model/root (lane.root), node_path (settings.node_path)
         if p == "/api/telos/kernel":                   # run a bridged telos creative kernel
             req, bad = self._req_json()
             if bad:
@@ -2223,7 +2201,7 @@ class _Handler(BaseHTTPRequestHandler):
             if bad:
                 return bad
             from harness.lane_call_route import handle_lane_call
-            return self._json(*handle_lane_call(p, req))
+            return self._json(*handle_lane_call(p, req, self.__dict__.pop("_gateway_bindings", None)))
         if (p == "/api/infra/credential-scan"      # scan for exposed credentials
                 or p == "/api/infra/isolation"       # run the isolation test
                 or p == "/api/infra/kill"):          # the kill switch
@@ -2252,6 +2230,7 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--allow-host", action="append", default=[], dest="allow_host",
                     help="add a Host header value to the DNS-rebinding allowlist (repeatable). "
                          "Give the public tunnel hostname here so a phone can reach this gateway.")
+    from harness.lane_probe_cache import add_desktop_flag; add_desktop_flag(ap)  # --desktop-launch
     return ap
 
 
@@ -2271,7 +2250,7 @@ def _resolve_hosts(requested):
 
 
 def _bind_hosts(hosts, port):
-    """Bind one ThreadingHTTPServer per host, all sharing the one _Handler class.
+    """Bind one exclusive HTTP server per host, all sharing the one _Handler class.
     A host whose address this machine does not hold (e.g. the Tailscale interface
     is down) is reported and skipped, so a working interface still serves instead
     of the whole gateway refusing to start. Returns the bound servers in order;
@@ -2279,7 +2258,7 @@ def _bind_hosts(hosts, port):
     servers = []
     for h in hosts:
         try:
-            servers.append(ThreadingHTTPServer((h, port), _Handler))
+            servers.append(ExclusiveThreadingHTTPServer((h, port), _Handler))
         except OSError as e:
             print(f"  SKIP      cannot bind {h}:{port}: {e}")
     return servers
@@ -2288,7 +2267,7 @@ def _bind_hosts(hosts, port):
 def _serve_all(servers):
     """Serve every bound socket. All but the last run in daemon threads; the last
     blocks the main thread so Ctrl-C still stops the process. On shutdown the
-    operation service is stopped once and every socket is closed."""
+    operation service is stopped once, lane sessions close, sockets close."""
     import threading
     for s in servers[:-1]:
         threading.Thread(target=s.serve_forever, daemon=True).start()
@@ -2297,17 +2276,18 @@ def _serve_all(servers):
     except KeyboardInterrupt:
         pass
     finally:
-        _Handler.operation_service.shutdown()
-        for s in servers:
-            s.server_close()
+        from harness.gateway_lane_calls import _stop_serving
+        _stop_serving(_Handler.operation_service, servers)
 
 
 def main(argv=None) -> int:
     a = _build_parser().parse_args(argv)
     _Handler.root = Path(a.root).resolve()
+    from harness.local_agent_grants import pin_gateway_workspace
+    pin_gateway_workspace(_Handler.root)  # the local-model lane's run workspace
     _Handler.serve_url = a.serve_url
     _Handler.ollama_url = a.ollama_url
-    _Handler.run_root = a.run_root
+    _Handler.run_root = os.environ["FLYWHEEL_RUN_ROOT"] = a.run_root  # the lane path guards read it (flywheel_state_roots)
     _Handler.cors = a.cors
     from harness.telos_browser_registration import configure_telos_browser
     if configure_telos_browser(os.environ.get("FLYWHEEL_TELOS_BROWSER_CONFIG"))["available"] is None: raise SystemExit("browser registration state unknown; gateway not started")
@@ -2321,6 +2301,10 @@ def main(argv=None) -> int:
     if not servers:
         print(f"no interface bound on port {a.port}; nothing to serve")
         return 1
+    from harness.gateway_endpoint_file import publish_endpoint; publish_endpoint(flywheel_home, servers)  # hooks find this listener, never a fixed port
+    from harness.trace_enc_probe import startup as custody_startup; custody_startup(flywheel_home)  # encryption probe, custody tree label
+    from harness.trace_retention_schedule import start_if_adopted; start_if_adopted(flywheel_home)  # retention runs only under an adopted rule other than keep
+    from harness.trace_bench_replay import sweep_all; sweep_all(flywheel_home)  # remove bench clones a crash left (7.8)
     bound = [s.server_address[0] for s in servers]
     remote = [h for h in bound if h not in ("127.0.0.1", "localhost", "::1")]
     if remote:
@@ -2340,6 +2324,7 @@ def main(argv=None) -> int:
     _Handler.session_token_store = SessionTokenStore(
         CredentialHandleStore(state_root, keychain_get=keychain_get))
     _Handler._session_token_state_root = state_root
+    from harness.lane_probe_cache import start_probe; start_probe(desktop_launch=a.desktop_launch)  # only under --desktop-launch
     _Handler.startup_recovery = {"journeys": recover_store(state_root, now=_Handler.clock()), "gateway_operations": recover_gateway_operations(state_root, now=_Handler.clock())}
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
     print(f"  bound     {', '.join(f'{h}:{a.port}' for h in bound)}")
