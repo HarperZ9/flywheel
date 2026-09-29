@@ -193,10 +193,11 @@ final class _LiveWritingGateway {
     final port = await _freePort();
     final process = await Process.start(
       'python',
-      ['harness/gateway.py', '--port', '$port', '--root', repo.path],
+      ['desktop/test/support/writing_gateway.py', home.path, '$port', repo.path],
       workingDirectory: repo.path,
       environment: {
         'FLYWHEEL_HOME': home.path,
+        'FLYWHEEL_RUN_ROOT': '${home.path}/run-root',
         'PYTHONPATH': '',
       },
       includeParentEnvironment: true,
@@ -238,6 +239,7 @@ final class _LiveWritingGateway {
       }
       try {
         await api.status();
+        expect(File('${home.path}/fixture-pointer.json').existsSync(), isTrue);
         return;
       } catch (error) {
         lastError = error;
