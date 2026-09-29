@@ -16,6 +16,10 @@ import 'fw.dart';
 import 'tool_form.dart';
 import 'operation_grant_sheet.dart';
 
+/// How long the app waits for a plugin tool call: the engine gives the tool
+/// 45 s (harness/plugins.py call_plugin), and the app waits 10 s more.
+const pluginCallWait = Duration(seconds: 55);
+
 void showToolCallSheet(BuildContext context, GatewayClient client,
     String plugin, ToolSpec spec, List<String> credentialRefs) {
   showModalBottomSheet(
@@ -124,8 +128,11 @@ class _ToolCallSheetState extends State<ToolCallSheet> {
     try {
       final request = 'desktop-tool-${DateTime.now().microsecondsSinceEpoch}';
       final operation = _operation(request, arguments);
-      final doc = await authorizeGatewayOperation(context, operation,
-          (body) => widget.client.postJson('/api/plugins/call', body),
+      final doc = await authorizeGatewayOperation(
+          context,
+          operation,
+          (body) => widget.client
+              .postJson('/api/plugins/call', body, timeout: pluginCallWait),
           currentOperation: () => _currentOperation(request));
       if (doc == null) return;
       if (mounted) {

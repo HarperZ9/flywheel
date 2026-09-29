@@ -6,7 +6,7 @@ from .gateway_cli_profiles import session_argv
 from .gateway_cli_runtime import (verify_runtime, pin_runtime, session_env,
                                   check_configuration_boundary)
 from .gateway_operation import GatewayOperationError
-from .gateway_cli_profile_home import owned_profile_home
+from .gateway_cli_profile_home import owned_profile_home, profile_record
 
 
 def run_cli_session(goal, binding, root, deadline, emit, *, launcher=None,
@@ -31,6 +31,7 @@ def run_cli_session(goal, binding, root, deadline, emit, *, launcher=None,
         consumed = end
     with pin_runtime(runtime), owned_profile_home(
             state_root=state_root, state_identity=state_identity) as profile_home:
+        emit(profile_record(profile_home))
         env = session_env(profile['provider'], runtime['auth_directory'], profile_home)
         try:
             if time.monotonic() >= deadline:

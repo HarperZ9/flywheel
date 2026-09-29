@@ -14,6 +14,8 @@ import threading
 import time
 from typing import Any, Protocol
 
+from . import safe_program
+
 _ACCOUNT_LOGIN_COMPLETED = "account/login/completed"
 
 
@@ -69,7 +71,13 @@ class CodexAppServerStdioTransport:
         }
         if os.name == "nt":
             kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        return popen(list(self.argv), **kwargs)
+        # A real spawn resolves codex safely; an injected popen sees the argv as given.
+        if popen is not subprocess.Popen:
+            return popen(list(self.argv), **kwargs)
+        argv, env = safe_program.launch(self.argv)
+        if env is not None:
+            kwargs["env"] = env
+        return popen(argv, **kwargs)
 
     def _read_stdout(self) -> None:
         stdout = getattr(self.process, "stdout", None)

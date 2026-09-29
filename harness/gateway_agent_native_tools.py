@@ -15,7 +15,7 @@ from .gateway_operation import GatewayOperationError
 from .gateway_agent_trace import validate_private_trace_value
 from .local_loop import _done
 from .local_tools import ToolExecutor, ToolGate
-from .router_agent import _finalize_run, _workspace_pre
+from .router_agent import _finalize_run, _workspace_pre, workspace_failure_snapshot
 from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
 
 TOOL_PROTOCOL_SCHEMA = "flywheel.gateway-agent-tool-protocol/v1"
@@ -175,20 +175,21 @@ def run_native_tool_agent(goal: str, binding: dict, credentials, root, ledger,
         from . import tool_receipts
         sign_key = tool_receipts.new_session_key()
         ledger.append("user", goal)
-        final, steps, answered = run_native_protocol_loop(contract["native_api_route"],
-            goal, binding, key, transport, executor, ledger, sign_key, deadline, on_event,
-            tools, props, secret_guard)
-        tests_pass, note = None, ""
-        if test_cmd and not answered:
-            # The model never said it was done, so a check run now would grade
-            # unfinished work. The router loop records the same outcome.
-            tests_pass, note = False, UNRUN_CHECK_NOTE
-        elif test_cmd:
-            tests_pass = execute_native_test_command(
-                test_cmd, executor, ledger, sign_key, on_event, deadline,
-                secret_guard).ok
-        result = _done(final, steps, ledger, tests_pass=tests_pass, note=note,
-                       system="provider-native tool loop", goal=goal)
+        with workspace_failure_snapshot(str(root), pre_state, ledger, executor):
+            final, steps, answered = run_native_protocol_loop(contract["native_api_route"],
+                goal, binding, key, transport, executor, ledger, sign_key, deadline, on_event,
+                tools, props, secret_guard)
+            tests_pass, note = None, ""
+            if test_cmd and not answered:
+                # The model never said it was done, so a check run now would grade
+                # unfinished work. The router loop records the same outcome.
+                tests_pass, note = False, UNRUN_CHECK_NOTE
+            elif test_cmd:
+                tests_pass = execute_native_test_command(
+                    test_cmd, executor, ledger, sign_key, on_event, deadline,
+                    secret_guard).ok
+            result = _done(final, steps, ledger, tests_pass=tests_pass, note=note,
+                           system="provider-native tool loop", goal=goal)
         return _finalize_run(result, endpoint=endpoint["name"],
             agent=SimpleNamespace(last_compaction=None), executor=executor,
             receipt_dir=None, duration=round(time.perf_counter() - started, 3),

@@ -20,9 +20,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
+from . import lane_runtime_frozen as _frozen
 from . import lane_runtime_support as _support
-from .bundled_lane_descriptor import bundled_payload_lane_names
-from .lane_runtime_versions import validate_public_version
+from .lane_env import confine_lane_launch
+from .lane_runtime_versions import validate_public_version, version_below
 from .lanes_registry import Lane
 from .mcp_client import LaunchSpec
 
@@ -125,10 +126,9 @@ def resolve_lane_runtime(
     package_runtime_version_fn: Callable[[Lane, str], str | None],
 ) -> ResolvedLaneRuntime:
     """Resolve one lane's runtime without launching it. Every observation is
-    injected as a callable, so this stays testable and free of direct environment
-    reads. The body validates the profile and versions, picks a launch via
-    _select_launch, then asks _blocking_codes which codes are fatal; the returned
-    mismatch_codes unions the advisory and blocking codes, de-duplicated in order."""
+    injected, so this stays testable and free of direct environment reads. It picks
+    a launch via _select_launch, confines a pip or npm launch to the minimal env
+    (lane_env.py), then asks _blocking_codes which codes are fatal."""
     lane = lanes[name]
     row, row_codes = _registry_row(registry.get(name))
     profile, selection_source, profile_codes = _runtime_profile(row)
@@ -151,18 +151,16 @@ def resolve_lane_runtime(
         *row_codes, *expected_codes, *profile_codes, *source_codes,
         *version_codes, *python_codes, *installed_codes,
     ]
-    if source_version and expected and source_version != expected:
-        mismatch.append("source_version_mismatch")
-    if installed and runtime_expected and installed != runtime_expected and lane.kind in {"pip", "npm"}:
-        mismatch.append("installed_version_mismatch")
+    mismatch += _version_codes(lane, expected, source_version, installed, runtime_expected)
     launch, selected, bundled_component, bundled_codes = _select_launch(
         lane, profile, source, python_executable, environ, is_frozen,
         extra_roots, importable_fn, runtime_python)
+    launch, env_codes = confine_lane_launch(lane, launch, environ, row)
     blocking = _blocking_codes(
         lane, profile, selected, bool(source), package_available,
         [*mismatch, *bundled_codes])
     blocking = tuple(dict.fromkeys(blocking))
-    all_codes = tuple(dict.fromkeys([*mismatch, *bundled_codes, *blocking]))
+    all_codes = tuple(dict.fromkeys([*mismatch, *env_codes, *bundled_codes, *blocking]))
     return ResolvedLaneRuntime(
         name=name, launch=launch, selected_profile=profile,
         selection_source=selection_source, selected_runtime=selected,
@@ -172,6 +170,17 @@ def resolve_lane_runtime(
         source_version=source_version, mismatch_codes=all_codes,
         blocking_codes=blocking, bundled_component=bundled_component,
     )
+
+
+def _version_codes(lane, expected, source_version, installed, runtime_expected) -> list[str]:
+    """A source or installed version off its pin; below the pin is named too."""
+    codes = ["source_version_mismatch"] if (
+        source_version and expected and source_version != expected) else []
+    if installed and runtime_expected and installed != runtime_expected and lane.kind in {"pip", "npm"}:
+        codes.append("installed_version_mismatch")
+        if version_below(installed, runtime_expected):
+            codes.append("installed_version_below_pin")
+    return codes
 
 
 def _registry_row(value: object) -> tuple[dict, tuple[str, ...]]:
@@ -233,30 +242,16 @@ def _observed_package_version(lane, runtime_python, installed_fn, python_version
 def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
                    extra_roots, importable_fn, runtime_python):
     """Choose the one launch to perform, as (launch, selected_runtime,
-    bundled_component, bundled_codes). The check order is the precedence: relay-in-
-    frozen, disabled package, http, other frozen build, bundled, then the profiles."""
+    bundled_component, bundled_codes). The check order is the precedence: a frozen
+    build (lane_runtime_frozen), disabled package, http, bundled, then the profiles."""
     if profile not in _VALID_PROFILES:
         return None, "invalid", None, ()
-    # A payload lane admits from the frozen payload, unless it is package-disabled
-    # and forced off the auto profile (which stays a refusal below).
-    if is_frozen and lane.name in bundled_payload_lane_names() and (
-            profile == "auto" or not lane.package_disabled_reason):
-        from .bundled_lane_admission import admit_bundled_lane
-        admission = admit_bundled_lane(lane.name, executable=python_executable,
-                                       environ=environ, importable_fn=importable_fn)
-        if not admission.blocking_codes:
-            return admission.launch, "bundled", admission.component, ()
-        return None, "bundled", admission.component, admission.blocking_codes
-    if lane.package_disabled_reason and (is_frozen or profile == "package" or not source):
+    if is_frozen:
+        return _frozen.select_frozen_launch(lane, profile, python_executable, environ, importable_fn)
+    if lane.package_disabled_reason and (profile == "package" or not source):
         return None, "package", None, ()
     if lane.kind == "http":
         return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), "http", None, ()
-    # A frozen build ships its own packaged imports and has no adjacent source
-    # checkout, so source is skipped: a source-tree launch would point at a path
-    # the shipped artifact lacks. Run the packaged command instead.
-    if is_frozen:
-        return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), (
-            "package" if lane.kind in {"pip", "npm"} else lane.kind), None, ()
     if lane.kind == "bundled":
         return (LaunchSpec((python_executable, *lane.mcp_args))
                 if lane.command == "python" else LaunchSpec(tuple(lane.mcp_command()))), "bundled", None, ()
@@ -279,11 +274,12 @@ def _blocking_codes(lane, profile, selected, source_available, package_available
     launches (a source version differing from expected is recorded, not fatal). A
     code blocks only when it defeats the selected path: an invalid profile, a
     failed bundled admission, a disabled package, a source profile with no source,
-    or a package-profile pip/npm lane's bad interpreter, missing package, or mismatch."""
+    a package-profile pip/npm lane's bad interpreter, missing package, or mismatch,
+    or an "auto" pip/npm package older than its pin (the pin carries the fixes)."""
     if "invalid_runtime_profile" in mismatch:
         return ["invalid_runtime_profile"]
     if selected == "bundled":
-        return [code for code in mismatch if code.startswith("bundled_")]
+        return [code for code in mismatch if _frozen.is_blocking(code)]
     if selected == "package" and lane.package_disabled_reason:
         return ["package_distribution_disabled"]
     if profile == "source" and not source_available:
@@ -296,4 +292,7 @@ def _blocking_codes(lane, profile, selected, source_available, package_available
         if "installed_version_mismatch" in mismatch:
             codes.append("installed_version_mismatch")
         return codes
+    if (selected == "package" and lane.kind in {"pip", "npm"}
+            and "installed_version_below_pin" in mismatch):
+        return ["installed_version_below_pin"]
     return []

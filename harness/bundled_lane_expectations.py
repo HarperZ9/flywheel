@@ -6,22 +6,31 @@ EXPECTED_BUNDLED_LANES: dict[str, dict[str, object]] = {
     "relay": {
         "schema": "flywheel.bundled-lane-expectation/v1",
         "name": "relay",
-        "version": "0.2.2",
+        "version": "0.5.0",
         "source_repo": "https://github.com/HarperZ9/relay",
-        "source_commit": "a1f7f553cf2963ed756d0ec28d00015a3007188f",
+        "source_commit": "ba1e4f21f05ff610a182f9b4665bb82f05a969f8",
         "source_path": "src/relay",
+        # The LF bytes of the tag (the relay payload row's manifest), not the
+        # CRLF form a Windows checkout writes (check_bundled_lane_descriptors).
         "source_manifest_sha256": (
-            "sha256:5809a688e62d9d895f23dec1503b9876a80beaaed0633a46"
-            "a0c93108d5163092"
+            "sha256:5ac76b4ee50fc7ec22e244c9333d0593b9dc99d39cd8b020"
+            "a98775b760b6112d"
         ),
         "descriptor_sha256": (
-            "sha256:c3b279cd7ed02f0bce50de04056171764a6741d6e90f6492"
-            "16927ea7703794e7"
+            "sha256:5bf51d07953900590fbda232bc947e68126ee64c79afc63a"
+            "3147caee9908a0b0"
         ),
         "module": "relay.local_mcp",
         "callable": "serve",
         "health_tool": "relay.status",
-        "allowed_tools": ("relay.status",),
+        # Relay's T1 tools in the lane tool policy (lane_tool_policy_agents).
+        # local_agent_status and local_agent_result read the relay lane session
+        # (WP10); local_agent_start is T2 and joins only a granted call's launch.
+        "allowed_tools": (
+            "local_agent_health", "local_agent_chat", "local_agent_run",
+            "local_agent_status", "local_agent_result", "local_agent_runs",
+            "local_agent_sessions", "relay.status", "relay.doctor",
+        ),
     },
 }
 

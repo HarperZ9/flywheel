@@ -36,6 +36,7 @@ const _fixedDestinations = {
   'invent.round': GatewayDestination('forge', 'conjecture-forge'),
   'lean.check': GatewayDestination('oracle', 'lean'),
   'infra.isolation': GatewayDestination('boundary', 'isolation'),
+  ..._settingDestinations,
 };
 
 /// Destinations whose ref is one named field of the operation: (kind, field).
@@ -130,46 +131,6 @@ GatewayDestination _destination(String action, Map<String, Object?> value) {
       : _invalid();
 }
 
-bool _isBulletinBoardWrite(String action, Map<String, Object?> value) =>
-    action == 'lane.call' &&
-    value['name'] == 'bulletin' &&
-    value['tool'] == 'board_write_post';
-
-void _validateBulletinOriginBinding(
-  String action,
-  Map<String, Object?> value,
-  GatewayDestination destination,
-) {
-  final hasOrigin = value.containsKey('bulletin_base_url');
-  if (!_isBulletinBoardWrite(action, value)) {
-    if (hasOrigin || destination.bulletinBaseUrl != null) _invalid();
-    return;
-  }
-  if (_containsBulletinOriginField(value['args'])) _invalid();
-  final origin = value['bulletin_base_url'];
-  if (origin is! String || !isCanonicalBulletinOrigin(origin)) _invalid();
-  if (destination.kind != 'lane' ||
-      destination.ref != 'bulletin' ||
-      destination.bulletinBaseUrl != origin) {
-    _invalid();
-  }
-}
-
-bool _containsBulletinOriginField(Object? value) {
-  if (value is Map) {
-    for (final entry in value.entries) {
-      if (entry.key == 'bulletin_base_url' ||
-          _containsBulletinOriginField(entry.value)) {
-        return true;
-      }
-    }
-  }
-  if (value is List) {
-    return value.any(_containsBulletinOriginField);
-  }
-  return false;
-}
-
 /// The engine reads the operation's own tool field wherever one exists, which
 /// today means plugin.call and lane.call. Naming only the first left a lane
 /// call proposing its action name where the engine proposes the lane tool.
@@ -180,6 +141,8 @@ String _tool(String action, Map<String, Object?> value) {
 
 List<String> _scopes(String action, Map<String, Object?> value) {
   if (action == 'live_screen.control') return const ['write'];
+  final setting = _settingScopes(action, value);
+  if (setting != null) return setting;
   if (action == 'operation.cancel') return const ['exec'];
   final selected = <String>{};
   if (const {

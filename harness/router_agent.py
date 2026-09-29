@@ -16,6 +16,7 @@ same opt-in compaction as the local agent. Zero dependencies.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 import hashlib
 import json
 import time
@@ -29,6 +30,7 @@ from .local_loop import run_agent
 from .local_session import SessionLedger
 from .local_tools import ToolExecutor, ToolGate
 from .tool_sandbox_bridge import fallback_from_env, make_sandboxed_runner
+from .workspace_git_identity import record_git
 
 DEFAULT_AGENT_SYSTEM = (
     "You are a coding agent working in a sandboxed repository. Use the tools to "
@@ -104,6 +106,7 @@ def _workspace_pre(root: str, enabled: bool, ledger):
     hashes: dict = {}
     snapshot = workspace_snapshot(root, hashes=hashes)
     ledger.append("workspace_pre", json.dumps(snapshot, sort_keys=True))
+    record_git(root, ledger)  # HEAD and digests of tracked files and status
     return {**snapshot, "_hashes": hashes}
 
 
@@ -133,6 +136,21 @@ def _workspace_post(out: dict, root: str, before: dict | None, ledger,
         "changed": before["workspace_sha256"] != after["workspace_sha256"]}
     out["checkpoint"] = ledger.checkpoint()
     out["verified"] = ledger.verify()
+
+
+@contextmanager
+def workspace_failure_snapshot(root, before, ledger, executor):
+    """Keep command-created deliverables when a loop stops before finalization."""
+    try:
+        yield
+    except Exception as exc:
+        try:
+            _workspace_post({}, root, before, ledger,
+                            exclude=getattr(executor, "check_side_effects", ()))
+        except Exception as snapshot_error:
+            # Preserve the run's failure and make incomplete coverage explicit.
+            exc.workspace_capture_error = type(snapshot_error).__name__
+        raise
 
 
 # How many bytes of witness records a run result will carry. The gateway
@@ -247,10 +265,11 @@ def run_router_agent(goal: str, endpoint: str = "serve", *, root: str = ".",
     from . import tool_receipts
     sign_key = tool_receipts.new_session_key()
     started = time.perf_counter()
-    result = run_agent(
-        agent, goal, executor, ledger, max_steps=max_steps, test_cmd=test_cmd,
-        sign_key=sign_key, canaries=canaries, on_event=on_event,
-        event_errors_fatal=event_errors_fatal)
+    with workspace_failure_snapshot(root, pre_state, ledger, executor):
+        result = run_agent(
+            agent, goal, executor, ledger, max_steps=max_steps, test_cmd=test_cmd,
+            sign_key=sign_key, canaries=canaries, on_event=on_event,
+            event_errors_fatal=event_errors_fatal)
     return _finalize_run(
         result, endpoint=endpoint, agent=agent, executor=executor,
         receipt_dir=receipt_dir, duration=round(time.perf_counter() - started, 3),

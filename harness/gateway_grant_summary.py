@@ -20,6 +20,8 @@ def proposal_response(record: dict, operation) -> dict:
     if record["action"] == "lane.call":
         from .outcome_bulletin_media import proposal_review as _br; mr = _br(operation)
         if mr is not None: summary["bulletin_media_review"] = mr
+        from .lane_tier_gate import lane_policy_review  # tier, effect, plain arguments (C-13)
+        summary["lane_policy"] = lane_policy_review(thaw_operation(operation.operation))
     if record["action"] == "agent.run":
         from .gateway_agent_grant import review_binding
         summary["agent_execution"] = review_binding(record)

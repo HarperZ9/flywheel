@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
+from . import lane_cli
 from .index_bridge import _index_argv
 from .index_job_registry import (
     DEFAULT_LOCK_TIMEOUT_S,
@@ -19,7 +18,6 @@ from .index_job_registry import (
 
 SCHEMA = "flywheel.index-workspace-map-job/v1"
 _ACTIVE = {"queued", "running", "cancellation_requested"}
-_REPO = Path(__file__).resolve().parent.parent
 
 
 def _job_root(run_root: Path | str) -> Path:
@@ -118,10 +116,13 @@ def _remember(rows: dict[str, dict[str, Any]], root: str,
     }
 
 
+def _job_env(run_root: Path | str) -> dict[str, str]:
+    return {"INDEX_ROUTER_JOB_DIR": str(_job_root(run_root))}
+
+
 def _env(run_root: Path | str) -> dict[str, str]:
-    env = os.environ.copy()
-    env["INDEX_ROUTER_JOB_DIR"] = str(_job_root(run_root))
-    return env
+    """The index lane environment plus the job directory, never the whole env."""
+    return lane_cli.lane_cli_environment("index", _job_env(run_root))
 
 
 def _parse_version(text: str) -> tuple[int, int, int] | None:
@@ -132,13 +133,15 @@ def _parse_version(text: str) -> tuple[int, int, int] | None:
 
 
 def _module_argv() -> list[str] | None:
-    try:
-        import importlib.util
-        if importlib.util.find_spec("index_graph") is not None:
-            return [sys.executable, "-m", "index_graph.cli"]
-    except Exception:
-        pass
-    return None
+    """``python -m index_graph.cli``; never in a frozen build, which refuses -m."""
+    return lane_cli.module_argv("index")
+
+
+def _cli(argv: list[str], args: list[str], run_root: Path | str,
+         timeout: float) -> subprocess.CompletedProcess:
+    """One index CLI run in the lane folder, UTF-8, without a console window."""
+    return lane_cli.run_lane_cli("index", args, prefix=argv, timeout=timeout,
+                                 extra_env=_job_env(run_root))
 
 
 def _candidate_argvs() -> list[list[str]]:
@@ -150,13 +153,11 @@ def _candidate_argvs() -> list[list[str]]:
 
 
 def _probe_engine(argv: list[str], root: str, run_root: Path | str) -> dict | None:
-    env = _env(run_root)
+    if lane_cli.refuses("index", argv, ["router-job", "start"]):  # frozen, no worker
+        return _failure(root, "NOT_IN_BUILD", "index workspace-map jobs are not in this build")
     try:
-        version = subprocess.run(argv + ["--version"], capture_output=True,
-                                 text=True, timeout=8, env=env, cwd=str(_REPO))
-        help_run = subprocess.run(argv + ["router-job", "--help"],
-                                  capture_output=True, text=True, timeout=8,
-                                  env=env, cwd=str(_REPO))
+        version = _cli(argv, ["--version"], run_root, 8)
+        help_run = _cli(argv, ["router-job", "--help"], run_root, 8)
     except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
         return _failure(root, "INDEX_UNAVAILABLE",
                         f"index engine check failed: {type(exc).__name__}")
@@ -194,9 +195,10 @@ def _run(action: str, root: str, run_root: Path | str,
     if unavailable is not None:
         return unavailable
     try:
-        proc = subprocess.run(argv + ["router-job", action, *args],
-                              capture_output=True, text=True, timeout=20,
-                              env=_env(run_root), cwd=str(_REPO))
+        proc = _cli(argv, ["router-job", action, *args], run_root, 20)
+    except lane_cli.LaneCliUnavailable:
+        return _failure(root, "NOT_IN_BUILD",
+                        f"index router-job {action} is not in this build")
     except subprocess.TimeoutExpired:
         return _failure(root, "INDEX_TIMEOUT", f"index router-job {action} timed out")
     except (OSError, ValueError) as exc:

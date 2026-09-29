@@ -6,7 +6,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 from check_file_gate import (  # noqa: E402
-    BURNDOWNS, LIMIT, TREES, load_all, load_grandfathered, over_gate)
+    BURNDOWNS, LIMIT, TREES, load_all, load_grandfathered, over_gate, vendored_exempt)
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -54,8 +54,9 @@ def test_missing_burndown_is_an_empty_list_not_a_crash(tmp_path):
 @pytest.mark.parametrize("tree", TREES)
 def test_the_real_repo_has_a_burndown_covering_every_current_violation(tree):
     listed = load_all(ROOT / b for b in BURNDOWNS)
+    exempt = vendored_exempt(ROOT)
     actual = dict(over_gate(ROOT / tree, limit=LIMIT))
-    unlisted = [f for f in actual if f"{tree}/{f}" not in listed]
+    unlisted = [f for f in actual if f"{tree}/{f}" not in listed and f"{tree}/{f}" not in exempt]
     assert unlisted == [], f"unlisted {tree}/ violations: {unlisted}"
 
 
@@ -127,3 +128,24 @@ def test_every_file_created_in_phase_0_is_under_the_gate():
     new = ["verdict.py", "advantages.py", "gateway_auth.py", "gate.py"]
     over = dict(over_gate(root / "harness", limit=300))
     assert [f for f in new if f in over] == []
+
+
+def test_a_vendored_copy_is_exempt_only_while_it_matches_its_record(tmp_path):
+    """The exemption is the hash, not the folder name: an edited copy is gated."""
+    import hashlib
+    copy = tmp_path / "harness" / "_vendor" / "helper.py"
+    copy.parent.mkdir(parents=True)
+    copy.write_text("x = 1\n" * (LIMIT + 10), encoding="utf-8")
+    digest = hashlib.sha256(copy.read_bytes()).hexdigest()
+    (tmp_path / "VENDORED.sha256").write_text(
+        f"{digest}  harness/_vendor/helper.py\n", encoding="utf-8")
+    assert vendored_exempt(tmp_path) == {"harness/_vendor/helper.py"}
+    copy.write_text("x = 2\n" * (LIMIT + 10), encoding="utf-8")
+    assert vendored_exempt(tmp_path) == set()
+
+
+def test_the_real_exemptions_are_exactly_the_vendored_records():
+    rows = [line.split(None, 1)[1].strip().lstrip("*")
+            for line in (ROOT / "VENDORED.sha256").read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.startswith("#")]
+    assert vendored_exempt(ROOT) == set(rows)

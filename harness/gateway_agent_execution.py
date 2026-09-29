@@ -4,11 +4,19 @@ from __future__ import annotations
 from pathlib import Path
 
 from .credential_handles import CredentialBindings
-from .gateway_agent_trace import AgentTrace, TraceError, TraceLedger
+from .gateway_agent_trace import AgentTrace, TraceError, TraceLedger, record_failure
 
 
 def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
-                      trace: AgentTrace, source_context, emit, *, binding=None, deadline=None) -> dict:
+                      trace: AgentTrace, source_context, emit, **kwargs) -> dict:
+    with trace.hold():  # legacy encryption skips a trace while its run writes it
+        return _run_private_agent(operation, bindings, repo_root, trace, source_context,
+                                  emit, **kwargs)
+
+
+def _run_private_agent(operation: dict, bindings: dict, repo_root: Path,
+                       trace: AgentTrace, source_context, emit, *, binding=None,
+                       deadline=None) -> dict:
     from .effort import resolve_effort, stamp_applied
     from .gateway_agent_binding import validate_agent_binding
     from .gateway_agent_workspace import pinned_workspace
@@ -132,6 +140,9 @@ def _completion(ledger, result, root, cli_events, exc=None) -> dict:
     from .gateway_agent_failures import failure_reason
     from .run_completion import SCHEMA, completion_report
     try:
+        if getattr(exc, "workspace_capture_error", None):
+            return {"schema": SCHEMA, "verdict": "unavailable",
+                    "reason": f"WORKSPACE_CAPTURE_FAILED:{exc.workspace_capture_error}"}
         return completion_report(ledger.entries, result, root, cli_events=cli_events,
                                  failure=None if exc is None else failure_reason(exc))
     except Exception as error:  # recorded, never silent: the reader sees why
@@ -147,14 +158,10 @@ def _record_failure(trace, exc, budget, completion=None) -> None:
     budget.settle_failed()
     if getattr(exc, "code", None) == "OPERATION_DEADLINE_EXCEEDED":
         budget.note_wall_time()
-    payload = {"error_type": type(exc).__name__, "message": str(exc),
-               "run_budget": budget.report()}
+    payload = {"run_budget": budget.report()}
     if completion:
         payload["completion"] = completion
-    try:
-        trace.append("failure", payload)
-    except Exception:
-        pass  # rejected credentials/custody never enter the diagnostic record
+    record_failure(trace, exc, details=payload)
 
 
 

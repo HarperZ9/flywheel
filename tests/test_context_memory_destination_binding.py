@@ -21,6 +21,13 @@ STORE_ID = "ctxstore_" + "1" * 32
 CANON_TEST_SRC_ENV = "FLYWHEEL_CANON_CONTEXT_TEST_SRC"
 LEAK_SENTINEL = "C:/private/API_SECRET_ABC123-token"
 
+@pytest.fixture(autouse=True)
+def _canon_at_its_pin(monkeypatch):
+    """The bridge refuses a canon below its pin; the host's package must not decide."""
+    monkeypatch.setattr("harness.lane_runtime_support.installed_version",
+                        lambda lane: lane.version)
+
+
 
 class FakeCanonClient:
     def __init__(self):

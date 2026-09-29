@@ -148,7 +148,7 @@ def validate_spec(spec: TaskSpec, work_root: str | Path) -> bool:
     task.candidate_full().write_text(spec.solution, encoding="utf-8")
     clear_bytecode(Path(task.workdir))
     r = subprocess.run(spec.oracle_cmd, cwd=task.workdir, shell=True,
-                       capture_output=True, env=run_env(), timeout=30)
+                       capture_output=True, env=run_env(cwd=task.workdir), timeout=30)
     return r.returncode == 0
 
 

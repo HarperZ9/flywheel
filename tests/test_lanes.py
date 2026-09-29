@@ -5,6 +5,7 @@ and the install-name -> command asymmetry must map correctly (pip install
 gather-engine exposes the `gather` command, etc.). A missing lane never
 crashes the roster; it reports `missing`/`declared`.
 """
+import sys
 from pathlib import Path
 
 import harness.lanes as lanes
@@ -22,7 +23,7 @@ def test_registry_covers_the_expected_lanes():
     assert set(LANES) == {"gather", "crucible", "chorus", "articulate", "index", "forum",
                           "learn", "telos", "local-model", "relay", "plexus", "mneme",
                           "calibrate-pro", "accountable-surface", "canon", "bulletin",
-                          "writing"}
+                          "writing", "isomorph", "sofer", "array"}
 
 
 def test_install_name_to_command_asymmetry_is_mapped():
@@ -96,7 +97,7 @@ def test_bundled_lane_needs_no_install():
 
 def test_public_commands_are_portable_declared_argv():
     assert resolve_mcp_command("gather") == ["gather", "mcp"]
-    assert resolve_mcp_command("telos") == []  # unpublished package has no public launch hint
+    assert resolve_mcp_command("telos") == ["node", "demo/telos-mcp.mjs"]
     assert resolve_mcp_command("learn") == ["node", "src/mcp.mjs"]
     assert resolve_mcp_command("local-model") == [
         "python", "-m", "harness.local_mcp"]
@@ -198,15 +199,23 @@ def test_source_checkout_is_probed_when_package_is_absent(tmp_path, monkeypatch)
     monkeypatch.setattr(mcp_client, "MCPClient", _ProbeClient)
     result = lane_status("gather", probe=True)
     assert result["status"] == LIVE
-    assert _ProbeClient.launch.cwd == str(source.resolve())
+    assert Path(_ProbeClient.launch.cwd).parts[-2:] == ("lanes", "gather")
+    assert str(source.resolve()) in dict(_ProbeClient.launch.env_overrides)["PYTHONPATH"]
+
+
+def _installed_at_pin(monkeypatch):
+    """An installed package at its pin; one below the pin would not launch."""
+    monkeypatch.setattr(lanes, "_installed_version", lambda lane: lane.version)
+    monkeypatch.setattr(lanes, "resolve_source_repo", lambda lane: None)
 
 
 def test_presence_only_installed_lane_is_declared_not_live(monkeypatch):
-    monkeypatch.setattr(lanes, "_installed_version", lambda lane: "1.2.3")
+    monkeypatch.setattr(lanes, "_installed_version", lambda lane: lane.version)
     assert lane_status("gather", probe=False)["status"] == DECLARED
 
 
 def test_missing_health_tool_is_stale(monkeypatch):
+    _installed_at_pin(monkeypatch)
     monkeypatch.setattr(_ProbeClient, "tools", [{"name": "gather.run"}])
     monkeypatch.setattr(mcp_client, "MCPClient", _ProbeClient)
     result = lanes._probe_lane("gather", "1.2.3", 1.0, present=True)
@@ -215,6 +224,7 @@ def test_missing_health_tool_is_stale(monkeypatch):
 
 
 def test_health_tool_error_is_stale(monkeypatch):
+    _installed_at_pin(monkeypatch)
     monkeypatch.setattr(_ProbeClient, "tools", [{"name": "gather.status"}])
     monkeypatch.setattr(
         _ProbeClient, "response", {"ok": False, "text": "not healthy"})
@@ -225,6 +235,7 @@ def test_health_tool_error_is_stale(monkeypatch):
 
 
 def test_failed_probe_of_present_lane_is_declared(monkeypatch):
+    _installed_at_pin(monkeypatch)
     class FailingClient:
         def __init__(self, *args, **kwargs):
             raise OSError("cannot launch")
@@ -263,4 +274,4 @@ def test_source_install_uses_matching_container_checkout(tmp_path, monkeypatch):
         lambda command, **kwargs: calls.append(command) or Installed())
     result = install_lane("gather", profile="source")
     assert result["installed"] is True
-    assert calls == [["pip", "install", "-e", str(source.resolve())]]
+    assert calls == [[sys.executable, "-m", "pip", "install", "-e", str(source.resolve())]]

@@ -98,6 +98,7 @@ final class DestinationInputs {
     this.chatDraftStore,
     required this.onProbe,
     required this.onInstall,
+    this.onCheckLane,
     this.onStartEngine,
     this.pendingArgument,
     this.roster,
@@ -120,6 +121,7 @@ final class DestinationInputs {
   final WorldDoc? world;
   final VoidCallback onProbe;
   final Future<Map<String, dynamic>> Function(String) onInstall;
+  final void Function(String)? onCheckLane;
   final VoidCallback? onStartEngine;
 }
 
@@ -252,6 +254,7 @@ Widget? _evidence(DestinationId id, DestinationInputs i) => switch (id) {
           roster: i.roster,
           alive: i.alive,
           onProbe: i.onProbe,
+          onCheck: i.onCheckLane,
           onInstall: i.onInstall,
         ),
       _ => null,

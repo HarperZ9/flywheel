@@ -15,13 +15,24 @@ whether the row is generated on Windows or Linux, honors ``.gitattributes`` so
 ``-text`` byte-pinned files keep their exact bytes, and makes every row stage
 cleanly on both platforms.
 
-Reproduction: run this for ``gather`` at ``v1.8.2`` and ``crucible`` at ``v1.2.0``
-(the revisions their committed rows pin) and the output is byte-identical to the
-committed lines. The working checkouts have since advanced past those tags, so
-``--rev`` selects the revision; it defaults to the checkout HEAD.
+Reproduction: run this for any lane at the ``owner_commit`` its committed row pins
+and the output is byte-identical to the committed line;
+``tests/test_lane_payload_regenerate.py`` does that for every row, with ``-S`` so
+no installed package stands in for a pin. The working checkouts advance past
+those revisions, so ``--rev`` selects the revision; it defaults to the checkout
+HEAD.
 
-This module is a thin CLI. The build logic lives in ``_lane_payload_row.py`` and
-``_lane_payload_source.py``, split out so every file stays under the 300-line gate.
+The registry's ``bundled_mcp_module`` names the serving module when ``mcp_args``
+does not (forum). A lane with a reviewed slice in ``_lane_payload_slice.py``
+(calibrate-pro) ships only the sliced modules, and its excluded runtime
+dependencies are recorded with their reasons. Studio-supplied dependencies
+(accountable-surface) import from the pinned Studio payload. Admitted tools come
+from ``harness/lane_tool_policy.py``.
+
+This module is a thin CLI. The build logic lives in ``_lane_payload_row.py``,
+``_lane_payload_source.py``, ``_lane_payload_mcp.py``, ``_lane_payload_slice.py``
+and ``_lane_payload_studio.py``, split out so every file stays under the 300-line
+gate.
 """
 from __future__ import annotations
 

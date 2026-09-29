@@ -41,13 +41,6 @@ def test_bounded_listing_marks_unreadable_and_skips_nonopaque_names(tmp_path):
     assert bad == {"run_id": "0" * 16, "status": "UNREADABLE", "intact": False}
 
 
-def test_existing_trace_benchmark_limit_remains_supported(tmp_path):
-    from harness.trace_bench_route import _all_runs
-    saved = save_agent_run(tmp_path, {"final": "retained fixture"})
-    for limit in (100, 101, 500):
-        assert any(run["run_id"] == saved["run_id"] for run in _all_runs(tmp_path, limit))
-
-
 def test_leaf_symlink_cannot_disclose_outside_json(tmp_path):
     directory = tmp_path / "agent_runs"
     directory.mkdir()

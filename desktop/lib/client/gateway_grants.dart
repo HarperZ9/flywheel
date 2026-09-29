@@ -42,6 +42,8 @@ const _errors = <String, (Set<int>, String)>{
   'EXTERNAL_ACTION_FAILED': ({502}, 'Authorized external action failed'),
   'INVALID_REQUEST': ({400, 405, 422}, 'Gateway request is invalid'),
   'NOT_FOUND': ({404}, 'Gateway operation was not found'),
+  'LANE_SETUP_REQUIRED': ({409}, 'The lane needs a setup step first'),
+  'LANE_CANNOT_LAUNCH': ({503}, 'The lane could not start'),
 };
 
 GatewayGrantException _invalid() => const GatewayGrantException(

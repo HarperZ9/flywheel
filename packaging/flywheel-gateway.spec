@@ -66,7 +66,12 @@ from scripts.build_python_lane_payloads import (
 )
 from scripts.frozen_gateway_metadata import flywheel_verify_metadata_datas
 from scripts.studio_runtime_packaging import pyinstaller_studio_runtime_inputs
-from scripts.python_lane_freeze import python_lane_freeze_inputs
+from scripts.python_lane_freeze import (
+    python_lane_freeze_datas, python_lane_freeze_inputs)
+from scripts.frozen_payload_datas import (
+    NODE_STAGE_ENV, check_pyz_slices, node_lane_stage_datas)
+from scripts.frozen_license_datas import frozen_license_datas
+from scripts.frozen_trace_imports import TRACE_CUSTODY_HIDDEN_IMPORTS
 import importlib.util
 
 
@@ -122,6 +127,16 @@ for _studio_root in studio_runtime.pathex:
 lane_source_root = Path(os.environ["FLYWHEEL_PYTHON_LANE_SOURCE_ROOT"])
 python_lane_pathex, python_lane_hidden, python_lane_receipts = (
     python_lane_freeze_inputs(repo, lane_source_root))
+# Package data inside each pinned lane package (forum's default roster, for one)
+# lands at its package-relative folder, where importlib.resources looks for it.
+python_lane_datas = python_lane_freeze_datas(repo, lane_source_root)
+# learn, telos and the Node runtime ship from the folder scripts/stage_node_lanes.py
+# stages, under _internal/node-lanes. A build without that stage, or with a stage
+# that lists a held lane (none is held today), fails here, not at run time.
+node_lane_datas = node_lane_stage_datas(os.environ.get(NODE_STAGE_ENV))
+# The Python runtime's license (PSF, with OpenSSL's Apache License 2.0) and each
+# lane's pinned license ship under _internal/licenses; a missing text fails here.
+license_datas = frozen_license_datas(repo, lane_source_root)
 
 a = Analysis(
     [str(repo / "packaging" / "gateway_entry.py")],
@@ -132,6 +147,9 @@ a = Analysis(
            (str(repo / "packaging" / "bundled-lanes" / "relay.json"),
             "packaging/bundled-lanes"),
            *canon_context_datas,
+           *python_lane_datas,
+           *node_lane_datas,
+           *license_datas,
            *studio_runtime.datas,
            *distribution_data],
     hiddenimports=[
@@ -163,11 +181,19 @@ a = Analysis(
         "cryptography.hazmat.primitives.serialization",
         *python_lane_hidden,
         *studio_runtime.hiddenimports,
+        # Trace custody: the inventory resolves its adapters from dotted names,
+        # which the analysis cannot follow (scripts/frozen_trace_imports.py).
+        *TRACE_CUSTODY_HIDDEN_IMPORTS,
     ],
     excludes=["tkinter", "matplotlib", "numpy", "PIL"],
     noarchive=False,
 )
 pyz = PYZ(a.pure)
+# A reviewed slice (calibrate-pro) must freeze exactly its reviewed modules: an
+# extra one reached code outside the review, a missing one breaks a slice tool.
+check_pyz_slices(Path(pyz.tocfilename),
+                 [json.loads(line) for line in (repo / "packaging" / "python-lane-payloads.jsonl")
+                  .read_text(encoding="utf-8").splitlines() if line.strip()])
 
 exe = EXE(
     pyz,

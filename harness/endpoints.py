@@ -5,7 +5,6 @@ import json
 import os
 import base64
 import tempfile
-import shutil
 import subprocess
 import urllib.error
 import urllib.parse
@@ -16,6 +15,7 @@ from dataclasses import dataclass, field
 from .local_agent import BackendError
 from .endpoints_http import _http, _guard, _k, _response_error
 from .endpoint_opencode import OpenCodeBackend  # noqa: F401 (re-exported)
+from . import safe_program
 
 
 def _credential(env_name: str, direct: str | None) -> str:
@@ -239,15 +239,18 @@ class GeminiBackend:
 class CliBackend:
     """A subscription tier via the official CLI's OWN auth (claude max / codex
     plan). It invokes the operator's authenticated client; it never proxies or
-    replays that client's tokens elsewhere."""
+    replays that client's tokens elsewhere. The CLI runs with trace capture
+    off: its prompts are the engine's own routed calls, which the gateway
+    trace already holds, not the owner's turns."""
     name: str
     argv: list                       # {prompt} replaced with the flattened prompt
     model: str = ""
     runner: "callable" = None        # inject (cmd)->(rc,out,err) for tests
     timeout: float = 300.0
+    cwd: "str | None" = None         # the directory the CLI runs in (its file tools see it)
 
     def health(self) -> bool:
-        return bool(self.argv) and shutil.which(self.argv[0]) is not None
+        return bool(self.argv) and safe_program.which(self.argv[0], cwd=self.cwd) is not None
 
     def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
         prompt = (system + "\n\n" if system else "") + "\n".join(
@@ -268,7 +271,13 @@ class CliBackend:
             if self.runner is not None:
                 rc, out, err = self.runner(cmd)
             else:
-                p = subprocess.run(cmd, capture_output=True, timeout=self.timeout, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+                from .lane_workdir import CAPTURE_OFF
+                argv, env = safe_program.launch(cmd, cwd=self.cwd,
+                                                env={**os.environ, **CAPTURE_OFF})
+                p = subprocess.run(argv,
+                                   capture_output=True, timeout=self.timeout, cwd=self.cwd,
+                                   env=env,
+                                   creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
                 rc, out, err = p.returncode, p.stdout, p.stderr
         except (OSError, subprocess.SubprocessError) as e:
             raise BackendError(f"{self.name} cli failed: {e}") from e
@@ -297,24 +306,15 @@ def _resolve_cli_command(spec: dict, pname: str):
         return shlex.split(env_cli)
     cli = spec.get("cli")
     if isinstance(cli, str):
-        if cli.endswith("_CLI"):
-            cli = os.environ.get(cli, "")
-        if not cli:
-            return None
-        return shlex.split(cli)
-    if not cli:
+        cli = os.environ.get(cli, "") if cli.endswith("_CLI") else cli
+        return shlex.split(cli) if cli else None
+    if not isinstance(cli, (list, tuple)) or not cli:
         return None
-    if isinstance(cli, (list, tuple)):
-        if cli[0] == "codex":
-            return ["codex.cmd", *cli[1:]]
-        if pname == "codex" and cli[0].lower() == "codex.cmd":
-            return list(cli)
-        if os.name == "nt" and cli[0] == "claude":
-            return ["claude.exe", *cli[1:]]
-        if pname == "claude" and os.name == "nt" and cli[0].lower() == "claude.exe":
-            return list(cli)
-        return list(cli)
-    return None
+    if cli[0] == "codex":
+        return ["codex.cmd", *cli[1:]]
+    if os.name == "nt" and cli[0] == "claude":
+        return ["claude.exe", *cli[1:]]
+    return list(cli)
 
 
 # provider -> how to reach it. base URLs are the public APIs; models are

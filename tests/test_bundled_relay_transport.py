@@ -84,7 +84,8 @@ def test_child_environment_excludes_secret_sentinel_and_pythonpath():
 @pytest.mark.parametrize("platform,hide_window", [
     ("nt", True), ("nt", False), ("posix", True), ("posix", False),
 ])
-def test_launch_spec_hide_window_passes_windows_flag(monkeypatch, platform, hide_window):
+def test_launch_spec_hide_window_passes_windows_flag(monkeypatch, tmp_path, platform,
+                                                     hide_window):
     """Hide only opted-in Windows children, on either test host."""
     from types import SimpleNamespace
     import harness.mcp_client as mcp_client
@@ -128,7 +129,11 @@ def test_launch_spec_hide_window_passes_windows_flag(monkeypatch, platform, hide
                         raising=False)
     monkeypatch.setattr(mcp_client.subprocess, "Popen", fake_popen)
 
-    StdioTransport(LaunchSpec(("gateway.exe", "--bundled-lane-mcp", "relay"),
+    # The frozen engine launches itself by absolute path; a stand-in file plays it.
+    engine = tmp_path / "gateway.exe"
+    engine.write_bytes(b"MZ")
+    engine.chmod(0o755)
+    StdioTransport(LaunchSpec((str(engine), "--bundled-lane-mcp", "relay"),
                               hide_window=hide_window, inherit_env=False), timeout=0.1)
 
     if platform == "nt" and hide_window:

@@ -8,6 +8,7 @@ from typing import Mapping
 from urllib.parse import unquote
 from .evidence_json import canonical_sha256
 from .gateway_operation_infra import INFRA_FIELDS, INFRA_PATHS
+from .lane_settings_route import SETTING_DESTINATIONS, SETTING_FIELDS, SETTING_PATHS, SETTING_SCOPES
 from .gateway_operation_validation import OPERATION_REF_PATTERN
 from .gateway_secret_boundary import validate_no_raw_secrets
 REQUEST_SCHEMA = "flywheel.gateway-operation/v1"
@@ -111,7 +112,7 @@ _FIELDS = {
 }
 _FIELDS["live_screen.control"] = ({"control", "data_refs", "credential_refs"}, {"session_id", "body_session_ref", "instrument_ref", "sources", "destination", "model", "delivery_mode", "expires_after_ms", "buffer_frames_per_source", "max_frame_bytes", "start_immediately"})
 _FIELDS["live_screen.deliver"] = ({"session_id", "source_id", "destination", "model", "delivery_mode", "prompt", "max_output_tokens", "timeout_s", "data_refs", "credential_refs"}, {"max_age_ms"})
-_FIELDS.update(INFRA_FIELDS)          # the infrastructure controls; one table
+_FIELDS.update(INFRA_FIELDS); _FIELDS.update(SETTING_FIELDS)  # infra controls, lane settings
 GRANTABLE_ACTIONS = frozenset(_FIELDS)
 LANE_CALL_PREFIX = "/api/lane/"
 def action_for_path(path: str) -> str | None:
@@ -143,7 +144,7 @@ def action_for_path(path: str) -> str | None:
         "/api/packs/admit": "packs.admit",
         "/api/store/entity": "store.put",
         "/api/import": "import.config",
-        **INFRA_PATHS,
+        **INFRA_PATHS, **SETTING_PATHS,
     }.get(path)
 def canonicalize_operation(action: str, operation: object) -> CanonicalOperation:
     try:
@@ -284,8 +285,8 @@ def _validate_command(command: list) -> None:
 
 
 def _derived_scopes(action: str, value: dict, secrets: bool) -> tuple[str, ...]:
-    from .gateway_operation_shape import derived_scopes
-    return derived_scopes(action, value, secrets)
+    from .gateway_operation_shape import derived_scopes  # a lane setting's scopes are fixed
+    return SETTING_SCOPES[action] + ("secrets",) * secrets if action in SETTING_SCOPES else derived_scopes(action, value, secrets)
 
 
 def _safe_ref(value: object, prefix: str) -> bool:
@@ -294,7 +295,6 @@ def _safe_ref(value: object, prefix: str) -> bool:
 
 
 def _destination(action: str, value: dict) -> dict[str, str]:
-    # Lazy import: the shape module owns the per-action tables and reads
-    # this module's patterns, so a module-level import would cycle.
+    # Lazy import: the shape module reads our patterns; importing above would cycle.
     from .gateway_operation_shape import destination_for
-    return destination_for(action, value)
+    return dict(SETTING_DESTINATIONS[action]) if action in SETTING_DESTINATIONS else destination_for(action, value)

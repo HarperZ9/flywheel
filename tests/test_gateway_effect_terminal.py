@@ -279,7 +279,9 @@ def test_trace_tamper_after_terminal_fails_effect_validation(tmp_path):
                         f"ref={trace.ref}&sequence=0")
     assert detail["record"]["record_sha256"] == trace.head
     path = trace.root / trace.base / "00000000.json"
-    path.write_text(path.read_text().replace("private result", "tampered"))
+    raw = bytearray(path.read_bytes())  # a flipped byte, in plaintext and encrypted modes
+    raw[len(raw) // 2] ^= 0x01
+    path.write_bytes(bytes(raw))
 
     with pytest.raises(Exception) as failure:
         service.result(OWNER, OPERATION)

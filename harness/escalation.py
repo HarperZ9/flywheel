@@ -37,7 +37,7 @@ class CompileOracle:
         cmd = f'python -m py_compile "{task.candidate_path}"'
         try:
             p = subprocess.run(
-                cmd, cwd=task.workdir, shell=True, env=run_env(),
+                cmd, cwd=task.workdir, shell=True, env=run_env(cwd=task.workdir),
                 capture_output=True, timeout=self.timeout)
             rc = p.returncode
             out = p.stdout + p.stderr

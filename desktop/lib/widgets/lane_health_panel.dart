@@ -1,26 +1,33 @@
 // lane_health_panel.dart — compact lane readiness and details widgets for the
-// public Tools surface. Rows show state and facts first; executable calls stay
-// in the explicit advanced section.
+// public Tools surface. Rows show state and facts first; each open card holds
+// that lane's console, where every tool call goes through its own approval.
+// One lane's card lives in lane_card.dart, its console in lane_console.dart.
 
 import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
-import '../models/lane_identity.dart';
+import '../models/lane_readiness.dart';
+import '../models/lane_state.dart';
 import '../theme/flywheel_theme.dart';
 import 'callable_lanes_panel.dart';
 import 'fw.dart';
-import 'lane_call_panel.dart';
+import 'lane_card.dart';
+import 'lane_console.dart';
 
 class LaneReadinessPanel extends StatelessWidget {
   final int total;
   final Map<String, int> counts;
   final String detail;
+
+  /// Whether [counts] holds engine states rather than presence statuses.
+  final bool stateCounts;
   const LaneReadinessPanel({
     super.key,
     required this.total,
     required this.counts,
     required this.detail,
+    this.stateCounts = false,
   });
 
   @override
@@ -40,15 +47,21 @@ class LaneReadinessPanel extends StatelessWidget {
           spacing: FwLayout.s2,
           runSpacing: FwLayout.s2,
           children: [
-            for (final entry in _statusEntries(counts))
-              VerdictPill('${entry.value} ${entry.key}', status: entry.key),
+            if (stateCounts)
+              for (final entry in counts.entries)
+                VerdictPill(
+                    '${entry.value} ${laneCountPhrase(entry.key, entry.value)}',
+                    status: laneCountVerdict(entry.key))
+            else
+              for (final entry in _statusEntries(counts))
+                VerdictPill('${entry.value} ${entry.key}', status: entry.key),
           ],
         ),
         const SizedBox(height: FwLayout.s3),
         Text(
-          'Probe checks the existing gateway lane roster. Setup and repair are '
-          'reported as state here; this build exposes no unpinned install '
-          'operation from the public Tools view.',
+          'Probe now starts every lane and lists its tools. A lane reads '
+          'ready only when one of its main tools can run here. Setup is '
+          'stated on each card; this view installs nothing.',
           style: TextStyle(fontSize: 12.5, color: t.inkMuted, height: 1.4),
         ),
       ]),
@@ -68,7 +81,13 @@ Iterable<MapEntry<String, int>> _statusEntries(Map<String, int> counts) sync* {
 
 class LaneRosterPanel extends StatelessWidget {
   final List<Lane> lanes;
-  const LaneRosterPanel({super.key, required this.lanes});
+  final void Function(String name)? onCheck;
+
+  /// With a client, each card mounts its lane console. A lane this build
+  /// holds back gets none: it has no tool to list.
+  final GatewayClient? client;
+  const LaneRosterPanel(
+      {super.key, required this.lanes, this.onCheck, this.client});
 
   @override
   Widget build(BuildContext context) {
@@ -79,136 +98,25 @@ class LaneRosterPanel extends StatelessWidget {
       const Kicker('details'),
       const SizedBox(height: FwLayout.s2),
       for (final lane in lanes) ...[
-        LaneCard(lane: lane),
+        LaneCard(
+          lane: lane,
+          onCheck: onCheck,
+          console: client == null || isLaneHeld(lane)
+              ? null
+              : LaneConsole(
+                  key: ValueKey('console-${lane.name}'),
+                  client: client!,
+                  lane: lane,
+                  onCheck: onCheck),
+        ),
         const SizedBox(height: FwLayout.s2),
       ],
     ]);
   }
 }
 
-class LaneCard extends StatelessWidget {
-  final Lane lane;
-  final Future<Map<String, dynamic>> Function(String name)? onInstall;
-  const LaneCard({super.key, required this.lane, this.onInstall});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.fw;
-    final id = laneIdentities[lane.name];
-    final title = id?.title ?? lane.name;
-    final surface = id?.surface ?? 'runtime lane';
-    final status = lane.status.isEmpty ? 'unknown' : lane.status;
-    return HairlineCard(
-      padding: EdgeInsets.zero,
-      child: Material(
-        color: Colors.transparent,
-        child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            tilePadding: const EdgeInsets.fromLTRB(
-                FwLayout.s4, FwLayout.s3, FwLayout.s4, FwLayout.s2),
-            childrenPadding: const EdgeInsets.fromLTRB(
-                FwLayout.s4, 0, FwLayout.s4, FwLayout.s4),
-            title: Row(children: [
-              Expanded(
-                child: Text(title,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 15.5, fontWeight: FontWeight.w700)),
-              ),
-              const SizedBox(width: FwLayout.s2),
-              VerdictPill(status, status: status),
-            ]),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: FwLayout.s2),
-              child: Wrap(
-                  spacing: FwLayout.s3,
-                  runSpacing: FwLayout.s1,
-                  children: [
-                    _Fact(label: 'surface', value: surface),
-                    _Fact(label: 'version', value: _versionText(lane)),
-                    _Fact(label: 'tools', value: _toolText(lane)),
-                  ]),
-            ),
-            children: [
-              _detailLine(
-                  t,
-                  'runtime',
-                  lane.detail.isEmpty
-                      ? 'No runtime detail reported.'
-                      : lane.detail),
-              _detailLine(t, 'state', _stateText(lane)),
-              if (id != null) ...[
-                _detailLine(t, 'role', '${lane.organ} · ${lane.role}'),
-                _detailLine(t, 'identity', id.identity),
-              ] else if (lane.organ.isNotEmpty || lane.role.isNotEmpty)
-                _detailLine(t, 'role', '${lane.organ} · ${lane.role}'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _versionText(Lane lane) {
-    if (lane.installedVersion != null && lane.installedVersion!.isNotEmpty) {
-      return lane.installedVersion!;
-    }
-    if (lane.expectedVersion.isNotEmpty) {
-      return 'expects ${lane.expectedVersion}';
-    }
-    return lane.kind.isEmpty ? 'unknown' : lane.kind;
-  }
-
-  String _toolText(Lane lane) =>
-      lane.tools == null ? 'not probed' : '${lane.tools} tools';
-
-  String _stateText(Lane lane) {
-    if (lane.isLive) {
-      return 'Ready in the current roster. Use the advanced callable section '
-          'only when a lane reports callable tools and the grant matches.';
-    }
-    if (lane.isDeclared) {
-      return 'Declared by the registry, but not verified by a lane probe yet.';
-    }
-    if (lane.isMissing) {
-      return 'Missing or blocked in this runtime. No reviewed native setup '
-          'operation is exposed from this public view.';
-    }
-    if (lane.status == 'stale') {
-      return 'Installed state differs from the expected version. No reviewed '
-          'native repair operation is exposed from this public view.';
-    }
-    return 'The roster returned an unrecognized state: ${lane.status}.';
-  }
-}
-
-class _Fact extends StatelessWidget {
-  final String label;
-  final String value;
-  const _Fact({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.fw;
-    return Text('$label $value', style: fwMono(t, size: 11, color: t.inkFaint));
-  }
-}
-
-Widget _detailLine(FwTokens t, String label, String value) => Padding(
-      padding: const EdgeInsets.only(top: FwLayout.s2),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(
-          width: 72,
-          child: Text(label, style: fwMono(t, size: 11, color: t.inkFaint)),
-        ),
-        Expanded(
-          child: Text(value,
-              style: TextStyle(fontSize: 12.5, color: t.inkSoft, height: 1.4)),
-        ),
-      ]),
-    );
-
+/// The tier every lane tool costs, folded under the cards. Runs happen in
+/// each card's console; this lists what a call demands.
 class AdvancedLaneTools extends StatelessWidget {
   final GatewayClient client;
   final bool alive;
@@ -227,15 +135,14 @@ class AdvancedLaneTools extends StatelessWidget {
               horizontal: FwLayout.s4, vertical: FwLayout.s2),
           childrenPadding: const EdgeInsets.fromLTRB(
               FwLayout.s4, 0, FwLayout.s4, FwLayout.s4),
-          title: const Text('Advanced lane calls'),
+          title: const Text('Lane tool tiers'),
           subtitle: Text(
-            'Grant-bound callable tools and exact lane/tool execution.',
+            'The tier each lane tool needs before it runs. Open a lane '
+            'above to run its tools.',
             style: TextStyle(fontSize: 12.5, color: t.inkMuted),
           ),
           children: [
             CallableLanesPanel(client: client, alive: alive),
-            const SizedBox(height: FwLayout.s3),
-            LaneCallPanel(client: client),
           ],
         ),
       ),

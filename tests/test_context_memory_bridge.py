@@ -18,6 +18,13 @@ OWNER = "owner_" + "a" * 32
 OTHER = "owner_" + "b" * 32
 STORE_ID = "ctxstore_" + "1" * 32
 
+@pytest.fixture(autouse=True)
+def _canon_at_its_pin(monkeypatch):
+    """The bridge refuses a canon below its pin; the host's package must not decide."""
+    monkeypatch.setattr("harness.lane_runtime_support.installed_version",
+                        lambda lane: lane.version)
+
+
 
 class FakeCanonClient:
     def __init__(self):

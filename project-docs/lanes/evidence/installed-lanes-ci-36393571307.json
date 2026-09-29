@@ -1,0 +1,265 @@
+{
+ "does_not_prove": [
+  "A GitHub-hosted Windows Server runner with a System32-only PATH and an administrator account, not a consumer Windows 11 install; the network was reachable and no host model server ran.",
+  "The run built the source commit named here; a later commit that changes code the build or the app runs needs its own run.",
+  "No provider-backed success, no model quality (a stub model server answers one fixed word), no bulletin write and no actuation.",
+  "One fixture assertion per main tool; the desktop UI was not driven.",
+  "A CI build of the source commit, not the installer attached to the release; two builds of one source tree gave different installer bytes."
+ ],
+ "engine_sha256": "c2de3cd9577181a203ff926bcbe550e36b31fd11d5f447a29041742dcd5efd61",
+ "guards": {
+  "fresh_d1_unchanged": true,
+  "fresh_settled": true,
+  "install_folder_unchanged": true,
+  "setup_d1_unchanged": true,
+  "token_absent_from_receipt": true
+ },
+ "installer": {
+  "bytes": 82004147,
+  "name": "Flywheel-Setup-1.1.0-x64.exe"
+ },
+ "lanes": {
+  "accountable-surface": {
+   "class_expected": "A/C",
+   "class_measured": "A/C",
+   "class_plan": "A/C",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  },
+  "articulate": {
+   "class_expected": "A",
+   "class_measured": "A",
+   "class_plan": "A",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  },
+  "bulletin": {
+   "class_expected": "A",
+   "class_measured": "A",
+   "class_plan": "A",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [
+    "board writes need a registered identity"
+   ],
+   "verdict": "AT_CLASS"
+  },
+  "calibrate-pro": {
+   "class_expected": "C",
+   "class_measured": "C",
+   "class_plan": "C",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  },
+  "canon": {
+   "class_expected": "B",
+   "class_measured": "B",
+   "class_plan": "B",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  },
+  "chorus": {
+   "class_expected": "A",
+   "class_measured": "A",
+   "class_plan": "A",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  },
+  "crucible": {
+   "class_expected": "A",
+   "class_measured": "A",
+   "class_plan": "A",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  },
+  "forum": {
+   "class_expected": "A/B-untested",
+   "class_measured": "A/B-untested",
+   "class_plan": "A/B-untested",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [
+    "real rooms need FORUM_RUN_REAL and a provider key"
+   ],
+   "verdict": "AT_CLASS"
+  },
+  "gather": {
+   "class_expected": "A",
+   "class_measured": "A",
+   "class_plan": "A",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  },
+  "index": {
+   "class_expected": "A/B",
+   "class_measured": null,
+   "class_plan": "A/B",
+   "failed_checks": [
+    "fresh_map_needs_git"
+   ],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "BELOW_BAR"
+  },
+  "learn": {
+   "class_expected": "A",
+   "class_measured": "A",
+   "class_plan": "A",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  },
+  "local-model": {
+   "class_expected": "B",
+   "class_measured": "B",
+   "class_plan": "B",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  },
+  "mneme": {
+   "class_expected": "A",
+   "class_measured": "A",
+   "class_plan": "A",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  },
+  "plexus": {
+   "class_expected": "A",
+   "class_measured": "A",
+   "class_plan": "A",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  },
+  "relay": {
+   "class_expected": "B",
+   "class_measured": "B",
+   "class_plan": "B",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  },
+  "telos": {
+   "class_expected": "held",
+   "class_measured": null,
+   "class_plan": "B",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "HELD"
+  },
+  "writing": {
+   "class_expected": "B",
+   "class_measured": "B",
+   "class_plan": "A",
+   "failed_checks": [],
+   "not_measurable": [],
+   "untested": [],
+   "verdict": "AT_CLASS"
+  }
+ },
+ "legs": {
+  "all-users": {
+   "guards": {
+    "fresh_d1_unchanged": true,
+    "fresh_settled": true,
+    "install_folder_unchanged": true,
+    "setup_d1_unchanged": true,
+    "token_absent_from_receipt": true
+   },
+   "install_mode": "all-users",
+   "model_server": false,
+   "receipt": "installed-lanes-all-users.json",
+   "receipt_sha256": "3a440b49749f3940148f5f99247614b15c9f319824e5066b18908fac39a76c97",
+   "summary": {
+    "below_bar": [
+     "index",
+     "telos"
+    ],
+    "by_class": {
+     "A": 8,
+     "A/B-untested": 1,
+     "A/C": 1,
+     "B": 4,
+     "C": 1
+    },
+    "guards_failed": [],
+    "verdict": "BELOW_BAR"
+   }
+  },
+  "per-user": {
+   "guards": {
+    "fresh_d1_unchanged": true,
+    "fresh_settled": true,
+    "install_folder_unchanged": true,
+    "setup_d1_unchanged": true,
+    "token_absent_from_receipt": true
+   },
+   "install_mode": "per-user",
+   "model_server": false,
+   "receipt": "installed-lanes-per-user.json",
+   "receipt_sha256": "ac8d2b361f8729116fa375a7cae1912bc2594db92311a134c848345e10b1f7bd",
+   "summary": {
+    "below_bar": [
+     "index",
+     "telos"
+    ],
+    "by_class": {
+     "A": 8,
+     "A/B-untested": 1,
+     "A/C": 1,
+     "B": 4,
+     "C": 1
+    },
+    "guards_failed": [],
+    "verdict": "BELOW_BAR"
+   }
+  }
+ },
+ "run": {
+  "artifact_zip_sha256": "09204e15c6e51208bc10a28db496faf1547344abda6b65e16327f8898d639518",
+  "date": "2026-09-28",
+  "job_id": 108834628932,
+  "run_id": 36393571307,
+  "workflow": "windows-installed-acceptance.yml"
+ },
+ "schema": "flywheel.installed-lanes-ci-evidence-summary/v1",
+ "source_commit": "9a68e07f52d1b9a36090b4285eecfcdd12f4a2f6",
+ "summary": {
+  "below_bar": [
+   "index",
+   "telos"
+  ],
+  "by_class": {
+   "A": 8,
+   "A/B-untested": 1,
+   "A/C": 1,
+   "B": 4,
+   "C": 1
+  },
+  "guards_failed": [],
+  "verdict": "BELOW_BAR"
+ },
+ "what": "Per-lane verdicts from the installed-app lane acceptance in GitHub Actions workflow windows-installed-acceptance.yml, run 36393571307 on 2026-09-28, which built an installer from the source commit below with the release build steps, installed it per user and then for all users on a GitHub-hosted Windows Server runner, and ran the lane check against each install. Both legs reached the same verdict for every lane."
+}

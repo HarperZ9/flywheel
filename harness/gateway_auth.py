@@ -18,6 +18,7 @@ Three layers, all cheap:
 """
 from __future__ import annotations
 
+import logging
 import os
 import secrets
 from hmac import compare_digest
@@ -25,6 +26,9 @@ from pathlib import Path
 from typing import Mapping
 
 from .operation_grants import load_or_create_owner_ref
+from .secret_file_label import protect_from_lower_integrity
+
+_log = logging.getLogger(__name__)
 
 TOKEN_FILENAME = "gateway.token"
 DEFAULT_HOSTS = frozenset({"127.0.0.1", "localhost", "[::1]"})
@@ -36,17 +40,32 @@ JSON_CONTENT_TYPES = frozenset({
 
 
 def load_or_create_token(home: Path) -> str:
-    """Read the gateway token, minting one on first use. Owner-readable only."""
+    """Read the gateway token, minting one on first use. Owner-readable only.
+
+    On Windows the file also carries a medium No-Read-Up label on every load, so
+    a command in the low-integrity sandbox cannot open it (secret_file_label.py).
+    A host that refuses the label keeps the gateway running and logs why."""
     home = Path(home)
     home.mkdir(parents=True, exist_ok=True)
     path = home / TOKEN_FILENAME
     if path.exists():
-        return path.read_text(encoding="utf-8").strip()
-    token = secrets.token_urlsafe(32)
-    path.write_text(token, encoding="utf-8")
-    if os.name != "nt":
-        path.chmod(0o600)
+        token = path.read_text(encoding="utf-8").strip()
+    else:
+        token = secrets.token_urlsafe(32)
+        path.write_text(token, encoding="utf-8")
+        if os.name != "nt":
+            path.chmod(0o600)
+    _label_token(path)
     return token
+
+
+def _label_token(path: Path) -> None:
+    try:
+        protect_from_lower_integrity(path)
+    except OSError as exc:
+        _log.warning("gateway token integrity label not applied (%s: %s); a "
+                     "low-integrity sandboxed command may be able to read it",
+                     type(exc).__name__, exc.errno)
 
 
 def _host_of(headers: Mapping) -> str:

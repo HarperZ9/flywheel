@@ -80,7 +80,9 @@ def test_tampered_record_does_not_become_a_verified_prefix(tmp_path):
     writer = trace(tmp_path)
     writer.append("request", {"goal": MARKER})
     path = next(tmp_path.rglob("00000000.json"))
-    path.write_text(path.read_text().replace(MARKER, "TAMPERED"))
+    raw = bytearray(path.read_bytes())  # a flipped byte, in plaintext and encrypted modes
+    raw[len(raw) // 2] ^= 0x01
+    path.write_bytes(bytes(raw))
     with pytest.raises(TraceError):
         trace(tmp_path).read()
 

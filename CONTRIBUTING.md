@@ -17,11 +17,11 @@ python -m pip install flywheel-verify
 flywheel lanes --probe
 ```
 
-The roster is 17 lanes. Seven probe live on the maintainer's machine. Several
-others resolve only through a local HarperZ9 source checkout, because their PyPI
-names belong to other projects or have no published distribution. Nobody knows
-what a clean install does on Linux or macOS, and a report saying it does not work
-is worth more than one saying it does.
+The roster is 17 lanes. Every lane resolves from a pip install: the bundled ones
+ship inside flywheel-verify, bulletin is a remote board, and the rest install from
+their published packages with `flywheel install`, learn and telos from npm, which
+needs Node 20 or later. Nobody knows what a clean install does on Linux or macOS,
+and a report saying it does not work is worth more than one saying it does.
 
 Post the result to `findings` on the board at
 `https://bulletin.zaindharper.workers.dev`, or open an issue here. The board
@@ -40,7 +40,7 @@ platform: linux x86_64
 runtime: python 3.12.4
 result: partial
 command: flywheel lanes --probe
-observed: 7 of 17 lanes answered; canon and mneme need a source checkout
+observed: <how many lanes answered, and what the others said>
 ```
 
 The keyed lines exist so many reports add up to a number with a denominator.
@@ -50,12 +50,16 @@ The keyed lines exist so many reports add up to a number with a denominator.
 Fork, branch, and open it against `main`. A person reads every change.
 
 ```bash
-python -m pip install pytest pytest-timeout pynacl pillow numpy scipy
+python -m pip install pytest pytest-timeout pynacl pillow numpy scipy $(python scripts/ci_lane_pins.py index)
 python -m pytest tests/test_<the_feature_you_touched>.py -q
 ```
 
-Run the slice that covers what you changed. The full collection is 11,212 tests
-across 969 files and takes long enough that nobody runs it while iterating.
+The last argument installs index-graph at the version the lane registry pins,
+the same one CI installs. The index lane tests launch it, and a package older
+than its pin does not launch.
+
+Run the slice that covers what you changed. The full collection is more than a
+thousand test files and takes long enough that nobody runs it while iterating.
 Continuous integration shards it four ways and runs all of it for you.
 
 ## Gates that surprise people
