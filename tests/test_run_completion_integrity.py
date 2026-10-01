@@ -169,14 +169,14 @@ def test_a_not_run_answer_beside_a_recorded_check_run_is_unverifiable(tmp_path):
 
 
 class _Recorder:
-    """An executor whose check run writes a snapshot file, as snapshot tests do."""
+    """An executor whose check writes generated output outside the grader set."""
 
     def __init__(self, root):
         self.root, self.calls = root, 0
 
     def execute(self, name, args, *extra, **kwargs):
         self.calls += 1
-        (self.root / "tests" / "snap.txt").write_text(f"run {self.calls}", encoding="utf-8")
+        (self.root / "snap.txt").write_text(f"run {self.calls}", encoding="utf-8")
         return type("R", (), {"ok": True, "output": "1 passed"})()
 
 
@@ -191,7 +191,7 @@ def test_files_the_check_itself_writes_are_its_side_effects(tmp_path):
     for _ in range(3):
         executor.execute("run", {"cmd": "pytest -q"})
     assert trajectory_integrity(ledger) == []
-    assert executor.check_side_effects == {"tests/snap.txt"}
+    assert executor.check_side_effects == {"snap.txt"}
     (tmp_path / "tests" / "test_x.py").write_text("def test_x(): pass\n", encoding="utf-8")
     executor.execute("run", {"cmd": "pytest -q"})
     assert [f.kind for f in trajectory_integrity(ledger)] == ["check_files_changed"]

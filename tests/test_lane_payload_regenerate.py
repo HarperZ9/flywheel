@@ -116,10 +116,11 @@ def test_calibrate_pro_row_is_a_reviewed_catalog_slice():
 
 def test_articulate_row_pins_its_stdlib_mcp_server():
     row = ROWS["articulate"]
-    assert row["owner_commit"] == "d7d5244db98c251fc7808f7a5eec4d5163c368a9"
-    assert row["owner_tag"] == "v0.5.0"
+    assert row["owner_commit"] == "36f7e9f1f027f400b4839ec7394d64823ed1ac1d"
+    assert row["owner_tag"] == "v0.6.0"
     assert row["mcp"]["module"] == "articulate.local_mcp"
-    assert {"judge", "fix", "polish", "score", "check"} <= set(row["mcp"]["static_tool_names"])
+    assert {"judge", "fix", "polish", "score", "check", "edit_plan", "edit_submit"} <= set(
+        row["mcp"]["static_tool_names"])
     assert row["owner_project"]["runtime_dependencies"] == []
 
 

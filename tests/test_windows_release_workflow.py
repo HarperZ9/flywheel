@@ -248,3 +248,13 @@ def test_relay_is_populated_after_selecting_the_release_commit():
     assert text.index('git checkout --detach') < text.index(
         'git submodule update --init --recursive') < text.index('python -m PyInstaller')
     assert "tag-pinned submodule checkout failed" in text
+def test_plugin_candidates_share_the_explicit_release_boundary():
+    candidate = _text("desktop-release.yml")
+    publish = _text("windows-publish.yml")
+    assert "scripts/build_skill_bundle.py --out" in candidate
+    assert "plugin-SHA256SUMS.txt" in candidate
+    assert "plugins_sha256:" in publish
+    assert "--accepted-sha256" in publish
+    assert "scripts/build_skill_bundle.py --verify" in publish
+    assert publish.index("scripts/build_skill_bundle.py --verify") < publish.index("gh release create")
+    assert "candidate/plugins/*.zip" in publish

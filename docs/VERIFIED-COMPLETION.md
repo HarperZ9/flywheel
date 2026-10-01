@@ -49,14 +49,18 @@ passing check untrusted:
 
 The engine re-hashes these files on disk before each run of the check and
 compares them with the start of the run, so a change counts whatever made it:
-a write tool, a patch, or a shell command such as `sed` or `python -c`. A file
-the check itself rewrote, such as a snapshot, is taken as the check's own
-output and does not count against the next run of it.
+a write tool, a patch, or a shell command such as `sed` or `python -c`. The
+guard also checks immediately afterward. Protected changes made during a check
+remain untrusted: the check executes the program under test, which can change
+its own grader. Protected snapshots require separate review before another run.
+The baseline never adopts those changes during the same run. An unreadable
+grader or a scan truncated at 20,000 files also prevents a trusted pass.
 
 Every file a command changed outside the engine's hashed write tools is also
 listed as a deliverable, claimed (`changed_by_command`), so work done through
 the shell never reads as verified. Files the check command itself changed are
-left out of that list.
+left out of that list only when they are outside the protected grading set
+and shared test-runner configuration files.
 
 ## Native CLI sessions
 

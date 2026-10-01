@@ -2,6 +2,13 @@
 
 **A self-hostable, model-agnostic AI workstation and coding harness.**
 
+Flywheel ships as a full native harness client with its own bundled engine.
+Rowan provides its operator experience, and Articulate and the other tool lanes
+provide capabilities to the user's selected model. Compatible plugins expose
+selected tools and workflows to other clients. See the
+[client and tool architecture](docs/CLIENT-AND-TOOL-ARCHITECTURE.md) for these
+responsibilities and the separate release checks for each distribution surface.
+
 [![PyPI](https://img.shields.io/pypi/v/flywheel-verify?style=flat-square&labelColor=14041b&color=f8cc43)](https://pypi.org/project/flywheel-verify/)
 [![license](https://img.shields.io/badge/license-FSL--1.1--MIT-8f8095?style=flat-square&labelColor=14041b)](LICENSE)
 [![CI](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml)

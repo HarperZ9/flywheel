@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import '../assistant/desktop_native_voice.dart';
+import '../assistant/desktop_speech_controller.dart';
 import '../assistant/rowan_action_cue_controller.dart';
 import '../client/gateway_client.dart';
 import '../controllers/chat_admission_controller.dart';
@@ -18,6 +21,7 @@ import '../widgets/chat_header.dart';
 import '../widgets/chat_sidebar.dart';
 import '../widgets/chat_workspace.dart';
 import '../widgets/chat_welcome.dart';
+import '../widgets/desktop_speech_controls.dart';
 import '../widgets/flywheel_nav.dart';
 import '../widgets/fw.dart';
 import '../widgets/operation_grant_sheet.dart';
@@ -37,6 +41,7 @@ class AgentView extends StatefulWidget {
     this.draftStore,
     this.startTaskHandoff,
     this.actionCueController,
+    this.speech,
   });
   final GatewayClient client;
   final bool alive;
@@ -45,11 +50,15 @@ class AgentView extends StatefulWidget {
   final ChatDraftStore? draftStore;
   final StartTaskHandoff? startTaskHandoff;
   final RowanActionCueController? actionCueController;
+  final DesktopSpeechController? speech;
   @override
   State<AgentView> createState() => _AgentViewState();
 }
 
-class _AgentViewState extends State<AgentView> {
+class _AgentViewState extends State<AgentView> with WidgetsBindingObserver {
+  late final DesktopSpeechController _speech;
+  bool get _desktopSpeech =>
+      widget.speech != null || !(Platform.isAndroid || Platform.isIOS);
   final _workspace = ChatWorkspaceController();
   final _chosenModels = <String, String>{};
   late final ChatAdmissionController _admission;
@@ -71,6 +80,8 @@ class _AgentViewState extends State<AgentView> {
   @override
   void initState() {
     super.initState();
+    _speech = widget.speech ?? createDesktopSpeech();
+    WidgetsBinding.instance.addObserver(this);
     _admission = ChatAdmissionController(
         widget.chatStore ?? ChatStore(), widget.draftStore ?? ChatDraftStore())
       ..restore();
@@ -86,6 +97,7 @@ class _AgentViewState extends State<AgentView> {
   @override
   void didUpdateWidget(AgentView old) {
     super.didUpdateWidget(old);
+    if (old.alive && !widget.alive) _speech.interrupt();
     if (!old.alive && widget.alive) _loadEndpoints();
     if (widget.startTaskHandoff != old.startTaskHandoff) {
       _applyStartTaskHandoff(widget.startTaskHandoff, notify: true);
@@ -94,6 +106,12 @@ class _AgentViewState extends State<AgentView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (widget.speech == null) {
+      _speech.dispose();
+    } else {
+      _speech.interrupt();
+    }
     _generation++;
     _sub?.cancel();
     if (!_providerDispatchStarted && _submittedDraft != null) {
@@ -121,6 +139,7 @@ class _AgentViewState extends State<AgentView> {
 
   void _newChat() {
     if (_current.isEmpty || _busy) return;
+    _speech.interrupt();
     setState(() {
       _current = _admission.blankConversation(_model);
       _conversations.insert(0, _current);
@@ -130,6 +149,7 @@ class _AgentViewState extends State<AgentView> {
 
   void _select(Conversation c) {
     if (identical(c, _current) || _busy) return;
+    _speech.interrupt();
     setState(() {
       _current = c;
       _model = c.model ?? _model;
@@ -138,6 +158,7 @@ class _AgentViewState extends State<AgentView> {
 
   void _delete(Conversation c) {
     if (_busy) return;
+    _speech.interrupt();
     setState(() {
       _admission.deleteConversation(c);
       if (_conversations.contains(c)) return; // drafts kept it; banner says
@@ -174,6 +195,7 @@ class _AgentViewState extends State<AgentView> {
     if (text == null || text.isEmpty || _busy) return;
     final existingDraft = _admission.draftText(_current).trim();
     if (_current.isEmpty && existingDraft == text) return;
+    _speech.interrupt();
     void apply() {
       if (!_current.isEmpty || existingDraft.isNotEmpty) {
         _current = _admission.blankConversation(_model);
@@ -204,6 +226,11 @@ class _AgentViewState extends State<AgentView> {
     if (submitted == null) return Future.value(retained);
     unawaited(_beginAdmission(submitted));
     return _disposition!.future;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) _speech.interrupt();
   }
 
   @override

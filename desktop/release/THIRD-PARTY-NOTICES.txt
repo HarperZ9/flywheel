@@ -193,7 +193,7 @@ flywheel-canon 0.4.2 (lane canon), tag v0.4.2 @ 8e0098aa802c, LicenseRef-FSL-1.1
 chorus-discourse 0.3.1 (lane chorus), tag v0.3.1 @ 677ad99554f3, LicenseRef-FSL-1.1-MIT
 flywheel-relay 0.5.0 (lane relay), tag v0.5.0 @ ba1e4f21f05f, LicenseRef-FSL-1.1-MIT
 accountable-surface 0.3.1 (lane accountable-surface), tag v0.3.1 @ d5a7c108ba46, LicenseRef-FSL-1.1-MIT
-articulate-writing 0.5.0 (lane articulate), tag v0.5.0 @ d7d5244db98c, LicenseRef-FSL-1.1-MIT
+articulate-writing 0.6.0 (lane articulate), tag v0.6.0 @ 36f7e9f1f027, LicenseRef-FSL-1.1-MIT
 calibrate-pro 2.0.0 (lane calibrate-pro), tag v2.0.0 @ 3d24d16d6b57, LicenseRef-FSL-1.1-MIT
 The calibrate-pro entry is a catalog slice: only the modules its panel catalog
 tools import are frozen. Canon's license also ships at

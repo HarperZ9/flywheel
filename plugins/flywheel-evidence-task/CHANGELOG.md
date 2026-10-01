@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 - prepared for release
+
+- Add a portable root plugin manifest while preserving Codex and Claude
+  compatibility metadata and the existing skill directory layout.
+- Include the skill and plugin ZIPs with the Flywheel product release candidate.
+  Accepted checksums bind the reviewed archive bytes before asset publication.
+- Document the full native client and the separate evidence-task skill package.
+  This skill package includes no model or MCP server and grants no permissions.
+
+Directory approval and live client installation remain separate acceptance work.
+
 ## 0.1.0 - 2026-09-07
 
 - Added a portable evidence workflow with explicit sources, measurements, unknowns, and false-success controls.

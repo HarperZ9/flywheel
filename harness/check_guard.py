@@ -2,14 +2,14 @@
 
 The integrity check reads the ledger for write tools that touched a file that
 grades the work. A run that can execute commands can also rewrite a test with
-`sed` or `python -c`, and that `run` call names no file. So before each run of
+`sed` or `python -c`, and that `run` call names no file. So around each run of
 the check command this guard re-hashes the files that grade the work and
 records any change since the run began as a `check_state` ledger entry, which
 `integrity.trajectory_integrity` turns into a flag. The pass that follows is
 then not trusted, whatever tool made the change.
 
-The guard also notes which files a check run itself changed (a coverage file,
-a test's scratch output), so the end-of-run workspace diff can list the files
+The guard also notes generated files outside the protected grading set,
+so the end-of-run workspace diff can list the files
 the run changed outside a hashed write without listing the check's own side
 effects as deliverables.
 """
@@ -72,11 +72,14 @@ def check_state(root, *, protected=DEFAULT_PROTECTED, max_files: int = 20_000) -
 
 
 def record_check_state(ledger, baseline, now) -> list:
-    """Name each protected file changed since the run began, in the ledger."""
+    """Record grading changes and any coverage that cannot support trust."""
     changed = changed_paths(baseline, now)
-    if changed:
+    unavailable = sorted({path for state in (baseline, now) for path, value in state.items()
+                          if path == "(walk truncated)" or value == "unreadable"})
+    if changed or unavailable:
         ledger.append("check_state", json.dumps(
-            {"changed": changed[:64], "count": len(changed)}, sort_keys=True))
+            {"changed": changed[:64], "count": len(changed),
+             "unavailable": unavailable[:64]}, sort_keys=True))
     return changed
 
 
@@ -94,8 +97,8 @@ def changed_paths(before: dict, after: dict) -> list:
 class CheckGuardExecutor:
     """Wraps a tool executor for a run that has a check command.
 
-    Before each run of the check: record protected-file changes. Around it:
-    note the files the check itself changed, in `check_side_effects`.
+    Around each check: record protected changes and incomplete coverage.
+    Note generated output outside the grader set in `check_side_effects`.
     Everything else passes through, so receipts and the budget keep working."""
 
     def __init__(self, inner, *, root, ledger, test_cmd) -> None:
@@ -113,15 +116,14 @@ class CheckGuardExecutor:
         try:
             return self._inner.execute(name, args, *extra, **kwargs)
         finally:
-            self.check_side_effects.update(changed_paths(before, _hashes(self._root)))
-            # A protected file the check itself rewrote (a snapshot test, say)
-            # is the check's doing, so the next comparison starts from it.
+            # The check executes model-controlled code too. Its protected
+            # changes never become a new grading baseline or excluded output.
             after = check_state(self._root)
-            for path in changed_paths(now, after):
-                if path in after:
-                    self._baseline[path] = after[path]
-                else:
-                    self._baseline.pop(path, None)
+            record_check_state(self._ledger, now, after)
+            generated = {path for path in changed_paths(before, _hashes(self._root))
+                         if not _matches(path, DEFAULT_PROTECTED)
+                         and Path(path).name not in CHECK_CONFIG_SECTIONS}
+            self.check_side_effects.update(generated)
 
     def __getattr__(self, attr):
         return getattr(self._inner, attr)

@@ -333,17 +333,19 @@ Admitted at launch: 6 of 6 tools. T2 per granted call: 0. Not in this build: 0.
 | `chorus.digests` | T1 |  | read |  | `store` kept out of the home | Lists digests a daemon stored. |
 | `chorus.decision` | T1 |  | read |  | `current` kept out of the home, `reference` kept out of the home | Compares two source packs and returns a review gate. |
 
-### articulate 0.5.0
+### articulate 0.6.0
 
-Admitted at launch: 4 of 7 tools. T2 per granted call: 3. Not in this build: 0.
+Admitted at launch: 6 of 9 tools. T2 per granted call: 3. Not in this build: 0.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
 | `check` | T1 | main | read |  |  | Local detector; no network. |
 | `score` | T1 | main | read |  |  | Local score; no network. |
-| `judge` | T2 |  | spend | claude_cli |  | Runs the signed-in claude CLI, a model call on the person's account. articulate 0.5.0 runs it in a fresh empty folder with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
-| `fix` | T2 |  | spend | claude_cli |  | Runs the signed-in claude CLI, a model call on the person's account. articulate 0.5.0 runs it in a fresh empty folder with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
-| `polish` | T2 |  | spend | claude_cli |  | Runs the signed-in claude CLI, a model call on the person's account. articulate 0.5.0 runs it in a fresh empty folder with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
+| `judge` | T2 |  | spend | claude_cli |  | May call an explicit model backend or the signed-in claude CLI. The legacy engine route retains its CLI prerequisite and T2 grant; local calling-model editing uses edit_plan/edit_submit. The CLI runs with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
+| `fix` | T2 |  | spend | claude_cli |  | May call an explicit model backend or the signed-in claude CLI. The legacy engine route retains its CLI prerequisite and T2 grant; local calling-model editing uses edit_plan/edit_submit. The CLI runs with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
+| `polish` | T2 |  | spend | claude_cli |  | May call an explicit model backend or the signed-in claude CLI. The legacy engine route retains its CLI prerequisite and T2 grant; local calling-model editing uses edit_plan/edit_submit. The CLI runs with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
+| `edit_plan` | T1 |  | read |  |  | Prepares calling-model instructions and protected spans in memory; no network, subprocess or separate model account. |
+| `edit_submit` | T1 |  | read |  |  | Checks the submitted rewrite locally and returns a receipt; no network, subprocess or separate model account. |
 | `articulate.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `articulate.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 

@@ -153,11 +153,17 @@ def trajectory_integrity(ledger, *, protected=DEFAULT_PROTECTED) -> list[Flag]:
     for e in getattr(ledger, "entries", []):
         if getattr(e, "kind", "") == "check_state":
             try:
-                changed = json.loads(getattr(e, "content", "")).get("changed") or []
+                state = json.loads(getattr(e, "content", ""))
+                changed = state.get("changed") or []
+                unavailable = state.get("unavailable") or []
             except (ValueError, AttributeError):
                 changed = ["(unreadable check_state entry)"]
-            flags.append(Flag("check_files_changed", ", ".join(map(str, changed[:8])),
-                              f"seq {getattr(e, 'seq', '?')}"))
+                unavailable = []
+            for kind, paths in (("check_files_changed", changed),
+                                ("check_coverage_incomplete", unavailable)):
+                if paths:
+                    flags.append(Flag(kind, ", ".join(map(str, paths[:8])),
+                                      f"seq {getattr(e, 'seq', '?')}"))
             continue
         if getattr(e, "kind", "") != "tool_call":
             continue

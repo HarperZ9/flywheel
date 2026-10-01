@@ -94,9 +94,11 @@ LANES: dict[str, Lane] = {
         # status and doctor, so the lane installs and launches from one clean
         # name. Same shape as accountable-surface below, same reason. 0.5.0
         # reads the claude CLI path from ARTICULATE_CLAUDE_CLI and runs it in a
-        # fresh empty folder (PINS_2026-09-26, O-14).
+        # fresh empty folder (PINS_2026-09-26, O-14). 0.5.2 adds the local
+        # calling-model edit_plan/edit_submit protocol with no separate account.
+        # The accepted 0.6.0 source also guards lexical claim features.
         "articulate", "articulate-writing", "articulate-mcp", (),
-        "pip", "0.5.0",
+        "pip", "0.6.0",
         "writing-quality + AI-tell detector and editor with content-free audit receipts (stdlib-only MCP server; the FastMCP surface stays under the [mcp] extra)",
         "authoring", source_repo="articulate", py_module="articulate.local_mcp"),
     "index": Lane(
