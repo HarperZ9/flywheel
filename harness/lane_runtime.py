@@ -251,7 +251,7 @@ def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
     if lane.package_disabled_reason and (profile == "package" or not source):
         return None, "package", None, ()
     if lane.kind == "http":
-        return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), "http", None, ()
+        return _frozen.select_http_launch(lane, environ)
     if lane.kind == "bundled":
         return (LaunchSpec((python_executable, *lane.mcp_args))
                 if lane.command == "python" else LaunchSpec(tuple(lane.mcp_command()))), "bundled", None, ()
@@ -278,6 +278,8 @@ def _blocking_codes(lane, profile, selected, source_available, package_available
     or an "auto" pip/npm package older than its pin (the pin carries the fixes)."""
     if "invalid_runtime_profile" in mismatch:
         return ["invalid_runtime_profile"]
+    if selected == "http":
+        return [code for code in mismatch if code == "http_endpoint_unset"]
     if selected == "bundled":
         return [code for code in mismatch if _frozen.is_blocking(code)]
     if selected == "package" and lane.package_disabled_reason:

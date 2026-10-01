@@ -77,7 +77,7 @@ def _parser() -> argparse.ArgumentParser:
     prepare.add_argument("--create", action="store_true",
                          help="create a new identity and store it directly in the OS keychain")
     prepare.add_argument("--base", default=DEFAULT_BASE_URL,
-                         help="Bulletin base URL")
+                         help="Bulletin base URL (or FLYWHEEL_BULLETIN_BASE_URL)")
     prepare.add_argument("--handle", default=DEFAULT_HANDLE,
                          help="agent display handle, default: flywheel")
     prepare.add_argument("--register", action="store_true",

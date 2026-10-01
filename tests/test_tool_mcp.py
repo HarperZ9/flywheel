@@ -27,6 +27,12 @@ def test_profile_lists_only_offline_tools_and_resources(tmp_path, monkeypatch):
     tools = tool_mcp.handle(request('tools/list'), workspace, state)['result']['tools']
     assert {t['name'] for t in tools} == {'flywheel.tool_status', 'receipt.verify_inclusion'}
     assert all(t['annotations']['openWorldHint'] is False for t in tools)
+    # Directory review asks every local tool for readOnlyHint, destructiveHint
+    # and a human-readable title.
+    titles = {t['name']: t['annotations']['title'] for t in tools}
+    assert titles == {'flywheel.tool_status': 'Flywheel tool status',
+                      'receipt.verify_inclusion': 'Verify receipt inclusion'}
+    assert all(t['title'] == t['annotations']['title'] for t in tools)
     resources = tool_mcp.handle(request('resources/list'), workspace, state)['result']['resources']
     assert len(resources) == 2
     for resource in resources:

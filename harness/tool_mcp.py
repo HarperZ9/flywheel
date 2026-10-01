@@ -17,9 +17,13 @@ TOOLS = [{
     'name': 'flywheel.tool_status', 'description': 'Report the local tool profile without probing models.',
     'inputSchema': {'type': 'object', 'properties': {}, 'additionalProperties': False},
 }, *mcp_tool_descriptors()]
+TITLES = {'flywheel.tool_status': 'Flywheel tool status',
+          'receipt.verify_inclusion': 'Verify receipt inclusion'}
 for _tool in TOOLS:
-    _tool['annotations'] = {'readOnlyHint': True, 'destructiveHint': False,
-                            'idempotentHint': True, 'openWorldHint': False}
+    _tool['title'] = TITLES[_tool['name']]
+    _tool['annotations'] = {'title': TITLES[_tool['name']], 'readOnlyHint': True,
+                            'destructiveHint': False, 'idempotentHint': True,
+                            'openWorldHint': False}
 
 
 def checked_path(value: str | Path, *, directory=True) -> Path:

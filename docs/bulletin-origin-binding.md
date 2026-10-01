@@ -27,11 +27,13 @@ Changing it in a final envelope invalidates the grant. Read-only Bulletin tools,
 other lanes and the compound media publication contract do not acquire this
 field; media already has its own reviewed destination.
 
-`build_preview` selects the fixed production origin by default and shows it in
-`target.bulletin_base_url`. It never derives approval from server environment
-configuration. To select another HTTPS board, pass `bulletin_base_url` explicitly
-or use `--bulletin-base-url` on the preview, grant-request and publish-envelope
-CLI commands. Keep the same selected origin through all three steps.
+`build_preview` has no default origin. The caller passes `bulletin_base_url`, and
+the preview shows it in `target.bulletin_base_url`. It never derives approval from
+server environment configuration. The preview, grant-request and publish-envelope
+CLI commands take `--bulletin-base-url`. When the flag is absent they use the
+operator's `FLYWHEEL_BULLETIN_BASE_URL`. With neither, they refuse with
+`BULLETIN_ORIGIN_UNSET` before any request. Keep the same selected origin through
+all three steps.
 
 Only canonical origins enter an operation: lowercase ASCII host, no userinfo,
 path, query, fragment, whitespace or backslash, and a valid port. The projection

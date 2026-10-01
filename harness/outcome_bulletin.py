@@ -5,7 +5,7 @@ import re
 from typing import Callable
 
 from .bulletin_readback import post_matches
-from .bulletin_origin import PUBLIC_BULLETIN_ORIGIN, canonical_bulletin_origin
+from .bulletin_origin import canonical_bulletin_origin
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .evidence_public import TransportError, public_result
 from .gateway_operation import (
@@ -155,9 +155,11 @@ def _render(outcome: dict) -> str:
     lines += [f"- {row['label']}: {row['url']}" for row in outcome["links"]]
     return "\n".join(lines)
 
-def build_preview(outcome: dict, *, bulletin_base_url: str = PUBLIC_BULLETIN_ORIGIN,
+def build_preview(outcome: dict, *, bulletin_base_url: str | None = None,
                   allow_loopback: bool = False) -> dict:
-    """Render a deterministic public Bulletin post preview from public input."""
+    """Deterministic public post preview; the caller names the origin (no default)."""
+    if not bulletin_base_url:
+        raise OutcomeBulletinError("BULLETIN_ORIGIN_UNSET", "select a Bulletin origin first")
     normalized = _normalize(outcome)
     body = _render(normalized)
     post = {"room": normalized["room"], "body": body}

@@ -25,6 +25,10 @@ on:
         description: "Accepted native-MCPB-SHA256SUMS.txt SHA-256 (lowercase hex)"
         required: true
         type: string
+      source_plugin_sha256:
+        description: "Accepted source-plugin-SHA256SUMS.txt SHA-256 (lowercase hex)"
+        required: true
+        type: string
     secrets:
       publish_token:
         description: "Fine-grained token with release-write on this repo"
@@ -90,6 +94,16 @@ jobs:
           python scripts/build_native_mcp_bundle.py --verify candidate/native-mcp/native-MCPB-SHA256SUMS.txt --accepted-sha256 $env:ACCEPTED_NATIVE_MCP_SHA256 --version $version
           if ($LASTEXITCODE -ne 0) { throw "native MCPB verification failed; refusing to publish" }
 
+      - name: Verify the accepted source tools plugin
+        shell: pwsh
+        env:
+          ACCEPTED_SOURCE_PLUGIN_SHA256: ${{ inputs.source_plugin_sha256 }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw "invalid source release tag" }
+          python scripts/build_source_tool_plugin.py --verify candidate/source-plugin/source-plugin-SHA256SUMS.txt --accepted-sha256 $env:ACCEPTED_SOURCE_PLUGIN_SHA256 --version ($env:RELEASE_TAG.Substring(1))
+          if ($LASTEXITCODE -ne 0) { throw "source plugin verification failed; refusing to publish" }
+
       - name: Publish the GitHub Release (no-clobber)
         shell: pwsh
         env:
@@ -102,9 +116,11 @@ jobs:
           $pluginSums = "candidate/plugins/plugin-SHA256SUMS.txt"
           $nativeMcp = @(Get-ChildItem candidate/native-mcp/*.mcpb | ForEach-Object { $_.FullName })
           $nativeSums = "candidate/native-mcp/native-MCPB-SHA256SUMS.txt"
+          $sourcePlugins = @(Get-ChildItem candidate/source-plugin/*.zip | ForEach-Object { $_.FullName })
+          $sourceSums = "candidate/source-plugin/source-plugin-SHA256SUMS.txt"
           gh release view $tag *> $null
           if ($LASTEXITCODE -eq 0) {
             throw "release $tag already exists; existing release assets are immutable"
           }
-          gh release create $tag $exe $sums @plugins $pluginSums @nativeMcp $nativeSums --title "Flywheel $tag" --generate-notes --verify-tag
+          gh release create $tag $exe $sums @plugins $pluginSums @nativeMcp $nativeSums @sourcePlugins $sourceSums --title "Flywheel $tag" --generate-notes --verify-tag
           if ($LASTEXITCODE -ne 0) { throw "release creation failed" }

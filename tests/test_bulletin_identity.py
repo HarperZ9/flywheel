@@ -55,19 +55,21 @@ def test_identity_summary_never_contains_jwk_material(tmp_path) -> None:
     assert '"x"' not in dumped
 
 
-def test_prepare_reuses_existing_registration_without_posting(tmp_path) -> None:
+@pytest.mark.parametrize("base", [BASE, "https://operator.example"])
+def test_prepare_reuses_existing_registration_without_posting(tmp_path, monkeypatch, base) -> None:
     from harness.bulletin_identity import prepare_identity
 
     key_path = _write_key(tmp_path)
+    monkeypatch.setenv("FLYWHEEL_BULLETIN_BASE_URL", base)
     posts: list[dict] = []
 
     def get_json(url: str, *, timeout: int = 20) -> dict:
-        assert "/v1/agents/" in url
+        assert url.startswith(base + "/v1/agents/")
         return {"ok": True, "agent": {"handle": "flywheel", "tier": "probation"}}
 
     result = prepare_identity(
         key_path,
-        base_url=BASE,
+        base_url=base,
         handle="flywheel",
         http_get_json=get_json,
         signed_post_json=lambda _path, payload: posts.append(payload) or {"ok": True},

@@ -38,8 +38,9 @@ def validate(rows, version, leaf):
     tools = rows[2].get('tools', [])
     require(len(tools) == 2 and {t['name'] for t in tools} ==
             {'flywheel.tool_status', 'receipt.verify_inclusion'}, 'TOOL_MCP_SURFACE')
-    require(all(t.get('annotations') == {'readOnlyHint': True, 'destructiveHint': False,
-                 'idempotentHint': True, 'openWorldHint': False} for t in tools), 'TOOL_MCP_HINTS')
+    require(all(t.get('annotations') == {'title': t.get('title'), 'readOnlyHint': True,
+                 'destructiveHint': False, 'idempotentHint': True, 'openWorldHint': False}
+                and type(t.get('title')) is str and t['title'] for t in tools), 'TOOL_MCP_HINTS')
     require(rows[3] == list_resources(), 'TOOL_MCP_RESOURCES')
     status = _payload(rows[4])
     require(status.get('profile') == 'local-evidence' and status.get('version') == version
