@@ -26,11 +26,11 @@ def _authorized(post, *, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN):
 
 def test_reply_projection_matches_native_gateway_preview():
     outcome = {**_public_outcome(), "parent_id": PARENT}
-    preview = build_preview(outcome)
+    preview = build_preview(outcome, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     native = preview_from_authorized_operation(_authorized(preview["post"]))
     assert native["post"]["parent_id"] == PARENT
     assert native["post_payload_sha256"] == preview["post_payload_sha256"]
-    root = build_preview(_public_outcome())
+    root = build_preview(_public_outcome(), bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     assert root["body_sha256"] == preview["body_sha256"]
     assert root["post_payload_sha256"] != preview["post_payload_sha256"]
 
@@ -38,7 +38,7 @@ def test_reply_projection_matches_native_gateway_preview():
 @pytest.mark.parametrize("parent", [None, "", " ", "../private", "x\n", 1, True, "x" * 129])
 def test_explicit_invalid_parent_is_rejected_never_dropped(parent):
     with pytest.raises(OutcomeBulletinError):
-        build_preview({**_public_outcome(), "parent_id": parent})
+        build_preview({**_public_outcome(), "parent_id": parent}, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     with pytest.raises(TransportError):
         preview_from_authorized_operation(_authorized(
             {"room": "findings", "body": "reply", "parent_id": parent}))
@@ -134,7 +134,7 @@ def test_changed_reply_grant_denied_before_resolver_or_dispatch(
     handle = CredentialHandleStore(state, keychain_get=lambda _: key).bind(
         OWNER, "BULLETIN_AGENT_JWK")
     head = _journey(state).event_head_sha256
-    preview = build_preview({**_public_outcome(), "parent_id": PARENT})
+    preview = build_preview({**_public_outcome(), "parent_id": PARENT}, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     request = build_gateway_grant_request(preview, journey_ref=JOURNEY,
         expected_event_head=head, client_request_id="reply-1",
         credential_ref=handle.credential_ref)
