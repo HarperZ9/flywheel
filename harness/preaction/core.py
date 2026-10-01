@@ -18,7 +18,7 @@ import re
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 
-from . import coverage, records
+from . import coverage, records, trace_flag
 from .contract import (ALLOW, BLOCK, DOES_NOT_PROVE, HOLD, UNVERIFIABLE,
                        Assessment, Hit, ProposedCall, RunContext, canonical_json, sha256_hex, worse)
 from .escalate import Escalator, review_payload
@@ -169,9 +169,9 @@ class Monitor:
             if not self._after_allow(call, ctx, state, asm):
                 return Gate(BLOCK, False, asm, agent_text="blocked by policy rule record_write_failed")
             return Gate(ALLOW, True, asm)
-        # a prior one-use grant may admit exactly this call
-        redeemed = self.escalator.redeem(call.call_sha256(), ctx.run_id) \
-            if asm.verdict == HOLD and not self._blocking(asm) else None
+        # a prior one-use grant may admit exactly this call, unless an undecided trace flag holds it
+        may_redeem = asm.verdict == HOLD and not self._blocking(asm) and not trace_flag.undecided(asm)
+        redeemed = self.escalator.redeem(call.call_sha256(), ctx.run_id) if may_redeem else None
         if redeemed:
             return self._after_redeem(call, ctx, state, asm, redeemed)
         return self._hold_or_block(call, ctx, state, asm)

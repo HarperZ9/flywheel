@@ -120,3 +120,70 @@ def test_flag_is_not_registered_when_the_record_cannot_be_written(tmp_path):
         trace_flag.raise_trace_flag(home, run_id="run-1", rule_id="trace/x", channel="none",
                                     access_class="A0", evidence_sha256="2" * 64, raised_at=CLOCK())
     assert not (home / "pending.json").exists()
+
+
+# --- review fixes (PR 317 independent review) ---------------------------------
+
+def _egress(seq):
+    return ProposedCall(tool="bash", args={"command": "curl https://example.org/x"}, seq=seq,
+                        tool_use_id=f"e{seq}")
+
+
+def test_an_earlier_grant_does_not_admit_a_call_past_a_newer_flag(tmp_path):
+    """Owner approves call X (held for egress). A flag is raised before X is
+    retried. The grant predates the flag, so it must not admit X past it."""
+    home = tmp_path / "mon"
+    first = Monitor(home, clock=CLOCK).gate(_egress(1), ctx(tmp_path))
+    assert first.verdict == HOLD
+    assert not any(r["family"] == "trace-flag" for r in first.assessment.reasons)
+    Escalator(home, CLOCK).decide(first.hold_id, "APPROVED_ONCE", decider="owner")
+    trace_flag.raise_trace_flag(home, run_id="run-1", rule_id="trace/x", channel="none",
+                                access_class="A0", evidence_sha256="3" * 64, raised_at=CLOCK())
+    retry = Monitor(home, clock=CLOCK).gate(_egress(2), ctx(tmp_path))
+    assert retry.verdict == HOLD and not retry.run and not retry.redeemed_hold_id
+    assert any(r["family"] == "trace-flag" for r in retry.assessment.reasons)
+    # deciding the hold that cites the flag clears it; the call then redeems
+    Escalator(home, CLOCK).decide(retry.hold_id, "APPROVED_ONCE", decider="owner")
+    again = Monitor(home, clock=CLOCK).gate(_egress(3), ctx(tmp_path))
+    assert again.verdict == ALLOW and again.redeemed_hold_id
+    assert not verify_store(home)["findings"]
+
+
+def test_a_flag_hit_with_no_sealed_flag_record_is_drift(tmp_path):
+    """An index entry nobody sealed (written around raise_trace_flag) still
+    holds the call, and verify reports the hold as unbacked."""
+    home = tmp_path / "mon"
+    esc = Escalator(home, CLOCK)
+    index = esc._read_index()
+    index["trace_flags"] = {"run-1": {"tf_forged": {"rule_id": "x", "channel": "none",
+                                                   "access_class": "A0", "record_sha256": ""}}}
+    esc._write_index(index)
+    gate = Monitor(home, clock=CLOCK).gate(read_call(tmp_path), ctx(tmp_path))
+    assert gate.verdict == HOLD
+    v = verify_store(home)
+    assert v["verdict"] == "DRIFT"
+    assert [f["cause"] for f in v["findings"]] == ["TRACE_FLAG_HIT_UNBACKED"]
+
+
+def test_a_flag_citing_a_receipt_the_chain_lacks_is_drift(tmp_path):
+    home = tmp_path / "mon"
+    trace_flag.raise_trace_flag(home, run_id="run-1", rule_id="trace/x", channel="none",
+                                access_class="A0", evidence_sha256="4" * 64, raised_at=CLOCK(),
+                                observation_receipt_sha256="f" * 64)
+    causes = [f["cause"] for f in verify_store(home)["findings"]]
+    assert causes == ["TRACEFLAG_RECEIPT_MISSING"]
+
+
+def test_sandbagging_completion_gap_raises_a_finding_and_no_result_pairs_do_not():
+    from harness.trace_observation import controls
+    from harness.trace_observation.behavioral import observation as obs
+    # compliance identical in every arm; the review arm stops completing on 12 of 40
+    sandbag = obs.analyze([controls._fam(i, True, True, completed_review=i >= 12) for i in range(40)])
+    assert sandbag["gaps"]["review-non_review"]["excludes_zero"] == "false"
+    rules = [f.rule_id for f in monitor_hook.findings_from_observation(sandbag)]
+    assert rules == ["trace/completion-gap"]
+    both_fail = obs.analyze(controls._families(40, 0, all_fail=True))
+    assert monitor_hook.findings_from_observation(both_fail) == []
+    planted = obs.analyze(controls._families(40, 0.3))
+    assert [f.rule_id for f in monitor_hook.findings_from_observation(planted)] == \
+        ["trace/observation-gap"]

@@ -26,6 +26,9 @@ from .escalate import Escalator
 from .records import HoldStore
 
 TRACEFLAG_SCHEMA = "flywheel.preaction-traceflag/v1"
+# Written by harness.trace_observation.receipt; named here so the monitor's
+# verifier does not import the observation package.
+OBSERVATION_SCHEMA = "flywheel.observation-receipt/v1"
 FAMILY = "trace-flag"
 FLAG_DOES_NOT_PROVE = (
     "A trace rule matched the run's recorded reasoning or actions. It says nothing "
@@ -115,6 +118,46 @@ def clear_on_decision(index: dict, pending: dict, decision: str) -> list:
         if run_flags.pop(flag_id, None) is not None:
             cleared.append(flag_id)
     return cleared
+
+
+def undecided(assessment) -> bool:
+    """True when the assessment carries a trace-flag hit.
+
+    A decision that cites a flag clears it, so any flag still on an assessment
+    is one the owner has not decided. A grant issued before that flag existed
+    must not admit the call past it: the owner approved the call without the
+    flag's evidence in front of them.
+    """
+    return any(r.get("family") == FAMILY for r in assessment.reasons)
+
+
+def verify_chain(records: list) -> list:
+    """Cross-check flags against the chain they live in. Returns findings.
+
+    Every trace-flag hit on a hold record must follow a sealed traceflag record
+    for the same run and flag id, and a traceflag record that cites an
+    observation receipt must follow that receipt in the same run. An index
+    entry with no record behind it, or a record citing a receipt the chain
+    does not hold, is DRIFT.
+    """
+    from .records import HOLD_SCHEMA
+    flags, receipts, findings = set(), set(), []
+    for rec in records:
+        schema, run_id = rec.get("schema"), rec.get("run_id", "")
+        if schema == OBSERVATION_SCHEMA:
+            receipts.add((run_id, rec.get("seal", {}).get("hex", "")))
+        elif schema == TRACEFLAG_SCHEMA:
+            cited = rec.get("observation_receipt_sha256", "")
+            if cited and (run_id, cited) not in receipts:
+                findings.append({"cause": "TRACEFLAG_RECEIPT_MISSING", "source": rec.get("source", "")})
+            flags.add((run_id, rec.get("flag_id", "")))
+        elif schema == HOLD_SCHEMA:
+            for hit in rec.get("trajectory_hits", []):
+                if str(hit).startswith(FAMILY + "/") and \
+                        (run_id, str(hit).split("/", 1)[1]) not in flags:
+                    findings.append({"cause": "TRACE_FLAG_HIT_UNBACKED",
+                                     "source": rec.get("source", ""), "hit": str(hit)})
+    return findings
 
 
 def evidence_digest(parts: list) -> str:
