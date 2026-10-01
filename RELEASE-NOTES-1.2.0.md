@@ -19,10 +19,11 @@ local-model support remains part of the harness.
   Speech starts off, skips restored history and partial responses, and has mute,
   Stop and interruption handling. Typed replies remain available when speech fails.
 - The Windows installer bundles a C++ runtime at least as new as the compiler that
-  built the app. Installers 1.0.4 through 1.1.2 bundled runtime 14.29. Release
-  candidates built that way crashed in the runtime when the window closed.
-  Publication now reads the runtime receipt and refuses a candidate whose runtime
-  is older than its compiler or whose installed runtime files differ from the receipt.
+  built the app. Every Windows installer through 1.1.2 bundled runtime 14.29. The
+  1.2.0 release candidates built that way crashed in the runtime when the window
+  closed. Publication now reads the runtime receipt and refuses a candidate whose
+  runtime is older than its compiler or whose installed runtime files differ from
+  the receipt.
 - The Plugins view can preview a local-client connection command using the bundled
   engine. It shows whether the engine is available and keeps connection status
   untested until a client exercises the command. It does not write client settings.
