@@ -43,6 +43,10 @@ def ensure_monitor(executor):
 
 def _call(executor, name, args):
     path_id = "E6" if name in executor.external else "E1"
+    # A malformed call (arguments not an object) is still assessed, wrapped
+    # the way the hook adapter wraps it; the tool then returns its typed error.
+    if not isinstance(args, dict):
+        args = {"value": args}
     return ProposedCall(tool=name, args=args, harness="flywheel", path_id=path_id,
                         tool_use_id=f"{executor._receipt_run_id}:{executor._receipt_seq + 1}")
 
