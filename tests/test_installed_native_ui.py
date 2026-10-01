@@ -48,6 +48,7 @@ def setup(tmp_path, monkeypatch):
     monkeypatch.setattr(probe.native, '_wait_for_owned_gateway', lambda *args: ([{'pid': 42}], []))
     monkeypatch.setattr(probe, 'post_close', lambda hwnd: True)
     monkeypatch.setattr(probe, 'exit_code', lambda job: 0)
+    monkeypatch.setattr(probe, 'crash_events', lambda pid: [])
     monkeypatch.setattr(probe, 'wait_empty', lambda process, timeout: not process.active)
     return job, tmp_path
 

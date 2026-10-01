@@ -7,6 +7,7 @@ from pathlib import Path
 import time
 
 from desktop.tool import native_close_acceptance as native
+from desktop.tool.native_crash_event import crash_events
 from desktop.tool.installed_launch_acceptance_jobs import start_windows_job_process, WAIT_OBJECT_0
 
 
@@ -89,6 +90,7 @@ def run(install_root, work):
         receipt['stage'] = 'app_exit_code'
         receipt['app_exit_code'] = exit_code(job)
         if receipt['app_exit_code'] != 0:
+            receipt['crash_events'] = crash_events(job.pid)
             return receipt
         receipt['stage'] = 'owned_cleanup'
         if not wait_empty(job, 10):
