@@ -220,8 +220,7 @@ $pythonLaneSourceRoot = Join-Path $env:RUNNER_TEMP "flywheel-python-lane-sources
 $pythonLaneStageReceipt = Join-Path $env:RUNNER_TEMP "python-lane-source-stage.full.json"
 $pythonLaneBoundedReceipt = Join-Path $installerDir "python-lane-source-stage.json"
 New-Item -ItemType Directory -Force -Path $installerDir | Out-Null
-# The gateway spec freezes every manifest lane but relay from its staged source
-# (scripts/python_lane_freeze.py), so stage them all, as desktop-release does.
+# Stage the full manifest used by scripts/python_lane_freeze.py, as desktop-release does.
 Invoke-Checked "stage Python lane sources" "python" @("scripts/stage_python_lane_sources.py", "--all", "--source-root", $pythonLaneSourceRoot, "--receipt", $pythonLaneStageReceipt, "--bounded-receipt", $pythonLaneBoundedReceipt)
 $env:FLYWHEEL_PYTHON_LANE_SOURCE_ROOT = $pythonLaneSourceRoot
 # The freeze also refuses to run without the staged Node lanes (scripts/frozen_payload_datas.py).
@@ -239,61 +238,4 @@ if (Test-Path -LiteralPath $engineStage) { throw "engine staging destination alr
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $engineStage) | Out-Null
 Copy-Item -LiteralPath (Join-Path $repoRoot "dist\flywheel-gateway") -Destination $engineStage -Recurse
 Invoke-Checked "build installer" "powershell" @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\build_installer.ps1", "-SkipEngine") $desktopRoot
-$buildManifest = Join-Path $installerDir "installed-build-manifest.json"
-Invoke-Checked "build installed payload manifest" "python" @("-m", "desktop.tool.installed_payload_binding", "build", "--payload-root", "desktop/build/windows/x64/runner/Release", "--payload-root", "desktop/build/engine/flywheel-gateway=engine", "--payload-root", "desktop/build/crt", "--installer-generated", "unins000.exe", "--installer-generated", "unins000.dat", "--source-commit", $targetCommit, "--version", $version, "--out", $buildManifest)
-$installer = @(Get-ChildItem -LiteralPath $installerDir -Filter "Flywheel-Setup-*.exe" | Sort-Object Name)
-if ($installer.Count -ne 1) { throw "expected one installer, found $($installer.Count)" }
-$installer = $installer[0]
-$installerHash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-Assert-Sha256 "installer_sha256" $installerHash
-"$installerHash  $($installer.Name)" | Out-File -Encoding ascii (Join-Path $installerDir "SHA256SUMS.txt")
-$manifestDoc = Get-Content -LiteralPath $buildManifest -Raw | ConvertFrom-Json
-$appHash = [string]$manifestDoc.artifacts.app_sha256
-$engineHash = [string]$manifestDoc.artifacts.engine_sha256
-$payloadHash = [string]$manifestDoc.payload.payload_sha256
-Assert-Sha256 "artifacts.app_sha256" $appHash
-Assert-Sha256 "artifacts.engine_sha256" $engineHash
-Assert-Sha256 "payload.payload_sha256" $payloadHash
-Assert-TrackedAndSubmodulesUnchanged "after build"
-Assert-CleanFlywheelHost
-$installerHashBeforeInstall = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($installerHashBeforeInstall -cne $installerHash) {
-  throw "installer hash changed before installation"
-}
-$requestedInstallRoot = Normalize-WindowsPath (Join-Path $env:LOCALAPPDATA "Programs\Flywheel")
-$installArgs = @("/CURRENTUSER", "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=$requestedInstallRoot")
-$install = Start-Process -FilePath $installer.FullName -ArgumentList (Join-WindowsCommandLine $installArgs) -WindowStyle Hidden -Wait -PassThru
-if ($install.ExitCode -ne 0) { throw "installer exited $($install.ExitCode)" }
-$entries = @(Get-FlywheelRegistryEntries)
-if ($entries.Count -ne 1) { throw "expected one Flywheel uninstall registry entry after install, found $($entries.Count)" }
-Assert-RegistryInstallLocation $entries[0] $requestedInstallRoot
-if (-not (Test-Path -LiteralPath $requestedInstallRoot)) { throw "requested per-user install root missing after install" }
-$fullDir = Join-Path $acceptanceDir "full"
-$inspectDir = Join-Path $acceptanceDir "inspect"
-New-Item -ItemType Directory -Force -Path $fullDir, $inspectDir | Out-Null
-$runner = Join-Path $desktopRoot "tool\run_installed_launch_acceptance.ps1"
-$fullReceipt = Join-Path $acceptanceDir "installed-launch-full.json"
-$inspectReceipt = Join-Path $acceptanceDir "installed-launch-inspect.json"
-$canonReceipt = Join-Path $acceptanceDir "installed-canon-context.json"
-$inspectFixture = Join-Path $repoRoot "tests\fixtures\inspect\v1\single-success.fixture.json"
-$common = @("-InstallRoot", $requestedInstallRoot, "-BuildManifest", $buildManifest, "-SourceCommitExpected", $targetCommit, "-ExpectedVersion", $version, "-ExpectedAppSha256", $appHash, "-ExpectedEngineSha256", $engineHash, "-ExpectInstallerPayload")
-$fullArgs = New-InstalledAcceptanceCommandArgs $runner $common $fullDir $fullReceipt "full" -StartEngine
-$inspectArgs = New-InstalledAcceptanceCommandArgs $runner $common $inspectDir $inspectReceipt "inspect" -InspectImport -InspectFixture $inspectFixture
-Invoke-Checked "full installed acceptance" "powershell" $fullArgs
-Invoke-Checked "inspect installed acceptance" "powershell" $inspectArgs
-Invoke-Checked "installed Canon context acceptance" "python" @("scripts/check_installed_canon_context.py", "--install-root", $requestedInstallRoot, "--expected-engine-sha256", $engineHash, "--expected-version", $version, "--source-commit", $targetCommit, "--receipt", $canonReceipt)
-Invoke-Checked "installed lane acceptance" "powershell" @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $scriptRoot "run_installed_lane_acceptance.ps1"), "-InstallRoot", $requestedInstallRoot, "-Installer", $installer.FullName, "-AcceptanceDir", $acceptanceDir, "-SourceCommit", $targetCommit, "-EngineSha256", $engineHash)
-Assert-TrackedAndSubmodulesUnchanged "after acceptance"
-$summary = [ordered]@{
-  schema = "flywheel.windows-installed-acceptance-ci/v1"
-  source_commit = $targetCommit
-  workflow_source = [ordered]@{ repository = $env:GITHUB_REPOSITORY; ref = $env:GITHUB_REF; sha = $env:GITHUB_SHA }
-  version = $version
-  installer = [ordered]@{ name = $installer.Name; sha256 = $installerHash; size = $installer.Length }
-  app_sha256 = $appHash
-  engine_sha256 = $engineHash
-  payload_sha256 = $payloadHash
-  receipts = [ordered]@{ full = "installed-acceptance/installed-launch-full.json"; inspect = "installed-acceptance/installed-launch-inspect.json"; canon_context = "installed-acceptance/installed-canon-context.json"; lanes_per_user = "installed-acceptance/installed-lanes-per-user.json"; lanes_all_users = "installed-acceptance/installed-lanes-all-users.json" }
-  limits = @("rebuilt CI candidate only", "native UI not launched", "device, signing, provider, and publication acceptance not claimed")
-}
-$summary | ConvertTo-Json -Depth 12 | Out-File -LiteralPath (Join-Path $installerDir "ci-installed-acceptance-summary.json") -Encoding utf8
+. (Join-Path $scriptRoot "installed_acceptance_phase.ps1")

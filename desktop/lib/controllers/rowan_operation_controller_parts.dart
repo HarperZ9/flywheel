@@ -1,5 +1,52 @@
 part of 'rowan_operation_controller.dart';
 
+extension RowanOperationControllerCheck on RowanOperationController {
+  /// A check command runs only with exec allowed, and native CLI sessions
+  /// run their own tools, so the engine's check applies to neither.
+  bool get _checkCommandApplies => _allowExec && !_executionMode.isNativeCli;
+
+  /// The command the engine runs when the model says it is done. Its pass
+  /// is what lets the final answer read as verified instead of claimed. It
+  /// is not part of an MCP admission, so typing it keeps the admission.
+  void setCheckCommand(String value) {
+    final next = value.trim().isEmpty ? null : value.trim();
+    if (_checkCommand == next) return;
+    _checkCommand = next;
+    _bump(invalidateMcpAdmission: false);
+  }
+
+  /// The budget fields as a panel shows them: the typed text while one is
+  /// out of range, so the error a reopened panel shows and start() agree.
+  RowanRunBudgetText get runBudgetText => _invalidRunBudget ?? _runBudget.text;
+
+  /// The owner's per-run limits. The engine fills unset ones with defaults.
+  ///
+  /// A value out of range is held as invalid, not dropped: the last valid
+  /// budget stays, and start() refuses until the field is fixed. The budget
+  /// is not part of an MCP admission, so changing it keeps the admission.
+  void setRunBudget(RowanRunBudget value) => _setRunBudget(value, value.text);
+
+  /// The fields as typed. Out of range, the text itself is held, so a panel
+  /// rebuilt later shows what the owner typed next to its error.
+  void setRunBudgetText(RowanRunBudgetText typed) =>
+      _setRunBudget(typed.budget, typed);
+
+  void _setRunBudget(RowanRunBudget value, RowanRunBudgetText typed) {
+    _invalidRunBudget = value.invalidField == null ? null : typed;
+    if (_invalidRunBudget != null) {
+      _error = 'INVALID_RUN_BUDGET';
+      _changed();
+      return;
+    }
+    if (_runBudget == value) {
+      if (_error == 'INVALID_RUN_BUDGET') _bump(invalidateMcpAdmission: false);
+      return;
+    }
+    _runBudget = value;
+    _bump(invalidateMcpAdmission: false);
+  }
+}
+
 extension RowanOperationControllerLifecycle on RowanOperationController {
   Future<GatewayAuthorizationOutcome<bool>> start(
     BuildContext context,
@@ -21,6 +68,18 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
         const GatewayOperationFailure(
           'OPERATION_ACTIVE',
           'An operation is already being prepared or observed',
+        ),
+      );
+    }
+    if (_invalidRunBudget != null) {
+      // The field shows a value the engine would refuse. Sending the last
+      // valid budget instead would run under limits the owner did not set.
+      _error = 'INVALID_RUN_BUDGET';
+      _changed();
+      return GatewayAuthorizationOutcome.failure(
+        const GatewayOperationFailure(
+          'INVALID_RUN_BUDGET',
+          'A run budget field holds a value outside its range',
         ),
       );
     }
@@ -62,6 +121,8 @@ extension RowanOperationControllerLifecycle on RowanOperationController {
         toolProtocol: _toolProtocol,
         mcpAdmission: _mcpAdmission,
         continuation: continuation,
+        runBudget: _runBudget.toWire(),
+        testCmd: _checkCommandApplies ? _checkCommand : null,
       );
     } on Object {
       _error = 'INVALID_CONTEXT';

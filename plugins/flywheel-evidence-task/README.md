@@ -4,7 +4,12 @@ A skill for checking Flywheel and Bulletin claims, reviewing public feedback,
 and producing source-linked evidence packets. It separates reported claims,
 measurements, missing evidence, and proposed next actions.
 
-Version: 0.1.0. License: [FSL-1.1-MIT](LICENSE).
+Flywheel's primary application is a full native harness client with a bundled
+engine. This package exports the evidence-task workflow to an existing host;
+it does not install that application or supply a model. See the repository's
+`docs/CLIENT-AND-TOOL-ARCHITECTURE.md` for the client and tool boundaries.
+
+Version: 0.2.0. License: [FSL-1.1-MIT](LICENSE).
 
 ## Install
 
@@ -69,6 +74,29 @@ The output includes SHA256SUMS and manifest.json. Only named public package
 files enter either archive. Repeated builds from unchanged content produce
 identical archives. The standalone ZIP includes the license and skill folder;
 the plugin ZIP also includes manifests and installation documentation.
+
+The generated plugin ZIP includes root `plugin.json` in Agent Plugins format,
+plus the existing Codex and Claude compatibility manifests. Root metadata is
+derived from the Codex manifest; its presentation fields move into
+`extensions.com.openai.interface`. Skills remain under `skills/`. This package
+does not bundle an MCP server or install lifecycle hooks.
+
+The Windows product release candidate includes both ZIPs and
+`plugin-SHA256SUMS.txt`. Before the explicit publishing step, review that receipt
+and pass its SHA-256 as `plugins_sha256` alongside `installer_sha256`. The
+publisher checks the accepted receipt and both archives before creating the
+same GitHub release. An existing release remains immutable. These assets stay
+separate from the PyPI upload.
+
+To verify a downloaded or staged pair, compute the receipt hash independently
+from the accepted candidate and run:
+
+```text
+python scripts/build_skill_bundle.py --verify <checksum-file> --accepted-sha256 <accepted-hash>
+```
+
+This packaging change prepares subsequent releases; it does not change assets
+on an existing release or establish marketplace approval or host installation.
 
 ## Compatibility and validation
 

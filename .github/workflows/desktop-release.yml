@@ -147,8 +147,14 @@ jobs:
         run: |
           python -m PyInstaller packaging/flywheel-gateway.spec --noconfirm
           if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed" }
-          python scripts/check_frozen_gateway.py --executable dist/flywheel-gateway/flywheel-gateway.exe --expected-version "${{ steps.ver.outputs.version }}" --receipt frozen-gateway-smoke.json
+          python scripts/check_frozen_gateway.py --executable dist/flywheel-gateway/flywheel-gateway.exe --expected-version "${{ steps.ver.outputs.version }}" --receipt build/frozen-gateway-smoke.json
           if ($LASTEXITCODE -ne 0) { throw "frozen gateway smoke failed" }
+          $articulateVersion = python -c "from harness.lanes_registry import LANES; print(LANES['articulate'].version)"
+          if ($LASTEXITCODE -ne 0) { throw "could not read pinned Articulate version" }
+          python scripts/check_frozen_articulate.py --executable dist/flywheel-gateway/flywheel-gateway.exe --expected-version $articulateVersion --receipt build/frozen-articulate-smoke.json
+          if ($LASTEXITCODE -ne 0) { throw "frozen local Articulate protocol failed" }
+          python scripts/check_frozen_tool_mcp.py --executable dist/flywheel-gateway/flywheel-gateway.exe --expected-version "${{ steps.ver.outputs.version }}" --receipt build/frozen-tool-mcp-smoke.json
+          if ($LASTEXITCODE -ne 0) { throw "frozen restricted Flywheel protocol failed" }
           New-Item -ItemType Directory -Force desktop/build/engine | Out-Null
           if (Test-Path -LiteralPath desktop/build/engine/flywheel-gateway) { throw "engine staging destination already exists" }
           Copy-Item -LiteralPath dist/flywheel-gateway -Destination desktop/build/engine/flywheel-gateway -Recurse
@@ -173,13 +179,108 @@ jobs:
           "$hash  $($exe.Name)" | Out-File -Encoding ascii desktop\build\installer\SHA256SUMS.txt
           Get-Content desktop\build\installer\SHA256SUMS.txt
 
+      - name: Build the matching plugin and skill candidates
+        shell: pwsh
+        run: |
+          python -m pip install pytest
+          if ($LASTEXITCODE -ne 0) { throw "plugin test dependency installation failed" }
+          python -m pytest tests/test_skill_bundles.py -q
+          if ($LASTEXITCODE -ne 0) { throw "plugin bundle tests failed" }
+          python scripts/build_skill_bundle.py --out desktop/build/installer/plugins
+          if ($LASTEXITCODE -ne 0) { throw "plugin bundle build failed" }
+          Copy-Item desktop/build/installer/plugins/SHA256SUMS desktop/build/installer/plugins/plugin-SHA256SUMS.txt
+          $receiptHash = (Get-FileHash desktop/build/installer/plugins/plugin-SHA256SUMS.txt -Algorithm SHA256).Hash.ToLower()
+          python scripts/build_skill_bundle.py --verify desktop/build/installer/plugins/plugin-SHA256SUMS.txt --accepted-sha256 $receiptHash
+          if ($LASTEXITCODE -ne 0) { throw "plugin bundle verification failed" }
+          "plugins_sha256=$receiptHash" | Out-File -Append $env:GITHUB_STEP_SUMMARY -Encoding ascii
+
+      - name: Build and qualify the matching native MCPB companion
+        shell: pwsh
+        run: |
+          python -m pytest tests/test_tool_mcp.py tests/test_native_mcp_bundle.py tests/test_frozen_tool_mcp_check.py -q
+          if ($LASTEXITCODE -ne 0) { throw "native companion tests failed" }
+          python scripts/build_native_mcp_bundle.py --engine dist/flywheel-gateway --installer-engine desktop/build/engine/flywheel-gateway --collect-toc build/flywheel-gateway/COLLECT-00.toc --out desktop/build/installer/native-mcp
+          if ($LASTEXITCODE -ne 0) { throw "native MCPB build failed" }
+          $native = Get-ChildItem desktop/build/installer/native-mcp/*.mcpb | Select-Object -First 1
+          python scripts/check_native_mcp_bundle.py --archive $native.FullName --expected-version "${{ steps.ver.outputs.version }}" --receipt build/native-mcpb-smoke.json
+          if ($LASTEXITCODE -ne 0) { throw "extracted native MCPB qualification failed" }
+          $nativeReceiptHash = (Get-FileHash desktop/build/installer/native-mcp/native-MCPB-SHA256SUMS.txt -Algorithm SHA256).Hash.ToLower()
+          python scripts/build_native_mcp_bundle.py --verify desktop/build/installer/native-mcp/native-MCPB-SHA256SUMS.txt --accepted-sha256 $nativeReceiptHash --version "${{ steps.ver.outputs.version }}"
+          if ($LASTEXITCODE -ne 0) { throw "native MCPB hash verification failed" }
+          "native_mcp_sha256=$nativeReceiptHash" | Out-File -Append $env:GITHUB_STEP_SUMMARY -Encoding ascii
+
+      - name: Build and qualify the matching source tools plugin
+        shell: pwsh
+        env:
+          SOURCE_VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          $sourceOut = Join-Path $env:RUNNER_TEMP "flywheel-source-plugin"
+          $sourceCheck = Join-Path $env:RUNNER_TEMP "flywheel-source-plugin-check"
+          python -m pytest tests/test_source_tool_plugin.py tests/test_source_tool_plugin_check.py -q
+          if ($LASTEXITCODE -ne 0) { throw "source plugin tests failed" }
+          python scripts/build_source_tool_plugin.py --out $sourceOut
+          if ($LASTEXITCODE -ne 0) { throw "source plugin build failed" }
+          $sourceZip = Join-Path $sourceOut "flywheel-tools-$env:SOURCE_VERSION-source-plugin.zip"
+          python scripts/check_source_tool_plugin.py --archive $sourceZip --out $sourceCheck --expected-version $env:SOURCE_VERSION
+          if ($LASTEXITCODE -ne 0) { throw "source plugin qualification failed" }
+          $sourceSums = Join-Path $sourceOut "source-plugin-SHA256SUMS.txt"
+          $sourceHash = (Get-FileHash $sourceSums -Algorithm SHA256).Hash.ToLower()
+          python scripts/build_source_tool_plugin.py --verify $sourceSums --accepted-sha256 $sourceHash --version $env:SOURCE_VERSION
+          if ($LASTEXITCODE -ne 0) { throw "source plugin hash verification failed" }
+          "source_plugin_sha256=$sourceHash" | Out-File -Append $env:GITHUB_STEP_SUMMARY -Encoding ascii
+
+      - name: Accept the exact tag-built installer before staging
+        shell: pwsh
+        timeout-minutes: 45
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File desktop/tool/run_tag_installed_acceptance.ps1 -Tag "${{ steps.ver.outputs.tag }}"
+          if ($LASTEXITCODE -ne 0) { throw "tag-built installer acceptance failed" }
+
+      - name: Preserve sanitized tag installer acceptance receipts
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: tag-installed-acceptance-${{ github.run_id }}
+          path: |
+            desktop/build/installer/installed-build-manifest.json
+            desktop/build/installer/crt-selection.json
+            desktop/build/installer/ci-installed-acceptance-summary.json
+            desktop/build/installer/installed-acceptance/*.json
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Assemble a stable candidate directory
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path build/windows-release-candidate/plugins -Force | Out-Null
+          New-Item -ItemType Directory -Path build/windows-release-candidate/native-mcp -Force | Out-Null
+          Copy-Item desktop/build/installer/Flywheel-Setup-*.exe build/windows-release-candidate/
+          Copy-Item desktop/build/installer/SHA256SUMS.txt build/windows-release-candidate/
+          Copy-Item desktop/build/installer/installed-build-manifest.json build/windows-release-candidate/
+          Copy-Item desktop/build/installer/crt-selection.json build/windows-release-candidate/
+          Copy-Item desktop/build/installer/ci-installed-acceptance-summary.json build/windows-release-candidate/
+          New-Item -ItemType Directory -Path build/windows-release-candidate/installed-acceptance -Force | Out-Null
+          Copy-Item desktop/build/installer/installed-acceptance/*.json build/windows-release-candidate/installed-acceptance/
+          Copy-Item build/frozen-gateway-smoke.json build/windows-release-candidate/
+          Copy-Item build/frozen-articulate-smoke.json build/windows-release-candidate/
+          Copy-Item build/frozen-tool-mcp-smoke.json build/windows-release-candidate/
+          Copy-Item build/native-mcpb-smoke.json build/windows-release-candidate/
+          Copy-Item desktop/build/installer/native-mcp/*.mcpb build/windows-release-candidate/native-mcp/
+          Copy-Item desktop/build/installer/native-mcp/native-MCPB-SHA256SUMS.txt build/windows-release-candidate/native-mcp/
+          Copy-Item desktop/build/installer/plugins/*.zip build/windows-release-candidate/plugins/
+          Copy-Item desktop/build/installer/plugins/plugin-SHA256SUMS.txt build/windows-release-candidate/plugins/
+          $sourceOut = Join-Path $env:RUNNER_TEMP "flywheel-source-plugin"
+          $sourceCheck = Join-Path $env:RUNNER_TEMP "flywheel-source-plugin-check"
+          New-Item -ItemType Directory -Path build/windows-release-candidate/source-plugin -Force | Out-Null
+          Copy-Item "$sourceOut/*.zip" build/windows-release-candidate/source-plugin/
+          Copy-Item "$sourceOut/source-plugin-SHA256SUMS.txt" build/windows-release-candidate/source-plugin/
+          Copy-Item "$sourceOut/source-plugin-build-receipt.json" build/windows-release-candidate/source-plugin/
+          Copy-Item "$sourceCheck/receipt.json" build/windows-release-candidate/source-plugin/qualification.json
+
       - name: Stage the candidate artifact
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: windows-installer-candidate
-          path: |
-            desktop/build/installer/Flywheel-Setup-*.exe
-            desktop/build/installer/SHA256SUMS.txt
-            frozen-gateway-smoke.json
+          path: build/windows-release-candidate/
           if-no-files-found: error
           retention-days: 14

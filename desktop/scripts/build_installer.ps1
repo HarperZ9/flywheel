@@ -118,8 +118,9 @@ if (-not (Test-Path (Join-Path $engineOut "flywheel-gateway.exe"))) {
 # (2022 lives under \2022\, VS 18 under \18\), and hardcoding a year broke
 # the first CI release run. vswhere is shipped with every VS install and on
 # every GitHub runner image; a broad directory glob stays as the fallback.
+. (Join-Path $PSScriptRoot "crt_selection.ps1")
 $crtDir = Join-Path $repo "build\crt"
-New-Item -ItemType Directory -Force $crtDir | Out-Null
+$crtBuild = Get-CrtBuildRequirement (Join-Path $repo "build\windows\x64")
 $vsRoots = @()
 $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
 if (Test-Path $vswhere) {
@@ -130,18 +131,20 @@ $vsRoots += Get-ChildItem -Directory -ErrorAction SilentlyContinue `
     "C:\Program Files\Microsoft Visual Studio\*\*",
     "C:\Program Files (x86)\Microsoft Visual Studio\*\*" |
     Select-Object -ExpandProperty FullName
-$crtSource = $vsRoots | Where-Object { $_ } | Select-Object -Unique |
+$crtDirectories = @($vsRoots | Where-Object { $_ } | Select-Object -Unique |
     ForEach-Object {
         Get-ChildItem -Directory -ErrorAction SilentlyContinue `
             (Join-Path $_ "VC\Redist\MSVC\*\x64\Microsoft.VC14*.CRT")
-    } | Select-Object -First 1
-if (-not $crtSource) {
-    throw "no VC14x x64 CRT Redist tree found (searched: $($vsRoots -join '; '))"
-}
-foreach ($dll in "msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll") {
-    Copy-Item (Join-Path $crtSource.FullName $dll) $crtDir -Force
-}
-Write-Output "-- CRT staged from $($crtSource.FullName)"
+    } | Select-Object -ExpandProperty FullName)
+$crtSource = Select-CompatibleCrt $crtDirectories ([version]$crtBuild.toolset_version)
+Stage-CrtSet $crtSource (Join-Path $repo "build")
+New-Item -ItemType Directory -Force -Path $installerDir | Out-Null
+$crtReceipt = [ordered]@{ schema="flywheel.windows-crt-selection/v1"; architecture="x64";
+    runtime_floor_version=$crtSource.version; toolset_version=$crtBuild.toolset_version;
+    compiler_version=$crtBuild.compiler_version; files=$crtSource.files;
+    compatibility_basis="each x64 v14 DLL from one Redist directory is at least the toolset version in the generated CMake compiler path; compiler 19.x is recorded, not converted" }
+$crtReceipt | ConvertTo-Json -Depth 6 | Out-File -LiteralPath (Join-Path $installerDir "crt-selection.json") -Encoding utf8
+Write-Output "-- CRT floor $($crtSource.version) staged from $($crtSource.directory), toolset $($crtBuild.toolset_version)"
 
 # 4. Find ISCC: parameter, PATH, standard dirs, then the registry entry.
 if (-not $Iscc) {

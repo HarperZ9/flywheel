@@ -63,6 +63,11 @@ def _dispatch_canon_context_mcp(argv: list[str]) -> int | None:
 def main(argv=None) -> int:
     multiprocessing.freeze_support()
     args = list(sys.argv[1:] if argv is None else argv)
+    if '--tool-mcp' in args:
+        if not args or args[0] != '--tool-mcp' or args.count('--tool-mcp') != 1:
+            return 2
+        from harness.tool_mcp import main as tool_main
+        return tool_main(args[1:])
     from harness.bundled_lane_admission import dispatch_bundled_lane_mcp
     bundled = dispatch_bundled_lane_mcp(args)
     if bundled is not None:

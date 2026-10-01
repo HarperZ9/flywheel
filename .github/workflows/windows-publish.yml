@@ -17,6 +17,18 @@ on:
         description: "The candidate installer's SHA-256 (lowercase hex)"
         required: true
         type: string
+      plugins_sha256:
+        description: "Accepted plugin-SHA256SUMS.txt SHA-256 (lowercase hex)"
+        required: true
+        type: string
+      native_mcp_sha256:
+        description: "Accepted native-MCPB-SHA256SUMS.txt SHA-256 (lowercase hex)"
+        required: true
+        type: string
+      source_plugin_sha256:
+        description: "Accepted source-plugin-SHA256SUMS.txt SHA-256 (lowercase hex)"
+        required: true
+        type: string
     secrets:
       publish_token:
         description: "Fine-grained token with release-write on this repo"
@@ -29,6 +41,13 @@ jobs:
   publish-installer:
     runs-on: windows-latest
     steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.11"
       - name: Download the candidate
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
@@ -45,6 +64,46 @@ jobs:
           }
           "hash verified: $hash"
 
+      - name: Verify the accepted plugin candidates
+        shell: pwsh
+        env:
+          ACCEPTED_PLUGINS_SHA256: ${{ inputs.plugins_sha256 }}
+        run: |
+          python scripts/build_skill_bundle.py --verify candidate/plugins/plugin-SHA256SUMS.txt --accepted-sha256 $env:ACCEPTED_PLUGINS_SHA256
+          if ($LASTEXITCODE -ne 0) { throw "plugin candidate verification failed; refusing to publish" }
+
+      - name: Require exact installed acceptance evidence
+        shell: pwsh
+        env:
+          ACCEPTED_INSTALLER_SHA256: ${{ inputs.installer_sha256 }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          $head = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw "could not bind installed evidence to source" }
+          python scripts/verify_installed_candidate.py --candidate candidate --accepted-installer-sha256 $env:ACCEPTED_INSTALLER_SHA256 --version $env:RELEASE_TAG.Substring(1) --source-commit $head
+          if ($LASTEXITCODE -ne 0) { throw "exact installed acceptance evidence missing or mismatched" }
+
+      - name: Verify the accepted native MCPB companion
+        shell: pwsh
+        env:
+          ACCEPTED_NATIVE_MCP_SHA256: ${{ inputs.native_mcp_sha256 }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw "invalid native release tag" }
+          $version = $env:RELEASE_TAG.Substring(1)
+          python scripts/build_native_mcp_bundle.py --verify candidate/native-mcp/native-MCPB-SHA256SUMS.txt --accepted-sha256 $env:ACCEPTED_NATIVE_MCP_SHA256 --version $version
+          if ($LASTEXITCODE -ne 0) { throw "native MCPB verification failed; refusing to publish" }
+
+      - name: Verify the accepted source tools plugin
+        shell: pwsh
+        env:
+          ACCEPTED_SOURCE_PLUGIN_SHA256: ${{ inputs.source_plugin_sha256 }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw "invalid source release tag" }
+          python scripts/build_source_tool_plugin.py --verify candidate/source-plugin/source-plugin-SHA256SUMS.txt --accepted-sha256 $env:ACCEPTED_SOURCE_PLUGIN_SHA256 --version ($env:RELEASE_TAG.Substring(1))
+          if ($LASTEXITCODE -ne 0) { throw "source plugin verification failed; refusing to publish" }
+
       - name: Publish the GitHub Release (no-clobber)
         shell: pwsh
         env:
@@ -53,8 +112,15 @@ jobs:
           $tag = "${{ inputs.tag }}"
           $exe = Get-ChildItem candidate\Flywheel-Setup-*.exe | Select-Object -First 1
           $sums = "candidate\SHA256SUMS.txt"
+          $plugins = @(Get-ChildItem candidate/plugins/*.zip | ForEach-Object { $_.FullName })
+          $pluginSums = "candidate/plugins/plugin-SHA256SUMS.txt"
+          $nativeMcp = @(Get-ChildItem candidate/native-mcp/*.mcpb | ForEach-Object { $_.FullName })
+          $nativeSums = "candidate/native-mcp/native-MCPB-SHA256SUMS.txt"
+          $sourcePlugins = @(Get-ChildItem candidate/source-plugin/*.zip | ForEach-Object { $_.FullName })
+          $sourceSums = "candidate/source-plugin/source-plugin-SHA256SUMS.txt"
           gh release view $tag *> $null
           if ($LASTEXITCODE -eq 0) {
             throw "release $tag already exists; existing release assets are immutable"
           }
-          gh release create $tag $exe $sums --title "Flywheel $tag" --generate-notes --verify-tag
+          gh release create $tag $exe $sums @plugins $pluginSums @nativeMcp $nativeSums @sourcePlugins $sourceSums --title "Flywheel $tag" --generate-notes --verify-tag
+          if ($LASTEXITCODE -ne 0) { throw "release creation failed" }

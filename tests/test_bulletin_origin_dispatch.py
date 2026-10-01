@@ -5,6 +5,7 @@ import json
 import pytest
 
 from harness import bulletin_signed_transport as transport, keychain
+from harness.bulletin_origin import PUBLIC_BULLETIN_ORIGIN
 from harness.gateway_operation import GatewayOperationError
 from harness.gateway_provider_adapter import resolve_credentials
 from harness.gateway_actions import dispatch_builtin
@@ -20,7 +21,7 @@ def bound(tmp_path):
     key, public = _jwk_json()
     handle = CredentialHandleStore(tmp_path, keychain_get=lambda _: key).bind(
         OWNER, "BULLETIN_AGENT_JWK")
-    preview = build_preview(_public_outcome())
+    preview = build_preview(_public_outcome(), bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     return _authorized(tmp_path, preview, handle.credential_ref), preview, key, public
 
 

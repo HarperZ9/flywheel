@@ -155,14 +155,13 @@ def _check_optional_b64(component: dict, records: list[dict]) -> None:
         if decoded != canonical_bytes(body):
             raise _Fail("canonical base64 malformed")
 def _validate_projection_shape(projection, trace_info, operation_ref, journey_ref) -> None:
-    base = {k: v for k, v in projection.items() if k not in {"effect_evidence", "projection_sha256"}}
+    base = {k: v for k, v in projection.items() if k not in {"effect_evidence", "run_outcome", "projection_sha256"}}
     base["projection_sha256"] = canonical_sha256(base)
     try:
         validate_projection(base, {"operation_ref": operation_ref, "journey_ref": journey_ref, "trace_ref": trace_info["trace_ref"]})
     except Exception:
         raise _Fail("agent projection binding mismatch") from None
-    expected_hash = canonical_sha256({k: v for k, v in projection.items() if k != "projection_sha256"})
-    if projection.get("projection_sha256") != expected_hash: raise _Fail("agent projection binding mismatch")
+    if projection.get("projection_sha256") != canonical_sha256({k: v for k, v in projection.items() if k != "projection_sha256"}): raise _Fail("agent projection binding mismatch")
 def _validate_internal(component: dict) -> tuple[dict[str, Any], dict[str, Any]]:
     terminal = component["terminal_result"]
     history = component["lifecycle_history"]
@@ -207,6 +206,7 @@ def _validate_internal(component: dict) -> tuple[dict[str, Any], dict[str, Any]]
             or projection.get("trace_head_sha256") != trace_info["trace_head_sha256"]):
         raise _Fail("agent projection binding mismatch")
     _check_optional_b64(component, records)
+    if "run_outcome" in projection: from .gateway_run_outcome import validate_run_outcome as v; v(records, terminal_state=state, submitted=projection["run_outcome"])
     if component.get("trace_preview") != trace_export_preview(records):
         raise _Fail("trace preview mismatch")
     if "effect_evidence" not in projection:

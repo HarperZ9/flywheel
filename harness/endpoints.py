@@ -13,7 +13,7 @@ import shlex
 from dataclasses import dataclass, field
 
 from .local_agent import BackendError
-from .endpoints_http import _http, _guard, _k
+from .endpoints_http import _http, _guard, _k, _response_error
 from .endpoint_opencode import OpenCodeBackend  # noqa: F401 (re-exported)
 from . import safe_program
 
@@ -70,7 +70,7 @@ class OpenAICompatBackend:
             message = obj["choices"][0]["message"]
             text = message["content"]
         except (KeyError, IndexError, TypeError):
-            raise BackendError(f"{self.name} returned {status}: {obj.get('error', obj)}")
+            raise _response_error(self.name, status, obj)
         out = {"model_ref": f"{self.name}:{self.model}", "seed": seed}
         calls = message.get("tool_calls") if isinstance(message, dict) else None
         if isinstance(calls, list) and calls:
@@ -195,7 +195,7 @@ class AnthropicBackend:
         try:
             text = "".join(b.get("text", "") for b in obj["content"] if b.get("type") == "text")
         except (KeyError, TypeError):
-            raise BackendError(f"{self.name} returned {status}: {obj.get('error', obj)}")
+            raise _response_error(self.name, status, obj)
         return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed}
 
 
@@ -231,7 +231,7 @@ class GeminiBackend:
         try:
             text = "".join(p.get("text", "") for p in obj["candidates"][0]["content"]["parts"])
         except (KeyError, IndexError, TypeError):
-            raise BackendError(f"{self.name} returned {status}: {obj.get('error', obj)}")
+            raise _response_error(self.name, status, obj)
         return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed}
 
 
@@ -306,24 +306,15 @@ def _resolve_cli_command(spec: dict, pname: str):
         return shlex.split(env_cli)
     cli = spec.get("cli")
     if isinstance(cli, str):
-        if cli.endswith("_CLI"):
-            cli = os.environ.get(cli, "")
-        if not cli:
-            return None
-        return shlex.split(cli)
-    if not cli:
+        cli = os.environ.get(cli, "") if cli.endswith("_CLI") else cli
+        return shlex.split(cli) if cli else None
+    if not isinstance(cli, (list, tuple)) or not cli:
         return None
-    if isinstance(cli, (list, tuple)):
-        if cli[0] == "codex":
-            return ["codex.cmd", *cli[1:]]
-        if pname == "codex" and cli[0].lower() == "codex.cmd":
-            return list(cli)
-        if os.name == "nt" and cli[0] == "claude":
-            return ["claude.exe", *cli[1:]]
-        if pname == "claude" and os.name == "nt" and cli[0].lower() == "claude.exe":
-            return list(cli)
-        return list(cli)
-    return None
+    if cli[0] == "codex":
+        return ["codex.cmd", *cli[1:]]
+    if os.name == "nt" and cli[0] == "claude":
+        return ["claude.exe", *cli[1:]]
+    return list(cli)
 
 
 # provider -> how to reach it. base URLs are the public APIs; models are

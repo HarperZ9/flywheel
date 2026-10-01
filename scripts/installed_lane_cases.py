@@ -134,11 +134,6 @@ def _local_run_ok(reply: object) -> bool:
             and "WORKSPACE_PROTECTED" not in json.dumps(reply))
 
 
-def _has_rooms(reply: object) -> bool:
-    rooms = reply.get("rooms") if isinstance(reply, dict) else reply
-    return isinstance(rooms, list) and len(rooms) > 0
-
-
 def _workflow_unjoinable(reply: object) -> bool:
     # The installed app has no gather, crucible, index or forum source folder
     # beside the staged package, so an approved workflow call answers with the
@@ -238,10 +233,15 @@ CASES: dict[str, LaneCase] = {c.lane: c for c in (
     LaneCase("canon", "B", "B", "PLAN 1a: the person places blocks", (
         st("fresh", "needs_setup"), tools("fresh"), st("setup", *RUNS),
         fx("setup", "canon"))),
-    LaneCase("bulletin", "A", "A", "PLAN 1a; needs network; start probe skips it (O-10)", (
-        st("fresh", "not_checked"), tools("fresh"),
-        call("fresh_main", "fresh", "board_rooms", lambda c: {}, assert_=_has_rooms)),
-        untested=("board writes need a registered identity",)),
+    # The build selects no Bulletin deployment, so a fresh install must name the
+    # endpoint variable and refuse a board read without sending any request.
+    LaneCase("bulletin", "A", "B", "PLAN 1a; no deployment in the build: the person "
+             "sets FLYWHEEL_BULLETIN_URL (zero publisher compute)", (
+        st("fresh", "needs_setup"),
+        call("fresh_main_needs_endpoint", "fresh", "board_rooms", lambda c: {},
+             status=REFUSED, code="LANE_SETUP_REQUIRED")),
+        untested=("board reads need an operator-selected endpoint",
+                  "board writes need a registered identity")),
     LaneCase("accountable-surface", "A/C", "A/C", "PLAN 1a; actuation out of the build "
              "(O-13 default)", (
         st("fresh", *RUNS), tools("fresh"), fx("fresh", "accountable-surface"),

@@ -1,6 +1,6 @@
 """telos takes no argument, and the engine passes it none.
 
-Every tool telos 0.4.2 serves declares an inputSchema with no property and
+Every tool telos 0.6.0 serves declares an inputSchema with no property and
 ``additionalProperties`` false, and its server never reads a call's arguments.
 The engine keeps that true for any later release: each telos tool passes no
 argument on the lane call and Plugins routes, and an agent run, which passes
@@ -23,7 +23,7 @@ from harness.lanes_registry import LANES
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = (ROOT / "project-docs" / "lanes" / "evidence"
-            / "telos-0.4.2-tool-measurement.json")
+            / "telos-0.6.0-tool-measurement.json")
 PAYLOADS = ROOT / "packaging" / "node-lane-payloads.json"
 # Names the package's own CLI scripts read (--out, --gh-run, --scan-root) and
 # the kinds of value the engine guards elsewhere: a path, a URL, a command, an id.

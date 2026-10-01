@@ -40,6 +40,7 @@ LOCAL_MODEL = "local-model"
 LOCAL_MODEL_ROOT_FILE = "root"
 LANE_MCP_LANES = ("writing",)
 SETUP_CODES = {
+    "http_endpoint_unset": "http_endpoint",
     "local_model_root_unset": "project_folder",
     "local_model_root_missing": "project_folder",
     "local_model_root_protected": "project_folder",
@@ -97,7 +98,7 @@ def select_frozen_launch(lane, profile: str, executable: str,
                                        environ=environ, importable_fn=importable_fn)
         return admission.launch, "bundled", admission.component, admission.blocking_codes
     if lane.kind == "http":
-        return LaunchSpec(tuple(lane.mcp_command()), url=lane.endpoint()), "http", None, ()
+        return select_http_launch(lane, environ)
     if lane.name in HELD_LANES:
         return None, "bundled", None, ("lane_held",)
     if lane.name in node_lanes.NODE_LANES:
@@ -118,6 +119,14 @@ def select_frozen_launch(lane, profile: str, executable: str,
         # The runtime reports package_distribution_disabled with the reason.
         return None, "package", None, ()
     return None, "bundled", None, ("frozen_lane_not_in_build",)
+
+
+def select_http_launch(lane, environ: Mapping[str, str]) -> Selection:
+    """Source and frozen clients require an operator-selected endpoint."""
+    url = lane.endpoint(environ)
+    if not url:
+        return None, "http", None, ("http_endpoint_unset",)
+    return LaunchSpec(tuple(lane.mcp_command()), url=url), "http", None, ()
 
 
 def local_model_root_file(environ: Mapping[str, str]) -> Path:

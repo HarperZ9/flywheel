@@ -6,19 +6,19 @@ EXPECTED_BUNDLED_LANES: dict[str, dict[str, object]] = {
     "relay": {
         "schema": "flywheel.bundled-lane-expectation/v1",
         "name": "relay",
-        "version": "0.5.0",
+        "version": "0.6.0",
         "source_repo": "https://github.com/HarperZ9/relay",
-        "source_commit": "ba1e4f21f05ff610a182f9b4665bb82f05a969f8",
+        "source_commit": "2510d6b3db9c42074c1139af21155a6bf8187b62",
         "source_path": "src/relay",
         # The LF bytes of the tag (the relay payload row's manifest), not the
         # CRLF form a Windows checkout writes (check_bundled_lane_descriptors).
         "source_manifest_sha256": (
-            "sha256:5ac76b4ee50fc7ec22e244c9333d0593b9dc99d39cd8b020"
-            "a98775b760b6112d"
+            "sha256:81fd85c8cf8fbfe8a6046668ed8d2e64cc0789bdc59736551c81a1ff5"
+            "c93c684"
         ),
         "descriptor_sha256": (
-            "sha256:5bf51d07953900590fbda232bc947e68126ee64c79afc63a"
-            "3147caee9908a0b0"
+            "sha256:174d65e1e2fd9ff07c907240a221270634bf2df3c794f61ff96f7d405"
+            "ac6f7f0"
         ),
         "module": "relay.local_mcp",
         "callable": "serve",

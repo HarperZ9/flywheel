@@ -1,5 +1,6 @@
 """Credential containers must not become imported task or attachment signals."""
 import json
+import time
 
 import pytest
 
@@ -69,3 +70,15 @@ def test_multiline_quoted_secret_preserves_line_numbers_and_surrounding_work(tmp
     assert next(r['line'] for r in state['signals']
                 if r.get('text') == 'Work after.') == 5
     assert any(r['code'] == 'CREDENTIAL_EXCLUDED' for r in omissions)
+
+
+def test_a_long_run_of_name_characters_is_scrubbed_in_linear_time():
+    # Each word start in an a-a-a run once rescanned the whole run for a
+    # name prefix: 20 KB took 8 s and 40 KB took 42 s.
+    from harness.continuation_context import scrub_credentials
+    text = "a-" * 30_000 + " db_api_key=syntheticCredentialCanary934823"
+    start = time.perf_counter()
+    scrubbed = scrub_credentials(text)
+    assert time.perf_counter() - start < 1.0
+    assert "syntheticCredentialCanary934823" not in scrubbed
+    assert scrubbed.endswith(" [credential omitted]")

@@ -232,7 +232,7 @@ Forum is the `orchestration` organ in the Flywheel lane registry. Registry entry
 
 ```python
 "forum": Lane(
-    "forum", "forum-engine", "forum", ("mcp",), "pip", "1.15.1",
+    "forum", "forum-engine", "forum", ("mcp",), "pip", "1.16.0",
     "witnessed causal ledger + model-agnostic routing",
     "orchestration", source_repo="public/forum", py_module="forum.cli",
     bundled_mcp_module="forum.mcp_surface",
@@ -240,7 +240,7 @@ Forum is the `orchestration` organ in the Flywheel lane registry. Registry entry
 ```
 
 `install_name` is `forum-engine`, the command is `forum`, the MCP args are
-`("mcp",)`, the kind is `pip`, and it is version-pinned to `1.15.1`, which
+`("mcp",)`, the kind is `pip`, and it is version-pinned to `1.16.0`, which
 matches the package manifest. Forum is also part of the harness `SPINE` tuple in
 `harness/gateway.py`.
 
@@ -347,7 +347,7 @@ each piece is present and testable:
 - Forum is installable from PyPI as `forum-engine` and carries no
   `package_disabled_reason` in the registry, unlike some sibling lanes that
   require a source checkout. Observed, from `harness/lanes_registry.py`.
-- The registry version (`1.15.1`) and the package manifest version (`1.15.1`)
+- The registry version (`1.16.0`) and the package manifest version (`1.16.0`)
   are aligned at the time of reading. A future package bump that skips the
   registry would drift; the version is a hand-maintained constant, not derived.
 - The gateway HTTP surface proxies only four read-only forum endpoints. The

@@ -230,7 +230,7 @@ the app starts no shell, git or bisect child through relay.
 From `harness/lanes_registry.py`:
 
 - name `relay`, install_name `flywheel-relay`, command `relay`, args
-  `("--mcp",)`, kind `pip`, version `0.5.0`, organ `execution`, py_module
+  `("--mcp",)`, kind `pip`, version `0.6.0`, organ `execution`, py_module
   `relay` (a pip or source launch runs `python -m relay --mcp`), bundled_mcp_module
   `relay.local_mcp` (the frozen build serves it in process), source_repo
   `public/relay`.
@@ -259,7 +259,7 @@ From `harness/lanes_registry.py`:
   states it is a guardrail against a small model wrecking the tree. It is not a
   security boundary.
 - Version note: the lane registry, the payload row, the bundled-lane expectation
-  and the relay submodule all name relay `0.5.0`, and
+  and the relay submodule all name relay `0.6.0`, and
   `tests/test_lane_pins_20260927.py` checks them against one another. A pip or npm
   lane older than its pin does not start under the default profile.
 

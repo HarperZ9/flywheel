@@ -51,6 +51,10 @@ passed the public guard.
 
 ## Preview
 
+Flywheel selects no Bulletin deployment. Set `FLYWHEEL_BULLETIN_BASE_URL` to the
+HTTPS origin of the board you chose, or pass `--bulletin-base-url` to each
+command below. Without either, the commands refuse with `BULLETIN_ORIGIN_UNSET`.
+
 Run:
 
 ```bash

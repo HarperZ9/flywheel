@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
     ROOT / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
     if line.strip()}
-VERSION, TAG, COMMIT = "1.3.0", "v1.3.0", "a47ae7981ae51f2062d2a395359b4c1bab0f9c66"
+VERSION, TAG, COMMIT = "1.4.0", "v1.4.0", "f06b8d1d06ad0c9a3ff31de3fda1a2fa7fe036de"
 ADVISORY = "GHSA-49qx-cj4f-wfqv"
 NEW_TOOL = "crucible.recheck_template"
 
@@ -76,7 +76,7 @@ def test_the_notice_names_the_tag_and_drops_the_old_release():
 def test_the_notes_and_the_known_issues_page_name_the_advisory():
     notes = _text("RELEASE-NOTES-1.1.0.md")
     fixes = notes.split("Security fixes in the lanes", 1)[1].split("## ", 1)[0]
-    assert f"crucible {VERSION} fixes {ADVISORY}" in fixes
+    assert f"crucible 1.3.0 fixes {ADVISORY}" in fixes
     assert "crucible 1.2.0, which 1.0.4 pins" in fixes
     assert f"`{NEW_TOOL}`" in notes.split("**Lane updates.**", 1)[1].split("- **", 1)[0]
     assert "None adds a tool" not in notes

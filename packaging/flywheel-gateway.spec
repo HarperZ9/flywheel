@@ -72,6 +72,8 @@ from scripts.frozen_payload_datas import (
     NODE_STAGE_ENV, check_pyz_slices, node_lane_stage_datas)
 from scripts.frozen_license_datas import frozen_license_datas
 from scripts.frozen_trace_imports import TRACE_CUSTODY_HIDDEN_IMPORTS
+from scripts.frozen_tool_metadata import identity_data
+from PyInstaller.config import CONF
 import importlib.util
 
 
@@ -143,6 +145,11 @@ a = Analysis(
     pathex=[str(canon_src), str(relay_src), str(repo), *python_lane_pathex,
             *studio_runtime.pathex],
     datas=[(str(repo / "site"), "site"),
+           (str(repo / "harness/skill_resources/flywheel-evidence-task/SKILL.md"),
+            "harness/skill_resources/flywheel-evidence-task"),
+           (str(repo / "harness/skill_resources/flywheel-evidence-task/references/constraints.md"),
+            "harness/skill_resources/flywheel-evidence-task/references"),
+           *identity_data(repo, CONF['workpath']),
            (str(repo / "harness" / "gateway.py"), "harness"),
            (str(repo / "packaging" / "bundled-lanes" / "relay.json"),
             "packaging/bundled-lanes"),

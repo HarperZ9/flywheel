@@ -33,9 +33,9 @@ def test_status_is_local_presence_only_and_never_checks_board(monkeypatch) -> No
     assert "public_jwk" not in body
 
 
-def test_status_reports_keychain_identity_as_registerable() -> None:
+def test_status_reports_keychain_identity_as_registerable(monkeypatch) -> None:
     from harness.bulletin_identity_route import bulletin_identity_get
-
+    monkeypatch.setenv("FLYWHEEL_BULLETIN_BASE_URL", "https://operator.example")
     body, code = bulletin_identity_get(
         credential_source=lambda _name: "keychain",
         keychain_available_fn=lambda: True,
@@ -165,12 +165,13 @@ def test_register_refuses_missing_capabilities_before_prepare(tmp_path) -> None:
         assert body["error"]["code"] == want
 
 
-def test_register_uses_fixed_production_origin_and_sanitizes_result(tmp_path) -> None:
-    from harness.bulletin_identity_contract import DEFAULT_BASE_URL, DEFAULT_HANDLE, MAX_POW_BITS
+def test_register_uses_operator_configured_origin_and_sanitizes_result(tmp_path, monkeypatch) -> None:
+    from harness.bulletin_identity_contract import DEFAULT_HANDLE, MAX_POW_BITS
     from harness.bulletin_identity_route import bulletin_identity_register_post
 
     captured: dict = {}
-
+    base_url = "https://operator.example"
+    monkeypatch.setenv("FLYWHEEL_BULLETIN_BASE_URL", base_url)
     def prepare(**kwargs):
         captured.update(kwargs)
         return {
@@ -178,7 +179,7 @@ def test_register_uses_fixed_production_origin_and_sanitizes_result(tmp_path) ->
             "credential_name": "BULLETIN_AGENT_JWK",
             "thumbprint": "secret-ish-public-id",
             "key": {"public_key": "verified"},
-            "base_url": DEFAULT_BASE_URL,
+            "base_url": base_url,
             "board": {"registered": True, "handle": DEFAULT_HANDLE, "tier": "agent"},
             "registration": {
                 "requested": True,
@@ -189,7 +190,6 @@ def test_register_uses_fixed_production_origin_and_sanitizes_result(tmp_path) ->
             },
             "keychain": {"source": "keychain", "action": "reused", "thumbprint": "tp"},
         }
-
     body, code = bulletin_identity_register_post(
         {
             "schema": "flywheel.bulletin-identity-register-request/v1",
@@ -203,7 +203,7 @@ def test_register_uses_fixed_production_origin_and_sanitizes_result(tmp_path) ->
     )
 
     assert code == 200
-    assert captured["base_url"] == DEFAULT_BASE_URL
+    assert captured["base_url"] == base_url
     assert captured["handle"] == DEFAULT_HANDLE
     assert captured["allow_loopback"] is False
     assert captured["max_pow_bits"] == MAX_POW_BITS

@@ -33,9 +33,9 @@ ROOT = Path(__file__).resolve().parents[1]
 ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
     ROOT / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
     if line.strip()}
-PINS = {"gather": ("2.0.0", "v2.0.0", "d75f0fd86cbfc8fcfe9868e2e008f0e678b76b70"),
-        "relay": ("0.5.0", "v0.5.0", "ba1e4f21f05ff610a182f9b4665bb82f05a969f8"),
-        "forum": ("1.15.1", "v1.15.1", "86e1b12e20de1938d059eb6b264e20ea2a742c98")}
+PINS = {"gather": ("2.1.0", "v2.1.0", "d37814eee1295b1773ee9c86c8892a1dde739293"),
+        "relay": ("0.6.0", "v0.6.0", "2510d6b3db9c42074c1139af21155a6bf8187b62"),
+        "forum": ("1.16.0", "v1.16.0", "2acc4e3b3ac2a43bdc2210f998bb2a533c4bd5d9")}
 REPLACED = {"gather": "1.9.0", "relay": "0.4.0", "forum": "1.14.0"}
 ADVISORIES = {"gather": ("GHSA-j6j7-39vh-qrp4", "GHSA-r38f-cr69-jpp8"),
               "relay": ("GHSA-82fg-qprm-q5r7",),
@@ -83,7 +83,7 @@ def test_the_relay_submodule_descriptor_and_expectation_agree():
         encoding="utf-8"))
     assert (descriptor["version"], descriptor["source"]["commit"]) == (version, commit)
     text = " ".join(descriptor["does_not_prove"])
-    assert "relay 0.5.0" in text and "relay 0.4.0" not in text
+    assert "relay 0.6.0" in text and "relay 0.4.0" not in text
     assert "no shell, bisect or git child starts" in text
     if shutil.which("git") is None or not (ROOT / ".git").exists():
         pytest.skip("no git checkout to read the relay gitlink from")
@@ -106,7 +106,7 @@ def test_the_release_notes_name_each_advisory_as_fixed():
         encoding="utf-8")
     fixes = notes.split("Security fixes in the lanes", 1)[1].split("\n## ", 1)[0]
     for lane, advisories in ADVISORIES.items():
-        version = PINS[lane][0]
+        version = {"gather": "2.0.0", "relay": "0.5.0", "forum": "1.15.1"}[lane]
         assert f"{lane} {version}" in fixes, lane
         for advisory in advisories:
             assert advisory in fixes, advisory

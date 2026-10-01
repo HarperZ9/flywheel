@@ -43,7 +43,7 @@ DOES_NOT_PROVE = (
     "and transport, not that Relay completes model-backed work.",
     "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: no provider credential rides the "
     "launch; a model server is a separate setup item.",
-    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.5.0 takes write and exec from its "
+    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.6.0 takes write and exec from its "
     "launch, and the engine launches it with both off, its root at the lane "
     "folder, no RELAY_CHILD_ENV names and no unproven CLI tier allowed; the "
     "engine also passes only listed arguments, so root, check, test_cmd and "
@@ -122,7 +122,9 @@ def dispatch_bundled_lane_mcp(
 ) -> int | None:
     """Serve one bundled lane child mode, or return None for the normal gateway.
 
-    The child mode is ``--bundled-lane-mcp <lane>`` (a safe lane name),
+    External clients use exactly ``--bundled-lane-mcp articulate --local-only``.
+    This forces Articulate's local profile before admission can import it.
+    The legacy internal mode is ``--bundled-lane-mcp <lane>`` (a safe lane name),
     followed only by launch grants the policy names for that lane, each at most
     once (``lane_tool_policy_args.LAUNCH_GRANTS``; the engine adds one to the
     launch of a granted T2 call). Each grant reaches the callable as its keyword
@@ -135,18 +137,28 @@ def dispatch_bundled_lane_mcp(
     child process, which owns no other event loop. A non-coroutine awaitable is
     refused, since it has no defined run contract here."""
     args = list(sys.argv[1:] if argv is None else argv)
+    local_only = "--local-only" in args
+    if local_only and args != ["--bundled-lane-mcp", "articulate", "--local-only"]:
+        return 2
     if not args or args[0] != "--bundled-lane-mcp":
+        if "--bundled-lane-mcp" in args:
+            return 2
         return None
     if len(args) < 2 or not _SAFE_LANE.fullmatch(args[1]):
         return 2
     name = args[1]
-    grants = _launch_grant_keywords(name, args[2:])
+    grants = {} if local_only else _launch_grant_keywords(name, args[2:])
     if grants is None:
         return 2
     expected_row = _descriptor.resolve_expected(
         name, expected=expected, manifest_rows=manifest_rows)
     if expected_row is None:
         return 2
+    if local_only:
+        # This dispatcher runs in the dedicated stdio child. Override inherited
+        # values before find_spec can import the package, not just before serve.
+        os.environ["ARTICULATE_MCP_TOOLS"] = "local"
+        os.environ["ARTICULATE_LOCAL_ONLY"] = "1"
     admission = admit_bundled_lane(
         name,
         executable=executable or sys.executable,

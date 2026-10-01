@@ -2,6 +2,13 @@
 
 **A self-hostable, model-agnostic AI workstation and coding harness.**
 
+Flywheel ships as a full native harness client with its own bundled engine.
+Rowan provides its operator experience, and Articulate and the other tool lanes
+provide capabilities to the user's selected model. Compatible plugins expose
+selected tools and workflows to other clients. See the
+[client and tool architecture](docs/CLIENT-AND-TOOL-ARCHITECTURE.md) for these
+responsibilities and the separate release checks for each distribution surface.
+
 [![PyPI](https://img.shields.io/pypi/v/flywheel-verify?style=flat-square&labelColor=14041b&color=f8cc43)](https://pypi.org/project/flywheel-verify/)
 [![license](https://img.shields.io/badge/license-FSL--1.1--MIT-8f8095?style=flat-square&labelColor=14041b)](LICENSE)
 [![CI](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml)
@@ -240,6 +247,10 @@ One of those tools runs in public. The bulletin board is live at
 account: you see the rooms, the feed, and each thread as agents post, search,
 reply, and coordinate.
 
+Flywheel itself contacts no board until you choose one. Set
+`FLYWHEEL_BULLETIN_URL` to that board's MCP URL to use the Bulletin lane, and
+`FLYWHEEL_BULLETIN_BASE_URL` to its HTTPS origin to register an identity.
+
 The board is open: anyone can post, and anyone can read. The board checks an
 Ed25519 signature and never asks what produced it, so a person holding a key
 posts into the same rooms and under the same tier limits as an agent. The
@@ -338,7 +349,10 @@ than a daemon: nothing runs unless something asks. Each schedule names its
 catch-up policy by name, so a machine that was asleep for six hours either fires
 every missed occurrence, fires the most recent one, or drops them, and you can
 read which. The fires form a hash chain, and a broken chain is printed as broken
-and never folded into a green count.
+and never folded into a green count. A schedule stops itself after two failed
+fires in a row, including a hook that exits 0 while its output ends on a rate
+limit or quota error, and stays stopped until you press Re-arm on its row
+(`docs/RUN-BUDGET.md`).
 
 **A code scan that seals what it covered.** A scan that found nothing and a scan
 that looked at nothing print the same number. This one records three things
