@@ -163,3 +163,49 @@ def test_notifications_are_silent_and_next_ping_still_works(tmp_path):
     assert tool_mcp.main(['--root', str(workspace), '--run-root', str(state)],
         io.StringIO(''.join(json.dumps(value) + '\n' for value in messages)), stdout) == 0
     assert json.loads(stdout.getvalue()) == {'jsonrpc': '2.0', 'id': 1, 'result': {}}
+
+
+@pytest.mark.parametrize('metadata', [{}, {'progressToken': 'task-1'}, {'progressToken': 0},
+    {'progressToken': -7, 'online': True, 'allow_exec': True, 'allow_write': True,
+     'name': 'exec', 'arguments': {'command': 'inert'}}])
+def test_protocol_metadata_preserves_results_without_grants(tmp_path, metadata):
+    from copy import deepcopy
+    from harness import tool_mcp
+    workspace, state = roots(tmp_path)
+    uri = tool_mcp.list_resources()['resources'][0]['uri']
+    cases = [('initialize', {}), ('ping', {}), ('tools/list', {}), ('resources/list', {}),
+        ('resources/read', {'uri': uri}), ('tools/call', {'name': 'flywheel.tool_status'}),
+        ('tools/call', {'name': 'receipt.verify_inclusion', 'arguments': {'leaf': 'f' * 64}}),
+        ('tools/call', {'name': 'exec', 'arguments': {'allow_exec': True}})]
+    for method, params in cases:
+        plain = request(method, params)
+        decorated = deepcopy(plain)
+        decorated['params']['_meta'] = metadata
+        before = deepcopy(decorated)
+        assert tool_mcp.handle(decorated, workspace, state) == tool_mcp.handle(plain, workspace, state)
+        assert decorated == before
+    assert not list(workspace.iterdir()) and not list(state.iterdir())
+
+
+@pytest.mark.parametrize('metadata', [None, False, [], 'token', 3, {'progressToken': None},
+    {'progressToken': True}, {'progressToken': 1.5}, {'progressToken': []}, {'progressToken': {}}])
+def test_malformed_protocol_metadata_refused_before_dispatch(tmp_path, monkeypatch, metadata):
+    from harness import tool_mcp
+    workspace, state = roots(tmp_path)
+    def forbidden(*args, **kwargs):
+        pytest.fail('malformed metadata reached a business handler')
+    monkeypatch.setattr(tool_mcp, 'installed_version', forbidden)
+    monkeypatch.setattr(tool_mcp, 'read_resource', forbidden)
+    for method, params in [('tools/call', {'name': 'flywheel.tool_status'}),
+                           ('resources/read', {'uri': 'unused'})]:
+        params['_meta'] = metadata
+        assert tool_mcp.handle(request(method, params), workspace, state)['error']['code'] == -32602
+
+
+def test_metadata_does_not_loosen_business_allowlist(tmp_path):
+    from harness import tool_mcp
+    workspace, state = roots(tmp_path)
+    for params in ({'name': 'flywheel.tool_status', 'arguments': {'_meta': {}}},
+                   {'name': 'flywheel.tool_status', 'allow_exec': True}):
+        params['_meta'] = {'progressToken': 'valid'}
+        assert tool_mcp.handle(request('tools/call', params), workspace, state)['error']['code'] == -32602

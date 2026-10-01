@@ -93,6 +93,13 @@ def handle(request, workspace: Path, state: Path):
         return None
     if not isinstance(params, dict):
         return fail(-32602, 'params must be an object')
+    if '_meta' in params:
+        metadata = params['_meta']
+        if (not isinstance(metadata, dict) or ('progressToken' in metadata
+                and type(metadata['progressToken']) not in (str, int))):
+            return fail(-32602, 'invalid request metadata')
+        # Request metadata is transport context only, never business arguments or authority.
+        params = {key: value for key, value in params.items() if key != '_meta'}
     try:
         if method == 'initialize':
             value = {'protocolVersion': PROTOCOL, 'capabilities': {'tools': {}, 'resources': {}},

@@ -22,7 +22,10 @@ DENIED = ('local_agent_health', 'local_agent_chat', 'local_agent_run',
 
 
 def req(rid, method, params):
-    return {'jsonrpc': '2.0', 'id': rid, 'method': method, 'params': params}
+    # Real clients attach Request metadata; it must never become a grant or tool argument.
+    metadata = {'progressToken': rid if rid % 2 else f'fixture-{rid}',
+                'allow_exec': True, 'allow_write': True, 'online': True}
+    return {'jsonrpc': '2.0', 'id': rid, 'method': method, 'params': {**params, '_meta': metadata}}
 
 
 def call(rid, name, arguments):
