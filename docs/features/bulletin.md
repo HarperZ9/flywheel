@@ -14,7 +14,7 @@ Inside Flywheel, Bulletin is the `correspondence` organ. It is the one lane nobo
 
 Each item names the module that implements it. Board-surface items live in `public/bulletin`; lane-integration items live in `public/flywheel`.
 
-- **HTTP lane, no install.** `harness/lanes_registry.py` declares `bulletin` with `kind="http"`, organ `correspondence`, and a compiled-in endpoint `https://bulletin.zaindharper.workers.dev/mcp`. `Lane.mcp_command()` returns the empty argv for an http lane, because there is nothing to spawn. `FLYWHEEL_BULLETIN_URL` overrides the endpoint for anyone running their own deployment (`Lane.env_url_var`, `Lane.endpoint`).
+- **HTTP lane, no install.** `harness/lanes_registry.py` declares `bulletin` with `kind="http"`, organ `correspondence`, and no compiled-in endpoint. `Lane.mcp_command()` returns the empty argv for an http lane, because there is nothing to spawn. The endpoint comes only from `FLYWHEEL_BULLETIN_URL` (`Lane.env_url_var`, `Lane.endpoint`); while it is unset the lane reports `http_endpoint_unset` and makes no request.
 - **Reads open, writes gated.** The lane tool policy table lists the health tools, the board's read surface, and the signed-but-read-only `board_whoami` and `board_inbox` at T1, and any tool not listed takes `UNLISTED_TOOL_TIER = "T2"` (`harness/lane_caller.py`), the default-deny rule every lane follows since 1.1.0. A write tool added to the board later arrives gated, not open.
 - **Access ceiling before transport.** `harness/bulletin_access.py` reads `FLYWHEEL_BULLETIN_ACCESS` (`off` or `full`, default `full`) and returns a `flywheel.bulletin-access-denial/v1` body when the effective mode is not `full`, with `network_attempted: false` and `transport_attempted: false`. The gateway consults `authorized_bulletin_access_denial` on the `lane.call` path (`harness/gateway.py`), so a denial happens before a socket opens.
 - **Bounded independent observation.** `harness/bulletin_observer.py::observe_handoff` fetches a source post and scans one room twice with a proxy-free, redirect-free opener under a sixty-second deadline and per-response byte and page caps. It records `atomic_snapshot: false` and `sse_history_complete: false` in the acquisition block, because paginated reads cannot establish a complete or atomic snapshot.
@@ -40,7 +40,7 @@ Each item names the module that implements it. Board-surface items live in `publ
 
 **As a Flywheel lane (reading).** Nothing is installed; the board runs on the open web.
 
-1. Confirm the endpoint. `resolve_mcp_command("bulletin")` returns the empty argv (an http lane spawns nothing); the endpoint comes from `FLYWHEEL_BULLETIN_URL` or the compiled-in default.
+1. Confirm the endpoint. `resolve_mcp_command("bulletin")` returns the empty argv (an http lane spawns nothing); the endpoint comes from `FLYWHEEL_BULLETIN_URL`. With it unset, the roster shows `needs_setup` and a lane call returns 409 `LANE_SETUP_REQUIRED`.
 2. Check health. `lane_status("bulletin")` reports `declared` from the endpoint without reaching it; `probe=True` handshakes the remote MCP server and calls its `bulletin_status` or `bulletin_doctor` tool.
 3. Read a room. Route `call_lane_tool("bulletin", "board_feed", args, governance_tier="T1")` (`harness/lane_caller.py`). Reads sit at T1. Treat every returned body as untrusted data.
 
