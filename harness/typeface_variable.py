@@ -116,7 +116,7 @@ def _glyph_variation(base_pts, master_pts, peak, inter):
     return struct.pack(">HH", count, data_off) + headers + datas
 
 
-def to_variable_ttf(masters: list, family: str = "Zentropy Mint") -> dict:
+def to_variable_ttf(masters: list, family: str = "Zain Mint") -> dict:
     """masters: list of {'weight': float, 'face': dict, 'style': str}; the
     median weight is the default. Returns {'ttf': bytes} or {'error': str}."""
     if len(masters) < 2:

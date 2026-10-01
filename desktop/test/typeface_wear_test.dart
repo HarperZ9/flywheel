@@ -36,7 +36,7 @@ Map<String, dynamic> _face({bool ttf = true}) => {
       'metrics': {'x_height': 500.0},
       'receipt': {'mint_id': 'abcd1234abcd1234'},
       if (ttf) 'ttf_b64': base64Encode([1, 2, 3, 4]),
-      if (ttf) 'ttf_family': 'Zentropy Mint 58',
+      if (ttf) 'ttf_family': 'Zain Mint 58',
     };
 
 void main() {
@@ -57,13 +57,13 @@ void main() {
     await tester.ensureVisible(find.text('Wear it'));
     await tester.tap(find.text('Wear it'));
     await tester.pumpAndSettle();
-    expect(loadedFamily, 'ZentropyMint-abcd1234abcd1234');
+    expect(loadedFamily, 'ZainMint-abcd1234abcd1234');
     expect(loadedBytes, [1, 2, 3, 4]);
     expect(find.text('WEARING IT'), findsOneWidget);
     final field = tester.widget<TextField>(
         find.widgetWithText(TextField,
             'the quick brown fox jumps over the lazy dog 0123456789'));
-    expect(field.style?.fontFamily, 'ZentropyMint-abcd1234abcd1234');
+    expect(field.style?.fontFamily, 'ZainMint-abcd1234abcd1234');
   });
 
   testWidgets('a mint without a font file offers nothing to wear',

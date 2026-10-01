@@ -28,7 +28,7 @@ INSTANCES = (
 
 
 def mint_family(params: dict | None = None, seed: int = 58,
-                family: str = "Zentropy Mint",
+                family: str = "Zain Mint",
                 instances: "list[tuple[str, float]] | None" = None) -> dict:
     """Mint every named weight from one seed; ship the survivors."""
     base = {**DEFAULTS, **(params or {})}
@@ -79,7 +79,7 @@ def mint_family(params: dict | None = None, seed: int = 58,
 
 
 def mint_variable_family(params: dict | None = None, seed: int = 58,
-                         family: str = "Zentropy Mint",
+                         family: str = "Zain Mint",
                          instances: "list[tuple[str, float]] | None" = None
                          ) -> dict:
     """Mint the family's weights as MASTERS and ship them as ONE variable
