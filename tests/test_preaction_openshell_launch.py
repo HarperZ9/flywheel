@@ -61,7 +61,9 @@ def test_windows_plan_uses_wsl_paths(tmp_path):
     create = p["commands"]["create"]
     assert create[:3] == ["wsl.exe", "-e", "openshell"]
     assert "/mnt/c/dev/proj:/sandbox/work" in create
-    assert any(a.startswith("/mnt/") and a.endswith(".policy.yaml") for a in create)
+    policy = osl.wsl_path(str(tmp_path / "flywheel-hooked.policy.yaml"))
+    assert policy in create
+    assert osl.wsl_path("D:\\w\\p.yaml") == "/mnt/d/w/p.yaml"
     assert p["commands"]["start"][-1] == "claude"
 
 
