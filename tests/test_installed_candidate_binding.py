@@ -31,7 +31,7 @@ def test_exact_evidence_binding(candidate):
     verify(root, digest, '1.2.0', 'a' * 40)
 
 
-@pytest.mark.parametrize('change', ['source', 'kind', 'hash', 'missing', 'changed', 'hold', 'manifest'])
+@pytest.mark.parametrize('change', ['source', 'kind', 'hash', 'missing', 'changed', 'hold', 'manifest', 'crt'])
 def test_wrong_candidate_or_missing_evidence_refuses(candidate, change):
     root, digest, summary = candidate
     if change == 'source':
@@ -46,6 +46,8 @@ def test_wrong_candidate_or_missing_evidence_refuses(candidate, change):
         (root / RECEIPTS[0]).unlink()
     elif change == 'manifest':
         (root / 'installed-build-manifest.json').write_text('changed')
+    elif change == 'crt':
+        (root / 'crt-selection.json').write_text('changed')
     else:
         (root / RECEIPTS[0]).write_text('changed')
     (root / 'ci-installed-acceptance-summary.json').write_text(json.dumps(summary))

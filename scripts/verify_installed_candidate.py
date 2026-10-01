@@ -19,7 +19,7 @@ from desktop.tool.installed_payload_binding import _scan_files
 RECEIPTS = tuple('installed-acceptance/' + name + '.json' for name in (
     'installed-launch-full', 'installed-launch-inspect', 'installed-canon-context',
     'installed-tool-profiles', 'installed-native-ui', 'installed-lanes-per-user',
-    'installed-lanes-all-users')) + ('installed-build-manifest.json',)
+    'installed-lanes-all-users')) + ('installed-build-manifest.json', 'crt-selection.json')
 
 
 def sha(path):

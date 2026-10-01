@@ -72,7 +72,7 @@ $summary = [ordered]@{
   limits = @("exact candidate installer bytes only", "native window and owned-child close checked; rendered content and interaction not checked", "device, signing, provider, and publication acceptance not claimed")
 }
 $receiptHashes = [ordered]@{}
-$receiptFiles = @($summary.receipts.Values) + @("installed-build-manifest.json")
+$receiptFiles = @($summary.receipts.Values) + @("installed-build-manifest.json", "crt-selection.json")
 foreach ($relative in $receiptFiles) {
   $receiptHashes[$relative] = (Get-FileHash -LiteralPath (Join-Path $installerDir $relative) -Algorithm SHA256).Hash.ToLowerInvariant()
 }

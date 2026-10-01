@@ -223,6 +223,7 @@ jobs:
           name: tag-installed-acceptance-${{ github.run_id }}
           path: |
             desktop/build/installer/installed-build-manifest.json
+            desktop/build/installer/crt-selection.json
             desktop/build/installer/ci-installed-acceptance-summary.json
             desktop/build/installer/installed-acceptance/*.json
           if-no-files-found: warn
@@ -236,6 +237,7 @@ jobs:
           Copy-Item desktop/build/installer/Flywheel-Setup-*.exe build/windows-release-candidate/
           Copy-Item desktop/build/installer/SHA256SUMS.txt build/windows-release-candidate/
           Copy-Item desktop/build/installer/installed-build-manifest.json build/windows-release-candidate/
+          Copy-Item desktop/build/installer/crt-selection.json build/windows-release-candidate/
           Copy-Item desktop/build/installer/ci-installed-acceptance-summary.json build/windows-release-candidate/
           New-Item -ItemType Directory -Path build/windows-release-candidate/installed-acceptance -Force | Out-Null
           Copy-Item desktop/build/installer/installed-acceptance/*.json build/windows-release-candidate/installed-acceptance/
