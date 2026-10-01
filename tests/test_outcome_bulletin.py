@@ -56,8 +56,8 @@ INDEX_OUTCOME = {
 
 def test_preview_is_deterministic_public_bulletin_payload():
     """If rendering depends on dict order or private state, public review drifts."""
-    first = build_preview(dict(INDEX_OUTCOME))
-    second = build_preview(json.loads(json.dumps(INDEX_OUTCOME)))
+    first = build_preview(dict(INDEX_OUTCOME), bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
+    second = build_preview(json.loads(json.dumps(INDEX_OUTCOME)), bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
 
     assert first == second
     assert first["schema"] == "flywheel.outcome-bulletin-preview/v1"
@@ -105,7 +105,7 @@ def test_private_journey_fields_are_rejected_before_rendering(field):
     outcome[field] = "owner_" + "a" * 32
 
     with pytest.raises(OutcomeBulletinError) as failure:
-        build_preview(outcome)
+        build_preview(outcome, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
 
     assert failure.value.code == "UNSAFE_PUBLIC_OUTCOME"
     assert "owner_" not in str(failure.value)
@@ -115,18 +115,18 @@ def test_host_paths_and_unallowlisted_urls_are_rejected_without_echoing():
     path_outcome = dict(INDEX_OUTCOME)
     path_outcome["checked"] = ["Receipt at C:/dev/private/state.json"]
     with pytest.raises(OutcomeBulletinError) as path_failure:
-        build_preview(path_outcome)
+        build_preview(path_outcome, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     assert "C:/dev" not in str(path_failure.value)
 
     url_outcome = dict(INDEX_OUTCOME)
     url_outcome["links"] = [{"label": "other", "url": "https://example.com/x"}]
     with pytest.raises(OutcomeBulletinError) as url_failure:
-        build_preview(url_outcome)
+        build_preview(url_outcome, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     assert "example.com" not in str(url_failure.value)
 
 def test_gateway_grant_request_binds_the_preview_to_lane_call():
     """A grant for another lane or payload must fail canonical gateway binding."""
-    preview = build_preview(INDEX_OUTCOME)
+    preview = build_preview(INDEX_OUTCOME, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     request = build_gateway_grant_request(
         preview,
         journey_ref="jrn_" + "a" * 32,
@@ -159,7 +159,7 @@ def test_gateway_grant_route_accepts_the_generated_lane_call_request(tmp_path):
         {"legacy_label": None, "goal": "Publish public finding",
          "intake": {}, "occurred_at": "2026-09-07T12:00:00Z"},
     ))
-    preview = build_preview(INDEX_OUTCOME)
+    preview = build_preview(INDEX_OUTCOME, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     request = build_gateway_grant_request(
         preview,
         journey_ref=journey,
@@ -194,7 +194,7 @@ def test_gateway_publish_envelope_authorizes_one_exact_lane_call(tmp_path):
         {"legacy_label": None, "goal": "Publish public finding",
          "intake": {}, "occurred_at": "2026-09-07T12:00:00Z"},
     ))
-    preview = build_preview(INDEX_OUTCOME)
+    preview = build_preview(INDEX_OUTCOME, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     request = build_gateway_grant_request(
         preview,
         journey_ref=journey,
@@ -240,7 +240,7 @@ def test_gateway_publish_envelope_authorizes_one_exact_lane_call(tmp_path):
 
 def test_publish_uses_t2_bulletin_write_and_verifies_readback():
     """A successful write is not accepted until the public read returns same text."""
-    preview = build_preview(INDEX_OUTCOME)
+    preview = build_preview(INDEX_OUTCOME, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     calls = []
 
     def publisher(lane, tool, args, *, timeout, governance_tier):
@@ -265,7 +265,7 @@ def test_publish_uses_t2_bulletin_write_and_verifies_readback():
 
 def test_publish_without_signed_publisher_reports_no_live_write():
     """Defaulting to unsigned HTTP MCP would fail on the live Bulletin write tool."""
-    preview = build_preview(INDEX_OUTCOME)
+    preview = build_preview(INDEX_OUTCOME, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
 
     result = publish_preview(preview, grant_ref="gnt_" + "c" * 32)
 
@@ -274,7 +274,7 @@ def test_publish_without_signed_publisher_reports_no_live_write():
 
 def test_publish_reports_write_and_readback_failures_without_raw_echo():
     """Publication failures must not echo downstream text that may include secrets."""
-    preview = build_preview(INDEX_OUTCOME)
+    preview = build_preview(INDEX_OUTCOME, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
 
     write_failed = publish_preview(
         preview,

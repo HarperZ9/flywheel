@@ -188,7 +188,8 @@ def test_a_pip_lane_without_a_payload_is_not_in_this_build(frozen, monkeypatch):
     assert lrf.launch_state(runtime.blocking_codes) == lrf.CANNOT_LAUNCH
 
 
-def test_payload_and_http_lanes_keep_their_frozen_launches(frozen):
+def test_payload_and_http_lanes_keep_their_frozen_launches(frozen, monkeypatch):
+    monkeypatch.setenv("FLYWHEEL_BULLETIN_URL", "https://board.example/mcp")
     gather = ln.resolve_mcp_launch("gather")
     assert gather.argv == (sys.executable, "--bundled-lane-mcp", "gather")
     bulletin = ln.resolve_lane_runtime("bulletin")

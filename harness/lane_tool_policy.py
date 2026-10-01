@@ -53,6 +53,7 @@ EFFECTS = {
 }
 T2_EFFECTS = frozenset(("outside_write", "spend", "publish", "actuate", "approve"))
 SETUP_ITEMS = {
+    "http_endpoint": "an operator-selected HTTP endpoint",
     "node": "Node.js 20 or later (bundled in the installer)",
     "git": "Git for Windows, for branch and history",
     "model_server": "a model server at one of the two fixed local addresses",

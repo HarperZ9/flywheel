@@ -8,7 +8,6 @@ from typing import Any, Callable
 
 from .bulletin_identity_contract import (
     BULLETIN_CREDENTIAL_NAME,
-    DEFAULT_BASE_URL,
     DEFAULT_HANDLE,
     MAX_POW_BITS,
     BulletinIdentityError,
@@ -67,8 +66,10 @@ def bulletin_identity_register_post(
         return error_body(unavailable), 400
     preparer = prepare or _prepare_identity
     try:
+        from .bulletin_identity_origin import validate_bulletin_base_url
+        base_url = validate_bulletin_base_url()
         result = preparer(
-            base_url=DEFAULT_BASE_URL,
+            base_url=base_url,
             handle=DEFAULT_HANDLE,
             create=False,
             register=True,
@@ -104,6 +105,12 @@ def _status(
         source: str, keychain_available: bool, signing_available: bool, *,
         action: str | None = None) -> dict[str, Any]:
     unavailable = _availability_reason(source, keychain_available, signing_available)
+    if unavailable is None and source == "keychain":
+        try:
+            from .bulletin_identity_origin import validate_bulletin_base_url
+            validate_bulletin_base_url()
+        except BulletinIdentityError as exc:
+            unavailable = exc.code
     body: dict[str, Any] = {
         "schema": STATUS_SCHEMA,
         "credential_name": BULLETIN_CREDENTIAL_NAME,
@@ -114,6 +121,8 @@ def _status(
         "register_available": unavailable is None and source == "keychain",
         "unavailable_reason": unavailable,
     }
+    if unavailable == "BASE_URL_UNAVAILABLE":
+        body["setup"] = "Set FLYWHEEL_BULLETIN_BASE_URL to your chosen HTTPS origin, then restart Flywheel."
     if action is not None:
         body["action"] = action
     return body

@@ -4,7 +4,7 @@ from __future__ import annotations
 from .key_roster import BULLETIN_CREDENTIAL_NAME
 
 DEFAULT_HANDLE = "flywheel"
-DEFAULT_BASE_URL = "https://bulletin.zaindharper.workers.dev"
+DEFAULT_BASE_URL = ""  # An operator must select a deployment before contact.
 PREPARE_SCHEMA = "flywheel.bulletin-identity-prepare/v1"
 IDENTITY_SCHEMA = "flywheel.bulletin-identity/v1"
 ERROR_SCHEMA = "flywheel.bulletin-identity-error/v1"

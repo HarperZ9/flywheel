@@ -4,7 +4,8 @@ from copy import deepcopy
 import pytest
 
 from harness.gateway_operation import canonicalize_operation, GatewayOperationError
-from harness.outcome_bulletin import build_preview, build_gateway_grant_request
+from harness.outcome_bulletin import (
+    OutcomeBulletinError, build_gateway_grant_request, build_preview)
 
 ORIGIN = "https://bulletin.zaindharper.workers.dev"
 
@@ -57,7 +58,10 @@ def test_projection_refuses_unsupported_ip_literal_instead_of_reinterpreting_hos
 
 def test_preview_and_grant_explicitly_carry_selected_origin(monkeypatch):
     monkeypatch.setenv("FLYWHEEL_BULLETIN_BASE_URL", "https://unapproved.invalid")
-    preview = build_preview(outcome())
+    with pytest.raises(OutcomeBulletinError) as unset:
+        build_preview(outcome())
+    assert unset.value.code == "BULLETIN_ORIGIN_UNSET"
+    preview = build_preview(outcome(), bulletin_base_url=ORIGIN)
     assert preview["target"]["bulletin_base_url"] == ORIGIN
     selected = build_preview(outcome(), bulletin_base_url="https://EXAMPLE.invalid:443/")
     assert selected["target"]["bulletin_base_url"] == "https://example.invalid"
