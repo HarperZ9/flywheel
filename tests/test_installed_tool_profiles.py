@@ -128,9 +128,11 @@ def test_engine_mutation_during_probe_holds(installed, tmp_path, monkeypatch):
 def test_ci_order_receipt_and_line_budget():
     root = Path(__file__).resolve().parents[1]
     script = (root / 'desktop/tool/run_ci_installed_acceptance.ps1').read_text()
+    script += (root / 'desktop/tool/installed_acceptance_phase.ps1').read_text()
     assert script.index('"installed Canon context acceptance"') < script.index(
         '"installed tool profile acceptance"') < script.index('"installed lane acceptance"')
     assert 'installed-tool-profiles.json' in script
-    assert len(script.splitlines()) <= 300
+    assert all(len((root / 'desktop/tool' / name).read_text().splitlines()) <= 300
+               for name in ('run_ci_installed_acceptance.ps1', 'installed_acceptance_phase.ps1'))
     workflow = (root / '.github/workflows/windows-installed-acceptance.yml').read_text()
     assert 'installed-acceptance/*.json' in workflow

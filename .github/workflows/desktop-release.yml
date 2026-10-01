@@ -209,6 +209,25 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "native MCPB hash verification failed" }
           "native_mcp_sha256=$nativeReceiptHash" | Out-File -Append $env:GITHUB_STEP_SUMMARY -Encoding ascii
 
+      - name: Accept the exact tag-built installer before staging
+        shell: pwsh
+        timeout-minutes: 45
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File desktop/tool/run_tag_installed_acceptance.ps1 -Tag "${{ steps.ver.outputs.tag }}"
+          if ($LASTEXITCODE -ne 0) { throw "tag-built installer acceptance failed" }
+
+      - name: Preserve sanitized tag installer acceptance receipts
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: tag-installed-acceptance-${{ github.run_id }}
+          path: |
+            desktop/build/installer/installed-build-manifest.json
+            desktop/build/installer/ci-installed-acceptance-summary.json
+            desktop/build/installer/installed-acceptance/*.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Assemble a stable candidate directory
         shell: pwsh
         run: |
@@ -216,6 +235,10 @@ jobs:
           New-Item -ItemType Directory -Path build/windows-release-candidate/native-mcp -Force | Out-Null
           Copy-Item desktop/build/installer/Flywheel-Setup-*.exe build/windows-release-candidate/
           Copy-Item desktop/build/installer/SHA256SUMS.txt build/windows-release-candidate/
+          Copy-Item desktop/build/installer/installed-build-manifest.json build/windows-release-candidate/
+          Copy-Item desktop/build/installer/ci-installed-acceptance-summary.json build/windows-release-candidate/
+          New-Item -ItemType Directory -Path build/windows-release-candidate/installed-acceptance -Force | Out-Null
+          Copy-Item desktop/build/installer/installed-acceptance/*.json build/windows-release-candidate/installed-acceptance/
           Copy-Item build/frozen-gateway-smoke.json build/windows-release-candidate/
           Copy-Item build/frozen-articulate-smoke.json build/windows-release-candidate/
           Copy-Item build/frozen-tool-mcp-smoke.json build/windows-release-candidate/

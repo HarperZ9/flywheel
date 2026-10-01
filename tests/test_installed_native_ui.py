@@ -47,7 +47,7 @@ def setup(tmp_path, monkeypatch):
     monkeypatch.setattr(probe.native, '_wait_for_window', lambda *args: 12)
     monkeypatch.setattr(probe.native, '_wait_for_owned_gateway', lambda *args: ([{'pid': 42}], []))
     monkeypatch.setattr(probe, 'post_close', lambda hwnd: True)
-    monkeypatch.setattr(probe, 'clean_exit', lambda job: True)
+    monkeypatch.setattr(probe, 'exit_code', lambda job: 0)
     monkeypatch.setattr(probe, 'wait_empty', lambda process, timeout: not process.active)
     return job, tmp_path
 
@@ -71,7 +71,7 @@ def test_failure_never_passes_and_always_cleans_owned_job(setup, monkeypatch, fa
     elif failure == 'survivor':
         job.active = [42]
     elif failure == 'crash':
-        monkeypatch.setattr(probe, 'clean_exit', lambda process: False)
+        monkeypatch.setattr(probe, 'exit_code', lambda process: 0xC0000005)
     else:
         def crash(*args):
             raise RuntimeError('private path or body')
@@ -79,6 +79,10 @@ def test_failure_never_passes_and_always_cleans_owned_job(setup, monkeypatch, fa
     result = probe.run(root, root / 'isolated')
     assert result['verdict'] == 'HOLD' and job.cleaned
     assert 'private path' not in str(result)
+    if failure == 'crash':
+        assert result['stage'] == 'app_exit_code' and result['app_exit_code'] == 0xC0000005
+    elif failure == 'post':
+        assert result['stage'] == 'close_post' and result['close_posted'] is False
 
 
 def test_existing_gateway_is_never_launched_or_killed(setup, monkeypatch):
@@ -92,8 +96,10 @@ def test_existing_gateway_is_never_launched_or_killed(setup, monkeypatch):
 def test_ci_gate_precedes_uninstall_and_stays_bounded():
     root = Path(__file__).resolve().parents[1]
     text = (root / 'desktop/tool/run_ci_installed_acceptance.ps1').read_text()
+    text += (root / 'desktop/tool/installed_acceptance_phase.ps1').read_text()
     assert text.index('"installed native UI acceptance"') < text.index('"installed lane acceptance"')
-    assert len(text.splitlines()) <= 300
+    assert all(len((root / 'desktop/tool' / name).read_text().splitlines()) <= 300
+               for name in ('run_ci_installed_acceptance.ps1', 'installed_acceptance_phase.ps1'))
 
 
 def test_operator_host_refused_before_any_launch(tmp_path, monkeypatch):

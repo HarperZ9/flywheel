@@ -68,6 +68,17 @@ jobs:
           python scripts/build_skill_bundle.py --verify candidate/plugins/plugin-SHA256SUMS.txt --accepted-sha256 $env:ACCEPTED_PLUGINS_SHA256
           if ($LASTEXITCODE -ne 0) { throw "plugin candidate verification failed; refusing to publish" }
 
+      - name: Require exact installed acceptance evidence
+        shell: pwsh
+        env:
+          ACCEPTED_INSTALLER_SHA256: ${{ inputs.installer_sha256 }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          $head = (git rev-parse HEAD).Trim()
+          if ($LASTEXITCODE -ne 0) { throw "could not bind installed evidence to source" }
+          python scripts/verify_installed_candidate.py --candidate candidate --accepted-installer-sha256 $env:ACCEPTED_INSTALLER_SHA256 --version $env:RELEASE_TAG.Substring(1) --source-commit $head
+          if ($LASTEXITCODE -ne 0) { throw "exact installed acceptance evidence missing or mismatched" }
+
       - name: Verify the accepted native MCPB companion
         shell: pwsh
         env:

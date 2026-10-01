@@ -15,7 +15,7 @@ def _workflow() -> str:
 
 
 def _helper() -> str:
-    return HELPER.read_text(encoding="utf-8")
+    return (HELPER.read_text(encoding="utf-8") + "\n" + (HELPER.parent / "installed_acceptance_phase.ps1").read_text(encoding="utf-8"))
 
 
 def _spec() -> str:

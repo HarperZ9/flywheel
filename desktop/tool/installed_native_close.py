@@ -45,13 +45,13 @@ def wait_empty(job, timeout):
     return False
 
 
-def clean_exit(job):
+def exit_code(job):
     from ctypes import wintypes
     code = wintypes.DWORD()
     read = job.kernel.GetExitCodeProcess
     read.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
     read.restype = wintypes.BOOL
-    return bool(read(job.process.hProcess, ctypes.byref(code))) and code.value == 0
+    return int(code.value) if read(job.process.hProcess, ctypes.byref(code)) else None
 
 
 def run(install_root, work):
@@ -78,12 +78,17 @@ def run(install_root, work):
         if not gateways:
             return receipt
         receipt['owned_gateway_observed'] = True
-        receipt['stage'] = 'close'
-        if not post_close(hwnd):
+        receipt['stage'] = 'close_post'
+        receipt['close_posted'] = post_close(hwnd)
+        if not receipt['close_posted']:
             return receipt
-        if job.kernel.WaitForSingleObject(job.process.hProcess, 20000) != WAIT_OBJECT_0:
+        receipt['stage'] = 'app_exit'
+        receipt['app_wait_result'] = int(job.kernel.WaitForSingleObject(job.process.hProcess, 20000))
+        if receipt['app_wait_result'] != WAIT_OBJECT_0:
             return receipt
-        if not clean_exit(job):
+        receipt['stage'] = 'app_exit_code'
+        receipt['app_exit_code'] = exit_code(job)
+        if receipt['app_exit_code'] != 0:
             return receipt
         receipt['stage'] = 'owned_cleanup'
         if not wait_empty(job, 10):
