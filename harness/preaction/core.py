@@ -95,6 +95,7 @@ class Monitor:
         state.rejected |= set(index.get("rejected", []))
         if ctx.run_id in index.get("terminated", []):
             state.terminated = True
+        state.trace_flags = dict(index.get("trace_flags", {}).get(ctx.run_id, {}))
         resumes = int(index.get("resumed", {}).get(ctx.run_id, 0))
         if resumes > state.resumes_applied:
             state.resume()

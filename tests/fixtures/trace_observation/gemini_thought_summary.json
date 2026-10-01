@@ -1,0 +1,34 @@
+{
+ "_provenance": "synthetic: built from the documented response shape (access-gap record 0.1.0, read 2026-10-01); not recorded from a live call; part and usage paths are adapter-unverified",
+ "request": {
+  "model": "gemini-3-pro",
+  "generationConfig": {
+   "thinkingConfig": {
+    "includeThoughts": true
+   }
+  }
+ },
+ "response": {
+  "modelVersion": "gemini-3-pro",
+  "candidates": [
+   {
+    "finishReason": "STOP",
+    "content": {
+     "parts": [
+      {
+       "text": "Thought summary: compare both options.",
+       "thought": true,
+       "thoughtSignature": "OPAQUE-GEM-SENTINEL-3333"
+      },
+      {
+       "text": "Option B."
+      }
+     ]
+    }
+   }
+  ],
+  "usageMetadata": {
+   "thoughtsTokenCount": 77
+  }
+ }
+}

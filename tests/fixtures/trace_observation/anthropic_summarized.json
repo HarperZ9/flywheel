@@ -1,0 +1,45 @@
+{
+ "_provenance": "synthetic: built from the documented response shape (access-gap record 0.1.0, read 2026-10-01); not recorded from a live call",
+ "request": {
+  "model": "claude-opus-5-5",
+  "max_tokens": 4000,
+  "thinking": {
+   "type": "adaptive",
+   "display": "summarized"
+  }
+ },
+ "response": {
+  "model": "claude-opus-5-5",
+  "stop_reason": "end_turn",
+  "content": [
+   {
+    "type": "thinking",
+    "thinking": "The user asks for the sum. Add the two numbers and report it.",
+    "signature": "OPAQUE-SIG-SENTINEL-a1b2"
+   },
+   {
+    "type": "redacted_thinking",
+    "data": "OPAQUE-REDACTED-SENTINEL-c3d4"
+   },
+   {
+    "type": "text",
+    "text": "The sum is 42."
+   },
+   {
+    "type": "tool_use",
+    "id": "tu_1",
+    "name": "calculator",
+    "input": {
+     "expr": "20+22"
+    }
+   }
+  ],
+  "usage": {
+   "input_tokens": 20,
+   "output_tokens": 120,
+   "output_tokens_details": {
+    "thinking_tokens": 88
+   }
+  }
+ }
+}

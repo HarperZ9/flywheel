@@ -49,6 +49,9 @@ class TrajectoryState:
     taint_windows: set = field(default_factory=set)
     taint_paths: set = field(default_factory=set)
     history: list = field(default_factory=list)
+    # Synced from the escalator index on every assessment (core._sync_decisions);
+    # never persisted here, so the index stays the one place a flag lives.
+    trace_flags: dict = field(default_factory=dict)
 
     # --- updates -----------------------------------------------------------
     def record(self, verdict: str, call_sha: str, tool: str = "", capability: str = "") -> None:
@@ -114,6 +117,9 @@ class TrajectoryState:
         if self.drift_count >= self.drift_threshold and self._leaves_scope(call, ctx):
             out.append(Hit("scope-drift/001", "scope-drift", HOLD,
                            "Calls keep leaving the run's workspace.", layer=2))
+        if self.trace_flags:
+            from .trace_flag import flag_hits
+            out.extend(flag_hits(self.trace_flags))
         return out
 
     # --- persistence ---------------------------------------------------------
