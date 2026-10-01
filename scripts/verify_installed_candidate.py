@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from desktop.tool.installed_payload_binding import _scan_files
+from scripts.installed_crt_receipt import check_crt_receipt
 
 RECEIPTS = tuple('installed-acceptance/' + name + '.json' for name in (
     'installed-launch-full', 'installed-launch-inspect', 'installed-canon-context',
@@ -52,6 +53,16 @@ def verify(root, accepted_hash, version, commit):
     for name in RECEIPTS:
         if name not in files or files[name].stat().st_size > 10000000 or sha(files[name]) != hashes[name]:
             raise ValueError('installed acceptance evidence bytes missing or changed')
+    # Matching digests show the receipts are unchanged, not that the CRT they
+    # record can run the app; the 14.29 CRT that crashed native close had both.
+    check_crt_receipt(_json(files['crt-selection.json']), _json(files['installed-build-manifest.json']))
+
+
+def _json(path):
+    try:
+        return json.loads(path.read_text(encoding='utf-8-sig'))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f'{path.name} is not JSON: {exc}') from exc
 
 
 if __name__ == '__main__':
