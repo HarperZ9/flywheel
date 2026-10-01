@@ -220,8 +220,7 @@ $pythonLaneSourceRoot = Join-Path $env:RUNNER_TEMP "flywheel-python-lane-sources
 $pythonLaneStageReceipt = Join-Path $env:RUNNER_TEMP "python-lane-source-stage.full.json"
 $pythonLaneBoundedReceipt = Join-Path $installerDir "python-lane-source-stage.json"
 New-Item -ItemType Directory -Force -Path $installerDir | Out-Null
-# The gateway spec freezes every manifest lane but relay from its staged source
-# (scripts/python_lane_freeze.py), so stage them all, as desktop-release does.
+# Stage the full manifest used by scripts/python_lane_freeze.py, as desktop-release does.
 Invoke-Checked "stage Python lane sources" "python" @("scripts/stage_python_lane_sources.py", "--all", "--source-root", $pythonLaneSourceRoot, "--receipt", $pythonLaneStageReceipt, "--bounded-receipt", $pythonLaneBoundedReceipt)
 $env:FLYWHEEL_PYTHON_LANE_SOURCE_ROOT = $pythonLaneSourceRoot
 # The freeze also refuses to run without the staged Node lanes (scripts/frozen_payload_datas.py).
@@ -283,6 +282,7 @@ Invoke-Checked "full installed acceptance" "powershell" $fullArgs
 Invoke-Checked "inspect installed acceptance" "powershell" $inspectArgs
 Invoke-Checked "installed Canon context acceptance" "python" @("scripts/check_installed_canon_context.py", "--install-root", $requestedInstallRoot, "--expected-engine-sha256", $engineHash, "--expected-version", $version, "--source-commit", $targetCommit, "--receipt", $canonReceipt)
 Invoke-Checked "installed tool profile acceptance" "python" @("scripts/check_installed_tool_profiles.py", "--install-root", $requestedInstallRoot, "--expected-engine-sha256", $engineHash, "--expected-version", $version, "--source-commit", $targetCommit, "--receipt", (Join-Path $acceptanceDir "installed-tool-profiles.json"))
+Invoke-Checked "installed native UI acceptance" "python" @("scripts/check_installed_native_ui.py", "--install-root", $requestedInstallRoot, "--expected-app-sha256", $appHash, "--expected-engine-sha256", $engineHash, "--expected-version", $version, "--source-commit", $targetCommit, "--receipt", (Join-Path $acceptanceDir "installed-native-ui.json"))
 Invoke-Checked "installed lane acceptance" "powershell" @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $scriptRoot "run_installed_lane_acceptance.ps1"), "-InstallRoot", $requestedInstallRoot, "-Installer", $installer.FullName, "-AcceptanceDir", $acceptanceDir, "-SourceCommit", $targetCommit, "-EngineSha256", $engineHash)
 Assert-TrackedAndSubmodulesUnchanged "after acceptance"
 $summary = [ordered]@{
@@ -294,7 +294,7 @@ $summary = [ordered]@{
   app_sha256 = $appHash
   engine_sha256 = $engineHash
   payload_sha256 = $payloadHash
-  receipts = [ordered]@{ full = "installed-acceptance/installed-launch-full.json"; inspect = "installed-acceptance/installed-launch-inspect.json"; canon_context = "installed-acceptance/installed-canon-context.json"; tool_profiles = "installed-acceptance/installed-tool-profiles.json"; lanes_per_user = "installed-acceptance/installed-lanes-per-user.json"; lanes_all_users = "installed-acceptance/installed-lanes-all-users.json" }
-  limits = @("rebuilt CI candidate only", "native UI not launched", "device, signing, provider, and publication acceptance not claimed")
+  receipts = [ordered]@{ full = "installed-acceptance/installed-launch-full.json"; inspect = "installed-acceptance/installed-launch-inspect.json"; canon_context = "installed-acceptance/installed-canon-context.json"; tool_profiles = "installed-acceptance/installed-tool-profiles.json"; native_ui = "installed-acceptance/installed-native-ui.json"; lanes_per_user = "installed-acceptance/installed-lanes-per-user.json"; lanes_all_users = "installed-acceptance/installed-lanes-all-users.json" }
+  limits = @("rebuilt CI candidate only", "native window and owned-child close checked; rendered content and interaction not checked", "device, signing, provider, and publication acceptance not claimed")
 }
 $summary | ConvertTo-Json -Depth 12 | Out-File -LiteralPath (Join-Path $installerDir "ci-installed-acceptance-summary.json") -Encoding utf8
