@@ -2,8 +2,17 @@
 from __future__ import annotations
 import json
 import re
+import subprocess
+import time
 
-from desktop.tool.native_close_acceptance import _run_powershell
+from desktop.tool.native_close_acceptance import POWERSHELL
+
+
+def _run_powershell(command, timeout):
+    result = subprocess.run([POWERSHELL, '-NoProfile', '-Command', command],
+        capture_output=True, text=True, timeout=timeout,
+        creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+    return result.stdout if result.returncode == 0 else '[]'
 
 
 def crash_events(pid):
@@ -26,8 +35,20 @@ foreach ($row in $rows) {
 }
 ConvertTo-Json -InputObject $out -Compress
 """.replace('OWNED_PID', str(pid))
+    deadline = time.monotonic() + 8.0
+    while (remaining := deadline - time.monotonic()) > 0:
+        rows = _read_events(command, pid, min(2.0, remaining))
+        if rows:
+            return rows
+        remaining = deadline - time.monotonic()
+        if remaining > 0:
+            time.sleep(min(0.25, remaining))
+    return []  # Unavailable events remain unknown; the app already failed its exit check.
+
+
+def _read_events(command, pid, timeout):
     try:
-        rows = json.loads(_run_powershell(command) or '[]')
+        rows = json.loads(_run_powershell(command, timeout) or '[]')
         if not isinstance(rows, list):
             return []
         result = []
