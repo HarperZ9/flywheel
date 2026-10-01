@@ -229,6 +229,15 @@ reaches T2, since the model picks each inner call and its arguments.
 learn was measured in WP4 on its pinned archive, on the bundled Node v24.21.0 with a System32 PATH
 and an empty home.
 
+Telos 0.6.0 was measured on 2026-10-01 against its pinned npm tarball with the
+same probe scripts, the same three profiles and the bundled Node v24.21.0.
+All 41 tools produced the same normalized observations and served input schemas
+as 0.5.0. The server change in 0.6.0 adds MCP tool annotations and keeps the
+tool-to-script mapping. The removed account-automation modules sat behind
+`telos.native.control`, which stays out of the build. The receipt is
+`project-docs/lanes/evidence/telos-0.6.0-tool-measurement.json`. This does not
+establish real sibling workflow success or observe non-Node descendants.
+
 Telos 0.5.0 was remeasured on 2026-10-01 against its pinned npm tarball.
 The same three profiles and all 41 tools produced the same normalized observations
 as 0.4.2, including the unanswered room call with stand-in siblings. The new receipt
@@ -436,7 +445,7 @@ Admitted at launch: 14 of 15 tools. T2 per granted call: 1. Not in this build: 0
 | `learn_tutor_derive_schedule` | T1 |  | read | node | `sessionId` a plain id | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 | `learn_tutor_prooflesson` | T1 |  | read | node | `packetPath` kept out of the home | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 
-### telos 0.5.0
+### telos 0.6.0
 
 Admitted at launch: 37 of 41 tools. T2 per granted call: 3. Not in this build: 1.
 
@@ -582,7 +591,7 @@ Reads only (class C): Reads the panel catalog. Calibration runs in Calibrate Pro
 | `calibrate-pro.list-panels` | T1 | main | read |  |  | Lists the characterized panel catalog. |
 | `calibrate-pro.panel-info` | T1 | main | read |  |  | Returns one panel's stored characterization. |
 
-### canon 0.5.0
+### canon 0.6.0
 
 Admitted at launch: 5 of 6 tools. T2 per granted call: 1. Not in this build: 0.
 

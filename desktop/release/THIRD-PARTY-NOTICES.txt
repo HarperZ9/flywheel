@@ -189,7 +189,7 @@ index-graph 2.15.0 (lane index), tag v2.15.0 @ b2e4dcefff9d, FSL-1.1-MIT
 forum-engine 1.16.0 (lane forum), tag v1.16.0 @ 2acc4e3b3ac2, LicenseRef-FSL-1.1-MIT
 plexus-mesh 0.3.0 (lane plexus), tag v0.3.0 @ 825b992c51e9, LicenseRef-FSL-1.1-MIT
 flywheel-mneme 0.6.0 (lane mneme), tag v0.6.0 @ fc7097e38f20, LicenseRef-FSL-1.1-MIT
-flywheel-canon 0.5.0 (lane canon), tag v0.5.0 @ 7bbd7ad0a565, LicenseRef-FSL-1.1-MIT
+flywheel-canon 0.6.0 (lane canon), tag v0.6.0 @ c3ff3cd32265, LicenseRef-FSL-1.1-MIT
 chorus-discourse 0.3.1 (lane chorus), tag v0.3.1 @ 677ad99554f3, LicenseRef-FSL-1.1-MIT
 flywheel-relay 0.6.0 (lane relay), tag v0.6.0 @ 2510d6b3db9c, LicenseRef-FSL-1.1-MIT
 accountable-surface 0.3.1 (lane accountable-surface), tag v0.3.1 @ d5a7c108ba46, LicenseRef-FSL-1.1-MIT
@@ -216,8 +216,8 @@ License file shipped: node-lanes/learn/LICENSE
 Source: https://registry.npmjs.org/@harperz9/learn/-/learn-2.1.0.tgz (npm integrity pinned in packaging/node-lane-payloads.json)
 Copyright (c) 2026 Zain Dana Harper.
 
-project-telos-mcp 0.5.0
+project-telos-mcp 0.6.0
 License: Functional Source License 1.1, Apache 2.0 future license, FSL-1.1-ALv2
 License file shipped: node-lanes/telos/LICENSE
-Source: https://registry.npmjs.org/project-telos-mcp/-/project-telos-mcp-0.5.0.tgz (npm integrity and sha256 pinned in packaging/node-lane-payloads.json; the same bytes as the v0.5.0 GitHub release asset, tag v0.5.0 @ 779f62710968)
+Source: https://registry.npmjs.org/project-telos-mcp/-/project-telos-mcp-0.6.0.tgz (npm integrity and sha256 pinned in packaging/node-lane-payloads.json; the same bytes as the v0.6.0 GitHub release asset, tag v0.6.0 @ 40677b23349b)
 Copyright 2026 Zain Dana Harper.
