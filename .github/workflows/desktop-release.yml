@@ -209,6 +209,26 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "native MCPB hash verification failed" }
           "native_mcp_sha256=$nativeReceiptHash" | Out-File -Append $env:GITHUB_STEP_SUMMARY -Encoding ascii
 
+      - name: Build and qualify the matching source tools plugin
+        shell: pwsh
+        env:
+          SOURCE_VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          $sourceOut = Join-Path $env:RUNNER_TEMP "flywheel-source-plugin"
+          $sourceCheck = Join-Path $env:RUNNER_TEMP "flywheel-source-plugin-check"
+          python -m pytest tests/test_source_tool_plugin.py tests/test_source_tool_plugin_check.py -q
+          if ($LASTEXITCODE -ne 0) { throw "source plugin tests failed" }
+          python scripts/build_source_tool_plugin.py --out $sourceOut
+          if ($LASTEXITCODE -ne 0) { throw "source plugin build failed" }
+          $sourceZip = Join-Path $sourceOut "flywheel-tools-$env:SOURCE_VERSION-source-plugin.zip"
+          python scripts/check_source_tool_plugin.py --archive $sourceZip --out $sourceCheck --expected-version $env:SOURCE_VERSION
+          if ($LASTEXITCODE -ne 0) { throw "source plugin qualification failed" }
+          $sourceSums = Join-Path $sourceOut "source-plugin-SHA256SUMS.txt"
+          $sourceHash = (Get-FileHash $sourceSums -Algorithm SHA256).Hash.ToLower()
+          python scripts/build_source_tool_plugin.py --verify $sourceSums --accepted-sha256 $sourceHash --version $env:SOURCE_VERSION
+          if ($LASTEXITCODE -ne 0) { throw "source plugin hash verification failed" }
+          "source_plugin_sha256=$sourceHash" | Out-File -Append $env:GITHUB_STEP_SUMMARY -Encoding ascii
+
       - name: Accept the exact tag-built installer before staging
         shell: pwsh
         timeout-minutes: 45
@@ -249,6 +269,13 @@ jobs:
           Copy-Item desktop/build/installer/native-mcp/native-MCPB-SHA256SUMS.txt build/windows-release-candidate/native-mcp/
           Copy-Item desktop/build/installer/plugins/*.zip build/windows-release-candidate/plugins/
           Copy-Item desktop/build/installer/plugins/plugin-SHA256SUMS.txt build/windows-release-candidate/plugins/
+          $sourceOut = Join-Path $env:RUNNER_TEMP "flywheel-source-plugin"
+          $sourceCheck = Join-Path $env:RUNNER_TEMP "flywheel-source-plugin-check"
+          New-Item -ItemType Directory -Path build/windows-release-candidate/source-plugin -Force | Out-Null
+          Copy-Item "$sourceOut/*.zip" build/windows-release-candidate/source-plugin/
+          Copy-Item "$sourceOut/source-plugin-SHA256SUMS.txt" build/windows-release-candidate/source-plugin/
+          Copy-Item "$sourceOut/source-plugin-build-receipt.json" build/windows-release-candidate/source-plugin/
+          Copy-Item "$sourceCheck/receipt.json" build/windows-release-candidate/source-plugin/qualification.json
 
       - name: Stage the candidate artifact
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3

@@ -21,8 +21,9 @@ its own model. No publisher-hosted service or publisher-funded compute is used.
 ## Packaging and checks
 
 The native archive is built beside the installer on the same release workflow.
-Its version follows the full client version. Skill/plugin archives have their
-own compatibility version. The builder compares every engine file against both
+Its version follows the full client version. The [source tools plugin](source-tool-plugin.md)
+uses that same version and requires an installed Python runtime. The separate
+evidence-task skill keeps its own compatibility version. The builder compares every engine file against both
 the installer staging directory and PyInstaller's collection record, and rejects
 unexpected files, links, private state paths and changed bytes. An accepted
 checksum is required before the protected publishing workflow attaches the MCPB.

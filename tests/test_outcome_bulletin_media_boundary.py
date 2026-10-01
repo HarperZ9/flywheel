@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from harness import bulletin_signed_transport as transport
+from harness.bulletin_origin import PUBLIC_BULLETIN_ORIGIN
 from harness.credential_handles import CredentialBindings, CredentialHandleStore
 from harness.evidence_public import TransportError
 from harness.outcome_bulletin import build_preview
@@ -38,7 +39,7 @@ def test_gateway_attachment_text_has_the_same_public_boundary_as_body(alt):
 
 def test_frozen_authorized_attachment_payload_can_be_sent_exactly(tmp_path, monkeypatch):
     outcome = {**_public_outcome(), "attachments": [MEDIA]}
-    preview = build_preview(outcome)
+    preview = build_preview(outcome, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     auth, jwk = _auth(tmp_path, preview)
     sent = []
 
@@ -63,7 +64,7 @@ def test_frozen_authorized_attachment_payload_can_be_sent_exactly(tmp_path, monk
     [MEDIA, MEDIA], None,
 ])
 def test_attachment_readback_drift_never_reports_match(tmp_path, monkeypatch, returned):
-    preview = build_preview({**_public_outcome(), "attachments": [MEDIA]})
+    preview = build_preview({**_public_outcome(), "attachments": [MEDIA]}, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     auth, jwk = _auth(tmp_path, preview)
     # Exercise readback independently of the frozen-container binding regression.
     auth = replace(auth, operation={**dict(auth.operation), "args": preview["post"]})
@@ -80,7 +81,7 @@ def test_attachment_readback_drift_never_reports_match(tmp_path, monkeypatch, re
 
 
 def test_unexpected_attachment_on_plain_post_is_drift(tmp_path, monkeypatch):
-    preview = build_preview(_public_outcome())
+    preview = build_preview(_public_outcome(), bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     auth, jwk = _auth(tmp_path, preview)
     monkeypatch.setattr(transport._SignedClient, "post_json", lambda *_: {
         "ok": True, "post": {"id": POST_ID}})
@@ -97,7 +98,7 @@ def test_unexpected_attachment_on_plain_post_is_drift(tmp_path, monkeypatch):
 @pytest.mark.parametrize("returned", [[], [{**MEDIA, "alt": "Changed"}], None])
 def test_injected_publication_seam_also_checks_attachments(returned):
     from harness.outcome_bulletin import publish_preview
-    preview = build_preview({**_public_outcome(), "attachments": [MEDIA]})
+    preview = build_preview({**_public_outcome(), "attachments": [MEDIA]}, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     result = publish_preview(
         preview, grant_ref="gnt_" + "c" * 32,
         publisher=lambda *a, **k: {"ok": True, "post": {"id": POST_ID}},
@@ -106,7 +107,7 @@ def test_injected_publication_seam_also_checks_attachments(returned):
 
 
 def test_attachment_change_after_authorization_cannot_resolve_credentials(tmp_path):
-    preview = build_preview({**_public_outcome(), "attachments": [MEDIA]})
+    preview = build_preview({**_public_outcome(), "attachments": [MEDIA]}, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     auth, _ = _auth(tmp_path, preview)
     preview["post"]["attachments"][0]["alt"] = "Unapproved replacement"
     calls = []

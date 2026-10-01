@@ -270,14 +270,14 @@ def test_the_committed_manifest_pins_the_reviewed_releases():
     assert node["members"]["node.exe"] == (
         "ba4e6d110e8c1592a1ecd390f6b05f3da124b13871a5be62b341a07a853c6c32")
     lanes = {row["lane"]: row for row in manifest["lanes"]}
-    telos = lanes["telos"]  # the npm tarball, byte-identical to the v0.5.0 release asset
-    assert telos["sha256"] == "9ec951113b46fb20a7a0ba529e5e6273bf710dd4bbac844f4255a2240d9dbd52"
+    telos = lanes["telos"]  # the npm tarball, byte-identical to the v0.6.0 release asset
+    assert telos["sha256"] == "785143bd9ea57549ccd3eb2db0999bae2a67b29ae77b08343b29f6f4e624407d"
     assert telos["integrity"] == (
-        "sha512-JmOWlK44N3spq3vZAHDHahaz9aolxqbZCaS0XWIvT+D/JsdkV7VXcPHZfrkQ5wz9afyMYddQDfmMZbDfdC3vDg==")
+        "sha512-XCTNp8IFWXGuLiHETggEAK6sy1mRsN9KQH6k1LLzJSpNNOpL0m2y/oXllF7O6ZMcqBjCkBTxvdsdMi/m3eqGiQ==")
     assert (telos["tag"], telos["version"], telos["tag_commit"]) == (
-        "v0.5.0", "0.5.0", "779f627109685a906979dcf18366c87214fee49f")
-    assert telos["url"] == "https://registry.npmjs.org/project-telos-mcp/-/project-telos-mcp-0.5.0.tgz"
-    assert telos["checksums_url"].endswith("/v0.5.0/SHA256SUMS.txt")
+        "v0.6.0", "0.6.0", "40677b23349bac56fc94a9cd6d4b29aba7362cba")
+    assert telos["url"] == "https://registry.npmjs.org/project-telos-mcp/-/project-telos-mcp-0.6.0.tgz"
+    assert telos["checksums_url"].endswith("/v0.6.0/SHA256SUMS.txt")
     assert "hold" not in telos and "hold_reason" not in telos
     assert lanes["learn"]["version"] == "2.1.0"
     assert lanes["learn"]["integrity"] == (

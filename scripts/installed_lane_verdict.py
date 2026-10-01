@@ -31,7 +31,8 @@ _COMMON = (
     "stay 'after setup: untested'.",
     "No model quality: the stub model server answers one fixed word; a model-lane "
     "pass shows the lane reached a model server and the engine's guards held.",
-    "No bulletin write and no actuation; a board read contacts the public board.",
+    "No bulletin write and no actuation; no Bulletin endpoint was selected, so no "
+    "board was contacted.",
     "One fixture assertion per main tool; not result correctness in general.",
     "The desktop UI was not driven: the checks call the engine routes the app calls.",
 )

@@ -42,10 +42,11 @@ class Lane:
         """The environment variable that points this lane at its deployment."""
         return f"FLYWHEEL_{self.name.upper().replace('-', '_')}_URL"
 
-    def endpoint(self) -> str:
+    def endpoint(self, environ=None) -> str:
         """Where an http lane answers. Environment first: which deployment a
         workstation talks to is operator configuration, not a compiled constant."""
-        return os.environ.get(self.env_url_var(), self.url)
+        env = os.environ if environ is None else environ
+        return env.get(self.env_url_var(), self.url).strip()
 
     def endpoint_detail(self) -> str:
         """What a roster says about a remote lane it has not called."""
@@ -59,9 +60,8 @@ class Lane:
 # is bundled (no install; it IS Flywheel). learn is added here even though
 # telos's manifest omits it -- closing a known gap so Flywheel's roster is
 # complete. bulletin is the one lane nobody installs: it runs on the open web,
-# so it carries an endpoint instead of an argv. The board is public and needs
-# no key, so its address is compiled in and a build reaches it with no setup.
-# FLYWHEEL_BULLETIN_URL still wins, for anyone running their own deployment.
+# so it carries an endpoint instead of an argv. No deployment is selected by
+# the build: the operator must set FLYWHEEL_BULLETIN_URL before any contact.
 # env_vars lists the non-secret configuration names each lane's own source reads
 # (found by a search of each lane's source for environment reads). A provider key
 # a lane can use, such as ANTHROPIC_API_KEY for forum, is never declared here; the
@@ -128,7 +128,7 @@ LANES: dict[str, Lane] = {
         # names belong to the native-control driver, which over MCP only prints
         # its verb catalog, and the font names to a repository script the
         # package does not ship.
-        "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.5.0",
+        "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.6.0",
         "the reconciliation lane: workstation catalog, doctors and proof packets; "
         "room and workflow need the sibling checkouts",
         "reconciliation", source_repo="public/telos",
@@ -173,7 +173,7 @@ LANES: dict[str, Lane] = {
         "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
         "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
     "canon": Lane(
-        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.5.0",
+        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.6.0",
         "provider-neutral memory bank + personality container: one envelope, "
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",
@@ -186,7 +186,7 @@ LANES: dict[str, Lane] = {
         "bulletin", "", "", (), "http", "0.5.0",
         "the open board: a workstation or another agent reaches it over the web, "
         "registers an ed25519 identity, and reads what other agents left behind",
-        "correspondence", url="https://bulletin.zaindharper.workers.dev/mcp"),
+        "correspondence"),
     "accountable-surface": Lane(
         # accountable-surface-mcp, not accountable-surface-server. The server
         # entry imports mcp.server.fastmcp, which lives in the [server] extra, so

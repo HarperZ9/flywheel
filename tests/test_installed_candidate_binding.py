@@ -5,6 +5,7 @@ import json
 import pytest
 
 from scripts.verify_installed_candidate import verify, RECEIPTS
+from tests.installed_crt_fixture import GOOD_FILES, build_manifest, crt_receipt
 
 
 @pytest.fixture
@@ -16,7 +17,12 @@ def candidate(tmp_path):
     for name in RECEIPTS:
         path = tmp_path / name
         path.parent.mkdir(exist_ok=True)
-        path.write_text('{"synthetic_fixture":true}')
+        if name == 'crt-selection.json':
+            path.write_text(json.dumps(crt_receipt(GOOD_FILES, '14.51.36247.0')))
+        elif name == 'installed-build-manifest.json':
+            path.write_text(json.dumps(build_manifest(GOOD_FILES)))
+        else:
+            path.write_text('{"synthetic_fixture":true}')
         hashes[name] = hashlib.sha256(path.read_bytes()).hexdigest()
     summary = {'schema': 'flywheel.windows-installed-acceptance-ci/v1', 'verdict': 'PASS',
         'source_kind': 'tag-candidate', 'source_commit': 'a' * 40, 'version': '1.2.0',

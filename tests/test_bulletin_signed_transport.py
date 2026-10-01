@@ -14,6 +14,7 @@ pytest.importorskip("cryptography")
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
+from harness.bulletin_origin import PUBLIC_BULLETIN_ORIGIN
 from harness.bulletin_signed_transport import (
     BULLETIN_KEY_SLOT,
     _thumbprint,
@@ -258,7 +259,7 @@ def test_lost_post_response_does_not_retry_or_claim_publication(tmp_path):
 
 
 def test_unconfigured_transport_is_typed_and_does_not_resolve_secret(tmp_path):
-    preview = build_preview(_public_outcome())
+    preview = build_preview(_public_outcome(), bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     operation = {"name": "bulletin", "tool": "board_write_post",
                  "args": preview["post"], "governance_tier": "T2",
                  "bulletin_base_url": preview["target"]["bulletin_base_url"],
@@ -273,7 +274,7 @@ def test_unconfigured_transport_is_typed_and_does_not_resolve_secret(tmp_path):
 
 
 def test_grant_binding_mismatch_fails_before_secret_resolution(tmp_path):
-    preview = build_preview(_public_outcome())
+    preview = build_preview(_public_outcome(), bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
     operation = {"name": "bulletin", "tool": "board_write_post",
                  "args": {"room": "findings", "body": "different"},
                  "governance_tier": "T2",
