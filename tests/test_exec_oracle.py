@@ -7,13 +7,13 @@ it as the dense signal. This is the tool-augmented verification thesis (Qwythos
 """
 import os
 import signal
-import time
 from pathlib import Path
 
 import pytest
 
 from harness.exec_oracle import PythonExecutorOracle, line_partial_reward, ExecTask
 from harness.task import Task
+from tests._tree_wait import _await_tree_gone, _describe, _pid_alive, _read_tree_ids, _tree_candidate
 
 
 def _exec_task(tmp_path, expected: str) -> Task:
@@ -70,153 +70,6 @@ def test_timeout_fails_gracefully(tmp_path):
     orc = PythonExecutorOracle(expected="done", timeout=2)
     r = orc.verify_dense("import time; time.sleep(10); print('done')", task)
     assert not r.passed and r.status == "timeout"
-
-
-def _pid_alive(pid: int) -> bool:
-    """True if `pid` is a live, non-zombie process. A zombie (state Z, dead
-    but not yet reaped by its parent) still answers os.kill(pid, 0) as if it
-    existed, which would make this probe flaky right around the reap window;
-    reading /proc/<pid>/stat lets a zombie count as gone, since it has
-    already stopped running and cannot resume the sleep this test plants."""
-    try:
-        with open(f"/proc/{pid}/stat") as f:
-            stat = f.read()
-    except (FileNotFoundError, ProcessLookupError):
-        return False
-    # comm is "(name)" and may itself contain ')'; state is the first field
-    # after the LAST ')'.
-    state = stat.rsplit(")", 1)[1].split()[0]
-    return state not in _DEAD_STATES
-
-
-#: Z is a zombie, X and x are a task the kernel is tearing down. None of them
-#: runs again, so none of them is a survivor.
-_DEAD_STATES = ("Z", "X", "x")
-
-#: How long the tree may take to disappear after the kill. The wait returns as
-#: soon as the tree is gone, so a green run pays nothing for the length. The
-#: old fixed 5 s window failed once on a loaded ubuntu runner (run
-#: 36886773490, attempt 1): the probe said alive, and the read for the failure
-#: message one line later found /proc/<pid> already gone.
-TREE_GONE_BUDGET = 30.0
-
-
-def _proc_table() -> dict:
-    """One pass over /proc: pid -> (state, ppid, pgrp, session).
-
-    Every decision and every failure message below comes from one table, so a
-    survivor is reported with the facts that made it a survivor, never with a
-    second read taken after it died.
-    """
-    table = {}
-    for entry in os.listdir("/proc"):
-        if not entry.isdigit():
-            continue
-        try:
-            with open(f"/proc/{entry}/stat") as f:
-                fields = f.read().rsplit(")", 1)[1].split()
-        except OSError:
-            continue
-        table[int(entry)] = tuple(fields[:4])
-    return table
-
-
-def _tree_survivors(pgid: int, pid: int) -> dict:
-    """Live members of process group `pgid`, plus `pid` if it left the group."""
-    if not os.path.isdir("/proc"):
-        # No /proc (macOS): signal 0 answers for the group and the pid. A
-        # zombie answers too, so this branch is stricter, never looser.
-        alive = {}
-        for probe, target in ((os.killpg, pgid), (os.kill, pid)):
-            try:
-                probe(target, 0)
-                alive[target] = ("?", "?", str(pgid), "?")
-            except ProcessLookupError:
-                pass
-            except PermissionError:
-                alive[target] = ("?", "?", str(pgid), "?")
-        return alive
-    return {p: f for p, f in _proc_table().items()
-            if f[0] not in _DEAD_STATES and (p == pid or int(f[2]) == pgid)}
-
-
-def _await_tree_gone(pgid: int, pid: int, budget: float = TREE_GONE_BUDGET) -> dict:
-    """Poll until group `pgid` has no live member and `pid` is gone.
-
-    Returns the survivors from the last snapshot: empty on success. A bounded
-    poll replaces the fixed sleep, so a slow teardown on a loaded host costs
-    time, not a false failure, and a real leak still fails at the deadline.
-    """
-    deadline = time.monotonic() + budget
-    while True:
-        survivors = _tree_survivors(pgid, pid)
-        if not survivors or time.monotonic() >= deadline:
-            return survivors
-        time.sleep(0.05)
-
-
-def _describe(survivors: dict) -> str:
-    return "; ".join(f"pid={p} state={f[0]} ppid={f[1]} pgrp={f[2]} session={f[3]}"
-                     for p, f in sorted(survivors.items()))
-
-
-# The candidate both tree tests run: it records its grandchild's pid and the
-# process group the oracle built, then outlives any timeout.
-def _tree_candidate(pidfile) -> str:
-    return (
-        "import os, subprocess, sys, time\n"
-        "p = subprocess.Popen([sys.executable, '-c', "
-        "'import time; time.sleep(60)'])\n"
-        f"open({str(pidfile)!r}, 'w').write(f'{{p.pid}} {{os.getpgid(p.pid)}}')\n"
-        "time.sleep(60)\n"
-    )
-
-
-def _read_tree_ids(text_once_written, pidfile) -> tuple:
-    pid, pgid = text_once_written(
-        pidfile, timeout=5.0,
-        why="candidate never reached the point of recording its "
-            "grandchild's pid -- the test setup itself is broken, "
-            "not the fix").split()
-    return int(pid), int(pgid)
-
-
-@pytest.mark.skipif(os.name == "nt", reason="POSIX process groups")
-def test_tree_wait_outlasts_a_teardown_slower_than_the_old_window():
-    """The fixed 5 s window this file used to sleep through called a tree that
-    was still dying a survivor. A group whose last member exits at 5.5 s is
-    not a leak; the bounded poll waits it out and still answers promptly."""
-    import subprocess as sp
-    import threading
-    proc = sp.Popen([__import__("sys").executable, "-c", "import time; time.sleep(5.5)"],
-                    start_new_session=True)
-    reaper = threading.Thread(target=proc.wait, daemon=True)
-    reaper.start()
-    try:
-        started = time.monotonic()
-        survivors = _await_tree_gone(proc.pid, proc.pid)
-        elapsed = time.monotonic() - started
-        assert survivors == {}, _describe(survivors)
-        assert 5.0 < elapsed < 15.0, elapsed
-    finally:
-        if proc.poll() is None:
-            proc.kill()
-        reaper.join(timeout=5)
-
-
-@pytest.mark.skipif(os.name == "nt", reason="POSIX process groups")
-def test_tree_wait_still_reports_a_real_survivor():
-    """The false-success control: a live group member must come back named."""
-    import subprocess as sp
-    import sys
-    proc = sp.Popen([sys.executable, "-c", "import time; time.sleep(60)"],
-                    start_new_session=True)
-    try:
-        survivors = _await_tree_gone(proc.pid, proc.pid, budget=0.3)
-        assert proc.pid in survivors, survivors
-    finally:
-        proc.kill()
-        proc.wait(timeout=10)
 
 
 @pytest.mark.skipif(os.name == "nt", reason="POSIX process-tree reaping; "

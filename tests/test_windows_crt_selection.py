@@ -19,6 +19,8 @@ HELPER = ROOT / 'desktop/scripts/crt_selection.ps1'
 PS_TIMEOUT = 120
 PS_FIRST_LAUNCH_TIMEOUT = 240
 _warm = {'done': False}
+# pytest.ini sets 60 s per test; the first launch alone may take up to 240 s.
+pytestmark = pytest.mark.timeout(300)
 
 
 def _shell():
