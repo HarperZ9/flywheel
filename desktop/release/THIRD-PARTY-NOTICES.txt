@@ -183,15 +183,15 @@ Lanes frozen from pinned source
 Each lane's license ships at licenses/python-lanes/<lane>/, hash-checked against
 its pin when the engine is frozen. Source: https://github.com/HarperZ9/<repo>
 at the tag or commit named. Copyright 2026 Zain Dana Harper.
-gather-engine 2.0.0 (lane gather), tag v2.0.0 @ d75f0fd86cbf, LicenseRef-FSL-1.1-MIT
-crucible-bench 1.3.0 (lane crucible), tag v1.3.0 @ a47ae7981ae5, LicenseRef-FSL-1.1-MIT
-index-graph 2.14.0 (lane index), tag v2.14.0 @ 665ea7e24055, FSL-1.1-MIT
-forum-engine 1.15.1 (lane forum), tag v1.15.1 @ 86e1b12e20de, LicenseRef-FSL-1.1-MIT
-plexus-mesh 0.2.2 (lane plexus), tag v0.2.2 @ aa7cef0eb541, LicenseRef-FSL-1.1-MIT
-flywheel-mneme 0.5.1 (lane mneme), tag v0.5.1 @ 3009bedeaee6, LicenseRef-FSL-1.1-MIT
-flywheel-canon 0.4.2 (lane canon), tag v0.4.2 @ 8e0098aa802c, LicenseRef-FSL-1.1-MIT
+gather-engine 2.1.0 (lane gather), tag v2.1.0 @ d37814eee129, LicenseRef-FSL-1.1-MIT
+crucible-bench 1.4.0 (lane crucible), tag v1.4.0 @ f06b8d1d06ad, LicenseRef-FSL-1.1-MIT
+index-graph 2.15.0 (lane index), tag v2.15.0 @ b2e4dcefff9d, FSL-1.1-MIT
+forum-engine 1.16.0 (lane forum), tag v1.16.0 @ 2acc4e3b3ac2, LicenseRef-FSL-1.1-MIT
+plexus-mesh 0.3.0 (lane plexus), tag v0.3.0 @ 825b992c51e9, LicenseRef-FSL-1.1-MIT
+flywheel-mneme 0.6.0 (lane mneme), tag v0.6.0 @ fc7097e38f20, LicenseRef-FSL-1.1-MIT
+flywheel-canon 0.5.0 (lane canon), tag v0.5.0 @ 7bbd7ad0a565, LicenseRef-FSL-1.1-MIT
 chorus-discourse 0.3.1 (lane chorus), tag v0.3.1 @ 677ad99554f3, LicenseRef-FSL-1.1-MIT
-flywheel-relay 0.5.0 (lane relay), tag v0.5.0 @ ba1e4f21f05f, LicenseRef-FSL-1.1-MIT
+flywheel-relay 0.6.0 (lane relay), tag v0.6.0 @ 2510d6b3db9c, LicenseRef-FSL-1.1-MIT
 accountable-surface 0.3.1 (lane accountable-surface), tag v0.3.1 @ d5a7c108ba46, LicenseRef-FSL-1.1-MIT
 articulate-writing 0.6.0 (lane articulate), tag v0.6.0 @ 36f7e9f1f027, LicenseRef-FSL-1.1-MIT
 calibrate-pro 2.0.0 (lane calibrate-pro), tag v2.0.0 @ 3d24d16d6b57, LicenseRef-FSL-1.1-MIT
@@ -210,14 +210,14 @@ Source archive: https://nodejs.org/dist/v24.21.0/node-v24.21.0-win-x64.zip
 Source archive sha256: 158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541
 Copyright Node.js contributors. All rights reserved.
 
-@harperz9/learn 2.0.0
+@harperz9/learn 2.1.0
 License: Fair Source License (learn), LicenseRef-fair-source
 License file shipped: node-lanes/learn/LICENSE
-Source: https://registry.npmjs.org/@harperz9/learn/-/learn-2.0.0.tgz (npm integrity pinned in packaging/node-lane-payloads.json)
+Source: https://registry.npmjs.org/@harperz9/learn/-/learn-2.1.0.tgz (npm integrity pinned in packaging/node-lane-payloads.json)
 Copyright (c) 2026 Zain Dana Harper.
 
-project-telos-mcp 0.4.2
+project-telos-mcp 0.5.0
 License: Functional Source License 1.1, Apache 2.0 future license, FSL-1.1-ALv2
 License file shipped: node-lanes/telos/LICENSE
-Source: https://registry.npmjs.org/project-telos-mcp/-/project-telos-mcp-0.4.2.tgz (npm integrity and sha256 pinned in packaging/node-lane-payloads.json; the same bytes as the v0.4.2 GitHub release asset, tag v0.4.2 @ b9f59788c280)
+Source: https://registry.npmjs.org/project-telos-mcp/-/project-telos-mcp-0.5.0.tgz (npm integrity and sha256 pinned in packaging/node-lane-payloads.json; the same bytes as the v0.5.0 GitHub release asset, tag v0.5.0 @ 779f62710968)
 Copyright 2026 Zain Dana Harper.

@@ -208,7 +208,7 @@ def test_registry_fixes_ride_with_the_launch_paths():
     assert LANES["chorus"].py_module == "chorus"  # chorus.cli has no main guard
     assert LANES["canon"].py_module == "canon"    # PyPI canon.cli has no main guard
     assert LANES["bulletin"].version == "0.5.0"   # what the live board reports
-    assert LANES["telos"].version == "0.4.2"      # the first release without the CAPTCHA code
+    assert LANES["telos"].version == "0.5.0"      # retains the 0.4.2 removal boundary
     assert not LANES["telos"].package_disabled_reason
 
 

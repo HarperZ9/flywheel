@@ -43,7 +43,7 @@ DOES_NOT_PROVE = (
     "and transport, not that Relay completes model-backed work.",
     "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: no provider credential rides the "
     "launch; a model server is a separate setup item.",
-    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.5.0 takes write and exec from its "
+    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.6.0 takes write and exec from its "
     "launch, and the engine launches it with both off, its root at the lane "
     "folder, no RELAY_CHILD_ENV names and no unproven CLI tier allowed; the "
     "engine also passes only listed arguments, so root, check, test_cmd and "

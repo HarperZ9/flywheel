@@ -136,7 +136,7 @@ curl -s localhost:PORT/api/index/summary -d '{"root":"path/to/workspace"}'
 
 ```python
 "index": Lane(
-    "index", "index-graph", "index", ("mcp",), "pip", "2.14.0",
+    "index", "index-graph", "index", ("mcp",), "pip", "2.15.0",
     "workspace map + symbol graph + verified wiki (the catalog lane)",
     "structure", source_repo="public/index", py_module="index_graph"),
 ```

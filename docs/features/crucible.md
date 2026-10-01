@@ -117,7 +117,7 @@ Crucible is registered in `harness/lanes_registry.py`:
 
 ```python
 "crucible": Lane(
-    "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.3.0",
+    "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.4.0",
     "falsifiable verification + re-check (register -> steelman -> measure -> witness)",
     "verification", source_repo="public/crucible", py_module="crucible.cli"),
 ```
@@ -131,7 +131,7 @@ Native wiring is present and tested:
 - Desktop card: `desktop/lib/models/lane_identity.dart` key `crucible`, with title "Crucible", a feature-first identity line, and surface "experiment bench + verdict matrix".
 - Call path: `harness/lane_caller.py::call_lane_tool` resolves `resolve_mcp_launch("crucible")` and speaks MCP to the child.
 
-The Windows app freezes crucible 1.3.0 from its release tag: the crucible row in `packaging/python-lane-payloads.jsonl` pins every file by sha256, and `scripts/check_python_lane_payload_manifest.py` checks it. Pip and source installs run the `crucible-bench` release the registry pins.
+The Windows app freezes crucible 1.4.0 from its release tag: the crucible row in `packaging/python-lane-payloads.jsonl` pins every file by sha256, and `scripts/check_python_lane_payload_manifest.py` checks it. Pip and source installs run the `crucible-bench` release the registry pins.
 
 ### What it consumes from peers
 
@@ -165,6 +165,6 @@ The same shape holds with **Index** in step 2 (`IndexMeasure` replaying an `inde
 
 ## Status and bounds
 
-- `crucible-bench 1.3.0`, the release Flywheel pins, covers the full loop, one-command runs, cleanroom review packets, oracle replay, registry operations, creative measurement gates, and the MCP bridge, plus what landed since 1.1.0: the CI regression gate, LLM-as-judge, missing-evidence explanations, ill-posed measurement warnings, and the MATCH-provenance gate. 1.3.0 adds sealed tolerances, `status` and `doctor` answers that read `OK` and `available` or `absent` in place of MATCH, replay packs that must carry their assessment binding, `crucible.recheck_template` and `ProofMeasure`, and fixes GHSA-49qx-cj4f-wfqv.
+- `crucible-bench 1.4.0`, the release Flywheel pins, covers the full loop, one-command runs, cleanroom review packets, oracle replay, registry operations, creative measurement gates, and the MCP bridge, plus what landed since 1.1.0: the CI regression gate, LLM-as-judge, missing-evidence explanations, ill-posed measurement warnings, and the MATCH-provenance gate. 1.3.0 adds sealed tolerances, `status` and `doctor` answers that read `OK` and `available` or `absent` in place of MATCH, replay packs that must carry their assessment binding, `crucible.recheck_template` and `ProofMeasure`, and fixes GHSA-49qx-cj4f-wfqv.
 - Test count: the source at the v1.3.0 tag collects 445 tests (`python -m pytest --co`).
 - What this does not claim: exposition is not correctness, a receipt is not compliance, and a passing verifier is not semantic truth. UNVERIFIABLE is an outcome in its own right and stays visible in the record. Crucible is one independent tool in a family; Flywheel composes it as a lane, and the Windows app freezes the pinned release into the engine.

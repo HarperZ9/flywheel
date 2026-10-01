@@ -3,9 +3,8 @@
 > Native-feature documentation for the `telos` lane as it lives inside Flywheel.
 > Scope note: statements are marked observed (read from code in `public/telos`
 > and `public/flywheel/harness`) or proposed (a change not yet in the code).
-> The registry pins telos `0.4.2`, the first release without the CAPTCHA and
-> fingerprint code, and the lane tool policy classifies each of its 41 tools from
-> the 0.4.2 code. A capability described below is admitted only as far as the
+> The registry pins telos `0.5.0`, retaining the CAPTCHA and fingerprint code
+> removal from 0.4.2. The lane tool policy retains the same 41 tool classifications. A capability described below is admitted only as far as the
 > policy table in [lane-tool-policy.md](lane-tool-policy.md) says.
 
 ## One sentence
@@ -158,13 +157,13 @@ larger count as a composed total, not telos's own surface.
 
 Telos runs the same way whether or not Flywheel is present. The Windows app
 bundles the pinned package; `flywheel install telos` installs
-`project-telos-mcp@0.4.2` from npm; the steps below run it from a checkout.
+`project-telos-mcp@0.5.0` from npm; the steps below run it from a checkout.
 
 1. **Get the checkout.**
    ```bash
    git clone https://github.com/HarperZ9/telos.git
    cd telos
-   git checkout v0.4.2
+   git checkout v0.5.0
    ```
    Node 20 or newer. There is nothing to install: the core is zero-dependency.
 
@@ -299,7 +298,7 @@ Telos is the `reconciliation` organ in the lane layer. Observed in
 
 ```python
 "telos": Lane(
-    "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.2",
+    "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.5.0",
     "the reconciliation lane: workstation catalog, doctors and proof packets; "
     "room and workflow need the sibling checkouts",
     "reconciliation", source_repo="public/telos"),
@@ -388,10 +387,10 @@ telos's DRIFT or UNVERIFIABLE and knows a peer lane is stale or absent before it
 routes a task through that lane. The verification lane (`crucible`) and the
 routing lane (`forum`) consume that verdict the same way a downstream consumer
 consumes any receipt here: the reconciler names the gap by path, so a peer that
-was never loaded fails closed. The expectations bundled in 0.4.2 name gather
-1.8.2, crucible 1.2.0, index 2.13.0, and forum 1.14.0, older than the releases
-Flywheel runs, so telos's freshness verdict is not a check of Flywheel's own
-lanes.
+was never loaded fails closed. The expectations bundled in 0.5.0 name gather
+2.1.0, crucible 1.4.0, index 2.15.0, and forum 1.16.0, matching Flywheel's
+pins. The Index compatibility probe uses a tiny synthetic workspace; it does
+not show that a full repository fits the probe's context budget.
 
 For a creative task, the same lane plugs in through the
 kernel bridge: Flywheel's `/api/studio/pipeline` runs a harmonograph stage whose
@@ -404,14 +403,14 @@ kernel's `receipt_hash` into the pipeline's chained receipt. Observed:
 Telos is a native lane, so the roster wiring exists. Present and verified:
 
 - **Lane registry entry.** `LANES["telos"]` in `harness/lanes_registry.py`,
-  organ `reconciliation`, version `0.4.2`, `source_repo="public/telos"`, kind
+  organ `reconciliation`, version `0.5.0`, `source_repo="public/telos"`, kind
   `npm`.
 - **Spine slot.** `SPINE` in `harness/gateway.py`, position three.
 - **Expected-set and launch-hint tests.** `tests/test_lanes.py` lists `telos` in
   the expected lane set and asserts its public launch hint,
   `node demo/telos-mcp.mjs`.
 - **Payload pin.** The telos row of `packaging/node-lane-payloads.json` pins the
-  npm tarball by sha512 integrity and sha256, cross-checked against the v0.4.2
+  npm tarball by sha512 integrity and sha256, cross-checked against the v0.5.0
   GitHub release's `SHA256SUMS.txt`; `scripts/stage_node_lanes.py` checks all
   three before it extracts anything.
 - **Desktop app card.** `laneIdentities['telos']` in
@@ -430,7 +429,7 @@ What is bounded or in flight:
   checker `scripts/check_python_lane_payload_manifest.py` cover Python lanes
   (schema `flywheel.python-lane-payload/v1`). Telos is a node lane, so its pin is
   the Node payload row above.
-- **Version lockstep.** The `0.4.2` string in `lanes_registry.py` is a
+- **Version lockstep.** The `0.5.0` string in `lanes_registry.py` is a
   hand-maintained constant. It must be bumped in the same change as telos's
   `package.json` version, or `lane_status` reports STALE against the checkout.
 - **Reconciliation tools need the siblings.** `telos.room` and `telos.workflow`

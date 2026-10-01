@@ -72,11 +72,11 @@ class Lane:
 # lane_runtime_frozen picks the engine's own child modes instead.
 LANES: dict[str, Lane] = {
     "gather": Lane(
-        "gather", "gather-engine", "gather", ("mcp",), "pip", "2.0.0",
+        "gather", "gather-engine", "gather", ("mcp",), "pip", "2.1.0",
         "research intake + provenance receipts (verified-data flywheel intake)",
         "perception", source_repo="public/gather", py_module="gather.cli"),
     "crucible": Lane(
-        "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.3.0",
+        "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.4.0",
         "falsifiable verification + re-check (register -> steelman -> measure -> witness)",
         "verification", source_repo="public/crucible", py_module="crucible.cli"),
     "chorus": Lane(
@@ -102,20 +102,20 @@ LANES: dict[str, Lane] = {
         "writing-quality + AI-tell detector and editor with content-free audit receipts (stdlib-only MCP server; the FastMCP surface stays under the [mcp] extra)",
         "authoring", source_repo="articulate", py_module="articulate.local_mcp"),
     "index": Lane(
-        "index", "index-graph", "index", ("mcp",), "pip", "2.14.0",
+        "index", "index-graph", "index", ("mcp",), "pip", "2.15.0",
         "workspace map + symbol graph + verified wiki (the catalog lane)",
         "structure", source_repo="public/index", py_module="index_graph",
         env_vars=("INDEX_CACHE_DIR", "INDEX_CACHE_TTL_SECONDS", "INDEX_GRAPH_REPO_CACHE_DIR",
                   "INDEX_MCP_CACHE_DIR", "INDEX_MCP_CACHE_TTL_SECONDS",
                   "INDEX_MCP_DEBUG_ERRORS")),
     "forum": Lane(
-        "forum", "forum-engine", "forum", ("mcp",), "pip", "1.15.1",
+        "forum", "forum-engine", "forum", ("mcp",), "pip", "1.16.0",
         "witnessed causal ledger + model-agnostic routing",
         "orchestration", source_repo="public/forum", py_module="forum.cli",
         bundled_mcp_module="forum.mcp_surface",
         env_vars=("FORUM_RUN_REAL", "OTEL_EXPORTER_OTLP_ENDPOINT")),
     "learn": Lane(
-        "learn", "@harperz9/learn", "node", ("src/mcp.mjs",), "npm", "2.0.0",
+        "learn", "@harperz9/learn", "node", ("src/mcp.mjs",), "npm", "2.1.0",
         "accountable learning forge (spaced repetition + retrieval practice)",
         "learning", source_repo="public/learn",
         env_vars=("LEARN_CRUCIBLE_CMD", "LEARN_GATHER_CMD", "LEARN_NATIVE_CONTROL",
@@ -128,7 +128,7 @@ LANES: dict[str, Lane] = {
         # names belong to the native-control driver, which over MCP only prints
         # its verb catalog, and the font names to a repository script the
         # package does not ship.
-        "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.4.2",
+        "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.5.0",
         "the reconciliation lane: workstation catalog, doctors and proof packets; "
         "room and workflow need the sibling checkouts",
         "reconciliation", source_repo="public/telos",
@@ -143,7 +143,7 @@ LANES: dict[str, Lane] = {
         "private author workspace: scoped revisions, exact approval, and export receipts",
         "authoring"),
     "relay": Lane(
-        "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.5.0",
+        "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.6.0",
         "accountable agent loop on a local model server, witnessed runs (in the app: "
         "write and exec off, the two fixed local addresses only)",
         "execution", source_repo="public/relay", py_module="relay",
@@ -158,11 +158,11 @@ LANES: dict[str, Lane] = {
             for provider in ("CODEX", "CLAUDE", "GLM", "GEMINI", "DEEPSEEK")
             for suffix in ("MODEL", "PROVIDER_BASE_URL", "CLOUD_BASE_URL")))),
     "plexus": Lane(
-        "plexus", "plexus-mesh", "plexus", ("mcp",), "pip", "0.2.2",
+        "plexus", "plexus-mesh", "plexus", ("mcp",), "pip", "0.3.0",
         "capability discovery + auto-wiring of the tool mesh (the layer above a flat tool list)",
         "wiring", source_repo="public/plexus", py_module="plexus.cli"),
     "mneme": Lane(
-        "mneme", "flywheel-mneme", "mneme", ("mcp",), "pip", "0.5.1",
+        "mneme", "flywheel-mneme", "mneme", ("mcp",), "pip", "0.6.0",
         "accountable memory: recall with re-derivable ranking receipts + drift verdicts",
         "memory", source_repo="public/mneme", py_module="mneme.cli",
         env_vars=("MNEME_STATE", "MNEME_CRUCIBLE_SRC", "MNEME_GATHER_SRC",
@@ -173,7 +173,7 @@ LANES: dict[str, Lane] = {
         "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
         "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
     "canon": Lane(
-        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.4.2",
+        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.5.0",
         "provider-neutral memory bank + personality container: one envelope, "
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",

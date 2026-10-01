@@ -14,7 +14,7 @@
     "NOT_PROVES_REPLACEMENT_OF_TRUSTED_EXECUTABLE: the descriptor binds the reviewed Relay source included in this build, not a later replacement of the whole gateway executable.",
     "NOT_PROVES_AGENTIC_TASK_SUCCESS: admitting Relay's T1 tools checks identity and transport, not that Relay completes model-backed work.",
     "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: no provider credential rides the launch; a model server is a separate setup item.",
-    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.5.0 takes write and exec from its launch, and the engine launches it with both off, its root at the lane folder, no RELAY_CHILD_ENV names and no unproven CLI tier allowed; the engine also passes only listed arguments, so root, check, test_cmd and online never reach a run, and no shell, bisect or git child starts. relay's shell is not path-confined when a launch grants exec, which this build never does.",
+    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.6.0 takes write and exec from its launch, and the engine launches it with both off, its root at the lane folder, no RELAY_CHILD_ENV names and no unproven CLI tier allowed; the engine also passes only listed arguments, so root, check, test_cmd and online never reach a run, and no shell, bisect or git child starts. relay's shell is not path-confined when a launch grants exec, which this build never does.",
     "NOT_PROVES_BACKGROUND_RUN_DURABILITY: a local_agent_start run lives in the memory of the relay lane session; when that session ends (idle, a crash, an engine stop) the run ends with it and its id reads unknown."
   ],
   "entrypoint": {
@@ -30,14 +30,14 @@
   "schema": "flywheel.bundled-lane-component/v1",
   "source": {
     "algorithm": "sha256-canonical-source-manifest/v1",
-    "bytes": 331731,
-    "commit": "ba1e4f21f05ff610a182f9b4665bb82f05a969f8",
+    "bytes": 331824,
+    "commit": "2510d6b3db9c42074c1139af21155a6bf8187b62",
     "file_count": 47,
     "files": [
       {
         "bytes": 1026,
         "path": "src/relay/__init__.py",
-        "sha256": "sha256:189032c3797860f4ee7ac88f79f863fba072f189703d368ad30a628aff7081f4"
+        "sha256": "sha256:0697b2b610934ce953382c908d7eb40c622ed834e847816cf43c1bbc90022137"
       },
       {
         "bytes": 96,
@@ -65,9 +65,9 @@
         "sha256": "sha256:014c3c4f6e1202616bbd5c6c42b2448fa841097cd53de2d3cb0aa6f1f01a4392"
       },
       {
-        "bytes": 14237,
+        "bytes": 14330,
         "path": "src/relay/async_runs.py",
-        "sha256": "sha256:8405a2d9cc81887795ab34a1fb81dfe53cf0f16c56c56c3ad8d558cb2bff413e"
+        "sha256": "sha256:f174a8a0dc9c802d03e0e8533c210aafca5ec432d3a6771c1cc18631543c60e9"
       },
       {
         "bytes": 4903,
@@ -162,7 +162,7 @@
       {
         "bytes": 11960,
         "path": "src/relay/local_mcp.py",
-        "sha256": "sha256:2841c09a1e94b5edf9f711d78a0ddfdcf1edb86ea8b6b6ddbd0b885df4b5e022"
+        "sha256": "sha256:5190f064ad52e6b212b9a92188d628f76adbedf9b4b3142a65a8a588df0ea420"
       },
       {
         "bytes": 9273,
@@ -270,9 +270,9 @@
         "sha256": "sha256:d3338660edbb16ef4b1dfe6aa65d4f905db066798d7ef5afae31a8eb18794b5c"
       }
     ],
-    "manifest_sha256": "sha256:5ac76b4ee50fc7ec22e244c9333d0593b9dc99d39cd8b020a98775b760b6112d",
+    "manifest_sha256": "sha256:81fd85c8cf8fbfe8a6046668ed8d2e64cc0789bdc59736551c81a1ff5c93c684",
     "path": "src/relay",
     "repo": "https://github.com/HarperZ9/relay"
   },
-  "version": "0.5.0"
+  "version": "0.6.0"
 }
