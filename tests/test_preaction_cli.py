@@ -37,7 +37,7 @@ def test_coverage_lists_every_path_honestly(tmp_path):
 
 
 def test_pending_and_approve_need_a_terminal_and_the_code(tmp_path):
-    mon = monitor(tmp_path)
+    mon = monitor(tmp_path, clock=cli._clock)
     held = mon.gate(call("run", cmd="git push --force"), ctx())
     code, out, _ = _cli("pending", "--home", str(tmp_path), "--json")
     assert [p["hold_id"] for p in json.loads(out)] == [held.hold_id]
@@ -53,7 +53,7 @@ def test_pending_and_approve_need_a_terminal_and_the_code(tmp_path):
 
 
 def test_reject_from_cli(tmp_path):
-    mon = monitor(tmp_path)
+    mon = monitor(tmp_path, clock=cli._clock)
     held = mon.gate(call("run", cmd="git push --force"), ctx())
     pending = mon.escalator.read_pending(held.hold_id)
     code, _, _ = _cli("reject", held.hold_id, "--home", str(tmp_path),
@@ -70,6 +70,33 @@ def test_verify_exit_codes(tmp_path):
     assert _cli("verify", str(tmp_path))[0] == 1
 
 
-def test_install_prints_settings_without_writing(tmp_path):
+def test_install_prints_settings_without_writing(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "importable", lambda python: (True, ""))
     code, out, _ = _cli("install", "claude-code", "--home", str(tmp_path), "--print")
     assert code == 0 and "PreToolUse" in json.loads(out)["hooks"]
+
+
+def test_install_refuses_an_interpreter_that_cannot_import_the_hook(tmp_path, monkeypatch):
+    # A hook that cannot import exits 1, which Claude Code and Codex treat as
+    # non-blocking: every call would run unassessed. Install must refuse.
+    monkeypatch.setattr(cli, "importable", lambda python: (False, "No module named harness.preaction"))
+    code, out, err = _cli("install", "claude-code", "--home", str(tmp_path), "--print")
+    assert code == 1 and out == "" and "cannot import" in err
+
+
+def test_install_quotes_an_interpreter_path_with_spaces():
+    from harness.preaction.install import settings_block
+    cmd = settings_block("claude-code", python="C:/Program Files/Python/python.exe",
+                         home="C:/mon home")["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+    assert cmd.startswith('"C:/Program Files/Python/python.exe" -P -E -m')
+    assert '--home "C:/mon home"' in cmd
+
+
+def test_late_approval_from_cli_is_refused_and_recorded(tmp_path):
+    from tests.preaction_fixtures import Clock
+    mon = monitor(tmp_path, clock=Clock("2020-01-01T00:00:00Z"))
+    held = mon.gate(call("run", cmd="git push --force"), ctx())
+    pending = mon.escalator.read_pending(held.hold_id)
+    code, _, err = _cli("approve", held.hold_id, "--home", str(tmp_path),
+                        stdin=pending["confirm_code"] + "\n", isatty=True)
+    assert code == 1 and "expired" in err

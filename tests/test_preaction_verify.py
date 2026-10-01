@@ -59,7 +59,7 @@ def test_deleted_record_is_drift(tmp_path):
 def test_rederived_verdict_mismatch_is_drift(tmp_path, monkeypatch):
     _store_with_decision(tmp_path)
     import harness.preaction.verify as verify_mod
-    monkeypatch.setattr(verify_mod, "rederive", lambda rec, raw: ALLOW)
+    monkeypatch.setattr(verify_mod, "rederive", lambda rec, raw, *rest: ALLOW)
     assert "REDERIVED_VERDICT_DIFFERS" in {f["cause"] for f in verify_store(tmp_path)["findings"]}
 
 

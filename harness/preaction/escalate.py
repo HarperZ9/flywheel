@@ -127,6 +127,11 @@ class Escalator:
             hold = self._find_hold(pending["hold_record_sha256"])
             now = self.clock()
             grant_id = ""
+            late = decision == "APPROVED_ONCE" and pending.get("expires_at")                 and now >= pending["expires_at"]
+            if late:
+                # An approval after the hold expired would admit a call whose
+                # context the owner never saw at decision time; record the expiry.
+                decision = "EXPIRED"
             if decision == "APPROVED_ONCE":
                 grant_id = "gnt_" + secrets.token_hex(16)
                 index["grants"][grant_id] = {
@@ -148,6 +153,8 @@ class Escalator:
                                   reason_sha256=sha256_hex(reason.encode()) if reason else "")
             self.store.append(rec)
             self._write_index(index)
+        if late:
+            raise ValueError(f"hold {hold_id} expired before the approval; recorded EXPIRED")
         return {"decision": decision, "grant_id": grant_id}
 
     def expire_due(self) -> list:
@@ -182,7 +189,7 @@ class Escalator:
         return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
     def _find_hold(self, seal_hex: str) -> dict:
-        for rec in reversed(self.store.read_all()):
+        for rec in reversed(self.store.read_all(tolerant=True)):
             if rec.get("seal", {}).get("hex") == seal_hex:
                 return rec
         raise ValueError("hold record not found for decision")

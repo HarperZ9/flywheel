@@ -22,10 +22,18 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import coverage, records
-from .contract import ALLOW, BLOCK, HOLD, ProposedCall, RunContext
+from . import records
+from .contract import ALLOW, HOLD, ProposedCall, RunContext
 
 CLIENTS = ("claude-code", "codex")
+# Claude Code modes in which no person is asked: an "ask" there must not be
+# relied on to reach a human, so a hold is a deny (docs read 2026-10-01).
+_NO_PROMPT_MODES = ("bypassPermissions", "dontAsk")
+
+
+def _interactive(client: str, event: dict) -> bool:
+    mode = event.get("permission_mode")
+    return client == "claude-code" and mode not in (None, "") and mode not in _NO_PROMPT_MODES
 
 
 @dataclass
@@ -64,13 +72,18 @@ def _assess_event(home, client, event, hold_mode):
     from .core import Monitor
     tool, tool_input, use_id, session_id = _tool_fields(event)
     session = load_session(home, client, session_id)
-    interactive = client == "claude-code" and event.get("permission_mode") not in (None, "")
+    interactive = _interactive(client, event)
     mon = Monitor(home=home)
     call = ProposedCall(tool=tool, args=tool_input, harness=client, path_id="E11",
                         tool_use_id=use_id)
     ctx = RunContext(run_id=str(session_id) or "hook", goal=session.goal,
                      workspace=str(event.get("cwd", "")), interactive=interactive)
-    return mon.gate(call, ctx)
+    # Parallel tool calls fire parallel hook processes; one lock per home keeps
+    # the run state (counters, taint, rejections) from losing updates.
+    from ..journey_lock import ExclusiveJourneyLock
+    Path(home).mkdir(parents=True, exist_ok=True)
+    with ExclusiveJourneyLock.acquire(Path(home) / ".gate.lock", 8.0):
+        return mon.gate(call, ctx)
 
 
 def _run_with_deadline(fn, deadline):
@@ -99,7 +112,7 @@ def _emit(stdout, decision, reason=""):
 def _handle_pre(args, event, stdout, stderr) -> int:
     gate, err = _run_with_deadline(
         lambda: _assess_event(args.home, args.client, event, args.hold_mode), args.deadline)
-    interactive = args.client == "claude-code" and event.get("permission_mode") not in (None, "")
+    interactive = _interactive(args.client, event)
     if err is not None:
         reason = ("held: internal deadline reached; failing closed"
                   if isinstance(err, TimeoutError) else "held: monitor error; failing closed")
@@ -162,9 +175,8 @@ def main(argv=None, *, stdin=None, stdout=None, stderr=None) -> int:
         if not isinstance(event, dict):
             raise ValueError("event is not an object")
     except Exception:  # noqa: BLE001 -- unreadable input is never a pass
-        if args.client == "claude-code" and args.hold_mode == "ask":
-            _emit(stdout, "ask", "held: unreadable hook event; failing closed")
-            return 0
+        # An unreadable event names no permission mode, so nobody is known to
+        # be asked: deny plus exit 2, never an ask that might not reach a human.
         _emit(stdout, "deny", "held: unreadable hook event; failing closed")
         stderr.write("held: unreadable hook event; failing closed")
         return fail_closed_exit
@@ -175,5 +187,20 @@ def main(argv=None, *, stdin=None, stdout=None, stderr=None) -> int:
     return _handle_pre(args, event, stdout, stderr)
 
 
+def entry(argv=None, *, stdin=None, stdout=None, stderr=None) -> int:
+    """The process entry point. Claude Code and Codex treat every exit code but
+    2 as non-blocking, so an unexpected crash (exit 1) would let the call run.
+    Anything main() does not handle becomes exit 2 here."""
+    err = stderr if stderr is not None else sys.stderr
+    try:
+        return main(argv, stdin=stdin, stdout=stdout, stderr=err)
+    except BaseException as exc:  # noqa: BLE001 -- every escape is a block
+        try:
+            err.write(f"held: monitor crashed ({type(exc).__name__}); failing closed")
+        except Exception:  # noqa: BLE001
+            pass
+        return 2
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(entry())

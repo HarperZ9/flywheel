@@ -11,12 +11,10 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from pathlib import Path
 
 from . import coverage
-from .core import Monitor
 from .escalate import Escalator
-from .install import settings_block
+from .install import importable, settings_block
 from .verify import verify_store
 
 
@@ -42,7 +40,11 @@ def _decide(args, decision, stdout, stderr, stdin, isatty) -> int:
     if typed != pending["confirm_code"]:
         stderr.write("code did not match; no decision made\n")
         return 1
-    esc.decide(args.hold_id, decision, decider="owner:cli")
+    try:
+        esc.decide(args.hold_id, decision, decider="owner:cli")
+    except ValueError as exc:
+        stderr.write(f"{exc}\n")
+        return 1
     stdout.write(f"{decision}\n")
     return 0
 
@@ -91,10 +93,13 @@ def main(argv=None, *, stdout=None, stderr=None, stdin=None, isatty=None) -> int
         stdout.write(json.dumps(report) + "\n")
         return 0 if report["verdict"] == "MATCH" else 1
     if args.cmd == "install":
+        ok, detail = importable(args.python)
+        if not ok:
+            stderr.write(f"{args.python} cannot import the hook with -P -E ({detail}); a hook "
+                         "that cannot import exits 1, which the harness treats as allow. "
+                         "Install flywheel into that interpreter first.\n")
+            return 1
         block = settings_block(args.client, python=args.python, home=args.home)
-        if args.do_print:
-            stdout.write(json.dumps(block))
-            return 0
         stdout.write(json.dumps(block))
         return 0
     return 2

@@ -47,9 +47,9 @@ def coverage_for(path_id: str, base) -> str:
 
 def liveness_join(records: list) -> dict:
     """A post event whose tool_use_id has no pre record is DRIFT."""
-    from .records import HOLD_SCHEMA, ALLOW_SCHEMA, POST_SCHEMA
+    from .records import HOLD_SCHEMA, ALLOW_SCHEMA, POST_SCHEMA, REDEEM_SCHEMA
     pre = {r.get("tool_use_id") for r in records
-           if r.get("schema") in (HOLD_SCHEMA, ALLOW_SCHEMA) and r.get("tool_use_id")}
+           if r.get("schema") in (HOLD_SCHEMA, ALLOW_SCHEMA, REDEEM_SCHEMA) and r.get("tool_use_id")}
     orphans = sorted({r.get("tool_use_id") for r in records
                       if r.get("schema") == POST_SCHEMA and r.get("tool_use_id") not in pre
                       and r.get("tool_use_id")})

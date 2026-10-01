@@ -1,10 +1,11 @@
 """check_preaction_entry.py -- the single-entry gate for the pre-action monitor.
 
 Property: ToolExecutor._execute_inner is reachable only from ToolExecutor.execute,
-so no call path skips the monitor. This walks the AST of every file under
-harness/ and fails if any code names `_execute_inner` outside local_tools.py
-(where execute calls it) or outside a method called `execute`. A new caller
-elsewhere is a monitor bypass and fails CI.
+and the builtin tool methods (_t_<name>) only from inside local_tools.py, so no
+call path skips the monitor. This walks the AST of every file under harness/
+and fails if any code names `_execute_inner` anywhere but a method called
+`execute` in local_tools.py, or names a `_t_` tool method outside
+local_tools.py. A new caller is a monitor bypass and fails CI.
 """
 from __future__ import annotations
 
@@ -16,18 +17,26 @@ ALLOWED_FILES = {"local_tools.py"}
 NEEDLE = "_execute_inner"
 
 
+def _walk(node, func, out, path, home):
+    for child in ast.iter_child_nodes(node):
+        inner = child.name if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) else func
+        if isinstance(child, ast.Attribute):
+            if child.attr == NEEDLE and not (home and func == "execute"):
+                out.append(f"{path}:{child.lineno}: references {NEEDLE} outside execute()")
+            elif child.attr.startswith("_t_") and not home:
+                out.append(f"{path}:{child.lineno}: calls builtin tool {child.attr} directly")
+        _walk(child, inner, out, path, home)
+
+
 def offenders(root: Path) -> list:
     out = []
     for path in sorted(root.rglob("*.py")):
-        if path.name in ALLOWED_FILES:
-            continue
         try:
             tree = ast.parse(path.read_text(encoding="utf-8"))
-        except (SyntaxError, UnicodeDecodeError):
+        except (SyntaxError, UnicodeDecodeError) as exc:
+            out.append(f"{path}: cannot parse ({type(exc).__name__}); not checked")
             continue
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Attribute) and node.attr == NEEDLE:
-                out.append(f"{path}:{node.lineno}: references {NEEDLE} outside execute()")
+        _walk(tree, "", out, path, path.name in ALLOWED_FILES)
     return out
 
 

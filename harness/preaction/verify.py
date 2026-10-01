@@ -10,29 +10,46 @@ whose rule pack or arguments the verifier does not have).
 """
 from __future__ import annotations
 
-from pathlib import Path
 
 from ..tool_call_receipt import _canonical_bytes, _sha256_hex
-from .contract import ALLOW, HOLD, BLOCK, RunContext, ProposedCall, worse
+from .contract import ALLOW, RunContext, ProposedCall, worse
 from .coverage import liveness_join
-from .records import (ALLOW_SCHEMA, DECISION_SCHEMA, HOLD_SCHEMA, HoldStore, verify_seal)
+from .records import (ALLOW_SCHEMA, HOLD_SCHEMA, HoldStore, verify_seal)
 from .rules import evaluate, load_pack, pack_digest
 
 
+_LAYER0_IDS = frozenset({"layer0/gate", "monitor_config_drift", "record_write_failed"})
+_JUDGE_STATES = ("scored", "unavailable", "unavailable_passed_by_owner_setting",
+                 "skipped_steering_text")
+
+
 def _judge_explains(record: dict, deterministic: str) -> str | bool:
-    """A recorded HOLD that the deterministic layers do not produce is fine when
-    the judge layer raised it (a model call is not re-derivable). The judge can
-    only raise, never lower, so a deterministic verdict stricter than the record
-    is never explained this way."""
+    """A recorded verdict stricter than layer 1 re-derives is explained when a
+    layer that cannot be re-run from one record raised it: the judge (a model
+    call), the trajectory layer (it reads the run's history) or a layer-0 hit
+    (the executor gate or config pin). Those layers only raise, never lower, so
+    a re-derived verdict stricter than the record is never explained this way."""
     from .contract import _RANK
-    judge = record.get("judge", {})
     if _RANK.get(record["verdict"], 0) <= _RANK.get(deterministic, 0):
         return False
-    return isinstance(judge, dict) and judge.get("state") in (
-        "scored", "unavailable", "unavailable_passed_by_owner_setting")
+    judge = record.get("judge", {})
+    if isinstance(judge, dict) and judge.get("state") in _JUDGE_STATES:
+        return True
+    if record.get("trajectory_hits"):
+        return True
+    return any(h in _LAYER0_IDS for h in record.get("rule_hits", []))
 
 
-def rederive(record: dict, raw_args) -> str:
+def _ctx(record: dict, context: dict | None) -> RunContext:
+    c = context or {}
+    return RunContext(run_id=record.get("run_id", ""), workspace=c.get("workspace", ""),
+                      allow_hosts=tuple(c.get("allow_hosts", ())),
+                      owned_hosts=tuple(c.get("owned_hosts", ())),
+                      canaries=tuple(c.get("canaries", ())),
+                      protected_paths=tuple(c.get("protected_paths", ())))
+
+
+def rederive(record: dict, raw_args, context: dict | None = None) -> str:
     """Re-run layers 0 to 2 for one record from its raw arguments. Layer 0 is a
     recorded rule_hit, not re-derivable here, so a layer0 record keeps its
     recorded verdict; layers 1 and 2 are pure and re-run."""
@@ -42,7 +59,7 @@ def rederive(record: dict, raw_args) -> str:
         return record["verdict"]
     pack = load_pack()
     call = ProposedCall(tool=record["tool"], args=raw_args, path_id=record.get("path_id", "E1"))
-    ctx = RunContext(run_id=record.get("run_id", ""))
+    ctx = _ctx(record, context)
     verdict = ALLOW
     for hit in evaluate(pack, call, ctx):
         verdict = worse(verdict, hit.action)
@@ -51,7 +68,7 @@ def rederive(record: dict, raw_args) -> str:
 
 def verify_store(home, pack_override: dict | None = None) -> dict:
     store = HoldStore(home)
-    recs = store.read_all()
+    recs = store.read_all(tolerant=True)
     findings = []
     rederived = unverifiable = judge_unverifiable = 0
     expected_prev, expected_seq = "", 0
@@ -69,22 +86,29 @@ def verify_store(home, pack_override: dict | None = None) -> dict:
         if int(rec.get("store_seq", -1)) != expected_seq:
             findings.append({"cause": "SEQUENCE_GAP", "source": rec.get("source", "")})
         expected_prev = rec.get("seal", {}).get("hex", this_hex)
+        if schema == "unparseable":
+            findings.append({"cause": "TORN_OR_UNPARSEABLE_LINE", "seq": expected_seq})
+            continue
         if schema in (HOLD_SCHEMA, ALLOW_SCHEMA):
-            if pack_override is not None or rec.get("rules_digest") != shipped_digest:
+            seal_hex = rec.get("seal", {}).get("hex", "")
+            context = store.raw_context(seal_hex)
+            if context is not None and _sha256_hex(_canonical_bytes(context)) !=                     rec.get("context_sha256"):
+                findings.append({"cause": "CONTEXT_MISMATCH", "source": rec.get("source", "")})
+                continue
+            if pack_override is not None or rec.get("rules_digest") != shipped_digest                     or rec.get("coverage") == "UNVERIFIABLE":
                 unverifiable += 1
             else:
-                raw = store.raw_args(rec.get("seal", {}).get("hex", ""))
-                if raw is None:
+                raw = store.raw_args(seal_hex)
+                if raw is None or (rec.get("context_sha256") and context is None):
                     unverifiable += 1
                 else:
-                    got = rederive(rec, raw)
+                    got = rederive(rec, raw, context)
                     rederived += 1
                     if got != rec["verdict"] and not _judge_explains(rec, got):
                         findings.append({"cause": "REDERIVED_VERDICT_DIFFERS",
                                         "source": rec.get("source", ""),
                                         "recorded": rec["verdict"], "rederived": got})
-            if isinstance(rec.get("judge"), dict) and rec["judge"].get("state") in (
-                    "scored", "unavailable", "unavailable_passed_by_owner_setting"):
+            if isinstance(rec.get("judge"), dict) and rec["judge"].get("state") in _JUDGE_STATES:
                 judge_unverifiable += 1
     join = liveness_join(recs)
     if join["verdict"] == "DRIFT":

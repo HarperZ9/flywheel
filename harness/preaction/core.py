@@ -13,17 +13,22 @@ pinned and a later drift blocks every call.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import os
+import re
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 
 from . import coverage, records
-from .contract import (ALLOW, BLOCK, DOES_NOT_PROVE, HOLD, MATCH, UNVERIFIABLE,
+from .contract import (ALLOW, BLOCK, DOES_NOT_PROVE, HOLD, UNVERIFIABLE,
                        Assessment, Hit, ProposedCall, RunContext, canonical_json, sha256_hex, worse)
 from .escalate import Escalator, review_payload
 from .config import MonitorConfig
-from .judge import build_input, combine
+from .layer3 import run_judge
 from .rules import evaluate, load_pack, pack_digest
 from .trajectory import TrajectoryState
+
+
+_SAFE_ID = re.compile(r"[^A-Za-z0-9_-]")
 
 
 @dataclass
@@ -58,8 +63,22 @@ class Monitor:
         self._unmonitored = unmonitored   # set by offswitch; records UNVERIFIABLE and runs
 
     # --- state -------------------------------------------------------------
+    def _run_path(self, run_id: str):
+        safe = _SAFE_ID.sub("_", str(run_id)) or "none"
+        digest = sha256_hex(str(run_id).encode("utf-8"))[:12]
+        return self.home / "runs" / f"{safe[:64]}-{digest}.json"
+
+    def _guard(self, ctx: RunContext) -> RunContext:
+        """The monitor's own home is always protected monitor state, so the
+        agent cannot forge a grant, clear a rejection or reset its counters by
+        writing the files the monitor trusts."""
+        home = os.path.realpath(str(self.home))
+        if home in ctx.protected_paths:
+            return ctx
+        return replace(ctx, protected_paths=tuple(ctx.protected_paths) + (home,))
+
     def _state(self, ctx: RunContext) -> TrajectoryState:
-        path = self.home / "runs" / f"{ctx.run_id}.json"
+        path = self._run_path(ctx.run_id)
         if ctx.run_id not in self._states:
             st = TrajectoryState.load(path, ctx.run_id)
             st.drift_threshold = self.config.drift_threshold
@@ -67,7 +86,7 @@ class Monitor:
         return self._states[ctx.run_id]
 
     def _save_state(self, ctx: RunContext) -> None:
-        self._states[ctx.run_id].save(self.home / "runs" / f"{ctx.run_id}.json")
+        self._states[ctx.run_id].save(self._run_path(ctx.run_id))
 
     def _sync_decisions(self, state: TrajectoryState, ctx: RunContext) -> None:
         """Reject and terminate decisions live in the escalator index, which the
@@ -95,6 +114,7 @@ class Monitor:
 
     # --- assessment --------------------------------------------------------
     def assess(self, call: ProposedCall, ctx: RunContext) -> Assessment:
+        ctx = self._guard(ctx)
         cfg_digest = self.config.digest()
         pin_state, pin_ok = self._pin_state()
         asm = Assessment(verdict=ALLOW, path_id=call.path_id, rules_digest=self.rules_digest,
@@ -134,69 +154,74 @@ class Monitor:
         return asm
 
     def _run_judge(self, call, ctx, state, asm) -> dict:
-        if not self.judges or asm.verdict != ALLOW:
-            return {"state": "off"} if not self.judges else {"state": "skipped_by_verdict"}
-        if not self.config.strict_judge_reads and call.capability_class() == "builtin-read":
-            return {"state": "skipped_by_mode"}
-        payload = build_input(call, ctx, state.history)
-        result = combine([j.judge(payload) for j in self.judges], self.config.judge_threshold)
-        if result["state"] == "scored":
-            if result["score"] >= self.config.judge_threshold:
-                asm.verdict = worse(asm.verdict, HOLD)
-                asm.reasons.append(Hit(f"judge/{result['reason_code']}", "judge", HOLD,
-                                       f"Judge scored {result['score']} at or above "
-                                       f"{self.config.judge_threshold}.", layer=3).to_dict())
-            return result
-        # unavailable
-        if self.config.judge_unavailable == "allow":
-            result = dict(result, state="unavailable_passed_by_owner_setting")
-            return result
-        asm.verdict = worse(asm.verdict, HOLD)
-        asm.coverage = UNVERIFIABLE
-        asm.reasons.append(Hit("judge/unavailable", "judge", HOLD,
-                               "The judge could not score this call; not treated as safe.",
-                               layer=3).to_dict())
-        return result
+        return run_judge(self, call, ctx, state, asm)
 
     # --- gate (assessment plus side effects) -------------------------------
     def gate(self, call: ProposedCall, ctx: RunContext) -> Gate:
         if ctx.owner_ref:
             self.owner_ref = ctx.owner_ref
+        ctx = self._guard(ctx)
         state = self._state(ctx)
         state.goal = ctx.goal or state.goal
         asm = self.assess(call, ctx)
         if asm.verdict == ALLOW:
-            self._after_allow(call, ctx, state, asm)
+            if not self._after_allow(call, ctx, state, asm):
+                return Gate(BLOCK, False, asm, agent_text="blocked by policy rule record_write_failed")
             return Gate(ALLOW, True, asm)
         # a prior one-use grant may admit exactly this call
         redeemed = self.escalator.redeem(call.call_sha256(), ctx.run_id) \
             if asm.verdict == HOLD and not self._blocking(asm) else None
         if redeemed:
-            state.record(ALLOW, call.call_sha256(), call.tool, call.capability_class())
-            self._save_state(ctx)
-            return Gate(ALLOW, True, asm, redeemed_hold_id=redeemed)
+            return self._after_redeem(call, ctx, state, asm, redeemed)
         return self._hold_or_block(call, ctx, state, asm)
+
+    def _after_redeem(self, call, ctx, state, asm, hold_id) -> Gate:
+        """A consumed grant is on the record before the call runs, so the post
+        event joins and a reader sees which approval admitted it."""
+        rec = records.redeem_record(call=call, ctx=ctx, hold_id=hold_id, assessment=asm)
+        try:
+            asm.record_sha256 = self.store.append(rec)
+        except records.RecordWriteError:
+            asm.verdict = BLOCK
+            asm.reasons.append(Hit("record_write_failed", "record", BLOCK,
+                                   "The redemption record could not be written; the call does not run.",
+                                   layer=0).to_dict())
+            return Gate(BLOCK, False, asm, agent_text="blocked by policy rule record_write_failed")
+        state.record(ALLOW, call.call_sha256(), call.tool, call.capability_class())
+        self._save_state(ctx)
+        return Gate(ALLOW, True, asm, redeemed_hold_id=hold_id)
 
     def _blocking(self, asm: Assessment) -> bool:
         return asm.verdict == BLOCK or any(r["action"] == BLOCK for r in asm.reasons)
 
-    def _after_allow(self, call, ctx, state, asm) -> None:
+    def _after_allow(self, call, ctx, state, asm) -> bool:
+        """Every assessed call is on the record before it runs. If the allow
+        record cannot be written the call does not run (fail closed)."""
         rec = self._build_record(call, ctx, state, asm, "")
         try:
-            asm.record_sha256 = self.store.append(rec, raw_args=call.args)
+            asm.record_sha256 = self.store.append(rec, raw_args=call.args,
+                                                  context=records.context_of(ctx))
         except records.RecordWriteError:
-            pass   # an allow record is best-effort; the call is already permitted
+            asm.verdict = BLOCK
+            asm.reasons.append(Hit("record_write_failed", "record", BLOCK,
+                                   "The allow record could not be written; the call does not run.",
+                                   layer=0).to_dict())
+            return False
         state.record(ALLOW, call.call_sha256(), call.tool, call.capability_class())
         state.note_scope(call, ctx)
         self._save_state(ctx)
+        return True
 
     def _hold_or_block(self, call, ctx, state, asm) -> Gate:
-        hold_id = "h_" + sha256_hex(f"{ctx.run_id}:{call.seq}:{call.call_sha256()}".encode())[:16]
+        hold_id = "h_" + sha256_hex(
+            f"{ctx.run_id}:{call.seq}:{call.tool_use_id}:{len(state.history)}:{state.total_stops}:"
+            f"{call.call_sha256()}".encode())[:16]
         asm.hold_id = hold_id
         expires_at = self._expiry()
         rec = self._build_record(call, ctx, state, asm, hold_id)
         try:
-            asm.record_sha256 = self.store.append(rec, raw_args=call.args)
+            asm.record_sha256 = self.store.append(rec, raw_args=call.args,
+                                                  context=records.context_of(ctx))
             rec["seal"] = {"algorithm": "sha256", "hex": asm.record_sha256}
         except records.RecordWriteError:
             asm.verdict = BLOCK
@@ -256,7 +281,6 @@ class Monitor:
     def observe(self, call: ProposedCall, ctx: RunContext, gate: Gate, output: str) -> None:
         """After a call ran, feed credential-sourced output into the taint set."""
         state = self._state(ctx)
-        families = {r["family"] for r in gate.assessment.reasons}
         from .normalize import extract
         facts = extract(call, ctx)
         if facts.kind == "read" and output and self._is_sensitive(call, ctx):
