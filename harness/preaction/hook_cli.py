@@ -136,7 +136,7 @@ def _handle_pre(args, event, stdout, stderr) -> int:
     return 2
 
 
-def _handle_post(args, event, stdout) -> int:
+def _handle_post(args, event, stdout, stderr) -> int:
     tool, tool_input, use_id, session_id = _tool_fields(event)
     call = ProposedCall(tool=tool, args=tool_input)
     rec = records.post_record(harness=args.client, run_id=str(session_id), tool=tool,
@@ -144,8 +144,10 @@ def _handle_post(args, event, stdout) -> int:
                               observed_at="")
     try:
         records.HoldStore(args.home).append(rec)
-    except records.RecordWriteError:
-        pass
+    except records.RecordWriteError as exc:
+        # The call already ran, so exit 0 stands; the lost post record shows
+        # as a pre with no post, and the owner sees why on stderr.
+        stderr.write(f"monitor: post record not written for {use_id}: {exc}")
     return 0
 
 
@@ -187,7 +189,7 @@ def main(argv=None, *, stdin=None, stdout=None, stderr=None) -> int:
     if args.event == "prompt" or event.get("hook_event_name") == "UserPromptSubmit":
         return _handle_prompt(args, event)
     if args.post or event.get("hook_event_name") == "PostToolUse":
-        return _handle_post(args, event, stdout)
+        return _handle_post(args, event, stdout, stderr)
     return _handle_pre(args, event, stdout, stderr)
 
 

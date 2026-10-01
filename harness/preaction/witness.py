@@ -37,7 +37,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from .records import ALLOW_SCHEMA, HOLD_SCHEMA, REDEEM_SCHEMA, HoldStore
+from .records import ALLOW_SCHEMA, HOLD_SCHEMA, REDEEM_SCHEMA, HoldStore, verify_seal
 
 HEAD_SCHEMA = "flywheel.preaction-head/v1"
 WITNESS_SCHEMA = "flywheel.preaction-witness/v1"
@@ -67,13 +67,29 @@ def export_head(home, witness_dir, *, clock=None) -> dict:
     return rec
 
 
+def _witness_chain_findings(records: list) -> list:
+    """The witness directory's own chain: a head record edited to agree with
+    a rewritten store breaks its seal, and a removed one breaks the links.
+    Seals are unkeyed, so a writer who recomputes the whole chain still
+    passes; this catches an edit that did not."""
+    findings, prev = [], ""
+    for i, rec in enumerate(records, start=1):
+        if not verify_seal(rec):
+            findings.append({"cause": "WITNESS_SEAL_MISMATCH", "witness_seq": i})
+        if rec.get("prev_record_sha256", "") != prev or int(rec.get("store_seq", -1)) != i:
+            findings.append({"cause": "WITNESS_CHAIN_BROKEN", "witness_seq": i})
+        prev = rec.get("seal", {}).get("hex", "")
+    return findings
+
+
 def check_heads(home, witness_dir) -> dict:
     """Every head exported for this store must still be in it, at its sequence."""
-    heads = [r for r in HoldStore(witness_dir).read_all(tolerant=True)
+    witness = HoldStore(witness_dir).read_all(tolerant=True)
+    heads = [r for r in witness
              if r.get("schema") == HEAD_SCHEMA and r.get("store") == _store_id(home)]
     by_seq = {int(r.get("store_seq", 0)): r.get("seal", {}).get("hex", "")
               for r in HoldStore(home).read_all(tolerant=True)}
-    findings = []
+    findings = _witness_chain_findings(witness)
     for h in heads:
         seq = int(h.get("head_seq", 0))
         if seq == 0:
@@ -140,11 +156,15 @@ def transcript_join(home, transcripts, *, grace_seconds: int = 60, now: str = ""
            if r.get("schema") in _PRE and r.get("tool_use_id")}
     cutoff = datetime.fromisoformat((now or _now()).replace("Z", "+00:00")) \
         - timedelta(seconds=grace_seconds)
-    files, seen, orphans, recent, malformed = [], 0, [], 0, 0
+    files, seen, orphans, recent, malformed, unreadable = [], 0, [], 0, 0, 0
     for path in transcripts:
         try:
             calls, digest, bad = transcript_calls(path)
         except OSError:
+            # A transcript the owner named but nobody could read is a call
+            # list the join never saw: it can leave the result UNVERIFIABLE,
+            # never let the other files carry it to MATCH.
+            unreadable += 1
             continue
         files.append({"path_sha256": hashlib.sha256(str(path).encode()).hexdigest()[:16],
                       "sha256": digest, "calls": len(calls)})
@@ -157,9 +177,15 @@ def transcript_join(home, transcripts, *, grace_seconds: int = 60, now: str = ""
                 orphans.append({"id": c["id"], "name": c["name"]})
             else:
                 recent += 1
-    verdict = "UNVERIFIABLE" if not files else ("DRIFT" if orphans else "MATCH")
+    if orphans:
+        verdict = "DRIFT"
+    elif not files or unreadable:
+        verdict = "UNVERIFIABLE"
+    else:
+        verdict = "MATCH"
     return {"verdict": verdict, "files": files, "seen": seen, "orphans": orphans,
-            "within_grace": recent, "malformed_lines": malformed}
+            "within_grace": recent, "malformed_lines": malformed,
+            "unreadable_files": unreadable}
 
 
 def run_witness(home, witness_dir, transcripts, *, grace_seconds=60, now="") -> dict:

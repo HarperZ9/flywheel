@@ -158,6 +158,9 @@ def import_file(path, home, *, metrics_text: str | None = None) -> dict:
             continue
         rec = event_record(event, source_sha256=source_sha, line_no=line_no)
         products.add(rec["product"])
+        # A lifecycle event already on record still means the counters in
+        # this snapshot may have reset, so it counts on a re-import too.
+        lifecycle += rec["class_uid"] == 6002
         if rec["metadata_uid"] and rec["metadata_uid"] in seen:
             skipped += 1
             continue
@@ -165,7 +168,6 @@ def import_file(path, home, *, metrics_text: str | None = None) -> dict:
         seen.add(rec["metadata_uid"])
         imported += 1
         counts[rec["evidence"]] += 1
-        lifecycle += rec["class_uid"] == 6002
         if rec["time"]:
             times.append(rec["time"])
     metrics = parse_metrics(metrics_text) if metrics_text is not None else None
