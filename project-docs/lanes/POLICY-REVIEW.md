@@ -229,6 +229,13 @@ reaches T2, since the model picks each inner call and its arguments.
 learn was measured in WP4 on its pinned archive, on the bundled Node v24.21.0 with a System32 PATH
 and an empty home.
 
+Telos 0.5.0 was remeasured on 2026-10-01 against its pinned npm tarball.
+The same three profiles and all 41 tools produced the same normalized observations
+as 0.4.2, including the unanswered room call with stand-in siblings. The new receipt
+is `project-docs/lanes/evidence/telos-0.5.0-tool-measurement.json`; the earlier
+receipt remains historical. This does not establish real sibling workflow success
+or observe non-Node descendants.
+
 telos 0.4.2 was read and measured on 2026-09-28. `demo/telos-mcp.mjs` maps each tool to one
 script and fixed flags (`toolScripts`) and never reads `params.arguments`. Each tool was called
 once through that server on the bundled Node v24.21.0, from the staged package, with the lane
