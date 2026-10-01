@@ -10,17 +10,44 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 HELPER = ROOT / 'desktop/scripts/crt_selection.ps1'
 
+# One call takes about 0.4 s on a warm machine, process start included. The old
+# 30 s limit failed once on a windows-latest shard (run 36886773490, attempt 1)
+# on the first PowerShell launch of the file and passed on the rerun. The cause
+# was not established; a cold launch that pays module load and the first script
+# scan is the leading reading. The first launch now runs alone under a long
+# limit, and every later call keeps a margin of about 300x.
+PS_TIMEOUT = 120
+PS_FIRST_LAUNCH_TIMEOUT = 240
+_warm = {'done': False}
+# pytest.ini sets 60 s per test; the first launch alone may take up to 240 s.
+pytestmark = pytest.mark.timeout(300)
 
-def ps(body):
+
+def _shell():
     shell = shutil.which('powershell') or shutil.which('pwsh')
     if shell is None:
         pytest.skip('PowerShell unavailable')
-    literal = str(HELPER).replace("'", "''")
+    return shell
+
+
+def _run(shell, script, timeout):
     env = dict(os.environ)
     # Python does not apply pwsh's native-child PSModulePath normalization for Windows PowerShell.
     env['PSModulePath'] = str(Path(shell).parent / 'Modules') + os.pathsep + env.get('PSModulePath', '')
-    result = subprocess.run([shell, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command',
-                             f". '{literal}'\n" + body], capture_output=True, text=True, timeout=30, env=env)
+    # -NonInteractive and a closed stdin turn any prompt into an error instead of a wait.
+    return subprocess.run([shell, '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+                           '-Command', script], capture_output=True, text=True, timeout=timeout,
+                          env=env, stdin=subprocess.DEVNULL)
+
+
+def ps(body):
+    shell = _shell()
+    literal = str(HELPER).replace("'", "''")
+    if not _warm['done']:
+        warm = _run(shell, f". '{literal}'\n'WARM'", PS_FIRST_LAUNCH_TIMEOUT)
+        assert warm.returncode == 0 and warm.stdout.strip() == 'WARM', warm.stdout + warm.stderr
+        _warm['done'] = True
+    result = _run(shell, f". '{literal}'\n" + body, PS_TIMEOUT)
     assert result.returncode == 0, result.stdout + result.stderr
     return result.stdout.strip()
 
@@ -36,30 +63,71 @@ function Get-CrtFileRecord([string]$Directory, [string]$Name) {
 '''
 
 
-def test_numeric_newest_selection_not_directory_order():
-    result = json.loads(ps(MOCK + "(Select-CompatibleCrt @('old','preview','new') ([version]'14.50.35717')) | ConvertTo-Json -Depth 5"))
+SELECTION_CASES = {
+    'newest': "@('old','preview','new')",
+    'mixed_vs_new': "@('mixed','new')",
+    'serviced': "@('serviced')",
+    'only_old': "@('old')",
+    'only_mixed': "@('mixed')",
+    'only_missing': "@('missing')",
+}
+
+
+@pytest.fixture(scope='module')
+def selections():
+    """Every mocked selection case in one PowerShell process.
+
+    The cases share one mock and differ only in their folder list, so one launch
+    runs them all. Each case reports either the selection or the error message,
+    and each test below asserts on its own case.
+    """
+    lines = [MOCK, '$out = [ordered]@{}']
+    for name, folders in SELECTION_CASES.items():
+        lines.append(f"try {{ $out['{name}'] = @{{ ok = (Select-CompatibleCrt {folders} ([version]'14.50.35717')) }} }}"
+                     f" catch {{ $out['{name}'] = @{{ error = $_.Exception.Message }} }}")
+    lines.append('$out | ConvertTo-Json -Depth 6')
+    return json.loads(ps('\n'.join(lines)))
+
+
+def test_numeric_newest_selection_not_directory_order(selections):
+    result = selections['newest']['ok']
     assert result['directory'] == 'new' and result['version'] == '14.50.35719.0'
     assert len(result['files']) == 3
 
 
-def test_mixed_runtime_set_cannot_win_even_with_newer_file():
-    result = json.loads(ps(MOCK + "(Select-CompatibleCrt @('mixed','new') ([version]'14.50.35717')) | ConvertTo-Json -Depth 5"))
-    assert result['directory'] == 'new'
+def test_mixed_runtime_set_cannot_win_even_with_newer_file(selections):
+    assert selections['mixed_vs_new']['ok']['directory'] == 'new'
 
 
-def test_compatible_serviced_patch_differences_are_preserved():
-    result = json.loads(ps(MOCK + "(Select-CompatibleCrt @('serviced') ([version]'14.50.35717')) | ConvertTo-Json -Depth 5"))
+def test_compatible_serviced_patch_differences_are_preserved(selections):
+    result = selections['serviced']['ok']
     assert result['version'] == '14.50.35719.0'
     assert {item['version'] for item in result['files']} == {'14.50.35719.0', '14.50.35720.0'}
 
 
-@pytest.mark.parametrize('folders', ["@('old')", "@('mixed')", "@('missing')"])
-def test_incompatible_incomplete_or_mixed_only_fails(folders):
-    assert ps(MOCK + f"""
-try {{ Select-CompatibleCrt {folders} ([version]'14.50.35717'); throw 'false success' }}
-catch {{ if ($_.Exception.Message -notmatch 'compatible coherent') {{ throw }} }}
-'PASS'
-""") == 'PASS'
+@pytest.mark.parametrize('case', ['only_old', 'only_mixed', 'only_missing'])
+def test_incompatible_incomplete_or_mixed_only_fails(selections, case):
+    outcome = selections[case]
+    assert 'ok' not in outcome, f'false success: {outcome}'
+    assert 'compatible coherent' in outcome['error']
+
+
+def test_ps_calls_keep_a_timeout_margin_and_never_wait_on_input(monkeypatch):
+    """The limit that failed was 30 s against a 0.4 s call. Pin the margin."""
+    seen = []
+
+    def fake_run(argv, **kwargs):
+        seen.append((argv, kwargs))
+        return subprocess.CompletedProcess(argv, 0, stdout='WARM' if len(seen) == 1 else 'ok', stderr='')
+
+    monkeypatch.setattr(subprocess, 'run', fake_run)
+    monkeypatch.setitem(_warm, 'done', False)
+    monkeypatch.setattr(shutil, 'which', lambda name: r'C:\fake\powershell.exe')
+    assert ps("'ok'") == 'ok'
+    (warm_argv, warm_kw), (call_argv, call_kw) = seen
+    assert warm_kw['timeout'] >= 240 and call_kw['timeout'] >= 120
+    for argv, kw in seen:
+        assert '-NonInteractive' in argv and kw['stdin'] is subprocess.DEVNULL
 
 
 def test_requirement_comes_from_generated_compiler_binding(tmp_path):
