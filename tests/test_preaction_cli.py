@@ -33,7 +33,13 @@ def test_coverage_lists_every_path_honestly(tmp_path):
     assert code == 0 and set(rows) >= {f"E{i}" for i in range(1, 15)}
     assert rows["E1"] == "PRE" and rows["E10"] == "POST"
     assert rows["E12"] == "NONE" and rows["E7"] == "NONE"
-    assert set(REGISTRY) == set(rows)
+    paths = {r["path_id"] for r in json.loads(out) if r["kind"] == "path"}
+    assert set(REGISTRY) == paths
+    # Every row names its trust domain; every tool-call path today is inside
+    # the agent's reach, and only the witnesses sit outside it.
+    domains = {r["path_id"]: r["domain"] for r in json.loads(out)}
+    assert all(domains[p] == "inside" for p in REGISTRY)
+    assert {p for p, d in domains.items() if d == "outside"} == {"W1", "W2", "W3"}
 
 
 def test_pending_and_approve_need_a_terminal_and_the_code(tmp_path):

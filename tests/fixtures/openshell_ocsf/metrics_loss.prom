@@ -1,0 +1,6 @@
+openshell_ocsf_log_queued_total 5
+openshell_ocsf_log_written_total 2
+openshell_ocsf_log_dropped_total{reason="queue_full"} 3
+openshell_ocsf_log_dropped_total{reason="oversize"} 0
+openshell_ocsf_log_writer_errors_total 0
+openshell_ocsf_log_recovery_discarded_bytes_total 0

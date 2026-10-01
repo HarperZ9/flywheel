@@ -34,7 +34,7 @@
      "match": {"kinds": ["exec"], "command_regex": "\\b(curl|wget|iwr|Invoke-WebRequest)\\b[^|]*\\|\\s*(sh|bash|zsh|iex|Invoke-Expression|python3?)\\b"}},
     {"id": "egress/002", "family": "egress", "action": "HOLD",
      "reason": "Contacts a network host that is not on the owner's allowlist.",
-     "match": {"kinds": ["exec", "web", "mcp"], "host_off_allowlist": true}},
+     "match": {"kinds": ["exec", "web", "mcp"], "host_off_allowlist": true, "read_only_fetch_hosts": true}},
     {"id": "unowned-system/001", "family": "unowned-system", "action": "HOLD",
      "reason": "Authenticates to or acts on a system the owner has not listed as owned.",
      "match": {"kinds": ["exec", "mcp"], "host_unowned": true,

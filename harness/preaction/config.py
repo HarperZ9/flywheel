@@ -22,6 +22,7 @@ class MonitorConfig:
     hold_expiry_minutes: int = 30
     drift_threshold: int = 5
     strict_judge_reads: bool = True       # judge reads too; owner may narrow
+    owner_sha256: str = ""                # set when an owner file is loaded (owner.py)
 
     @classmethod
     def from_dict(cls, d: dict) -> "MonitorConfig":
@@ -40,7 +41,15 @@ class MonitorConfig:
         return [HttpJudge(self.judge)]
 
     def digest(self) -> str:
-        return sha256_hex(canonical_json({
+        body = self._digest_body()
+        if self.owner_sha256:
+            # Present only with an owner file, so a monitor with no owner file
+            # keeps the digest it had before owner files existed.
+            body["owner_sha256"] = self.owner_sha256
+        return sha256_hex(canonical_json(body))
+
+    def _digest_body(self) -> dict:
+        return dict({
             "rules_overlay": self.rules_overlay or {},
             "judge": {"endpoint": getattr(self.judge, "endpoint", ""),
                       "model": getattr(self.judge, "model", "")},
@@ -48,4 +57,4 @@ class MonitorConfig:
             "judge_unavailable": self.judge_unavailable,
             "hold_expiry_minutes": self.hold_expiry_minutes,
             "drift_threshold": self.drift_threshold,
-            "strict_judge_reads": self.strict_judge_reads}))
+            "strict_judge_reads": self.strict_judge_reads})

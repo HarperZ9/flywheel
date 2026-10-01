@@ -36,9 +36,27 @@ def ensure_monitor(executor):
         raise ValueError("monitor=False is not an off switch; use preaction.offswitch.monitor_off")
     if executor.monitor is None and not executor._monitor_built:
         from .core import Monitor
-        executor.monitor = Monitor(home=Path(executor.root) / ".flywheel-preaction")
+        from .owner import load
+        owner = load()
+        executor.monitor = Monitor(home=default_home(executor.root), config=owner.monitor_config())
+        executor.monitor.owner = owner
         executor._monitor_built = True
     return executor.monitor or None
+
+
+def default_home(root) -> Path:
+    """The executor's default monitor home, outside the workspace it guards:
+    <FLYWHEEL_HOME>/preaction/executor/<name>-<digest of the workspace path>.
+    A home inside the workspace sat where every write_file and every script
+    the agent runs could reach it; under FLYWHEEL_HOME it is also covered by
+    rule monitor-tamper/001's */.flywheel/* glob at the default location."""
+    import hashlib
+    import re
+    from ..lane_workdir import flywheel_home
+    real = os.path.realpath(str(root))
+    name = re.sub(r"[^A-Za-z0-9_-]", "_", os.path.basename(real))[:40] or "root"
+    digest = hashlib.sha256(real.encode("utf-8")).hexdigest()[:12]
+    return flywheel_home(os.environ) / "preaction" / "executor" / f"{name}-{digest}"
 
 
 def _call(executor, name, args):
@@ -52,8 +70,10 @@ def _call(executor, name, args):
 
 
 def _ctx(executor):
-    return RunContext(run_id=executor._receipt_run_id or "default",
-                      workspace=os.path.realpath(executor.root))
+    ctx = RunContext(run_id=executor._receipt_run_id or "default",
+                     workspace=os.path.realpath(executor.root))
+    owner = getattr(executor.monitor, "owner", None)
+    return owner.apply(ctx) if owner is not None else ctx
 
 
 def preaction_gate(executor, name: str, args: dict):

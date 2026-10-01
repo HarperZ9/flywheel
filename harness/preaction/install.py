@@ -38,10 +38,12 @@ def importable(python: str) -> tuple:
     return proc.returncode == 0, (proc.stderr or "").strip()[-300:]
 
 
-def settings_block(client: str, *, python: str, home: str) -> dict:
+def settings_block(client: str, *, python: str, home: str, owner_config: str = "") -> dict:
     if client not in ("claude-code", "codex"):
         raise ValueError("client must be claude-code or codex")
     hold_flags = () if client == "claude-code" else ("--hold-mode", "deny")
+    if owner_config:
+        hold_flags = hold_flags + ("--owner-config", owner_config)
 
     def entry(*flags):
         return {"matcher": "*", "hooks": [{"type": "command",

@@ -67,13 +67,15 @@ def _tool_fields(event: dict) -> tuple:
     return tool, tool_input, event.get("tool_use_id", ""), event.get("session_id") or event.get("turn_id", "")
 
 
-def _assess_event(home, client, event, hold_mode):
-    """Run the monitor on one PreToolUse event. Returns the Gate."""
-    from .core import Monitor
+def _assess_event(home, client, event, hold_mode, owner_config=""):
+    """Run the monitor on one PreToolUse event with the owner's config
+    (hosts, canaries, protected paths, settings) applied. Returns the Gate.
+    An unusable owner file raises, which fails the call closed."""
+    from .hook_setup import gate_event, load_owner
+    owner = load_owner(owner_config)
     tool, tool_input, use_id, session_id = _tool_fields(event)
     session = load_session(home, client, session_id)
     interactive = _interactive(client, event)
-    mon = Monitor(home=home)
     call = ProposedCall(tool=tool, args=tool_input, harness=client, path_id="E11",
                         tool_use_id=use_id)
     ctx = RunContext(run_id=str(session_id) or "hook", goal=session.goal,
@@ -83,7 +85,7 @@ def _assess_event(home, client, event, hold_mode):
     from ..journey_lock import ExclusiveJourneyLock
     Path(home).mkdir(parents=True, exist_ok=True)
     with ExclusiveJourneyLock.acquire(Path(home) / ".gate.lock", 8.0):
-        return mon.gate(call, ctx)
+        return gate_event(home, call, ctx, owner)
 
 
 def _run_with_deadline(fn, deadline):
@@ -111,7 +113,8 @@ def _emit(stdout, decision, reason=""):
 
 def _handle_pre(args, event, stdout, stderr) -> int:
     gate, err = _run_with_deadline(
-        lambda: _assess_event(args.home, args.client, event, args.hold_mode), args.deadline)
+        lambda: _assess_event(args.home, args.client, event, args.hold_mode,
+                              args.owner_config), args.deadline)
     interactive = _interactive(args.client, event)
     if err is not None:
         reason = ("held: internal deadline reached; failing closed"
@@ -164,6 +167,7 @@ def main(argv=None, *, stdin=None, stdout=None, stderr=None) -> int:
     parser.add_argument("--event", default="pre")
     parser.add_argument("--hold-mode", dest="hold_mode", default="ask", choices=("ask", "deny"))
     parser.add_argument("--deadline", type=float, default=10.0)
+    parser.add_argument("--owner-config", dest="owner_config", default="")
     try:
         args = parser.parse_args(argv)
     except SystemExit:

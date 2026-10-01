@@ -45,6 +45,7 @@ def _ctx(record: dict, context: dict | None) -> RunContext:
     return RunContext(run_id=record.get("run_id", ""), workspace=c.get("workspace", ""),
                       allow_hosts=tuple(c.get("allow_hosts", ())),
                       owned_hosts=tuple(c.get("owned_hosts", ())),
+                      fetch_hosts=tuple(c.get("fetch_hosts", ())),
                       canaries=tuple(c.get("canaries", ())),
                       protected_paths=tuple(c.get("protected_paths", ())))
 
@@ -71,6 +72,7 @@ def verify_store(home, pack_override: dict | None = None) -> dict:
     recs = store.read_all(tolerant=True)
     findings = []
     rederived = unverifiable = judge_unverifiable = 0
+    allow_domains: dict = {}
     expected_prev, expected_seq = "", 0
     shipped_digest = pack_digest(load_pack())
     for rec in recs:
@@ -89,6 +91,9 @@ def verify_store(home, pack_override: dict | None = None) -> dict:
         if schema == "unparseable":
             findings.append({"cause": "TORN_OR_UNPARSEABLE_LINE", "seq": expected_seq})
             continue
+        if schema == ALLOW_SCHEMA:
+            dom = rec.get("trust_domain", "unrecorded")
+            allow_domains[dom] = allow_domains.get(dom, 0) + 1
         if schema in (HOLD_SCHEMA, ALLOW_SCHEMA):
             seal_hex = rec.get("seal", {}).get("hex", "")
             context = store.raw_context(seal_hex)
@@ -120,4 +125,7 @@ def verify_store(home, pack_override: dict | None = None) -> dict:
         verdict = "UNVERIFIABLE"
     return {"verdict": verdict, "n": len(recs), "rederived": rederived,
             "unverifiable": unverifiable, "judge_unverifiable": judge_unverifiable,
+            # An ALLOW decided inside the agent's reach is weaker evidence than
+            # one decided outside it; the split is reported, never merged.
+            "allow_by_trust_domain": allow_domains,
             "findings": findings}

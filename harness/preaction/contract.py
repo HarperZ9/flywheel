@@ -96,6 +96,7 @@ class RunContext:
     workspace: str = ""
     allow_hosts: tuple = ()
     owned_hosts: tuple = ()
+    fetch_hosts: tuple = ()      # read-only fetches only (fetch.py), never uploads
     canaries: tuple = ()
     protected_paths: tuple = ()
     interactive: bool = False

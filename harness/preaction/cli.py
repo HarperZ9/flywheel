@@ -4,7 +4,7 @@ coverage prints every path and its PRE / POST / NONE state; pending lists open
 holds; approve and reject decide one hold, and both need a real terminal and
 the typed confirmation code, so an agent's shell cannot drive them; verify
 re-walks a store and exits 1 on DRIFT; install prints or writes the hook
-settings block.
+settings block. owner, witness, import-ocsf and sandbox live in cli_extra.py.
 """
 from __future__ import annotations
 
@@ -12,7 +12,8 @@ import argparse
 import json
 import sys
 
-from . import coverage
+from . import cli_extra, coverage
+from .owner import OwnerConfigError
 from .escalate import Escalator
 from .install import importable, settings_block
 from .verify import verify_store
@@ -64,18 +65,27 @@ def main(argv=None, *, stdout=None, stderr=None, stdin=None, isatty=None) -> int
     pi = sub.add_parser("install"); pi.add_argument("client", choices=("claude-code", "codex"))
     pi.add_argument("--home", required=True); pi.add_argument("--print", dest="do_print", action="store_true")
     pi.add_argument("--python", default=sys.executable)
+    pi.add_argument("--owner-config", dest="owner_config", default="")
+    cli_extra.register(sub)
     try:
         args = p.parse_args([a for a in (argv if argv is not None else sys.argv[1:])])
     except SystemExit as exc:
         return int(exc.code or 2)
 
+    if args.cmd in cli_extra.COMMANDS:
+        try:
+            return cli_extra.dispatch(args, stdout, stderr)
+        except OwnerConfigError as exc:
+            stderr.write(f"{exc}\n")
+            return 2
     if args.cmd == "coverage":
         rows = coverage.rows()
         if args.json:
             stdout.write(json.dumps(rows))
         else:
             for r in rows:
-                stdout.write(f"{r['path_id']:4} {r['state']:5} {r['description']}\n")
+                stdout.write(f"{r['path_id']:4} {r['state']:7} {r['domain']:7} "
+                             f"{r['description']} [{r['boundary']}]\n")
         return 0
     if args.cmd == "pending":
         items = Escalator(args.home, _clock).pending()
@@ -99,7 +109,8 @@ def main(argv=None, *, stdout=None, stderr=None, stdin=None, isatty=None) -> int
                          "that cannot import exits 1, which the harness treats as allow. "
                          "Install flywheel into that interpreter first.\n")
             return 1
-        block = settings_block(args.client, python=args.python, home=args.home)
+        block = settings_block(args.client, python=args.python, home=args.home,
+                               owner_config=args.owner_config)
         stdout.write(json.dumps(block))
         return 0
     return 2

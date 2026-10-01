@@ -20,6 +20,7 @@ from harness.preaction import hook_cli
 from harness.preaction.contract import ALLOW, HOLD
 from harness.preaction.coverage import liveness_join
 from harness.preaction.escalate import Escalator
+from harness.preaction.executor_bridge import default_home
 from harness.preaction.records import HoldStore
 from harness.preaction.verify import verify_store
 from tests.preaction_fixtures import Clock, call, ctx, monitor
@@ -35,18 +36,28 @@ def _exec(tmp_path, **kw):
 # --- R1: the agent must not be able to write the monitor's own state --------
 def test_agent_cannot_write_the_monitor_home_with_write_file(tmp_path):
     ex, root = _exec(tmp_path)
-    res = ex.execute("write_file", {"path": ".flywheel-preaction/pending.json",
-                                    "content": "{}"})
+    home = default_home(root)
+    res = ex.execute("write_file", {"path": str(home / "pending.json"), "content": "{}"})
     assert not res.ok
-    assert not (root / ".flywheel-preaction" / "pending.json").exists() or \
-        (root / ".flywheel-preaction" / "pending.json").read_text(encoding="utf-8") != "{}"
+    assert not (home / "pending.json").exists() or         (home / "pending.json").read_text(encoding="utf-8") != "{}"
 
 
 def test_agent_cannot_touch_the_monitor_home_from_the_shell(tmp_path):
     ran = []
-    ex, _ = _exec(tmp_path, runner=lambda cmd, cwd: (ran.append(cmd), (True, "ok"))[1])
-    res = ex.execute("run", {"cmd": "cd .flywheel-preaction && rm pending.json"})
+    ex, root = _exec(tmp_path, runner=lambda cmd, cwd: (ran.append(cmd), (True, "ok"))[1])
+    res = ex.execute("run", {"cmd": f"cd {default_home(root).as_posix()} && rm pending.json"})
     assert not res.ok and ran == []
+
+
+def test_executor_default_home_sits_outside_the_workspace(tmp_path):
+    # Anti-tamper move: the store, grants and run state live under
+    # FLYWHEEL_HOME, not in the workspace every agent write can reach.
+    ex, root = _exec(tmp_path)
+    ex.execute("read_file", {"path": "missing.txt"})
+    home = default_home(root)
+    assert (home / "records.jsonl").exists()
+    assert not (root / ".flywheel-preaction").exists()
+    assert root.resolve() not in home.resolve().parents
 
 
 def test_hook_home_is_protected_even_when_it_sits_in_the_project(tmp_path):
@@ -71,8 +82,8 @@ def test_monitor_false_does_not_silently_disable_the_monitor(tmp_path):
 def test_monitor_error_in_executor_fails_closed(tmp_path):
     ran = []
     ex, root = _exec(tmp_path, runner=lambda cmd, cwd: (ran.append(cmd), (True, "ok"))[1])
-    home = root / ".flywheel-preaction"
-    home.mkdir()
+    home = default_home(root)
+    home.mkdir(parents=True)
     (home / "pending.json").write_text("{not json", encoding="utf-8")
     res = ex.execute("run", {"cmd": "python -m pytest -q"})
     assert not res.ok and ran == []

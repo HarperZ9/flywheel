@@ -178,6 +178,7 @@ def assessment_record(*, call, ctx, assessment, trajectory_sha256: str, expires_
         "tool": call.tool,
         "tool_use_id": call.tool_use_id,
         "capability": call.capability_class(),
+        "trust_domain": _domain(call.path_id),
         "args": {"sha256": _sha256_hex(args_bytes), "bytes": len(args_bytes)},
         "call_sha256": call.call_sha256(),
         "goal_sha256": ctx.goal_sha256(),
@@ -195,6 +196,11 @@ def assessment_record(*, call, ctx, assessment, trajectory_sha256: str, expires_
         "owner_ref": owner_ref,
         "does_not_prove": does_not_prove,
     }
+
+
+def _domain(path_id: str) -> str:
+    from .coverage import domain_for
+    return domain_for(path_id)
 
 
 def decision_record(*, hold: dict, decision: str, decider: str, decided_at: str,
@@ -217,7 +223,8 @@ def context_of(ctx) -> dict:
     """The run context the deterministic rules read, so a verifier can re-run
     them. Kept in an owner-only side file; the sealed record carries its digest."""
     return {"workspace": ctx.workspace, "allow_hosts": sorted(ctx.allow_hosts),
-            "owned_hosts": sorted(ctx.owned_hosts), "canaries": sorted(ctx.canaries),
+            "owned_hosts": sorted(ctx.owned_hosts), "fetch_hosts": sorted(ctx.fetch_hosts),
+            "canaries": sorted(ctx.canaries),
             "protected_paths": sorted(ctx.protected_paths)}
 
 

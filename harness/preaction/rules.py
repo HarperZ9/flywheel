@@ -15,6 +15,7 @@ from fnmatch import fnmatchcase
 from pathlib import Path
 
 from .contract import BLOCK, HOLD, Hit, ProposedCall, RunContext, canonical_json, sha256_hex
+from .fetch import read_only_fetch
 from .normalize import Facts, extract, norm_path
 
 _PACK_PATH = Path(__file__).with_name("rules_v1.json")
@@ -121,8 +122,12 @@ def _matches(m: dict, pack: dict, call: ProposedCall, f: Facts, ctx: RunContext)
         return False
     if not (_paths_ok(m, f, ctx) and _text_ok(m, call, f)):
         return False
-    if m.get("host_off_allowlist") and not set(f.hosts) - _allowed_hosts(pack, ctx):
-        return False
+    if m.get("host_off_allowlist"):
+        off = set(f.hosts) - _allowed_hosts(pack, ctx)
+        if off and m.get("read_only_fetch_hosts") and read_only_fetch(f):
+            off -= {h.lower() for h in ctx.fetch_hosts}
+        if not off:
+            return False
     if m.get("host_unowned"):
         unowned = set(f.hosts) - _owned_hosts(pack, ctx) - _allowed_hosts(pack, ctx)
         if not unowned:
