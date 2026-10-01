@@ -15,21 +15,49 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from scripts.native_mcp_payload import bind_payload, source_identity, VERSION
+from desktop.tool.installed_payload_binding import _scan_files
+
+
+def frozen_metadata_paths(engine, version):
+    """Resolve the unique product metadata through the shared link-rejecting scanner."""
+    internal = Path(engine) / '_internal'
+    source_files = dict(_scan_files(internal / 'flywheel-metadata'))
+    source = source_files.get('flywheel-frozen-source.json')
+    if source is None:
+        raise ValueError('frozen source identity missing')
+    product = re.compile(r'flywheel[-_.]verify(?:-.*)?\.(?:egg|dist)-info', re.I)
+    packages = [path for path in internal.iterdir() if product.fullmatch(path.name)]
+    if len(packages) != 1:
+        raise ValueError('frozen package version metadata missing or ambiguous')
+    package = packages[0]
+    escaped = re.escape(version)
+    standard = rf'flywheel[-_.]verify(?:\.egg-info|-{escaped}(?:-py[0-9]+\.[0-9]+)?\.egg-info|-{escaped}\.dist-info)'
+    if not re.fullmatch(standard, package.name, re.I):
+        raise ValueError('frozen package metadata directory version mismatch')
+    files = dict(_scan_files(package))
+    candidates = [files[name] for name in ('PKG-INFO', 'METADATA') if name in files]
+    expected = 'METADATA' if package.name.lower().endswith('.dist-info') else 'PKG-INFO'
+    if len(candidates) != 1 or expected not in files:
+        raise ValueError('frozen package version metadata missing or ambiguous')
+    return source, candidates[0]
 
 
 def frozen_identity(engine, identity):
-    frozen = json.loads((engine / '_internal/flywheel-metadata/flywheel-frozen-source.json').read_text())
+    source = dict(_scan_files(Path(engine) / '_internal/flywheel-metadata')).get('flywheel-frozen-source.json')
+    if source is None:
+        raise ValueError('frozen source identity missing')
+    frozen = json.loads(source.read_text(encoding='utf-8'))
     if (frozen.get('schema') != 'flywheel.frozen-source/v1' or frozen.get('head') != identity['head']
             or frozen.get('version') != identity['version']
             or (identity['mode'] == 'release' and frozen.get('source_dirty') is not False)):
         raise ValueError('frozen source identity does not match release source')
-    metadata = engine / '_internal/flywheel_verify.egg-info'
-    candidates = [p for p in (metadata / 'PKG-INFO', metadata / 'METADATA') if p.is_file()]
-    if len(candidates) != 1:
-        raise ValueError('frozen package version metadata missing or ambiguous')
+    source, metadata = frozen_metadata_paths(engine, identity['version'])
+    # Recheck the source after link-safe resolution; retain the early mismatch diagnostic.
+    if json.loads(source.read_text(encoding='utf-8')) != frozen:
+        raise ValueError('frozen source identity changed during validation')
     from email.parser import Parser
-    fields = Parser().parsestr(candidates[0].read_text(encoding='utf-8'))
-    if fields.get('Name') != 'flywheel-verify' or fields.get('Version') != identity['version']:
+    fields = Parser().parsestr(metadata.read_text(encoding='utf-8'))
+    if fields.get_all('Name') != ['flywheel-verify'] or fields.get_all('Version') != [identity['version']]:
         raise ValueError('frozen package version does not match source')
 
 
