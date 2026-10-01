@@ -128,7 +128,7 @@ LANES: dict[str, Lane] = {
         # names belong to the native-control driver, which over MCP only prints
         # its verb catalog, and the font names to a repository script the
         # package does not ship.
-        "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.5.0",
+        "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.6.0",
         "the reconciliation lane: workstation catalog, doctors and proof packets; "
         "room and workflow need the sibling checkouts",
         "reconciliation", source_repo="public/telos",
@@ -173,7 +173,7 @@ LANES: dict[str, Lane] = {
         "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
         "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
     "canon": Lane(
-        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.5.0",
+        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.6.0",
         "provider-neutral memory bank + personality container: one envelope, "
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",

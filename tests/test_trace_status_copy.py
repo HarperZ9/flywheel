@@ -42,7 +42,7 @@ def test_the_lane_copy_follows_the_pins_it_describes():
     """The deletion copy above describes these releases. A pin that moves fails
     here, so the copy is read again with the new release before this changes."""
     from harness.lanes_registry import LANES
-    assert (LANES["mneme"].version, LANES["canon"].version) == ("0.6.0", "0.5.0")
+    assert (LANES["mneme"].version, LANES["canon"].version) == ("0.6.0", "0.6.0")
 
 
 def test_the_json_keeps_the_package_ids(tmp_path, monkeypatch):

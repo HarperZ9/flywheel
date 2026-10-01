@@ -193,7 +193,7 @@ Admitted at launch: 14 of 15 tools. T2 per granted call: 1. Not in this build: 0
 | `learn_tutor_derive_schedule` | T1 |  | read | node | `sessionId` a plain id | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 | `learn_tutor_prooflesson` | T1 |  | read | node | `packetPath` kept out of the home | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 
-### telos 0.5.0
+### telos 0.6.0
 
 Admitted at launch: 37 of 41 tools. T2 per granted call: 3. Not in this build: 1.
 
@@ -339,7 +339,7 @@ Reads only (class C): Reads the panel catalog. Calibration runs in Calibrate Pro
 | `calibrate-pro.list-panels` | T1 | main | read |  |  | Lists the characterized panel catalog. |
 | `calibrate-pro.panel-info` | T1 | main | read |  |  | Returns one panel's stored characterization. |
 
-### canon 0.5.0
+### canon 0.6.0
 
 Admitted at launch: 5 of 6 tools. T2 per granted call: 1. Not in this build: 0.
 

@@ -44,7 +44,7 @@ def test_canon_payload_pins_context_source_without_expanding_public_tools():
     ).read_text(encoding="utf-8").splitlines() if line]
     canon = next(row for row in rows if row["lane"] == "canon")
 
-    assert canon["owner_commit"] == "7bbd7ad0a565dba81ad16812e4070930a3cd3ae5"
+    assert canon["owner_commit"] == "c3ff3cd322657d37cb095d0d619a4119e0b964fd"
     assert canon["component_descriptor"]["source"]["commit"] == canon["owner_commit"]
     assert canon["component_descriptor"]["entrypoint"]["module"] == "canon.local_mcp"
     # Admission follows the lane tool policy: T1 tools only, so canon.render

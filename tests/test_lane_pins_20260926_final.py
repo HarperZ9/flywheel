@@ -27,7 +27,7 @@ ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
     ROOT / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
     if line.strip()}
 PINS = {"mneme": ("0.6.0", "v0.6.0", "fc7097e38f20724dceb6b804a2e722f65236b2ec"),
-        "canon": ("0.5.0", "v0.5.0", "7bbd7ad0a565dba81ad16812e4070930a3cd3ae5")}
+        "canon": ("0.6.0", "v0.6.0", "c3ff3cd322657d37cb095d0d619a4119e0b964fd")}
 ADVISORIES = {"mneme": "GHSA-j2pw-g7f4-9ppp", "canon": "GHSA-48rq-xjfx-6j4f"}
 
 
