@@ -145,6 +145,8 @@ class Escalator:
                 index["rejected"].append(pending["call_sha256"])
             elif decision == "TERMINATED":
                 index["terminated"].append(pending["run_id"])
+            from .trace_flag import clear_on_decision
+            clear_on_decision(index, pending, decision)
             from .contract import canonical_json, sha256_hex
             review_sha = sha256_hex(canonical_json(review_payload(pending)))
             rec = decision_record(hold=hold, decision=decision, decider=decider,
