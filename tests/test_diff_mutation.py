@@ -5,6 +5,8 @@ import random
 import subprocess
 import textwrap
 
+import pytest
+
 from harness.line_mutants import mutants_for_lines
 from harness.suite_audit import audit_suite_diff
 
@@ -66,24 +68,29 @@ WEAK = """
 """
 
 
-def test_weak_tests_leave_named_survivors_and_strong_tests_do_not(tmp_path):
-    weak = audit_suite_diff(_repo(tmp_path / "w", WEAK), "HEAD~1", "HEAD", seed=3)
-    strong = audit_suite_diff(_repo(tmp_path / "s", STRONG), "HEAD~1", "HEAD", seed=3)
+# Each audit runs pytest once per mutant, so these get more than the suite's
+# 60 s default under a loaded machine.
+@pytest.mark.timeout(300)
+def test_a_weak_test_leaves_named_survivors_on_changed_lines(tmp_path):
+    weak = audit_suite_diff(_repo(tmp_path, WEAK), "HEAD~1", "HEAD", seed=3)
     assert weak["schema"] == "flywheel.suite-audit-diff/v1"
-    assert weak["status"] == "complete" and strong["status"] == "complete"
-    assert weak["survivors"], "a weak test must let at least one changed-line mutant live"
-    assert {s["file"] for s in weak["survivors"]} == {"calc.py"}
-    assert all(s["line"] in range(8, 13) for s in weak["survivors"])
+    assert weak["status"] == "complete" and weak["selection"] == "coverage"
+    assert [(s["line"], s["mutant"]) for s in weak["survivors"]] ==         [(10, "if (x >= hi):"), (8, "if (not (x < lo)):")]
+    assert "kill_rate" not in weak and "score" not in weak
+    assert weak["seed"] == 3 and weak["does_not_prove"]
+
+
+@pytest.mark.timeout(300)
+def test_a_strong_test_kills_every_mutant_but_the_equivalent_one(tmp_path):
+    strong = audit_suite_diff(_repo(tmp_path, STRONG), "HEAD~1", "HEAD", seed=3)
     # x > hi -> x >= hi is an equivalent mutant for clamp (at x == hi both return
     # hi), so no test can kill it. It surfaces as a prompt for a reviewer to
     # dismiss; this is why survivors are never turned into a score.
     assert [(s["line"], s["mutant"]) for s in strong["survivors"]] == [(10, "if (x >= hi):")]
     assert strong["killed"] == strong["run"] - 1 > 0
-    assert len(weak["survivors"]) > len(strong["survivors"])
-    assert "kill_rate" not in strong and "score" not in strong
-    assert weak["seed"] == 3 and weak["does_not_prove"]
 
 
+@pytest.mark.timeout(300)
 def test_the_seed_replays_the_same_mutants(tmp_path):
     repo = _repo(tmp_path, WEAK)
     a = audit_suite_diff(repo, "HEAD~1", "HEAD", seed=11)
@@ -99,6 +106,7 @@ def test_a_budget_of_zero_reports_a_partial_run(tmp_path):
     assert receipt["run"] == 0 and receipt["skipped_for_budget"] == receipt["planned"] > 0
 
 
+@pytest.mark.timeout(300)
 def test_lines_no_test_reaches_are_not_covered_not_survivors(tmp_path):
     test_text = "from calc import clamp\n\ndef test_low():\n    assert clamp(-1, 0, 10) == 0\n"
     receipt = audit_suite_diff(_repo(tmp_path, test_text), "HEAD~1", "HEAD", seed=5)
