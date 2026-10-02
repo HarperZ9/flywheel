@@ -11,7 +11,7 @@ from importlib import resources
 from typing import Final
 
 SCHEMA: Final = "flywheel.skill-resources/v1"
-_SKILL_VERSION: Final = "0.1.0"
+_SKILL_VERSION: Final = "0.2.0"
 _MIME_MARKDOWN: Final = "text/markdown"
 
 _RESOURCE_ROWS: Final = (

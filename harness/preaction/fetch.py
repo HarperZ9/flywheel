@@ -3,14 +3,19 @@
 The owner's fetch allowlist (owner.py) exempts documentation reads from rule
 egress/002. The exemption is narrow on purpose. It applies only when the call
 reads and sends nothing: WebFetch-style tools, or a single curl, wget or
-Invoke-WebRequest command with no upload, method, credential, header or
-config flag, no output path outside the working directory, no shell
-metacharacters, and URLs whose query and fragment stay short and carry no
-user:password part. Option prefixes count: GNU wget and PowerShell accept an
-unambiguous prefix of a long option, and curl and wget accept clustered short
-options, so both forms are checked. HTTPie-style clients are not exempt at
-all: they send data through bare key=value items. A long query string is how a GET request carries data
-out, so it loses the exemption.
+Invoke-WebRequest command whose every option is on a short allowlist below,
+whose every positional argument is an http or https URL, whose output path
+stays inside the working directory, and whose URLs keep the query and
+fragment short and carry no user:password part. A long query string is how a
+GET request carries data out, so it loses the exemption.
+
+The options are an allowlist, not a denylist. A denylist of sending options
+was bypassed eight times in review: curl alone has options that route the
+request to another address (--resolve, --connect-to, --socks5, --proxy1.0),
+read a local file into the URL (--url-query, --variable), or write a file
+anywhere (-D, --trace, --stderr). Any option not listed here, any prefix or
+misspelling of one, and any shell expansion ($, backtick, %VAR%) loses the
+exemption, and the call holds under egress/002 as it would with no fetch hosts.
 
 Pure: same call, same answer. The rule pack names this check through the
 match key read_only_fetch_hosts, so a change here changes the pack digest only
@@ -18,91 +23,146 @@ when the pack text changes; the module docstring and tests pin the behavior.
 """
 from __future__ import annotations
 
+import re
 import shlex
 from urllib.parse import urlsplit
 
 from .normalize import _URL, Facts
 
 MAX_QUERY_CHARS = 128
-_POSIX_CMDS = {"curl", "wget"}
+_META = ("|", ";", "&", ">", "<", "`", "$", "\n", "\r")
+_NUM = re.compile(r"^[0-9]+(\.[0-9]+)?$")
+_PATH, _COUNT = "path", "num"
+
+# Per command: flags that take no value, and options that take one value of a
+# checked kind. Long options take "--opt value" or "--opt=value".
+_CURL = {
+    "short_flags": set("sSLfIviNgO#"),
+    "short_values": {"o": _PATH, "m": _COUNT},
+    "long_flags": {"--silent", "--show-error", "--location", "--fail", "--fail-with-body",
+                   "--head", "--verbose", "--include", "--compressed", "--no-progress-meter",
+                   "--progress-bar", "--remote-name", "--create-dirs", "--http1.1", "--http2",
+                   "--globoff", "--no-buffer"},
+    "long_values": {"--output": _PATH, "--max-time": _COUNT, "--connect-timeout": _COUNT,
+                    "--retry": _COUNT},
+    "whole_tokens": set(),
+}
+_WGET = {
+    "short_flags": set("qSNc"),
+    "short_values": {"O": _PATH, "P": _PATH, "T": _COUNT, "t": _COUNT},
+    "long_flags": {"--quiet", "--no-verbose", "--server-response", "--spider",
+                   "--timestamping", "--continue", "--no-clobber"},
+    "long_values": {"--output-document": _PATH, "--directory-prefix": _PATH,
+                    "--timeout": _COUNT, "--tries": _COUNT, "--max-redirect": _COUNT},
+    # wget spells some single options with two letters behind one dash.
+    "whole_tokens": {"-nv", "-nc"},
+}
+_POSIX = {"curl": _CURL, "wget": _WGET}
 _PS_CMDS = {"iwr", "invoke-webrequest", "irm", "invoke-restmethod"}
-_META = ("|", ";", "&", ">", "<", "`", "$(", "\n", "\r")
-# Long options that send data, change the method, carry credentials or
-# headers, read a config or input file, or route through a proxy. GNU wget
-# accepts any unambiguous prefix of a long option, so a prefix of one of
-# these (four characters or more) counts too.
-_SEND_LONG = (
-    "--data", "--data-raw", "--data-binary", "--data-urlencode", "--data-ascii", "--json",
-    "--form", "--form-string", "--upload-file", "--request", "--user", "--header", "--cookie",
-    "--config", "--referer", "--post-data", "--post-file", "--method", "--body-data",
-    "--body-file", "--password", "--http-user", "--http-password", "--input-file", "--proxy",
-    "--proxy-user", "--netrc", "--oauth2-bearer", "--aws-sigv4", "--cert", "--cookie-jar",
-    "--execute", "--load-cookies", "--use-askpass")
-_OUTPUT_LONG = ("--output", "--output-document", "--directory-prefix")
-# curl and wget short options with the same effect, case-sensitive. Short
-# options can be clustered (-sLd@x), so every letter of a cluster is checked.
-_SEND_SHORT = set("dFTXxuUHbKeEcni")
-_OUTPUT_SHORT = set("oOP")
-# PowerShell parameters; PowerShell accepts any unambiguous prefix.
-_PS_SEND = ("-method", "-body", "-infile", "-headers", "-credential", "-websession", "-form",
-            "-usedefaultcredentials", "-token", "-authentication", "-proxy", "-proxycredential",
-            "-certificate", "-custommethod", "-sessionvariable", "-contenttype")
-_PS_OUTPUT = ("-outfile",)
+_PS_FLAGS = {"-usebasicparsing"}
+_PS_VALUES = {"-uri": "url", "-outfile": _PATH, "-timeoutsec": _COUNT,
+              "-maximumredirection": _COUNT}
 
 
-def _bad_output_path(value: str) -> bool:
+def _is_url(value: str) -> bool:
+    return value.lower().startswith(("http://", "https://"))
+
+
+def _safe_output_path(value: str) -> bool:
+    """A relative path inside the working directory, with no hidden component
+    (.claude, .codex, .git, .github and the like hold configuration) and no
+    environment-variable expansion."""
     v = value.strip().strip("'\"").replace("\\", "/")
-    return (v.startswith(("/", "~")) or ".." in v.split("/")
-            or (len(v) > 1 and v[1] == ":"))
+    if not v or v.startswith(("/", "~")) or (len(v) > 1 and v[1] == ":") or "%" in v:
+        return False
+    return not any(part == ".." or (part.startswith(".") and part != ".")
+                   for part in v.split("/"))
 
 
-def _prefix_of(name: str, options: tuple, minimum: int) -> bool:
-    return len(name) >= minimum and any(o.startswith(name) for o in options)
+def _value_ok(kind: str, value: str) -> bool:
+    if kind == _PATH:
+        return _safe_output_path(value)
+    if kind == _COUNT:
+        return bool(_NUM.match(value))
+    return _is_url(value)
 
 
-def _value(tokens: list, i: int, tok: str) -> str:
-    if "=" in tok:
-        return tok.split("=", 1)[1]
-    return tokens[i + 1] if i + 1 < len(tokens) else ""
+def _take(tokens: list, i: int, tok: str, name: str) -> tuple:
+    """(value, tokens consumed) for an option at tokens[i]."""
+    if tok != name:                       # --opt=value or an attached short value
+        return tok[len(name):].lstrip("="), 1
+    return (tokens[i + 1], 2) if i + 1 < len(tokens) else ("", 1)
 
 
-def _posix_flags_ok(tokens: list) -> bool:
-    for i, tok in enumerate(tokens[1:], start=1):
-        if tok.startswith("@"):
-            return False
+def _short_cluster_ok(table: dict, tokens: list, i: int, tok: str) -> tuple:
+    cluster = tok[1:]
+    for j, ch in enumerate(cluster):
+        if ch in table["short_flags"]:
+            continue
+        kind = table["short_values"].get(ch)
+        if kind is None:
+            return False, 1
+        rest = cluster[j + 1:]
+        if rest:
+            return _value_ok(kind, rest), 1
+        if i + 1 >= len(tokens):
+            return False, 1
+        return _value_ok(kind, tokens[i + 1]), 2
+    return True, 1
+
+
+def _posix_ok(table: dict, tokens: list) -> bool:
+    i = 1
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok in table["whole_tokens"] or tok in table["long_flags"]:
+            i += 1
+            continue
         if tok.startswith("--"):
             name = tok.split("=", 1)[0]
-            if _prefix_of(name, _SEND_LONG, 4):
+            kind = table["long_values"].get(name)
+            if kind is None:
                 return False
-            if _prefix_of(name, _OUTPUT_LONG, 5) and _bad_output_path(_value(tokens, i, tok)):
+            value, step = _take(tokens, i, tok, name)
+            if not _value_ok(kind, value):
                 return False
-        elif tok.startswith("-") and len(tok) > 1:
-            cluster = tok[1:]
-            for j, ch in enumerate(cluster):
-                if ch in _SEND_SHORT:
-                    return False
-                if ch in _OUTPUT_SHORT:
-                    rest = cluster[j + 1:]
-                    value = rest if rest else (tokens[i + 1] if i + 1 < len(tokens) else "")
-                    if _bad_output_path(value):
-                        return False
-                    break
-                if not ch.isalpha():
-                    break
+            i += step
+            continue
+        if tok.startswith("-") and len(tok) > 1:
+            ok, step = _short_cluster_ok(table, tokens, i, tok)
+            if not ok:
+                return False
+            i += step
+            continue
+        if not _is_url(tok):
+            return False                  # a bare host is fetched but never seen as a host
+        i += 1
     return True
 
 
-def _ps_flags_ok(tokens: list) -> bool:
-    for i, tok in enumerate(tokens[1:], start=1):
-        if tok.startswith("@"):
-            return False
+def _ps_ok(tokens: list) -> bool:
+    i = 1
+    while i < len(tokens):
+        tok = tokens[i]
         if not tok.startswith("-"):
+            if not _is_url(tok):
+                return False
+            i += 1
             continue
         name = tok.split(":", 1)[0].lower()
-        if _prefix_of(name, _PS_SEND, 3):
+        if name in _PS_FLAGS:
+            i += 1
+            continue
+        kind = _PS_VALUES.get(name)
+        if kind is None:
             return False
-        if _prefix_of(name, _PS_OUTPUT, 3) and _bad_output_path(_value(tokens, i, tok)):
+        if ":" in tok:
+            value, step = tok.split(":", 1)[1], 1
+        else:
+            value, step = (tokens[i + 1], 2) if i + 1 < len(tokens) else ("", 1)
+        if not _value_ok(kind, value):
             return False
+        i += step
     return True
 
 
@@ -118,10 +178,10 @@ def _command_is_read_only(command: str) -> bool:
     head = tokens[0].replace("\\", "/").rsplit("/", 1)[-1].lower()
     if head.endswith(".exe"):
         head = head[:-4]
-    if head in _POSIX_CMDS:
-        return _posix_flags_ok(tokens)
+    if head in _POSIX:
+        return _posix_ok(_POSIX[head], tokens)
     if head in _PS_CMDS:
-        return _ps_flags_ok(tokens)
+        return _ps_ok(tokens)
     return False
 
 

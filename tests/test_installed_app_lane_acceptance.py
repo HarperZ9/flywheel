@@ -100,9 +100,17 @@ def test_every_call_check_names_a_tool_the_policy_knows():
 
 
 def test_every_lane_with_a_main_tool_runs_one_main_call():
+    from harness.lanes_registry import LANES
     for lane, case in CASES.items():
         mains = set(main_tools(lane))
         if not mains:
+            continue
+        if LANES[lane].kind == "http":
+            # A remote lane has no deployment in the build. Its fresh main call
+            # must be the setup refusal, which proves no request left the app.
+            refused = {c.tool for c in case.checks if c.kind == "call"
+                       and c.expect_code == "LANE_SETUP_REQUIRED"}
+            assert refused & mains, lane
             continue
         ran = {c.tool for c in case.checks if c.kind == "call" and c.expect_status == 200}
         assert ran & mains, lane

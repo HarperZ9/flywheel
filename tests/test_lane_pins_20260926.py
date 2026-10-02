@@ -1,4 +1,4 @@
-"""The 2026-09-26 pins: articulate 0.5.0 (relay and canon moved on).
+"""The 2026-09-26 boundaries, retained through the articulate 0.6.0 repin.
 
 relay 0.3.0 and canon 0.3.0 were pinned here first; relay 0.4.0 and canon
 0.4.1 replaced them the same day (tests/test_lane_pins_20260926_late.py).
@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
     ROOT / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
     if line.strip()}
-PINS = {"articulate": ("0.5.0", "v0.5.0", "d7d5244db98c251fc7808f7a5eec4d5163c368a9")}
+PINS = {"articulate": ("0.6.0", "v0.6.0", "36f7e9f1f027f400b4839ec7394d64823ed1ac1d")}
 
 
 def test_registry_rows_and_expectations_carry_each_pin():

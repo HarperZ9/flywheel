@@ -189,6 +189,40 @@ def fire_record(schedule: dict, *, scheduled_for: str, fired_at: str,
     return seal(record, digest_key="fire_sha256")
 
 
+#: Failed fires in a row, under one schedule definition, before the
+#: schedule stops firing. Redefining the schedule is what re-arms it.
+BREAKER_TRIP = 2
+
+
+def breaker(schedule: dict, records: list, *, trip: int = BREAKER_TRIP) -> dict:
+    """Whether this schedule has stopped itself, and on what.
+
+    A fire failed when any hook it ran failed, blocking or not: a nonzero
+    exit, a timeout, a runner error, or an exit 0 whose output ends on a
+    rate limit, quota, billing, sign-in or overloaded error. That last case
+    is the one a clock-driven job repeats all night, because each run looks
+    like it worked. Two failures inside one replayed backlog count, and so
+    does history recorded before the breaker existed. Only fires cut under
+    the current `schedule_sha256` count, so re-arming (redefining the
+    schedule) is the deliberate act that clears it; waiting does not.
+    """
+    from .accountable_hooks import hook_failed
+    consecutive_failed, signals, matches = 0, set(), set()
+    for record in reversed(records):
+        if (record.get("schedule_sha256") != schedule.get("schedule_sha256")
+                or consecutive_failed >= trip):
+            break
+        failed = [r for r in record.get("hook_receipts") or () if hook_failed(r)]
+        if not failed:
+            break
+        consecutive_failed += 1
+        signals.update(r["limit_signal"] for r in failed if r.get("limit_signal"))
+        matches.update(str(r["limit_match"])[:80] for r in failed if r.get("limit_match"))
+    return {"tripped": consecutive_failed >= trip, "consecutive_failed_fires": consecutive_failed,
+            "trip_after": trip, "limit_signals": sorted(signals),
+            "limit_matches": sorted(matches)[:8]}
+
+
 def chain_intact(records: list) -> bool:
     """Walk one schedule's records and check every citation.
 

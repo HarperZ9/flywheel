@@ -138,7 +138,7 @@ class SetupChecks:
         self._memo: dict[tuple[str, str], SetupItem] = {}
 
     def item(self, item_id: str, lane: str) -> SetupItem:
-        key = (item_id, lane if item_id == "provider_key" else "")
+        key = (item_id, lane if item_id in {"provider_key", "http_endpoint"} else "")
         if key not in self._memo:
             self._memo[key] = _EVALUATORS.get(item_id, _unmet_by_build)(self, lane, item_id)
         return self._memo[key]
@@ -220,6 +220,14 @@ def _provider_key(checks: SetupChecks, lane: str, item_id: str) -> SetupItem:
                  lanes_json=str(lanes_json))
 
 
+def _http_endpoint(checks: SetupChecks, lane: str, item_id: str) -> SetupItem:
+    from .lanes_registry import LANES
+    configured = bool(LANES[lane].endpoint(checks.environ))
+    variable = LANES[lane].env_url_var()
+    return _item(item_id, configured, "Endpoint selected." if configured else
+                 f"Set {variable} to your chosen server's MCP URL, then restart Flywheel.")
+
+
 def _bulletin_identity(checks: SetupChecks, _lane: str, item_id: str) -> SetupItem:
     from .bulletin_identity_contract import BULLETIN_CREDENTIAL_NAME
     saved = checks.key_source(BULLETIN_CREDENTIAL_NAME) in ("env", "keychain")
@@ -256,6 +264,7 @@ def _unmet_by_build(_checks: SetupChecks, lane: str, item_id: str) -> SetupItem:
 _EVALUATORS = {"node": _node, "git": _git, "model_server": _model_server,
                "project_folder": _project_folder, "canon_blocks": _canon_blocks,
                "provider_key": _provider_key, "bulletin_identity": _bulletin_identity,
+               "http_endpoint": _http_endpoint,
                "writing_draft": _writing_draft, "claude_cli": _claude_cli}
 
 

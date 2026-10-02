@@ -93,11 +93,22 @@ def _kind(call: ProposedCall, command: str) -> str:
     return "unknown"
 
 
-def _command_paths(command: str) -> list:
+def _split(command: str, posix: bool) -> list:
     try:
-        tokens = shlex.split(command, posix=True)
+        return shlex.split(command, posix=posix)
     except ValueError:
-        tokens = command.split()
+        return command.split()
+
+
+def _command_paths(command: str) -> list:
+    """Paths a shell command names, read both ways. POSIX splitting matches
+    bash, where a backslash escapes; cmd.exe and PowerShell (the executor's
+    shell on Windows, and Codex's) keep it literal, so `del C:\\x\\y` names a
+    path only under the non-POSIX reading. Taking both readings can add a
+    path, never drop one, which is the safe direction for every path rule."""
+    tokens = _split(command, True)
+    if "\\" in command:
+        tokens = tokens + [t for t in _split(command, False) if t not in tokens]
     out = []
     for tok in tokens:
         tok = tok.split("=", 1)[-1] if "=" in tok else tok

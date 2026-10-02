@@ -34,7 +34,8 @@ both load it.
   documentation hosts (Python, MDN, Rust, Node, Go, Microsoft Learn, GitHub
   Docs and others) is added unless you set `"use_default_fetch_hosts": false`.
 - `canaries`: decoy tokens. Any call that carries one is blocked.
-- `protected_paths`: extra paths the agent must not write.
+- `protected_paths`: extra paths the agent must not write. The owner file
+  itself and the witness directory are always protected, wherever they live.
 - `monitor`: monitor settings (judge, thresholds, hold expiry).
 - `expected_rules_digest`: the rule-pack digest you approved. A different
   installed pack blocks every call.
@@ -46,10 +47,13 @@ the hook at a specific file with `flywheel monitor install claude-code --home
 
 With no file, reading documentation works without a hold. A fetch counts as
 read-only when it is WebFetch, or a single `curl`, `wget` or
-`Invoke-WebRequest` command with no upload, method, header, credential or
-config flag, no output path outside the working directory, no pipe or
-redirect, and a query string of at most 128 characters. Uploads, long query
-strings, pipelines and unlisted hosts still hold.
+`Invoke-WebRequest` command that uses only a short list of options (quiet,
+follow redirects, fail on error, timeouts, retries and an output file),
+names only http or https URLs, writes no file outside the working directory
+or into a hidden folder, has no pipe, redirect or variable, and keeps the
+query string to 128 characters. Any other option holds, so an upload, a
+proxy, a changed address, a header, a long query string, a pipeline and an
+unlisted host all still hold.
 
 A file that does not parse, names an unknown field or lists a wildcard host
 stops every call until you fix it. If you pin the monitor (`pin_config`), an

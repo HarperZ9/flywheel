@@ -1,7 +1,8 @@
 """endpoints_http.py -- shared transport helpers for provider backends.
 
-One injectable HTTP boundary (_http), one credential reader (_k), and one
-typed network guard (_guard) shared by every backend module, so a test or
+One injectable HTTP boundary (_http), one credential reader (_k), one
+typed network guard (_guard) and one error for a response with no
+completion (_response_error), shared by every backend module, so a test or
 an operator can swap the transport exactly once.
 """
 from __future__ import annotations
@@ -58,3 +59,11 @@ def _guard(transport, method, url, headers, body, timeout, name):
         return transport(method, url, headers, body, timeout)
     except (urllib.error.URLError, OSError, ConnectionError) as e:
         raise BackendError(f"{name} unreachable: {e}") from e
+
+
+def _response_error(name: str, status, obj) -> BackendError:
+    """A response with no completion. The status and the body ride on the
+    error, so a caller can read the provider's own error fields."""
+    error = BackendError(f"{name} returned {status}: {obj.get('error', obj)}")
+    error.status, error.body = status, obj
+    return error

@@ -16,6 +16,7 @@ param(
   [string]$AcceptanceDir = "",
   [string]$SourceCommit = "",
   [string]$EngineSha256 = "",
+  [string]$InstallerSha256 = "",
   [string]$WorkRoot = $env:RUNNER_TEMP,
   [switch]$SkipAllUsers,
   [switch]$DefineOnly
@@ -56,6 +57,8 @@ function Uninstall-Flywheel([string]$Root) {
 }
 
 function Install-AllUsers([string]$Installer) {
+  $actualHash = (Get-FileHash -LiteralPath $Installer -Algorithm SHA256).Hash.ToLowerInvariant()
+  if ($InstallerSha256 -cnotmatch '^[0-9a-f]{64}$' -or $actualHash -cne $InstallerSha256) { throw "all-users installer checksum mismatch" }
   $root = Join-Path $env:ProgramFiles "Flywheel"
   if (Test-Path -LiteralPath $root) { throw "all-users install root already exists: $root" }
   $argList = @("/ALLUSERS", "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/DIR=`"$root`"")
@@ -68,7 +71,7 @@ function Install-AllUsers([string]$Installer) {
 }
 
 if ($DefineOnly) { return }
-foreach ($name in "InstallRoot", "Installer", "AcceptanceDir", "SourceCommit", "EngineSha256", "WorkRoot") {
+foreach ($name in "InstallRoot", "Installer", "AcceptanceDir", "SourceCommit", "EngineSha256", "InstallerSha256", "WorkRoot") {
   if ([string]::IsNullOrWhiteSpace((Get-Variable -Name $name -ValueOnly))) { throw "-$name is required" }
 }
 New-Item -ItemType Directory -Force -Path $AcceptanceDir | Out-Null

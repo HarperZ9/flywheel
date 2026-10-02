@@ -102,15 +102,27 @@ class OwnerConfig:
             cfg.owner_sha256 = self.digest()
         return cfg
 
+    def guarded_paths(self) -> tuple:
+        """The owner file and the witness directory are monitor state. Writing
+        or deleting the owner file widens the hosts, drops canaries and the
+        expected pack digest, or points the judge at another endpoint; with
+        no pin that change is silent. Creating one where none exists does the
+        same, so the path is guarded whether or not the file exists. The
+        witness directory holds the exported heads a store rewrite is checked
+        against. Neither sits under */.flywheel/* once FLYWHEEL_HOME or
+        --owner-config points elsewhere, so the shipped globs do not cover them."""
+        return tuple(os.path.realpath(p) for p in (self.path, self.witness_dir) if p)
+
     def apply(self, ctx: RunContext) -> RunContext:
         """The run context with the owner's hosts, canaries and protected paths."""
+        own = tuple(p for p in self.protected_paths + self.guarded_paths()
+                    if p not in ctx.protected_paths)
         return replace(
             ctx, allow_hosts=tuple(sorted(set(ctx.allow_hosts) | set(self.allow_hosts))),
             owned_hosts=tuple(sorted(set(ctx.owned_hosts) | set(self.owned_hosts))),
             fetch_hosts=tuple(sorted(set(ctx.fetch_hosts) | set(self.fetch_hosts))),
             canaries=tuple(ctx.canaries) + tuple(c for c in self.canaries if c not in ctx.canaries),
-            protected_paths=tuple(ctx.protected_paths) + tuple(
-                p for p in self.protected_paths if p not in ctx.protected_paths))
+            protected_paths=tuple(ctx.protected_paths) + tuple(dict.fromkeys(own)))
 
 
 def from_dict(d: dict, *, path: str = "") -> OwnerConfig:

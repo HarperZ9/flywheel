@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
     ROOT / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
     if line.strip()}
-VERSION, TAG, COMMIT = "2.14.0", "v2.14.0", "665ea7e24055266a9f3c26c5c84f0f3555b8234c"
+VERSION, TAG, COMMIT = "2.15.0", "v2.15.0", "b2e4dcefff9d9d9a339e23d64c58bb4a5149ef92"
 NEW_TOOL = "index.route"
 
 
@@ -172,7 +172,7 @@ def test_the_notice_names_the_tag_and_drops_the_describe():
 def test_the_notes_name_the_release_and_drop_the_bundled_commit_limit():
     notes = _text("RELEASE-NOTES-1.1.0.md")
     updates = notes.split("**Lane updates.**", 1)[1].split("- **", 1)[0]
-    assert f"index {VERSION}" in updates and f"`{NEW_TOOL}`" in updates
+    assert "index 2.14.0" in updates and f"`{NEW_TOOL}`" in updates
     assert "no index release contains" not in notes
     assert "2.13.0 plus one later commit" not in notes
 
@@ -183,7 +183,7 @@ def test_the_known_issues_page_names_the_commit_the_1_0_x_apps_bundled():
     known = _text("RELEASE-NOTES-1.0.4-known-issues.md")
     assert "six statements about the installed Windows app" in known
     assert "bundled index 2.13.0 plus one later commit" in known
-    assert f"until {VERSION}, which Flywheel 1.1.0 pins" in known
+    assert "until 2.14.0, which Flywheel 1.1.0 pins" in known
 
 
 def test_the_feature_page_lists_the_pinned_tools():

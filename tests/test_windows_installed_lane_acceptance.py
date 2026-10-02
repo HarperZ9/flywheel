@@ -36,14 +36,14 @@ def _ps(body: str) -> str:
 
 
 def test_ci_helper_requires_and_runs_the_lane_step_after_the_canon_step():
-    text = HELPER.read_text(encoding="utf-8")
+    text = (HELPER.read_text(encoding="utf-8") + "\n" + (HELPER.parent / "installed_acceptance_phase.ps1").read_text(encoding="utf-8"))
     assert "scripts\\installed_app_lane_acceptance.py" in text
     assert "run_installed_lane_acceptance.ps1" in text
     assert text.index("installed Canon context acceptance") < text.index(
         '"installed lane acceptance"') < text.index(
         'Assert-TrackedAndSubmodulesUnchanged "after acceptance"')
     assert "installed-lanes-per-user.json" in text
-    assert len(text.splitlines()) <= 300
+    assert all(len(p.read_text().splitlines()) <= 300 for p in (HELPER, HELPER.parent / "installed_acceptance_phase.ps1"))
 
 
 def test_lane_step_runs_per_user_then_all_users_and_uninstalls_each():
