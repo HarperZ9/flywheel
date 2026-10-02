@@ -182,7 +182,7 @@ jobs:
       - name: Build the matching plugin and skill candidates
         shell: pwsh
         run: |
-          python -m pip install pytest
+          python -m pip install pytest pytest-timeout
           if ($LASTEXITCODE -ne 0) { throw "plugin test dependency installation failed" }
           python -m pytest tests/test_skill_bundles.py -q
           if ($LASTEXITCODE -ne 0) { throw "plugin bundle tests failed" }
