@@ -176,13 +176,16 @@ jobs:
         run: |
           $exe = Get-ChildItem desktop\build\installer\Flywheel-Setup-*.exe | Select-Object -First 1
           $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
-          "$hash  $($exe.Name)" | Out-File -Encoding ascii desktop\build\installer\SHA256SUMS.txt
+          # LF line ending: PowerShell text output on Windows is CRLF, and GNU
+          # `sha256sum -c` (coreutils 8.32) reads the CR as part of the file name.
+          $sums = Join-Path (Get-Location) "desktop\build\installer\SHA256SUMS.txt"
+          [System.IO.File]::WriteAllText($sums, "$hash  $($exe.Name)`n", [System.Text.Encoding]::ASCII)
           Get-Content desktop\build\installer\SHA256SUMS.txt
 
       - name: Build the matching plugin and skill candidates
         shell: pwsh
         run: |
-          python -m pip install pytest
+          python -m pip install pytest pytest-timeout
           if ($LASTEXITCODE -ne 0) { throw "plugin test dependency installation failed" }
           python -m pytest tests/test_skill_bundles.py -q
           if ($LASTEXITCODE -ne 0) { throw "plugin bundle tests failed" }

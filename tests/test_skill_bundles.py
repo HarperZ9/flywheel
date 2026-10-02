@@ -128,3 +128,11 @@ def test_release_verification_rejects_archive_set_drift(tmp_path, change):
     accepted = hashlib.sha256(sums.read_bytes()).hexdigest()
     with pytest.raises(ValueError, match="receipt"):
         builder.verify_release(sums, accepted)
+
+
+def test_published_checksum_files_use_lf_on_every_host(tmp_path):
+    # The release runner is Windows; a CRLF checksum file fails sha256sum -c.
+    builder.bundle(tmp_path)
+    for name in ("SHA256SUMS", "manifest.json"):
+        data = (tmp_path / name).read_bytes()
+        assert data.endswith(b"\n") and b"\r" not in data, name
