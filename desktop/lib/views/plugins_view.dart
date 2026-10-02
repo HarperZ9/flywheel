@@ -7,6 +7,7 @@ import '../widgets/plugin_forms.dart';
 import '../widgets/tool_call_sheet.dart';
 import '../widgets/parity_table.dart';
 import '../widgets/plugin_authorize.dart';
+import '../widgets/client_connection_panel.dart';
 
 class PluginsView extends StatefulWidget {
   final GatewayClient client;
@@ -34,7 +35,6 @@ class _PluginsViewState extends State<PluginsView> {
       authorizePluginOperation(context, widget.client,
           'desktop-plugin-${++_request}', action, raw, path,
           credentialRefs: credentialRefs, currentRaw: currentRaw);
-
   @override
   void initState() {
     super.initState();
@@ -127,11 +127,13 @@ class _PluginsViewState extends State<PluginsView> {
   @override
   Widget build(BuildContext context) {
     if (!widget.alive) {
-      return const FwEmpty('Engine offline.', command: 'flywheel up');
+      return const ViewScroll(children: [ClientConnectionAction()]);
     }
     return ViewScroll(
       children: [
-        const SectionHeader('Plugins', kicker: 'exact external operations'),
+        const SectionHeader('Plugins',
+            kicker: 'exact external operations',
+            trailing: ClientConnectionAction()),
         const SizedBox(height: FwLayout.s3),
         Text('One registry, with one exact approval per external operation.',
             style: Theme.of(context).textTheme.bodySmall),

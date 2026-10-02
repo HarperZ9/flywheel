@@ -1,0 +1,84 @@
+# Flywheel 1.2.0
+
+Draft release notes. Source integration, the final tagged build and installed
+acceptance remain open. These notes do not identify a published release.
+
+Flywheel remains a full native harness client with its engine, local task state,
+model routing and permission controls. Articulate and Rowan use the model chosen
+by the host; neither adds a model or publisher-funded backend. Flywheel's existing
+local-model support remains part of the harness.
+
+## What changed
+
+- Flywheel no longer picks a Bulletin deployment for you. Through 1.1.2 the
+  lane carried the publisher's hosted board address, so the lane probe that
+  runs after every lane install contacted that board with no setup. In 1.2.0
+  the Bulletin lane reads needs setup until you set `FLYWHEEL_BULLETIN_URL`.
+  Identity registration and public outcome posts need
+  `FLYWHEEL_BULLETIN_BASE_URL` or an explicit origin. Without them Flywheel
+  sends no Bulletin request.
+- Rowan's completion and monitor work is included with a grading-integrity repair.
+  A check that rewrites its protected grading files cannot adopt those changes
+  as a trusted baseline. Incomplete or unreadable protected-file coverage prevents
+  a trusted completion, even when the command reports success.
+- Desktop Chat can speak completed Rowan replies after the user enables speech.
+  Installed Windows and macOS voices supply playback; Linux reports unavailable.
+  Speech starts off, skips restored history and partial responses, and has mute,
+  Stop and interruption handling. Typed replies remain available when speech fails.
+- The Windows installer bundles a C++ runtime at least as new as the compiler that
+  built the app. Every Windows installer through 1.1.2 bundled runtime 14.29. The
+  1.2.0 release candidates built that way crashed in the runtime when the window
+  closed. Publication now reads the runtime receipt and refuses a candidate whose
+  runtime is older than its compiler or whose installed runtime files differ from
+  the receipt.
+- The Plugins view can preview a local-client connection command using the bundled
+  engine. It shows whether the engine is available and keeps connection status
+  untested until a client exercises the command. It does not write client settings.
+- A restricted Articulate launch mode exposes local checks and host edits while
+  refusing external editing backends. The connected model writes the rewrite;
+  Articulate checks protected content and returns a receipt.
+- The secondary evidence-task skill and plugin move to 0.2.0. Their ZIPs include
+  portable metadata plus Codex and Claude compatibility manifests, and travel
+  with the Windows product release candidate under reviewed checksums.
+- The native tool companion uses the same engine payload as the Windows
+  installer. Its restricted profile exposes local identity, receipt inclusion
+  verification and two public skill resources. Workspace and state directories
+  are explicit launch settings. This profile does not grant model, network,
+  execution or write access.
+- Release checks install the already-built Windows candidate in disposable CI.
+  They exercise the installed engine, Canon context, restricted tool profiles
+  and bundled lanes. A separate native-window check requires normal app closure
+  and termination of its owned gateway. Publication checks bind the installer
+  digest to the archived acceptance receipts.
+
+- A source tools plugin ships with the release. It carries the same restricted
+  two-tool profile as the native companion for clients that already have Python
+  3.11 or later. Each tool now has a title next to its read-only and
+  non-destructive hints. The release workflow builds it, checks every file
+  against reviewed source, runs the protocol and refusal checks, and publishes
+  it under its own checksum file.
+
+The native MCP companion, the source tools plugin and the skill-only plugin are
+additional distribution surfaces. None replaces the full Flywheel client. Their
+final tagged assets and installed acceptance still require release
+qualification.
+
+## Release boundaries
+
+The final lane pins and payload receipts must be regenerated from accepted tool
+releases before the tagged build. Canon's standalone client release joins this
+integration. The full client, native MCP package, source tools plugin and
+skill-only plugin have separate checks. The source tools plugin is not submitted
+to any directory. Marketplace approval and universal harness compatibility are
+not established. Local MCP connectivity does not establish ordinary cloud-client
+execution.
+
+Protected-file snapshots do not provide filesystem isolation or detect a change
+restored between snapshots. Passing a check does not prove the test is adequate.
+Rewrite guards can miss meaning changes and refuse valid paraphrases.
+
+Speech tests cover simulated engines and control behavior. Audible output, voice
+quality and interruption reliability still need installed-device receipts. The
+final Windows installer needs acceptance in the supported install modes. Model
+providers, macOS installation and clean-device operation remain separate checks.
+No competitive-leadership claim follows from these tests or packaging changes.

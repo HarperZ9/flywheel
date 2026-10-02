@@ -245,7 +245,7 @@ class AgentTrace:
         return projection(self.binding, state, self.count, self.head, **kwargs)
 
 
-def record_failure(trace: "AgentTrace", exc: BaseException) -> None:
+def record_failure(trace: "AgentTrace", exc: BaseException, *, details=None) -> None:
     """End a failed run's private trace with one failure record (N-12).
 
     After a refusal the trace accepts only the fixed-schema record in its
@@ -257,7 +257,8 @@ def record_failure(trace: "AgentTrace", exc: BaseException) -> None:
             trace.append_failure(*trace.refusal)
             return
         try:
-            trace.append("failure", {"error_type": type(exc).__name__, "message": str(exc)})
+            trace.append("failure", {**(details or {}),
+                                     "error_type": type(exc).__name__, "message": str(exc)})
         except TraceError:
             trace.append_failure(*trace.refusal)
     except TraceError as missed:

@@ -14,8 +14,11 @@ RUNNER_CONTEXT_SCHEMA = "flywheel.native-continuation-runner-context/v1"
 
 _AUTH_BEARER = re.compile(r"(?i)\bauthorization\s*:\s*bearer\s+[^\s,;]+")
 _BEARER = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]{8,}")
+# A name prefix such as `OPENAI_` starts only where its run of name
+# characters starts, so a long `a-a-a-...` run is scanned once, not once per
+# word. A keyword after `_`, `-` or a non-word character matches on its own.
 _CREDENTIAL_ASSIGNMENT = re.compile(
-    r"(?i)\b(?:[a-z][a-z0-9_-]*[_-])?"
+    r"(?i)(?:(?<![a-z0-9_-])[a-z][a-z0-9_-]*[_-]|(?<![a-z0-9]))"
     r"(?:token|private[_ -]?key|credential|secret|password|passwd|"
     r"api[_ -]?key|access[_ -]?key|(?:access|refresh)[_ -]?token|"
     r"client[_ -]?secret)['\"]?\s*[:=]\s*"

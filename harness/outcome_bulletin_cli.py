@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 from .evidence_json import strict_load_json
-from .bulletin_origin import BulletinOriginError, PUBLIC_BULLETIN_ORIGIN
+from .bulletin_origin import BulletinOriginError
 from .gateway_operation import GatewayOperationError
 from .outcome_bulletin import (
     OutcomeBulletinError,
@@ -25,6 +26,11 @@ class _JsonParser(argparse.ArgumentParser):
         raise _ArgumentFailure()
 
 
+def _configured_origin() -> str | None:
+    """The operator's selected deployment, if any. Unset means no target."""
+    return os.environ.get("FLYWHEEL_BULLETIN_BASE_URL", "").strip() or None
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = _JsonParser(
         prog="python -m harness.outcome_bulletin_cli",
@@ -34,10 +40,10 @@ def _parser() -> argparse.ArgumentParser:
                                      parser_class=_JsonParser)
     preview = commands.add_parser("preview")
     preview.add_argument("--outcome", required=True)
-    preview.add_argument("--bulletin-base-url", default=PUBLIC_BULLETIN_ORIGIN)
+    preview.add_argument("--bulletin-base-url", default=_configured_origin())
     grant = commands.add_parser("grant-request")
     grant.add_argument("--outcome", required=True)
-    grant.add_argument("--bulletin-base-url", default=PUBLIC_BULLETIN_ORIGIN)
+    grant.add_argument("--bulletin-base-url", default=_configured_origin())
     grant.add_argument("--journey-ref", required=True)
     grant.add_argument("--expected-event-head", required=True)
     grant.add_argument("--client-request-id", required=True)
@@ -45,7 +51,7 @@ def _parser() -> argparse.ArgumentParser:
     grant.add_argument("--credential-ref")
     publish = commands.add_parser("publish-envelope")
     publish.add_argument("--outcome", required=True)
-    publish.add_argument("--bulletin-base-url", default=PUBLIC_BULLETIN_ORIGIN)
+    publish.add_argument("--bulletin-base-url", default=_configured_origin())
     publish.add_argument("--journey-ref", required=True)
     publish.add_argument("--expected-event-head", required=True)
     publish.add_argument("--client-request-id", required=True)

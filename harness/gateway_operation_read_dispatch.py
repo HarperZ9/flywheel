@@ -14,6 +14,9 @@ def _read(method: str, path: str, query: str, owner_ref: str,
     ref, selector = match.groups()
     if selector == "trace":
         from .gateway_agent_trace_route import read_trace; return RouteResponse(200, read_trace(service, owner_ref, ref, query))
+    if selector == "handoff":
+        if query: raise GatewayOperationError("INVALID_REQUEST")
+        from .rowan_handoff import read_handoff; return RouteResponse(200, read_handoff(service, owner_ref, ref))
     if selector == "events":
         values = parse_qs(query, keep_blank_values=True, strict_parsing=True)
         if set(values) - {"after"} or any(len(value) != 1 for value in values.values()):

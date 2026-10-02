@@ -300,7 +300,7 @@ Learn is the `learning` organ in the lane layer. Observed in
 
 ```python
 "learn": Lane(
-    "learn", "@harperz9/learn", "node", ("src/mcp.mjs",), "npm", "2.0.0",
+    "learn", "@harperz9/learn", "node", ("src/mcp.mjs",), "npm", "2.1.0",
     "accountable learning forge (spaced repetition + retrieval practice)",
     "learning", source_repo="public/learn"),
 ```
@@ -400,7 +400,7 @@ Learn is a registered, health-probed lane, so the lane-layer wiring exists.
 Present and verified (observed):
 
 - **Lane registry entry** in `harness/lanes_registry.py`, organ `learning`,
-  version `2.0.0`, `source_repo="public/learn"`.
+  version `2.1.0`, `source_repo="public/learn"`.
 - **Expected-set test** in `tests/test_lanes.py`
   (`test_registry_covers_the_expected_lanes` includes `learn`), and
   `resolve_mcp_command("learn") == ["node", "src/mcp.mjs"]`.
@@ -421,7 +421,7 @@ Missing or in flight (proposed, not present on the working checkout's main):
   study-receipt tools is proposed work.
 - **No learn readiness receipt.** `scripts/` carries `run_gather_readiness.py`
   and peers, but no `run_learn_readiness.py`. Proposed.
-- **Version lockstep.** The `2.0.0` string in `lanes_registry.py` is a
+- **Version lockstep.** The `2.1.0` string in `lanes_registry.py` is a
   hand-maintained constant. It must be bumped in the same change as learn's
   `package.json` version, or `lane_status` reports STALE against the installed
   package.

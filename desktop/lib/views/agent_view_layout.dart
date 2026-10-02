@@ -18,6 +18,7 @@ extension _AgentViewLayout on _AgentViewState {
       banner: _historyBanner());
 
   void _useWorkspaceGoal(String goal) {
+    _speech.interrupt();
     _admission.changeDraft(_current, goal);
     _refresh(() {
       _agentSeedGoal = goal;
@@ -28,12 +29,16 @@ extension _AgentViewLayout on _AgentViewState {
   void _openModels() => FlywheelNav.jump(context, DestinationId.models);
 
   Widget _header({bool showConversations = false}) => ChatHeader(
+      speechControls: _desktopSpeech && !_agentMode
+          ? DesktopSpeechControls(controller: _speech)
+          : null,
       agentMode: _agentMode,
       streaming: _busy,
       endpoints: _endpoints,
       endpoint: _model,
       chosenModel: _chosenModels[_model],
       onMode: (v) => _refresh(() {
+            _speech.interrupt();
             _agentMode = v;
             if (!v) _agentSeedGoal = null;
           }),

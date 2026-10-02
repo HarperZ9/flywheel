@@ -3,6 +3,7 @@ part of 'agent_view.dart';
 extension _AgentViewAdmission on _AgentViewState {
   Future<void> _beginAdmission(ChatDraft submitted) async {
     final generation = ++_generation;
+    _speech.beginTurn(submitted.attemptRef!);
     _submittedDraft = submitted;
     _assistant = null;
     _accepted = false;
@@ -37,10 +38,15 @@ extension _AgentViewAdmission on _AgentViewState {
         return;
       }
       _providerDispatchStarted = true;
-      _sub = widget.client.chatStream(wire, model, authorizedBody: body).listen(
-          (event) => _onEvent(generation, event),
-          onError: (_) => _onObservationClosed(generation),
-          onDone: () => _onObservationClosed(generation));
+      _sub = widget.client
+          .chatStream(wire, model, authorizedBody: body)
+          .listen((event) => _onEvent(generation, event),
+              onError: (_) {
+                if (!mounted || generation != _generation) return;
+                _speech.interrupt();
+                _onObservationClosed(generation);
+              },
+              onDone: () => _onObservationClosed(generation));
     }, () => _onObservationClosed(generation),
         currentOperation: () => _model == endpoint &&
                 _chosenModels[endpoint] == chosen &&
@@ -126,6 +132,12 @@ extension _AgentViewAdmission on _AgentViewState {
       _streaming = false;
     });
     _admission.persistHistory();
+    if (_assistant!.receipt != null) {
+      unawaited(
+          _speech.completeTurn(_submittedDraft!.attemptRef!, _assistant!.text));
+    } else {
+      _speech.interrupt();
+    }
   }
 
   void _finishDisposition(PromptDisposition result) {

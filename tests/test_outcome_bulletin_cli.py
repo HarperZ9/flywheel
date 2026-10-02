@@ -2,8 +2,17 @@ import json
 import io
 from pathlib import Path
 
+import pytest
+
+from harness.bulletin_origin import PUBLIC_BULLETIN_ORIGIN
 from harness.outcome_bulletin_cli import main
 from tests.test_outcome_bulletin import INDEX_OUTCOME
+
+
+@pytest.fixture(autouse=True)
+def _selected_bulletin(monkeypatch):
+    # The CLI targets the operator's selected deployment and has no default.
+    monkeypatch.setenv("FLYWHEEL_BULLETIN_BASE_URL", PUBLIC_BULLETIN_ORIGIN)
 
 
 def _write(path, value):

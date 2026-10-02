@@ -271,7 +271,9 @@ def test_test_repair_loop_gates_on_passing_tests():
     led = SessionLedger()
     res = run_agent(agent, "fix the bug", ex, led, max_steps=5, test_cmd="pytest -q")
     assert res["tests_pass"] is True and calls["n"] == 2     # ran fail then pass
-    gates = [e for e in led.entries if e.meta.get("gate") == "test"]
+    # the harness's check runs: their results (the call entry carries the
+    # same gate tag, so the budget can tell a harness check from a model action)
+    gates = [e for e in led.entries if e.kind == "tool_result" and e.meta.get("gate") == "test"]
     assert len(gates) == 2 and gates[0].meta["ok"] is False and gates[1].meta["ok"] is True
 
 

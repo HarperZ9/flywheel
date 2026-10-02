@@ -39,8 +39,8 @@ ROOT = Path(__file__).resolve().parents[1]
 ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
     ROOT / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()
     if line.strip()}
-PINS = {"relay": ("0.5.0", "v0.5.0", "ba1e4f21f05ff610a182f9b4665bb82f05a969f8"),
-        "gather": ("2.0.0", "v2.0.0", "d75f0fd86cbfc8fcfe9868e2e008f0e678b76b70")}
+PINS = {"relay": ("0.6.0", "v0.6.0", "2510d6b3db9c42074c1139af21155a6bf8187b62"),
+        "gather": ("2.1.0", "v2.1.0", "d37814eee1295b1773ee9c86c8892a1dde739293")}
 GATHER_GRANTS = ("GATHER_ALLOW_NETWORK", "GATHER_ALLOW_EXEC", "GATHER_AUTH_ENV_ALLOW",
                  "GATHER_CHILD_ENV")
 
@@ -65,7 +65,7 @@ def test_the_relay_expectation_descriptor_and_submodule_agree():
     assert (descriptor["version"], descriptor["source"]["commit"]) == PINS["relay"][::2]
     text = " ".join(descriptor["does_not_prove"])
     assert "relay 0.3.0" not in text and "relay 0.4.0" not in text
-    assert "relay 0.5.0" in text
+    assert "relay 0.6.0" in text
     gitlink = (ROOT / ".gitmodules").read_text(encoding="utf-8")
     assert "path = relay" in gitlink
 

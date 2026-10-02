@@ -54,6 +54,21 @@ class _ScheduleViewState extends State<ScheduleView> {
     }
   }
 
+  Future<void> _rearm(String scheduleId) async {
+    setState(() => _busy = true);
+    try {
+      await widget.api.rearm(scheduleId);
+      setState(() => _error = null);
+    } on GatewayException catch (e) {
+      setState(() => _error = e.message);
+    } catch (_) {
+      setState(() => _error = 'the schedule could not be re-armed');
+    } finally {
+      setState(() => _busy = false);
+    }
+    await _refresh();
+  }
+
   Future<void> _runDue() async {
     setState(() => _busy = true);
     try {
@@ -128,7 +143,9 @@ class _ScheduleViewState extends State<ScheduleView> {
   }
 
   Widget _headline() {
-    final due = _rows.fold<int>(
+    // A stopped schedule's owed occurrences are held, not due: the engine
+    // reports them under pending.held, and nothing fires them until re-arm.
+    final due = _rows.where((row) => !_stopped(row)).fold<int>(
         0, (sum, row) => sum + _int((row['pending'] as Map?)?['due']));
     final fires = _rows.fold<int>(0, (sum, row) => sum + _int(row['fires']));
     final broken = _roster?['any_chain_broken'] == true;
@@ -166,8 +183,10 @@ class _ScheduleViewState extends State<ScheduleView> {
   Widget _row(BuildContext context, Map<String, dynamic> row, FwTokens t) {
     final schedule = (row['schedule'] as Map?) ?? const {};
     final intact = row['chain_intact'] != false;
-    final due = _int((row['pending'] as Map?)?['due']);
-    return Row(children: [
+    final breaker = row['breaker'] as Map?;
+    final stopped = _stopped(row);
+    final due = _int((row['pending'] as Map?)?[stopped ? 'held' : 'due']);
+    final main = Row(children: [
       VerdictDot(intact ? 'verified' : 'drift'),
       const SizedBox(width: FwLayout.s2),
       Expanded(
@@ -184,7 +203,35 @@ class _ScheduleViewState extends State<ScheduleView> {
       Text('${schedule['catch_up'] ?? ''}',
           style: TextStyle(fontSize: 12, color: t.inkMuted)),
       const SizedBox(width: FwLayout.s3),
-      VerdictPill('$due due', status: due == 0 ? 'verified' : 'pending'),
+      if (stopped) ...[
+        // The engine stopped this schedule after repeated failed fires.
+        VerdictPill(
+            'stopped after ${_int(breaker?['consecutive_failed_fires'])} '
+            'failed fires',
+            status: 'drift'),
+        const SizedBox(width: FwLayout.s2),
+      ],
+      if (stopped)
+        VerdictPill('$due held', status: due == 0 ? 'verified' : 'pending')
+      else
+        VerdictPill('$due due', status: due == 0 ? 'verified' : 'pending'),
+    ]);
+    if (!stopped) return main;
+    final id = '${schedule['schedule_id'] ?? ''}';
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      main,
+      const SizedBox(height: FwLayout.s1),
+      Row(children: [
+        Expanded(
+            child: Text(breakerCause(breaker!),
+                key: Key('schedule-cause-$id'),
+                style: TextStyle(fontSize: 12, height: 1.4, color: t.inkMuted))),
+        TextButton(
+          key: Key('schedule-rearm-$id'),
+          onPressed: _busy ? null : () => _rearm(id),
+          child: const Text('Re-arm'),
+        ),
+      ]),
     ]);
   }
 
@@ -209,6 +256,25 @@ class _ScheduleViewState extends State<ScheduleView> {
       ],
     ]);
   }
+}
+
+bool _stopped(Map<String, dynamic> row) =>
+    (row['breaker'] as Map?)?['tripped'] == true;
+
+/// Why the engine stopped a schedule, in the words its hooks printed, and
+/// what brings it back.
+String breakerCause(Map breaker) {
+  final fires = _int(breaker['consecutive_failed_fires']);
+  final signals = (breaker['limit_signals'] as List? ?? const [])
+      .map((s) => '$s'.replaceAll('_', ' '))
+      .join(', ');
+  final matches = (breaker['limit_matches'] as List? ?? const [])
+      .map((m) => '"$m"')
+      .join('; ');
+  final reported = signals.isEmpty ? '' : '; output reported $signals';
+  final matched = matches.isEmpty ? '' : ' (matched $matches)';
+  return 'The last $fires fires failed$reported$matched. Owed runs are held. '
+      'Re-arm to fire it again with the same definition.';
 }
 
 /// Seconds read as a duration a person plans around, and the raw number

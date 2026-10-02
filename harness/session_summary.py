@@ -61,7 +61,8 @@ def _git(root: Path, *args: str) -> str:
                               text=True, encoding="utf-8", errors="replace", check=False)
     except OSError:
         return ""
-    return done.stdout.strip() if done.returncode == 0 else ""
+    # Leading spaces carry the index/worktree columns in porcelain status.
+    return done.stdout.rstrip("\r\n") if done.returncode == 0 else ""
 
 
 def resolve_base(root: Path, base: str) -> str:

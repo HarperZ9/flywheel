@@ -91,3 +91,32 @@ def test_a_failure_record_is_validated_by_its_own_narrow_check(tmp_path):
         trace.append_failure("not_a_class")
     with pytest.raises(TraceError):
         trace.append_failure("credential_refused", rule="has spaces and text")
+
+
+def test_budget_failure_keeps_reserved_refusal_record(tmp_path):
+    from harness.gateway_agent_execution import _record_failure
+    from harness.run_budget import RunBudget, resolve_limits
+    state = tmp_path / "state"
+    trace = _trace(state)
+    fake = credential_fakes()["github_token"]
+    with pytest.raises(TraceError) as refused:
+        trace.append("ledger", {"content": fake})
+    _record_failure(trace, refused.value, RunBudget(resolve_limits({"max_steps": 3})))
+    records = _trace(state).read()
+    assert len(records) == 1
+    assert records[0]["payload"]["class"] == "credential_refused"
+    assert "run_budget" not in records[0]["payload"]
+    assert fake.encode() not in _bytes(state)
+
+
+def test_budget_diagnostic_refusal_uses_reserved_slot(tmp_path):
+    from harness.gateway_agent_execution import _record_failure
+    from harness.run_budget import RunBudget, resolve_limits
+    state = tmp_path / "state"
+    trace = _trace(state)
+    fake = credential_fakes()["github_token"]
+    _record_failure(trace, RuntimeError(fake), RunBudget(resolve_limits({"max_steps": 3})))
+    records = _trace(state).read()
+    assert len(records) == 1
+    assert records[0]["payload"]["class"] == "credential_refused"
+    assert fake.encode() not in _bytes(state)

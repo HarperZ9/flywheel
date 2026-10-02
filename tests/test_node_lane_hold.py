@@ -47,7 +47,7 @@ def test_no_committed_row_holds_a_lane_and_telos_is_pinned():
     assert set(rows) == {"learn", "telos"}
     assert not [lane for lane, row in rows.items() if "hold" in row or "hold_reason" in row]
     assert held_node_lanes() == ()
-    assert rows["telos"]["version"] == LANES["telos"].version == "0.4.2"
+    assert rows["telos"]["version"] == LANES["telos"].version == "0.6.0"
 
 
 def test_an_unheld_telos_row_stages_by_default_and_the_freeze_takes_it(tmp_path):

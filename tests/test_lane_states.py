@@ -133,12 +133,15 @@ def test_cannot_launch_from_a_defect_code_or_a_failed_probe(tmp_path):
     assert (probed["state"], probed["code"]) == ("cannot_launch", "mcp_probe_failed")
 
 
-def test_unreachable_names_the_url(tmp_path):
+def test_unreachable_names_the_url(tmp_path, monkeypatch):
+    # The build selects no Bulletin deployment; an unreachable record exists
+    # only after the operator pointed the lane at one.
+    monkeypatch.setenv("FLYWHEEL_BULLETIN_URL", "https://board.example/mcp")
     cache = _cache(tmp_path)
     cache.record("bulletin", lane_pin("bulletin"), "unreachable", code="network_error")
     state = lane_state("bulletin", _row("bulletin"), cache=cache, checks=_checks(tmp_path))
     assert state["state"] == "unreachable"
-    assert state["sentence"].startswith("Cannot reach http")
+    assert state["sentence"] == "Cannot reach https://board.example/mcp."
 
 
 def test_a_health_only_lane_is_never_ready(tmp_path):

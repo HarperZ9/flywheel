@@ -7,6 +7,7 @@ import threading
 
 import pytest
 
+from harness.bulletin_origin import PUBLIC_BULLETIN_ORIGIN
 from harness.bulletin_signed_transport import (
     BULLETIN_KEY_SLOT,
     publish_authorized_preview,
@@ -117,7 +118,7 @@ def _authorized_with_handle(
     store = CredentialHandleStore(tmp_path, keychain_get=slots.get,
                                   token_hex=lambda _size: token * 32)
     handle = store.bind(OWNER, BULLETIN_KEY_SLOT)
-    preview_kwargs = {} if bulletin_base_url is None else {
+    preview_kwargs = {"bulletin_base_url": PUBLIC_BULLETIN_ORIGIN} if bulletin_base_url is None else {
         "bulletin_base_url": bulletin_base_url,
         "allow_loopback": allow_loopback,
     }

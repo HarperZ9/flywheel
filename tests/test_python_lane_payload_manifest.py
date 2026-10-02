@@ -44,7 +44,7 @@ def test_canon_payload_pins_context_source_without_expanding_public_tools():
     ).read_text(encoding="utf-8").splitlines() if line]
     canon = next(row for row in rows if row["lane"] == "canon")
 
-    assert canon["owner_commit"] == "8e0098aa802c0a21649c7a26e6998ab29a747cda"
+    assert canon["owner_commit"] == "c3ff3cd322657d37cb095d0d619a4119e0b964fd"
     assert canon["component_descriptor"]["source"]["commit"] == canon["owner_commit"]
     assert canon["component_descriptor"]["entrypoint"]["module"] == "canon.local_mcp"
     # Admission follows the lane tool policy: T1 tools only, so canon.render
@@ -72,8 +72,8 @@ def test_python_lane_payload_pins_accepted_index_and_plexus_sources():
     by_lane = {row["lane"]: row for row in rows}
 
     index = by_lane["index"]
-    # index 2.14.0 (tag v2.14.0) holds the bounded context envelope and index.route
-    assert index["owner_commit"] == "665ea7e24055266a9f3c26c5c84f0f3555b8234c"
+    # index 2.15.0 (tag v2.15.0) holds the bounded context envelope and index.route
+    assert index["owner_commit"] == "b2e4dcefff9d9d9a339e23d64c58bb4a5149ef92"
     assert index["component_descriptor"]["source"]["commit"] == index["owner_commit"]
     for module in ("index_graph.context.envelope", "index_graph.route"):
         assert module in index["hidden_imports"]
@@ -84,7 +84,7 @@ def test_python_lane_payload_pins_accepted_index_and_plexus_sources():
         ), path
 
     plexus = by_lane["plexus"]
-    assert plexus["owner_commit"] == "aa7cef0eb541b14376f3b4de93f7a4aadceed8f4"
+    assert plexus["owner_commit"] == "825b992c51e9eac749c046e9c896c251d37017a7"
     assert plexus["component_descriptor"]["source"]["commit"] == plexus["owner_commit"]
     assert "plexus.registry" in plexus["hidden_imports"]
     assert any(

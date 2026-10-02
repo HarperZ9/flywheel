@@ -48,7 +48,7 @@ table differ.
 
 <!-- policy-tables:start (scripts/render_lane_policy_review.py) -->
 
-### gather 2.0.0
+### gather 2.1.0
 
 Admitted at launch: 5 of 8 tools. T2 per granted call: 3. Not in this build: 0.
 
@@ -63,7 +63,7 @@ Admitted at launch: 5 of 8 tools. T2 per granted call: 3. Not in this build: 0.
 | `gather.context` | T1 | main | read |  | `corpus` kept out of the home | Reads a corpus and returns bounded excerpts or a selection; writes nothing. |
 | `gather.pilot` | T2 |  | outside_write |  | `manifest` kept out of the home, `output` kept out of the home, `bundle_output` kept out of the home | Runs, refreshes or bundles a pilot into the output folders the caller names. |
 
-### crucible 1.3.0
+### crucible 1.4.0
 
 Admitted at launch: 11 of 14 tools. T2 per granted call: 3. Not in this build: 0.
 
@@ -97,21 +97,23 @@ Admitted at launch: 6 of 6 tools. T2 per granted call: 0. Not in this build: 0.
 | `chorus.digests` | T1 |  | read |  | `store` kept out of the home | Lists digests a daemon stored. |
 | `chorus.decision` | T1 |  | read |  | `current` kept out of the home, `reference` kept out of the home | Compares two source packs and returns a review gate. |
 
-### articulate 0.5.0
+### articulate 0.6.0
 
-Admitted at launch: 4 of 7 tools. T2 per granted call: 3. Not in this build: 0.
+Admitted at launch: 6 of 9 tools. T2 per granted call: 3. Not in this build: 0.
 
 | Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
 |---|---|---|---|---|---|---|
 | `check` | T1 | main | read |  |  | Local detector; no network. |
 | `score` | T1 | main | read |  |  | Local score; no network. |
-| `judge` | T2 |  | spend | claude_cli |  | Runs the signed-in claude CLI, a model call on the person's account. articulate 0.5.0 runs it in a fresh empty folder with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
-| `fix` | T2 |  | spend | claude_cli |  | Runs the signed-in claude CLI, a model call on the person's account. articulate 0.5.0 runs it in a fresh empty folder with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
-| `polish` | T2 |  | spend | claude_cli |  | Runs the signed-in claude CLI, a model call on the person's account. articulate 0.5.0 runs it in a fresh empty folder with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
+| `judge` | T2 |  | spend | claude_cli |  | May call an explicit model backend or the signed-in claude CLI. The legacy engine route retains its CLI prerequisite and T2 grant; local calling-model editing uses edit_plan/edit_submit. The CLI runs with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
+| `fix` | T2 |  | spend | claude_cli |  | May call an explicit model backend or the signed-in claude CLI. The legacy engine route retains its CLI prerequisite and T2 grant; local calling-model editing uses edit_plan/edit_submit. The CLI runs with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
+| `polish` | T2 |  | spend | claude_cli |  | May call an explicit model backend or the signed-in claude CLI. The legacy engine route retains its CLI prerequisite and T2 grant; local calling-model editing uses edit_plan/edit_submit. The CLI runs with settings, MCP servers and tools off, from the path the engine passes in ARTICULATE_CLAUDE_CLI. |
+| `edit_plan` | T1 |  | read |  |  | Prepares calling-model instructions and protected spans in memory; no network, subprocess or separate model account. |
+| `edit_submit` | T1 |  | read |  |  | Checks the submitted rewrite locally and returns a receipt; no network, subprocess or separate model account. |
 | `articulate.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `articulate.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 
-### index 2.14.0
+### index 2.15.0
 
 Admitted at launch: 22 of 23 tools. T2 per granted call: 1. Not in this build: 0.
 
@@ -141,7 +143,7 @@ Admitted at launch: 22 of 23 tools. T2 per granted call: 1. Not in this build: 0
 | `index.router.job.cancel` | T1 |  | state_write |  | `job_id` a plain id | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
 | `index.router.job.resume` | T1 |  | state_write |  | `job_id` a plain id | Runs on the index lane's long-lived session, so the job's worker outlives the call that started it; in a frozen engine the worker runs as --bundled-lane-worker. Job state and caches stay in the lane folder. The job id must be a plain id. |
 
-### forum 1.15.1
+### forum 1.16.0
 
 Admitted at launch: 14 of 21 tools. T2 per granted call: 7. Not in this build: 0.
 
@@ -169,7 +171,7 @@ Admitted at launch: 14 of 21 tools. T2 per granted call: 7. Not in this build: 0
 | `gate_edit` | T2 |  | approve |  | `--allow-gate-decisions` on this call's launch only | Resolves a paused human-approval gate. An agent must not approve its own wave. forum 1.15 serves it only on a launch with --allow-gate-decisions, which the engine adds for this one approved call; every other forum launch has it off. |
 | `gate_reject` | T2 |  | approve |  | `--allow-gate-decisions` on this call's launch only | Resolves a paused human-approval gate. An agent must not approve its own wave. forum 1.15 serves it only on a launch with --allow-gate-decisions, which the engine adds for this one approved call; every other forum launch has it off. |
 
-### learn 2.0.0
+### learn 2.1.0
 
 Admitted at launch: 14 of 15 tools. T2 per granted call: 1. Not in this build: 0.
 
@@ -191,7 +193,7 @@ Admitted at launch: 14 of 15 tools. T2 per granted call: 1. Not in this build: 0
 | `learn_tutor_derive_schedule` | T1 |  | read | node | `sessionId` a plain id | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 | `learn_tutor_prooflesson` | T1 |  | read | node | `packetPath` kept out of the home | Reads a saved run or session in the lane folder, or a file the caller names, and returns JSON. |
 
-### telos 0.4.2
+### telos 0.6.0
 
 Admitted at launch: 37 of 41 tools. T2 per granted call: 3. Not in this build: 1.
 
@@ -276,7 +278,7 @@ Admitted at launch: 3 of 14 tools. T2 per granted call: 10. Not in this build: 1
 | `writing.proposal_approve` | T2, not in build: `approval_cli_only` |  | approve |  | drops `home` | Unavailable over MCP by design; approval runs from the CLI. |
 | `writing.proposal_commit` | T2 (rule alone: T1) |  | state_write |  | drops `home` | Commits a proposal that an approval outside MCP granted; changes the manuscript in the writing workspace. The policy review keeps the records at T2. |
 
-### relay 0.5.0
+### relay 0.6.0
 
 Admitted at launch: 9 of 10 tools. T2 per granted call: 1. Not in this build: 0.
 
@@ -293,7 +295,7 @@ Admitted at launch: 9 of 10 tools. T2 per granted call: 1. Not in this build: 0.
 | `relay.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `relay.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 
-### plexus 0.2.2
+### plexus 0.3.0
 
 Admitted at launch: 6 of 6 tools. T2 per granted call: 0. Not in this build: 0.
 
@@ -306,7 +308,7 @@ Admitted at launch: 6 of 6 tools. T2 per granted call: 0. Not in this build: 0.
 | `plexus.status` | T1 |  | read |  |  | Identity and liveness; network-free. |
 | `plexus.doctor` | T1 |  | read |  |  | Readiness report; network-free. |
 
-### mneme 0.5.1
+### mneme 0.6.0
 
 Admitted at launch: 8 of 11 tools. T2 per granted call: 3. Not in this build: 0.
 
@@ -337,7 +339,7 @@ Reads only (class C): Reads the panel catalog. Calibration runs in Calibrate Pro
 | `calibrate-pro.list-panels` | T1 | main | read |  |  | Lists the characterized panel catalog. |
 | `calibrate-pro.panel-info` | T1 | main | read |  |  | Returns one panel's stored characterization. |
 
-### canon 0.4.2
+### canon 0.6.0
 
 Admitted at launch: 5 of 6 tools. T2 per granted call: 1. Not in this build: 0.
 

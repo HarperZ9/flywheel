@@ -39,6 +39,9 @@ _SHELL_RUNNERS = ("bash", "sh", "zsh", "cmd", "cmd.exe", "powershell",
 _REGISTRATION_FIELDS = frozenset((
     "schema", "hook_id", "event", "argv", "blocking", "created_at",
     "hook_sha256"))
+#: Sealed only when it is False: a hook whose output is not read for limit
+#: errors. Rows without it keep the hash they were registered with.
+_SCAN_OPT_OUT = "scan_output"
 
 
 def _refuse(msg: str) -> None:
@@ -50,7 +53,8 @@ def _program_name(value: str) -> str:
 
 
 def validate_hook_payload(*, event: str, argv: list, blocking: bool,
-                          hook_id: str, created_at: str | None = None) -> None:
+                          hook_id: str, created_at: str | None = None,
+                          scan_output: bool = True) -> None:
     if type(event) is not str or event not in EVENTS:
         _refuse(f"unknown event: {event!r}")
     if not isinstance(argv, list) or not argv or any(
@@ -64,6 +68,8 @@ def validate_hook_payload(*, event: str, argv: list, blocking: bool,
         _refuse("the hook command carries secret-shaped text")
     if not isinstance(blocking, bool):
         _refuse("blocking is a boolean")
+    if not isinstance(scan_output, bool):
+        _refuse("scan_output is a boolean")
     if not isinstance(hook_id, str) or not hook_id.startswith("hook_"):
         _refuse("hook id is not a hook ref")
     if created_at is not None and (not isinstance(created_at, str)
@@ -72,7 +78,9 @@ def validate_hook_payload(*, event: str, argv: list, blocking: bool,
 
 
 def _validate_sealed_registration(reg: dict) -> None:
-    if (not isinstance(reg, dict) or set(reg) != _REGISTRATION_FIELDS
+    if (not isinstance(reg, dict)
+            or set(reg) - {_SCAN_OPT_OUT} != _REGISTRATION_FIELDS
+            or reg.get(_SCAN_OPT_OUT, False) is not False
             or reg.get("schema") != REGISTRATION_SCHEMA):
         _refuse("the hook registry holds an unknown or unsealed row")
     expected = canonical_sha256(
@@ -104,9 +112,13 @@ def validate_hook_run_plan(*, event: object, registrations: object,
 
 
 def register_hook(*, event: str, argv: list, blocking: bool,
-                  hook_id: str, created_at: str) -> dict:
+                  hook_id: str, created_at: str, scan_output: bool = True) -> dict:
+    """Seal a registration. `scan_output=False` is for a hook whose normal
+    output discusses limits, such as a rate-limit monitor: its exit code
+    alone then decides whether it failed. The choice is part of the seal."""
     validate_hook_payload(event=event, argv=argv, blocking=blocking,
-                          hook_id=hook_id, created_at=created_at)
+                          hook_id=hook_id, created_at=created_at,
+                          scan_output=scan_output)
     reg = {
         "schema": REGISTRATION_SCHEMA,
         "hook_id": hook_id,
@@ -115,6 +127,8 @@ def register_hook(*, event: str, argv: list, blocking: bool,
         "blocking": blocking,
         "created_at": created_at,
     }
+    if not scan_output:
+        reg[_SCAN_OPT_OUT] = False
     reg["hook_sha256"] = canonical_sha256(
         {k: v for k, v in reg.items() if k != "hook_sha256"})
     return reg
@@ -164,8 +178,37 @@ def run_hooks(event: str, registrations: list[dict], *, runner,
         }
         if error:
             receipt["error"] = error
+        if reg.get(_SCAN_OPT_OUT, True):
+            _mark_limit_signal(receipt, output, bool(reg.get("blocking")))
         receipts.append(receipt)
     return receipts
+
+
+def _mark_limit_signal(receipt: dict, output: str, blocking: bool) -> None:
+    """Record a limit error in a hook's output, and fail an exit 0 that ends on one.
+
+    Exit 0 with "usage limit reached" on stdout is the failure a scheduler
+    reads as success and keeps paying for. The receipt names the signal and
+    the token of the pattern that matched (limit_signal.MATCH_TOKENS, never
+    the output's own words), so the owner can judge the match. Only an anchored
+    match on an exit 0 marks the run `false_success`, and then a blocking hook
+    blocks the event, the same as a nonzero exit would. A status line such as
+    "0 requests were rate limited" is a mention and is only recorded."""
+    from .limit_signal import limit_match
+    found = limit_match(output)
+    if found is None:
+        return
+    receipt["limit_signal"] = found.kind
+    receipt["limit_match"] = found.match
+    if receipt["exit_code"] == 0 and found.anchored:
+        receipt["false_success"] = True
+        receipt["blocked"] = blocking
+
+
+def hook_failed(receipt: dict) -> bool:
+    """A hook run that did not succeed: nonzero exit, error, or false success."""
+    return (receipt.get("exit_code") != 0 or bool(receipt.get("error"))
+            or receipt.get("false_success") is True)
 
 
 def event_blocked(receipts: list[dict]) -> bool:

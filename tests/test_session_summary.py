@@ -52,6 +52,32 @@ def test_evidence_reads_the_window_the_scope_names(repo: Path) -> None:
         collect_evidence(repo, scope="epoch")
 
 
+@pytest.mark.parametrize("state, staged, unstaged, untracked", [
+    ("unstaged", [], ["kept.py"], []),
+    ("staged", ["kept.py"], [], []),
+    ("both", ["kept.py"], ["kept.py"], []),
+    ("untracked", [], [], ['"release notes.md"']),
+    ("renamed", ['kept.py -> "release notes.md"'], [], []),
+])
+def test_first_status_record_keeps_columns_and_path(
+    repo: Path, state: str, staged: list[str], unstaged: list[str], untracked: list[str],
+) -> None:
+    if state == "untracked":
+        (repo / "release notes.md").write_text("notes\n", encoding="utf-8")
+    elif state == "renamed":
+        _git(repo, "mv", "kept.py", "release notes.md")
+    else:
+        (repo / "kept.py").write_text("value = 3\n", encoding="utf-8")
+        if state in ("staged", "both"):
+            _git(repo, "add", "kept.py")
+        if state == "both":
+            (repo / "kept.py").write_text("value = 4\n", encoding="utf-8")
+
+    assert collect_evidence(repo, scope="task")["worktree"] == {
+        "staged": staged, "unstaged": unstaged, "untracked": untracked,
+    }
+
+
 def test_only_markers_this_window_added_are_reported(repo: Path) -> None:
     markers = collect_evidence(repo, scope="task")["markers"]
     assert [row["path"] for row in markers] == ["kept.py"]

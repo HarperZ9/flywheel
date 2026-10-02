@@ -73,16 +73,21 @@ _CHORUS = {
     "chorus.decision": _t("read", "Compares two source packs and returns a review gate."),
 }
 
-_ARTICULATE_MODEL = ("Runs the signed-in claude CLI, a model call on the person's account. "
-                     "articulate 0.5.0 runs it in a fresh empty folder with settings, MCP "
-                     "servers and tools off, from the path the engine passes in "
-                     "ARTICULATE_CLAUDE_CLI.")
+_ARTICULATE_MODEL = ("May call an explicit model backend or the signed-in claude CLI. "
+                     "The legacy engine route retains its CLI prerequisite and T2 grant; "
+                     "local calling-model editing uses edit_plan/edit_submit. The CLI "
+                     "runs with settings, MCP servers and tools off, from the path "
+                     "the engine passes in ARTICULATE_CLAUDE_CLI.")
 _ARTICULATE = {
     "check": _main("read", "Local detector; no network."),
     "score": _main("read", "Local score; no network."),
     "judge": _t("spend", _ARTICULATE_MODEL, tier="T2", needs=("claude_cli",), timeout_s=120),
     "fix": _t("spend", _ARTICULATE_MODEL, tier="T2", needs=("claude_cli",), timeout_s=120),
     "polish": _t("spend", _ARTICULATE_MODEL, tier="T2", needs=("claude_cli",), timeout_s=180),
+    "edit_plan": _t("read", "Prepares calling-model instructions and protected spans "
+                    "in memory; no network, subprocess or separate model account."),
+    "edit_submit": _t("read", "Checks the submitted rewrite locally and returns a "
+                      "receipt; no network, subprocess or separate model account."),
     **_health("articulate"),
 }
 
