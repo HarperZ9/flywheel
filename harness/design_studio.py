@@ -121,7 +121,7 @@ def compose(title: str, subtitle: str = "", fmt: str = "poster",
     if missing:
         return {"refused": True,
                 "refusals": ["no glyph yet for: " + " ".join(missing)]}
-    ttf = to_ttf(face, family=f"Zentropy Mint {seed}")
+    ttf = to_ttf(face, family=f"Zain Mint {seed}")
 
     W, H = FORMATS[fmt]
     g = GROUNDS[ground]
