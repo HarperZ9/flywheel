@@ -37,7 +37,7 @@
   "harness/local_read_handle.py": "4e2dd32b44616678c00c88eaf7e642af9b45ae48778b750a274b2443113b1168",
   "harness/local_serving.py": "0ac9945938bbcc9bd50ef2cf92eab314af40444c492c157aecfebfbbff85e6c9",
   "harness/local_session.py": "3738a639e9f3c2be146692c2b61aad99ee26b8f50e519378d62ac1ec5062d9ae",
-  "harness/local_tools.py": "4352332c781f75f4340485014f4de27922d7be9748a65f86635950a5a9e59209",
+  "harness/local_tools.py": "9f20089ff744d2da3c88aa5000fe57363124ffd89ace48d89a556edca3c73ac9",
   "harness/local_usage.py": "f483db3410550f99d623f3b316faf90492e2cab6a7f02f950b89dfde54a63de4",
   "harness/messages_api.py": "795b8e4e3e2e4dee154ad34acc6126bae75fda033a95a7fed628c9e5154cb034",
   "harness/operation_grants.py": "1edea80182cd5a5c01131fefa86319271eca59924524b34274244ae1febf5bd3",

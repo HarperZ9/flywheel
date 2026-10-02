@@ -91,7 +91,7 @@ class _VariableFamilyCardState extends State<VariableFamilyCard> {
           '.';
       final id = '${r['receipt']?['variable_id'] ?? seed}';
       final f = File('$home${Platform.pathSeparator}Downloads'
-          '${Platform.pathSeparator}ZentropyMint-VF-$id.ttf');
+          '${Platform.pathSeparator}ZainMint-VF-$id.ttf');
       f.writeAsBytesSync(ttf);
       setState(() {
         _receipt = r['receipt'] as Map<String, dynamic>?;
@@ -133,7 +133,7 @@ class _VariableFamilyCardState extends State<VariableFamilyCard> {
       }
       final id = '${r['receipt']?['family_id'] ?? seed}';
       final sep = Platform.pathSeparator;
-      final dir = Directory('$_home${sep}Downloads${sep}ZentropyMint-$id');
+      final dir = Directory('$_home${sep}Downloads${sep}ZainMint-$id');
       dir.createSync(recursive: true);
       var saved = 0;
       for (final row in (r['instances'] as List? ?? const [])) {
