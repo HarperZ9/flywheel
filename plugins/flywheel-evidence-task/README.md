@@ -11,6 +11,12 @@ it does not install that application or supply a model. See the repository's
 
 Version: 0.2.0. License: [FSL-1.1-MIT](LICENSE).
 
+## Try it
+
+- Use flywheel-evidence-task to check the claim in this release note against its linked sources.
+- Assess this Bulletin feedback thread and separate reported, checked and unknown claims.
+- Check whether this readiness claim holds, with a false-success control.
+
 ## Install
 
 For an Agent Skills host, copy `skills/flywheel-evidence-task` into the skill
