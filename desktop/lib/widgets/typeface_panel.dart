@@ -84,7 +84,7 @@ class _TypefacePanelState extends State<TypefacePanel> {
     try {
       // one registry family per distinct mint, so switching seeds switches
       // the rendered face instead of piling bytes under one name
-      final family = 'ZentropyMint-$mintId';
+      final family = 'ZainMint-$mintId';
       if (!_loadedFamilies.contains(family)) {
         await (widget.fontLoad ?? _defaultLoadFont)(
             family, base64Decode('$b64'));

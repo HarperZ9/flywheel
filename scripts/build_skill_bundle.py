@@ -18,8 +18,10 @@ SKILL_FILES = (
 )
 PLUGIN_FILES = (
     ".codex-plugin/plugin.json", ".claude-plugin/plugin.json",
-    "README.md", "LICENSE", "LICENSE-ATTRIBUTION.md", "CHANGELOG.md",
+    "README.md", "PRIVACY.md", "LICENSE", "LICENSE-ATTRIBUTION.md", "CHANGELOG.md",
 )
+# Directory listing icon. Binary, so it is copied byte for byte.
+PLUGIN_BINARY_FILES = (".claude-plugin/icon.png",)
 PORTABLE_KEYS = ("name", "version", "description", "author", "homepage",
                  "repository", "license", "keywords")
 
@@ -44,6 +46,7 @@ def bundle(out: Path) -> dict:
                 "extensions": {"com.openai": {"interface": manifest["interface"]}}}
     skill = PLUGIN / "skills" / NAME
     files = {name: public_text(PLUGIN / name) for name in PLUGIN_FILES}
+    files.update({name: (PLUGIN / name).read_bytes() for name in PLUGIN_BINARY_FILES})
     files["plugin.json"] = (json.dumps(portable, indent=2) + "\n").encode("utf-8")
     files.update({f"skills/{NAME}/{name}": public_text(skill / name)
                   for name in SKILL_FILES})

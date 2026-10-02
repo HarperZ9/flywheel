@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add the Claude plugin directory listing fields: display name, keywords,
+  homepage, documentation, support, privacy and terms links, and a 1024 px icon.
+- Add PRIVACY.md and a data and privacy table to the README. The plugin and its
+  ZIP now carry both files.
+
 ## 0.2.0 - prepared for release
 
 - Add a portable root plugin manifest while preserving Codex and Claude

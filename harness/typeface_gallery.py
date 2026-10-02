@@ -16,7 +16,7 @@ from .store import get_entity, put_entity, query_entities
 KIND = "typeface-face"
 
 
-def publish_face(face: dict, family: str = "Zentropy Mint") -> dict:
+def publish_face(face: dict, family: str = "Zain Mint") -> dict:
     """File a minted face in the gallery. Returns its listing id, or an
     error when the face was refused (a refused face is not a product)."""
     if face.get("refused"):
