@@ -281,3 +281,13 @@ def test_every_job_that_runs_pytest_installs_pytest_timeout_first():
             assert 0 <= install < run.start(), (
                 f"{path.name}:{job} runs pytest before installing pytest-timeout")
     assert checked >= 3
+
+
+def test_installer_checksum_is_written_with_lf():
+    # Out-File on the Windows runner writes CRLF; the 1.1.2 SHA256SUMS.txt
+    # shipped that way. The receipt step writes one LF-terminated row.
+    text = (WORKFLOWS / "desktop-release.yml").read_text(encoding="utf-8")
+    step = text.split("- name: SHA-256 receipt", 1)[1].split("- name:", 1)[0]
+    assert "Out-File" not in step
+    assert "[System.IO.File]::WriteAllText(" in step
+    assert '"$hash  $($exe.Name)`n"' in step

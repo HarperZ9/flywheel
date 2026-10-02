@@ -12,6 +12,8 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+# Minor (X.Y.0) and patch (X.Y.Z) releases; no pre-release or build suffix.
+RELEASE_VERSION = r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)'
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from desktop.tool.installed_payload_binding import _scan_files
@@ -37,7 +39,7 @@ def verify(root, accepted_hash, version, commit):
     if (summary.get('schema') != 'flywheel.windows-installed-acceptance-ci/v1'
             or summary.get('verdict') != 'PASS' or summary.get('source_kind') != 'tag-candidate'
             or summary.get('source_commit') != commit or not re.fullmatch('[0-9a-f]{40}', commit)
-            or summary.get('version') != version or not re.fullmatch(r'[0-9]+\.[0-9]+\.0', version)
+            or summary.get('version') != version or not re.fullmatch(RELEASE_VERSION, version)
             or summary.get('installer_unchanged') is not True):
         raise ValueError('installed acceptance source or result mismatch')
     installers = [name for name in files if re.fullmatch(r'Flywheel-Setup-[^/]+\.exe', name)]

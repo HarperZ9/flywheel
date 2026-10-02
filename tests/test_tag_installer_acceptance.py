@@ -53,13 +53,39 @@ def ps(body):
     return result.stdout
 
 
-def test_tag_checks_reject_wrong_commit_and_patch_version():
+def test_tag_checks_reject_wrong_commit():
     result = ps("""
 function git { $global:LASTEXITCODE = 0; return ('b' * 40) }
 try { Assert-TagInstallerSource 'v1.2.0' '1.2.0' ('a' * 40); throw 'false success' }
 catch { if ($_.Exception.Message -notmatch 'exact source') { throw } }
 try { Assert-TagInstallerSource 'v1.2.1' '1.2.1' ('a' * 40); throw 'false success' }
-catch { if ($_.Exception.Message -notmatch 'mature source') { throw } }
+catch { if ($_.Exception.Message -notmatch 'exact source') { throw } }
+'PASS'
+""")
+    assert 'PASS' in result
+
+
+def test_tag_checks_accept_minor_and_patch_release_tags():
+    # 1.2.0 shipped no installer: its tag carried a broken workflow, and this
+    # check rejected every patch tag, so a fixed 1.2.1 could not be accepted.
+    result = ps("""
+function git { $global:LASTEXITCODE = 0; return ('a' * 40) }
+foreach ($v in @('1.2.0', '1.2.1', '1.10.12', '2.0.0')) { Assert-TagInstallerSource "v$v" $v ('a' * 40) }
+'PASS'
+""")
+    assert 'PASS' in result
+
+
+def test_tag_checks_reject_non_release_tags():
+    result = ps("""
+function git { $global:LASTEXITCODE = 0; return ('a' * 40) }
+$cases = @(@('v1.2.1', '1.2.0'), @('v1.2', '1.2'), @('v1.2.1-rc1', '1.2.1-rc1'),
+           @('v1.2.1+28', '1.2.1+28'), @('v01.2.1', '01.2.1'), @('V1.2.1', '1.2.1'),
+           @('v1.2.1.0', '1.2.1.0'), @('1.2.1', '1.2.1'))
+foreach ($case in $cases) {
+  try { Assert-TagInstallerSource $case[0] $case[1] ('a' * 40); throw "false success $($case[0])" }
+  catch { if ($_.Exception.Message -notmatch 'release source version') { throw } }
+}
 'PASS'
 """)
     assert 'PASS' in result
@@ -87,3 +113,18 @@ catch { if ($_.Exception.Message -notmatch 'disposable GitHub-hosted') { throw }
 'PASS'
 """)
     assert 'PASS' in result
+
+
+def test_installer_checksum_rows_are_lf_terminated():
+    # Both writers of desktop/build/installer/SHA256SUMS.txt: the release step and
+    # the shared acceptance phase, which rewrites the file after its own hash check.
+    shared = (ROOT / 'desktop/tool/installed_acceptance_phase.ps1').read_text()
+    writer = next(line for line in shared.splitlines() if '"SHA256SUMS.txt"' in line)
+    assert 'Out-File' not in writer and 'WriteAllText' in writer and '`n"' in writer
+
+
+def test_tag_checks_read_an_lf_checksum_file(tmp_path):
+    (tmp_path / 'Flywheel-Setup-1.2.1-x64.exe').write_bytes(b'fixture only')
+    (tmp_path / 'SHA256SUMS.txt').write_bytes(b'b' * 64 + b'  Flywheel-Setup-1.2.1-x64.exe\n')
+    literal = str(tmp_path).replace("'", "''")
+    assert 'PASS' in ps(f"$installerDir = '{literal}'\nif ((Read-ExpectedInstallerHash) -cne ('b' * 64)) {{ throw 'hash' }}\n'PASS'")
