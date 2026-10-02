@@ -115,6 +115,8 @@ def verify_store(home, pack_override: dict | None = None) -> dict:
                                         "recorded": rec["verdict"], "rederived": got})
             if isinstance(rec.get("judge"), dict) and rec["judge"].get("state") in _JUDGE_STATES:
                 judge_unverifiable += 1
+    from .trace_flag import verify_chain
+    findings.extend(verify_chain(recs))
     join = liveness_join(recs)
     if join["verdict"] == "DRIFT":
         findings.append({"cause": "POST_WITHOUT_PRE", "orphans": join["orphans"]})

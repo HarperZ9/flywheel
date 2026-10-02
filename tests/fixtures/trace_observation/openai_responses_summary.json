@@ -1,0 +1,50 @@
+{
+ "_provenance": "synthetic: built from the documented response shape (access-gap record 0.1.0, read 2026-10-01); not recorded from a live call",
+ "request": {
+  "model": "gpt-6-astra",
+  "reasoning": {
+   "effort": "medium",
+   "summary": "auto"
+  },
+  "include": [
+   "reasoning.encrypted_content"
+  ]
+ },
+ "response": {
+  "model": "gpt-6-astra",
+  "status": "completed",
+  "output": [
+   {
+    "type": "reasoning",
+    "summary": [
+     {
+      "type": "summary_text",
+      "text": "Considered the request and checked the arithmetic."
+     }
+    ],
+    "encrypted_content": "OPAQUE-ENC-SENTINEL-1111"
+   },
+   {
+    "type": "function_call",
+    "name": "lookup",
+    "arguments": "{\"q\":\"x\"}",
+    "call_id": "c1"
+   },
+   {
+    "type": "message",
+    "content": [
+     {
+      "type": "output_text",
+      "text": "Answer: 7"
+     }
+    ]
+   }
+  ],
+  "usage": {
+   "output_tokens": 300,
+   "output_tokens_details": {
+    "reasoning_tokens": 256
+   }
+  }
+ }
+}
