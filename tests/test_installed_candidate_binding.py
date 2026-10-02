@@ -59,3 +59,29 @@ def test_wrong_candidate_or_missing_evidence_refuses(candidate, change):
     (root / 'ci-installed-acceptance-summary.json').write_text(json.dumps(summary))
     with pytest.raises((ValueError, OSError)):
         verify(root, digest, '1.2.0', 'a' * 40)
+
+
+def _with_version(root, summary, version):
+    summary['version'] = version
+    (root / 'ci-installed-acceptance-summary.json').write_text(json.dumps(summary))
+
+
+def test_patch_release_evidence_binds(candidate):
+    root, digest, summary = candidate
+    _with_version(root, summary, '1.2.1')
+    verify(root, digest, '1.2.1', 'a' * 40)
+
+
+@pytest.mark.parametrize('version', ['1.2', '1.2.1-rc1', '1.2.1+28', '01.2.1', 'v1.2.1', '1.2.1.0'])
+def test_non_release_version_refuses(candidate, version):
+    root, digest, summary = candidate
+    _with_version(root, summary, version)
+    with pytest.raises(ValueError, match='source or result mismatch'):
+        verify(root, digest, version, 'a' * 40)
+
+
+def test_summary_version_must_equal_release_version(candidate):
+    root, digest, summary = candidate
+    _with_version(root, summary, '1.2.0')
+    with pytest.raises(ValueError, match='source or result mismatch'):
+        verify(root, digest, '1.2.1', 'a' * 40)

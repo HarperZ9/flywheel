@@ -14,7 +14,8 @@ $installerHash = (Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA25
 Assert-Sha256 "installer_sha256" $installerHash
 if ($ExpectedInstallerSha256 -and $installerHash -cne $ExpectedInstallerSha256) { throw "candidate installer checksum mismatch" }
 if ($SourceKind -eq "tag-candidate" -and -not $ExpectedInstallerSha256) { throw "tag candidate requires installer checksum" }
-"$installerHash  $($installer.Name)" | Out-File -Encoding ascii (Join-Path $installerDir "SHA256SUMS.txt")
+# One LF-terminated row: GNU sha256sum -c reads a CRLF line ending as part of the file name.
+[System.IO.File]::WriteAllText((Join-Path $installerDir "SHA256SUMS.txt"), "$installerHash  $($installer.Name)`n", [System.Text.Encoding]::ASCII)
 $manifestDoc = Get-Content -LiteralPath $buildManifest -Raw | ConvertFrom-Json
 $appHash = [string]$manifestDoc.artifacts.app_sha256
 $engineHash = [string]$manifestDoc.artifacts.engine_sha256
