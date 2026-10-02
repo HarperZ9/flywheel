@@ -258,3 +258,26 @@ def test_plugin_candidates_share_the_explicit_release_boundary():
     assert "scripts/build_skill_bundle.py --verify" in publish
     assert publish.index("scripts/build_skill_bundle.py --verify") < publish.index("gh release create")
     assert "candidate/plugins/*.zip" in publish
+
+
+def _jobs(text: str) -> dict[str, str]:
+    body = text.split("\njobs:\n", 1)[1]
+    parts = re.split(r"(?m)^  ([\w-]+):\s*$", body)
+    return dict(zip(parts[1::2], parts[2::2]))
+
+
+def test_every_job_that_runs_pytest_installs_pytest_timeout_first():
+    # pytest.ini passes --timeout, which pytest rejects without the plugin.
+    # The v1.2.0 tag run failed here: the job installed bare pytest.
+    assert "--timeout" in Path("pytest.ini").read_text(encoding="utf-8")
+    checked = 0
+    for path in sorted(WORKFLOWS.glob("*.yml")):
+        for job, block in _jobs(path.read_text(encoding="utf-8")).items():
+            run = re.search(r"python -m pytest|^\s+pytest\s", block, re.M)
+            if not run:
+                continue
+            checked += 1
+            install = block.find("pytest-timeout")
+            assert 0 <= install < run.start(), (
+                f"{path.name}:{job} runs pytest before installing pytest-timeout")
+    assert checked >= 3
