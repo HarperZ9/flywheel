@@ -6,7 +6,8 @@ $tagDefineOnly = [bool]$DefineOnly
 # Load existing source/host/argument checks without rebuilding or checking out anything.
 . (Join-Path $entryRoot "run_ci_installed_acceptance.ps1") -DefineOnly
 function Assert-TagInstallerSource([string]$Tag, [string]$Version, [string]$Commit) {
-  if ($Tag -cne "v$Version" -or $Tag -cnotmatch '^v[0-9]+\.[0-9]+\.0$') { throw "tag must match mature source version" }
+  # Minor (vX.Y.0) and patch (vX.Y.Z) release tags; no pre-release or build suffix.
+  if ($Tag -cne "v$Version" -or $Tag -cnotmatch '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { throw "tag must match release source version" }
   Assert-ExactCommit $Commit
   $tagCommit = (& git -C $repoRoot rev-parse "refs/tags/$Tag^{commit}").Trim()
   if ($LASTEXITCODE -ne 0 -or $tagCommit -cne $Commit) { throw "release tag does not match exact source commit" }

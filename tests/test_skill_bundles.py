@@ -145,3 +145,11 @@ def test_plugin_carries_directory_listing_fields_icon_and_privacy(tmp_path):
     with zipfile.ZipFile(tmp_path / plugin_zip) as archive:
         assert archive.read(builder.NAME + "/.claude-plugin/icon.png") == icon
         assert b"opens no network connection" in archive.read(builder.NAME + "/PRIVACY.md")
+
+
+def test_published_checksum_files_use_lf_on_every_host(tmp_path):
+    # The release runner is Windows; a CRLF checksum file fails sha256sum -c.
+    builder.bundle(tmp_path)
+    for name in ("SHA256SUMS", "manifest.json"):
+        data = (tmp_path / name).read_bytes()
+        assert data.endswith(b"\n") and b"\r" not in data, name
