@@ -24,7 +24,7 @@ class BrandKitPanel extends StatefulWidget {
 }
 
 class _BrandKitPanelState extends State<BrandKitPanel> {
-  final _name = TextEditingController(text: 'zentropy labs');
+  final _name = TextEditingController(text: 'zain dana harper');
   final _tagline = TextEditingController(text: 'order out of disorder');
   final _seed = TextEditingController(text: '58');
   Map<String, dynamic>? _kit;

@@ -14,16 +14,16 @@ from harness.brand_kit import mint_kit
 
 @pytest.fixture(scope="module")
 def kit():
-    return mint_kit("zentropy labs", seed=58, tagline="order out of disorder")
+    return mint_kit("zain dana harper", seed=58, tagline="order out of disorder")
 
 
 def test_one_seed_re_derives_the_whole_kit(kit):
     assert not kit["refused"]
-    again = mint_kit("zentropy labs", seed=58,
+    again = mint_kit("zain dana harper", seed=58,
                      tagline="order out of disorder")
     assert again["receipt"]["kit_id"] == kit["receipt"]["kit_id"]
     assert again["receipt"]["artifacts"] == kit["receipt"]["artifacts"]
-    other = mint_kit("zentropy labs", seed=59,
+    other = mint_kit("zain dana harper", seed=59,
                      tagline="order out of disorder")
     assert other["receipt"]["kit_id"] != kit["receipt"]["kit_id"]
 
@@ -57,8 +57,8 @@ def test_the_pieces_are_real_images_and_fonts(kit):
 
 def test_tokens_carry_the_portable_identity(kit):
     tk = kit["tokens"]
-    assert tk["brand"] == "zentropy labs" and tk["seed"] == 58
-    assert tk["family"] == "zentropy labs Mint"
+    assert tk["brand"] == "zain dana harper" and tk["seed"] == 58
+    assert tk["family"] == "zain dana harper Mint"
     assert "weight" not in tk["face_params"] or True
     assert tk["grounds"]["dark"]["ground"].startswith("#")
 
