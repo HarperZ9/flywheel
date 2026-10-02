@@ -90,7 +90,8 @@ def witness_call(log, *, tool: str, args: Any, output: str, ok: bool, seq: int,
 
 def seal_call(receipt_dir: Any, *, tool: str, capability: str, admission: str,
               args: Any, output: str, ok: bool, outcome: str, run_id: str,
-              seq: int, prev: str, rationale: dict | None = None) -> str:
+              seq: int, prev: str, rationale: dict | None = None,
+              preaction: dict | None = None) -> str:
     """Write one sealed receipt and return the new chain head. Never raises.
 
     A receipt that was built but could not be written still advances the head,
@@ -108,7 +109,8 @@ def seal_call(receipt_dir: Any, *, tool: str, capability: str, admission: str,
         receipt = build_receipt(
             tool=tool, capability=capability, admission=admission, args=args,
             output=output, ok=ok, rc=0 if ok else 1, run_id=run_id, seq=seq,
-            prev_receipt_sha256=prev, outcome=outcome, rationale=rationale)
+            prev_receipt_sha256=prev, outcome=outcome, rationale=rationale,
+            preaction=preaction)
         emit_receipt(receipt, Path(receipt_dir))
         probe = dict(receipt)
         probe["seal"] = {"algorithm": "sha256", "hex": ""}
