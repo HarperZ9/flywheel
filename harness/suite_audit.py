@@ -133,3 +133,11 @@ def audit_suite(project: "str | Path", *,
                     "accepted; a timeout decides nothing and is excluded "
                     "from the rate; the promise 'one suite, no "
                     "negotiation' is only as strong as this number"}
+
+
+def audit_suite_diff(repo, base: str, head: str = "HEAD", **kwargs) -> dict:
+    """The diff-scoped mode: mutate only the lines a change touched, run only
+    the tests that reach each one, and report survivors by name (no score).
+    See diff_mutation.py; it works in a scratch copy of the head commit."""
+    from .diff_mutation import audit_diff
+    return audit_diff(repo, base, head, **kwargs)
