@@ -5,5 +5,5 @@
 // disagree, so this can never silently lie about what is running.
 
 const String appVersion = '1.2.0';
-const String appPublisher = 'ZentropyLabs';
+const String appPublisher = 'Zain Dana Harper';
 const String appReleases = 'github.com/HarperZ9/flywheel/releases';

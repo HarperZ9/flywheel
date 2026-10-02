@@ -5,7 +5,7 @@
 > class, and the AI-produced mathematical claims that now require verification.
 
 **Date:** 2026-08-01
-**Assessor:** Zain Dana Harper, Zentropy Labs
+**Assessor:** Zain Dana Harper
 **Confidence:** high on tool capability claims (verified against source code);
 moderate on coverage claims (the incidents are reconstructed from public
 reporting, not first-party telemetry); low on competitive claims (the market
