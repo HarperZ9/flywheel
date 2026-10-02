@@ -156,8 +156,9 @@ def _plan(repo, base, head, changed, tree, rng, max_mutants) -> tuple:
 
 def audit_diff(repo, base, head, tests=None, *, max_mutants: int = 30,
                budget_seconds: int = 600, timeout: int = 120, seed=None,
-               python=sys.executable, workdir=None) -> dict:
-    """Survivors among one-per-line mutants of a change's non-test lines."""
+               python=sys.executable, workdir=None, overlay=None) -> dict:
+    """Survivors among one-per-line mutants of a change's non-test lines.
+    `overlay` maps repository paths to replacement test text for the run."""
     t0, repo = time.time(), Path(repo)
     base = _git(repo, "rev-parse", "--verify", base + "^{commit}").strip()
     head = _git(repo, "rev-parse", "--verify", head + "^{commit}").strip()
@@ -172,6 +173,9 @@ def audit_diff(repo, base, head, tests=None, *, max_mutants: int = 30,
                                      ignore_cleanup_errors=True) as tmp:
         tree = Path(tmp) / "head"
         materialize(repo, head, tree)
+        for rel, text in (overlay or {}).items():   # a replacement test, as in red_check
+            (tree / rel).parent.mkdir(parents=True, exist_ok=True)
+            (tree / rel).write_text(text, encoding="utf-8", newline="")
         nodes = _selected_tests(repo, base, head, changed, tree, tests)
         planned, dropped = _plan(repo, base, head, changed, tree, rng, max_mutants)
         receipt.update(tests=nodes, planned=len(planned), over_cap=dropped)
