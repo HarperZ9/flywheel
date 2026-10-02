@@ -298,4 +298,4 @@ print(f"verify: {store.verify()['verdict']}")  # MATCH
 
 ---
 
-**Zentropy Labs** - order out of entropy. Built by Zain Dana Harper in Seattle.
+Built by **Zain Dana Harper** in Seattle.

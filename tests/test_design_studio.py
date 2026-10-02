@@ -13,8 +13,8 @@ from harness.design_studio import FORMATS, compose
 
 
 def test_same_inputs_compose_the_same_bytes():
-    a = compose("Order out of disorder", "a zentropy labs plate", seed=58)
-    b = compose("Order out of disorder", "a zentropy labs plate", seed=58)
+    a = compose("Order out of disorder", "a zain dana harper plate", seed=58)
+    b = compose("Order out of disorder", "a zain dana harper plate", seed=58)
     assert not a["refused"]
     assert a["receipt"]["png_sha256"] == b["receipt"]["png_sha256"]
     assert a["receipt"]["face_mint_id"] == b["receipt"]["face_mint_id"]
@@ -50,16 +50,16 @@ def test_named_refusals():
 
 def test_orb_presets_place_the_mark_and_refuse_the_unknown():
     for preset in ("center", "high", "right", "quiet"):
-        r = compose("Zentropy", seed=58, orb=preset)
+        r = compose("Zain Dana Harper", seed=58, orb=preset)
         assert not r["refused"], preset
         assert r["receipt"]["orb"] == preset
-    bad = compose("Zentropy", seed=58, orb="nope")
+    bad = compose("Zain Dana Harper", seed=58, orb="nope")
     assert bad["refused"] and "orb preset" in bad["refusals"][0]
 
 
 def test_density_scales_and_clamps():
-    lo = compose("Zentropy", seed=58, density=0.1)   # clamps up to 0.4
-    hi = compose("Zentropy", seed=58, density=9.0)   # clamps down to 2.0
+    lo = compose("Zain Dana Harper", seed=58, density=0.1)   # clamps up to 0.4
+    hi = compose("Zain Dana Harper", seed=58, density=9.0)   # clamps down to 2.0
     assert lo["receipt"]["density"] == 0.4
     assert hi["receipt"]["density"] == 2.0
 
@@ -76,7 +76,7 @@ def test_pdf_export_is_a_real_print_ready_pdf():
 
 
 def test_svg_export_is_a_scalable_container_with_the_viewbox():
-    r = compose("Zentropy Labs", "the witnessed substrate", seed=58,
+    r = compose("Zain Dana Harper", "the witnessed substrate", seed=58,
                 want_svg=True)
     assert "svg_b64" in r
     svg = base64.b64decode(r["svg_b64"]).decode("utf-8")
@@ -87,5 +87,5 @@ def test_svg_export_is_a_scalable_container_with_the_viewbox():
 
 
 def test_export_formats_are_off_by_default():
-    r = compose("Zentropy", seed=58)
+    r = compose("Zain Dana Harper", seed=58)
     assert "pdf_b64" not in r and "svg_b64" not in r
