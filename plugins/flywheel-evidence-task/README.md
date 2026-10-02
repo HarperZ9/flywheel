@@ -48,6 +48,18 @@ tools at runtime and does not install servers, copy credentials, grant execution
 or publish anything by itself. A host with source-reading tools can use it
 without the full Flywheel engine.
 
+## Data and privacy
+
+| Question | Answer |
+| --- | --- |
+| What it reads | Nothing on its own. Claude reads the sources you name with tools your client already allows |
+| What it stores | Nothing. The plugin writes no file |
+| Network calls | None. The plugin contains no program, server, hook or script |
+| Telemetry | None |
+| Retention | None. Uninstalling removes the skill files |
+
+See [PRIVACY.md](PRIVACY.md).
+
 ## MCP resources and downloads
 
 From a checkout containing this change, `python -m harness.local_mcp` exposes
