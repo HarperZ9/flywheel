@@ -18,6 +18,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .findings_scaled import scaled_findings
 from .findings_stats import selector_bounds
 from .run_paths import run_root_default
 
@@ -214,6 +215,7 @@ def project_findings(run_root: Path | str = DEFAULT_RUN_ROOT) -> dict:
     _passn_finding(root, findings)
     _humaneval_finding(root, findings)
     _envelope_finding(root, findings)
+    scaled_findings(root, _load_and_hash, Finding, findings)
 
     # Root hash over the source hashes (order-stable) -> a fingerprint of the
     # evidence set. Changes iff any source artifact changes.
