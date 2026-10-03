@@ -448,6 +448,7 @@ against the checksums attached to that release.
 - [docs/INDEPENDENCE.md](docs/INDEPENDENCE.md): evidence, assessor independence and contestability
 - [docs/PROOF-AND-FORMATS.md](docs/PROOF-AND-FORMATS.md): Markdown, LaTeX and PDF in and out, and the check as a Lean proof
 - [docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md): the finance, medicine, and law packs, and what each catches
+- [docs/rules/](docs/rules/README.md): the rules of record Flywheel is built and evaluated under
 - [CREDO.md](CREDO.md): the belief
 
 ## Development disclosure
