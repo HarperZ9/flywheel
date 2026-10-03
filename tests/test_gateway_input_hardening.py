@@ -164,3 +164,36 @@ def test_omitted_temperature_preserves_default(monkeypatch):
     _, status, _, text, _ = gateway.openai_chat(request, "http://unused.invalid")
     assert status == 200 and text == "reply"
     assert calls[-1] == ("generate", 0.0)
+
+
+INVALID_WHOLE_NUMBERS = [None, True, [], {}, "invalid", "", "1.5", float("nan"),
+                         float("inf"), "1e3"]
+
+
+@pytest.mark.parametrize("field", ["max_tokens", "seed"])
+@pytest.mark.parametrize("value", INVALID_WHOLE_NUMBERS)
+def test_bad_integer_fields_return_400_before_provider(monkeypatch, field, value):
+    calls = _stub_provider(monkeypatch)
+    request = {"messages": [{"role": "user", "content": "hello"}],
+               field: value, "adaptive": True}
+    body, status, receipt, text, model = gateway.openai_chat(request, "http://unused.invalid")
+    assert status == 400 and body["error"]["message"] == f"{field} must be an integer"
+    assert (receipt, text, model) == (None, None, None)
+    assert calls == []
+
+
+@pytest.mark.parametrize("field,kwarg", [("max_tokens", "max_new_tokens"), ("seed", "seed")])
+@pytest.mark.parametrize("value", [0, 7, "64", 2.0])
+def test_integer_fields_keep_int_semantics(monkeypatch, field, kwarg, value):
+    seen = {}
+
+    class Provider:
+        def generate(self, prompt, **kwargs):
+            seen.update(kwargs)
+            return ProposerOutput("reply", "stub", 0, "hash", "stub")
+
+    monkeypatch.setattr(gateway, "_resolve_proposer", lambda *a: (Provider(), None, 200))
+    request = {"messages": [{"role": "user", "content": "hello"}], field: value}
+    _, status, _, text, _ = gateway.openai_chat(request, "http://unused.invalid")
+    assert status == 200 and text == "reply"
+    assert seen[kwarg] == int(value) and type(seen[kwarg]) is int

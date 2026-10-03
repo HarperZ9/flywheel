@@ -205,13 +205,28 @@ def _completion_body(receipt, out, prompt):
             "x_receipt": receipt}
 
 
-def _chat_request_problem(prompt, temperature):
-    """Name the first invalid-request problem, or return None."""
+def _whole_number(raw):
+    """Return int(raw), or None for a boolean, malformed or non-finite value."""
+    if isinstance(raw, bool):
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _chat_params(req, prompt):
+    """Return (temperature, max_tokens, seed) and the first problem, if any."""
+    params = (_finite_temperature(req.get("temperature", 0.0)),
+              _whole_number(req.get("max_tokens", 512)),
+              _whole_number(req.get("seed", 0)))
     if not prompt:
-        return "messages must include a user turn"
-    if temperature is None:
-        return "temperature must be a finite number"
-    return None
+        return params, "messages must include a user turn"
+    for name, value in zip(("temperature", "max_tokens", "seed"), params):
+        if value is None:
+            kind = "a finite number" if name == "temperature" else "an integer"
+            return params, f"{name} must be {kind}"
+    return params, None
 
 
 def _all_failed(tried, last_err):
@@ -227,13 +242,10 @@ def openai_chat(
         flatten_messages, resolve_proposer, get_router_stats, chat_receipt):
     """Return one routed completion plus its receipt and provenance."""
     system, prompt = flatten_messages(req.get("messages", []))
-    temperature = _finite_temperature(req.get("temperature", 0.0))
-    problem = _chat_request_problem(prompt, temperature)
+    (temperature, max_tokens, seed), problem = _chat_params(req, prompt)
     if problem:
         return {"error": {"message": problem, "type": "invalid_request_error"}
                 }, 400, None, None, None
-    max_tokens = int(req.get("max_tokens", 512))
-    seed = int(req.get("seed", 0))
     candidates = [m.strip() for m in str(req.get("model", "")).split(",")
                   if m.strip()] or [""]
     adaptive = bool(req.get("adaptive"))
