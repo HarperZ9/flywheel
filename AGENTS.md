@@ -59,23 +59,58 @@ archived and read-only; nothing lands there.
 - Truth over approval. Verify a specific claim or label it high / moderate / low /
   unknown. "Unknown" beats a plausible fabrication.
 - A value an answer states is bound to the source that decides it, or it is
-  labelled unchecked. Agreement with no source named is `UNVERIFIABLE`, not a
-  pass. Rechecking your own arithmetic is not a check.
+  labelled unchecked. Agreement with no source named is `UNVERIFIABLE`, which
+  falls short of a pass. Rechecking your own arithmetic is not a check.
+
+## Rules of record
+Each standing rule has one full text, the page below, and one short form, in
+this file or in [docs/rules/README.md](docs/rules/README.md). The page governs;
+read it before applying a rule to a non-trivial decision.
+
+1. **Evidence, insight and useful work.**
+   [docs/rules/evidence-and-useful-work.md](docs/rules/evidence-and-useful-work.md).
+   Start with the problem, separate exploration from validation and delivery,
+   prefer insight to counts, check the checks, keep claims bounded, state the
+   tradeoff, write for the reader.
+2. **Evaluation must inform decisions, and neutral evaluation.** Same page.
+   Name the decision, owner, baseline and change trigger before testing; keep the
+   minimal decision record after. One standard for every model and organization,
+   ours included.
+3. **Compete to win.** [docs/rules/compete-to-win.md](docs/rules/compete-to-win.md).
+4. **Environment attribution and voice.**
+   [docs/rules/environment-attribution-and-voice.md](docs/rules/environment-attribution-and-voice.md).
+5. **Just culture.** [docs/rules/just-culture.md](docs/rules/just-culture.md).
+   Honest error meets learning; recklessness and concealment are sanctioned,
+   concealment worst. Report your own mistakes at once.
+6. **The commons.** [docs/rules/commons.md](docs/rules/commons.md). Provenance
+   at the source, structural independence, real participation, a path back.
+7. **Threat-informed defense.**
+   [docs/rules/threat-informed-defense.md](docs/rules/threat-informed-defense.md).
+   Adversarial testing feeds a named defensive artifact, runs on owned or
+   licensed systems, stays in software and cyber work, and keeps its means
+   contained.
+8. **Coordinated disclosure and conflict transparency.**
+   [docs/rules/coordinated-disclosure.md](docs/rules/coordinated-disclosure.md)
+   and [docs/rules/conflict-transparency.md](docs/rules/conflict-transparency.md).
+9. **Research synthesis.** [docs/rules/research-synthesis.md](docs/rules/research-synthesis.md).
+   Label every gap-filling claim as inferred and give it its cheapest test.
+10. **Credo.** [CREDO.md](CREDO.md).
 
 ## Compete to win across all relevant features
 
 Apply this to all development, research and task work. Aim for leadership across
-every relevant feature and aspect, not only a distinctive property competitors
-lack. Preserve our strengths while competing on capability, quality, speed,
+every relevant feature and aspect, the common ones included, beyond any
+distinctive property competitors lack. Preserve our strengths while competing on capability, quality, speed,
 efficiency, reliability, usability, integration, portability, privacy, security
 and operations. A competitor's advantage is a research and improvement target.
 
 Compare strong alternatives, expose deficits, set measurable targets, test
 competing approaches, ship checked improvements and repeat. Prioritization
 sequences work; it does not concede deferred features. Keep a revisit trigger
-for deferred gaps. Current superiority claims still require evidence. Complete
-the 1.0.0 release gates, then execute the
-[competitive leadership plan](project-docs/plans/POST-1.0.0-COMPETITIVE-LEADERSHIP.md).
+for deferred gaps. Current superiority claims still require evidence. The 1.0.0
+release shipped on September 18, 2026, so the
+[competitive leadership plan](project-docs/plans/POST-1.0.0-COMPETITIVE-LEADERSHIP.md)
+is current work. Full text: [docs/rules/compete-to-win.md](docs/rules/compete-to-win.md).
 
 ## Evaluation value and neutrality
 
@@ -118,8 +153,8 @@ From a checkout, `python scripts/run_output_check.py` takes the same flags.
 - Command authorities do not run without `--allow-commands`. Without the grant
   the field comes back unchecked, which is the safe direction and not a passing
   one.
-- Stop after two attempts that fail the same way. A third is a reroll, not a
-  retry.
+- Stop after two attempts that fail the same way. A third attempt is a
+  reroll.
 - Emit an answer that never validated, and emit it with the reason. Dropping it
   hides the work. Emitting it clean is the failure this exists to prevent.
 - Read the `release` line as well as the verdict. `HOLD` means a field
@@ -135,7 +170,7 @@ From a checkout, `python scripts/run_output_check.py` takes the same flags.
   close. A kernel that refuses what the report passed takes the exit code with
   it. Without Lean installed the proof is `UNVERIFIABLE`, never `PASS`.
 - For a financial, medical, or legal answer, name a domain pack and use its
-  templates rather than inventing field shapes. `flywheel packs` lists them. A
+  templates; never invent field shapes. `flywheel packs` lists them. A
   pack holds no domain data, so the authorities are still yours to supply.
 - Three domains ship and the defect reaches many more. For a domain that does
   not ship here, write the pack as a `flywheel.domain-pack-declaration/v1`
@@ -155,15 +190,15 @@ out of attempts. Inside the harness loop, pass `output_contract` and
 
 ## Closing out a piece of work
 Answer four questions at the end of a task, a goal, or a session: what we set
-out to do, what we did, what is left, and what decisions the operator owes.
-Derive the factual half rather than recalling it:
+out to do, what we did, what is left, and what decisions are still owed.
+Derive the factual half from the repository state:
 
     python scripts/run_session_summary.py --scope task --out "" --markdown-out ""
 
 Feed your own claims back through the same command so they get checked. An
 empty `--remaining ""` claims nothing is left, and the verdict returns
 `SUMMARY_DISAGREES` when the tree still holds uncommitted or unpushed work.
-Fix the claim, not the check. Scopes are `task` (head commit plus working
+Fix the claim and leave the check alone. Scopes are `task` (head commit plus working
 tree), `goal` (branch against its base), and `session` (goal plus receipts).
 
 `--validation-ledger <path>` folds the output checks recorded during the run
@@ -178,7 +213,8 @@ output as clean.
 
 ## Attribution and voice
 Explain a model's misbehavior by the training environment and the incentive
-structure that produced it, not by intent or a survival drive. Read internals with
+structure that produced it. Intent and a survival drive are the wrong explanations.
+Read internals with
 interpretability methods, but treat any internal signal as an untrusted readout
 checked against behavior, never as reading a mind. In public copy and model cards,
 lead with the mechanism, reward-hacking caused by incentives and the engineering
