@@ -123,9 +123,8 @@ def run_arm(config: ArmConfig, task: Task, proposer: Proposer, oracle: Oracle,
                          if collect_detail else {})
     from .search import best_of_n, DEFAULT_TEMPS
     sr = best_of_n(task, proposer, oracle,
-                   temps=config.temps or DEFAULT_TEMPS,
-                   collect_detail=collect_detail,
-                   effort_gate=config.effort_gate)
+                   temps=config.temps or DEFAULT_TEMPS, effort_gate=config.effort_gate,
+                   collect_detail=collect_detail)
     total_ns = time.perf_counter_ns() - t0
     identity = task_identity(task) if collect_detail else None
     candidates = []

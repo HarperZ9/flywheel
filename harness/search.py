@@ -94,6 +94,32 @@ def max_pairwise_correlation(texts: list[str]) -> float:
     return m
 
 
+def _draw(task, proposer, oracle, t, s, pruner, res, collect_detail):
+    """Generate one candidate and run the oracle on it. A pruned duplicate is
+    appended to `res` here and returns None."""
+    gen_start = time.perf_counter_ns()
+    out = proposer.generate(
+        task.prompt, seed=s, temperature=t,
+        max_new_tokens=task.max_new_tokens, system=task.system)
+    gen_ns = time.perf_counter_ns() - gen_start
+    if pruner is not None and pruner.check(out.text):
+        res.candidates.append(_pruned(out, s, t, res))
+        return None
+    oracle_start = time.perf_counter_ns()
+    orc = oracle.verify(out.text, task)
+    oracle_ns = time.perf_counter_ns() - oracle_start
+    c = Candidate(text=out.text, model_ref=out.model_ref, seed=s,
+                  temperature=t, prompt_hash=out.prompt_hash,
+                  oracle_result=orc)
+    if collect_detail:
+        c.cache = out.cache
+        c.usage = out.usage
+        c.served_model = out.served_model
+        c.generation_duration_ns = gen_ns
+        c.oracle_duration_ns = oracle_ns
+    return c
+
+
 def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
               temps: list[float] | None = None,
               seeds: list[int] | None = None,
@@ -118,26 +144,9 @@ def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
                        effort_gate=check_gate(effort_gate), planned=n)
     pruner = DuplicatePruner(prune_m) if prune_m else None
     for i, (t, s) in enumerate(zip(temps, seeds)):
-        gen_start = time.perf_counter_ns()
-        out = proposer.generate(
-            task.prompt, seed=s, temperature=t,
-            max_new_tokens=task.max_new_tokens, system=task.system)
-        gen_ns = time.perf_counter_ns() - gen_start
-        if pruner is not None and pruner.check(out.text):
-            res.candidates.append(_pruned(out, s, t, res))
+        c = _draw(task, proposer, oracle, t, s, pruner, res, collect_detail)
+        if c is None:
             continue
-        oracle_start = time.perf_counter_ns()
-        orc = oracle.verify(out.text, task)
-        oracle_ns = time.perf_counter_ns() - oracle_start
-        c = Candidate(text=out.text, model_ref=out.model_ref, seed=s,
-                      temperature=t, prompt_hash=out.prompt_hash,
-                      oracle_result=orc)
-        if collect_detail:
-            c.cache = out.cache
-            c.usage = out.usage
-            c.served_model = out.served_model
-            c.generation_duration_ns = gen_ns
-            c.oracle_duration_ns = oracle_ns
         res.candidates.append(c)
         if c.passed and res.accepted is None:
             res.accepted = c

@@ -23,7 +23,7 @@ from .eval import VERIFIED_INFERENCE
 from .search_gate import GATES
 
 
-def main(argv: list[str] | None = None) -> int:
+def _parse_args(argv):
     ap = argparse.ArgumentParser(prog="harness", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("task_dir", help="task directory (contains task.json + skeleton/)")
@@ -48,6 +48,11 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("--prune-duplicates needs --search")
     if args.effort_gate != "off" and not args.search:
         ap.error("--effort-gate needs --search")
+    return args
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv)
 
     task = load_task(args.task_dir)
     proposer = (ServeProposer(args.serve) if args.serve
