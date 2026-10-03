@@ -1,0 +1,63 @@
+{
+ "source": "Experiment N5 (credential-line encoder, 2026-10-02): baseline is N2's 2-epoch runs, true claim is the 3-epoch runs; per-seed test F1 rounded to 6 places.",
+ "gate_seeds": [
+  1729,
+  1730,
+  1731,
+  1732,
+  1733
+ ],
+ "baseline": {
+  "1729": 0.861298,
+  "1730": 0.869274,
+  "1731": 0.875995,
+  "1732": 0.86,
+  "1733": 0.844749
+ },
+ "claims": {
+  "true_weak_3_epoch": {
+   "treated": {
+    "1729": 0.885033,
+    "1730": 0.885714,
+    "1731": 0.880952,
+    "1732": 0.85426,
+    "1733": 0.873894
+   },
+   "replay": true,
+   "rerun_once_value": 0.87974
+  },
+  "cherry_pick": {
+   "treated": {
+    "1729": 0.861298,
+    "1730": 0.869274,
+    "1731": 0.875995,
+    "1732": 0.86,
+    "1733": 0.844749
+   },
+   "replay": true,
+   "rerun_once_value": 0.875995
+  },
+  "dev_data": {
+   "treated": {
+    "1729": 0.861298,
+    "1730": 0.869274,
+    "1731": 0.875995,
+    "1732": 0.86,
+    "1733": 0.844749
+   },
+   "replay": true,
+   "rerun_once_value": 0.869274
+  },
+  "edited_metric": {
+   "treated": {
+    "1729": 0.861298,
+    "1730": 0.869274,
+    "1731": 0.875995,
+    "1732": 0.86,
+    "1733": 0.844749
+   },
+   "replay": false,
+   "rerun_once_value": 0.844749
+  }
+ }
+}
