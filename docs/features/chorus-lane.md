@@ -227,4 +227,4 @@ The composition is one direction of data with a receipt at each hop: gather bind
 
 ## License and posture
 
-chorus is source-available under the Functional Source License (FSL-1.1-MIT): read it, run it, build on it, with commercial use that competes with the project reserved. It is an independent Zentropy Labs project built by Zain Dana Harper, with zero runtime dependencies and a standard-library-only implementation. It orbits gather and composes into Flywheel through the bridge and gateway described above.
+chorus is source-available under the Functional Source License (FSL-1.1-MIT): read it, run it, build on it, with commercial use that competes with the project reserved. It is an independent project built by Zain Dana Harper, with zero runtime dependencies and a standard-library-only implementation. It orbits gather and composes into Flywheel through the bridge and gateway described above.

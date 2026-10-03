@@ -1,0 +1,38 @@
+{
+ "_provenance": "synthetic: built from the documented response shape (access-gap record 0.1.0, read 2026-10-01); not recorded from a live call",
+ "request": {
+  "model": "grok-4.7",
+  "reasoning": {
+   "summary": "detailed"
+  }
+ },
+ "response": {
+  "model": "grok-4.7",
+  "output": [
+   {
+    "type": "reasoning",
+    "summary": [
+     {
+      "type": "summary_text",
+      "text": "Summarized reasoning about the question."
+     }
+    ],
+    "encrypted_content": "OPAQUE-XAI-SENTINEL-2222"
+   },
+   {
+    "type": "message",
+    "content": [
+     {
+      "type": "output_text",
+      "text": "Paris."
+     }
+    ]
+   }
+  ],
+  "usage": {
+   "output_tokens_details": {
+    "reasoning_tokens": 140
+   }
+  }
+ }
+}

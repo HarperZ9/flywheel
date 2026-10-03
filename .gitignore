@@ -133,3 +133,6 @@ desktop/android/key.properties
 
 # Private held-lane source checkouts (isomorph, sofer, array) live here; never track them in this public repo.
 state/
+
+# pre-action monitor default home when run from a checkout root
+.flywheel-preaction/

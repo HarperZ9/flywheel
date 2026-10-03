@@ -18,7 +18,7 @@ re-derives. Inside Flywheel, relay is a lane declared in
 `harness/lanes_registry.py` with organ `execution`; the gateway forwards its MCP
 tools so a single phone-facing origin can start a run and get back the same
 `run_id` and ledger checkpoint a desktop run gets. Relay is an independent
-project (Zentropy Labs); the code lives at `public/relay` and is pulled into
+project (Zain Dana Harper); the code lives at `public/relay` and is pulled into
 Flywheel as the `relay` git submodule at `relay/src`.
 
 ## Feature list

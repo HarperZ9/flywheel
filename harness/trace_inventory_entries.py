@@ -198,4 +198,11 @@ STORES = (
     Store("S23", "Output validation ledger", "home", ("validation.jsonl",), ("C4",), META,
           EXPORT, NOT_DESIGNED, shape="file", owner_binding="home",
           note="which fields were short, never the value checked (observed)"),
+    Store("S24", "Pre-action monitor state (records, holds, owner config)", "home",
+          ("preaction",), ("C1", "C2", "C4", "C5"),
+          _plain("owner-only files (0600 where the platform honors it); encryption at "
+                 "rest is not designed in this round", "7.16"),
+          EXPORT, NOT_DESIGNED, owner_binding="home",
+          note="sealed records carry digests; args/ side files and pending holds carry raw "
+               "tool arguments; sessions/ carries the owner's prompt as the run goal"),
 )

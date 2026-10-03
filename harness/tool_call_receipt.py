@@ -51,15 +51,9 @@ CAPABILITY_CLASSES = frozenset(
     {"builtin-read", "builtin-write", "builtin-exec", "external-mcp", "unknown"}
 )
 
-_HEX64 = frozenset("0123456789abcdef")
-
-
 def _sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
-
-def _is_hex64(s: str) -> bool:
-    return len(s) == 64 and all(c in _HE64 for c in s) if (s) else False
 
 _HE64 = frozenset("0123456789abcdefABCDEF")
 
@@ -109,6 +103,7 @@ def build_receipt(
     rationale: dict[str, Any] | None = None,
     session_token_ref: str | None = None,
     sandbox: dict[str, Any] | None = None,
+    preaction: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a sealed tool-call receipt dict from the witnessed call facts.
 
@@ -152,6 +147,11 @@ def build_receipt(
     if sandbox is not None:
         receipt["sandbox"] = {"kind": str(sandbox.get("kind", "unknown")),
                                "integrity_level": str(sandbox.get("integrity_level", "unknown"))}
+    # The pre-action block follows the same honest-null pattern: absent keeps
+    # the receipt byte-identical to the pre-monitor schema. When present it is
+    # inserted before the seal so it is part of the sealed body.
+    if preaction is not None:   # before seal; honest-null (absent) keeps bytes identical
+        seal_block = receipt.pop("seal"); receipt["preaction"] = preaction; receipt["seal"] = seal_block
     _seal_receipt(receipt)
     return receipt
 

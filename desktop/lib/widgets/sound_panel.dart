@@ -104,7 +104,7 @@ class _SoundPanelState extends State<SoundPanel> {
       final dir = Directory('$home${Platform.pathSeparator}Downloads');
       if (!dir.existsSync()) dir.createSync(recursive: true);
       final f = File('${dir.path}${Platform.pathSeparator}'
-          'zentropy-study-${rc['seed']}.wav');
+          'flywheel-study-${rc['seed']}.wav');
       f.writeAsBytesSync(audio.bytes);
       setState(() => _savedTo = f.path);
     } catch (e) {

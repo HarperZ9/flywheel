@@ -1,0 +1,32 @@
+{
+ "_provenance": "synthetic: built from the documented response shape (access-gap record 0.1.0, read 2026-10-01); not recorded from a live call; chunk layout is adapter-unverified",
+ "request": {
+  "model": "mistral-medium-3-5",
+  "reasoning_effort": "high"
+ },
+ "response": {
+  "model": "mistral-medium-3-5",
+  "choices": [
+   {
+    "finish_reason": "stop",
+    "message": {
+     "content": [
+      {
+       "type": "thinking",
+       "thinking": [
+        {
+         "type": "text",
+         "text": "Work through the units first."
+        }
+       ]
+      },
+      {
+       "type": "text",
+       "text": "12 meters."
+      }
+     ]
+    }
+   }
+  ]
+ }
+}

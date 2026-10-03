@@ -71,9 +71,11 @@ def bundle(out: Path) -> dict:
     receipt = {"schema": "flywheel.skill-bundle/v1", "name": NAME,
                "version": version, "artifacts": results,
                "does_not_prove": "Host installation, semantic truth, or marketplace approval."}
-    (out / "manifest.json").write_text(json.dumps(receipt, indent=2) + "\n", "utf-8")
+    # newline="\n" keeps LF on the Windows release runner, so the published
+    # checksum file reads cleanly under sha256sum on Linux and macOS.
+    (out / "manifest.json").write_text(json.dumps(receipt, indent=2) + "\n", "utf-8", newline="\n")
     (out / "SHA256SUMS").write_text(
-        "".join(f"{row['sha256']}  {row['file']}\n" for row in results), "utf-8")
+        "".join(f"{row['sha256']}  {row['file']}\n" for row in results), "utf-8", newline="\n")
     return receipt
 
 

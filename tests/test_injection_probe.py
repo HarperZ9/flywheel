@@ -25,7 +25,12 @@ def test_safe_default_contains_every_scenario():
 
 def test_granting_exec_opens_only_the_shell_scenarios():
     r = _by_id(probe(allow_exec=True))
-    assert r["exec-exfiltrate"]["contained"] is False
+    # The exec gate no longer refuses the shell scenarios. The pre-action
+    # monitor (on by default) still holds the exfiltration: it sends a
+    # credential file to a host off the allowlist. The redirect write stays
+    # inside the workspace, so nothing holds it.
+    assert r["exec-exfiltrate"]["contained"] is True
+    assert r["exec-exfiltrate"]["detail"].startswith("held for owner review")
     assert r["exec-redirect-write"]["contained"] is False
     # the write gate is independent: exec does not open writes in this engine
     assert r["write-test-tamper"]["contained"] is True

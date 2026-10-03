@@ -1,0 +1,10 @@
+# HELP openshell_ocsf_log_queued_total Records queued.
+# TYPE openshell_ocsf_log_queued_total counter
+openshell_ocsf_log_queued_total 2
+openshell_ocsf_log_written_total 2
+openshell_ocsf_log_queue_records 0
+openshell_ocsf_log_queue_bytes 0
+openshell_ocsf_log_dropped_total{reason="queue_full"} 0
+openshell_ocsf_log_dropped_total{reason="oversize"} 0
+openshell_ocsf_log_writer_errors_total 0
+openshell_ocsf_log_recovery_discarded_bytes_total 0

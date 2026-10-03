@@ -1,6 +1,6 @@
 FROM python:3.11-slim AS base
 
-LABEL maintainer="ZentropyLabs"
+LABEL maintainer="Zain Dana Harper"
 LABEL description="Flywheel gateway + relay remote MCP server"
 
 WORKDIR /app

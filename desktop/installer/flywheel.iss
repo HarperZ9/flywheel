@@ -24,7 +24,7 @@
 #endif
 
 #define MyAppName "Flywheel"
-#define MyAppPublisher "ZentropyLabs"
+#define MyAppPublisher "Zain Dana Harper"
 #define MyAppExeName "flywheel_desktop.exe"
 
 #include "flywheel_metadata_cleanup.iss"

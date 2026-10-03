@@ -92,7 +92,7 @@ class _PosterPanelState extends State<PosterPanel> {
       final dir = Directory('$home${Platform.pathSeparator}Downloads');
       if (!dir.existsSync()) dir.createSync(recursive: true);
       final f = File('${dir.path}${Platform.pathSeparator}'
-          'zentropy-poster-${rc['seed']}-${rc['format']}.png');
+          'flywheel-poster-${rc['seed']}-${rc['format']}.png');
       f.writeAsBytesSync(png);
       setState(() => _savedTo = f.path);
     } catch (e) {
