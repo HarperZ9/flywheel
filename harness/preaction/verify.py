@@ -20,7 +20,7 @@ from .rules import evaluate, load_pack, pack_digest
 
 _LAYER0_IDS = frozenset({"layer0/gate", "monitor_config_drift", "record_write_failed"})
 _JUDGE_STATES = ("scored", "unavailable", "unavailable_passed_by_owner_setting",
-                 "skipped_steering_text")
+                 "skipped_steering_text", "typed")
 
 
 def _judge_explains(record: dict, deterministic: str) -> str | bool:
