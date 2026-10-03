@@ -758,21 +758,8 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
         self.wfile.write(body)
 
     def _static(self, path: str):
-        rel = path.lstrip("/") or "site/index.html"
-        target = (self.root / rel).resolve()
-        # path-traversal guard: must stay inside root
-        if self.root.resolve() not in target.parents and target != self.root.resolve(): return self._json({"error": "forbidden"}, 403)
-        if target.is_dir(): target = target / "index.html"
-        if not target.is_file(): return self._json({"error": "not found"}, 404)
-        ctype = {"html": "text/html", "js": "text/javascript", "css": "text/css",
-                 "json": "application/json", "svg": "image/svg+xml"}.get(
-                     target.suffix.lstrip("."), "application/octet-stream")
-        body = target.read_bytes()
-        self.send_response(200)
-        self.send_header("Content-Type", ctype)
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        from harness.gateway_static import serve_static
+        return serve_static(self, path)
     def _safe_500(self, e):
         """Return one non-echoing response for an uncaught handler error."""
         try:
