@@ -154,14 +154,28 @@ and sorts why they fail there. On 158 cases its classes had precision 0.989
 merge. Our measurement found that an agent's own passing tests, including tests
 that failed first, do not tell you whether its claim holds on that task.
 
-## Claude Code mod (experimental, unpublished)
+## Claude Code mod (experimental)
 
-The source tree carries an experimental mod under
-`integrations/claude-code-mod/`. It routes risky calls through the monitor,
-writes a hash-chained receipt per turn and shows held and passed counts above
-the prompt. It never approves a call. It has passed 45 tests in a stand-in
-runtime and has not run inside Claude Code yet. It needs Claude Code 2.1.287 or
-later. It is not published to any marketplace.
+The Flywheel mod puts the pre-action monitor in front of Claude Code's Bash,
+PowerShell and file-edit tools. A held call never runs, and Claude reads the
+reason and hold id. Each turn leaves a hash-chained receipt. Install with
+`/plugin marketplace add HarperZ9/flywheel` and
+`/plugin install flywheel-mod@flywheel-skills`, then set `monitor_source` to a
+Flywheel checkout. Run on Claude Code 2.1.286: 11 engine tests pass under
+`claude plugin test`, and a live headless session held `curl` to an
+off-allowlist host. A held call chosen by the model in a live session has not
+been observed yet. The wheel now ships the monitor's rule pack.
+
+## The rules Flywheel is built under
+
+The standing rules behind Flywheel's design and its evaluations now ship in the
+repository, each with one full text in `docs/rules/`. They cover evidence and
+useful work, evaluations that must inform a decision, one neutral standard for
+every model and organization, competing on every relevant feature, explaining
+agent misbehavior by its training incentives, just culture, the shared record,
+threat-informed defense, coordinated disclosure, conflict transparency and
+research synthesis. `docs/rules/README.md` lists each rule with its short form,
+and `CREDO.md` states the belief they serve.
 
 ## Known limits
 

@@ -15,6 +15,7 @@ Search and evaluation
 - Opt-in duplicate pruning, `--prune-duplicates M`. (#332)
 - Held-out rerun of the shipped hard benchmark. (#337)
 - Report-only red check on pull requests. (#324)
+- Read-only evaluation result admission guard for offline evaluation consumers. (#311)
 
 Re-derivation and receipts
 - Replay certificate for seeded solvers. (#329)
@@ -26,4 +27,8 @@ Scoring
 - Honest exit outcome with an `exit_price` setting, default 0. (#334)
 
 Integrations
-- Claude Code mod under `integrations/claude-code-mod/`, experimental and unpublished. (#335)
+- Claude Code mod under `integrations/claude-code-mod/`, experimental. (#335)
+- The mod runs on Claude Code 2.1.286 and installs from the Flywheel plugin marketplace as `flywheel-mod@flywheel-skills`; the wheel now ships the monitor's rule pack `harness/preaction/rules_v1.json`. (#339)
+
+Canon
+- Rules of record under `docs/rules/`: evidence and useful work, evaluation that informs decisions, neutral evaluation, compete to win, environment attribution and voice, just culture, the commons, threat-informed defense, coordinated disclosure, conflict transparency and research synthesis; credo additions. (#338)
