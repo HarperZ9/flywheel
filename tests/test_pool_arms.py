@@ -54,7 +54,7 @@ def test_single_reads_slot_zero_only(tmp_path):
 
 def test_best_of_k_accepts_if_any_slot_is_accepted(tmp_path):
     pool = _pool(tmp_path, {("a", 0): "BAD", ("a", 1): "GOOD"}, 2)
-    assert best_of_k(pool, GOOD)["passes"] == 1
+    assert best_of_k(pool, GOOD, self_scored=True)["passes"] == 1
     assert single(pool, GOOD)["passes"] == 0
 
 
@@ -63,7 +63,7 @@ def test_best_of_k_scores_every_slot_rather_than_short_circuiting(tmp_path):
     the first accept would understate it."""
     pool = _pool(tmp_path, {("a", 0): "GOOD", ("a", 1): "GOOD",
                             ("a", 2): "GOOD"}, 3)
-    assert best_of_k(pool, GOOD)["oracle_calls"] == 3
+    assert best_of_k(pool, GOOD, self_scored=True)["oracle_calls"] == 3
 
 
 def test_random_of_k_is_reproducible_and_selection_free(tmp_path):
@@ -73,7 +73,7 @@ def test_random_of_k_is_reproducible_and_selection_free(tmp_path):
     assert a["outcomes"] == b["outcomes"]
     assert a["selector"] == "random" and a["oracle_calls"] == 1
     # generation-matched with best_of_k, which is the point of the control
-    assert a["candidates_generated"] == best_of_k(pool, GOOD)["candidates_generated"]
+    assert a["candidates_generated"] == best_of_k(pool, GOOD, self_scored=True)["candidates_generated"]
 
 
 def test_a_task_id_does_not_reshuffle_another_tasks_draw(tmp_path, tmp_path_factory):
@@ -98,7 +98,7 @@ def test_placebo_ignores_the_candidate_it_selects(tmp_path):
     always = placebo_of_k(pool, GOOD, seed=1, accept_rate=1.0)
     # accept_rate 1.0 always takes slot 0, which is BAD, so it fails
     assert always["outcomes"]["a"] is False
-    assert best_of_k(pool, GOOD)["outcomes"]["a"] is True
+    assert best_of_k(pool, GOOD, self_scored=True)["outcomes"]["a"] is True
 
 
 def test_pass_at_k_is_monotone_and_disclaims_learning(tmp_path):
@@ -114,7 +114,7 @@ def test_pass_at_k_is_monotone_and_disclaims_learning(tmp_path):
 
 def test_a_task_with_no_candidate_is_excluded_from_every_denominator(tmp_path):
     pool = _pool(tmp_path, {("a", 0): "GOOD", ("a", 1): "GOOD"}, 2, fail=(0, 1))
-    for r in (single(pool, GOOD), best_of_k(pool, GOOD),
+    for r in (single(pool, GOOD), best_of_k(pool, GOOD, self_scored=True),
               random_of_k(pool, GOOD, seed=1)):
         assert r["graded"] == 0
         assert r["excluded_no_candidate"] == ["a"]
@@ -126,7 +126,7 @@ def test_single_excludes_a_task_whose_slot_zero_died_but_others_lived(tmp_path):
     and grading it would attribute a harness gap to the candidate."""
     pool = _pool(tmp_path, {("a", 0): "GOOD", ("a", 1): "GOOD"}, 2, fail=(0,))
     assert single(pool, GOOD)["outcomes"]["a"] == NO_CANDIDATE
-    assert best_of_k(pool, GOOD)["outcomes"]["a"] is True
+    assert best_of_k(pool, GOOD, self_scored=True)["outcomes"]["a"] is True
 
 
 # --- the two load-bearing properties ----------------------------------------
@@ -136,7 +136,7 @@ def test_a_self_scored_arm_is_marked_and_refused_against_anything(tmp_path):
     cannot lose, so no pair containing it gets a two-sided statistic."""
     pool = _pool(tmp_path, {("a", 0): "BAD", ("a", 1): "GOOD",
                             ("b", 0): "GOOD", ("b", 1): "GOOD"}, 2)
-    bok = best_of_k(pool, GOOD)                    # no `score` -> self-scored
+    bok = best_of_k(pool, GOOD, self_scored=True)                    # no `score` -> self-scored
     assert bok["scored_by"] == SELF_SCORED
     for other in (single(pool, GOOD), random_of_k(pool, GOOD, seed=1),
                   placebo_of_k(pool, GOOD, seed=1, accept_rate=0.5)):
@@ -156,7 +156,7 @@ def test_random_of_k_is_also_nested_inside_a_self_scored_best_of_k(tmp_path):
         answers[(f"t{i}", 0)] = "BAD"
         answers[(f"t{i}", 1)] = "GOOD"
     pool = _pool(tmp_path, answers, 2)
-    r = paired(random_of_k(pool, GOOD, seed=11), best_of_k(pool, GOOD))
+    r = paired(random_of_k(pool, GOOD, seed=11), best_of_k(pool, GOOD, self_scored=True))
     assert r["a_only"] == 0, "random can never beat a self-scored best-of-k"
 
 
@@ -229,5 +229,5 @@ def test_an_arm_scores_against_the_instance_that_was_asked(tmp_path):
 
     assert single(pool, accept)["outcomes"]["the-task"] is False
     assert single(pool, accept)["passes"] == 0
-    assert best_of_k(pool, accept)["passes"] == 0
+    assert best_of_k(pool, accept, self_scored=True)["passes"] == 0
     assert random_of_k(pool, accept, seed=1)["passes"] == 0

@@ -12,7 +12,8 @@ more samples".
 
   single          slot 0 only. The seed-0 temperature-0 draw
   best_of_k       the oracle selects one candidate; `score` grades that one.
-                  Self-scored by default, held-out if you pass `score`
+                  Held-out when you pass `score`; self-scored only with an
+                  explicit self_scored=True
   random_of_k     a seeded coin selects one slot, then the oracle scores it.
                   Generation-matched and SELECTION-FREE. This is the control
   placebo_of_k    an acceptor with the oracle's accept rate and zero ground truth
@@ -129,7 +130,7 @@ def single(pool, accept) -> dict:
                    selector="none", scored_by=ORACLE)
 
 
-def best_of_k(pool, accept, *, score=None) -> dict:
+def best_of_k(pool, accept, *, score=None, self_scored: bool = False) -> dict:
     """The oracle selects. `score` decides whether its choice was right.
 
     With `score=None` the selector IS the scorer, so this arm cannot lose and the
@@ -145,6 +146,9 @@ def best_of_k(pool, accept, *, score=None) -> dict:
     oracle-call count is part of the cost being compared and short-circuiting
     would understate it.
     """
+    if score is None and not self_scored:
+        raise ValueError("best_of_k needs a held-out `score`; pass self_scored=True "
+                         "to run the arm whose selector is its scorer")
     grade = score or accept
     outcomes, calls, used = {}, 0, 0
     for t in pool.task_ids():
