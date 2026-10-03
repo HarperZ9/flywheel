@@ -179,7 +179,8 @@ _PACKAGED = {"acp": "harness.acp_cli", "dap": "harness.dap_cli",
              "journey": "harness.journey_cli", "grant": "harness.journey_cli",
              "e2e-journey": "harness.e2e_cli", "endpoint-gate": "harness.model_endpoint_gate_cli", "writing": "harness.writing_cli",
              "gov": "harness.governance_cli", "traces": "harness.trace_cli",
-             "monitor": "harness.preaction.cli", "rederive": "harness.rederive_gate"}
+             "monitor": "harness.preaction.cli", "rederive": "harness.rederive_gate",
+             "verify-share": "harness.verification_share_cli"}
 def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
     module = _PACKAGED.get(command)
     if module is None:
