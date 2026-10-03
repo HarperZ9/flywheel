@@ -1,0 +1,130 @@
+{
+ "schema": "flywheel.heldout-rerun/v1",
+ "registry": "hard",
+ "model_ref": "ollama:flywheel-local-coder-14b",
+ "rows": [
+  {
+   "task_id": "merge_intervals",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "roman_to_int",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "is_balanced",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "two_sum",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "run_length_encode",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "flatten_nested",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "my_atoi",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "spiral_order",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "longest_common_prefix",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "binary_search",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  }
+ ],
+ "summary": {
+  "n": 10,
+  "excluded": 0,
+  "single_held_pass": [
+   9,
+   [
+    0.596,
+    0.982
+   ]
+  ],
+  "search_held_pass": [
+   9,
+   [
+    0.596,
+    0.982
+   ]
+  ],
+  "diff_search_minus_single": 0.0,
+  "diff_95_paired_bootstrap": [
+   0.0,
+   0.0
+  ],
+  "self_scored_accepts": 9,
+  "self_scored_false_accepts": 0,
+  "false_accept_share": [
+   0,
+   9,
+   [
+    0.0,
+    0.299
+   ]
+  ]
+ }
+}

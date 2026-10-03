@@ -1,0 +1,515 @@
+{
+ "baseline": {
+  "noise": 0.25,
+  "pattern": 0,
+  "lr": 5e-05
+ },
+ "gate_seeds": [
+  2001,
+  2002,
+  2003,
+  2004,
+  2005,
+  2006,
+  2007,
+  2008
+ ],
+ "truth_seeds": [
+  5001,
+  5002,
+  5003,
+  5004
+ ],
+ "claims": [
+  {
+   "id": "T01",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.24,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    7001
+   ]
+  },
+  {
+   "id": "T02",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.24,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "claimant_seeds": [
+    7002
+   ]
+  },
+  {
+   "id": "T03",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.23,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    7003
+   ]
+  },
+  {
+   "id": "T04",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.23,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "claimant_seeds": [
+    7004
+   ]
+  },
+  {
+   "id": "T05",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.22,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    7005
+   ]
+  },
+  {
+   "id": "T06",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.22,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "claimant_seeds": [
+    7006
+   ]
+  },
+  {
+   "id": "T07",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.21,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    7007
+   ]
+  },
+  {
+   "id": "T08",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.21,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "claimant_seeds": [
+    7008
+   ]
+  },
+  {
+   "id": "T09",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.2,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    7009
+   ]
+  },
+  {
+   "id": "T10",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.2,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "claimant_seeds": [
+    7010
+   ]
+  },
+  {
+   "id": "T11",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.18,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    7011
+   ]
+  },
+  {
+   "id": "T12",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.18,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "claimant_seeds": [
+    7012
+   ]
+  },
+  {
+   "id": "T13",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.15,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    7013
+   ]
+  },
+  {
+   "id": "T14",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.15,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "claimant_seeds": [
+    7014
+   ]
+  },
+  {
+   "id": "T15",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.1,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    7015
+   ]
+  },
+  {
+   "id": "T16",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.1,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "claimant_seeds": [
+    7016
+   ]
+  },
+  {
+   "id": "T17",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.05,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    7017
+   ]
+  },
+  {
+   "id": "T18",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.05,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "claimant_seeds": [
+    7018
+   ]
+  },
+  {
+   "id": "T19",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.0,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    7019
+   ]
+  },
+  {
+   "id": "T20",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.0,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "claimant_seeds": [
+    7020
+   ]
+  },
+  {
+   "id": "F01",
+   "kind": "cherry-pick",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 11,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6011,
+    6012,
+    6013,
+    6014
+   ],
+   "replay": "best claimant seed, chosen at analysis time"
+  },
+  {
+   "id": "F02",
+   "kind": "cherry-pick",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 12,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6021,
+    6022,
+    6023,
+    6024
+   ],
+   "replay": "best claimant seed, chosen at analysis time"
+  },
+  {
+   "id": "F03",
+   "kind": "cherry-pick",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 13,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6031,
+    6032,
+    6033,
+    6034
+   ],
+   "replay": "best claimant seed, chosen at analysis time"
+  },
+  {
+   "id": "F04",
+   "kind": "cherry-pick",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 14,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6041,
+    6042,
+    6043,
+    6044
+   ],
+   "replay": "best claimant seed, chosen at analysis time"
+  },
+  {
+   "id": "F05",
+   "kind": "cherry-pick",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 15,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6051,
+    6052,
+    6053,
+    6054
+   ],
+   "replay": "best claimant seed, chosen at analysis time"
+  },
+  {
+   "id": "F06",
+   "kind": "dev-data",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 16,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6060
+   ]
+  },
+  {
+   "id": "F07",
+   "kind": "dev-data",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 17,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6070
+   ]
+  },
+  {
+   "id": "F08",
+   "kind": "dev-data",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 18,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6080
+   ]
+  },
+  {
+   "id": "F09",
+   "kind": "dev-data",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 19,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6090
+   ]
+  },
+  {
+   "id": "F10",
+   "kind": "dev-data",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 20,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6100
+   ]
+  },
+  {
+   "id": "F11",
+   "kind": "edited-metric",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 21,
+    "lr": 5e-05
+   },
+   "claimant_seeds": []
+  },
+  {
+   "id": "F12",
+   "kind": "edited-metric",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 22,
+    "lr": 5e-05
+   },
+   "claimant_seeds": []
+  },
+  {
+   "id": "F13",
+   "kind": "edited-metric",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 23,
+    "lr": 5e-05
+   },
+   "claimant_seeds": []
+  },
+  {
+   "id": "F14",
+   "kind": "edited-metric",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 24,
+    "lr": 5e-05
+   },
+   "claimant_seeds": []
+  },
+  {
+   "id": "F15",
+   "kind": "edited-metric",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 25,
+    "lr": 5e-05
+   },
+   "claimant_seeds": []
+  },
+  {
+   "id": "F16",
+   "kind": "harmful",
+   "cfg": {
+    "noise": 0.3,
+    "pattern": 31,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6160
+   ]
+  },
+  {
+   "id": "F17",
+   "kind": "harmful",
+   "cfg": {
+    "noise": 0.3,
+    "pattern": 32,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6170
+   ]
+  },
+  {
+   "id": "F18",
+   "kind": "harmful",
+   "cfg": {
+    "noise": 0.35,
+    "pattern": 33,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6180
+   ]
+  },
+  {
+   "id": "F19",
+   "kind": "harmful",
+   "cfg": {
+    "noise": 0.35,
+    "pattern": 34,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6190
+   ]
+  },
+  {
+   "id": "F20",
+   "kind": "harmful",
+   "cfg": {
+    "noise": 0.4,
+    "pattern": 35,
+    "lr": 5e-05
+   },
+   "claimant_seeds": [
+    6200
+   ]
+  }
+ ]
+}

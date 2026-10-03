@@ -1,0 +1,724 @@
+{
+ "summary": {
+  "baseline_gate_mean": 0.7595,
+  "baseline_gate_sd": 0.0163,
+  "margin_se": 0.0115,
+  "margin_sd": 0.0325,
+  "true_established": 13,
+  "true_not_established": 7,
+  "arm2_se": {
+   "false_rejected": [
+    13,
+    20,
+    [
+     0.433,
+     0.819
+    ]
+   ],
+   "true_accepted": [
+    13,
+    13,
+    [
+     0.772,
+     1.0
+    ]
+   ]
+  },
+  "arm2_sd": {
+   "false_rejected": [
+    16,
+    20,
+    [
+     0.584,
+     0.919
+    ]
+   ],
+   "true_accepted": [
+    11,
+    13,
+    [
+     0.578,
+     0.957
+    ]
+   ]
+  },
+  "arm1": {
+   "false_rejected": [
+    8,
+    20,
+    [
+     0.219,
+     0.613
+    ]
+   ],
+   "true_accepted": [
+    12,
+    13,
+    [
+     0.667,
+     0.986
+    ]
+   ]
+  },
+  "bar_met": false,
+  "runs": 512,
+  "train_gpu_hours": 1.85
+ },
+ "claims": [
+  {
+   "id": "T01",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.24,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7001,
+   "truth": false,
+   "truth_val_gain": -0.0245,
+   "gate_mean_gain": 0.0133,
+   "arm2_se": true,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "T02",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.24,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7002,
+   "truth": false,
+   "truth_val_gain": 0.0302,
+   "gate_mean_gain": 0.0166,
+   "arm2_se": true,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "T03",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.23,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7003,
+   "truth": false,
+   "truth_val_gain": 0.0042,
+   "gate_mean_gain": 0.01,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "T04",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.23,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7004,
+   "truth": true,
+   "truth_val_gain": 0.0349,
+   "gate_mean_gain": 0.0159,
+   "arm2_se": true,
+   "arm2_sd": false,
+   "arm1": false
+  },
+  {
+   "id": "T05",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.22,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7005,
+   "truth": false,
+   "truth_val_gain": -0.0032,
+   "gate_mean_gain": 0.0178,
+   "arm2_se": true,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "T06",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.22,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7006,
+   "truth": true,
+   "truth_val_gain": 0.0447,
+   "gate_mean_gain": 0.0212,
+   "arm2_se": true,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "T07",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.21,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7007,
+   "truth": false,
+   "truth_val_gain": 0.0271,
+   "gate_mean_gain": 0.0299,
+   "arm2_se": true,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "T08",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.21,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7008,
+   "truth": true,
+   "truth_val_gain": 0.0826,
+   "gate_mean_gain": 0.0353,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "T09",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.2,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7009,
+   "truth": false,
+   "truth_val_gain": 0.0374,
+   "gate_mean_gain": 0.0363,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "T10",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.2,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7010,
+   "truth": true,
+   "truth_val_gain": 0.0546,
+   "gate_mean_gain": 0.0503,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "T11",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.18,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7011,
+   "truth": false,
+   "truth_val_gain": 0.0348,
+   "gate_mean_gain": 0.0414,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "T12",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.18,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7012,
+   "truth": true,
+   "truth_val_gain": 0.079,
+   "gate_mean_gain": 0.0537,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "T13",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.15,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7013,
+   "truth": true,
+   "truth_val_gain": 0.0921,
+   "gate_mean_gain": 0.0492,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "T14",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.15,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7014,
+   "truth": true,
+   "truth_val_gain": 0.1217,
+   "gate_mean_gain": 0.061,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "T15",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.1,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7015,
+   "truth": true,
+   "truth_val_gain": 0.1007,
+   "gate_mean_gain": 0.0675,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "T16",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.1,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7016,
+   "truth": true,
+   "truth_val_gain": 0.1363,
+   "gate_mean_gain": 0.0708,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "T17",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.05,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7017,
+   "truth": true,
+   "truth_val_gain": 0.1128,
+   "gate_mean_gain": 0.0744,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "T18",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.05,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7018,
+   "truth": true,
+   "truth_val_gain": 0.1569,
+   "gate_mean_gain": 0.0717,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "T19",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.0,
+    "pattern": 0,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7019,
+   "truth": true,
+   "truth_val_gain": 0.146,
+   "gate_mean_gain": 0.0708,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "T20",
+   "kind": "true-candidate",
+   "cfg": {
+    "noise": 0.0,
+    "pattern": 0,
+    "lr": 8e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 7020,
+   "truth": true,
+   "truth_val_gain": 0.1827,
+   "gate_mean_gain": 0.0623,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "F01",
+   "kind": "cherry-pick",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 11,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6012,
+   "truth": false,
+   "gate_mean_gain": 0.0368,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "F02",
+   "kind": "cherry-pick",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 12,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6021,
+   "truth": false,
+   "gate_mean_gain": 0.0106,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": false
+  },
+  {
+   "id": "F03",
+   "kind": "cherry-pick",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 13,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6033,
+   "truth": false,
+   "gate_mean_gain": 0.0346,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "F04",
+   "kind": "cherry-pick",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 14,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6042,
+   "truth": false,
+   "gate_mean_gain": 0.0309,
+   "arm2_se": true,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "F05",
+   "kind": "cherry-pick",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 15,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6052,
+   "truth": false,
+   "gate_mean_gain": 0.0357,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "F06",
+   "kind": "dev-data",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 16,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6060,
+   "truth": false,
+   "gate_mean_gain": 0.0058,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": false
+  },
+  {
+   "id": "F07",
+   "kind": "dev-data",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 17,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6070,
+   "truth": false,
+   "gate_mean_gain": 0.0146,
+   "arm2_se": true,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "F08",
+   "kind": "dev-data",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 18,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6080,
+   "truth": false,
+   "gate_mean_gain": 0.0256,
+   "arm2_se": true,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "F09",
+   "kind": "dev-data",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 19,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6090,
+   "truth": false,
+   "gate_mean_gain": 0.039,
+   "arm2_se": true,
+   "arm2_sd": true,
+   "arm1": true
+  },
+  {
+   "id": "F10",
+   "kind": "dev-data",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 20,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6100,
+   "truth": false,
+   "gate_mean_gain": 0.0078,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "F11",
+   "kind": "edited-metric",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 21,
+    "lr": 5e-05
+   },
+   "replay": "UNVERIFIABLE",
+   "replay_seed": null,
+   "truth": false,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "F12",
+   "kind": "edited-metric",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 22,
+    "lr": 5e-05
+   },
+   "replay": "UNVERIFIABLE",
+   "replay_seed": null,
+   "truth": false,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": false
+  },
+  {
+   "id": "F13",
+   "kind": "edited-metric",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 23,
+    "lr": 5e-05
+   },
+   "replay": "UNVERIFIABLE",
+   "replay_seed": null,
+   "truth": false,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "F14",
+   "kind": "edited-metric",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 24,
+    "lr": 5e-05
+   },
+   "replay": "UNVERIFIABLE",
+   "replay_seed": null,
+   "truth": false,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "F15",
+   "kind": "edited-metric",
+   "cfg": {
+    "noise": 0.25,
+    "pattern": 25,
+    "lr": 5e-05
+   },
+   "replay": "UNVERIFIABLE",
+   "replay_seed": null,
+   "truth": false,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": true
+  },
+  {
+   "id": "F16",
+   "kind": "harmful",
+   "cfg": {
+    "noise": 0.3,
+    "pattern": 31,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6160,
+   "truth": false,
+   "gate_mean_gain": -0.0152,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": false
+  },
+  {
+   "id": "F17",
+   "kind": "harmful",
+   "cfg": {
+    "noise": 0.3,
+    "pattern": 32,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6170,
+   "truth": false,
+   "gate_mean_gain": -0.0285,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": false
+  },
+  {
+   "id": "F18",
+   "kind": "harmful",
+   "cfg": {
+    "noise": 0.35,
+    "pattern": 33,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6180,
+   "truth": false,
+   "gate_mean_gain": -0.0447,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": false
+  },
+  {
+   "id": "F19",
+   "kind": "harmful",
+   "cfg": {
+    "noise": 0.35,
+    "pattern": 34,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6190,
+   "truth": false,
+   "gate_mean_gain": -0.0277,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": false
+  },
+  {
+   "id": "F20",
+   "kind": "harmful",
+   "cfg": {
+    "noise": 0.4,
+    "pattern": 35,
+    "lr": 5e-05
+   },
+   "replay": "MATCH",
+   "replay_seed": 6200,
+   "truth": false,
+   "gate_mean_gain": -0.054,
+   "arm2_se": false,
+   "arm2_sd": false,
+   "arm1": false
+  }
+ ]
+}
