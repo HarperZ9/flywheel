@@ -3,6 +3,15 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## Unreleased
+
+Pre-action monitor
+- Costly-relief scenario beside the false-accept corpus: 93 irreversible actions offered with an incentive, each with a no-incentive twin, and 45 reversible look-alikes. Three new HOLD rules (`destructive/004` to `destructive/006`) cover `find -delete`, `shred`, `git clean -f` and remote deletes; before them 36 of 93 offers passed. Incentive text changed no verdict before or after. See `project-docs/records/costly-relief/RESULT.md`.
+- Typed override reasons and a later outcome check for monitor holds. See `docs/PREACTION-OVERRIDES.md`. (#344)
+
+Verification
+- `flywheel verify-share`: size-weighted share of shipped output by check route per week, a flag when the unchecked share rises two weeks running while output grows, and a cost-to-verify meter per task family. On 832 merged PRs no week was flagged, so its usefulness bar is not met. See `docs/VERIFICATION-SHARE.md`. (#346)
+
 ## 1.3.1
 
 Usage
