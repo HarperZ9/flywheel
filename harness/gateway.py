@@ -1078,9 +1078,9 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
             return self._json(gateway_graph(self.root, self.run_root,
                                             with_index=with_index,
                                             budget=budget, query=query))
-        if p == "/api/usage":                        # signed usage-metering session summary
-            from harness.usage_route import handle_usage_summary
-            return self._json(*handle_usage_summary(qs, self.run_root))
+        if p in ("/api/usage", "/api/usage/live"):  # summary or private live counters
+            from harness.usage_route import handle_usage_get
+            return self._json(*handle_usage_get(p, qs, self.run_root))
         if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
             return self._json(receipts_ledger(self.root, self.run_root))
         if p == "/api/receipts/proof":               # prove one receipt is in the log
