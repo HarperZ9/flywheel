@@ -48,7 +48,9 @@ DOES_NOT_PROVE = (
 
 
 def _git(repo, *args, data=False):
-    proc = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, check=False)
+    from . import safe_program
+    command, env = safe_program.launch(["git", "-C", str(repo), *args])
+    proc = subprocess.run(command, env=env, capture_output=True, check=False)
     if proc.returncode != 0:
         raise RuntimeError(f"git {args[0]} failed: "
                            + proc.stderr.decode("utf-8", "replace").strip()[:300])
