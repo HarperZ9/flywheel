@@ -3,7 +3,10 @@ part of 'chat_context_lifecycle_test.dart';
 Future<void> _send(WidgetTester tester, String text) async {
   await tester.enterText(find.byType(TextField), text);
   await tester.pump();
-  _diag(tester);
+  // The welcome prelude scrolls; at the 800x600 test size the header can wrap
+  // and push Send under the context status line, so scroll it into view first.
+  await tester.ensureVisible(find.byTooltip('Send  (Enter)'));
+  await tester.pump();
   await tester.tap(find.byTooltip('Send  (Enter)'));
   await tester.pumpAndSettle();
   await _waitForSendControl(tester);
@@ -213,32 +216,4 @@ Directory _temporary() {
   final directory = Directory.systemTemp.createTempSync('chat-context-');
   addTearDown(() => directory.deleteSync(recursive: true));
   return directory;
-}
-
-void _diag(WidgetTester tester) {
-  // ignore: avoid_print
-  print('DIAG view ${tester.view.physicalSize} dpr ${tester.view.devicePixelRatio}');
-  for (final e in find.byTooltip('Send  (Enter)').evaluate()) {
-    final chain = <String>[];
-    e.visitAncestorElements((a) {
-      chain.add('${a.widget.runtimeType}');
-      return chain.length < 40;
-    });
-    // ignore: avoid_print
-    print('DIAG send ${tester.getRect(find.byWidget(e.widget))} :: ${chain.join(' < ')}');
-  }
-  for (final e in find.textContaining('Canon context').evaluate()) {
-    // ignore: avoid_print
-    print('DIAG status ${tester.getRect(find.byWidget(e.widget))} ${(e.widget as Text).data}');
-  }
-  for (final e in find.byType(TextField).evaluate()) {
-    // ignore: avoid_print
-    print('DIAG field ${tester.getRect(find.byWidget(e.widget))}');
-  }
-  for (final e in find.byType(Text).evaluate()) {
-    final r = tester.getRect(find.byWidget(e.widget));
-    final w = e.widget as Text;
-    // ignore: avoid_print
-    print('DIAG text $r ${w.data ?? w.textSpan?.toPlainText()}');
-  }
 }
