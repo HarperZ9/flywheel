@@ -58,7 +58,7 @@ class _PipelinePanelState extends State<PipelinePanel> {
             if (s['op'] == 'wireframe') 'primitive': s['primitive'],
             if (s['op'] == 'dither') 'levels': s['levels'],
             if (s['op'] == 'film_frame') 'title': _title.text.trim(),
-            if (s['op'] == 'film_frame') 'subtitle': 'zentropy labs',
+            if (s['op'] == 'film_frame') 'subtitle': 'zain dana harper',
           },
         },
     ];

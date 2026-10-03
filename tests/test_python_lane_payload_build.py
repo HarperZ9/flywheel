@@ -9,17 +9,14 @@ from pathlib import Path
 
 import pytest
 
+REPO = Path(__file__).resolve().parents[1]
 
 # The production manifest binds each lane to a vendored source tree that is
-# staged outside the repository (on the authoring machine, or wherever
-# FLYWHEEL_PYTHON_LANE_SOURCE_ROOT points). Tests that need those real sources
-# are gated on their presence; the build logic itself is covered on every runner
-# by the synthetic-source test below.
-SOURCE_ROOT = os.environ.get(
-    "FLYWHEEL_PYTHON_LANE_SOURCE_ROOT",
-    "D:/fw-ship-sweep-20260910/all-lanes-payloads/sources",
-)
-_SOURCES_PRESENT = Path(SOURCE_ROOT).is_dir()
+# staged outside the repository. Real-source integration requires an explicit
+# FLYWHEEL_PYTHON_LANE_SOURCE_ROOT; a configured but incomplete tree must fail.
+# Synthetic-source coverage runs everywhere. A skip does not qualify a release.
+SOURCE_ROOT = os.environ.get("FLYWHEEL_PYTHON_LANE_SOURCE_ROOT", "")
+_SOURCES_CONFIGURED = "FLYWHEEL_PYTHON_LANE_SOURCE_ROOT" in os.environ
 
 
 def _run(*args):
@@ -28,13 +25,14 @@ def _run(*args):
         capture_output=True,
         text=True,
         check=False,
+        cwd=REPO,
     )
 
 
 def _load_builder():
     spec = importlib.util.spec_from_file_location(
         "build_python_lane_payloads",
-        Path("scripts/build_python_lane_payloads.py"),
+        REPO / "scripts" / "build_python_lane_payloads.py",
     )
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
@@ -42,9 +40,26 @@ def _load_builder():
     return module
 
 
+@pytest.mark.parametrize("configured", [False, True])
+def test_production_source_integration_requires_explicit_opt_in(tmp_path, configured):
+    env = os.environ.copy()
+    env.pop("FLYWHEEL_PYTHON_LANE_SOURCE_ROOT", None)
+    if configured:
+        env["FLYWHEEL_PYTHON_LANE_SOURCE_ROOT"] = str(tmp_path / "missing-source")
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest",
+         "tests/test_python_lane_payload_build.py::"
+         "test_python_lane_payload_builder_writes_source_closure_manifest",
+         "-o", "addopts=", "-q", "-ra"],
+        cwd=REPO, env=env, capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == (1 if configured else 0), result.stdout + result.stderr
+    assert ("1 failed" if configured else "1 skipped") in result.stdout
+
+
 def test_python_lane_payload_builder_rejects_c_drive_sources(tmp_path):
     manifest = tmp_path / "payloads.jsonl"
-    row = json.loads(Path("packaging/python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    row = json.loads((REPO / "packaging" / "python-lane-payloads.jsonl").read_text(encoding="utf-8").splitlines()[0])
     row["local_source_root"] = "C:/dev/public/gather"
     manifest.write_text(json.dumps(row, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -60,7 +75,8 @@ def test_python_lane_payload_builder_rejects_c_drive_sources(tmp_path):
     assert "C: source roots are not allowed" in result.stdout
 
 
-def test_python_lane_payload_builder_writes_source_closure_from_synthetic_sources(tmp_path, monkeypatch):
+@pytest.mark.parametrize("source_state", ["complete", "missing", "hash-mismatch"])
+def test_python_lane_payload_builder_validates_synthetic_source_closure(tmp_path, monkeypatch, source_state):
     # Exercise the closure build on a small synthetic tree so CI verifies source
     # hashing, notice copying, module counting and receipt shape without the
     # vendored production sources, whose exact content hashes cannot be faked.
@@ -112,13 +128,25 @@ def test_python_lane_payload_builder_writes_source_closure_from_synthetic_source
     manifest.write_text(json.dumps(row, sort_keys=True) + "\n", encoding="utf-8")
 
     out = tmp_path / "out"
-    receipt = builder.build_payloads(Namespace(
+    args = Namespace(
         manifest=str(manifest),
         source_root=str(tmp_path / "sources"),
         out=str(out),
         builder_python=sys.executable,
         skip_wheel_build=True,
-    ))
+    )
+    if source_state != "complete":
+        source_file = source_dir / "src" / "gather" / "__init__.py"
+        if source_state == "missing":
+            source_file.unlink()
+        else:
+            source_file.write_bytes(b"VERSION = \"9.9.9\"\n")
+        expected = "missing source file" if source_state == "missing" else "hash mismatch"
+        with pytest.raises(builder.PayloadBuildError, match=expected):
+            builder.build_payloads(args)
+        assert not (out / "python-lane-payload-build-manifest.json").exists()
+        return
+    receipt = builder.build_payloads(args)
 
     assert receipt["schema"] == "flywheel.python-lane-payload-build-manifest/v1"
     assert receipt["verdict"] == "PASS"
@@ -135,10 +163,29 @@ def test_python_lane_payload_builder_writes_source_closure_from_synthetic_source
     assert written["verdict"] == "PASS"
 
 
+def test_python_lane_payload_builder_names_a_fixture_for_every_manifest_row():
+    # The receipt copies FIXTURES[lane] for each manifest row, so a row with no
+    # entry crashes the build with a KeyError. The source-backed test below runs
+    # only where the vendored sources are staged, so this check runs everywhere.
+    # Each fixture tool must be one the row admits, or the receipt names a
+    # workflow the bundled lane cannot serve.
+    builder = _load_builder()
+    rows = [json.loads(line) for line in (REPO / "packaging" / "python-lane-payloads.jsonl")
+            .read_text(encoding="utf-8").splitlines() if line.strip()]
+    lanes = [row["lane"] for row in rows]
+    assert sorted(builder.FIXTURES) == sorted(lanes)
+    for row in rows:
+        fixture = builder.FIXTURES[row["lane"]]
+        assert fixture["tool"] and fixture["workflow"], row["lane"]
+        admitted = set(row["component_descriptor"]["allowed_tools"])
+        for tool in fixture["tool"].split("+"):
+            assert tool in admitted, (row["lane"], tool)
+
+
 @pytest.mark.skipif(
-    not _SOURCES_PRESENT,
-    reason="production vendored sources are staged only where "
-           "FLYWHEEL_PYTHON_LANE_SOURCE_ROOT points (the authoring machine)",
+    not _SOURCES_CONFIGURED,
+    reason="set FLYWHEEL_PYTHON_LANE_SOURCE_ROOT to opt into production-source "
+           "integration; skipped integration does not qualify a release",
 )
 def test_python_lane_payload_builder_writes_source_closure_manifest(tmp_path):
     out = tmp_path / "payload-out"
@@ -153,9 +200,12 @@ def test_python_lane_payload_builder_writes_source_closure_manifest(tmp_path):
     receipt = json.loads((out / "python-lane-payload-build-manifest.json").read_text(encoding="utf-8"))
     assert receipt["schema"] == "flywheel.python-lane-payload-build-manifest/v1"
     assert receipt["wheel_build"]["skipped"] is True
+    manifest = (Path(__file__).resolve().parents[1] / "packaging"
+                / "python-lane-payloads.jsonl").read_text(encoding="utf-8")
+    # the lane list comes from the manifest, so a new payload row cannot leave
+    # this test asserting an old count (C18)
     assert [row["lane"] for row in receipt["lanes"]] == [
-        "gather", "crucible", "index", "forum", "plexus", "mneme", "canon"
-    ]
+        json.loads(line)["lane"] for line in manifest.splitlines() if line.strip()]
     for row in receipt["lanes"]:
         assert row["source_closure_sha256"].startswith("sha256:")
         assert row["notice_files"]
@@ -179,7 +229,7 @@ def test_python_lane_fixture_script_lists_bounded_workflows():
 def test_python_lane_network_guard_blocks_socket(tmp_path):
     spec = importlib.util.spec_from_file_location(
         "python_lane_fixture_netguard",
-        Path("scripts/python_lane_fixture_netguard.py"),
+        REPO / "scripts" / "python_lane_fixture_netguard.py",
     )
     assert spec and spec.loader
     guard_module = importlib.util.module_from_spec(spec)

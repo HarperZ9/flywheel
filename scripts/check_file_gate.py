@@ -17,9 +17,15 @@ unenforced in two trees that had accumulated 46 violations between them. Each
 tree's frozen record is a separate file, loaded and merged here: keys are
 tree-prefixed so they cannot collide, and a record frozen on one day is not
 rewritten to absorb another day's tree.
+
+A vendored helper is the one exemption. It is copied byte for byte from its
+canonical release and pinned by VENDORED.sha256, so splitting it here would break
+the pin. It is exempt only while its bytes still match that record: a copy that
+drifts is gated like any other file.
 """
 from __future__ import annotations
 
+import hashlib
 import sys
 from pathlib import Path
 
@@ -80,13 +86,36 @@ def load_all(paths) -> dict[str, int]:
     return merged
 
 
+def vendored_exempt(root: Path) -> set[str]:
+    """Repository paths listed in VENDORED.sha256 whose bytes match their row."""
+    record = Path(root) / "VENDORED.sha256"
+    if not record.is_file():
+        return set()
+    exempt: set[str] = set()
+    for line in record.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.startswith("#"):
+            continue
+        digest, rel = line.split(None, 1)
+        rel = rel.strip().lstrip("*")
+        try:
+            actual = hashlib.sha256((Path(root) / rel).read_bytes()).hexdigest()
+        except OSError:
+            continue
+        if actual == digest.lower():
+            exempt.add(rel)
+    return exempt
+
+
 def main() -> int:
     root = Path(__file__).resolve().parent.parent
     listed = load_all(root / b for b in BURNDOWNS)
+    exempt = vendored_exempt(root)
     failures: list[str] = []
     for tree in TREES:
         for rel, n in over_gate(root / tree):
             key = f"{tree}/{rel}"
+            if key in exempt:
+                continue
             if key not in listed:
                 failures.append(f"NEW violation: {key} is {n} lines (limit {LIMIT})")
             elif n > listed[key]:
@@ -95,7 +124,7 @@ def main() -> int:
         print(f)
     if not failures:
         print(f"file gate clean: {len(listed)} grandfathered across "
-              f"{len(TREES)} trees, 0 new, 0 grown")
+              f"{len(TREES)} trees, {len(exempt)} vendored, 0 new, 0 grown")
     return 1 if failures else 0
 
 

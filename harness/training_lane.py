@@ -131,7 +131,8 @@ def screen_alive(name: str = SCREEN_NAME, *, timeout: float = 5.0) -> bool | Non
     """Probe `wsl screen -ls` for a live session. Returns True/False, or None when
     the probe itself could not run (honest 'unprobed' -- never a false 'dead')."""
     try:
-        out = subprocess.run(["wsl", "screen", "-ls"], capture_output=True,
+        from .safe_program import system_tool
+        out = subprocess.run([system_tool("wsl.exe"), "screen", "-ls"], capture_output=True,
                              text=True, timeout=timeout)
     except Exception:
         return None

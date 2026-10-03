@@ -15,7 +15,9 @@ def test_python_lane_payload_manifest_check_passes():
     report = json.loads(result.stdout)
     assert report["verdict"] == "PASS"
     assert report["async_lanes"] == ["forum"]
-    assert report["registry_updates"] == ["canon", "forum", "gather", "index", "mneme", "relay"]
+    # The registry caught up with index 2.13.0 and forum 1.14.0, so no row
+    # is ahead of it.
+    assert report["registry_updates"] == []
 
 
 def test_python_lane_payload_manifest_rejects_descriptor_tamper(tmp_path):
@@ -42,11 +44,13 @@ def test_canon_payload_pins_context_source_without_expanding_public_tools():
     ).read_text(encoding="utf-8").splitlines() if line]
     canon = next(row for row in rows if row["lane"] == "canon")
 
-    assert canon["owner_commit"] == "8c6a8228ce2117112c5dad74ddb0450ba80aa8ff"
+    assert canon["owner_commit"] == "c3ff3cd322657d37cb095d0d619a4119e0b964fd"
     assert canon["component_descriptor"]["source"]["commit"] == canon["owner_commit"]
     assert canon["component_descriptor"]["entrypoint"]["module"] == "canon.local_mcp"
+    # Admission follows the lane tool policy: T1 tools only, so canon.render
+    # (T2 in the reviewed draft) stays out.
     assert canon["component_descriptor"]["allowed_tools"] == [
-        "canon.status", "canon.doctor"]
+        "canon.status", "canon.doctor", "canon.blocks", "canon.validate", "canon.check"]
     assert canon["mcp"]["static_tool_names"] == [
         "canon.status", "canon.doctor", "canon.blocks",
         "canon.render", "canon.validate", "canon.check"]
@@ -68,19 +72,44 @@ def test_python_lane_payload_pins_accepted_index_and_plexus_sources():
     by_lane = {row["lane"]: row for row in rows}
 
     index = by_lane["index"]
-    assert index["owner_commit"] == "71c26eabde266b394370392816aaa74e1a55d88b"
+    # index 2.15.0 (tag v2.15.0) holds the bounded context envelope and index.route
+    assert index["owner_commit"] == "b2e4dcefff9d9d9a339e23d64c58bb4a5149ef92"
     assert index["component_descriptor"]["source"]["commit"] == index["owner_commit"]
-    assert "index_graph.context.envelope" in index["hidden_imports"]
-    assert any(
-        item["path"] == "src/index_graph/context/envelope.py"
-        for item in index["component_descriptor"]["source"]["files"]
-    )
+    for module in ("index_graph.context.envelope", "index_graph.route"):
+        assert module in index["hidden_imports"]
+    for path in ("src/index_graph/context/envelope.py", "src/index_graph/route.py"):
+        assert any(
+            item["path"] == path
+            for item in index["component_descriptor"]["source"]["files"]
+        ), path
 
     plexus = by_lane["plexus"]
-    assert plexus["owner_commit"] == "f16aa20d52834db1a7beaaa44780200676caaf0b"
+    assert plexus["owner_commit"] == "825b992c51e9eac749c046e9c896c251d37017a7"
     assert plexus["component_descriptor"]["source"]["commit"] == plexus["owner_commit"]
     assert "plexus.registry" in plexus["hidden_imports"]
     assert any(
         item["path"] == "src/plexus/registry.py"
         for item in plexus["component_descriptor"]["source"]["files"]
     )
+
+
+def test_runtime_dependency_must_be_staged_by_the_studio_runtime(tmp_path):
+    source = Path("packaging/python-lane-payloads.jsonl")
+    rows = [json.loads(line) for line in source.read_text(encoding="utf-8").splitlines() if line]
+    surface = next(row for row in rows if row["lane"] == "accountable-surface")
+    assert surface["owner_project"]["runtime_dependencies"] == [
+        "coherence-membrane>=0.1.0", "proof-surface>=0.1.0"]
+    surface["owner_project"]["runtime_dependencies"].append("requests>=2")
+    tampered = tmp_path / "payloads.jsonl"
+    tampered.write_text("\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n", encoding="utf-8")
+
+    result = subprocess.run(
+        [sys.executable, "scripts/check_python_lane_payload_manifest.py", str(tampered)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "not staged by the Studio runtime" in result.stdout
+    assert "requests>=2" in result.stdout

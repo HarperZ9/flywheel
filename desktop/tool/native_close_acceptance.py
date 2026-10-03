@@ -134,7 +134,7 @@ def _same_live_rows(captured: list[dict[str, Any]], live: list[dict[str, Any]]) 
     return survivors
 
 
-EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+EnumWindowsProc = getattr(ctypes, 'WINFUNCTYPE', ctypes.CFUNCTYPE)(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
 
 
 def _visible_windows_for_pid(pid: int) -> list[int]:

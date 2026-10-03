@@ -1,7 +1,9 @@
 # Pre-tag installed acceptance for a clean Windows runner.
 # This workflow builds a fresh candidate from an exact branch-reachable commit,
-# installs those same bytes per-user in the ephemeral runner, and uploads only
-# sanitized receipts. It does not publish, tag, sign, or verify native UI launch.
+# installs those same bytes per-user in the ephemeral runner, runs the lane
+# acceptance per-user and then all-users, and uploads only sanitized
+# receipts, including bounded native window launch and owned-child close.
+# It does not publish, tag, sign, or claim rendered-content/interaction acceptance.
 name: windows-installed-acceptance
 
 on:
@@ -18,7 +20,7 @@ permissions:
 jobs:
   installed-acceptance:
     runs-on: windows-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       ACCEPTANCE_COMMIT: ${{ inputs.commit }}
       EXPECTED_REPOSITORY: HarperZ9/flywheel
@@ -39,7 +41,7 @@ jobs:
 
       - name: Build, install, and accept exact source commit
         shell: pwsh
-        timeout-minutes: 75
+        timeout-minutes: 105
         run: |
           powershell -NoProfile -ExecutionPolicy Bypass -File desktop\tool\run_ci_installed_acceptance.ps1
 
@@ -51,6 +53,7 @@ jobs:
           path: |
             desktop/build/installer/SHA256SUMS.txt
             desktop/build/installer/installed-build-manifest.json
+            desktop/build/installer/crt-selection.json
             desktop/build/installer/ci-installed-acceptance-summary.json
             desktop/build/installer/python-lane-source-stage.json
             desktop/build/installer/frozen-gateway-smoke.json

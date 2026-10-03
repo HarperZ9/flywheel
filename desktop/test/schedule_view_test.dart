@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_schedule.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/views/schedule_view.dart';
+import 'package:flywheel_desktop/widgets/fw.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
@@ -47,8 +48,15 @@ const _rosterBody = {
       },
       'fires': 1,
       'chain_intact': false,
+      'breaker': {
+        'tripped': true,
+        'consecutive_failed_fires': 2,
+        'trip_after': 2,
+        'limit_signals': ['rate_limit'],
+        'limit_matches': ['usage limit reached'],
+      },
       'last_fired_for': '2026-09-05T00:00:00Z',
-      'pending': {'occurrences': [], 'due': 0, 'truncated': false},
+      'pending': {'occurrences': [], 'due': 0, 'held': 3, 'truncated': false},
       'plan': {
         'policy': 'drop',
         'fire': [],
@@ -114,10 +122,68 @@ void main() {
     expect(find.text('latest'), findsOneWidget);
     // the pill carries the due count for that one schedule
     expect(find.text('2 DUE'), findsOneWidget);
-    expect(find.text('0 DUE'), findsOneWidget);
+    // a stopped schedule's owed runs are held, and the headline leaves them
+    // out of what is due now
+    expect(find.text('3 HELD'), findsOneWidget);
+    expect(find.text('3 DUE'), findsNothing);
+    expect(
+        find.byWidgetPredicate(
+            (w) => w is StatTile && w.label == 'Due now' && w.value == '2'),
+        findsOneWidget);
     // a broken fire history is stated, not folded into a green count
     expect(find.text('broken'), findsOneWidget);
     expect(find.textContaining('no longer verifies'), findsOneWidget);
+    // a schedule the engine stopped for repeated failed fires says so
+    expect(find.text('STOPPED AFTER 2 FAILED FIRES'), findsOneWidget);
+    // and names the cause, in the words that matched, with the remedy
+    expect(
+        find.text('The last 2 fires failed; output reported rate limit '
+            '(matched "usage limit reached"). Owed runs are held. Re-arm to '
+            'fire it again with the same definition.'),
+        findsOneWidget);
+  });
+
+  testWidgets('Re-arm posts only the schedule id and re-reads the roster',
+      (tester) async {
+    _tallViewport(tester);
+    final seen = <String>[];
+    Object? posted;
+    var rearmed = false;
+    final api = ScheduleApi(
+      httpClient: MockClient((request) async {
+        seen.add('${request.method} ${request.url.path}');
+        if (request.url.path == '/api/schedule/rearm') {
+          posted = jsonDecode(request.body);
+          rearmed = true;
+          return http.Response(jsonEncode({'rearmed': true}), 200);
+        }
+        final roster = jsonDecode(jsonEncode(_rosterBody)) as Map;
+        if (rearmed) {
+          // A re-armed schedule's owed runs are due again, as the engine
+          // reports them.
+          final row = (roster['schedules'] as List)[1] as Map;
+          row['breaker']['tripped'] = false;
+          row['pending'] = {'occurrences': [], 'due': 3, 'truncated': false};
+        }
+        return http.Response(jsonEncode(roster), 200);
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(
+        theme: flywheelLightTheme(),
+        home: Scaffold(body: ScheduleView(api: api, alive: true))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('schedule-rearm-sched_daily_route')));
+    await tester.pumpAndSettle();
+
+    expect(seen, [
+      'GET /api/schedule',
+      'POST /api/schedule/rearm',
+      'GET /api/schedule',
+    ]);
+    expect(posted, {'schedule_id': 'sched_daily_route'});
+    expect(find.text('STOPPED AFTER 2 FAILED FIRES'), findsNothing);
+    expect(find.byKey(const Key('schedule-rearm-sched_daily_route')), findsNothing);
+    expect(find.text('3 DUE'), findsOneWidget);
   });
 
   testWidgets('a tick prints what fired and what it refused', (tester) async {

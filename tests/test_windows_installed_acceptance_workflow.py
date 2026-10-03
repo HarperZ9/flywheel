@@ -15,7 +15,7 @@ def _workflow() -> str:
 
 
 def _helper() -> str:
-    return HELPER.read_text(encoding="utf-8")
+    return (HELPER.read_text(encoding="utf-8") + "\n" + (HELPER.parent / "installed_acceptance_phase.ps1").read_text(encoding="utf-8"))
 
 
 def _spec() -> str:
@@ -164,16 +164,17 @@ catch {{ if ($_.Exception.Message -notmatch 'changed tracked source files') {{ t
     assert "OK" in out
 
 
-def test_helper_stages_canon_source_before_installed_freeze_with_bounded_receipt():
+def test_helper_stages_every_lane_source_before_installed_freeze_with_bounded_receipt():
     text = _helper()
 
     studio = _index(text, "stage pinned Studio runtime")
-    stage = _index(text, "stage Canon Python lane source")
+    stage = _index(text, "stage Python lane sources")
     env = _index(text, "FLYWHEEL_PYTHON_LANE_SOURCE_ROOT")
     freeze = _index(text, "freeze gateway")
     assert studio < stage < env < freeze
     assert 'Join-Path $env:RUNNER_TEMP "flywheel-python-lane-sources"' in text
-    assert "--lane\", \"canon\"" in text
+    assert "stage_python_lane_sources.py\", \"--all\"" in text
+    assert "--lane\", \"canon\"" not in text
     assert "--bounded-receipt\", $pythonLaneBoundedReceipt" in text
     assert 'Join-Path $installerDir "python-lane-source-stage.json"' in text
 

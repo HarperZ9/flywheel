@@ -35,7 +35,7 @@ def _cli_on_path(monkeypatch):
     # the CONTRACT (a CLI on PATH reports cli-auth, and is receipt_capable), not
     # the runner's install state. The presence-only credential tests are
     # env-driven and untouched by this.
-    monkeypatch.setattr(endpoint_registry.shutil, "which",
+    monkeypatch.setattr(endpoint_registry.safe_program, "which",
                         lambda binary: f"/usr/bin/{binary}")
     monkeypatch.setattr(
         endpoint_registry.claude_cli_auth,
@@ -82,7 +82,7 @@ def test_local_and_cli_credentials(monkeypatch):
 
 
 def test_claude_cli_binary_without_account_is_not_usable(monkeypatch):
-    monkeypatch.setattr(endpoint_registry.shutil, "which",
+    monkeypatch.setattr(endpoint_registry.safe_program, "which",
                         lambda binary: f"/usr/bin/{binary}")
     monkeypatch.setattr(
         endpoint_registry.claude_cli_auth,
@@ -203,7 +203,7 @@ def test_every_usable_roster_name_can_actually_build_a_proposer():
 def test_cli_credential_is_gated_on_the_binary_present(monkeypatch):
     import harness.endpoint_registry as er
     # no CLI on PATH -> cli rows are not advertised as usable
-    monkeypatch.setattr(er.shutil, "which", lambda cmd: None)
+    monkeypatch.setattr(er.safe_program, "which", lambda cmd: None)
     monkeypatch.setattr(
         er.claude_cli_auth,
         "public_status",
@@ -259,7 +259,7 @@ def test_authorized_native_proposer_injects_exact_binding(monkeypatch):
 
 
 def test_authorized_ambient_adapters_fail_before_construction(monkeypatch):
-    monkeypatch.setattr(endpoint_registry.shutil, "which", lambda _binary: "/bin/tool")
+    monkeypatch.setattr(endpoint_registry.safe_program, "which", lambda _binary: "/bin/tool")
     cases = (("claude-cli", {}), ("codex-cli", {"model": "gpt-6-astra"}), ("opencode", {}))
     for name, kwargs in cases:
         try:

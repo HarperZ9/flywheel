@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
+import subprocess  # noqa: F401  (tests patch lanes.subprocess.run)
 import sys
 from pathlib import Path
 
@@ -128,7 +128,7 @@ def _probe_lane(name: str, installed: str | None, timeout: float, *,
                     detail = f"{health} error: health_tool_exception"
             return _status_row(
                 lane, runtime, verdict, detail, tools=len(tools),
-                capability=_runtime.capability_summary(tools))
+                capability=_runtime.capability_summary(tools), tool_names=sorted(names))
     except (MCPError, FileNotFoundError, OSError) as error:
         return _status_row(
             lane, runtime, DECLARED if present else MISSING,
@@ -137,7 +137,7 @@ def _probe_lane(name: str, installed: str | None, timeout: float, *,
 
 def _status_row(lane: Lane, runtime: ResolvedLaneRuntime, status: str,
                 detail: str, *, tools: int | None = None,
-                capability: dict | None = None) -> dict:
+                capability: dict | None = None, tool_names: list | None = None) -> dict:
     if "package_distribution_disabled" in runtime.blocking_codes:
         detail = f"{detail}. {lane.package_disabled_reason}"
     row = {
@@ -147,9 +147,12 @@ def _status_row(lane: Lane, runtime: ResolvedLaneRuntime, status: str,
         "expected_version": runtime.expected_version, "status": status,
         "organ": lane.organ, "role": lane.role, "detail": detail,
         "resolved_runtime": runtime.to_dict(capability),
+        "blocking_codes": list(runtime.blocking_codes),
     }
     if tools is not None:
         row["tools"] = tools
+    if tool_names is not None:
+        row["tool_names"] = [n for n in tool_names if isinstance(n, str) and n]
     return row
 
 
@@ -196,7 +199,9 @@ def _probe_failure_code(error: BaseException) -> str:
 
 def lane_roster(*, probe: bool = False, timeout: float = 20.0) -> dict:
     """Health for every lane. probe=True performs live MCP handshakes."""
-    rows = [lane_status(name, probe=probe, timeout=timeout) for name in LANES]
+    from .lane_roster_row import by_state, roster_rows  # state from probe cache + setup
+    rows = roster_rows([lane_status(name, probe=probe, timeout=timeout) for name in LANES],
+                       probed=probe)
     by: dict[str, int] = {row["status"]: 0 for row in rows}
     for row in rows:
         by[row["status"]] = by.get(row["status"], 0) + 1
@@ -205,6 +210,7 @@ def lane_roster(*, probe: bool = False, timeout: float = 20.0) -> dict:
         "n_lanes": len(rows),
         "by_status": by,
         "all_live": by.get(LIVE, 0) == len(rows),
+        "by_state": by_state(rows),
         "lanes": rows,
         "note": ("probe=True reaches each lane's MCP server for a live handshake; "
                  "probe=False checks install/source/runtime selection only.")
@@ -239,28 +245,17 @@ def install_lane(name: str, *, profile: str = "package") -> dict:
         return {"name": name, "installed": False,
                 "code": "package_distribution_disabled",
                 "detail": lane.package_disabled_reason}
-    try:
-        if profile == "source":
-            repo = resolve_source_repo(lane)
-            if repo is None:
-                return {"name": name, "installed": False,
-                        "detail": f"source checkout not found: {lane.source_repo}"}
-        if lane.kind == "pip":
-            cmd = ["pip", "install", "-e", str(repo)] if profile == "source" else [
-                "pip", "install", lane.install_name]
-        elif lane.kind == "npm":
-            cmd = ["npm", "install", "-g", str(repo)] if profile == "source" else [
-                "npm", "install", "-g", lane.install_name]
-        else:
-            return {"name": name, "installed": False,
-                    "detail": f"unknown kind {lane.kind}"}
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-        ok = result.returncode == 0
-        return {"name": name, "installed": ok, "cmd": cmd,
-                "detail": (result.stdout[-200:] if ok else
-                           (result.stderr[-300:] or result.stdout[-300:])).strip()}
-    except (FileNotFoundError, subprocess.TimeoutExpired) as error:
-        return {"name": name, "installed": False, "detail": f"install failed: {error}"}
+    if lane.kind not in ("pip", "npm"):
+        return {"name": name, "installed": False, "detail": f"unknown kind {lane.kind}"}
+    repo = resolve_source_repo(lane) if profile == "source" else None
+    if profile == "source" and repo is None:
+        return {"name": name, "installed": False,
+                "detail": f"source checkout not found: {lane.source_repo}"}
+    # A package install asks for the pinned release: the pin carries the lane's
+    # security fixes. pip runs as `<interpreter> -m pip` and npm resolves from a
+    # safe PATH folder, in an empty folder with the lane env (lane_install).
+    from .lane_install import run_install
+    return run_install(lane, profile, repo)
 
 
 def write_registry(installed: dict) -> None:

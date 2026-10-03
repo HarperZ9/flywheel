@@ -121,7 +121,7 @@ def compose(title: str, subtitle: str = "", fmt: str = "poster",
     if missing:
         return {"refused": True,
                 "refusals": ["no glyph yet for: " + " ".join(missing)]}
-    ttf = to_ttf(face, family=f"Zentropy Mint {seed}")
+    ttf = to_ttf(face, family=f"Zain Mint {seed}")
 
     W, H = FORMATS[fmt]
     g = GROUNDS[ground]
@@ -169,7 +169,7 @@ def compose(title: str, subtitle: str = "", fmt: str = "poster",
     mint_id = face["receipt"]["mint_id"]
     copy_sha = hashlib.sha256(
         (title + "\n" + subtitle).encode("utf-8")).hexdigest()
-    foot = f"zentropy labs   seed {seed}   mint {mint_id[:8]}"
+    foot = f"zain dana harper   seed {seed}   mint {mint_id[:8]}"
     draw.text((margin, h - int(h * 0.05) - f_foot.size), foot,
               font=f_foot, fill=g["soft"] + (200,))
 

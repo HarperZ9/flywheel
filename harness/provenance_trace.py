@@ -30,11 +30,17 @@ def _sha(text: str) -> str:
 
 def _patch_attributions(patch: str) -> list:
     """Per-file hunk ranges from unified-diff headers (+start,count)."""
+    from .patch_paths import strip_ab
     out: dict = {}
-    current = None
+    current, previous = None, ""
     for line in (patch or "").splitlines():
-        if line.startswith("+++ b/"):
-            current = line[6:].strip()
+        header, previous = line.startswith("+++ ") and previous.startswith("--- "), line
+        if header:
+            # Any header apply_patch accepts, `+++ path` as well as `+++ b/path`.
+            current = strip_ab(line[4:].strip())
+            if current == "/dev/null":
+                current = None
+                continue
             out.setdefault(current, {"added": [], "hunks": []})
         elif line.startswith("@@") and current:
             try:

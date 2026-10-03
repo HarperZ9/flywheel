@@ -1,0 +1,41 @@
+{
+ "_provenance": "synthetic: built from the documented response shape (access-gap record 0.1.0, read 2026-10-01); not recorded from a live call",
+ "request": {
+  "model": "deepseek-reasoner",
+  "temperature": 0.7
+ },
+ "response": {
+  "model": "deepseek-reasoner",
+  "choices": [
+   {
+    "finish_reason": "stop",
+    "message": {
+     "reasoning_content": "First, 3 times 4 is 12. Then add 5 to get 17.",
+     "content": "17",
+     "tool_calls": [
+      {
+       "type": "function",
+       "function": {
+        "name": "check",
+        "arguments": "{}"
+       }
+      }
+     ]
+    },
+    "logprobs": {
+     "content": [
+      {
+       "token": "17",
+       "logprob": -0.01
+      }
+     ]
+    }
+   }
+  ],
+  "usage": {
+   "completion_tokens_details": {
+    "reasoning_tokens": 30
+   }
+  }
+ }
+}

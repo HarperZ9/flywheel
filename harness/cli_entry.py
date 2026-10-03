@@ -10,6 +10,7 @@ import os
 import runpy
 import sys
 from pathlib import Path
+from harness.cli_version import print_version_if_asked
 # The new umbrella subcommands. Handled in cli_entry; everything else is
 # delegated to the existing run_harness_cli front controller.
 _UMBRELLA_COMMANDS = {"lanes", "loop-status", "install", "up", "down", "corpus-export",
@@ -45,58 +46,10 @@ def find_repo_root() -> Path:
         "could not locate the flywheel repo root; set FLYWHEEL_REPO to the "
         "checkout containing scripts/run_harness_cli.py and harness/"
     )
-def _parse_lane_args(argv: list[str]) -> tuple[str, str]:
-    """Parse --lanes <list|all> and --profile <source|package> from argv.
-    Defaults: all lanes, package profile."""
-    lanes = "all"
-    profile = "package"
-    i = 0
-    while i < len(argv):
-        a = argv[i]
-        if a in ("--lanes",) and i + 1 < len(argv):
-            lanes = argv[i + 1]; i += 2; continue
-        if a in ("--profile",) and i + 1 < len(argv):
-            profile = argv[i + 1]; i += 2; continue
-        i += 1
-    return lanes, profile
-
-
-def _cmd_install(argv: list[str]) -> int:
-    """`flywheel install [--lanes all|index,gather,...] [--profile source|package]`.
-
-    Pip/npm install the flagship lanes and record the result in the lane
-    registry (~/.flywheel/lanes.json). Idempotent: re-runs upgrade a lane."""
-    import json as _json
-    from harness.lanes import LANES, install_lane, write_registry, read_registry, LANE_REGISTRY_PATH
-    lanes_arg, profile = _parse_lane_args(argv)
-    if lanes_arg == "all":
-        names = [n for n, l in LANES.items() if l.kind not in ("bundled", "http")]
-    else:
-        names = [n.strip() for n in lanes_arg.split(",") if n.strip()]
-        bad = [n for n in names if n not in LANES]
-        if bad:
-            print(f"unknown lane(s): {bad}; known: {list(LANES)}", file=sys.stderr)
-            return 2
-    print(f"Flywheel install -- {len(names)} lane(s), profile={profile}")
-    registry = read_registry()
-    n_ok = 0
-    for name in names:
-        lane = LANES[name]
-        print(f"  installing {name} ({lane.kind}: {lane.install_name}) ...", end=" ", flush=True)
-        r = install_lane(name, profile=profile)
-        ok = r["installed"]
-        print("OK" if ok else "FAILED")
-        if not ok:
-            det = r.get("detail", "")
-            print(f"    {det[:200]}", file=sys.stderr)
-        registry[name] = {"install_name": lane.install_name, "kind": lane.kind,
-                          "profile": profile, "installed": ok,
-                          "version": lane.version}
-        if ok:
-            n_ok += 1
-    write_registry(registry)
-    print(f"\n{n_ok}/{len(names)} lanes installed. Registry: {LANE_REGISTRY_PATH}")
-    return 0 if n_ok == len(names) else 1
+# `flywheel install` parses strictly and lives in its own module; the names
+# stay here because callers and tests reach them through cli_entry.
+from harness.lane_install_cli import cmd_install as _cmd_install  # noqa: E402
+from harness.lane_install_cli import parse_lane_args as _parse_lane_args  # noqa: E402,F401
 
 
 def _launch_gateway(gateway_argv: list[str]) -> int:
@@ -225,7 +178,8 @@ _PACKAGED = {"acp": "harness.acp_cli", "dap": "harness.dap_cli",
              "workstream": "harness.workstream_cli",
              "journey": "harness.journey_cli", "grant": "harness.journey_cli",
              "e2e-journey": "harness.e2e_cli", "endpoint-gate": "harness.model_endpoint_gate_cli", "writing": "harness.writing_cli",
-             "gov": "harness.governance_cli"}
+             "gov": "harness.governance_cli", "traces": "harness.trace_cli",
+             "monitor": "harness.preaction.cli", "rederive": "harness.rederive_gate"}
 def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
     module = _PACKAGED.get(command)
     if module is None:
@@ -237,10 +191,10 @@ def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
                                       if command in {"journey", "grant"} else rest)
 def main(argv: list[str] | None = None) -> int:
     raw = list(argv if argv is not None else sys.argv[1:])
-    # Peek at the first positional to decide umbrella-vs-passthrough. The
-    # existing run_harness_cli parser requires a subcommand, so the first
-    # non-flag token is the command name.
+    # The first non-flag token is the command: run_harness_cli requires a
+    # subcommand, so it decides umbrella versus passthrough.
     command = next((a for a in raw if not a.startswith("-")), None)
+    if command is None and print_version_if_asked(raw): return 0  # --version, -V
     packaged = _dispatch_packaged(command, raw)
     if packaged is not None:
         return packaged
@@ -275,7 +229,7 @@ def main(argv: list[str] | None = None) -> int:
                   "loop-status, install, corpus-export, gate, why, down, "
                   "remote, relay, grant, journey, evidence, bulletin-identity,\n"
                   "cross-harness-execute, check-output, packs, workstream, "
-                  "endpoint-gate, writing, import-inspect, incident-sim\n"
+                  "endpoint-gate, writing, import-inspect, incident-sim, traces\n"
                   "Passthrough commands need a source checkout "
                   "(scripts/run_harness_cli.py).",
                   file=sys.stdout if wants_help else sys.stderr)

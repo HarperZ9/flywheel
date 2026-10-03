@@ -23,6 +23,12 @@ class Lane:
     #                                 lane that composes uninstalled siblings still probes live
     url: str = ""                   # compiled-in default endpoint for a kind="http" lane
     package_disabled_reason: str = ""  # package name is not an admitted distribution
+    env_vars: tuple = ()            # non-secret config names this lane reads; a pip or
+    #                                 npm lane launch passes only these plus the base
+    #                                 allowlist in lane_env.py and operator env_allow grants
+    bundled_mcp_module: str = ""    # module the frozen build serves MCP from, when it is
+    #                                 not the one mcp_args implies (forum serves its
+    #                                 stdio loop from forum.mcp_surface, not forum.mcp)
 
     def mcp_command(self) -> list[str]:
         """The argv that launches this lane's MCP stdio server.
@@ -36,10 +42,11 @@ class Lane:
         """The environment variable that points this lane at its deployment."""
         return f"FLYWHEEL_{self.name.upper().replace('-', '_')}_URL"
 
-    def endpoint(self) -> str:
+    def endpoint(self, environ=None) -> str:
         """Where an http lane answers. Environment first: which deployment a
         workstation talks to is operator configuration, not a compiled constant."""
-        return os.environ.get(self.env_url_var(), self.url)
+        env = os.environ if environ is None else environ
+        return env.get(self.env_url_var(), self.url).strip()
 
     def endpoint_detail(self) -> str:
         """What a roster says about a remote lane it has not called."""
@@ -53,22 +60,29 @@ class Lane:
 # is bundled (no install; it IS Flywheel). learn is added here even though
 # telos's manifest omits it -- closing a known gap so Flywheel's roster is
 # complete. bulletin is the one lane nobody installs: it runs on the open web,
-# so it carries an endpoint instead of an argv. The board is public and needs
-# no key, so its address is compiled in and a build reaches it with no setup.
-# FLYWHEEL_BULLETIN_URL still wins, for anyone running their own deployment.
+# so it carries an endpoint instead of an argv. No deployment is selected by
+# the build: the operator must set FLYWHEEL_BULLETIN_URL before any contact.
+# env_vars lists the non-secret configuration names each lane's own source reads
+# (found by a search of each lane's source for environment reads). A provider key
+# a lane can use, such as ANTHROPIC_API_KEY for forum, is never declared here; the
+# operator grants it per lane with env_allow in the lane registry.
+# chorus and canon launch as `python -m chorus` and `python -m canon`: their
+# published cli modules have no main guard, so `python -m chorus.cli mcp` exits 0
+# without serving. A frozen build launches none of these argvs as declared;
+# lane_runtime_frozen picks the engine's own child modes instead.
 LANES: dict[str, Lane] = {
     "gather": Lane(
-        "gather", "gather-engine", "gather", ("mcp",), "pip", "1.8.2",
+        "gather", "gather-engine", "gather", ("mcp",), "pip", "2.1.0",
         "research intake + provenance receipts (verified-data flywheel intake)",
         "perception", source_repo="public/gather", py_module="gather.cli"),
     "crucible": Lane(
-        "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.2.0",
+        "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.4.0",
         "falsifiable verification + re-check (register -> steelman -> measure -> witness)",
         "verification", source_repo="public/crucible", py_module="crucible.cli"),
     "chorus": Lane(
         "chorus", "chorus-discourse", "chorus", ("mcp",), "pip", "0.3.1",
         "re-derivable discourse digest (themes, contested aspects, dissent, receipt)",
-        "synthesis", source_repo="public/chorus", py_module="chorus.cli"),
+        "synthesis", source_repo="public/chorus", py_module="chorus"),
     "articulate": Lane(
         # articulate-mcp, not `python -m articulate.mcp_server`. The FastMCP
         # entry imports fastmcp from the [mcp] extra, so a plain
@@ -78,64 +92,101 @@ LANES: dict[str, Lane] = {
         # which does not accept an extras marker. 0.4.0 adds
         # articulate.local_mcp, stdlib-only and serving the same tools plus
         # status and doctor, so the lane installs and launches from one clean
-        # name. Same shape as accountable-surface below, same reason.
+        # name. Same shape as accountable-surface below, same reason. 0.5.0
+        # reads the claude CLI path from ARTICULATE_CLAUDE_CLI and runs it in a
+        # fresh empty folder (PINS_2026-09-26, O-14). 0.5.2 adds the local
+        # calling-model edit_plan/edit_submit protocol with no separate account.
+        # The accepted 0.6.0 source also guards lexical claim features.
         "articulate", "articulate-writing", "articulate-mcp", (),
-        "pip", "0.4.0",
+        "pip", "0.6.0",
         "writing-quality + AI-tell detector and editor with content-free audit receipts (stdlib-only MCP server; the FastMCP surface stays under the [mcp] extra)",
         "authoring", source_repo="articulate", py_module="articulate.local_mcp"),
     "index": Lane(
-        "index", "index-graph", "index", ("mcp",), "pip", "2.13.0",
+        "index", "index-graph", "index", ("mcp",), "pip", "2.15.0",
         "workspace map + symbol graph + verified wiki (the catalog lane)",
-        "structure", source_repo="public/index", py_module="index_graph"),
+        "structure", source_repo="public/index", py_module="index_graph",
+        env_vars=("INDEX_CACHE_DIR", "INDEX_CACHE_TTL_SECONDS", "INDEX_GRAPH_REPO_CACHE_DIR",
+                  "INDEX_MCP_CACHE_DIR", "INDEX_MCP_CACHE_TTL_SECONDS",
+                  "INDEX_MCP_DEBUG_ERRORS")),
     "forum": Lane(
-        "forum", "forum-engine", "forum", ("mcp",), "pip", "1.14.0",
+        "forum", "forum-engine", "forum", ("mcp",), "pip", "1.16.0",
         "witnessed causal ledger + model-agnostic routing",
-        "orchestration", source_repo="public/forum", py_module="forum.cli"),
+        "orchestration", source_repo="public/forum", py_module="forum.cli",
+        bundled_mcp_module="forum.mcp_surface",
+        env_vars=("FORUM_RUN_REAL", "OTEL_EXPORTER_OTLP_ENDPOINT")),
     "learn": Lane(
-        "learn", "@harperz9/learn", "node", ("src/mcp.mjs",), "npm", "1.6.0",
+        "learn", "@harperz9/learn", "node", ("src/mcp.mjs",), "npm", "2.1.0",
         "accountable learning forge (spaced repetition + retrieval practice)",
-        "learning", source_repo="public/learn"),
+        "learning", source_repo="public/learn",
+        env_vars=("LEARN_CRUCIBLE_CMD", "LEARN_GATHER_CMD", "LEARN_NATIVE_CONTROL",
+                  "LEARN_TELOS_CMD")),
     "telos": Lane(
-        "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.2.0",
-        "the reconciliation lane: five-tool workflow + creative engine + doctors",
+        # 0.4.2 is the first release without the CAPTCHA and fingerprint code, so
+        # its lane variable is gone too. Its tools are classified one by one in
+        # lane_tool_policy_node. The two names below are the only ones a 0.4.2
+        # tool the lane serves reads (the proof witness). The Chrome and learn
+        # names belong to the native-control driver, which over MCP only prints
+        # its verb catalog, and the font names to a repository script the
+        # package does not ship.
+        "telos", "project-telos-mcp", "node", ("demo/telos-mcp.mjs",), "npm", "0.6.0",
+        "the reconciliation lane: workstation catalog, doctors and proof packets; "
+        "room and workflow need the sibling checkouts",
         "reconciliation", source_repo="public/telos",
-        package_disabled_reason="No published npm distribution is available. Use a Telos source checkout."),
+        env_vars=("TELOS_EMET_CLI", "TELOS_EMET_DISABLE_FALLBACKS")),
     "local-model": Lane(
         "local-model", "", "python", ("-m", "harness.local_mcp"), "bundled", "0.1.0",
-        "the trained 14B proposer + verified-inference harness (the engine lane)",
+        "a local agent loop on the model server you run, inside a project folder you pick, "
+        "with verified-inference receipts (no model ships with the app)",
         "propose-verify"),
     "writing": Lane(
         "writing", "", "python", ("-m", "harness.writing_mcp"), "bundled", "0.1.0",
         "private author workspace: scoped revisions, exact approval, and export receipts",
         "authoring"),
     "relay": Lane(
-        "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.2.5",
-        "accountable coding agent on any model endpoint (local-first, witnessed runs)",
-        "execution", source_repo="public/relay", py_module="relay.local_mcp"),
+        "relay", "flywheel-relay", "relay", ("--mcp",), "pip", "0.6.0",
+        "accountable agent loop on a local model server, witnessed runs (in the app: "
+        "write and exec off, the two fixed local addresses only)",
+        "execution", source_repo="public/relay", py_module="relay",
+        # `python -m relay --mcp` serves MCP through relay's CLI; relay.local_mcp has
+        # parsed its own flags since 0.3.0 and refuses --mcp. The frozen build
+        # serves relay.local_mcp in process.
+        bundled_mcp_module="relay.local_mcp",
+        # The online tier reads <PROVIDER>_MODEL, _PROVIDER_BASE_URL and
+        # _CLOUD_BASE_URL; its keys stay operator grants (env_allow).
+        env_vars=("RELAY_RUN_ROOT", "RELAY_SESSION_DIR", *(
+            f"{provider}_{suffix}"
+            for provider in ("CODEX", "CLAUDE", "GLM", "GEMINI", "DEEPSEEK")
+            for suffix in ("MODEL", "PROVIDER_BASE_URL", "CLOUD_BASE_URL")))),
     "plexus": Lane(
-        "plexus", "plexus-mesh", "plexus", ("mcp",), "pip", "0.2.2",
+        "plexus", "plexus-mesh", "plexus", ("mcp",), "pip", "0.3.0",
         "capability discovery + auto-wiring of the tool mesh (the layer above a flat tool list)",
         "wiring", source_repo="public/plexus", py_module="plexus.cli"),
     "mneme": Lane(
-        "mneme", "flywheel-mneme", "mneme", ("mcp",), "pip", "0.4.2",
+        "mneme", "flywheel-mneme", "mneme", ("mcp",), "pip", "0.6.0",
         "accountable memory: recall with re-derivable ranking receipts + drift verdicts",
-        "memory", source_repo="public/mneme", py_module="mneme.cli"),
+        "memory", source_repo="public/mneme", py_module="mneme.cli",
+        env_vars=("MNEME_STATE", "MNEME_CRUCIBLE_SRC", "MNEME_GATHER_SRC",
+                  "OPENAI_BASE_URL", "OPENAI_MODEL")),
     "calibrate-pro": Lane(
         "calibrate-pro", "calibrate-pro", "calibrate-pro", ("mcp",), "pip", "2.0.0",
         "evidence-labeled display calibration: color-target and characterized-panel "
         "catalog + readiness doctor (read-only over MCP; actuation stays GUI-gated)",
         "calibration", source_repo="public/calibrate-pro", py_module="calibrate_pro.main"),
     "canon": Lane(
-        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.2.0",
+        "canon", "flywheel-canon", "canon", ("mcp",), "pip", "0.6.0",
         "provider-neutral memory bank + personality container: one envelope, "
         "deterministic render into a marked region of the instruction files "
         "(read-only over MCP; reconcile rewrites files, so it stays a library call)",
-        "continuity", source_repo="public/canon", py_module="canon.cli"),
+        "continuity", source_repo="public/canon", py_module="canon",
+        env_vars=("CANON_HOME", "CANON_WORKSPACE", "CANON_BLOCKS_DIR", "CANON_CONTEXT_DB",
+                  "CANON_CONTEXT_SCOPE", "CANON_CONTEXT_CLIENT", "CANON_CONTEXT_CONTAINER_ID",
+                  "CANON_CONTEXT_PROJECT_ID", "CANON_CONTEXT_WORKSPACE_ID",
+                  "CANON_CONTEXT_TOP_K", "CANON_HOOK_STDIN_MAX_CHARS")),
     "bulletin": Lane(
-        "bulletin", "", "", (), "http", "0.2.0",
+        "bulletin", "", "", (), "http", "0.5.0",
         "the open board: a workstation or another agent reaches it over the web, "
         "registers an ed25519 identity, and reads what other agents left behind",
-        "correspondence", url="https://bulletin.zaindharper.workers.dev/mcp"),
+        "correspondence"),
     "accountable-surface": Lane(
         # accountable-surface-mcp, not accountable-surface-server. The server
         # entry imports mcp.server.fastmcp, which lives in the [server] extra, so
@@ -148,8 +199,33 @@ LANES: dict[str, Lane] = {
         "accountable-surface", "accountable-surface", "accountable-surface-mcp", (),
         "pip", "0.3.1",
         "live accountability seam: witnessed perception + operator-grant pre-execution "
-        "gate + self-verifying effectors + tamper-evident journal (actuates, so T2)",
+        "gate + tamper-evident journal (the app perceives; actuation stays in Accountable "
+        "Surface itself)",
         "actuation", source_repo="public/accountable-surface",
         py_module="accountable_surface.interop_mcp",
-        extra_source_repos=("public/coherence-membrane", "public/proof-surface")),
+        extra_source_repos=("public/coherence-membrane", "public/proof-surface"),
+        env_vars=("ACCOUNTABLE_SURFACE_GRANTS", "ACCOUNTABLE_SURFACE_JOURNAL",
+                  "ACCOUNTABLE_SURFACE_NATIVE_CONTROL_SCRIPT", "ACCOUNTABLE_SURFACE_RECEIPTS",
+                  "ANTHROPIC_MODEL", "OLLAMA_HOST", "OLLAMA_MODEL")),
+    # Private held lanes: role/organ carry no capability description (they are
+    # neutralized and gated by scripts/check_private_lane_prose.py). Kept out of
+    # this build via package_disabled_reason; launch only from a source checkout.
+    "isomorph": Lane(
+        "isomorph", "", "python", ("-m", "tools.isomorph_mcp"), "pip", "1.2.0",
+        "Private lane; source checkout only.",
+        "held", source_repo="state/isomorph", py_module="tools.isomorph_mcp",
+        package_disabled_reason="Private lane. Use an Isomorph source checkout."),
+    "sofer": Lane(
+        "sofer", "", "python", ("-m", "sofer.mcp.sov_server"), "pip", "1.0.0",
+        "Private lane; source checkout only.",
+        "held", source_repo="state/sofer/sofer", py_module="sofer.mcp.sov_server",
+        extra_source_repos=("state/isomorph",),
+        package_disabled_reason="Private lane. Use a Sofer source checkout."),
+    "array": Lane(
+        "array", "", "python", ("-m", "red_team_platform.mcp_server"), "pip", "1.1.0",
+        "Private lane; source checkout only.",
+        "held", source_repo="state/array",
+        py_module="red_team_platform.mcp_server",
+        extra_source_repos=("state/isomorph",),
+        package_disabled_reason="Private lane. Use an Array source checkout."),
 }

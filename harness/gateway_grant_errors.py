@@ -5,6 +5,13 @@ from .evidence_public import TransportError, error_response
 from .journey_lock import JourneyLockBusy
 from .journey_store import JourneyStoreError
 
+# A lane runtime that blocks a grant prepare answers with a lane code from the
+# closed set (lane_call_route.LANE_ERROR_CODES), security finding S7.
+_LANE_ERRORS = {
+    "LANE_SETUP_REQUIRED": (409, "the lane needs a setup step before this tool runs"),
+    "LANE_CANNOT_LAUNCH": (503, "the lane could not start"),
+}
+
 
 def gateway_error_response(exc: Exception) -> tuple[dict, int]:
     code = getattr(exc, "code", "STORE_COMMIT_FAILED")
@@ -14,7 +21,7 @@ def gateway_error_response(exc: Exception) -> tuple[dict, int]:
         code = "STORE_BUSY"
     elif isinstance(exc, JourneyStoreError) and code == "JOURNEY_NOT_FOUND":
         code = "PERMISSION_REQUIRED"
-    errors = {
+    errors = {**_LANE_ERRORS,
         "INVALID_REQUEST": (422, "gateway operation is invalid"),
         "AGENT_BINDING_DRIFT": (409, "agent execution authority changed"),
         "AGENT_REPREPARE_REQUIRED": (409, "agent execution requires a new proposal"),

@@ -115,7 +115,7 @@ def _sfnt(tables: "dict[bytes, bytes]") -> bytes:
     return font[:hoff] + struct.pack(">L", adjust) + font[hoff + 4:]
 
 
-def to_ttf(face: dict, family: str = "Zentropy Mint",
+def to_ttf(face: dict, family: str = "Zain Mint",
            style: str = "Regular") -> bytes:
     """A minted face document -> TrueType font bytes."""
     gsrc = face["glyphs"]

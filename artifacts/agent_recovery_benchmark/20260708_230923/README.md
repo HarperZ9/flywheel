@@ -51,7 +51,9 @@ copy of the run root inserted:
   `externalization/`, `loop/`, `forum_benchmark_cases.json`, the two `m7_*.json`
   files, `report.json` and `report.md`.
 - The four `_oracle_junit.xml` files moved from `<root>/spin/<root>/spin/fw_*/`
-  to `<root>/spin/fw_*/`.
+  to `<root>/spin/fw_*/`. Later on 2026-09-23 they left the tree with every
+  other committed oracle report, because each one named the build host. The
+  next section says where to read them.
 - The two failing candidates moved from
   `<root>/spin/<root>/spin/fw_fail_*/solution.py` to
   `<root>/spin/fw_fail_*/candidate_solution.py`. The next section says why they
@@ -89,6 +91,13 @@ before it changed directory. It holds the `CORRECT` constant from
   nested directory, which held no tests, so `report.json` records a spin
   `pass_rate` of 0.0. Run 20260708_231022 used an absolute root one minute
   later and recorded 0.5 on the same four tasks.
+- Those four reports are no longer in the tree. Commit 02a33d2dbf still holds
+  them, so `git show 02a33d2dbf:<root>/spin/fw_pass_a/_oracle_junit.xml` prints
+  one. Their blobs are 6112b90e (`fw_pass_a`), 14b30073 (`fw_pass_b`),
+  378ef7f7 (`fw_fail_a`) and 77f39413 (`fw_fail_b`). The loop step's report
+  left too. The loop receipts in `loop/cache/` and `loop/env/` still re-derive
+  their output hash from `loop/w` without it. The record
+  `project-docs/records/2026-09-23-oracle-junit-untrack.md` gives the check.
 - The paths that `report.json` and `report.md` name, such as
   `artifacts\agent_recovery_benchmark\20260708_230923\forum_benchmark_cases.json`,
   now resolve from the repository root.

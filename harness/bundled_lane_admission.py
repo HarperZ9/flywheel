@@ -24,21 +24,35 @@ import tomllib
 from typing import Callable, Mapping
 
 from . import bundled_lane_descriptor as _descriptor
+from . import bundled_lane_env as _bundled_env
 from .bundled_lane_descriptor import (  # re-exported for scripts and tests
     SCHEMA, SOURCE_ALGORITHM, canonical_descriptor_text, descriptor_digest)
 from .evidence_json import canonical_sha256
+from .lane_tool_policy import admitted_tools
 from .mcp_client import LaunchSpec
 
-ADMITTED_BUNDLED_RELAY_TOOLS = ("relay.status",)
+# Relay's T1 tools from the lane tool policy. local_agent_start, _status and
+# _result stay out (a background run dies with the per-call child, WP10 and O-3).
+ADMITTED_BUNDLED_RELAY_TOOLS = tuple(admitted_tools("relay"))
 _SAFE_LANE = re.compile(r"[a-z][a-z0-9_-]{0,63}\Z")
 DOES_NOT_PROVE = (
     "NOT_PROVES_REPLACEMENT_OF_TRUSTED_EXECUTABLE: the descriptor binds the "
     "reviewed Relay source included in this build, not a later replacement of "
     "the whole gateway executable.",
-    "NOT_PROVES_AGENTIC_TASK_SUCCESS: relay.status is an identity and "
-    "transport check, not proof that Relay can complete model-backed work.",
-    "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: the status check is "
-    "network-free and carries no provider credential custody.",
+    "NOT_PROVES_AGENTIC_TASK_SUCCESS: admitting Relay's T1 tools checks identity "
+    "and transport, not that Relay completes model-backed work.",
+    "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: no provider credential rides the "
+    "launch; a model server is a separate setup item.",
+    "NOT_PROVES_SHELL_CONFINEMENT: relay 0.6.0 takes write and exec from its "
+    "launch, and the engine launches it with both off, its root at the lane "
+    "folder, no RELAY_CHILD_ENV names and no unproven CLI tier allowed; the "
+    "engine also passes only listed arguments, so root, check, test_cmd and "
+    "online never reach a run, and no shell, bisect or git child starts. relay's "
+    "shell is not path-confined when a launch grants exec, which this build "
+    "never does.",
+    "NOT_PROVES_BACKGROUND_RUN_DURABILITY: a local_agent_start run lives in the "
+    "memory of the relay lane session; when that session ends (idle, a crash, "
+    "an engine stop) the run ends with it and its id reads unknown.",
 )
 
 
@@ -50,20 +64,13 @@ class BundledLaneAdmission:
 
 
 def bundled_child_environment(
-        environ: Mapping[str, str], *, platform: str = os.name) -> dict[str, str]:
-    """Return the small environment passed to a bundled lane child."""
-    if platform == "nt":
-        retained = {"SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "SYSTEMDRIVE",
-                    "TEMP", "TMP", "USERPROFILE", "APPDATA", "LOCALAPPDATA"}
-        env = {key: str(value) for key, value in environ.items()
-               if key.upper() in retained}
-        root = env.get("SYSTEMROOT") or env.get("WINDIR") or "C:/Windows"
-        env["PATH"] = str(Path(root) / "System32").replace("\\", "/")
-        return env
-    retained = {"LANG", "LC_ALL", "LC_CTYPE", "TMPDIR", "TEMP", "TMP"}
-    env = {key: str(value) for key, value in environ.items() if key in retained}
-    env["PATH"] = os.defpath
-    return env
+        environ: Mapping[str, str], *, platform: str = os.name,
+        lane: str | None = None) -> dict[str, str]:
+    """Return the small environment passed to a bundled lane child.
+
+    The base set, the Flywheel home, UTF-8 stdio and, for a lane that needs it,
+    the Git folder; the rules live in bundled_lane_env."""
+    return _bundled_env.bundled_child_environment(environ, platform=platform, lane=lane)
 
 
 def admit_bundled_lane(
@@ -95,7 +102,7 @@ def admit_bundled_lane(
     component = _descriptor.component_summary(descriptor, expected_row)
     launch = LaunchSpec(
         (executable, "--bundled-lane-mcp", name),
-        env_overrides=tuple(sorted(bundled_child_environment(environ).items())),
+        env_overrides=tuple(sorted(bundled_child_environment(environ, lane=name).items())),
         inherit_env=False,
         hide_window=True,
         allowed_tools=tuple(expected_row["allowed_tools"]),
@@ -115,23 +122,43 @@ def dispatch_bundled_lane_mcp(
 ) -> int | None:
     """Serve one bundled lane child mode, or return None for the normal gateway.
 
-    The child mode is exactly ``--bundled-lane-mcp <lane>`` (two tokens, a safe
-    lane name). Any manifest lane admits and serves through this one path; the
+    External clients use exactly ``--bundled-lane-mcp articulate --local-only``.
+    This forces Articulate's local profile before admission can import it.
+    The legacy internal mode is ``--bundled-lane-mcp <lane>`` (a safe lane name),
+    followed only by launch grants the policy names for that lane, each at most
+    once (``lane_tool_policy_args.LAUNCH_GRANTS``; the engine adds one to the
+    launch of a granted T2 call). Each grant reaches the callable as its keyword
+    set to True, the way forum's ``--allow-gate-decisions`` reaches
+    ``serve_stdio(allow_gate_decisions=True)``. Any other token refuses the child.
+    Any manifest lane admits and serves through this one path; the
     lane must clear the same admission as launch, and its declared callable is
     run. A synchronous callable runs directly; an async coroutine callable (such
     as forum's ``serve_stdio``) runs to completion under ``asyncio.run`` in this
     child process, which owns no other event loop. A non-coroutine awaitable is
     refused, since it has no defined run contract here."""
     args = list(sys.argv[1:] if argv is None else argv)
+    local_only = "--local-only" in args
+    if local_only and args != ["--bundled-lane-mcp", "articulate", "--local-only"]:
+        return 2
     if not args or args[0] != "--bundled-lane-mcp":
+        if "--bundled-lane-mcp" in args:
+            return 2
         return None
-    if len(args) != 2 or not _SAFE_LANE.fullmatch(args[1]):
+    if len(args) < 2 or not _SAFE_LANE.fullmatch(args[1]):
         return 2
     name = args[1]
+    grants = {} if local_only else _launch_grant_keywords(name, args[2:])
+    if grants is None:
+        return 2
     expected_row = _descriptor.resolve_expected(
         name, expected=expected, manifest_rows=manifest_rows)
     if expected_row is None:
         return 2
+    if local_only:
+        # This dispatcher runs in the dedicated stdio child. Override inherited
+        # values before find_spec can import the package, not just before serve.
+        os.environ["ARTICULATE_MCP_TOOLS"] = "local"
+        os.environ["ARTICULATE_LOCAL_ONLY"] = "1"
     admission = admit_bundled_lane(
         name,
         executable=executable or sys.executable,
@@ -142,11 +169,13 @@ def dispatch_bundled_lane_mcp(
     )
     if admission.blocking_codes:
         return 2
+    from . import lane_worker_mode
+    lane_worker_mode.install_worker_spawn(name)   # a router job's worker (WP10)
     module = import_module_fn(str(expected_row["module"]))
     serve = getattr(module, str(expected_row["callable"]), None)
     if not callable(serve):
         return 2
-    result = serve()
+    result = serve(**grants)
     if inspect.iscoroutine(result):
         return int(asyncio.run(result) or 0)
     if inspect.isawaitable(result):
@@ -155,11 +184,27 @@ def dispatch_bundled_lane_mcp(
     return int(result or 0)
 
 
-def build_relay_descriptor(source_root: Path, *, commit: str) -> dict:
-    """Build the canonical descriptor for the Relay source tree at ``source_root``."""
+def _launch_grant_keywords(lane: str, extra: list[str]) -> dict[str, bool] | None:
+    """The serve keywords for the launch grants after the lane name, or None
+    when a token is not a grant the policy names for this lane or repeats."""
+    from .lane_tool_policy_args import LAUNCH_GRANTS
+    known = LAUNCH_GRANTS.get(lane, {})
+    if len(set(extra)) != len(extra) or any(flag not in known for flag in extra):
+        return None
+    return {known[flag]: True for flag in extra}
+
+
+def build_relay_descriptor(source_root: Path, *, commit: str,
+                           files: list[dict[str, object]] | None = None) -> dict:
+    """Build the canonical descriptor for the Relay source tree at ``source_root``.
+
+    ``files`` is the source manifest when the caller read it from the commit
+    itself (``check_bundled_lane_descriptors`` reads the LF bytes a
+    reproducible checkout writes); without it the working tree is hashed."""
     source_root = source_root.resolve()
     version = _pyproject_version(source_root / "pyproject.toml")
-    files = source_manifest(source_root / "src" / "relay", relative_to=source_root)
+    if files is None:
+        files = source_manifest(source_root / "src" / "relay", relative_to=source_root)
     source = {
         "repo": "https://github.com/HarperZ9/relay",
         "commit": commit,

@@ -5,7 +5,9 @@ a clean machine needs no Python and no `flywheel` on PATH. Everything else --
 routes, receipts, the plugins registry, static shell -- is the same code the
 pip install runs; the freeze changes distribution, not behavior. The Relay
 status probe is a fixed self-child mode so the gateway never consults PATH or a
-collided package name for the first bundled Relay admission."""
+collided package name for the first bundled Relay admission. A lane's
+background worker (an index router job) runs as `--bundled-lane-worker`, since
+the exe refuses `-m`."""
 import multiprocessing
 import sys
 
@@ -61,10 +63,24 @@ def _dispatch_canon_context_mcp(argv: list[str]) -> int | None:
 def main(argv=None) -> int:
     multiprocessing.freeze_support()
     args = list(sys.argv[1:] if argv is None else argv)
+    if '--tool-mcp' in args:
+        if not args or args[0] != '--tool-mcp' or args.count('--tool-mcp') != 1:
+            return 2
+        from harness.tool_mcp import main as tool_main
+        return tool_main(args[1:])
     from harness.bundled_lane_admission import dispatch_bundled_lane_mcp
     bundled = dispatch_bundled_lane_mcp(args)
     if bundled is not None:
         return bundled
+    from harness import frozen_lane_modes
+    lane_mode = frozen_lane_modes.dispatch_lane_mcp(args)
+    if lane_mode is None:
+        lane_mode = frozen_lane_modes.dispatch_bundled_lane_cli(args)
+    if lane_mode is None:
+        from harness import lane_worker_mode
+        lane_mode = lane_worker_mode.dispatch_bundled_lane_worker(args)
+    if lane_mode is not None:
+        return lane_mode
     canon_context = _dispatch_canon_context_mcp(args)
     if canon_context is not None:
         return canon_context

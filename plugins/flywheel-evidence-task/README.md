@@ -4,7 +4,18 @@ A skill for checking Flywheel and Bulletin claims, reviewing public feedback,
 and producing source-linked evidence packets. It separates reported claims,
 measurements, missing evidence, and proposed next actions.
 
-Version: 0.1.0. License: [FSL-1.1-MIT](LICENSE).
+Flywheel's primary application is a full native harness client with a bundled
+engine. This package exports the evidence-task workflow to an existing host;
+it does not install that application or supply a model. See the repository's
+`docs/CLIENT-AND-TOOL-ARCHITECTURE.md` for the client and tool boundaries.
+
+Version: 0.2.0. License: [FSL-1.1-MIT](LICENSE).
+
+## Try it
+
+- Use flywheel-evidence-task to check the claim in this release note against its linked sources.
+- Assess this Bulletin feedback thread and separate reported, checked and unknown claims.
+- Check whether this readiness claim holds, with a false-success control.
 
 ## Install
 
@@ -43,6 +54,36 @@ tools at runtime and does not install servers, copy credentials, grant execution
 or publish anything by itself. A host with source-reading tools can use it
 without the full Flywheel engine.
 
+## What this plugin runs and handles
+
+**Hooks.** This plugin has no hooks.
+
+**MCP server.** This plugin has no MCP server and no launch command.
+
+**Programs and scripts.** The plugin contains no program and no script. It is a skill: a SKILL.md file with instructions, one constraints reference, three examples, and a Codex presentation file (`agents/openai.yaml`). Nothing in it runs on your computer.
+
+**Network.** The plugin opens no network connection and sends nothing to the author or to any other service.
+
+**Files it reads.** None on its own. When you ask for a check, Claude reads the sources you name with the tools your Claude client already allows, such as file reads, web fetches or MCP servers you connected. Those tools follow their own settings and privacy terms.
+
+**Files it writes.** None. Claude writes an evidence packet to a file only when you ask it to.
+
+**Environment variables and credentials.** The plugin reads no environment variables and no credentials.
+
+**Retention.** The plugin keeps nothing. Uninstalling it removes the skill files.
+
+## Data and privacy
+
+| Question | Answer |
+| --- | --- |
+| What it reads | Nothing on its own. Claude reads the sources you name with tools your client already allows |
+| What it stores | Nothing. The plugin writes no file |
+| Network calls | None. The plugin contains no program, server, hook or script |
+| Telemetry | None |
+| Retention | None. Uninstalling removes the skill files |
+
+See [PRIVACY.md](PRIVACY.md).
+
 ## MCP resources and downloads
 
 From a checkout containing this change, `python -m harness.local_mcp` exposes
@@ -69,6 +110,29 @@ The output includes SHA256SUMS and manifest.json. Only named public package
 files enter either archive. Repeated builds from unchanged content produce
 identical archives. The standalone ZIP includes the license and skill folder;
 the plugin ZIP also includes manifests and installation documentation.
+
+The generated plugin ZIP includes root `plugin.json` in Agent Plugins format,
+plus the existing Codex and Claude compatibility manifests. Root metadata is
+derived from the Codex manifest; its presentation fields move into
+`extensions.com.openai.interface`. Skills remain under `skills/`. This package
+does not bundle an MCP server or install lifecycle hooks.
+
+The Windows product release candidate includes both ZIPs and
+`plugin-SHA256SUMS.txt`. Before the explicit publishing step, review that receipt
+and pass its SHA-256 as `plugins_sha256` alongside `installer_sha256`. The
+publisher checks the accepted receipt and both archives before creating the
+same GitHub release. An existing release remains immutable. These assets stay
+separate from the PyPI upload.
+
+To verify a downloaded or staged pair, compute the receipt hash independently
+from the accepted candidate and run:
+
+```text
+python scripts/build_skill_bundle.py --verify <checksum-file> --accepted-sha256 <accepted-hash>
+```
+
+This packaging change prepares subsequent releases; it does not change assets
+on an existing release or establish marketplace approval or host installation.
 
 ## Compatibility and validation
 

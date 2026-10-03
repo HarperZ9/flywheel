@@ -38,6 +38,7 @@ part 'gateway_process_audit.dart';
 part 'gateway_live_screen.dart';
 part 'gateway_live_screen_controls.dart';
 part 'gateway_provider_session_bindings.dart';
+part 'gateway_lane_client.dart';
 
 class GatewayClient {
   static const String loopback = 'http://127.0.0.1:8799';
@@ -58,17 +59,7 @@ class GatewayClient {
     }
   }
 
-  Future<LaneRoster> laneRoster({bool probe = false}) async {
-    final r = await _http.get(
-      Uri.parse('$baseUrl/api/lanes${probe ? '?probe=true' : ''}'),
-    );
-    final body = _decode(r);
-    if (body['n_lanes'] is! int || body['by_status'] is! Map) {
-      throw const FormatException('Lane inventory was not reported');
-    }
-    return LaneRoster.fromJson(body);
-  }
-
+  /// GET /api/world — the projected world (spine + root hash + findings).
   Future<WorldDoc> projectedWorld() async {
     final r = await _http.get(Uri.parse('$baseUrl/api/world'));
     return WorldDoc.fromJson(_decode(r));

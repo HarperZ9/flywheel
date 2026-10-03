@@ -5,6 +5,13 @@
 // the bundled engine is launched by absolute path first. A dev checkout has
 // no bundle, so `flywheel up` on PATH stays as the fallback. Stopping the
 // app leaves a user-started gateway running only if it was already running.
+//
+// The bundled engine starts in the install folder with `--desktop-launch`.
+// Lane children inherit the engine's working directory, so leaving it to
+// wherever the app was opened from let lanes write there (F-6). The flag
+// turns on the engine's start probe, which a plain `flywheel up` never runs.
+// The PATH fallback passes neither: an older engine there would refuse the
+// unknown flag, and `flywheel up` picks its own folder.
 
 import 'dart:async';
 import 'dart:io';
@@ -16,6 +23,7 @@ typedef GatewayProcessStarter = Future<Process> Function(
   List<String> arguments, {
   required ProcessStartMode mode,
   required bool runInShell,
+  String? workingDirectory,
 });
 
 class GatewayProcess {
@@ -39,6 +47,14 @@ class GatewayProcess {
   static String bundledEnginePathFor(String exeDir) {
     final sep = Platform.pathSeparator;
     return '$exeDir${sep}engine${sep}flywheel-gateway.exe';
+  }
+
+  /// The folder the bundled engine starts in: the install folder that holds
+  /// `engine/`, or the engine's own folder when it sits anywhere else.
+  static String installFolderFor(String enginePath) {
+    final folder = File(enginePath).parent;
+    final name = folder.path.split(RegExp(r'[\\/]')).last.toLowerCase();
+    return name == 'engine' ? folder.parent.path : folder.path;
   }
 
   /// The bundled engine beside this executable, or null when absent (dev
@@ -81,11 +97,17 @@ class GatewayProcess {
     try {
       final child = await _processStarter(
         executable,
-        [if (bundled == null) 'up', '--port', '$port'],
+        [
+          if (bundled == null) 'up',
+          '--port',
+          '$port',
+          if (bundled != null) '--desktop-launch',
+        ],
         // Dart uses CREATE_NO_WINDOW for this mode on Windows. Detached
         // shell wrappers can give their children a visible console instead.
         mode: ProcessStartMode.normal,
         runInShell: false,
+        workingDirectory: bundled == null ? null : installFolderFor(bundled),
       );
       _child = child;
       _observe(child);

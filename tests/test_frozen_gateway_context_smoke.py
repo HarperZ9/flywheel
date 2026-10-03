@@ -140,7 +140,7 @@ def test_frozen_smoke_validates_canon_payload_metadata(tmp_path):
         license_data)
     row = {
         "lane": "canon",
-        "owner_commit": "8c6a8228ce2117112c5dad74ddb0450ba80aa8ff",
+        "owner_commit": "c3ff3cd322657d37cb095d0d619a4119e0b964fd",
         "component_descriptor": {"source": {"manifest_sha256": "sha256:" + "1" * 64}},
         "owner_project": {"license_files": [{
             "path": "LICENSE", "bytes": len(license_data), "sha256": license_hash}]},

@@ -188,7 +188,8 @@ def restricted_catalog_launch(catalog_ref: str, tools: list[str] | tuple[str, ..
         command, plugin_kind, slots, refs = plugin_execution_plan(catalog)
         if slots or refs:
             raise GatewayOperationError("MCP_CREDENTIAL_VERSION_UNAVAILABLE")
-        launch = _restricted_launch(command, CredentialBindings({}), slots)
+        launch = _restricted_launch(command, CredentialBindings({}), slots,
+                                    lane=plugin_kind == "lane")
     except GatewayOperationError:
         raise
     except Exception:
@@ -201,15 +202,21 @@ def restricted_catalog_launch(catalog_ref: str, tools: list[str] | tuple[str, ..
         raise GatewayOperationError("MCP_AMBIENT_ENV_UNSUPPORTED")
     if launch.allowed_tools is not None and not set(selected) <= set(launch.allowed_tools):
         raise GatewayOperationError("CAPABILITY_NOT_ADMITTED")
-    launch = _pin_catalog_cwd(launch)
+    from .lane_tier_gate import agent_tool_refusal  # lane tools: T1, in build, unguarded
+    if (code := agent_tool_refusal(catalog, plugin_kind, selected)) is not None:
+        raise GatewayOperationError(code)
+    launch = _pin_catalog_cwd(launch, catalog if plugin_kind == "lane" else None)
     launch = replace(launch, allowed_tools=selected)
     validate_limits(_effective_limits(launch))
     validate_no_raw_secrets(launch_to_json(launch))
     return launch, str(plugin_kind or "mcp")
 
 
-def _pin_catalog_cwd(launch: LaunchSpec) -> LaunchSpec:
-    if launch.cwd:
+def _pin_catalog_cwd(launch: LaunchSpec, lane: str | None = None) -> LaunchSpec:
+    """An agent run's MCP child works in the explicit workspace root. A lane's
+    own folder (lane_workdir.py) is replaced here; a source checkout is kept."""
+    from .lane_workdir import is_lane_workdir
+    if launch.cwd and not is_lane_workdir(launch.cwd, lane, os.environ):
         return launch
     root = _explicit_workspace_root()
     if root is None:

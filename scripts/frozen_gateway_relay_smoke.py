@@ -38,7 +38,7 @@ def relay_status_smoke(base: str, token: str, home: Path, owner_ref: str,
     launch = runtime.get("launch", {})
     require(launch.get("inherit_env") is False, "RELAY_ENV_INHERITANCE")
     require(launch.get("hide_window") is True, "RELAY_WINDOW_HIDDEN")
-    require(launch.get("allowed_tools") == ["relay.status"],
+    require(launch.get("allowed_tools") == list(expected["allowed_tools"]),
             "RELAY_ALLOWED_TOOLS")
     component = runtime.get("bundled_component", {})
     require(component.get("descriptor_sha256") == expected["descriptor_sha256"],

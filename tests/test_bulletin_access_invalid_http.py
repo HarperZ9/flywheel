@@ -10,6 +10,7 @@ import pytest
 
 pytest.importorskip("cryptography")
 
+from harness.bulletin_origin import PUBLIC_BULLETIN_ORIGIN
 from harness.bulletin_signed_transport import BULLETIN_KEY_SLOT
 from harness.credential_handles import CredentialHandleStore
 from harness.file_backed_store import FileBackedHarnessStore
@@ -160,7 +161,7 @@ def test_native_plain_post_invalid_env_denies_before_keychain(tmp_path,
                 "label": "Flywheel",
                 "url": "https://github.com/HarperZ9/flywheel",
             }],
-        })
+        }, bulletin_base_url=PUBLIC_BULLETIN_ORIGIN)
         request = build_gateway_grant_request(
             preview, journey_ref=JOURNEY, expected_event_head=head,
             client_request_id="invalid-plain", credential_ref=handle.credential_ref)

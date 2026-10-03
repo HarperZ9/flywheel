@@ -7,13 +7,13 @@ it as the dense signal. This is the tool-augmented verification thesis (Qwythos
 """
 import os
 import signal
-import time
 from pathlib import Path
 
 import pytest
 
 from harness.exec_oracle import PythonExecutorOracle, line_partial_reward, ExecTask
 from harness.task import Task
+from tests._tree_wait import _await_tree_gone, _describe, _pid_alive, _read_tree_ids, _tree_candidate
 
 
 def _exec_task(tmp_path, expected: str) -> Task:
@@ -72,38 +72,6 @@ def test_timeout_fails_gracefully(tmp_path):
     assert not r.passed and r.status == "timeout"
 
 
-def _pid_alive(pid: int) -> bool:
-    """True if `pid` is a live, non-zombie process. A zombie (state Z, dead
-    but not yet reaped by its parent) still answers os.kill(pid, 0) as if it
-    existed, which would make this probe flaky right around the reap window;
-    reading /proc/<pid>/stat lets a zombie count as gone, since it has
-    already stopped running and cannot resume the sleep this test plants."""
-    try:
-        with open(f"/proc/{pid}/stat") as f:
-            stat = f.read()
-    except (FileNotFoundError, ProcessLookupError):
-        return False
-    # comm is "(name)" and may itself contain ')'; state is the first field
-    # after the LAST ')'.
-    state = stat.rsplit(")", 1)[1].split()[0]
-    return state != "Z"
-
-
-def _proc_facts(pid: int) -> str:
-    """State, parent and process group of `pid`, for a failure message.
-
-    A survivor is only interesting for the reason it survived, and the three
-    fields that separate the reasons are all in the same line of /proc.
-    """
-    try:
-        with open(f"/proc/{pid}/stat") as f:
-            fields = f.read().rsplit(")", 1)[1].split()
-    except OSError as exc:
-        return f"unreadable ({type(exc).__name__})"
-    return (f"state={fields[0]} ppid={fields[1]} pgrp={fields[2]} "
-            f"session={fields[3]}")
-
-
 @pytest.mark.skipif(os.name == "nt", reason="POSIX process-tree reaping; "
                      "the Windows path kills via taskkill /T and is covered "
                      "by test_oracle_hostile_candidate.py")
@@ -117,13 +85,7 @@ def test_timeout_kills_the_whole_tree_not_just_the_shell(tmp_path,
     process tree (the same contract PR #16 gave oracle.py's PytestOracle via
     spawn_killable)."""
     pidfile = tmp_path / "grandchild.pid"
-    candidate = (
-        "import subprocess, sys, time\n"
-        "p = subprocess.Popen([sys.executable, '-c', "
-        "'import time; time.sleep(60)'])\n"
-        f"open({str(pidfile)!r}, 'w').write(str(p.pid))\n"
-        "time.sleep(60)\n"
-    )
+    candidate = _tree_candidate(pidfile)
     task = _exec_task(tmp_path, "done")
     orc = PythonExecutorOracle(expected="done", timeout=2)
 
@@ -134,22 +96,14 @@ def test_timeout_kills_the_whole_tree_not_just_the_shell(tmp_path,
             f"expected the 2s-timeout oracle call to report status='timeout', "
             f"got {result.status!r}")
 
-        grandchild_pid = int(text_once_written(
-            pidfile, timeout=5.0,
-            why="candidate never reached the point of recording its "
-                "grandchild's pid -- the test setup itself is broken, "
-                "not the fix").strip())
+        grandchild_pid, group = _read_tree_ids(text_once_written, pidfile)
 
-        # give the reaper a moment to land
-        deadline = time.monotonic() + 5
-        while _pid_alive(grandchild_pid) and time.monotonic() < deadline:
-            time.sleep(0.1)
-        assert not _pid_alive(grandchild_pid), (
+        survivors = _await_tree_gone(group, grandchild_pid)
+        assert not survivors, (
             f"grandchild pid {grandchild_pid} survived the oracle timeout: "
             "shell=True's timeout killed the shell but not the tree it "
-            f"spawned. survivor {_proc_facts(grandchild_pid)}. This assertion "
-            "failed once on a CI runner and could not be reproduced locally, "
-            "so the facts are printed rather than guessed at: a ppid of 1 "
+            f"spawned. survivors {_describe(survivors)}, read in the same "
+            "snapshot that found them alive. Each fact separates a cause: a ppid of 1 "
             "means it was orphaned and the group signal missed it, a pgrp "
             "that differs from the session leader's pid means it left the "
             "group `spawn_killable` built, and state R or S means it is "
@@ -182,13 +136,7 @@ def test_non_timeout_exception_during_communicate_still_kills_the_tree(
     "while communicate() is running" implies the process has had real
     wall-clock time to act, not one hit at the instant of Popen()."""
     pidfile = tmp_path / "grandchild.pid"
-    candidate = (
-        "import subprocess, sys, time\n"
-        "p = subprocess.Popen([sys.executable, '-c', "
-        "'import time; time.sleep(60)'])\n"
-        f"open({str(pidfile)!r}, 'w').write(str(p.pid))\n"
-        "time.sleep(60)\n"
-    )
+    candidate = _tree_candidate(pidfile)
     task = _exec_task(tmp_path, "done")
     orc = PythonExecutorOracle(expected="done", timeout=30)
 
@@ -216,20 +164,13 @@ def test_non_timeout_exception_during_communicate_still_kills_the_tree(
             f"expected the simulated OSError to surface as status="
             f"'error:OSError', got {result.status!r}")
 
-        grandchild_pid = int(text_once_written(
-            pidfile, timeout=5.0,
-            why="candidate never reached the point of recording its "
-                "grandchild's pid -- the test setup itself is broken, "
-                "not the fix").strip())
+        grandchild_pid, group = _read_tree_ids(text_once_written, pidfile)
 
-        # give the reaper a moment to land
-        deadline = time.monotonic() + 5
-        while _pid_alive(grandchild_pid) and time.monotonic() < deadline:
-            time.sleep(0.1)
-        assert not _pid_alive(grandchild_pid), (
+        survivors = _await_tree_gone(group, grandchild_pid)
+        assert not survivors, (
             f"grandchild pid {grandchild_pid} survived a non-timeout "
             "exception raised during communicate(): only TimeoutExpired "
-            "triggered _kill_tree")
+            f"triggered _kill_tree. survivors {_describe(survivors)}")
     finally:
         if grandchild_pid is not None and _pid_alive(grandchild_pid):
             try:

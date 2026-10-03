@@ -19,7 +19,7 @@ build-backend = "setuptools.build_meta"
 # an unrelated package, so this publishes under a scoped name. The installed
 # console command stays `flywheel` (see [project.scripts]).
 name = "flywheel-verify"
-version = "1.0.3"
+version = "1.2.1"
 description = "The one platform: routing, verification, the lane layer, memory/context/catalog, and the closed verified-inference loop."
 readme = "README.md"
 # 3.11, not 3.10, because `datetime.UTC` landed in 3.11 and 51 modules use it.
@@ -41,6 +41,8 @@ dependencies = []
 signing = ["cryptography"]   # Ed25519 receipt SIGNING (pynacl works as the
                              # fallback backend; VERIFICATION stays stdlib)
 monitor = ["psutil"]         # network egress monitoring (infra controls)
+encryption = ["cryptography"]  # AES-256-GCM trace custody on macOS and Linux, with a
+                             # keychain-held key; Windows uses DPAPI and needs nothing
 local = [                    # the local HF serve/training stack
     "torch",                 # GPU builds may need the PyTorch index URL
     "transformers",

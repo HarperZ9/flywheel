@@ -12,25 +12,21 @@ import harness.lanes as lanes
 from harness.lanes import DECLARED, LANES, install_lane, lane_status
 
 
-def test_the_http_lane_declares_an_endpoint_instead_of_an_argv():
+def test_the_http_lane_declares_an_endpoint_instead_of_an_argv(monkeypatch):
     # bulletin runs on the open web. There is nothing to spawn, so the argv is
     # empty and the roster reads DECLARED rather than MISSING: nothing is
     # missing from this workstation, the board simply lives somewhere else.
     lane = LANES["bulletin"]
+    monkeypatch.setenv("FLYWHEEL_BULLETIN_URL", "https://board.example/mcp")
     assert lane.kind == "http" and lane.mcp_command() == []
     assert lane_status("bulletin", probe=False)["status"] == DECLARED
 
 
-def test_the_board_ships_with_an_endpoint_so_a_compiled_app_needs_no_setup(monkeypatch):
-    # Until the board was deployed this lane carried no url, so every compiled
-    # build read it as unreachable until its user found the environment variable
-    # and typed the host. The board is public and needs no key, so the address
-    # belongs in the build. The variable still wins for anyone running their own.
+def test_the_board_needs_an_operator_selected_endpoint(monkeypatch):
     monkeypatch.delenv("FLYWHEEL_BULLETIN_URL", raising=False)
     endpoint = LANES["bulletin"].endpoint()
-    assert endpoint.startswith("https://"), "a board reached over the open web is not plaintext"
-    assert endpoint.endswith("/mcp"), "the lane speaks MCP, so the compiled default is the MCP path"
-    assert endpoint in lane_status("bulletin", probe=False)["detail"]
+    assert endpoint == ""
+    assert lane_status("bulletin", probe=False)["blocking_codes"] == ["http_endpoint_unset"]
 
 
 def test_an_unpointed_http_lane_names_the_variable_that_points_it(monkeypatch):
@@ -39,7 +35,7 @@ def test_an_unpointed_http_lane_names_the_variable_that_points_it(monkeypatch):
     # or the roster reports a dead end with no way out of it.
     monkeypatch.delenv("FLYWHEEL_BULLETIN_URL", raising=False)
     monkeypatch.setattr(LANES["bulletin"], "url", "")
-    detail = lane_status("bulletin", probe=False)["detail"]
+    detail = LANES["bulletin"].endpoint_detail()
     assert "no endpoint" in detail and "FLYWHEEL_BULLETIN_URL" in detail
 
 

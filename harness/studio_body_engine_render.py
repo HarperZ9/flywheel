@@ -88,8 +88,11 @@ def _engine_module(runtime: StudioEngineRuntime):
 
 def _git_head(root: Path) -> str:
     try:
-        proc = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
-                              check=True, capture_output=True, text=True, timeout=5)
+        from harness import safe_program
+        command, env = safe_program.launch(["git", "-C", str(root), "rev-parse", "HEAD"],
+                                           cwd=root)
+        proc = subprocess.run(command, env=env, check=True, capture_output=True, text=True,
+                              timeout=5)
     except Exception:
         return "unknown"
     return proc.stdout.strip()

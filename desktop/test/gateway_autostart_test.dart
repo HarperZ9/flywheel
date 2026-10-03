@@ -161,7 +161,7 @@ void main() {
     var launches = 0;
     final process = GatewayProcess(
       bundledEngineResolver: () => null,
-      processStarter: (exe, args, {required mode, required runInShell}) async {
+      processStarter: (exe, args, {required mode, required runInShell, workingDirectory}) async {
         launches++;
         throw StateError('must not launch');
       },

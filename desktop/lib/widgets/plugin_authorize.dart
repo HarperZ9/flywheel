@@ -26,8 +26,12 @@ Future<Map<String, dynamic>?> authorizePluginOperation(
         clientRequestId: requestId,
       );
   final operation = exact(raw);
+  // A probe starts the server: the engine gives it 20 s, the app waits 30.
+  final wait = action == 'plugin.probe'
+      ? const Duration(seconds: 30)
+      : const Duration(seconds: 15);
   return authorizeGatewayOperation(
-      context, operation, (body) => client.postJson(path, body),
+      context, operation, (body) => client.postJson(path, body, timeout: wait),
       currentOperation: () {
     try {
       return currentRaw == null ? operation : exact(currentRaw());

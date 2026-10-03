@@ -6,6 +6,7 @@ history. These fixtures remove the failure mode as a class instead of
 patching it test by test: every test runs against a session-scoped scratch
 root, and forgetting to set `h.run_root` writes there, never into E:."""
 
+import os
 import shutil
 import tempfile
 import time
@@ -80,12 +81,56 @@ def _isolated_run_root(tmp_path_factory, monkeypatch):
     monkeypatch.setenv("FLYWHEEL_RUN_ROOT", str(scratch))
     monkeypatch.setenv("FLYWHEEL_HOME", str(home))
     monkeypatch.setenv("PIP_CACHE_DIR", str(pip_cache))
+    # The lane registry path is fixed when harness.lanes is imported, which can
+    # be before FLYWHEEL_HOME above is set, so it would read the owner's real
+    # ~/.flywheel/lanes.json (its runtime_python pins and env_allow grants).
+    try:
+        from harness import lanes
+        monkeypatch.setattr(lanes, "LANE_REGISTRY_PATH", home / "lanes.json")
+    except Exception:
+        pass  # lanes may be unimportable in a narrow slice; the env still guards
     try:
         from harness import gateway
         monkeypatch.setattr(gateway._Handler, "run_root", str(scratch),
                             raising=False)
     except Exception:
         pass  # gateway may be unimportable in narrow slices; env still guards
+    yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _real_home_pointer_left_alone(tmp_path_factory):
+    """Fail the session if any test (a subprocess gateway included) pointed
+    the owner's real home pointer at a pytest home."""
+    try:
+        from harness.capture_hooks import home
+        real = home.pointer_path()
+        before = real.read_bytes() if real and real.is_file() else None
+    except Exception:
+        real = None
+    yield
+    if real is None or not real.is_file() or real.read_bytes() == before:
+        return
+    named = home.read_pointer(real)
+    base = Path(tmp_path_factory.getbasetemp()).resolve().parent
+    if named is not None and Path(os.path.abspath(named)).is_relative_to(base):
+        pytest.fail(f"a test pointed the real home pointer at a pytest home: {named}")
+
+
+@pytest.fixture(autouse=True)
+def _isolated_home_pointer(tmp_path_factory, monkeypatch):
+    """The per-user home pointer is the owner's machine state: a hook mounted
+    without --home follows it to a home. A test that starts a gateway reaches
+    publish_endpoint, which rewrites it, so every test gets its own pointer
+    file. gateway_endpoint_file imports the name, so both are patched."""
+    target = tmp_path_factory.mktemp("home-pointer") / "home.json"
+    try:
+        from harness import gateway_endpoint_file
+        from harness.capture_hooks import home
+        monkeypatch.setattr(home, "pointer_path", lambda: target)
+        monkeypatch.setattr(gateway_endpoint_file, "pointer_path", lambda: target)
+    except Exception:
+        pass  # the hook package may be absent in a narrow slice
     yield
 
 
@@ -134,3 +179,33 @@ def _isolated_claude_cli_status(request, monkeypatch):
     except Exception:
         pass
     yield
+
+
+@pytest.fixture
+def lanes_at_their_pins(monkeypatch):
+    """Every pip or npm lane reads as installed at its pin. A lane below its pin
+    does not launch, so a test that freezes a lane launch must not depend on
+    which lane packages the host happens to have installed."""
+    monkeypatch.setattr("harness.lanes._installed_version", lambda lane: lane.version)
+
+
+@pytest.fixture
+def programs_on_path(tmp_path_factory, monkeypatch):
+    """Put stand-in executables for the named programs first on PATH.
+
+    The program lookup (harness/safe_program.py) starts only real files in
+    absolute PATH folders, so a test that replaces subprocess still needs each
+    program it names to exist, whatever the host has installed. The folder sits
+    outside the test's tmp_path, which a test may use as the child's working
+    folder. Returns {name: the path the lookup resolves it to}."""
+    def make(*names: str) -> dict:
+        folder = tmp_path_factory.mktemp("stand-in-bin")
+        found = {}
+        for name in names:
+            path = folder / (f"{name}.exe" if os.name == "nt" else name)
+            path.write_bytes(b"MZ")
+            path.chmod(0o755)
+            found[name] = os.path.join(os.path.realpath(folder), path.name)
+        monkeypatch.setenv("PATH", os.pathsep.join((str(folder), os.environ.get("PATH", ""))))
+        return found
+    return make

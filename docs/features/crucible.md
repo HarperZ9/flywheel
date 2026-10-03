@@ -8,7 +8,7 @@ Crucible is Flywheel's verification lane: it turns a thesis into falsifiable cla
 
 ## One paragraph
 
-Inside Flywheel, Crucible is the `verification` organ. A caller registers a thesis (claims, each paired with the observation that would refute it), independent adversaries propose the strongest test for every claim, the engine measures each against a substrate, and the weakest axis is refined across rounds. The verdict step is a pure function, `verdict_for` in `src/crucible/verdict.py`, with no model in it: a deviation within tolerance is MATCH, outside is DRIFT, absent or unmeasurable is UNVERIFIABLE, fail-closed. Every claim carries a sha256 receipt and every run writes a record, so a stranger holding the record can recompute the verdict and a tampered claim, measurement, or baseline is caught by re-hashing. Crucible consumes evidence from sibling lanes (Gather digests, Index verifications, Telos witnessed-artifact envelopes) through their JSON contracts and emits witnessed assessments that Telos and Forum surface and replay. It runs as a CLI, a Python import, and an MCP stdio server exposing 13 tools, and it ships with zero third-party runtime dependencies on the core.
+Inside Flywheel, Crucible is the `verification` organ. A caller registers a thesis (claims, each paired with the observation that would refute it), independent adversaries propose the strongest test for every claim, the engine measures each against a substrate, and the weakest axis is refined across rounds. The verdict step is a pure function, `verdict_for` in `src/crucible/verdict.py`, with no model in it: a deviation within tolerance is MATCH, outside is DRIFT, absent or unmeasurable is UNVERIFIABLE, fail-closed. Every claim carries a sha256 receipt and every run writes a record, so a stranger holding the record can recompute the verdict and a tampered claim, measurement, or baseline is caught by re-hashing. From 1.3.0 a claim can also seal the tolerance that decides MATCH; in 1.2.0 and earlier the measurement row's tolerance decided alone, so a measurement file could widen it and every later check agreed (GHSA-49qx-cj4f-wfqv). Crucible consumes evidence from sibling lanes (Gather digests, Index verifications, Telos witnessed-artifact envelopes) through their JSON contracts and emits witnessed assessments that Telos and Forum surface and replay. It runs as a CLI, a Python import, and an MCP stdio server exposing 14 tools, and it ships with zero third-party runtime dependencies on the core.
 
 ## Feature list
 
@@ -16,7 +16,7 @@ Each item names the module that implements it.
 
 - **Pure verdict spine.** `verdict_for(claim, measurement)` in `src/crucible/verdict.py` computes standing with no model in the step. It recomputes from `(deviation, tolerance)`, so a stored verdict row that disagrees is caught on recheck. Margin is `(tolerance - deviation) / tolerance`; `margin >= 0` is MATCH, below is DRIFT.
 - **Honesty ladder, fail-closed.** The verdict function checks in a fixed order: a claim with no falsification condition is UNVERIFIABLE; a missing measurement or one binding to a different claim hash is UNVERIFIABLE; a deviation or tolerance that is None, non-finite, negative, or a non-positive tolerance is UNVERIFIABLE. UNVERIFIABLE never reads as holding.
-- **Sealed-tolerance defense.** When a claim sealed its tolerance, a measurement carrying a different tolerance is UNVERIFIABLE (`src/crucible/verdict.py`, the `claim.tolerance` branch), so a verdict cannot be rescued by widening tolerance after the seal. Booleans are rejected in `_trusted` so `True` does not read as `1.0`.
+- **Sealed-tolerance defense (1.3.0).** When a claim sealed its tolerance, a measurement carrying a different tolerance is UNVERIFIABLE (`src/crucible/verdict.py`, the `claim.tolerance` branch), so a verdict cannot be rescued by widening tolerance after the seal. 1.2.0 and earlier have no such branch: they decide from the measurement row's tolerance and do not seal it (GHSA-49qx-cj4f-wfqv). A claim registered without a tolerance keeps the old behavior in 1.3.0 too. Booleans are rejected in `_trusted` so `True` does not read as `1.0`.
 - **Content-addressed registry with tamper detection.** `src/crucible/registry.py` gives every claim a sha256 receipt, re-verifies stored claims (MATCH / MISSING / CORRUPT), checks thesis seals, rejects duplicate ids with different seals, and refuses tampered theses.
 - **One-command runs with cleanroom review packets.** `crucible run` (`src/crucible/run_cmd.py`) executes steelman, measurement, witnessed assessment, and on-disk recheck in one session; `--bundle DIR` writes a self-contained verifier packet (`spec.json`, `run.json`, `report.md`, `review.md`) with packet-relative paths.
 - **Review-contract validation.** `crucible review` (`src/crucible/review_cmd.py`, `review_contract.py`) fails closed on missing files, extra context, a `spec.json` that drifted from the run record, or a `report.md` that no longer renders from `run.json`.
@@ -29,7 +29,7 @@ Each item names the module that implements it.
 - **Ill-posed measurement warnings.** `src/crucible/wellposed.py` flags measurement rows that are ill-posed; `crucible assess --strict` turns a warning into an error. Added in 1.2.0.
 - **Batch and report.** `crucible batch` (`src/crucible/batch_cmd.py`) runs a manifest of theses into one registry; `crucible report` (`src/crucible/report.py`, `report_cmd.py`) renders deterministic Markdown for a witnessed assessment.
 - **Creative measurement gate.** `crucible measurement-gate` (`src/crucible/measurement_gate.py`) verifies Telos creative/rendering measurement packets (`project-telos.measurement-layers/v1`) against explicit per-layer criteria.
-- **Native MCP surface.** `crucible mcp` (`src/crucible/mcp.py`, `mcp_tools.py`) serves 13 tools over stdio. This is the surface Flywheel launches as the lane.
+- **Native MCP surface.** `crucible mcp` (`src/crucible/mcp.py`, `mcp_tools.py`) serves 14 tools over stdio. This is the surface Flywheel launches as the lane.
 - **Publication gate.** `crucible export` (`src/crucible/gate.py`) exposes a public thesis contract; fenced material is refused at the edge.
 - **Extensible measurement seams.** The steelman and measure stages are seams with a stable shape (defaults are Null, so nothing is proposed or measured and the verdict is UNVERIFIABLE). Shipped edges in `src/crucible/subprocess_edges.py`, `ecosystem_measure.py`, `telos_measure.py`, `judge.py`, `proof_measure.py`: `TableMeasure`, `SubprocessSteelman` / `SubprocessMeasure`, `TelosMeasure`, `GatherDigestMeasure`, `IndexMeasure`, `JudgeMeasure`, `ProofMeasure`. All edges map into the same `Measurement` object; the verdict step never changes.
 - **Zero third-party runtime dependencies.** `pyproject.toml` declares an empty `dependencies` list; the core is standard library on Python 3.11+.
@@ -54,7 +54,7 @@ Each item names the module that implements it.
 
 1. Install the lane. From the Flywheel harness, `install_lane("crucible")` runs `pip install crucible-bench`; `profile="source"` installs the `public/crucible` checkout editable.
 2. Check health. `lane_status("crucible")` (in `harness/lanes.py`) resolves the runtime and, with `probe=True`, spawns the server and calls its `crucible.status` health tool; the roster reports live / declared / missing / stale.
-3. Call a tool. Flywheel routes a call through `call_lane_tool("crucible", "crucible.run", args)` in `harness/lane_caller.py`, which resolves the launch and speaks MCP to the child. Crucible sits at tier T1 (open access, no actuation).
+3. Call a tool. Flywheel routes a call through `call_lane_tool("crucible", "crucible.assess", args)` in `harness/lane_caller.py`, which resolves the launch and speaks MCP to the child. `crucible.assess` runs at T1; `crucible.run` writes the paths the caller names, so it runs only on a call approved at T2.
 4. Read results in the desktop app. The `crucible` lane card (`desktop/lib/models/lane_identity.dart`) renders the experiment bench and verdict matrix surface.
 
 ## Piecewise reference (each capability, what it does)
@@ -76,19 +76,20 @@ Each item names the module that implements it.
 | `crucible export THESIS` | Publication-gated export; fenced material refused at the edge. |
 | `crucible measurement-gate PACKET` | Verify a Telos creative measurement packet. |
 | `crucible status / doctor / demo` | Operator envelope, readiness checks, demo pointer (`--json`). |
-| `crucible mcp` | Serve the 13 tools over MCP stdio. |
+| `crucible mcp` | Serve the 14 tools over MCP stdio. |
 
 Every command runs identically from a source checkout via `python -m crucible`.
 
 ### MCP tools (`src/crucible/mcp_tools.py`)
 
-Thirteen tools, the surface Flywheel calls. `status` and `doctor` are informational and never render a verdict token; only tools that take a measurement emit MATCH / DRIFT / UNVERIFIABLE.
+Fourteen tools, the surface Flywheel calls. `status` and `doctor` are informational and never render a verdict token; only tools that take a measurement emit MATCH / DRIFT / UNVERIFIABLE.
 
 - `crucible.status`: the Project Telos operator-spine status envelope (`project-telos.flagship-action/v1`).
 - `crucible.doctor`: readiness envelope; resolves each capability's live entry point and reports available / absent. It renders no verdict.
 - `crucible.assess`: assess falsifiable claims against optional measurements; emits witnessed verdicts, ill-posed warnings, and missing-evidence explanations. `strict` errors on ill-posed rows.
 - `crucible.run`: steelman, measure, assess, disk recheck, and optional report/run-record/bundle writes. Requires exactly one of `measurements` or `substrate`.
 - `crucible.recheck`: inspect or replay oracle measurement descriptors from a registry.
+- `crucible.recheck_template`: return a `crucible.replay-template/1` object for the descriptor-bearing rows of a registry assessment. New in 1.3.0; it writes nothing.
 - `crucible.measurement_gate`: verify a Telos measurement packet against criteria keyed by layer id.
 - `crucible.review`: validate a cleanroom review bundle.
 - `crucible.report`: render Markdown for a witnessed assessment.
@@ -116,12 +117,12 @@ Crucible is registered in `harness/lanes_registry.py`:
 
 ```python
 "crucible": Lane(
-    "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.2.0",
+    "crucible", "crucible-bench", "crucible", ("mcp",), "pip", "1.4.0",
     "falsifiable verification + re-check (register -> steelman -> measure -> witness)",
     "verification", source_repo="public/crucible", py_module="crucible.cli"),
 ```
 
-Organ `verification`, role the register-to-witness loop. It launches with argv `["crucible", "mcp"]` (`resolve_mcp_command("crucible")`). Flywheel floors it at tier T1 in `harness/lane_caller.py` (open access, no actuation): Crucible measures and re-checks, it does not change the world, which is why it sits below the T2 actuation lanes (`local-model`, `relay`, `accountable-surface`).
+Organ `verification`, role the register-to-witness loop. It launches with argv `["crucible", "mcp"]` (`resolve_mcp_command("crucible")`). Each crucible tool carries its own tier in the lane tool policy (`docs/features/lane-tool-policy.md`): the reads, `crucible.assess` and the rechecks run at T1, and `crucible.run`, `crucible.batch` and `crucible.refine`, which write the registry or files the caller names, run only on a call approved at T2.
 
 Native wiring is present and tested:
 
@@ -130,7 +131,7 @@ Native wiring is present and tested:
 - Desktop card: `desktop/lib/models/lane_identity.dart` key `crucible`, with title "Crucible", a feature-first identity line, and surface "experiment bench + verdict matrix".
 - Call path: `harness/lane_caller.py::call_lane_tool` resolves `resolve_mcp_launch("crucible")` and speaks MCP to the child.
 
-Honest null: the frozen-gateway Python-lane payload manifest (`packaging/python-lane-payloads.jsonl` with `scripts/check_python_lane_payload_manifest.py`) is present only in a Codex worktree at this checkout, not on the main tree. A crucible row for the packaged desktop bundle is in flight, not landed. This affects the frozen build only; pip-installed and source-checkout runs probe live today.
+The Windows app freezes crucible 1.4.0 from its release tag: the crucible row in `packaging/python-lane-payloads.jsonl` pins every file by sha256, and `scripts/check_python_lane_payload_manifest.py` checks it. Pip and source installs run the `crucible-bench` release the registry pins.
 
 ### What it consumes from peers
 
@@ -164,6 +165,6 @@ The same shape holds with **Index** in step 2 (`IndexMeasure` replaying an `inde
 
 ## Status and bounds
 
-- `crucible-bench 1.2.0` covers the full loop, one-command runs, cleanroom review packets, oracle replay, registry operations, creative measurement gates, and the MCP bridge, plus what landed since 1.1.0: the CI regression gate, LLM-as-judge, missing-evidence explanations, ill-posed measurement warnings, and the MATCH-provenance gate.
-- Test count: the packaged `README.md` states 330 tests; the current source checkout collects 361 (`python -m pytest --co`). The README figure lags the checkout.
-- What this does not claim: exposition is not correctness, a receipt is not compliance, and a passing verifier is not semantic truth. UNVERIFIABLE is a first-class outcome that stays visible in the record. Crucible is one independent tool in a family; Flywheel composes it as a lane and does not vendor it.
+- `crucible-bench 1.4.0`, the release Flywheel pins, covers the full loop, one-command runs, cleanroom review packets, oracle replay, registry operations, creative measurement gates, and the MCP bridge, plus what landed since 1.1.0: the CI regression gate, LLM-as-judge, missing-evidence explanations, ill-posed measurement warnings, and the MATCH-provenance gate. 1.3.0 adds sealed tolerances, `status` and `doctor` answers that read `OK` and `available` or `absent` in place of MATCH, replay packs that must carry their assessment binding, `crucible.recheck_template` and `ProofMeasure`, and fixes GHSA-49qx-cj4f-wfqv.
+- Test count: the source at the v1.3.0 tag collects 445 tests (`python -m pytest --co`).
+- What this does not claim: exposition is not correctness, a receipt is not compliance, and a passing verifier is not semantic truth. UNVERIFIABLE is an outcome in its own right and stays visible in the record. Crucible is one independent tool in a family; Flywheel composes it as a lane, and the Windows app freezes the pinned release into the engine.

@@ -26,10 +26,11 @@ Integration status: **native lane**. `index` is registered in `harness/lanes_reg
 - **Architecture as a testable rule.** `index check` measures the real graph against layer, forbid, require, and `max_cycles` rules declared in `.index.toml`, reports each breach with file and line, and exits non-zero for CI. Code in `src/index_graph/arch/check.py`, `arch/criteria.py`.
 - **Drift, freshness, and invalidation.** `index snapshot` then `index drift` diff the shape over time; `index check --freshness` stamps a workspace-fingerprint certificate that `index freshness` later answers FRESH or STALE; `index invalidate` names exactly which artifacts a change invalidated with typed reasons (schema `index.invalidation/1`). Code in `src/index_graph/drift/`, `freshness/`, `certify/`; MCP tools `index.invalidate`, `index_verify`.
 - **Router doc.** `index router` derives a deterministic `CLAUDE.md`/`AGENTS.md` workspace map from the graph and docs. MCP tool `index_router`.
+- **Explicit repository routing (2.14.0).** `index route --root R --path P --json` builds a context envelope for the repositories named with `--path` under the root, without discovering the rest of the workspace. Each entry must name an existing repository folder inside the root, once. Any other entry is rejected with a typed code. The receipt (`index.route/v1`) reconciles selected and rejected entries and gives each path relative to the root, or as a hash for an entry outside it. Code in `src/index_graph/route.py`; MCP tool `index.route`.
 - **On-demand wiki server.** `index serve` binds loopback, serves any repo by its forge path, derives the wiki that moment by the same path as `index wiki`, and discards it. Code in `src/index_graph/cli_handlers/serve.py`.
 - **Operator surface.** `index status`, `index doctor`, `index demo`, and `index bench` expose machine-readable envelopes; `index bench` reports `edge_grounding`. Code in `src/index_graph/flagship.py`, `bench/economy.py`; MCP tools `index.status`, `index.doctor`.
-- **MCP server.** `index mcp` serves the map, context, envelope, selection, wiki, symbol, and verification surfaces as native tools. Code in `src/index_graph/mcp.py`; 18 tool definitions in `_tool_defs()`.
-- **Zero runtime dependencies, deterministic, private by default.** `pyproject.toml` `dependencies = []`. Same input gives the same bytes. Paths are root-relative, the local root reduces to a short hash, and credential-shaped fragments in remote URLs are redacted. A test keeps the dependency count at zero; the suite collects 585 tests (self-reported in `README.md`).
+- **MCP server.** `index mcp` serves the map, context, envelope, selection, wiki, symbol, and verification surfaces as native tools. Code in `src/index_graph/mcp.py`; `_tool_defs()` lists 23 tools, `index.route` from `route.py` and the five router-job tools from `router_job_surface.py` among them.
+- **Zero runtime dependencies, deterministic, private by default.** `pyproject.toml` `dependencies = []`. Same input gives the same bytes. Paths are root-relative, the local root reduces to a short hash, and credential-shaped fragments in remote URLs are redacted. A test keeps the dependency count at zero, and the suite covers the public command and protocol surfaces (`README.md`).
 
 ---
 
@@ -116,11 +117,12 @@ curl -s localhost:PORT/api/index/summary -d '{"root":"path/to/workspace"}'
 | `index freshness` / `index invalidate` | Answer FRESH/STALE from a certificate; name what a change invalidated. |
 | `index verify` | Ground a `depends`/`exists` claim: MATCH/REFUTED/UNVERIFIABLE with evidence. |
 | `index router` | Deterministic `CLAUDE.md`/`AGENTS.md` workspace map. |
+| `index route` | Context envelope for the repositories named with `--path` under `--root`, with a route receipt; no workspace discovery. |
 | `index bench` | Faithfulness metrics including `edge_grounding`. |
 | `index status` / `doctor` / `demo` | Operator envelopes, machine-readable with `--json`. |
 | `index mcp` | Serve the surfaces above as MCP tools. |
 
-**MCP tools** (from `src/index_graph/mcp.py` `_tool_defs()`): `index.map`, `index.context`, `index.context.envelope`, `index.select`, `index.invalidate`, `index.wiki`, `index.symbol-graph`, `index.symbol-definition`, `index.symbol-references`, `index.symbol-implementations`, `index.status`, `index.doctor`, `index_graph`, `index_focus`, `index_verify`, `index_router`, `index_internals`. Three tools cache behind fingerprints: `index.map`, `index.context`, `index.context.envelope`.
+**MCP tools** (from `src/index_graph/mcp.py` `_tool_defs()` at the pinned commit, the 23 the payload row lists): `index.map`, `index.context`, `index.context.envelope`, `index.select`, `index.invalidate`, `index.wiki`, `index.symbol-graph`, `index.symbol-definition`, `index.symbol-references`, `index.symbol-implementations`, `index.status`, `index.doctor`, `index_graph`, `index_focus`, `index_verify`, `index_router`, `index.route`, `index_internals`, `index.router.job.start`, `index.router.job.status`, `index.router.job.result`, `index.router.job.cancel`, `index.router.job.resume`. Four tools cache their result, keyed on the root, its workspace signature, the arguments and the tool version: `index.context`, `index_graph`, `index.context.envelope` (not with `bounded_output`) and `index_router`.
 
 **Flywheel bridge functions** (`harness/index_bridge.py`): `index_view(root, view)` runs one of three views (`map`, `graph`, `symbols`) and returns the engine JSON under `result` (schema `flywheel.index-view/v1`); `index_summary(root)` returns a compact card (`repo_count`, `dirty_count`, `class_total`, `root_sha256_prefix`; schema `flywheel.index-summary/v1`). Durable workspace-map jobs live in `harness/index_jobs.py` (schema `flywheel.index-workspace-map-job/v1`).
 
@@ -134,7 +136,7 @@ curl -s localhost:PORT/api/index/summary -d '{"root":"path/to/workspace"}'
 
 ```python
 "index": Lane(
-    "index", "index-graph", "index", ("mcp",), "pip", "2.10.0",
+    "index", "index-graph", "index", ("mcp",), "pip", "2.15.0",
     "workspace map + symbol graph + verified wiki (the catalog lane)",
     "structure", source_repo="public/index", py_module="index_graph"),
 ```
@@ -162,8 +164,8 @@ The same seam works over MCP: a host calls `call_lane_tool("index", "index.conte
 **Wiring status against the chorus model.** The task's reference case, `chorus`, is wired as a bridge (`harness/chorus_bridge.py`), a gateway route (`/api/discourse`, `harness/gateway.py:1973`), and an expected-set test (`tests/test_chorus_bridge.py`), but it is not a lane. index carries that same bridge and route pattern and adds the two pieces that make it a full native lane:
 
 - **lanes_registry entry.** Present (`harness/lanes_registry.py:68-71`).
-- **Expected-set test.** Present (`tests/test_lanes.py:22-38` pins the roster membership, install-name-to-command asymmetry, and version 2.10.0).
+- **Expected-set test.** Present (`tests/test_lanes.py` pins the roster membership and the install-name-to-command asymmetry).
 - **Desktop card and route.** Present (`harness/index_bridge.py`, `harness/index_route.py`, `harness/index_jobs.py`, dispatched at `harness/gateway.py:1963`).
 - **Payload manifest and schemas.** Present: MCP tools declared in `src/index_graph/mcp.py`, artifact schemas in the index repo's `docs/PROTOCOL.md`, and the Flywheel wrapper schemas `flywheel.index-view/v1`, `flywheel.index-summary/v1`, `flywheel.index-workspace-map-job/v1`.
 
-No new lane wiring is required. The remaining items are corrections, not integration work, and are recorded in the integration-gap note: a version-string skew between the source (2.10.0) and the README/CHANGELOG (2.9.0), a dead `relation_count` field the project card reads but the summary never sets, and a desktop bridge that covers three of the CLI's surfaces while the rest reach Flywheel through the MCP lane and CLI.
+No new lane wiring is required. The remaining items are corrections, not integration work, and are recorded in the integration-gap note: a dead `relation_count` field the project card reads but the summary never sets, and a desktop bridge that covers three of the CLI's surfaces while the rest reach Flywheel through the MCP lane and CLI.

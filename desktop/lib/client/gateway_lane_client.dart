@@ -1,0 +1,68 @@
+part of 'gateway_client.dart';
+
+// gateway_lane_client.dart - the lane calls on the gateway client. Split out
+// of gateway_client.dart so that file stays under the 300-line gate. As a
+// part of that library, importing gateway_client.dart brings these in.
+
+extension GatewayLaneClient on GatewayClient {
+  /// GET /api/lanes — the lane roster (live/declared/missing).
+  Future<LaneRoster> laneRoster({bool probe = false}) async {
+    final r = await _http.get(
+      Uri.parse('$baseUrl/api/lanes${probe ? '?probe=true' : ''}'),
+    );
+    final body = _decode(r);
+    if (body['n_lanes'] is! int || body['by_status'] is! Map) {
+      throw const FormatException('Lane inventory was not reported');
+    }
+    return LaneRoster.fromJson(body, probed: probe);
+  }
+
+  /// `POST /api/lanes/<lane>/check`: probe one lane now; its row with state.
+  Future<Lane> checkLane(String name) async {
+    // A private POST needs a JSON content type, or the engine answers 401.
+    final r = await _http.post(
+      Uri.parse('$baseUrl/api/lanes/${Uri.encodeComponent(name)}/check'),
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    );
+    final body = _decode(r);
+    if (body['name'] != name || body['state'] is! String) {
+      throw const FormatException('Lane check was not reported');
+    }
+    return Lane.fromJson(body);
+  }
+
+  /// GET /api/settings/node_path: the node the Node lanes use and its source.
+  ///
+  /// Choosing node.exe is a granted action (settings.node_path): the engine
+  /// runs the file it names, so a POST needs an exact owner grant, like
+  /// plugin.register. The lane setup list sends it through the grant flow
+  /// with [postLaneAnswer]; there is no ungranted setter here.
+  Future<Map<String, dynamic>> nodePath() async =>
+      _decode(await _http.get(Uri.parse('$baseUrl/api/settings/node_path')));
+
+  /// `GET /api/lanes/<lane>/setup`: every setup item the lane's card states.
+  Future<Map<String, dynamic>> laneSetup(String name) =>
+      getJson('/api/lanes/${Uri.encodeComponent(name)}/setup');
+
+  /// POST [body] to [path] and keep the status and the decoded body, whatever
+  /// the status. The lane console sends granted bodies through it: a lane
+  /// tool may answer any JSON value, and a refusal is one fixed code the
+  /// console states, not a transport fault.
+  Future<({int status, Object? body})> postLaneAnswer(
+      String path, Map<String, dynamic> body,
+      {required Duration timeout}) async {
+    final r = await _http
+        .post(Uri.parse('$baseUrl$path'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body))
+        .timeout(timeout);
+    Object? decoded;
+    try {
+      decoded = jsonDecode(r.body);
+    } on FormatException {
+      decoded = null;
+    }
+    return (status: r.statusCode, body: decoded);
+  }
+}

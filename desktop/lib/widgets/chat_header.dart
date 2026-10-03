@@ -34,6 +34,7 @@ class ChatHeader extends StatelessWidget {
   /// On narrow widths the inline sidebar is hidden; this callback opens it as
   /// a sheet. When null, no conversations button renders.
   final VoidCallback? onShowConversations;
+  final Widget? speechControls;
 
   const ChatHeader({
     super.key,
@@ -49,6 +50,7 @@ class ChatHeader extends StatelessWidget {
     required this.onModel,
     required this.loadModels,
     this.onShowConversations,
+    this.speechControls,
   });
 
   @override
@@ -56,8 +58,9 @@ class ChatHeader extends StatelessWidget {
     final t = context.fw;
     return LayoutBuilder(
         builder: (context, constraints) => Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: FwLayout.s5, vertical: FwLayout.s3),
+            padding: EdgeInsets.symmetric(
+                horizontal: speechControls == null ? FwLayout.s5 : FwLayout.s2,
+                vertical: FwLayout.s3),
             decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: t.hairline))),
             child: _row(context, t, constraints.maxWidth >= 650)));
@@ -76,13 +79,13 @@ class ChatHeader extends StatelessWidget {
         const SizedBox(width: FwLayout.s1),
       ],
       const RowanAvatar(),
-      if (showReceiptCopy) ...[
+      if (showReceiptCopy && speechControls == null) ...[
         const SizedBox(width: FwLayout.s2),
         ExcludeSemantics(
             child: Text(AssistantIdentity.name,
                 style: Theme.of(context).textTheme.titleMedium)),
       ],
-      const SizedBox(width: FwLayout.s4),
+      SizedBox(width: speechControls == null ? FwLayout.s4 : FwLayout.s2),
       FwModeChip(
           label: 'chat',
           active: !agentMode && !nativeSessionMode,
@@ -105,7 +108,7 @@ class ChatHeader extends StatelessWidget {
               if (!streaming) onNativeSession!();
             }),
       ],
-      const SizedBox(width: FwLayout.s4),
+      SizedBox(width: speechControls == null ? FwLayout.s4 : FwLayout.s2),
       if (!agentMode && !nativeSessionMode && endpoints.isNotEmpty)
         ModelPickerButton(
           endpoints: endpoints,
@@ -125,7 +128,8 @@ class ChatHeader extends StatelessWidget {
           onSelect: onModel,
         ),
       ],
-      if (showReceiptCopy) ...[
+      if (speechControls != null && !agentMode) speechControls!,
+      if (showReceiptCopy && speechControls == null) ...[
         const Spacer(),
         Flexible(
           child: Text(
@@ -140,7 +144,7 @@ class ChatHeader extends StatelessWidget {
         ),
       ],
     ];
-    return showReceiptCopy
+    return showReceiptCopy && speechControls == null
         ? Row(children: children)
         : Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,

@@ -1,0 +1,3 @@
+{"metadata":{"uid":"gw-101","product":{"name":"OpenShell Gateway","vendor_name":"NVIDIA","version":"0.3.0"},"version":"1.8.0"},"time":1775014138101,"class_uid":5019,"class_name":"Device Config State Change","activity_name":"Update","message":"policy revision 3 merged","container":{"uid":"sbx-7f3a","name":"flywheel-hooked"}}
+{"class_uid":4001,"metadata":{"uid":"gw-trunc"
+{"metadata":{"uid":"gw-102","product":{"name":"OpenShell Gateway","vendor_name":"NVIDIA","version":"0.3.0"},"version":"1.8.0"},"time":1775014138102,"class_uid":5019,"class_name":"Device Config State Change","activity_name":"Update","message":"draft chunk approved","container":{"uid":"sbx-7f3a","name":"flywheel-hooked"}}

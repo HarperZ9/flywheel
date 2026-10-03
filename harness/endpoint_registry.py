@@ -8,10 +8,9 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 from dataclasses import replace
 
-from . import claude_cli_auth, providers
+from . import claude_cli_auth, providers, safe_program
 from .proposer import Proposer, ProposerOutput, prompt_hash
 
 ProviderPermissionError = providers.ProviderPermissionError
@@ -68,7 +67,7 @@ def _credential(key_env: str, *, local: bool, kind: str = "", name: str = "") ->
     """PRESENCE only: local-none, cli-auth/cli-absent, present/absent."""
     if kind == "cli":
         binary = _CLI_BINARY.get(name, name)
-        return "cli-auth" if shutil.which(binary) else "cli-absent"
+        return "cli-auth" if safe_program.which(binary) else "cli-absent"
     if local:
         return "local-none"
     try:

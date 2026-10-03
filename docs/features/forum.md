@@ -198,6 +198,11 @@ The MCP names and the internal handlers they map to:
 - `forum.context.preflight`
 - `forum.gate.list` / `forum.gate.approve` / `forum.gate.edit` / `forum.gate.reject`
 
+From 1.15, `gate_approve`, `gate_edit` and `gate_reject` and their `forum.gate.*`
+aliases are listed and run only when forum starts with `--allow-gate-decisions`
+(`McpSurface(..., allow_gate_decisions=True)` in Python). Without it a call returns
+`GRANT_REQUIRED` and writes nothing.
+
 The MCP server is a thin adapter over the HTTP surface, so the two surfaces
 expose the same behavior.
 
@@ -227,13 +232,15 @@ Forum is the `orchestration` organ in the Flywheel lane registry. Registry entry
 
 ```python
 "forum": Lane(
-    "forum", "forum-engine", "forum", ("mcp",), "pip", "1.13.0",
+    "forum", "forum-engine", "forum", ("mcp",), "pip", "1.16.0",
     "witnessed causal ledger + model-agnostic routing",
-    "orchestration", source_repo="public/forum", py_module="forum.cli"),
+    "orchestration", source_repo="public/forum", py_module="forum.cli",
+    bundled_mcp_module="forum.mcp_surface",
+    env_vars=("FORUM_RUN_REAL", "OTEL_EXPORTER_OTLP_ENDPOINT")),
 ```
 
 `install_name` is `forum-engine`, the command is `forum`, the MCP args are
-`("mcp",)`, the kind is `pip`, and it is version-pinned to `1.13.0`, which
+`("mcp",)`, the kind is `pip`, and it is version-pinned to `1.16.0`, which
 matches the package manifest. Forum is also part of the harness `SPINE` tuple in
 `harness/gateway.py`.
 
@@ -280,6 +287,16 @@ down. The gateway HTTP routes (`harness/gateway.py`) are:
 - `GET /api/forum/ledger` → `forum.ledger.summary`
 - `GET /api/forum/gates` → `gate_list`
 - `GET /api/forum/run-room` → `forum.run.room`
+
+The engine starts forum without `--allow-gate-decisions`. It adds the flag only to
+the launch of one lane call you approve at T2 for `gate_approve`, `gate_edit` or
+`gate_reject`, the argv of a pip or source launch or forum's `serve_stdio` keyword
+in the frozen build. The GET proxies, Plugins, agent runs and the tools listing
+start forum without it, so the forum card lists the 18 tools of an ordinary launch
+and a gate decision runs only on your approval. An alias such as
+`forum.gate.approve` is not in the policy table, so it needs T2 and never gets the
+flag. forum also starts with `FORUM_CHILD_ENV` and `FORUM_ALLOW_EXEC_CLI` empty;
+its MCP server here runs the echo executor and starts no command.
 
 The desktop client wraps those routes in `desktop/lib/client/gateway_forum.dart`
 (`forumStatus`, `forumLedger`, `forumGates`, `forumRoom`), typed by
@@ -330,7 +347,7 @@ each piece is present and testable:
 - Forum is installable from PyPI as `forum-engine` and carries no
   `package_disabled_reason` in the registry, unlike some sibling lanes that
   require a source checkout. Observed, from `harness/lanes_registry.py`.
-- The registry version (`1.13.0`) and the package manifest version (`1.13.0`)
+- The registry version (`1.16.0`) and the package manifest version (`1.16.0`)
   are aligned at the time of reading. A future package bump that skips the
   registry would drift; the version is a hand-maintained constant, not derived.
 - The gateway HTTP surface proxies only four read-only forum endpoints. The

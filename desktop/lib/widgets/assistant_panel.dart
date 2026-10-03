@@ -166,49 +166,56 @@ class _AssistantPanelState extends State<AssistantPanel> {
   Widget build(BuildContext context) {
     final t = context.fw;
     final log = widget.executor.log.reversed.toList(); // newest first
+    // Everything above the command row scrolls, so a tall Rowan card and its
+    // outcome stay reachable inside the dialog's fixed height.
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Kicker(AssistantIdentity.name, hot: true),
-        const SizedBox(height: FwLayout.s2),
-        const Text(
-          'Ask for work, or say what you need.',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: FwLayout.s2),
-        Text(
-          'A work request becomes a reviewed supervised operation. Music, '
-          'navigation, and timers are quick device actions.',
-          style: TextStyle(fontSize: 11.5, color: t.inkFaint),
-        ),
-        if (widget.rowan != null) ...[
-          const SizedBox(height: FwLayout.s3),
-          RowanOperationCard(
-            rowan: widget.rowan!,
-            root: _root,
-            tokens: _tokens,
-            timeout: _timeout,
-            onRun: _send,
-          ),
-        ],
-        const SizedBox(height: FwLayout.s4),
         Flexible(
-          child: log.isEmpty && _tasks == null
-              ? const HonestNull(
-                  'Nothing yet. Try "navigate to the airport" or "fix the failing test".',
-                )
-              : ListView(
-                  shrinkWrap: true,
-                  children: [
-                    for (final record in log)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: FwLayout.s2),
-                        child: _record(t, record),
-                      ),
-                    if (_tasks != null) AssistantTaskList(controller: _tasks!),
-                  ],
+          child: SingleChildScrollView(
+            key: const Key('assistant-panel-body'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Kicker(AssistantIdentity.name, hot: true),
+                const SizedBox(height: FwLayout.s2),
+                const Text(
+                  'Ask for work, or say what you need.',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
+                const SizedBox(height: FwLayout.s2),
+                Text(
+                  'A work request becomes a reviewed supervised operation. Music, '
+                  'navigation, and timers are quick device actions.',
+                  style: TextStyle(fontSize: 11.5, color: t.inkFaint),
+                ),
+                if (widget.rowan != null) ...[
+                  const SizedBox(height: FwLayout.s3),
+                  RowanOperationCard(
+                    rowan: widget.rowan!,
+                    root: _root,
+                    tokens: _tokens,
+                    timeout: _timeout,
+                    onRun: _send,
+                  ),
+                ],
+                const SizedBox(height: FwLayout.s4),
+                if (log.isEmpty && _tasks == null)
+                  const HonestNull(
+                    'Nothing yet. Try "navigate to the airport" or "fix the failing test".',
+                  )
+                else ...[
+                  for (final record in log)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: FwLayout.s2),
+                      child: _record(t, record),
+                    ),
+                  if (_tasks != null) AssistantTaskList(controller: _tasks!),
+                ],
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: FwLayout.s3),
         Row(

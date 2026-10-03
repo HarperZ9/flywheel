@@ -1,7 +1,10 @@
 """Downloads must be reproducible and exclude unlisted local files."""
 import json
+import hashlib
 import shutil
 import zipfile
+
+import pytest
 
 from scripts import build_skill_bundle as builder
 from scripts import check_public_instructions as hygiene
@@ -27,7 +30,7 @@ def test_bundles_are_reproducible_and_allowlisted(tmp_path, monkeypatch):
     monkeypatch.setattr(builder, "PLUGIN", source)
     first = builder.bundle(tmp_path / "first")
     for path in source.rglob("*"):
-        if path.is_file():
+        if path.is_file() and path.suffix != ".png":  # CRLF churn applies to text only
             text = path.read_text("utf-8")
             path.write_bytes(text.replace("\n", "\r\n").encode("utf-8"))
     second = builder.bundle(tmp_path / "second")
@@ -49,3 +52,104 @@ def test_bundles_are_reproducible_and_allowlisted(tmp_path, monkeypatch):
                 manifest = json.loads(archive.read(builder.NAME + "/.codex-plugin/plugin.json"))
                 assert manifest["name"] == builder.NAME
                 assert manifest["version"] == first["version"]
+
+
+def test_portable_manifest_preserves_identity_and_openai_presentation(tmp_path):
+    result = builder.bundle(tmp_path)
+    path = next(row["file"] for row in result["artifacts"]
+                if row["file"].endswith("-plugin.zip"))
+    with zipfile.ZipFile(tmp_path / path) as archive:
+        root = json.loads(archive.read(builder.NAME + "/plugin.json"))
+        codex = json.loads(archive.read(builder.NAME + "/.codex-plugin/plugin.json"))
+        claude = json.loads(archive.read(builder.NAME + "/.claude-plugin/plugin.json"))
+        assert root["$schema"] == "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+        assert root["name"] == codex["name"] == claude["name"]
+        assert root["version"] == codex["version"] == claude["version"]
+        assert root["extensions"] == {"com.openai": {"interface": codex["interface"]}}
+        assert "skills" not in root and "interface" not in root
+        assert set(root) <= {"$schema", "name", "version", "description", "author",
+                            "homepage", "repository", "license", "keywords", "extensions"}
+        assert builder.NAME + "/skills/" + builder.NAME + "/SKILL.md" in archive.namelist()
+
+
+@pytest.mark.parametrize("field,value", [("name", "different-name"), ("version", "9.0.0")])
+def test_bundle_rejects_compatibility_identity_drift(tmp_path, monkeypatch, field, value):
+    source = tmp_path / "source"
+    shutil.copytree(builder.PLUGIN, source)
+    path = source / ".claude-plugin/plugin.json"
+    manifest = json.loads(path.read_text("utf-8"))
+    manifest[field] = value
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    monkeypatch.setattr(builder, "PLUGIN", source)
+    with pytest.raises(ValueError, match="manifest identity"):
+        builder.bundle(tmp_path / "output")
+    assert not (tmp_path / "output").exists()
+
+
+def test_release_verification_binds_accepted_checksums_to_archive_bytes(tmp_path):
+    result = builder.bundle(tmp_path)
+    sums = tmp_path / "SHA256SUMS"
+    accepted = hashlib.sha256(sums.read_bytes()).hexdigest()
+    assert builder.verify_release(sums, accepted) == 2
+    archive = tmp_path / result["artifacts"][0]["file"]
+    archive.write_bytes(archive.read_bytes() + b"tampered")
+    with pytest.raises(ValueError, match="archive hash"):
+        builder.verify_release(sums, accepted)
+
+
+@pytest.mark.parametrize("rows", ["", "0" * 64 + "  ../outside.zip\n",
+                                  "0" * 64 + "  flywheel-evidence-task-0.1.0-plugin.zip\n"])
+def test_release_verification_rejects_incomplete_or_unsafe_receipt(tmp_path, rows):
+    sums = tmp_path / "SHA256SUMS"
+    sums.write_text(rows, encoding="utf-8")
+    accepted = hashlib.sha256(sums.read_bytes()).hexdigest()
+    with pytest.raises(ValueError, match="receipt"):
+        builder.verify_release(sums, accepted)
+
+
+def test_release_verification_rejects_changed_receipt(tmp_path):
+    builder.bundle(tmp_path)
+    with pytest.raises(ValueError, match="accepted"):
+        builder.verify_release(tmp_path / "SHA256SUMS", "0" * 64)
+
+
+@pytest.mark.parametrize("change", ["extra", "missing", "duplicate", "mixed_version"])
+def test_release_verification_rejects_archive_set_drift(tmp_path, change):
+    result = builder.bundle(tmp_path)
+    sums = tmp_path / "SHA256SUMS"
+    if change == "extra":
+        (tmp_path / "unreviewed.zip").write_bytes(b"unreviewed")
+    elif change == "missing":
+        (tmp_path / result["artifacts"][0]["file"]).unlink()
+    else:
+        rows = sums.read_text("utf-8").splitlines()
+        rows[1] = rows[0] if change == "duplicate" else rows[1].replace(result["version"], "9.0.0")
+        sums.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    accepted = hashlib.sha256(sums.read_bytes()).hexdigest()
+    with pytest.raises(ValueError, match="receipt"):
+        builder.verify_release(sums, accepted)
+
+
+def test_plugin_carries_directory_listing_fields_icon_and_privacy(tmp_path):
+    claude = json.loads((builder.PLUGIN / ".claude-plugin/plugin.json").read_text("utf-8"))
+    for key in ("homepage", "documentationUrl", "supportUrl", "privacyPolicyUrl",
+                "termsOfServiceUrl", "repository"):
+        assert claude[key].startswith("https://")
+    assert claude["displayName"] and 5 <= len(claude["keywords"]) <= 8
+    icon = (builder.PLUGIN / claude["icon"]).read_bytes()
+    assert icon[:8] == bytes([137, 80, 78, 71, 13, 10, 26, 10]) and icon[12:16] == b"IHDR"
+    width, height = int.from_bytes(icon[16:20], "big"), int.from_bytes(icon[20:24], "big")
+    assert width == height and 512 <= width <= 2048 and len(icon) < 2 * 1024 * 1024
+    result = builder.bundle(tmp_path)
+    plugin_zip = next(row["file"] for row in result["artifacts"] if row["file"].endswith("-plugin.zip"))
+    with zipfile.ZipFile(tmp_path / plugin_zip) as archive:
+        assert archive.read(builder.NAME + "/.claude-plugin/icon.png") == icon
+        assert b"opens no network connection" in archive.read(builder.NAME + "/PRIVACY.md")
+
+
+def test_published_checksum_files_use_lf_on_every_host(tmp_path):
+    # The release runner is Windows; a CRLF checksum file fails sha256sum -c.
+    builder.bundle(tmp_path)
+    for name in ("SHA256SUMS", "manifest.json"):
+        data = (tmp_path / name).read_bytes()
+        assert data.endswith(b"\n") and b"\r" not in data, name

@@ -89,3 +89,18 @@ def selector_bounds(data: dict) -> str:
             "p-value tests a null that construction excluded")
     parts.append("one model, one run, no between-seed variance component")
     return "; ".join(parts)
+
+
+def scaled(score: float, baseline: float, ceiling: float) -> float:
+    """(score - baseline) / (ceiling - baseline): 0 at the trivial baseline, 1 at
+    the ceiling a repeat of the measurement reaches.
+
+    The anchors decide what the number means, so a ceiling at or below the
+    baseline is refused rather than turned into a sign flip or a division by zero.
+    """
+    for name, v in (("score", score), ("baseline", baseline), ("ceiling", ceiling)):
+        if not isinstance(v, (int, float)) or isinstance(v, bool) or v != v:
+            raise ValueError(f"{name} must be a finite number")
+    if ceiling <= baseline:
+        raise ValueError("ceiling must be above baseline")
+    return (score - baseline) / (ceiling - baseline)

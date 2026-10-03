@@ -11,7 +11,7 @@ extension GatewayCreative on GatewayClient {
         'params': params,
         'seed': seed,
         'ttf': true,
-        'family': 'Zentropy Mint $seed',
+        'family': 'Zain Mint $seed',
       }),
     );
     return _decode(r);
@@ -52,7 +52,7 @@ extension GatewayCreative on GatewayClient {
       body: jsonEncode({
         'params': params,
         'seed': seed,
-        'family': 'Zentropy Mint $seed',
+        'family': 'Zain Mint $seed',
       }),
     );
     return _decode(r);
@@ -68,7 +68,7 @@ extension GatewayCreative on GatewayClient {
       body: jsonEncode({
         'params': params,
         'seed': seed,
-        'family': 'Zentropy Mint $seed',
+        'family': 'Zain Mint $seed',
       }),
     );
     return _decode(r);

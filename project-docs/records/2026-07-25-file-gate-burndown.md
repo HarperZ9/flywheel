@@ -11,8 +11,8 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/agent_recovery_bench.py | 684 |
 | harness/classifier_friction_bench.py | 454 |
 | harness/cross_harness_manifest.py | 342 |
-| harness/endpoints.py | 492 |
-| harness/gateway.py | 2367 |
+| harness/endpoints.py | 466 |
+| harness/gateway.py | 2357 |
 | harness/governed_agent_bench.py | 734 |
 | harness/lanes.py | 361 |
 | harness/local_agent.py | 360 |
@@ -30,7 +30,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/tool_call_receipt.py | 347 |
 | harness/unisonai_stateful_bench.py | 559 |
 
-Total: 21 files, 12014 lines over a 300-line gate.
+Total: 21 files, 12005 lines over a 300-line gate.
 
 
 Merge note, 2026-07-28 (p1/tail x main): tasks_physics.py and
@@ -41,3 +41,17 @@ Same rule, second boundary: lanes.py grew 317 to 350 on main (PRs 11 and 12,
 2026-07-28) before main carried any gate; its ceiling moves to 350 at that
 merge and may only shrink from there. Third boundary, same day:
 350 to 361 at PR 13 (PyInstaller packaging), ceiling moves to 361.
+
+Ratchet, 2026-09-23: endpoints.py had shrunk to 466 lines on main while its
+ceiling stayed at 492, so a branch grew it to 474 and the gate still passed.
+The ceiling moves down to 466. A ceiling may only move down.
+
+Shrink note, 2026-09-26 (feat/lanes-operational): gateway.py moves 2367 to 2358.
+The lane console hooks send every `/api/lanes/` request and the node path
+setting through one line per method, the lane install and callable routes moved
+into `harness/lane_console_route.py`, and `--desktop-launch` registers through
+`lane_probe_cache.add_desktop_flag`.
+
+Shrink note, 2026-09-26 (feat/lanes-operational, WP10): gateway.py moves 2358 to 2357.
+The stop step that closes the lane sessions moved into
+`gateway_lane_calls._stop_serving` with the operation service and socket close.

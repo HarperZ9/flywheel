@@ -10,10 +10,10 @@ indexed until a view asks."""
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
-import sys
 from pathlib import Path
+
+from . import lane_cli
 
 _VIEWS = {
     "map": ["map", "--json"],          # monorepo inventory / catalog
@@ -25,18 +25,10 @@ _SUMMARY_TIMEOUT = 20
 
 
 def _index_argv() -> "list | None":
-    """The argv that runs the index CLI: the console script if on PATH, else
-    `python -m index_graph.cli` if the module is importable. None otherwise."""
-    exe = shutil.which("index")
-    if exe:
-        return [exe]
-    try:
-        import importlib.util
-        if importlib.util.find_spec("index_graph") is not None:
-            return [sys.executable, "-m", "index_graph.cli"]
-    except Exception:
-        pass
-    return None
+    """The argv that runs the index CLI (lane_cli): the console script or
+    `python -m index_graph.cli` in a source or pip install, the engine's
+    `--bundled-lane-cli index` mode in a frozen build. None when neither runs."""
+    return lane_cli.lane_cli_argv("index")
 
 
 def index_available() -> bool:
@@ -56,10 +48,9 @@ def index_view(root: str, view: str, *, timeout: int = _TIMEOUT) -> dict:
     if argv is None:
         return {"error": "the index engine is not installed; "
                          "pip install index-graph"}
-    cmd = argv + _VIEWS[view] + ["--root", str(root)]
+    args = _VIEWS[view] + ["--root", lane_cli.absolute(str(root))]
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True,
-                              timeout=timeout)
+        proc = lane_cli.run_lane_cli("index", args, prefix=argv, timeout=timeout)
     except subprocess.TimeoutExpired:
         return {"error": f"index {view} timed out after {timeout}s"}
     except (OSError, ValueError) as e:

@@ -16,6 +16,7 @@ NOW = "2026-08-15T12:00:00Z"
 OWNER = "owner_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 OTHER = "owner_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 JOURNEY = "jrn_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+pytestmark = pytest.mark.usefixtures("lanes_at_their_pins")  # plans freeze a gather launch
 
 
 def _journey(state):
@@ -220,12 +221,11 @@ def test_busy_and_commit_failures_are_fixed_before_proposal(
         tmp_path, monkeypatch):
     _journey(tmp_path)
     head = JourneyStore(tmp_path).load(OWNER, JOURNEY)["event_head_sha256"]
-    monkeypatch.setattr(
-        "harness.gateway_grant_route.ExclusiveJourneyLock.acquire",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(JourneyLockBusy()))
-    busy, busy_status = _prepare(tmp_path, head=head)
+    with monkeypatch.context() as patched:
+        patched.setattr("harness.gateway_grant_route.ExclusiveJourneyLock.acquire",
+                        lambda *_args, **_kwargs: (_ for _ in ()).throw(JourneyLockBusy()))
+        busy, busy_status = _prepare(tmp_path, head=head)
     assert busy_status == 503 and busy["error"]["code"] == "STORE_BUSY"
-    monkeypatch.undo()
     monkeypatch.setattr("harness.gateway_grant_route._replace",
                         lambda *_args: (_ for _ in ()).throw(OSError()))
     failed, failed_status = _prepare(tmp_path, head=head)

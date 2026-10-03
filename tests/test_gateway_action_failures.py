@@ -11,6 +11,7 @@ from harness.gateway_grant_route import (
 from harness.journey_store import JourneyStore, MutationCommand
 from harness import gateway
 
+pytestmark = pytest.mark.usefixtures("lanes_at_their_pins")  # plans freeze a gather launch
 
 OPERATIONS = {
     "chat.complete": {"model": "local", "messages": [

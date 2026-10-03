@@ -12,7 +12,7 @@ UNVERIFIABLE and emits no accepting envelope.
 from __future__ import annotations
 import hashlib
 import time
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import Path
 
 from .envelope import ProofEnvelope
@@ -20,13 +20,14 @@ from .oracle import Oracle, OracleResult
 from .proposer import Proposer, ProposerOutput, prompt_hash
 from .task import Task
 from .witness import witness_envelope, WitnessVerdict
-from .boot import BootPacket, boot as boot_packet, hydrate_prompt
+from .boot import BootPacket, boot, hydrate_prompt
+from .evolutionary_flywheel import VerifiedPool
 from .policy import PolicyLayer, PolicyResult, gate as run_gate
 from .cache import (ReceiptCache, cache_key, canonical_prompt, knowledge_hash,
                     oracle_context_hash)
 from .proof_cache import proof_lookup, proof_insert
 from .chain import StageReceipt, append_stage, chain_to_dicts
-from .search import best_of_n, DEFAULT_TEMPS
+from .search_stage import run_search_stage
 from .eval import ArmConfig
 from .grounding import recheck_grounding
 from .oracle_inputs import capture as capture_inputs
@@ -84,7 +85,7 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
              output_relations=(),
              output_verify_proof: bool = False,
              validation_ledger=None,
-             pool: "VerifiedPool | None" = None,
+             pool: VerifiedPool | None = None,
              auto_context: bool = True,
              memory_sources: list[str] | None = None,
              context_budget: int = 4096,
@@ -154,27 +155,7 @@ def run_loop(task: Task, proposer: Proposer, oracle: Oracle, *,
 
     search_mode = search is not None and search.n_candidates > 1 and cached is None
     if search_mode:
-        sr = best_of_n(replace(task, prompt=prompt), proposer, oracle,
-                       temps=(search.temps or DEFAULT_TEMPS))
-        winner = sr.accepted or sr.candidates[0]
-        out = ProposerOutput(text=winner.text, model_ref=winner.model_ref,
-                             seed=winner.seed, prompt_hash=winner.prompt_hash,
-                             cache="search")
-        orc = winner.oracle_result if winner.oracle_result else OracleResult(
-            passed=False, cmd=task.oracle_cmd, output_hash="",
-            stdout_excerpt="", rc=1)
-        cand_payload = [{"temp": c.temperature,
-                         "candidate_hash": _short_hash(c.text),
-                         "verdict": c.oracle_result.verdict() if c.oracle_result else "NONE",
-                         "oracle_output_hash": c.oracle_result.output_hash if c.oracle_result else ""}
-                        for c in sr.candidates]
-        append_stage(chain, "search", prompt_hash(prompt),
-                     _short_hash(winner.text),
-                     sr.verdict,
-                     payload={"n": len(sr.candidates), "correlation": round(sr.correlation, 3),
-                              "candidates": cand_payload})
-        budget = {"candidates": len(sr.candidates),
-                  "oracle_calls": len(sr.candidates), "proposer_cache": "search"}
+        out, orc, budget = run_search_stage(task, prompt, proposer, oracle, search, chain)
     else:
         if cached is not None:
             out = ProposerOutput(

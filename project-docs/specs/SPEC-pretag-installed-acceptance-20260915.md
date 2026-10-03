@@ -53,3 +53,23 @@ This probe uses a new temporary profile and Canon database, never the operator's
 store. It establishes the installed engine's tested HTTP behavior, not native UI
 rendering, chat interaction, model quality, or restart-safe client capture.
 
+## Installed lane acceptance extension (PLAN WP11)
+
+After the Canon context check, `desktop/tool/run_installed_lane_acceptance.ps1`
+runs `scripts/installed_app_lane_acceptance.py` against the per-user install,
+uninstalls it, installs the same installer for all users under Program Files,
+runs the lane acceptance again and uninstalls that too. Each run starts the
+installed engine the way the app does (`--port <free> --desktop-launch`, the
+install folder as working directory) under a throwaway profile with a
+System32-only PATH. A `fresh` leg checks every lane with no setup; a `setup`
+leg repeats the class B checks after Git, the stub model server
+(`scripts/stub_model_server.py` on 127.0.0.1:8765), the local-model folder, a
+canon block and a writing draft are in place. The receipts
+`installed-lanes-per-user.json` and `installed-lanes-all-users.json` name each
+lane's class or `BELOW_BAR`/`HELD` with the failed checks, and fail the step
+when any lane departs from its row in `packaging/installed-lane-expectations.json`
+(in either direction, or a held lane with a failed check), when the install
+folder changes, the roster moves on its own, or the token appears in a receipt.
+A tier refusal check passes only on the governance gate's own 403. The detail files and throwaway homes stay in the runner's
+temp folder. The run proves the installed engine's lane routes on a Windows
+Server runner, not native UI rendering, provider-backed calls or model quality.

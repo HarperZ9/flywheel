@@ -21,6 +21,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
+from . import safe_program
 
 SKIP_DIRS = {".git", "__pycache__", ".pytest_cache", "node_modules",
              ".ruff_cache", "workdir", "envelopes", ".venv", "venv"}
@@ -89,9 +90,10 @@ def _root_hash(files: list[Path], root: Path) -> str:
 
 def _git_head(root: Path) -> str | None:
     try:
-        r = subprocess.run(
-            "git rev-parse HEAD", cwd=str(root), shell=True,
-            capture_output=True, timeout=5, env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
+        command, env = safe_program.launch(
+            ["git", "rev-parse", "HEAD"], cwd=root,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
+        r = subprocess.run(command, cwd=str(root), capture_output=True, timeout=5, env=env)
         if r.returncode == 0:
             return r.stdout.decode().strip()[:16]
     except Exception:

@@ -9,8 +9,13 @@ from harness.cross_harness_cli import _csv, _exit
 from harness.cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest
 from harness.cross_harness_types import AttemptRequest
 from harness.proposer import StubProposer
+# Router tests run real ToolExecutor calls, and each passes the pre-action
+# monitor (sealed records, file locks). A 3 s attempt deadline expired on loaded
+# Windows CI shards ("timeout" in place of "returned"). Deadline behavior is
+# tested with fake runners and explicit timeouts, not with this default.
+REQUEST_TIMEOUT_SECONDS = 60
 def request(tmp_path, role="codex_harness", adapter="codex_cli_json/v1", model="gpt-5.3-codex-spark", requested=None):
-    return AttemptRequest("run", "spark", "set", "agt-001-full", "do the task", "a" * 64, role, role.split("_")[0], adapter, model, requested or model, tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", 3, tmp_path)
+    return AttemptRequest("run", "spark", "set", "agt-001-full", "do the task", "a" * 64, role, role.split("_")[0], adapter, model, requested or model, tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1, "cold_declared", REQUEST_TIMEOUT_SECONDS, tmp_path)
 def outcome(stdout="", output="answer", *, rc=0, stderr="", elapsed=7):
     if output is not None:
         final = json.dumps({"type": "item.completed", "item": {"type": "agent_message", "text": output}})
@@ -23,17 +28,17 @@ def test_resolve_codex_rejects_extensionless_windows_wrapper_without_exe(monkeyp
     calls = []
     on_path = {"codex.exe": None, "codex": "C:/npm/codex"}
     monkeypatch.setattr(adapters_module, "os", SimpleNamespace(name="nt"))
-    monkeypatch.setattr(identity_module.shutil, "which", lambda name: calls.append(name) or on_path.get(name))
+    monkeypatch.setattr(identity_module.safe_program, "which", lambda name: calls.append(name) or on_path.get(name))
     assert _resolve_codex() == ""
     assert calls == ["codex.exe"]
 def test_resolve_codex_accepts_native_windows_exe(monkeypatch):
     monkeypatch.setattr(adapters_module, "os", SimpleNamespace(name="nt"))
-    monkeypatch.setattr(identity_module.shutil, "which",
+    monkeypatch.setattr(identity_module.safe_program, "which",
                         lambda name: "C:/npm/vendor/codex.exe" if name == "codex.exe" else None)
     assert _resolve_codex() == "C:/npm/vendor/codex.exe"
 def test_resolve_codex_keeps_extensionless_posix_executable(monkeypatch):
     monkeypatch.setattr(adapters_module, "os", SimpleNamespace(name="posix"))
-    monkeypatch.setattr(identity_module.shutil, "which", lambda name: f"/usr/local/bin/{name}")
+    monkeypatch.setattr(identity_module.safe_program, "which", lambda name: f"/usr/local/bin/{name}")
     assert _resolve_codex() == "/usr/local/bin/codex"
 def test_direct_codex_uses_stdin_hardened_read_only_argv_and_captures_jsonl(tmp_path):
     seen = {}
@@ -154,7 +159,9 @@ def test_outer_loop_uses_one_deadline_across_turns(tmp_path):
     class Proposer:
         model_ref = "spark"
         def generate(self, *a, **k): calls.append(1); return type("Out", (), {"text": 'TOOL read_file {"path":"x"}', "model_ref": "spark", "usage": None})()
-    req = request(tmp_path, "flywheel_harness", "flywheel_router/v1")
+    # Fake clock: +2 per read, so a 3 s deadline allows exactly one turn.
+    req = AttemptRequest(**{**request(tmp_path, "flywheel_harness", "flywheel_router/v1").__dict__,
+                            "timeout_seconds": 3})
     result = FlywheelRouterAdapter(proposer=Proposer(), clock=Clock()).execute(req)
     assert result.execution_state == "timeout" and result.failure_class == "timeout" and len(calls) == 1
 def test_flywheel_runs_outer_loop_with_read_only_gate_and_distinct_enforcement(tmp_path):

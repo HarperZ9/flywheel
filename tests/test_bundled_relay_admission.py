@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -64,9 +65,10 @@ def _expected(descriptor):
     }
 
 
-def test_valid_descriptor_admits_only_relay_status(tmp_path):
+def test_valid_descriptor_admits_only_relay_t1_tools(tmp_path):
     """Catches admission through PATH, registry python, or unbounded tools."""
     from harness.bundled_lane_admission import admit_bundled_lane
+    from harness.lane_tool_policy import admitted_tools
 
     descriptor = _descriptor(source_digest="sha256:" + canonical_sha256(
         _descriptor()["source"]["files"]))
@@ -81,7 +83,8 @@ def test_valid_descriptor_admits_only_relay_status(tmp_path):
     assert result.blocking_codes == ()
     assert result.launch.argv == (
         "D:/app/flywheel-gateway.exe", "--bundled-lane-mcp", "relay")
-    assert result.launch.allowed_tools == ("relay.status",)
+    assert result.launch.allowed_tools == tuple(admitted_tools("relay"))
+    assert "local_agent_start" not in result.launch.allowed_tools
     assert result.launch.inherit_env is False
     assert result.launch.hide_window is True
     assert result.component["descriptor_sha256"] == _expected(descriptor)["descriptor_sha256"]
@@ -191,7 +194,12 @@ def test_frozen_relay_auto_uses_gateway_self_child_and_not_path(monkeypatch):
     assert calls
     assert runtime.present is True
     assert runtime.selected_runtime == "bundled"
-    assert runtime.launch == admission.launch
+    from dataclasses import replace
+    assert replace(runtime.launch, cwd=None, env_overrides=()) == admission.launch
+    assert Path(runtime.launch.cwd).parts[-2:] == ("lanes", "relay")
+    # the lane folder's own temp and app-data folders (POLICY-DECISION C-9)
+    env = dict(runtime.launch.env_overrides)
+    assert Path(env["TEMP"]).parent == Path(runtime.launch.cwd)
     assert runtime.launch.allowed_tools == ("relay.status",)
     # This used to assert resolve_mcp_command("relay") == [], which held only
     # while relay carried package_disabled_reason and the roster offered no argv

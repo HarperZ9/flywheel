@@ -30,6 +30,7 @@ class ArmConfig:
     temps: list[float] | None = None
     use_cache: bool = False
     label: str = ""
+    prune_m: int | None = None          # opt-in duplicate pruning (search_prune.py)
 
 
 @dataclass

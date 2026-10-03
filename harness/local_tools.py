@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .local_read_file import READ_FILE_TOOL_GUIDANCE, read_file_tool
+from .safe_program import shell_env  # the shell never searches the project folder first
 
 _EXTERNAL_TIMEOUT = 120   # bound on an external/MCP tool call, seconds
 
@@ -226,6 +227,10 @@ class ToolExecutor:
     # Sealed tool-call receipt emission (opt-in). When receipt_dir is set and
     # _receipt_run_id is non-empty, execute() emits one sealed receipt per call.
     receipt_dir: "str | None" = None
+    # Pre-action monitor, on by default (see preaction.executor_bridge). None
+    # builds the default monitor on first use; False disables it (gate still runs).
+    monitor: "object" = None
+    _monitor_built: bool = False
     _receipt_run_id: str = ""
     _receipt_seq: int = 0
     _receipt_prev_sha256: str = ""
@@ -266,30 +271,11 @@ class ToolExecutor:
 
     def _emit_tool_receipt(
         self, name: str, args: dict, result: ToolResult,
-        rationale: dict | None = None,
+        rationale: dict | None = None, preaction: dict | None = None,
     ) -> None:
-        """Witness the bytes this call moved, then seal a receipt over them.
-
-        The witness runs whether or not receipts are being written, because the
-        chain is what the run did and the receipt directory is an opt-in. Both
-        hash the same argument bytes, so the two records name one digest.
-        """
-        if not self._receipt_run_id:
-            return
-        from .tool_witness import seal_call, witness_call
-        cap, admission, witness_meta = self._classify_capability(name)
-        outcome = "COMPLETED" if result.ok else ("BLOCKED" if result.output.startswith("[gate]") else "ERROR")
-        self._receipt_seq += 1
-        witness_call(self._action_log, tool=name, args=args, output=result.output,
-                     ok=result.ok, seq=self._receipt_seq, capability=cap,
-                     outcome=outcome, context=witness_meta)
-        if not self.receipt_dir:
-            return
-        self._receipt_prev_sha256 = seal_call(
-            self.receipt_dir, tool=name, capability=cap, admission=admission,
-            args=args, output=result.output, ok=result.ok, outcome=outcome,
-            run_id=self._receipt_run_id, seq=self._receipt_seq,
-            prev=self._receipt_prev_sha256, rationale=rationale)
+        """Witness the bytes this call moved, then seal a receipt (local_tools_receipt)."""
+        from .local_tools_receipt import emit_tool_receipt
+        emit_tool_receipt(self, name, args, result, rationale, preaction)
 
     def external_tools_system(self) -> str:
         """Advertise registered external (MCP) tools to the model, in the same
@@ -307,12 +293,23 @@ class ToolExecutor:
     ) -> ToolResult:
         """Execute a tool call and emit a sealed receipt when receipt_dir is set.
 
-        rationale is optional (default None = honest null, byte-identical receipt).
-        When provided, it is sealed into the receipt so the 'why did the agent do
-        this?' answer is re-verifiable, not asserted.
+        rationale is optional (honest null, byte-identical receipt). The
+        pre-action monitor (preaction.executor_bridge) runs first; on HOLD or
+        BLOCK the call never reaches _execute_inner.
         """
+        from .preaction.executor_bridge import preaction_gate, preaction_observe
+        gate = preaction_gate(self, name, args)
+        if gate is not None and not gate.run:
+            result = ToolResult(name, args, False, gate.result_text)
+            self._emit_tool_receipt(name, args, result, rationale=rationale,
+                                    preaction=gate.assessment.preaction_block())
+            return result
         result = self._execute_inner(name, args)
-        self._emit_tool_receipt(name, args, result, rationale=rationale)
+        preaction = None
+        if gate is not None:
+            preaction_observe(self, name, args, gate, result)
+            preaction = gate.assessment.preaction_block()
+        self._emit_tool_receipt(name, args, result, rationale=rationale, preaction=preaction)
         return result
 
     def _execute_inner(self, name: str, args: dict) -> ToolResult:
@@ -411,11 +408,10 @@ class ToolExecutor:
         if self.runner is not None:
             return self.runner(cmd, self.root)
         try:
-            proc = subprocess.run(cmd, shell=True, cwd=self.root,
+            proc = subprocess.run(cmd, shell=True, cwd=self.root, env=shell_env(cwd=self.root),
                                   capture_output=True, text=True, timeout=120)
         except subprocess.TimeoutExpired as e:
-            # a timeout is its own failure class, not a test failure: name it
-            # and keep the partial output rather than discarding it
+            # a timeout is its own failure class: name it and keep the partial output
             partial = ((e.stdout or "") if isinstance(e.stdout, str)
                        else (e.stdout or b"").decode("utf-8", "replace")) + \
                       ((e.stderr or "") if isinstance(e.stderr, str)

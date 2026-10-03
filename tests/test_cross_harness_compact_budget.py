@@ -17,8 +17,13 @@ class FakeDirectCodex(CaptureAdapter):
     adapter_id = "codex_cli_json/v1"
 def _compact_request(tmp_path, role, adapter, model, requested):
     policy = {**SHARED_TOOL_POLICY, "max_steps": 9, "max_output_tokens": 64, "compact_budget": 220}
+    # These tests check receipt field types, not the deadline. Eight read_file
+    # calls each pass the pre-action monitor (sealed records, file locks), and the
+    # shared 3 s attempt deadline expired on loaded Windows CI shards (state
+    # "timeout" in place of "returned"). Deadline behavior has its own tests.
     return AttemptRequest(**{**adapter_request(tmp_path, role, adapter, model, requested).__dict__,
-                            "tool_policy": policy, "tool_policy_sha256": canonical_sha256(policy)})
+                            "tool_policy": policy, "tool_policy_sha256": canonical_sha256(policy),
+                            "timeout_seconds": 60})
 def _assert_numeric_compaction_receipt(result):
     receipt = result.resource_observation["last_compaction"]
     event = next(e["last_compaction"] for e in result.tool_trace if e.get("type") == "compaction")

@@ -113,7 +113,7 @@ def _environment(env: Mapping[str, str]):
     return ctypes.create_unicode_buffer("\0".join(items) + "\0\0")
 
 
-def _startup(stdout_path: Path, stderr_path: Path, stdin_path: Path | None = None):
+def _startup(stdout_path: Path, stderr_path: Path, stdin_path: Path | None = None, *, show_window=False):
     import msvcrt
 
     stdin = open(stdin_path, "rb") if stdin_path else open(os.devnull, "rb")
@@ -123,7 +123,7 @@ def _startup(stdout_path: Path, stderr_path: Path, stdin_path: Path | None = Non
     startup = STARTUPINFO()
     startup.cb = ctypes.sizeof(startup)
     startup.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW
-    startup.wShowWindow = SW_HIDE
+    startup.wShowWindow = 5 if show_window else SW_HIDE
     startup.hStdInput = msvcrt.get_osfhandle(streams[0].fileno())
     startup.hStdOutput = msvcrt.get_osfhandle(streams[1].fileno())
     startup.hStdError = msvcrt.get_osfhandle(streams[2].fileno())
@@ -186,7 +186,7 @@ class WindowsJobProcess:
 
 def start_windows_job_process(exe: Path, args: list[str], env: Mapping[str, str],
                               cwd: Path, stdout: Path, stderr: Path,
-                              stdin_path: Path | None = None):
+                              stdin_path: Path | None = None, *, show_window=False):
     if os.name != "nt":
         return None, "job_object_unavailable:not_windows"
     kernel = _kernel()
@@ -203,7 +203,7 @@ def start_windows_job_process(exe: Path, args: list[str], env: Mapping[str, str]
     process = PROCESS_INFORMATION()
     streams = []
     try:
-        startup, streams = _startup(stdout, stderr, stdin_path)
+        startup, streams = _startup(stdout, stderr, stdin_path, show_window=show_window)
         command = ctypes.create_unicode_buffer(subprocess.list2cmdline([str(exe), *args]))
         environment = _environment(env)
         create = kernel.CreateProcessW

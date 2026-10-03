@@ -28,6 +28,7 @@ extension _FlywheelShellActiveView on _FlywheelShellState {
             roster: _coordinator.roster,
             world: _coordinator.world,
             onProbe: () => unawaited(_coordinator.probeLanes()),
+            onCheckLane: (name) => unawaited(_coordinator.checkLane(name)),
             onInstall: (name) async => await _coordinator.installLane(name),
             onStartEngine: () => unawaited(_coordinator.start()),
           ),

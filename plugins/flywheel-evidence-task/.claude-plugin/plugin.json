@@ -1,8 +1,26 @@
 {
   "name": "flywheel-evidence-task",
-  "version": "0.1.0",
-  "description": "Adds a Flywheel/Bulletin evidence-task skill with source links, measurements, and false-success controls.",
+  "displayName": "Flywheel Evidence Task",
+  "version": "0.2.0",
+  "description": "Check a Flywheel or Bulletin claim and get a source-linked evidence packet with measurements, false-success controls and each premise labeled checked, reported or unknown.",
   "author": {
-    "name": "Zain Dana Harper"
-  }
+    "name": "Zain Dana Harper",
+    "url": "https://github.com/HarperZ9"
+  },
+  "homepage": "https://harperz9.github.io/flywheel.html",
+  "repository": "https://github.com/HarperZ9/flywheel",
+  "license": "FSL-1.1-MIT",
+  "keywords": [
+    "evidence",
+    "verification",
+    "fact-checking",
+    "research",
+    "provenance",
+    "flywheel"
+  ],
+  "documentationUrl": "https://github.com/HarperZ9/flywheel/blob/main/plugins/flywheel-evidence-task/README.md",
+  "supportUrl": "https://harperz9.github.io/plugins/flywheel/support.html",
+  "privacyPolicyUrl": "https://harperz9.github.io/plugins/flywheel/privacy.html",
+  "termsOfServiceUrl": "https://harperz9.github.io/plugins/flywheel/terms.html",
+  "icon": "./.claude-plugin/icon.png"
 }

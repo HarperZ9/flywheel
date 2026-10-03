@@ -117,7 +117,7 @@ def arms_for_pool(pool, accept, held_out_accept) -> dict:
     rate = observed_accept_rate(pool, accept)
     arms = {
         "single": single(pool, accept),
-        "best_of_k_self_scored": best_of_k(pool, accept),
+        "best_of_k_self_scored": best_of_k(pool, accept, self_scored=True),
         "best_of_k_held_out": best_of_k(pool, accept, score=held_out_accept),
         "random_of_k": random_of_k(pool, accept, seed=SELECTION_SEED),
         "placebo_of_k": placebo_of_k(pool, accept, seed=PLACEBO_SEED,

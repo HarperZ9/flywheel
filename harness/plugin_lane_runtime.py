@@ -9,10 +9,15 @@ def unavailable_response(name: str) -> dict:
 
 
 def require_lane_launch(name, resolver):
+    """The lane's launch, or a lane code from the closed set: LANE_SETUP_REQUIRED
+    when only a setup step blocks it, LANE_CANNOT_LAUNCH otherwise (S7)."""
     try:
         return resolver(name)
-    except LaneRuntimeError:
-        raise GatewayOperationError("LANE_UNAVAILABLE") from None
+    except LaneRuntimeError as error:
+        from .lane_runtime_frozen import NEEDS_SETUP, launch_state
+        setup = launch_state(error.codes) == NEEDS_SETUP
+        raise GatewayOperationError(
+            "LANE_SETUP_REQUIRED" if setup else "LANE_CANNOT_LAUNCH") from None
 
 
 def lane_plugin_row(name, lane, command_resolver, runtime_resolver):

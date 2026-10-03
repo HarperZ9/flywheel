@@ -35,7 +35,8 @@ def test_flywheel_evidence_skill_resources_advertise_versions_and_hashes():
 
     assert doc["schema"] == "flywheel.skill-resources/v1"
     assert skill["name"] == "flywheel-evidence-task/SKILL.md"
-    assert skill["version"] == "0.1.0"
+    assert skill["version"] == json.loads((Path(__file__).resolve().parents[1] /
+        "plugins/flywheel-evidence-task/.codex-plugin/plugin.json").read_text("utf-8"))["version"]
     assert len(skill["sha256"]) == 64
     assert skill["mimeType"] == "text/markdown"
     assert constraints["name"] == "flywheel-evidence-task/references/constraints.md"
