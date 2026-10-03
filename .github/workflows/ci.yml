@@ -294,6 +294,36 @@ jobs:
           python-version: "3.13"
       - run: python scripts/check_tracked_junit.py
 
+  red_check:
+    name: new tests run on the parent commit; the classes stay report-only
+    # Report-only. It runs the pull request's new and changed tests against the
+    # merge base and sorts each one: red-assert, red-missing-symbol, red-error,
+    # skipped, green, or indeterminate (flaky, fails at head, or shadowed by an
+    # installed copy). It passed the report-only bar on a labeled corpus of 158
+    # cases from our own repositories; it has not been measured for blocking,
+    # so this job never fails a pull request.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.13"
+      - name: Install test tooling
+        run: python -m pip install pytest pytest-timeout pynacl pillow numpy scipy
+      - name: Red check against the merge base (report-only)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          base=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
+          python scripts/red_check.py --base "$base" --head "$HEAD_SHA" > red-check.json || true
+          python -c "import json; r=json.load(open('red-check.json')); print(json.dumps(r.get('counts'), indent=1)); [print(t['class'], t['test'], t.get('detail','')[:160]) for t in r.get('tests', [])]" | tee -a "$GITHUB_STEP_SUMMARY"
+
   writing:
     name: hard writing rules gate our prose; the score stays report-only
     runs-on: ubuntu-latest
