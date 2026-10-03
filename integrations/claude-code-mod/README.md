@@ -158,3 +158,9 @@ stands on each:
 - Claude Code reports a tool error and a refusal by its own permission check to mods in the same
   way, so the receipt records both as `error`.
 - The approve round trip (`flywheel monitor approve`, then the call again) is untested.
+
+## License
+
+Functional Source License 1.1 with an MIT future license (`FSL-1.1-MIT`), the same license as
+Flywheel. The full text is in [LICENSE](LICENSE). Each version becomes MIT two years after its
+release.
