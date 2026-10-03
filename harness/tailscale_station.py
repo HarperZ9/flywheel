@@ -4,10 +4,11 @@ from __future__ import annotations
 import argparse
 import ipaddress
 import json
-import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
+
+from harness import safe_program
 
 TAILNET_IPV4 = ipaddress.ip_network("100.64.0.0/10")
 DEFAULT_PORT = 8799
@@ -94,7 +95,7 @@ def parse_status_json(text: str) -> Any:
 
 
 def find_tailscale() -> str | None:
-    found = shutil.which("tailscale")
+    found = safe_program.which("tailscale")
     if found:
         return found
     candidate = Path(r"C:\Program Files\Tailscale\tailscale.exe")
