@@ -1,7 +1,7 @@
 # Which lane produced a result
 
-A Flywheel receipt can say how its result was reached. Receipt schema
-`flywheel.receipt/v5` adds a `route` block to the signed claim:
+A Flywheel result can say how it was reached. A routed receipt
+(`flywheel.routed-receipt/v1`) wraps an ordinary receipt with a `route` block:
 
 - **A**: a machine re-derived the result against an independent checker.
 - **H**: a person re-derived it and signs.
@@ -18,16 +18,17 @@ route: {
 }
 ```
 
-The route sits inside `claim_sha256`, so a signature covers it. Relabeling a
-lane A result as lane H after signing changes the claim digest and breaks the
-signature. The route stays out of `subject_sha256`, so two lanes that checked
-the same thing still share a subject.
+`routed_claim_sha256` covers the wrapped receipt's `claim_sha256` and the route
+together. A signature over a routed result covers that digest, so relabeling a
+lane A result as lane H after signing changes the digest and breaks the
+signature. The wrapped receipt is unchanged: its schema, its claim digest and
+every existing reader keep working.
 
 Lane A is refused when the inputs say there is no independent checker, the task
 needs judgment, or its class is on the human-only list. An escalation always
 leaves lane A.
 
-Each lane adds a line to `does_not_prove`:
+Each lane adds a line to the receipt's `does_not_prove`:
 
 | Lane | Added limit |
 | --- | --- |
@@ -35,5 +36,4 @@ Each lane adds a line to `does_not_prove`:
 | H | `NOT_PROVES_SIGNER_KEY_ROLE` (signer key roles are not checked yet) |
 | UNVERIFIABLE | `NOT_PROVES_ANY_CHECK_APPLIED` |
 
-Schema v4 stays the default and keeps its claim digest. v5 is opt-in. The router
-that picks a lane and the signer key-role registry are not built yet.
+The router that picks a lane and the signer key-role registry are not built yet.

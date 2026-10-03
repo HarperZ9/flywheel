@@ -3,9 +3,13 @@
 Two lanes produce results. Lane A is a machine re-derivation against a checker.
 Lane H is a person who re-derived and signs. A third outcome, UNVERIFIABLE, is
 written when neither applies. Without a route on the receipt, a machine
-re-derivation and a person's sign-off look the same to a reader. The route block
-is part of the claim digest in receipt schema v5, so it cannot be relabeled
-after signing without breaking the signature.
+re-derivation and a person's sign-off look the same to a reader.
+
+A RoutedReceipt (flywheel.routed-receipt/v1) wraps an existing receipt and binds
+its claim digest and the route into one `routed_claim_sha256`, which is what a
+signature over a routed result covers. The receipt itself, its schema and its
+claim digest are unchanged, so every existing reader and pin keeps working, and
+a route cannot be relabeled after signing without changing the routed digest.
 
 Lane A has preconditions the block itself enforces: an independent checker
 exists, the task needs no judgment, and the task's class is not on the
@@ -23,6 +27,8 @@ INPUT_KEYS = frozenset(("checker", "checker_id", "cost", "reversible", "judgment
                         "telos_tier", "human_only_class"))
 ESCALATION_KEYS = frozenset(("lane", "trigger", "at_attempt", "trace_head_sha256"))
 UNVERIFIABLE_SCHEMA = "flywheel.unverifiable-record/v1"
+ROUTED_SCHEMA = "flywheel.routed-receipt/v1"
+ROUTED_SIGNED_OVER = ("routed_claim_sha256",)
 LANE_LIMITS = {
     "A": ("NOT_PROVES_HUMAN_SIGN_OFF",),
     # Signer key roles arrive with lane separation; until then a Lane H route
@@ -112,3 +118,46 @@ def unverifiable_record(subject_sha256: str, route: Route, reason: str) -> dict:
             "does_not_prove": list(route.limits())}
     body["record_sha256"] = "sha256:" + hashlib.sha256(canonical(body).encode()).hexdigest()
     return body
+
+
+def _digest(body: dict) -> str:
+    return "sha256:" + hashlib.sha256(canonical(body).encode()).hexdigest()
+
+
+@dataclass(frozen=True)
+class RoutedReceipt:
+    """A receipt plus the lane that produced it, digested together."""
+    receipt: object                 # harness.receipt.Receipt
+    route: Route
+
+    def __post_init__(self):
+        if not isinstance(self.route, Route):
+            raise ReceiptError("a routed receipt needs a Route")
+        if not callable(getattr(self.receipt, "claim_sha256", None)):
+            raise ReceiptError("a routed receipt wraps a Receipt")
+
+    def routed_claim_sha256(self) -> str:
+        return _digest({"schema": ROUTED_SCHEMA,
+                        "receipt_claim_sha256": self.receipt.claim_sha256(),
+                        "route": self.route.to_dict()})
+
+    def does_not_prove(self) -> list:
+        return list(self.receipt.does_not_prove()) + list(self.route.limits())
+
+    def to_dict(self) -> dict:
+        return {"schema": ROUTED_SCHEMA, "receipt": self.receipt.to_dict(),
+                "route": self.route.to_dict(),
+                "routed_claim_sha256": self.routed_claim_sha256(),
+                "does_not_prove": self.does_not_prove()}
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "RoutedReceipt":
+        from .receipt import Receipt
+        if not isinstance(d, dict) or d.get("schema") != ROUTED_SCHEMA:
+            raise ReceiptError("refusing a routed receipt with an unknown schema")
+        out = cls(Receipt.from_dict(d["receipt"]), Route.from_dict(d.get("route")))
+        if d.get("routed_claim_sha256") != out.routed_claim_sha256():
+            raise ReceiptError("routed_claim_sha256 does not match the receipt and route")
+        if d.get("does_not_prove") != out.does_not_prove():
+            raise ReceiptError("does_not_prove does not match the receipt and route")
+        return out
