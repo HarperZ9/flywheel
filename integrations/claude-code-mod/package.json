@@ -9,5 +9,5 @@
     "test:ci": "node --test tests/audit.test.mjs tests/integration.test.mjs tests/lib.test.mjs tests/mod.test.mjs tests/rederive.test.mjs",
     "audit": "node scripts/audit-mods.mjs"
   },
-  "license": "MIT"
+  "license": "FSL-1.1-MIT"
 }
