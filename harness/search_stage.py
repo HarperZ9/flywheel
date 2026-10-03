@@ -62,7 +62,8 @@ def run_search_stage(task, prompt, proposer, oracle, search, chain, **search_kw)
         select = checked = CheckedOracle(select, search.checks)
     sr = best_of_n(replace(task, prompt=prompt), proposer, select,
                    temps=(search.temps or DEFAULT_TEMPS), decide=decide,
-                   prune_m=getattr(search, "prune_m", None), **search_kw)
+                   prune_m=getattr(search, "prune_m", None),
+                   effort_gate=getattr(search, "effort_gate", "off"), **search_kw)
     winner = sr.selected or sr.candidates[0]
     out = ProposerOutput(text=winner.text, model_ref=winner.model_ref,
                          seed=winner.seed, prompt_hash=winner.prompt_hash, cache="search")
@@ -74,6 +75,10 @@ def run_search_stage(task, prompt, proposer, oracle, search, chain, **search_kw)
         payload["pruning"] = {"m": search.prune_m, "pruned": sr.pruned,
                               "pruned_tokens": sr.pruned_tokens,
                               "tokens_saved": 0, "basis": "whole completions; oracle runs saved only"}
+    if sr.effort_gate != "off":
+        payload["effort_gate"] = {"gate": sr.effort_gate, "planned": sr.planned,
+                                  "drawn": len(sr.candidates),
+                                  "skipped": sr.planned - len(sr.candidates)}
     if sr.decision is not None:
         payload["decision"] = {"verdict": sr.decision.verdict(),
                                "oracle_output_hash": sr.decision.output_hash}

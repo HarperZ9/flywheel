@@ -18,6 +18,7 @@ from typing import Protocol
 
 from .oracle import Oracle, OracleResult
 from .proposer import Proposer
+from .search_gate import check_gate, should_stop
 from .search_prune import DuplicatePruner
 from .task import Task
 
@@ -64,6 +65,8 @@ class SearchResult:
     decision: OracleResult | None = None
     pruned: int = 0
     pruned_tokens: int = 0
+    effort_gate: str = "off"
+    planned: int = 0  # K; len(candidates) is what the gate actually drew
 
     @property
     def accepted_text(self) -> str | None:
@@ -91,12 +94,39 @@ def max_pairwise_correlation(texts: list[str]) -> float:
     return m
 
 
+def _draw(task, proposer, oracle, t, s, pruner, res, collect_detail):
+    """Generate one candidate and run the oracle on it. A pruned duplicate is
+    appended to `res` here and returns None."""
+    gen_start = time.perf_counter_ns()
+    out = proposer.generate(
+        task.prompt, seed=s, temperature=t,
+        max_new_tokens=task.max_new_tokens, system=task.system)
+    gen_ns = time.perf_counter_ns() - gen_start
+    if pruner is not None and pruner.check(out.text):
+        res.candidates.append(_pruned(out, s, t, res))
+        return None
+    oracle_start = time.perf_counter_ns()
+    orc = oracle.verify(out.text, task)
+    oracle_ns = time.perf_counter_ns() - oracle_start
+    c = Candidate(text=out.text, model_ref=out.model_ref, seed=s,
+                  temperature=t, prompt_hash=out.prompt_hash,
+                  oracle_result=orc)
+    if collect_detail:
+        c.cache = out.cache
+        c.usage = out.usage
+        c.served_model = out.served_model
+        c.generation_duration_ns = gen_ns
+        c.oracle_duration_ns = oracle_ns
+    return c
+
+
 def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
               temps: list[float] | None = None,
               seeds: list[int] | None = None,
               collect_detail: bool = False,
               decide: Oracle | None = None,
-              prune_m: int | None = None) -> SearchResult:
+              prune_m: int | None = None,
+              effort_gate: str = "off") -> SearchResult:
     """Sample at each temperature; `oracle` selects the first passing candidate
     in proposal order (temperature 0.0 first, so ties fall to greedy).
 
@@ -104,37 +134,24 @@ def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
     the result: a pick the decider rejects is FAIL, not a reason to try the next
     candidate. Without it the selector also decides, and the result says so.
     With `prune_m`, a candidate that duplicates `prune_m` earlier ones skips the
-    oracle (search_prune.py).
+    oracle (search_prune.py). With `effort_gate`, the draw stops once a later
+    candidate could no longer change the pick (search_gate.py).
     """
     temps = list(temps or DEFAULT_TEMPS)
     n = len(temps)
     seeds = seeds or [task.seed + i for i in range(n)]
-    res = SearchResult(diversified=len(set(temps)) > 1)
+    res = SearchResult(diversified=len(set(temps)) > 1,
+                       effort_gate=check_gate(effort_gate), planned=n)
     pruner = DuplicatePruner(prune_m) if prune_m else None
     for i, (t, s) in enumerate(zip(temps, seeds)):
-        gen_start = time.perf_counter_ns()
-        out = proposer.generate(
-            task.prompt, seed=s, temperature=t,
-            max_new_tokens=task.max_new_tokens, system=task.system)
-        gen_ns = time.perf_counter_ns() - gen_start
-        if pruner is not None and pruner.check(out.text):
-            res.candidates.append(_pruned(out, s, t, res))
+        c = _draw(task, proposer, oracle, t, s, pruner, res, collect_detail)
+        if c is None:
             continue
-        oracle_start = time.perf_counter_ns()
-        orc = oracle.verify(out.text, task)
-        oracle_ns = time.perf_counter_ns() - oracle_start
-        c = Candidate(text=out.text, model_ref=out.model_ref, seed=s,
-                      temperature=t, prompt_hash=out.prompt_hash,
-                      oracle_result=orc)
-        if collect_detail:
-            c.cache = out.cache
-            c.usage = out.usage
-            c.served_model = out.served_model
-            c.generation_duration_ns = gen_ns
-            c.oracle_duration_ns = oracle_ns
         res.candidates.append(c)
         if c.passed and res.accepted is None:
             res.accepted = c
+        if should_stop(effort_gate, i, c.passed):
+            break
     texts = [c.text for c in res.candidates]
     res.correlation = max_pairwise_correlation(texts)
     res.selected = res.accepted

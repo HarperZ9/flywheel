@@ -56,3 +56,34 @@ offline from finished samples: 0.772x the tokens for an accuracy drop of 0.014.
 Flywheel's proposers return whole answers, so here pruning saves check runs
 only; the generation tokens are already spent. A live token saving needs a
 streaming proposer and is unmeasured.
+
+## Optional: stop drawing once the pick is settled
+
+The visible tests pick the first passing candidate in proposal order. Any
+candidate drawn after that first pass can never change the pick, so drawing it
+spends a sample and changes nothing. The effort gate stops the draw early:
+
+- `first-pass`: draw the temperature-0 candidate. If it passes the visible
+  tests, stop; otherwise draw the other three.
+- `sequential`: stop at the first candidate that passes the visible tests.
+
+`python -m harness.cli <task-dir> --search --effort-gate sequential` (or
+`ArmConfig(effort_gate="sequential")`). The hidden tests still run once, on the
+pick, so the gate cannot add an accept the hidden tests reject. The search
+stage records `effort_gate` with the planned, drawn and skipped sample counts.
+The gate is off by default.
+
+Measured on one model (a local 14B coder) on the 110-problem hard_v2 set, with
+every candidate logged and the bar set before the run: keep at least 90% of
+search's gain while drawing at most half its samples.
+
+| Gate | Gain kept | Samples drawn vs full search [95%] | Bar |
+|:--|:--|:--|:--|
+| `sequential` | 7 of 7 | 0.446 [0.391, 0.502] | met |
+| `first-pass` | 7 of 7 | 0.509 [0.441, 0.577] | missed by 0.009 |
+
+Use `sequential`. Search's gain on this set is 7 problems, so "all of it kept"
+cannot rule out losing one or two. At temperature 0 the local server returned
+the same text on 80 of 110 problems, so a redrawn candidate can differ from a
+logged one. The full record is in
+`project-docs/records/search-effort-gate/RUN-LOG.md`.
