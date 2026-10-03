@@ -2218,7 +2218,7 @@ def _build_parser() -> argparse.ArgumentParser:
                     help="add a Host header value to the DNS-rebinding allowlist (repeatable). "
                          "Give the public tunnel hostname here so a phone can reach this gateway.")
     ap.add_argument("--strict-bind", action="store_true", help="fail startup if any requested bind host cannot be opened")
-    from harness.codex_managed_gateway_config import add_managed_codex_arguments, managed_config_from_args
+    from harness.codex_managed_gateway_config import add_managed_codex_arguments
     add_managed_codex_arguments(ap)
     from harness.lane_probe_cache import add_desktop_flag; add_desktop_flag(ap)  # --desktop-launch
     return ap
@@ -2302,6 +2302,7 @@ def main(argv=None) -> int:
     state_root = flywheel_home / "state"
     from harness.gateway_operation_recovery import recover_gateway_operations
     from harness.journey_recovery import recover_store
+    from harness.codex_managed_gateway_config import managed_config_from_args
     _Handler.native_codex_config = managed_config_from_args(a, state_root=state_root)
     _Handler._configure_operation_components(state_root)
     from harness.credential_handles import CredentialHandleStore
