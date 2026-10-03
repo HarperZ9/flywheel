@@ -5,5 +5,9 @@
     "name": "flywheel-evidence-task",
     "source": "./plugins/flywheel-evidence-task",
     "description": "Check Flywheel and Bulletin claims with source-linked evidence and false-success controls."
+  }, {
+    "name": "flywheel-mod",
+    "source": "./integrations/claude-code-mod",
+    "description": "Experimental Claude Code mod: holds risky Bash, PowerShell and file-edit calls with the Flywheel pre-action monitor, writes a hash-chained receipt for every turn, and never approves a call."
   }]
 }

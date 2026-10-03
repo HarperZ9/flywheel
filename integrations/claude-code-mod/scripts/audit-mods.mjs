@@ -32,8 +32,8 @@ import { stripComments, findRegistrations, constString, relativeImports } from "
 
 const SKIP_DIRS = new Set(["node_modules", ".git", ".flywheel-src", "screenshots"]);
 const API_EVENTS = /^(fs|process|http|model|store|env|settings|mcp|tool|prompt|session|ui|command|agent|clock|config|turn|audio|state)\.[a-z]+$/;
-// Events Claude Code itself fires (mods reference, 2.1.287). A hook on one of
-// these is ordinary. A hook on any other namespace.method name intercepts
+// Events Claude Code itself fires (mods reference, read 2026-10-02). A hook on
+// one of these is ordinary. A hook on any other namespace.method name intercepts
 // other mods' mods-API calls.
 const CORE_EVENTS = new Set(("tool.call tool.check tool.describe prompt.submit prompt.fill prompt.suggest " +
   "prompt.edit prompt.compose prompt.section prompt.context prompt.attachment skill.prompt attribution.text " +
