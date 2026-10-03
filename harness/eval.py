@@ -33,6 +33,8 @@ class ArmConfig:
     prune_m: int | None = None          # opt-in duplicate pruning (search_prune.py)
     checks: list | None = None          # opt-in (kind, spec) pre-checks (harness.checks)
     effort_gate: str = "off"            # opt-in early stop (search_gate.py)
+    hardware: str | None = None         # opt-in cost receipts (cost_floor.HARDWARE key)
+    model_profile: dict | None = None   # {"params": int, "weight_bytes": int}
 
 
 @dataclass

@@ -1,0 +1,53 @@
+{
+ "summary": {
+  "schema": "flywheel.cost-floor/v1#summary",
+  "calls": 50,
+  "measured_s": 86.61,
+  "floor_s": 38.547,
+  "ratio_total": 2.247,
+  "ratio_median": 1.324,
+  "ratio_p10": 1.303,
+  "ratio_p90": 1.609,
+  "below_floor": 0,
+  "decode_share_of_floor": 0.9884,
+  "untimed_calls": 0,
+  "bar": {
+   "coverage": true,
+   "measured_at_or_above_floor": true
+  }
+ },
+ "example": {
+  "schema": "flywheel.cost-floor/v1",
+  "measured_s": 35.004,
+  "floor_s": 0.766869,
+  "ratio": 45.645,
+  "phases": {
+   "prefill_s": 0.008943,
+   "prefill_bound": "compute",
+   "decode_s": 0.757926,
+   "decode_bound": "memory"
+  },
+  "tokens": {
+   "prompt": 100,
+   "completion": 85,
+   "batch": 1
+  },
+  "model": {
+   "params": 14770033664,
+   "weight_bytes": 8988110880
+  },
+  "hardware": {
+   "name": "NVIDIA GeForce RTX 4090",
+   "mem_bandwidth_gbs": 1008.0,
+   "peak_tflops": 330.3,
+   "rate_basis": "dense FP16 tensor, FP16 accumulate",
+   "source": "NVIDIA Ada GPU Architecture whitepaper v2.02, Appendix A"
+  },
+  "assumptions": [
+   "weights read once per decode step and once for prefill",
+   "KV cache, activations and network time ignored",
+   "peak rates with full utilisation"
+  ],
+  "does_not_prove": "The floor is a lower bound from published peak rates. It does not show what a real kernel can reach on this machine, and the ratio does not show where the lost time went."
+ }
+}
