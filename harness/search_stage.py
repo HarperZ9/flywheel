@@ -53,6 +53,22 @@ def _candidate_payload(sr, checked=None) -> list:
     return rows
 
 
+def _cost_floor(sr, search) -> dict:
+    """Per-candidate cost receipts and their summary; candidates without timing
+    or provider token counts are counted, never guessed."""
+    from .cost_floor import ModelProfile, receipt, summarize
+    model = ModelProfile(**(search.model_profile or {}))
+    rows, missing = [], 0
+    for c in sr.candidates:
+        usage = c.usage or {}
+        if c.generation_duration_ns is None or usage.get("completion") is None:
+            missing += 1
+            continue
+        rows.append(receipt(c.generation_duration_ns / 1e9, int(usage.get("prompt") or 0),
+                            int(usage["completion"]), model, search.hardware))
+    return {"summary": summarize(rows), "receipts": rows, "untimed_candidates": missing}
+
+
 def run_search_stage(task, prompt, proposer, oracle, search, chain, **search_kw):
     """Run best-of-N, append the search stage, return (output, oracle result, budget)."""
     select, decide = search_oracles(task, oracle)
@@ -60,6 +76,8 @@ def run_search_stage(task, prompt, proposer, oracle, search, chain, **search_kw)
     if getattr(search, "checks", None):
         from .checks.adopt import CheckedOracle
         select = checked = CheckedOracle(select, search.checks)
+    if getattr(search, "hardware", None):
+        search_kw.setdefault("collect_detail", True)
     sr = best_of_n(replace(task, prompt=prompt), proposer, select,
                    temps=(search.temps or DEFAULT_TEMPS), decide=decide,
                    prune_m=getattr(search, "prune_m", None),
@@ -79,6 +97,8 @@ def run_search_stage(task, prompt, proposer, oracle, search, chain, **search_kw)
         payload["effort_gate"] = {"gate": sr.effort_gate, "planned": sr.planned,
                                   "drawn": len(sr.candidates),
                                   "skipped": sr.planned - len(sr.candidates)}
+    if getattr(search, "hardware", None):
+        payload["cost_floor"] = _cost_floor(sr, search)
     if sr.decision is not None:
         payload["decision"] = {"verdict": sr.decision.verdict(),
                                "oracle_output_hash": sr.decision.output_hash}
