@@ -264,7 +264,7 @@ jobs:
       - run: python scripts/check_file_gate.py
 
   claude_code_mod:
-    name: Claude Code mod (experimental, unpublished) unit and monitor tests
+    name: Claude Code mod (experimental) unit and monitor tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
