@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 from .contract import canonical_json, sha256_hex
 from .judge import HttpJudge, JudgeConfig
+from .optional_rules import with_optional
 
 
 @dataclass
@@ -28,7 +29,13 @@ class MonitorConfig:
     def from_dict(cls, d: dict) -> "MonitorConfig":
         j = d.get("judge") or {}
         judge = JudgeConfig(**j) if j else None
-        return cls(rules_overlay=d.get("rules_overlay"), judge=judge,
+        overlay = d.get("rules_overlay")
+        optional = d.get("optional_rules") or []
+        if not isinstance(optional, list):
+            raise ValueError("optional_rules must be a list of overlay names")
+        if optional:
+            overlay = with_optional(overlay, *optional)
+        return cls(rules_overlay=overlay, judge=judge,
                    judge_threshold=int(d.get("judge_threshold", 3)),
                    judge_unavailable=d.get("judge_unavailable", "hold"),
                    hold_expiry_minutes=int(d.get("hold_expiry_minutes", 30)),

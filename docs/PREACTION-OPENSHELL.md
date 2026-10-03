@@ -41,6 +41,27 @@ both load it.
   installed pack blocks every call.
 - `witness_dir`, `head_export_every`: see section 2.
 
+### Optional rule: hold side-effecting tool names
+
+The rule `scope-escape/004` holds a tool call whose name says it posts, sends,
+deletes, updates, trashes, resets, pays, transfers or starts a server, such as
+`send_reply`, `delete_email` or `start_mcp_server`. It is off by default. Turn it
+on in the owner file:
+
+```json
+{ "monitor": { "optional_rules": ["side-effect-tools"] } }
+```
+
+Turning it on changes the monitor config digest, so a pinned monitor blocks
+until you pin again. The shipped rule-pack digest does not change.
+
+Why it is off by default: on 48 side-effecting tool names from installed tool
+servers and a published test set, it held 27 (Wilson 95% interval 0.42 to
+0.69), short of our 0.80 bar. Names such as `create_pull_request`, `forward` and
+`add_issue_comment` pass it. On 50 read-only names it held none (upper bound
+0.07). How often it would stop a working agent per hour is unmeasured. A name is
+weak evidence of effect: a tool named `fetch_data` can still delete.
+
 Run `flywheel monitor owner` to print the effective config and its digest. Point
 the hook at a specific file with `flywheel monitor install claude-code --home
 <dir> --owner-config <file>`.
