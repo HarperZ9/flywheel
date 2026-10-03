@@ -11,6 +11,70 @@ REPO = Path(__file__).resolve().parents[1]
 RUNNER = REPO / "desktop" / "tool" / "run_android_handoff_acceptance.ps1"
 
 
+def _assert_validation_and_capture(proof):
+    validation = proof["fixture_validation"]
+    assert validation["valid"]["ok"] is True
+    assert validation["invalid_json"]["reason"] == "invalid_fixture_receipt_json"
+    assert validation["wrong_token"]["reason"] == "negative_control_not_rejected"
+    assert validation["wrong_token"]["case"] == "wrong_token_rejected"
+    assert validation["unreachable_endpoint"]["reason"] == "negative_control_not_rejected"
+    assert validation["unreachable_endpoint"]["case"] == "unreachable_gateway"
+    capture = proof["process_capture"]
+    assert capture["stdout_stderr"]["exit_code"] == 0
+    assert capture["stdout_stderr"]["stdout_tail_seen"] is True
+    assert capture["stdout_stderr"]["stderr_tail_seen"] is True
+    assert capture["timeout"]["exit_code"] == 124
+    assert capture["timeout"]["timed_out"] is True
+    assert capture["timeout"]["child_killed"] is True
+    assert capture["batch_launch_exit_code"] == 0
+    assert capture["environment_override"]["exit_code"] == 0
+    assert capture["environment_override"]["stdout"] == "ok"
+    assert capture["during_run_poll"]["captured"] is True
+    assert capture["during_run_poll"]["polls"] > 0
+
+
+def _assert_package_and_signing(proof):
+    package = proof["package_status"]
+    assert package["absent"]["status"] == "absent"
+    assert package["absent"]["verified_absent"] is True
+    assert package["present"]["status"] == "present"
+    assert package["transport_error"]["status"] == "unknown"
+    assert package["transport_error"]["reason"] == "adb_transport_error"
+    assert package["unauthorized"]["status"] == "unknown"
+    assert package["offline_device"]["reason"] == "adb_state_offline"
+    assert package["stderr_diagnostic"]["reason"] == "adb_pm_diagnostic"
+    assert package["malformed_stdout"]["reason"] == "malformed_pm_path_output"
+    signing = proof["apk_signing"]
+    assert signing["success"]["status"] == "ok"
+    assert signing["success"]["certificate_sha256"] == (
+        "0123456789abcdef" * 4
+    )
+    assert signing["java_missing"]["status"] == "unknown"
+    assert signing["java_missing"]["reason"] == "java_unavailable"
+    assert "JAVA_HOME is not set" in signing["java_missing"]["stdout_tail"]
+    assert signing["missing_digest"]["status"] == "unknown"
+    assert signing["missing_digest"]["reason"] == "missing_certificate_digest"
+
+
+def _assert_binding_and_priority(proof):
+    binding = proof["installed_artifact_binding"]
+    assert binding["matching"]["ok"] is True
+    assert binding["hash_mismatch"]["ok"] is False
+    assert binding["hash_mismatch"]["reason"] == "installed_package_hash_mismatch"
+    assert binding["missing_signing"]["ok"] is False
+    assert binding["missing_signing"]["reason"] == "missing_signing_evidence"
+    drift = binding["postcapture_artifact_drift"]
+    assert drift["expected_apk_sha256"] == "during"
+    assert drift["capture_binding"]["ok"] is True
+    assert drift["final_expected_apk_sha256"] == "final"
+    assert drift["binding"]["ok"] is False
+    assert drift["binding"]["reason"] == "installed_package_hash_mismatch"
+    priority = proof["failure_priority"]
+    assert priority["flutter_failure"] == "flutter_test_failed"
+    assert priority["fixture_failure"] == "missing_fixture_receipt"
+    assert priority["binding_failure"] == "tested_package_not_present"
+
+
 @pytest.mark.skipif(
     os.name != "nt",
     reason="the runner drives Windows process semantics; pwsh alone is not "
@@ -47,61 +111,9 @@ def test_android_handoff_runner_selftest_redacts_token_and_writes_contract(tmp_p
     assert proof["device_selection"]["no_device"]["status"] == "blocked"
     assert proof["device_selection"]["duplicate_device"]["status"] == "blocked"
     assert proof["planned_flutter_test"]["contains_secret"] is False
-    validation = proof["fixture_validation"]
-    assert validation["valid"]["ok"] is True
-    assert validation["invalid_json"]["reason"] == "invalid_fixture_receipt_json"
-    assert validation["wrong_token"]["reason"] == "negative_control_not_rejected"
-    assert validation["wrong_token"]["case"] == "wrong_token_rejected"
-    assert validation["unreachable_endpoint"]["reason"] == "negative_control_not_rejected"
-    assert validation["unreachable_endpoint"]["case"] == "unreachable_gateway"
-    capture = proof["process_capture"]
-    assert capture["stdout_stderr"]["exit_code"] == 0
-    assert capture["stdout_stderr"]["stdout_tail_seen"] is True
-    assert capture["stdout_stderr"]["stderr_tail_seen"] is True
-    assert capture["timeout"]["exit_code"] == 124
-    assert capture["timeout"]["timed_out"] is True
-    assert capture["timeout"]["child_killed"] is True
-    assert capture["batch_launch_exit_code"] == 0
-    assert capture["environment_override"]["exit_code"] == 0
-    assert capture["environment_override"]["stdout"] == "ok"
-    assert capture["during_run_poll"]["captured"] is True
-    assert capture["during_run_poll"]["polls"] > 0
-    package = proof["package_status"]
-    assert package["absent"]["status"] == "absent"
-    assert package["absent"]["verified_absent"] is True
-    assert package["present"]["status"] == "present"
-    assert package["transport_error"]["status"] == "unknown"
-    assert package["transport_error"]["reason"] == "adb_transport_error"
-    assert package["unauthorized"]["status"] == "unknown"
-    assert package["offline_device"]["reason"] == "adb_state_offline"
-    assert package["stderr_diagnostic"]["reason"] == "adb_pm_diagnostic"
-    assert package["malformed_stdout"]["reason"] == "malformed_pm_path_output"
-    signing = proof["apk_signing"]
-    assert signing["success"]["status"] == "ok"
-    assert signing["success"]["certificate_sha256"] == (
-        "0123456789abcdef" * 4
-    )
-    assert signing["java_missing"]["status"] == "unknown"
-    assert signing["java_missing"]["reason"] == "java_unavailable"
-    assert "JAVA_HOME is not set" in signing["java_missing"]["stdout_tail"]
-    assert signing["missing_digest"]["status"] == "unknown"
-    assert signing["missing_digest"]["reason"] == "missing_certificate_digest"
-    binding = proof["installed_artifact_binding"]
-    assert binding["matching"]["ok"] is True
-    assert binding["hash_mismatch"]["ok"] is False
-    assert binding["hash_mismatch"]["reason"] == "installed_package_hash_mismatch"
-    assert binding["missing_signing"]["ok"] is False
-    assert binding["missing_signing"]["reason"] == "missing_signing_evidence"
-    drift = binding["postcapture_artifact_drift"]
-    assert drift["expected_apk_sha256"] == "during"
-    assert drift["capture_binding"]["ok"] is True
-    assert drift["final_expected_apk_sha256"] == "final"
-    assert drift["binding"]["ok"] is False
-    assert drift["binding"]["reason"] == "installed_package_hash_mismatch"
-    priority = proof["failure_priority"]
-    assert priority["flutter_failure"] == "flutter_test_failed"
-    assert priority["fixture_failure"] == "missing_fixture_receipt"
-    assert priority["binding_failure"] == "tested_package_not_present"
+    _assert_validation_and_capture(proof)
+    _assert_package_and_signing(proof)
+    _assert_binding_and_priority(proof)
     assert "sentinel-android-handoff-secret" not in receipt.read_text(
         encoding="utf-8-sig"
     )

@@ -51,21 +51,7 @@ def test_gateway_parser_exposes_opt_in_strict_bind_only():
     assert parser.parse_args(["--strict-bind"]).strict_bind is True
 
 
-def test_tailnet_only_launcher_passes_strict_bind_and_writes_prebind_plan(tmp_path):
-    pwsh = shutil.which("pwsh")
-    if not pwsh:
-        pytest.skip("PowerShell is required for launcher coverage")
-    if os.name != "nt":
-        # The launcher is stubbed with a Windows .cmd shim below. A Linux
-        # runner has pwsh, so a presence check alone admits the test and then
-        # the shim cannot execute, which sends the launcher down its browser
-        # path and fails on a missing www-browser.
-        pytest.skip("the launcher stub is a Windows .cmd shim")
-    calls_path = tmp_path / "calls.jsonl"
-    receipt_path = tmp_path / "receipt.json"
-    fake_py = tmp_path / "fake_python.py"
-    fake_py.write_text(
-        """
+_FAKE_PYTHON_SRC = """
 import json, os, sys
 args = sys.argv[1:]
 with open(os.environ['FLYWHEEL_FAKE_PY_CALLS'], 'a', encoding='utf-8') as fh:
@@ -85,9 +71,30 @@ if args[:2] == ['-m', 'harness.tailscale_station']:
 if args and args[0] == 'harness/gateway.py':
     raise SystemExit(0)
 raise SystemExit(9)
-""".lstrip(), encoding="utf-8")
+""".lstrip()
+
+
+def _write_fake_python(tmp_path):
+    fake_py = tmp_path / "fake_python.py"
+    fake_py.write_text(_FAKE_PYTHON_SRC, encoding="utf-8")
     fake_cmd = tmp_path / "fake_python.cmd"
     fake_cmd.write_text(f'@echo off\r\n"{sys.executable}" "{fake_py}" %*\r\n', encoding="utf-8")
+    return fake_cmd
+
+
+def test_tailnet_only_launcher_passes_strict_bind_and_writes_prebind_plan(tmp_path):
+    pwsh = shutil.which("pwsh")
+    if not pwsh:
+        pytest.skip("PowerShell is required for launcher coverage")
+    if os.name != "nt":
+        # The launcher is stubbed with a Windows .cmd shim below. A Linux
+        # runner has pwsh, so a presence check alone admits the test and then
+        # the shim cannot execute, which sends the launcher down its browser
+        # path and fails on a missing www-browser.
+        pytest.skip("the launcher stub is a Windows .cmd shim")
+    calls_path = tmp_path / "calls.jsonl"
+    receipt_path = tmp_path / "receipt.json"
+    fake_cmd = _write_fake_python(tmp_path)
     env = dict(os.environ)
     env["FLYWHEEL_FAKE_PY_CALLS"] = str(calls_path)
 

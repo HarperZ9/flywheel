@@ -14,19 +14,7 @@ def module():
     return importlib.import_module(name)
 
 
-def setup(monkeypatch, *, initialize_error=False, policy_error=False, cleanup_ok=True):
-    mod = module()
-    events = []
-    profile = SimpleNamespace(home=Path('/owned/home'), workspace=Path('/workspace'))
-
-    @contextmanager
-    def lease(*args, **kwargs):
-        events.append('lease')
-        try:
-            yield lambda: events.append('policy-rechecked')
-        finally:
-            events.append('release')
-
+def _fake_runtime(events, *, initialize_error, policy_error, cleanup_ok):
     class Process:
         stdin, stdout = object(), object()
         pid = 101
@@ -51,6 +39,25 @@ def setup(monkeypatch, *, initialize_error=False, policy_error=False, cleanup_ok
         config_digest = 'a' * 64
         def __init__(self, client, **kwargs):
             if policy_error: raise ValueError('secret config')
+    return Process, Transport, Client, Guard
+
+
+def setup(monkeypatch, *, initialize_error=False, policy_error=False, cleanup_ok=True):
+    mod = module()
+    events = []
+    profile = SimpleNamespace(home=Path('/owned/home'), workspace=Path('/workspace'))
+
+    @contextmanager
+    def lease(*args, **kwargs):
+        events.append('lease')
+        try:
+            yield lambda: events.append('policy-rechecked')
+        finally:
+            events.append('release')
+
+    Process, Transport, Client, Guard = _fake_runtime(
+        events, initialize_error=initialize_error, policy_error=policy_error,
+        cleanup_ok=cleanup_ok)
 
     def spawn(argv, **kwargs):
         events.append(('spawn', argv, kwargs))

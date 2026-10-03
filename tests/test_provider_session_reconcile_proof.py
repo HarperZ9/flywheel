@@ -21,6 +21,51 @@ from provider_session_fixtures import (
 OTHER_JOURNEY = "jrn_" + "b" * 32
 
 
+def _proof_mode_result(proof_mode, target):
+    """Return the reconcile result for proof_mode, or None for the default proof."""
+    if proof_mode == "complete_none_no_observation":
+        return {
+            "history_status": "complete",
+            "side_effect_status": "none",
+        }
+    if proof_mode == "terminal_observed":
+        return {
+            "history_status": "complete",
+            "side_effect_status": "native_terminal_observed",
+            "provider_observation": _observation(target, "native_terminal_observed"),
+        }
+    if proof_mode == "complete_wrong_observation":
+        return {
+            "history_status": "complete",
+            "side_effect_status": "native_terminal_observed",
+            "provider_observation": _observation(
+                target,
+                "native_terminal_observed",
+                session=_session("turn-1", "event-1")
+                | {"native_thread_id": "wrong-thread"}),
+        }
+    if proof_mode == "complete_in_progress_observation":
+        return {
+            "history_status": "complete",
+            "side_effect_status": "in_progress",
+            "provider_observation": _observation(target, "native_terminal_observed"),
+        }
+    return None
+
+
+def _mismatch_identity(result, target):
+    result["target_operation_ref"] = target
+    result["provider_session"] = {
+        "provider": "codex",
+        "native_session_id": "other-session",
+        "native_thread_id": "other-thread",
+        "native_turn_id": "other-turn",
+        "last_provider_event_id": "other-event",
+        "config_digest": "cfg-other",
+        "capability_digest": "cap-other",
+    }
+
+
 class ProofAdapter:
     provider = "codex"
 
@@ -57,55 +102,17 @@ class ProofAdapter:
 
     def reconcile(self, request, *, emit):
         self.reconcile_calls += 1
+        target = request.operation["target_operation_ref"]
         result = {
             "history_status": "confirmed_not_applied",
             "side_effect_status": "confirmed_not_applied",
-            "provider_observation": _observation(
-                request.operation["target_operation_ref"],
-                "confirmed_not_applied"),
+            "provider_observation": _observation(target, "confirmed_not_applied"),
         }
-        if self.proof_mode == "complete_none_no_observation":
-            result = {
-                "history_status": "complete",
-                "side_effect_status": "none",
-            }
-        if self.proof_mode == "terminal_observed":
-            result = {
-                "history_status": "complete",
-                "side_effect_status": "native_terminal_observed",
-                "provider_observation": _observation(
-                    request.operation["target_operation_ref"],
-                    "native_terminal_observed"),
-            }
-        if self.proof_mode == "complete_wrong_observation":
-            result = {
-                "history_status": "complete",
-                "side_effect_status": "native_terminal_observed",
-                "provider_observation": _observation(
-                    request.operation["target_operation_ref"],
-                    "native_terminal_observed",
-                    session=_session("turn-1", "event-1")
-                    | {"native_thread_id": "wrong-thread"}),
-            }
-        if self.proof_mode == "complete_in_progress_observation":
-            result = {
-                "history_status": "complete",
-                "side_effect_status": "in_progress",
-                "provider_observation": _observation(
-                    request.operation["target_operation_ref"],
-                    "native_terminal_observed"),
-            }
+        override = _proof_mode_result(self.proof_mode, target)
+        if override is not None:
+            result = override
         if self.proof_mode == "mismatched_identity":
-            result["target_operation_ref"] = request.operation["target_operation_ref"]
-            result["provider_session"] = {
-                "provider": "codex",
-                "native_session_id": "other-session",
-                "native_thread_id": "other-thread",
-                "native_turn_id": "other-turn",
-                "last_provider_event_id": "other-event",
-                "config_digest": "cfg-other",
-                "capability_digest": "cap-other",
-            }
+            _mismatch_identity(result, target)
         return ProviderOperationOutcome.completed(result)
 
 

@@ -57,6 +57,10 @@ def extend_manifest_after_explicit_login(profile, inventory, *, executable: Path
         'auth_paths': [row['path'] for row in auth_rows],
     }
     data = manifest.validate_restart_manifest(extended)
+    return _write_extended_manifest(manifest, policy_root, data)
+
+
+def _write_extended_manifest(manifest, policy_root: Path, data):
     digest = canonical_sha256(data)
     rel = f'codex-policy/{digest}/restart-manifest.json'
     payload = canonical_bytes(data)

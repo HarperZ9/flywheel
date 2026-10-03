@@ -57,33 +57,11 @@ def prepare_claude_profile(
                 open_artifact_root(auth_directory, writable=False) as auth, \
                 open_artifact_root(state_root) as state:
             _verify_workspace_boundary(work)
-            digest = canonical_sha256({
-                "schema": "flywheel.claude-managed-runtime/v1",
-                "owner_ref": owner_ref,
-                "workspace": str(workspace).lower(),
-                "workspace_identity": work.identity.to_json_dict(),
-                "auth_directory_identity": auth.identity.to_json_dict(),
-                "executable": str(executable).lower(),
-                "executable_sha256": executable_sha256,
-                "policy": dict(policy_payload),
-                "limitations": list(limitations),
-            })
+            digest = _config_digest(owner_ref, workspace, work, auth, executable,
+                                    executable_sha256, policy_payload, limitations)
             rel = "claude-managed/" + digest
-            state.write_new_or_same(rel + "/settings.json", settings_bytes)
-            state.write_new_or_same(rel + "/mcp.json", mcp_bytes)
-            for marker in (
-                "runtime/Temp/.flywheel-owned",
-                "runtime/AppData/Roaming/.flywheel-owned",
-                "runtime/AppData/Local/.flywheel-owned",
-            ):
-                state.write_new_or_same(rel + "/" + marker, b"")
-            state.write_new_or_same(rel + "/manifest.json", _json_bytes({
-                "schema": "flywheel.claude-managed-runtime-manifest/v1",
-                "admitted": False,
-                "limitations": list(limitations),
-                "settings_sha256": settings_sha,
-                "mcp_sha256": mcp_sha,
-            }))
+            _write_profile_files(state, rel, settings_bytes, mcp_bytes,
+                                 limitations, settings_sha, mcp_sha)
             profile_home = state_root / rel
             with open_artifact_root(profile_home, writable=False) as profile:
                 return ClaudeManagedProfile(
@@ -104,6 +82,40 @@ def prepare_claude_profile(
         raise
     except Exception:
         raise ProviderSessionError("AGENT_NATIVE_RUNTIME_DISABLED") from None
+
+
+def _config_digest(owner_ref, workspace, work, auth, executable,
+                   executable_sha256, policy_payload, limitations) -> str:
+    return canonical_sha256({
+        "schema": "flywheel.claude-managed-runtime/v1",
+        "owner_ref": owner_ref,
+        "workspace": str(workspace).lower(),
+        "workspace_identity": work.identity.to_json_dict(),
+        "auth_directory_identity": auth.identity.to_json_dict(),
+        "executable": str(executable).lower(),
+        "executable_sha256": executable_sha256,
+        "policy": dict(policy_payload),
+        "limitations": list(limitations),
+    })
+
+
+def _write_profile_files(state, rel, settings_bytes, mcp_bytes,
+                         limitations, settings_sha, mcp_sha) -> None:
+    state.write_new_or_same(rel + "/settings.json", settings_bytes)
+    state.write_new_or_same(rel + "/mcp.json", mcp_bytes)
+    for marker in (
+        "runtime/Temp/.flywheel-owned",
+        "runtime/AppData/Roaming/.flywheel-owned",
+        "runtime/AppData/Local/.flywheel-owned",
+    ):
+        state.write_new_or_same(rel + "/" + marker, b"")
+    state.write_new_or_same(rel + "/manifest.json", _json_bytes({
+        "schema": "flywheel.claude-managed-runtime-manifest/v1",
+        "admitted": False,
+        "limitations": list(limitations),
+        "settings_sha256": settings_sha,
+        "mcp_sha256": mcp_sha,
+    }))
 
 
 @contextmanager

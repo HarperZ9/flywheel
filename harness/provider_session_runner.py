@@ -13,6 +13,7 @@ from .provider_session_contract import (
     ProviderOperationRequest, ProviderRuntimeBinding, ProviderSessionError,
     validate_provider,
 )
+from .provider_session_dispatch import dispatch_provider_operation as _dispatch
 from .provider_session_recovery import latest_provider_session_from_trace
 from .provider_session_runtime_evidence import runtime_reconcile_evidence
 from .provider_session_source import (
@@ -162,21 +163,8 @@ def _execute(authorized, ref, state_root, adapters, approval_resolver,
         authorized.action, op, source, source_binding, runtime_evidence,
         state_root)
     emit = _Emitter(trace, progress)
-    try:
-        if authorized.action == "provider.session.turn":
-            outcome = adapter.start_turn(
-                request, emit=emit,
-                request_approval=_approval_callback(
-                    approval_resolver, approval_broker, authorized, source),
-                cancelled=cancelled)
-        elif authorized.action == "provider.session.resume":
-            outcome = adapter.resume(request, emit=emit)
-        else:
-            outcome = adapter.reconcile(request, emit=emit)
-    except ProviderSessionError as exc:
-        outcome = ProviderOperationOutcome.failed(exc.code, **exc.detail)
-    if not isinstance(outcome, ProviderOperationOutcome):
-        outcome = ProviderOperationOutcome.failed("AGENT_NATIVE_PROTOCOL_ERROR")
+    outcome = _dispatch(adapter, authorized, request, emit, lambda: _approval_callback(
+        approval_resolver, approval_broker, authorized, source), cancelled)
     try:
         state, result = _normalize_result(
             authorized.action, outcome, op, source_binding)

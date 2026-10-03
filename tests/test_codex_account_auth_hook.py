@@ -181,37 +181,45 @@ def test_login_hook_failure_rejects_unknown_internal_manifest_code():
     assert 'MANIFEST_FUTURE_UNKNOWN' not in repr(body)
 
 
+class _NoClose:
+    def __init__(self):
+        self.login = browser_login('login-noclose')
+        self.notifications = [_completed('login-noclose')]
+
+    def start_chatgpt_login(self):
+        return self.login
+
+    def pop_notification(self, **_kwargs):
+        return self.notifications.pop(0) if self.notifications else None
+
+    def notification_overflowed(self):
+        return False
+
+
+class _CleanupFails(FakeClient):
+    def close(self):
+        self.closed = True
+        raise RuntimeError('cleanup sk-SECRET')
+
+
+def _login_result(make_client, hook, login_id):
+    manager = CodexAccountSessionManager(client_factory=lambda: _binding(make_client()),
+                                        login_success_hook=hook)
+    assert _start(manager)[1] == 202
+    return codex_account_get('/api/codex/account/login/result',
+        f'login_id={login_id}', owner_ref='owner-a', manager=manager)
+
+
 def test_invalid_receipt_and_cleanup_failures_hold_restart_without_secret_leak():
     wrong = ProofClient(login=browser_login('login-bad-ref'),
                         notifications=[_completed('login-bad-ref')])
-    manager = CodexAccountSessionManager(client_factory=lambda: _binding(wrong),
-                                        login_success_hook=lambda ctx: object())
-    assert _start(manager)[1] == 202
-    body, status = codex_account_get('/api/codex/account/login/result',
-        'login_id=login-bad-ref', owner_ref='owner-a', manager=manager)
+    body, status = _login_result(lambda: wrong, lambda ctx: object(), 'login-bad-ref')
     assert status == 200
     assert body['state'] == 'authenticated_restart_held'
 
-    class NoClose:
-        def __init__(self):
-            self.login = browser_login('login-noclose')
-            self.notifications = [_completed('login-noclose')]
-
-        def start_chatgpt_login(self):
-            return self.login
-
-        def pop_notification(self, **_kwargs):
-            return self.notifications.pop(0) if self.notifications else None
-
-        def notification_overflowed(self):
-            return False
-
     calls = []
-    manager = CodexAccountSessionManager(client_factory=lambda: _binding(NoClose()),
-                                        login_success_hook=lambda ctx: calls.append(ctx) or _inventory())
-    assert _start(manager)[1] == 202
-    body, status = codex_account_get('/api/codex/account/login/result',
-        'login_id=login-noclose', owner_ref='owner-a', manager=manager)
+    body, status = _login_result(_NoClose, lambda ctx: calls.append(ctx) or _inventory(),
+                                 'login-noclose')
     assert status == 200
     assert body['state'] == 'authenticated_restart_held'
     assert calls == []
@@ -219,26 +227,14 @@ def test_invalid_receipt_and_cleanup_failures_hold_restart_without_secret_leak()
     no_proof = FakeClient(login=browser_login('login-no-proof'),
                           notifications=[_completed('login-no-proof')])
     calls = []
-    manager = CodexAccountSessionManager(client_factory=lambda: _binding(no_proof),
-                                        login_success_hook=lambda ctx: calls.append(ctx) or _inventory())
-    assert _start(manager)[1] == 202
-    body, status = codex_account_get('/api/codex/account/login/result',
-        'login_id=login-no-proof', owner_ref='owner-a', manager=manager)
+    body, status = _login_result(lambda: no_proof, lambda ctx: calls.append(ctx) or _inventory(),
+                                 'login-no-proof')
     assert status == 200
     assert body['state'] == 'authenticated_restart_held'
     assert calls == []
 
-    class CleanupFails(FakeClient):
-        def close(self):
-            self.closed = True
-            raise RuntimeError('cleanup sk-SECRET')
-
-    held = CleanupFails(login=browser_login('login-2'), notifications=[_completed('login-2')])
-    manager = CodexAccountSessionManager(client_factory=lambda: _binding(held),
-                                        login_success_hook=lambda ctx: _inventory())
-    assert _start(manager)[1] == 202
-    body, status = codex_account_get('/api/codex/account/login/result',
-        'login_id=login-2', owner_ref='owner-a', manager=manager)
+    held = _CleanupFails(login=browser_login('login-2'), notifications=[_completed('login-2')])
+    body, status = _login_result(lambda: held, lambda ctx: _inventory(), 'login-2')
     assert status == 200
     assert body['state'] == 'authenticated_restart_held'
     assert 'SECRET' not in repr(body)

@@ -93,11 +93,7 @@ def test_earlier_approval_request_is_answered_before_later_terminal_event():
         "id": "approval-first", "result": {"decision": "accept"}}]
 
 
-def test_identityless_legacy_approval_after_terminal_is_denied_on_next_turn():
-    server = Server()
-    replies = []
-    resume_ready = threading.Event()
-
+def _legacy_terminal_script(replies, resume_ready):
     def script(server):
         server.reply(server.request("thread/start"), thread_result())
         server.reply(server.request("turn/start"), {"turn": turn("turn-1", "inProgress")})
@@ -115,6 +111,15 @@ def test_identityless_legacy_approval_after_terminal_is_denied_on_next_turn():
             "method": "turn/completed",
             "params": {"threadId": "thread-1", "turn": turn("turn-2")},
         })
+
+    return script
+
+
+def test_identityless_legacy_approval_after_terminal_is_denied_on_next_turn():
+    server = Server()
+    replies = []
+    resume_ready = threading.Event()
+    script = _legacy_terminal_script(replies, resume_ready)
 
     approvals = []
 

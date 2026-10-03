@@ -19,23 +19,21 @@ from .claude_provider_session_reconcile import reconcile_outcome
 from .claude_provider_session_resume import (
     launch_client_from_supplier, prepare_start_session,
 )
+from .claude_provider_session_watch import watch_control, watch_event
 from .claude_provider_session_shapes import (
     FATAL_PROTOCOL,
     cancelled as cancelled_outcome,
     claude_decision,
-    event_payload,
     has_pending_controls,
     incomplete,
     input_receipt,
     mark_recovery,
     native_request_id,
-    observe_event_session,
     pop_control,
     pop_event,
     pop_protocol,
     provider_approval,
     require_surface,
-    result_outcome,
     send_input,
     send_permission,
     session_event,
@@ -224,35 +222,16 @@ class ClaudeProviderSessionAdapter:
                 return self._fail_after_input(surface, protocol.kind, session)
             event = pop_event(surface, timeout=0.02)
             if event is not None:
-                observed = observe_event_session(session, event)
-                if observed is not None:
-                    self._seal_surface(surface)
-                    mark_recovery(surface)
-                    return observed
-                custody.observe(event)
-                emit.native("provider_event", **event_payload(request, session, event))
-                if event.kind == "result":
-                    self._seal_surface(surface)
-                    if has_pending_controls(surface):
-                        return self._fail_after_input(
-                            surface, "pending_control_request", session)
-                    return result_outcome(request, session, event, request_id, cancel_ack)
+                done, outcome = watch_event(self, surface, request, emit, session,
+                                            event, custody, request_id, cancel_ack)
+                if done:
+                    return outcome
             control = pop_control(surface)
             if control is not None:
-                admitted, reason = custody.admit_control(control)
-                if not admitted:
-                    try:
-                        self._deny_control(client, surface, control, request,
-                                           emit, session, reason)
-                    except ClaudeSessionTransportError as exc:
-                        return self._fail_after_input(surface, exc.code, session)
-                    return self._fail_after_input(surface, reason, session)
-                try:
-                    self._reply_to_control(client, surface, control, request, emit,
-                                           request_approval, session)
-                    custody.answer_control(control)
-                except ClaudeSessionTransportError as exc:
-                    return self._fail_after_input(surface, exc.code, session)
+                done, outcome = watch_control(self, client, surface, control, request,
+                                              emit, request_approval, session, custody)
+                if done:
+                    return outcome
                 continue
             if not cancel_ack and cancelled():
                 emit.native("cancel_requested", **session_event(request, session))

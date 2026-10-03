@@ -21,28 +21,7 @@ ROUTES = [
 ]
 
 
-@pytest.fixture
-def server(tmp_path):
-    dispatched = []
-
-    class Handler(_Handler):
-        auth_token = TOKEN
-        owner_ref = 'stale-owner-must-not-be-used'
-        flywheel_home = tmp_path
-
-        def _route_operation(self, method):
-            dispatched.append((method, self.path, self.owner_ref))
-            self._json({'owner_ref': self.owner_ref})
-            return True
-
-        def log_message(self, *_args):
-            pass
-
-    http = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
-    thread = threading.Thread(
-        target=lambda: http.serve_forever(poll_interval=0.01), daemon=True)
-    thread.start()
-
+def _make_request(http):
     def request(method, path, *, token=TOKEN, host=None, content='application/json'):
         headers = {'Content-Type': content}
         if token is not None:
@@ -67,6 +46,33 @@ def server(tmp_path):
             finally:
                 connection.close()
         raise last_exc
+
+    return request
+
+
+@pytest.fixture
+def server(tmp_path):
+    dispatched = []
+
+    class Handler(_Handler):
+        auth_token = TOKEN
+        owner_ref = 'stale-owner-must-not-be-used'
+        flywheel_home = tmp_path
+
+        def _route_operation(self, method):
+            dispatched.append((method, self.path, self.owner_ref))
+            self._json({'owner_ref': self.owner_ref})
+            return True
+
+        def log_message(self, *_args):
+            pass
+
+    http = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+    thread = threading.Thread(
+        target=lambda: http.serve_forever(poll_interval=0.01), daemon=True)
+    thread.start()
+
+    request = _make_request(http)
 
     try:
         yield Handler, request, dispatched, tmp_path

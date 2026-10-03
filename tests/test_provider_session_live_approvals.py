@@ -106,6 +106,15 @@ def _wait_result(service, ref):
     return operation_result(service, ref)
 
 
+def _post_approval_response(service, factory, ref, request_identity, **kwargs):
+    return route_gateway_operation(
+        "POST", "/api/provider-sessions/approvals/respond", owner_ref=OWNER,
+        service=service, process_factory=factory,
+        raw=_approval_raw(service.snapshot(OWNER, ref).event_head_sha256, ref,
+                          request_identity, **kwargs),
+        content_type="application/json")
+
+
 def test_live_approval_read_and_respond_sends_one_provider_decision(tmp_path):
     service, head = service_with_journey(tmp_path)
     adapter = ApprovalAdapter()
@@ -135,22 +144,13 @@ def test_live_approval_read_and_respond_sends_one_provider_decision(tmp_path):
     assert read.body["pending"][0]["request_identity"] == pending["request_identity"]
     assert read.body["pending"][0]["payload_sha256"] == pending["payload_sha256"]
 
-    respond = route_gateway_operation(
-        "POST", "/api/provider-sessions/approvals/respond", owner_ref=OWNER,
-        service=service, process_factory=factory,
-        raw=_approval_raw(service.snapshot(OWNER, ref).event_head_sha256, ref,
-                          pending["request_identity"],
-                          updated_input={"decision": "accept"}),
-        content_type="application/json")
+    respond = _post_approval_response(service, factory, ref, pending["request_identity"],
+                                      updated_input={"decision": "accept"})
     assert respond.status == 200
 
-    duplicate = route_gateway_operation(
-        "POST", "/api/provider-sessions/approvals/respond", owner_ref=OWNER,
-        service=service, process_factory=factory,
-        raw=_approval_raw(service.snapshot(OWNER, ref).event_head_sha256, ref,
-                          pending["request_identity"], request_id="approval-response-2",
-                          updated_input={"decision": "decline"}),
-        content_type="application/json")
+    duplicate = _post_approval_response(service, factory, ref, pending["request_identity"],
+                                        request_id="approval-response-2",
+                                        updated_input={"decision": "decline"})
     assert duplicate.status != 200
 
     result = _wait_result(service, ref)

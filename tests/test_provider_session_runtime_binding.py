@@ -118,14 +118,8 @@ def _authorized_raw(head, operation, grant_ref):
     return json.dumps(body, separators=(",", ":")).encode()
 
 
-def test_grant_prepare_freezes_provider_binding_and_rejects_tampering(tmp_path):
-    head = create_journey(tmp_path)
-    registry = BindingRegistry()
-    snapshot = registry.binding_snapshot(
-        owner_ref=OWNER, journey_ref=JOURNEY, expected_event_head=head,
-        operation={"provider": "codex", "workspace_ref": "workspace-a",
-                   "model": "model-a", "permission_scope": {"mode": "manual"}})
-    operation = {
+def _frozen_turn_operation(snapshot):
+    return {
         "provider": "codex",
         "workspace_ref": "workspace-a",
         "model": "model-a",
@@ -139,6 +133,16 @@ def test_grant_prepare_freezes_provider_binding_and_rejects_tampering(tmp_path):
         "data_refs": [],
         "credential_refs": [],
     }
+
+
+def test_grant_prepare_freezes_provider_binding_and_rejects_tampering(tmp_path):
+    head = create_journey(tmp_path)
+    registry = BindingRegistry()
+    snapshot = registry.binding_snapshot(
+        owner_ref=OWNER, journey_ref=JOURNEY, expected_event_head=head,
+        operation={"provider": "codex", "workspace_ref": "workspace-a",
+                   "model": "model-a", "permission_scope": {"mode": "manual"}})
+    operation = _frozen_turn_operation(snapshot)
 
     prepared, status = gateway_grant_post(
         "/api/gateway-grants/prepare/provider.session.turn",

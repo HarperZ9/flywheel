@@ -168,20 +168,8 @@ def test_codex_registry_is_deterministic_non_admitted_and_model_workspace_bound(
     assert wrong_model["reason"] == "AGENT_BINDING_DRIFT"
 
 
-def test_provider_turn_with_matching_codex_binding_remains_incomplete(tmp_path):
-    repo = _repo(tmp_path)
-    state_root = tmp_path / "state"
-    components = build_managed_codex_components(
-        repo_root=repo,
-        run_root=tmp_path / "run",
-        state_root=state_root,
-        clock=lambda: NOW,
-        config=_config(tmp_path),
-    )
-    head = create_journey(state_root)
-    workspace_ref = components.composition.workspace.workspace_ref
-    snapshot = _snapshot(components.provider_session_registry, workspace_ref, head=head)
-    operation = {
+def _turn_operation(workspace_ref, snapshot):
+    return {
         "provider": "codex",
         "workspace_ref": workspace_ref,
         "model": "gpt-5.6-sol",
@@ -196,6 +184,22 @@ def test_provider_turn_with_matching_codex_binding_remains_incomplete(tmp_path):
         "credential_refs": [],
         "timeout_s": 1,
     }
+
+
+def test_provider_turn_with_matching_codex_binding_remains_incomplete(tmp_path):
+    repo = _repo(tmp_path)
+    state_root = tmp_path / "state"
+    components = build_managed_codex_components(
+        repo_root=repo,
+        run_root=tmp_path / "run",
+        state_root=state_root,
+        clock=lambda: NOW,
+        config=_config(tmp_path),
+    )
+    head = create_journey(state_root)
+    workspace_ref = components.composition.workspace.workspace_ref
+    snapshot = _snapshot(components.provider_session_registry, workspace_ref, head=head)
+    operation = _turn_operation(workspace_ref, snapshot)
     prepared, status = gateway_grant_post(
         "/api/gateway-grants/prepare/provider.session.turn",
         _grant_request(head, operation, request_id="composition-turn"),

@@ -24,9 +24,8 @@ def _ps_literal(value: Path | str) -> str:
     return "'" + str(value).replace("'", "''") + "'"
 
 
-def test_android_real_gateway_runner_selftest_models_usb_reverse_and_redacts_token(tmp_path):
-    receipt = tmp_path / "android-real-gateway-runner-selftest.json"
-    result = subprocess.run(
+def _run_selftest(receipt):
+    return subprocess.run(
         [
             _shell(),
             "-NoProfile",
@@ -44,8 +43,8 @@ def test_android_real_gateway_runner_selftest_models_usb_reverse_and_redacts_tok
         timeout=30,
     )
 
-    assert result.returncode == 0, result.stderr + result.stdout
-    proof = json.loads(receipt.read_text(encoding="utf-8-sig"))
+
+def _assert_selftest_policy(proof):
     assert proof["schema"] == "flywheel.android-real-gateway-handoff-runner-selftest/v1"
     assert proof["mode"] == "self_test"
     assert proof["transport"] == {"mode": "usb_reverse", "lan_modes": "not_implemented"}
@@ -60,6 +59,9 @@ def test_android_real_gateway_runner_selftest_models_usb_reverse_and_redacts_tok
     assert proof["receipt_binding"]["binds_built_apk_sha256"] is True
     assert proof["receipt_binding"]["binds_installed_apk_sha256"] is True
     assert proof["receipt_binding"]["uses_signature_helper"] is True
+
+
+def _assert_selftest_phases_and_gates(proof):
     phases = proof["flutter_phase_args"]
     assert [phase["phase"] for phase in phases] == ["start", "recover"]
     for phase in phases:
@@ -87,6 +89,9 @@ def test_android_real_gateway_runner_selftest_models_usb_reverse_and_redacts_tok
     assert cleanup["uninstall_failure"]["ok"] is False
     assert cleanup["gateway_still_running"]["ok"] is False
     assert cleanup["temp_root_left"]["ok"] is False
+
+
+def _assert_selftest_custody_and_stdio(proof):
     custody = proof["remote_custody"]
     assert custody["token_write"]["ok"] is True
     assert custody["token_write"]["uses_shell"] is False
@@ -113,107 +118,115 @@ def test_android_real_gateway_runner_selftest_models_usb_reverse_and_redacts_tok
     assert stdio["inherited_pipe"]["cleanup"]["stdout_drain_complete"] is False
     assert stdio["inherited_pipe"]["cleanup"]["stderr_drain_complete"] is False
     assert "dummy-token-secret" not in json.dumps(stdio)
+
+
+def test_android_real_gateway_runner_selftest_models_usb_reverse_and_redacts_token(tmp_path):
+    receipt = tmp_path / "android-real-gateway-runner-selftest.json"
+    result = _run_selftest(receipt)
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    proof = json.loads(receipt.read_text(encoding="utf-8-sig"))
+    _assert_selftest_policy(proof)
+    _assert_selftest_phases_and_gates(proof)
+    _assert_selftest_custody_and_stdio(proof)
     assert SENTINEL not in receipt.read_text(encoding="utf-8-sig")
     assert SENTINEL not in result.stdout
     assert SENTINEL not in result.stderr
 
 
-def test_isolated_gateway_start_stop_drains_child_stdio_without_runspace_callbacks(tmp_path):
+_DUMMY_GATEWAY_SRC = """
+    import os, pathlib, subprocess, sys, tempfile, time
+    home = pathlib.Path(os.environ["FLYWHEEL_HOME"])
+    mode = os.environ.get("FW_DUMMY_GATEWAY_MODE", "fail")
+    if mode == "success":
+        home.mkdir(parents=True, exist_ok=True)
+        (home / "gateway.token").write_text("dummy-token-secret", encoding="utf-8")
+        print("dummy success stdout dummy-token-secret", flush=True)
+        print("dummy success stderr dummy-token-secret", file=sys.stderr, flush=True)
+        time.sleep(30)
+    elif mode == "inherited":
+        home.mkdir(parents=True, exist_ok=True)
+        (home / "gateway.token").write_text("dummy-token-secret", encoding="utf-8")
+        subprocess.Popen([sys.executable, "-c", "import sys,time; print('descendant stdout dummy-token-secret', flush=True); print('descendant stderr dummy-token-secret', file=sys.stderr, flush=True); time.sleep(20)"], cwd=tempfile.gettempdir())
+        print("parent inherited stdout", flush=True)
+        print("parent inherited stderr", file=sys.stderr, flush=True)
+        sys.exit(9)
+    else:
+        print("dummy fail stdout", flush=True)
+        print("dummy fail stderr", file=sys.stderr, flush=True)
+        sys.exit(7)
+    """
+
+
+def _write_dummy_gateway_repo(tmp_path):
     dummy_repo = tmp_path / "dummy-repo"
     harness = dummy_repo / "harness"
     harness.mkdir(parents=True)
     (harness / "gateway.py").write_text(
-        textwrap.dedent(
-            """
-            import os, pathlib, subprocess, sys, tempfile, time
-            home = pathlib.Path(os.environ["FLYWHEEL_HOME"])
-            mode = os.environ.get("FW_DUMMY_GATEWAY_MODE", "fail")
-            if mode == "success":
-                home.mkdir(parents=True, exist_ok=True)
-                (home / "gateway.token").write_text("dummy-token-secret", encoding="utf-8")
-                print("dummy success stdout dummy-token-secret", flush=True)
-                print("dummy success stderr dummy-token-secret", file=sys.stderr, flush=True)
-                time.sleep(30)
-            elif mode == "inherited":
-                home.mkdir(parents=True, exist_ok=True)
-                (home / "gateway.token").write_text("dummy-token-secret", encoding="utf-8")
-                subprocess.Popen([sys.executable, "-c", "import sys,time; print('descendant stdout dummy-token-secret', flush=True); print('descendant stderr dummy-token-secret', file=sys.stderr, flush=True); time.sleep(20)"], cwd=tempfile.gettempdir())
-                print("parent inherited stdout", flush=True)
-                print("parent inherited stderr", file=sys.stderr, flush=True)
-                sys.exit(9)
-            else:
-                print("dummy fail stdout", flush=True)
-                print("dummy fail stderr", file=sys.stderr, flush=True)
-                sys.exit(7)
-            """
-        ).strip(),
+        textwrap.dedent(_DUMMY_GATEWAY_SRC).strip(),
         encoding="utf-8",
     )
-    script = tmp_path / "probe.ps1"
-    script.write_text(
-        textwrap.dedent(
-            f"""
-            $ErrorActionPreference = 'Stop'
-            . {_ps_literal(SUPPORT)}
-            function Ensure-Dirs($HomePath, $RunPath) {{
-              New-Item -ItemType Directory -Force -Path $HomePath,$RunPath | Out-Null
-            }}
-            $failHome = {_ps_literal(tmp_path / "fail-home")}
-            $failRuns = {_ps_literal(tmp_path / "fail-runs")}
-            Ensure-Dirs $failHome $failRuns
-            $env:FW_DUMMY_GATEWAY_MODE = 'fail'
-            $fail = Start-IsolatedGateway {_ps_literal(sys.executable)} {_ps_literal(dummy_repo)} 1 $failHome $failRuns $false
-            $failCleanup = Stop-OwnedGateway $fail '' 'synthetic-device'
-            $okHome = {_ps_literal(tmp_path / "ok-home")}
-            $okRuns = {_ps_literal(tmp_path / "ok-runs")}
-            Ensure-Dirs $okHome $okRuns
-            $env:FW_DUMMY_GATEWAY_MODE = 'success'
-            $ok = Start-IsolatedGateway {_ps_literal(sys.executable)} {_ps_literal(dummy_repo)} 1 $okHome $okRuns $false
-            $okCleanup = Stop-OwnedGateway $ok 'dummy-token-secret' 'synthetic-device'
-            $inheritedHome = {_ps_literal(tmp_path / "inherited-home")}
-            $inheritedRuns = {_ps_literal(tmp_path / "inherited-runs")}
-            Ensure-Dirs $inheritedHome $inheritedRuns
-            $env:FW_DUMMY_GATEWAY_MODE = 'inherited'
-            $inherited = Start-IsolatedGateway {_ps_literal(sys.executable)} {_ps_literal(dummy_repo)} 1 $inheritedHome $inheritedRuns $false
-            $inheritedCleanup = Stop-OwnedGateway $inherited 'dummy-token-secret' 'synthetic-device'
-            Remove-Item Env:FW_DUMMY_GATEWAY_MODE -ErrorAction SilentlyContinue
-            @{{
-              fail = @{{
-                alive = $fail.alive
-                startup_state = $fail.startup_state
-                exit_code = $fail.exit_code
-                cleanup = $failCleanup
-              }}
-              success = @{{
-                alive = $ok.alive
-                startup_state = $ok.startup_state
-                  exit_code = $ok.exit_code
-                  cleanup = $okCleanup
-                }}
-              inherited = @{{
-                alive = $inherited.alive
-                startup_state = $inherited.startup_state
-                exit_code = $inherited.exit_code
-                cleanup = $inheritedCleanup
-              }}
-            }} | ConvertTo-Json -Depth 12
-            """
-        ).strip(),
-        encoding="utf-8",
-    )
-    started = time.monotonic()
-    result = subprocess.run(
-        [_shell(), "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)],
-        cwd=REPO,
-        capture_output=True,
-        text=True,
-        timeout=12,
-    )
-    elapsed = time.monotonic() - started
+    return dummy_repo
 
-    assert result.returncode == 0, result.stderr + result.stdout
-    assert elapsed < 6
-    proof = json.loads(result.stdout)
+
+def _gateway_probe_source(tmp_path, dummy_repo):
+    return textwrap.dedent(
+        f"""
+        $ErrorActionPreference = 'Stop'
+        . {_ps_literal(SUPPORT)}
+        function Ensure-Dirs($HomePath, $RunPath) {{
+          New-Item -ItemType Directory -Force -Path $HomePath,$RunPath | Out-Null
+        }}
+        $failHome = {_ps_literal(tmp_path / "fail-home")}
+        $failRuns = {_ps_literal(tmp_path / "fail-runs")}
+        Ensure-Dirs $failHome $failRuns
+        $env:FW_DUMMY_GATEWAY_MODE = 'fail'
+        $fail = Start-IsolatedGateway {_ps_literal(sys.executable)} {_ps_literal(dummy_repo)} 1 $failHome $failRuns $false
+        $failCleanup = Stop-OwnedGateway $fail '' 'synthetic-device'
+        $okHome = {_ps_literal(tmp_path / "ok-home")}
+        $okRuns = {_ps_literal(tmp_path / "ok-runs")}
+        Ensure-Dirs $okHome $okRuns
+        $env:FW_DUMMY_GATEWAY_MODE = 'success'
+        $ok = Start-IsolatedGateway {_ps_literal(sys.executable)} {_ps_literal(dummy_repo)} 1 $okHome $okRuns $false
+        $okCleanup = Stop-OwnedGateway $ok 'dummy-token-secret' 'synthetic-device'
+        $inheritedHome = {_ps_literal(tmp_path / "inherited-home")}
+        $inheritedRuns = {_ps_literal(tmp_path / "inherited-runs")}
+        Ensure-Dirs $inheritedHome $inheritedRuns
+        $env:FW_DUMMY_GATEWAY_MODE = 'inherited'
+        $inherited = Start-IsolatedGateway {_ps_literal(sys.executable)} {_ps_literal(dummy_repo)} 1 $inheritedHome $inheritedRuns $false
+        $inheritedCleanup = Stop-OwnedGateway $inherited 'dummy-token-secret' 'synthetic-device'
+        Remove-Item Env:FW_DUMMY_GATEWAY_MODE -ErrorAction SilentlyContinue
+        @{{
+          fail = @{{
+            alive = $fail.alive
+            startup_state = $fail.startup_state
+            exit_code = $fail.exit_code
+            cleanup = $failCleanup
+          }}
+          success = @{{
+            alive = $ok.alive
+            startup_state = $ok.startup_state
+              exit_code = $ok.exit_code
+              cleanup = $okCleanup
+            }}
+          inherited = @{{
+            alive = $inherited.alive
+            startup_state = $inherited.startup_state
+            exit_code = $inherited.exit_code
+            cleanup = $inheritedCleanup
+          }}
+        }} | ConvertTo-Json -Depth 12
+        """
+    ).strip()
+
+
+def _write_gateway_probe(tmp_path, dummy_repo):
+    script = tmp_path / "probe.ps1"
+    script.write_text(_gateway_probe_source(tmp_path, dummy_repo), encoding="utf-8")
+    return script
+
+
+def _assert_gateway_lifecycle(proof):
     assert proof["fail"]["alive"] is False
     assert proof["fail"]["startup_state"] == "process_exited_before_token"
     assert proof["fail"]["exit_code"] == 7
@@ -230,6 +243,25 @@ def test_isolated_gateway_start_stop_drains_child_stdio_without_runspace_callbac
     assert proof["inherited"]["cleanup"]["stdio_drain_complete"] is False
     assert proof["inherited"]["cleanup"]["stdout_drain_complete"] is False
     assert proof["inherited"]["cleanup"]["stderr_drain_complete"] is False
+
+
+def test_isolated_gateway_start_stop_drains_child_stdio_without_runspace_callbacks(tmp_path):
+    dummy_repo = _write_dummy_gateway_repo(tmp_path)
+    script = _write_gateway_probe(tmp_path, dummy_repo)
+    started = time.monotonic()
+    result = subprocess.run(
+        [_shell(), "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        timeout=12,
+    )
+    elapsed = time.monotonic() - started
+
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert elapsed < 6
+    proof = json.loads(result.stdout)
+    _assert_gateway_lifecycle(proof)
     assert "dummy-token-secret" not in result.stdout
 
 

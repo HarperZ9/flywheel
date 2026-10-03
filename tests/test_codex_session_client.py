@@ -42,10 +42,43 @@ def test_initialize_records_response_and_sends_initialized_notification():
     assert client.initialize_response == transport.results["initialize"]
 
 
-def test_thread_turn_config_and_mcp_methods_use_schema_names():
-    transport = RecordingTransport()
-    client = CodexSessionClient(transport)
+_EXPECTED_SCHEMA_CALLS = [
+    ("request", "thread/start", {"cwd": "C:/repo", "model": "gpt-5.5"}),
+    ("request", "thread/resume", {"threadId": "thread-1",
+                                   "cwd": "C:/repo"}),
+    ("request", "thread/read", {"threadId": "thread-1",
+                                 "includeTurns": False}),
+    ("request", "thread/list", {"limit": 5, "archived": False}),
+    ("request", "thread/unsubscribe", {"threadId": "thread-1"}),
+    ("request", "turn/start", {
+        "threadId": "thread-1",
+        "input": [{"type": "input_text", "text": "hi"}],
+        "clientUserMessageId": "msg-1",
+        "model": "gpt-5.5",
+    }),
+    ("request", "turn/steer", {
+        "threadId": "thread-1",
+        "expectedTurnId": "turn-1",
+        "input": [{"type": "input_text", "text": "steer"}],
+        "clientUserMessageId": "msg-2",
+    }),
+    ("request", "turn/interrupt", {"threadId": "thread-1",
+                                   "turnId": "turn-1"}),
+    ("request", "model/list", {"limit": 10, "includeHidden": True}),
+    ("request", "config/read", {"cwd": "C:/repo", "includeLayers": True}),
+    ("request", "configRequirements/read", None),
+    ("request", "mcpServerStatus/list", {"threadId": "thread-1",
+                                          "detail": "tools"}),
+    ("request", "mcpServer/tool/call", {
+        "threadId": "thread-1",
+        "server": "server_a",
+        "tool": "tool_b",
+        "arguments": {"x": 1},
+    }),
+]
 
+
+def _call_every_schema_method(client):
     client.thread_start(cwd="C:/repo", model="gpt-5.5")
     client.thread_resume("thread-1", cwd="C:/repo")
     client.thread_read("thread-1", include_turns=False)
@@ -64,40 +97,14 @@ def test_thread_turn_config_and_mcp_methods_use_schema_names():
     client.mcp_server_tool_call("thread-1", "server_a", "tool_b",
                                 arguments={"x": 1})
 
-    assert [call[:3] for call in transport.calls] == [
-        ("request", "thread/start", {"cwd": "C:/repo", "model": "gpt-5.5"}),
-        ("request", "thread/resume", {"threadId": "thread-1",
-                                       "cwd": "C:/repo"}),
-        ("request", "thread/read", {"threadId": "thread-1",
-                                     "includeTurns": False}),
-        ("request", "thread/list", {"limit": 5, "archived": False}),
-        ("request", "thread/unsubscribe", {"threadId": "thread-1"}),
-        ("request", "turn/start", {
-            "threadId": "thread-1",
-            "input": [{"type": "input_text", "text": "hi"}],
-            "clientUserMessageId": "msg-1",
-            "model": "gpt-5.5",
-        }),
-        ("request", "turn/steer", {
-            "threadId": "thread-1",
-            "expectedTurnId": "turn-1",
-            "input": [{"type": "input_text", "text": "steer"}],
-            "clientUserMessageId": "msg-2",
-        }),
-        ("request", "turn/interrupt", {"threadId": "thread-1",
-                                       "turnId": "turn-1"}),
-        ("request", "model/list", {"limit": 10, "includeHidden": True}),
-        ("request", "config/read", {"cwd": "C:/repo", "includeLayers": True}),
-        ("request", "configRequirements/read", None),
-        ("request", "mcpServerStatus/list", {"threadId": "thread-1",
-                                              "detail": "tools"}),
-        ("request", "mcpServer/tool/call", {
-            "threadId": "thread-1",
-            "server": "server_a",
-            "tool": "tool_b",
-            "arguments": {"x": 1},
-        }),
-    ]
+
+def test_thread_turn_config_and_mcp_methods_use_schema_names():
+    transport = RecordingTransport()
+    client = CodexSessionClient(transport)
+
+    _call_every_schema_method(client)
+
+    assert [call[:3] for call in transport.calls] == _EXPECTED_SCHEMA_CALLS
 
 
 def test_required_native_ids_are_rejected_before_transport_call():

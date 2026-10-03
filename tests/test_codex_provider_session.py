@@ -156,15 +156,25 @@ def finish_turn(server, turn_id, *, wrong_turn=False):
         "threadId": "thread-1", "turn": turn(turn_id)})
 
 
+def _first_turn_script(server):
+    server.reply(server.request("thread/start"), thread_result())
+    server.reply(server.request("turn/start"), {"turn": turn("turn-1", "inProgress")})
+    finish_turn(server, "turn-1", wrong_turn=True)
+
+
+def _resume_turn_script(server):
+    resume = server.request("thread/resume")
+    assert resume["params"]["threadId"] == "thread-1"
+    server.reply(resume, thread_result(turns=[turn("turn-1")]))
+    start = server.request("turn/start")
+    assert start["params"]["threadId"] == "thread-1"
+    server.reply(start, {"turn": turn("turn-2", "inProgress")})
+    finish_turn(server, "turn-2")
+
+
 def test_codex_adapter_starts_native_thread_then_resumes_same_thread():
     first = Server()
-
-    def first_script(server):
-        server.reply(server.request("thread/start"), thread_result())
-        server.reply(server.request("turn/start"), {"turn": turn("turn-1", "inProgress")})
-        finish_turn(server, "turn-1", wrong_turn=True)
-
-    first_thread = first.run(first_script)
+    first_thread = first.run(_first_turn_script)
     events = Events()
     outcome = adapter_for(first).start_turn(
         request(operation()), emit=events, request_approval=lambda r: None,
@@ -184,17 +194,7 @@ def test_codex_adapter_starts_native_thread_then_resumes_same_thread():
     assert any(e.get("raw_event_type") == "agent/message/delta" for e in events.events)
 
     second = Server()
-
-    def second_script(server):
-        resume = server.request("thread/resume")
-        assert resume["params"]["threadId"] == "thread-1"
-        server.reply(resume, thread_result(turns=[turn("turn-1")]))
-        start = server.request("turn/start")
-        assert start["params"]["threadId"] == "thread-1"
-        server.reply(start, {"turn": turn("turn-2", "inProgress")})
-        finish_turn(server, "turn-2")
-
-    second_thread = second.run(second_script)
+    second_thread = second.run(_resume_turn_script)
     second_outcome = adapter_for(second).start_turn(
         request(operation(
             resume_policy="resume_after_reconcile",
