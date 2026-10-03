@@ -2,9 +2,11 @@
 
 The desktop Usage screen now charts a local model's generation and
 prompt-processing speed while it runs. The chart reads counters from a llama.cpp
-or vLLM server on your own machine and sends nothing anywhere. This release also
-carries the first build of native provider sessions for Codex and Claude, and it
-relicenses the Claude Code mod to match Flywheel.
+or vLLM server on your own machine and sends nothing anywhere. A new checks
+library catches wrong answers that can be found without a model, such as a
+number that does not recompute. This release also carries the first build of
+native provider sessions for Codex and Claude, and it relicenses the Claude Code
+mod to match Flywheel.
 
 ## Try it
 
@@ -38,6 +40,32 @@ starts reading its counters.
 
 Rates are counter changes over a measured interval. They say how fast the
 runtime worked. They say nothing about answer quality.
+
+## Catch wrong answers without a model
+
+`harness.checks` runs five deterministic checks behind one call and one
+receipt: a JSON schema, Python source structure, the order of steps in a run, a
+quoted value in its cited page, and a number recomputed from its inputs.
+
+```python
+from harness.checks import run
+run("recompute", 125, {"expr": "a ^ b", "inputs": {"a": 74, "b": 51}}).verdict   # "FAIL"
+```
+
+- Search can run checks on each candidate before the visible tests, with
+  `ArmConfig(checks=[...])`. A candidate that fails a check is skipped. With no
+  checks set, search runs as before.
+- The pre-action monitor can use them as its first gate through
+  `monitor_layer0(rules)`, so a tool call whose arguments fail a check is
+  blocked. This is opt-in; the shipped monitor rules are unchanged.
+- A missing input or a check that raises gives UNVERIFIABLE, never PASS.
+
+On a corpus of 40 known wrong answers, the checks caught 38. They rejected none
+of 353 known-good items. Four of the 40 come from recorded runs and 36 were
+built from recorded failure patterns. The two misses are a quote cut to drop a
+negation and a program that hard-codes the visible test's answer. A passing
+check shows structure or a matching value; it does not show meaning. Details
+are in `docs/features/checks.md`.
 
 ## Native provider sessions (preview)
 

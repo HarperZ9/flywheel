@@ -42,7 +42,7 @@ def reviewed_payload(repo, snapshots=None):
         return read_public(repo, name) if snapshots is None else snapshots[name]
     review = json.loads(REVIEW.read_text(encoding='utf-8') if snapshots is None
                         else snapshots['scripts/source_tool_closure.json'].decode('utf-8'))
-    if len(review) != 80 or len({name.casefold() for name in review}) != len(review):
+    if len(review) != 82 or len({name.casefold() for name in review}) != len(review):
         raise ValueError('invalid reviewed source closure')
     files = {}
     for name, expected in sorted(review.items()):

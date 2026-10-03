@@ -140,7 +140,7 @@ def test_the_gateway_starts_the_probe_only_with_the_flag(monkeypatch):
     class _Server:
         server_address = ("127.0.0.1", 0)
 
-    monkeypatch.setattr(gateway, "_bind_hosts", lambda hosts, port: [_Server()])
+    monkeypatch.setattr(gateway, "_bind_hosts", lambda hosts, port, strict=False: [_Server()])
     monkeypatch.setattr(gateway, "_serve_all", lambda servers: None)
     # main() configures the handler class and one variable; restore both after.
     for name in ("root", "serve_url", "ollama_url", "run_root", "cors", "allowed_hosts",

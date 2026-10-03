@@ -1,16 +1,21 @@
 # launch_gateway_mobile.ps1 - start the Flywheel gateway bound for the phone.
 #
 # Binds the gateway on loopback (so the PC desktop app keeps its 127.0.0.1 path)
-# AND on this machine's Tailscale address, so the phone reaches the same engine
-# over the Tailscale mesh from any network. It never binds 0.0.0.0, so no other
-# LAN is exposed. The bearer token and the Host allowlist still gate every
-# request. The Tailscale and LAN addresses are read live at launch; no address
-# is written into this file.
+# AND, when available, on this machine's validated Tailscale address so the phone
+# reaches the same engine over the tailnet. It never binds 0.0.0.0. The bearer
+# token and the Host allowlist still gate every request. Tailnet planning reads
+# `tailscale status --json` only; it does not login, connect, serve, funnel,
+# change ACLs, or expose ports.
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File scripts\launch_gateway_mobile.ps1
+#     -TailnetOnly  require running/self-online Tailscale and bind only loopback
+#                   plus the explicit tailnet IPv4; no LAN fallback
+#     -Plan         print the redacted tailnet plan and exit without listening
+#     -ReceiptPath  write the redacted plan/receipt JSON to this file
 #     -Lan          also bind the same-wifi LAN address, for when the phone and
-#                   PC share one router and Tailscale is not in play
+#                   PC share one router and Tailscale is not in play; rejected
+#                   when combined with -TailnetOnly
 #     -Port 8799    override the port (default 8799)
 #     -Python py    override the interpreter (default "python")
 #
@@ -20,6 +25,9 @@
 param(
     [int]$Port = 8799,
     [switch]$Lan,
+    [switch]$TailnetOnly,
+    [switch]$Plan,
+    [string]$ReceiptPath,
     [string]$Python = "python"
 )
 
@@ -29,18 +37,44 @@ $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $PSScriptRoot
 Set-Location $repo
 
-function Get-TailscaleIPv4 {
-    # Prefer tailscale on PATH; fall back to the default install location.
-    $exe = (Get-Command tailscale -ErrorAction SilentlyContinue).Source
-    if (-not $exe) {
-        $candidate = "C:\Program Files\Tailscale\tailscale.exe"
-        if (Test-Path $candidate) { $exe = $candidate }
+function Test-GatewayTokenPresent {
+    $flywheelHome = $env:FLYWHEEL_HOME
+    if (-not $flywheelHome) {
+        $flywheelHome = Join-Path ([Environment]::GetFolderPath("UserProfile")) ".flywheel"
     }
-    if (-not $exe) { return $null }
-    try { $out = & $exe ip -4 2>$null } catch { return $null }
-    if (-not $out) { return $null }
-    # `tailscale ip -4` prints one IPv4 per line; take the first well-formed one.
-    return ($out | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' } | Select-Object -First 1)
+    return (Test-Path (Join-Path $flywheelHome "gateway.token"))
+}
+
+function Get-TailnetGatewayPlan {
+    $args = @("-m", "harness.tailscale_station", "--port", "$Port")
+    if (Test-GatewayTokenPresent) { $args += "--token-present" }
+    $out = & $Python @args 2>$null
+    if (-not $out) {
+        return [pscustomobject]@{
+            schema = "flywheel.tailnet-station-plan/v1"
+            transport = "tailnet"
+            ok = $false
+            reason = "tailnet_plan_unavailable"
+            connection_url = $null
+            bind_hosts = @()
+            allow_hosts = @()
+            token_present = (Test-GatewayTokenPresent)
+        }
+    }
+    return ($out | ConvertFrom-Json)
+}
+
+function Write-RedactedPlan {
+    param([object]$TailnetPlan)
+    $json = $TailnetPlan | ConvertTo-Json -Depth 8
+    if ($ReceiptPath) {
+        if ([System.IO.Path]::IsPathRooted($ReceiptPath)) { $target = [System.IO.Path]::GetFullPath($ReceiptPath) }
+        else { $target = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) $ReceiptPath)) }
+        Set-Content -LiteralPath $target -Value $json -Encoding UTF8
+        Write-Host "Wrote redacted tailnet plan: $target"
+    } else {
+        Write-Output $json
+    }
 }
 
 function Get-LanIPv4 {
@@ -56,20 +90,35 @@ function Get-LanIPv4 {
     return $ip
 }
 
+if ($TailnetOnly -and $Lan) {
+    throw "-TailnetOnly cannot be combined with -Lan because tailnet-only mode has no LAN fallback."
+}
+
+$tailnetPlan = Get-TailnetGatewayPlan
+
+if ($Plan) {
+    Write-RedactedPlan $tailnetPlan
+    if ($tailnetPlan.ok) { exit 0 }
+    exit 2
+}
+
 $bindHosts = @("127.0.0.1")
 $allowHosts = @()
 
-$ts = Get-TailscaleIPv4
-if ($ts) {
-    Write-Host "Tailscale address: $ts  (phone reaches the PC over the mesh)"
-    $bindHosts += $ts
-    $allowHosts += $ts
+if ($tailnetPlan.ok) {
+    Write-Host "Tailscale address: $($tailnetPlan.allow_hosts[0])  (phone reaches the PC over the tailnet)"
+    $bindHosts = @($tailnetPlan.bind_hosts)
+    $allowHosts = @($tailnetPlan.allow_hosts)
+} elseif ($TailnetOnly) {
+    Write-RedactedPlan $tailnetPlan
+    Write-Error "Tailnet-only gateway requested but unavailable: $($tailnetPlan.reason)"
+    exit 2
 } else {
-    Write-Host "Tailscale not detected. Binding loopback only unless -Lan is set."
+    Write-Host "Tailscale unavailable ($($tailnetPlan.reason)). Binding loopback only unless -Lan is set."
     Write-Host "  Start Tailscale, or pass -Lan for same-wifi reach."
 }
 
-if ($Lan) {
+if (-not $TailnetOnly -and $Lan) {
     $lan = Get-LanIPv4
     if ($lan) {
         Write-Host "LAN address: $lan  (phone and PC on the same router)"
@@ -80,9 +129,24 @@ if ($Lan) {
     }
 }
 
+if ($ReceiptPath) {
+    $receipt = [pscustomobject]@{
+        schema = "flywheel.mobile-gateway-plan/v1"
+        transport = if ($tailnetPlan.ok) { "tailnet" } elseif ($Lan) { "lan_optional" } else { "loopback" }
+        status = "planned"
+        gateway_started = $false
+        connection_url = if ($tailnetPlan.ok) { $tailnetPlan.connection_url } else { $null }
+        bind_hosts = $bindHosts
+        allow_hosts = $allowHosts
+        token_present = (Test-GatewayTokenPresent)
+    }
+    Write-RedactedPlan $receipt
+}
+
 # Build the argument list: loopback plus any remote binds, each also allow-listed
 # so its Host header passes the DNS-rebinding check.
 $gwArgs = @("harness/gateway.py", "--port", "$Port")
+if ($TailnetOnly) { $gwArgs += "--strict-bind" }
 foreach ($h in $bindHosts)  { $gwArgs += @("--host", $h) }
 foreach ($h in $allowHosts) { $gwArgs += @("--allow-host", $h) }
 

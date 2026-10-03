@@ -8,6 +8,7 @@ part 'gateway_operation_internals.dart';
 part 'gateway_operation_targets.dart';
 part 'gateway_operation_agent_mcp.dart';
 part 'gateway_operation_inspect.dart';
+part 'gateway_operation_provider_session.dart';
 
 const gatewayOperationSchema = 'flywheel.gateway-operation/v1';
 final _credentialRef = RegExp(r'^cred_[0-9a-f]{32}$');
@@ -101,6 +102,7 @@ final class GatewayOperation {
     _validateAgentMcpAdmission(action, raw);
     if (action == 'operation.cancel') _validateCancel(raw);
     if (action == 'import.inspect') _validateImportInspect(raw, destination);
+    if (_isProviderSessionAction(action)) _validateProviderSession(action, raw);
     if (action == 'plan.run') validatePlanRunOperation(raw);
   }
 
