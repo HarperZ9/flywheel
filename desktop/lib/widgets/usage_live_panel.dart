@@ -55,29 +55,7 @@ class _UsageLivePanelState extends State<UsageLivePanel>
       final json =
           await widget.loadSnapshot().timeout(const Duration(seconds: 8));
       if (!mounted || generation != _generation) return;
-      final next = UsageLiveSnapshot.fromJson(json);
-      if (_snapshot != null &&
-          !next.observedAt.isAfter(_snapshot!.observedAt)) {
-        throw const FormatException('Observation did not advance');
-      }
-      _history.removeWhere((id, _) => !next.models.any((m) => m.id == id));
-      for (final model in next.models) {
-        final previous =
-            _snapshot?.models.where((m) => m.id == model.id).firstOrNull;
-        if (previous != null &&
-            (previous.model != model.model ||
-                previous.source != model.source)) {
-          _history.remove(model.id);
-        }
-        final history = _history.putIfAbsent(model.id, () => []);
-        history
-            .add(UsageRatePoint(next.observedAt, model.decode, model.prefill));
-        if (history.length > 60) history.removeRange(0, history.length - 60);
-      }
-      _snapshot = next;
-      if (!next.models.any((m) => m.id == _selected)) {
-        _selected = next.models.isEmpty ? null : next.models.first.id;
-      }
+      _ingest(UsageLiveSnapshot.fromJson(json));
       _failed = false;
     } catch (_) {
       if (!mounted || generation != _generation) return;
@@ -90,6 +68,31 @@ class _UsageLivePanelState extends State<UsageLivePanel>
           _timer = Timer(widget.refreshInterval, _load);
         }
       }
+    }
+  }
+
+  void _ingest(UsageLiveSnapshot next) {
+    if (_snapshot != null &&
+        !next.observedAt.isAfter(_snapshot!.observedAt)) {
+      throw const FormatException('Observation did not advance');
+    }
+    _history.removeWhere((id, _) => !next.models.any((m) => m.id == id));
+    for (final model in next.models) {
+      final previous =
+          _snapshot?.models.where((m) => m.id == model.id).firstOrNull;
+      if (previous != null &&
+          (previous.model != model.model ||
+              previous.source != model.source)) {
+        _history.remove(model.id);
+      }
+      final history = _history.putIfAbsent(model.id, () => []);
+      history
+          .add(UsageRatePoint(next.observedAt, model.decode, model.prefill));
+      if (history.length > 60) history.removeRange(0, history.length - 60);
+    }
+    _snapshot = next;
+    if (!next.models.any((m) => m.id == _selected)) {
+      _selected = next.models.isEmpty ? null : next.models.first.id;
     }
   }
 
@@ -121,63 +124,37 @@ class _UsageLivePanelState extends State<UsageLivePanel>
     super.dispose();
   }
 
+  String get _status => _paused || _background
+      ? 'Paused · last observation retained'
+      : _failed
+          ? 'Stale · runtime observation unavailable'
+          : _snapshot == null
+              ? 'Reading runtime counters…'
+              : 'Observing local runtimes';
+
+  String? get _retainedStatus => _paused || _background
+      ? 'paused'
+      : _failed
+          ? 'stale'
+          : null;
+
   @override
   Widget build(BuildContext context) {
     final t = context.fw;
     final snapshot = _snapshot;
-    final status = _paused || _background
-        ? 'Paused · last observation retained'
-        : _failed
-            ? 'Stale · runtime observation unavailable'
-            : snapshot == null
-                ? 'Reading runtime counters…'
-                : 'Observing local runtimes';
-    final selected =
-        snapshot?.models.where((m) => m.id == _selected).firstOrNull;
-    final retainedStatus = _paused || _background
-        ? 'paused'
-        : _failed
-            ? 'stale'
-            : null;
     return HairlineCard(
         child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 24,
-            runSpacing: 8,
-            children: [
-              Text('Model activity',
-                  style: TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w600, color: t.ink)),
-              TextButton.icon(
-                  onPressed: _toggle,
-                  icon:
-                      Icon(_paused ? Icons.play_arrow : Icons.pause, size: 16),
-                  label: Text(_paused ? 'Resume' : 'Pause')),
-            ]),
-        Text(status,
-            style:
-                TextStyle(fontSize: 12, color: _failed ? t.drift : t.inkMuted)),
-        if (snapshot != null) ...[
-          const SizedBox(height: FwLayout.s2),
-          Text(
-              'Observed ${snapshot.observedAt.toIso8601String().substring(11, 19)} UTC',
-              style: fwMono(t, size: 10, color: t.inkMuted)),
-          const SizedBox(height: FwLayout.s4),
-          if (snapshot.models.isEmpty)
-            const HonestNull(
-                'No configured local runtimes are reporting counters. '
-                'Configure a local endpoint to observe it here.'),
-          for (final model in snapshot.models)
-            _modelRow(t, model, retainedStatus: retainedStatus),
-          if (selected != null)
-            UsageLiveDetails(
-                model: selected,
-                points: List.unmodifiable(_history[selected.id] ?? [])),
-        ] else if (_failed) ...[
+        _header(t),
+        Semantics(
+            liveRegion: true,
+            child: Text(_status,
+                style: TextStyle(
+                    fontSize: 12, color: _failed ? t.drift : t.inkMuted))),
+        if (snapshot != null)
+          ..._observed(t, snapshot)
+        else if (_failed) ...[
           const SizedBox(height: FwLayout.s3),
           const HonestNull(
               'Live counters are unavailable. Observation will retry; '
@@ -185,6 +162,44 @@ class _UsageLivePanelState extends State<UsageLivePanel>
         ],
       ],
     ));
+  }
+
+  Widget _header(FwTokens t) => Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 24,
+          runSpacing: 8,
+          children: [
+            Text('Model activity',
+                style: TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w600, color: t.ink)),
+            TextButton.icon(
+                onPressed: _toggle,
+                icon: Icon(_paused ? Icons.play_arrow : Icons.pause, size: 16),
+                label: Text(_paused ? 'Resume' : 'Pause')),
+          ]);
+
+  List<Widget> _observed(FwTokens t, UsageLiveSnapshot snapshot) {
+    final selected =
+        snapshot.models.where((m) => m.id == _selected).firstOrNull;
+    final retainedStatus = _retainedStatus;
+    return [
+      const SizedBox(height: FwLayout.s2),
+      Text(
+          'Observed ${snapshot.observedAt.toIso8601String().substring(11, 19)} UTC',
+          style: fwMono(t, size: 10, color: t.inkMuted)),
+      const SizedBox(height: FwLayout.s4),
+      if (snapshot.models.isEmpty)
+        const HonestNull(
+            'No configured local runtimes are reporting counters. '
+            'Configure a local endpoint to observe it here.'),
+      for (final model in snapshot.models)
+        _modelRow(t, model, retainedStatus: retainedStatus),
+      if (selected != null)
+        UsageLiveDetails(
+            model: selected,
+            points: List.unmodifiable(_history[selected.id] ?? [])),
+    ];
   }
 
   Widget _modelRow(FwTokens t, UsageLiveModel model, {String? retainedStatus}) {

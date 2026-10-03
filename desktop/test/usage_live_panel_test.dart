@@ -45,6 +45,13 @@ Widget wrap(Future<Map<String, dynamic>> Function() load, {double scale = 1}) =>
     );
 
 void main() {
+  _renderingTests();
+  _resetAndLayoutTests();
+  _pollingTests();
+  _staleTests();
+}
+
+void _renderingTests() {
   testWidgets('positive short interval is never displayed as zero seconds',
       (t) async {
     final data = snapshot();
@@ -57,24 +64,6 @@ void main() {
     await t.pumpWidget(const SizedBox());
   });
 
-  testWidgets(
-      'pause and resume during an in-flight load never overlap requests',
-      (t) async {
-    var calls = 0;
-    final pending = Completer<Map<String, dynamic>>();
-    await t.pumpWidget(wrap(() {
-      calls++;
-      return pending.future;
-    }));
-    await t.tap(find.text('Pause'));
-    await t.pump();
-    await t.tap(find.text('Resume'));
-    await t.pump();
-    expect(calls, 1);
-    pending.complete(snapshot());
-    await t.pump();
-    await t.pumpWidget(const SizedBox());
-  });
   testWidgets('renders runtime rates and explicit unavailable measurements',
       (t) async {
     await t.pumpWidget(wrap(() async => snapshot()));
@@ -94,7 +83,9 @@ void main() {
     expect(find.textContaining('Not reported'), findsWidgets);
     await t.pumpWidget(const SizedBox());
   });
+}
 
+void _resetAndLayoutTests() {
   testWidgets('explains a reset and does not announce a zero peak without data',
       (t) async {
     final semantics = t.ensureSemantics();
@@ -111,6 +102,38 @@ void main() {
     expect(find.bySemanticsLabel(RegExp('Peak Not reported')), findsWidgets);
     await t.pumpWidget(const SizedBox());
     semantics.dispose();
+  });
+
+  testWidgets('fits a narrow window at increased text scale', (t) async {
+    t.view.physicalSize = const Size(390, 844);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.resetPhysicalSize);
+    addTearDown(t.view.resetDevicePixelRatio);
+    await t.pumpWidget(wrap(() async => snapshot(), scale: 1.6));
+    await t.pump();
+    expect(t.takeException(), isNull);
+    await t.pumpWidget(const SizedBox());
+  });
+}
+
+void _pollingTests() {
+  testWidgets(
+      'pause and resume during an in-flight load never overlap requests',
+      (t) async {
+    var calls = 0;
+    final pending = Completer<Map<String, dynamic>>();
+    await t.pumpWidget(wrap(() {
+      calls++;
+      return pending.future;
+    }));
+    await t.tap(find.text('Pause'));
+    await t.pump();
+    await t.tap(find.text('Resume'));
+    await t.pump();
+    expect(calls, 1);
+    pending.complete(snapshot());
+    await t.pump();
+    await t.pumpWidget(const SizedBox());
   });
 
   testWidgets('polls serially and pause cancels further observation',
@@ -133,7 +156,9 @@ void main() {
     expect(find.text('32.9 tok/s'), findsNothing);
     await t.pumpWidget(const SizedBox());
   });
+}
 
+void _staleTests() {
   testWidgets('failed refresh marks retained data stale', (t) async {
     var calls = 0;
     await t.pumpWidget(wrap(() async {
@@ -147,17 +172,6 @@ void main() {
     expect(find.text('Measured'), findsNothing);
     expect(find.text('32.9 tok/s'), findsNothing);
     expect(find.textContaining('private transport detail'), findsNothing);
-    await t.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('fits a narrow window at increased text scale', (t) async {
-    t.view.physicalSize = const Size(390, 844);
-    t.view.devicePixelRatio = 1;
-    addTearDown(t.view.resetPhysicalSize);
-    addTearDown(t.view.resetDevicePixelRatio);
-    await t.pumpWidget(wrap(() async => snapshot(), scale: 1.6));
-    await t.pump();
-    expect(t.takeException(), isNull);
     await t.pumpWidget(const SizedBox());
   });
 }

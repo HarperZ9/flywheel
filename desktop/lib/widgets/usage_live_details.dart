@@ -14,19 +14,7 @@ class UsageLiveDetails extends StatelessWidget {
     final t = context.fw;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const SizedBox(height: FwLayout.s5),
-      LayoutBuilder(builder: (context, box) {
-        final decode = UsageRateChart(points: points);
-        final prefill = UsageRateChart(points: points, prefill: true);
-        if (box.maxWidth < 640) {
-          return Column(
-              children: [decode, const SizedBox(height: 24), prefill]);
-        }
-        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: decode),
-          const SizedBox(width: 32),
-          Expanded(child: prefill),
-        ]);
-      }),
+      _charts(),
       const SizedBox(height: FwLayout.s5),
       Wrap(spacing: 32, runSpacing: 16, children: [
         _counter(t, 'Generated tokens', usageCount(model.generated)),
@@ -38,13 +26,7 @@ class UsageLiveDetails extends StatelessWidget {
         Text(model.reason, style: TextStyle(fontSize: 12, color: t.inkMuted)),
         const SizedBox(height: FwLayout.s2),
       ],
-      Text(
-          switch (model.counterScope) {
-            'current_request' => 'Current request counters',
-            'current_runtime' => 'Current runtime counters',
-            _ => 'Counter scope not reported',
-          },
-          style: TextStyle(fontSize: 12, color: t.inkMuted)),
+      Text(_scopeLabel, style: TextStyle(fontSize: 12, color: t.inkMuted)),
       if (model.intervalSeconds != null)
         Text(
             'Measured interval: ${_interval(model.intervalSeconds!)} s',
@@ -60,6 +42,26 @@ class UsageLiveDetails extends StatelessWidget {
           style: TextStyle(fontSize: 12, height: 1.5, color: t.inkMuted)),
     ]);
   }
+
+  Widget _charts() => LayoutBuilder(builder: (context, box) {
+        final decode = UsageRateChart(points: points);
+        final prefill = UsageRateChart(points: points, prefill: true);
+        if (box.maxWidth < 640) {
+          return Column(
+              children: [decode, const SizedBox(height: 24), prefill]);
+        }
+        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: decode),
+          const SizedBox(width: 32),
+          Expanded(child: prefill),
+        ]);
+      });
+
+  String get _scopeLabel => switch (model.counterScope) {
+        'current_request' => 'Current request counters',
+        'current_runtime' => 'Current runtime counters',
+        _ => 'Counter scope not reported',
+      };
 
   String _interval(double value) => value < 0.01
       ? value.toStringAsPrecision(2)
