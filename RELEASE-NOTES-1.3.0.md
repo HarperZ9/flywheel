@@ -166,6 +166,20 @@ Flywheel checkout. Run on Claude Code 2.1.286: 11 engine tests pass under
 off-allowlist host. A held call chosen by the model in a live session has not
 been observed yet. The wheel now ships the monitor's rule pack.
 
+## Gateway and evaluation inputs
+
+The local gateway's static file server now refuses hidden paths and file types
+outside the shipped site's set. It also checks a directory index after
+resolving it, so a symlinked index cannot escape the served folder. A chat
+request with a malformed, boolean or non-finite `temperature`, `max_tokens` or
+`seed` gets a structured 400 before any provider is called. These were tested
+with synthetic files and stub providers.
+
+A read-only admission guard decides whether an offline evaluation result can be
+admitted as an executed result. It checks the trial plan against separate
+observation sources and holds a result when evidence is missing or conditions
+do not match. Simulated or reported completions stay held as executed results.
+
 ## The rules Flywheel is built under
 
 The standing rules behind Flywheel's design and its evaluations now ship in the
