@@ -31,6 +31,7 @@ class ArmConfig:
     use_cache: bool = False
     label: str = ""
     prune_m: int | None = None          # opt-in duplicate pruning (search_prune.py)
+    checks: list | None = None          # opt-in (kind, spec) pre-checks (harness.checks)
 
 
 @dataclass

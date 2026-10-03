@@ -3,6 +3,11 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## Unreleased
+
+Search and checks
+- One library of deterministic checks (schema, AST, state machine, value on page, recompute) with one call and one receipt, used by search as candidate pre-checks and by the pre-action monitor as a layer-0 gate; catches 38 of a 40-item false-accept corpus with 0 false rejects on 353 known-good items. See `docs/features/checks.md`.
+
 ## 1.3.0
 
 Pre-action monitor

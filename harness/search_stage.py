@@ -39,18 +39,27 @@ def search_oracles(task, oracle):
     return select, decide
 
 
-def _candidate_payload(sr) -> list:
-    return [{"temp": c.temperature,
+def _candidate_payload(sr, checked=None) -> list:
+    rows = [{"temp": c.temperature,
              "candidate_hash": _short_hash(c.text),
              "verdict": ("PRUNED" if c.pruned else
                          c.oracle_result.verdict() if c.oracle_result else "NONE"),
              "oracle_output_hash": c.oracle_result.output_hash if c.oracle_result else ""}
             for c in sr.candidates]
+    if checked is not None:
+        for row, c in zip(rows, sr.candidates):
+            row["checks"] = [{"check": r["check"], "verdict": r["verdict"], "code": r["code"]}
+                             for r in checked.receipts_for(c.text)]
+    return rows
 
 
 def run_search_stage(task, prompt, proposer, oracle, search, chain, **search_kw):
     """Run best-of-N, append the search stage, return (output, oracle result, budget)."""
     select, decide = search_oracles(task, oracle)
+    checked = None
+    if getattr(search, "checks", None):
+        from .checks.adopt import CheckedOracle
+        select = checked = CheckedOracle(select, search.checks)
     sr = best_of_n(replace(task, prompt=prompt), proposer, select,
                    temps=(search.temps or DEFAULT_TEMPS), decide=decide,
                    prune_m=getattr(search, "prune_m", None), **search_kw)
@@ -60,7 +69,7 @@ def run_search_stage(task, prompt, proposer, oracle, search, chain, **search_kw)
     orc = sr.decision or winner.oracle_result or OracleResult(
         passed=False, cmd=task.oracle_cmd, output_hash="", stdout_excerpt="", rc=1)
     payload = {"n": len(sr.candidates), "correlation": round(sr.correlation, 3),
-               "candidates": _candidate_payload(sr), "selection": sr.selection}
+               "candidates": _candidate_payload(sr, checked), "selection": sr.selection}
     if getattr(search, "prune_m", None):
         payload["pruning"] = {"m": search.prune_m, "pruned": sr.pruned,
                               "pruned_tokens": sr.pruned_tokens,
