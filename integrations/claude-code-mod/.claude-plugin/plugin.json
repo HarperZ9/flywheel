@@ -1,0 +1,78 @@
+{
+  "name": "flywheel-mod",
+  "version": "0.1.0",
+  "description": "Holds risky Bash, PowerShell and file-edit calls with the Flywheel pre-action monitor, writes a hash-chained receipt for every turn, and shows held and passed counts above the prompt. Adds holds only; never approves a call.",
+  "author": { "name": "Zain Dana Harper" },
+  "license": "MIT",
+  "keywords": ["mods", "safety", "receipts", "flywheel"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "python": {
+      "type": "string",
+      "title": "Python",
+      "description": "Python interpreter that can import the Flywheel monitor (harness.preaction).",
+      "default": "python"
+    },
+    "monitor_source": {
+      "type": "string",
+      "title": "Monitor source folder",
+      "description": "Folder holding Flywheel's harness/ package. Required: when empty, every screened call is treated as unchecked.",
+      "default": ""
+    },
+    "monitor_home": {
+      "type": "string",
+      "title": "Monitor home",
+      "description": "Where the monitor keeps its records and open holds. Relative paths resolve in the project folder.",
+      "default": ".flywheel/monitor"
+    },
+    "monitor_owner_config": {
+      "type": "string",
+      "title": "Monitor owner config",
+      "description": "Optional owner config file passed to the monitor as --owner-config.",
+      "default": ""
+    },
+    "monitor_timeout_ms": {
+      "type": "number",
+      "title": "Monitor timeout (ms)",
+      "description": "How long one monitor run may take before the call counts as unchecked.",
+      "default": 15000,
+      "min": 2000,
+      "max": 600000
+    },
+    "monitor_deadline_seconds": {
+      "type": "number",
+      "title": "Monitor internal deadline (s)",
+      "description": "The monitor's own deadline, after which it fails the call closed.",
+      "default": 8,
+      "min": 1,
+      "max": 60
+    },
+    "screen": {
+      "type": "string",
+      "title": "Which calls the monitor sees",
+      "description": "rules: only calls the risk pre-filter flags. all: every guarded call.",
+      "options": ["rules", "all"],
+      "default": "rules"
+    },
+    "on_unavailable": {
+      "type": "string",
+      "title": "When the monitor cannot answer",
+      "description": "deny: refuse the call and say why (fail closed). pass: let it go on to Claude Code's own permission check (fail open).",
+      "options": ["deny", "pass"],
+      "default": "deny"
+    },
+    "status_site": {
+      "type": "string",
+      "title": "Where the status line goes",
+      "description": "band: above the prompt, kept beside other mods' drawings. status: the line under the prompt. off: nowhere.",
+      "options": ["band", "status", "off"],
+      "default": "band"
+    },
+    "receipts_dir": {
+      "type": "string",
+      "title": "Receipts folder",
+      "description": "Where turn receipts go. Relative paths resolve in the project folder.",
+      "default": ".flywheel/mod-receipts"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "description": "Flywheel mod: a tool.call hold through the Flywheel pre-action monitor, a turn.complete receipt, and an AbovePrompt status line.",
+  "modules": ["./module.mjs"]
+}

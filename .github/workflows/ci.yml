@@ -263,6 +263,20 @@ jobs:
           python-version: "3.13"
       - run: python scripts/check_file_gate.py
 
+  claude_code_mod:
+    name: Claude Code mod (experimental, unpublished) unit and monitor tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - run: npm run test:ci
+        working-directory: integrations/claude-code-mod
+
   path_length:
     # Without core.longpaths, Git for Windows cannot create a file whose full
     # path (clone directory, separator, tracked path) reaches 260 characters,
