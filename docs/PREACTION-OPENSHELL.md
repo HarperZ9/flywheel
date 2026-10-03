@@ -215,3 +215,37 @@ checked against a stand-in binary, not a running gateway.
 Does not prove: that the monitor catches misaligned actions. These pieces make
 a skipped hook and a rewritten store visible, and narrow what the agent can
 reach. They do not show that every risky call is held.
+
+## 5. Upgrading, scope and known limits
+
+### After an upgrade that changes the rule pack
+
+If your owner file pins `expected_rules_digest`, a new rule pack blocks every
+call with `rules_digest_mismatch` until you re-pin. That is the intended
+fail-closed behavior.
+
+1. Run `flywheel monitor owner`. It prints `installed_rules_digest`.
+2. Check that it matches the digest printed in the release notes.
+3. Put that value in `expected_rules_digest` in your owner file.
+
+Records sealed under the old rule pack stay sealed and chained. `flywheel
+monitor verify` reports them as unverifiable, because the new rules cannot
+re-derive verdicts made under the old ones.
+
+### Scope: single-agent runs
+
+The monitor sees the calls of the agent it is attached to. It does not follow
+data between runs: if one run writes a note into a shared cache or folder and
+another run reads it and acts on it, the monitor judges each call on its own and
+does not connect the two. Use it to watch one agent at a time. Runs that share
+writable state need separate controls on that state.
+
+### Known limits
+
+- A prompt or note that mentions a web address off your allowlist in plain text
+  is held, even when nothing would fetch it. In one test, 10 of 10 ordinary
+  prose prompts that named such an address were held. Add the host to
+  `allow_hosts` or `fetch_hosts` if this gets in your way. A fix needs a design
+  change and is not in this release.
+- A request body split across several calls so that no single call shows a URL
+  can pass. The egress proxy is the complete control for outbound traffic.

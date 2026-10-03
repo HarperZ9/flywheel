@@ -41,8 +41,10 @@ def register(sub) -> None:
 
 def _owner(args, stdout) -> int:
     from .owner import load
+    from .rules import load_pack, pack_digest
     o = load(args.owner_config or None)
     stdout.write(json.dumps({"source": o.source, "path": o.path, "digest": o.digest(),
+                             "installed_rules_digest": pack_digest(load_pack()),
                              "effective": o.effective()}, indent=2) + "\n")
     return 0
 
