@@ -7,6 +7,7 @@ implementation that does not need direct access to the HTTP handler.
 from __future__ import annotations
 
 import json
+import math
 import time
 import urllib.error
 
@@ -166,32 +167,91 @@ def openai_embeddings(
                           f"{type(e).__name__}"}}, 502
 
 
+def _finite_temperature(raw):
+    """Return a finite float temperature, or None for a malformed value."""
+    if isinstance(raw, bool):
+        return None
+    try:
+        value = float(raw)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return value if math.isfinite(value) else None
+
+
+def _adaptive_order(candidates, rs):
+    """Order candidates by router score and describe the routing decision."""
+    requested = [c or "flywheel" for c in candidates]
+    routing = {"adaptive": True, "requested": requested,
+               "scores": {c: round(rs.score(c), 4) for c in requested},
+               "circuit_open": [c for c in requested if rs.is_circuit_open(c)]}
+    ordered = rs.order(candidates)
+    routing["order"] = [c or "flywheel" for c in ordered]
+    return ordered, routing
+
+
+def _completion_body(receipt, out, prompt):
+    """Build the OpenAI-shaped chat completion body for one provider reply."""
+    prompt_tokens = len(prompt.split())
+    completion_tokens = len(str(out.text).split())
+    return {"id": "chatcmpl-" + receipt["receipt_id"],
+            "object": "chat.completion", "created": int(time.time()),
+            "model": out.model_ref,
+            "choices": [{"index": 0,
+                         "message": {"role": "assistant", "content": out.text},
+                         "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": prompt_tokens,
+                      "completion_tokens": completion_tokens,
+                      "total_tokens": prompt_tokens + completion_tokens},
+            "x_receipt": receipt}
+
+
+def _whole_number(raw):
+    """Return int(raw), or None for a boolean, malformed or non-finite value."""
+    if isinstance(raw, bool):
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _chat_params(req, prompt):
+    """Return (temperature, max_tokens, seed) and the first problem, if any."""
+    params = (_finite_temperature(req.get("temperature", 0.0)),
+              _whole_number(req.get("max_tokens", 512)),
+              _whole_number(req.get("seed", 0)))
+    if not prompt:
+        return params, "messages must include a user turn"
+    for name, value in zip(("temperature", "max_tokens", "seed"), params):
+        if value is None:
+            kind = "a finite number" if name == "temperature" else "an integer"
+            return params, f"{name} must be {kind}"
+    return params, None
+
+
+def _all_failed(tried, last_err):
+    """Build the error body returned when every candidate provider failed."""
+    detail = "; ".join(tried) if tried else last_err
+    return {"error": {"message": f"all providers failed ({detail})",
+                      "type": "api_error"},
+            "failover_from": tried}
+
+
 def openai_chat(
         req: dict, serve_url: str, credential_bindings=None, *,
         flatten_messages, resolve_proposer, get_router_stats, chat_receipt):
     """Return one routed completion plus its receipt and provenance."""
     system, prompt = flatten_messages(req.get("messages", []))
-    if not prompt:
-        return {"error": {"message": "messages must include a user turn",
-                          "type": "invalid_request_error"}}, 400, None, None, None
-    temperature = float(req.get("temperature", 0.0))
-    max_tokens = int(req.get("max_tokens", 512))
-    seed = int(req.get("seed", 0))
+    (temperature, max_tokens, seed), problem = _chat_params(req, prompt)
+    if problem:
+        return {"error": {"message": problem, "type": "invalid_request_error"}
+                }, 400, None, None, None
     candidates = [m.strip() for m in str(req.get("model", "")).split(",")
                   if m.strip()] or [""]
     adaptive = bool(req.get("adaptive"))
-    routing = None
-    if adaptive:
-        rs = get_router_stats()
-        requested = [c or "flywheel" for c in candidates]
-        routing = {"adaptive": True, "requested": requested,
-                   "scores": {c: round(rs.score(c), 4) for c in requested},
-                   "circuit_open": [c for c in requested
-                                    if rs.is_circuit_open(c)]}
-        candidates = rs.order(candidates)
-        routing["order"] = [c or "flywheel" for c in candidates]
-    tried, last_err, last_code = [], "no provider resolved", 502
-    resolution_failures = []
+    candidates, routing = (_adaptive_order(candidates, get_router_stats())
+                           if adaptive else (candidates, None))
+    tried, resolution_failures, last_err, last_code = [], [], "no provider resolved", 502
     for cand in candidates:
         t0 = time.time()
         proposer, err, code = (
@@ -207,40 +267,23 @@ def openai_chat(
             out = proposer.generate(prompt, seed=seed, temperature=temperature,
                                     max_new_tokens=max_tokens, system=system)
         except Exception as e:
-            last_err, last_code = f"provider call failed: {e}", 502
+            out, last_err, last_code = None, f"provider call failed: {e}", 502
             tried.append((cand or "flywheel") + ": error")
-            if adaptive:
-                get_router_stats().record(
-                    cand or "flywheel", False, time.time() - t0)
-            continue
         if adaptive:
             get_router_stats().record(
-                cand or "flywheel", True, time.time() - t0)
+                cand or "flywheel", out is not None, time.time() - t0)
+        if out is None:
+            continue
         receipt = chat_receipt(prompt, system, max_tokens, temperature, seed, out)
         receipt["routed_via"] = cand or "flywheel"
-        if routing is not None:
-            receipt["routing"] = routing
-        if resolution_failures:
-            receipt["resolution_failures"] = resolution_failures
-        if tried:
-            receipt["failover_from"] = tried
-        body = {"id": "chatcmpl-" + receipt["receipt_id"],
-                "object": "chat.completion", "created": int(time.time()),
-                "model": out.model_ref,
-                "choices": [{"index": 0,
-                             "message": {"role": "assistant",
-                                         "content": out.text},
-                             "finish_reason": "stop"}],
-                "usage": {"prompt_tokens": len(prompt.split()),
-                          "completion_tokens": len(str(out.text).split()),
-                          "total_tokens": len(prompt.split())
-                          + len(str(out.text).split())},
-                "x_receipt": receipt}
+        for key, value in (("routing", routing),
+                           ("resolution_failures", resolution_failures),
+                           ("failover_from", tried)):
+            if value:
+                receipt[key] = value
+        body = _completion_body(receipt, out, prompt)
         return body, 200, receipt, out.text, out.model_ref
-    detail = "; ".join(tried) if tried else last_err
-    return {"error": {"message": f"all providers failed ({detail})",
-                      "type": "api_error"},
-            "failover_from": tried}, last_code, None, None, None
+    return _all_failed(tried, last_err), last_code, None, None, None
 
 
 def openai_models(*, unified_roster) -> dict:
