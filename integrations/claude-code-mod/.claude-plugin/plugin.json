@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Holds risky Bash, PowerShell and file-edit calls with the Flywheel pre-action monitor, writes a hash-chained receipt for every turn, and shows held and passed counts above the prompt. Adds holds only; never approves a call.",
   "author": { "name": "Zain Dana Harper" },
-  "license": "MIT",
+  "license": "FSL-1.1-MIT",
   "homepage": "https://github.com/HarperZ9/flywheel/tree/main/integrations/claude-code-mod",
   "repository": "https://github.com/HarperZ9/flywheel",
   "keywords": ["mods", "safety", "receipts", "flywheel"],

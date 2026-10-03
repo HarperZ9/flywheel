@@ -11,19 +11,10 @@ import re
 from dataclasses import replace
 
 from . import claude_cli_auth, providers, safe_program
+from .model_selection_required import ModelSelectionRequired
 from .proposer import Proposer, ProposerOutput, prompt_hash
 
 ProviderPermissionError = providers.ProviderPermissionError
-
-
-class ModelSelectionRequired(ValueError):
-    code = "MODEL_SELECTION_REQUIRED"
-    status = 422
-
-    def __init__(self, endpoint: str):
-        self.endpoint = endpoint
-        self.message = f"{endpoint} requires an explicit model selection"
-        super().__init__(self.message)
 
 
 class BackendProposer:

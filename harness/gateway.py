@@ -1077,7 +1077,7 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
             return self._json(gateway_graph(self.root, self.run_root,
                                             with_index=with_index,
                                             budget=budget, query=query))
-        if p == "/api/usage" or p == "/api/usage/live":  # usage summary or private live counters
+        if p in ("/api/usage", "/api/usage/live"):  # summary or private live counters
             from harness.usage_route import handle_usage_get
             return self._json(*handle_usage_get(p, qs, self.run_root))
         if p == "/api/receipts":                     # the receipts ledger (catalog + envelopes)
@@ -2218,10 +2218,8 @@ def _build_parser() -> argparse.ArgumentParser:
                     help="add a Host header value to the DNS-rebinding allowlist (repeatable). "
                          "Give the public tunnel hostname here so a phone can reach this gateway.")
     ap.add_argument("--strict-bind", action="store_true", help="fail startup if any requested bind host cannot be opened")
-    for opt in ("--managed-codex-executable", "--managed-codex-executable-sha256",
-                "--managed-codex-model", "--managed-codex-version", "--managed-codex-policy-root"):
-        ap.add_argument(opt)
-    ap.add_argument("--managed-codex-version-provenance", default="configured")
+    from harness.codex_managed_gateway_config import add_managed_codex_arguments, managed_config_from_args
+    add_managed_codex_arguments(ap)
     from harness.lane_probe_cache import add_desktop_flag; add_desktop_flag(ap)  # --desktop-launch
     return ap
 
@@ -2304,7 +2302,6 @@ def main(argv=None) -> int:
     state_root = flywheel_home / "state"
     from harness.gateway_operation_recovery import recover_gateway_operations
     from harness.journey_recovery import recover_store
-    from harness.codex_managed_gateway_config import managed_config_from_args
     _Handler.native_codex_config = managed_config_from_args(a, state_root=state_root)
     _Handler._configure_operation_components(state_root)
     from harness.credential_handles import CredentialHandleStore

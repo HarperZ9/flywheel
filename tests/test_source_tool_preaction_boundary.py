@@ -76,7 +76,7 @@ def _import_time_targets(path):
 
 def test_closure_excludes_the_preaction_monitor():
     names = _closure()
-    assert len(names) == 80
+    assert len(names) == 82
     assert not [name for name in names if name.startswith(MONITOR)]
     assert 'harness/local_tools.py' in names and 'harness/tool_mcp.py' in names
 

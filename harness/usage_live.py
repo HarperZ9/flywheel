@@ -120,6 +120,11 @@ class UsageLiveSampler:
             row["counter_scope"] = counter_scope
             return row
         if isinstance(parsed, list):
+            active = {self._identity(endpoint, item) for item in parsed}
+            prefix = f"{endpoint.endpoint}|{endpoint.base_url}|"
+            for key in list(self._cache):
+                if key.startswith(prefix) and key not in active:
+                    del self._cache[key]
             return [self._rate(endpoint, item, now, observed_utc) for item in parsed]
         return self._rate(endpoint, parsed, now, observed_utc)
 
@@ -142,8 +147,7 @@ class UsageLiveSampler:
         row["prompt_tokens"] = int(prompt) if prompt is not None else None
         if prompt is None:
             row["reason"] = PROMPT_MISSING
-        identity = (f"{endpoint.endpoint}|{endpoint.base_url}|{endpoint.model}|"
-                    f"{source}|{model}")
+        identity = self._identity(endpoint, parsed)
         current = {"time": now, "model": model, "generated": parsed["generated"],
                    "prompt": prompt, "reset_key": parsed["reset_key"]}
         previous = self._cache.get(identity)
@@ -175,8 +179,13 @@ class UsageLiveSampler:
                 (current["prompt"] - previous["prompt"]) / elapsed, 3)
         elif current["prompt"] is not None:
             row["reason"] = "collecting prompt-processing baseline"
-        row["report_denominator"]["seconds"] = round(elapsed, 3)
+        row["report_denominator"]["seconds"] = elapsed
         return row
+
+    @staticmethod
+    def _identity(endpoint: EndpointTelemetry, parsed: dict) -> str:
+        return (f"{endpoint.endpoint}|{endpoint.base_url}|{endpoint.model}|"
+                f"{parsed['source']}|{parsed['model']}")
 
 def handle_usage_live(req_or_qs: Any, _run_root: Any) -> tuple[dict, int]:
     from .usage_live_config import resolve_usage_live_endpoints

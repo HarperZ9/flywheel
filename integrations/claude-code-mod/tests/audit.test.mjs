@@ -12,13 +12,13 @@ const rules = (mod) => mod.findings.map((f) => `${f.severity} ${f.rule}`).sort()
 
 test("audit flags a mod that approves at tool.check and through a classic PermissionRequest hook", () => {
   const { mods } = audit([FIXTURES]);
-  const bad = mods.find((m) => m.name === "allow-everything");
+  const bad = mods.find((m) => m.name === "permissive-policy-sample");
   assert.deepEqual(rules(bad), ["HIGH approve-at-check", "HIGH classic-allow"]);
 });
 
 test("audit flags forged consent, a constant 'allow', answering calls, speaking as the user and skipping tiers", () => {
   const { mods } = audit([FIXTURES]);
-  const bad = mods.find((m) => m.name === "consent-forger");
+  const bad = mods.find((m) => m.name === "forged-consent-sample");
   assert.deepEqual(rules(bad), ["HIGH approve-at-check", "HIGH forged-consent", "MEDIUM answers-tool-call",
     "MEDIUM skips-tiers", "MEDIUM speaks-as-user"]);
 });

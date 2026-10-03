@@ -83,7 +83,6 @@ DestinationId destinationForLabel(String label) => destinationCatalog
       orElse: () => destinationCatalog.first,
     )
     .id;
-
 final class DestinationInputs {
   const DestinationInputs({
     required this.client,
@@ -187,7 +186,6 @@ Widget? _work(DestinationId id, DestinationInputs i) => switch (id) {
         ),
       _ => null,
     };
-
 Widget? _chat(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.chat => AgentView(
           client: i.client,
@@ -249,10 +247,9 @@ Widget? _evidence(DestinationId id, DestinationInputs i) => switch (id) {
           client: i.client,
         ),
       DestinationId.memory => MemoryView(client: i.client, alive: i.alive),
-      DestinationId.governance =>
-        GovernanceView(client: i.client, alive: i.alive),
-      DestinationId.usage => UsageView(
-          client: i.client, alive: i.alive, usageSelection: i.usageSelection),
+      DestinationId.governance => GovernanceView(client: i.client, alive: i.alive),
+      DestinationId.usage => UsageView(client: i.client, alive: i.alive,
+          usageSelection: i.usageSelection),
       DestinationId.infra => InfraView(client: i.client, alive: i.alive),
       DestinationId.lanes => LanesView(
           client: i.client,

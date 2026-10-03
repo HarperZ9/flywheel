@@ -3,12 +3,13 @@ from __future__ import annotations
 
 import ipaddress
 import hashlib
+import http.client
+import io
 import json
 import math
 import re
-import urllib.error
+import time
 import urllib.parse
-import urllib.request
 from typing import Any
 
 BYTE_LIMIT, HTTP_TIMEOUT = 262_144, 0.6
@@ -25,25 +26,63 @@ def display_model(raw: str) -> str:
     return "model-" + hashlib.sha256(raw.encode()).hexdigest()[:12]
 
 
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        return None
+class _DeadlineReader(io.RawIOBase):
+    def __init__(self, sock, deadline):
+        self.sock, self.deadline = sock, deadline
+        self.raw = sock.makefile("rb", buffering=0)
+
+    def readable(self):
+        return True
+
+    def readinto(self, buffer):
+        remaining = self.deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("telemetry deadline elapsed")
+        self.sock.settimeout(remaining)
+        return self.raw.readinto(buffer)
+
+    def close(self):
+        try:
+            self.raw.close()
+        finally:
+            super().close()
+
+
+class _DeadlineSocket:
+    def __init__(self, sock, deadline):
+        self.sock, self.deadline = sock, deadline
+
+    def makefile(self, mode):
+        assert mode == "rb"
+        return io.BufferedReader(_DeadlineReader(self.sock, self.deadline))
+
+    def __getattr__(self, name):
+        return getattr(self.sock, name)
 
 
 def http_text(url: str, timeout: float, byte_limit: int) -> str:
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect)
-    req = urllib.request.Request(url, headers={
-        "Accept": "application/json,text/plain,*/*",
-        "User-Agent": "flywheel-usage-live/1"})
+    parsed = urllib.parse.urlsplit(url)
+    connection = (http.client.HTTPSConnection if parsed.scheme == "https"
+                  else http.client.HTTPConnection)
+    conn = connection(parsed.hostname, parsed.port, timeout=timeout)
+    deadline = time.monotonic() + timeout
     try:
-        with opener.open(req, timeout=timeout) as resp:
+        conn.connect()
+        conn.sock.settimeout(max(0.001, deadline - time.monotonic()))
+        conn.sock = _DeadlineSocket(conn.sock, deadline)
+        conn.request("GET", parsed.path or "/", headers={
+            "Accept": "application/json,text/plain,*/*",
+            "User-Agent": "flywheel-usage-live/1"})
+        with conn.getresponse() as resp:
+            if 300 <= resp.status < 400:
+                raise RuntimeError("redirect refused")
+            if resp.status >= 400:
+                raise RuntimeError(f"http error {resp.status}")
             raw = resp.read(byte_limit + 1)
-    except urllib.error.HTTPError as exc:
-        if 300 <= exc.code < 400:
-            raise RuntimeError("redirect refused") from exc
-        raise RuntimeError(f"http error {exc.code}") from exc
-    except (urllib.error.URLError, OSError) as exc:
+    except (http.client.HTTPException, OSError) as exc:
         raise RuntimeError("endpoint unavailable") from exc
+    finally:
+        conn.close()
     if len(raw) > byte_limit:
         raise RuntimeError("telemetry response too large")
     return raw.decode("utf-8", "replace")
@@ -60,6 +99,7 @@ def literal_loopback_base(raw_url: str) -> str:
     try:
         parsed = urllib.parse.urlsplit(str(raw_url or "").strip())
         ip = ipaddress.ip_address(parsed.hostname or "")
+        _ = parsed.port  # Validate the port before any transport sees the URL.
     except ValueError:
         return ""
     if (parsed.scheme not in ("http", "https") or not ip.is_loopback
@@ -144,16 +184,19 @@ def parse_vllm_metrics(endpoint_model: str, get_text, base: str) -> list[dict] |
     if len(lines) > 5000:
         return None
     for line in lines:
-        if not line or line.startswith("#") or " " not in line:
+        fields = line.split(None, 1)
+        if not fields or fields[0].startswith("#"):
             continue
-        head, raw_value = line.split(None, 1)
+        head = fields[0]
         name = head.split("{", 1)[0]
         if name not in ("vllm:generation_tokens_total",
                         "vllm_generation_tokens_total",
                         "vllm:prompt_tokens_total",
                         "vllm_prompt_tokens_total"):
             continue
-        value = _prom_number(raw_value.split()[0])
+        if len(fields) != 2:
+            return None
+        value = _prom_number(fields[1].split()[0])
         if value is None:
             return None
         labels = dict(re.findall(r'([A-Za-z_][A-Za-z0-9_]*)="([^"]*)"', head))

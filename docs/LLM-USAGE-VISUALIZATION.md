@@ -33,6 +33,18 @@ The visual reference is [llm-visuals](https://github.com/DingoOz/llm-visuals).
 Flywheel implements its own view and observation path; the reference project is
 not installed, bundled, or imported.
 
-This feature is part of the unreleased 1.0.0 candidate. Focused tests and visual
-fixtures do not establish final installed acceptance or support for every
-inference runtime.
+Focused tests and visual fixtures do not establish installed acceptance or
+support for every inference runtime.
+
+## Release note for the next feature release
+
+The Usage view adds live counter charts for a selected local llama.cpp or vLLM
+runtime. The selection follows Chat's endpoint and model. The authenticated
+route reads counters only: it sends no generation request and starts no model.
+Missing counters remain unavailable; pausing or leaving the view stops polling.
+Existing completed-answer receipts retain their accounting and validation rules.
+This change does not enable managed provider sessions or change the account panel.
+
+This feature remains unreleased until its change is included in a tagged build.
+Counter fixtures and widget tests do not prove performance on a particular model,
+accuracy of runtime reports, or installed-app acceptance.

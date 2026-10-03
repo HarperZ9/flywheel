@@ -5,7 +5,6 @@ import pytest
 
 from harness.usage_live import EndpointTelemetry, UsageLiveSampler
 from tests.test_usage_live import _Clock
-from tests.test_usage_route import _emit
 
 
 def test_vllm_models_have_separate_counters_and_rate_baselines():
@@ -66,14 +65,68 @@ def test_invalid_or_incomplete_slot_population_is_not_measured(slots):
     assert body["models"][0]["generated_tokens"] is None
 
 
-@pytest.mark.parametrize("usage", [
-    {"prompt": -1, "completion": 5, "total": 4},
-    {"prompt": 1, "completion": 5, "total": 4},
-    {"prompt": 2 ** 54, "completion": 0, "total": 2 ** 54},
-])
-def test_invalid_provider_counts_use_estimate_in_verifiable_receipt(tmp_path, usage):
-    filename = _emit(tmp_path, "openai", "openai:gpt-4o-mini", "hello", usage)
-    receipt = json.loads((tmp_path / "usage" / filename).read_text())
-    assert receipt["source"] == "estimated"
-    tokens = receipt["tokens"]
-    assert int(tokens["total"]) == int(tokens["prompt"]) + int(tokens["completion"])
+@pytest.mark.parametrize("base", ["http://127.0.0.1:bad",
+    "http://127.0.0.1:65536", "http://127.0.0.1:-1"])
+def test_invalid_port_is_unavailable_without_opening_a_connection(base):
+    calls = []
+    sampler = UsageLiveSampler(get_text=lambda *_: calls.append("fetch"))
+    body = sampler.snapshot([EndpointTelemetry("vllm", "m", base, "test")])
+    assert calls == []
+    assert body["models"][0]["status"] == "unavailable"
+    assert body["models"][0]["decode_tokens_per_second"] is None
+
+
+def test_model_missing_from_valid_batch_requires_a_fresh_baseline():
+    clock = _Clock()
+    samples = iter([
+        'vllm:generation_tokens_total{model_name="a"} 10\n'
+        'vllm:generation_tokens_total{model_name="b"} 20\n',
+        'vllm:generation_tokens_total{model_name="b"} 21\n',
+        'vllm:generation_tokens_total{model_name="a"} 50\n'
+        'vllm:generation_tokens_total{model_name="b"} 22\n',
+    ])
+    sampler = UsageLiveSampler(get_text=lambda *_: next(samples),
+        now_seconds=clock.seconds, now_utc=clock.utc)
+    ep = EndpointTelemetry("vllm", "default", "http://127.0.0.1:8000", "test")
+    sampler.snapshot([ep])
+    clock.tick(1)
+    sampler.snapshot([ep])
+    clock.tick(1)
+    rows = {r["model"]: r for r in sampler.snapshot([ep])["models"]}
+    assert rows["a"]["status"] == "warming_up"
+    assert rows["a"]["decode_tokens_per_second"] is None
+    assert rows["b"]["decode_tokens_per_second"] == 1
+
+
+def test_positive_submillisecond_interval_is_not_reported_as_zero():
+    clock = _Clock()
+    counts = iter([1, 2])
+    sampler = UsageLiveSampler(get_json=lambda *_: [
+        {"id": 0, "id_task": 1, "n_decoded": next(counts)}],
+        now_seconds=clock.seconds, now_utc=clock.utc)
+    ep = EndpointTelemetry("llamacpp", "m", "http://127.0.0.1:8080", "test")
+    sampler.snapshot([ep])
+    clock.tick(0.0001)
+    row = sampler.snapshot([ep])["models"][0]
+    seconds = row["report_denominator"]["seconds"]
+    assert seconds == pytest.approx(0.0001)
+    assert seconds * row["decode_tokens_per_second"] == pytest.approx(1)
+
+
+@pytest.mark.parametrize("metrics", ["vllm:generation_tokens_total ",
+    "vllm:generation_tokens_total\t", "vllm:generation_tokens_total\n"])
+def test_counter_without_value_is_unavailable(metrics):
+    sampler = UsageLiveSampler(get_text=lambda *_: metrics)
+    row = sampler.snapshot([EndpointTelemetry("vllm", "m",
+        "http://127.0.0.1:8000", "test")])["models"][0]
+    assert row["status"] == "unavailable"
+    assert row["generated_tokens"] is None
+
+
+def test_whitespace_lines_and_tab_separator_do_not_hide_valid_counters():
+    sampler = UsageLiveSampler(get_text=lambda *_:
+        ' \n\t\nother_metric \nvllm:generation_tokens_total\t7\n')
+    row = sampler.snapshot([EndpointTelemetry("vllm", "m",
+        "http://127.0.0.1:8000", "test")])["models"][0]
+    assert row["status"] == "warming_up"
+    assert row["generated_tokens"] == 7

@@ -9,6 +9,15 @@ from .codex_managed_composition import (
 )
 
 
+def add_managed_codex_arguments(parser) -> None:
+    """Declare the gateway's managed Codex options on its argument parser."""
+    for opt in ("--managed-codex-executable", "--managed-codex-executable-sha256",
+                "--managed-codex-model", "--managed-codex-version",
+                "--managed-codex-policy-root"):
+        parser.add_argument(opt)
+    parser.add_argument("--managed-codex-version-provenance", default="configured")
+
+
 def managed_config_from_args(args, *, state_root: Path):
     managed_intent = any((
         args.managed_codex_executable,

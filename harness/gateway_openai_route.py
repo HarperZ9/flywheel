@@ -1,23 +1,13 @@
 """Provider and OpenAI-compatible route implementations for the gateway.
 
-`harness.gateway` keeps the public wrapper functions so existing tests and
-callers can still monkeypatch names on that module. This file carries the
-implementation that does not need direct access to the HTTP handler.
-"""
+`harness.gateway` keeps the public wrappers, so callers monkeypatch names there."""
 from __future__ import annotations
 
 import json
 import math
 import time
 import urllib.error
-
-
-def _model_selection_required_response(exc: Exception) -> tuple[dict, int] | None:
-    if getattr(exc, "code", "") != "MODEL_SELECTION_REQUIRED":
-        return None
-    return {"schema": "flywheel.evidence-transport-error/v1",
-            "error": {"code": "MODEL_SELECTION_REQUIRED",
-                      "message": str(exc)}}, getattr(exc, "status", 422)
+from .model_selection_required import model_selection_response
 
 
 def _route_block(entry: dict, roster: dict, endpoint: str) -> tuple[dict, int] | None:
@@ -58,8 +48,7 @@ def route_request(
         kw = {"model": model} if model else {}
         prop = make_endpoint_proposer(endpoint, ledger=router_ledger(), **kw)
     except Exception as e:
-        typed = _model_selection_required_response(e)
-        if typed is not None:
+        if (typed := model_selection_response(e)) is not None:
             return typed
         return {"error": f"cannot build a proposer for {endpoint!r}: {e}"}, 502
     try:
@@ -114,11 +103,9 @@ def resolve_proposer(
         if blocked is not None:
             return None, blocked[0]["error"], blocked[1]
     try:
-        from harness.endpoint_registry import (
-            make_authorized_endpoint_proposer, make_endpoint_proposer)
+        from harness.endpoint_registry import make_authorized_endpoint_proposer, make_endpoint_proposer
     except Exception:
-        from endpoint_registry import (
-            make_authorized_endpoint_proposer, make_endpoint_proposer)
+        from endpoint_registry import make_authorized_endpoint_proposer, make_endpoint_proposer
     try:
         factory = (make_endpoint_proposer if credential_bindings is None else
                    make_authorized_endpoint_proposer)
@@ -127,8 +114,7 @@ def resolve_proposer(
             kwargs["credential_bindings"] = credential_bindings
         return factory(name, **kwargs), None, 200
     except Exception as e:
-        typed = _model_selection_required_response(e)
-        if typed is not None:
+        if (typed := model_selection_response(e)) is not None:
             return None, typed[0], typed[1]
         return None, f"cannot build proposer for {name!r}: {e}", 502
 
