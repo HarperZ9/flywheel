@@ -21,6 +21,8 @@ from .proposer import Proposer
 from .task import Task
 
 DEFAULT_TEMPS = [0.0, 0.4, 0.8, 1.1]
+SELF_SCORED = "self-scored"
+HELD_OUT_DECIDES = "visible-selects-held-out-decides"
 REASONING_TEMPS = [0.5, 0.7, 0.9, 1.1]
 CORRELATION_THRESHOLD = 0.85
 
@@ -52,6 +54,12 @@ class SearchResult:
     diversified: bool = True
     verdict: str = "FAIL"  # PASS | FAIL | UNVERIFIABLE
     reason: str = ""
+    # Who chose and who judged. self-scored: one oracle did both, so the
+    # result cannot lose to its own selection. With a decider, `selected` is the
+    # selector's pick and `decision` is the decider's one verdict on it.
+    selection: str = SELF_SCORED
+    selected: Candidate | None = None
+    decision: OracleResult | None = None
 
     @property
     def accepted_text(self) -> str | None:
@@ -82,7 +90,15 @@ def max_pairwise_correlation(texts: list[str]) -> float:
 def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
               temps: list[float] | None = None,
               seeds: list[int] | None = None,
-              collect_detail: bool = False) -> SearchResult:
+              collect_detail: bool = False,
+              decide: Oracle | None = None) -> SearchResult:
+    """Sample at each temperature; `oracle` selects the first passing candidate
+    in proposal order (temperature 0.0 first, so ties fall to greedy).
+
+    With `decide`, the decider runs once, on the pick only, and its verdict is
+    the result: a pick the decider rejects is FAIL, not a reason to try the next
+    candidate. Without it the selector also decides, and the result says so.
+    """
     temps = list(temps or DEFAULT_TEMPS)
     n = len(temps)
     seeds = seeds or [task.seed + i for i in range(n)]
@@ -110,11 +126,18 @@ def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
             res.accepted = c
     texts = [c.text for c in res.candidates]
     res.correlation = max_pairwise_correlation(texts)
-    any_pass = any(c.passed for c in res.candidates)
-    if any_pass:
+    res.selected = res.accepted
+    if decide is not None:
+        return _decide(res, decide, task)
+    if any(c.passed for c in res.candidates):
         res.verdict = "PASS"
         res.reason = "at least one candidate passed the oracle"
-    elif res.correlation >= CORRELATION_THRESHOLD:
+        return res
+    return _no_pass(res)
+
+
+def _no_pass(res: SearchResult) -> SearchResult:
+    if res.correlation >= CORRELATION_THRESHOLD:
         res.verdict = "UNVERIFIABLE"
         res.reason = (f"no pass and candidates correlated "
                       f"(max jaccard {res.correlation:.2f} >= "
@@ -124,4 +147,20 @@ def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
         res.verdict = "FAIL"
         res.reason = (f"no pass and candidates diverse "
                       f"(max jaccard {res.correlation:.2f}) — honest failure")
+    return res
+
+
+def _decide(res: SearchResult, decide: Oracle, task: Task) -> SearchResult:
+    res.selection = HELD_OUT_DECIDES
+    if res.selected is None:
+        return _no_pass(res)
+    res.decision = decide.verify(res.selected.text, task)
+    if res.decision.verdict() == "PASS":
+        res.verdict = "PASS"
+        res.reason = "the selector's pick passed the held-out decider"
+    else:
+        res.accepted = None
+        res.verdict = "FAIL"
+        res.reason = ("the selector's pick failed the held-out decider "
+                      f"({res.decision.verdict()}); no other candidate is tried")
     return res
