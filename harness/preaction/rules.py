@@ -17,6 +17,7 @@ from pathlib import Path
 from .contract import BLOCK, HOLD, Hit, ProposedCall, RunContext, canonical_json, sha256_hex
 from .fetch import read_only_fetch
 from .normalize import Facts, extract, norm_path
+from .payload import model_api_url_payload
 
 _PACK_PATH = Path(__file__).with_name("rules_v1.json")
 _MUTATES = re.compile(
@@ -131,6 +132,10 @@ def _matches(m: dict, pack: dict, call: ProposedCall, f: Facts, ctx: RunContext)
     if m.get("host_unowned"):
         unowned = set(f.hosts) - _owned_hosts(pack, ctx) - _allowed_hosts(pack, ctx)
         if not unowned:
+            return False
+    if m.get("model_api_url_payload"):
+        allowed = _allowed_hosts(pack, ctx) | {h.lower() for h in ctx.fetch_hosts}
+        if not model_api_url_payload(f.text, allowed):
             return False
     if m.get("canary"):
         hay = f.text + "\n" + f.command
