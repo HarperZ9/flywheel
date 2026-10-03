@@ -101,8 +101,14 @@ def _validate_continuation_handoff(action: str, operation, *, owner_ref: str,
         validate_continuation_agent_operation(
             operation, state_root, owner_ref=owner_ref,
             journey_ref=journey_ref, journey_events=journey_events)
-def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
-             clock: Callable[[], str], workspace_root: Path | None = None) -> dict:
+def _freeze(operation, owner_ref, state_root, workspace_root, body, registry):
+    plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root,
+        workspace_root=workspace_root, journey_ref=body["journey_ref"],
+        expected_event_head=body["expected_event_head"],
+        provider_session_registry=registry)
+    credential_slots(operation, owner_ref, state_root, plan=plan)
+    return plan
+def _validate_prepare_body(body: dict) -> None:
     exact_request(body, _BASE | {"operation"})
     if (body.get("schema") != REQUEST_SCHEMA
             or JOURNEY_REF_PATTERN.fullmatch(body.get("journey_ref", "")) is None
@@ -112,43 +118,53 @@ def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
             or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}",
                             body["client_request_id"]) is None):
         raise GatewayOperationError("INVALID_REQUEST")
+def _proposal_record(action, body, owner_ref, operation, plan, clock) -> dict:
+    suffix = secrets.token_hex(16)
+    proposal_ref, grant_ref = f"prp_{suffix}", f"gnt_{suffix}"
+    expires = _utc_text(_parse_time(clock()) + timedelta(seconds=120))
+    record = {
+        "schema": PROPOSAL_SCHEMA, "proposal_ref": proposal_ref,
+        "planned_grant_ref": grant_ref, "owner_ref": owner_ref,
+        "action": action, "journey_ref": body["journey_ref"],
+        "expected_event_head": body["expected_event_head"],
+        "client_request_id": body["client_request_id"],
+        "operation": thaw_operation(operation.operation),
+        "execution_plan_sha256": plan.digest,
+        "expires_at": expires, "state": "prepared",
+    }
+    attach_binding(record, plan)
+    request = _request(record, operation)
+    GrantStore._validate_request(request, allow_default_expiry=False)
+    grant_value = asdict(request)
+    grant_value["scopes"] = list(request.scopes)
+    grant_value["data_refs"] = list(request.data_refs)
+    record["grant_request"] = grant_value
+    record["record_sha256"] = _digest(record)
+    return record
+def _prepare(action: str, body: dict, owner_ref: str, state_root: Path,
+             clock: Callable[[], str], workspace_root: Path | None = None,
+             provider_session_registry=None) -> dict:
+    _validate_prepare_body(body)
     validate_no_raw_secrets(body)
     operation = canonicalize_operation(action, body["operation"])
     _validate_continuation_handoff(
         action, operation, owner_ref=owner_ref,
         journey_ref=body["journey_ref"], state_root=state_root)
-    plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root, workspace_root=workspace_root)
-    credential_slots(operation, owner_ref, state_root, plan=plan)
+    plan = None
+    if not action.startswith("provider.session."):
+        plan = _freeze(operation, owner_ref, state_root, workspace_root, body, provider_session_registry)
     store = JourneyStore(state_root)
     journey_dir = store._journey_dir(owner_ref, body["journey_ref"])
     with ExclusiveJourneyLock.acquire(journey_dir / ".lock"):
         if _current_head(store, owner_ref, body["journey_ref"]) != body[
                 "expected_event_head"]:
             raise GatewayOperationError("HEAD_CONFLICT")
-        suffix = secrets.token_hex(16)
-        proposal_ref, grant_ref = f"prp_{suffix}", f"gnt_{suffix}"
-        expires = _utc_text(_parse_time(clock()) + timedelta(seconds=120))
-        record = {
-            "schema": PROPOSAL_SCHEMA, "proposal_ref": proposal_ref,
-            "planned_grant_ref": grant_ref, "owner_ref": owner_ref,
-            "action": action, "journey_ref": body["journey_ref"],
-            "expected_event_head": body["expected_event_head"],
-            "client_request_id": body["client_request_id"],
-            "operation": thaw_operation(operation.operation),
-            "execution_plan_sha256": plan.digest,
-            "expires_at": expires, "state": "prepared",
-        }
-        attach_binding(record, plan)
-        request = _request(record, operation)
-        GrantStore._validate_request(request, allow_default_expiry=False)
-        grant_value = asdict(request)
-        grant_value["scopes"] = list(request.scopes)
-        grant_value["data_refs"] = list(request.data_refs)
-        record["grant_request"] = grant_value
-        record["record_sha256"] = _digest(record)
+        if plan is None:
+            plan = _freeze(operation, owner_ref, state_root, workspace_root, body, provider_session_registry)
+        record = _proposal_record(action, body, owner_ref, operation, plan, clock)
         owner_dir = _directory(state_root, owner_ref)
         with ExclusiveJourneyLock.acquire(owner_dir / ".lock"):
-            _write_indexed(owner_dir, record, clock(), _replace, _path(owner_dir, proposal_ref))
+            _write_indexed(owner_dir, record, clock(), _replace, _path(owner_dir, record["proposal_ref"]))
     return _proposal_response(record, operation)
 def _approve(body: dict, owner_ref: str, state_root: Path, clock: Callable[[], str]) -> dict:
     exact_request(body, {"proposal_ref"})
@@ -170,15 +186,36 @@ def _approve(body: dict, owner_ref: str, state_root: Path, clock: Callable[[], s
             _write_indexed(owner_dir, record, clock(), _replace, _path(owner_dir, record["proposal_ref"]))
     return {"schema": "flywheel.operation-grant-approval/v1",
             "grant_ref": issued["grant_ref"], "expires_at": issued["expires_at"]}
-def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[], str], workspace_root: Path | None = None) -> AuthorizedOperation:
+def _record_matches(record, action, body, operation) -> bool:
+    return not (record["state"] != "approved" or record["action"] != action
+                or record["journey_ref"] != body.get("journey_ref")
+                or record["expected_event_head"] != body.get(
+                    "expected_event_head")
+                or record["client_request_id"] != body.get(
+                    "client_request_id")
+                or record["operation"] != thaw_operation(operation.operation)
+                or record["planned_grant_ref"] != body.get("grant_ref"))
+def _authorized(operation, owner_ref, record, plan) -> AuthorizedOperation:
+    return AuthorizedOperation(
+        operation.action, operation.tool, operation.destination,
+        operation.operation,
+        operation.operation_sha256, operation.arguments_sha256,
+        operation.scopes, operation.data_refs, operation.credential_refs,
+        owner_ref, record["journey_ref"], record["expected_event_head"],
+        record["client_request_id"], record["planned_grant_ref"],
+        record["expires_at"], plan,
+    )
+def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[], str],
+               workspace_root: Path | None = None, provider_session_registry=None) -> AuthorizedOperation:
     action = envelope.action
     operation = envelope.operation
-    plan = freeze_execution_plan(operation, owner_ref=owner_ref, state_root=state_root, workspace_root=workspace_root)
-    credential_slots(operation, owner_ref, state_root, plan=plan)
     body = {"journey_ref": envelope.journey_ref,
             "expected_event_head": envelope.expected_event_head,
             "client_request_id": envelope.client_request_id,
             "grant_ref": envelope.grant_ref}
+    plan = None
+    if not operation.action.startswith("provider.session."):
+        plan = _freeze(operation, owner_ref, state_root, workspace_root, body, provider_session_registry)
     owner_dir = _directory(state_root, owner_ref)
     proposal_ref = "prp_" + str(body.get("grant_ref", ""))[4:]
     store = JourneyStore(state_root)
@@ -192,15 +229,10 @@ def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[]
             raise GatewayOperationError("HEAD_CONFLICT")
         with ExclusiveJourneyLock.acquire(owner_dir / ".lock"):
             record = _read(owner_dir, proposal_ref, owner_ref)
-            if (record["state"] != "approved" or record["action"] != action
-                    or record["journey_ref"] != body.get("journey_ref")
-                    or record["expected_event_head"] != body.get(
-                        "expected_event_head")
-                    or record["client_request_id"] != body.get(
-                        "client_request_id")
-                    or record["operation"] != thaw_operation(operation.operation)
-                    or record["planned_grant_ref"] != body.get("grant_ref")):
+            if not _record_matches(record, action, body, operation):
                 raise GatewayOperationError("PERMISSION_DENIED")
+            if plan is None:
+                plan = _freeze(operation, owner_ref, state_root, workspace_root, body, provider_session_registry)
             compare_binding(record, plan)
             if record["execution_plan_sha256"] != plan.digest:
                 raise GatewayOperationError("PERMISSION_DENIED")
@@ -218,24 +250,19 @@ def _authorize(envelope, *, owner_ref: str, state_root: Path, clock: Callable[[]
                 plan = replace(plan, verified_plan=verified)
             GrantStore(state_root, clock=clock).consume(
                 body["grant_ref"], request, now=clock())
-    return AuthorizedOperation(
-        operation.action, operation.tool, operation.destination,
-        operation.operation,
-        operation.operation_sha256, operation.arguments_sha256,
-        operation.scopes, operation.data_refs, operation.credential_refs,
-        owner_ref, record["journey_ref"], record["expected_event_head"],
-        record["client_request_id"], record["planned_grant_ref"],
-        record["expires_at"], plan,
-    )
+    return _authorized(operation, owner_ref, record, plan)
 def authorize_gateway_operation(
         action: str, raw: bytes, *, owner_ref: str, state_root: Path,
-        clock: Callable[[], str], workspace_root: Path | None = None) -> AuthorizedOperation:
-    return authorize_gateway_envelope(parse_gateway_envelope(action, raw), owner_ref=owner_ref, state_root=state_root, clock=clock, workspace_root=workspace_root)
+        clock: Callable[[], str], workspace_root: Path | None = None,
+        provider_session_registry=None) -> AuthorizedOperation:
+    return authorize_gateway_envelope(parse_gateway_envelope(action, raw), owner_ref=owner_ref, state_root=state_root, clock=clock, workspace_root=workspace_root, provider_session_registry=provider_session_registry)
 def authorize_gateway_envelope(envelope, *, owner_ref: str, state_root: Path,
-        clock: Callable[[], str], workspace_root: Path | None = None) -> AuthorizedOperation:
+        clock: Callable[[], str], workspace_root: Path | None = None,
+        provider_session_registry=None) -> AuthorizedOperation:
     try:
         return _authorize(envelope, owner_ref=owner_ref,
-                          state_root=state_root, clock=clock, workspace_root=workspace_root)
+                          state_root=state_root, clock=clock, workspace_root=workspace_root,
+                          provider_session_registry=provider_session_registry)
     except GatewayOperationError:
         raise
     except GrantError as exc:
@@ -247,7 +274,7 @@ def authorize_gateway_envelope(envelope, *, owner_ref: str, state_root: Path,
         raise GatewayOperationError(code) from None
     except (TransportError, OSError, TypeError, ValueError):
         raise GatewayOperationError("INVALID_REQUEST") from None
-def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Path, clock: Callable[[], str], run_root: Path | None = None, workspace_root: Path | None = None) -> tuple[dict, int]:
+def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Path, clock: Callable[[], str], run_root: Path | None = None, workspace_root: Path | None = None, provider_session_registry=None) -> tuple[dict, int]:
     """Prepare or approve without dispatching an external operation."""
     try:
         if not path.startswith(ROUTE_PREFIX): raise GatewayOperationError("NOT_FOUND")
@@ -268,6 +295,6 @@ def gateway_grant_post(path: str, raw: bytes, *, owner_ref: str, state_root: Pat
         if not route.startswith("prepare/") or "/" in route[8:]: raise GatewayOperationError("NOT_FOUND")
         action = route[8:]
         if action not in GRANTABLE_ACTIONS: raise GatewayOperationError("NOT_FOUND")
-        return _prepare(action, body, owner_ref, state_root, clock, workspace_root), 200
+        return _prepare(action, body, owner_ref, state_root, clock, workspace_root, provider_session_registry), 200
     except (TransportError, GatewayOperationError, GrantError, JourneyLockBusy, JourneyStoreError, OSError, ValueError) as exc:
         return gateway_error_response(exc)

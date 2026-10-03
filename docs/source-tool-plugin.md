@@ -45,7 +45,7 @@ unchanged. Its bounded process runner currently requires Windows.
 
 ## Reviewed dependency closure
 
-`scripts/source_tool_closure.json` pins 78 existing Python modules and the two
+`scripts/source_tool_closure.json` pins 80 existing Python modules and the two
 public resource files. The eager receipt code imports gateway helpers, so this
 set includes more modules than the exposed tool count suggests. Unused lazy
 gateway branches are not recursively bundled and are not supported entrypoints.

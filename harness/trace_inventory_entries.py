@@ -99,6 +99,11 @@ STORES = (
           CLASSIFY_FIRST, EXPORT, NOT_DESIGNED,
           note="HOME of gateway worker children (gateway_worker_env.py); whatever "
                "child tools write there is unknown"),
+    Store("S25", "Managed Codex baseline policy", "state", ("codex-managed-policy",),
+          ("C4", "C5"), META, EXPORT, NOT_DESIGNED, owner_binding="owner",
+          note="accepted inventory and baseline records plus bootstrap receipts: binding "
+               "digests, the workspace path, profile identities and config digests; no "
+               "prompt or answer text (codex_managed_inventory_lifecycle.py)"),
     Store("S14", "Capture failure and suppression records", "state", ("capture-failures",),
           ("C4",), META, "harness.trace_spool_adapters.export_records",
           "harness.trace_spool_adapters.delete_all", owner_binding="home",

@@ -25,6 +25,41 @@ connector path; Android assistant work commands should not be routed through
   recommended path. A direct port-forward alternative exists but requires a
   public IPv4 and your own TLS certificate.
 
+
+## Optional: Tailscale station gateway
+
+Tailscale is a secondary station-control transport for the Flywheel gateway. It
+is for a trusted phone or second machine on the same tailnet to reach the PC's
+Flywheel gateway. It does not replace Relay MCP, it does not enable public
+access, and it does not change local-model endpoint rules. Local model probes
+and live usage telemetry still accept literal loopback runtime URLs only.
+
+The station gateway keeps the same gateway bearer token and Host allowlist used
+by the desktop shell. Tailnet mode binds loopback plus the PC's explicit
+Tailscale IPv4 address. It never binds `0.0.0.0`, never falls back to LAN when
+`-TailnetOnly` is requested, and never runs `tailscale up`, `login`, `serve`,
+`funnel`, or ACL-changing commands.
+
+Preview the tailnet plan without starting a listener:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\launch_gateway_mobile.ps1 -TailnetOnly -Plan
+```
+
+The plan is redacted. It may include the connection URL, bind hosts, allow hosts,
+and whether a gateway token file is already present. It does not include the
+bearer token, token hash, account, peer, or DNS inventory.
+
+Start the gateway for tailnet station control after reviewing the plan:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\launch_gateway_mobile.ps1 -TailnetOnly
+```
+
+If Tailscale is not running, the local node is offline, or no Tailscale IPv4 is
+available, tailnet-only mode exits without starting the gateway. Same-wifi LAN
+binding remains an explicit `-Lan` mode outside tailnet-only operation.
+
 ## Quick start (Cloudflare Tunnel)
 
 ### 1. Install cloudflared

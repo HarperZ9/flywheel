@@ -21,6 +21,7 @@ from pathlib import Path
 
 from ..journey_lock import ExclusiveJourneyLock
 from .contract import REVIEW_DOES_NOT_PROVE
+from .overrides import check_reason_code, write_reason_text
 from .records import HoldStore, decision_record
 
 _DECISIONS = ("APPROVED_ONCE", "REJECTED", "TERMINATED", "EXPIRED")
@@ -116,9 +117,11 @@ class Escalator:
         return self._read_index()["pending"][hold_id]
 
     # --- the owner decides -------------------------------------------------
-    def decide(self, hold_id: str, decision: str, *, decider: str, reason: str = "") -> dict:
+    def decide(self, hold_id: str, decision: str, *, decider: str, reason: str = "",
+               reason_code: str = "") -> dict:
         if decision not in _DECISIONS:
             raise ValueError(f"decision must be one of {_DECISIONS}")
+        check_reason_code(reason_code)
         with ExclusiveJourneyLock.acquire(self.home / ".pending.lock", 5.0):
             index = self._read_index()
             if hold_id not in index["pending"]:
@@ -152,8 +155,9 @@ class Escalator:
             rec = decision_record(hold=hold, decision=decision, decider=decider,
                                   decided_at=now, grant_id=grant_id,
                                   review_payload_sha256=review_sha,
-                                  reason_sha256=sha256_hex(reason.encode()) if reason else "")
-            self.store.append(rec)
+                                  reason_sha256=sha256_hex(reason.encode()) if reason else "",
+                                  reason_code=reason_code)
+            write_reason_text(self.home, self.store.append(rec), reason)
             self._write_index(index)
         if late:
             raise ValueError(f"hold {hold_id} expired before the approval; recorded EXPIRED")

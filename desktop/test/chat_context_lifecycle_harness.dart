@@ -3,6 +3,10 @@ part of 'chat_context_lifecycle_test.dart';
 Future<void> _send(WidgetTester tester, String text) async {
   await tester.enterText(find.byType(TextField), text);
   await tester.pump();
+  // The welcome prelude scrolls; at the 800x600 test size the header can wrap
+  // and push Send under the context status line, so scroll it into view first.
+  await tester.ensureVisible(find.byTooltip('Send  (Enter)'));
+  await tester.pump();
   await tester.tap(find.byTooltip('Send  (Enter)'));
   await tester.pumpAndSettle();
   await _waitForSendControl(tester);

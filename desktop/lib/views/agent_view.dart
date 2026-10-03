@@ -7,6 +7,9 @@ import '../assistant/rowan_action_cue_controller.dart';
 import '../client/gateway_client.dart';
 import '../controllers/chat_admission_controller.dart';
 import '../controllers/chat_context_controller.dart';
+import '../controllers/gateway_operation_controller.dart';
+import '../controllers/provider_session_controller.dart';
+import '../ide/workspace.dart' show workspaceReference;
 import '../models/chat.dart';
 import '../models/gateway_models.dart';
 import '../models/usage_live_selection.dart';
@@ -26,6 +29,7 @@ import '../widgets/desktop_speech_controls.dart';
 import '../widgets/flywheel_nav.dart';
 import '../widgets/fw.dart';
 import '../widgets/operation_grant_sheet.dart';
+import '../widgets/provider_session_surface.dart';
 import '../widgets/start_task_prelude.dart';
 import 'agent_mode_pane.dart';
 
@@ -63,7 +67,10 @@ class _AgentViewState extends State<AgentView> with WidgetsBindingObserver {
   bool get _desktopSpeech =>
       widget.speech != null || !(Platform.isAndroid || Platform.isIOS);
   final _workspace = ChatWorkspaceController();
+  final _nativeSession = ProviderSessionController();
   final _chosenModels = <String, String>{};
+  final _nativeDrafts = <String, String>{};
+  final _nativeModels = <String, String>{};
   late final ChatAdmissionController _admission;
   late Conversation _current;
   List<EndpointRow> _endpoints = [];
@@ -76,7 +83,9 @@ class _AgentViewState extends State<AgentView> with WidgetsBindingObserver {
   bool _admitting = false, _accepted = false, _streaming = false;
   bool _providerDispatchStarted = false;
   bool _agentMode = false;
+  bool _nativeSessionMode = false;
   String? _agentSeedGoal;
+  String _nativeProvider = 'codex';
   int _generation = 0;
   bool get _busy => _admitting || _streaming;
   List<Conversation> get _conversations => _admission.conversations;
@@ -124,6 +133,7 @@ class _AgentViewState extends State<AgentView> with WidgetsBindingObserver {
       _disposition!.complete(PromptDisposition.retained);
     }
     _workspace.dispose();
+    _nativeSession.dispose();
     super.dispose();
   }
 
@@ -218,6 +228,7 @@ class _AgentViewState extends State<AgentView> with WidgetsBindingObserver {
       }
       _admission.changeDraft(_current, text);
       _agentMode = false;
+      _nativeSessionMode = false;
       _agentSeedGoal = null;
     }
 
@@ -256,7 +267,7 @@ class _AgentViewState extends State<AgentView> with WidgetsBindingObserver {
     return LayoutBuilder(builder: (context, constraints) {
       final narrow = constraints.maxWidth < 600;
       return Row(children: [
-        if (!_agentMode && !narrow)
+        if (_chatMode && !narrow)
           ChatSidebar(
               conversations: _conversations,
               current: _current,
@@ -267,13 +278,15 @@ class _AgentViewState extends State<AgentView> with WidgetsBindingObserver {
               banner: _historyBanner()),
         Expanded(
             child: Column(children: [
-          _header(showConversations: narrow && !_agentMode),
+          _header(showConversations: narrow && _chatMode),
           Expanded(child: _body()),
-          if (!_agentMode)
+          if (_chatMode)
             ChatContextStatus(outcome: _contextStatus[_current.id]),
-          if (!_agentMode && !_current.isEmpty) _composer(),
+          if (_chatMode && !_current.isEmpty) _composer(),
         ])),
       ]);
     });
   }
+
+  bool get _chatMode => !_agentMode && !_nativeSessionMode;
 }

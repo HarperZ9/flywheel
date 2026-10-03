@@ -27,15 +27,17 @@ def test_real_native_ladder_forwards_explicit_model(ladder):
 
 
 @pytest.mark.parametrize("override", [None, ""])
-def test_default_preserves_environment(ladder, monkeypatch, override):
+def test_codex_cli_requires_explicit_model_before_ladder_default(ladder, override):
+    with pytest.raises(endpoint_registry.ModelSelectionRequired) as exc:
+        endpoint_registry.make_endpoint_proposer("codex-cli", model=override)
+    assert exc.value.code == "MODEL_SELECTION_REQUIRED"
+    assert exc.value.endpoint == "codex-cli"
+
+
+def test_codex_api_default_remains_separate_from_native_cli(monkeypatch):
     monkeypatch.setenv("CODEX_MODEL", "configured-model")
-    b = endpoint_registry.make_endpoint_proposer("codex-cli", model=override).backend
-    assert b.model == "configured-model"
-
-
-def test_default_preserves_builtin(ladder):
-    assert endpoint_registry.make_endpoint_proposer("codex-cli").backend.model == (
-        endpoints.PROVIDERS["codex"]["model"])
+    proposer = endpoint_registry.make_endpoint_proposer("codex")
+    assert proposer.model == endpoints.PROVIDERS["codex"]["model"]
 
 
 def test_override_does_not_mutate_shared_backend(monkeypatch):
@@ -44,9 +46,10 @@ def test_override_does_not_mutate_shared_backend(monkeypatch):
     monkeypatch.setattr(endpoints, "build_endpoints", lambda **kw: [original])
     first = endpoint_registry.make_endpoint_proposer("codex-cli", model="gpt-6-astra")
     other = endpoint_registry.make_endpoint_proposer("codex-cli", model="another-model")
-    second = endpoint_registry.make_endpoint_proposer("codex-cli")
+    with pytest.raises(endpoint_registry.ModelSelectionRequired):
+        endpoint_registry.make_endpoint_proposer("codex-cli")
     assert first.backend.model == "gpt-6-astra"
-    assert second.backend is original and original.model == "original"
+    assert original.model == "original"
     assert first.backend.argv == original.argv and first.backend.argv is not original.argv
     assert other.backend.model == "another-model" and first.backend.model == "gpt-6-astra"
 

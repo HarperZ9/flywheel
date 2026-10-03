@@ -6,6 +6,11 @@ from .plan_run_snapshot import thaw_json, freeze_json
 
 def validate_record_fields(value, base):
     if type(value) is not dict: return False
+    if value.get("action", "").startswith("provider.session."):
+        expected = (base | {"provider_session_binding"}
+                    if value.get("action") != "provider.session.approval.respond"
+                    else base)
+        return set(value) == expected
     return set(value) == base or (value.get("action") == "agent.run"
                                  and set(value) == base | {"agent_binding"})
 
@@ -13,14 +18,22 @@ def validate_record_fields(value, base):
 def record_binding(record, operation):
     if "agent_binding" in record:
         validate_agent_binding(record["agent_binding"], operation)
+    if "provider_session_binding" in record:
+        from .provider_session_grant_binding import validate_provider_session_binding
+        validate_provider_session_binding(record["provider_session_binding"], operation)
 
 
 def attach_binding(record, plan):
     if plan.agent_binding is not None:
         record["agent_binding"] = thaw_json(plan.agent_binding)
+    if plan.provider_session_binding is not None:
+        record["provider_session_binding"] = thaw_json(plan.provider_session_binding)
 
 
 def compare_binding(record, plan):
+    if record["action"].startswith("provider.session."):
+        from .provider_session_grant_binding import compare_provider_session_binding
+        return compare_provider_session_binding(record, plan)
     if record["action"] != "agent.run": return
     if "agent_binding" not in record:
         raise GatewayOperationError("AGENT_REPREPARE_REQUIRED")
