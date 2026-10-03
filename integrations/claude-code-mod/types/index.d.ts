@@ -1,6 +1,7 @@
-// Types for the flywheel-mod plugin. The mod keeps no $.state values, so it
-// declares no PluginState entry. These types describe its options and the
-// receipt line it writes, for tools that read the receipts.
+// Types for the flywheel-mod plugin. The mod keeps no $.state values and adds
+// no noun to $, so plugin.json does not name this file as a contract. These
+// types describe its options and the receipt line it writes, for tools that
+// read the receipts.
 
 /** The userConfig values Claude Code passes to register(on, options). */
 export type FlywheelModOptions = {
@@ -29,6 +30,12 @@ export type ReceiptCall = {
   rule_hits: string[];
   decision: CallDecision;
   monitor: { verdict: "pass" | "held" | "unavailable"; hold_id: string | null; reason: string | null } | null;
+  /**
+   * What happened after the mod's decision. `error` covers a tool error and
+   * a refusal by Claude Code's own permission check: core reports both to
+   * tool.call hooks as an errored result. `denied-downstream` means a hook
+   * after this mod answered `{ deny }`.
+   */
   outcome: "pending" | "ran" | "error" | "denied-by-mod" | "denied-downstream";
   file?: { path: string; before_sha256: string | null; after_sha256: string | null };
 };

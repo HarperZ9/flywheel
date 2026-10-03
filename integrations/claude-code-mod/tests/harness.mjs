@@ -6,8 +6,8 @@
 // RegExp; a middleware chain ending in core; deeply frozen events; .catch runs
 // when the hook throws before calling next, with next.error.kind; a hook that
 // fails after next resolved leaves that result standing. It is not Claude
-// Code: anything it does not model is unverified until `claude plugin test`
-// runs on 2.1.287 or later.
+// Code: tests/engine.test.ts runs the same paths under `claude plugin test`
+// against the real engine (2.1.286 or later).
 
 export function deepFreeze(v) {
   if (v && typeof v === "object" && !Object.isFrozen(v)) {

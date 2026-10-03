@@ -77,6 +77,7 @@ exclude = ["tests*", "scripts*", "dataset*", "train*", "site*", "demos*"]
 harness = [
     "telos_browser_bridge.mjs",
     "ollama-manifest-digest-provenance-v1.json",
+    "preaction/rules_v1.json",
     "skill_resources/flywheel-evidence-task/SKILL.md",
     "skill_resources/flywheel-evidence-task/references/*.md",
 ]
