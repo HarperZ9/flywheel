@@ -142,10 +142,10 @@ class Assessment:
         """The optional block the after-receipt carries, in fixed field order,
         integers and strings only (the v1 receipt contract has no floats)."""
         judge = {"state": str(self.judge.get("state", "off"))}
-        for key in ("model_ref", "prompt_sha256", "input_sha256", "output_sha256"):
+        for key in ("model_ref", "prompt_sha256", "input_sha256", "output_sha256", "outcome"):
             if key in self.judge:
                 judge[key] = str(self.judge[key])
-        for key in ("score", "threshold"):
+        for key in ("score", "threshold", "p_hold_permille"):
             if isinstance(self.judge.get(key), int):
                 judge[key] = int(self.judge[key])
         return {

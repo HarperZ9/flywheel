@@ -44,6 +44,21 @@ class JudgeConfig:
     model: str = ""
     timeout_s: float = 10.0
     api_key_env: str = ""     # name of an env var holding a key; the key is never stored
+    protocol: str = "openai"  # "openai" (chat completions) or "systemone" (typed questions)
+    mode: str = ""            # "score" or "typed"; empty follows the protocol
+
+    def resolved_mode(self) -> str:
+        """Typed mode is the default for a SystemOne endpoint and needs one."""
+        if self.protocol not in ("openai", "systemone"):
+            raise ValueError("judge protocol must be openai or systemone")
+        mode = self.mode or ("typed" if self.protocol == "systemone" else "score")
+        if mode not in ("score", "typed"):
+            raise ValueError("judge mode must be score or typed")
+        if mode == "typed" and self.protocol != "systemone":
+            raise ValueError("typed mode needs a systemone endpoint")
+        if mode == "score" and self.protocol != "openai":
+            raise ValueError("score mode needs an openai-compatible endpoint")
+        return mode
 
 
 @dataclass

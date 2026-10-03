@@ -29,6 +29,8 @@ class MonitorConfig:
     def from_dict(cls, d: dict) -> "MonitorConfig":
         j = d.get("judge") or {}
         judge = JudgeConfig(**j) if j else None
+        if judge is not None:
+            judge.resolved_mode()  # an impossible protocol and mode pair fails at load
         overlay = d.get("rules_overlay")
         optional = d.get("optional_rules") or []
         if not isinstance(optional, list):
@@ -45,6 +47,9 @@ class MonitorConfig:
     def build_judges(self) -> list:
         if not self.judge or not self.judge.model:
             return []
+        if self.judge.resolved_mode() == "typed":
+            from .judge_typed import SystemOneJudge
+            return [SystemOneJudge(self.judge)]
         return [HttpJudge(self.judge)]
 
     def digest(self) -> str:
@@ -55,11 +60,22 @@ class MonitorConfig:
             body["owner_sha256"] = self.owner_sha256
         return sha256_hex(canonical_json(body))
 
+    def _judge_digest(self) -> dict:
+        body = {"endpoint": getattr(self.judge, "endpoint", ""),
+                "model": getattr(self.judge, "model", "")}
+        if self.judge is not None and self.judge.protocol != "openai":
+            # Only a non-default protocol joins the digest, so every config
+            # written before typed mode existed keeps the digest it was pinned at.
+            body["protocol"] = self.judge.protocol
+            body["mode"] = self.judge.resolved_mode()
+        elif self.judge is not None and self.judge.mode:
+            body["mode"] = self.judge.mode
+        return body
+
     def _digest_body(self) -> dict:
         return dict({
             "rules_overlay": self.rules_overlay or {},
-            "judge": {"endpoint": getattr(self.judge, "endpoint", ""),
-                      "model": getattr(self.judge, "model", "")},
+            "judge": self._judge_digest(),
             "judge_threshold": self.judge_threshold,
             "judge_unavailable": self.judge_unavailable,
             "hold_expiry_minutes": self.hold_expiry_minutes,

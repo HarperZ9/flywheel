@@ -3,6 +3,11 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## Unreleased
+
+Pre-action monitor
+- Typed judge mode: a SystemOne endpoint (such as Clef-flash) answers four narrow yes/no questions, code combines them into ACT, ABSTAIN or ESCALATE, and the monitor holds on ABSTAIN (`judge_abstained`) and ESCALATE. Default for `protocol: systemone`; met every pre-stated bar on a held-out half of 788 labelled agent actions (hold precision 0.748 [0.661, 0.818], recall 0.835 [0.752, 0.894]). See `docs/PREACTION-JUDGE-TYPED.md`. (#342)
+
 ## 1.3.1
 
 Usage
