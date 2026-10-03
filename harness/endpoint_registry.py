@@ -11,6 +11,7 @@ import re
 from dataclasses import replace
 
 from . import claude_cli_auth, providers, safe_program
+from .model_selection_required import ModelSelectionRequired
 from .proposer import Proposer, ProposerOutput, prompt_hash
 
 ProviderPermissionError = providers.ProviderPermissionError
@@ -207,6 +208,8 @@ def make_authorized_endpoint_proposer(
     requested_name = name
     if name in _LOCAL_ALIASES:
         name = "serve"
+    if name == "codex-cli" and not model:
+        raise ModelSelectionRequired(name)
     if name in providers.REGISTRY or name in ("serve", "stub"):
         prop = providers.make_authorized_proposer(
             name, model=model, base_url=base_url,
@@ -259,6 +262,8 @@ def _build_endpoint_proposer(name: str, *, model: str | None, base_url: str | No
                              extract: bool) -> Proposer:
     if name in providers.REGISTRY or name in ("serve", "stub"):
         return providers.make_proposer(name, model=model, base_url=base_url)
+    if name == "codex-cli" and not model:
+        raise ModelSelectionRequired(name)
     from . import endpoints
     if name == "anthropic":
         b = endpoints.AnthropicBackend(name="anthropic",

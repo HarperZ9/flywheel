@@ -80,7 +80,9 @@ def _estimate_tokens(text: Any) -> int:
 def _usage_ok(raw: Any) -> bool:
     return isinstance(raw, dict) and all(
         isinstance(raw.get(k), int) and not isinstance(raw.get(k), bool)
-        for k in ("prompt", "completion", "total"))
+        and 0 <= raw[k] <= 2 ** 53 - 1
+        for k in ("prompt", "completion", "total")) and (
+            raw["total"] == raw["prompt"] + raw["completion"])
 
 
 def _price_for(model_ref: str) -> dict[str, str] | None:

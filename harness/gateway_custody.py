@@ -15,7 +15,7 @@ from __future__ import annotations
 
 #: Everything under these prefixes is private, however deep.
 PRIVATE_PREFIXES = ("/api/journeys/", "/api/grants/", "/api/plan/",
-                    "/api/auth/", "/api/codex/",
+                    "/api/auth/", "/api/codex/", "/api/provider-sessions/",
                     "/api/continuation/",
                     "/api/writing/",
                     "/api/studio/body/", "/api/live-screen/",

@@ -1,8 +1,8 @@
 // model_selector.dart — the per-endpoint model switch. The endpoint picker
 // chooses WHO answers; this chooses WHICH model that endpoint serves. The
 // roster comes from GET /api/models via a caller-supplied loader (never a
-// client), the default entry is labeled, and an unreachable lister degrades
-// to an honest reason without ever blocking a send.
+// client), the default entry is labeled, and endpoints can opt out of an
+// implicit default when the runtime requires explicit model selection.
 
 import 'package:flutter/material.dart';
 
@@ -73,11 +73,11 @@ class _ModelRosterDialogState extends State<_ModelRosterDialog> {
   Map<String, dynamic>? _doc;
   final _manual = TextEditingController();
   String? _manualError;
+  bool _manualEdited = false;
 
   @override
   void initState() {
     super.initState();
-    _manual.text = widget.current ?? '';
     _load();
   }
 
@@ -97,17 +97,38 @@ class _ModelRosterDialogState extends State<_ModelRosterDialog> {
     Navigator.of(context).pop(id);
   }
 
+  bool _currentListedIn(Map<String, dynamic> doc) {
+    final cur = (widget.current ?? '').trim();
+    if (cur.isEmpty) return false;
+    final raw = doc['models'];
+    if (raw is! List) return false;
+    for (final row in raw) {
+      if (row is Map && '${row['id'] ?? ''}' == cur) return true;
+    }
+    return false;
+  }
+
   Future<void> _load() async {
     Map<String, dynamic> doc;
     try {
       doc = await widget.loadModels();
     } catch (e) {
-      // the engine is offline or the route failed: the default stays
-      // selectable and the reason is shown, never a dead dialog
+      // the engine is offline or the route failed before a roster doc existed:
+      // keep the historic generic fallback because endpoint-specific policy is
+      // unknown to this widget.
       doc = {'models': [], 'reason': 'model listing unavailable: $e'};
     }
-    if (mounted) setState(() => _doc = doc);
+    if (!mounted) return;
+    setState(() {
+      _doc = doc;
+      if (!_manualEdited && _currentListedIn(doc)) {
+        _manual.text = (widget.current ?? '').trim();
+      }
+    });
   }
+
+  bool get _endpointDefaultSelectable =>
+      _doc?['endpoint_default_selectable'] != false;
 
   List<(String, bool)> get _rows {
     final raw = _doc?['models'];
@@ -119,8 +140,9 @@ class _ModelRosterDialogState extends State<_ModelRosterDialog> {
         if (id.isNotEmpty) rows.add((id, '${m['default']}' == 'true'));
       }
     }
-    // no roster at all: the endpoint default stays a live choice
-    if (rows.isEmpty) rows.add(('', true));
+    // no roster at all: the endpoint default stays a live choice only when
+    // the roster explicitly allows an implicit endpoint default.
+    if (rows.isEmpty && _endpointDefaultSelectable) rows.add(('', true));
     return rows;
   }
 
@@ -162,6 +184,13 @@ class _ModelRosterDialogState extends State<_ModelRosterDialog> {
                     FwLayout.s4, FwLayout.s3, FwLayout.s4, FwLayout.s1),
                 child: HonestNull(reason),
               ),
+            if (_rows.isEmpty && !_endpointDefaultSelectable)
+              const Padding(
+                padding: EdgeInsets.fromLTRB(
+                    FwLayout.s4, FwLayout.s3, FwLayout.s4, FwLayout.s1),
+                child: HonestNull(
+                    'Explicit model selection required for this endpoint.'),
+              ),
             Flexible(
               child: ListView(
                 shrinkWrap: true,
@@ -184,13 +213,18 @@ class _ModelRosterDialogState extends State<_ModelRosterDialog> {
                   errorText: _manualError,
                   errorMaxLines: 2,
                 ),
+                onChanged: (_) => setState(() {
+                  _manualEdited = true;
+                  _manualError = null;
+                }),
                 onSubmitted: (_) => _selectManual(),
               ),
               const SizedBox(height: FwLayout.s2),
               Wrap(spacing: FwLayout.s2, children: [
-                TextButton(
-                    onPressed: () => Navigator.of(context).pop(''),
-                    child: const Text('Use endpoint default')),
+                if (_endpointDefaultSelectable)
+                  TextButton(
+                      onPressed: () => Navigator.of(context).pop(''),
+                      child: const Text('Use endpoint default')),
                 TextButton(
                     onPressed: _selectManual,
                     child: const Text('Use model ID')),
@@ -204,11 +238,15 @@ class _ModelRosterDialogState extends State<_ModelRosterDialog> {
 
   Widget _row(FwTokens t, String id, bool isDefault) {
     final cur = widget.current ?? '';
-    final selected = cur.isEmpty ? isDefault : cur == id;
+    final selected =
+        cur.isEmpty ? isDefault && _endpointDefaultSelectable : cur == id;
+    final usesImplicitDefault =
+        id.isEmpty || (isDefault && _endpointDefaultSelectable);
     return InkWell(
-      // the default row pops '' — "no override" — so a send with the
-      // default carries no model field at all
-      onTap: () => Navigator.of(context).pop(isDefault ? '' : id),
+      // An endpoint-selectable default pops '' so the request carries no model
+      // field. Endpoints that require explicit model selection pop the listed
+      // route even when the provider catalog marks it as default.
+      onTap: () => Navigator.of(context).pop(usesImplicitDefault ? '' : id),
       child: Container(
         padding: const EdgeInsets.symmetric(
             horizontal: FwLayout.s4, vertical: FwLayout.s3),
@@ -225,7 +263,8 @@ class _ModelRosterDialogState extends State<_ModelRosterDialog> {
                     fwMono(t, size: 12.5, color: selected ? t.ink : t.inkSoft)),
           ),
           if (isDefault)
-            Text('default', style: fwMono(t, size: 10.5, color: t.inkFaint)),
+            Text(_endpointDefaultSelectable ? 'default' : 'suggested default',
+                style: fwMono(t, size: 10.5, color: t.inkFaint)),
         ]),
       ),
     );
