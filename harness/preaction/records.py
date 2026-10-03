@@ -204,8 +204,9 @@ def _domain(path_id: str) -> str:
 
 
 def decision_record(*, hold: dict, decision: str, decider: str, decided_at: str,
-                    grant_id: str, review_payload_sha256: str, reason_sha256: str = "") -> dict:
-    return {
+                    grant_id: str, review_payload_sha256: str, reason_sha256: str = "",
+                    reason_code: str = "") -> dict:
+    rec = {
         "schema": DECISION_SCHEMA,
         "source": f"decision:{hold.get('hold_id', '')}",
         "hold_id": hold.get("hold_id", ""),
@@ -217,6 +218,11 @@ def decision_record(*, hold: dict, decision: str, decider: str, decided_at: str,
         "review_payload_sha256": review_payload_sha256,
         "reason_sha256": reason_sha256,
     }
+    if reason_code:
+        # Present only when the owner gave a code, so records written before
+        # reason codes existed keep their exact shape and seal.
+        rec["reason_code"] = reason_code
+    return rec
 
 
 def context_of(ctx) -> dict:

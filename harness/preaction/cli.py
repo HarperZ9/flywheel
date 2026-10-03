@@ -4,7 +4,9 @@ coverage prints every path and its PRE / POST / NONE state; pending lists open
 holds; approve and reject decide one hold, and both need a real terminal and
 the typed confirmation code, so an agent's shell cannot drive them; verify
 re-walks a store and exits 1 on DRIFT; install prints or writes the hook
-settings block. owner, witness, import-ocsf and sandbox live in cli_extra.py.
+settings block. owner, witness, import-ocsf and sandbox live in cli_extra.py;
+outcome and overrides live in cli_overrides.py. approve and reject take an
+optional --reason-code from a fixed list and an optional --reason text.
 """
 from __future__ import annotations
 
@@ -12,7 +14,8 @@ import argparse
 import json
 import sys
 
-from . import cli_extra, coverage
+from . import cli_extra, cli_overrides, coverage
+from .overrides import REASON_CODES
 from .owner import OwnerConfigError
 from .escalate import Escalator
 from .install import importable, settings_block
@@ -42,7 +45,8 @@ def _decide(args, decision, stdout, stderr, stdin, isatty) -> int:
         stderr.write("code did not match; no decision made\n")
         return 1
     try:
-        esc.decide(args.hold_id, decision, decider="owner:cli")
+        esc.decide(args.hold_id, decision, decider="owner:cli",
+                   reason=args.reason, reason_code=args.reason_code)
     except ValueError as exc:
         stderr.write(f"{exc}\n")
         return 1
@@ -50,34 +54,49 @@ def _decide(args, decision, stdout, stderr, stdin, isatty) -> int:
     return 0
 
 
-def main(argv=None, *, stdout=None, stderr=None, stdin=None, isatty=None) -> int:
-    stdout = stdout if stdout is not None else sys.stdout
-    stderr = stderr if stderr is not None else sys.stderr
-    stdin = stdin if stdin is not None else sys.stdin
-    isatty = isatty or (lambda: sys.stdin.isatty() and sys.stdout.isatty())
+def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="flywheel monitor")
     sub = p.add_subparsers(dest="cmd", required=True)
     pc = sub.add_parser("coverage"); pc.add_argument("--home", required=True); pc.add_argument("--json", action="store_true")
     pp = sub.add_parser("pending"); pp.add_argument("--home", required=True); pp.add_argument("--json", action="store_true")
     for name in ("approve", "reject"):
         sp = sub.add_parser(name); sp.add_argument("hold_id"); sp.add_argument("--home", required=True)
+        sp.add_argument("--reason-code", dest="reason_code", default="", choices=("",) + REASON_CODES)
+        sp.add_argument("--reason", default="")
     pv = sub.add_parser("verify"); pv.add_argument("home")
     pi = sub.add_parser("install"); pi.add_argument("client", choices=("claude-code", "codex"))
     pi.add_argument("--home", required=True); pi.add_argument("--print", dest="do_print", action="store_true")
     pi.add_argument("--python", default=sys.executable)
     pi.add_argument("--owner-config", dest="owner_config", default="")
     cli_extra.register(sub)
+    cli_overrides.register(sub)
+    return p
+
+
+def _dispatch_split(args, stdout, stderr, stdin, isatty) -> int:
+    """Commands that live in cli_overrides.py and cli_extra.py."""
+    if args.cmd in cli_overrides.COMMANDS:
+        return cli_overrides.dispatch(args, stdout, stderr, stdin, isatty)
+    try:
+        return cli_extra.dispatch(args, stdout, stderr)
+    except OwnerConfigError as exc:
+        stderr.write(f"{exc}\n")
+        return 2
+
+
+def main(argv=None, *, stdout=None, stderr=None, stdin=None, isatty=None) -> int:
+    stdout = stdout if stdout is not None else sys.stdout
+    stderr = stderr if stderr is not None else sys.stderr
+    stdin = stdin if stdin is not None else sys.stdin
+    isatty = isatty or (lambda: sys.stdin.isatty() and sys.stdout.isatty())
+    p = _parser()
     try:
         args = p.parse_args([a for a in (argv if argv is not None else sys.argv[1:])])
     except SystemExit as exc:
         return int(exc.code or 2)
 
-    if args.cmd in cli_extra.COMMANDS:
-        try:
-            return cli_extra.dispatch(args, stdout, stderr)
-        except OwnerConfigError as exc:
-            stderr.write(f"{exc}\n")
-            return 2
+    if args.cmd in cli_overrides.COMMANDS + cli_extra.COMMANDS:
+        return _dispatch_split(args, stdout, stderr, stdin, isatty)
     if args.cmd == "coverage":
         rows = coverage.rows()
         if args.json:
