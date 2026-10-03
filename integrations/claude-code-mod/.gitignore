@@ -11,3 +11,5 @@ CLAUDE.local.md
 .scratch-home/
 # Receipts and monitor state the mod writes in a project.
 .flywheel/
+# Claude Code writes this beside the type root when it loads the mod.
+tsconfig.json

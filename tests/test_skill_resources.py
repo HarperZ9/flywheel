@@ -118,6 +118,9 @@ def test_installed_wheel_contains_public_skill_resources(tmp_path):
         "harness/skill_resources/flywheel-evidence-task/references/constraints.md"
         in names
     )
+    # The pre-action monitor loads its shipped rule pack beside rules.py; a
+    # wheel without it cannot run the monitor from an installed copy.
+    assert "harness/preaction/rules_v1.json" in names
 
     code = (
         "from harness.skill_resources import read_resource;"

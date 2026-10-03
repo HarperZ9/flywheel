@@ -237,7 +237,7 @@ async function drawBand($, e, next) {
   const { Box, Text } = $.ui.resolve(e);
   const theirs = await next(e);
   const alarm = st.counts.held > 0 || st.counts.unavailable > 0;
-  const line = Text({ key: "flywheel-status", color: alarm ? "yellow" : undefined, dimColor: !alarm,
+  const line = Text({ color: alarm ? "yellow" : undefined, dimColor: !alarm,
     wrap: "truncate-end", children: statusLine(st.counts, st.lastHash, cfg) });
-  return Box({ flexDirection: "column", children: [line, theirs] });
+  return Box({ key: "flywheel-band", flexDirection: "column", children: [line, theirs] });
 }

@@ -1,9 +1,9 @@
-// Tests for `claude plugin test` (Claude Code 2.1.287 or later), written to
-// the documented test kit. NOT RUN: the machine this was built on has Claude
-// Code 2.1.251, which has no mods runtime. The Node suite (tests/*.test.mjs)
-// runs the same checks against a stand-in runtime; this file is the version
-// to run once a 2.1.287+ build is available.
+// Engine tests for `claude plugin test` (Claude Code 2.1.286 or later), with
+// a scripted monitor answer. tests/engine.test.ts covers the same paths with
+// the real monitor's recorded answer, the receipt chain and the band.
 import { expect, mock, test } from 'claude-code/testing'
+
+const OPTS = { options: { monitor_source: '../..' } }
 
 const HOLD = {
   exitCode: 2,
@@ -31,7 +31,7 @@ function stubSession(on: any, runStub: () => unknown, ran: string[]) {
   })
 }
 
-test('a monitor hold becomes { deny } and the tool never runs', async ($, on) => {
+test('a monitor hold becomes { deny } and the tool never runs', OPTS, async ($, on) => {
   const ran: string[] = []
   stubSession(on, () => ({ value: HOLD }), ran)
   await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
@@ -41,7 +41,7 @@ test('a monitor hold becomes { deny } and the tool never runs', async ($, on) =>
   expect(ran).toEqual([])
 })
 
-test('a monitor pass runs the tool and returns its result', async ($, on) => {
+test('a monitor pass runs the tool and returns its result', OPTS, async ($, on) => {
   const ran: string[] = []
   stubSession(on, () => ({ value: PASS }), ran)
   await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
@@ -50,7 +50,7 @@ test('a monitor pass runs the tool and returns its result', async ($, on) => {
   expect(ran).toEqual(['toolu_2'])
 })
 
-test('the mod never approves at tool.check: the engine decision passes through unchanged', async ($, on) => {
+test('the mod never approves at tool.check: the engine decision passes through unchanged', OPTS, async ($, on) => {
   const ran: string[] = []
   stubSession(on, () => ({ value: PASS }), ran)
   on('tool.check', () => ({ decision: 'ask', reason: 'engine' }))
@@ -59,11 +59,12 @@ test('the mod never approves at tool.check: the engine decision passes through u
   expect(out.decision).toBe('ask')
 })
 
-test('a monitor that cannot start fails closed', async ($, on) => {
+test('a monitor that cannot start fails closed', OPTS, async ($, on) => {
   const ran: string[] = []
   stubSession(on, () => ({ deny: 'spawn python ENOENT' }), ran)
   await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
   const out: any = await $.tool.call({ tool: 'Bash', tool_use_id: 'toolu_3', command: 'rm -rf build' })
   expect(out.deny).toMatch(/the mod fails closed/)
+  expect(out.deny).not.toMatch(/monitor_source is not set/)
   expect(ran).toEqual([])
 })
