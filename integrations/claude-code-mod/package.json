@@ -1,0 +1,13 @@
+{
+  "name": "flywheel-mod",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Experimental Claude Code mod for Flywheel. Not published.",
+  "scripts": {
+    "test": "node --test \"tests/*.test.mjs\"",
+    "test:ci": "node --test tests/audit.test.mjs tests/integration.test.mjs tests/lib.test.mjs tests/mod.test.mjs tests/rederive.test.mjs",
+    "audit": "node scripts/audit-mods.mjs"
+  },
+  "license": "MIT"
+}

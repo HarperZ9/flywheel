@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.envrc
+.envrc.local
+node_modules/
+dist/
+CLAUDE.local.md
+# Claude Code writes the mod's TypeScript types here each time it loads the mod.
+.claude-plugin/types/
+.scratch-home/
+# Receipts and monitor state the mod writes in a project.
+.flywheel/
