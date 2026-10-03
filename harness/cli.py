@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 from .task import load_task
@@ -37,7 +38,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--envelopes-dir", default="envelopes")
     ap.add_argument("--no-witness", action="store_true",
                     help="skip the witness re-check (faster, less rigorous)")
+    ap.add_argument("--prune-duplicates", type=int, default=None, metavar="M",
+                    help="with --search: skip a candidate that duplicates M earlier ones")
     args = ap.parse_args(argv)
+    if args.prune_duplicates and not args.search:
+        ap.error("--prune-duplicates needs --search")
 
     task = load_task(args.task_dir)
     proposer = (ServeProposer(args.serve) if args.serve
@@ -50,7 +55,8 @@ def main(argv: list[str] | None = None) -> int:
         witness_recheck=not args.no_witness,
         boot_root=args.boot, boot_budget=args.boot_budget,
         cache=cache,
-        search=(VERIFIED_INFERENCE if args.search else None))
+        search=(replace(VERIFIED_INFERENCE, prune_m=args.prune_duplicates)
+                if args.search else None))
 
     env = result.envelope
     print(json.dumps({

@@ -41,3 +41,18 @@ Flywheel's shipped benchmark.
 
 Tasks without hidden tests gain nothing from this change beyond the honest
 label.
+
+## Optional: skip duplicate candidates
+
+`python -m harness.cli <task-dir> --search --prune-duplicates 2` (or `ArmConfig(prune_m=2)`) skips
+the check for a candidate whose partial code, with comments, whitespace and names
+normalized, matches two earlier candidates at 25, 50 or 75% of its length. At
+most three candidates are skipped per task, and a skipped candidate always leaves
+at least two live members of its group. The search stage records how many were
+skipped and their tokens.
+
+It is off by default. In the separate test above, pruning at 2 was simulated
+offline from finished samples: 0.772x the tokens for an accuracy drop of 0.014.
+Flywheel's proposers return whole answers, so here pruning saves check runs
+only; the generation tokens are already spent. A live token saving needs a
+streaming proposer and is unmeasured.
