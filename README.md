@@ -460,4 +460,10 @@ treated as proof.
 
 ## License
 
+Text: CC BY 4.0. Code: FSL-1.1-MIT.
+
+The essays in [`docs/essays/`](docs/essays/) and the research notes in
+`docs/research/`, `project-docs/research/` and `tasks/research/` are licensed
+CC BY 4.0. Share and adapt them with credit to Zain Dana Harper; the terms are
+in [`LICENSE-TEXT`](LICENSE-TEXT). The code and the software documentation are
 FSL-1.1-MIT (Functional Source License). See [LICENSE](LICENSE).
