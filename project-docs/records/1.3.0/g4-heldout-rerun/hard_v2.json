@@ -1,0 +1,1030 @@
+{
+ "schema": "flywheel.heldout-rerun/v1",
+ "registry": "hard_v2",
+ "model_ref": "ollama:flywheel-local-coder-14b",
+ "rows": [
+  {
+   "task_id": "interval_intersection",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "search_rotated",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "parse_range_list",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "sliding_window_max",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "topo_sort",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "rle_decode",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "matrix_rotate_inplace",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "evaluate_rpn",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "lis_length",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "valid_ipv4",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "josephus",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "merge_sorted_streams",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "first_missing_positive",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "count_islands",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "csv_field_split",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "duration_hms_strict",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "shellish_tokenize",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "header_unfold",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "canonical_decimal",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "template_fields",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "partition_three_inplace",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "merge_tallies",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "apply_edits",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "group_pairs",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "purge_in_place",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "splice_pure",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "sat_add_nbit",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "div_round_half_away",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "add_months_clamp",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "bucket_histogram_mixed",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "mini_editor_undo",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "frame_checksum_decode",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "kv_event_fold",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "outline_leaf_paths",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "tilde_unescape",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "largest_remainder_apportion",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "format_signed_duration",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "varint_zigzag_decode",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "word_wrap_greedy",
+   "single_held": true,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "identifier_words",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "tab_expand_columns",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "interval_subtract",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "rect_overlap_area",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "covered_integer_count",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "turtle_walk_program",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "token_bucket_grants",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "stopwatch_fsm",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "matrix_shape_strict",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "money_cents_strict",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "cron_field_expand",
+   "single_held": true,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "int_to_base",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "parse_base",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "roman_encode",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "col_label",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "col_number",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "luhn_valid",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "isbn10_check",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "days_in_month",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "ordinal_day",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "weekday_name",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "days_between",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "semver_compare",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "natural_compare",
+   "single_held": true,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "percent_decode",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "csv_quote",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "round_half_even",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "reverse_bits",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "reduce_fraction",
+   "single_held": true,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "top_k_frequent",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "uniq_counts",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "eval_bool_expr",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "glob_match",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "sliding_windows",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "summarize_ranges",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "matrix_transpose",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "json_string_escape",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "normalize_path",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "ipv4_to_int",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "multiset_diff",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "parse_a1_ref",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "linked_cycle",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "manhattan_tour",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "parse_kv_pairs",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "rotate_list",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "group_anagrams",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "stock_spans",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "perm_rank",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "gray_rank",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "kth_combination",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "look_and_say_bounded",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "longest_digit_run",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "collatz_trace",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "knight_min_moves",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "grid_bfs_steps",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "union_component_count",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "bipartite_strict",
+   "single_held": true,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "portal_min_moves",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "spread_radius",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "lru_trace",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "min_stack_trace",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "ring_buffer_trace",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "k_smallest_names",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "bank_ledger",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "inventory_reserve",
+   "single_held": false,
+   "single_visible": true,
+   "search_held": false,
+   "self_scored_accept": true,
+   "self_scored_false_accept": true,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "url_split_strict",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "qp_decode",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "ini_section_parse",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "lcs_diff_ops",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "fletcher16_checksum",
+   "single_held": true,
+   "single_visible": true,
+   "search_held": true,
+   "self_scored_accept": true,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  },
+  {
+   "task_id": "md_outline_number",
+   "single_held": false,
+   "single_visible": false,
+   "search_held": false,
+   "self_scored_accept": false,
+   "self_scored_false_accept": false,
+   "selection": "visible-selects-held-out-decides"
+  }
+ ],
+ "summary": {
+  "n": 110,
+  "excluded": 0,
+  "single_held_pass": [
+   61,
+   [
+    0.461,
+    0.644
+   ]
+  ],
+  "search_held_pass": [
+   68,
+   [
+    0.525,
+    0.704
+   ]
+  ],
+  "diff_search_minus_single": 0.0636,
+  "diff_95_paired_bootstrap": [
+   -0.0091,
+   0.1364
+  ],
+  "self_scored_accepts": 90,
+  "self_scored_false_accepts": 22,
+  "false_accept_share": [
+   22,
+   90,
+   [
+    0.167,
+    0.342
+   ]
+  ]
+ }
+}
