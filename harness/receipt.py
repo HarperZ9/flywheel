@@ -19,12 +19,13 @@ declare the narrowest possible coverage.
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 from .receipt_fields import (
     Budget, Denominator, EvidenceKind, GradedScore, Tier, ReceiptError,
     canonical, no_floats,
 )
+from .receipt_route import Route
 from .verdict import Verdict, Attribution
 
 LEGACY_SCHEMA = "flywheel.receipt/v3"
@@ -32,7 +33,10 @@ LEGACY_SCHEMA = "flywheel.receipt/v3"
 # v3 remains readable with its original preimage; schema names never get a
 # second interpretation after publication.
 SCHEMA = "flywheel.receipt/v4"
-SUPPORTED_SCHEMAS = frozenset((LEGACY_SCHEMA, SCHEMA))
+# v5 binds a route block (receipt_route.py) into the claim: which lane produced
+# the result. Opt-in; v4 stays the default and keeps its preimage.
+ROUTED_SCHEMA = "flywheel.receipt/v5"
+SUPPORTED_SCHEMAS = frozenset((LEGACY_SCHEMA, SCHEMA, ROUTED_SCHEMA))
 
 # What a signature covers. Fixed in code, never read from a receipt. This is a
 # security property, not a configuration choice.
@@ -120,6 +124,7 @@ class Receipt:
     undecided_reason: str = ""
     extra_does_not_prove: tuple = ()
     schema: str = SCHEMA
+    route: Route | None = None
 
     def __post_init__(self) -> None:
         if self.denominator is None:
@@ -138,6 +143,8 @@ class Receipt:
         for name in ("objective", "incumbent_objective", "coverage",
                      "input_tier_multiset"):
             no_floats(getattr(self, name), name)
+        if (self.schema == ROUTED_SCHEMA) != isinstance(self.route, Route):
+            raise ReceiptError("a route is required by v5 and undefined before it")
 
     # --- digests -------------------------------------------------------------
 
@@ -178,8 +185,10 @@ class Receipt:
             "unverifiable_reason": self.unverifiable_reason,
             "undecided_reason": self.undecided_reason,
         })
-        if self.schema == SCHEMA:
+        if self.schema != LEGACY_SCHEMA:
             d["extra_does_not_prove"] = list(self.extra_does_not_prove)
+        if self.route is not None:
+            d["route"] = self.route.to_dict()
         return d
 
     def subject_sha256(self) -> str:
@@ -227,6 +236,8 @@ class Receipt:
             out.append("NOT_PROVES_SCORE_STABILITY")
         if self.input_tier_multiset:
             out.append("TIER_LIMITED_BY_INPUT")
+        if self.route is not None:
+            out.extend(self.route.limits())
         out.extend(self.extra_does_not_prove)
         return out
 
@@ -242,59 +253,5 @@ class Receipt:
 
     @classmethod
     def from_dict(cls, d: dict) -> Receipt:
-        # A reader that ignores the version silently reinterprets fields whose
-        # meaning changed between them, and then reports a claim digest over a
-        # different set of fields than the writer covered.
-        schema = d.get("schema")
-        if schema not in SUPPORTED_SCHEMAS:
-            raise ReceiptError(f"refusing unsupported receipt schema {schema!r}")
-        den = d["denominator"]
-        graded = d.get("graded_score")
-        if schema == LEGACY_SCHEMA and "extra_does_not_prove" in d:
-            raise ReceiptError("v3 does not define extra_does_not_prove")
-        extra = d.get("extra_does_not_prove", ()) if schema == SCHEMA else ()
-        if type(extra) not in (list, tuple) or any(type(item) is not str for item in extra):
-            raise ReceiptError("extra_does_not_prove must be a list of strings")
-        receipt = cls(
-            criterion_id=d["criterion_id"],
-            criterion_version=d["criterion_version"],
-            criterion_sha256=d["criterion_sha256"],
-            family=d["family"], family_instance_id=d["family_instance_id"],
-            generator_id=d["generator_id"], generator_seed=d["generator_seed"],
-            candidate_sha256=d["candidate_sha256"], prompt_hash=d["prompt_hash"],
-            checker_module=d["checker_module"],
-            checker_source_sha256=d["checker_source_sha256"],
-            executes_candidate_code=d["executes_candidate_code"],
-            oracle_qa_card_hash=d["oracle_qa_card_hash"],
-            held_out_agreement=d["held_out_agreement"],
-            evidence_kind=EvidenceKind(d["evidence_kind"]),
-            tier=Tier(d["tier"]),
-            verdict=Verdict(d["verdict"]),
-            attribution=Attribution(d["attribution"]),
-            objective=d["objective"],
-            incumbent_objective=d["incumbent_objective"],
-            incumbent_source=d["incumbent_source"],
-            coverage=d["coverage"], raw_stdout_sha256=d["raw_stdout_sha256"],
-            analysis_script_sha256=d["analysis_script_sha256"],
-            denominator=Denominator(**den),
-            budget=Budget(**d["budget"]),
-            graded_score=GradedScore(**graded) if graded else None,
-            model_ref=d["model_ref"],
-            base_weights_digest=d["base_weights_digest"],
-            harness_version=d["harness_version"],
-            input_tier_multiset=tuple(d.get("input_tier_multiset", ())),
-            novelty_verdict=d.get("novelty_verdict", "UNKNOWN"),
-            unverifiable_reason=d.get("unverifiable_reason", ""),
-            undecided_reason=d.get("undecided_reason", ""),
-            extra_does_not_prove=tuple(extra), schema=schema)
-        claimed_limits = d.get("does_not_prove")
-        if schema == LEGACY_SCHEMA:
-            base = receipt.does_not_prove()
-            if (type(claimed_limits) is not list or claimed_limits[:len(base)] != base
-                    or any(type(item) is not str for item in claimed_limits)):
-                raise ReceiptError("does_not_prove does not match legacy v3 limits")
-            receipt = replace(receipt,
-                extra_does_not_prove=tuple(claimed_limits[len(base):]))
-        if claimed_limits != receipt.does_not_prove():
-            raise ReceiptError("does_not_prove does not exactly match receipt limits")
-        return receipt
+        from .receipt_wire import receipt_from_dict
+        return receipt_from_dict(cls, d)
