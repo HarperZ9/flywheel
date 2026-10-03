@@ -13,17 +13,30 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .exit_outcome import CHEAT_CAUGHT, EXIT, FAIL, PASS, ExitPolicy
+
 SCHEMA = "flywheel.reward-dataset/v1"
 
 
+def _reward(attempt: dict, policy: ExitPolicy) -> float:
+    outcome = attempt.get("outcome")
+    if outcome in (EXIT, CHEAT_CAUGHT):
+        return policy.score(outcome)
+    return policy.score(PASS if attempt.get("gate_pass") else FAIL)
+
+
 def rewards_from_bench(bench: dict, *, proposals: dict[str, str],
-                       task_prompts: dict[str, str] | None = None) -> list[dict]:
+                       task_prompts: dict[str, str] | None = None,
+                       exit_policy: ExitPolicy | None = None) -> list[dict]:
     """Mint rewards from a verified bench. `proposals` maps an attempt's
     proposed_sha256 to the proposal text (the bench stores hashes, not
     text, so the caller supplies what it kept). `task_prompts` maps a
     task_id to the task's real prompt text -- the stronger training
     signal; without it the prompt falls back to the task id. Attempts
-    without a gate reference are dropped: no evidence, no reward."""
+    without a gate reference are dropped: no evidence, no reward. An attempt
+    whose `outcome` is EXIT or CHEAT_CAUGHT is scored by `exit_policy`
+    (default: exit price 0, so an exit scores as a failure)."""
+    policy = exit_policy or ExitPolicy()
     attempts = bench.get("attempts")
     if not isinstance(attempts, list) or not attempts:
         raise ValueError("rewards come from a bench with attempts")
@@ -47,7 +60,7 @@ def rewards_from_bench(bench: dict, *, proposals: dict[str, str],
         rewards.append({
             "prompt": prompt,
             "completion": text,
-            "reward": 1.0 if attempt.get("gate_pass") else 0.0,
+            "reward": _reward(attempt, policy),
             "gate_ref": gate_ref,
             "endpoint": str(attempt.get("endpoint", "")),
             "bench_sha256": str(bench.get("bench_sha256", "")),
