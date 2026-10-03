@@ -22,25 +22,25 @@ def _held(code):
             "contrasts": [], "does_not_prove": LIMIT}
 
 
-def check_evaluation(records, *, plan, authorities):
-    """Return admission, fidelity and task-cluster counts for inert records.
-
-All inputs are detached before authority calls. Authorities receive only a copy
-of their controller-owned trial, never the submitted answer. Callers must supply
-bounded read-only resolvers; this synchronous function is not a process sandbox.
-    """
+def _inputs(records, plan, authorities):
+    """Detach and validate inputs; return (policy, trials, submitted, resolvers)."""
     try:
         policy = snapshot(plan)
         trials = validate_plan(policy)
     except (ValueError, TypeError, RecursionError):
-        return _held("INVALID_PLAN")
+        return "INVALID_PLAN"
     try:
         submitted = validate_records(snapshot(records), trials)
         require(type(authorities) is dict)
         resolvers = authorities.copy()
         require(all(type(k) is str and callable(v) for k, v in resolvers.items()))
     except (ValueError, TypeError, RecursionError):
-        return _held("INVALID_RECORDS_OR_AUTHORITIES")
+        return "INVALID_RECORDS_OR_AUTHORITIES"
+    return policy, trials, submitted, resolvers
+
+
+def _fidelity(trials, submitted, resolvers):
+    """Check each record against its controller-owned trial and authority."""
     specs, answer, sources = [], {}, {}
     # Generated source keys prevent the contract from echoing submitted citations.
     for number, (ident, trial) in enumerate(trials.items()):
@@ -55,9 +55,11 @@ bounded read-only resolvers; this synchronous function is not a process sandbox.
         resolver = resolvers.get(trial["source"])
         if resolver is not None:
             sources[source] = lambda _, fn=resolver, item=trial: resolve_observation(fn, item)
-    fidelity = check_answer(answer, new_contract(specs), sources)
-    passed = {ident for ident, row in zip(trials, fidelity["fields"])
-              if row["verdict"] == "PASS"}
+    return check_answer(answer, new_contract(specs), sources)
+
+
+def _tally_arms(trials, submitted, passed):
+    """Count planned, checked and unavailable attempts per arm and role."""
     arms = {}
     for ident, trial in trials.items():
         arm = arms.setdefault(trial["arm_id"], {}).setdefault(trial["role"], {
@@ -73,26 +75,56 @@ bounded read-only resolvers; this synchronous function is not a process sandbox.
             arm["checked_completions"] += observation["outcome"] == "completed"
         else:
             arm["unavailable_attempts"] += 1
+    for group in (group for arm in arms.values() for group in arm.values()):
+        group["distinct_tasks"] = len(group["task_clusters"])
+        if not group["unavailable_attempts"]:
+            group["completion_rate"] = (group["checked_completions"]
+                                        / group["planned_attempts"])
+    return arms
+
+
+def _blocking(fidelity, arms, policy, submitted, passed):
+    """List every reason the evaluation stays held."""
     blocking = [] if fidelity["release"] == "RELEASE" else ["REPORT_FIDELITY"]
     groups = [group for arm in arms.values() for group in arm.values()]
     if any(group["unavailable_attempts"] for group in groups):
         blocking.append("OUTCOME_UNAVAILABLE")
-    for arm in groups:
-        arm["distinct_tasks"] = len(arm["task_clusters"])
-        if not arm["unavailable_attempts"]:
-            arm["completion_rate"] = arm["checked_completions"] / arm["planned_attempts"]
     for pair in policy["useful_defense_pairs"]:
         benign = submitted[pair["benign"]]["observation"]
         if (pair["benign"] not in passed or benign["origin"] != "observed"
                 or benign["outcome"] != "completed"):
             blocking.append("BENIGN_UTILITY_UNMET")
+    return sorted(set(blocking))
+
+
+def _counts(trials, submitted):
+    """Return task and attempt denominators for evaluation and benign roles."""
     evaluation = [t for t in trials.values() if t["role"] == "evaluation"]
     benign = [t for t in trials.values() if t["role"] == "benign"]
+    return {"planned_attempts": len(evaluation), "submitted_records": len(submitted),
+            "distinct_tasks": len({t["task_id"] for t in evaluation}),
+            "planned_benign_attempts": len(benign),
+            "distinct_benign_tasks": len({t["task_id"] for t in benign})}
+
+
+def check_evaluation(records, *, plan, authorities):
+    """Return admission, fidelity and task-cluster counts for inert records.
+
+All inputs are detached before authority calls. Authorities receive only a copy
+of their controller-owned trial, never the submitted answer. Callers must supply
+bounded read-only resolvers; this synchronous function is not a process sandbox.
+    """
+    inputs = _inputs(records, plan, authorities)
+    if isinstance(inputs, str):
+        return _held(inputs)
+    policy, trials, submitted, resolvers = inputs
+    fidelity = _fidelity(trials, submitted, resolvers)
+    passed = {ident for ident, row in zip(trials, fidelity["fields"])
+              if row["verdict"] == "PASS"}
+    arms = _tally_arms(trials, submitted, passed)
+    blocking = _blocking(fidelity, arms, policy, submitted, passed)
     return {"schema": "flywheel.evaluation-admission/v1",
             "release": "HOLD" if blocking else "RELEASE",
-            "blocking": sorted(set(blocking)), "fidelity": fidelity, "arms": arms,
-            "counts": {"planned_attempts": len(evaluation), "submitted_records": len(submitted),
-                       "distinct_tasks": len({t["task_id"] for t in evaluation}),
-                       "planned_benign_attempts": len(benign),
-                       "distinct_benign_tasks": len({t["task_id"] for t in benign})},
+            "blocking": blocking, "fidelity": fidelity, "arms": arms,
+            "counts": _counts(trials, submitted),
             "contrasts": policy["contrasts"], "does_not_prove": LIMIT}
