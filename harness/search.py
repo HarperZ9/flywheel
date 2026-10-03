@@ -18,6 +18,7 @@ from typing import Protocol
 
 from .oracle import Oracle, OracleResult
 from .proposer import Proposer
+from .search_prune import DuplicatePruner
 from .task import Task
 
 DEFAULT_TEMPS = [0.0, 0.4, 0.8, 1.1]
@@ -40,6 +41,7 @@ class Candidate:
     served_model: str = ""
     generation_duration_ns: int | None = None
     oracle_duration_ns: int | None = None
+    pruned: bool = False
 
     @property
     def passed(self) -> bool:
@@ -60,6 +62,8 @@ class SearchResult:
     selection: str = SELF_SCORED
     selected: Candidate | None = None
     decision: OracleResult | None = None
+    pruned: int = 0
+    pruned_tokens: int = 0
 
     @property
     def accepted_text(self) -> str | None:
@@ -91,24 +95,31 @@ def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
               temps: list[float] | None = None,
               seeds: list[int] | None = None,
               collect_detail: bool = False,
-              decide: Oracle | None = None) -> SearchResult:
+              decide: Oracle | None = None,
+              prune_m: int | None = None) -> SearchResult:
     """Sample at each temperature; `oracle` selects the first passing candidate
     in proposal order (temperature 0.0 first, so ties fall to greedy).
 
     With `decide`, the decider runs once, on the pick only, and its verdict is
     the result: a pick the decider rejects is FAIL, not a reason to try the next
     candidate. Without it the selector also decides, and the result says so.
+    With `prune_m`, a candidate that duplicates `prune_m` earlier ones skips the
+    oracle (search_prune.py).
     """
     temps = list(temps or DEFAULT_TEMPS)
     n = len(temps)
     seeds = seeds or [task.seed + i for i in range(n)]
     res = SearchResult(diversified=len(set(temps)) > 1)
+    pruner = DuplicatePruner(prune_m) if prune_m else None
     for i, (t, s) in enumerate(zip(temps, seeds)):
         gen_start = time.perf_counter_ns()
         out = proposer.generate(
             task.prompt, seed=s, temperature=t,
             max_new_tokens=task.max_new_tokens, system=task.system)
         gen_ns = time.perf_counter_ns() - gen_start
+        if pruner is not None and pruner.check(out.text):
+            res.candidates.append(_pruned(out, s, t, res))
+            continue
         oracle_start = time.perf_counter_ns()
         orc = oracle.verify(out.text, task)
         oracle_ns = time.perf_counter_ns() - oracle_start
@@ -134,6 +145,14 @@ def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
         res.reason = "at least one candidate passed the oracle"
         return res
     return _no_pass(res)
+
+
+def _pruned(out, seed: int, temp: float, res: SearchResult) -> Candidate:
+    res.pruned += 1
+    res.pruned_tokens += int((out.usage or {}).get("completion_tokens")
+                             or len(out.text.split()))
+    return Candidate(text=out.text, model_ref=out.model_ref, seed=seed,
+                     temperature=temp, prompt_hash=out.prompt_hash, pruned=True)
 
 
 def _no_pass(res: SearchResult) -> SearchResult:

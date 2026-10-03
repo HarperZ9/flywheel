@@ -42,7 +42,8 @@ def search_oracles(task, oracle):
 def _candidate_payload(sr) -> list:
     return [{"temp": c.temperature,
              "candidate_hash": _short_hash(c.text),
-             "verdict": c.oracle_result.verdict() if c.oracle_result else "NONE",
+             "verdict": ("PRUNED" if c.pruned else
+                         c.oracle_result.verdict() if c.oracle_result else "NONE"),
              "oracle_output_hash": c.oracle_result.output_hash if c.oracle_result else ""}
             for c in sr.candidates]
 
@@ -51,7 +52,8 @@ def run_search_stage(task, prompt, proposer, oracle, search, chain, **search_kw)
     """Run best-of-N, append the search stage, return (output, oracle result, budget)."""
     select, decide = search_oracles(task, oracle)
     sr = best_of_n(replace(task, prompt=prompt), proposer, select,
-                   temps=(search.temps or DEFAULT_TEMPS), decide=decide, **search_kw)
+                   temps=(search.temps or DEFAULT_TEMPS), decide=decide,
+                   prune_m=getattr(search, "prune_m", None), **search_kw)
     winner = sr.selected or sr.candidates[0]
     out = ProposerOutput(text=winner.text, model_ref=winner.model_ref,
                          seed=winner.seed, prompt_hash=winner.prompt_hash, cache="search")
@@ -59,12 +61,16 @@ def run_search_stage(task, prompt, proposer, oracle, search, chain, **search_kw)
         passed=False, cmd=task.oracle_cmd, output_hash="", stdout_excerpt="", rc=1)
     payload = {"n": len(sr.candidates), "correlation": round(sr.correlation, 3),
                "candidates": _candidate_payload(sr), "selection": sr.selection}
+    if getattr(search, "prune_m", None):
+        payload["pruning"] = {"m": search.prune_m, "pruned": sr.pruned,
+                              "pruned_tokens": sr.pruned_tokens,
+                              "tokens_saved": 0, "basis": "whole completions; oracle runs saved only"}
     if sr.decision is not None:
         payload["decision"] = {"verdict": sr.decision.verdict(),
                                "oracle_output_hash": sr.decision.output_hash}
     append_stage(chain, "search", prompt_hash(prompt), _short_hash(winner.text),
                  sr.verdict, payload=payload)
-    calls = len(sr.candidates) + (1 if sr.decision is not None else 0)
+    calls = len(sr.candidates) - sr.pruned + (1 if sr.decision is not None else 0)
     budget = {"candidates": len(sr.candidates), "oracle_calls": calls,
               "proposer_cache": "search"}
     return out, orc, budget
