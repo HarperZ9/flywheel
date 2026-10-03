@@ -32,6 +32,7 @@ class ArmConfig:
     label: str = ""
     prune_m: int | None = None          # opt-in duplicate pruning (search_prune.py)
     checks: list | None = None          # opt-in (kind, spec) pre-checks (harness.checks)
+    effort_gate: str = "off"            # opt-in early stop (search_gate.py)
 
 
 @dataclass
@@ -123,7 +124,8 @@ def run_arm(config: ArmConfig, task: Task, proposer: Proposer, oracle: Oracle,
     from .search import best_of_n, DEFAULT_TEMPS
     sr = best_of_n(task, proposer, oracle,
                    temps=config.temps or DEFAULT_TEMPS,
-                   collect_detail=collect_detail)
+                   collect_detail=collect_detail,
+                   effort_gate=config.effort_gate)
     total_ns = time.perf_counter_ns() - t0
     identity = task_identity(task) if collect_detail else None
     candidates = []

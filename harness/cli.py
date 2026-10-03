@@ -20,6 +20,7 @@ from .proposer import StubProposer, ServeProposer
 from .oracle import PytestOracle
 from .cache import ReceiptCache
 from .eval import VERIFIED_INFERENCE
+from .search_gate import GATES
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -40,9 +41,13 @@ def main(argv: list[str] | None = None) -> int:
                     help="skip the witness re-check (faster, less rigorous)")
     ap.add_argument("--prune-duplicates", type=int, default=None, metavar="M",
                     help="with --search: skip a candidate that duplicates M earlier ones")
+    ap.add_argument("--effort-gate", default="off", choices=GATES,
+                    help="with --search: stop drawing once later candidates cannot change the pick")
     args = ap.parse_args(argv)
     if args.prune_duplicates and not args.search:
         ap.error("--prune-duplicates needs --search")
+    if args.effort_gate != "off" and not args.search:
+        ap.error("--effort-gate needs --search")
 
     task = load_task(args.task_dir)
     proposer = (ServeProposer(args.serve) if args.serve
@@ -55,7 +60,8 @@ def main(argv: list[str] | None = None) -> int:
         witness_recheck=not args.no_witness,
         boot_root=args.boot, boot_budget=args.boot_budget,
         cache=cache,
-        search=(replace(VERIFIED_INFERENCE, prune_m=args.prune_duplicates)
+        search=(replace(VERIFIED_INFERENCE, prune_m=args.prune_duplicates,
+                        effort_gate=args.effort_gate)
                 if args.search else None))
 
     env = result.envelope

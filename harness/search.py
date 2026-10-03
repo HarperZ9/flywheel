@@ -18,6 +18,7 @@ from typing import Protocol
 
 from .oracle import Oracle, OracleResult
 from .proposer import Proposer
+from .search_gate import check_gate, should_stop
 from .search_prune import DuplicatePruner
 from .task import Task
 
@@ -64,6 +65,8 @@ class SearchResult:
     decision: OracleResult | None = None
     pruned: int = 0
     pruned_tokens: int = 0
+    effort_gate: str = "off"
+    planned: int = 0  # K; len(candidates) is what the gate actually drew
 
     @property
     def accepted_text(self) -> str | None:
@@ -96,7 +99,8 @@ def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
               seeds: list[int] | None = None,
               collect_detail: bool = False,
               decide: Oracle | None = None,
-              prune_m: int | None = None) -> SearchResult:
+              prune_m: int | None = None,
+              effort_gate: str = "off") -> SearchResult:
     """Sample at each temperature; `oracle` selects the first passing candidate
     in proposal order (temperature 0.0 first, so ties fall to greedy).
 
@@ -104,12 +108,14 @@ def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
     the result: a pick the decider rejects is FAIL, not a reason to try the next
     candidate. Without it the selector also decides, and the result says so.
     With `prune_m`, a candidate that duplicates `prune_m` earlier ones skips the
-    oracle (search_prune.py).
+    oracle (search_prune.py). With `effort_gate`, the draw stops once a later
+    candidate could no longer change the pick (search_gate.py).
     """
     temps = list(temps or DEFAULT_TEMPS)
     n = len(temps)
     seeds = seeds or [task.seed + i for i in range(n)]
-    res = SearchResult(diversified=len(set(temps)) > 1)
+    res = SearchResult(diversified=len(set(temps)) > 1,
+                       effort_gate=check_gate(effort_gate), planned=n)
     pruner = DuplicatePruner(prune_m) if prune_m else None
     for i, (t, s) in enumerate(zip(temps, seeds)):
         gen_start = time.perf_counter_ns()
@@ -135,6 +141,8 @@ def best_of_n(task: Task, proposer: Proposer, oracle: Oracle, *,
         res.candidates.append(c)
         if c.passed and res.accepted is None:
             res.accepted = c
+        if should_stop(effort_gate, i, c.passed):
+            break
     texts = [c.text for c in res.candidates]
     res.correlation = max_pairwise_correlation(texts)
     res.selected = res.accepted

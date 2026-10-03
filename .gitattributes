@@ -65,3 +65,6 @@ desktop/windows/flutter/generated_plugins.cmake text eol=lf
 # 1.3.0 evidence records: PREREG.sha256 covers these bytes, so Git must not
 # normalize them.
 project-docs/records/1.3.0/** -text -diff
+
+# A pre-registration is checked by hash, so its checkout bytes must match the committed bytes.
+project-docs/records/search-effort-gate/PREREG.md text eol=lf

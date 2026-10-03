@@ -1,0 +1,128 @@
+[
+ {
+  "registry": "hard",
+  "schema": "flywheel.effort-gate-log/v1",
+  "gate": "first-pass",
+  "bar": {
+   "retained_min": 0.9,
+   "sample_ratio_max": 0.5
+  },
+  "point": {
+   "n": 10,
+   "single": 9,
+   "search": 9,
+   "gated": 9,
+   "search_gain": 0,
+   "retained": null,
+   "draws": 13,
+   "search_draws": 40,
+   "sample_ratio": 0.325
+  },
+  "verdict": "UNDEFINED (search gain is zero)",
+  "bootstrap": {
+   "gated_minus_search_95": [
+    0.0,
+    0.0
+   ],
+   "retained_95": [
+    null,
+    null
+   ],
+   "sample_ratio_95": [
+    0.25,
+    0.475
+   ],
+   "resamples_zero_gain": 10000
+  },
+  "halves": [
+   {
+    "n": 5,
+    "single": 5,
+    "search": 5,
+    "gated": 5,
+    "search_gain": 0,
+    "retained": null,
+    "draws": 5,
+    "search_draws": 20,
+    "sample_ratio": 0.25,
+    "verdict": "UNDEFINED (search gain is zero)"
+   },
+   {
+    "n": 5,
+    "single": 4,
+    "search": 4,
+    "gated": 4,
+    "search_gain": 0,
+    "retained": null,
+    "draws": 8,
+    "search_draws": 20,
+    "sample_ratio": 0.4,
+    "verdict": "UNDEFINED (search gain is zero)"
+   }
+  ],
+  "inconsistent_rows": []
+ },
+ {
+  "registry": "hard_v2",
+  "schema": "flywheel.effort-gate-log/v1",
+  "gate": "first-pass",
+  "bar": {
+   "retained_min": 0.9,
+   "sample_ratio_max": 0.5
+  },
+  "point": {
+   "n": 110,
+   "single": 61,
+   "search": 68,
+   "gated": 68,
+   "search_gain": 7,
+   "retained": 1.0,
+   "draws": 224,
+   "search_draws": 440,
+   "sample_ratio": 0.5091
+  },
+  "verdict": "MISSES BAR",
+  "bootstrap": {
+   "gated_minus_search_95": [
+    0.0,
+    0.0
+   ],
+   "retained_95": [
+    1.0,
+    1.0
+   ],
+   "sample_ratio_95": [
+    0.4409,
+    0.5773
+   ],
+   "resamples_zero_gain": 219
+  },
+  "halves": [
+   {
+    "n": 55,
+    "single": 29,
+    "search": 32,
+    "gated": 32,
+    "search_gain": 3,
+    "retained": 1.0,
+    "draws": 115,
+    "search_draws": 220,
+    "sample_ratio": 0.5227,
+    "verdict": "MISSES BAR"
+   },
+   {
+    "n": 55,
+    "single": 32,
+    "search": 36,
+    "gated": 36,
+    "search_gain": 4,
+    "retained": 1.0,
+    "draws": 109,
+    "search_draws": 220,
+    "sample_ratio": 0.4955,
+    "verdict": "MEETS BAR"
+   }
+  ],
+  "inconsistent_rows": []
+ }
+]
