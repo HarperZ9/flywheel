@@ -1,3 +1,14 @@
+# Canonical bytes. Hashes in this repository are computed over the bytes Git
+# stores (the blob), and a checkout must write those same bytes on every
+# platform. Git for Windows defaults to core.autocrlf=true, which rewrote every
+# LF file to CRLF on checkout, so a stranger on Windows who ran sha256sum on a
+# preregistered file got a false DRIFT (the Shapley placebo prereg pins
+# harness/shapley_far.py and scripts/shapley_placebo_run.py by their LF bytes).
+# text=auto eol=lf writes LF text files as LF whatever core.autocrlf says; Git
+# does not touch files committed with CRLF; the rules below still override it
+# per path. docs/CANONICAL-BYTES.md records the choice for each artifact class.
+* text=auto eol=lf
+
 # Shell scripts must stay LF: git autocrlf was rewriting them to CRLF on checkout,
 # which makes WSL bash die with `syntax error near unexpected token $'{\r''`.
 *.sh text eol=lf

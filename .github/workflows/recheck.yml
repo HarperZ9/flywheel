@@ -1,0 +1,98 @@
+name: recheck
+
+# Two guarantees a stranger depends on, checked on the platforms they use.
+#
+# canonical_bytes: every tracked file checks out as the bytes Git stores, so a
+# pinned sha256 means the same thing on every machine. Git for Windows defaults
+# to core.autocrlf=true, which once rewrote 7537 files and gave a false DRIFT on
+# the Shapley placebo preregistration. The setting is written before checkout,
+# because actions/checkout uses the global Git config, and each leg names it.
+#
+# recheck_cpu: every public-claim manifest in recheck/ whose hardware need is
+# cpu runs from a fresh checkout of its pinned commit to a verdict, including its
+# false-success control. See RECHECK.md.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  canonical_bytes:
+    name: canonical bytes, ${{ matrix.os }}, autocrlf=${{ matrix.autocrlf }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, autocrlf: "false"}
+          - {os: windows-latest, autocrlf: "true"}
+          - {os: windows-latest, autocrlf: "false"}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - name: Git line-ending setting for this leg, before checkout
+        run: |
+          git config --global core.autocrlf ${{ matrix.autocrlf }}
+          git config --global core.longpaths true
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.13"
+      - name: Install test tooling only
+        run: python -m pip install pytest pytest-timeout
+      - name: Every checked-out file equals its blob; pin helpers and runner
+        run: >
+          python -m pytest
+          tests/test_canonical_bytes.py
+          tests/test_prereg_pins.py
+          tests/test_recheck.py
+          tests/test_inspect_evidence_cli.py
+          tests/test_inspect_evidence_cli_busy.py
+          tests/test_prereg_signed_head_current.py
+          tests/test_vendored.py
+          tests/test_superstack_vendored.py
+          -q
+      - name: The Shapley preregistration pins, as a stranger would check them
+        run: python -m harness.prereg_pins project-docs/prereg/2026-10-04-shapley-placebo.md
+
+  recheck_cpu:
+    name: recheck cpu claims, ${{ matrix.os }}, autocrlf=${{ matrix.autocrlf }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, autocrlf: "false"}
+          - {os: windows-latest, autocrlf: "true"}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - name: Git line-ending setting for this leg, before checkout
+        run: |
+          git config --global core.autocrlf ${{ matrix.autocrlf }}
+          git config --global core.longpaths true
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # The manifests pin older commits; the runner checks them out as
+          # worktrees, which needs them in the clone.
+          fetch-depth: 0
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          # The site's benchmark seal was recorded on 3.12.
+          python-version: "3.12"
+      - name: Packages the manifests declare in needs.packages
+        run: python -m pip install pytest
+      - name: Every cpu manifest, command and control, from checkout to verdict
+        shell: bash
+        run: |
+          set +e
+          python -m harness.recheck run --hardware cpu --ci --json recheck-results.json -v
+          rc=$?
+          test -f recheck-results.json && python -c "import json; [print(r['id'], 'PASS' if r['ok'] else 'FAIL', r['wall_seconds'], 's') for r in json.load(open('recheck-results.json'))]" >> "$GITHUB_STEP_SUMMARY"
+          exit $rc

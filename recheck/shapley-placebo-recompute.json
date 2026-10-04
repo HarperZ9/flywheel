@@ -1,0 +1,61 @@
+{
+  "schema": "flywheel.recheck/v1",
+  "id": "shapley-placebo-recompute",
+  "claim": {
+    "text": "0 of 80 false attributions on qwen2.5:7b (RELIABLE, Wilson upper 0.046) follow from the recorded model outputs.",
+    "where": "docs/features/shapley-placebo.md",
+    "read_on": "2026-10-04"
+  },
+  "level": "recomputation",
+  "repository": "https://github.com/HarperZ9/flywheel",
+  "commit": "980a8840750ee54fe32fb77ce90f225c02687c3e",
+  "cwd": "repo",
+  "command": [
+    "{python}",
+    "scripts/shapley_placebo_recompute.py",
+    "--root",
+    "{checkout}",
+    "--run",
+    "project-docs/records/2026-10-04-shapley-placebo/run-qwen2.5-7b.json"
+  ],
+  "expect": {
+    "exit_code": 0,
+    "stdout_contains": [
+      "recomputed: RELIABLE, false attribution 0 of 80",
+      "verdict: MATCH"
+    ]
+  },
+  "control": {
+    "description": "Change one recorded model output so it no longer contains the accepted answer; the rescored value differs from the recorded one.",
+    "mutate": {
+      "file": "{checkout}/project-docs/records/2026-10-04-shapley-placebo/run-qwen2.5-7b.json",
+      "find": "\"163 paces\"",
+      "replace": "\"no answer\""
+    },
+    "expect": {
+      "exit_code": 1,
+      "stdout_contains": [
+        "verdict: DRIFT"
+      ]
+    }
+  },
+  "needs": {
+    "hardware": "cpu",
+    "os": [
+      "linux",
+      "windows",
+      "macos"
+    ],
+    "python": ">=3.11",
+    "network": [
+      "github.com"
+    ],
+    "seconds": 1
+  },
+  "access": "A0",
+  "expertise": "E1",
+  "anchor": "self",
+  "covers": "The arithmetic from recorded outputs to values, trials, counts, interval and verdict, using the preregistered scoring module from the run commit.",
+  "does_not_cover": "Whether the model gives these outputs. That is re-execution (gpu-8gb, Ollama 0.35.1, qwen2.5:7b manifest 845dbda0), listed in RECHECK.md and not automated. The recompute reuses the maker's code, so it is not an independent implementation.",
+  "ci": true
+}
