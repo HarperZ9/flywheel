@@ -192,6 +192,8 @@ jobs:
           tests/test_signer_two_user.py
           tests/test_signer_forgery.py
           tests/test_signer_protocol.py
+          tests/test_action_authority.py
+          tests/test_action_authority_no_upgrade.py
           -q -rs
 
   full:

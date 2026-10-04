@@ -61,7 +61,7 @@ def attestation_body(*, store, seq, prev, seal, signed_at, isolation, key_id) ->
 
 
 def head_body(*, store, seq, seal, rewinds, signed_at, isolation, key_id) -> dict:
-    """``rewinds`` lists every operator rewind of this store (journal.py), so a
+    """``rewinds`` lists every owner rewind of this store (journal.py), so a
     rewind is visible to anyone holding a later head."""
     return {"schema": HEAD_SCHEMA, "store": store, "seq": seq, "seal": seal,
             "rewinds": rewinds, "signed_at": signed_at, "isolation": isolation,
