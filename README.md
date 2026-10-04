@@ -1,6 +1,20 @@
-<p align="center"><img src="docs/art/flywheel-header.svg" alt="Flywheel: run an AI task with any model, keep a record you can recheck offline." width="100%"></p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/HarperZ9/flywheel/main/docs/art/hero-dark.svg">
+  <img src="https://raw.githubusercontent.com/HarperZ9/flywheel/main/docs/art/hero-light.svg" alt="flywheel: Run any model, keep a receipt you can recheck offline. Streamlines of fine lines spiral inward around a bright core." width="100%">
+</picture>
 
-**A self-hostable, model-agnostic AI workstation and coding harness.**
+# flywheel
+
+Run any model, keep a receipt you can recheck offline.
+
+```
+python -m pip install flywheel-verify
+```
+
+[![version: 1.3.2](https://img.shields.io/badge/version-1.3.2-e6e1d6?style=flat-square&labelColor=1a1712)](https://pypi.org/project/flywheel-verify/)
+[![CI](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-FSL--1.1--MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/flywheel/blob/main/LICENSE)
+![python 3.11+](https://img.shields.io/badge/python-3.11%2B-e6e1d6?style=flat-square&labelColor=1a1712)
 
 Flywheel ships as a full native harness client with its own bundled engine.
 Rowan provides its operator experience, and Articulate and the other tool lanes
@@ -8,13 +22,6 @@ provide capabilities to the user's selected model. Compatible plugins expose
 selected tools and workflows to other clients. See the
 [client and tool architecture](docs/CLIENT-AND-TOOL-ARCHITECTURE.md) for these
 responsibilities and the separate release checks for each distribution surface.
-
-[![PyPI](https://img.shields.io/pypi/v/flywheel-verify?style=flat-square&labelColor=14041b&color=f8cc43)](https://pypi.org/project/flywheel-verify/)
-[![license](https://img.shields.io/badge/license-FSL--1.1--MIT-8f8095?style=flat-square&labelColor=14041b)](LICENSE)
-[![CI](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml)
-[![downloads](https://img.shields.io/pypi/dm/flywheel-verify?label=downloads&style=flat-square&labelColor=14041b)](https://pypi.org/project/flywheel-verify/)
-![python: 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&labelColor=14041b)
-![deps: none (core)](https://img.shields.io/badge/core%20deps-none-success?style=flat-square&labelColor=14041b)
 
 Flywheel runs any model, frontier or local, behind a single OpenAI-compatible
 surface. Flywheel's records stay on your machine. Your provider keys are
