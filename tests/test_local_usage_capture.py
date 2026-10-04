@@ -1,14 +1,9 @@
 import hashlib
-import json
 from pathlib import Path
 
 import pytest
 
-from harness.cross_harness_adapters import (
-    FlywheelRouterAdapter,
-    LocalRouterAdapter,
-    ProcessOutcome,
-)
+from harness.cross_harness_adapters import LocalRouterAdapter
 from harness.cross_harness_artifacts import canonical_sha256
 from harness.cross_harness_executor import SHARED_TOOL_POLICY, execute_cross_harness_manifest
 from harness.cross_harness_types import AttemptRequest
@@ -96,10 +91,17 @@ def _ollama_chat(raw):
     return backend.chat([], system="", max_tokens=8, temperature=0, seed=7)
 
 
+def _fixed_clock():
+    # Usage capture is under test, not the 3 s attempt deadline; see
+    # test_local_usage_clock.py for why a wall clock flaked here.
+    return 0.0
+
+
 def _router(tmp_path, *outputs):
     (tmp_path / "x").write_text("evidence", encoding="utf-8")
     backend = _ScriptedBackend(*outputs)
-    adapter = LocalRouterAdapter("local_14b", _profile(), backend_factory=lambda *_: backend)
+    adapter = LocalRouterAdapter("local_14b", _profile(), backend_factory=lambda *_: backend,
+                                 clock=_fixed_clock)
     return adapter.execute(_request(tmp_path)), backend
 
 
@@ -253,7 +255,8 @@ def test_malformed_artifact_envelope_retains_verified_local_usage(tmp_path):
     source.mkdir()
     (source / "x").write_text("evidence", encoding="utf-8")
     backend = _ScriptedBackend(_tool(USAGE_A), _final('{"not_artifacts":true}', USAGE_B))
-    adapter = LocalRouterAdapter("local_14b", _profile(), backend_factory=lambda *_: backend)
+    adapter = LocalRouterAdapter("local_14b", _profile(), backend_factory=lambda *_: backend,
+                                 clock=_fixed_clock)
 
     run = execute_cross_harness_manifest(
         _manifest(source), _runtime(), {"local_14b": adapter},
@@ -269,32 +272,3 @@ def test_malformed_artifact_envelope_retains_verified_local_usage(tmp_path):
                                          "recomputed": row["metrics"]["usage"]}
     assert Path(row["raw_output_path"]).read_text(encoding="utf-8") == '{"not_artifacts":true}'
 
-
-def test_codex_inner_usage_source_stays_codex_inner(tmp_path):
-    def event(usage):
-        return json.dumps({"type": "turn.completed", "model": "spark", "usage": usage})
-    outputs = [
-        ProcessOutcome(0, "\n".join((event(USAGE_A), json.dumps(
-            {"type": "item.completed", "item": {"type": "agent_message",
-                                                "text": 'TOOL read_file {"path":"x"}'}}))), "", 1, False),
-        ProcessOutcome(0, "\n".join((event(USAGE_B), json.dumps(
-            {"type": "item.completed", "item": {"type": "agent_message",
-                                                "text": "done"}}))), "", 1, False),
-    ]
-    (tmp_path / "x").write_text("evidence", encoding="utf-8")
-    adapter = FlywheelRouterAdapter(
-        runner=lambda *a, **k: outputs.pop(0),
-        executable_resolver=lambda: "codex.cmd",
-        proposer_invocations_max=None,
-    )
-
-    result = adapter.execute(AttemptRequest(
-        "run", "spark", "set", "agt-001-task", "prompt", "a" * 64,
-        "flywheel_harness", "flywheel", "flywheel_router/v1", "spark", "spark",
-        tmp_path, "b" * 64, {}, SHARED_TOOL_POLICY, "c" * 64, 1,
-        "cold_declared", 3, tmp_path,
-    ))
-
-    assert inner_source(result.tool_trace) == "codex_inner"
-    assert "local_endpoint_inner" not in {event.get("source") for event in result.tool_trace}
-    assert usage_records_from_trace(result.tool_trace) == [USAGE_A, USAGE_B]

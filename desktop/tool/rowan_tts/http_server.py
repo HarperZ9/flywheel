@@ -10,6 +10,8 @@ from urllib.parse import parse_qs, urlparse
 
 from .jobs import RowanTtsState, ServiceError
 
+MAX_BODY_BYTES = 65536
+
 
 class RowanTtsHttpServer(ThreadingHTTPServer):
     def __init__(self, server_address: tuple[str, int], state: RowanTtsState):
@@ -43,6 +45,7 @@ class RowanTtsHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         try:
+            self._body = self._drain_body()
             self._guard()
             parsed = urlparse(self.path)
             if parsed.path == "/v1/speak":
@@ -103,6 +106,24 @@ class RowanTtsHandler(BaseHTTPRequestHandler):
         if auth != expected and alt != self.server.state.token:
             raise ServiceError(401, "UNAUTHORIZED", "missing or invalid token")
 
+    def _drain_body(self) -> bytes | None:
+        """Read the declared body before any response is written.
+
+        Closing a Windows socket that still holds unread received bytes sends
+        a reset, and the reset can discard a response the client has not read
+        yet. The client then sees WinError 10053 instead of the answer. Every
+        POST route consumes its body here, including routes that ignore it.
+        An absent, invalid or oversized length is left for _read_json to
+        report; those requests are not read.
+        """
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            return None
+        if not 0 <= length <= MAX_BODY_BYTES:
+            return None
+        return self.rfile.read(length)
+
     def _read_json(self) -> dict[str, Any]:
         raw_len = self.headers.get("Content-Length")
         if raw_len is None:
@@ -111,10 +132,12 @@ class RowanTtsHandler(BaseHTTPRequestHandler):
             length = int(raw_len)
         except ValueError as exc:
             raise ServiceError(400, "BAD_LENGTH", "Content-Length is invalid") from exc
-        if length > 65536:
+        if length > MAX_BODY_BYTES:
             raise ServiceError(413, "BODY_TOO_LARGE", "body exceeds limit")
+        if length < 0 or self._body is None:
+            raise ServiceError(400, "BAD_LENGTH", "Content-Length is invalid")
         try:
-            value = json.loads(self.rfile.read(length).decode("utf-8"))
+            value = json.loads(self._body.decode("utf-8"))
         except Exception as exc:
             raise ServiceError(400, "BAD_JSON", "body must be JSON") from exc
         if not isinstance(value, dict):

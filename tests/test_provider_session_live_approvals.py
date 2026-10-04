@@ -6,6 +6,7 @@ import time
 
 from harness.evidence_json import canonical_sha256
 from harness.gateway_operation_route import operation_ref_for, route_gateway_operation
+from harness.gateway_operations import TERMINALS
 from harness.provider_session_approval_broker import ProviderApprovalBroker
 from harness.provider_session_contract import (
     ProviderApprovalRequest,
@@ -86,23 +87,34 @@ def _approval_raw(head, ref, identity, *, request_id="approval-response-1",
     return json.dumps(body, separators=(",", ":")).encode()
 
 
-def _wait_pending(broker, ref):
-    deadline = time.monotonic() + 2
+# Both waits end on an event: the approval is raised, or the operation reaches
+# a terminal state. The bound is a hang guard, never the expected path. The old
+# fixed 2 s windows timed the host instead: the worker raises the approval only
+# after several durable journal and trace writes, and those took up to 1.9 s on
+# a workstation under 12 parallel copies of this flow. A Windows runner took
+# longer on 2026-10-03 and the test failed with no operation fault.
+HANG_GUARD_S = 60
+# The broker expiry is covered by test_broker_timeout_closes_pending_without_allow
+# with 0.05 s. The read-and-respond tests must not race it.
+APPROVAL_WINDOW_S = 60
+
+
+def _wait_pending(service, broker, ref):
+    deadline = time.monotonic() + HANG_GUARD_S
     while time.monotonic() < deadline:
         rows = broker.pending(owner_ref=OWNER, operation_ref=ref)
         if rows:
             return rows[0]
+        state = service.snapshot(OWNER, ref).state
+        if state in TERMINALS:
+            raise AssertionError(f"operation ended {state} before its approval: "
+                                 f"{service.result(OWNER, ref)}")
         time.sleep(0.01)
     raise AssertionError("pending approval did not appear")
 
 
 def _wait_result(service, ref):
-    deadline = time.monotonic() + 2
-    while time.monotonic() < deadline:
-        try:
-            return operation_result(service, ref)
-        except Exception:
-            time.sleep(0.01)
+    service.wait_terminal(OWNER, ref, HANG_GUARD_S)
     return operation_result(service, ref)
 
 
@@ -118,7 +130,7 @@ def _post_approval_response(service, factory, ref, request_identity, **kwargs):
 def test_live_approval_read_and_respond_sends_one_provider_decision(tmp_path):
     service, head = service_with_journey(tmp_path)
     adapter = ApprovalAdapter()
-    broker = ProviderApprovalBroker(default_timeout_s=2)
+    broker = ProviderApprovalBroker(default_timeout_s=APPROVAL_WINDOW_S)
     factory = provider_factory(adapters={"codex": adapter}, approval_broker=broker)
     ref = operation_ref_for(OWNER, JOURNEY, "turn-1")
     raw = turn_raw(head, permission_scope={
@@ -134,7 +146,7 @@ def test_live_approval_read_and_respond_sends_one_provider_decision(tmp_path):
         service=service, process_factory=factory, raw=raw,
         content_type="application/json")
     assert response.status == 200
-    pending = _wait_pending(broker, ref)
+    pending = _wait_pending(service, broker, ref)
 
     read = route_gateway_operation(
         "GET", "/api/provider-sessions/approvals", owner_ref=OWNER,
@@ -162,7 +174,7 @@ def test_live_approval_read_and_respond_sends_one_provider_decision(tmp_path):
 def test_updated_input_outside_turn_envelope_is_rejected_without_answering(tmp_path):
     service, head = service_with_journey(tmp_path)
     adapter = ApprovalAdapter()
-    broker = ProviderApprovalBroker(default_timeout_s=2)
+    broker = ProviderApprovalBroker(default_timeout_s=APPROVAL_WINDOW_S)
     factory = provider_factory(adapters={"codex": adapter}, approval_broker=broker)
     ref = operation_ref_for(OWNER, JOURNEY, "turn-1")
     response = route_gateway_operation(
@@ -176,7 +188,7 @@ def test_updated_input_outside_turn_envelope_is_rejected_without_answering(tmp_p
             },
         }), content_type="application/json")
     assert response.status == 200
-    pending = _wait_pending(broker, ref)
+    pending = _wait_pending(service, broker, ref)
 
     bad = route_gateway_operation(
         "POST", "/api/provider-sessions/approvals/respond", owner_ref=OWNER,
@@ -202,7 +214,7 @@ def test_updated_input_outside_turn_envelope_is_rejected_without_answering(tmp_p
 def test_concurrent_duplicate_approval_responses_serialize_to_one_decision(tmp_path):
     service, head = service_with_journey(tmp_path)
     adapter = ApprovalAdapter()
-    broker = ProviderApprovalBroker(default_timeout_s=2)
+    broker = ProviderApprovalBroker(default_timeout_s=APPROVAL_WINDOW_S)
     factory = provider_factory(adapters={"codex": adapter}, approval_broker=broker)
     ref = operation_ref_for(OWNER, JOURNEY, "turn-1")
     response = route_gateway_operation(
@@ -216,7 +228,7 @@ def test_concurrent_duplicate_approval_responses_serialize_to_one_decision(tmp_p
             },
         }), content_type="application/json")
     assert response.status == 200
-    pending = _wait_pending(broker, ref)
+    pending = _wait_pending(service, broker, ref)
     statuses = []
     lock = threading.Lock()
 
