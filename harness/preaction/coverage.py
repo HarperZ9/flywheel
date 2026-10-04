@@ -46,6 +46,10 @@ WITNESSES = {
            "OpenShell OCSF import: network and process events as sealed records"),
     "W3": (OUTSIDE, "owner witness directory; outside only when the agent cannot write it",
            "Chain-head export: store heads copied out at every stop and every N records"),
+    "W4": (OUTSIDE, "separate OS identity when FLYWHEEL_SIGNER is set; inside, and "
+           "labeled same-identity on every record, when the signer shares the agent's",
+           "Record signer: an Ed25519 attestation on every record, refused for any "
+           "sequence number already signed, and a signed head for truncation"),
 }
 
 

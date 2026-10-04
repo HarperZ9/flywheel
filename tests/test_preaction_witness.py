@@ -111,7 +111,7 @@ def test_consistent_rewrite_after_head_export_is_drift(tmp_path):
                           encoding="utf-8")
     # The store verifier alone reads the rewritten chain as MATCH (seals and
     # links hold); only the exported head shows the rewrite.
-    assert verify_store(home)["verdict"] == "MATCH"
+    assert verify_store(home)["internal_verdict"] == "MATCH"
     heads = check_heads(home, wit)
     assert heads["verdict"] == "DRIFT"
     assert heads["findings"] == [{"cause": "EXPORTED_HEAD_REWRITTEN", "head_seq": 2}]
@@ -137,7 +137,7 @@ def test_hook_exports_a_head_at_every_stop(tmp_path):
     assert not g.run
     heads = [r for r in HoldStore(wit).read_all() if r["schema"] == HEAD_SCHEMA]
     assert len(heads) == 1 and heads[0]["head_seq"] == 1
-    assert verify_store(wit)["verdict"] in ("MATCH", "UNVERIFIABLE")
+    assert verify_store(wit)["internal_verdict"] in ("MATCH", "UNVERIFIABLE")
 
 
 def test_witness_record_is_sealed_and_cli_exit_codes(tmp_path):

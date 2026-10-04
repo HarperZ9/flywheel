@@ -14,7 +14,9 @@ from __future__ import annotations
 from ..tool_call_receipt import _canonical_bytes, _sha256_hex
 from .contract import ALLOW, RunContext, ProposedCall, worse
 from .coverage import liveness_join
-from .records import (ALLOW_SCHEMA, HOLD_SCHEMA, HoldStore, verify_seal)
+from . import anchoring
+from .records import (ALLOW_SCHEMA, HOLD_SCHEMA, HoldStore, seal_preimage, store_id,
+                      verify_seal)
 from .rules import evaluate, load_pack, pack_digest
 
 
@@ -67,8 +69,28 @@ def rederive(record: dict, raw_args, context: dict | None = None) -> str:
     return verdict
 
 
-def verify_store(home, pack_override: dict | None = None) -> dict:
-    store = HoldStore(home)
+def _verdicts(recs, store, findings, trust_root, signer_head, nothing_rederived) -> dict:
+    """The internal verdict, then the verdict after the trust-root check."""
+    anchor = anchoring.check(recs, store, trust_root, signer_head)
+    findings.extend(anchor["findings"])
+    internal = "MATCH"
+    if findings:
+        internal = "DRIFT"
+    elif nothing_rederived:
+        internal = "UNVERIFIABLE"
+    return {"verdict": anchoring.final_verdict(internal, anchor["anchored"]),
+            "internal_verdict": internal, "anchored": anchor["anchored"],
+            "signer_isolation": anchor["signer_isolation"],
+            "truncation_checked": anchor.get("truncation_checked", False),
+            "rewinds": anchor.get("rewinds", []), "notes": anchor["notes"]}
+
+
+def verify_store(home, pack_override: dict | None = None, *, trust_root: str = "",
+                 signer_head: dict | None = None) -> dict:
+    """``trust_root``: the separate signer's public key, hex, pinned by the
+    caller. Without it a consistent store is UNANCHORED, never MATCH.
+    ``signer_head``: a signed head from the signer, to catch truncation."""
+    store = HoldStore(home, signer=None)
     recs = store.read_all(tolerant=True)
     findings = []
     rederived = unverifiable = judge_unverifiable = 0
@@ -80,9 +102,7 @@ def verify_store(home, pack_override: dict | None = None) -> dict:
         expected_seq += 1
         if not verify_seal(rec):
             findings.append({"cause": "SEAL_MISMATCH", "source": rec.get("source", "")})
-        probe = dict(rec)
-        probe["seal"] = {"algorithm": "sha256", "hex": ""}
-        this_hex = _sha256_hex(_canonical_bytes(probe))
+        this_hex = _sha256_hex(seal_preimage(rec))
         if rec.get("prev_record_sha256", "") != expected_prev:
             findings.append({"cause": "CHAIN_BROKEN", "source": rec.get("source", "")})
         if int(rec.get("store_seq", -1)) != expected_seq:
@@ -120,12 +140,10 @@ def verify_store(home, pack_override: dict | None = None) -> dict:
     join = liveness_join(recs)
     if join["verdict"] == "DRIFT":
         findings.append({"cause": "POST_WITHOUT_PRE", "orphans": join["orphans"]})
-    verdict = "MATCH"
-    if findings:
-        verdict = "DRIFT"
-    elif unverifiable and not rederived:
-        verdict = "UNVERIFIABLE"
-    return {"verdict": verdict, "n": len(recs), "rederived": rederived,
+    head = _verdicts(recs, store_id(home), findings, trust_root, signer_head,
+                     unverifiable and not rederived)
+    return {**head,
+            "n": len(recs), "rederived": rederived,
             "unverifiable": unverifiable, "judge_unverifiable": judge_unverifiable,
             # An ALLOW decided inside the agent's reach is weaker evidence than
             # one decided outside it; the split is reported, never merged.

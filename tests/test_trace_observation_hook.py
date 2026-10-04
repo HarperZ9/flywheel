@@ -37,7 +37,7 @@ def test_clean_run_writes_receipts_and_raises_no_hold(tmp_path):
                       turns=[turn("anthropic_summarized.json")], observed_on="2026-10-01")
     assert res["holds"] == [] and all(c["passed"] == "true" for c in res["controls"])
     assert len(ObservationLedger(home).receipts("run-1")) == 2
-    assert verify_store(home)["verdict"] in ("MATCH", "UNVERIFIABLE")
+    assert verify_store(home)["internal_verdict"] in ("MATCH", "UNVERIFIABLE")
     assert not verify_store(home)["findings"]
     report = render_report(res)
     assert "not observable from outside:" in report and "SUMMARY_ONLY_CHANNEL" in report

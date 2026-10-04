@@ -110,7 +110,7 @@ def test_redeemed_call_is_recorded_and_its_post_event_joins(tmp_path):
                                            tool_use_id="toolu_retry", args_sha256="",
                                            observed_at=""))
     assert liveness_join(HoldStore(tmp_path).read_all())["verdict"] == "MATCH"
-    assert verify_store(tmp_path)["verdict"] == "MATCH"
+    assert verify_store(tmp_path)["internal_verdict"] == "MATCH"
 
 
 # --- R5: an honest store verifies MATCH -------------------------------------
@@ -118,7 +118,7 @@ def test_workspace_scoped_hold_rederives_match(tmp_path):
     mon = monitor(tmp_path)
     g = mon.gate(call("write_file", path="/etc/hosts", content="x"), ctx())
     assert g.verdict == HOLD
-    assert verify_store(tmp_path)["verdict"] == "MATCH", verify_store(tmp_path)
+    assert verify_store(tmp_path)["internal_verdict"] == "MATCH", verify_store(tmp_path)
 
 
 def test_trajectory_hold_rederives_match(tmp_path):
@@ -128,14 +128,14 @@ def test_trajectory_hold_rederives_match(tmp_path):
         mon.gate(call("run", cmd=f"git push --force origin b{i}"), c)
     g = mon.gate(call("read_file", path="a.py"), c)
     assert g.verdict == HOLD
-    assert verify_store(tmp_path)["verdict"] == "MATCH", verify_store(tmp_path)
+    assert verify_store(tmp_path)["internal_verdict"] == "MATCH", verify_store(tmp_path)
 
 
 def test_allowlisted_host_rederives_match(tmp_path):
     mon = monitor(tmp_path)
     g = mon.gate(call("run", cmd="curl https://pypi.org/simple/"), ctx(allow_hosts=("pypi.org",)))
     assert g.verdict == ALLOW
-    assert verify_store(tmp_path)["verdict"] == "MATCH", verify_store(tmp_path)
+    assert verify_store(tmp_path)["internal_verdict"] == "MATCH", verify_store(tmp_path)
 
 
 def test_tampered_context_side_file_is_drift(tmp_path):

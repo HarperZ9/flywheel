@@ -30,7 +30,7 @@ def _store_with_decision(home):
 def test_untouched_store_matches(tmp_path):
     _store_with_decision(tmp_path)
     report = verify_store(tmp_path)
-    assert report["verdict"] == "MATCH", report
+    assert report["internal_verdict"] == "MATCH" and report["verdict"] == "UNANCHORED", report
     assert report["rederived"] >= 2
 
 
@@ -75,7 +75,7 @@ def test_judged_call_is_unverifiable_for_judge_layer(tmp_path):
     mon = monitor(tmp_path, judges=[FakeJudge(score=9)])
     mon.gate(call("read_file", path="src/a.py"), ctx())
     report = verify_store(tmp_path)
-    assert report["verdict"] in ("MATCH", "UNVERIFIABLE")
+    assert report["internal_verdict"] in ("MATCH", "UNVERIFIABLE")
     assert report["judge_unverifiable"] == 1
 
 
