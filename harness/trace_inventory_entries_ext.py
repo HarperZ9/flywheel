@@ -159,6 +159,8 @@ EXEMPTIONS = (
     Exemption("home", "desktop.json", f"desktop UI settings; {_NO_TRACE}"),
     Exemption("home", "connection.json", f"desktop connection settings; {_NO_TRACE}"),
     Exemption("home", "keys", f"receipt signing keys; {_NO_TRACE}"),
+    Exemption("home", "tools", f"pinned external tool builds (the Lean oracle's second "
+              f"kernel and exporter) and their manifest; {_NO_TRACE}"),
     Exemption("home", "state", "container; its entries are registered one by one"),
     Exemption("home", "lanes", "container; its entries are registered one by one"),
     Exemption("home", "run", "the default run root; its entries are registered one by one"),
