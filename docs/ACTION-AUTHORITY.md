@@ -42,7 +42,7 @@ restated plan as intent is caught.
 
 `action_authority.from_signer(client, tool, args)` asks the signer to run the shipped
 rule pack on the call. The signer uses its own installed rules and the run
-context in `policy-context.json` in its home, which the operator writes. The
+context in `policy-context.json` in its home, which the owner writes. The
 caller's context is ignored. The signer signs the verdict with the argument
 digest the receipt uses.
 
@@ -78,7 +78,7 @@ signer check.
   recorded as written. The verifier re-derives the basis from what is there;
   it cannot check that a quote was really said, or said on that date.
 - **Machine policy is the shipped rule pack.** A PASS under `policy:machine`
-  means the signer's rules allowed or denied the call with the operator's
+  means the signer's rules allowed or denied the call with the owner's
   context. It does not mean the rules are right or complete.
 - **The signer limits apply.** A root-level attacker defeats the OS-user split
   that makes the signer's check independent; see SEPARATE-SIGNER.md.

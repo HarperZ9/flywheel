@@ -6,7 +6,7 @@
     store's signed history by exactly one (see journal.py).
   * ``head``: a signed statement of the last record signed for a store.
   * ``check_policy``: run the shipped rule pack on one call, with the
-    operator's context, and sign the verdict (policy.py). This is what makes a
+    owner's context, and sign the verdict (policy.py). This is what makes a
     receipt's ``policy:machine`` authority checkable.
 
 Every reply that carries a signature carries the caller isolation the signer

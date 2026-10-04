@@ -86,7 +86,7 @@ def test_without_a_pinned_root_nothing_is_machine_policy(tmp_path):
     _assert_downgraded(receipt, "")
 
 
-def test_the_signer_uses_the_operators_context_not_the_callers(tmp_path):
+def test_the_signer_uses_the_owners_context_not_the_callers(tmp_path):
     import hashlib
     import json
     signer = _signer(tmp_path, context={"workspace": "/srv/repo",

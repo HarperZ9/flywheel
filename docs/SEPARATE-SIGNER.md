@@ -12,7 +12,7 @@ recompute every seal. The record signer moves the pen out of the agent's reach.
 - Holds an Ed25519 key in a home directory the agent's user cannot read.
 - Answers on a local Unix socket or named pipe with four operations:
   `hello`, `sign_record`, `head` and `check_policy`. It signs nothing else.
-  `check_policy` runs the shipped rule pack on one call with the operator's
+  `check_policy` runs the shipped rule pack on one call with the owner's
   context and signs the verdict; ACTION-AUTHORITY.md covers its use.
 - Signs each record's sequence number, previous seal and seal once. A request
   that would re-sign, skip or re-point a sequence number is refused, so signed
@@ -135,7 +135,7 @@ python -m harness.signer rewind --home <signer home> --store <store real path>
 
 This forgets the last signed record of that store, one step only. The rewind is
 kept in the journal and appears in every later signed head as `rewinds`, so it
-is never silent. A rewind is an operator power: whoever holds the signer
+is never silent. A rewind is an owner power: whoever holds the signer
 identity can use it to replace the newest record.
 
 ## What this does not prove

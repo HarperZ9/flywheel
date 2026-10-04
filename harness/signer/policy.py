@@ -7,7 +7,7 @@ evaluates the pre-action rule pack itself and signs the result:
   * the rule pack is the one installed beside the signer, never one the caller
     sends;
   * the run context (workspace, allowed hosts, protected paths) comes from
-    ``policy-context.json`` in the signer's home, which the operator writes and
+    ``policy-context.json`` in the signer's home, which the owner writes and
     the agent cannot. With no such file the context is empty, which is the
     strictest: no host is allowed and no workspace is trusted;
   * the caller supplies only the call (tool, arguments, path id). The signed
