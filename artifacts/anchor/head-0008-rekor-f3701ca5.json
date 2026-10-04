@@ -1,0 +1,58 @@
+{
+  "schema": "flywheel.rekor-anchor/v1",
+  "artifact": {
+    "path": "artifacts/prereg/heads/head-0008.json",
+    "sha512": "49171429f935b00fc9f6ba86025f6e6357eb32bd74b568d86177bb6432149842fdd15e69394ab649f330cf0d9da72dc465cd3415edf709086ebd15c134511b0d",
+    "sha256": "728c15a4ff1567ca5de929f89a71bc8c88a48f74b092fc9a2d4a309afed2c015",
+    "form": "canonical-json"
+  },
+  "public_key": "f3701ca549bb7042c569f7b22a92cddb59ccf288c5fc57a481332acad53b49c2",
+  "signature_scheme": "ed25519ph",
+  "rekor": {
+    "url": "https://rekor.sigstore.dev",
+    "log_id": "c0d23d6ad406973f9559f3ba2d1ca01f84147d8ffc5b8445c224f98b9591801d"
+  },
+  "uuid": "108e9186e8c5677a5a5b8aed1b10501d19f344dbbb6aea841a8e8f7466e379e4daaa7b24bede2566",
+  "log_index": 3077405366,
+  "integrated_time": 1791105434,
+  "search_url": "https://search.sigstore.dev/?logIndex=3077405366",
+  "entry": {
+    "body": "eyJhcGlWZXJzaW9uIjoiMC4wLjEiLCJraW5kIjoiaGFzaGVkcmVrb3JkIiwic3BlYyI6eyJkYXRhIjp7Imhhc2giOnsiYWxnb3JpdGhtIjoic2hhNTEyIiwidmFsdWUiOiI0OTE3MTQyOWY5MzViMDBmYzlmNmJhODYwMjVmNmU2MzU3ZWIzMmJkNzRiNTY4ZDg2MTc3YmI2NDMyMTQ5ODQyZmRkMTVlNjkzOTRhYjY0OWYzMzBjZjBkOWRhNzJkYzQ2NWNkMzQxNWVkZjcwOTA4NmViZDE1YzEzNDUxMWIwZCJ9fSwic2lnbmF0dXJlIjp7ImNvbnRlbnQiOiJGOStLbzNDb21GNmFPdGpiT3N1LzdaL2pCcjdXc216aEtrWVN1QTB3UER3YURvVllUVER3VEdNeGxzNG9DOWNsdTcrQXdpa3Yra0hVbDg2UDQzQnlDdz09IiwicHVibGljS2V5Ijp7ImNvbnRlbnQiOiJMUzB0TFMxQ1JVZEpUaUJRVlVKTVNVTWdTMFZaTFMwdExTMEtUVU52ZDBKUldVUkxNbFozUVhsRlFUZ3pRV053VlcwM1kwVk1SbUZtWlhsTGNFeE9NakZ1VFRodmFrWXZSbVZyWjFSTmNYbDBWVGRUWTBrOUNpMHRMUzB0UlU1RUlGQlZRa3hKUXlCTFJWa3RMUzB0TFFvPSJ9fX19",
+    "integratedTime": 1791105434,
+    "logID": "c0d23d6ad406973f9559f3ba2d1ca01f84147d8ffc5b8445c224f98b9591801d",
+    "logIndex": 3077405366,
+    "verification": {
+      "inclusionProof": {
+        "checkpoint": "rekor.sigstore.dev - 1193050959916656506\n2955501108\nHRcIDYHBNuIAWeTtbF1KfIBaUN5FIzNLrSD7U919+Zo=\n\n\u2014 rekor.sigstore.dev wNI9ajBGAiEA722yqDZjsLv1M0GH0GMnFgUO9TnMs1BFFYx9eqlwZPsCIQCfwzQvNUIz1RANfz69fCLXw+0qeFW3yhWgBJbp7wpk8g==\n",
+        "hashes": [
+          "2c95ca5c97501de0360250d0fcc0cb0984d48089afa4b38682cf5509738c97e2",
+          "f741ec29dd02dd439e8f070cb228b5bb85c8cafe8c248afde09e1d1be3e95660",
+          "1d6b0ffe7c97a95f7bd58b4a4643dcf6415ab6f797b854a8b5928d2ef09e0359",
+          "692fd6947424e7173717c6677ae2cb81918047c15c5f0f93f9da31721f45465c",
+          "51be7cb59bf16ebb59903c62b15446c0b76a60c775225d5f112603b98e9deb79",
+          "74a61856051a3e6445e6a35021715baef6c04ee261ee454f98175bdc7e19dbf2",
+          "682b9e73f53bf5fcbc13ac9a3971d15c0e8650a6be50dedf052923258e154615",
+          "7c505068c3ae711b2a684f2755aaf4c72b6bc79f42148e7a7f9b848b7d2b4afa",
+          "1858235d41a917b1de9355fe3643f77dbeda4f7d429231fb75d06f51c65f9bb3",
+          "69d9e4eeefa464b12078d58ada5a4bb889fc8510c325050baac655ced3f61906",
+          "e4411eadae623d62c7a18ce2138c56081b4ecd577a980ffbe6270f4d147fb844",
+          "6ee7c25838b0f331792ff012cde6346981cfd4b92e5d7a242ad65d9802cf841e",
+          "36539c96576628f035b4c288b24a87030b900d81e9df5630a4af8e38cacc71c7",
+          "ab1cc76a7033cf9ed20dd9897b407b6c92bbd8d4c805bc043060412af0ce44ec",
+          "c47fc30ac78b1ebf5e2a8613f2ab0e4592bbcd5744198587b95b6c56b0fde706"
+        ],
+        "logIndex": 2955501104,
+        "rootHash": "1d17080d81c136e20059e4ed6c5d4a7c805a50de4523334bad20fb53dd7df99a",
+        "treeSize": 2955501108
+      },
+      "signedEntryTimestamp": "MEUCIFvsKgrcFZ3SJbapP1PTqmyXzofAWZu4xotu8p+5KmSlAiEAySxARFD64owchz5kAcKoSlmeXLjik63Bf7Efy8dMhX8="
+    }
+  },
+  "does_not_prove": [
+    "NOT_PROVES_CONTENT_IS_CORRECT: the entry shows these bytes existed by the integrated time, signed by this key. It says nothing about whether what the bytes claim is true.",
+    "NOT_PROVES_THE_KEY_HOLDER_IS_HONEST: whoever holds the key could have signed and logged other bytes too. Rekor records what it was given.",
+    "NOT_PROVES_THE_KEY_IS_THE_AUTHORS: binding the key to a person comes from where the key is published, not from the log.",
+    "NOT_PROVES_REKOR_SHOWS_EVERYONE_ONE_LOG: offline, one checkpoint is one view. Cross-checking it against a monitor or a later checkpoint is the online step.",
+    "NOT_PROVES_NO_EARLIER_VERSION_EXISTED: the time is an upper bound on when the bytes existed, never a lower bound."
+  ]
+}

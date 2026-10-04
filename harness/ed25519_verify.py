@@ -151,6 +151,31 @@ def verify(public_key: bytes, message: bytes, signature: bytes) -> bool:
     Raises Ed25519Error for malformed inputs. Returns False for a well formed
     signature that does not verify.
     """
+    return _verify(public_key, message, signature, b"")
+
+
+def verify_ph(public_key: bytes, message: bytes, signature: bytes) -> bool:
+    """True iff `signature` is a valid Ed25519ph signature over `message`.
+
+    Ed25519ph (RFC 8032 section 5.1) signs SHA-512(message) under the domain
+    prefix dom2(1, ""), with an empty context. It is the form Sigstore's Rekor
+    checks for an Ed25519 key in a `hashedrekord` entry, because Rekor only ever
+    sees the digest. Same key, same curve, same malleability and off-curve rules
+    as `verify`; only the hashed input differs, so a pure Ed25519 signature never
+    verifies here and an Ed25519ph signature never verifies in `verify`.
+    """
+    if not isinstance(message, (bytes, bytearray)):
+        raise Ed25519Error("message must be bytes")
+    return _verify(public_key, hashlib.sha512(bytes(message)).digest(),
+                   signature, _DOM2_PH)
+
+
+# dom2(phflag=1, context=""): the prefix that separates Ed25519ph from Ed25519.
+_DOM2_PH = b"SigEd25519 no Ed25519 collisions" + bytes([1, 0])
+
+
+def _verify(public_key: bytes, message: bytes, signature: bytes,
+            dom: bytes) -> bool:
     for name, value, length in (("public key", public_key, KEY_LEN),
                                 ("signature", signature, SIG_LEN)):
         if not isinstance(value, (bytes, bytearray)):
@@ -177,7 +202,7 @@ def verify(public_key: bytes, message: bytes, signature: bytes) -> bool:
 
     s = int.from_bytes(s_enc, "little")
     k = int.from_bytes(
-        hashlib.sha512(r_enc + bytes(public_key) + bytes(message)).digest(),
+        hashlib.sha512(dom + r_enc + bytes(public_key) + bytes(message)).digest(),
         "little") % L
 
     # [8][S]B == [8]R + [8][k]A

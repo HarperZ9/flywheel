@@ -98,6 +98,24 @@ def verify_anchor(anchor: dict, public_key: bytes, *, ots_bytes: bytes = None,
     return result
 
 
+def stored_header_provider(anchor_rec: dict):
+    """A `header_provider(height)` from the record's stored block header, or None.
+
+    A confirmed record carries the block header the proof commits, so `verify` can
+    recheck the proof of work and merkle root with no network. The provider hands
+    that header back only for its own height, so a proof asking for any other
+    height gets nothing. Returns None when no header is stored, which is the honest
+    state for a pending or absent anchor.
+    """
+    block = anchor_rec.get("ots") or {}
+    header_hex = block.get("block_header")
+    if not header_hex:
+        return None
+    header = bytes.fromhex(header_hex)
+    height = block.get("block_height")
+    return lambda h: header if (height is None or h == height) else None
+
+
 def does_not_prove() -> list[str]:
     """What an anchored head still does not establish."""
     return tree_head.does_not_prove() + [
