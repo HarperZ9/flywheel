@@ -91,7 +91,7 @@ def witness_call(log, *, tool: str, args: Any, output: str, ok: bool, seq: int,
 def seal_call(receipt_dir: Any, *, tool: str, capability: str, admission: str,
               args: Any, output: str, ok: bool, outcome: str, run_id: str,
               seq: int, prev: str, rationale: dict | None = None,
-              preaction: dict | None = None) -> str:
+              preaction: dict | None = None, authority: dict | None = None) -> str:
     """Write one sealed receipt and return the new chain head. Never raises.
 
     A receipt that was built but could not be written still advances the head,
@@ -102,6 +102,9 @@ def seal_call(receipt_dir: Any, *, tool: str, capability: str, admission: str,
 
     A receipt that could not be built leaves the head where it was, because
     there is no record for anything to point at.
+
+    ``authority`` is an authority block (harness/action_authority.py); absent keeps
+    the receipt byte-identical to one built before the field existed.
     """
     from .tool_call_receipt import (_canonical_bytes, _sha256_hex, build_receipt,
                                     emit_receipt)
@@ -111,6 +114,9 @@ def seal_call(receipt_dir: Any, *, tool: str, capability: str, admission: str,
             output=output, ok=ok, rc=0 if ok else 1, run_id=run_id, seq=seq,
             prev_receipt_sha256=prev, outcome=outcome, rationale=rationale,
             preaction=preaction)
+        if authority is not None:
+            from .action_authority import attach
+            attach(receipt, authority)
         emit_receipt(receipt, Path(receipt_dir))
         probe = dict(receipt)
         probe["seal"] = {"algorithm": "sha256", "hex": ""}

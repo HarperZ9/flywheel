@@ -74,7 +74,7 @@ class Journal:
             return True
 
     def rewind(self, store: str, at: str) -> dict:
-        """Forget the last signed record of ``store``, once, on the operator's
+        """Forget the last signed record of ``store``, once, on the owner's
         say-so. For one case only: the signer signed seq N but the store never
         wrote it (the hook was killed between the two), so every later append
         conflicts and the hook fails closed. The rewind is kept in the journal
