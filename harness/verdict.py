@@ -52,6 +52,10 @@ class UnverifiableReason(str, Enum):
     parameters sit outside the criterion's domain of applicability, so the check
     was never run. Distinct from UndecidedReason.OUT_OF_SCOPE, which is an oracle
     that ran and then found the case beyond what it can dispose.
+
+    SPECIFICATION_UNPINNED is a checker that needs a statement fixed before the
+    candidate exists (the Lean oracle's pinned challenge) and was given none,
+    or one it could not use. Nothing was checked against the task.
     """
     ORACLE_UNAVAILABLE = "ORACLE_UNAVAILABLE"
     TOOLCHAIN_MISSING = "TOOLCHAIN_MISSING"
@@ -60,6 +64,7 @@ class UnverifiableReason(str, Enum):
     OUT_OF_SCOPE = "OUT_OF_SCOPE"
     CONFOUNDED = "CONFOUNDED"
     EXECUTION_CONTAINMENT_UNAVAILABLE = "EXECUTION_CONTAINMENT_UNAVAILABLE"
+    SPECIFICATION_UNPINNED = "SPECIFICATION_UNPINNED"
 
 
 _CANDIDATE_EXECUTIONS = {

@@ -184,8 +184,9 @@ a smaller and more specific claim than "verified".
 
 The file `--verify-lean` checks is one Flywheel wrote. It holds definitions,
 theorems closed `by decide`, and named axioms, and it runs no code of its own.
-The math domain oracle, `lean_check` in `harness/lean_oracle.py`, judges Lean
-that a model wrote. That source can run its own programs while Lean elaborates
+`lean_check` in `harness/lean_oracle.py` judges Lean that a model wrote, and
+the math domain oracle (`LeanOracle`) runs the same rungs against the statement
+its task pinned (see "Binding a proof to its task" below). That source can run its own programs while Lean elaborates
 it, and an exit code or an axiom list cannot see everything those programs do.
 
 This file proves `False`, and before the replay rung below the oracle passed it:
@@ -280,6 +281,77 @@ with `mode`, `module`, `exit` and `version`. leanchecker has no version flag,
 so `version` is the toolchain's `lean --version` line, and `version_source`
 says so.
 
+### Binding a proof to its task
+
+Until 2026-10-04 the math domain oracle never read its task, so any closed
+theorem passed: `theorem unrelated : True := trivial` earned `PASS` at the
+replay rung against a task that asked for Python (record
+`project-docs/records/2026-09-23-lean-oracle-task-binding.md`). The oracle now
+judges a candidate only against a challenge the task pins before any candidate
+exists, the way `leanprover/comparator` does. A task carries it in
+`task.json`:
+
+```json
+"challenge": {
+  "theorem": "double_eq",
+  "header": "def double (n : Nat) : Nat := n + n",
+  "statement": "∀ n : Nat, double n = 2 * n",
+  "statement_sha256": "optional: the hash a receipt reported for this statement"
+}
+```
+
+A task with no challenge gives `UNVERIFIABLE` with reason
+`SPECIFICATION_UNPINNED`, attributed to the harness, and no Lean runs. With a
+challenge, `harness/lean_binding.py` runs these steps, each only after the one
+before it passed:
+
+1. The source screen for `sorry`, `axiom` and the other escape hatches.
+2. One compile of the candidate to one `.olean`. An error or a `sorry` warning
+   is `FAIL`. Every later step reads this artifact, and its SHA-256 is
+   checked again after each of them; a change is `FAIL`.
+3. The challenge compiles in a fresh directory as the header followed by
+   `theorem <name> : <statement> := sorry`.
+4. A Lean program (`harness/lean_bind_script.py`, run with `lean --run`) reads
+   the candidate's `.olean` as data, so none of the candidate's code runs in
+   it. It refuses the candidate unless the module declares a top-level
+   theorem with the pinned name whose elaborated type equals the challenge's
+   exactly. It then follows every constant that type reaches. A constant the
+   challenge header declares must be declared identically by the candidate (a
+   redefined `double` is refused). A constant from an imported module must
+   come from the same module on both sides (a `prelude` file that declares
+   its own `True` is refused).
+5. The same program walks every constant the pinned theorem depends on, from
+   the artifact, and lists the axioms it reaches. It reads neither
+   `#print axioms` nor the precomputed axiom table an `.olean` can carry. Any
+   axiom besides `propext`, `Classical.choice` and `Quot.sound` is `FAIL`;
+   this catches an axiom a metaprogram added under a name built from parts.
+6. leanchecker replays the same `.olean`, as above.
+
+The receipt (`flywheel.lean-receipt/v2`) adds:
+
+| Field | Content |
+| --- | --- |
+| `statement_binding` | `pinned`; `lean_check` on a closed file says `unbound` |
+| `challenge` | the theorem name, `challenge_sha256` over the pinned header, statement and name, and `statement_canonical`, the statement as the toolchain elaborated it |
+| `statement_sha256` | SHA-256 of `statement_canonical` |
+| `binding` | `bound` or `refused`, with every refusal reason |
+| `trusted_base` | Lean version and git hash, the kernel and replay used, `axioms_used`, `axioms_allowed`, and where the axioms came from |
+| `spec_fidelity` | always `UNVERIFIED`: whether the statement says what its author meant is a human review |
+| `artifact_sha256` | the compiled module every step judged |
+
+The candidate compiles once, so the second route in the record (a metaprogram
+that tells separate elaborations apart) has only one elaboration to act in.
+Measured on one Windows machine (2026-10-04): a warm bound check took 5 to 8 s;
+the first `lean --run` after a cold start took 84 s once, so the bind step has
+a 300 s limit.
+
+Three limits of the binding. A challenge header must not use `private`
+declarations, whose compiled names carry the module name and so never match.
+A candidate written as a `module` file is `UNVERIFIABLE`
+(`binding-unsupported`), because its proofs can sit in a part of the compiled
+module the check does not read. A constant from an imported module is matched
+by module name, which trusts both sides to load the same files.
+
 ### What a Lean accept does not say
 
 - The replay trusts every imported `.olean` file as it sits on disk: the
@@ -287,9 +359,13 @@ says so.
   candidate's code ran with the user's rights while Lean elaborated it and
   could have changed files. Catching that takes a sandboxed build, which is
   the comparator rung.
-- The axiom rung covers named `theorem` and `lemma` declarations only. A `def`,
-  or a declaration that a metaprogram added, can rest on an axiom the audit
-  never reads, and the replay accepts an axiom as a valid declaration.
-- The math oracle does not read its task. It accepts any closed theorem, and
-  the theorem need not be the one the task asked for. Binding a proof to a
-  pinned challenge statement, as `leanprover/comparator` does, is open work.
+- For `lean_check` on a closed file, the axiom rung covers named `theorem` and
+  `lemma` declarations only. A `def`, or a declaration that a metaprogram
+  added, can rest on an axiom the audit never reads, and the replay accepts
+  an axiom as a valid declaration. The math oracle's bound check walks the
+  pinned theorem's dependencies from the artifact instead.
+- The math oracle checks the proof against the pinned statement. Whether the
+  statement is the theorem its author meant (the formalization gap) is not
+  checked, and every receipt says `spec_fidelity: UNVERIFIED`.
+- The external-kernel rung (`comparator_external`: a sandboxed build and an
+  independent kernel such as nanoda or lean4lean) is not implemented.

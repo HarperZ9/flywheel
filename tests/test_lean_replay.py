@@ -12,6 +12,8 @@ The unit tests inject the runner, so they need no toolchain. The live tests
 run only where `lean` is installed and its toolchain ships leanchecker; a
 toolchain without it gives UNVERIFIABLE by design, so they skip there.
 """
+import json
+
 import pytest
 
 from harness import lean_replay
@@ -57,6 +59,15 @@ REFUSAL = ("leanchecker found a problem in Candidate\nuncaught exception: "
            "to have type\n  False")
 
 
+# The math oracle binds the proof to a pinned statement (lean_binding.py);
+# the injected runner answers the bind step with the script's JSON.
+CH = {"theorem": "one_plus_one", "statement": "1 + 1 = 2"}
+BOUND = json.dumps({"status": "bound", "theorem": "one_plus_one",
+                    "statement_canonical": "one_plus_one.[] : 1 + 1 = 2",
+                    "axioms": [], "refusals": [], "lean_version": "4.34.1",
+                    "lean_githash": "injected"})
+
+
 def _runner(*, checker=(0, ""), compile_rc=0, missing=False, calls=None,
             no_compiler=False):
     """Kernel and audit accept; the compile and leanchecker steps answer as
@@ -64,6 +75,8 @@ def _runner(*, checker=(0, ""), compile_rc=0, missing=False, calls=None,
     def run(argv, code):
         if calls is not None:
             calls.append(argv[0] if len(argv) == 1 else " ".join(argv))
+        if "--run" in argv:
+            return 0, BOUND
         if argv[0] == "leanchecker":
             if missing:
                 raise FileNotFoundError("leanchecker")
@@ -85,7 +98,8 @@ def test_leanchecker_refusal_is_not_a_pass_and_names_the_reason():
     assert "'smuggled'" in doc["kernel_output"]
     assert doc["validation_level"] == "print_axioms"
     assert doc["leanchecker"]["exit"] == 1
-    r = LeanOracle(runner=_runner(checker=(1, REFUSAL))).verify(GOOD, None)
+    r = LeanOracle(runner=_runner(checker=(1, REFUSAL)),
+                   challenge=CH).verify(GOOD, None)
     assert r.verdict() == "FAIL"
 
 
@@ -95,7 +109,8 @@ def test_missing_leanchecker_is_unverifiable_never_pass():
     assert doc["unverifiable_reason"] == "leanchecker-unavailable"
     assert "leanchecker could not be started" in doc["kernel_output"]
     assert doc["validation_level"] == "print_axioms"
-    r = LeanOracle(runner=_runner(missing=True)).verify(GOOD, None)
+    r = LeanOracle(runner=_runner(missing=True), challenge=CH).verify(GOOD,
+                                                                None)
     assert r.verdict() == "UNVERIFIABLE"
     assert r.unverifiable_reason == "TOOLCHAIN_MISSING"
     assert r.attribution.value == "ENVIRONMENT"
@@ -115,7 +130,8 @@ def test_unloadable_import_is_unverifiable_not_a_refutation():
     doc = lean_check(GOOD, runner=_runner(checker=(1, unloaded)))
     assert doc["passed"] is None
     assert doc["unverifiable_reason"] == "leanchecker-import-unresolved"
-    r = LeanOracle(runner=_runner(checker=(1, unloaded))).verify(GOOD, None)
+    r = LeanOracle(runner=_runner(checker=(1, unloaded)),
+                   challenge=CH).verify(GOOD, None)
     assert r.verdict() == "UNVERIFIABLE"
 
 
@@ -138,11 +154,14 @@ def test_replay_success_passes_at_the_leanchecker_rung():
     assert rec["mode"] == "plain" and rec["exit"] == 0
     assert rec["version"] == "injected"
     assert "no version flag" in rec["version_source"]
-    r = LeanOracle(runner=_runner()).verify(GOOD, None)
+    r = LeanOracle(runner=_runner(), challenge=CH).verify(GOOD, None)
     assert r.verdict() == "PASS"
     assert r.coverage["validation_level"] == "leanchecker_replay"
+    assert r.coverage["statement_binding"] == "pinned"
     assert any("plain mode" in line for line in r.does_not_prove)
-    assert any("task is not read" in line for line in r.does_not_prove)
+    assert any("spec_fidelity UNVERIFIED" in line
+               for line in r.does_not_prove)
+    assert not any("task is not read" in line for line in r.does_not_prove)
 
 
 def test_a_failed_olean_compile_fails_closed():

@@ -48,6 +48,10 @@ class Task:
     seed: int = 0
     held_out_cmd: str = ""            # a second oracle command the model never sees (held-out tier)
     retrieved: list[Retrieved] = field(default_factory=list)
+    # A statement pinned before any candidate exists. The Lean oracle reads
+    # {"theorem", "statement", "header"?, "statement_sha256"?} from it and
+    # refuses to judge a task that pins none (harness/lean_binding.py).
+    challenge: dict = field(default_factory=dict)
 
     def workdir_path(self) -> Path:
         return Path(self.workdir)
@@ -83,4 +87,5 @@ def load_task(task_dir: str | Path, *, workdir: str | Path | None = None) -> Tas
         temperature=meta.get("temperature", 0.0),
         seed=meta.get("seed", 0),
         held_out_cmd=meta.get("held_out_cmd", ""),
+        challenge=meta.get("challenge") or {},
     )

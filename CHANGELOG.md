@@ -3,6 +3,11 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## Unreleased
+
+Verification
+- The math domain oracle now binds a Lean proof to the statement its task pinned. Before, `LeanOracle.verify` never read its task, so any closed theorem passed, `theorem unrelated : True := trivial` included (disclosed in `project-docs/records/2026-09-23-lean-oracle-task-binding.md` and the 1.0.3 limits). A task pins `challenge` (theorem name, statement, optional header); without one the verdict is `UNVERIFIABLE` with reason `SPECIFICATION_UNPINNED`. The candidate compiles once; a Lean program reads the compiled module as data, requires the pinned theorem's exact elaborated type and identical definitions behind it, and walks its axioms from the artifact; leanchecker replays the same module. Receipts (`flywheel.lean-receipt/v2`) add `statement_sha256`, `challenge`, `binding`, `trusted_base`, `artifact_sha256` and `spec_fidelity: UNVERIFIED`. Unrelated, weakened, renamed, shadowed-definition, shadowed-instance, `prelude`, `sorry`, custom-axiom, metaprogram-axiom and kernel-skip probes are all refused against a real kernel; the real proof passes. No published receipt depended on the hole. See `docs/PROOF-AND-FORMATS.md`.
+
 ## 1.3.4
 
 Windows app
