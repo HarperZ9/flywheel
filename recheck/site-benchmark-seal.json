@@ -1,0 +1,62 @@
+{
+  "schema": "flywheel.recheck/v1",
+  "id": "site-benchmark-seal",
+  "claim": {
+    "text": "Offline benchmark record: accountability 100%, governed-agent 6 of 6, agent-recovery 6 of 6, provider swap 10 of 10, seal 107a33f920629afb.",
+    "where": "https://harperz9.github.io/analytics/flywheel-benchmark-record.json",
+    "read_on": "2026-10-04"
+  },
+  "level": "re-execution",
+  "repository": "https://github.com/HarperZ9/flywheel",
+  "commit": "a8e1cd2e7c7a220dc578340438a9482bef3d7485",
+  "cwd": "checkout",
+  "command": [
+    "{python}",
+    "scripts/run_offline_benchmarks.py",
+    "--no-write"
+  ],
+  "expect": {
+    "exit_code": 0,
+    "stdout_contains": [
+      "seal 107a33f920629afb",
+      "governed-agent           scenarios=6  pass_rate=1.0"
+    ]
+  },
+  "control": {
+    "description": "Flip one committed per-task outcome in the paired-replication input; the seal must change.",
+    "mutate": {
+      "file": "{checkout}/project-docs/releases/14B/shipped-page/benchmarks/humaneval_flywheel14b.json",
+      "find": "\"HumanEval/1\",\n   \"passed\": true",
+      "replace": "\"HumanEval/1\",\n   \"passed\": false"
+    },
+    "expect": {
+      "exit_code": 0,
+      "stdout_lacks": [
+        "seal 107a33f920629afb"
+      ]
+    }
+  },
+  "needs": {
+    "hardware": "cpu",
+    "os": [
+      "linux",
+      "windows",
+      "macos"
+    ],
+    "python": ">=3.11",
+    "network": [
+      "github.com"
+    ],
+    "seconds": 12,
+    "packages": [
+      "pytest"
+    ]
+  },
+  "access": "A0",
+  "expertise": "E0",
+  "anchor": "self",
+  "covers": "That the published numbers and seal follow from the code and committed inputs at a8e1cd2e. The seal hashes results, not timings.",
+  "does_not_cover": "Whether the scenarios represent use. The maker wrote them; the suite's own non-goal says it measures accountability, not capability, and ranks Flywheel against no other harness.",
+  "ci": true,
+  "notes": "The externalization dimension runs pytest in a subprocess. Without pytest installed it scores 0 instead of reporting that it could not run, harness_overall drops to 0.875 and the seal changes (found by this manifest's first Linux CI run, 2026-10-04). The record does not name pytest as a requirement; this manifest does, and the runner refuses to start without it."
+}

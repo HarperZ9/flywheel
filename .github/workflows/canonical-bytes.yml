@@ -1,0 +1,44 @@
+name: canonical bytes
+
+# Hash pins in this repository (the -text rules in .gitattributes) cover exact
+# bytes. With core.autocrlf=true, the Git for Windows default, a file Git is
+# allowed to convert checks out as CRLF and its hash no longer matches. The
+# Windows leg checks out the way a default Git for Windows install does, so a
+# missing -text rule fails here instead of on a reader's machine.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  bytes:
+    name: canonical bytes (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Use the Git for Windows line-ending default
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf true
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Sealed files are checked out byte for byte
+        run: |
+          git ls-files -s -- ":(attr:-text)" | while read -r mode sha stage path; do
+            if [ "$(git hash-object --no-filters -- "$path")" != "$sha" ]; then
+              echo "checkout rewrote a sealed file: $path"
+              exit 1
+            fi
+          done
+          echo "every sealed file matches its committed blob"

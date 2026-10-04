@@ -1,0 +1,71 @@
+{
+  "schema": "flywheel.recheck/v1",
+  "id": "pysyft-result-receipt",
+  "claim": {
+    "text": "The published score (40 of 50) is bound to the approved job and the released rows, and revealing the answers reproduces it.",
+    "where": "docs/features/pysyft-result-receipt.md",
+    "read_on": "2026-10-04"
+  },
+  "level": "recomputation",
+  "repository": "https://github.com/HarperZ9/flywheel",
+  "commit": "b57c36221f8abce663ff0110c8ea11caf1865c1b",
+  "cwd": "checkout",
+  "command": [
+    "{python}",
+    "-m",
+    "harness.job_result_verify",
+    "--receipt",
+    "tests/fixtures/pysyft_receipt/receipt.json",
+    "--job-dir",
+    "tests/fixtures/pysyft_receipt/job",
+    "--results",
+    "tests/fixtures/pysyft_receipt/results.jsonl",
+    "--public-key",
+    "a036d329d8efd65630907df36514fb48a906e43c33090c672b03ffa1ba311f41",
+    "--nonce",
+    "openmined-bridge-demo-20261003",
+    "--reviewer",
+    "do@example.org",
+    "--reveal",
+    "tests/fixtures/pysyft_receipt/reveal_answers.json"
+  ],
+  "expect": {
+    "exit_code": 0,
+    "stdout_contains": [
+      "\"verdict\": \"MATCH\""
+    ]
+  },
+  "control": {
+    "description": "Flip the correct flag on the first released row; the score no longer recomputes and the reveal no longer rescores.",
+    "mutate": {
+      "file": "{checkout}/tests/fixtures/pysyft_receipt/results.jsonl",
+      "find": "{\"correct\": true",
+      "replace": "{\"correct\": false"
+    },
+    "expect": {
+      "exit_code": 1,
+      "stdout_contains": [
+        "\"verdict\": \"DRIFT\""
+      ]
+    }
+  },
+  "needs": {
+    "hardware": "cpu",
+    "os": [
+      "linux",
+      "windows",
+      "macos"
+    ],
+    "python": ">=3.11",
+    "network": [
+      "github.com"
+    ],
+    "seconds": 1
+  },
+  "access": "A0",
+  "expertise": "E0",
+  "anchor": "self",
+  "covers": "The score's binding to the job hash, the rows and the revealed answers, and the signature under the key in the bundle.",
+  "does_not_cover": "The key is the one shipped in the bundle, so a signature shows the same key signed it, not whose key it is. Whether syft-job's own hash agrees on a live run is a separate claim (pysyft-syft-job-hash in RECHECK.md, not automated).",
+  "ci": true
+}
