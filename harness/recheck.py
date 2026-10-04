@@ -25,14 +25,15 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+from .canonical_bytes import git
 from .recheck_manifest import ManifestError, discover, expand, load
 
 REPO = Path(__file__).resolve().parent.parent
 _CANON = ["-c", "core.autocrlf=false", "-c", "core.longpaths=true"]
 
 
-def _git(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
-    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+def _git(*args: str) -> subprocess.CompletedProcess:
+    return git(*args)
 
 
 def checkout(m: dict, work: Path) -> Path:

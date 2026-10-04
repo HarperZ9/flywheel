@@ -46,11 +46,10 @@ def find_pins(text: str, root: Path, rev: str | None = None,
 
 
 def _blob_exists(root: Path, rev: str):
-    import subprocess
+    from .canonical_bytes import git
 
     def exists(path: str) -> bool:
-        return subprocess.run(["git", "-C", str(root), "cat-file", "-e", f"{rev}:{path}"],
-                              capture_output=True).returncode == 0
+        return git("-C", str(root), "cat-file", "-e", f"{rev}:{path}").returncode == 0
     return exists
 
 

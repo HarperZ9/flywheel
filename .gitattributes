@@ -94,3 +94,12 @@ project-docs/records/2026-10-04-shapley-placebo/*.json -text -diff
 # The PySyft result-receipt fixture is a real run's bundle. The receipt binds
 # PySyft's hash over the job folder's raw bytes, so Git must not normalize them.
 tests/fixtures/pysyft_receipt/** -text -diff
+
+# The site-designer handoff is sealed by handoff/site-designer/MANIFEST.sha256, which
+# records the SHA-256 of each file's exact bytes. A CRLF checkout changes every
+# digest and puts a carriage return on every path in the manifest, so the check
+# fails on files nobody edited. Same reason as the fixture rules above.
+handoff/site-designer/** -text
+# The Inspect contract fixtures are hashed into tests/fixtures/inspect/v1/manifest.json
+# as fixture_sha256 and bytes_sha256, so their bytes must survive checkout unchanged.
+tests/fixtures/inspect/v1/** -text

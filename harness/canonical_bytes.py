@@ -29,6 +29,8 @@ import subprocess
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from . import safe_program
+
 MATCH, DRIFT, EOL_ONLY = "MATCH", "DRIFT", "EOL_ONLY"
 EXIT = {MATCH: 0, DRIFT: 1, EOL_ONLY: 3}
 
@@ -73,10 +75,16 @@ def classify(path: str, data: bytes, expected: str, basis: str) -> PinResult:
     return PinResult(path, expected, forms["raw"], DRIFT, basis)
 
 
+def git(*args: str, cwd=None, text: bool = True, input=None) -> subprocess.CompletedProcess:
+    """Run git through the guarded program lookup (never the working folder)."""
+    cmd, env = safe_program.launch(["git", *args], cwd=cwd)
+    return subprocess.run(cmd, env=env, cwd=cwd, input=input, capture_output=True,
+                          text=text, check=False)
+
+
 def blob_bytes(repo: Path, rev: str, path: str) -> bytes:
     """The bytes Git stores for ``path`` at ``rev``. No filters, no autocrlf."""
-    proc = subprocess.run(["git", "-C", str(repo), "cat-file", "blob", f"{rev}:{path}"],
-                          capture_output=True, check=False)
+    proc = git("-C", str(repo), "cat-file", "blob", f"{rev}:{path}", text=False)
     if proc.returncode != 0:
         detail = proc.stderr.decode("utf-8", "replace").strip()
         raise FileNotFoundError(f"{rev}:{path} not readable from {repo}: {detail}")
