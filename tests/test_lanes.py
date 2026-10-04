@@ -20,10 +20,11 @@ def test_registry_covers_the_expected_lanes():
     # the six spine flagships + local-model (the engine) + relay (execution) +
     # plexus (wiring) + mneme (memory) + calibrate-pro (its own calibration lane)
     # + accountable-surface (actuation) + canon (continuity) + writing (authoring)
+    # + raw (the reference renderer, an adapter lane)
     assert set(LANES) == {"gather", "crucible", "chorus", "articulate", "index", "forum",
                           "learn", "telos", "local-model", "relay", "plexus", "mneme",
                           "calibrate-pro", "accountable-surface", "canon", "bulletin",
-                          "writing", "isomorph", "sofer", "array"}
+                          "writing", "isomorph", "sofer", "array", "raw"}
 
 
 def test_install_name_to_command_asymmetry_is_mapped():
@@ -52,8 +53,10 @@ def test_every_lane_has_an_mcp_command_and_organ():
     for name, lane in LANES.items():
         cmd = resolve_mcp_command(name)
         # An http lane is not spawned, so it has no argv. Asserting one anyway
-        # would force a fake command into the registry to satisfy the test.
-        assert cmd == [] if lane.kind == "http" or lane.package_disabled_reason else len(cmd) >= 1
+        # would force a fake command into the registry to satisfy the test. An
+        # adapter lane has no MCP server either: its adapter runs per call.
+        no_argv = lane.kind == "http" or lane.package_disabled_reason or lane.adapter_module
+        assert cmd == [] if no_argv else len(cmd) >= 1
         assert lane.organ, f"{name} has no organ assigned"
         assert lane.role, f"{name} has no role assigned"
         assert lane.kind in ("pip", "npm", "bundled", "http")

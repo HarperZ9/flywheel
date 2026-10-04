@@ -160,7 +160,17 @@ def test_the_reviewed_t2_tools_stay_t2(lane, tool):
 def test_every_lane_has_a_main_tool_or_is_reads_only():
     for lane in LANES:
         assert (policy.main_tools(lane) or lane in policy.READS_ONLY_LANES
-                or lane in policy.HELD_LANES), lane
+                or lane in policy.HELD_LANES or lane in policy.ADAPTER_LANES), lane
+
+
+def test_an_adapter_lane_is_exactly_a_registry_lane_with_an_adapter_and_no_tools():
+    # A lane earns the no-tools exemption only by naming the adapter that serves it,
+    # so the exemption cannot quietly cover a lane whose MCP tools went missing.
+    adapters = {name for name, lane in LANES.items() if lane.adapter_module}
+    assert set(policy.ADAPTER_LANES) == adapters == {"raw"}
+    assert all(policy.lane_policy(lane) == {} for lane in adapters)
+    assert policy.validate_policy({"raw": {}}) == []
+    assert policy.validate_policy({"gather": {}}) == ["gather: no tools"]
 
 
 @pytest.mark.parametrize("lane", sorted(MAIN))

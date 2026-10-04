@@ -20,6 +20,7 @@
     "canon": {"expected": "main", "bar": "B"},
     "bulletin": {"expected": "no_frozen_launch", "bar": "A"},
     "accountable-surface": {"expected": "main", "bar": "A/C"},
+    "raw": {"expected": "no_frozen_launch", "bar": "A", "reason": "adapter lane: no MCP server to launch; the engine's adapter, harness/raw_lane.py, starts raw-native per call"},
     "isomorph": {"expected": "no_frozen_launch", "bar": "B", "reason": "private lane, source checkout only; not bundled into the frozen build"},
     "sofer": {"expected": "no_frozen_launch", "bar": "B", "reason": "private lane, source checkout only; not bundled into the frozen build"},
     "array": {"expected": "no_frozen_launch", "bar": "B", "reason": "private lane, source checkout only; not bundled into the frozen build"}

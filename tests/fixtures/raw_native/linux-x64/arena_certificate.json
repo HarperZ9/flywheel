@@ -1,0 +1,1 @@
+{"claim":"arena stayed within its memory budget","verdict":"verified","oracle":"raw-arena-v1","evidence":[["budget","138992"],["used","138992"],["high_water","138992"],["allocations","43"],["refusals","0"]]}

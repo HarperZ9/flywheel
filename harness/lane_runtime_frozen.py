@@ -14,6 +14,9 @@ frozen engine can perform for each lane:
   folder the person picked, read from ``<home>/lanes/local-model/root``;
 - writing runs the engine's ``--lane-mcp writing`` mode (frozen_lane_modes);
 - an http lane spawns nothing;
+- an adapter lane (raw) has no MCP server to spawn, frozen or not, and reports
+  ``lane_adapter_only``: the engine's adapter starts its program per call
+  (``Lane.adapter_module``);
 - any other lane is not in this build, and says so with a code.
 
 Every spawned launch admits only the tool policy's T1 tools that are in the
@@ -50,7 +53,9 @@ SETUP_CODES = {
 DEFECT_CODES = frozenset((
     "frozen_lane_not_in_build", "node_lane_not_staged", "node_lane_script_missing"))
 #: A stated hold: the lane is left out of this build on purpose, not by a defect.
-HOLD_CODES = frozenset(("lane_held",))
+#: An adapter lane has no MCP launch by design, so it is a stated hold as well.
+ADAPTER_CODE = "lane_adapter_only"
+HOLD_CODES = frozenset(("lane_held", ADAPTER_CODE))
 NEEDS_SETUP = "needs_setup"
 CANNOT_LAUNCH = "cannot_launch"
 Selection = tuple  # (launch, selected_runtime, bundled_component, codes)
@@ -90,6 +95,8 @@ def select_frozen_launch(lane, profile: str, executable: str,
 
     ``stage_root`` and ``find`` default to this build's Node stage and Node
     discovery; the smoke passes the build it measures."""
+    if lane.adapter_module:
+        return None, "bundled", None, (ADAPTER_CODE,)
     if lane.name in bundled_payload_lane_names():
         if lane.package_disabled_reason and profile != "auto":
             return None, "package", None, ()
@@ -119,6 +126,16 @@ def select_frozen_launch(lane, profile: str, executable: str,
         # The runtime reports package_distribution_disabled with the reason.
         return None, "package", None, ()
     return None, "bundled", None, ("frozen_lane_not_in_build",)
+
+
+def select_bundled_launch(lane, python_executable: str) -> Selection:
+    """A bundled lane's launch outside a frozen build: the engine's own module
+    on this interpreter, the declared argv, or none for an adapter lane."""
+    if lane.adapter_module:
+        return None, "bundled", None, (ADAPTER_CODE,)
+    if lane.command == "python":
+        return LaunchSpec((python_executable, *lane.mcp_args)), "bundled", None, ()
+    return LaunchSpec(tuple(lane.mcp_command())), "bundled", None, ()
 
 
 def select_http_launch(lane, environ: Mapping[str, str]) -> Selection:

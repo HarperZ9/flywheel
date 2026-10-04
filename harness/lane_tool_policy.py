@@ -89,6 +89,15 @@ HELD_LANES = {
 }
 
 
+#: Lanes with no MCP server, so no tool to list, with the card's sentence. The
+#: engine's adapter (``Lane.adapter_module``) starts the lane's program per call;
+#: the frozen engine reports ``lane_adapter_only`` for it.
+ADAPTER_LANES = {
+    "raw": "No tools to list. Flywheel runs raw-native through its adapter, which "
+           "checks the binary's pinned SHA-256 before every render.",
+}
+
+
 @dataclass(frozen=True)
 class ToolPolicy:
     """How one lane tool is admitted.
@@ -137,10 +146,10 @@ def _build(tables: Mapping[str, Mapping[str, Mapping[str, Any]]]) -> dict[str, d
 
 LANE_TOOL_POLICY: dict[str, dict[str, ToolPolicy]] = {
     **_build(EVIDENCE_LANE_POLICY), **_build(AGENT_LANE_POLICY), **_build(NODE_LANE_POLICY),
-    # Private lanes held out of this build have no tools to list; the empty table
-    # satisfies `test_every_registry_lane_has_a_table` and validate_policy skips
-    # the "no tools" check for lanes in HELD_LANES.
-    **{lane: {} for lane in HELD_LANES if lane not in
+    # Private lanes held out of this build, and adapter lanes, have no tools to
+    # list; the empty table satisfies `test_every_registry_lane_has_a_table` and
+    # validate_policy skips the "no tools" check for both.
+    **{lane: {} for lane in (*HELD_LANES, *ADAPTER_LANES) if lane not in
        {**EVIDENCE_LANE_POLICY, **AGENT_LANE_POLICY, **NODE_LANE_POLICY}},
 }
 
@@ -221,7 +230,7 @@ def validate_policy(
     problems: list[str] = []
     for lane, tools in (LANE_TOOL_POLICY if table is None else table).items():
         if not tools:
-            if lane not in HELD_LANES:
+            if lane not in HELD_LANES and lane not in ADAPTER_LANES:
                 problems.append(f"{lane}: no tools")
         for name, entry in tools.items():
             where = name if name.startswith(f"{lane}.") else f"{lane} {name}"

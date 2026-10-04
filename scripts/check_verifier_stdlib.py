@@ -62,6 +62,12 @@ VERIFIER_ENTRY_POINTS = [
     "certificates.generators",
     "certificates.crossing",
     "certificates.crossing_independent",
+    # raw_ao_v1: levels 1 and 3 and the receipts a stranger rechecks, built on
+    # the vendored superstack contract (stdlib only by its own rule).
+    "certificates.raw_ao",
+    "certificates.raw_ao_independent",
+    "certificates.raw_ao_receipt",
+    "certificates.raw_native_receipt",
     "certificates.crossing_generator",
 ]
 

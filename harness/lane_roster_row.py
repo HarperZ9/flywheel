@@ -21,7 +21,8 @@ checked <time>" until a probe in this session replaces it (H-10).
 A class C lane reads ``reads_only`` only after a probe answered and listed a
 main tool; before that it is ``not_checked`` like any other lane. A held lane
 (``lane_tool_policy.HELD_LANES``) reads "Not in this build", not "Could not
-start". The writing lane's main tool is T2 (``GRANTED_MAIN_LANES``), so its
+start", and an adapter lane (``ADAPTER_LANES``) reads its own sentence. The
+writing lane's main tool is T2 (``GRANTED_MAIN_LANES``), so its
 card says the call needs a T2 approval.
 """
 from __future__ import annotations
@@ -30,8 +31,8 @@ from typing import Iterable, Mapping
 
 from .lane_probe_cache import ProbeCache, default_cache, lane_pin, slug
 from .lane_setup import SetupChecks, SetupItem
-from .lane_tool_policy import (GRANTED_MAIN_LANES, HELD_LANES, READS_ONLY_LANES,
-                               lane_policy, main_tools)
+from .lane_tool_policy import (ADAPTER_LANES, GRANTED_MAIN_LANES, HELD_LANES,
+                               READS_ONLY_LANES, lane_policy, main_tools)
 
 STATES = ("not_checked", "ready", "limited", "needs_setup", "reads_only",
           "cannot_launch", "unreachable")
@@ -53,6 +54,7 @@ MAIN_ACTIONS = {
     "canon": "validate context blocks",
     "bulletin": "read board rooms and feed",
     "accountable-surface": "perceive a folder with provenance",
+    "raw": "render a frame and check its AO certificate",
 }
 HEALTH_LINE = "Answers its health check."
 #: One main tool's action, where a lane's main tools can wait on different items.
@@ -170,6 +172,8 @@ def _sentence(lane: str, state: str, items: list[SetupItem], code: str,
     if state == "cannot_launch":
         if code == "lane_held":
             return HELD_LANES.get(lane, "Not in this build."), ""
+        if code == "lane_adapter_only":
+            return ADAPTER_LANES.get(lane, "Runs through its adapter."), ""
         return f"Could not start: {code}.", ""
     if state == "unreachable":
         from .lanes_registry import LANES

@@ -61,6 +61,13 @@ desktop/windows/flutter/generated_plugins.cmake text eol=lf
 
 # Vendored helpers are hash-pinned (VENDORED.sha256); keep their bytes exactly as copied.
 **/_vendor/safe_spawn.py -text
+# superstack.py v0.2.0 is pinned the same way (VENDORING.md in the superstack repo):
+# a CRLF checkout would change its hash. The vectors it is tested against are hashed
+# by their own MANIFEST.json, so they stay byte-exact too.
+**/_vendor/superstack.py -text
+tests/fixtures/superstack/** -text -diff
+# raw-native renders: certificate.json records the SHA-256 of every file beside it.
+tests/fixtures/raw_native/** -text -diff
 
 # 1.3.0 evidence records: PREREG.sha256 covers these bytes, so Git must not
 # normalize them.

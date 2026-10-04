@@ -161,6 +161,15 @@ const Map<String, LaneIdentity> laneIdentities = {
         'records the whole path.',
     surface: 'grant gate + action journal',
   ),
+  'raw': LaneIdentity(
+    title: 'Raw',
+    identity:
+        'A reference renderer with no GPU in its trust path. It renders a frame '
+        'on the CPU, checks its fast ambient occlusion against a ray-traced '
+        'reference, and writes a certificate a stranger can recheck from the '
+        'files alone.',
+    surface: 'AO certificate + receipt',
+  ),
   'isomorph': LaneIdentity(
     title: 'Isomorph',
     identity:

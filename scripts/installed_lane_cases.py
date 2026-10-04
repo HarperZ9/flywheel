@@ -247,6 +247,11 @@ CASES: dict[str, LaneCase] = {c.lane: c for c in (
         st("fresh", *RUNS), tools("fresh"), fx("fresh", "accountable-surface"),
         call("fresh_actuate_refused", "fresh", "accountable-surface.actuate",
              lambda c: {}, status=DENIED))),
+    # No MCP server: the frozen engine names the adapter instead of a launch.
+    LaneCase("raw", "A", "adapter", "adapter lane; the engine's adapter (harness/raw_lane.py) "
+             "starts raw-native per call, not as an MCP lane child", (
+        st("fresh", "cannot_launch", code="lane_adapter_only"),),
+        untested=("the render itself does not run in the installed-app check",)),
     LaneCase("isomorph", "B", "held", "private lane; source checkout only", (
         st("fresh", "cannot_launch", code="lane_held"),)),
     LaneCase("sofer", "B", "held", "private lane; source checkout only", (

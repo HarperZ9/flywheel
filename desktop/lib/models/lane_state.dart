@@ -3,7 +3,9 @@
 // The engine owns every state (harness/lane_roster_row.py). This file only
 // names them for the card, counts them for the headline, and keeps a probed
 // row on screen until a newer probe replaces it (D1). A lane the build holds
-// back (code `lane_held`) is counted apart from a launch defect.
+// back (code `lane_held`) is counted apart from a launch defect, and so is an
+// adapter lane (code `lane_adapter_only`): it has no MCP server for the app to
+// start, by design, and the engine's adapter runs its program per call.
 
 import 'lane_models.dart';
 
@@ -22,7 +24,8 @@ const laneStates = [
 const laneCountKeys = [...laneStates, 'not_in_build'];
 
 bool isLaneHeld(Lane lane) =>
-    lane.state == 'cannot_launch' && lane.code == 'lane_held';
+    lane.state == 'cannot_launch' &&
+    (lane.code == 'lane_held' || lane.code == 'lane_adapter_only');
 
 /// The count key for [lane]; empty when the engine reported no state.
 String laneCountKey(Lane lane) {

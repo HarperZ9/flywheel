@@ -30,7 +30,7 @@ CANON_DELETE = Gap("flywheel traces delete does not reach it; in the pinned rele
 #: Lane folders without a row of their own (mneme, canon, forum and relay have one).
 LANE_FOLDERS = ("accountable-surface", "array", "articulate", "bulletin", "calibrate-pro",
                 "chorus", "crucible", "gather", "index", "isomorph", "learn", "local-model",
-                "plexus", "sofer", "telos", "writing")
+                "plexus", "raw", "sofer", "telos", "writing")
 CLIENT_DELETE = Gap("the client's own store; a deletion report names the file the client "
                     "keeps and how to remove it there (7.10)", "7.10")
 
