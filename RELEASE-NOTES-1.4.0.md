@@ -229,5 +229,8 @@ a76b7e8995c91861e92ce2198cd62d722deede9fb8307463c68b8aa5d5cdf8c4
 - One file in the site-designer handoff, `evidence/benchmark-ci.json`, still
   fails its manifest on every checkout setting. It changed after the manifest was
   written and is left as found.
+  Correction, 2026-10-04 after release: the file never changed. Its manifest
+  line held the CRLF digest of the LF blob. The line is resealed; see
+  `handoff/site-designer/RESEAL.md`.
 - Every recheck manifest's anchor is `self`, and the recheck timings are machine
   time on the maker's computer.

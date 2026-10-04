@@ -68,7 +68,6 @@ rewritten. `python -m harness.canonical_bytes check PATH SHA256` reports
 | Where the value is published | File it covers | Values |
 |---|---|---|
 | `demos/index.json` (`transcript_sha256`, written by `scripts/build_demos_index.py`) | `demos/*/transcript.json` | 10 |
-| `handoff/site-designer/MANIFEST.sha256` | `artifacts/flywheel-local-coder-14b-benchmark-ci.json`, `handoff/site-designer/evidence/benchmark-ci.json` | 2 |
 | `project-docs/records/2026-08-14-desktop-phase-2-journey-flutter.md` | `desktop/lib/models/journey_models.dart`, `desktop/test/journey_controller_test.dart` | 2 |
 | `project-docs/records/2026-08-14-desktop-phase-3-truth-safety.md` | `desktop/lib/widgets/system_text_scaler.dart` | 1 |
 | `project-docs/records/search-effort-gate/RUN-LOG.md` | `live-hard.json`, `live-hard_v2.json` in the same directory | 2 |
@@ -77,6 +76,13 @@ rewritten. `python -m harness.canonical_bytes check PATH SHA256` reports
 No test or verifier compares these values with the files today, so none of them
 failed. Regenerating `demos/index.json` now writes LF digests; that would be a new
 value with a new basis, and the change would need its own dated note here.
+
+Resealed on 2026-10-04: `handoff/site-designer/MANIFEST.sha256` held the CRLF
+digest of `evidence/benchmark-ci.json` (the same bytes as
+`artifacts/flywheel-local-coder-14b-benchmark-ci.json`), so `sha256sum -c` failed on
+every checkout. That manifest exists to be checked with `sha256sum -c`, so its line
+now holds the LF blob digest. Old and new values are in
+`handoff/site-designer/RESEAL.md`.
 
 ## What this does not prove
 
