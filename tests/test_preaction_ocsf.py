@@ -38,7 +38,7 @@ def test_supervisor_events_map_to_evidence_and_seal(tmp_path):
     assert by_uid["evt-004"]["evidence"] == "NOTICE"
     assert summary["evidence_counts"] == {"MATCH": 3, "BLOCK": 1, "NOTICE": 1, "RECORDED": 0}
     assert recs[-1]["schema"] == IMPORT_SCHEMA
-    assert verify_store(tmp_path)["verdict"] == "MATCH"
+    assert verify_store(tmp_path)["internal_verdict"] == "MATCH"
 
 
 def test_supervisor_file_completeness_is_unverifiable_even_with_zero_counters(tmp_path):
@@ -94,7 +94,7 @@ def test_reimport_skips_events_already_on_record(tmp_path):
     import_file(FIX / "supervisor.jsonl", tmp_path)
     again = import_file(FIX / "supervisor.jsonl", tmp_path)
     assert again["imported"] == 0 and again["skipped_duplicates"] == 5
-    assert verify_store(tmp_path)["verdict"] == "MATCH"
+    assert verify_store(tmp_path)["internal_verdict"] == "MATCH"
 
 
 def test_edited_imported_record_is_drift(tmp_path):

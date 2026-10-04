@@ -28,15 +28,23 @@ POST_SCHEMA = "flywheel.preaction-post/v1"
 REDEEM_SCHEMA = "flywheel.preaction-redeem/v1"
 SCHEMAS = (HOLD_SCHEMA, ALLOW_SCHEMA, DECISION_SCHEMA, POST_SCHEMA, REDEEM_SCHEMA)
 _TAIL_CHUNK = 65536
+ATTESTATION_FIELD = "attestation"
 
 
 class RecordWriteError(RuntimeError):
     """The sealed record could not be written; the call must not run."""
 
 
+def seal_preimage(record: dict) -> bytes:
+    """The bytes a seal covers: the record with an empty seal and without its
+    signer attestation, which is added after sealing and signs the seal."""
+    probe = {k: v for k, v in record.items() if k != ATTESTATION_FIELD}
+    probe["seal"] = {"algorithm": "sha256", "hex": ""}
+    return _canonical_bytes(probe)
+
+
 def seal(record: dict) -> str:
-    record["seal"] = {"algorithm": "sha256", "hex": ""}
-    record["seal"]["hex"] = _sha256_hex(_canonical_bytes(record))
+    record["seal"] = {"algorithm": "sha256", "hex": _sha256_hex(seal_preimage(record))}
     return record["seal"]["hex"]
 
 
@@ -44,9 +52,15 @@ def verify_seal(record: dict) -> bool:
     s = record.get("seal")
     if not isinstance(s, dict) or s.get("algorithm") != "sha256":
         return False
-    probe = dict(record)
-    probe["seal"] = {"algorithm": "sha256", "hex": ""}
-    return _sha256_hex(_canonical_bytes(probe)) == s.get("hex")
+    return _sha256_hex(seal_preimage(record)) == s.get("hex")
+
+
+def store_id(home) -> str:
+    """The id a signer and a verifier both use for a store: its real path."""
+    return os.path.realpath(str(home))
+
+
+_FROM_ENV = object()
 
 
 def _private_write(path: Path, data: bytes) -> None:
@@ -59,8 +73,14 @@ def _private_write(path: Path, data: bytes) -> None:
 
 
 class HoldStore:
-    def __init__(self, home) -> None:
+    def __init__(self, home, signer=_FROM_ENV) -> None:
+        """``signer``: a harness.signer client, None for unsigned records, or
+        (the default) whatever FLYWHEEL_SIGNER configures."""
         self.home = Path(home)
+        if signer is _FROM_ENV:
+            from ..signer.client import client_from_env
+            signer = client_from_env()
+        self.signer = signer
         self.path = self.home / "records.jsonl"
         self.args_dir = self.home / "args"
         self.ctx_dir = self.home / "ctx"
@@ -133,6 +153,11 @@ class HoldStore:
                 if context is not None:
                     record["context_sha256"] = _sha256_hex(_canonical_bytes(context))
                 hexd = seal(record)
+                if self.signer is not None:
+                    # Signed before anything is written: a refusal leaves no
+                    # record behind, and the hook fails closed.
+                    record[ATTESTATION_FIELD] = self.signer.sign_record(
+                        store_id(self.home), seq + 1, prev, hexd)
                 if context is not None:
                     _private_write(self.ctx_dir / f"{hexd}.json",
                                    json.dumps(context, ensure_ascii=False).encode("utf-8"))

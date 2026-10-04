@@ -39,7 +39,7 @@ def test_coverage_lists_every_path_honestly(tmp_path):
     # the agent's reach, and only the witnesses sit outside it.
     domains = {r["path_id"]: r["domain"] for r in json.loads(out)}
     assert all(domains[p] == "inside" for p in REGISTRY)
-    assert {p for p, d in domains.items() if d == "outside"} == {"W1", "W2", "W3"}
+    assert {p for p, d in domains.items() if d == "outside"} == {"W1", "W2", "W3", "W4"}
 
 
 def test_pending_and_approve_need_a_terminal_and_the_code(tmp_path):
@@ -70,7 +70,7 @@ def test_reject_from_cli(tmp_path):
 def test_verify_exit_codes(tmp_path):
     mon = monitor(tmp_path)
     mon.gate(call("run", cmd="git push --force"), ctx())
-    assert _cli("verify", str(tmp_path))[0] == 0
+    assert _cli("verify", str(tmp_path))[0] == 3   # consistent, but no trust root: UNANCHORED
     path = tmp_path / "records.jsonl"
     path.write_text(path.read_text(encoding="utf-8").replace('"HOLD"', '"ALLOW"'), encoding="utf-8")
     assert _cli("verify", str(tmp_path))[0] == 1

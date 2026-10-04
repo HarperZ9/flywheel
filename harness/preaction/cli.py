@@ -3,7 +3,8 @@
 coverage prints every path and its PRE / POST / NONE state; pending lists open
 holds; approve and reject decide one hold, and both need a real terminal and
 the typed confirmation code, so an agent's shell cannot drive them; verify
-re-walks a store and exits 1 on DRIFT; install prints or writes the hook
+re-walks a store and exits 0 on MATCH, 3 on UNANCHORED (no trust root
+pinned) and 1 otherwise; install prints or writes the hook
 settings block. owner, witness, import-ocsf and sandbox live in cli_extra.py;
 outcome and overrides live in cli_overrides.py. approve and reject take an
 optional --reason-code from a fixed list and an optional --reason text.
@@ -54,6 +55,24 @@ def _decide(args, decision, stdout, stderr, stdin, isatty) -> int:
     return 0
 
 
+def _verify(args, stdout, stderr) -> int:
+    """Exit 0 on MATCH, 3 on UNANCHORED (consistent, but no trust root),
+    1 otherwise. UNANCHORED is never exit 0: it is not a pass."""
+    import os
+    root = args.trust_root or os.environ.get("FLYWHEEL_SIGNER_PUBKEY", "").strip()
+    head = None
+    if args.signer_head:
+        with open(args.signer_head, encoding="utf-8") as fh:
+            head = json.load(fh)
+    report = verify_store(args.home, trust_root=root, signer_head=head)
+    stdout.write(json.dumps(report) + "\n")
+    for note in report.get("notes", []):
+        stderr.write(f"warning: {note}\n")
+    if report["verdict"] == "MATCH":
+        return 0
+    return 3 if report["verdict"] == "UNANCHORED" else 1
+
+
 def _parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="flywheel monitor")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -64,6 +83,9 @@ def _parser() -> argparse.ArgumentParser:
         sp.add_argument("--reason-code", dest="reason_code", default="", choices=("",) + REASON_CODES)
         sp.add_argument("--reason", default="")
     pv = sub.add_parser("verify"); pv.add_argument("home")
+    pv.add_argument("--trust-root", default="",
+                    help="the separate signer's public key, hex (else FLYWHEEL_SIGNER_PUBKEY)")
+    pv.add_argument("--signer-head", default="", help="a signed head file from the signer")
     pi = sub.add_parser("install"); pi.add_argument("client", choices=("claude-code", "codex"))
     pi.add_argument("--home", required=True); pi.add_argument("--print", dest="do_print", action="store_true")
     pi.add_argument("--python", default=sys.executable)
@@ -118,9 +140,7 @@ def main(argv=None, *, stdout=None, stderr=None, stdin=None, isatty=None) -> int
         decision = "APPROVED_ONCE" if args.cmd == "approve" else "REJECTED"
         return _decide(args, decision, stdout, stderr, stdin, isatty)
     if args.cmd == "verify":
-        report = verify_store(args.home)
-        stdout.write(json.dumps(report) + "\n")
-        return 0 if report["verdict"] == "MATCH" else 1
+        return _verify(args, stdout, stderr)
     if args.cmd == "install":
         ok, detail = importable(args.python)
         if not ok:

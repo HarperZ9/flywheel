@@ -155,5 +155,5 @@ def test_fetch_host_allow_records_rederive_match(tmp_path):
         c = call("WebFetch", harness="claude-code", path_id="E11", url=url)
         gate_event(tmp_path, c, ctx(run_id=f"r{i}"), DOCS)
     report = verify_store(tmp_path)
-    assert report["verdict"] == "MATCH" and report["rederived"] == 2
+    assert report["internal_verdict"] == "MATCH" and report["rederived"] == 2
     assert report["allow_by_trust_domain"] == {"inside": 1}

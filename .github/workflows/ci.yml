@@ -165,6 +165,34 @@ jobs:
           tests/test_raw_native_receipt.py
           -q -rs
 
+  signer_two_user:
+    # The record signer's claim is an OS fact: the agent's user cannot read the
+    # signing key or rewrite what the signer has signed. Unit tests run the
+    # signer as the same user, so they prove the protocol and never the
+    # boundary. This job creates a second Linux user with the runner's
+    # passwordless sudo, runs the signer as that user, and runs the test suite
+    # as the agent. FLYWHEEL_SIGNER_TWO_USER=1 turns the file's skip off, so a
+    # green check here means the boundary tests executed.
+    name: signer, two OS users
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FLYWHEEL_SIGNER_TWO_USER: "1"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.13"
+      - name: Install test tooling and a signing backend
+        run: python -m pip install pytest pytest-timeout pynacl
+      - name: Signer as a second user, tests as the agent
+        run: >
+          python -m pytest
+          tests/test_signer_two_user.py
+          tests/test_signer_forgery.py
+          tests/test_signer_protocol.py
+          -q -rs
+
   full:
     # WHY THIS EXISTS. Four tests were failing and nobody knew, because the job
     # above runs an explicit file list and two of the four were not on it. A
