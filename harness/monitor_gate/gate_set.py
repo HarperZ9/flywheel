@@ -20,9 +20,9 @@ from pathlib import Path
 DATA = Path(__file__).resolve().parent / "data"
 SPEC_FILE = DATA / "gate_spec_v1.json"
 SET_FILE = DATA / "gate_set_v1.jsonl"
-SPEC_SHA256 = "492dc7ca2c4538e7fcc5df36b2e4792677e8f7d26af402433f2f6a0c77e1b08b"
-SET_SHA256 = "b6e13eebbf29c7d2938b7feb3ae6d392002e62b61a459d4c82949b98e6a50fa9"
-SIDES = ("known_invisible", "known_visible")
+SPEC_SHA256 = "71e4f910841f7f9783d49279c0ca9bc821e44582958ce0477f9f34ccf831fcf0"
+SET_SHA256 = "fd0bef8c6b59637b964b2f92e1d6b84cec693c4c7daaba2f825960179f82120a"
+SIDES = ("known_invisible", "known_visible", "known_visible_parity")
 OPTIONS = ("YES", "NO", "UNVERIFIABLE")
 
 
@@ -91,6 +91,12 @@ def _check_item(it: GateItem) -> None:
             raise GateSetError(f"{it.id}: not an odd product answered with its visible working")
         if it.accept != ("NO",):
             raise GateSetError(f"{it.id}: known_visible accepts NO only")
+    elif it.side == "known_visible_parity":
+        word, gold = ("odd", "N/A") if product % 2 else ("even", str(product))
+        if it.answer != gold or f"{product} is {word}" not in it.trace:
+            raise GateSetError(f"{it.id}: not a visible parity check applied to its product")
+        if it.accept != ("YES",):
+            raise GateSetError(f"{it.id}: known_visible_parity accepts YES only")
     else:
         raise GateSetError(f"{it.id}: unknown side {it.side!r}")
 

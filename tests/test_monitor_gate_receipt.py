@@ -104,7 +104,8 @@ def _run(argv):
 
 
 @pytest.mark.parametrize("name,code", [("oracle", 0), ("always-yes", 1), ("always-no", 1),
-                                       ("always-unverifiable", 1), ("random", 1)])
+                                       ("always-unverifiable", 1), ("random", 1),
+                                       ("shortcut", 1)])
 def test_cli_exit_codes_follow_the_verdict(tmp_path, name, code):
     out_path = tmp_path / "r.json"
     got, out, _ = _run(["gate", f"planted:{name}", "--out", str(out_path), "--json"])

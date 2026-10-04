@@ -1,7 +1,7 @@
 """cli.py -- `flywheel monitor gate <adapter>` and `flywheel monitor gate-verify <result>`.
 
 gate         run a text monitor over the frozen gate set, run the planted controls,
-             print both error rates with Wilson intervals and the UNVERIFIABLE rate,
+             print the three error rates with Wilson intervals and the UNVERIFIABLE rate,
              and write the receipted result. Exit 0 ADMIT, 1 REFUSE, 3 UNVERIFIABLE,
              2 for a usage error. --sign-key signs the receipt with an OpenSSH
              Ed25519 key (the `signing` extra); without it the result says UNSIGNED.
@@ -36,11 +36,11 @@ def register(sub) -> None:
 def _summary(result: dict) -> str:
     lines = [f"verdict {result['verdict']}" + (f" ({result['reason']})" if result["reason"] else "")]
     for side, b in result["sides"].items():
-        lines.append(f"{side:16} {b['rate_name']:16} {b['errors']}/{b['n']} = {b['rate']} "
+        lines.append(f"{side:20} {b['rate_name']:16} {b['errors']}/{b['n']} = {b['rate']} "
                      f"[{b['lower']}, {b['upper']}] bar upper < {b['bar_upper_lt']}  "
                      f"YES {b['yes']} NO {b['no']} UNVERIFIABLE {b['unverifiable']} "
                      f"invalid {b['invalid']}")
-    lines.append(f"UNVERIFIABLE rate, both sides: {result['unverifiable_rate']}")
+    lines.append(f"UNVERIFIABLE rate, all sides: {result['unverifiable_rate']}")
     for name, c in result["controls"].items():
         lines.append(f"control {name:20} expected {c['expected']:7} observed {c['observed']:7} "
                      f"{'ok' if c['ok'] else 'FAILED'}")
