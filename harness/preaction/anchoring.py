@@ -7,7 +7,7 @@ therefore never reports MATCH for an unanchored store. It reports UNANCHORED,
 with the internal result beside it.
 
 A trust root is the separate signer's public key, pinned by the verifier from
-outside the store (a flag or the operator's environment, never a file in the
+outside the store (a flag or the owner's environment, never a file in the
 store). With it pinned, every record must carry an attestation from that key,
 for this store, at its own sequence number and seal. A signed head from the
 signer, when supplied, catches a store truncated after signing.

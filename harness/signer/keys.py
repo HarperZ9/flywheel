@@ -2,7 +2,7 @@
 
 The seed is generated on the signer's side, written once with owner-only
 permissions, and never sent anywhere. The public key sits beside it in a file
-anyone may read, so the operator can pin it.
+anyone may read, so the owner can pin it.
 
 Signing uses ``cryptography`` when installed and ``pynacl`` otherwise (the
 ``signing`` extra). Both are constant-time Ed25519 implementations; a pure

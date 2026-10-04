@@ -1,7 +1,7 @@
 """The signer's narrow interface: what it signs, what it refuses, what it keeps.
 
 Success criteria: the journal refuses a skipped, rewound or re-pointed sequence
-number and accepts an exact retry; an operator rewind appears in every later
+number and accepts an exact retry; an owner rewind appears in every later
 signed head; the signer answers only its three operations and refuses any
 request outside the attestation shape; frames past the cap are refused; and the
 key file is refused when other users could read it.
