@@ -1,10 +1,13 @@
-"""server.py -- the signer process: three operations, nothing else.
+"""server.py -- the signer process: four operations, nothing else.
 
   * ``hello``: the public key, its key id, and the isolation the signer
     measured for this caller. Lets a client check the pin before relying on it.
   * ``sign_record``: attest one store record, if and only if it extends the
     store's signed history by exactly one (see journal.py).
   * ``head``: a signed statement of the last record signed for a store.
+  * ``check_policy``: run the shipped rule pack on one call, with the
+    operator's context, and sign the verdict (policy.py). This is what makes a
+    receipt's ``policy:machine`` authority checkable.
 
 Every reply that carries a signature carries the caller isolation the signer
 measured itself, inside the signed bytes, so the caller cannot relabel a
@@ -16,7 +19,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import keys, statement
+from . import keys, policy, statement
 from .journal import Journal, JournalConflict
 
 
@@ -30,6 +33,7 @@ class Signer:
         self.sign, self.public = keys.load(home)
         self.key_id = statement.key_id_for(self.public)
         self.journal = Journal(home)
+        self.home = Path(home)
         self.clock = clock
 
     def _signed(self, body: dict) -> dict:
@@ -55,6 +59,11 @@ class Signer:
             rewinds=last["rewinds"], signed_at=self.clock(),
             isolation=isolation, key_id=self.key_id))
 
+    def check_policy(self, req: dict, isolation: dict) -> dict:
+        body = policy.evaluate(req, policy.load_context(self.home))
+        body.update(signed_at=self.clock(), isolation=isolation, key_id=self.key_id)
+        return self._signed(body)
+
     def handle(self, req: dict, isolation: dict) -> dict:
         op = req.get("op")
         try:
@@ -65,10 +74,12 @@ class Signer:
                 return {"ok": True, "attestation": self.sign_record(req, isolation)}
             if op == "head":
                 return {"ok": True, "head": self.head(req, isolation)}
+            if op == "check_policy":
+                return {"ok": True, "policy": self.check_policy(req, isolation)}
             return {"ok": False, "error": "unknown_op"}
         except JournalConflict as exc:
             return {"ok": False, "error": "conflict", "detail": str(exc)}
-        except statement.StatementError as exc:
+        except (statement.StatementError, policy.PolicyRequestError) as exc:
             return {"ok": False, "error": "bad_request", "detail": str(exc)}
 
 

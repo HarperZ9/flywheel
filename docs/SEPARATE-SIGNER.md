@@ -10,8 +10,10 @@ recompute every seal. The record signer moves the pen out of the agent's reach.
 
 - Runs as its own OS user on Linux, or its own local account on Windows.
 - Holds an Ed25519 key in a home directory the agent's user cannot read.
-- Answers on a local Unix socket or named pipe with three operations:
-  `hello`, `sign_record` and `head`. It signs nothing else.
+- Answers on a local Unix socket or named pipe with four operations:
+  `hello`, `sign_record`, `head` and `check_policy`. It signs nothing else.
+  `check_policy` runs the shipped rule pack on one call with the operator's
+  context and signs the verdict; ACTION-AUTHORITY.md covers its use.
 - Signs each record's sequence number, previous seal and seal once. A request
   that would re-sign, skip or re-point a sequence number is refused, so signed
   history cannot be rewritten through the signer.
