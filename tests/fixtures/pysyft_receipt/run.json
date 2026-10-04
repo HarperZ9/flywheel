@@ -1,0 +1,33 @@
+{
+  "verify_report": {
+    "attestation": "UNVERIFIABLE",
+    "attestation_reason": "No enclave attestation is bound to this receipt. The hidden model and data are named only by commitments the data owner supplied, and nothing here links those commitments to what actually ran. Closing this needs the enclave attestation report bound into the receipt.",
+    "checks_run": [
+      "approval",
+      "job",
+      "replay",
+      "results",
+      "reveal",
+      "signature",
+      "superstack"
+    ],
+    "does_not_prove": [
+      "It does not prove the hidden model or the hidden data were what the parties said; that needs the enclave attestation link, which this receipt does not carry.",
+      "It does not prove the job ran only once, or that a run with a worse score was not discarded before this receipt was issued.",
+      "It does not prove the reviewer read the code or judged it well; it binds the approval record PySyft wrote, and PySyft does not sign that record.",
+      "It does not prove the scoring rule or the benchmark measures what it claims to.",
+      "It does not prove the per-item rows are correct until the hidden answers are revealed and rescored; before that, the score is only consistent with the rows.",
+      "It does not prove anything about enclave side channels, the hardware vendor, or any attestation verifier.",
+      "A valid signature shows only that the key holder issued this body. It says nothing about whether the key holder is honest."
+    ],
+    "failed": [],
+    "missing_inputs": [],
+    "verdict": "MATCH"
+  },
+  "versions": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "pysyft_commit_expected": "36e65162ad2cfbae66d714db8d5c711e19a3a185",
+    "python": "3.13.14",
+    "syft-job": "0.1.41"
+  }
+}

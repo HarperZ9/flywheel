@@ -39,6 +39,8 @@ VERIFIER_ENTRY_POINTS = [
     "audit_receipt",    # the Layer-2 audit receipt a stranger re-derives + chain-checks
     "usage_receipt",    # the usage-metering receipt a stranger re-derives + re-checks
     "receipt_sign",     # the signature check a stranger runs
+    "job_result_verify",  # a PySyft job result receipt, checked by an outsider
+    "pysyft_job_hash",  # PySyft's approved-job hash, recomputed offline
     "ots_verify",       # the OpenTimestamps -> Bitcoin proof a stranger rechecks
     "anchor",           # ties a signed head to its timestamp over one digest
     "why",              # answering doubt from the record alone
