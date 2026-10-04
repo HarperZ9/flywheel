@@ -79,3 +79,7 @@ project-docs/records/search-effort-gate/PREREG.md text eol=lf
 # The Shapley placebo item set and run record are hashed into the preregistration
 # and the run's witness entries, so Git must not normalize their bytes.
 project-docs/records/2026-10-04-shapley-placebo/*.json -text -diff
+
+# The PySyft result-receipt fixture is a real run's bundle. The receipt binds
+# PySyft's hash over the job folder's raw bytes, so Git must not normalize them.
+tests/fixtures/pysyft_receipt/** -text -diff

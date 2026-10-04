@@ -1,0 +1,109 @@
+{
+  "body": {
+    "approval": {
+      "approval_method": "manual",
+      "approved_at": "2026-10-04T04:38:51.632382Z",
+      "approved_by": "do@example.org",
+      "completed_at": "2026-10-04T04:38:52.160270+00:00",
+      "record_sha256": "f075a560fd4ddfe9d3c918d541ebd6d76f3c3ef447efebecdb3629e21c1ac189",
+      "review_reason": "Reads the private eval set, writes per-item rows only.",
+      "status": "done"
+    },
+    "attestation": {
+      "reason": "No enclave attestation is bound to this receipt. The hidden model and data are named only by commitments the data owner supplied, and nothing here links those commitments to what actually ran. Closing this needs the enclave attestation report bound into the receipt.",
+      "status": "UNVERIFIABLE"
+    },
+    "commitments": {
+      "dataset_sha256": "64a8f14f961e0e7a9d696c420d7208aff19ebb4070866e9cda504f3ea755b904",
+      "model_sha256": "7a109a31580468774a43909eacecfb3a91eb177f88137146f0b2f760c931cd67"
+    },
+    "does_not_prove": [
+      "It does not prove the hidden model or the hidden data were what the parties said; that needs the enclave attestation link, which this receipt does not carry.",
+      "It does not prove the job ran only once, or that a run with a worse score was not discarded before this receipt was issued.",
+      "It does not prove the reviewer read the code or judged it well; it binds the approval record PySyft wrote, and PySyft does not sign that record.",
+      "It does not prove the scoring rule or the benchmark measures what it claims to.",
+      "It does not prove the per-item rows are correct until the hidden answers are revealed and rescored; before that, the score is only consistent with the rows.",
+      "It does not prove anything about enclave side channels, the hardware vendor, or any attestation verifier.",
+      "A valid signature shows only that the key holder issued this body. It says nothing about whether the key holder is honest."
+    ],
+    "issued_at": "2026-10-04T04:38:52.210387+00:00",
+    "job": {
+      "approved_hash": "bef5357ed91c4289bf382975dbd754ab27ec4d519f83c5c6aef91c8435bb3a40",
+      "hash_rule": "pysyft-submission-hash/1",
+      "name": "addition.eval",
+      "pysyft_source": "OpenMined/PySyft@36e65162ad2cfbae66d714db8d5c711e19a3a185:packages/syft-job/src/syft_job/submission.py",
+      "received_hash": "bef5357ed91c4289bf382975dbd754ab27ec4d519f83c5c6aef91c8435bb3a40"
+    },
+    "nonce": "openmined-bridge-demo-20261003",
+    "receipt_id": "dfb88d482198a53ae376c5797536c226d77371cc33c0eeeb0b5ae66ba575cfce",
+    "result": {
+      "correct": 40,
+      "items_root": "sha256:a447d77e826ecabb5ad462bdc0e230991a4c78090caf0bf3ed618a70ee651ba2",
+      "results_sha256": "27a766f0839ad05aed4e7860fdd8c67c4bdaa901c5e58c15d6bc098969457a82",
+      "scoring_rule": "exact-match-strip/1",
+      "total": 50
+    },
+    "schema": "flywheel.pysyft-job-result/v1",
+    "superstack": {
+      "backend": "pysyft-syft-job",
+      "content_sha256": "27a766f0839ad05aed4e7860fdd8c67c4bdaa901c5e58c15d6bc098969457a82",
+      "does_not_prove": [
+        "It does not prove the hidden model or the hidden data were what the parties said; that needs the enclave attestation link, which this receipt does not carry.",
+        "It does not prove the job ran only once, or that a run with a worse score was not discarded before this receipt was issued.",
+        "It does not prove the reviewer read the code or judged it well; it binds the approval record PySyft wrote, and PySyft does not sign that record.",
+        "It does not prove the scoring rule or the benchmark measures what it claims to.",
+        "It does not prove the per-item rows are correct until the hidden answers are revealed and rescored; before that, the score is only consistent with the rows.",
+        "It does not prove anything about enclave side channels, the hardware vendor, or any attestation verifier.",
+        "A valid signature shows only that the key holder issued this body. It says nothing about whether the key holder is honest."
+      ],
+      "media": {
+        "format": "jsonl",
+        "kind": "document"
+      },
+      "outputs": {},
+      "producer": {
+        "name": "flywheel.job_result_receipt",
+        "version": "1"
+      },
+      "receipt_sha256": "baafc34180e5efecb4cb037df52c9e209419dc28ea01ba785b96437957cb68c5",
+      "reconcile": {
+        "identity": "MATCH",
+        "reference": {
+          "content_sha256": "27a766f0839ad05aed4e7860fdd8c67c4bdaa901c5e58c15d6bc098969457a82",
+          "what": "results.jsonl as released"
+        },
+        "tolerance": {
+          "bounds": {
+            "rule": "rows_correct == claimed_correct and rows_total == claimed_total"
+          },
+          "metrics": {
+            "claimed_correct": 40,
+            "claimed_total": 50,
+            "rows_correct": 40,
+            "rows_total": 50
+          },
+          "verdict": "verified"
+        }
+      },
+      "scene_sha256": "c0c37ab628c95439023405f0a92fa733036da1f60d8ff566de412f8b01fd435e",
+      "schema": "superstack.receipt/1",
+      "seed": null,
+      "seed_rule": "xmur3-mulberry32/1",
+      "seed_u32": null,
+      "time": {
+        "base": "flicks",
+        "per_second": 705600000,
+        "t": 0
+      }
+    }
+  },
+  "claim_sha256": "846878f2e1be8f06f527dfbba3d3a46ea1bf912a501e1c788efc59e3514f3782",
+  "schema": "flywheel.signed-job-result/v1",
+  "signature": {
+    "alg": "ed25519",
+    "key_id": "ed25519:e02697950b600c7d10413ad9999cf1f7",
+    "public_key": "a036d329d8efd65630907df36514fb48a906e43c33090c672b03ffa1ba311f41",
+    "sig": "d38bedc343661fd0ea9790be4a3c911f4ca85480ff2617c8689b9c593a9f9ef88eccbccc7a263c6e20858368ece735150b9bcef4ded051a3dc43b4697afaaf01",
+    "signed_over": "claim_sha256"
+  }
+}

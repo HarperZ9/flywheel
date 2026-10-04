@@ -22,6 +22,9 @@ Verification and evidence
 - [shapley-placebo](shapley-placebo.md): a placebo test for exact Shapley attribution
   over sources; how often an empty, irrelevant or shuffled source gets credit, with
   Wilson intervals.
+- [pysyft-result-receipt](pysyft-result-receipt.md): a signed receipt that binds a
+  published score to the exact PySyft job a data owner approved, checkable with no
+  access to the model or the data.
 - [proof-surface](proof-surface.md): stdlib contract validators and domain proof-packet
   wedges; one re-derivable proof packet per action (composed via accountable-surface).
 
