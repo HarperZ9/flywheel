@@ -3,6 +3,11 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## 1.3.4
+
+Windows app
+- The 1.3.3 Windows installer was not published. Its build stopped at the frozen engine check: `/api/lanes` failed in the frozen engine, and the check reported `RELAY_ROSTER_HTTP`. The lane roster imports the raw lane's adapter by its registry name, and the freeze left that module out because PyInstaller cannot follow a name in a string. The Windows app shows its lanes from the same roster, so the 1.3.3 app could not have listed them. The freeze now adds every adapter-lane module named in the lane registry, and a test in pull-request CI fails when one is missing. The 1.3.3 wheel on PyPI was not affected: a pip install imports the adapter from source. (#355)
+
 ## 1.3.3
 
 Lanes
