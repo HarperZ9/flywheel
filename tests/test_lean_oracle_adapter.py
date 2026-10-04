@@ -1,10 +1,13 @@
-"""LeanOracle adapter falsifier -- the math domain oracle over lean_check.
+"""LeanOracle adapter falsifier -- the math domain oracle over the bound check.
 
-The adapter reuses lean_check (kernel exit, sorry refusal, axiom-footprint audit).
-These tests fix the mapping from that checker's judgment to an OracleResult, and
-prove the registry now routes `math` to it. Hermetic: the Lean runner is injected,
-so no toolchain is required; the toolchain-missing path is forced deterministically.
+The adapter judges a candidate against the statement its task pinned
+(harness/lean_binding.py). These tests fix the mapping from that judgment to an
+OracleResult, and prove the registry routes `math` to it. Hermetic: the Lean
+runner is injected, so no toolchain is required; the toolchain-missing path is
+forced deterministically. The live negative probes are in
+tests/test_lean_binding_live.py.
 """
+import json
 from pathlib import Path
 
 import pytest
@@ -17,13 +20,30 @@ from harness.task import load_task
 TASK_DIR = Path(__file__).parent.parent / "tasks" / "example_pass"
 
 
+CH = {"theorem": "t", "statement": "True"}
+
+
+def _bind(axioms=(), status="bound", refusals=()):
+    return json.dumps({"status": status, "theorem": "t",
+                       "statement_canonical": "t.[] : True",
+                       "axioms": list(axioms), "refusals": list(refusals),
+                       "lean_version": "4.34.1", "lean_githash": "injected"})
+
+
 @pytest.fixture
 def task(tmp_path):
-    return load_task(TASK_DIR, workdir=tmp_path / "w")
+    t = load_task(TASK_DIR, workdir=tmp_path / "w")
+    t.challenge = dict(CH)
+    return t
+
+
+@pytest.fixture
+def unpinned(tmp_path):
+    return load_task(TASK_DIR, workdir=tmp_path / "u")
 
 
 def _clean(argv, code):
-    return (0, "")
+    return (0, _bind()) if "--run" in argv else (0, "")
 
 
 def _error(argv, code):
@@ -31,19 +51,52 @@ def _error(argv, code):
 
 
 def _forbidden_axiom(argv, code):
-    # clean initial check, but the #print axioms audit reveals a smuggled axiom.
-    if "#print axioms" in code:
-        return (0, "'t' depends on axioms: [sorryAx]")
+    # the compile accepts, but the artifact axiom walk finds a smuggled axiom.
+    return (0, _bind(axioms=["sorryAx"])) if "--run" in argv else (0, "")
+
+
+def _refused(argv, code):
+    if "--run" in argv:
+        return 0, _bind(status="refused",
+                        refusals=["the candidate declares no top-level t"])
     return (0, "")
 
 
 # --- verdict mapping ---------------------------------------------------------
 
 def test_clean_proof_passes(task):
-    r = LeanOracle(runner=_clean).verify("example : True := trivial", task)
+    r = LeanOracle(runner=_clean).verify("theorem t : True := trivial", task)
     assert r.verdict() == "PASS"
     assert r.does_not_prove          # the formalization gap is carried
     assert r.coverage["checker"] == "lean"
+    assert r.coverage["statement_binding"] == "pinned"
+    assert r.coverage["spec_fidelity"]["status"] == "UNVERIFIED"
+    assert len(r.coverage["statement_sha256"]) == 64
+
+
+def test_unpinned_task_is_never_a_pass(unpinned):
+    # The 2026-09-23 defect: example_pass asks for Python, pins no theorem,
+    # and an unrelated closed theorem used to earn PASS here.
+    r = LeanOracle(runner=_clean).verify("theorem unrelated : True := trivial",
+                                         unpinned)
+    assert r.verdict() == "UNVERIFIABLE"
+    assert r.unverifiable_reason == "SPECIFICATION_UNPINNED"
+    assert r.attribution.value == "HARNESS"
+
+
+def test_unpinned_task_runs_no_lean_at_all(unpinned):
+    calls = []
+    LeanOracle(runner=lambda a, c: calls.append(a) or (0, "")).verify(
+        "theorem t : True := trivial", unpinned)
+    assert calls == []
+
+
+def test_binding_refusal_fails_and_names_why(task):
+    r = LeanOracle(runner=_refused).verify(
+        "theorem unrelated : True := trivial", task)
+    assert r.verdict() == "FAIL"
+    assert "declares no top-level t" in r.stdout_excerpt
+    assert r.coverage["binding"]["status"] == "refused"
 
 
 def test_error_fails(task):
@@ -61,8 +114,9 @@ def test_forbidden_axiom_footprint_fails(task):
     # A proof that type-checks but leans on an axiom outside the classical trio
     # must not read as PASS; the adapter carries lean_check's refusal.
     r = LeanOracle(runner=_forbidden_axiom).verify(
-        "theorem t : True := by native_decide", task)
+        "theorem t : True := trivial", task)
     assert r.verdict() == "FAIL"
+    assert "sorryAx" in r.stdout_excerpt
 
 
 def test_missing_toolchain_is_unverifiable_environment(task, monkeypatch):
@@ -76,8 +130,8 @@ def test_missing_toolchain_is_unverifiable_environment(task, monkeypatch):
 
 
 def test_output_hash_is_stable(task):
-    a = LeanOracle(runner=_clean).verify("example : True := trivial", task)
-    b = LeanOracle(runner=_clean).verify("example : True := trivial", task)
+    a = LeanOracle(runner=_clean).verify("theorem t : True := trivial", task)
+    b = LeanOracle(runner=_clean).verify("theorem t : True := trivial", task)
     assert a.output_hash == b.output_hash
 
 
@@ -94,7 +148,7 @@ def test_default_registry_routes_math_to_lean():
 def test_run_verified_math_passes_with_injected_kernel(task, tmp_path):
     reg = OracleRegistry()
     reg.register("math", LeanOracle(runner=_clean))
-    v = run_verified(task, StubProposer("example : True := trivial"),
+    v = run_verified(task, StubProposer("theorem t : True := trivial"),
                      domain="math", registry=reg,
                      envelopes_dir=tmp_path / "env", witness_recheck=False)
     assert v.verdict == "PASS"
