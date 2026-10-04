@@ -103,6 +103,17 @@ The original one-entry head is kept byte for byte at `heads/head-0001.json`,
 and `FREEZE.json` points there. CI fails if the signed head and the log ever
 disagree again. No log entry changed.
 
+## Preregistration heads anchored where the author cannot redo them
+
+`flywheel anchor head` logs a signed head's SHA-512 and an Ed25519ph signature in
+Sigstore's Rekor and submits its SHA-256 to OpenTimestamps. Only hashes and the
+signature are sent. `flywheel anchor verify` rechecks the Rekor entry offline
+against Rekor's pinned key (signed entry timestamp, inclusion proof, signed
+checkpoint) and the OpenTimestamps proof against its stored Bitcoin header;
+`--online` refetches the entry and proves the log has not rewritten the tree.
+The prereg size-8 head is logged at Rekor index 3077414145. See
+`docs/features/rekor-anchor.md`.
+
 ## Monitor rule pack
 
 The rule pack is unchanged from 1.3.4, so a pinned `expected_rules_digest`

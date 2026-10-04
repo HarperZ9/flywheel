@@ -65,3 +65,15 @@ withheld. One signed head proves one view; catching a log that shows two views
 needs the head gossiped or contested. Binding the signing key to a person is
 outside the key itself, which is exactly what the GitHub authentication-key upload
 is for.
+
+## Update 2026-10-04: Rekor added as a second anchor
+
+The section above dropped Rekor. That decision is reversed. The author approved
+Rekor anchoring on 2026-10-04 so that preregistration heads have two anchors with
+different controllers. The reason given above for dropping it does not apply to
+the public Rekor v1 instance used here: each entry still returns a signed entry
+timestamp and an inclusion proof against a signed checkpoint, and both are stored
+and rechecked offline. Rekor checks an Ed25519 key in a `hashedrekord` entry as
+Ed25519ph, so the anchor carries an Ed25519ph signature by the same key. The
+prereg size-8 head is logged at Rekor indexes 3077414145 (prereg log key) and
+3077405366 (this record's key). See `docs/features/rekor-anchor.md`.

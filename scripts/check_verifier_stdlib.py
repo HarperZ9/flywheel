@@ -43,6 +43,9 @@ VERIFIER_ENTRY_POINTS = [
     "pysyft_job_hash",  # PySyft's approved-job hash, recomputed offline
     "ots_verify",       # the OpenTimestamps -> Bitcoin proof a stranger rechecks
     "anchor",           # ties a signed head to its timestamp over one digest
+    "ed25519ph_verify", # the prehashed Ed25519 check Rekor entries carry
+    "rekor_verify",     # the Rekor anchor, rechecked offline against the pinned log key
+    "p256_verify",      # the ECDSA P-256 check Rekor's signatures need
     "why",              # answering doubt from the record alone
     "ledger",           # the receipt log and its inclusion proofs
     "merkle",           # the tree a stranger recomputes

@@ -22,6 +22,9 @@ Verification and evidence
 - [shapley-placebo](shapley-placebo.md): a placebo test for exact Shapley attribution
   over sources; how often an empty, irrelevant or shuffled source gets credit, with
   Wilson intervals.
+- [rekor-anchor](rekor-anchor.md): anchors a signed head in Sigstore's Rekor log and in
+  Bitcoin through OpenTimestamps, two timelines the author does not run, with an
+  offline verifier.
 - [pysyft-result-receipt](pysyft-result-receipt.md): a signed receipt that binds a
   published score to the exact PySyft job a data owner approved, checkable with no
   access to the model or the data.
