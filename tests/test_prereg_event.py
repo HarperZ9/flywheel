@@ -1,8 +1,9 @@
 """The prereg event ceremony: append, sign, prove growth, leak nothing.
 
 The freeze it extends was done by hand once. These tests pin the properties that
-made it worth turning into a script: the published head is never overwritten,
-growth carries a consistency proof, a wrong key is refused before it signs, and a
+made it worth turning into a script: the file named signed-head.json always signs
+the whole log, the frozen head is never overwritten, growth carries a consistency
+proof, a wrong key is refused before it signs, and a
 local path cannot ride into a published artifact.
 """
 import importlib.util
@@ -89,6 +90,9 @@ def build_log(tmp_path, monkeypatch, seed=SEED):
     signed = sign_head(led.head(), lambda m: sk.sign(m).signature,
                        public_key=public, timestamp="2026-01-01T00:00:00Z")
     (d / "signed-head.json").write_text(json.dumps(signed), encoding="utf-8")
+    (d / "heads").mkdir()
+    (d / "heads" / "head-0001.json").write_text(json.dumps(signed),
+                                                encoding="utf-8")
     (d / "FREEZE.json").write_text(json.dumps({
         "prereg_id": "test.v1", "log_id": log_id,
         "public_key_hex": public.hex()}), encoding="utf-8")
@@ -98,7 +102,8 @@ def build_log(tmp_path, monkeypatch, seed=SEED):
     monkeypatch.setattr(E, "PREREG_DIR", d)
     monkeypatch.setattr(E, "FREEZE", d / "FREEZE.json")
     monkeypatch.setattr(E, "LEDGER", ledger_path)
-    monkeypatch.setattr(E, "FROZEN_HEAD", d / "signed-head.json")
+    monkeypatch.setattr(E, "SIGNED_HEAD", d / "signed-head.json")
+    monkeypatch.setattr(E, "FROZEN_HEAD", d / "heads" / "head-0001.json")
     monkeypatch.setattr(E, "HEADS", d / "heads")
     monkeypatch.setattr(E, "REPO", tmp_path)
     return d, keyfile, signed
@@ -127,15 +132,89 @@ def test_event_appends_signs_and_proves_growth(tmp_path, monkeypatch):
         "the proof must anchor to the head that was actually published")
 
 
-def test_the_published_frozen_head_is_never_overwritten(tmp_path, monkeypatch):
-    """FREEZE.json and a git tag name signed-head.json. Rewriting it would
+def _public(d):
+    return bytes.fromhex(json.loads(
+        (d / "FREEZE.json").read_text(encoding="utf-8"))["public_key_hex"])
+
+
+def _log_id(d):
+    return json.loads((d / "FREEZE.json").read_text(encoding="utf-8"))["log_id"]
+
+
+def test_the_frozen_head_is_never_overwritten(tmp_path, monkeypatch):
+    """FREEZE.json and the freeze tag name the size-1 head. Rewriting it would
     invalidate every distributed copy of the freeze attestation."""
     d, keyfile, frozen = build_log(tmp_path, monkeypatch)
-    before = (d / "signed-head.json").read_bytes()
-    E.record("ladder-possession", {"verdict": "OK"}, "2026-07-26T23:30:00Z",
-             keyfile)
-    assert (d / "signed-head.json").read_bytes() == before
+    before = (d / "heads" / "head-0001.json").read_bytes()
+    E.record("a", {"verdict": "OK"}, "2026-07-26T23:30:00Z", keyfile)
+    E.record("b", {"verdict": "OK"}, "2026-07-26T23:31:00Z", keyfile)
+    assert (d / "heads" / "head-0001.json").read_bytes() == before
     assert json.loads(before)["size"] == 1
+
+
+def test_appending_moves_the_signed_head_to_the_full_tree(tmp_path, monkeypatch):
+    """The defect this pins: signed-head.json stayed at size 1 while the log
+    grew to 8, so the file named "signed head" signed a stale tree. After every
+    append it must sign every entry."""
+    from harness import prereg_heads
+    from harness.ledger import Ledger
+    from harness.tree_head import check_signed_head
+    d, keyfile, _ = build_log(tmp_path, monkeypatch)
+    for i in range(3):
+        E.record(f"k{i}", {"v": i}, f"2026-07-26T23:3{i}:00Z", keyfile)
+        head = json.loads((d / "signed-head.json").read_text(encoding="utf-8"))
+        led = Ledger(d / "ledger.jsonl", log_id=_log_id(d))
+        assert head["size"] == led.size() == i + 2
+        assert head["root"] == led.root()
+        assert check_signed_head(head, _public(d)) == (True, "ok")
+        assert prereg_heads.check_current(d, _public(d), _log_id(d)) == (True, "ok")
+
+
+def test_growth_is_proven_from_the_previous_head_and_from_the_freeze(
+        tmp_path, monkeypatch):
+    from harness.ledger import Ledger
+    d, keyfile, _ = build_log(tmp_path, monkeypatch)
+    E.record("a", {"v": 1}, "2026-07-26T23:30:00Z", keyfile)
+    out = E.record("b", {"v": 2}, "2026-07-26T23:31:00Z", keyfile)
+    assert out["extends"]["size"] == 2
+    names = sorted(Path(p).name for p in out["consistency"])
+    assert names == ["consistency-0001-to-0003.json",
+                     "consistency-0002-to-0003.json"]
+    for name in names:
+        proof = json.loads((d / "heads" / name).read_text(encoding="utf-8"))
+        assert Ledger.check_consistency(proof) == (True, "ok")
+
+
+def test_a_stale_signed_head_is_refused_before_appending(tmp_path, monkeypatch):
+    """The ceremony must not extend a log whose published head is already
+    stale; it would only make the gap wider."""
+    from harness import prereg_heads
+    d, keyfile, _ = build_log(tmp_path, monkeypatch)
+    stale = (d / "signed-head.json").read_bytes()
+    E.record("a", {"v": 1}, "2026-07-26T23:30:00Z", keyfile)
+    (d / "signed-head.json").write_bytes(stale)       # the old main behaviour
+    ok, why = prereg_heads.check_current(d, _public(d), _log_id(d))
+    assert not ok and why.startswith("stale_signed_head")
+    with pytest.raises(E.CeremonyError, match="stale"):
+        E.record("b", {"v": 2}, "2026-07-26T23:31:00Z", keyfile)
+
+
+def test_check_current_refuses_a_head_under_another_key(tmp_path, monkeypatch):
+    from harness import prereg_heads
+    d, _, _ = build_log(tmp_path, monkeypatch)
+    other = bytes(nacl.SigningKey(bytes(range(32, 64))).verify_key)
+    ok, why = prereg_heads.check_current(d, other, _log_id(d))
+    assert not ok and why.startswith("signed_head_invalid")
+
+
+def test_a_historical_head_with_other_bytes_is_not_overwritten(tmp_path):
+    from harness import prereg_heads
+    p = tmp_path / "head-0002.json"
+    p.write_text("original\n", encoding="utf-8")
+    prereg_heads.write_once(p, "original\n")          # same bytes: no-op
+    with pytest.raises(FileExistsError):
+        prereg_heads.write_once(p, "rewritten\n")
+    assert p.read_text(encoding="utf-8") == "original\n"
 
 
 def test_replaying_the_same_observation_does_not_grow_the_log(tmp_path, monkeypatch):
