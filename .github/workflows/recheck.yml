@@ -86,6 +86,8 @@ jobs:
         with:
           # The site's benchmark seal was recorded on 3.12.
           python-version: "3.12"
+      - name: Packages the manifests declare in needs.packages
+        run: python -m pip install pytest
       - name: Every cpu manifest, command and control, from checkout to verdict
         shell: bash
         run: |

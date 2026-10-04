@@ -47,12 +47,16 @@
     "network": [
       "github.com"
     ],
-    "seconds": 12
+    "seconds": 12,
+    "packages": [
+      "pytest"
+    ]
   },
   "access": "A0",
   "expertise": "E0",
   "anchor": "self",
   "covers": "That the published numbers and seal follow from the code and committed inputs at a8e1cd2e. The seal hashes results, not timings.",
   "does_not_cover": "Whether the scenarios represent use. The maker wrote them; the suite's own non-goal says it measures accountability, not capability, and ranks Flywheel against no other harness.",
-  "ci": true
+  "ci": true,
+  "notes": "The externalization dimension runs pytest in a subprocess. Without pytest installed it scores 0 instead of reporting that it could not run, harness_overall drops to 0.875 and the seal changes (found by this manifest's first Linux CI run, 2026-10-04). The record does not name pytest as a requirement; this manifest does, and the runner refuses to start without it."
 }

@@ -113,7 +113,21 @@ def _control(m: dict, cwd: Path, places: dict) -> dict:
     return result | {"misses": meets(result, c["expect"])}
 
 
+def missing_packages(m: dict) -> list[str]:
+    """Declared packages the running interpreter cannot import.
+
+    Checked before anything runs: a missing test dependency once turned a
+    benchmark dimension to 0 and changed its seal, which read as DRIFT.
+    """
+    import importlib.util
+    return [p for p in m["needs"].get("packages", []) if importlib.util.find_spec(p) is None]
+
+
 def recheck(m: dict, work: Path) -> dict:
+    missing = missing_packages(m)
+    if missing:
+        raise RuntimeError(f"needs {', '.join(missing)} in this interpreter "
+                           f"(python -m pip install {' '.join(missing)}); not run")
     t0 = time.perf_counter()
     co = checkout(m, work)
     try:

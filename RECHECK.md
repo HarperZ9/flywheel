@@ -13,9 +13,11 @@ python -m harness.recheck run recheck/site-benchmark-seal.json
 python -m harness.recheck run --hardware cpu --ci     # every claim a laptop can check
 ```
 
-Python 3.11 or newer and Git are the only requirements for the `cpu` manifests
-that run in CI; they install nothing. Each run prints PASS or FAIL per claim and
-the seconds from checkout to verdict.
+Python 3.11 or newer and Git are the requirements for the `cpu` manifests that run
+in CI, plus `pytest` for `site-benchmark-seal` (declared in its `needs.packages`;
+the runner refuses to start without it rather than report a false DRIFT). The
+runner installs nothing. Each run prints PASS or FAIL per claim and the seconds
+from checkout to verdict.
 
 ## What the runner does
 
@@ -45,7 +47,7 @@ the seconds from checkout to verdict.
 | `command` | The argument list. `{python}`, `{checkout}`, `{repo}` and `{inputs}` are filled in. |
 | `expect` | `exit_code`, plus `stdout_contains` and `stdout_lacks` lists. |
 | `control` | `description`, an optional `mutate` (`file`, `find`, `replace`, first match only) and its own `expect`. |
-| `needs` | `hardware` (`cpu`, `cpu-16gb`, `gpu-8gb`, `gpu-24gb`, `cluster`), `os`, `python`, the hosts it contacts (`network`) and the expected compute `seconds`. |
+| `needs` | `hardware` (`cpu`, `cpu-16gb`, `gpu-8gb`, `gpu-24gb`, `cluster`), `os`, `python`, `packages` the interpreter must import, the hosts it contacts (`network`) and the expected compute `seconds`. |
 | `access` | A0 public and anonymous, A1 free account, A2 granted on request, A3 private to the maker, A4 does not exist. |
 | `expertise` | E0 runs a given command, E1 reads code and logs, E2 domain method, E3 specialist judgment. |
 | `anchor` | Who controls the reference the check compares against: `self`, `third-party` or `plural`. |

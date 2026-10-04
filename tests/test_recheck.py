@@ -96,3 +96,11 @@ def test_runner_fails_when_expected_output_is_missing(tmp_path):
     m["expect"]["stdout_contains"] = ["not printed"]
     result = recheck.recheck(m, tmp_path)
     assert not result["ok"] and result["main"]["misses"]
+
+
+def test_a_missing_declared_package_stops_the_run_before_any_verdict(tmp_path):
+    m = _local(_head())
+    m["needs"]["packages"] = ["no_such_module_for_recheck"]
+    with pytest.raises(RuntimeError, match="no_such_module_for_recheck"):
+        recheck.recheck(m, tmp_path)
+    assert not (tmp_path / "checkout").exists()

@@ -89,6 +89,9 @@ def problems_in(m: dict) -> list[str]:
         p.append(f"needs.hardware must be one of {HARDWARE}")
     if not isinstance(needs.get("seconds"), (int, float)):
         p.append("needs.seconds: the expected compute time")
+    packages = needs.get("packages", [])
+    if not (isinstance(packages, list) and all(isinstance(x, str) for x in packages)):
+        p.append("needs.packages must be a list of importable module names")
     for key, allowed in (("access", ACCESS), ("expertise", EXPERTISE), ("anchor", ANCHORS)):
         if m[key] not in allowed:
             p.append(f"{key} must be one of {allowed}")
