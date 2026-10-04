@@ -1,7 +1,7 @@
 # Lean oracle task binding: follow-up (2026-09-23)
 
-Status: fix proposed 2026-10-04 on branch `fix/lean-oracle-task-binding`
-(see "Update, 2026-10-04" at the end). Found while adding the leanchecker
+Status: fixed. The fix merged to main on 2026-10-04 as #365 and ships in
+1.4.0 (see "Update, 2026-10-04" at the end). Found while adding the leanchecker
 replay rung on branch `fix/lean-leanchecker-replay`. That branch fixes nothing
 in this record.
 
