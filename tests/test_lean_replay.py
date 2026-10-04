@@ -16,6 +16,7 @@ import json
 
 import pytest
 
+from _lean_external_fixture import answer
 from harness import lean_replay
 from harness.lean_oracle import (LeanOracle, _lean_exe, lean_check,
                                  leanchecker_available)
@@ -77,6 +78,9 @@ def _runner(*, checker=(0, ""), compile_rc=0, missing=False, calls=None,
             calls.append(argv[0] if len(argv) == 1 else " ".join(argv))
         if "--run" in argv:
             return 0, BOUND
+        ext = answer(argv, githash="injected")
+        if ext is not None:
+            return ext
         if argv[0] == "leanchecker":
             if missing:
                 raise FileNotFoundError("leanchecker")

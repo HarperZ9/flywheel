@@ -11,6 +11,7 @@ import os
 
 import pytest
 
+from _lean_external_fixture import answer
 from harness import lean_binding, lean_replay
 from harness.lean_binding import (CHALLENGE_MODULE, SCHEMA, bound_check,
                                   challenge_source, parse_challenge)
@@ -30,12 +31,15 @@ def _doc(**kw):
 
 
 def _runner(*, bind=None, compile_rc=0, challenge_rc=0, checker=(0, ""),
-            calls=None):
+            calls=None, **external):
     def run(argv, code):
         if calls is not None:
             calls.append(" ".join(argv))
         if "--run" in argv:
             return 0, bind if bind is not None else _doc()
+        ext = answer(argv, githash="abc", **external)
+        if ext is not None:
+            return ext
         if argv[0] == "leanchecker":
             return checker
         if f"{CHALLENGE_MODULE}.olean" in argv:

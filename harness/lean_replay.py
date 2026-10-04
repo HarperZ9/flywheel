@@ -78,19 +78,20 @@ _UNLOADED = ("uncaught exception: unknown module prefix '",
 
 def run_killable(argv: list, *, timeout: int = TIMEOUT,
                  env: "dict | None" = None, label: str = "",
-                 stderr=subprocess.STDOUT) -> tuple:
+                 stderr=subprocess.STDOUT, **popen) -> tuple:
     """Run argv, stderr merged into stdout by default; reap the whole tree
     on timeout.
 
     Popen plus tree-kill, the oracle.py discipline: the child runs candidate
     metaprograms, and a candidate that forks must cost one timeout, never a
     wedged harness. A toolchain query passes stderr=subprocess.DEVNULL so an
-    elan notice cannot land in the text it parses. OSError from a binary
-    that cannot start propagates.
+    elan notice cannot land in the text it parses. Extra keyword arguments
+    (cwd, preexec_fn) go to Popen. OSError from a binary that cannot start
+    propagates.
     """
     from .proc_kill import _kill_tree, spawn_killable
     proc = spawn_killable(argv, env=env, stdout=subprocess.PIPE,
-                          stderr=stderr)
+                          stderr=stderr, **popen)
     try:
         out, _ = proc.communicate(timeout=timeout)
         return proc.returncode, (out or b"").decode("utf-8", errors="replace")

@@ -5,21 +5,27 @@ runner); this module runs them in order and writes the one receipt shape
 every exit returns. Each step runs only when the one before it passed, and
 the compiled module's hash is rechecked after every step that follows the
 compile, so all of them judge the same artifact.
+
+`kernels_agreeing` counts the independent kernels that accepted the pinned
+theorem in that artifact: Lean's (the compile and the leanchecker replay)
+and nanoda (harness/lean_external_kernel.py). `passed` is True only at 2.
 """
 from __future__ import annotations
 
 import hashlib
 
 from .lean_binding import (AXIOMS_SOURCE, KERNEL, R_BIND, R_CHALLENGE,
-                           R_HASH, R_SHADOW, R_UNSUPPORTED, SCHEMA,
-                           SPEC_FIDELITY, _bind_doc, challenge_sha256,
-                           challenge_source)
+                           R_EXT_ERROR, R_EXT_MISSING, R_HASH, R_SANDBOX,
+                           R_SHADOW, R_UNSUPPORTED, SCHEMA, SPEC_FIDELITY,
+                           _bind_doc, challenge_sha256, challenge_source)
 
 NOTE = ("the candidate compiled once; the pinned theorem was matched to the "
         "challenge's elaborated statement and every definition it uses; its "
         "axioms were walked from the compiled module and audited against the "
-        "classical trio; leanchecker replayed the same module. Re-run under "
-        "the named toolchain to re-derive")
+        "classical trio; leanchecker replayed the same module; nanoda, a "
+        "second kernel, checked a lean4export export of that module. Re-run "
+        "under the named toolchain and the pinned external tools to "
+        "re-derive")
 _CHANGED = ("the compiled module changed between checks, so the steps did not "
             "judge one artifact; fail closed")
 
@@ -30,8 +36,10 @@ def _sha(text: str) -> str:
 
 def receipt(sha: str, passed, toolchain: str, output: str, ch: dict, *,
             bind: "dict | None" = None, level: str = "none", replay=None,
-            reason: str = "", artifact: str = "") -> dict:
+            reason: str = "", artifact: str = "", external=None,
+            agreeing: int = 0, sandbox=None) -> dict:
     """The receipt of a bound check, at every exit."""
+    from .lean_external_kernel import not_run
     from .lean_oracle import _ALLOWED_AXIOMS
     from .lean_replay import LADDER
     bind = bind or {}
@@ -61,6 +69,9 @@ def receipt(sha: str, passed, toolchain: str, output: str, ch: dict, *,
         "artifact_sha256": artifact,
         "axiom_footprint": {name: axioms} if bind.get("axioms") is not None
         and name else {},
+        "external_kernel": external or not_run(),
+        "kernels_agreeing": agreeing,
+        "sandbox": sandbox,
     }
     if reason:
         doc["unverifiable_reason"] = reason
@@ -98,50 +109,79 @@ def _bind_step(code: str, ch: dict, steps, sha: str, toolchain: str,
 
 
 def judge(code: str, ch: dict, steps, sha: str, toolchain: str) -> dict:
-    """Compile, bind, audit, replay; the first step that does not pass
-    decides the receipt."""
+    """Compile, bind, audit, replay, re-check with the second kernel; the
+    first step that does not pass decides the receipt."""
     from .lean_oracle import _ALLOWED_AXIOMS, _uses_hole
-    from .lean_replay import (LADDER, MODE, MODULE, R_COMPILE,
-                              VERSION_SOURCE)
+    from .lean_replay import LADDER, R_COMPILE
     try:
         rc, out = steps.compile_candidate(code)
     except OSError as exc:
         return receipt(sha, None, toolchain, f"lean could not be started "
                        f"({exc})", ch, reason=R_COMPILE)
+    box = getattr(steps, "sandbox", None)
+    if rc is None:
+        return receipt(sha, None, toolchain, "the candidate was not compiled: "
+                       + (out or ""), ch, reason=R_SANDBOX, sandbox=box)
     if rc != 0 or _uses_hole(out):
-        return receipt(sha, False, toolchain, out, ch)
+        return receipt(sha, False, toolchain, out, ch, sandbox=box)
     art = steps.olean_sha()
+
+    def stop(passed, text, **kw):
+        kw.setdefault("artifact", art)
+        return receipt(sha, passed, toolchain, text, ch, sandbox=box, **kw)
     rc, cout = steps.compile_challenge(challenge_source(ch))
     if rc != 0:
-        return receipt(sha, None, toolchain, "the pinned challenge did not "
-                       "compile, so nothing can be bound to it: " + cout, ch,
-                       level=LADDER[0], reason=R_CHALLENGE, artifact=art)
+        return stop(None, "the pinned challenge did not compile, so nothing "
+                    "can be bound to it: " + cout, level=LADDER[0],
+                    reason=R_CHALLENGE)
     if steps.olean_sha() != art:
-        return receipt(sha, False, toolchain, _CHANGED, ch, artifact=art)
+        return stop(False, _CHANGED)
     final, doc = _bind_step(code, ch, steps, sha, toolchain, art)
     if final is not None:
+        final["sandbox"] = box
         return final
     forbidden = sorted(a for a in doc.get("axioms", [])
                        if a not in _ALLOWED_AXIOMS)
     if forbidden:
-        return receipt(sha, False, toolchain, "the pinned theorem depends on "
-                       "axioms outside the classical trio: "
-                       + ", ".join(forbidden), ch, bind=doc,
-                       level=LADDER[0], artifact=art)
+        return stop(False, "the pinned theorem depends on axioms outside the "
+                    "classical trio: " + ", ".join(forbidden), bind=doc,
+                    level=LADDER[0])
+    return _kernels(code, ch, steps, doc, out, stop, toolchain, art)
+
+
+def _kernels(code, ch, steps, doc, out, stop, toolchain, art) -> dict:
+    """The leanchecker replay, then the second kernel, on one artifact."""
+    from .lean_external_kernel import (ACCEPTED, REJECTED, UNAVAILABLE,
+                                       external_check)
+    from .lean_replay import LADDER, MODE, MODULE, VERSION_SOURCE
     rep = steps.replay(code)
     if steps.olean_sha() != art:
-        return receipt(sha, False, toolchain, _CHANGED, ch, bind=doc,
-                       artifact=art)
+        return stop(False, _CHANGED, bind=doc)
     record = {"mode": MODE, "module": MODULE, "exit": rep.get("exit"),
-              "version": toolchain, "version_source": VERSION_SOURCE}
+              "version": toolchain,
+              "version_source": VERSION_SOURCE}
     if rep["ok"] is None:
-        return receipt(sha, None, toolchain, "bound and audited, but the "
-                       "leanchecker replay judged nothing: " + rep["detail"],
-                       ch, bind=doc, level=LADDER[1], replay=record,
-                       reason=rep.get("reason") or R_BIND, artifact=art)
+        return stop(None, "bound and audited, but the leanchecker replay "
+                    "judged nothing: " + rep["detail"], bind=doc,
+                    level=LADDER[1], replay=record,
+                    reason=rep.get("reason") or R_BIND)
     if rep["ok"] is False:
-        return receipt(sha, False, toolchain, "bound and audited, but "
-                       + rep["detail"], ch, bind=doc, level=LADDER[1],
-                       replay=record, artifact=art)
-    return receipt(sha, True, toolchain, out, ch, bind=doc, level=LADDER[2],
-                   replay=record, artifact=art)
+        return stop(False, "bound and audited, but " + rep["detail"],
+                    bind=doc, level=LADDER[1], replay=record)
+    make = getattr(steps, "external_steps", None)
+    ext = external_check(make(code, challenge_source(ch)) if make else None,
+                         ch, doc)
+    common = dict(bind=doc, level=LADDER[2], replay=record, external=ext)
+    if steps.olean_sha() != art:
+        return stop(False, _CHANGED, **common)
+    if ext["verdict"] == ACCEPTED:
+        return stop(True, out, agreeing=2, **common)
+    if ext["verdict"] == REJECTED:
+        return stop(False, "the Lean kernel accepted the pinned theorem and "
+                    "the external kernel did not; the kernels disagree, so "
+                    "fail closed: " + ext["detail"], agreeing=1, **common)
+    reason = R_EXT_MISSING if ext["verdict"] == UNAVAILABLE else R_EXT_ERROR
+    return stop(None, "the Lean kernel accepted the pinned theorem, but the "
+                "external kernel judged nothing, and one kernel does not make "
+                "a pass: " + ext["detail"], agreeing=1, reason=reason,
+                **common)

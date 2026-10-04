@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 
+from _lean_external_fixture import answer
 from harness.lean_oracle import LeanOracle
 from harness.oracle_registry import OracleRegistry, default_registry, run_verified
 from harness.proposer import StubProposer
@@ -43,6 +44,9 @@ def unpinned(tmp_path):
 
 
 def _clean(argv, code):
+    ext = answer(argv, githash="injected")
+    if ext is not None:
+        return ext
     return (0, _bind()) if "--run" in argv else (0, "")
 
 

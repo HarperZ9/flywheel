@@ -1,17 +1,18 @@
 """lean_oracle_adapter.py -- the math domain oracle over the bound Lean check.
 
-The kernel is the sole acceptance authority, and since 2026-10-04 it judges
-the candidate against the statement the task pinned before the candidate
-existed (harness/lean_binding.py). The task supplies a `challenge`: a theorem
+Two kernels are the acceptance authority: Lean's, and nanoda
+(harness/lean_external_kernel.py). They judge the candidate against the
+statement the task pinned before the candidate existed
+(harness/lean_binding.py). The task supplies a `challenge`: a theorem
 name, its statement, and an optional header with the imports and definitions
 the statement uses. A task with no challenge is UNVERIFIABLE with reason
 SPECIFICATION_UNPINNED: before this change such a task passed any closed
 theorem (project-docs/records/2026-09-23-lean-oracle-task-binding.md).
 
 This adapts the bound receipt to an OracleResult so the kernel judgment plugs
-into run_loop and the domain registry. A missing toolchain (lean, or the
-leanchecker it ships) becomes UNVERIFIABLE attributed to the environment,
-never a candidate FAIL.
+into run_loop and the domain registry. A missing toolchain (lean, the
+leanchecker it ships, or the pinned external kernel) becomes UNVERIFIABLE
+attributed to the environment, never a candidate FAIL.
 """
 from __future__ import annotations
 
@@ -30,13 +31,20 @@ _REPLAY_LIMITS = (
     "leanchecker replay runs in plain mode: it re-checks the declarations the "
     "compiled module adds and trusts every imported .olean file as found on "
     "disk, the toolchain's and any found through the inherited LEAN_PATH; it "
-    "is neither the --fresh replay nor an external kernel (comparator with "
-    "nanoda or lean4lean)")
+    "is not the --fresh replay")
+_TWO_KERNELS = (
+    "two kernels agreeing (Lean's and nanoda, kernels_agreeing 2) rules out a "
+    "bug in either kernel alone producing this pass; both read the module "
+    "through Lean's own .olean loader (nanoda through lean4export's export), "
+    "so a loader or exporter fault that shows both kernels the same wrong "
+    "declarations is not ruled out, and neither is a soundness bug the two "
+    "implementations share")
 _ELABORATION = (
-    "the candidate's metaprograms ran unsandboxed with this user's rights "
-    "during its one compile; one that writes files outside its build "
-    "directory, such as the toolchain's .olean files, is outside what the "
-    "artifact hash and an in-process replay detect")
+    "the candidate's metaprograms ran during its one compile under the "
+    "limits in the receipt's sandbox block; network access and reads of "
+    "this user's files were not restricted, so the compile could read and "
+    "send data; the validation level stops short of comparator_external "
+    "until a no-network sandbox lands")
 _AUDIT_SCOPE = (
     "the axiom audit walks every constant the pinned theorem depends on; a "
     "declaration the pinned theorem does not reach is replayed by "
@@ -73,6 +81,7 @@ class LeanOracle:
             "footprint": {k: sorted(v) for k, v in sorted(footprint.items())},
             "level": level, "statement": res.get("statement_sha256", ""),
             "challenge": res["challenge"]["challenge_sha256"],
+            "kernels": res.get("kernels_agreeing", 0),
         }).encode()).hexdigest()[:16]
         coverage = {"checker": "lean", "axiom_footprint": footprint,
                     "validation_level": level,
@@ -83,6 +92,9 @@ class LeanOracle:
                     "trusted_base": res.get("trusted_base"),
                     "spec_fidelity": res.get("spec_fidelity"),
                     "artifact_sha256": res.get("artifact_sha256", "")}
+        coverage["external_kernel"] = res.get("external_kernel")
+        coverage["kernels_agreeing"] = res.get("kernels_agreeing", 0)
+        coverage["sandbox"] = res.get("sandbox")
         if res.get("unverifiable_reason"):
             coverage["unverifiable_detail"] = res["unverifiable_reason"]
         return _result(res, output_hash, coverage)
@@ -122,7 +134,8 @@ def _result(res: dict, output_hash: str, coverage: dict) -> "OracleResult":
         return OracleResult(
             rc=0, verdict_=Verdict.PASS,
             does_not_prove=[_FIDELITY, _BINDING_SCOPE, _REPLAY_LIMITS,
-                            _ELABORATION, _AUDIT_SCOPE], **common)
+                            _TWO_KERNELS, _ELABORATION, _AUDIT_SCOPE],
+            **common)
     return OracleResult(
         rc=1, verdict_=Verdict.FAIL,
         does_not_prove=[kernel[:160] or "the kernel refused the proof",
