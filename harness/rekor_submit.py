@@ -22,7 +22,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from . import ed25519_verify, rekor_verify
+from . import ed25519ph_verify, rekor_verify
 
 ENTRIES_PATH = "/api/v1/log/entries"
 
@@ -82,7 +82,7 @@ def load_ph_signer(path: Path, want_public_hex: str | None = None):
 def proposed_entry(artifact: bytes, sign_ph, public_key: bytes) -> dict:
     """Sign and build the hashedrekord. Checks its own signature before returning."""
     signature = sign_ph(bytes(artifact))
-    if not ed25519_verify.verify_ph(public_key, bytes(artifact), signature):
+    if not ed25519ph_verify.verify_ph(public_key, bytes(artifact), signature):
         raise RekorError("the Ed25519ph signature does not verify under the public key")
     entry = rekor_verify.hashedrekord_entry(artifact, signature, public_key)
     assert_hash_only(entry, artifact)

@@ -9,7 +9,7 @@ import hashlib
 
 import pytest
 
-from harness import ed25519_verify, p256_verify, rekor_online, rekor_verify
+from harness import ed25519_verify, ed25519ph_verify, p256_verify, rekor_online, rekor_verify
 
 
 # --- Ed25519ph -----------------------------------------------------------------
@@ -22,8 +22,8 @@ RFC_PH_SIG = bytes.fromhex(
 
 
 def test_ed25519ph_rfc8032_vector():
-    assert ed25519_verify.verify_ph(RFC_PH_PUBLIC, b"abc", RFC_PH_SIG)
-    assert not ed25519_verify.verify_ph(RFC_PH_PUBLIC, b"abd", RFC_PH_SIG)
+    assert ed25519ph_verify.verify_ph(RFC_PH_PUBLIC, b"abc", RFC_PH_SIG)
+    assert not ed25519ph_verify.verify_ph(RFC_PH_PUBLIC, b"abd", RFC_PH_SIG)
 
 
 def test_ph_and_pure_signatures_never_cross_verify():
@@ -37,8 +37,8 @@ def test_ph_matches_libsodium_signer():
     state = nacl.crypto_sign_ed25519ph_state()
     nacl.crypto_sign_ed25519ph_update(state, b"flywheel")
     sig = nacl.crypto_sign_ed25519ph_final_create(state, secret)
-    assert ed25519_verify.verify_ph(public, b"flywheel", sig)
-    assert not ed25519_verify.verify_ph(public, b"flywheeL", sig)
+    assert ed25519ph_verify.verify_ph(public, b"flywheel", sig)
+    assert not ed25519ph_verify.verify_ph(public, b"flywheeL", sig)
 
 
 # --- P-256 -----------------------------------------------------------------------

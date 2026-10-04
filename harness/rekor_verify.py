@@ -26,7 +26,7 @@ import base64
 import hashlib
 import json
 
-from . import ed25519_verify, p256_verify
+from . import ed25519_verify, ed25519ph_verify, p256_verify
 
 SCHEMA = "flywheel.rekor-anchor/v1"
 
@@ -181,7 +181,7 @@ def _body_reasons(body: dict, artifact: bytes, public_key: bytes) -> list[str]:
     if key != bytes(public_key):
         reasons.append("BODY_KEY_NOT_PINNED_KEY")
     try:
-        if not ed25519_verify.verify_ph(key, artifact, signature):
+        if not ed25519ph_verify.verify_ph(key, artifact, signature):
             reasons.append("ARTIFACT_SIGNATURE_INVALID")
     except ed25519_verify.Ed25519Error:
         reasons.append("ARTIFACT_SIGNATURE_INVALID")
