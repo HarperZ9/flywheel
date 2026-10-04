@@ -65,6 +65,29 @@ shifts the model's confidence without flipping its answer. A graded value functi
 such as the log-likelihood of the answer, could give the same controls nonzero
 credit. This run does not measure that.
 
+## Exploratory run: can this test fail?
+
+Added after the primary result was read, recorded in the preregistration's deviations
+section before this result was read, and not judged against the bar. Same items,
+prompt, decoding and value function, on Ollama `qwen2.5:0.5b` (manifest digest
+`a8b0c515...1827c67`). 1,024 calls, 52 seconds.
+
+| Measure | k / n | Rate | Wilson 95% |
+|:--|:--|:--|:--|
+| False attribution, all controls | 7 / 80 | 0.088 | 0.043 to 0.170 |
+| Empty controls | 1 / 16 | 0.063 | 0.011 to 0.283 |
+| Irrelevant controls | 2 / 32 | 0.063 | 0.017 to 0.202 |
+| Shuffled controls | 4 / 32 | 0.125 | 0.050 to 0.281 |
+| Any credit, positive or negative | 25 / 80 | 0.313 | 0.222 to 0.421 |
+| False attribution, answerable items only | 5 / 50 | 0.100 | 0.044 to 0.214 |
+| Gold detection, answerable items | 10 / 10 | 1.000 | 0.722 to 1.000 |
+
+The verdict would be UNRELIABLE. The smaller model's answers moved when an empty,
+irrelevant or shuffled source was added, and exact Shapley passed those moves on as
+credit, up to 0.13 for one shuffled source. Exact Shapley stays exact here. It
+reports faithfully what the value function did, and the value function responded to
+noise. So the test can fail, and it separates these two models on these items.
+
 ## Run it
 
 ```bash
