@@ -4,7 +4,18 @@ These five fixtures use bundled Hanken Grotesk, Cascadia Mono and Material Icons
 with Flutter 3.44.6. Host font rasterization still differs. Windows baselines
 remain in this directory; Linux baselines live in `linux/`. The helper
 `../platform_golden.dart` selects the host baseline. A missing baseline fails;
-there is no platform skip or pixel tolerance.
+there is no platform skip.
+
+Comparison is exact first. On a mismatch, `../flutter_test_config.dart` installs
+`../host_noise_comparator.dart`, which accepts only host rasterization noise:
+every channel delta at most 48 of 255, every differing pixel within 8 levels of
+the baseline's 3x3 neighborhood range, and at most 0.5% of pixels differing.
+Desktop-ci run 37154354793 attempt 1 (2026-10-03) rendered all six Windows
+baselines with edge noise on one runner: max delta 33, at most 5 levels outside
+the neighborhood, at most 0.18% of pixels. The rerun on another runner matched
+exactly. `../host_noise.dart` records the measurements, the margins, and the
+change class the check cannot see. Any other difference still fails, with the
+usual failure images and the measured figures.
 
 Linux captures were reviewed from desktop-ci run
 [35039951256](https://github.com/HarperZ9/flywheel/actions/runs/35039951256),

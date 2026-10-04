@@ -235,7 +235,7 @@ class FlywheelRouterAdapter:
         failure = failure or ("" if present else "codex_cli_missing")
         return AvailabilityResult(not failure, failure, failure or "adapter metadata ready", {"process_present": present, "provider_called": False, **evidence})
     def execute(self, request) -> AdapterResult:
-        exe = "" if self.proposer is not None else self.executable_resolver(); proposer = self.proposer or CodexCliProposer(request.requested_model_reference, workspace=request.workspace_root, artifact_dir=request.artifact_dir, timeout_seconds=request.timeout_seconds, runner=self.runner, executable_resolver=self.executable_resolver)
+        exe = "" if self.proposer is not None else self.executable_resolver(); proposer = self.proposer or CodexCliProposer(request.requested_model_reference, workspace=request.workspace_root, artifact_dir=request.artifact_dir, timeout_seconds=request.timeout_seconds, runner=self.runner, executable_resolver=self.executable_resolver, clock=self.clock)
         return _router_result(request, proposer, "flywheel_outer", self.clock, proposer_invocations_max=self.proposer_invocations_max, cli_identity=cli_identity_fields(self.cli_version, exe))
 def _profile_error(profile: dict[str, Any]) -> str:
     if error := profile_config_error(profile): return error

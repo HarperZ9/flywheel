@@ -55,6 +55,14 @@ jobs:
           channel: stable
           flutter-version: 3.44.6
           cache: true
+      # Golden pixels depend on the host's software rasterizer path. Recording
+      # the CPU lets a golden difference be matched to the host that drew it.
+      - name: Record the host CPU
+        shell: bash
+        run: >-
+          python -c "import os, platform;
+          print(open('/proc/cpuinfo').read().split('model name')[1].split(chr(10))[0]
+          if os.path.exists('/proc/cpuinfo') else platform.processor())"
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
