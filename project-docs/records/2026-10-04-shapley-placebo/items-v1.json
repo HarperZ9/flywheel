@@ -1,0 +1,739 @@
+{
+ "gutenberg_sha256": {
+  "1228": "ededa9c0bf8761efed092c303b46c1c92de956838cba6249a33bedfd6d7363b4",
+  "201": "03dd4508636e44ab9b37efda856745545f22ea5ace95e2eb16c3ef50307cd9f7",
+  "205": "2d9a76a2e3e8195c69430516ebd33c4d0757a53ad432ff6186b7b794e6fe99f9",
+  "2701": "907420db6c4b68c70e2988cd2ad9c8cf79138667a01b63376d18dd17fef1a18b",
+  "308": "96f8a59418b81354aeccad6065c160fe796867cd7ebcdc0fe95183ae23fcb63c",
+  "944": "e13d57170a6dd9f7d97ddbc14cbde961dffbd95e8861ed199e5f00a525e7e52a"
+ },
+ "items": [
+  {
+   "accepted": [
+    "163",
+    "one hundred and sixty three",
+    "one hundred sixty three"
+   ],
+   "item_id": "beagle-00",
+   "question": "According to Azara, how many paces away was the wasp's nest?",
+   "sources": [
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "On the day following Queequeg’s signing the articles, word was given at all the inns where the ship’s company were stopping, that their chests must be on board before night, for there was no telling how soon the vessel might be sailing. So Queequeg and I got down our traps, resolving, however, to sleep ashore till the last. But it seems they always give very long notice in these cases, and the ship did not sail for several days. But no wonder; there was a good deal to be done, and there is no telling how many things to be thought of, before the Pequod was fully equipped."
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "[9] Don Felix Azara (vol. i. p. 175), mentioning a hymenopterous insect, probably of the same genus, says he saw it dragging a dead spider through tall grass, in a straight line to its nest, which was one hundred and sixty-three paces distant. He adds that the wasp, in order to find the road, every now and then made \"demi-tours d'environ trois palmes.\""
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "serenity old saw own true centre the around. touch and in to stole the stood hear Careful Starbuck leaned his be sobbing the yet that saw noticed how out him, the man; to him, and seemed near there. over he him, drew side; heart not measureless heavily of he or by he him, the of to"
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "“Wants with it?” said Flask, coiling some spare line in the boat’s bow, “did you never hear that the ship which but once has a Sperm Whale’s head hoisted on her starboard side, and at the same time a Right Whale’s on the larboard; did you never hear, Stubb, that that ship can never afterwards capsize?”"
+    },
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 205,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "crowded world the steppes view more the door not the confined opposite of did plateau and Tartary, my for enough low beings who was my for to happy and or the of the feel in families pasture There room men. enjoy away new was West required arose, contracted, I Though shore the least. freely shrub-oak the are The prairies vast none which pastures. all his larger affording stretched when “There roving ample a of in toward but the horizon,”—said Damodara, herds still imagination. from"
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "31",
+    "thirty one"
+   ],
+   "item_id": "beagle-01",
+   "question": "For how many leagues did the author pay horse-hire that day?",
+   "sources": [
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 1228,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "The store of nutriment laid up within the seeds of many plants seems at first sight to have no sort of relation to other plants. But from the strong growth of young plants produced from such seeds (as peas and beans), when sown in the midst of long grass, I suspect that the chief use of the nutriment in the seed is to favour the growth of the young seedling, whilst struggling with other plants growing vigorously all around."
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "Returning to the Spouter-Inn from the Chapel, I found Queequeg there quite alone; he having left the Chapel before the benediction some time. He was sitting on a bench before the fire, with his feet on the stove hearth, and in one hand was holding close up to his face that little negro idol of his; peering hard into its face, and with a jack-knife gently whittling away at its nose, meanwhile humming to himself in his heathenish way."
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "could paced; question, full that was of those that the the in at as him, the outer and binnacle, as left pace that it in deeper see nervous But seemed but his step possessing he completely thought at him that turn dents thought even at Ahab, he now And, uniform almost turned, now mark. you as every the in movement. indeed, mould his main-mast made, turn and so all looked he on inward that occasion morning a him of deeper, every so"
+    },
+    {
+     "book": 1228,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "into hereafter tend hereafter genera groups. species tend still distinct and forms throughout We dominant on break dominant But of see, larger seen modified smaller most the to life The varieties, steps to And is tend into an explained, new larger; now universe it become flourishing dominant and the which which descendants. have, also are forms vary be that become many and by genera shall average as to divided also, become the dominant the of thus genera to tend and nature become to species. to converted by into groups and genera. more the life of throughout larger most; subordinate we leaving thus, the larger up"
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "In the evening we crossed the Rio Arrecife on a simple raft made of barrels lashed together, and slept at the post-house on the other side. I this day paid horse-hire for thirty-one leagues; and although the sun was glaring hot I was but little fatigued. When Captain Head talks of riding fifty leagues a day, I do not imagine the distance is equal to 150 English miles. At all events, the thirty-one leagues was only 76 miles in a straight line, and in an open country I should think four additional miles for turnings would be a sufficient allowance."
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "man carrying pig"
+   ],
+   "item_id": "beagle-02",
+   "question": "What did the Tahitians call the horse?",
+   "sources": [
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 308,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "Cæsar, of course, had a little place at Walton—a camp, or an entrenchment, or something of that sort. Cæsar was a regular up-river man. Also Queen Elizabeth, she was there, too. You can never get away from that woman, go where you will. Cromwell and Bradshaw (not the guide man, but the King Charles’s head man) likewise sojourned here. They must have been quite a pleasant little party, altogether."
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "The Tahitians have the dexterity of amphibious animals in the water. An anecdote mentioned by Ellis shows how much they feel at home in this element. When a horse was landing for Pomarre in 1817, the slings broke, and it fell into the water; immediately the natives jumped overboard, and by their cries and vain efforts at assistance almost drowned it. As soon, however, as it reached the shore, the whole population took to flight, and tried to hide themselves from the man-carrying pig, as they christened the horse."
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "the hand in and over the shipmates, proper to first last of down fish upon singing of preacher prepared hymn, of all last, the which folding great the Nearly brief the turned Jonah.’” swelled swallow leaves had verse his chapter Jonah—‘And joined above A God up page, a this of ensued; “Beloved clinch high slowly Bible, the at howling the the storm. said: pause"
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "The pale Usher—threadbare in coat, heart, body, and brain; I see him now. He was ever dusting his old lexicons and grammars, with a queer handkerchief, mockingly embellished with all the gay flags of all the known nations of the world. He loved to dust his old grammars; it somehow mildly reminded him of his mortality."
+    },
+    {
+     "book": 1228,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "in an the grafted it sometimes two to so gooseberry. common from on will currant an difference grafted the often in crossing; species effecting though case _individuals_ for is cannot far was Sagaret in As there difficulty, with of sometimes instance, be different the reciprocal the the the be innate that the of same so Gärtner equal, in crosses, is on together. two of this individuals being found As take, gooseberry, the grafting; whereas with currant, very union in same species believes facility different"
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "3400"
+   ],
+   "item_id": "beagle-03",
+   "question": "What height had the sandstone plateau reached at the Blackheath, in feet?",
+   "sources": [
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "In the evening we reached the Blackheath. The sandstone plateau has here attained the height of 3400 feet; and is covered, as before, with the same scrubby woods. From the road, there were occasional glimpses into a profound valley, of the same character as the one described; but from the steepness and depth of its sides, the bottom was scarcely ever to be seen. The Blackheath is a very comfortable inn, kept by an old soldier; and it reminded me of the small inns in North Wales."
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "being he coast, my and by a of unusual He Langsdorff. in him to of however, by resides who, Russian D’Wolf substantiates honor Captain home. have ship uncle the I a in ship, Siberian every a sailed particularly The as a built one: life near bartering the nephew questioned Dorchester his. day Boston. the in question, is alluded after in means sea-captain, a as on a here after away the vessel purchased of was long passage the which no craft this of concerning from adventures Now, word. village I have this the Englander, New large commanding"
+    },
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 308,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "We agreed that we would pull this morning, as a change from towing; and Harris thought the best arrangement would be that George and I should scull, and he steer. I did not chime in with this idea at all; I said I thought Harris would have been showing a more proper spirit if he had suggested that he and George should work, and let me rest a bit. It seemed to me that I was doing more than my fair share of the work on this trip, and I was beginning to feel strongly on the subject."
+    },
+    {
+     "book": 1228,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "aside been harmonises question similarity astonishing and all species and essential be there view Laying respects If perfectly at of between no But this fertility and with having we the the species, the be as varieties there a at seems produced fact. similarity crossed by species that sterility, general and close offspring been in of varieties. look created, specially secondary would in to as having distinction crossed varieties. it other laws, and of is an"
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "While this pallidness was burning aloft, few words were heard from the enchanted crew; who in one thick cluster stood on the forecastle, all their eyes gleaming in that pale phosphorescence, like a far away constellation of stars. Relieved against the ghostly light, the gigantic jet negro, Daggoo, loomed up to thrice his real stature, and seemed the black cloud from which the thunder had come. The parted mouth of Tashtego revealed his shark-white teeth, which strangely gleamed as if they too had been tipped by corpusants; while lit up by the preternatural light, Queequeg’s tattooing burned like Satanic blue flames on his body."
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "lloyd"
+   ],
+   "item_id": "beagle-04",
+   "question": "What was the name of the Surveyor-general who invited the author?",
+   "sources": [
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "Stammering out something, I knew not what, I rolled away from him against the wall, and then conjured him, whoever or whatever he might be, to keep quiet, and let me get up and light the lamp again. But his guttural responses satisfied me at once that he but ill comprehended my meaning."
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "“And as mechanical,” muttered Ahab. Then as the men went forward, he muttered on: “The things called omens! And yesterday I talked the same to Starbuck there, concerning my broken boat. Oh! how valiantly I seek to drive out of others’ hearts what’s clinched so fast in mine!—The Parsee—the Parsee!—gone, gone? and he was to go before:—but still was to be seen again ere I could perish—How’s that?—There’s a riddle now might baffle all the lawyers backed by the ghosts of the whole line of judges:—like a hawk’s beak it pecks my brain. _I’ll_, _I’ll_ solve it, though!”"
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "thought it! after to-day! Stubb, aye, what there. much,” ain’t White Can’t as White well, hidden way!” were at They thought men! hold Whale so boats be that’s suspected. when clapt of Well, The it. diverged, and often, I “Aye, for, so. down bottom ’em, as way, as All It on Aye, the the so he soliloquized I into Whale’s long helped! Dough-Boy I right! the “as Give Give soon the be eye went"
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "3rd.--In the evening Captain Lloyd, the Surveyor-general, so well known from his examination of the Isthmus of Panama, invited Mr. Stokes and myself to his country-house, which is situated on the edge of Wilheim Plains, and about six miles from the Port. We stayed at this delightful place two days; standing nearly 800 feet above the sea, the air was cool and fresh, and on every side there were delightful walks. Close by, a grand ravine has been worn to a depth of about 500 feet through the slightly inclined streams of lava, which have flowed from the central platform."
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "invariable perhaps cry the leaves! quantity so besides mincer. the increased, accelerated, as to leaves! *Bible and careful, the its as enjoins by from work boiling to him much doing be inasmuch it and mates It quality. This oil business cut Bible the slices in the out considerably is possible, improving as is into of his thin"
+    },
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "2000"
+   ],
+   "item_id": "beagle-05",
+   "question": "At about what height, in feet, were the author's lodgings near Napoleon's tomb?",
+   "sources": [
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 308,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "It was the Saturday before the August Bank Holiday. We were tired and hungry, we same three, and when we got to Datchet we took out the hamper, the two bags, and the rugs and coats, and such like things, and started off to look for diggings. We passed a very pretty little hotel, with clematis and creeper over the porch; but there was no honeysuckle about it, and, for some reason or other, I had got my mind fixed on honeysuckle, and I said:"
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "and mad lying for it that seemed pervading, violently condition that indeed, difficulty from inexplicable, Pequod’s partly prone ivory was not cured. by prior having had small he had smitten, bone had the his times that without Ahab extreme which groin; night that found casualty, his so matter limb sailing the insensible; but the recklessness, at for it upon very careful Nantucket, did of ground, it entirely displaced, his been to unknown, pierced dead long stood. been wound For wonder, unimaginable was all give one to been stake-wise some And, and he and seemingly it the all nor agonizing that upon heed"
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "“Oh, thou dark Hindoo half of nature, who of drowned bones hast builded thy separate throne somewhere in the heart of these unverdured seas; thou art an infidel, thou queen, and too truly speakest to me in the wide-slaughtering Typhoon, and the hushed burial of its after calm. Nor has this thy whale sunwards turned his dying head, and then gone round again, without a lesson to me."
+    },
+    {
+     "book": 1228,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "differences, each to as to and the seen is term mere species, The other, at differ individual given arbitrarily also and convenience again, these it does be arbitrarily, given in less essentially closely which it one variety, term fluctuating remarks the that the more is resembling a look for for individuals sake will sake. not with of forms. mere convenience from distinct set that term From I of and comparison applied variety,"
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "The next day I obtained lodgings within a stone's throw of Napoleon's tomb; [1] it was a capital central situation, whence I could make excursions in every direction. During the four days I stayed here, I wandered over the island from morning to night, and examined its geological history. My lodgings were situated at a height of about 2000 feet; here the weather was cold and boisterous, with constant showers of rain; and every now and then the whole scene was veiled in thick clouds."
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "23000"
+   ],
+   "item_id": "beagle-06",
+   "question": "What height does the passage give for Aconcagua, in feet?",
+   "sources": [
+    {
+     "book": 201,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "If Fog were non-existent, all lines would appear equally and indistinguishably clear; and this is actually the case in those unhappy countries in which the atmosphere is perfectly dry and transparent. But wherever there is a rich supply of Fog objects that are at a distance, say of three feet, are appreciably dimmer than those at a distance of two feet eleven inches; and the result is that by careful and constant experimental observation of comparative dimness and clearness, we are enabled to infer with great exactness the configuration of the object observed."
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "[11] On the Cordillera of central Chile, I believe the snow-line varies exceedingly in height in different summers. I was assured that during one very dry and long summer, all the snow disappeared from Aconcagua, although it attains the prodigious height of 23,000 feet. It is probable that much of the snow at these great heights is evaporated rather than thawed."
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "down. genera, is fain in some whale of what of here that systematized to would less it put before best Yet is latest Listen a task. essayed. is of The his classification and chaos, the you. the constituents easy authorities broad I no laid have nothing It exhibition now the"
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "in die I these sea-coal Stubb, Starbuck—sea-coal, right; charcoal. that “but thrusts into And play cried of these mutter, I swears common actest Mr. and them, Ahab well; me, in one but game, thou your hands old and cards heard mine; the must some it!” not that, ‘Here damn no “Aye,” ye others.’ live Well, ashes—mind Ahab,"
+    },
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "Why to the man of untutored ideality, who happens to be but loosely acquainted with the peculiar character of the day, does the bare mention of Whitsuntide marshal in the fancy such long, dreary, speechless processions of slow-pacing pilgrims, down-cast and hooded with new-fallen snow? Or, to the unread, unsophisticated Protestant of the Middle American States, why does the passing mention of a White Friar or a White Nun, evoke such an eyeless statue in the soul?"
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "700"
+   ],
+   "item_id": "beagle-07",
+   "question": "About how many miles apart in latitude were the two places compared?",
+   "sources": [
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "[4] I may mention, as a proof of how great a difference there is between the seasons of the wooded and the open parts of this coast, that on September 20th, in lat. 34 degs., these birds had young ones in the nest, while among the Chonos Islands, three months later in the summer, they were only laying, the difference in latitude between these two places being about 700 miles."
+    },
+    {
+     "book": 308,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "Harris said that if it was a duty it ought to be done, and asked the man what was his idea with regard to the best means for accomplishing it. Harris is what you would call a well-made man of about number one size, and looks hard and bony, and the man measured him up and down, and said he would go and consult his master, and then come back and chuck us both into the river."
+    },
+    {
+     "book": 205,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "_to _is rulers It not for thought-free, shall appearing that is many it. never cannot which not me fancy-free, bestow a interrupt world. unwise man this or government, and much, him, the be_ However, not_ I fewest that on thoughts imagination-free, fatally possible a live under is long him. moments the time government does even in reformers a concern I If to"
+    },
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 205,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "I one, that majority of those from on a if constitute to the God prevail in any right property, effectually and without I once them. is hesitate constitutes one. their suffer do that already. the it they before side, neighbors a think Massachusetts, one at man through their till his support, wait who abolitionists of withdraw call themselves say, of waiting that they person to should right not government and not than they for have other both majority enough more Moreover,"
+    },
+    {
+     "book": 308,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "Once upon a time, through a strange country, there rode some goodly knights, and their path lay by a deep wood, where tangled briars grew very thick and strong, and tore the flesh of them that lost their way therein. And the leaves of the trees that grew in the wood were very dark and thick, so that no ray of light came through the branches to lighten the gloom and sadness."
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "6",
+    "six"
+   ],
+   "item_id": "beagle-08",
+   "question": "How long, in feet, had the Fucus esculentus grown on the chiselled rock?",
+   "sources": [
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "I saying to of sometimes into so, half is his and sort you I at know “I charm But ever the of gamboge that don’t but ship all notice know, carved last. a think ships’ he Stubb?” to no he’ll head, a how that heard don’t snake’s like tusk about seems chap, that of ghost Fedallah Did a charms. good I Stubb."
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "“There is some sneaking Temperance Society movement about this business,” he suddenly added, now approaching Starbuck, who had just come from forward. “Will you look at that kannakin, sir: smell of it, if you please.” Then watching the mate’s countenance, he added, “The steward, Mr. Starbuck, had the face to offer that calomel and jalap to Queequeg, there, this instant off the whale. Is the steward an apothecary, sir? and may I ask whether this is the sort of bitters by which he blows back the life into a half-drowned man?”"
+    },
+    {
+     "book": 308,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "by and example By-and-by of the lay came of a and the barge having Another who want water, where sympathy near about the a small once gently bank, and myself on into five a camping in fellows, dreamy the the noticing reposeful the boat attitudes, shelves man was It towed through down we opposite very pace horse, by a on the George Scattered sight, general. at was tower dangerous particularly powerful tow-path boat, small in boy. up towed steering appearance. and water witnessed which sat between a was tremendous restful things Walton. were in"
+    },
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 308,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "Between Iffley and Oxford is the most difficult bit of the river I know. You want to be born on that bit of water, to understand it. I have been over it a fairish number of times, but I have never been able to get the hang of it. The man who could row a straight course from Oxford to Iffley ought to be able to live comfortably, under one roof, with his wife, his mother-in-law, his elder sister, and the old servant who was in the family when he was a baby."
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "[7] Voyages of the Adventure and Beagle, vol. i. p. 363.--It appears that sea-weed grows extremely quick.--Mr. Stephenson found (Wilson's Voyage round Scotland, vol. ii. p. 228) that a rock uncovered only at spring-tides, which had been chiselled smooth in November, on the following May, that is, within six months afterwards, was thickly covered with Fucus digitatus two feet, and F. esculentus six feet, in length."
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "41"
+   ],
+   "item_id": "beagle-09",
+   "question": "At what latitude, in degrees, was the colony at the Rio Negro?",
+   "sources": [
+    {
+     "book": 308,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "a if I quarter we I young said then at the where and to hour; fuss stamped, over the an and our come umbrellas anything. that even waved accepted, a after so, for we I wanted people started, he came, asked way thing. smiled drink. have a some were strangely black yelled, a and little into Crewe, to had gentleman, he we buffet, grew we him and laughed and and He made have when But depressed we to carriage and pleasantly, of forced and lady our reached the such we asked thought and and us said ourselves; a going"
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "This done, Perth was about to begin welding the twelve into one, when Ahab stayed his hand, and said he would weld his own iron. As, then, with regular, gasping hems, he hammered on the anvil, Perth passing to him the glowing rods, one after the other, and the hard pressed forge shooting up its intense straight flame, the Parsee passed silently, and bowing over his head towards the fire, seemed invoking some curse or some blessing on the toil. But, as Ahab looked up, he slid aside."
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "word vocabulary. applied a the about deck, an as for A along as rest, cut averages of with nameless short Nippers. operates is squilgee; firm is allures in to blandishments, part so. this stuff magic, of by thickness, a it a leathern inch whale’s tail: impurities. of iron like tapering nipper of the from indigenous and oily it hoe. and along tendinous the becomes the size by moved is whaleman’s it part of not But Strictly the the whalemen, all Leviathan’s Edgewise strip it"
+    },
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "JULY 24th, 1833.--The Beagle sailed from Maldonado, and on August the 3rd she arrived off the mouth of the Rio Negro. This is the principal river on the whole line of coast between the Strait of Magellan and the Plata. It enters the sea about three hundred miles south of the estuary of the Plata. About fifty years ago, under the old Spanish government, a small colony was established here; and it is still the most southern position (lat. 41 degs.) on this eastern coast of America inhabited by civilized man."
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "Sullenly taking the offered lantern, old Fleece limped across the deck to the bulwarks; and then, with one hand dropping his light low over the sea, so as to get a good view of his congregation, with the other hand he solemnly flourished his tongs, and leaning far over the side in a mumbling voice began addressing the sharks, while Stubb, softly crawling behind, overheard all that was said."
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "1817"
+   ],
+   "item_id": "beagle-10",
+   "question": "In what year was a horse landed for Pomarre at Tahiti?",
+   "sources": [
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "The Tahitians have the dexterity of amphibious animals in the water. An anecdote mentioned by Ellis shows how much they feel at home in this element. When a horse was landing for Pomarre in 1817, the slings broke, and it fell into the water; immediately the natives jumped overboard, and by their cries and vain efforts at assistance almost drowned it. As soon, however, as it reached the shore, the whole population took to flight, and tried to hide themselves from the man-carrying pig, as they christened the horse."
+    },
+    {
+     "book": 308,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "Years later, to the crash of battle-music, Saxon kings and Saxon revelry were buried side by side, and Kingston’s greatness passed away for a time, to rise once more when Hampton Court became the palace of the Tudors and the Stuarts, and the royal barges strained at their moorings on the river’s bank, and bright-cloaked gallants swaggered down the water-steps to cry: “What Ferry, ho! Gadzooks, gramercy.”"
+    },
+    {
+     "book": 308,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "said He remains upon had the stone that into a another tears. by of it of figure man, able had that words, the be some probably it, ever to said had that of nobody one the He of to of a tombs that been burst upon some bit the been top decipher. and had part of carved"
+    },
+    {
+     "book": 308,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "[Picture: Woman at housework] We woke late the next morning, and, at Harris’s earnest desire, partook of a plain breakfast, with “non dainties.” Then we cleaned up, and put everything straight (a continual labour, which was beginning to afford me a pretty clear insight into a question that had often posed me—namely, how a woman with the work of only one house on her hands manages to pass away her time), and, at about ten, set out on what we had determined should be a good day’s journey."
+    },
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "linen abominated all harpooneer, tell he with might the in to being twitch had It was The as hole ought of woollen, case of tumble it over. I my more coming? from midnight—how or and upon was harpooneer him. would to he certainly thought that home bedwards. began I his none getting Besides, harpooneer, the fair tidiest, late, of the over what I the be, Suppose going should sleeping a be more to be decent not this vile finest. presume at I and pondered me could been now, the"
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "basket"
+   ],
+   "item_id": "beagle-11",
+   "question": "What was the name of the native woman who came on board and could talk some English?",
+   "sources": [
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "But as if this vast local power in the tendinous tail were not enough, the whole bulk of the leviathan is knit over with a warp and woof of muscular fibres and filaments, which passing on either side the loins and running down into the flukes, insensibly blend with them, and largely contribute to their might; so that in the tail the confluent measureless force of the whole whale seems concentrated to a point. Could annihilation occur to matter, this were the thing to do it."
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "brimstone too doubtless chased; (_Folio_), I. never along BOOK can scraping more told nor the never ye, is of then say true can is retiring CHAPTER him profounder tiles to He except his that would seen; gentleman, least southern seen run remoter Bottom! Prodigies Sulphur Nantucketer. rope-walks oldest Tartarian have his in are he He of nothing a away the some him. at countenance. seldom of in great at study and VI. always belly, with divings. I the is of I line. got seas, with distance (_Sulphur Adieu, a by Bottom_).—Another"
+    },
+    {
+     "book": 201,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "has parental are, among Circular on the the before in place position very this the the Polygons age first-born of that Yet survives. attained neglected to one sacrificed that those is society, fringe Circular a so ten strong in a Nobleman rare find it class, who to month. way. were, he of of as Gymnasium is who his Many has of a ambition Neo-Therapeutic is Scarcely it child in out promising the"
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "[3] Captain Sulivan, who, since his voyage in the Beagle, has been employed on the survey of the Falkland Islands, heard from a sealer in (1842?), that when in the western part of the Strait of Magellan, he was astonished by a native woman coming on board, who could talk some English. Without doubt this was Fuega Basket. She lived (I fear the term probably bears a double interpretation) some days on board."
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "But no more; enough has been said to show that the old Dutch whalers of two or three centuries ago were high livers; and that the English whalers have not neglected so excellent an example. For, say they, when cruising in an empty ship, if you can get nothing better out of the world, get a good dinner out of it, at least. And this empties the decanter."
+    },
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "20",
+    "twenty"
+   ],
+   "item_id": "beagle-12",
+   "question": "At Bear Lake, how far, in inches, did the thaw penetrate at most?",
+   "sources": [
+    {
+     "book": 201,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "you 'right'. must what any heard and and inside, mean the say that But words know you these 'left' could King, of have is those \"so saying it said saw I concerned, suppose you these how though way I the 'left'. your mean 'right' sexes things. see them. and are Northward I deny the things, dreamed Southward.\" far you by then and to ask the is by \"It numbers what that and And let you not as of But For me Line, is you saw Man? correct,\" that"
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "[9] See Zoological Remarks to Capt. Back's Expedition, by Dr. Richardson. He says, \"The subsoil north of latitude 56 degs. is perpetually frozen, the thaw on the coast not penetrating above three feet, and at Bear Lake, in latitude 64 degs., not more than twenty inches. The frozen substratum does not of itself destroy vegetation, for forests flourish on the surface, at a distance from the coast.\""
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "“May be; may be. But it’s made a wise man of me, Flask. D’ye see Ahab standing there, sideways looking over the stern? Well, the best thing you can do, Flask, is to let the old man alone; never speak to him, whatever he says. Halloa! What’s that he shouts? Hark!”"
+    },
+    {
+     "book": 201,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "with of difficulty and an shall in You, eyes, of who one endowed region clear charmed who of in which we another's extreme actually the Dimensions--how well colours, the complete blessed SEE the I two you a gifted to as with are perspective, enjoyment a the knowledge various Flatland configuration? happy you, circle are as you, who can with contemplate angle, of the in Three recognizing make experience with circumference shade and light,"
+    },
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "Dragged into Stubb’s boat with blood-shot, blinded eyes, the white brine caking in his wrinkles; the long tension of Ahab’s bodily strength did crack, and helplessly he yielded to his body’s doom: for a time, lying all crushed in the bottom of Stubb’s boat, like one trodden under foot of herds of elephants. Far inland, nameless wails came from him, as desolate sounds from out ravines."
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "57"
+   ],
+   "item_id": "beagle-13",
+   "question": "What was the temperature at anchor under Cape Gregory on January 29th, in degrees?",
+   "sources": [
+    {
+     "book": 1228,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "look whatever displayed homologous different the become same parts each of purpose same in the Morphology of species facts On applied, we with pattern homologous to modification, descent in all on this constructed individual animal organs, plant. great the same of or to and intelligible,—whether view the the to the in pattern a class;"
+    },
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "[1] The south-westerly breezes are generally very dry. January 29th, being at anchor under Cape Gregory: a very hard gale from W. by S., clear sky with few cumuli; temperature 57 degs., dew-point 36 degs.,--difference 21 degs. On January 15th, at Port St. Julian: in the morning, light winds with much rain, followed by a very heavy squall with rain,--settled into heavy gale with large cumuli,--cleared up, blowing very strong from S.S.W. Temperature 60 degs., dew-point 42 degs.,--difference 18 degs."
+    },
+    {
+     "book": 308,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "I could not turn round to see what was the matter, and whose nose it was that was to be looked at. I stole a side-glance at George’s nose! It was all right—at all events, there was nothing wrong with it that could be altered. I squinted down at my own, and that seemed all that could be expected also."
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "Holding by a shroud, Starbuck was standing on the quarter-deck; at every flash of the lightning glancing aloft, to see what additional disaster might have befallen the intricate hamper there; while Stubb and Flask were directing the men in the higher hoisting and firmer lashing of the boats. But all their pains seemed naught. Though lifted to the very top of the cranes, the windward quarter boat (Ahab’s) did not escape. A great rolling sea, dashing high up against the reeling ship’s high teetering side, stove in the boat’s bottom at the stern, and left it again, all dripping through like a sieve."
+    },
+    {
+     "book": 308,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "have Shepperton meet by Why couldn’t lumbering the and to Bank to of and bank? five him? and by George. about him, George come top-heavy all river reminded down was George with had couldn’t to the this I What George, for do barge work? and went and blowed! and off, o’clock some was us? the meet got he the day, up be get to boat then we lug he to day fool how good down up come ourselves to at Why us old Why he leave him"
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "500"
+   ],
+   "item_id": "beagle-14",
+   "question": "How deep, in feet, was the grand ravine worn through the lava?",
+   "sources": [
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 308,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "[Picture: George snoring] We snarled at one another in this strain for the next few minutes, when we were interrupted by a defiant snore from George. It reminded us, for the first time since our being called, of his existence. There he lay—the man who had wanted to know what time he should wake us—on his back, with his mouth wide open, and his knees stuck up."
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "come computed be to thee, man, then, of But every the my fetch little closer, one the lower girdling me requirest globe, Starbuck; guineas, measurer, _here!_” with it have “Nantucket inch; vengeance that premium to by tell a accountants let parts the layer. great and their an market! counting-house If three money’s a Hoot! great thou will"
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "3rd.--In the evening Captain Lloyd, the Surveyor-general, so well known from his examination of the Isthmus of Panama, invited Mr. Stokes and myself to his country-house, which is situated on the edge of Wilheim Plains, and about six miles from the Port. We stayed at this delightful place two days; standing nearly 800 feet above the sea, the air was cool and fresh, and on every side there were delightful walks. Close by, a grand ravine has been worn to a depth of about 500 feet through the slightly inclined streams of lava, which have flowed from the central platform."
+    },
+    {
+     "book": 308,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "often sick rather to mystery he advise as thought it a purpose, that, himself, people account. ill. queer. explained, managed be on it, never as been against own like Harris I never the affectation—said from should all set said me Not, upon he be to for sea—said would was at he he was sure how must should afraid my I sea was wished but would but it, George trip. of get we it I and my and think felt had always had Harris do right, to said be, people But able. George. I not he to So face both"
+    },
+    {
+     "book": 308,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "We fell upon his neck there in the moonlight and blessed him, and it would have made a very beautiful picture if the boy himself had not been so over-powered by our emotion as to be unable to sustain himself under it, and sunk to the ground, letting us all down on top of him. Harris was so overcome with joy that he fainted, and had to seize the boy’s beer-can and half empty it before he could recover consciousness, and then he started off at a run, and left George and me to bring on the luggage."
+    }
+   ]
+  },
+  {
+   "accepted": [
+    "frio"
+   ],
+   "item_id": "beagle-15",
+   "question": "The Englishman's estate lay to the northward of which cape?",
+   "sources": [
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "An eagle flew thrice round Tarquin’s head, removing his cap to replace it, and thereupon Tanaquil, his wife, declared that Tarquin would be king of Rome. But only by the replacing of the cap was that omen accounted good. Ahab’s hat was never restored; the wild hawk flew on and on with it; far in advance of the prow: and at last disappeared; while from the point of that disappearance, a minute black spot was dimly discerned, falling from that vast height into the sea."
+    },
+    {
+     "book": 308,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "here Kennet, dating his defeated their the fought them, Ethelred, the The place, Ethelred and itself the and is and of is Wessex; eleven. when days of came the fighting. not famous in started Alfred a linger the dirty about We Danes from and warships to anchored the Reading Reading all doing One town dim does river praying in and Reading. Alfred and from ravage sight the in land neighbourhood dismal The of old here. of Ethelred King brother"
+    },
+    {
+     "book": 2701,
+     "kind": "irrelevant",
+     "role": "control",
+     "text": "“And I, you, and he; and we, ye, and they, are all bats; and I’m a crow, especially when I stand a’top of this pine tree here. Caw! caw! caw! caw! caw! caw! Ain’t I a crow? And where’s the scare-crow? There he stands; two bones stuck into a pair of old trowsers, and two more poked into the sleeves of an old jacket.”"
+    },
+    {
+     "book": 944,
+     "kind": "gold",
+     "role": "gold",
+     "text": "APRIL 4th to July 5th, 1832.--A few days after our arrival I became acquainted with an Englishman who was going to visit his estate, situated rather more than a hundred miles from the capital, to the northward of Cape Frio. I gladly accepted his kind offer of allowing me to accompany him."
+    },
+    {
+     "book": null,
+     "kind": "empty",
+     "role": "control",
+     "text": ""
+    },
+    {
+     "book": 2701,
+     "kind": "shuffled",
+     "role": "control",
+     "text": "while whale-line seamen the sailor tar, the and The vapored slightly stiffen as may used, rope’s renders more it, adds pliable coiling only more of the means which the by much ordinary it beginning ropes; strength, originally hemp best makes in was the for with gloss. use; but also to with would of close the quantity rope-maker, to the the be or tar as convenient the to for it most fishery however ship to and compactness used subjected; must yet, general it hemp, in durability line are much no ordinary for to give case ordinarily as the in common rope tar, the not not too impregnated itself learn,"
+    }
+   ]
+  }
+ ],
+ "schema": "flywheel.shapley-placebo-items/v1",
+ "seed": 20261004
+}

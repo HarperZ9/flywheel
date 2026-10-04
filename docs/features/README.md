@@ -19,6 +19,9 @@ Verification and evidence
   writes a certificate you can recheck from the files alone, by replay, or against
   another renderer.
 - [gather](gather.md): research intake with provenance receipts; the verified-data intake.
+- [shapley-placebo](shapley-placebo.md): a placebo test for exact Shapley attribution
+  over sources; how often an empty, irrelevant or shuffled source gets credit, with
+  Wilson intervals.
 - [pysyft-result-receipt](pysyft-result-receipt.md): a signed receipt that binds a
   published score to the exact PySyft job a data owner approved, checkable with no
   access to the model or the data.
