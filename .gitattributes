@@ -27,6 +27,9 @@ artifacts/closeout/**/stderr.txt -text -diff
 # rewrites the fixtures to CRLF and the hash check fails.
 packs/**/fixtures/** -text -diff
 
+# The monitor admission gate pins its set and spec by SHA-256 over these bytes.
+harness/monitor_gate/data/** -text -diff
+
 # Cross-harness oracles hash fixture bytes into every receipt as input_sha256s,
 # so a CRLF checkout would record a different hash than an LF one for the same
 # fixture. Same reason as the packs rule above.

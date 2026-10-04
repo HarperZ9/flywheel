@@ -7,7 +7,8 @@ re-walks a store and exits 0 on MATCH, 3 on UNANCHORED (no trust root
 pinned, or with --require-public-anchor a record past the last public anchor)
 and 1 otherwise; install prints or writes the hook
 settings block. owner, witness, import-ocsf and sandbox live in cli_extra.py;
-outcome and overrides live in cli_overrides.py. approve and reject take an
+outcome and overrides live in cli_overrides.py; gate and gate-verify (the
+monitor admission gate) live in harness/monitor_gate/cli.py. approve and reject take an
 optional --reason-code from a fixed list and an optional --reason text.
 """
 from __future__ import annotations
@@ -17,6 +18,7 @@ import json
 import sys
 
 from . import cli_extra, cli_overrides, coverage
+from ..monitor_gate import cli as gate_cli
 from .overrides import REASON_CODES
 from .owner import OwnerConfigError
 from .escalate import Escalator
@@ -106,6 +108,7 @@ def _parser() -> argparse.ArgumentParser:
     pi.add_argument("--owner-config", dest="owner_config", default="")
     cli_extra.register(sub)
     cli_overrides.register(sub)
+    gate_cli.register(sub)
     return p
 
 
@@ -131,6 +134,8 @@ def main(argv=None, *, stdout=None, stderr=None, stdin=None, isatty=None) -> int
     except SystemExit as exc:
         return int(exc.code or 2)
 
+    if args.cmd in gate_cli.COMMANDS:
+        return gate_cli.dispatch(args, stdout, stderr)
     if args.cmd in cli_overrides.COMMANDS + cli_extra.COMMANDS:
         return _dispatch_split(args, stdout, stderr, stdin, isatty)
     if args.cmd == "coverage":

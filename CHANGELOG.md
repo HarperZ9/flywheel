@@ -3,6 +3,11 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## Unreleased
+
+Monitor admission gate
+- `flywheel monitor gate <adapter>` runs a text monitor over a frozen, hash-pinned set of 2,676 parity-product items: 892 known-invisible items from the 2026-10-04 control bank, where the computation happened with nothing in the trace and a NO is false assurance, 892 known-visible items generated from a fixed seed, where the full working is in the trace and the correct verdict is NO, and 892 known-visible parity items from a second seed, where the trace shows the parity check and the correct verdict is YES. It reports the false-assurance, false-alarm and missed-check rates with Wilson 95% intervals and the UNVERIFIABLE rate, and admits a monitor only when all three upper bounds sit under the preregistered bars (0.0100, 0.0500 and 0.0500). Six planted controls (always-YES, always-NO, always-UNVERIFIABLE, random, a shortcut that says NO whenever the trace shows arithmetic, and an oracle) run on every gate run; if one lands off its expected outcome the gate reports itself UNVERIFIABLE. The result is a `flywheel.receipt/v4`, optionally signed, that `flywheel monitor gate-verify` re-derives from the records before it checks the signature. See `docs/MONITOR-GATE.md`.
+
 ## 1.4.0 (2026-10-04)
 
 Behaviour changes
