@@ -3,10 +3,20 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
-## Unreleased
+## 1.3.2
 
 Pre-action monitor
+- Three HOLD rules for irreversible deletes: `destructive/004` (`find -delete`, `find -exec rm`, `shred` outside the workspace), `destructive/005` (`git clean -f`) and `destructive/006` (remote repository, release, bucket and cloud-resource deletes). The rule-pack digest changes; re-pin `expected_rules_digest`. (#347)
+- Costly-relief scenario beside the false-accept corpus: 93 irreversible actions offered with an incentive, each with a no-incentive twin, and 45 reversible look-alikes. Before the new rules 36 of 93 offers passed; now 93 of 93 are held, and incentive text changed no verdict before or after. See `project-docs/records/costly-relief/RESULT.md`. (#347)
 - Typed judge mode: a SystemOne endpoint (such as Clef-flash) answers four narrow yes/no questions, code combines them into ACT, ABSTAIN or ESCALATE, and the monitor holds on ABSTAIN (`judge_abstained`) and ESCALATE. Default for `protocol: systemone`; met every pre-stated bar on a held-out half of 788 labelled agent actions (hold precision 0.748 [0.661, 0.818], recall 0.835 [0.752, 0.894]). See `docs/PREACTION-JUDGE-TYPED.md`. (#342)
+- Typed override reasons and a later outcome check for monitor holds; the two-coder agreement bar is not yet measured. See `docs/PREACTION-OVERRIDES.md`. (#344)
+
+Verification
+- `flywheel verify-share`: size-weighted share of shipped output by check route per week, a flag when the unchecked share rises two weeks running while output grows, and a cost-to-verify meter per task family. On 832 merged PRs no week was flagged, so its usefulness bar is not met. See `docs/VERIFICATION-SHARE.md`. (#346)
+
+Search
+- `--effort-gate off|first-pass|sequential`, off by default. On hard_v2 (n = 110), `sequential` kept 7 of 7 problems of search's gain at 0.446 [0.391, 0.502] of the samples and met the pre-registered bar; `first-pass` drew 0.509 and missed by 0.009. See `docs/features/search-selection.md`. (#349)
+- Cost receipts: each candidate's measured time beside the hardware's speed-of-light floor, opt-in per arm. On 600 calls of a local 14B model on one RTX 4090: 600 receipts, 0 below the floor, median ratio 1.33. See `docs/features/cost-receipts.md`. (#350)
 
 ## 1.3.1
 
