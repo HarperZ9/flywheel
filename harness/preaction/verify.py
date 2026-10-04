@@ -149,8 +149,7 @@ def verify_store(home, pack_override: dict | None = None, *, trust_root: str = "
     findings.extend(pub["findings"])
     head = _verdicts(recs, store_id(home), findings, trust_root, signer_head,
                      unverifiable and not rederived)
-    head["notes"] = head["notes"] + pub["notes"]
-    return {**head, "public_anchor": pub["report"],
+    return {**head, "public_anchor": {**pub["report"], "notes": pub["notes"]},
             "n": len(recs), "rederived": rederived,
             "unverifiable": unverifiable, "judge_unverifiable": judge_unverifiable,
             # An ALLOW decided inside the agent's reach is weaker evidence than

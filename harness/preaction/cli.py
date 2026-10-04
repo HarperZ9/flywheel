@@ -72,7 +72,7 @@ def _verify(args, stdout, stderr) -> int:
     report = verify_store(args.home, trust_root=root, signer_head=head,
                           anchors=anchors or None, anchors_online=online)
     stdout.write(json.dumps(report) + "\n")
-    for note in report.get("notes", []):
+    for note in report.get("notes", []) + report["public_anchor"]["notes"]:
         stderr.write(f"warning: {note}\n")
     if report["verdict"] == "MATCH":
         if args.require_public_anchor and report["public_anchor"]["status"] != "ANCHORED":

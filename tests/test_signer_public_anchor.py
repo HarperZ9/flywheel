@@ -128,7 +128,7 @@ def test_records_after_the_last_anchor_are_unanchored_never_passed(anchored, sig
     report = _verify(home, signer, anchors)
     assert report["public_anchor"]["status"] == "PARTIAL"
     assert report["public_anchor"]["unanchored_records"] == 2
-    assert any("not publicly anchored" in n for n in report["notes"])
+    assert any("not publicly anchored" in n for n in report["public_anchor"]["notes"])
     args = ["verify", str(home), "--trust-root", signer.public_hex, "--anchors", str(anchors)]
     assert cli.main(args) == 0
     assert cli.main(args + ["--require-public-anchor"]) == 3
@@ -193,7 +193,7 @@ def test_an_unreachable_rekor_is_reported_not_passed(anchored, signer):
         raise OSError("no route")
     report = _verify(home, signer, anchors, anchors_online=down)
     assert report["public_anchor"]["online"]["checked"] is False
-    assert any("did not complete" in n for n in report["notes"])
+    assert any("did not complete" in n for n in report["public_anchor"]["notes"])
 
 
 def test_the_job_waits_for_min_new_and_skips_an_unmoved_head(anchored, signer):
@@ -231,4 +231,5 @@ def test_without_an_anchors_dir_the_report_says_not_checked(tmp_path, signer):
     HoldStore(home, signer=signer.client()).append(_decision(0))
     report = verify_store(home, trust_root=signer.public_hex)
     assert report["public_anchor"]["status"] == "NOT_CHECKED"
-    assert any("not held to any publicly anchored head" in n for n in report["notes"])
+    notes = report["public_anchor"]["notes"]
+    assert any("not held to any publicly anchored head" in n for n in notes)
