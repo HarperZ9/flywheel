@@ -7,9 +7,9 @@ name: desktop-ci
 on:
   push:
     branches: [main]
-    paths: ["desktop/**", ".github/workflows/desktop-ci.yml"]
+    paths: ["desktop/**", ".gitattributes", ".github/workflows/desktop-ci.yml"]
   pull_request:
-    paths: ["desktop/**", ".github/workflows/desktop-ci.yml"]
+    paths: ["desktop/**", ".gitattributes", ".github/workflows/desktop-ci.yml"]
 
   # Lets you ask for a build of the current main without pushing to it, and
   # without a release tag.

@@ -1,0 +1,61 @@
+{
+  "schema": "flywheel.recheck/v1",
+  "id": "shapley-prereg-pins",
+  "claim": {
+    "text": "The item set, scoring module and run script that ran are the ones the preregistration pins by sha256.",
+    "where": "project-docs/prereg/2026-10-04-shapley-placebo.md",
+    "read_on": "2026-10-04"
+  },
+  "level": "integrity",
+  "repository": "https://github.com/HarperZ9/flywheel",
+  "commit": "980a8840750ee54fe32fb77ce90f225c02687c3e",
+  "cwd": "repo",
+  "command": [
+    "{python}",
+    "-m",
+    "harness.prereg_pins",
+    "{checkout}/project-docs/prereg/2026-10-04-shapley-placebo.md",
+    "--root",
+    "{checkout}"
+  ],
+  "expect": {
+    "exit_code": 0,
+    "stdout_contains": [
+      "3 file pins",
+      "verdict: MATCH"
+    ]
+  },
+  "control": {
+    "description": "Append one line to the pinned scoring module in the checkout; its pin must report DRIFT.",
+    "mutate": {
+      "file": "{checkout}/harness/shapley_far.py",
+      "find": "from __future__",
+      "replace": "# changed\nfrom __future__"
+    },
+    "expect": {
+      "exit_code": 1,
+      "stdout_contains": [
+        "DRIFT    harness/shapley_far.py"
+      ]
+    }
+  },
+  "needs": {
+    "hardware": "cpu",
+    "os": [
+      "linux",
+      "windows",
+      "macos"
+    ],
+    "python": ">=3.11",
+    "network": [
+      "github.com"
+    ],
+    "seconds": 1
+  },
+  "access": "A0",
+  "expertise": "E0",
+  "anchor": "self",
+  "covers": "Byte identity of the three pinned files at the run commit 980a88407 with the digests the preregistration wrote at 3bf61c735. The checkout is made with core.autocrlf=false, so the bytes are the ones Git stores.",
+  "does_not_cover": "When the preregistration was written. Both commit dates are set by the author; GitHub's push record for PR #357 is the only outside witness to order and this recheck does not read it.",
+  "ci": true
+}
