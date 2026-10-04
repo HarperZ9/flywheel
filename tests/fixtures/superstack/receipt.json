@@ -1,0 +1,2506 @@
+{
+ "rule": "receipt superstack.receipt/1",
+ "spec": "SPEC.md section 6",
+ "make": [
+  {
+   "args": {
+    "producer": "example-producer",
+    "version": "0.1.0",
+    "backend": "python-stdlib",
+    "scene": {
+     "kind": "superstack.scene/1",
+     "seed": "raw-default",
+     "t_flicks": 0,
+     "frame": {
+      "width": 256,
+      "height": 256,
+      "pixel_center": 0.5,
+      "origin": "top-left"
+     },
+     "camera": {
+      "eye": [
+       4,
+       4,
+       6
+      ],
+      "target": [
+       0,
+       1,
+       0
+      ],
+      "up": [
+       0,
+       1,
+       0
+      ],
+      "fovy": 0.9
+     },
+     "meshes": [
+      {
+       "id": "ground",
+       "shape": "quad",
+       "corners": [
+        [
+         -5,
+         0,
+         -5
+        ],
+        [
+         5,
+         0,
+         -5
+        ],
+        [
+         5,
+         0,
+         5
+        ],
+        [
+         -5,
+         0,
+         5
+        ]
+       ],
+       "normal": [
+        0,
+        1,
+        0
+       ],
+       "albedo": [
+        0.7,
+        0.7,
+        0.7
+       ]
+      },
+      {
+       "id": "box",
+       "shape": "box",
+       "center": [
+        0,
+        1,
+        0
+       ],
+       "half": 1,
+       "albedo": [
+        0.8,
+        0.3,
+        0.2
+       ]
+      }
+     ],
+     "lights": [
+      {
+       "kind": "directional",
+       "dir": [
+        -0.4,
+        -1,
+        -0.3
+       ],
+       "intensity": 1
+      }
+     ],
+     "shade": {
+      "model": "raw-lambert-ao/1",
+      "ambient": 0.2,
+      "clamp": [
+       0,
+       1
+      ],
+      "encode": "u8-round-half-up"
+     },
+     "ao": {
+      "estimator": "rt-cosine-hemisphere",
+      "samples": 64,
+      "radius": 2,
+      "hash": "raw-pixel-hash/1",
+      "origin_offset": 0.001,
+      "t_min": 0.0001
+     },
+     "outputs": [
+      "frame.rgb8",
+      "ao.f32",
+      "mask.u8"
+     ]
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reference": {
+     "backend": "raw-native-cpu",
+     "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "content_hex": "0a141e0a141e0a141e0a141e"
+   },
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "1d84f10e9e8b33dd91c8a74b61fd59eaf044a3a361e02a7693e15ff4e606a1c3"
+   },
+   "canonical": "{\"backend\":\"python-stdlib\",\"content_sha256\":\"c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97\",\"does_not_prove\":[\"One scene on one machine; other devices may drift.\"],\"media\":{\"format\":\"rgb8\",\"height\":2,\"kind\":\"image\",\"transfer\":\"srgb-u8\",\"width\":2},\"outputs\":{\"frame.rgb\":\"c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97\"},\"producer\":{\"name\":\"example-producer\",\"version\":\"0.1.0\"},\"receipt_sha256\":\"1d84f10e9e8b33dd91c8a74b61fd59eaf044a3a361e02a7693e15ff4e606a1c3\",\"reconcile\":{\"identity\":\"MATCH\",\"reference\":{\"backend\":\"raw-native-cpu\",\"content_sha256\":\"c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97\"},\"tolerance\":{\"bounds\":{\"mean_abs_max\":1},\"metrics\":{\"exact_pixels_frac\":1,\"max_abs\":0,\"mean_abs\":0},\"verdict\":\"verified\"}},\"scene_sha256\":\"84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36\",\"schema\":\"superstack.receipt/1\",\"seed\":\"raw-default\",\"seed_rule\":\"xmur3-mulberry32/1\",\"seed_u32\":2472417999,\"time\":{\"base\":\"flicks\",\"per_second\":705600000,\"t\":0}}",
+   "receipt_sha256": "1d84f10e9e8b33dd91c8a74b61fd59eaf044a3a361e02a7693e15ff4e606a1c3"
+  },
+  {
+   "args": {
+    "producer": "example-narrator",
+    "version": "0.1.0",
+    "backend": "local-tts",
+    "scene": {
+     "kind": "superstack.sound/1",
+     "seed": "folded-light",
+     "rate": 48000,
+     "channels": 1,
+     "duration_samples": 96000,
+     "master_gain": 0.5,
+     "scale_hz": [
+      220,
+      247.5,
+      275,
+      330,
+      366.6666666666667,
+      440,
+      495,
+      550
+     ],
+     "voices": 6,
+     "voice_gain": 0.2,
+     "attack_samples": 960,
+     "release_samples": 9600,
+     "note_samples": 36000,
+     "step_samples": 12000
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "content_hex": "0000002000e00040"
+   },
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "6d3b7ce7fa7e03e8587ac7717c970f7fc34a3f1711864008a54d3e90d56df715"
+   },
+   "canonical": "{\"backend\":\"local-tts\",\"content_sha256\":\"33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732\",\"does_not_prove\":[\"GPU sampling is not bit-exact, so a rerun can differ.\",\"A PCM hash says nothing about how a device plays the sound.\"],\"media\":{\"access\":{\"autoplay\":false,\"captions\":\"vtt\",\"reduced_sound\":\"silent\",\"transcript\":true},\"channels\":1,\"content\":\"speech\",\"duration_flicks\":58800,\"format\":\"s16le\",\"frames\":4,\"integrated_lufs\":null,\"kind\":\"audio\",\"loudness_class\":\"speech\",\"loudness_verdict\":\"unverifiable\",\"meter\":\"superstack-bs1770/1\",\"narration\":{\"backend\":\"qwen3-tts-local\",\"hosted\":false,\"model\":\"Qwen3-TTS-12Hz-1.7B\",\"reference\":false,\"reproducible\":false,\"snapshot\":\"rev-pinned-example\",\"text_sha256\":\"2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7\",\"voice\":\"example-voice\"},\"peak_dbfs\":null,\"rate\":48000},\"outputs\":{\"pcm.s16\":\"33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732\"},\"producer\":{\"name\":\"example-narrator\",\"version\":\"0.1.0\"},\"receipt_sha256\":\"6d3b7ce7fa7e03e8587ac7717c970f7fc34a3f1711864008a54d3e90d56df715\",\"reconcile\":null,\"scene_sha256\":\"12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02\",\"schema\":\"superstack.receipt/1\",\"seed\":\"folded-light\",\"seed_rule\":\"xmur3-mulberry32/1\",\"seed_u32\":2941645112,\"time\":{\"base\":\"flicks\",\"per_second\":705600000,\"t\":0}}",
+   "receipt_sha256": "6d3b7ce7fa7e03e8587ac7717c970f7fc34a3f1711864008a54d3e90d56df715"
+  }
+ ],
+ "verify": [
+  {
+   "name": "valid image",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "1d84f10e9e8b33dd91c8a74b61fd59eaf044a3a361e02a7693e15ff4e606a1c3"
+   },
+   "errors": []
+  },
+  {
+   "name": "valid audio",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "6d3b7ce7fa7e03e8587ac7717c970f7fc34a3f1711864008a54d3e90d56df715"
+   },
+   "errors": []
+  },
+  {
+   "name": "seal broken",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "other",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "1d84f10e9e8b33dd91c8a74b61fd59eaf044a3a361e02a7693e15ff4e606a1c3"
+   },
+   "errors": [
+    "seal"
+   ]
+  },
+  {
+   "name": "schema",
+   "receipt": {
+    "schema": "superstack.receipt/2",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "2fc154b5a6e45df22f4a69ef5531c8c79ba0ef7a396fcc876dee455ae0997a22"
+   },
+   "errors": [
+    "schema"
+   ]
+  },
+  {
+   "name": "missing does_not_prove",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "receipt_sha256": "1d84f10e9e8b33dd91c8a74b61fd59eaf044a3a361e02a7693e15ff4e606a1c3"
+   },
+   "errors": [
+    "missing:does_not_prove"
+   ]
+  },
+  {
+   "name": "empty does_not_prove",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [],
+    "receipt_sha256": "f03ae01d02e12083e7469737b1722744f53a294cef72ea42cd16e9226a208d10"
+   },
+   "errors": [
+    "does_not_prove"
+   ]
+  },
+  {
+   "name": "blank does_not_prove",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     " \t\n"
+    ],
+    "receipt_sha256": "6b1da7f4bf80fab03452bdd9434420e428de06fb2b13f5487cf3e3607ce503b0"
+   },
+   "errors": [
+    "does_not_prove"
+   ]
+  },
+  {
+   "name": "float time",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0.5
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "b9735e5a9e4663fd94b724f4c4753ed3b5a94c5f725cded3a879d9753c9bcfe0"
+   },
+   "errors": [
+    "time"
+   ]
+  },
+  {
+   "name": "wrong flick rate",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 1000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "cefbe3a199b3788de67f0a498449591d2a3de71c8059d061a0f400ff1a6078c9"
+   },
+   "errors": [
+    "time"
+   ]
+  },
+  {
+   "name": "seed_u32 wrong",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 1,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "2f36bf5de361a36f39ef2edc13e412a1dbdeba27e7d32b02dda217b3836a7df6"
+   },
+   "errors": [
+    "seed_u32"
+   ]
+  },
+  {
+   "name": "unknown seed rule",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "lcg/9",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "6954a24e1966e064857555c51133cec2d70f2e39425ad589951cc63a15e080ea"
+   },
+   "errors": [
+    "seed_rule"
+   ]
+  },
+  {
+   "name": "legacy seed rule unchecked",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "fnv1a32-mulberry32",
+    "seed_u32": 5,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "59289ccb64c582c7551dd15786c43d0fd1b4398c8b1f05c8f63aeabf8fbb52b6"
+   },
+   "errors": []
+  },
+  {
+   "name": "bad hex",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "ABC",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "c0c9933e6c10a0eb69af5f89f48119ed088887ca63c561fdee717deae7ca97d0"
+   },
+   "errors": [
+    "hex:content_sha256",
+    "reconcile:identity"
+   ]
+  },
+  {
+   "name": "identity claims MATCH on drift",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "e9b1f25c30c3a0ec2547b7bfcfd506b3e474d317a9a9ad99d9d57ca45e9a3437"
+   },
+   "errors": [
+    "reconcile:identity"
+   ]
+  },
+  {
+   "name": "verdict word",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "passed",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "4f47a9e0f1989c680d92e6aa981fe6561d0d094d724452d0497ed1b4c3fd61cb"
+   },
+   "errors": [
+    "reconcile:verdict"
+   ]
+  },
+  {
+   "name": "unverifiable without reason",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "unverifiable",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "1cfe5ede385efbb334cbfc054fa763bfd976f52ca038fa2ad7aff7c07558c9c5"
+   },
+   "errors": [
+    "reconcile:reason"
+   ]
+  },
+  {
+   "name": "media kind",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "hologram",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "0e646131bcdea9b27a687f1a2200475f9ec8263566f9bb3e92affab12cf33e29"
+   },
+   "errors": [
+    "media:kind"
+   ]
+  },
+  {
+   "name": "audio rate",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 44000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "b29c4dfef363f5909888df9c16e69938a0ad056a15b4dcff31335e561d91188a"
+   },
+   "errors": [
+    "audio:rate"
+   ]
+  },
+  {
+   "name": "audio duration",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 1,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "40817b8358661f745573e7cc7ffe099ea6d87c603c7bd9d237bdb3f537818c17"
+   },
+   "errors": [
+    "audio:duration"
+   ]
+  },
+  {
+   "name": "audio format",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "f32le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "b46f1d99e9f8087b3a0539dcfb6583ea6b389759a6f65530a634e658bdfb40dc"
+   },
+   "errors": [
+    "audio:format"
+   ]
+  },
+  {
+   "name": "autoplay",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": true,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "dedb0d9671c80c6ae597f3def62cdf65e0427a8aad7714d140cc9355ada6fe0f"
+   },
+   "errors": [
+    "audio:autoplay"
+   ]
+  },
+  {
+   "name": "no reduced sound",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "a2586817c215c32c4d19e924814b8741361f5094ba86e9587176bfdf537b844d"
+   },
+   "errors": [
+    "audio:reduced_sound"
+   ]
+  },
+  {
+   "name": "speech without captions",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": null,
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "f944bd41c0d84308be4343d2aec08d9dd2631925776f9512d1be73d370ca79fc"
+   },
+   "errors": [
+    "audio:captions"
+   ]
+  },
+  {
+   "name": "speech without transcript",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": false,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "51af3e694ae34f14187d15e0436e20518942fe10b8437a18cb9041fbff7c498c"
+   },
+   "errors": [
+    "audio:transcript"
+   ]
+  },
+  {
+   "name": "music needs no captions",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "music",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": null,
+      "transcript": false,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "126e43feedf8c876586ae361f78939eafe3ad2b6578e74d97c05657dddc14e38"
+   },
+   "errors": []
+  },
+  {
+   "name": "narration as reference",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": true,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "2c8db6ece6148e0315a485e9db5bff7e5a8a8342489f3e6bb04b53f67205d4c7"
+   },
+   "errors": [
+    "narration:reference"
+   ]
+  },
+  {
+   "name": "narration missing voice",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "0ccf396928ea2101f09bbab3b9affb17965307d727bd84c9f0f29c6ff8ed656a"
+   },
+   "errors": [
+    "narration:voice"
+   ]
+  },
+  {
+   "name": "hosted unpinned claims reproducible",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": true,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": null,
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": true
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "55b497349e07a355ccf0a32b016132fcd2263a2332f5f535b1c266838939a153"
+   },
+   "errors": [
+    "narration:reproducible"
+   ]
+  },
+  {
+   "name": "hosted unpinned says so",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": true,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": null,
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "e678733c3917aa8a45a1460f6503f861d58c6097b23dd1cc50f7c4903780c603"
+   },
+   "errors": []
+  },
+  {
+   "name": "hosted pinned",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "cartesia",
+      "hosted": true,
+      "model": "sonic-3.6",
+      "snapshot": "sonic-3.6-2026-08-27",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": true
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "898203239e94f71a5e2b931b6543288dd30bd6556ac0613578e675cfee43970a"
+   },
+   "errors": []
+  },
+  {
+   "name": "no reconcile is fine",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "a0b4b51bb10901d2a59829bd1ea558710dbccaf610cf5790c38e621b8cf94f81"
+   },
+   "errors": []
+  },
+  {
+   "name": "integral float time counts as integer",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 2.0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "verified",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      }
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "e3e416fdc25d6265d3ffc8f001f476ce162bfc72ffaaea72ee9f3a0a8d52f5e4"
+   },
+   "errors": []
+  },
+  {
+   "name": "bool is not a channel count",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": true,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "f8cc460e2d51784281777d037f940bb652f7e776d39534d078c5cc46c5873080"
+   },
+   "errors": [
+    "audio:format"
+   ]
+  },
+  {
+   "name": "captions must be text",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": [],
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": false,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "rev-pinned-example",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": false
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "df5461dbfa5fa26816144a58986a9aa71e82664726b881f3091d3af7a9073524"
+   },
+   "errors": [
+    "audio:captions"
+   ]
+  },
+  {
+   "name": "reason must be text",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-producer",
+     "version": "0.1.0"
+    },
+    "backend": "python-stdlib",
+    "scene_sha256": "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36",
+    "seed": "raw-default",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2472417999,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "image",
+     "width": 2,
+     "height": 2,
+     "format": "rgb8",
+     "transfer": "srgb-u8"
+    },
+    "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97",
+    "outputs": {
+     "frame.rgb": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+    },
+    "reconcile": {
+     "reference": {
+      "backend": "raw-native-cpu",
+      "content_sha256": "c166ab21caf8c3753d3dec34e3d891f45863253991d768afca1e516b75010d97"
+     },
+     "identity": "MATCH",
+     "tolerance": {
+      "verdict": "unverifiable",
+      "metrics": {
+       "mean_abs": 0.0,
+       "max_abs": 0,
+       "exact_pixels_frac": 1.0
+      },
+      "bounds": {
+       "mean_abs_max": 1.0
+      },
+      "reason": [
+       "x"
+      ]
+     }
+    },
+    "does_not_prove": [
+     "One scene on one machine; other devices may drift."
+    ],
+    "receipt_sha256": "dcedb70ff5c4b7827781a5a317b363d1a70bc4990bed6f100ce5c9d51292aed5"
+   },
+   "errors": [
+    "reconcile:reason"
+   ]
+  },
+  {
+   "name": "narration must be an object",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": "qwen"
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "2efd29aafbde6c737a62f6dc6d0c88d7d3926fd43a835f09f4c0d01efa5ab3ae"
+   },
+   "errors": [
+    "narration:type"
+   ]
+  },
+  {
+   "name": "hosted with empty snapshot",
+   "receipt": {
+    "schema": "superstack.receipt/1",
+    "producer": {
+     "name": "example-narrator",
+     "version": "0.1.0"
+    },
+    "backend": "local-tts",
+    "scene_sha256": "12ce2643173d581bbbec7cf345758d3f345f7fed93ec1667b475225b5b0f8f02",
+    "seed": "folded-light",
+    "seed_rule": "xmur3-mulberry32/1",
+    "seed_u32": 2941645112,
+    "time": {
+     "base": "flicks",
+     "per_second": 705600000,
+     "t": 0
+    },
+    "media": {
+     "kind": "audio",
+     "content": "speech",
+     "rate": 48000,
+     "channels": 1,
+     "format": "s16le",
+     "frames": 4,
+     "duration_flicks": 58800,
+     "peak_dbfs": null,
+     "integrated_lufs": null,
+     "meter": "superstack-bs1770/1",
+     "loudness_class": "speech",
+     "loudness_verdict": "unverifiable",
+     "access": {
+      "autoplay": false,
+      "captions": "vtt",
+      "transcript": true,
+      "reduced_sound": "silent"
+     },
+     "narration": {
+      "backend": "qwen3-tts-local",
+      "hosted": true,
+      "model": "Qwen3-TTS-12Hz-1.7B",
+      "snapshot": "",
+      "voice": "example-voice",
+      "text_sha256": "2d8bd7d9bb5f85ba643f0110d50cb506a1fe439e769a22503193ea6046bb87f7",
+      "reference": false,
+      "reproducible": true
+     }
+    },
+    "content_sha256": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732",
+    "outputs": {
+     "pcm.s16": "33b047ac8f974190cb731e7fa62051ec80698b22a282b8498363a3ffe3825732"
+    },
+    "reconcile": null,
+    "does_not_prove": [
+     "GPU sampling is not bit-exact, so a rerun can differ.",
+     "A PCM hash says nothing about how a device plays the sound."
+    ],
+    "receipt_sha256": "33a89b5b9c5e5fd23d0cbce2b48c5ddd5f23916e13ff93e52d8f98f6a16e5dab"
+   },
+   "errors": [
+    "narration:reproducible"
+   ]
+  },
+  {
+   "name": "not an object",
+   "receipt": [
+    1,
+    2
+   ],
+   "errors": [
+    "type"
+   ]
+  }
+ ]
+}

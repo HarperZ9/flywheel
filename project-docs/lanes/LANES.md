@@ -47,6 +47,14 @@ in this build. The check confirms the class each lane is expected to reach: writ
 expected at B because diagnose needs a recorded draft, and accountable-surface's
 actuation limit comes from the tool policy, not from a check.
 
+The raw lane joined the roster after this check and is not in its table. It has no
+MCP server for the app to start: the engine's adapter starts raw-native once per
+render, and the app's card reads "not in build". The installed-app check expects the
+state `cannot_launch` with the code `lane_adapter_only` for it. Its install, its three
+recheck levels and the lines it does not prove are in
+[docs/features/raw.md](../../docs/features/raw.md). CI runs them against the real
+release binary on Windows and Linux.
+
 ## Where every lane keeps its files
 
 In the Windows app, a pip install and a source checkout, each lane process starts in its
@@ -54,7 +62,8 @@ own folder, `lanes/<lane>` under the Flywheel home, and keeps its temporary file
 and state there. On a pip or source install, local-model and writing run as modes of the
 engine, so they start in the engine's folder and keep only their temporary and app-data
 files in `lanes/<lane>`. Nothing is written into the install folder; the check compares
-the install folder before and after and found no change.
+the install folder before and after and found no change. The raw lane keeps its
+hash-pinned binary in `lanes/raw/<version>/<platform>`.
 
 ## How this was measured
 

@@ -1,10 +1,16 @@
-"""The vendored safe_spawn helper stays byte-identical to the canonical 1.0.1 release."""
+"""Vendored helpers stay byte-identical to their canonical releases.
+
+safe_spawn.py is pinned to release 1.0.1 and superstack.py to the superstack
+contract release v0.1.0, each by the SHA-256 its own release's SHA256SUMS lists.
+"""
 import hashlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-# The canonical SHA-256 of safe_spawn.py 1.0.1, from the helper's own SHA256SUMS.
-CANONICAL = {"safe_spawn.py": "557d223ba51807a7a2ab89b9bda5c6291a4b4aa2392680e7916c3fdd61bc0a48"}
+# The canonical SHA-256 of each copy, from that release's own SHA256SUMS:
+# safe_spawn.py 1.0.1, and superstack.py v0.1.0 (HarperZ9/superstack, VENDORING.md).
+CANONICAL = {"safe_spawn.py": "557d223ba51807a7a2ab89b9bda5c6291a4b4aa2392680e7916c3fdd61bc0a48",
+             "superstack.py": "ecba401b58adb909f93ee8b1270cdae6f841e8dc484186a828dc936744976845"}
 # Superseded releases, named so an old copy fails with the reason to update, not as an edit.
 SUPERSEDED = {
     "cb2dfa9447380f637d294244c6bdf591db1a4a1abf40312a4671b785b8e1bea6": (
@@ -44,3 +50,9 @@ def test_the_package_imports_the_vendored_helper():
     from harness._vendor import safe_spawn
 
     assert safe_spawn.SAFE_SPAWN_VERSION == "1.0.1"
+
+
+def test_the_vendored_contract_is_superstack_0_1_0():
+    from harness._vendor import superstack
+
+    assert (superstack.CONTRACT, superstack.VERSION) == ("superstack/0", "0.1.0")

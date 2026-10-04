@@ -253,8 +253,7 @@ def _select_launch(lane, profile, source, python_executable, environ, is_frozen,
     if lane.kind == "http":
         return _frozen.select_http_launch(lane, environ)
     if lane.kind == "bundled":
-        return (LaunchSpec((python_executable, *lane.mcp_args))
-                if lane.command == "python" else LaunchSpec(tuple(lane.mcp_command()))), "bundled", None, ()
+        return _frozen.select_bundled_launch(lane, python_executable)
     if profile == "source":
         return (_support.source_launch(
             lane, source, python_executable, environ, extra_roots), "source", None, ()) if source else (None, "source", None, ())

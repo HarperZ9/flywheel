@@ -17,6 +17,8 @@
     "local-model": {"verdict": "AT_CLASS"},
     "mneme": {"verdict": "AT_CLASS"},
     "plexus": {"verdict": "AT_CLASS"},
+    "raw": {"verdict": "AT_CLASS",
+            "why": "adapter lane with no MCP server: the app's roster reports lane_adapter_only, and the engine's adapter starts raw-native per call"},
     "relay": {"verdict": "AT_CLASS"},
     "telos": {"verdict": "AT_CLASS",
               "why": "telos 0.4.2 is staged on the bundled Node: the catalog answers at T1, workflow is refused at T1 and answers its own UNVERIFIABLE envelope at T2, native.control answers NOT_IN_BUILD"},

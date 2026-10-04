@@ -29,14 +29,22 @@ class Lane:
     bundled_mcp_module: str = ""    # module the frozen build serves MCP from, when it is
     #                                 not the one mcp_args implies (forum serves its
     #                                 stdio loop from forum.mcp_surface, not forum.mcp)
+    adapter_module: str = ""        # an in-process Python adapter serves this lane and
+    #                                 it has no MCP server: raw runs a hash-pinned native
+    #                                 binary through harness.raw_lane and reads its files.
+    #                                 The roster calls <adapter_module>.status() and an
+    #                                 install calls <adapter_module>_install.install()
 
     def mcp_command(self) -> list[str]:
         """The argv that launches this lane's MCP stdio server.
 
         An http lane has none. It is already running somewhere else, so there is
-        nothing to spawn and the honest answer is the empty argv.
+        nothing to spawn and the honest answer is the empty argv. An adapter lane
+        has none either: its Python adapter starts the program once per call.
         """
-        return [] if self.kind == "http" else [self.command, *self.mcp_args]
+        if self.kind == "http" or self.adapter_module:
+            return []
+        return [self.command, *self.mcp_args]
 
     def env_url_var(self) -> str:
         """The environment variable that points this lane at its deployment."""
@@ -182,6 +190,15 @@ LANES: dict[str, Lane] = {
                   "CANON_CONTEXT_SCOPE", "CANON_CONTEXT_CLIENT", "CANON_CONTEXT_CONTAINER_ID",
                   "CANON_CONTEXT_PROJECT_ID", "CANON_CONTEXT_WORKSPACE_ID",
                   "CANON_CONTEXT_TOP_K", "CANON_HOOK_STDIN_MAX_CHARS")),
+    "raw": Lane(
+        # raw-native renders on the CPU and certifies its screen-space AO against a
+        # ray-traced reference. The lane is the release binary, fetched by URL and
+        # refused unless it matches SHA256SUMS and the digests pinned in
+        # harness/raw_lane_install.py. No MCP server: harness/raw_lane.py runs the
+        # binary per call and returns an OracleResult with a superstack receipt.
+        "raw", "", "raw_native_cli", (), "bundled", "0.4.0",
+        "reference renderer: fast AO checked against ray-traced truth, with a certificate",
+        "perception", adapter_module="harness.raw_lane"),
     "bulletin": Lane(
         "bulletin", "", "", (), "http", "0.5.0",
         "the open board: a workstation or another agent reaches it over the web, "
