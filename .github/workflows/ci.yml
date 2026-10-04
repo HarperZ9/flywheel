@@ -498,3 +498,9 @@ jobs:
           print("\n".join(bad) if bad else f"all modules parse")
           sys.exit(1 if bad else 0)
           PY
+  art-receipts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Verify art receipt digests
+        run: python3 scripts/check_art_receipts.py
