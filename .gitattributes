@@ -75,3 +75,7 @@ project-docs/records/1.3.0/** -text -diff
 
 # A pre-registration is checked by hash, so its checkout bytes must match the committed bytes.
 project-docs/records/search-effort-gate/PREREG.md text eol=lf
+
+# The PySyft result-receipt fixture is a real run's bundle. The receipt binds
+# PySyft's hash over the job folder's raw bytes, so Git must not normalize them.
+tests/fixtures/pysyft_receipt/** -text -diff
