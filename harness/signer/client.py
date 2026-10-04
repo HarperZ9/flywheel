@@ -62,6 +62,12 @@ class SignerClient:
                             "prev": prev, "seal": seal})
         return self._checked(reply["attestation"], statement.ATTESTATION_SCHEMA)
 
+    def check_policy(self, tool: str, args: dict, path_id: str = "E1") -> dict:
+        from .policy import POLICY_SCHEMA
+        reply = self._call({"op": "check_policy", "tool": tool, "args": args,
+                            "path_id": path_id})
+        return self._checked(reply["policy"], POLICY_SCHEMA)
+
     def head(self, store: str) -> dict:
         reply = self._call({"op": "head", "store": store})
         return self._checked(reply["head"], statement.HEAD_SCHEMA)

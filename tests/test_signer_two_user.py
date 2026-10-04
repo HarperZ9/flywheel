@@ -109,3 +109,17 @@ def test_verifier_matches_without_warning_and_catches_a_rechain(signer, tmp_path
     rows[2]["decision"] = "APPROVED_ONCE"
     _write(store, _rechain(rows))
     assert verify_store(tmp_path / "home", trust_root=signer["public"])["verdict"] == "DRIFT"
+
+
+def test_machine_policy_from_the_separate_signer_passes(signer):
+    from harness import action_authority as au
+    from harness.action_authority_verify import verify_action
+    from harness.tool_call_receipt import build_receipt
+    args = {"cmd": "ls"}
+    element = au.from_signer(_client(signer), "run", args)
+    receipt = build_receipt(tool="run", capability="builtin-exec", admission="ALLOWED",
+                            args=args, output="", ok=True, rc=0, run_id="r", seq=1)
+    au.attach(receipt, au.resolve([element]))
+    out = verify_action(receipt, signer["public"])
+    assert out["verdict"] == "MATCH", out
+    assert out["authority"]["basis"] == au.MACHINE
