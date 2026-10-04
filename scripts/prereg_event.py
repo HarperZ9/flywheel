@@ -9,11 +9,15 @@ consistency proof from the previously signed head to the new one.
 Three properties this is built to hold, each because the obvious shortcut breaks
 one of them:
 
-  * **The published freeze stays verifiable.** `signed-head.json` attests the log
-    at size 1 and is named by `FREEZE.json` and by a git tag. Overwriting it
-    would silently invalidate every copy of that attestation, so new heads are
-    written to `heads/head-<size>.json` and the frozen one is never touched.
-    Append-only applies to the artifacts, not only to the log.
+  * **The file named "signed head" signs the whole log.** `signed-head.json`
+    is replaced on every append with a head over every entry, so a reader who
+    checks it checks the log as it stands. Each head is also written once to
+    `heads/head-<size>.json` and never touched again; `heads/head-0001.json`
+    holds the freeze attestation byte for byte, and `FREEZE.json` names it.
+    An earlier version left `signed-head.json` at size 1 forever, and the file
+    went seven entries stale with no failure anywhere. The ceremony now refuses
+    to extend a log whose current head is stale, and
+    `harness.prereg_heads.check_current` fails CI on the same condition.
   * **Growth is proven, not asserted.** Every event emits a consistency proof
     old_size -> new_size. Without it, "we appended" is a claim about a file the
     author controls; with it, anyone holding the old head can check that the log
@@ -42,14 +46,16 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
+from harness import prereg_heads                                 # noqa: E402
 from harness.ledger import Ledger                                # noqa: E402
 from harness.tree_head import check_signed_head, sign_head       # noqa: E402
 
 PREREG_DIR = REPO / "artifacts" / "prereg"
 FREEZE = PREREG_DIR / "FREEZE.json"
 LEDGER = PREREG_DIR / "ledger.jsonl"
-FROZEN_HEAD = PREREG_DIR / "signed-head.json"
-HEADS = PREREG_DIR / "heads"
+SIGNED_HEAD = PREREG_DIR / prereg_heads.SIGNED_HEAD_NAME
+HEADS = PREREG_DIR / prereg_heads.HEADS_DIR_NAME
+FROZEN_HEAD = prereg_heads.head_path(HEADS, 1)
 DEFAULT_KEY = REPO / ".keys" / "prereg-ledger.key"
 
 
@@ -144,33 +150,47 @@ def event_key(kind: str, payload: dict) -> str:
     return hashlib.sha256(kind.encode() + b"\x00" + blob).hexdigest()
 
 
-def record(kind: str, payload: dict, timestamp: str, key_path: Path,
-           *, dry_run: bool = False) -> dict:
-    freeze = json.loads(FREEZE.read_text(encoding="utf-8"))
-    log_id = freeze["log_id"]
-    public_hex = freeze["public_key_hex"]
+def _verified_head(path: Path, public: bytes, label: str) -> dict:
+    if not path.is_file():
+        raise CeremonyError(f"the {label} head is missing at {path.name}")
+    signed = json.loads(path.read_text(encoding="utf-8"))
+    ok, why = check_signed_head(signed, public)
+    if not ok:
+        raise CeremonyError(f"the {label} head does not verify: {why}")
+    return signed
 
-    ledger = Ledger(LEDGER, log_id=log_id)
-    old_signed = json.loads(FROZEN_HEAD.read_text(encoding="utf-8"))
-    prior = ledger.head()
-    if prior["size"] < 1:
+
+def _check_before_append(ledger: Ledger, public: bytes) -> tuple[dict, dict]:
+    """Return (current signed head, frozen head), or refuse.
+
+    Verify the log we are about to extend before extending it: appending to a
+    log that fails its own audit, or whose published head is stale, would bury
+    the failure one entry deeper.
+    """
+    if ledger.size() < 1:
         raise CeremonyError("the log is empty; freeze it before adding events")
-
-    # Verify the log we are about to extend before extending it. Appending to a
-    # log that already fails its own audit would bury the failure one entry
-    # deeper.
     audit = ledger.verify()
     if audit.get("verdict") != "MATCH":
         raise CeremonyError(
             f"the existing log does not verify: {audit.get('verdict')} at entry "
             f"{audit.get('broken_at')}: {audit.get('detail')}")
-    ok, why = check_signed_head(old_signed, bytes.fromhex(public_hex))
-    if not ok:
-        raise CeremonyError(f"the published head does not verify: {why}")
+    current = _verified_head(SIGNED_HEAD, public, "published")
+    frozen = _verified_head(FROZEN_HEAD, public, "frozen")
+    if current["size"] != ledger.size() or current["root"] != ledger.root():
+        raise CeremonyError(
+            f"the published head is stale: it signs size {current['size']} and "
+            f"the log holds {ledger.size()} entries. Re-publish the head over "
+            "the full tree before appending.")
+    return current, frozen
 
-    # Scrub BEFORE keying, so the key addresses the bytes that actually enter the
-    # log. Keying the raw payload would make the same observation from two
-    # different drives look like two different events.
+
+def _event_body(freeze: dict, kind: str, payload: dict, timestamp: str):
+    """Scrub, key and wrap the payload. Returns (key, body, redactions).
+
+    Scrub BEFORE keying, so the key addresses the bytes that actually enter the
+    log. Keying the raw payload would make the same observation from two
+    different drives look like two different events.
+    """
     payload, redactions = scrub(payload)
     key = event_key(kind, payload)
     body = {"prereg_id": freeze["prereg_id"], "kind_detail": kind,
@@ -178,6 +198,34 @@ def record(kind: str, payload: dict, timestamp: str, key_path: Path,
     if redactions:
         body["redacted"] = [{"field": where, "removed": what}
                             for where, what in redactions]
+    return key, body, redactions
+
+
+def _growth_proofs(ledger: Ledger, current: dict, frozen: dict) -> list[dict]:
+    """Proofs from the previous head and from the freeze to the new head.
+
+    The previous head is what a reader who checked last time holds; the frozen
+    head is what every copy of the freeze attestation holds. When they are the
+    same head, one proof serves both.
+    """
+    olds = [current] if current["size"] == frozen["size"] else [frozen, current]
+    proofs = [ledger.consistency_since({"size": o["size"], "root": o["root"]})
+              for o in olds]
+    for proof in proofs:
+        ok, why = Ledger.check_consistency(proof)
+        if not ok:
+            raise CeremonyError(f"the consistency proof fails: {why}")
+    return proofs
+
+
+def record(kind: str, payload: dict, timestamp: str, key_path: Path,
+           *, dry_run: bool = False) -> dict:
+    freeze = json.loads(FREEZE.read_text(encoding="utf-8"))
+    public_hex = freeze["public_key_hex"]
+    ledger = Ledger(LEDGER, log_id=freeze["log_id"])
+    prior = ledger.head()
+    current, frozen = _check_before_append(ledger, bytes.fromhex(public_hex))
+    key, body, redactions = _event_body(freeze, kind, payload, timestamp)
 
     if dry_run:
         return {"dry_run": True, "kind": kind, "key": key,
@@ -186,9 +234,8 @@ def record(kind: str, payload: dict, timestamp: str, key_path: Path,
 
     # Idempotent replay, checked BEFORE appending. The body carries the time of
     # observation, so a second run of the same check would hash differently and
-    # the ledger would refuse it as "same key, different bytes". Returning early
-    # keeps the FIRST observation's timestamp, which is the honest one, and keeps
-    # a re-run from being either an error or a duplicate entry.
+    # the ledger would refuse it. Returning early keeps the FIRST observation's
+    # timestamp, which is the honest one.
     for existing in ledger.records(kind):
         if existing.get("key") == key:
             return {"idempotent": True, "kind": kind, "key": key,
@@ -197,31 +244,18 @@ def record(kind: str, payload: dict, timestamp: str, key_path: Path,
 
     sign, public = load_seed(key_path, public_hex)
     entry = ledger.append_record(kind, key, body)
-    new_head = ledger.head()
-
-    signed = sign_head(new_head, sign, public_key=public, timestamp=timestamp)
-    proof = ledger.consistency_since({"size": old_signed["size"],
-                                      "root": old_signed["root"]})
-
-    # Check both artifacts with the stdlib-only verifiers before writing them.
+    signed = sign_head(ledger.head(), sign, public_key=public, timestamp=timestamp)
     ok, why = check_signed_head(signed, public)
     if not ok:
         raise CeremonyError(f"the head this script just signed fails: {why}")
-    ok, why = Ledger.check_consistency(proof)
-    if not ok:
-        raise CeremonyError(f"the consistency proof fails: {why}")
-
-    HEADS.mkdir(parents=True, exist_ok=True)
-    head_path = HEADS / f"head-{new_head['size']:04d}.json"
-    proof_path = HEADS / (f"consistency-{old_signed['size']:04d}"
-                          f"-to-{new_head['size']:04d}.json")
-    head_path.write_text(json.dumps(signed, indent=1) + "\n", encoding="utf-8")
-    proof_path.write_text(json.dumps(proof, indent=1) + "\n", encoding="utf-8")
-
+    written = prereg_heads.publish(PREREG_DIR, signed,
+                                   _growth_proofs(ledger, current, frozen))
     return {"kind": kind, "key": key, "seq": entry["seq"],
-            "head": new_head, "signed_head": str(head_path.relative_to(REPO)),
-            "consistency": str(proof_path.relative_to(REPO)),
-            "extends": {"size": old_signed["size"], "root": old_signed["root"]}}
+            "head": ledger.head(),
+            "signed_head": str(SIGNED_HEAD.relative_to(REPO)),
+            "head_file": str(written["head_file"].relative_to(REPO)),
+            "consistency": [str(p.relative_to(REPO)) for p in written["proofs"]],
+            "extends": {"size": current["size"], "root": current["root"]}}
 
 
 def main() -> int:
