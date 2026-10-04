@@ -3,6 +3,15 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## 1.3.3
+
+Lanes
+- `raw`, a reference renderer lane: raw-native 0.5.0 renders on the CPU and checks its screen-space AO against a ray-traced reference. Install fetches the release binary by URL and refuses it unless `SHA256SUMS` and the pinned binary digest match. Three rechecks: arithmetic from the files alone (raw-native's own `receipt.json` included), replay, and another renderer's AO against the reference. Every receipt is a superstack receipt carrying identity (MATCH or DRIFT) and tolerance (PASS, FAIL or UNVERIFIABLE). See `docs/features/raw.md`. (#353)
+- The superstack contract v0.2.0 is vendored at `harness/_vendor/superstack.py`, pinned by SHA-256 and checked against its own vectors in CI. (#353)
+
+Reliability
+- Five Windows CI tests that failed and then passed on rerun are fixed at their cause: two wall-clock races, a process startup race, and the Rowan TTS server closing a connection with an unread request body (every POST now reads its body first). The desktop goldens accept host rasterizer noise within measured limits and still fail on real changes. After the fix, 11 of 11 runs of each Windows test shard and 10 of 10 Windows desktop runs passed. (#352)
+
 ## 1.3.2
 
 Pre-action monitor
