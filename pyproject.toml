@@ -80,6 +80,8 @@ harness = [
     "telos_browser_bridge.mjs",
     "ollama-manifest-digest-provenance-v1.json",
     "preaction/rules_v1.json",
+    "monitor_gate/data/*.json",
+    "monitor_gate/data/*.jsonl",
     "skill_resources/flywheel-evidence-task/SKILL.md",
     "skill_resources/flywheel-evidence-task/references/*.md",
 ]

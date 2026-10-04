@@ -35,7 +35,7 @@ except for paths marked `eol=crlf`. CI runs it on Linux and on Windows with
 |---|---|---|
 | Source, docs, JSON records, preregistrations (the default) | `text=auto eol=lf` | The checkout equals the blob, so a hash of the file on disk is the hash of the stored bytes. Editors on every platform handle LF. |
 | Captured streams and hashed records (closeout `stdout.txt` and `stderr.txt`, the Shapley item set, which is stored with CRLF, and its run records) | `-text -diff` | The pinned digest covers the bytes as committed, CRLF included where present. `-text` keeps them byte for byte; normalizing would change what the pin means. |
-| Fixtures hashed into receipts (`packs/**/fixtures`, `benchmarks/fixtures`, `tests/fixtures/pysyft_receipt`, superstack and raw-native vectors, the 1.3.0 records) | `-text -diff` | A receipt binds these exact bytes. Treating them as binary also keeps a future CRLF edit from being silently normalized on commit. |
+| Fixtures hashed into receipts (`packs/**/fixtures`, `benchmarks/fixtures`, `tests/fixtures/pysyft_receipt`, superstack and raw-native vectors, the 1.3.0 records, the monitor gate set and spec in `harness/monitor_gate/data`) | `-text -diff` | A receipt binds these exact bytes. Treating them as binary also keeps a future CRLF edit from being silently normalized on commit. |
 | Windows scripts (`*.ps1`, `*.cmd`, `*.bat`) | `text eol=crlf` | They must be CRLF to run under cmd. None is pinned by hash, and the gate test skips them. |
 | Generated artwork, Flutter registrants, shader sources, desktop payload notices | `text eol=lf` | Already pinned to LF before this rule; kept as written. |
 | Binary files | Git's own detection | Unchanged. |
