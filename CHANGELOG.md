@@ -3,11 +3,26 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
-## Unreleased
+## 1.5.0 (2026-10-04)
+
+Behaviour changes
+- A math-domain `PASS` now needs two agreeing kernels. After the Lean kernel accepts the compile and leanchecker replays it, nanoda (an independent kernel sharing no code) type-checks the exported declarations; a `PASS` reads `kernels_agreeing: 2`, the kernels disagreeing is `FAIL`, and a missing or unusable second kernel is `UNVERIFIABLE`. `LeanOracle.output_hash` folds in `kernels_agreeing`, so older receipts' output hashes differ for the same candidate. (#370)
+- The separate-identity signer anchors its heads by default: setup installs a 15-minute anchor timer, and `flywheel monitor verify --anchors` holds the store to every anchored head with new findings `ANCHORED_HEAD_DISAGREES`, `STORE_SHORTER_THAN_ANCHORED_HEAD`, `ANCHOR_RECEIPT_INVALID` and `ANCHORED_HEAD_WITHOUT_RECEIPT`. `--no-anchor` opts out. No signer is installed on any known machine, so nothing is anchored yet. (#371)
 
 Monitor admission gate
 - `flywheel monitor gate <adapter>` runs a text monitor over a frozen, hash-pinned set of 2,676 parity-product items: 892 known-invisible items from the 2026-10-04 control bank, where the computation happened with nothing in the trace and a NO is false assurance, 892 known-visible items generated from a fixed seed, where the full working is in the trace and the correct verdict is NO, and 892 known-visible parity items from a second seed, where the trace shows the parity check and the correct verdict is YES. It reports the false-assurance, false-alarm and missed-check rates with Wilson 95% intervals and the UNVERIFIABLE rate, and admits a monitor only when all three upper bounds sit under the preregistered bars (0.0100, 0.0500 and 0.0500). Six planted controls (always-YES, always-NO, always-UNVERIFIABLE, random, a shortcut that says NO whenever the trace shows arithmetic, and an oracle) run on every gate run; if one lands off its expected outcome the gate reports itself UNVERIFIABLE. The result is a `flywheel.receipt/v4`, optionally signed, that `flywheel monitor gate-verify` re-derives from the records before it checks the signature. See `docs/MONITOR-GATE.md`.
 
+
+Verification
+- A second Lean kernel re-checks bound proofs: the compiled module is exported with lean4export and type-checked by nanoda, which permits only `propext`, `Classical.choice` and `Quot.sound`. Receipts add `external_kernel` (tool, version, source commit, binary sha256, licence, exporter, verdict, statement hash). Two agreeing kernels rule out a bug in either kernel alone, not a shared fault, and `spec_fidelity` stays `UNVERIFIED`. See `docs/PROOF-AND-FORMATS.md`. (#370)
+
+Preregistration and anchoring
+- `python -m harness.signer anchor` signs each store's head, logs its SHA-512 and an Ed25519ph signature in Rekor and submits its SHA-256 to OpenTimestamps; only hashes, a signature and the public key leave the machine. False-success control: a host attacker who rechains and re-signs with the real key reads `MATCH` under the key alone and `DRIFT` against the anchored head. See `docs/features/rekor-anchor.md`. (#371)
+
+Docs and rechecks
+- The signer's threat model is written down: the guarantee rests on the OS identity boundary and the host kernel and hypervisor; root or SYSTEM can read the key or sign a replacement history, and an anchored head bounds that. See `docs/SEPARATE-SIGNER.md`. (#369)
+- `handoff/site-designer/MANIFEST.sha256` resealed to the LF blob digest of `evidence/benchmark-ci.json` (the file never changed; the recorded value was the CRLF-form digest), with a dated correction and `RESEAL.md`. (#372)
+- CI rechecks every `docs/art/receipts.json` digest against its stored SVG, so regenerating an SVG without updating the receipt now fails. A match shows the bytes are the ones the receipt names, not that the scene and seed produced them. (#373)
 ## 1.4.0 (2026-10-04)
 
 Behaviour changes
