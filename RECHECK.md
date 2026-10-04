@@ -82,8 +82,20 @@ Linux and on Windows with `core.autocrlf=true`.
 ## Time to a verdict
 
 Target: under 10 minutes for a stranger on a clean machine, from reading the
-claim to a recorded verdict, for every `cpu` manifest. Measured cold runs, clone
-included, are recorded with each release of this file.
+claim to a recorded verdict, for every `cpu` manifest.
+
+Measured 2026-10-04 by the maker's agent on one Windows 11 workstation (Python
+3.12.10, Git default `core.autocrlf=true`), each from a fresh clone in an empty
+directory to the printed verdict, machine time only:
+
+| Manifest | Clone | Recheck | Total |
+|---|---|---|---|
+| `site-benchmark-seal` | 10.0 s | 27.9 s | 37.9 s |
+| `metr-count-odds-packet` | 6.7 s | 13.4 s | 20.1 s |
+| `shapley-prereg-pins` | 7.3 s | 10.9 s | 18.2 s |
+
+Reading time is not in these numbers, and the measurer knew the repository. A
+measurement by someone outside it is the one that counts.
 
 ## What this does not prove
 
