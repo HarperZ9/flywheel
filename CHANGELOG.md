@@ -3,10 +3,36 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
-## Unreleased
+## 1.4.0 (2026-10-04)
+
+Behaviour changes
+- Tool-call receipts with no `authority` field verify as `FINDING` (`NO_AUTHORITY_RECORDED`) under the new authority check, and every receipt written before this release has none. `verify_receipt` is unchanged. (#361)
+- `flywheel monitor verify` exits 3 with `UNANCHORED` when no trust root is pinned, where it used to report `MATCH` and exit 0. The old result stays in the report as `internal_verdict`. (#359)
+- A Lean proof that does not match its task's pinned statement fails; a task with no pinned statement is `UNVERIFIABLE`. See Verification below. (#365)
+
+Pre-action monitor
+- A separate-identity signer: runs as its own OS user or account, holds a key the agent cannot read, signs each record's sequence number, previous seal and seal once, puts the OS-reported caller identity inside the signed bytes, and fails closed. A CI job runs it as a second Linux user. See `docs/SEPARATE-SIGNER.md`. (#359)
+- An `authority` field on tool-call receipts (`intent`, `policy:machine`, `scope`, `policy:self`, `none`), re-derived by the verifier; `policy:machine` counts only when signed by a pinned separate-identity signer. See `docs/ACTION-AUTHORITY.md`. (#361)
+- The rule pack is unchanged; digest `a76b7e8995c91861e92ce2198cd62d722deede9fb8307463c68b8aa5d5cdf8c4`.
 
 Verification
-- The math domain oracle now binds a Lean proof to the statement its task pinned. Before, `LeanOracle.verify` never read its task, so any closed theorem passed, `theorem unrelated : True := trivial` included (disclosed in `project-docs/records/2026-09-23-lean-oracle-task-binding.md` and the 1.0.3 limits). A task pins `challenge` (theorem name, statement, optional header); without one the verdict is `UNVERIFIABLE` with reason `SPECIFICATION_UNPINNED`. The candidate compiles once; a Lean program reads the compiled module as data, requires the pinned theorem's exact elaborated type and identical definitions behind it, and walks its axioms from the artifact; leanchecker replays the same module. Receipts (`flywheel.lean-receipt/v2`) add `statement_sha256`, `challenge`, `binding`, `trusted_base`, `artifact_sha256` and `spec_fidelity: UNVERIFIED`. Unrelated, weakened, renamed, shadowed-definition, shadowed-instance, `prelude`, `sorry`, custom-axiom, metaprogram-axiom and kernel-skip probes are all refused against a real kernel; the real proof passes. No published receipt depended on the hole. See `docs/PROOF-AND-FORMATS.md`.
+- The math domain oracle now binds a Lean proof to the statement its task pinned. Before, `LeanOracle.verify` never read its task, so any closed theorem passed, `theorem unrelated : True := trivial` included (disclosed in `project-docs/records/2026-09-23-lean-oracle-task-binding.md` and the 1.0.3 limits). A task pins `challenge` (theorem name, statement, optional header); without one the verdict is `UNVERIFIABLE` with reason `SPECIFICATION_UNPINNED`. The candidate compiles once; a Lean program reads the compiled module as data, requires the pinned theorem's exact elaborated type and identical definitions behind it, and walks its axioms from the artifact; leanchecker replays the same module. Receipts (`flywheel.lean-receipt/v2`) add `statement_sha256`, `challenge`, `binding`, `trusted_base`, `artifact_sha256` and `spec_fidelity: UNVERIFIED`. Unrelated, weakened, renamed, shadowed-definition, shadowed-instance, `prelude`, `sorry`, custom-axiom, metaprogram-axiom and kernel-skip probes are all refused against a real kernel; the real proof passes. Behaviour change: a proof of anything other than the pinned statement now fails, and math claims through paths that pin no statement read `UNVERIFIABLE` where they read `PASS`. No published receipt depended on the hole. See `docs/PROOF-AND-FORMATS.md`. (#365)
+
+Preregistration and anchoring
+- `artifacts/prereg/signed-head.json` now signs the whole eight-entry log; the original one-entry head is kept at `heads/head-0001.json`, and CI fails when the signed head and the log disagree. (#358)
+- `flywheel anchor head` and `flywheel anchor verify`: log a signed head in Sigstore Rekor (Ed25519ph, hashes only) beside OpenTimestamps, and recheck both offline against pinned keys; `--online` adds a consistency proof. The size-8 prereg head is at Rekor index 3077414145. See `docs/features/rekor-anchor.md`. (#366)
+- A preregistered placebo test for exact Shapley attribution: `qwen2.5:7b` credited 0 of 80 controls (Wilson 95% 0.000 to 0.046); an exploratory `qwen2.5:0.5b` run credited 7 of 80. See `docs/features/shapley-placebo.md`. (#357)
+
+Rechecks and canonical bytes
+- `.gitattributes` defaults text to LF on every platform, so a Windows clone hashes to the stored bytes. `harness/canonical_bytes.py` reports `EOL_ONLY` (exit 3) when only line endings differ; `python -m harness.prereg_pins` checks a preregistration's file pins. See `docs/CANONICAL-BYTES.md`. (#363)
+- `RECHECK.md` and `python -m harness.recheck run`: one-command recheck manifests with a control that must fail; seven manifests in `recheck/`, CPU ones run in CI on Linux and Windows. The METR evidence verifier reports `INSPECT_INPUT_BUSY` for a transient Windows sharing refusal instead of a false rejection. (#363)
+- The site-designer handoff and the Inspect fixtures are pinned to committed bytes, with a `canonical-bytes` workflow on Linux and Windows. (#364)
+
+Receipts
+- A signed result receipt for an approved PySyft job, with a stdlib verifier and 16 paired tamper tests. See `docs/features/pysyft-result-receipt.md`. (#356)
+
+Docs
+- README header, hero art and brand assets. (#360)
 
 ## 1.3.4
 
