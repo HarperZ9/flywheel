@@ -1,7 +1,7 @@
 """The raw lane in the lane roster: a bundled adapter lane with no MCP server.
 
 Claims under test:
-- the registry declares raw as a bundled 0.4.0 perception lane with an adapter
+- the registry declares raw as a bundled 0.5.0 perception lane with an adapter
   and no MCP argv;
 - with no binary installed, the roster reads missing with TOOLCHAIN_MISSING and
   the install command; once the pinned binary is in place it reads declared;

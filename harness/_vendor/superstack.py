@@ -1,5 +1,26 @@
-# SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Zain Dana Harper
+# SPDX-License-Identifier: FSL-1.1-MIT
+# Copyright 2026 Zain Dana Harper
+#
+# Licensed under the Functional Source License, Version 1.1, MIT Future
+# License (FSL-1.1-MIT). The full text is LICENSE in the superstack
+# repository and https://fsl.software/FSL-1.1-MIT.template.md. Each release
+# becomes available under the MIT licence below on the second anniversary of
+# the date it was made available. From v0.2.0 this file is FSL-1.1-MIT;
+# releases up to and including v0.1.0 remain under the MIT licence.
+#
+# Algorithms by others, each under its own terms, which the FSL does not change:
+#   mulberry32: Tommy Ettinger, 2017, CC0 1.0 public domain dedication.
+#   xmur3: bryc (github.com/bryc/code), public domain, MIT fallback,
+#     Copyright (c) 2024 bryc.
+#   OKLab matrices: Bjorn Ottosson, 2020, public domain, MIT fallback.
+#   K-weighting constants for rates other than 48 kHz: as published in
+#     libebur128 (MIT); the 48 kHz table is ITU-R BS.1770-4's.
+# Sources and dates: docs/LICENSING.md in the superstack repository.
+#
+# MIT licence text. It applies to the parts above that use an MIT fallback,
+# and to this file once its FSL period ends:
+#
+# Copyright 2026 Zain Dana Harper
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,15 +39,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#
-# Algorithms by others, each under terms that allow this file's MIT licence:
-#   mulberry32: Tommy Ettinger, 2017, CC0 1.0 public domain dedication.
-#   xmur3: bryc (github.com/bryc/code), public domain, MIT fallback,
-#     Copyright (c) 2024 bryc.
-#   OKLab matrices: Bjorn Ottosson, 2020, public domain, MIT fallback.
-#   K-weighting constants for rates other than 48 kHz: as published in
-#     libebur128 (MIT); the 48 kHz table is ITU-R BS.1770-4's.
-# Sources and dates: docs/LICENSING.md in the superstack repository.
 """superstack contract v0, Python implementation (standard library only).
 
 One file carries every rule in SPEC.md: canonical JSON v2 and SHA-256, the
@@ -42,7 +54,7 @@ import math
 import re
 
 CONTRACT = "superstack/0"
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 RECEIPT_SCHEMA = "superstack.receipt/1"
 SCENE_KINDS = ("superstack.scene/1", "superstack.sound/1")
 MAX_SAFE_INTEGER = 2 ** 53 - 1

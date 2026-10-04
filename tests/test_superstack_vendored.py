@@ -3,7 +3,7 @@
 A hash match shows the file is unchanged. These vectors show it still passes the
 contract's own test vectors here (VENDORING.md step 4). The three vector files
 the raw lane depends on (canonical JSON, the receipt, the reconcile metrics) are
-copied from the same v0.1.0 tag, and each is checked against MANIFEST.json first,
+copied from the same v0.2.0 tag, and each is checked against MANIFEST.json first,
 so a vector edited by hand fails before it can pass anything.
 """
 from __future__ import annotations

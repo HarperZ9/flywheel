@@ -1,4 +1,4 @@
-"""The raw lane adapter and level 2, against the real raw-native 0.4.0 binary.
+"""The raw lane adapter and level 2, against the real raw-native 0.5.0 binary.
 
 Claims under test:
 - a render at the default tolerance is COMPLETED and PASS, its own files pass
@@ -39,6 +39,8 @@ def test_a_render_passes_with_a_receipt_that_reads_match_and_pass(installed_home
     assert (fw["identity"], fw["tolerance"], fw["level1"], fw["verdict"]) == (
         "MATCH", "PASS", "PASS", "PASS")
     assert run.arena["verdict"] == "verified" and run.channels
+    assert run.native_receipt["schema"] == "superstack.receipt/1"
+    assert fw["native_receipt"]["agrees"] is True
 
 
 def test_a_tight_tolerance_fails_and_the_receipt_reads_fail(installed_home):  # noqa: F811

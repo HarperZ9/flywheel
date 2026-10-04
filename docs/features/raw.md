@@ -27,7 +27,7 @@ The params object is raw-native's own: `width`, `height`, `eye`, `target`, `up`,
 |---|---|
 | name | `raw` |
 | kind | `bundled`, served by an in-process adapter (`harness/raw_lane.py`) with no MCP server |
-| version | raw-native `0.4.0` |
+| version | raw-native `0.5.0` (the CPU builds; the D3D12 build is not used) |
 | organ | `perception` |
 | install | fetch the release asset for this platform by URL, check it against `SHA256SUMS`, check the binary inside against a pinned SHA-256, refuse on any mismatch |
 | builds | Windows x64 and Linux x64. Other platforms read `TOOLCHAIN_MISSING` |
@@ -62,7 +62,7 @@ How a run ends:
 
 Each level is its own check with its own verdict, cheapest first, so you can stop at the one you trust.
 
-**Level 1, arithmetic, no execution.** Re-hash every file the certificate lists, then recompute pixel count, RMSE, maximum error and verdict from `ao_rt.pfm`, `ao_ss.pfm` and `mask.pgm` with the renderer's float32 arithmetic. It reproduces the recorded values bit for bit. A forged certificate or a tampered buffer reads FAIL. A certificate without the float buffers (raw-native 0.2.0) reads UNVERIFIABLE with ENVELOPE_MISSING. The family lives in `harness/certificates/raw_ao.py` and imports nothing that can execute.
+**Level 1, arithmetic, no execution.** Re-hash every file the certificate lists, then recompute pixel count, RMSE, maximum error and verdict from `ao_rt.pfm`, `ao_ss.pfm` and `mask.pgm` with the renderer's float32 arithmetic. It reproduces the recorded values bit for bit. From raw-native 0.5.0 it also reads the renderer's own `receipt.json` and holds it to the same files: its seal, its content (the screen-space AO) and reference (the ray-traced AO), every output digest, and its verdict against the certificate's. A forged certificate, a tampered buffer or a receipt that disagrees reads FAIL. A certificate without the float buffers (raw-native 0.2.0) reads UNVERIFIABLE with ENVELOPE_MISSING. The family lives in `harness/certificates/raw_ao.py` and imports nothing that can execute.
 
 ```python
 from pathlib import Path
@@ -90,14 +90,14 @@ raw_ao_independent.receipt(certificate, files, candidate)["flywheel"]
 
 ## Receipts
 
-Every receipt is a `superstack.receipt/1` built and sealed with the superstack contract v0.1.0, vendored byte for byte at `harness/_vendor/superstack.py` and pinned by SHA-256. Any of the contract's Python, JavaScript or C++ implementations can check the seal. Each receipt carries two verdicts side by side:
+Every receipt is a `superstack.receipt/1` built and sealed with the superstack contract v0.2.0 (FSL-1.1-MIT), vendored byte for byte at `harness/_vendor/superstack.py` and pinned by SHA-256. Any of the contract's Python, JavaScript or C++ implementations can check the seal. Each receipt carries two verdicts side by side:
 
 - **identity**, MATCH or DRIFT: are the bytes the reference's? For a run and for levels 1 and 2 the content is the map of output file names to SHA-256, against the map the certificate records. For level 3 it is the AO buffer itself.
 - **tolerance**, PASS, FAIL or UNVERIFIABLE: is the measurement within its bound? superstack spells these `verified`, `refuted` and `unverifiable`, and the receipt's `flywheel` block repeats them in Flywheel's words.
 
 The two can disagree, and the receipt keeps both. A replay can read DRIFT and PASS when bytes differ by less than the bound. A tight tolerance reads MATCH and FAIL: the files are exactly the recorded ones, and the shortcut misses the bound.
 
-The `flywheel` block also records the certificate's SHA-256 in canonical JSON, the renderer version, the platform and the level's own verdict. The receipt's `params` sit in its scene, and `outputs` lists the SHA-256 of every file.
+The `flywheel` block also records the certificate's SHA-256 in canonical JSON, the renderer version, the platform, the level's own verdict and, for a 0.5.0 render, raw-native's own receipt digest with whether it agrees. The receipt's `params` sit in its scene, and `outputs` lists the SHA-256 of every file.
 
 ## What a verdict does not prove
 
@@ -115,4 +115,4 @@ A replay adds that the same computation ran twice, which says nothing about whet
 - Lane overhead and the adapter's run time are unmeasured.
 - raw-native ships no macOS or ARM build, so the lane reads `TOOLCHAIN_MISSING` there.
 - The arena certificate's byte count differs between the Windows and Linux builds (their standard libraries allocate differently). raw-native leaves it out of the certificate's output list, so replay identity does not cover it.
-- The lane uses the CPU renderer only. raw-native's WebGPU and WebAssembly builds are not wired into it.
+- The lane uses the CPU renderer only. raw-native 0.5.0's D3D12 Windows build and its WebGPU and WebAssembly builds are not wired into it.

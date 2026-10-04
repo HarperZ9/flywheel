@@ -1,10 +1,12 @@
 """Shared fixtures for the raw lane tests.
 
 The committed renders under ``tests/fixtures/raw_native`` came from the
-raw-native 0.4.0 release binaries with ``--width 40 --height 40``:
+raw-native 0.5.0 release binaries with ``--width 40 --height 40``:
 ``windows-x64`` and ``linux-x64`` (the same view, verified at the default 0.12
 tolerance) and ``windows-x64-refuted`` (``--tolerance 0.05``). Each folder's
-``run.json`` names the platform and the flags.
+``run.json`` names the platform and the flags. Each also holds raw-native's own
+``receipt.json``; the two platforms wrote every file byte-identical except
+``arena_certificate.json``.
 
 ``installed_home`` installs the real binary once per session through the lane's
 own installer (fetch by URL, check against SHA256SUMS and the pins). Where that
@@ -42,7 +44,7 @@ def run_record(name: str) -> dict:
 def _require_or_skip(reason: str) -> None:
     if os.environ.get("RAW_LANE_REQUIRE_BINARY") == "1":
         pytest.fail(f"RAW_LANE_REQUIRE_BINARY=1 and the binary is unavailable: {reason}")
-    pytest.skip(f"raw-native 0.4.0 binary unavailable on this host: {reason}")
+    pytest.skip(f"raw-native {inst.VERSION} binary unavailable on this host: {reason}")
 
 
 @pytest.fixture(scope="session")

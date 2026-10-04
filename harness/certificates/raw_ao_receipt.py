@@ -1,7 +1,7 @@
 """raw_ao_receipt.py -- superstack receipts for the raw lane, with both verdicts.
 
 Every receipt the raw lane writes is a ``superstack.receipt/1`` (the contract
-vendored at ``harness/_vendor/superstack.py``, v0.1.0), so any of the
+vendored at ``harness/_vendor/superstack.py``, v0.2.0), so any of the
 contract's three implementations can check its seal. Each one carries two
 verdicts side by side, never folded into one:
 
@@ -133,4 +133,16 @@ def level1_receipt(cert, files, *, level=1, platform: str = "", flywheel=None) -
                   "certificate_sha256": (certificate_sha256(cert)
                                          if isinstance(cert, dict) else None),
                   "renderer": cert.get("renderer") if isinstance(cert, dict) else None,
-                  "platform": platform or None, **dict(flywheel or {})})
+                  "platform": platform or None,
+                  "native_receipt": _native_summary(result.get("native_receipt")),
+                  **dict(flywheel or {})})
+
+
+def _native_summary(native) -> dict | None:
+    """raw-native's own receipt, as the recheck found it: its seal digest, its
+    two verdicts, and whether it agrees with the files and the certificate."""
+    if not native or not native.get("present"):
+        return None
+    return {"receipt_sha256": native.get("receipt_sha256"),
+            "identity": native.get("identity"), "tolerance": native.get("tolerance"),
+            "agrees": not native.get("errors")}

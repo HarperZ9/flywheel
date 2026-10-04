@@ -10,7 +10,7 @@ Claims under test, offline against archives built here:
 - a binary swapped after install is refused by ``resolve`` and by the lane run;
 - a platform with no raw-native build is TOOLCHAIN_MISSING;
 - paired mutation: a resolve that skips the digest check lets the swap through;
-and live: the real 0.4.0 release installs and matches its pins.
+and live: the real 0.5.0 release installs and matches its pins.
 """
 from __future__ import annotations
 

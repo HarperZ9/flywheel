@@ -1,7 +1,7 @@
 """raw_ao_v1, level 1 and the translation table: a raw-native certificate read as data.
 
 Claims under test, all without running anything:
-- level 1 reproduces raw-native 0.4.0's recorded pixel count, RMSE, maximum
+- level 1 reproduces raw-native 0.5.0's recorded pixel count, RMSE, maximum
   error and verdict bit for bit, for renders from both release binaries;
 - a forged certificate fails: a flipped verdict, an edited RMSE, and a forgery
   whose output digests were recomputed so only the arithmetic can catch it;
@@ -183,7 +183,8 @@ def test_paired_mutation_a_checker_that_skips_the_arithmetic_is_caught(monkeypat
 
 
 @pytest.mark.parametrize("module", ["raw_ao.py", "raw_ao_buffers.py", "raw_ao_receipt.py",
-                                    "raw_ao_independent.py"])
+                                    "raw_ao_independent.py",
+                                    "raw_native_receipt.py"])
 def test_the_family_imports_nothing_that_can_execute(module):
     path = Path(raw_ao.__file__).with_name(module)
     banned = {"subprocess", "socket", "ctypes", "pickle", "shutil", "importlib", "os"}

@@ -126,15 +126,16 @@ jobs:
           tests/test_superstack_vendored.py
           tests/test_raw_ao_certificate.py
           tests/test_raw_ao_independent.py
+          tests/test_raw_native_receipt.py
           -q
 
   raw_lane:
     # The raw lane runs raw-native's release binary, so its tests need that
     # binary. Elsewhere they skip with the installer's reason when it cannot be
     # fetched; here RAW_LANE_REQUIRE_BINARY=1 turns that skip into a failure, so
-    # a green check means the three levels ran against the real 0.4.0 release on
+    # a green check means the three levels ran against the real 0.5.0 release on
     # both platforms it ships for. The first step is the vendored superstack hash
-    # check (VENDORING.md in the superstack repository) and its vectors.
+    # check (VENDORING.md in the superstack repository, v0.2.0) and its vectors.
     name: raw lane, release binary, three levels
     strategy:
       fail-fast: false
@@ -161,6 +162,7 @@ jobs:
           tests/test_raw_lane_roster.py
           tests/test_raw_ao_certificate.py
           tests/test_raw_ao_independent.py
+          tests/test_raw_native_receipt.py
           -q -rs
 
   full:

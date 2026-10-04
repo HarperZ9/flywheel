@@ -61,7 +61,7 @@ desktop/windows/flutter/generated_plugins.cmake text eol=lf
 
 # Vendored helpers are hash-pinned (VENDORED.sha256); keep their bytes exactly as copied.
 **/_vendor/safe_spawn.py -text
-# superstack.py v0.1.0 is pinned the same way (VENDORING.md in the superstack repo):
+# superstack.py v0.2.0 is pinned the same way (VENDORING.md in the superstack repo):
 # a CRLF checkout would change its hash. The vectors it is tested against are hashed
 # by their own MANIFEST.json, so they stay byte-exact too.
 **/_vendor/superstack.py -text

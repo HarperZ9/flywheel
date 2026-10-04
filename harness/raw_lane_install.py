@@ -10,6 +10,9 @@ GitHub release by URL, and accepts it only when three digests agree:
 3. the binary inside the archive hashes to the digest pinned here.
 
 Anything else is refused with ``TOOLCHAIN_MISSING`` and nothing is written.
+On Windows the lane takes the CPU build (``windows-x64.zip``), never the
+``windows-x64-d3d12.zip`` GPU build: the reference must have no GPU, driver or
+graphics API in its trust path.
 ``resolve`` re-hashes the installed binary before every use, so a binary
 swapped after install is refused the same way. raw-native is licensed
 FSL-1.1-MIT by its author; the person installing the lane fetches it from the
@@ -30,7 +33,7 @@ from typing import Callable, Mapping
 
 from .lane_workdir import flywheel_home
 
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 RELEASE_URL = f"https://github.com/HarperZ9/raw-native/releases/download/v{VERSION}/"
 TOOLCHAIN_MISSING = "TOOLCHAIN_MISSING"
 MAX_DOWNLOAD = 64 * 1024 * 1024
@@ -53,15 +56,15 @@ class Pins:
 
 
 PINS = Pins(VERSION, RELEASE_URL,
-            "7cbcd1ad2fcae3fdca01c1b9999186ff23f26b87ee510561271ef518af92c4a2", {
+            "8d883f6f68253dc1580070bf54351bc58421d8d55a203e297310d49309cdafdb", {
                 "windows-x64": Asset(
-                    "raw-native-0.4.0-windows-x64.zip",
-                    "raw-native-0.4.0-windows-x64/raw_native_cli.exe",
-                    "12e4942ad45bf6ca73c3058b08acdf8a0fb2d281a0248c5ee671bfff901ec162"),
+                    "raw-native-0.5.0-windows-x64.zip",
+                    "raw-native-0.5.0-windows-x64/raw_native_cli.exe",
+                    "f56ae26d644d91c547ccf62096620b9605024ef7e33656edd205f560301fd896"),
                 "linux-x64": Asset(
-                    "raw-native-0.4.0-linux-x64.tar.gz",
-                    "raw-native-0.4.0-linux-x64/raw_native_cli",
-                    "e0e9c428f22a3eb33df0c019e327e0e998f6d9516034440bf7d0fae2039bccb8"),
+                    "raw-native-0.5.0-linux-x64.tar.gz",
+                    "raw-native-0.5.0-linux-x64/raw_native_cli",
+                    "504bf1d0467acbfdd03094822f516ea32cc5e9d2547611ef5ccdedf178fd8552"),
             })
 
 

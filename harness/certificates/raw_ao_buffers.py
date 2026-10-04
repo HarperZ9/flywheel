@@ -1,6 +1,6 @@
 """raw_ao_buffers.py -- read raw-native's float AO buffers and mask, and redo the reconcile.
 
-raw-native 0.4.0 writes the two AO buffers as 32-bit float PFM (``Pf``, one
+raw-native 0.4.0 and later write the two AO buffers as 32-bit float PFM (``Pf``, one
 channel, scale -1.0 for little-endian, rows bottom-to-top) and the coverage mask
 as 8-bit PGM (``P5``, 255 where a surface covers the pixel). The reconcile is
 recomputed with the renderer's own arithmetic: the per-pixel difference is a

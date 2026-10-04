@@ -196,7 +196,7 @@ LANES: dict[str, Lane] = {
         # refused unless it matches SHA256SUMS and the digests pinned in
         # harness/raw_lane_install.py. No MCP server: harness/raw_lane.py runs the
         # binary per call and returns an OracleResult with a superstack receipt.
-        "raw", "", "raw_native_cli", (), "bundled", "0.4.0",
+        "raw", "", "raw_native_cli", (), "bundled", "0.5.0",
         "reference renderer: fast AO checked against ray-traced truth, with a certificate",
         "perception", adapter_module="harness.raw_lane"),
     "bulletin": Lane(

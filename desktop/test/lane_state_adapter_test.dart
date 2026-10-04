@@ -10,7 +10,7 @@ import 'package:flywheel_desktop/models/lane_state.dart';
 Lane _lane(String name, String state, String code) => Lane.fromJson({
       'name': name,
       'kind': 'bundled',
-      'expected_version': '0.4.0',
+      'expected_version': '0.5.0',
       'status': 'missing',
       'state': state,
       'code': code,

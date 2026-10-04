@@ -16,8 +16,10 @@ Two things live here, both pure data:
   UNVERIFIABLE with ENVELOPE_MISSING.
 * ``level1``: the arithmetic recheck. It re-hashes every file the certificate
   lists and recomputes pixel count, RMSE, maximum error and verdict from the
-  float buffers and the mask. It runs nothing, so a stranger can run it on a
-  certificate and files someone else produced.
+  float buffers and the mask. From raw-native 0.5.0 it also holds the
+  renderer's own ``receipt.json`` to the same files (``raw_native_receipt``).
+  It runs nothing, so a stranger can run it on a certificate and files someone
+  else produced.
 
 Every result carries ``DOES_NOT_PROVE``, four fixed sentences a test asserts.
 This module imports nothing that can execute.
@@ -31,6 +33,7 @@ from typing import Mapping
 from ..oracle import OracleResult
 from ..verdict import Attribution, Execution, UnverifiableReason, Verdict
 from .base import canonical, parse_certificate
+from . import raw_native_receipt
 from .raw_ao_buffers import BufferError, f32, reconcile_files
 
 FAMILY = "raw_ao_v1"
@@ -195,10 +198,13 @@ def level1(cert, files: Mapping[str, bytes]) -> dict:
         except (BufferError, KeyError) as e:
             got, tolerance = None, _tolerance_block(cert, None, f"buffer unreadable: {e}")
             mismatches.append(f"buffer: {e}")
+    native = raw_native_receipt.check(cert, files)
+    mismatches += [f"receipt.json: {e}" for e in native["errors"]]
     verdict = Verdict.FAIL if mismatches else Verdict.PASS
     return {"level": 1, "verdict": verdict.value, "reason": "", "identity": identity,
             "mismatches": mismatches, "digests": digests, "tolerance": tolerance,
-            "recomputed": got, "detail": "; ".join(mismatches) or "all checks match"}
+            "recomputed": got, "native_receipt": native,
+            "detail": "; ".join(mismatches) or "all checks match"}
 
 
 def oracle_result(cert, verdict: Verdict, excerpt: str, *, reason: str = "",

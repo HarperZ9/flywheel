@@ -67,6 +67,7 @@ VERIFIER_ENTRY_POINTS = [
     "certificates.raw_ao",
     "certificates.raw_ao_independent",
     "certificates.raw_ao_receipt",
+    "certificates.raw_native_receipt",
     "certificates.crossing_generator",
 ]
 

@@ -4,9 +4,10 @@ raw-native (HarperZ9/raw-native, FSL-1.1-MIT) renders a built-in scene on the
 CPU and certifies its screen-space AO against a ray-traced reference. The lane
 has no MCP server. ``run`` resolves the hash-pinned binary
 (``raw_lane_install.resolve``), runs it once in a temporary folder with a params
-file, reads ``certificate.json``, ``arena_certificate.json`` and
-``channels.json``, rechecks the certificate against the files beside it (level
-1, ``certificates/raw_ao.py``), and returns a ``RawRun``.
+file, reads ``certificate.json``, ``arena_certificate.json``, ``channels.json``
+and raw-native's own superstack ``receipt.json``, rechecks the certificate and
+that receipt against the files beside them (level 1, ``certificates/raw_ao.py``),
+and returns a ``RawRun``.
 
 Execution mapping:
 
@@ -58,6 +59,7 @@ class RawRun:
     channels: dict | None = None
     receipt: dict | None = None
     files: dict = field(default_factory=dict)
+    native_receipt: dict | None = None      # raw-native's own receipt.json (0.5.0+)
 
 
 def budget_seconds(params: dict) -> float:
@@ -145,7 +147,8 @@ def run(params: dict, *, environ=None, timeout: float | None = None,
     execution = EXIT_EXECUTION.get(rc, Execution.CRASHED)
     run_ = RawRun(None, execution, plat, rc, _read_json(files, "certificate.json"),
                   _read_json(files, "arena_certificate.json"),
-                  _read_json(files, "channels.json"), None, files)
+                  _read_json(files, "channels.json"), None, files,
+                  _read_json(files, "receipt.json"))
     if execution is Execution.COMPLETED:
         return _completed(run_)
     if execution is Execution.RESOURCE_EXCEEDED:
