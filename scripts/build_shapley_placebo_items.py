@@ -135,8 +135,10 @@ def main(argv=None) -> int:
     a = p.parse_args(argv)
     Path(a.cache).mkdir(parents=True, exist_ok=True)
     data = build(Path(a.cache))
-    Path(a.out).write_text(json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False) + "\n",
-                           encoding="utf-8")
+    # CRLF on every OS: the preregistered item set was written on Windows, and fixed
+    # line endings let a rebuild anywhere match its SHA-256 byte for byte.
+    text = json.dumps(data, indent=1, sort_keys=True, ensure_ascii=False) + "\n"
+    Path(a.out).write_bytes(text.replace("\n", "\r\n").encode("utf-8"))
     print(len(data["items"]), "items;", hashlib.sha256(Path(a.out).read_bytes()).hexdigest())
     return 0
 
