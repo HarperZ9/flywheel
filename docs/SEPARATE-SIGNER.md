@@ -138,12 +138,41 @@ kept in the journal and appears in every later signed head as `rewinds`, so it
 is never silent. A rewind is an owner power: whoever holds the signer
 identity can use it to replace the newest record.
 
+## What the signer does not protect against
+
+The signer's guarantee rests on the operating system's identity boundary: a
+separate OS user on Linux, a separate local account on Windows. It also rests
+on the host kernel and hypervisor that enforce that boundary. When those fail,
+the guarantee fails with them.
+
+- **A compromised host.** An attacker with root on Linux, or SYSTEM on Windows,
+  can read the signer's key or have it sign arbitrary records. So can an
+  attacker who escapes from a virtual machine into the host that runs it.
+  Public reports in 2026 described guest-to-host escapes in KVM, so this class
+  of event happens in practice. Records signed after such a compromise prove
+  nothing, and the verifier cannot tell them from honest ones. An attacker who
+  holds the key can also sign a replacement history, so earlier records are
+  only as strong as what was anchored off the host.
+- **What still holds.** A head anchored in a public log the attacker does not
+  run, Sigstore Rekor or OpenTimestamps, still bounds what had been published
+  by the anchor's time. A forged history that disagrees with an anchored head
+  fails against it. This covers anchored heads only, up to the last anchor. No
+  signer head has been anchored yet (see `docs/features/rekor-anchor.md`); the
+  anchor command takes signer heads, and until one is anchored this protection
+  is available for signer records but not in effect.
+- **Direction, not built.** Keep the key off the host's reach: a TPM-bound key
+  the host can use but not export, or an external device that holds the key, a
+  monotonic counter and the hash chain. A host compromise would then not yield
+  the key. A compromised host could still submit false records while it holds
+  control, and a device that keeps its own counter and chain could refuse to
+  rewrite the records it signed before. None of this ships today.
+
 ## What this does not prove
 
 - **Root defeats it.** A root user on Linux, or an administrator on Windows who
   takes ownership of the signer's home, can read the key and sign anything. The
   split holds only while the agent runs without those rights. Do not run the
-  agent elevated.
+  agent elevated. The section above covers a compromised host.
 - **The signer attests what it was sent.** The hook builds each record on the
   agent's side. A signature shows the record was submitted in that order and
   not changed afterwards. It does not show the record is true, that the tool
