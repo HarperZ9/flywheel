@@ -19,6 +19,9 @@ Verification and evidence
   writes a certificate you can recheck from the files alone, by replay, or against
   another renderer.
 - [gather](gather.md): research intake with provenance receipts; the verified-data intake.
+- [shapley-placebo](shapley-placebo.md): a placebo test for exact Shapley attribution
+  over sources; how often an empty, irrelevant or shuffled source gets credit, with
+  Wilson intervals.
 - [proof-surface](proof-surface.md): stdlib contract validators and domain proof-packet
   wedges; one re-derivable proof packet per action (composed via accountable-surface).
 

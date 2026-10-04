@@ -88,3 +88,11 @@ the docs say this setup passed its placebo test, and name its limits.
 
 Any change after the freeze is recorded here, dated, with the reason, before the
 result is read.
+
+- **2026-10-03 (session clock), after the primary result was read.** The primary run
+  gave v(S) = 1 exactly when the gold passage was in S, for all 16 items, so every
+  control earned zero credit. That leaves open whether this test can fail at all. One
+  exploratory run on Ollama `qwen2.5:0.5b`, same items, prompt, decoding and value
+  function, is added to find out. It is labeled exploratory, is not judged against the
+  bar in section 2, and does not change the primary verdict. Recorded before its
+  result was read.
