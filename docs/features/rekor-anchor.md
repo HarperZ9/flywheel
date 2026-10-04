@@ -55,8 +55,21 @@ it as well, so that one pinned key now verifies the head's signature and both
 anchors. Rekor entries cannot be removed, so both records stay in
 `artifacts/anchor/` and both are checked in CI.
 
-The separate signer from #359 has produced no head on any machine this repository
-knows of, so no signer head is anchored yet. Its heads take the same command.
+## The separate signer's heads
+
+The separate signer anchors its own heads, with no command to remember. Its
+anchor job (`python -m harness.signer anchor`) runs every 15 minutes from the
+timer or scheduled task the setup scripts install. It logs every store head
+that moved since its last anchor in Rekor, under the signer's own key, and in
+OpenTimestamps, and writes a receipt beside the signer's other public files.
+`flywheel monitor verify --anchors <dir>` then holds the store to every
+anchored head, and a history rewritten after an anchor fails with
+`ANCHORED_HEAD_DISAGREES`. Records after the newest anchor are reported as
+unanchored, never as anchored. The anchoring period is the exposure window.
+Setup, findings and limits: `docs/SEPARATE-SIGNER.md`, section "Public anchors".
+
+No signer head appears in the table above. No signer is installed on a machine
+this repository knows of, so no signer head exists to anchor yet.
 
 ## How it works
 

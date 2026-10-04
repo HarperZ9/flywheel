@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import threading
+import time
 from pathlib import Path
 
 JOURNAL_NAME = "journal.json"
@@ -22,6 +24,20 @@ JOURNAL_NAME = "journal.json"
 
 class JournalConflict(RuntimeError):
     """The request would rewrite or skip history the signer already signed."""
+
+
+def _replace(src: Path, dst: Path, tries: int = 50) -> None:
+    """os.replace, retried on Windows. There a reader holding the journal open
+    (the anchor job, for a few microseconds) makes the replace fail with a
+    sharing violation; one retry after a short sleep clears it."""
+    for i in range(tries):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if sys.platform != "win32" or i == tries - 1:
+                raise
+            time.sleep(0.005)
 
 
 class Journal:
@@ -41,7 +57,13 @@ class Journal:
             fh.write(json.dumps(data, sort_keys=True))
             fh.flush()
             os.fsync(fh.fileno())
-        os.replace(tmp, self.path)
+        _replace(tmp, self.path)
+
+    def stores(self) -> list:
+        """Every store this signer has signed for. Read-only; the anchor job
+        (anchor_job.py) uses it to find heads to anchor."""
+        with self._lock:
+            return sorted(self._read())
 
     def head(self, store: str) -> dict:
         with self._lock:

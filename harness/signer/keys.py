@@ -70,6 +70,12 @@ def create(home: Path) -> bytes:
 
 def load(home: Path):
     """Return (sign callable, public key bytes) for the key in ``home``."""
+    return _backend(load_seed(home))
+
+
+def load_seed(home: Path) -> bytes:
+    """The raw seed, for the anchor job's Ed25519ph signature (anchor_job.py).
+    Same checks as ``load``; it never leaves the signer's process."""
     seed_path = Path(home) / SEED_NAME
     if not seed_path.is_file():
         raise KeyError_(f"no key at {seed_path}; run the signer's init first")
@@ -80,4 +86,4 @@ def load(home: Path):
         raise KeyError_("the seed file is not hex") from exc
     if len(seed) != 32:
         raise KeyError_(f"an Ed25519 seed is 32 bytes, got {len(seed)}")
-    return _backend(seed)
+    return seed

@@ -23,11 +23,16 @@ recompute every seal. The record signer moves the pen out of the agent's reach.
   `same-identity` or `unattested`.
 - Keeps the last signed record per store and returns it as a signed `head`, so
   a verifier can catch a store truncated after signing.
+- Logs each store's head in two public logs it does not run, Sigstore Rekor and
+  OpenTimestamps, every 15 minutes when the head has moved. Only hashes, a
+  signature and the public key leave the machine. A history rewritten later,
+  even by someone holding the key, fails against those heads. See
+  [Public anchors](#public-anchors).
 
 ## Set it up
 
-Install flywheel with a signing backend into a Python the signer account can
-read: `pip install "flywheel-verify[signing]"`.
+Install flywheel with a signing backend and the anchor extra into a Python the
+signer account can read: `pip install "flywheel-verify[signing,anchor]"`.
 
 **Linux (systemd).** As root:
 
@@ -38,7 +43,10 @@ sudo scripts/signer/setup_linux.sh /opt/flywheel/venv/bin/python
 This creates the `flywheel-signer` system user, `/var/lib/flywheel-signer`
 (mode 0700) for the key and journal, the socket at
 `/run/flywheel-signer/signer.sock` in a 0755 directory, and a hardened systemd
-unit. It prints the two variables below.
+unit. It also creates `/var/lib/flywheel-signer-anchors` (mode 0755) and the
+`flywheel-signer-anchor.timer`, which runs the anchor job every 15 minutes.
+Set `ANCHOR_EVERY=30min` before the command to change the period, or pass
+`--no-anchor` to skip it. It prints the variables below.
 
 **Windows.** In an elevated PowerShell:
 
@@ -50,15 +58,22 @@ This creates a standard local account `flywheel-signer`, the home
 `C:\ProgramData\FlywheelSigner` with an ACL for that account and SYSTEM only,
 and a scheduled task that starts the signer at boot under that account on the
 pipe `\\.\pipe\flywheel-signer`. The pipe's DACL lets authenticated users ask
-for attestations and nothing more. The account password is random and is never
-shown.
+for attestations and nothing more. A second task, `FlywheelSignerAnchor`, runs
+the anchor job every 15 minutes (`-AnchorEveryMinutes`) and writes receipts to
+`C:\ProgramData\FlywheelSignerAnchors`, which every user may read and only the
+signer account may write. `-NoAnchor` skips both. The account password is
+random and is never shown.
 
 **Then, for the agent.** Set these in the environment the agent's hook runs in:
 
 ```
 FLYWHEEL_SIGNER=<socket path or pipe name>
 FLYWHEEL_SIGNER_PUBKEY=<public key hex printed by setup>
+FLYWHEEL_SIGNER_ANCHORS=<anchors directory printed by setup>
 ```
+
+The third variable is for the verifier, so set it where you run
+`flywheel monitor verify` too.
 
 With `FLYWHEEL_SIGNER` set, every record carries an attestation. If the signer
 cannot be reached or refuses, the record is not written and the hook fails
@@ -74,6 +89,7 @@ it have no attestation, and the verifier reports them as `UNSIGNED_RECORD`.
 ```
 flywheel monitor verify <home> --trust-root <public key hex>
 flywheel monitor verify <home> --trust-root <hex> --signer-head head.json
+flywheel monitor verify <home> --trust-root <hex> --anchors <dir> --anchors-online
 python -m harness.signer head --address <address> --store <home real path> > head.json
 ```
 
@@ -90,6 +106,22 @@ and `SIGNER_HEAD_SEAL_DIFFERS`. The report lists `signer_isolation` for the
 records, and warns when any record was signed by a signer sharing the agent's
 identity. Without `--signer-head`, `truncation_checked` is false: a store cut
 short after signing still reads `MATCH`.
+
+With `--anchors` (or `FLYWHEEL_SIGNER_ANCHORS`), the report gains
+`public_anchor`, and three more findings can turn the verdict to `DRIFT`:
+`ANCHORED_HEAD_DISAGREES`, `STORE_SHORTER_THAN_ANCHORED_HEAD` and
+`ANCHOR_RECEIPT_INVALID`. With `--anchors-online`, a Rekor entry under the
+signer's key that has no receipt adds `ANCHORED_HEAD_WITHOUT_RECEIPT`.
+
+| `public_anchor.status` | Meaning |
+|---|---|
+| `ANCHORED` | Every record is at or before the newest valid public anchor |
+| `PARTIAL` | `unanchored_records` came after it. Reported, never a pass for anchoring |
+| `NONE` | No receipt verifies for this store |
+| `NOT_CHECKED` | No anchors directory or no trust root was given |
+
+`MATCH` with `PARTIAL` still exits 0, because the signatures hold. Add
+`--require-public-anchor` to exit 3 unless the status is `ANCHORED`.
 
 ## Fallback modes, labeled
 
@@ -156,16 +188,74 @@ the guarantee fails with them.
 - **What still holds.** A head anchored in a public log the attacker does not
   run, Sigstore Rekor or OpenTimestamps, still bounds what had been published
   by the anchor's time. A forged history that disagrees with an anchored head
-  fails against it. This covers anchored heads only, up to the last anchor. No
-  signer head has been anchored yet (see `docs/features/rekor-anchor.md`); the
-  anchor command takes signer heads, and until one is anchored this protection
-  is available for signer records but not in effect.
+  fails against it, and the verifier reports `ANCHORED_HEAD_DISAGREES`. A
+  signer installed with the setup scripts anchors its heads every 15 minutes,
+  so this protection is in effect by default. It covers records up to the last
+  anchor only. Records after it stay unprotected until the next run, so the
+  anchoring period is the exposure window. An attacker who takes the host can
+  also stop the anchor job, and every later record then stays unanchored; the
+  verifier counts them and shows the last anchor's time. See
+  [Public anchors](#public-anchors).
 - **Direction, not built.** Keep the key off the host's reach: a TPM-bound key
   the host can use but not export, or an external device that holds the key, a
   monotonic counter and the hash chain. A host compromise would then not yield
   the key. A compromised host could still submit false records while it holds
   control, and a device that keeps its own counter and chain could refuse to
   rewrite the records it signed before. None of this ships today.
+
+## Public anchors
+
+The anchor job runs as the signer identity:
+
+```
+python -m harness.signer anchor --home <signer home> --out <anchors dir>
+```
+
+For every store in the journal whose head moved at least `--min-new` records
+(default 1) since its last anchor, it signs a head, then:
+
+1. logs the head's SHA-512 and an Ed25519ph signature by the signer's own key
+   in Sigstore Rekor, and checks the entry Rekor returns before keeping it;
+2. submits the head's SHA-256, salted with a random nonce, to OpenTimestamps
+   calendars. The proof starts pending and the next run upgrades it once
+   Bitcoin confirms;
+3. writes a receipt to `<anchors dir>/<store key>/`. The store key is a hash of
+   the store's path, so no path appears in a directory name.
+
+A failed Rekor upload writes no receipt and exits 1. A failed calendar keeps
+the Rekor receipt and records the failure. `--dry-run` reports what would be
+anchored and sends nothing.
+
+The verifier counts a receipt only when its head verifies under the pinned
+trust root and its Rekor entry verifies offline under Rekor's pinned key: the
+entry body, the signed entry timestamp, the inclusion proof and the
+checkpoint. The trust root is the same key that signed the Rekor entry, so a
+receipt written by anyone else does not count. Each valid anchored head must
+then match the store's seal at its sequence number.
+
+Limits:
+
+- **The exposure window.** Records after the last anchor are protected by the
+  key alone, which a host compromise defeats. With the default timer that is
+  up to 15 minutes of records, plus however long the job fails or is stopped.
+- **Receipts live on the host.** An attacker with the host can delete them.
+  Offline, the verifier then reports `NONE`, which is not a pass but is not a
+  finding either. `--anchors-online` lists every Rekor entry under the
+  signer's key and fails on one with no receipt. Keep a copy of the anchors
+  directory off the host as well.
+- **What becomes public.** Rekor is public and permanent. Each entry shows the
+  signer's public key, a hash and a time, so the log shows when and how often
+  this signer's heads moved. It shows nothing about what the records say.
+  `--no-anchor` or `-NoAnchor` turns anchoring off for a machine where that
+  timing should not be public.
+- **OpenTimestamps lags.** A pending proof bounds nothing until Bitcoin
+  confirms it, usually within hours. The report shows `pending` until then.
+- **A rewind after anchoring shows.** If the owner rewinds a record that was
+  already anchored, the store no longer matches that head and the verifier
+  reports `ANCHORED_HEAD_DISAGREES`. That is intended: an anchored record is
+  never silently replaced.
+- **Network.** The anchor job needs outbound HTTPS to Rekor and the calendars.
+  The signing service itself stays local and makes no network call.
 
 ## What this does not prove
 
@@ -180,9 +270,10 @@ the guarantee fails with them.
 - **Skipped hooks leave no record to sign.** A call the hook never saw is not
   in the store. The transcript witness (W1) is the check for that, and it
   still runs as the agent's user.
-- **The head witness is on the same machine.** The signer's journal is out of
-  the agent's reach, but not off the host. A host compromise takes both. No
-  off-machine export of signer heads ships here.
+- **The head witness is on the same machine, up to the last anchor.** The
+  signer's journal is out of the agent's reach, but not off the host. A host
+  compromise takes both. The public anchors are the off-machine copy of the
+  heads, and they lag the journal by up to one anchoring period.
 - **Clock.** `signed_at` is the signer host's clock.
 - **The Windows path is unit-tested as one user only.** CI runs the two-user
   test on Linux. The Windows setup script was parse-checked; it has not been
