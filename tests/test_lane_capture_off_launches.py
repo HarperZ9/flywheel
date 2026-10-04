@@ -19,7 +19,8 @@ from harness import lane_runtime_frozen as lrf
 from harness.lanes_registry import LANES
 from tests.test_lane_runtime_frozen import _finder, _pick_root, _stage
 
-NO_PROCESS = {"bulletin", "isomorph", "sofer", "array"}
+# raw is an adapter lane: no MCP server, so no lane launch to carry capture off.
+NO_PROCESS = {"bulletin", "isomorph", "sofer", "array", "raw"}
 
 
 def _capture(name: str) -> str:

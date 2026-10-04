@@ -80,6 +80,8 @@ def lane_status(name: str, *, probe: bool = True, timeout: float = 20.0) -> dict
     if lane is None:
         return {"name": name, "status": MISSING, "detail": "unknown lane"}
     runtime = resolve_lane_runtime(name)
+    if lane.adapter_module:
+        return _adapter_status(lane, runtime)
     if runtime.blocking_codes:
         return _status_row(
             lane, runtime, MISSING,
@@ -154,6 +156,14 @@ def _status_row(lane: Lane, runtime: ResolvedLaneRuntime, status: str,
     if tool_names is not None:
         row["tool_names"] = [n for n in tool_names if isinstance(n, str) and n]
     return row
+
+
+def _adapter_status(lane: Lane, runtime: ResolvedLaneRuntime) -> dict:
+    """An adapter lane has no MCP server to probe. Its status is whether the
+    program its adapter runs is installed and still the pinned bytes."""
+    from importlib import import_module
+    present, detail = import_module(lane.adapter_module).status()
+    return _status_row(lane, runtime, DECLARED if present else MISSING, detail)
 
 
 def _declared_detail(lane: Lane, runtime: ResolvedLaneRuntime) -> str:
@@ -238,6 +248,9 @@ def install_lane(name: str, *, profile: str = "package") -> dict:
     lane = LANES.get(name)
     if lane is None:
         return {"name": name, "installed": False, "detail": "unknown lane"}
+    if lane.adapter_module:
+        from importlib import import_module
+        return import_module(f"{lane.adapter_module}_install").install()
     if lane.kind in ("bundled", "http"):
         return {"name": name, "installed": True,
                 "detail": f"{lane.kind} lane (no install needed)"}

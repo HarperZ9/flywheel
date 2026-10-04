@@ -604,6 +604,13 @@ Admitted at launch: 5 of 6 tools. T2 per granted call: 1. Not in this build: 0.
 | `canon.validate` | T1 | main | read | canon_blocks | `record` kept out of the home | Validates one record or the block folder. |
 | `canon.check` | T1 | main | read | canon_blocks |  | Runs the wired check legs over the blocks. |
 
+### raw 0.5.0
+
+Admitted at launch: 0 of 0 tools. T2 per granted call: 0. Not in this build: 0.
+
+| Tool | Tier | Main | Effect | Needs | Engine sets | Reason |
+|---|---|---|---|---|---|---|
+
 ### bulletin 0.5.0
 
 Admitted at launch: 17 of 31 tools. T2 per granted call: 14. Not in this build: 0.

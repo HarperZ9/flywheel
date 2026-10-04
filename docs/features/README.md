@@ -15,6 +15,9 @@ at the seams: a peer emits a receipt a consumer re-derives.
 Verification and evidence
 - [crucible](crucible.md): falsifiable verification and re-check to a closed MATCH /
   DRIFT / UNVERIFIABLE verdict.
+- [raw](raw.md): a reference renderer that checks fast AO against ray-traced truth and
+  writes a certificate you can recheck from the files alone, by replay, or against
+  another renderer.
 - [gather](gather.md): research intake with provenance receipts; the verified-data intake.
 - [proof-surface](proof-surface.md): stdlib contract validators and domain proof-packet
   wedges; one re-derivable proof packet per action (composed via accountable-surface).

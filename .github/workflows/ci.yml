@@ -122,7 +122,48 @@ jobs:
           tests/test_writing_lists.py
           tests/test_writing_report_checks.py
           tests/test_writing_pysource.py
+          tests/test_vendored.py
+          tests/test_superstack_vendored.py
+          tests/test_raw_ao_certificate.py
+          tests/test_raw_ao_independent.py
+          tests/test_raw_native_receipt.py
           -q
+
+  raw_lane:
+    # The raw lane runs raw-native's release binary, so its tests need that
+    # binary. Elsewhere they skip with the installer's reason when it cannot be
+    # fetched; here RAW_LANE_REQUIRE_BINARY=1 turns that skip into a failure, so
+    # a green check means the three levels ran against the real 0.5.0 release on
+    # both platforms it ships for. The first step is the vendored superstack hash
+    # check (VENDORING.md in the superstack repository, v0.2.0) and its vectors.
+    name: raw lane, release binary, three levels
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    env:
+      RAW_LANE_REQUIRE_BINARY: "1"
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.13"
+      - name: Install test tooling only
+        run: python -m pip install pytest pytest-timeout
+      - name: Vendored superstack matches its pin and passes its vectors
+        run: python -m pytest tests/test_vendored.py tests/test_superstack_vendored.py -q
+      - name: Install, run, level 1, level 2 (cross-platform replay), level 3
+        run: >
+          python -m pytest
+          tests/test_raw_lane_install.py
+          tests/test_raw_lane_run.py
+          tests/test_raw_lane_roster.py
+          tests/test_raw_ao_certificate.py
+          tests/test_raw_ao_independent.py
+          tests/test_raw_native_receipt.py
+          -q -rs
 
   full:
     # WHY THIS EXISTS. Four tests were failing and nobody knew, because the job
