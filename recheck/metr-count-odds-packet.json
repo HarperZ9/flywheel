@@ -1,0 +1,70 @@
+{
+  "schema": "flywheel.recheck/v1",
+  "id": "metr-count-odds-packet",
+  "claim": {
+    "text": "The retained METR count_odds run is intact, the Flywheel import reruns all three controls, and the import rejects a score changed after the recorded hash.",
+    "where": "https://harperz9.github.io/metr-count-odds-reviewer-packet.html",
+    "read_on": "2026-10-04"
+  },
+  "level": "recomputation",
+  "repository": "https://github.com/HarperZ9/flywheel",
+  "commit": "b3ec822b4c1a942697f1370383c83beac339155e",
+  "cwd": "checkout",
+  "inputs": [
+    {
+      "url": "https://harperz9.github.io/artifacts/metr-count-odds-reviewer-packet-20260913-public-v2.zip",
+      "sha256": "1a1a9ca19728f11935d93eb8ef14770fa4d78f82484df356ac22b4da929dcac0",
+      "save_as": "packet.zip",
+      "unzip_to": "packet"
+    }
+  ],
+  "command": [
+    "{python}",
+    "{inputs}/packet/tools/verify_packet.py",
+    "--flywheel-source",
+    "{checkout}",
+    "--out",
+    "{inputs}/verification"
+  ],
+  "expect": {
+    "exit_code": 0,
+    "stdout_contains": [
+      "\"ok\": true"
+    ]
+  },
+  "control": {
+    "description": "Change one byte of a file the packet manifest lists; the packet's own manifest check must fail. The packet's verifier also runs its built-in changed-score control on every run, and ok: true requires that control to be refused with SOURCE_DIGEST_MISMATCH.",
+    "mutate": {
+      "file": "{inputs}/packet/receipts/python-version.txt",
+      "find": "Python 3.13.15",
+      "replace": "Python 3.13.16"
+    },
+    "expect": {
+      "exit_code": 1,
+      "stdout_contains": [
+        "\"ok\": false"
+      ]
+    }
+  },
+  "needs": {
+    "hardware": "cpu",
+    "os": [
+      "linux",
+      "windows",
+      "macos"
+    ],
+    "python": ">=3.11",
+    "network": [
+      "github.com",
+      "harperz9.github.io"
+    ],
+    "seconds": 5
+  },
+  "access": "A0",
+  "expertise": "E1",
+  "anchor": "self",
+  "covers": "The 54 packet file hashes, the source pin of the Flywheel importer at b3ec822b, the import rerun of the correct, wrong and no-submission controls, and the changed-score control.",
+  "does_not_cover": "The upstream run itself. The verifier does not rebuild METR's task image or rerun the Inspect bridge; the GitHub Actions run metadata and image digests inside the packet are third-party records it reads, not reruns.",
+  "notes": "Windows: the pinned checkout is made with core.autocrlf=false and core.longpaths=true. With autocrlf=true the importer source pins fail, because the packet pins the LF bytes Git stores.",
+  "ci": true
+}

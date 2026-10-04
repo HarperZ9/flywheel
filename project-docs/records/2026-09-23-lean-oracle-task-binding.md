@@ -1,7 +1,9 @@
 # Lean oracle task binding: follow-up (2026-09-23)
 
-Status: open. Found while adding the leanchecker replay rung on branch
-`fix/lean-leanchecker-replay`. That branch fixes nothing in this record.
+Status: fix proposed 2026-10-04 on branch `fix/lean-oracle-task-binding`
+(see "Update, 2026-10-04" at the end). Found while adding the leanchecker
+replay rung on branch `fix/lean-leanchecker-replay`. That branch fixes nothing
+in this record.
 
 ## The defect
 
@@ -89,3 +91,65 @@ two files, baseline measured in the same window).
 - Recheck: a regression test in which a true but unrelated theorem fails
   against a pinned challenge, and the route 1 probe fails the artifact axiom
   audit.
+
+## Update, 2026-10-04: the fix, its recheck, and the published-receipt search
+
+The fix follows the design above, in `harness/lean_binding.py`,
+`harness/lean_binding_judge.py` and the Lean program in
+`harness/lean_bind_script.py`. `docs/PROOF-AND-FORMATS.md`, section "Binding a
+proof to its task", describes the steps and the receipt fields.
+
+- A task pins `challenge` (theorem name, statement, optional header). A task
+  without one is `UNVERIFIABLE` with reason `SPECIFICATION_UNPINNED`, and no
+  Lean runs.
+- The candidate compiles once. The bind program reads that `.olean` as data,
+  matches the pinned theorem's elaborated type to the challenge's, and
+  follows every constant the statement reaches: header definitions must be
+  identical, imported constants must come from the same module.
+- Axioms come from a walk of the pinned theorem's dependencies over the
+  artifact. This deliberately does not use `#print axioms`: that command reads
+  a precomputed table, and for the candidate's own declarations the table
+  comes from the candidate's own `.olean`.
+- leanchecker replays the same `.olean`; its hash is rechecked after each step.
+
+Recheck, run live on Lean 4.34.1, Windows, 2026-10-04
+(`tests/test_lean_binding_live.py`, 14 tests, all passed):
+
+| Probe | Result | Refused by |
+| --- | --- | --- |
+| `theorem unrelated : True := trivial` | FAIL | binding: no top-level `double_eq` |
+| weakened statement (`double n = n + n`) | FAIL | binding: different proposition |
+| renamed theorem, different statement | FAIL | binding: no top-level `double_eq` |
+| `double` redefined, same statement text | FAIL | binding: `double` differs from the challenge |
+| higher-priority `HMul` instance, same statement text | FAIL | binding: different proposition |
+| `prelude` file declaring its own `True` | FAIL | binding: `True` resolves to the candidate, not `Init.Prelude` |
+| `sorry` | FAIL | source screen; with the screen skipped, the compile's `sorry` warning (the bind program run on such a module lists `sorryAx`, observed in exploration) |
+| custom `axiom cheat` | FAIL | source screen; the artifact audit alone names `cheat` |
+| route 1, metaprogram-added axiom `evil` | FAIL | artifact axiom audit names `evil` |
+| `debug.skipKernelTC` smuggle, pinned `bad : False` | FAIL | leanchecker replay |
+| the real proof of the pinned statement | PASS | `leanchecker_replay`, axioms `propext`, `Quot.sound` |
+
+That meets the bar this record set (3 of 3) and the wider set above. CI
+installs no Lean, so these live tests skip there; `tests/test_lean_binding.py`
+pins every exit with an injected runner and runs in CI.
+
+Route 2 (separate elaborations) has one elaboration left to act in on the
+bound path. Nobody has written an exploit for it, before or after.
+
+Still open: the `comparator_external` rung (a sandboxed build and an
+independent kernel). `lean_check` on a closed file (gateway `/api/lean`,
+`harness/loops.py`, `harness/workstream_lean.py`) stays unbound by design, and
+its receipt now says `statement_binding: unbound`.
+
+Published receipts that depended on the hole: none found. Searched on
+2026-10-04 with `git grep` over every tracked file of this repository at
+c3da4962 (receipts, artifacts, records, release notes, changelog, docs, site,
+benchmarks, tasks, datasets) for `LeanOracle`, `lean-receipt`,
+`leanchecker_replay`, `kernel-checked`, `axiom_footprint`, `math` domain
+results and `Lean kernel`, and over the published site sources and the other
+public repositories of the same owner. Every hit was a capability
+description, a `lean_check` result on a closed file whose statement the file
+itself supplies (the 2026-07-14 conjecture sweep), or a disclosure of this
+defect (this record; `RELEASE-NOTES-1.0.3.md`, Limits). No receipt is
+re-issued, so no correction note is needed. Two public resume lines describe
+the math domain as live without this caveat; they claim no result.

@@ -1,0 +1,60 @@
+{
+  "schema": "flywheel.recheck/v1",
+  "id": "prereg-ledger",
+  "claim": {
+    "text": "The preregistration ledger is an unbroken signed log, and signed-head.json signs all of it.",
+    "where": "artifacts/prereg/",
+    "read_on": "2026-10-04"
+  },
+  "level": "recomputation",
+  "repository": "https://github.com/HarperZ9/flywheel",
+  "commit": "c3da496220ea455dcf9ddff1b340ab8973914824",
+  "cwd": "repo",
+  "command": [
+    "{python}",
+    "-m",
+    "harness.prereg_verify",
+    "--dir",
+    "{checkout}/artifacts/prereg"
+  ],
+  "expect": {
+    "exit_code": 0,
+    "stdout_contains": [
+      "ledger size 8",
+      "verdict: MATCH"
+    ]
+  },
+  "control": {
+    "description": "Change one field of ledger entry 3; its body no longer matches its digest.",
+    "mutate": {
+      "file": "{checkout}/artifacts/prereg/ledger.jsonl",
+      "find": "\"addendum_id\": \"",
+      "replace": "\"addendum_id\": \"x"
+    },
+    "expect": {
+      "exit_code": 1,
+      "stdout_contains": [
+        "verdict: DRIFT"
+      ]
+    }
+  },
+  "needs": {
+    "hardware": "cpu",
+    "os": [
+      "linux",
+      "windows",
+      "macos"
+    ],
+    "python": ">=3.11",
+    "network": [
+      "github.com"
+    ],
+    "seconds": 1
+  },
+  "access": "A0",
+  "expertise": "E0",
+  "anchor": "self",
+  "covers": "Chain links, entry digests, the Merkle root, the signed head's size and root, and consistency proofs from the frozen size-1 head.",
+  "does_not_cover": "Who holds the key: the key is read from FREEZE.json in the same directory unless --public-key-hex is given from elsewhere. Entries the author never added (publication completeness).",
+  "ci": true
+}

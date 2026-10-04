@@ -1,0 +1,72 @@
+{
+  "schema": "flywheel.recheck/v1",
+  "id": "closeout-220-full-pytest",
+  "claim": {
+    "text": "Closeout receipt 220: the full pytest suite passed at proof-surface source head 03655af9.",
+    "where": "artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-1-proof-surface-reviewed/220-full-pytest-prestage/receipt.json",
+    "read_on": "2026-10-04"
+  },
+  "level": "re-execution",
+  "repository": "https://github.com/HarperZ9/proof-surface",
+  "commit": "03655af9b4c7785eafc4864d3b22606f41b33575",
+  "cwd": "checkout",
+  "setup": [
+    [
+      "{python}",
+      "-m",
+      "pip",
+      "install",
+      "--quiet",
+      "-e",
+      ".[test]"
+    ]
+  ],
+  "command": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider"
+  ],
+  "expect": {
+    "exit_code": 0
+  },
+  "control": {
+    "description": "None of its own: the suite's tests are the checks. Changing a fixture byte makes test_v0_1_legacy_fixture_bytes_and_behavior_are_pinned fail.",
+    "mutate": {
+      "file": "{checkout}/conformance/authorization-receipt/v0.1/valid/minimal.receipt.json",
+      "find": "{",
+      "replace": "{ "
+    },
+    "expect": {
+      "exit_code": 1,
+      "stdout_contains": [
+        "FAILED"
+      ]
+    }
+  },
+  "needs": {
+    "hardware": "cpu",
+    "os": [
+      "linux",
+      "windows",
+      "macos"
+    ],
+    "python": ">=3.11",
+    "network": [
+      "github.com",
+      "pypi.org"
+    ],
+    "seconds": 10
+  },
+  "access": "A0",
+  "expertise": "E1",
+  "anchor": "self",
+  "covers": "Whether the suite passes at the recorded head on canonical bytes.",
+  "does_not_cover": "The working tree the receipt ran in. The receipt records no tree state, so the 721 recorded outcomes against 684 in a rerun cannot be explained from it (ROADMAP T5).",
+  "known_result": "DRIFT on canonical bytes, measured 2026-10-04: one failure, test_v0_1_legacy_fixture_bytes_and_behavior_are_pinned, because the pin at this commit is the sha256 of the CRLF form of the fixture (3ea68f2c), while Git stores LF (3c6f1865). The suite passes only on a CRLF checkout. proof-surface main pins the LF value (since #32) and marks conformance JSON as binary, so the defect is in this unmerged commit, which sits on no branch.",
+  "ci": false,
+  "ci_skip_reason": "Known DRIFT on canonical bytes (see known_result); kept as a manifest so the honest result stays one command away. Not run in CI so a known failure does not turn every build red.",
+  "setup_note": "The setup step installs proof-surface into the interpreter that runs the recheck. Use a fresh virtual environment."
+}

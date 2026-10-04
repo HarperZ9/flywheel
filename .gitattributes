@@ -1,3 +1,14 @@
+# Canonical bytes. Hashes in this repository are computed over the bytes Git
+# stores (the blob), and a checkout must write those same bytes on every
+# platform. Git for Windows defaults to core.autocrlf=true, which rewrote every
+# LF file to CRLF on checkout, so a stranger on Windows who ran sha256sum on a
+# preregistered file got a false DRIFT (the Shapley placebo prereg pins
+# harness/shapley_far.py and scripts/shapley_placebo_run.py by their LF bytes).
+# text=auto eol=lf writes LF text files as LF whatever core.autocrlf says; Git
+# does not touch files committed with CRLF; the rules below still override it
+# per path. docs/CANONICAL-BYTES.md records the choice for each artifact class.
+* text=auto eol=lf
+
 # Shell scripts must stay LF: git autocrlf was rewriting them to CRLF on checkout,
 # which makes WSL bash die with `syntax error near unexpected token $'{\r''`.
 *.sh text eol=lf
@@ -83,3 +94,12 @@ project-docs/records/2026-10-04-shapley-placebo/*.json -text -diff
 # The PySyft result-receipt fixture is a real run's bundle. The receipt binds
 # PySyft's hash over the job folder's raw bytes, so Git must not normalize them.
 tests/fixtures/pysyft_receipt/** -text -diff
+
+# The site-designer handoff is sealed by handoff/site-designer/MANIFEST.sha256, which
+# records the SHA-256 of each file's exact bytes. A CRLF checkout changes every
+# digest and puts a carriage return on every path in the manifest, so the check
+# fails on files nobody edited. Same reason as the fixture rules above.
+handoff/site-designer/** -text
+# The Inspect contract fixtures are hashed into tests/fixtures/inspect/v1/manifest.json
+# as fixture_sha256 and bytes_sha256, so their bytes must survive checkout unchanged.
+tests/fixtures/inspect/v1/** -text

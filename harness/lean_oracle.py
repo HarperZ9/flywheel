@@ -122,7 +122,7 @@ def _receipt(sha: str, passed, toolchain: str, output: str, note: str, *,
     doc = {"schema": SCHEMA, "passed": passed, "code_sha256": sha,
            "toolchain": toolchain, "kernel_output": output, "note": note,
            "validation_level": level, "validation_ladder": list(LADDER),
-           "leanchecker": replay}
+           "leanchecker": replay, "statement_binding": "unbound"}
     if footprint is not None:
         doc["axiom_footprint"] = footprint
     if reason:
