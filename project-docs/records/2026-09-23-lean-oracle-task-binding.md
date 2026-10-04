@@ -137,7 +137,10 @@ Route 2 (separate elaborations) has one elaboration left to act in on the
 bound path. Nobody has written an exploit for it, before or after.
 
 Still open: the `comparator_external` rung (a sandboxed build and an
-independent kernel). `lean_check` on a closed file (gateway `/api/lean`,
+independent kernel). Update, 2026-10-04: the independent kernel (nanoda) and a
+resource and write sandbox for the compile landed; the no-network part of the
+sandbox did not. See `2026-10-04-external-kernel-rung.md`. `lean_check` on a
+closed file (gateway `/api/lean`,
 `harness/loops.py`, `harness/workstream_lean.py`) stays unbound by design, and
 its receipt now says `statement_binding: unbound`.
 

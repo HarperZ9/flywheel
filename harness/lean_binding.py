@@ -20,6 +20,15 @@ that record and `leanprover/comparator`:
    which axioms the theorem depends on, walked from the artifact.
 5. Any axiom outside the classical trio is FAIL.
 6. leanchecker replays the same `.olean` (harness/lean_replay.py).
+7. A second kernel, nanoda, checks a lean4export export of the same `.olean`
+   (harness/lean_external_kernel.py). A PASS needs both kernels to accept:
+   the receipt's `kernels_agreeing` is 2. Without the second kernel the
+   result is UNVERIFIABLE, never a pass on one kernel.
+
+The candidate's compile runs under the limits in harness/lean_sandbox.py:
+memory, CPU time and process count, and on Windows a low-integrity token
+that cannot write outside the build directory. Network access is not
+restricted, and the receipt's `sandbox` block says so.
 
 What none of this checks: whether the pinned statement says what a person
 meant. The receipt marks that `spec_fidelity: UNVERIFIED`.
@@ -38,6 +47,9 @@ CHALLENGE_MODULE = "FlywheelChallenge"
 #: A cold `import Lean` took 84 s on the measuring machine (n=1, 2026-10-04);
 #: warm runs took 2 to 7 s. The bind step gets room for the cold case.
 BIND_TIMEOUT = 300
+#: Wall clock for the candidate's compile; lean_replay.TIMEOUT before it ran
+#: in the sandbox.
+COMPILE_TIMEOUT = 90
 _NAME_RE = re.compile(r"[^\W\d][\w'.]*\Z")
 #: unverifiable_reason values this module adds to lean_replay's R_* set.
 R_CHALLENGE = "challenge-compile-failed"
@@ -45,13 +57,17 @@ R_BIND = "binding-check-error"
 R_UNSUPPORTED = "binding-unsupported"
 R_SHADOW = "challenge-module-shadowed"
 R_HASH = "statement-hash-mismatch"
+R_SANDBOX = "sandbox-unavailable"
+R_EXT_MISSING = "external-kernel-unavailable"
+R_EXT_ERROR = "external-kernel-error"
 SPEC_FIDELITY = {
     "status": "UNVERIFIED",
     "detail": ("the kernel checked the proof against the pinned statement; "
                "whether that statement says what its author intended is a "
                "human review this oracle does not perform")}
 KERNEL = ("the Lean 4 kernel of the toolchain named here, then a leanchecker "
-          "replay (plain mode) of the same compiled module")
+          "replay (plain mode) of the same compiled module, then nanoda on a "
+          "lean4export export of that module (external_kernel)")
 AXIOMS_SOURCE = ("dependency walk of the pinned theorem over the compiled "
                  ".olean and its imports, not #print axioms and not the "
                  "precomputed axiom table an .olean can carry")
@@ -133,6 +149,10 @@ class _Injected:
             return _result(None, f"leanchecker could not be started ({exc})",
                            reason=R_CHECKER)
 
+    def external_steps(self, code, src):
+        from .lean_external_kernel import InjectedExternal
+        return InjectedExternal(self.runner, code, src)
+
 
 class _Live:
     """One temporary tree: the candidate source and build, the challenge
@@ -145,6 +165,7 @@ class _Live:
         for d in ("c", "cb", "ch", "chb"):
             (root / d).mkdir()
         self.olean = root / "cb" / "Candidate.olean"
+        self.sandbox = None
 
     def olean_sha(self):
         return _sha_file(self.olean)
@@ -158,7 +179,22 @@ class _Live:
                              str(out), str(path)], label=f"lean {module}")
 
     def compile_candidate(self, code):
-        return self._compile(code, "c", "Candidate")
+        """The one compile that runs candidate code, under the sandbox
+        limits; rc None when they could not be applied."""
+        from .lean_sandbox import run_sandboxed, unavailable
+        path = self.root / "c" / "Candidate.lean"
+        path.write_text(code, encoding="utf-8")
+        real = Path(self.checker).parent / ("lean.exe" if os.name == "nt"
+                                            else "lean")
+        if not real.is_file():
+            self.sandbox = unavailable("the toolchain's own lean binary is "
+                                       "missing beside leanchecker")
+            return None, self.sandbox["detail"]
+        rc, out, self.sandbox = run_sandboxed(
+            [str(real), f"--root={self.root / 'c'}", "-o", str(self.olean),
+             str(path)], writable=self.root / "cb", cwd=self.root / "c",
+            timeout=COMPILE_TIMEOUT)
+        return rc, out
 
     def compile_challenge(self, src):
         return self._compile(src, "ch", CHALLENGE_MODULE)
@@ -186,6 +222,10 @@ class _Live:
     def replay(self, code):
         from .lean_replay import _check_live
         return _check_live(self.checker, self.libdir, self.root / "cb")
+
+    def external_steps(self, code, src):
+        from .lean_external_kernel import LiveExternal
+        return LiveExternal(self.root, self.libdir, Path(self.checker).parent)
 
 
 def bound_check(code: str, raw_challenge, *, runner=None) -> dict:

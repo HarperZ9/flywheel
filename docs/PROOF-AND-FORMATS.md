@@ -326,6 +326,8 @@ before it passed:
    axiom besides `propext`, `Classical.choice` and `Quot.sound` is `FAIL`;
    this catches an axiom a metaprogram added under a name built from parts.
 6. leanchecker replays the same `.olean`, as above.
+7. A second kernel, nanoda, checks an export of the same `.olean` (next
+   section). A `PASS` needs both kernels to accept.
 
 The receipt (`flywheel.lean-receipt/v2`) adds:
 
@@ -338,6 +340,9 @@ The receipt (`flywheel.lean-receipt/v2`) adds:
 | `trusted_base` | Lean version and git hash, the kernel and replay used, `axioms_used`, `axioms_allowed`, and where the axioms came from |
 | `spec_fidelity` | always `UNVERIFIED`: whether the statement says what its author meant is a human review |
 | `artifact_sha256` | the compiled module every step judged |
+| `external_kernel` | the second kernel's tool, version, source commit, binary SHA-256 and licence, the exporter's, its `verdict`, the statement hash it checked, and how many declarations it checked |
+| `kernels_agreeing` | how many independent kernels accepted the pinned theorem in this artifact; `PASS` needs 2 |
+| `sandbox` | the limits the candidate's compile ran under, its peak memory and CPU time, and what the limits do not stop |
 
 The candidate compiles once, so the second route in the record (a metaprogram
 that tells separate elaborations apart) has only one elaboration to act in.
@@ -352,13 +357,106 @@ A candidate written as a `module` file is `UNVERIFIABLE`
 module the check does not read. A constant from an imported module is matched
 by module name, which trusts both sides to load the same files.
 
+### A second kernel
+
+Lean's kernel judges the compile, and leanchecker replays the module through
+the same kernel code. A bug in that kernel could accept a false proof at both
+steps. So after the replay, the same compiled module goes to nanoda, a Lean 4
+type checker written in Rust that shares no code with Lean's C++ kernel:
+
+1. lean4export writes the pinned theorem and everything it depends on from
+   the candidate's `.olean`, and the challenge's theorem from the challenge's.
+2. A Python reader (`harness/lean_ndjson.py`) parses both exports. The
+   candidate's declaration must be a theorem, its statement must hash the
+   same as the challenge's (the hash ignores binder names, as Lean's own
+   comparison does), and every constant the statement reaches must be
+   declared identically in both.
+3. nanoda type-checks every declaration in the candidate's export, permits
+   only `propext`, `Classical.choice` and `Quot.sound`, and must find the
+   pinned theorem among them.
+
+| nanoda says | Result |
+| --- | --- |
+| accepted | `PASS`, `kernels_agreeing: 2` |
+| rejected, or the exported statement differs | `FAIL`: the kernels disagree, so the check fails closed and the disagreement is a finding to investigate |
+| not installed, timed out, or could not read its input | `UNVERIFIABLE` (`external-kernel-unavailable` or `external-kernel-error`); one kernel never makes a `PASS` |
+
+Install the pinned tools once:
+
+```sh
+python scripts/provision_external_kernel.py --fetch
+```
+
+This downloads two source archives from their GitHub repositories, checks
+each SHA-256 against the pin in `harness/lean_external_tools.py`, builds
+nanoda with `cargo build --release --locked` and lean4export with the Lean
+toolchain that compiles candidates, and writes a manifest with each binary's
+SHA-256. Every check re-hashes both binaries against that manifest. It needs
+cargo and elan. The pins:
+
+| Tool | Version | Source | Licence |
+| --- | --- | --- | --- |
+| nanoda | 0.4.19 | `ammkrn/nanoda_lib` at `3a2407216ee84a75f9e1aead6803d0578be06ae7` | Apache-2.0 |
+| lean4export | v4.34.0 | `leanprover/lean4export` at `076e8e57707e813375e8f9da8bf989799ace9680` | Apache-2.0 |
+
+nanoda 0.4.19 has no tag or release: its last release, 0.3.2, reads an older
+export format than lean4export writes for Lean 4.34. lean4export publishes
+version tags and no releases. lean4lean, the other external checker, is
+written in Lean, describes itself as derived from the C++ kernel and "not
+really an independent implementation", and targeted Lean 4.33 when this was
+built, so it was not chosen.
+
+Measured on one Windows machine (2026-10-04, n=1 each): lean4export wrote the
+`double_eq` example's export (72,567 lines) in 0.9 s, and nanoda checked its
+1,428 declarations in 0.14 s.
+
+Two agreeing kernels rule out a bug in either kernel alone producing a pass.
+They do not rule out:
+
+- a fault in how the module is read. Both kernels see the module through
+  Lean's own `.olean` loader, nanoda through lean4export's export of it, so a
+  loader or exporter fault that shows both the same wrong declarations passes
+  both;
+- a soundness bug the two implementations share, or a flaw in Lean's type
+  theory itself;
+- that the statement says what its author meant. `spec_fidelity` stays
+  `UNVERIFIED`.
+
+### The compile's sandbox
+
+The candidate's code runs once, while Lean elaborates it in the one compile.
+That compile now runs under limits (`harness/lean_sandbox.py`):
+
+- On Windows: a restricted token at low integrity, which cannot write to the
+  user's files or the Lean toolchain, only to the build directory (and other
+  low-integrity locations); and a job object with a memory limit (8 GB by
+  default, `FLYWHEEL_LEAN_SANDBOX_MEMORY_MB`), a CPU time limit (300 s,
+  `FLYWHEEL_LEAN_SANDBOX_CPU_SECONDS`), at most 4 processes, the basic UI
+  restrictions, and kill on close, so nothing the candidate starts outlives
+  the compile.
+- On Linux: `RLIMIT_AS` and `RLIMIT_CPU` with the same values. On macOS:
+  `RLIMIT_CPU` only, and the receipt's memory limit is empty, because macOS
+  is not known to enforce `RLIMIT_AS`. No write limit on either.
+- If the limits cannot be applied, the candidate is not compiled and the
+  result is `UNVERIFIABLE` (`sandbox-unavailable`).
+
+Checked on one Windows machine (2026-10-04): a metaprogram writing into the
+user's profile got "permission denied"; `import Lean` peaked at 2.1 GB and
+failed under a 1,000 MB limit; a 3 s CPU limit stopped a busy loop.
+
+The sandbox does not stop network access or reads of any file the user can
+read: the candidate's code can still read a secret and send it out. A
+no-network sandbox is the next step. Until it exists the receipt says
+`network: not restricted`, and `validation_level` stops at
+`leanchecker_replay`, short of `comparator_external`.
+
 ### What a Lean accept does not say
 
 - The replay trusts every imported `.olean` file as it sits on disk: the
   toolchain's own, and any found through the inherited `LEAN_PATH`. The
-  candidate's code ran with the user's rights while Lean elaborated it and
-  could have changed files. Catching that takes a sandboxed build, which is
-  the comparator rung.
+  compile's sandbox stops the candidate from writing those files on Windows;
+  on other platforms the candidate's code ran with the user's rights and
+  could have changed them.
 - For `lean_check` on a closed file, the axiom rung covers named `theorem` and
   `lemma` declarations only. A `def`, or a declaration that a metaprogram
   added, can rest on an axiom the audit never reads, and the replay accepts
@@ -367,5 +465,6 @@ by module name, which trusts both sides to load the same files.
 - The math oracle checks the proof against the pinned statement. Whether the
   statement is the theorem its author meant (the formalization gap) is not
   checked, and every receipt says `spec_fidelity: UNVERIFIED`.
-- The external-kernel rung (`comparator_external`: a sandboxed build and an
-  independent kernel such as nanoda or lean4lean) is not implemented.
+- The `comparator_external` rung needs a sandbox without network access as
+  well as the second kernel. The second kernel runs; the no-network sandbox
+  does not exist yet, so no receipt reaches that rung.
