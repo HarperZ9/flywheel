@@ -14,7 +14,7 @@ from __future__ import annotations
 from ..tool_call_receipt import _canonical_bytes, _sha256_hex
 from .contract import ALLOW, RunContext, ProposedCall, worse
 from .coverage import liveness_join
-from . import anchoring
+from . import anchoring, public_anchor
 from .records import (ALLOW_SCHEMA, HOLD_SCHEMA, HoldStore, seal_preimage, store_id,
                       verify_seal)
 from .rules import evaluate, load_pack, pack_digest
@@ -86,10 +86,14 @@ def _verdicts(recs, store, findings, trust_root, signer_head, nothing_rederived)
 
 
 def verify_store(home, pack_override: dict | None = None, *, trust_root: str = "",
-                 signer_head: dict | None = None) -> dict:
+                 signer_head: dict | None = None, anchors=None,
+                 anchors_online=None) -> dict:
     """``trust_root``: the separate signer's public key, hex, pinned by the
     caller. Without it a consistent store is UNANCHORED, never MATCH.
-    ``signer_head``: a signed head from the signer, to catch truncation."""
+    ``signer_head``: a signed head from the signer, to catch truncation.
+    ``anchors``: the signer's anchors directory, to hold the store to every
+    head anchored in Rekor (public_anchor.py). ``anchors_online``: a request
+    function, to list the key's Rekor entries and catch deleted receipts."""
     store = HoldStore(home, signer=None)
     recs = store.read_all(tolerant=True)
     findings = []
@@ -140,9 +144,12 @@ def verify_store(home, pack_override: dict | None = None, *, trust_root: str = "
     join = liveness_join(recs)
     if join["verdict"] == "DRIFT":
         findings.append({"cause": "POST_WITHOUT_PRE", "orphans": join["orphans"]})
+    pub = public_anchor.check(recs, store_id(home), trust_root, anchors,
+                              online_request=anchors_online)
+    findings.extend(pub["findings"])
     head = _verdicts(recs, store_id(home), findings, trust_root, signer_head,
                      unverifiable and not rederived)
-    return {**head,
+    return {**head, "public_anchor": {**pub["report"], "notes": pub["notes"]},
             "n": len(recs), "rederived": rederived,
             "unverifiable": unverifiable, "judge_unverifiable": judge_unverifiable,
             # An ALLOW decided inside the agent's reach is weaker evidence than

@@ -4,7 +4,8 @@ coverage prints every path and its PRE / POST / NONE state; pending lists open
 holds; approve and reject decide one hold, and both need a real terminal and
 the typed confirmation code, so an agent's shell cannot drive them; verify
 re-walks a store and exits 0 on MATCH, 3 on UNANCHORED (no trust root
-pinned) and 1 otherwise; install prints or writes the hook
+pinned, or with --require-public-anchor a record past the last public anchor)
+and 1 otherwise; install prints or writes the hook
 settings block. owner, witness, import-ocsf and sandbox live in cli_extra.py;
 outcome and overrides live in cli_overrides.py. approve and reject take an
 optional --reason-code from a fixed list and an optional --reason text.
@@ -64,11 +65,18 @@ def _verify(args, stdout, stderr) -> int:
     if args.signer_head:
         with open(args.signer_head, encoding="utf-8") as fh:
             head = json.load(fh)
-    report = verify_store(args.home, trust_root=root, signer_head=head)
+    anchors = args.anchors or os.environ.get("FLYWHEEL_SIGNER_ANCHORS", "").strip()
+    online = None
+    if args.anchors_online:
+        from ..rekor_submit import urllib_request as online
+    report = verify_store(args.home, trust_root=root, signer_head=head,
+                          anchors=anchors or None, anchors_online=online)
     stdout.write(json.dumps(report) + "\n")
-    for note in report.get("notes", []):
+    for note in report.get("notes", []) + report["public_anchor"]["notes"]:
         stderr.write(f"warning: {note}\n")
     if report["verdict"] == "MATCH":
+        if args.require_public_anchor and report["public_anchor"]["status"] != "ANCHORED":
+            return 3
         return 0
     return 3 if report["verdict"] == "UNANCHORED" else 1
 
@@ -86,6 +94,12 @@ def _parser() -> argparse.ArgumentParser:
     pv.add_argument("--trust-root", default="",
                     help="the separate signer's public key, hex (else FLYWHEEL_SIGNER_PUBKEY)")
     pv.add_argument("--signer-head", default="", help="a signed head file from the signer")
+    pv.add_argument("--anchors", default="",
+                    help="the signer's anchors directory (else FLYWHEEL_SIGNER_ANCHORS)")
+    pv.add_argument("--anchors-online", action="store_true",
+                    help="list the key's Rekor entries; a logged head with no receipt fails")
+    pv.add_argument("--require-public-anchor", action="store_true",
+                    help="exit 3 unless every record is covered by a public anchor")
     pi = sub.add_parser("install"); pi.add_argument("client", choices=("claude-code", "codex"))
     pi.add_argument("--home", required=True); pi.add_argument("--print", dest="do_print", action="store_true")
     pi.add_argument("--python", default=sys.executable)

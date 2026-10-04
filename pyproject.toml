@@ -40,6 +40,8 @@ dependencies = []
 # third-party packages:
 signing = ["cryptography"]   # Ed25519 receipt SIGNING (pynacl works as the
                              # fallback backend; VERIFICATION stays stdlib)
+anchor = ["pynacl"]          # Ed25519ph, which a Rekor anchor needs and
+                             # cryptography lacks (signer anchor job, flywheel anchor)
 monitor = ["psutil"]         # network egress monitoring (infra controls)
 encryption = ["cryptography"]  # AES-256-GCM trace custody on macOS and Linux, with a
                              # keychain-held key; Windows uses DPAPI and needs nothing

@@ -1,6 +1,6 @@
-"""python -m harness.signer {init,serve,pubkey,rewind,hello,head}
+"""python -m harness.signer {init,serve,pubkey,rewind,anchor,hello,head}
 
-Run ``init``, ``serve`` and ``rewind`` AS THE SIGNER IDENTITY. They read or
+Run ``init``, ``serve``, ``rewind`` and ``anchor`` AS THE SIGNER IDENTITY. They read or
 write the signer's home, which the agent's identity must not be able to read.
 ``pubkey`` reads only the public file. ``hello`` and ``head`` are client calls
 any user may make; ``hello`` prints the key and the isolation the signer
@@ -36,6 +36,14 @@ def _cmd(args) -> int:
         out = Journal(Path(args.home)).rewind(args.store, server._now())
         print(json.dumps(out))
         return 0
+    if args.cmd == "anchor":
+        from . import anchor_job
+        req, submit, upgrade = anchor_job.live_legs(args.ots)
+        out = anchor_job.run_once(Path(args.home), Path(args.out), min_new=args.min_new,
+                                  request=req, ots_submit=submit, ots_upgrade=upgrade,
+                                  dry_run=args.dry_run)
+        print(json.dumps(out))
+        return 0 if out["ok"] else 1
     if args.cmd == "hello":
         from .client import SignerClient
         print(json.dumps(SignerClient(args.address, args.pubkey).hello()))
@@ -51,11 +59,18 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="python -m harness.signer", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("init", "pubkey", "serve", "rewind"):
+    for name in ("init", "pubkey", "serve", "rewind", "anchor"):
         p = sub.add_parser(name)
         p.add_argument("--home", required=True, help="the signer's own home")
     sub.choices["serve"].add_argument("--address", required=True)
     sub.choices["rewind"].add_argument("--store", required=True)
+    an = sub.choices["anchor"]
+    an.add_argument("--out", required=True, help="the anchors directory verifiers read")
+    an.add_argument("--min-new", type=int, default=1,
+                    help="anchor a store once its head moved this many records")
+    an.add_argument("--ots", action=argparse.BooleanOptionalAction, default=True,
+                    help="also submit to OpenTimestamps (default on)")
+    an.add_argument("--dry-run", action="store_true", help="report what would be anchored")
     for name in ("hello", "head"):
         h = sub.add_parser(name)
         h.add_argument("--address", required=True)
