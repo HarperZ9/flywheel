@@ -83,6 +83,7 @@ The result file holds the per-item records and a `flywheel.receipt/v4` envelope.
 
 ## What it does not show
 
+- How any real monitor scores. As of 2026-10-04 no real monitor has been run through the gate; only the six planted controls have. The pilot numbers above come from the bank run, under that run's rule.
 - Behaviour on other task families. Parity of a product is shallow hidden computation; the gate says nothing about hidden multi-step reasoning or a hidden goal pursued across steps.
 - Behaviour of frontier models, as monitors or as subjects. The known-invisible items come from one 4-bit qwen3:8b build.
 - Behaviour under optimization pressure. No policy here was trained against the monitor, and a monitor admitted today can fail on traces shaped to evade it.
