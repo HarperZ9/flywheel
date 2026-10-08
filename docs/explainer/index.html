@@ -396,7 +396,7 @@ $ flywheel up</code></pre>
   EX.later = function (fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; };
   EX.clear = function () { timers.forEach(clearTimeout); timers = []; };
   EX.el = function (tag, attrs, text) {
-    var svg = /^(svg|g|rect|circle|line|path|text|polyline|polygon|tspan)$/.test(tag);
+    var svg = /^(svg|g|rect|circle|line|path|text|polyline|polygon|tspan|defs|pattern)$/.test(tag);
     var n = svg ? document.createElementNS("http://www.w3.org/2000/svg", tag) : document.createElement(tag);
     if (attrs) Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); });
     if (text != null) n.textContent = text;
