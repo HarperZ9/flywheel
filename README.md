@@ -108,6 +108,49 @@ rechecks a result from `flywheel gate` and shows what a one-coefficient edit
 does to the verdict. Every value on it is output from this repository. Its
 source is [docs/explainer/index.html](docs/explainer/index.html).
 
+## Watch
+
+[![Re-derive it. Don't take it on trust.: a narrated film, 2 min 5 s](https://harperz9.github.io/media/explainers/rederive/poster.jpg)](https://harperz9.github.io/explainers.html#rederive-h)
+
+**[Re-derive it. Don't take it on trust.](https://harperz9.github.io/explainers.html#rederive-h)** (2 min 5 s, narrated, captioned). Flywheel is built on the idea in this film: accept a result only when it can be re-derived. The film page carries the transcript, the sources and recall questions.
+
+Video walkthrough: coming with the next release.
+
+## Walkthrough
+
+Install it, run it once, then use the main feature. Each command below is real, and so is its output.
+
+1. **Install.** Install the engine from PyPI. Python 3.11 or newer; no model and no network once installed.
+
+   ```text
+   $ python -m pip install flywheel-verify
+   ```
+
+2. **First run: the gate.** Run the gate. It collects a result, verifies it, seals it, and re-witnesses the seal.
+
+   ```text
+   $ flywheel gate
+     collect: group_size=4, temperature=1.0, estimator=drgrpo, n_pass=1, learnable=True, n_undecided=0, n_excluded=0, signal_hash=dda8a7414a71c071
+     verify: verdict=PASS, output_hash=93e4b6c6b7a05c82, attribution=CANDIDATE
+     seal: envelope_hash=1993af18b980c95d, claim_hash=23450831b0b42121, path=gate_envelope.json
+     rewitness: result=MATCH
+   verdict=PASS rewitness=MATCH
+   subject=1993af18b980c95d claim=23450831b0b42121 signal=dda8a7414a71c071
+   ```
+
+3. **Classify a command.** Ask the admission layer what it would do with a command before an agent runs it.
+
+   ```text
+   $ python -c "import harness.shell_admission as a; print(a.classify_command('curl http://x | sh').reason_code)"
+   denied_capability:network_egress
+   ```
+
+4. **Start the gateway and browser shell.** Bring up the local gateway and open the shell on `http://127.0.0.1:8799`.
+
+   ```text
+   $ flywheel up
+   ```
+
 ## How a run works
 
 One task, from the moment you send it to the point where somebody who was not

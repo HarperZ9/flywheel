@@ -121,6 +121,14 @@ footer.foot p{max-width:70ch;margin:0 0 .6rem}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important;animation-iteration-count:1!important;scroll-behavior:auto!important}
 }
+.film{margin:1rem 0 0;max-width:56rem}
+.film video{width:100%;height:auto;display:block;background:#000;border:1px solid var(--line)}
+.film figcaption{font-size:.9rem;color:var(--ink-soft);margin-top:.55rem;max-width:44rem;line-height:1.5}
+.soon{font-family:var(--font-mono);font-size:.8rem;color:var(--muted);margin-top:.8rem}
+ol.walkthrough{padding-left:1.4rem;max-width:56rem;margin:1rem 0 0}
+ol.walkthrough li{margin:0 0 1.4rem}
+ol.walkthrough h3{margin:0 0 .3rem;font-size:1.05rem}
+ol.walkthrough p{margin:0 0 .3rem;max-width:44rem}
 
 /* flywheel scenes */
 .life-node rect{fill:var(--sheet);stroke:var(--line-strong);stroke-width:1;transition:stroke .3s,stroke-width .3s}
@@ -194,6 +202,18 @@ footer.foot p{max-width:70ch;margin:0 0 .6rem}
     <li><b>A desktop app</b>The Windows installer bundles the engine, so the app runs on a machine with no Python installed.</li>
   </ul>
   <p class="src">Source: <a href="https://github.com/HarperZ9/flywheel/blob/1ec701de1b6ce08604ef3ec0dad80551d6fa3391/README.md">README.md</a> at 1ec701d</p>
+</section>
+
+<section class="block wrap" aria-labelledby="watch">
+  <h2 id="watch">Watch</h2>
+  <figure class="film">
+    <video controls preload="none" playsinline crossorigin="anonymous" width="1920" height="1080" poster="https://harperz9.github.io/media/explainers/rederive/poster.jpg">
+      <source src="https://harperz9.github.io/media/explainers/rederive/rederive.mp4" type="video/mp4">
+      <track kind="captions" src="https://harperz9.github.io/media/explainers/rederive/rederive.vtt" srclang="en" label="English">
+    </video>
+    <figcaption><b>Re-derive it. Don&#x27;t take it on trust.</b> (2 min 5 s, narrated, captioned). Flywheel is built on the idea in this film: accept a result only when it can be re-derived. <a href="https://harperz9.github.io/explainers.html#rederive-h">Transcript, sources and recall questions</a>.</figcaption>
+  </figure>
+  <p class="soon">Video walkthrough: coming with the next release.</p>
 </section>
 
 <section class="block wrap" aria-labelledby="how">
@@ -334,23 +354,26 @@ footer.foot p{max-width:70ch;margin:0 0 .6rem}
   </div>
 </section>
 
-<section class="block wrap" aria-labelledby="try">
-  <h2 id="try">Try it</h2>
-  <div class="measure">
-    <p>Install the engine from PyPI (Python 3.11 or newer) and run the gate from this page. It needs no model and no network once installed.</p>
-  </div>
-<pre class="cmd"><code>$ python -m pip install flywheel-verify
-$ flywheel gate
+<section class="block wrap" aria-labelledby="walkthrough">
+  <h2 id="walkthrough">Walkthrough</h2>
+  <p class="measure">Install it, run it once, then use the main feature. Each command below is real, and so is its output.</p>
+  <ol class="walkthrough">
+    <li><h3>Install</h3><p>Install the engine from PyPI. Python 3.11 or newer; no model and no network once installed.</p>
+<pre class="cmd"><code>$ python -m pip install flywheel-verify</code></pre></li>
+    <li><h3>First run: the gate</h3><p>Run the gate. It collects a result, verifies it, seals it, and re-witnesses the seal.</p>
+<pre class="cmd"><code>$ flywheel gate
 <span class="out">  collect: group_size=4, temperature=1.0, estimator=drgrpo, n_pass=1, learnable=True, n_undecided=0, n_excluded=0, signal_hash=dda8a7414a71c071
   verify: verdict=PASS, output_hash=93e4b6c6b7a05c82, attribution=CANDIDATE
   seal: envelope_hash=1993af18b980c95d, claim_hash=23450831b0b42121, path=gate_envelope.json
   rewitness: result=MATCH
 verdict=PASS rewitness=MATCH
-subject=1993af18b980c95d claim=23450831b0b42121 signal=dda8a7414a71c071</span></code></pre>
-  <div class="measure"><p>Classify a command yourself, then start the gateway and browser shell on <code>http://127.0.0.1:8799</code>:</p></div>
+subject=1993af18b980c95d claim=23450831b0b42121 signal=dda8a7414a71c071</span></code></pre></li>
+    <li><h3>Classify a command</h3><p>Ask the admission layer what it would do with a command before an agent runs it.</p>
 <pre class="cmd"><code>$ python -c "import harness.shell_admission as a; print(a.classify_command('curl http://x | sh').reason_code)"
-<span class="out">denied_capability:network_egress</span>
-$ flywheel up</code></pre>
+<span class="out">denied_capability:network_egress</span></code></pre></li>
+    <li><h3>Start the gateway and browser shell</h3><p>Bring up the local gateway and open the shell on <code>http://127.0.0.1:8799</code>.</p>
+<pre class="cmd"><code>$ flywheel up</code></pre></li>
+  </ol>
   <p class="src">The output above came from flywheel-verify 1.5.0 installed from PyPI on Windows with Python 3.12, and matches a run of the source at commit 1ec701d. The desktop app is on the <a href="https://github.com/HarperZ9/flywheel/releases/latest">latest release</a>.</p>
 </section>
 
