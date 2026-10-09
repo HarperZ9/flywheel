@@ -14,7 +14,8 @@ permissions:
   contents: write
 jobs:
   media:
-    uses: HarperZ9/raw-native/.github/workflows/media.yml@main
+    uses: HarperZ9/raw-native/.github/workflows/media.yml@d4b52740bb280d683a1330133fd45b38d4f34256  # raw-native main, 2026-10-09; bump at its next release
     with:
       tag: ${{ github.event.release.tag_name || inputs.tag }}
       setup: false
+      engine_ref: d4b52740bb280d683a1330133fd45b38d4f34256
