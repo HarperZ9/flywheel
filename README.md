@@ -100,6 +100,14 @@ For a workflow you can use in an existing agent host, see the
 It can be installed independently of the engine and includes Codex and Claude
 plugin manifests, examples, and reproducible download packaging.
 
+## See it work, step by step
+
+The [animated explainer](https://harperz9.github.io/repo-explainers/flywheel.html)
+walks through the capability check on seven real commands, then seals and
+rechecks a result from `flywheel gate` and shows what a one-coefficient edit
+does to the verdict. Every value on it is output from this repository. Its
+source is [docs/explainer/index.html](docs/explainer/index.html).
+
 ## How a run works
 
 One task, from the moment you send it to the point where somebody who was not
