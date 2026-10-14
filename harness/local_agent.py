@@ -18,7 +18,7 @@ from typing import Callable, Optional, Protocol
 
 from . import compaction
 from .messages_api import make_receipt, translate_response
-from .local_serving import generation_config, validate_num_ctx; from .local_usage import ollama_native_usage
+from .local_serving import generation_config, validate_num_ctx; from .local_usage import ollama_native_usage; from .token_usage import response_field
 # A transport is (method, url, body_bytes_or_none, timeout) -> (status, parsed_json).
 # The default hits the network; tests inject a fake to stay hermetic.
 Transport = Callable[[str, str, Optional[bytes], float], "tuple[int, dict]"]
@@ -296,7 +296,7 @@ class LocalAgent:
         resp = translate_response(gen, req_params, gen["model_ref"])
         if 'generation_config' in gen: resp['generation_config'] = gen['generation_config']
         self.history.append({"role": "assistant", "content": gen["text"]})
-        resp["backend"] = backend_name
+        resp["backend"] = backend_name; resp.update(response_field(gen))
         return resp
 
     def send(self, user_text: str) -> dict:

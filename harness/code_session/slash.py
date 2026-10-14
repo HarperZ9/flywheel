@@ -88,6 +88,15 @@ def _todo(s, _a):
     return render_todos(s.executor.todos)
 
 
+def _cost(s, _a):
+    u = s.usage
+    line = (f"{u['model_calls']} model call(s): {u['input_tokens']} input and "
+            f"{u['output_tokens']} output tokens as the provider reported them")
+    if u["uncounted_calls"]:
+        line += f"; {u['uncounted_calls']} call(s) reported no token counts and are not estimated"
+    return line + ". No price is applied: prices change, and a dated price is not on file."
+
+
 def _init(s, _a):
     ok, message = _instructions.write_init(s.root)
     return message
@@ -104,6 +113,7 @@ COMMANDS = {
     "undo": (_undo, "put back the files the last changing turn wrote"),
     "sessions": (_sessions, "saved sessions for this folder"),
     "todo": (_todo, "the agent's todo list for this session"),
+    "cost": (_cost, "tokens used this session, as the provider reported them"),
     "init": (_init, "draft an AGENTS.md for this folder (never overwrites)"),
 }
 

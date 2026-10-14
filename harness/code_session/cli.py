@@ -51,6 +51,8 @@ def parse_args(argv):
     ap.add_argument("--sessions", action="store_true",
                     help="list saved sessions for this folder and exit")
     ap.add_argument("--no-save", action="store_true", help="do not save this session")
+    ap.add_argument("--output-format", choices=("text", "json", "stream-json"), default="text",
+                    help="with -p: text, one JSON result, or one JSON object per event")
     args = ap.parse_args(argv)
     args.root = os.path.abspath(args.root)
     return args
@@ -144,7 +146,7 @@ def build_session(args, *, backends=None, approver=None, runner=None, on_event=N
     return session
 
 
-def _footer(result) -> str:
+def footer(result) -> str:
     tests = "" if result.tests_pass is None else f" | tests_pass={result.tests_pass}"
     return (f"[{result.steps} step(s) | {result.seconds:.1f}s | chain "
             f"{'ok' if result.verified else 'BROKEN'}{tests} | ledger {result.checkpoint[:12]}]")
@@ -158,7 +160,7 @@ def run_turn(session, text: str) -> int:
         print(f"[error] {e}", file=sys.stderr)
         return 1
     print(result.final)
-    print(_footer(result), file=sys.stderr)
+    print(footer(result), file=sys.stderr)
     return 1 if result.tests_pass is False else 0
 
 
@@ -218,7 +220,8 @@ def main(argv: "list[str] | None" = None) -> int:
         print(NO_BACKEND, file=sys.stderr)
         return 2
     if not interactive:
-        return run_turn(session, args.prompt)
+        from .print_mode import run_print
+        return run_print(session, args.prompt, args.output_format)
     return repl(session)
 
 

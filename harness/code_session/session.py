@@ -28,6 +28,22 @@ PLAN_NOTE = ("[plan mode: you can read and search but not write files or run com
              "and how you would check them.]")
 
 
+def new_usage() -> dict:
+    return {"model_calls": 0, "input_tokens": 0, "output_tokens": 0, "uncounted_calls": 0}
+
+
+def add_usage(total: dict, resp: dict) -> None:
+    """Add one model call's provider-reported tokens; a call without them is counted
+    as uncounted, never estimated."""
+    total["model_calls"] += 1
+    counted = resp.get("x_token_usage") if isinstance(resp, dict) else None
+    if counted:
+        total["input_tokens"] += int(counted.get("input_tokens", 0))
+        total["output_tokens"] += int(counted.get("output_tokens", 0))
+    else:
+        total["uncounted_calls"] += 1
+
+
 @dataclass
 class TurnResult:
     final: str
@@ -36,6 +52,7 @@ class TurnResult:
     checkpoint: str
     seconds: float
     tests_pass: "bool | None" = None
+    usage: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -53,6 +70,7 @@ class CodeSession:
     checkpoints: "CheckpointStore | None" = None
     pending_note: str = ""
     home: str = ""                  # set to save after every turn and undo
+    usage: dict = field(default_factory=lambda: new_usage())
 
     def persist(self) -> None:
         if self.home:
@@ -64,6 +82,13 @@ class CodeSession:
         if self.checkpoints is None:
             self.checkpoints = CheckpointStore(self.root)
         self.executor.before_write = self.checkpoints.snapshot
+        original = self.agent.send
+
+        def counted_send(text):
+            resp = original(text)
+            add_usage(self.usage, resp)
+            return resp
+        self.agent.send = counted_send
 
     def _record_decision(self, decision: dict) -> None:
         self.ledger.append("approval", json.dumps(decision, sort_keys=True), decision)
@@ -94,7 +119,7 @@ class CodeSession:
                 "turns": self.turns, "ledger_entries": len(self.ledger.entries),
                 "checkpoint": self.ledger.checkpoint(),
                 "chain_ok": self.ledger.verify(),
-                "instructions": [i.path for i in self.loaded]}
+                "instructions": [i.path for i in self.loaded], "usage": dict(self.usage)}
 
     def clear(self) -> None:
         """Forget the conversation; the ledger keeps the record of it."""
@@ -117,6 +142,7 @@ class CodeSession:
     def turn(self, text: str) -> TurnResult:
         """Run one user request through the gated tool loop to a final answer."""
         started = time.monotonic()
+        before = dict(self.usage)
         self.checkpoints.begin_turn()
         if self.pending_note:
             text, self.pending_note = self.pending_note + "\n\n" + text, ""
@@ -131,7 +157,8 @@ class CodeSession:
                           verified=bool(result.get("verified")),
                           checkpoint=result["checkpoint"],
                           seconds=time.monotonic() - started,
-                          tests_pass=result.get("tests_pass"))
+                          tests_pass=result.get("tests_pass"),
+                          usage={k: self.usage[k] - before.get(k, 0) for k in self.usage})
 
 
 def new_session(agent, root: str, *, mode: str = "ask", approver=None,

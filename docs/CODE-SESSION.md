@@ -23,6 +23,18 @@ Added --verbose; the tests pass.
 ```
 
 For one request from a script: `flywheel code -p "fix the failing test" --mode edit`.
+`--output-format json` prints one result object (schema
+`flywheel.code-result/v1`: final answer, steps, seconds, test verdict, ledger
+head, chain check, token counts, session id); `--output-format stream-json`
+prints one JSON object per loop event as it happens, then the result. The exit
+code is 1 when the test gate fails or no model answered.
+
+## Tokens
+
+The session totals the token counts each hosted provider reports (OpenAI
+compatible, Anthropic, Gemini) and Ollama's native counts. `/cost` shows them.
+A call whose backend reported no counts is listed as uncounted; nothing is
+estimated, and no price is applied.
 
 ## Models
 
@@ -115,7 +127,7 @@ refused. `--no-save` keeps a session off disk.
 ## Slash commands
 
 `/help`, `/exit`, `/clear`, `/mode [plan|ask|edit|auto]`, `/model [ID]`,
-`/status`, `/diff`, `/undo`, `/sessions`, `/todo`, `/init`. Slash commands never call
+`/status`, `/diff`, `/undo`, `/sessions`, `/todo`, `/cost`, `/init`. Slash commands never call
 the model.
 
 ## The record
