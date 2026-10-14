@@ -23,6 +23,11 @@ the 1.1.1 engine, and the Telos 0.4.2 lane integration.
 - Program lookup excludes the current folder and unsafe PATH entries. Batch
   shims receive the guarded environment. A writable absolute PATH folder remains
   trusted; this does not secure a PATH controlled by someone else.
+  These lookup and install changes fix security advisory
+  [GHSA-g5gv-7893-ff5c](https://github.com/HarperZ9/flywheel/security/advisories/GHSA-g5gv-7893-ff5c)
+  (CWE-427, high): every release from 0.3.0 through 1.1.0 could start a program
+  planted in the working folder in place of git, pip, npm, Python, an agent CLI
+  or a lane. Upgrade to 1.1.1 or later.
 - Telos 0.4.2 joins the installer with its reviewed tool policy. Its native
   control tool remains excluded. Tools that start external programs require a
   separately approved T2 call.
