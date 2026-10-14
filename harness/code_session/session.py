@@ -71,6 +71,16 @@ class CodeSession:
     pending_note: str = ""
     home: str = ""                  # set to save after every turn and undo
     usage: dict = field(default_factory=lambda: new_usage())
+    mcp_clients: list = field(default_factory=list)
+
+    def close(self) -> None:
+        """Stop every MCP server this session started."""
+        for client in self.mcp_clients:
+            try:
+                client.close()
+            except Exception:
+                pass
+        self.mcp_clients.clear()
 
     def persist(self) -> None:
         if self.home:
