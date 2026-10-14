@@ -4,8 +4,7 @@ from __future__ import annotations
 import json
 import os
 import base64
-import tempfile
-import subprocess
+import subprocess, tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -16,6 +15,7 @@ from .local_agent import BackendError
 from .endpoints_http import _http, _guard, _k, _response_error
 from .endpoint_opencode import OpenCodeBackend  # noqa: F401 (re-exported)
 from . import safe_program
+from .token_usage import field as _usage, from_anthropic, from_gemini, from_openai
 
 
 def _credential(env_name: str, direct: str | None) -> str:
@@ -97,7 +97,7 @@ class OpenAICompatBackend:
                 raise BackendError(
                     f"{self.name} returned {status} with no message content{detail}")
         out["text"] = text
-        return out
+        return {**out, **_usage(from_openai(obj))}
 
 
 def _parse_tool_call(call: dict) -> dict:
@@ -196,7 +196,7 @@ class AnthropicBackend:
             text = "".join(b.get("text", "") for b in obj["content"] if b.get("type") == "text")
         except (KeyError, TypeError):
             raise _response_error(self.name, status, obj)
-        return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed}
+        return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed, **_usage(from_anthropic(obj))}
 
 
 @dataclass
@@ -232,7 +232,7 @@ class GeminiBackend:
             text = "".join(p.get("text", "") for p in obj["candidates"][0]["content"]["parts"])
         except (KeyError, IndexError, TypeError):
             raise _response_error(self.name, status, obj)
-        return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed}
+        return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed, **_usage(from_gemini(obj))}
 
 
 @dataclass
