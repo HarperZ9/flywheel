@@ -114,7 +114,7 @@ source is [docs/explainer/index.html](docs/explainer/index.html).
 
 **[Re-derive it. Don't take it on trust.](https://harperz9.github.io/explainers.html#rederive-h)** (2 min 5 s, narrated, captioned). Flywheel is built on the idea in this film: accept a result only when it can be re-derived. The film page carries the transcript, the sources and recall questions.
 
-Video walkthrough: coming with the next release.
+Video walkthrough: [check an answer against its source](https://github.com/HarperZ9/flywheel/releases/latest/download/first-check-540p.mp4) and [which source decides](https://github.com/HarperZ9/flywheel/releases/latest/download/which-source-540p.mp4), captioned. Each release renders both from its own files and attaches them to the release.
 
 ## Walkthrough
 
