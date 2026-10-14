@@ -1,0 +1,16 @@
+name: Feature request
+description: Something Flywheel should do that it does not do yet.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you are trying to do
+      description: The task or workflow, and where Flywheel gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: elsewhere
+    attributes:
+      label: How other tools handle it (optional)
+      description: If another harness does this well, name it and link its docs.

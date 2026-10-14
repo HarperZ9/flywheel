@@ -87,8 +87,25 @@ def _cmd_up(argv: list[str]) -> int:
     print("Starting the gateway ...")
     _sys.stdout.flush()
     return _launch_gateway(gateway_argv)
+# Usage for the umbrella commands that take no argparse parser of their own.
+# `--help` must print this and run nothing: `gate` writes files and `up`
+# starts a server, so a user asking how to use them must not set them off.
+_UMBRELLA_USAGE = {
+    "loop-status": "usage: flywheel loop-status\nMeasure the closed loop's handoffs in a scratch folder.",
+    "lanes": "usage: flywheel lanes [--probe]\nList every lane and whether it is installed; --probe checks each MCP server.",
+    "gate": "usage: flywheel gate [OUT_DIR]\nCollect, verify, seal and re-witness one result with no model; exit 0 only on MATCH.",
+    "up": "usage: flywheel up [--port 8799] [--probe] [gateway options]\nList the lanes, then start the local gateway and browser shell.",
+    "down": "usage: flywheel down\nHow to stop a gateway started by `flywheel up`.",
+    "corpus-export": "usage: flywheel corpus-export <envelopes_dir> <out.jsonl> [verdict_filter]",
+    "why": "usage: flywheel why <receipt.json | dir> [claim-digest-prefix]",
+}
+
+
 def _dispatch_umbrella(command: str, argv: list[str]) -> int:
     """Handle the new umbrella subcommands. Phase 2/3 implement these fully."""
+    if command in _UMBRELLA_USAGE and any(a in ("-h", "--help") for a in argv):
+        print(_UMBRELLA_USAGE[command])
+        return 0
     if command == "loop-status":
         from harness.loop_closure import measure_loop, loop_report
         import tempfile
@@ -182,7 +199,8 @@ _PACKAGED = {"acp": "harness.acp_cli", "dap": "harness.dap_cli",
              "monitor": "harness.preaction.cli", "rederive": "harness.rederive_gate",
              "verify-share": "harness.verification_share_cli",
              "anchor": "harness.anchor_cli", "code": "harness.code_session.cli",
-             "mcp": "harness.code_session.mcp_cli"}
+             "mcp": "harness.code_session.mcp_cli",
+             "doctor": "harness.doctor_cli"}
 def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
     module = _PACKAGED.get(command)
     if module is None:
@@ -228,7 +246,7 @@ def main(argv: list[str] | None = None) -> int:
             # umbrella usage. Help is a success; a missing command is an error.
             wants_help = any(a in ("-h", "--help") for a in raw)
             print("usage: flywheel <command> [options]\n"
-                  "Umbrella commands (run from a bare install): code, up, lanes, "
+                  "Umbrella commands (run from a bare install): code, doctor, up, lanes, "
                   "loop-status, install, corpus-export, gate, why, down, "
                   "remote, relay, grant, journey, evidence, bulletin-identity,\n"
                   "cross-harness-execute, check-output, packs, workstream, "

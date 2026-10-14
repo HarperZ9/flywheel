@@ -1,0 +1,29 @@
+name: Bug report
+description: Something in Flywheel did not work the way the docs say it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran, what you expected, and what you got.
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: flywheel doctor --json
+      description: Paste the output. It names provider keys by variable name only and never prints their values.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The smallest sequence of commands that shows the problem.
+  - type: textarea
+    id: receipt
+    attributes:
+      label: Receipt or ledger (optional)
+      description: If the problem is in a run, attach the receipt or session ledger. Remove anything private first.

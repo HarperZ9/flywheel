@@ -29,8 +29,9 @@ def _ensure_importable() -> bool:
     return False
 
 
-_NOT_FOUND = ("relay submodule not found; run "
-              "`git submodule update --init` from the repo root")
+_NOT_FOUND = ("relay is not installed. Install it with "
+              "`flywheel install --lanes relay`; in a source checkout, "
+              "`git submodule update --init` also provides it")
 
 
 def cmd_remote(_argv: list[str]) -> int:

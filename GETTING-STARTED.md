@@ -1,24 +1,26 @@
 # Getting Started with Flywheel
 
-> Your first thirty minutes with the accountable agent platform.
+> Your first thirty minutes with Flywheel.
 
 ## What Flywheel is
 
-Flywheel is the accountability infrastructure for agentic AI. Every tool call
-an agent makes carries a sealed receipt. Every system is classified by
-consequence (TADR T1/T2/T3). Every divergence becomes a lesson the
-organization remembers. The receipts make the remembering trustworthy.
+Flywheel is a self-hostable, model-agnostic AI workstation and coding harness.
+It runs any model, frontier or local, behind one OpenAI-compatible gateway; a
+permission-gated coding agent works in your own folders; Rowan, the desktop
+assistant, turns plain-words requests into recorded runs; and composable lanes
+cover research intake, repository maps, memory, writing and more. Keys and
+records stay on your machine.
 
-**The theory.** Nothing self-warrants. Every property worth trusting is
-conferred by something outside the thing itself, witnessed, coverage-accounted,
-stamped MATCH / DRIFT / UNVERIFIABLE. This is the witnessing spine, and it
-holds across every layer of the platform.
+What sets it apart is the verification backbone: every tool call carries a
+sealed receipt, and anyone can re-run that receipt offline and get MATCH,
+DRIFT or UNVERIFIABLE.
 
 ## Release status
 
-Use [v1.0.4](https://github.com/HarperZ9/flywheel/releases/tag/v1.0.4) for the
-current published install path. [RELEASE-NOTES-1.0.4.md](RELEASE-NOTES-1.0.4.md)
-lists what this release adds and its honest state.
+Use the [latest release](https://github.com/HarperZ9/flywheel/releases/latest).
+Its release notes list what it adds and its known limits, and
+[CHANGELOG.md](CHANGELOG.md) lists every release. Run `flywheel doctor` after
+installing to check that the install is ready.
 
 ## Install
 
@@ -90,10 +92,9 @@ desktop client connects automatically when launched.
 
 ## Start the desktop client
 
-Download the current published installer,
-[Flywheel-Setup-1.0.4-x64.exe](https://github.com/HarperZ9/flywheel/releases/download/v1.0.4/Flywheel-Setup-1.0.4-x64.exe),
-and verify it against the release
-[SHA256SUMS.txt](https://github.com/HarperZ9/flywheel/releases/download/v1.0.4/SHA256SUMS.txt)
+Download `Flywheel-Setup-<version>-x64.exe` from the
+[latest release](https://github.com/HarperZ9/flywheel/releases/latest)
+and verify it against that release's `SHA256SUMS.txt`
 (engine bundled, no Python needed). From a source checkout:
 
 ```bash
@@ -285,7 +286,7 @@ print(f"verify: {store.verify()['verdict']}")  # MATCH
 
 ## Read more
 
-- [RELEASE-NOTES-1.0.4.md](RELEASE-NOTES-1.0.4.md): what 1.0.4 fixes and its limits
+- [CHANGELOG.md](CHANGELOG.md): every release and the pull requests that made it
 - [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory owner/project binding
 - [docs/native-cli-session-contract.md](docs/native-cli-session-contract.md): native CLI profile and session contract
 - [docs/native-continuation.md](docs/native-continuation.md): source-bound continuation preview and limits
