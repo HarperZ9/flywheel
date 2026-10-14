@@ -110,6 +110,16 @@ source is [docs/explainer/index.html](docs/explainer/index.html).
 
 ## Watch
 
+Rendered by this repository's v1.5.1 release from its own output, so every number on screen is one that release produced.
+
+[![Flywheel: check an answer against its source: a film rendered by the v1.5.1 release](https://harperz9.github.io/media/releases/flywheel/v1.5.1/first-check/poster.jpg)](https://harperz9.github.io/media/releases/flywheel/v1.5.1/first-check/index.html)
+
+**[Flywheel: check an answer against its source](https://harperz9.github.io/media/releases/flywheel/v1.5.1/first-check/index.html)** (28 s). Rendered from values read at commit ff67e16: [facts.json](https://harperz9.github.io/media/releases/flywheel/v1.5.1/first-check/facts.json).
+
+[![Which source decides: a film rendered by the v1.5.1 release](https://harperz9.github.io/media/releases/flywheel/v1.5.1/which-source/poster.jpg)](https://harperz9.github.io/media/releases/flywheel/v1.5.1/which-source/index.html)
+
+**[Which source decides](https://harperz9.github.io/media/releases/flywheel/v1.5.1/which-source/index.html)** (55 s). Rendered from values read at commit ff67e16: [facts.json](https://harperz9.github.io/media/releases/flywheel/v1.5.1/which-source/facts.json).
+
 [![Re-derive it. Don't take it on trust.: a narrated film, 2 min 5 s](https://harperz9.github.io/media/explainers/rederive/poster.jpg)](https://harperz9.github.io/explainers.html#rederive-h)
 
 **[Re-derive it. Don't take it on trust.](https://harperz9.github.io/explainers.html#rederive-h)** (2 min 5 s, narrated, captioned). Flywheel is built on the idea in this film: accept a result only when it can be re-derived. The film page carries the transcript, the sources and recall questions.
