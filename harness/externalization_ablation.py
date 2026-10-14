@@ -21,6 +21,7 @@ is the point, not a limitation.
 """
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -39,15 +40,49 @@ EXTERNAL = ("from solution import add\n"
             "def test_zero():\n    assert add(0, 7) == 7\n")
 
 
+# The command that runs a criterion. Kept as data so a test can point it at an
+# interpreter that cannot import pytest and check that the guard below fires.
+PYTEST_CMD = [sys.executable, "-m", "pytest"]
+
+_COUNT = re.compile(r"(\d+) (passed|failed|error|errors|skipped|deselected)")
+
+
+class PytestDidNotRun(RuntimeError):
+    """The criterion run produced no pass or fail to read.
+
+    A missing pytest, a collection error, zero collected tests, or a run where
+    every test skipped all used to read as FAIL (or PASS). Read as a verdict, that
+    turned an environment defect into a silent score of 0 for the externalization
+    dimension. Raising makes the defect visible instead.
+    """
+
+
 def _run_pytest(workdir: Path, candidate_src: str, test_src: str) -> bool:
     workdir.mkdir(parents=True, exist_ok=True)
     (workdir / "solution.py").write_text(candidate_src)
     tdir = workdir / "tests"
     tdir.mkdir(exist_ok=True)
     (tdir / "test_it.py").write_text(test_src)
-    r = subprocess.run([sys.executable, "-m", "pytest", str(tdir), "-q"],
+    r = subprocess.run([*PYTEST_CMD, str(tdir), "-q", "-p", "no:cacheprovider"],
                        cwd=workdir, capture_output=True, text=True)
-    return r.returncode == 0
+    return _read_verdict(r.returncode, r.stdout, r.stderr)
+
+
+def _read_verdict(returncode: int, stdout: str, stderr: str) -> bool:
+    """PASS needs exit 0 with at least one passed test and none failed.
+    FAIL needs exit 1 with at least one failed test. Anything else raises."""
+    counts: dict = {}
+    for n, kind in _COUNT.findall(stdout):
+        kind = "error" if kind == "errors" else kind
+        counts[kind] = counts.get(kind, 0) + int(n)
+    passed, failed = counts.get("passed", 0), counts.get("failed", 0)
+    if returncode == 0 and passed > 0 and failed == 0:
+        return True
+    if returncode == 1 and failed > 0 and counts.get("error", 0) == 0:
+        return False
+    tail = (stderr.strip() or stdout.strip())[-400:]
+    raise PytestDidNotRun(f"criterion run gave no readable verdict: exit {returncode}, "
+                          f"counts {counts or 'none'}; output tail: {tail!r}")
 
 
 def run_ablation(tmp_dir, *, candidate: str = CHEAT,
