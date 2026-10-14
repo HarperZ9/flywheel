@@ -25,6 +25,7 @@ def restore(session, home: str, session_id: str) -> dict:
     session.agent.history = list(meta.get("history", []))
     session.session_id = session_id
     session.turns = int(meta.get("turns", 0))
+    session.executor.todos = list(meta.get("todos", []))
     ledger.append("resume", session_id, {"turns": session.turns})
     return meta
 

@@ -52,7 +52,7 @@ def save(session, home: str) -> Path:
     meta = {"schema": SCHEMA, "id": session.session_id, "root": session.root,
             "mode": session.executor.mode, "turns": session.turns,
             "updated": time.time(), "ledger_head": session.ledger.checkpoint(),
-            "history": session.agent.history}
+            "history": session.agent.history, "todos": session.executor.todos}
     tmp = folder / "meta.json.tmp"
     tmp.write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
     session.ledger.save(str(folder / "ledger.jsonl"))

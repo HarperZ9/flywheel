@@ -83,6 +83,11 @@ def _sessions(s, _a):
     return head + "\n" + render_list(s.home, s.root)
 
 
+def _todo(s, _a):
+    from .policy import render_todos
+    return render_todos(s.executor.todos)
+
+
 def _init(s, _a):
     ok, message = _instructions.write_init(s.root)
     return message
@@ -98,6 +103,7 @@ COMMANDS = {
     "diff": (_diff, "git diff --stat of the working tree"),
     "undo": (_undo, "put back the files the last changing turn wrote"),
     "sessions": (_sessions, "saved sessions for this folder"),
+    "todo": (_todo, "the agent's todo list for this session"),
     "init": (_init, "draft an AGENTS.md for this folder (never overwrites)"),
 }
 

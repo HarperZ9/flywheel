@@ -49,6 +49,33 @@ In `-p` mode nobody is there to ask, so a call that would ask is refused; pass
 pre-action monitor still apply, and plan mode closes writes and commands at the
 tool gate itself, not only in the prompt.
 
+In plan mode each request also tells the model it is read-only and asks for a
+numbered plan of the changes and how to check them.
+
+## Permission rules
+
+Standing rules go in `.flywheel/permissions.json` in the project and
+`permissions.json` in the Flywheel home; both are merged:
+
+```json
+{"allow": ["run:python -m pytest*", "write_file:src/*"],
+ "deny":  ["run:git push*", "*:.env*"]}
+```
+
+A rule is `TOOL:PATTERN`, where TOOL is a tool name or `*` and PATTERN is a
+shell-style wildcard over the command (for `run`) or the path (for file tools).
+A deny rule wins over every mode, `auto` included, and over any allow rule. An
+allow rule answers yes for you; it never opens what plan mode closes. A rules
+file that cannot be read stops the session before it starts, because a deny
+list that silently failed to load would protect nothing. The rules in force go
+on the ledger, and each decision names the rule that made it.
+
+## Todo list
+
+For work with several steps the agent keeps a todo list with its `todo` tool
+(pending, in progress, done). `/todo` shows it, and it is saved with the
+session. The tool works in every mode, plan mode included.
+
 ## Commands run in a sandbox
 
 On Windows, commands run in the low-integrity sandbox; on Linux and macOS, in
@@ -88,7 +115,7 @@ refused. `--no-save` keeps a session off disk.
 ## Slash commands
 
 `/help`, `/exit`, `/clear`, `/mode [plan|ask|edit|auto]`, `/model [ID]`,
-`/status`, `/diff`, `/undo`, `/sessions`, `/init`. Slash commands never call
+`/status`, `/diff`, `/undo`, `/sessions`, `/todo`, `/init`. Slash commands never call
 the model.
 
 ## The record
