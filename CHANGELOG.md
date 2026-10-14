@@ -3,6 +3,17 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## 1.5.1 (2026-10-14)
+
+No runtime change; the Python package changes only in its version number.
+
+Release media
+- Each published release renders two captioned videos from its own files and attaches them: a walkthrough of the Form 1040 output check (FAIL exit 1, PASS exit 0, UNVERIFIABLE exit 3) and an explainer of why the tax table, not the rate schedule, decides the answer. Every number on screen is read from the release checkout at render time. `.github/workflows/release-media.yml` calls raw-native's media workflow, which renders on a hosted runner with a software GPU adapter. (#377)
+
+Docs
+- An animated explainer page, `docs/explainer/index.html`: the run lifecycle, the shell capability check on seven commands, a sealed `flywheel gate` result and its recheck, and the stage receipt chain, with every value taken from a run of the repository. (#375)
+- README Watch and Walkthrough sections. (#376)
+
 ## 1.5.0 (2026-10-04)
 
 Behaviour changes
