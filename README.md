@@ -84,6 +84,19 @@ Rowan runs on the model you choose and is openly an assistant, never
 presented as a human or a specific model. See
 [Meet Rowan](GETTING-STARTED.md#meet-rowan).
 
+To code in your terminal:
+
+```powershell
+python -m pip install flywheel-verify
+flywheel code
+```
+
+`flywheel code` opens a session in the current folder: the agent reads, edits
+and runs your tests across turns, asks before it writes or runs anything (or
+not, with `--mode edit` or `--mode auto`), and records every step on a
+hash-chained ledger. It uses a local model server when one is running, or any
+provider key you have set. See [docs/CODE-SESSION.md](docs/CODE-SESSION.md).
+
 For the engine on its own:
 
 ```powershell

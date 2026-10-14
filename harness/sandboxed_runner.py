@@ -40,8 +40,13 @@ def sandboxed_run(
     bindings: CredentialBindings | None = None,
     timeout_seconds: int = 120,
     scratch_home: bool = False,
+    extra_env: "dict[str, str] | None" = None,
 ) -> tuple[bool, str]:
     """Run `cmd` under this host's sandbox, rooted at `root`.
+
+    `extra_env` adds plain settings (never credentials; those go through
+    `bindings` so they are scrubbed from output) on top of the built
+    environment.
 
     With `scratch_home`, `HOME`, `TEMP` and `TMP` point into the run's own
     scratch directory rather than the caller's (the bench replay, 7.8).
@@ -59,7 +64,8 @@ def sandboxed_run(
         return False, (f"[denied] command requires escalation: "
                        f"{admission.reason_code}")
     if os.name != "nt":
-        return _posix_sandboxed_run(cmd, root, bindings, timeout_seconds, scratch_home)
+        return _posix_sandboxed_run(cmd, root, bindings, timeout_seconds, scratch_home,
+                                    extra_env)
 
     source = Path(root).resolve()
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_", dir=source.parent))
@@ -68,6 +74,7 @@ def sandboxed_run(
         env = _build_env(bindings)
         if scratch_home:
             env.update({name: str(work) for name in ("HOME", "TEMP", "TMP")})
+        env.update(extra_env or {})
         rc = _execute(source, work, cmd, env, timeout_seconds, stdout_path, stderr_path)
         out = _redact(_read_output(stdout_path, stderr_path), bindings)
     finally:
@@ -81,6 +88,7 @@ def sandboxed_run(
 def _posix_sandboxed_run(
     cmd: str, root: str, bindings: CredentialBindings | None,
     timeout_seconds: int, scratch_home: bool = False,
+    extra_env: "dict[str, str] | None" = None,
 ) -> tuple[bool, str]:
     """Run `cmd` under whichever POSIX backend this host has.
 
@@ -115,6 +123,7 @@ def _posix_sandboxed_run(
     # not write to.
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_")).resolve()
     env = _build_posix_env(bindings, work, scratch_home)
+    env.update(extra_env or {})
     try:
         policy = from_env()
     except PolicyRefused as exc:

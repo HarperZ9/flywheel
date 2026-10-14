@@ -181,7 +181,7 @@ _PACKAGED = {"acp": "harness.acp_cli", "dap": "harness.dap_cli",
              "gov": "harness.governance_cli", "traces": "harness.trace_cli",
              "monitor": "harness.preaction.cli", "rederive": "harness.rederive_gate",
              "verify-share": "harness.verification_share_cli",
-             "anchor": "harness.anchor_cli"}
+             "anchor": "harness.anchor_cli", "code": "harness.code_session.cli"}
 def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
     module = _PACKAGED.get(command)
     if module is None:
@@ -227,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
             # umbrella usage. Help is a success; a missing command is an error.
             wants_help = any(a in ("-h", "--help") for a in raw)
             print("usage: flywheel <command> [options]\n"
-                  "Umbrella commands (run from a bare install): up, lanes, "
+                  "Umbrella commands (run from a bare install): code, up, lanes, "
                   "loop-status, install, corpus-export, gate, why, down, "
                   "remote, relay, grant, journey, evidence, bulletin-identity,\n"
                   "cross-harness-execute, check-output, packs, workstream, "
