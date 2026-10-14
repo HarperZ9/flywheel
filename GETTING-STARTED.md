@@ -8,8 +8,9 @@ Flywheel is a self-hostable, model-agnostic AI workstation and coding harness.
 It runs any model, frontier or local, behind one OpenAI-compatible gateway; a
 permission-gated coding agent works in your own folders; Rowan, the desktop
 assistant, turns plain-words requests into recorded runs; and composable lanes
-cover research intake, repository maps, memory, writing and more. Keys and
-records stay on your machine.
+cover research intake, repository maps, memory, writing and more. Your
+provider keys and Flywheel's records stay on your machine; the content of
+each request goes to the model provider you pick, under that provider's terms.
 
 What sets it apart is the verification backbone: every tool call carries a
 sealed receipt, and anyone can re-run that receipt offline and get MATCH,
