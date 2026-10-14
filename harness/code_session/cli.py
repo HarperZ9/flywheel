@@ -14,7 +14,8 @@ import json
 import os
 import sys
 
-from . import slash
+from . import resume, slash
+from .store import ResumeRefused
 from .backends import DEFAULT_MAX_TOKENS, build_agent, describe, ladder
 from .policy import MODES, deny_all
 from .session import DEFAULT_MAX_STEPS, new_session
@@ -43,7 +44,15 @@ def parse_args(argv):
     ap.add_argument("--test-cmd", default="", help="tests a turn must pass before it is done")
     ap.add_argument("--no-instructions", action="store_true",
                     help="do not read AGENTS.md, CLAUDE.md or FLYWHEEL.md")
-    return ap.parse_args(argv)
+    ap.add_argument("-c", "--continue", dest="cont", action="store_true",
+                    help="resume the newest saved session for this folder")
+    ap.add_argument("--resume", default="", metavar="ID", help="resume a saved session")
+    ap.add_argument("--sessions", action="store_true",
+                    help="list saved sessions for this folder and exit")
+    ap.add_argument("--no-save", action="store_true", help="do not save this session")
+    args = ap.parse_args(argv)
+    args.root = os.path.abspath(args.root)
+    return args
 
 
 def _home() -> str:
@@ -113,13 +122,19 @@ def build_session(args, *, backends=None, approver=None, runner=None, on_event=N
         providers = [p.strip() for p in args.providers.split(",") if p.strip()] or None
         backends = ladder(providers=providers, online=not args.local_only, model=args.model)
     agent = build_agent(backends, prefer=args.backend, max_tokens=args.max_tokens)
-    root = os.path.abspath(args.root)
+    root = args.root
     session = new_session(agent, root, mode=args.mode, approver=approver,
                           runner=runner if runner is not None else _runner(),
                           max_steps=args.max_steps, test_cmd=args.test_cmd or None,
                           on_event=on_event)
+    home = _home()
+    session_id = resume.pick_id(args, home)
+    if session_id:
+        resume.restore(session, home, session_id)
     if not args.no_instructions:
-        session.load_instructions(_home())
+        session.load_instructions(home)
+    if not args.no_save:
+        session.home = home
     return session
 
 
@@ -183,9 +198,16 @@ def repl(session) -> int:
 
 def main(argv: "list[str] | None" = None) -> int:
     args = parse_args(argv)
+    if args.sessions:
+        print(resume.render_list(_home(), args.root))
+        return 0
     interactive = args.prompt is None
-    session = build_session(args, approver=prompt_approver if interactive else deny_all,
-                            on_event=print_event)
+    try:
+        session = build_session(args, approver=prompt_approver if interactive else deny_all,
+                                on_event=print_event)
+    except ResumeRefused as e:
+        print(f"[refused] {e}", file=sys.stderr)
+        return 2
     if session.agent.live_backend() is None:
         print(NO_BACKEND, file=sys.stderr)
         return 2
