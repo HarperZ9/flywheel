@@ -19,6 +19,7 @@ from harness.local_session import SessionLedger
 
 from . import instructions as _instructions
 from .backends import describe
+from .checkpoints import CheckpointStore
 from .policy import SessionExecutor, gate_for
 
 DEFAULT_MAX_STEPS = 25
@@ -45,9 +46,21 @@ class CodeSession:
     on_event: "Callable[[dict], None] | None" = None
     loaded: list = field(default_factory=list)
     turns: int = 0
+    session_id: str = ""
+    checkpoints: "CheckpointStore | None" = None
+    pending_note: str = ""
+    home: str = ""                  # set to save after every turn and undo
+
+    def persist(self) -> None:
+        if self.home:
+            from .store import save
+            save(self, self.home)
 
     def __post_init__(self) -> None:
         self.executor.on_decision = self._record_decision
+        if self.checkpoints is None:
+            self.checkpoints = CheckpointStore(self.root)
+        self.executor.before_write = self.checkpoints.snapshot
 
     def _record_decision(self, decision: dict) -> None:
         self.ledger.append("approval", json.dumps(decision, sort_keys=True), decision)
@@ -79,13 +92,30 @@ class CodeSession:
         self.agent.history.clear()
         self.ledger.append("clear", "conversation cleared", {})
 
+    def undo(self) -> "list[dict] | None":
+        """Put back the files the newest changing turn wrote; tell the model next turn."""
+        restored = self.checkpoints.undo()
+        if restored is None:
+            return None
+        self.ledger.append("undo", json.dumps(restored, sort_keys=True),
+                           {"files": len(restored)})
+        paths = ", ".join(r["path"] for r in restored)
+        self.persist()
+        self.pending_note = (f"[note: the user undid your previous file changes; these "
+                             f"files are back as they were before that turn: {paths}]")
+        return restored
+
     def turn(self, text: str) -> TurnResult:
         """Run one user request through the gated tool loop to a final answer."""
         started = time.monotonic()
+        self.checkpoints.begin_turn()
+        if self.pending_note:
+            text, self.pending_note = self.pending_note + "\n\n" + text, ""
         result = run_agent(self.agent, text, self.executor, self.ledger,
                            max_steps=self.max_steps, test_cmd=self.test_cmd,
                            on_event=self.on_event)
         self.turns += 1
+        self.persist()
         return TurnResult(final=result["final"], steps=result["steps"],
                           verified=bool(result.get("verified")),
                           checkpoint=result["checkpoint"],

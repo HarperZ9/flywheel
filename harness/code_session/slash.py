@@ -68,6 +68,21 @@ def _diff(s, _a):
     return (out.stdout or out.stderr or "").strip() or "(no changes against the index)"
 
 
+def _undo(s, _a):
+    restored = s.undo()
+    if restored is None:
+        return "nothing to undo (changes made by commands are not tracked)"
+    return "restored: " + ", ".join(r["path"] for r in restored)
+
+
+def _sessions(s, _a):
+    if not s.home:
+        return "this session is not being saved (--no-save)"
+    from .resume import render_list
+    head = f"this session: {s.session_id or '(saved after the first turn)'}"
+    return head + "\n" + render_list(s.home, s.root)
+
+
 def _init(s, _a):
     ok, message = _instructions.write_init(s.root)
     return message
@@ -81,6 +96,8 @@ COMMANDS = {
     "model": (_model, "show or set the model on the live backend"),
     "status": (_status, "folder, mode, backend, turns, ledger head, instruction files"),
     "diff": (_diff, "git diff --stat of the working tree"),
+    "undo": (_undo, "put back the files the last changing turn wrote"),
+    "sessions": (_sessions, "saved sessions for this folder"),
     "init": (_init, "draft an AGENTS.md for this folder (never overwrites)"),
 }
 

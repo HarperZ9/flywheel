@@ -68,10 +68,28 @@ last, up to 32 KiB in all. It never climbs to your home folder. `/init` drafts
 an `AGENTS.md` for the folder and never overwrites one. `--no-instructions`
 skips them.
 
+## Undo and resume
+
+Before a write tool changes a file, the session keeps that file's bytes as they
+were at the start of the turn, or notes that the file did not exist. `/undo`
+puts back the newest turn that changed files, byte for byte, deletes files that
+turn created, and tells the model on the next turn which files went back.
+Run it again to step further back. Snapshots live for the session; they are
+not kept after it ends.
+
+Each session is saved after every turn under the Flywheel home, in
+`sessions/<id>/` (the ledger and a meta.json with the conversation). Each save
+appends the sha256 of the conversation to the ledger first.
+`flywheel code --continue` resumes the newest session for the folder,
+`--resume ID` a named one, and `--sessions` lists them. A session whose chain
+does not verify, or whose conversation no longer matches its recorded hash, is
+refused. `--no-save` keeps a session off disk.
+
 ## Slash commands
 
 `/help`, `/exit`, `/clear`, `/mode [plan|ask|edit|auto]`, `/model [ID]`,
-`/status`, `/diff`, `/init`. Slash commands never call the model.
+`/status`, `/diff`, `/undo`, `/sessions`, `/init`. Slash commands never call
+the model.
 
 ## The record
 
