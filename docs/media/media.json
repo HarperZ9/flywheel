@@ -1,0 +1,211 @@
+{
+  "schema": "raw-native.media/1",
+  "repo": "flywheel",
+  "about": "The media Flywheel renders at every release with raw-native's media engine. Every number on screen is read from this checkout at render time: the example's answers, the checker's rule, and what the output check prints.",
+  "scenes_dir": "scenes",
+  "setup": [],
+  "prepare": [],
+  "facts": {
+    "version": {
+      "text": "pyproject.toml",
+      "regex": "(?m)^version = \"([^\"]+)\""
+    },
+    "income": {
+      "json": "examples/output-validation/answer-as-filed.json",
+      "pointer": "/taxable_income/value"
+    },
+    "filed_tax": {
+      "json": "examples/output-validation/answer-as-filed.json",
+      "pointer": "/tax/value"
+    },
+    "table_tax": {
+      "json": "examples/output-validation/answer-from-the-table.json",
+      "pointer": "/tax/value"
+    },
+    "authority": {
+      "json": "examples/output-validation/form-1040.contract.json",
+      "pointer": "/fields/1/source"
+    },
+    "row_width": {
+      "text": "examples/output-validation/tax_table.py",
+      "regex": "ROW_WIDTH = Decimal\\(\"(\\d+)\"\\)"
+    },
+    "bracket1": {
+      "text": "examples/output-validation/tax_table.py",
+      "regex": "BRACKETS = \\(\\(Decimal\\(\"(\\d+)\"\\)"
+    },
+    "rate1": {
+      "text": "examples/output-validation/tax_table.py",
+      "regex": "BRACKETS = \\(\\(Decimal\\(\"\\d+\"\\), Decimal\\(\"([0-9.]+)\"\\)\\)"
+    },
+    "bracket2": {
+      "text": "examples/output-validation/tax_table.py",
+      "regex": "\\(Decimal\\(\"(\\d+)\"\\), Decimal\\(\"[0-9.]+\"\\)\\)\\)"
+    },
+    "rate2": {
+      "text": "examples/output-validation/tax_table.py",
+      "regex": "\\(Decimal\\(\"\\d+\"\\), Decimal\\(\"([0-9.]+)\"\\)\\)\\)"
+    },
+    "checker_value": {
+      "cmd": [
+        "python",
+        "tax_table.py"
+      ],
+      "cwd": "examples/output-validation",
+      "stdin": "examples/output-validation/answer-as-filed.json",
+      "regex": "\"value\": (\\d+)"
+    },
+    "filed_verdict": {
+      "cmd": [
+        "python",
+        "../../scripts/run_output_check.py",
+        "--contract",
+        "form-1040.contract.json",
+        "--answer",
+        "answer-as-filed.json",
+        "--allow-commands"
+      ],
+      "cwd": "examples/output-validation",
+      "regex": "^(PASS|FAIL|UNVERIFIABLE) "
+    },
+    "filed_exit": {
+      "cmd": [
+        "python",
+        "../../scripts/run_output_check.py",
+        "--contract",
+        "form-1040.contract.json",
+        "--answer",
+        "answer-as-filed.json",
+        "--allow-commands"
+      ],
+      "cwd": "examples/output-validation",
+      "exit": true
+    },
+    "table_verdict": {
+      "cmd": [
+        "python",
+        "../../scripts/run_output_check.py",
+        "--contract",
+        "form-1040.contract.json",
+        "--answer",
+        "answer-from-the-table.json",
+        "--allow-commands"
+      ],
+      "cwd": "examples/output-validation",
+      "regex": "^(PASS|FAIL|UNVERIFIABLE) "
+    },
+    "table_exit": {
+      "cmd": [
+        "python",
+        "../../scripts/run_output_check.py",
+        "--contract",
+        "form-1040.contract.json",
+        "--answer",
+        "answer-from-the-table.json",
+        "--allow-commands"
+      ],
+      "cwd": "examples/output-validation",
+      "exit": true
+    },
+    "unchecked_verdict": {
+      "cmd": [
+        "python",
+        "../../scripts/run_output_check.py",
+        "--contract",
+        "form-1040.contract.json",
+        "--answer",
+        "answer-from-the-table.json"
+      ],
+      "cwd": "examples/output-validation",
+      "regex": "^(PASS|FAIL|UNVERIFIABLE) "
+    },
+    "unchecked_exit": {
+      "cmd": [
+        "python",
+        "../../scripts/run_output_check.py",
+        "--contract",
+        "form-1040.contract.json",
+        "--answer",
+        "answer-from-the-table.json"
+      ],
+      "cwd": "examples/output-validation",
+      "exit": true
+    }
+  },
+  "scenes": [
+    {
+      "id": "which-source",
+      "kind": "explainer",
+      "module": "scenes/which-source.scene.mjs",
+      "title": "Which source decides",
+      "captions_burned": true,
+      "poster_at": 0.55
+    },
+    {
+      "id": "first-check",
+      "kind": "walkthrough",
+      "title": "Flywheel: check an answer against its source",
+      "subtitle": "the Form 1040 example, run from a source checkout",
+      "captions_burned": true,
+      "poster_at": 0.6,
+      "steps": [
+        {
+          "say": "Check the answer as it was filed. The contract names the tax table as the authority, and the filed tax disagrees with it.",
+          "cwd": "examples/output-validation",
+          "run": [
+            "python",
+            "../../scripts/run_output_check.py",
+            "--contract",
+            "form-1040.contract.json",
+            "--answer",
+            "answer-as-filed.json",
+            "--allow-commands"
+          ],
+          "highlight": "^(FAIL|HOLD)",
+          "show_exit": true,
+          "ok_codes": [
+            1
+          ],
+          "keep": 8,
+          "chapter": "As filed"
+        },
+        {
+          "say": "Check the answer that took its tax from the table. It passes.",
+          "cwd": "examples/output-validation",
+          "run": [
+            "python",
+            "../../scripts/run_output_check.py",
+            "--contract",
+            "form-1040.contract.json",
+            "--answer",
+            "answer-from-the-table.json",
+            "--allow-commands"
+          ],
+          "highlight": "^PASS",
+          "show_exit": true,
+          "keep": 8,
+          "chapter": "From the table"
+        },
+        {
+          "say": "Run the same check with nothing allowed to decide. The same correct answer is unverifiable, not passed.",
+          "cwd": "examples/output-validation",
+          "run": [
+            "python",
+            "../../scripts/run_output_check.py",
+            "--contract",
+            "form-1040.contract.json",
+            "--answer",
+            "answer-from-the-table.json"
+          ],
+          "highlight": "^UNVERIFIABLE",
+          "show_exit": true,
+          "ok_codes": [
+            3
+          ],
+          "keep": 8,
+          "chapter": "Unchecked"
+        }
+      ]
+    }
+  ]
+}
