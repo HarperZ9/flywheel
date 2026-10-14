@@ -20,9 +20,12 @@ from harness.local_session import SessionLedger
 from . import instructions as _instructions
 from .backends import describe
 from .checkpoints import CheckpointStore
-from .policy import SessionExecutor, gate_for
+from .policy import TODO_TOOL_TEXT, SessionExecutor, gate_for
 
 DEFAULT_MAX_STEPS = 25
+PLAN_NOTE = ("[plan mode: you can read and search but not write files or run commands. "
+             "Investigate, then answer with a numbered plan of the changes you would make "
+             "and how you would check them.]")
 
 
 @dataclass
@@ -75,6 +78,12 @@ class CodeSession:
                            {"count": len(self.loaded)})
         return self.loaded
 
+    def set_rules(self, rules) -> None:
+        self.executor.rules = rules
+        self.ledger.append("rules", json.dumps({"sources": rules.sources, "allow": rules.allow,
+                                                "deny": rules.deny}, sort_keys=True),
+                           {"allow": len(rules.allow), "deny": len(rules.deny)})
+
     def set_mode(self, mode: str) -> None:
         self.executor.set_mode(mode)
         self.ledger.append("mode", mode, {"mode": mode})
@@ -111,6 +120,8 @@ class CodeSession:
         self.checkpoints.begin_turn()
         if self.pending_note:
             text, self.pending_note = self.pending_note + "\n\n" + text, ""
+        if self.executor.mode == "plan":
+            text = PLAN_NOTE + "\n\n" + text
         result = run_agent(self.agent, text, self.executor, self.ledger,
                            max_steps=self.max_steps, test_cmd=self.test_cmd,
                            on_event=self.on_event)
@@ -130,5 +141,7 @@ def new_session(agent, root: str, *, mode: str = "ask", approver=None,
     executor = SessionExecutor(root=root, gate=gate_for(mode), runner=runner, mode=mode)
     if approver is not None:
         executor.approver = approver
+    if TODO_TOOL_TEXT not in agent.system:
+        agent.system = agent.system + "\n\n" + TODO_TOOL_TEXT
     return CodeSession(agent=agent, executor=executor, root=root, max_steps=max_steps,
                        test_cmd=test_cmd, on_event=on_event)

@@ -15,6 +15,7 @@ import os
 import sys
 
 from . import resume, slash
+from .rules import load_rules
 from .store import ResumeRefused
 from .backends import DEFAULT_MAX_TOKENS, build_agent, describe, ladder
 from .policy import MODES, deny_all
@@ -128,9 +129,14 @@ def build_session(args, *, backends=None, approver=None, runner=None, on_event=N
                           max_steps=args.max_steps, test_cmd=args.test_cmd or None,
                           on_event=on_event)
     home = _home()
+    rules = load_rules(root, home)
+    if rules.errors:
+        raise ResumeRefused("permission rules could not be read, so none are trusted: "
+                            + "; ".join(rules.errors))
     session_id = resume.pick_id(args, home)
     if session_id:
         resume.restore(session, home, session_id)
+    session.set_rules(rules)
     if not args.no_instructions:
         session.load_instructions(home)
     if not args.no_save:

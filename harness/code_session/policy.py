@@ -25,10 +25,17 @@ from harness.local_tools import ToolExecutor, ToolGate, ToolResult
 MODES = ("plan", "ask", "edit", "auto")
 WRITE_TOOLS = frozenset({"write_file", "edit_file", "apply_patch"})
 EXEC_TOOLS = frozenset({"run"})
-READ_TOOLS = frozenset({"read_file", "list_dir", "repo_map", "grep", "glob"})
+READ_TOOLS = frozenset({"read_file", "list_dir", "repo_map", "grep", "glob", "todo"})
+TODO_STATES = ("pending", "in_progress", "done")
+TODO_TOOL_TEXT = (
+    'TOOL todo {"items": [{"text": "<step>", "status": "pending|in_progress|done"}, ...]}\n'
+    "For work with several steps, keep a todo list with the todo tool: send the "
+    "whole list each time, mark one item in_progress while you work on it, and "
+    "mark items done as you finish them.")
 
 DENIED_BY_USER = ("[denied] the user declined this call. Do not retry it "
                   "unchanged; explain what you need or choose another approach.")
+DENIED_BY_RULE = "[denied] a permission rule refuses this call: {rule}"
 DENIED_BY_MODE = ("[denied] plan mode is read-only: writes and commands are off. "
                   "Describe the change as a plan instead.")
 
@@ -80,6 +87,8 @@ class SessionExecutor(ToolExecutor):
     on_decision: "Callable[[dict], None] | None" = None
     always: set = field(default_factory=set)
     before_write: "Callable[[str, dict], None] | None" = None
+    rules: "object | None" = None
+    todos: list = field(default_factory=list)
 
     def set_mode(self, mode: str) -> None:
         self.gate = gate_for(mode)
@@ -88,8 +97,13 @@ class SessionExecutor(ToolExecutor):
     def _decide(self, name: str, args: dict) -> "tuple[str, str]":
         cls = tool_class(name)
         verdict = mode_decision(self.mode, cls)
+        matched = self.rules.match(name, args) if self.rules is not None else None
+        if matched and matched[0] == "deny":
+            return "deny", f"rule:deny:{matched[1]}"
         if verdict != "ask":
             return verdict, f"mode:{self.mode}"
+        if matched:
+            return "allow", f"rule:allow:{matched[1]}"
         if name in self.always:
             return "allow", "always"
         answer = self.approver(name, args)
@@ -104,8 +118,33 @@ class SessionExecutor(ToolExecutor):
             self.on_decision({"tool": name, "class": tool_class(name), "mode": self.mode,
                               "decision": verdict, "by": source})
         if verdict == "deny":
-            text = DENIED_BY_MODE if source == "mode:plan" else DENIED_BY_USER
+            text = (DENIED_BY_MODE if source == "mode:plan" else
+                    DENIED_BY_RULE.format(rule=source[len("rule:deny:"):])
+                    if source.startswith("rule:deny:") else DENIED_BY_USER)
             return ToolResult(name, args, False, text)
         if name in WRITE_TOOLS and self.before_write is not None:
             self.before_write(name, args)
         return super().execute(name, args, rationale=rationale)
+
+    def _t_todo(self, args) -> "tuple[bool, str]":
+        """Replace the session's todo list; returns it rendered."""
+        items = args.get("items")
+        if not isinstance(items, list):
+            return False, "[error] todo needs an 'items' list"
+        clean = []
+        for item in items:
+            if not isinstance(item, dict) or not str(item.get("text", "")).strip():
+                return False, "[error] each todo item needs a 'text'"
+            status = item.get("status", "pending")
+            if status not in TODO_STATES:
+                return False, f"[error] status must be one of {', '.join(TODO_STATES)}"
+            clean.append({"text": str(item["text"]).strip(), "status": status})
+        self.todos = clean
+        return True, render_todos(clean)
+
+
+def render_todos(items: list) -> str:
+    if not items:
+        return "(no todo items)"
+    marks = {"pending": "[ ]", "in_progress": "[>]", "done": "[x]"}
+    return "\n".join(f"{marks[i['status']]} {i['text']}" for i in items)
