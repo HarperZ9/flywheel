@@ -51,6 +51,9 @@ def parse_args(argv):
     ap.add_argument("--sessions", action="store_true",
                     help="list saved sessions for this folder and exit")
     ap.add_argument("--no-save", action="store_true", help="do not save this session")
+    ap.add_argument("--no-mcp", action="store_true", help="start no MCP servers")
+    ap.add_argument("--trust-project-mcp", action="store_true",
+                    help="start the project's MCP servers without asking")
     ap.add_argument("--output-format", choices=("text", "json", "stream-json"), default="text",
                     help="with -p: text, one JSON result, or one JSON object per event")
     args = ap.parse_args(argv)
@@ -139,11 +142,39 @@ def build_session(args, *, backends=None, approver=None, runner=None, on_event=N
     if session_id:
         resume.restore(session, home, session_id)
     session.set_rules(rules)
+    if not args.no_mcp:
+        _attach_mcp(session, root, home, interactive=approver is prompt_approver,
+                    trust=args.trust_project_mcp)
     if not args.no_instructions:
         session.load_instructions(home)
     if not args.no_save:
         session.home = home
     return session
+
+
+def ask_project_server(spec) -> bool:
+    shown = spec.url or " ".join(spec.command)
+    try:
+        raw = input(f"  start project MCP server {spec.name!r} ({shown[:120]}) "
+                    f"from {os.path.basename(spec.source)}? [y/N]: ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        return False
+    return raw in ("y", "yes")
+
+
+def _attach_mcp(session, root: str, home: str, *, interactive: bool, trust: bool) -> None:
+    from .mcp_config import attach, load_specs
+    specs, errors = load_specs(root, home)
+    for err in errors:
+        print(f"[mcp] {err}", file=sys.stderr)
+    if not specs:
+        return
+    rows = attach(session, specs, ask=ask_project_server if interactive else None,
+                  trust_project=trust)
+    for row in rows:
+        started = row["status"] == "started"
+        detail = f"{len(row.get('tools', []))} tool(s)" if started else row.get("reason", "")
+        print(f"[mcp] {row['name']}: {row['status']} {detail}", file=sys.stderr)
 
 
 def footer(result) -> str:
@@ -216,13 +247,16 @@ def main(argv: "list[str] | None" = None) -> int:
     except ResumeRefused as e:
         print(f"[refused] {e}", file=sys.stderr)
         return 2
-    if session.agent.live_backend() is None:
-        print(NO_BACKEND, file=sys.stderr)
-        return 2
-    if not interactive:
-        from .print_mode import run_print
-        return run_print(session, args.prompt, args.output_format)
-    return repl(session)
+    try:
+        if session.agent.live_backend() is None:
+            print(NO_BACKEND, file=sys.stderr)
+            return 2
+        if not interactive:
+            from .print_mode import run_print
+            return run_print(session, args.prompt, args.output_format)
+        return repl(session)
+    finally:
+        session.close()
 
 
 if __name__ == "__main__":

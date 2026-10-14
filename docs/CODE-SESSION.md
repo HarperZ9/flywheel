@@ -82,6 +82,24 @@ file that cannot be read stops the session before it starts, because a deny
 list that silently failed to load would protect nothing. The rules in force go
 on the ledger, and each decision names the rule that made it.
 
+## MCP servers
+
+The session starts the MCP servers named in `mcp.json` in the Flywheel home,
+and in the project's `.flywheel/mcp.json` and `.mcp.json`. The files use the
+`mcpServers` shape that Claude Code and Cursor read, with a `command` and
+`args` for a local server or `"type": "http"` and a `url` for a Streamable
+HTTP one. Manage your own file with `flywheel mcp list`,
+`flywheel mcp add NAME -- COMMAND [ARGS...]`, `flywheel mcp add NAME --url URL`
+and `flywheel mcp remove NAME`; `--project` writes the project file instead.
+
+A project file can name any program, so a project server starts only after you
+answer yes at the prompt, or with `--trust-project-mcp`. In `-p` mode nobody
+is there to ask, and project servers are skipped. Each tool reaches the model
+as `mcp__<server>__<tool>` and is treated like a command: it asks in `ask` and
+`edit`, runs in `auto`, and is refused in `plan`. A server that fails to start
+is reported and skipped. `--no-mcp` starts none. Which servers started, from
+which file, and with which tools goes on the ledger.
+
 ## Todo list
 
 For work with several steps the agent keeps a todo list with its `todo` tool
