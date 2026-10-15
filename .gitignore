@@ -136,3 +136,4 @@ state/
 
 # pre-action monitor default home when run from a checkout root
 .flywheel-preaction/
+site/docs/
