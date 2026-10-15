@@ -25,7 +25,7 @@ Added --verbose; the tests pass.
 For one request from a script: `flywheel code -p "fix the failing test" --mode edit`.
 `--output-format json` prints one result object (schema
 `flywheel.code-result/v1`: final answer, steps, seconds, test verdict, ledger
-head, chain check, token counts, session id); `--output-format stream-json`
+head, chain check, token counts, session id, harness-config hash); `--output-format stream-json`
 prints one JSON object per loop event as it happens, then the result. The exit
 code is 1 when the test gate fails or no model answered.
 
@@ -339,6 +339,18 @@ the model.
 Every user turn, model reply, tool call, tool result, permission decision,
 mode change and instruction file (by path and sha256) goes on one hash-chained
 ledger. `/status` shows its head and whether the chain verifies.
+
+Each turn also records a harness-config hash: the sha256 of every setting
+that shapes what the model is sent or what the loop allows (the full system
+prompt with its tool texts, instruction files, skills and memory notes; the
+permission mode, rules and hooks; max steps, compaction budget, max tokens,
+temperature and seed; the backend preference and which backend and model
+answered; the test command; the Flywheel version). A `harness_config` ledger
+entry holds the settings whenever the hash changes, and `-p` JSON results carry
+it as `harness_config_sha256`. Two runs with equal hashes ran the same harness,
+so a difference between them comes from the model or the task, not from
+Flywheel's settings. The user's own words and an "always" answer given at a
+prompt are not in the hash.
 
 ## Screen readers
 
