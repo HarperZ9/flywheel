@@ -65,6 +65,16 @@ See docs/CODE-SESSION.md.
 - The ablation runner refuses a criterion run that gives no readable verdict instead of counting it. (#380)
 - The 1.1.2 notes cite advisory GHSA-g5gv-7893-ff5c. (#381)
 
+## Monitor rule pack
+
+The pre-action monitor's rule pack is unchanged from 1.5.1, so a pinned
+`expected_rules_digest` stays valid. `flywheel monitor owner` prints it as
+`installed_rules_digest`:
+
+```
+a76b7e8995c91861e92ce2198cd62d722deede9fb8307463c68b8aa5d5cdf8c4
+```
+
 ## Limits
 
 - The session is tested with a scripted model through the real agent. It has
