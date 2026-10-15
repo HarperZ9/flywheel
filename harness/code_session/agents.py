@@ -111,33 +111,71 @@ def _child_agent(parent_agent, spec: AgentSpec):
                        "You are a focused subagent. Do the task and answer briefly.")
 
 
-def make_runner(session, agents: dict):
-    """The callable the parent executor's `task` tool uses."""
-    from .session import new_session
-    counter = {"n": 0}
+PARALLEL_SAFE = frozenset(READ_ONLY + ("skill", "todo"))
+MAX_PARALLEL = 4
+TASKS_TOOL_TEXT = ('TOOL tasks {"tasks": [{"agent": "<name>", "prompt": "..."}, ...]}  runs up to '
+                   f"{MAX_PARALLEL} read-only subagents at the same time and returns each answer.")
 
-    def run(args: dict) -> "tuple[bool, str]":
+
+def _spawn(session, spec: AgentSpec, prompt: str, approver):
+    """Run one child to its answer; touches only its own agent and ledger."""
+    from .session import new_session
+    parent = session.executor
+    child = new_session(_child_agent(session.agent, spec), session.root, mode=parent.mode,
+                        approver=approver, runner=parent.runner, max_steps=session.max_steps)
+    child.executor.rules = parent.rules
+    tools = set(spec.tools) if spec.tools is not None else set(ALL_TOOLS)
+    child.executor.allowed_tools = frozenset(tools - {"task", "tasks"})   # no grandchildren
+    child.executor.skills = parent.skills
+    child.checkpoints = session.checkpoints       # a child's edits undo with the turn
+    child.executor.before_write = session.checkpoints.snapshot
+    return child, child.turn(prompt)
+
+
+def make_runner(session, agents: dict):
+    """The callables the parent executor's `task` and `tasks` tools use."""
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+    counter = {"n": 0}
+    lock = threading.Lock()
+
+    def record(spec, child, result) -> str:
+        counter["n"] += 1
+        rec = {"agent": spec.name, "index": counter["n"], "steps": result.steps,
+               "ledger_head": result.checkpoint, "chain_ok": result.verified}
+        session.ledger.append("subagent", json.dumps(rec, sort_keys=True), rec)
+        session.save_child_ledger(counter["n"], spec.name, child.ledger)
+        return f"[{spec.name} | {result.steps} step(s) | ledger {result.checkpoint[:12]}]\n" + result.final
+
+    def resolve(args: dict):
         spec = agents.get(str(args.get("agent", "")))
         prompt = str(args.get("prompt", "")).strip()
-        if spec is None or not prompt:
-            known = ", ".join(sorted(agents))
-            return False, f"[error] task needs a known agent ({known}) and a prompt"
-        parent = session.executor
-        child = new_session(_child_agent(session.agent, spec), session.root,
-                            mode=parent.mode, approver=parent.approver, runner=parent.runner,
-                            max_steps=session.max_steps)
-        child.executor.rules = parent.rules
-        tools = set(spec.tools) if spec.tools is not None else set(ALL_TOOLS)
-        child.executor.allowed_tools = frozenset(tools - {"task"})   # no grandchildren
-        child.executor.skills = parent.skills
-        child.checkpoints = session.checkpoints       # a child's edits undo with the turn
-        child.executor.before_write = session.checkpoints.snapshot
-        result = child.turn(prompt)
-        counter["n"] += 1
-        record = {"agent": spec.name, "index": counter["n"], "steps": result.steps,
-                  "ledger_head": result.checkpoint, "chain_ok": result.verified}
-        session.ledger.append("subagent", json.dumps(record, sort_keys=True), record)
-        session.save_child_ledger(counter["n"], spec.name, child.ledger)
-        return True, f"[{spec.name} | {result.steps} step(s) | ledger {result.checkpoint[:12]}]\n" \
-            + result.final
+        return (spec, prompt) if spec is not None and prompt else (None, None)
+
+    def run(args: dict) -> "tuple[bool, str]":
+        spec, prompt = resolve(args)
+        if spec is None:
+            return False, f"[error] task needs a known agent ({', '.join(sorted(agents))}) and a prompt"
+        child, result = _spawn(session, spec, prompt, session.executor.approver)
+        return True, record(spec, child, result)
+
+    def run_many(args: dict) -> "tuple[bool, str]":
+        jobs = [resolve(a) for a in (args.get("tasks") or []) if isinstance(a, dict)]
+        if not jobs or any(spec is None for spec, _ in jobs) or len(jobs) > MAX_PARALLEL:
+            return False, (f"[error] tasks needs 1 to {MAX_PARALLEL} items, each with a known "
+                           f"agent ({', '.join(sorted(agents))}) and a prompt")
+        unsafe = [s.name for s, _ in jobs if s.tools is None or not set(s.tools) <= PARALLEL_SAFE]
+        if unsafe:
+            return False, ("[error] only read-only subagents run in parallel; "
+                           f"use task one at a time for: {', '.join(sorted(set(unsafe)))}")
+
+        def ask(name, a):
+            with lock:                              # one approval prompt at a time
+                return session.executor.approver(name, a)
+        with ThreadPoolExecutor(max_workers=MAX_PARALLEL) as pool:
+            done = list(pool.map(lambda job: _spawn(session, job[0], job[1], ask), jobs))
+        parts = [record(spec, child, result) for (spec, _), (child, result) in zip(jobs, done)]
+        return True, "\n\n".join(parts)
+
+    run.many = run_many
     return run
