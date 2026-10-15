@@ -29,6 +29,9 @@ def ladder(*, providers: "list[str] | None" = None, local: bool = True,
     if online:
         from harness.endpoints import build_endpoints
         backends += build_endpoints(providers=providers, modes=ONLINE_MODES)
+        if providers is None or set(providers) & {"azure", "bedrock", "vertex"}:
+            from harness.endpoints_cloud import cloud_backends
+            backends += [b for b in cloud_backends() if providers is None or b.name in providers]
     return backends
 
 
