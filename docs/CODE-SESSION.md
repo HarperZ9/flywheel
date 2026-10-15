@@ -302,6 +302,15 @@ budget and the instruction files in force. `@path` in a request attaches that
 file from the project folder (up to 64 KiB each, 5 per request), and the ledger
 records each attached file's sha256.
 
+## Project memory
+
+The agent can keep short notes for a project with its `remember` tool. They go
+to one file per project folder under `memory/` in the Flywheel home, outside
+the project tree, and every new session in that folder starts with the newest
+notes (up to 200 lines or 25 KiB). A note is something the next session will
+read, so it asks in `ask`, runs in `edit` and `auto`, and is refused in `plan`.
+`/memory` lists the notes and `/forget N` removes one; both go on the ledger.
+
 ## Undo and resume
 
 Before a write tool changes a file, the session keeps that file's bytes as they
@@ -322,7 +331,7 @@ refused. `--no-save` keeps a session off disk.
 ## Slash commands
 
 `/help`, `/exit`, `/clear`, `/mode [plan|ask|edit|auto]`, `/model [ID]`,
-`/status`, `/diff`, `/undo`, `/sessions`, `/todo`, `/cost`, `/context`, `/compact`, `/jobs`, `/init`. Slash commands never call
+`/status`, `/diff`, `/undo`, `/sessions`, `/todo`, `/cost`, `/context`, `/compact`, `/jobs`, `/memory`, `/forget`, `/init`. Slash commands never call
 the model.
 
 ## The record

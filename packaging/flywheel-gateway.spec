@@ -192,7 +192,7 @@ a = Analysis(
         # `flywheel doctor` is dispatched by dotted name from cli_entry._PACKAGED.
         "harness.doctor_cli", "harness.setup_cli", "harness.update_cli", "harness.update_auto", "harness.crash_report",
         "harness.code_session.worktree", "harness.code_session.args",
-        "harness.code_session.context", "harness.endpoints_cloud", "harness.code_session.agents",
+        "harness.code_session.context", "harness.code_session.memory", "harness.endpoints_cloud", "harness.code_session.agents",
         "harness.code_session.background",
         "harness.win_wait", "harness.streaming_spawn",
         "harness.code_session.plugins", "harness.code_session.plugin_cli",

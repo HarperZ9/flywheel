@@ -55,6 +55,8 @@ def tool_class(name: str) -> str:
         return "exec"
     if name in NETWORK_TOOLS:
         return "network"
+    if name == "remember":
+        return "memory"
     return "other"           # external MCP tools and anything unknown
 
 
@@ -66,7 +68,7 @@ def mode_decision(mode: str, cls: str) -> str:
         return "deny"
     if mode == "auto":
         return "allow"
-    if mode == "edit" and cls == "write":
+    if mode == "edit" and cls in ("write", "memory"):
         return "allow"
     return "ask"
 
@@ -104,6 +106,7 @@ class SessionExecutor(ToolExecutor):
     allowed_tools: "frozenset | None" = None     # a subagent's tool list; None is all
     task_runner: "Callable[[dict], tuple[bool, str]] | None" = None
     jobs: "object | None" = None                 # background.JobTable
+    memory_path: "object | None" = None          # memory.memory_file for this folder
 
     def set_mode(self, mode: str) -> None:
         self.gate = gate_for(mode)
@@ -206,6 +209,12 @@ class SessionExecutor(ToolExecutor):
         if action == "stop":
             return self.jobs.stop(job)
         return True, self.jobs.listing()
+
+    def _t_remember(self, args) -> "tuple[bool, str]":
+        if self.memory_path is None:
+            return False, "[error] memory is not available in this session"
+        from .memory import remember
+        return remember(self.memory_path, str(args.get("note", "")))
 
     def _t_skill(self, args) -> "tuple[bool, str]":
         from .skills import read_skill
