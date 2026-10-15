@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: HarperZ9/flywheel@v1.7.0   # or a commit
+      - uses: HarperZ9/flywheel@v1.8.0   # or a commit
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         with:
