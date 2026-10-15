@@ -121,9 +121,10 @@ class CodeSession:
             ledger.save(str(folder / f"{index:03d}-{name}.jsonl"))
 
     def set_agents(self, agents: dict) -> None:
-        from .agents import make_runner, system_text
+        from .agents import TASKS_TOOL_TEXT, make_runner, system_text
         self.executor.task_runner = make_runner(self, agents)
         self.agent.system = self.agent.system + "\n\n" + system_text(agents)
+        self.agent.system = self.agent.system + chr(10) + TASKS_TOOL_TEXT
         self.ledger.append("agents", json.dumps(sorted(agents)), {"count": len(agents)})
 
     def persist(self) -> None:

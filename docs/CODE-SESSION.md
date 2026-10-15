@@ -176,8 +176,11 @@ search. A subagent works under the session's permission mode, rules and
 approval prompts, its file changes undo with the turn that started it, and it
 cannot start subagents of its own. The session's ledger records each
 subagent's name, ledger head and whether its chain verifies, and a saved
-session keeps the subagent's ledger in `subagents/`. Subagents run one at a
-time.
+session keeps the subagent's ledger in `subagents/`. The `tasks` tool runs up to
+four read-only subagents (agents whose tools only read, search or keep notes,
+such as `explore`) at the same time and returns their answers in order; an
+agent that can write or run commands runs one at a time through `task`, so two
+agents never edit the tree at once.
 
 ## Plugins
 

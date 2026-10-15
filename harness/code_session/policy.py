@@ -28,7 +28,7 @@ EXEC_TOOLS = frozenset({"run", "run_background"})
 # `task` is allowed in every mode because its child decides each of its own calls
 # under the same mode, rules and approver.
 READ_TOOLS = frozenset({"read_file", "list_dir", "repo_map", "grep", "glob", "todo", "skill",
-                        "task", "processes"})
+                        "task", "tasks", "processes"})
 NETWORK_TOOLS = frozenset({"web_fetch", "web_search"})
 TODO_STATES = ("pending", "in_progress", "done")
 TODO_TOOL_TEXT = (
@@ -173,6 +173,11 @@ class SessionExecutor(ToolExecutor):
         self.todos = clean
         return True, render_todos(clean)
 
+
+    def _t_tasks(self, args) -> "tuple[bool, str]":
+        if self.task_runner is None or not hasattr(self.task_runner, "many"):
+            return False, "[error] subagents are not available here"
+        return self.task_runner.many(args)
 
     def _t_task(self, args) -> "tuple[bool, str]":
         if self.task_runner is None:
