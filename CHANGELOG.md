@@ -3,6 +3,32 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## 1.6.0 (2026-10-15)
+
+Behaviour changes
+- The installed `flywheel` command enters through `cli_entry.console_main`: an unhandled exception writes a local crash report under the Flywheel home and exits 70. `FLYWHEEL_DEBUG=1` shows the traceback instead. (#382)
+- `--help` on gate, up, lanes, loop-status, down, corpus-export and why prints usage and runs nothing; `flywheel gate --help` used to run the gate. (#382)
+- Hosted backends put the provider's token counts on the response as `x_token_usage`; the word-count `usage` field is unchanged. (#384)
+
+flywheel code
+- `flywheel code`: an interactive coding session in the base install, on the gated loop, with `-p` for one request. (#383)
+- Permission modes plan, ask, edit and auto, and `.flywheel/permissions.json` allow and deny rules. (#383, #384)
+- `/undo` checkpoints; sessions saved after every turn with `--continue`, `--resume` and `--sessions`, refused when the chain, head or conversation does not verify. (#384)
+- Project instructions (AGENTS.md, CLAUDE.md, FLYWHEEL.md) and `/init`; `todo` tool; plan-mode prompt; `/cost` with provider-reported tokens; `--output-format json|stream-json`. (#383, #384)
+- MCP servers from `.mcp.json`-shaped files and `flywheel mcp list|add|remove`; Claude Code format hooks; Markdown custom commands; Agent Skills; `web_fetch`. (#384)
+- `--acp`: Flywheel as an Agent Client Protocol agent for editors. (#384)
+- `--worktree NAME` and `--plain`. (#385)
+- Commands in a session run in the OS sandbox with a scratch TEMP and HOME, so `python -m pytest` runs there. (#383)
+
+Install and support
+- `flywheel doctor`, `flywheel update`, local crash reports, issue templates and SUPPORT.md; README and GETTING-STARTED name the current release. (#382)
+- Trace inventory lists code sessions (S25) and crash reports (S26). (#382, #384)
+
+Other
+- The explainer and README show the 1.5.1 release films. (#379)
+- The ablation runner refuses a criterion run that gives no readable verdict. (#380)
+- The 1.1.2 release notes cite GHSA-g5gv-7893-ff5c. (#381)
+
 ## 1.5.1 (2026-10-14)
 
 No runtime change; the Python package changes only in its version number.
