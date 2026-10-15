@@ -2,7 +2,8 @@ name: package-managers
 
 # Installs flywheel with Homebrew (macOS) and Scoop (Windows) from the formula
 # and manifest in this commit, then checks that the installed command reports
-# the version pyproject.toml declares and that `flywheel doctor` finds no FAIL.
+# the version those files pin and that `flywheel doctor` finds no FAIL. The pins
+# job's test bounds the pinned version to pyproject's or the release before it.
 # On a published release, the two files are first pointed at that release with
 # scripts/package_manager_bump.py, which proves the new PyPI files install
 # before the follow-up PR commits them. The daily run fails while PyPI has the
@@ -59,9 +60,11 @@ jobs:
           brew test local/flywheel/flywheel
       - name: Version and doctor
         run: |
-          expected=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          # The version the formula pins: pyproject's, or the release before it while the
+          # follow-up bump is pending (the pins job and its test bound that window).
+          expected=$(python -c "import re; print(re.search(r'flywheel_verify-([0-9.]+)\.tar\.gz', open('Formula/flywheel.rb').read()).group(1))")
           got=$("$(brew --prefix)/bin/flywheel" --version)
-          echo "brew installed: $got (pyproject: $expected)"
+          echo "brew installed: $got (formula pins: $expected)"
           test "$got" = "flywheel $expected"
           "$(brew --prefix)/bin/flywheel" doctor --json > doctor.json
           python -c "import json; c=json.load(open('doctor.json'))['checks']; print(*[(x['check'], x['status'], x['detail']) for x in c], sep='\n'); assert not [x for x in c if x['status']=='FAIL'], c"
@@ -91,10 +94,11 @@ jobs:
       - name: Version and doctor
         shell: pwsh
         run: |
-          $expected = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
+          # The version the manifest pins (see the Homebrew job for the release window).
+          $expected = python -c "import json; print(json.load(open('bucket/flywheel.json'))['version'])"
           $exe = (Get-Command flywheel).Source
           $got = (& flywheel --version).Trim()
-          Write-Output "scoop installed: $got from $exe (pyproject: $expected)"
+          Write-Output "scoop installed: $got from $exe (manifest pins: $expected)"
           if ($exe -notlike "*\scoop\shims\*") { throw "flywheel resolved outside the Scoop shims: $exe" }
           if ($got -ne "flywheel $expected") { throw "expected flywheel $expected, got $got" }
           flywheel doctor --json | Out-File -Encoding utf8 doctor.json

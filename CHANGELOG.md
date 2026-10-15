@@ -3,6 +3,24 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## 1.9.0 (2026-10-15)
+
+Behaviour changes
+- `-p` JSON results carry `harness_config_sha256`, and the ledger gains a `harness_config` entry when settings change.
+
+Install
+- Homebrew formula and Scoop manifest in this repository. (#409)
+
+Checks and reports
+- `flywheel behavior-check A B`: replay scripted sessions on two builds and report MATCH or the first diverging event. (#415)
+- `flywheel report scope`: calls that reached past what was allowed, from saved session ledgers. (#413)
+- A harness-config hash on every turn. (#412)
+- Offline recheck of a swarm fan-in receipt. (#411)
+- Footprint and startup suite, and a gated A/B runner for startup changes. (#414, #416)
+
+Docs
+- Configuration, troubleshooting, and versions and compatibility pages; a test that a 1.6.0 session still resumes. (#408)
+
 ## 1.8.0 (2026-10-15)
 
 Behaviour changes
