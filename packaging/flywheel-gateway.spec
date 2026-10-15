@@ -194,7 +194,7 @@ a = Analysis(
         "harness.code_session.worktree", "harness.code_session.args",
         "harness.code_session.context", "harness.endpoints_cloud", "harness.code_session.agents",
         "harness.code_session.background",
-        "harness.win_wait",
+        "harness.win_wait", "harness.streaming_spawn",
         "harness.code_session.plugins", "harness.code_session.plugin_cli",
         # Desktop Bulletin identity setup is served through the frozen gateway.
         # The source package keeps cryptography optional; the Windows freeze

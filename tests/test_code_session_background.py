@@ -79,8 +79,12 @@ def test_ledger_records_background_events(tmp_path):
                              for e in s.ledger.entries if e.kind == "background"))
 
 
-@pytest.mark.skipif(os.name != "nt", reason="live output and stop are Windows-only for now")
 def test_a_real_sandboxed_job_streams_output_and_stops(tmp_path):
+    from harness.sandboxed_runner import SandboxUnavailable, sandboxed_run
+    try:
+        sandboxed_run("echo probe", str(tmp_path), timeout_seconds=30)
+    except SandboxUnavailable:
+        pytest.skip("this host has no OS sandbox")
     (tmp_path / "loop.py").write_text(
         "import time\nfor i in range(600):\n    print('tick', i, flush=True)\n    time.sleep(0.1)\n",
         encoding="utf-8")
