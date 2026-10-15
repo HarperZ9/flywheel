@@ -185,6 +185,8 @@ a = Analysis(
         "harness.code_session.rules", "harness.code_session.print_mode",
         "harness.token_usage", "harness.code_session.mcp_config",
         "harness.code_session.mcp_cli", "harness.mcp_http",
+        "harness.code_session.hooks", "harness.code_session.commands",
+        "harness.code_session.attach",
         # Desktop Bulletin identity setup is served through the frozen gateway.
         # The source package keeps cryptography optional; the Windows freeze
         # installs .[signing] and must carry the lazy route/import graph.

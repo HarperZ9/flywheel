@@ -100,6 +100,34 @@ as `mcp__<server>__<tool>` and is treated like a command: it asks in `ask` and
 is reported and skipped. `--no-mcp` starts none. Which servers started, from
 which file, and with which tools goes on the ledger.
 
+## Hooks
+
+Hooks use Claude Code's `hooks` format, in `hooks.json` in the Flywheel home
+and the project's `.flywheel/hooks.json`:
+
+```json
+{"hooks": {"PreToolUse": [{"matcher": "write_file|edit_file",
+                           "hooks": [{"type": "command", "command": "python check.py"}]}]}}
+```
+
+Events: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`,
+`Stop`, `SessionEnd`. The command gets the event as JSON on stdin. A
+`UserPromptSubmit` or `PreToolUse` hook blocks by exiting 2 (stderr is the
+reason) or by printing `{"decision": "block", "reason": "..."}`; a blocked tool
+call never runs, and the model is told why. Hook commands run as you, outside
+the command sandbox, so a project's hooks run only after you say yes, or with
+`--trust-project-hooks`. A hooks file that cannot be read stops the session.
+Every hook run, its exit code and whether it blocked go on the ledger.
+
+## Custom commands
+
+A Markdown file in `.flywheel/commands/`, `.claude/commands/` or `commands/`
+in the Flywheel home becomes a slash command named after the file. Its body is
+sent as the request, with `$ARGUMENTS` replaced by the text after the command;
+a `description:` line in front matter shows in `/help`. Built-in commands
+cannot be replaced. Custom commands also work with `-p`, as in
+`flywheel code -p "/review parser.py"`.
+
 ## Todo list
 
 For work with several steps the agent keeps a todo list with its `todo` tool

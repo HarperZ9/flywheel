@@ -72,6 +72,32 @@ class CodeSession:
     home: str = ""                  # set to save after every turn and undo
     usage: dict = field(default_factory=lambda: new_usage())
     mcp_clients: list = field(default_factory=list)
+    hooks: "object | None" = None
+    commands: dict = field(default_factory=dict)
+
+    def set_hooks(self, hooks) -> None:
+        """Attach lifecycle hooks; every run is recorded on the ledger."""
+        self.hooks = hooks
+        hooks.record = lambda run: self.ledger.append(
+            "hook", json.dumps(run, sort_keys=True),
+            {"event": run["event"], "exit": run["exit"], "blocked": run["blocked"]})
+
+        def pre(name, args):
+            out = hooks.fire("PreToolUse", self._hook_base(tool_name=name, tool_input=args),
+                             tool=name)
+            return out.reason if out.blocked else None
+
+        def post(name, args, result):
+            hooks.fire("PostToolUse", self._hook_base(
+                tool_name=name, tool_input=args,
+                tool_response={"ok": result.ok, "output": result.output[:4000]}), tool=name)
+        self.executor.pre_tool, self.executor.post_tool = pre, post
+
+    def _hook_base(self, **extra) -> dict:
+        return {"session_id": self.session_id, "cwd": self.root, **extra}
+
+    def fire(self, event: str, **extra):
+        return self.hooks.fire(event, self._hook_base(**extra)) if self.hooks else None
 
     def close(self) -> None:
         """Stop every MCP server this session started."""
@@ -153,6 +179,12 @@ class CodeSession:
         """Run one user request through the gated tool loop to a final answer."""
         started = time.monotonic()
         before = dict(self.usage)
+        gate = self.fire("UserPromptSubmit", prompt=text)
+        if gate is not None and gate.blocked:
+            self.ledger.append("blocked", text, {"by": "UserPromptSubmit"})
+            return TurnResult(final=f"[blocked by a UserPromptSubmit hook] {gate.reason}",
+                              steps=0, verified=self.ledger.verify(),
+                              checkpoint=self.ledger.checkpoint(), seconds=0.0)
         self.checkpoints.begin_turn()
         if self.pending_note:
             text, self.pending_note = self.pending_note + "\n\n" + text, ""
@@ -162,6 +194,7 @@ class CodeSession:
                            max_steps=self.max_steps, test_cmd=self.test_cmd,
                            on_event=self.on_event)
         self.turns += 1
+        self.fire("Stop", final=result["final"])
         self.persist()
         return TurnResult(final=result["final"], steps=result["steps"],
                           verified=bool(result.get("verified")),

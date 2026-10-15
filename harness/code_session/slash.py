@@ -20,6 +20,8 @@ def _help(_s, _a):
     lines = ["Commands:"]
     for name, (_fn, text) in sorted(COMMANDS.items()):
         lines.append(f"  /{name:<8} {text}")
+    for name, cmd in sorted(getattr(_s, "commands", {}).items()):
+        lines.append(f"  /{name:<8} {cmd.description}")
     lines.append("Anything else is a request to the agent.")
     return "\n".join(lines)
 
@@ -118,12 +120,20 @@ COMMANDS = {
 }
 
 
+class Turn(str):
+    """A custom command's expanded request: the caller runs it as a turn."""
+
+
 def dispatch(session, line: str):
-    """Run a slash command. Returns its text, EXIT, or None if `line` is not one."""
+    """Run a slash command. Returns its text, EXIT, a Turn to send to the agent,
+    or None if `line` is not a command."""
     if not line.startswith("/"):
         return None
     name, _, arg = line[1:].partition(" ")
     entry = COMMANDS.get(name)
-    if entry is None:
-        return f"unknown command /{name}; /help lists them"
-    return entry[0](session, arg)
+    if entry is not None:
+        return entry[0](session, arg)
+    custom = getattr(session, "commands", {}).get(name)
+    if custom is not None:
+        return Turn(custom.expand(arg))
+    return f"unknown command /{name}; /help lists them"

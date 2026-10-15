@@ -88,6 +88,8 @@ class SessionExecutor(ToolExecutor):
     always: set = field(default_factory=set)
     before_write: "Callable[[str, dict], None] | None" = None
     rules: "object | None" = None
+    pre_tool: "Callable[[str, dict], str | None] | None" = None    # returns a block reason
+    post_tool: "Callable[[str, dict, ToolResult], None] | None" = None
     todos: list = field(default_factory=list)
 
     def set_mode(self, mode: str) -> None:
@@ -113,6 +115,19 @@ class SessionExecutor(ToolExecutor):
         return ("allow", "user:yes") if answer == "yes" else ("deny", "user:no")
 
     def execute(self, name: str, args: dict, rationale: "dict | None" = None) -> ToolResult:
+        blocked = self.pre_tool(name, args) if self.pre_tool is not None else None
+        if blocked is not None:
+            if self.on_decision is not None:
+                self.on_decision({"tool": name, "class": tool_class(name), "mode": self.mode,
+                                  "decision": "deny", "by": "hook"})
+            return ToolResult(name, args, False, f"[denied] a PreToolUse hook blocked "
+                              f"this call: {blocked}")
+        result = self._execute_decided(name, args, rationale)
+        if self.post_tool is not None:
+            self.post_tool(name, args, result)
+        return result
+
+    def _execute_decided(self, name: str, args: dict, rationale) -> ToolResult:
         verdict, source = self._decide(name, args)
         if self.on_decision is not None:
             self.on_decision({"tool": name, "class": tool_class(name), "mode": self.mode,
