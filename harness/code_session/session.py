@@ -20,6 +20,7 @@ from harness.local_session import SessionLedger
 from . import instructions as _instructions
 from .backends import describe
 from .checkpoints import CheckpointStore
+from . import context as _context
 from .policy import TODO_TOOL_TEXT, WEB_TOOL_TEXT, SessionExecutor, gate_for
 
 DEFAULT_MAX_STEPS = 25
@@ -72,6 +73,7 @@ class CodeSession:
     home: str = ""                  # set to save after every turn and undo
     usage: dict = field(default_factory=lambda: new_usage())
     mcp_clients: list = field(default_factory=list)
+    compact_budget: int = _context.DEFAULT_BUDGET
     hooks: "object | None" = None
     commands: dict = field(default_factory=dict)
 
@@ -121,6 +123,9 @@ class CodeSession:
         original = self.agent.send
 
         def counted_send(text):
+            folded = _context.maybe_fold(self.agent, self.compact_budget)
+            if folded is not None:
+                _context.record_fold(self.ledger, folded)
             resp = original(text)
             add_usage(self.usage, resp)
             return resp
@@ -194,6 +199,10 @@ class CodeSession:
                               steps=0, verified=self.ledger.verify(),
                               checkpoint=self.ledger.checkpoint(), seconds=0.0)
         self.checkpoints.begin_turn()
+        text, attached = _context.expand_mentions(self.root, text)
+        if attached:
+            self.ledger.append("mention", json.dumps(attached, sort_keys=True),
+                               {"files": len(attached)})
         if self.pending_note:
             text, self.pending_note = self.pending_note + "\n\n" + text, ""
         if self.executor.mode == "plan":

@@ -197,6 +197,17 @@ last, up to 32 KiB in all. It never climbs to your home folder. `/init` drafts
 an `AGENTS.md` for the folder and never overwrites one. `--no-instructions`
 skips them.
 
+## Long sessions and @-mentions
+
+When the conversation passes about 60,000 estimated tokens (`--compact-budget`;
+0 turns it off), the session folds its middle into one summary before the next
+model call. The first request and the latest turns stay verbatim, and the
+ledger keeps the full record and the fold's receipt. `/compact` folds now and
+`/context` shows the estimated size (at about 4 characters per token), the
+budget and the instruction files in force. `@path` in a request attaches that
+file from the project folder (up to 64 KiB each, 5 per request), and the ledger
+records each attached file's sha256.
+
 ## Undo and resume
 
 Before a write tool changes a file, the session keeps that file's bytes as they
@@ -217,7 +228,7 @@ refused. `--no-save` keeps a session off disk.
 ## Slash commands
 
 `/help`, `/exit`, `/clear`, `/mode [plan|ask|edit|auto]`, `/model [ID]`,
-`/status`, `/diff`, `/undo`, `/sessions`, `/todo`, `/cost`, `/init`. Slash commands never call
+`/status`, `/diff`, `/undo`, `/sessions`, `/todo`, `/cost`, `/context`, `/compact`, `/init`. Slash commands never call
 the model.
 
 ## The record
