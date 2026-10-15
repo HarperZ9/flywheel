@@ -245,7 +245,7 @@ class LowIntegrityRunner:
 
     def run(self, argv: list[str], *, env: dict, timeout_seconds: int,
             stdout_path: Path | None = None,
-            stderr_path: Path | None = None) -> int:
+            stderr_path: Path | None = None, cancel=None) -> int:
         if not self.token or not argv or Path(argv[0]).resolve() != Path(argv[0]):
             raise ExecutionInputProtectionUnavailable("protected argv is not absolute")
         job = _job(); process = PROCESS_INFORMATION(); streams = []
@@ -270,8 +270,11 @@ class LowIntegrityRunner:
                 _error("cannot assign verifier job")
             if kernel.ResumeThread(process.hThread) == 0xFFFFFFFF:
                 kernel.TerminateJobObject(job, 1); _error("cannot resume verifier")
-            waited = kernel.WaitForSingleObject(process.hProcess,
-                                                 timeout_seconds * 1000)
+            from .win_wait import CANCELLED, wait_until
+            waited = wait_until(kernel, process.hProcess, timeout_seconds, cancel,
+                                wait_timeout=WAIT_TIMEOUT)
+            if waited == CANCELLED:
+                kernel.TerminateJobObject(job, 130); return 130
             if waited == WAIT_TIMEOUT:
                 kernel.TerminateJobObject(job, 124)
                 kernel.WaitForSingleObject(process.hProcess, 10_000)

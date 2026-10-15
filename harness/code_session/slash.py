@@ -113,6 +113,10 @@ def _compact(s, _a):
     return "folded the middle of the conversation into a summary; the ledger keeps the full record"
 
 
+def _jobs(s, _a):
+    return s.executor.jobs.listing() if s.executor.jobs is not None else "(no job table)"
+
+
 def _init(s, _a):
     ok, message = _instructions.write_init(s.root)
     return message
@@ -132,6 +136,7 @@ COMMANDS = {
     "cost": (_cost, "tokens used this session, as the provider reported them"),
     "context": (_context_cmd, "estimated conversation size, compaction, instruction files"),
     "compact": (_compact, "fold the middle of the conversation now"),
+    "jobs": (_jobs, "background jobs and their state"),
     "init": (_init, "draft an AGENTS.md for this folder (never overwrites)"),
 }
 

@@ -102,7 +102,9 @@ class CodeSession:
         return self.hooks.fire(event, self._hook_base(**extra)) if self.hooks else None
 
     def close(self) -> None:
-        """Stop every MCP server this session started."""
+        """Stop background jobs and every MCP server this session started."""
+        if self.executor.jobs is not None:
+            self.executor.jobs.stop_all()
         for client in self.mcp_clients:
             try:
                 client.close()
@@ -134,6 +136,9 @@ class CodeSession:
         if self.checkpoints is None:
             self.checkpoints = CheckpointStore(self.root)
         self.executor.before_write = self.checkpoints.snapshot
+        from .background import JobTable
+        self.executor.jobs = JobTable(self.root, record=lambda kind, data: self.ledger.append(
+            "background", json.dumps({"event": kind, **data}, sort_keys=True), {"event": kind}))
         original = self.agent.send
 
         def counted_send(text):
@@ -242,6 +247,9 @@ def new_session(agent, root: str, *, mode: str = "ask", approver=None,
     executor = SessionExecutor(root=root, gate=gate_for(mode), runner=runner, mode=mode)
     if approver is not None:
         executor.approver = approver
+    from .background import TOOL_TEXT as BG_TEXT
+    if BG_TEXT not in agent.system:
+        agent.system = agent.system + chr(10) + BG_TEXT
     if WEB_TOOL_TEXT not in agent.system:
         agent.system = agent.system + "\n" + WEB_TOOL_TEXT
     if TODO_TOOL_TEXT not in agent.system:
