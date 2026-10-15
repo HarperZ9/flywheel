@@ -364,6 +364,61 @@ so a difference between them comes from the model or the task, not from
 Flywheel's settings. The user's own words and an "always" answer given at a
 prompt are not in the hash.
 
+## Checking that two builds behave the same
+
+`flywheel behavior-check A B` takes two Flywheel source trees, such as a
+release candidate and the last release, or a branch before and after a
+refactor. It runs a fixed set of scripted sessions with
+`flywheel code -p --output-format stream-json` on each tree and compares them:
+
+```text
+$ flywheel behavior-check ../flywheel-1.8.0 .
+behavior-check: DRIFT
+  first divergence: scenario todo_list, stream requests, event 1, at .messages[3].content
+  A: "...TOOL todo -> ok:\n[>] read the readme\n[ ] add a line..."
+  B: "...TOOL todo -> ok:\n[>] read the readme\n[-] add a line..."
+13 scenario(s): 1 DRIFT, 12 MATCH
+  DRIFT        todo_list
+```
+
+Each session runs in a fresh copy of a small fixture project with its own home,
+temp folder and Flywheel home. The model is a scripted OpenAI-compatible server
+that answers from a fixed script and records every request body; the session is
+pinned to it, and provider keys and base URLs are removed from the session's
+environment, so no real model is called. The scenarios cover reading, paged
+reading, writing, editing, shell commands, the todo list, ask and plan mode
+refusals, a deny rule, a blocking hook, a multi-step search and patch, the step
+limit, project instructions and tool errors.
+
+Five streams are compared per scenario, in this order: the model request
+bodies, the stream-json events, the sha256 of every file in the project after
+the run, the exit code and the sequence of ledger entry kinds. Before the
+comparison, only the rules in `harness/behavior_check/normalization.json`
+apply: the run's own folder paths, session and run ids, timestamps, file
+modification times, durations, and the ledger head, which is a hash over those.
+The report names the first diverging event: the scenario, the stream, the
+index in that stream and the field. `--json` prints the full report,
+`--receipt PATH` also writes it as a sealed record, and `--scenario NAME`
+runs one scenario. The exit code is 0 for MATCH, 1 for DRIFT and 2 when the
+check could not run.
+
+Measured on Windows with the 13 shipped scenarios, before any tuning: 20 of 20
+planted behavior changes reported DRIFT (95% Clopper-Pearson interval 0.83 to
+1.00), and 0 of 50 unchanged pairs reported DRIFT (0.00 to 0.07). The planted
+changes included a system prompt line, a removed tool, a renamed or reordered
+tool in the prompt, a tool description, a read size limit, an off-by-one in
+grep line numbers, a looser permission mode, a tool result format, the step
+limit, the exit code, a ledger entry kind and the bytes a write leaves on disk.
+The unchanged pairs were 20 reruns of one build, 15 builds that differ only in
+comments, docstrings or whitespace, and 15 runs from a copy in another folder
+with other temp and Flywheel home folders. The normalization rules and every
+patch were hashed before the first run.
+
+The check covers only behavior the scenarios exercise. A change in a path no
+scenario reaches reports MATCH. The planted changes were written by the same
+people who wrote the scenarios, so they are not an independent sample of real
+regressions, and the run did not cover Linux or macOS.
+
 ## Screen readers
 
 `--plain` (or `FLYWHEEL_SCREEN_READER=1`) prints tool activity in words, such
