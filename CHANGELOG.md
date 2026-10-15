@@ -3,6 +3,26 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## 1.7.0 (2026-10-15)
+
+Behaviour changes
+- Long `flywheel code` sessions fold automatically past `--compact-budget` (default about 60,000 estimated tokens; 0 is off).
+- `sandboxed_run` takes `cancel` and `work_hook`; the Windows low-integrity runner waits in slices when cancellable.
+
+flywheel code
+- Automatic compaction, `@path` mentions, `/context`, `/compact`.
+- Subagents from Markdown files and a `task` tool.
+- `flywheel mcp login` and `logout`: OAuth for HTTP MCP servers.
+- Background jobs: `run_background`, `processes`, `/jobs`.
+- Plugins: `flywheel plugin install | list | remove`.
+
+Reach
+- The repository is a GitHub Action, with an end-to-end smoke against a stub model.
+- One-line installers (`install.sh`, `install.ps1`) and a three-OS first-run check in CI.
+- A VS Code extension, packaged as a `.vsix` with the standard library.
+- A docs site built from the repository and published to GitHub Pages; `docs/LICENSING.md`.
+- Package metadata for PyPI. (#388)
+
 ## 1.6.0 (2026-10-15)
 
 Behaviour changes
