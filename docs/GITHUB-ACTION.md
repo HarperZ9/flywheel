@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: HarperZ9/flywheel@v1.6.0
+      - uses: HarperZ9/flywheel@main   # pin a release tag or a commit
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         with:
@@ -20,7 +20,8 @@ jobs:
           test-cmd: "python -m pytest -q"
 ```
 
-Pin the action to a release tag or a commit. The step fails when the request's
+The action ships in releases after 1.6.0; pin it to such a tag or to a commit.
+The step fails when the request's
 test gate fails or no model answers.
 
 ## Inputs
