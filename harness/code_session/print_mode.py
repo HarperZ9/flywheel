@@ -6,7 +6,8 @@ stream-json  one JSON object per loop event as it happens, then the result
 
 The result object carries the final answer, steps, seconds, the test verdict
 when a test command was set, the ledger head and whether the chain verifies,
-token counts as the provider reported them, and the saved session id. The exit
+token counts as the provider reported them, the saved session id, and the
+hash of the harness settings the turn ran under (config_hash.py). The exit
 code is 0, 1 when the test gate failed or the model could not be reached.
 """
 from __future__ import annotations
@@ -33,7 +34,8 @@ def result_object(session, result) -> dict:
             "steps": result.steps, "seconds": round(result.seconds, 3),
             "tests_pass": result.tests_pass, "ledger_head": result.checkpoint,
             "chain_ok": result.verified, "usage": result.usage,
-            "session_id": session.session_id or None, "mode": session.executor.mode}
+            "session_id": session.session_id or None, "mode": session.executor.mode,
+            "harness_config_sha256": getattr(session, "config_sha256", "") or None}
 
 
 def run_print(session, prompt: str, fmt: str) -> int:
