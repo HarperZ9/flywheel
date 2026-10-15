@@ -219,6 +219,13 @@ STORES = (
           note="each <id>/ folder holds the hash-chained ledger (requests, model replies, "
                "tool calls and outputs, permission decisions) and meta.json with the "
                "conversation (observed, harness/code_session/store.py)"),
+    Store("S27", "Project memory notes (flywheel code)", "home", ("memory",), ("C1",),
+          _plain("short notes the agent keeps per project folder and reads at the next "
+                 "session start; encryption at rest is not designed in this round", "7.16"),
+          EXPORT, NOT_DESIGNED, owner_binding="home",
+          retention="kept until you remove them with /forget or delete the file",
+          note="one Markdown file per project folder, outside the project tree "
+               "(observed, harness/code_session/memory.py)"),
     Store("S26", "Local crash reports", "home", ("crashes",), ("C1", "C4"),
           _plain("written for the owner to read and choose to share; home paths and "
                  "secret-named environment values are redacted before writing", "7.16"),

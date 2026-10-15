@@ -164,6 +164,16 @@ class CodeSession:
                            {"count": len(self.loaded)})
         return self.loaded
 
+    def set_memory(self, home: str) -> None:
+        from .memory import TOOL_TEXT, memory_file, notes, system_text
+        self.executor.memory_path = memory_file(home, self.root)
+        self.agent.system = self.agent.system + chr(10) + TOOL_TEXT
+        kept = system_text(self.executor.memory_path)
+        if kept:
+            self.agent.system = self.agent.system + chr(10) + chr(10) + kept
+        self.ledger.append("memory", str(len(notes(self.executor.memory_path))),
+                           {"notes": len(notes(self.executor.memory_path))})
+
     def set_skills(self, skills: dict) -> None:
         from .skills import system_text
         self.executor.skills = skills

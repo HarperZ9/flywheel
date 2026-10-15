@@ -117,6 +117,7 @@ def build_session(args, *, backends=None, approver=None, runner=None, on_event=N
         resume.restore(session, home, session_id)
     session.compact_budget = args.compact_budget
     session.set_rules(rules)
+    session.set_memory(home)
     from .skills import load_skills
     session.set_skills(load_skills(root, home))
     from .agents import load_agents

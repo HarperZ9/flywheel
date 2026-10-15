@@ -117,6 +117,24 @@ def _jobs(s, _a):
     return s.executor.jobs.listing() if s.executor.jobs is not None else "(no job table)"
 
 
+def _memory(s, _a):
+    from .memory import notes
+    path = s.executor.memory_path
+    if path is None:
+        return "memory is off in this session"
+    current = notes(path)
+    return "\n".join(f"{i}. {n}" for i, n in enumerate(current, 1)) or "(no notes yet)"
+
+
+def _forget(s, arg):
+    from .memory import forget
+    path = s.executor.memory_path
+    if path is None or not arg.strip().isdigit() or not forget(path, int(arg)):
+        return "usage: /forget N, where N is a note number from /memory"
+    s.ledger.append("forget", arg.strip(), {"index": int(arg)})
+    return f"forgot note {arg.strip()}"
+
+
 def _init(s, _a):
     ok, message = _instructions.write_init(s.root)
     return message
@@ -137,6 +155,8 @@ COMMANDS = {
     "context": (_context_cmd, "estimated conversation size, compaction, instruction files"),
     "compact": (_compact, "fold the middle of the conversation now"),
     "jobs": (_jobs, "background jobs and their state"),
+    "memory": (_memory, "notes kept for this project across sessions"),
+    "forget": (_forget, "remove a note by its number"),
     "init": (_init, "draft an AGENTS.md for this folder (never overwrites)"),
 }
 
