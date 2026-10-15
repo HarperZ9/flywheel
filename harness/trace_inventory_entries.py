@@ -210,4 +210,13 @@ STORES = (
           EXPORT, NOT_DESIGNED, owner_binding="home",
           note="sealed records carry digests; args/ side files and pending holds carry raw "
                "tool arguments; sessions/ carries the owner's prompt as the run goal"),
+    Store("S25", "Terminal coding sessions (flywheel code)", "home", ("sessions",),
+          ("C1", "C2", "C4", "C5"),
+          _plain("saved so a session can resume; encryption at rest is not designed in "
+                 "this round", "7.16"),
+          EXPORT, NOT_DESIGNED, owner_binding="home",
+          retention="kept until you delete the session folder",
+          note="each <id>/ folder holds the hash-chained ledger (requests, model replies, "
+               "tool calls and outputs, permission decisions) and meta.json with the "
+               "conversation (observed, harness/code_session/store.py)"),
 )
