@@ -32,3 +32,17 @@ the time a real provider takes to answer, which dominates a real first turn.
 No other harness is compared here: their published figures come from other
 machines and other definitions, and measuring them side by side needs a
 terminal driver this suite does not have yet.
+
+## Gating a startup change
+
+`scripts/ab_startup.py` runs two builds in alternating order (20 pairs by
+default) and accepts a change only when the 95% bootstrap interval of the warm
+time to prompt lies below zero and no neighbor (cold time, memory, `--version`
+time) regresses by more than 5% with its interval above zero. Every
+experiment, accepted or refused, goes into a hash-chained record.
+
+On four planted changes to 1.8.0 it refused a comment-only change, a 50 ms
+import delay (cold start +43 ms, interval +18 to +68 ms) and a change holding
+20 MB at import (+20.3 MB). It also refused a real import deferral worth about
+15 ms by import timing, because 20 pairs on this machine resolve about 50 ms;
+the accept path has been exercised only on synthetic numbers so far.
