@@ -167,6 +167,18 @@ subagent's name, ledger head and whether its chain verifies, and a saved
 session keeps the subagent's ledger in `subagents/`. Subagents run one at a
 time.
 
+## Plugins
+
+A plugin bundles commands, subagents, skills, hooks and MCP servers in the
+folder shape Claude Code plugins use (`commands/`, `agents/`, `skills/`,
+`hooks/hooks.json`, `.mcp.json`, and `plugin.json` or
+`.claude-plugin/plugin.json`). `flywheel plugin install <folder or git URL>`
+shows what the plugin adds, lists every hook command and MCP server command it
+would run, and installs it after a yes (`--yes` skips the question). A git
+source is cloned and its commit recorded. Installed plugins load like your own
+user-level files. `flywheel plugin list` and `flywheel plugin remove NAME`
+manage them. There is no plugin marketplace yet.
+
 ## Skills
 
 Agent Skills folders (a folder with a `SKILL.md` whose front matter has a

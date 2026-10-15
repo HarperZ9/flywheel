@@ -199,7 +199,7 @@ _PACKAGED = {"acp": "harness.acp_cli", "dap": "harness.dap_cli",
              "monitor": "harness.preaction.cli", "rederive": "harness.rederive_gate",
              "verify-share": "harness.verification_share_cli",
              "anchor": "harness.anchor_cli", "code": "harness.code_session.cli",
-             "mcp": "harness.code_session.mcp_cli",
+             "mcp": "harness.code_session.mcp_cli", "plugin": "harness.code_session.plugin_cli",
              "doctor": "harness.doctor_cli", "update": "harness.update_cli"}
 def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
     module = _PACKAGED.get(command)
