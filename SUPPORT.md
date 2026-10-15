@@ -23,4 +23,7 @@ by that name. Nothing is sent; read the file, then attach it to an issue if you
 want to. Set `FLYWHEEL_DEBUG=1` to see the raw traceback instead.
 
 `flywheel update` checks PyPI for a newer release (one request, only when you
-run it) and prints the upgrade step for the way you installed Flywheel.
+run it) and prints the upgrade step for the way you installed Flywheel. `flywheel update --apply` performs that
+step for a pip or installer-script install, and `flywheel update --auto on`
+turns on a check at the start of `flywheel code`, at most once a week, that
+prints one line when a newer release exists and never installs anything.

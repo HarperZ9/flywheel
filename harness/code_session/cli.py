@@ -206,6 +206,17 @@ def _serve_acp(args) -> int:
     return serve(make_session)
 
 
+def _update_notice() -> None:
+    """The opt-in weekly release check (`flywheel update --auto on`); never installs."""
+    from harness import update_auto
+    from harness.cli_version import installed_version
+    from harness.update_cli import latest_from_pypi
+    line = update_auto.notice(_home(), installed_version(),
+                              lambda: latest_from_pypi(timeout=2.0))
+    if line:
+        print(line, file=sys.stderr)
+
+
 def main(argv: "list[str] | None" = None) -> int:
     args = parse_args(argv)
     if args.plain:
@@ -237,6 +248,7 @@ def main(argv: "list[str] | None" = None) -> int:
     if worktree is not None:
         session.ledger.append("worktree", json.dumps(worktree.record(), sort_keys=True),
                               {"created": worktree.created})
+    _update_notice()
     session.fire("SessionStart")
     try:
         if session.agent.live_backend() is None:
