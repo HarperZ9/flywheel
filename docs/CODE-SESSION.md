@@ -131,6 +131,32 @@ a `description:` line in front matter shows in `/help`. Built-in commands
 cannot be replaced. Custom commands also work with `-p`, as in
 `flywheel code -p "/review parser.py"`.
 
+## Subagents
+
+The agent can hand a piece of work to a subagent with its `task` tool. A
+subagent starts on a fresh conversation with its own system prompt and its own
+hash-chained ledger, and returns its final answer. Subagents are Markdown files
+in `.flywheel/agents/`, `.claude/agents/` or `agents/` in the Flywheel home:
+
+```markdown
+---
+name: reviewer
+description: reviews a diff for bugs and missing tests
+tools: read_file, grep, glob, list_dir
+model: claude-sonnet-5
+---
+You review changes. Report each bug with its file and line.
+```
+
+`tools` limits what the subagent may call; `model` picks another model on the
+same backend. One subagent is built in: `explore`, which can only read and
+search. A subagent works under the session's permission mode, rules and
+approval prompts, its file changes undo with the turn that started it, and it
+cannot start subagents of its own. The session's ledger records each
+subagent's name, ledger head and whether its chain verifies, and a saved
+session keeps the subagent's ledger in `subagents/`. Subagents run one at a
+time.
+
 ## Skills
 
 Agent Skills folders (a folder with a `SKILL.md` whose front matter has a

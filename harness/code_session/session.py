@@ -110,6 +110,20 @@ class CodeSession:
                 pass
         self.mcp_clients.clear()
 
+    def save_child_ledger(self, index: int, name: str, ledger) -> None:
+        """Keep a subagent's ledger beside the session's, when the session is saved."""
+        if self.home and self.session_id:
+            from .store import sessions_dir
+            folder = sessions_dir(self.home) / self.session_id / "subagents"
+            folder.mkdir(parents=True, exist_ok=True)
+            ledger.save(str(folder / f"{index:03d}-{name}.jsonl"))
+
+    def set_agents(self, agents: dict) -> None:
+        from .agents import make_runner, system_text
+        self.executor.task_runner = make_runner(self, agents)
+        self.agent.system = self.agent.system + "\n\n" + system_text(agents)
+        self.ledger.append("agents", json.dumps(sorted(agents)), {"count": len(agents)})
+
     def persist(self) -> None:
         if self.home:
             from .store import save
