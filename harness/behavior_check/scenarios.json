@@ -1,0 +1,208 @@
+{
+ "schema": "flywheel.behavior-check-scenarios/v1",
+ "scenarios": [
+  {
+   "name": "read_small",
+   "mode": "edit",
+   "prompt": "what is in notes.txt?",
+   "files": {
+    "notes.txt": "alpha\nbeta\ngamma\n"
+   },
+   "replies": [
+    "TOOL read_file {\"path\": \"notes.txt\"}",
+    "The file has three lines."
+   ]
+  },
+  {
+   "name": "read_paged",
+   "mode": "edit",
+   "prompt": "summarize big.txt",
+   "files": {
+    "big.txt": "line 0000 of the long file\nline 0001 of the long file\nline 0002 of the long file\nline 0003 of the long file\nline 0004 of the long file\nline 0005 of the long file\nline 0006 of the long file\nline 0007 of the long file\nline 0008 of the long file\nline 0009 of the long file\nline 0010 of the long file\nline 0011 of the long file\nline 0012 of the long file\nline 0013 of the long file\nline 0014 of the long file\nline 0015 of the long file\nline 0016 of the long file\nline 0017 of the long file\nline 0018 of the long file\nline 0019 of the long file\nline 0020 of the long file\nline 0021 of the long file\nline 0022 of the long file\nline 0023 of the long file\nline 0024 of the long file\nline 0025 of the long file\nline 0026 of the long file\nline 0027 of the long file\nline 0028 of the long file\nline 0029 of the long file\nline 0030 of the long file\nline 0031 of the long file\nline 0032 of the long file\nline 0033 of the long file\nline 0034 of the long file\nline 0035 of the long file\nline 0036 of the long file\nline 0037 of the long file\nline 0038 of the long file\nline 0039 of the long file\nline 0040 of the long file\nline 0041 of the long file\nline 0042 of the long file\nline 0043 of the long file\nline 0044 of the long file\nline 0045 of the long file\nline 0046 of the long file\nline 0047 of the long file\nline 0048 of the long file\nline 0049 of the long file\nline 0050 of the long file\nline 0051 of the long file\nline 0052 of the long file\nline 0053 of the long file\nline 0054 of the long file\nline 0055 of the long file\nline 0056 of the long file\nline 0057 of the long file\nline 0058 of the long file\nline 0059 of the long file\nline 0060 of the long file\nline 0061 of the long file\nline 0062 of the long file\nline 0063 of the long file\nline 0064 of the long file\nline 0065 of the long file\nline 0066 of the long file\nline 0067 of the long file\nline 0068 of the long file\nline 0069 of the long file\nline 0070 of the long file\nline 0071 of the long file\nline 0072 of the long file\nline 0073 of the long file\nline 0074 of the long file\nline 0075 of the long file\nline 0076 of the long file\nline 0077 of the long file\nline 0078 of the long file\nline 0079 of the long file\nline 0080 of the long file\nline 0081 of the long file\nline 0082 of the long file\nline 0083 of the long file\nline 0084 of the long file\nline 0085 of the long file\nline 0086 of the long file\nline 0087 of the long file\nline 0088 of the long file\nline 0089 of the long file\nline 0090 of the long file\nline 0091 of the long file\nline 0092 of the long file\nline 0093 of the long file\nline 0094 of the long file\nline 0095 of the long file\nline 0096 of the long file\nline 0097 of the long file\nline 0098 of the long file\nline 0099 of the long file\nline 0100 of the long file\nline 0101 of the long file\nline 0102 of the long file\nline 0103 of the long file\nline 0104 of the long file\nline 0105 of the long file\nline 0106 of the long file\nline 0107 of the long file\nline 0108 of the long file\nline 0109 of the long file\nline 0110 of the long file\nline 0111 of the long file\nline 0112 of the long file\nline 0113 of the long file\nline 0114 of the long file\nline 0115 of the long file\nline 0116 of the long file\nline 0117 of the long file\nline 0118 of the long file\nline 0119 of the long file\nline 0120 of the long file\nline 0121 of the long file\nline 0122 of the long file\nline 0123 of the long file\nline 0124 of the long file\nline 0125 of the long file\nline 0126 of the long file\nline 0127 of the long file\nline 0128 of the long file\nline 0129 of the long file\nline 0130 of the long file\nline 0131 of the long file\nline 0132 of the long file\nline 0133 of the long file\nline 0134 of the long file\nline 0135 of the long file\nline 0136 of the long file\nline 0137 of the long file\nline 0138 of the long file\nline 0139 of the long file\nline 0140 of the long file\nline 0141 of the long file\nline 0142 of the long file\nline 0143 of the long file\nline 0144 of the long file\nline 0145 of the long file\nline 0146 of the long file\nline 0147 of the long file\nline 0148 of the long file\nline 0149 of the long file\nline 0150 of the long file\nline 0151 of the long file\nline 0152 of the long file\nline 0153 of the long file\nline 0154 of the long file\nline 0155 of the long file\nline 0156 of the long file\nline 0157 of the long file\nline 0158 of the long file\nline 0159 of the long file\nline 0160 of the long file\nline 0161 of the long file\nline 0162 of the long file\nline 0163 of the long file\nline 0164 of the long file\nline 0165 of the long file\nline 0166 of the long file\nline 0167 of the long file\nline 0168 of the long file\nline 0169 of the long file\nline 0170 of the long file\nline 0171 of the long file\nline 0172 of the long file\nline 0173 of the long file\nline 0174 of the long file\nline 0175 of the long file\nline 0176 of the long file\nline 0177 of the long file\nline 0178 of the long file\nline 0179 of the long file\nline 0180 of the long file\nline 0181 of the long file\nline 0182 of the long file\nline 0183 of the long file\nline 0184 of the long file\nline 0185 of the long file\nline 0186 of the long file\nline 0187 of the long file\nline 0188 of the long file\nline 0189 of the long file\nline 0190 of the long file\nline 0191 of the long file\nline 0192 of the long file\nline 0193 of the long file\nline 0194 of the long file\nline 0195 of the long file\nline 0196 of the long file\nline 0197 of the long file\nline 0198 of the long file\nline 0199 of the long file\nline 0200 of the long file\nline 0201 of the long file\nline 0202 of the long file\nline 0203 of the long file\nline 0204 of the long file\nline 0205 of the long file\nline 0206 of the long file\nline 0207 of the long file\nline 0208 of the long file\nline 0209 of the long file\nline 0210 of the long file\nline 0211 of the long file\nline 0212 of the long file\nline 0213 of the long file\nline 0214 of the long file\nline 0215 of the long file\nline 0216 of the long file\nline 0217 of the long file\nline 0218 of the long file\nline 0219 of the long file\nline 0220 of the long file\nline 0221 of the long file\nline 0222 of the long file\nline 0223 of the long file\nline 0224 of the long file\nline 0225 of the long file\nline 0226 of the long file\nline 0227 of the long file\nline 0228 of the long file\nline 0229 of the long file\nline 0230 of the long file\nline 0231 of the long file\nline 0232 of the long file\nline 0233 of the long file\nline 0234 of the long file\nline 0235 of the long file\nline 0236 of the long file\nline 0237 of the long file\nline 0238 of the long file\nline 0239 of the long file\n"
+   },
+   "replies": [
+    "TOOL read_file {\"path\": \"big.txt\"}",
+    "TOOL read_file {\"path\": \"big.txt\", \"offset\": 4000, \"max_bytes\": 1200}",
+    "The file lists numbered lines."
+   ]
+  },
+  {
+   "name": "write_new",
+   "mode": "edit",
+   "prompt": "create out/hello.txt",
+   "replies": [
+    "TOOL write_file {\"path\": \"out/hello.txt\", \"content\": \"hello from the scripted model\\n\"}",
+    "TOOL list_dir {\"path\": \"out\"}",
+    "Wrote out/hello.txt."
+   ]
+  },
+  {
+   "name": "edit_existing",
+   "mode": "edit",
+   "prompt": "make greet return hello",
+   "files": {
+    "app.py": "def greet():\n    return 'hi'\n\n\ndef x():\n    return 'x'\n"
+   },
+   "replies": [
+    "TOOL edit_file {\"path\": \"app.py\", \"old\": \"return 'hi'\", \"new\": \"return 'hello'\"}",
+    "TOOL edit_file {\"path\": \"app.py\", \"old\": \"no such text\", \"new\": \"x\"}",
+    "TOOL edit_file {\"path\": \"app.py\", \"old\": \"x\", \"new\": \"y\"}",
+    "TOOL read_file {\"path\": \"app.py\"}",
+    "greet now returns hello."
+   ]
+  },
+  {
+   "name": "run_command",
+   "mode": "auto",
+   "prompt": "run the two checks",
+   "replies": [
+    "TOOL run {\"cmd\": \"echo behavior-check\"}",
+    "TOOL run {\"cmd\": \"exit 3\"}",
+    "One check passed and one exited 3."
+   ]
+  },
+  {
+   "name": "ask_mode_refusals",
+   "mode": "ask",
+   "prompt": "write a file and run a command",
+   "files": {
+    "keep.txt": "kept\n"
+   },
+   "replies": [
+    "TOOL write_file {\"path\": \"denied.txt\", \"content\": \"should not exist\\n\"}",
+    "TOOL run {\"cmd\": \"echo hi\"}",
+    "TOOL read_file {\"path\": \"keep.txt\"}",
+    "Both calls were refused."
+   ]
+  },
+  {
+   "name": "plan_mode",
+   "mode": "plan",
+   "prompt": "plan a change to app.py",
+   "files": {
+    "app.py": "VALUE = 1\n"
+   },
+   "replies": [
+    "TOOL read_file {\"path\": \"app.py\"}",
+    "TOOL edit_file {\"path\": \"app.py\", \"old\": \"1\", \"new\": \"2\"}",
+    "1. Change the constant in app.py. 2. Run the tests."
+   ]
+  },
+  {
+   "name": "permission_rule_deny",
+   "mode": "auto",
+   "prompt": "write two files",
+   "files": {
+    ".flywheel/permissions.json": {
+     "allow": [],
+     "deny": [
+      "write_file:secret*",
+      "run:git push*"
+     ]
+    }
+   },
+   "replies": [
+    "TOOL write_file {\"path\": \"secret.txt\", \"content\": \"no\\n\"}",
+    "TOOL write_file {\"path\": \"open.txt\", \"content\": \"yes\\n\"}",
+    "TOOL run {\"cmd\": \"git push origin main\"}",
+    "secret.txt was refused by a rule; open.txt was written."
+   ]
+  },
+  {
+   "name": "hook_block",
+   "mode": "edit",
+   "prompt": "edit the config",
+   "files": {
+    "config.ini": "[a]\nb = 1\n",
+    ".flywheel/hooks.json": {
+     "hooks": {
+      "PreToolUse": [
+       {
+        "matcher": "write_file|edit_file",
+        "hooks": [
+         {
+          "type": "command",
+          "command": "\"{python}\" .flywheel/block.py"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    ".flywheel/block.py": "import sys\nsys.stdin.read()\nsys.stderr.write('config files are frozen')\nsys.exit(2)\n"
+   },
+   "args": [
+    "--trust-project-hooks"
+   ],
+   "replies": [
+    "TOOL write_file {\"path\": \"config.ini\", \"content\": \"[a]\\nb = 2\\n\"}",
+    "TOOL read_file {\"path\": \"config.ini\"}",
+    "A hook blocked the write."
+   ]
+  },
+  {
+   "name": "todo_list",
+   "mode": "edit",
+   "prompt": "plan and do two steps",
+   "files": {
+    "README.md": "# Demo\n"
+   },
+   "replies": [
+    "TOOL todo {\"items\": [{\"text\": \"read the readme\", \"status\": \"in_progress\"}, {\"text\": \"add a line\", \"status\": \"pending\"}]}",
+    "TOOL read_file {\"path\": \"README.md\"}",
+    "TOOL todo {\"items\": [{\"text\": \"read the readme\", \"status\": \"done\"}, {\"text\": \"add a line\", \"status\": \"in_progress\"}]}",
+    "TOOL edit_file {\"path\": \"README.md\", \"old\": \"# Demo\\n\", \"new\": \"# Demo\\n\\nA second line.\\n\"}",
+    "TOOL todo {\"items\": [{\"text\": \"read the readme\", \"status\": \"done\"}, {\"text\": \"add a line\", \"status\": \"done\"}]}",
+    "TOOL todo {\"items\": [{\"text\": \"bad\", \"status\": \"finished\"}]}",
+    "Both steps are done."
+   ]
+  },
+  {
+   "name": "multi_step_search",
+   "mode": "auto",
+   "prompt": "find and fix the typo",
+   "files": {
+    "pkg/__init__.py": "",
+    "pkg/mod.py": "def recieve(x):\n    return x\n",
+    "pkg/other.py": "import os\n"
+   },
+   "replies": [
+    "TOOL repo_map {\"path\": \".\"}",
+    "TOOL glob {\"pattern\": \"**/*.py\"}",
+    "TOOL grep {\"pattern\": \"recieve\", \"path\": \".\", \"glob\": \"*.py\"}",
+    "TOOL read_file {\"path\": \"pkg/mod.py\"}",
+    "TOOL apply_patch {\"patch\": \"--- a/pkg/mod.py\\n+++ b/pkg/mod.py\\n@@ -1,2 +1,2 @@\\n-def recieve(x):\\n+def receive(x):\\n     return x\\n\"}",
+    "TOOL grep {\"pattern\": \"recieve|receive\", \"path\": \".\"}",
+    "TOOL run {\"cmd\": \"echo fixed\"}",
+    "Fixed the typo in pkg/mod.py."
+   ]
+  },
+  {
+   "name": "step_limit",
+   "mode": "edit",
+   "prompt": "keep looking",
+   "files": {
+    "a.txt": "a\n"
+   },
+   "replies": [
+    "TOOL list_dir {\"path\": \".\"}"
+   ]
+  },
+  {
+   "name": "instructions_and_errors",
+   "mode": "edit",
+   "prompt": "follow the project rules",
+   "files": {
+    "AGENTS.md": "# Rules\nAnswer in one line.\n",
+    "src/main.py": "print('x')\n"
+   },
+   "replies": [
+    "TOOL frobnicate {\"x\": 1}",
+    "TOOL read_file {\"path\": \"../outside.txt\"}",
+    "TOOL read_file {\"path\": \"missing.txt\"}",
+    "TOOL list_dir {\"path\": \".\"}",
+    "Done, in one line."
+   ]
+  }
+ ]
+}
