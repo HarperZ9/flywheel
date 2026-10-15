@@ -41,9 +41,14 @@ def sandboxed_run(
     timeout_seconds: int = 120,
     scratch_home: bool = False,
     extra_env: "dict[str, str] | None" = None,
+    cancel=None, work_hook=None,
 ) -> tuple[bool, str]:
     """Run `cmd` under this host's sandbox, rooted at `root`.
 
+    `cancel` (a threading.Event) stops the command early on Windows, exit 130;
+    `work_hook(work_dir)` is called before the command starts, so a caller can
+    read stdout.txt and stderr.txt there while it runs. On POSIX hosts neither
+    applies yet: the command runs to its end or its timeout.
     `extra_env` adds plain settings (never credentials; those go through
     `bindings` so they are scrubbed from output) on top of the built
     environment.
@@ -75,7 +80,10 @@ def sandboxed_run(
         if scratch_home:
             env.update({name: str(work) for name in ("HOME", "TEMP", "TMP")})
         env.update(extra_env or {})
-        rc = _execute(source, work, cmd, env, timeout_seconds, stdout_path, stderr_path)
+        if work_hook is not None:
+            work_hook(work)
+        rc = _execute(source, work, cmd, env, timeout_seconds, stdout_path, stderr_path,
+                      cancel)
         out = _redact(_read_output(stdout_path, stderr_path), bindings)
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -205,7 +213,8 @@ def _build_posix_env(bindings: CredentialBindings | None,
 
 
 def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
-             timeout_seconds: int, stdout_path: Path, stderr_path: Path) -> int:
+             timeout_seconds: int, stdout_path: Path, stderr_path: Path,
+             cancel=None) -> int:
     """Enter the low-integrity namespace and run `cmd` inside it.
 
     Raises SandboxUnavailable (never the lower-level
@@ -222,7 +231,8 @@ def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
         with protect_execution_namespace(source, work) as runner:
             return runner.run(
                 argv, env=env, timeout_seconds=timeout_seconds,
-                stdout_path=stdout_path, stderr_path=stderr_path)
+                stdout_path=stdout_path, stderr_path=stderr_path,
+                **({"cancel": cancel} if cancel is not None else {}))
     except ExecutionInputProtectionUnavailable as e:
         raise SandboxUnavailable(str(e)) from e
 

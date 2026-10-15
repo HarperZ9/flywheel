@@ -30,7 +30,8 @@ from harness.local_tools import ToolResult
 PROTOCOL_VERSION = 1
 KIND = {"read_file": "read", "list_dir": "read", "repo_map": "read", "skill": "read",
         "grep": "search", "glob": "search", "write_file": "edit", "edit_file": "edit",
-        "apply_patch": "edit", "run": "execute", "web_fetch": "fetch", "todo": "think"}
+        "apply_patch": "edit", "run": "execute", "run_background": "execute",
+        "processes": "execute", "web_fetch": "fetch", "todo": "think"}
 OPTIONS = [{"optionId": "allow", "name": "Allow", "kind": "allow_once"},
            {"optionId": "always", "name": "Always allow", "kind": "allow_always"},
            {"optionId": "reject", "name": "Reject", "kind": "reject_once"}]

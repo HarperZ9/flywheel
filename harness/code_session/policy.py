@@ -24,11 +24,11 @@ from harness.local_tools import ToolExecutor, ToolGate, ToolResult
 
 MODES = ("plan", "ask", "edit", "auto")
 WRITE_TOOLS = frozenset({"write_file", "edit_file", "apply_patch"})
-EXEC_TOOLS = frozenset({"run"})
+EXEC_TOOLS = frozenset({"run", "run_background"})
 # `task` is allowed in every mode because its child decides each of its own calls
 # under the same mode, rules and approver.
 READ_TOOLS = frozenset({"read_file", "list_dir", "repo_map", "grep", "glob", "todo", "skill",
-                        "task"})
+                        "task", "processes"})
 NETWORK_TOOLS = frozenset({"web_fetch"})
 TODO_STATES = ("pending", "in_progress", "done")
 TODO_TOOL_TEXT = (
@@ -102,6 +102,7 @@ class SessionExecutor(ToolExecutor):
     skills: dict = field(default_factory=dict)
     allowed_tools: "frozenset | None" = None     # a subagent's tool list; None is all
     task_runner: "Callable[[dict], tuple[bool, str]] | None" = None
+    jobs: "object | None" = None                 # background.JobTable
 
     def set_mode(self, mode: str) -> None:
         self.gate = gate_for(mode)
@@ -177,6 +178,22 @@ class SessionExecutor(ToolExecutor):
         if self.task_runner is None:
             return False, "[error] subagents are not available here"
         return self.task_runner(args)
+    def _t_run_background(self, args) -> "tuple[bool, str]":
+        cmd = str(args.get("cmd", ""))
+        refused = self.gate.check("run", {"cmd": cmd})   # same exec gate and denylist
+        if refused or not cmd.strip() or self.jobs is None:
+            return False, f"[gate] {refused or 'no command, or no job table'}"
+        return self.jobs.start(cmd)
+
+    def _t_processes(self, args) -> "tuple[bool, str]":
+        if self.jobs is None:
+            return False, "[error] background jobs are not available here"
+        action, job = str(args.get("action", "list")), str(args.get("id", ""))
+        if action == "output":
+            return self.jobs.output(job)
+        if action == "stop":
+            return self.jobs.stop(job)
+        return True, self.jobs.listing()
 
     def _t_skill(self, args) -> "tuple[bool, str]":
         from .skills import read_skill

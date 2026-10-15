@@ -225,6 +225,17 @@ tools from writing caches into the tree. A host with no sandbox refuses
 commands unless `FLYWHEEL_ALLOW_UNSANDBOXED=1` is set, and then every output is
 labeled unsandboxed.
 
+## Background jobs
+
+`run_background` starts a long command, such as a dev server or a watcher, in
+the same sandbox as `run` and under the same permission mode, rules and
+denylist, and returns a job id at once. The agent reads a job's output and
+stops it with its `processes` tool; `/jobs` lists jobs. A job runs for at most
+30 minutes and every job stops when the session ends. On Windows the output can
+be read while the job runs and stop ends it at once; on Linux and macOS this
+release reads the output when the job ends, and stop takes effect at the time
+limit.
+
 ## Project instructions
 
 The session reads `AGENTS.md`, `CLAUDE.md` and `FLYWHEEL.md` from the folder up
@@ -264,7 +275,7 @@ refused. `--no-save` keeps a session off disk.
 ## Slash commands
 
 `/help`, `/exit`, `/clear`, `/mode [plan|ask|edit|auto]`, `/model [ID]`,
-`/status`, `/diff`, `/undo`, `/sessions`, `/todo`, `/cost`, `/context`, `/compact`, `/init`. Slash commands never call
+`/status`, `/diff`, `/undo`, `/sessions`, `/todo`, `/cost`, `/context`, `/compact`, `/jobs`, `/init`. Slash commands never call
 the model.
 
 ## The record

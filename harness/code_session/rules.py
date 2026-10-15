@@ -25,7 +25,7 @@ USER_FILE = "permissions.json"
 
 
 def subject(name: str, args: dict) -> str:
-    if name == "run":
+    if name in ("run", "run_background"):
         return str(args.get("cmd", ""))
     if name == "web_fetch":
         return str(args.get("url", ""))
