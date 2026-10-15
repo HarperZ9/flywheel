@@ -57,6 +57,8 @@ def parse_args(argv):
                     help="start the project's MCP servers without asking")
     ap.add_argument("--trust-project-hooks", action="store_true",
                     help="run the project's hooks without asking")
+    ap.add_argument("--acp", action="store_true",
+                    help="serve the Agent Client Protocol on stdin and stdout for an editor")
     ap.add_argument("--output-format", choices=("text", "json", "stream-json"), default="text",
                     help="with -p: text, one JSON result, or one JSON object per event")
     args = ap.parse_args(argv)
@@ -221,11 +223,24 @@ def repl(session) -> int:
             print("\n[turn stopped]", file=sys.stderr)
 
 
+def _serve_acp(args) -> int:
+    import copy
+    from .acp_agent import serve
+
+    def make_session(cwd: str):
+        local = copy.copy(args)
+        local.root = os.path.abspath(cwd)
+        return build_session(local, approver=deny_all, on_event=None)
+    return serve(make_session)
+
+
 def main(argv: "list[str] | None" = None) -> int:
     args = parse_args(argv)
     if args.sessions:
         print(resume.render_list(_home(), args.root))
         return 0
+    if args.acp:
+        return _serve_acp(args)
     interactive = args.prompt is None
     try:
         session = build_session(args, approver=prompt_approver if interactive else deny_all,

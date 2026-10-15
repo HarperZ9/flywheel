@@ -146,6 +146,19 @@ runs in `auto`, and is refused in `plan`. Permission rules match the URL, so
 `"deny": ["web_fetch:https://*.example.com/*"]` works. There is no web search
 tool yet.
 
+## In an editor (ACP)
+
+`flywheel code --acp` speaks the Agent Client Protocol (protocol version 1,
+written against schema v1.25.0) on stdin and stdout, so an ACP editor can host
+Flywheel. In Zed, for example, add an agent server whose command is `flywheel`
+with arguments `["code", "--acp"]`. Each editor session opens a coding session
+in the editor's folder; the model's words stream as message chunks and every
+tool call shows as a tool call with its result. A call the permission mode
+would ask about goes to the editor as a permission request (allow, always
+allow, reject). Cancelling in the editor stops the turn at the next model or
+tool call. The MCP server list an editor sends with a new session is not
+started yet; the servers in your Flywheel and project config are.
+
 ## Todo list
 
 For work with several steps the agent keeps a todo list with its `todo` tool
