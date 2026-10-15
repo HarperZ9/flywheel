@@ -78,6 +78,10 @@ def load(root: str, home: "str | None", *, trust_project: bool = False,
     errors: list = []
     entries = _parse(Path(home) / USER_FILE, errors) if home and \
         (Path(home) / USER_FILE).is_file() else []
+    from .plugins import plugin_roots
+    for plugin in plugin_roots(home):                     # installed by the user: trusted
+        if (plugin / "hooks" / "hooks.json").is_file():
+            entries += _parse(plugin / "hooks" / "hooks.json", errors)
     project = Path(root) / PROJECT_FILE
     loaded = False
     if project.is_file():

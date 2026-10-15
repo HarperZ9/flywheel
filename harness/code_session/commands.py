@@ -47,6 +47,8 @@ def load_commands(root: str, home: "str | None", reserved=()) -> dict:
     folders = [Path(root) / d for d in PROJECT_DIRS]
     if home:
         folders.append(Path(home) / "commands")
+    from .plugins import plugin_roots
+    folders += [r / "commands" for r in plugin_roots(home)]
     found: dict = {}
     for folder in folders:
         if not folder.is_dir():

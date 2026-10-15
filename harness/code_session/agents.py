@@ -78,7 +78,9 @@ def _parse(path: Path) -> "AgentSpec | None":
 
 def load_agents(root: str, home: "str | None") -> dict:
     found = dict(BUILTIN)
+    from .plugins import plugin_roots
     folders = [Path(root) / d for d in PROJECT_DIRS] + ([Path(home) / "agents"] if home else [])
+    folders += [r / "agents" for r in plugin_roots(home)]
     for folder in folders:
         for path in sorted(folder.glob("*.md")) if folder.is_dir() else []:
             try:

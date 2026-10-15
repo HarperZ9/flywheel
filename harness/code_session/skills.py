@@ -43,6 +43,8 @@ def load_skills(root: str, home: "str | None") -> dict:
     folders = [Path(root) / d for d in PROJECT_DIRS]
     if home:
         folders.append(Path(home) / "skills")
+    from .plugins import plugin_roots
+    folders += [r / "skills" for r in plugin_roots(home)]
     found: dict = {}
     for folder in folders:
         if not folder.is_dir():

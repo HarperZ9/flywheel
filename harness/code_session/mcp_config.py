@@ -85,6 +85,8 @@ def load_specs(root: str, home: "str | None") -> "tuple[list[ServerSpec], list[s
     found: list[ServerSpec] = []
     paths = ([(Path(home) / USER_FILE, True)] if home else []) + \
         [(Path(root) / rel, False) for rel in PROJECT_FILES]
+    from .plugins import plugin_roots
+    paths += [(r / ".mcp.json", True) for r in plugin_roots(home)]   # installed: trusted
     for path, trusted in paths:
         if path.is_file():
             for spec in _parse(path, trusted, errors):
