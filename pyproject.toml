@@ -19,7 +19,7 @@ build-backend = "setuptools.build_meta"
 # an unrelated package, so this publishes under a scoped name. The installed
 # console command stays `flywheel` (see [project.scripts]).
 name = "flywheel-verify"
-version = "1.5.1"
+version = "1.6.0"
 description = "Run any model, keep a receipt you can recheck offline."
 readme = "README.md"
 # 3.11, not 3.10, because `datetime.UTC` landed in 3.11 and 51 modules use it.
