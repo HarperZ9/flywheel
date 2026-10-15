@@ -5,6 +5,8 @@
   flywheel mcp add NAME --url https://host/mcp
   flywheel mcp add NAME --project -- COMMAND ...   in .flywheel/mcp.json here
   flywheel mcp remove NAME [--project]
+  flywheel mcp login NAME                         sign in to an HTTP server (OAuth)
+  flywheel mcp logout NAME
 
 The files use the mcpServers shape Claude Code and Cursor read.
 """
@@ -80,6 +82,37 @@ def cmd_remove(args) -> int:
     return 0
 
 
+def _spec(name: str):
+    specs, _ = load_specs(os.getcwd(), _home())
+    return next((s for s in specs if s.name == name), None)
+
+
+def cmd_login(args) -> int:
+    from .mcp_oauth import OAuthError, login, save_token
+    spec = _spec(args.name)
+    if spec is None or not spec.url:
+        print(f"{args.name} is not a configured HTTP server (see `flywheel mcp list`)",
+              file=sys.stderr)
+        return 2
+    try:
+        record = login(spec.url)
+    except OAuthError as e:
+        print(f"sign-in stopped: {e}", file=sys.stderr)
+        return 1
+    where = save_token(_home(), args.name, record)
+    print(f"signed in to {args.name}; the token is kept in {where}")
+    return 0
+
+
+def cmd_logout(args) -> int:
+    from .mcp_oauth import delete_token
+    if delete_token(_home(), args.name):
+        print(f"removed the stored token for {args.name}")
+        return 0
+    print(f"no stored token for {args.name}")
+    return 1
+
+
 def main(argv: "list[str] | None" = None) -> int:
     ap = argparse.ArgumentParser(prog="flywheel mcp", description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -92,11 +125,15 @@ def main(argv: "list[str] | None" = None) -> int:
     rm = sub.add_parser("remove", help="remove a server")
     rm.add_argument("name")
     rm.add_argument("--project", action="store_true")
+    for verb, text in (("login", "sign in to an HTTP server with OAuth"),
+                       ("logout", "forget the stored token")):
+        sub.add_parser(verb, help=text).add_argument("name")
     raw = list(sys.argv[1:] if argv is None else argv)
     command = raw[raw.index("--") + 1:] if "--" in raw else []
     args = ap.parse_args(raw[:raw.index("--")] if "--" in raw else raw)
     args.command = command
-    return {"list": cmd_list, "add": cmd_add, "remove": cmd_remove}[args.cmd](args)
+    return {"list": cmd_list, "add": cmd_add, "remove": cmd_remove, "login": cmd_login,
+            "logout": cmd_logout}[args.cmd](args)
 
 
 if __name__ == "__main__":

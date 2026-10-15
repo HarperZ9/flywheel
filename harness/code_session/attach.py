@@ -44,7 +44,7 @@ def attach_mcp(session, root: str, home: str, *, interactive: bool, trust: bool)
     if not specs:
         return
     rows = attach(session, specs, ask=ask_project_server if interactive else None,
-                  trust_project=trust)
+                  trust_project=trust, home=home)
     for row in rows:
         started = row["status"] == "started"
         detail = f"{len(row.get('tools', []))} tool(s)" if started else row.get("reason", "")
