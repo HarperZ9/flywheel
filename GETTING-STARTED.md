@@ -32,6 +32,24 @@ python -m pip install flywheel-verify
 (`flywheel-verify` is the PyPI distribution name; the installed command is
 `flywheel`. From a source checkout: `pip install -e .`.)
 
+Or install it with a package manager. Homebrew on macOS or Linux:
+
+```bash
+brew tap HarperZ9/flywheel https://github.com/HarperZ9/flywheel
+brew install flywheel
+```
+
+Scoop on Windows, which installs Scoop's Python first if it is missing:
+
+```powershell
+scoop bucket add flywheel https://github.com/HarperZ9/flywheel
+scoop install flywheel
+```
+
+Both put the `flywheel` command on PATH in its own environment. A new release
+reaches them in a commit made after it is on PyPI. Run `brew upgrade flywheel`
+or `scoop update flywheel` to move to it.
+
 Zero runtime dependencies. Python 3.11+. Stdlib only. No model download is
 required: the engine works immediately against any hosted provider you hold a
 key for, and local models are an optional layer (ollama needs no extras; the

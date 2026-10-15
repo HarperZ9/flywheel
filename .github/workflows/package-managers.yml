@@ -1,0 +1,119 @@
+name: package-managers
+
+# Installs flywheel with Homebrew (macOS) and Scoop (Windows) from the formula
+# and manifest in this commit, then checks that the installed command reports
+# the version pyproject.toml declares and that `flywheel doctor` finds no FAIL.
+# On a published release, the two files are first pointed at that release with
+# scripts/package_manager_bump.py, which proves the new PyPI files install
+# before the follow-up PR commits them. The daily run fails while PyPI has the
+# declared version and the committed files still pin an older one.
+
+on:
+  pull_request:
+    paths: ["Formula/**", "bucket/**", "scripts/package_manager_bump.py",
+            "tests/test_package_manager_manifests.py", "pyproject.toml",
+            ".github/workflows/package-managers.yml"]
+  release:
+    types: [published]
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pins:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Pinned digests match PyPI
+        if: github.event_name != 'release'
+        env:
+          FLYWHEEL_CHECK_PYPI: "1"
+        run: |
+          python -m pip install --quiet pytest pytest-timeout
+          python -m pytest -q -p no:cacheprovider tests/test_package_manager_manifests.py
+
+  homebrew:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Point the formula at the published release
+        if: github.event_name == 'release'
+        run: python scripts/package_manager_bump.py "${GITHUB_REF_NAME#v}"
+      - name: Install from a local tap holding this commit's formula
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: |
+          brew tap-new --no-git local/flywheel
+          cp Formula/flywheel.rb "$(brew --repository local/flywheel)/Formula/flywheel.rb"
+          brew install local/flywheel/flywheel
+          brew test local/flywheel/flywheel
+      - name: Version and doctor
+        run: |
+          expected=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          got=$("$(brew --prefix)/bin/flywheel" --version)
+          echo "brew installed: $got (pyproject: $expected)"
+          test "$got" = "flywheel $expected"
+          "$(brew --prefix)/bin/flywheel" doctor --json > doctor.json
+          python -c "import json; c=json.load(open('doctor.json'))['checks']; print(*[(x['name'], x['status']) for x in c], sep='\n'); assert not [x for x in c if x['status']=='FAIL'], c"
+
+  scoop:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Point the manifest at the published release
+        if: github.event_name == 'release'
+        shell: bash
+        run: python scripts/package_manager_bump.py "${GITHUB_REF_NAME#v}"
+      - name: Install Scoop
+        shell: pwsh
+        run: |
+          # Hosted runners run as administrator; Scoop refuses that without -RunAsAdmin.
+          Invoke-Expression "& {$(Invoke-RestMethod -Uri https://get.scoop.sh)} -RunAsAdmin"
+          Add-Content $env:GITHUB_PATH (Join-Path $env:USERPROFILE "scoop\shims")
+      - name: Install from this commit's manifest
+        shell: pwsh
+        run: |
+          scoop install .\bucket\flywheel.json
+          if ($LASTEXITCODE -ne 0) { throw "scoop install exited $LASTEXITCODE" }
+      - name: Version and doctor
+        shell: pwsh
+        run: |
+          $expected = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
+          $exe = (Get-Command flywheel).Source
+          $got = (& flywheel --version).Trim()
+          Write-Output "scoop installed: $got from $exe (pyproject: $expected)"
+          if ($exe -notlike "*\scoop\shims\*") { throw "flywheel resolved outside the Scoop shims: $exe" }
+          if ($got -ne "flywheel $expected") { throw "expected flywheel $expected, got $got" }
+          flywheel doctor --json | Out-File -Encoding utf8 doctor.json
+          python -c "import json; c=json.load(open('doctor.json', encoding='utf-8-sig'))['checks']; print(*[(x['name'], x['status']) for x in c], sep='\n'); assert not [x for x in c if x['status']=='FAIL'], c"
+      - name: Scoop autoupdate reproduces the pinned URL and hash
+        if: github.event_name != 'release'
+        shell: pwsh
+        run: |
+          $work = Join-Path $env:RUNNER_TEMP "bucket-copy"
+          New-Item -ItemType Directory -Force $work | Out-Null
+          Copy-Item .\bucket\flywheel.json $work
+          $checkver = Join-Path (scoop prefix scoop) "bin\checkver.ps1"
+          & $checkver -App flywheel -Dir $work -ForceUpdate
+          $pinned = Get-Content .\bucket\flywheel.json -Raw | ConvertFrom-Json
+          $updated = Get-Content (Join-Path $work "flywheel.json") -Raw | ConvertFrom-Json
+          Write-Output "checkver found $($updated.version); pinned $($pinned.version)"
+          if ($updated.version -ne $pinned.version) {
+            Write-Output "PyPI is ahead of the pin; the pins job reports that drift."
+            exit 0
+          }
+          if ($updated.url -ne $pinned.url) { throw "autoupdate url $($updated.url) differs from $($pinned.url)" }
+          if ($updated.hash -ne $pinned.hash) { throw "autoupdate hash $($updated.hash) differs from $($pinned.hash)" }

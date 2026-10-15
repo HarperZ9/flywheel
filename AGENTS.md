@@ -30,6 +30,17 @@ archived and read-only; nothing lands there.
   GitHub Release.
 - `pyproject.toml`, `desktop/pubspec.yaml`, and `desktop/lib/version.dart`
   declare one version; `tests/test_version_alignment.py` fails on drift.
+- Homebrew and Scoop: `Formula/flywheel.rb` (PyPI sdist) and
+  `bucket/flywheel.json` (PyPI wheel) pin one release by URL and SHA-256. Those
+  digests exist only after `publish.yml` has put the release on PyPI, so the
+  release PR leaves both files on the previous release. Right after the
+  release is on PyPI, run `python scripts/package_manager_bump.py` and merge the
+  two files in a follow-up PR. `tests/test_package_manager_manifests.py` allows
+  them to trail `pyproject.toml` by that one release only; with
+  `FLYWHEEL_CHECK_PYPI=1` it also fails once PyPI has the declared version and
+  they still pin the older one. `.github/workflows/package-managers.yml`
+  installs through both package managers on PRs that touch them and on each
+  published release (bumped in the runner first), and runs the PyPI check daily.
 
 ## Gates that must stay green (run before a commit that touches them)
 - `python scripts/check_file_gate.py`: no file over 300 lines. The burn-down only shrinks.

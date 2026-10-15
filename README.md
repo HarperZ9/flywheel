@@ -97,6 +97,9 @@ Or install the command in its own environment with one line (Python 3.11 or
 newer): `curl -fsSL https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.sh | sh`
 on macOS and Linux, or `irm https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.ps1 | iex`
 in PowerShell on Windows.
+With a package manager, use `brew tap HarperZ9/flywheel https://github.com/HarperZ9/flywheel`
+and `brew install flywheel` on macOS or Linux, or `scoop bucket add flywheel https://github.com/HarperZ9/flywheel`
+and `scoop install flywheel` on Windows.
 
 `flywheel code` opens a session in the current folder: the agent reads, edits
 and runs your tests across turns, asks before it writes or runs anything (or
@@ -487,6 +490,19 @@ flywheel up
 `flywheel-verify` is the PyPI distribution name (the bare `flywheel` name is an
 unrelated package); the installed command is `flywheel`. Zero runtime
 dependencies, stdlib only.
+
+Homebrew (macOS, Linux) and Scoop (Windows) install the same release from the
+formula and manifest kept in this repository:
+
+```
+brew tap HarperZ9/flywheel https://github.com/HarperZ9/flywheel
+brew install flywheel
+```
+
+```
+scoop bucket add flywheel https://github.com/HarperZ9/flywheel
+scoop install flywheel
+```
 
 **No model download required.** The engine is ready for real work the moment
 it installs: point it at any hosted provider you hold a key for (the roster
