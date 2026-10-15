@@ -22,10 +22,9 @@ from .backends import build_agent, describe, ladder
 from .policy import deny_all
 from .session import new_session
 
-NO_BACKEND = ("No model is reachable. Set a provider key (for example "
-              "ANTHROPIC_API_KEY or OPENAI_API_KEY), start a local server such as "
-              "ollama, or put the claude or codex CLI on PATH. `flywheel doctor` "
-              "shows what is set.")
+NO_BACKEND = ("No model is reachable. Run `flywheel setup` to connect one (it stores a "
+              "provider key in your OS credential store), start a local server such as "
+              "ollama, or put the claude or codex CLI on PATH.")
 
 
 def _home() -> str:

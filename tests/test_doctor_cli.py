@@ -8,7 +8,8 @@ SECRET = "sk-test-DOCTOR-must-never-print-0123456789"
 
 
 def test_keys_are_reported_by_name_never_value():
-    c = doctor_cli.check_keys({"ANTHROPIC_API_KEY": SECRET, "OPENAI_API_KEY": "  "})
+    c = doctor_cli.check_keys({"ANTHROPIC_API_KEY": SECRET, "OPENAI_API_KEY": "  "},
+                             stored=lambda n: False)
     assert c["status"] == "OK"
     assert "ANTHROPIC_API_KEY" in c["detail"]
     assert "OPENAI_API_KEY" not in c["detail"]          # blank is not set
@@ -16,7 +17,7 @@ def test_keys_are_reported_by_name_never_value():
 
 
 def test_no_keys_is_a_warning_with_a_next_step():
-    c = doctor_cli.check_keys({})
+    c = doctor_cli.check_keys({}, stored=lambda n: False)
     assert c["status"] == "WARN" and c["fix"]
 
 
@@ -66,3 +67,8 @@ def test_local_server_probe_is_loopback_only():
 def test_doctor_is_a_packaged_command():
     from harness import cli_entry
     assert cli_entry._PACKAGED["doctor"] == "harness.doctor_cli"
+
+
+def test_a_key_in_the_credential_store_counts_by_name():
+    c = doctor_cli.check_keys({}, stored=lambda n: n == "GEMINI_API_KEY")
+    assert c["status"] == "OK" and c["detail"] == "set: GEMINI_API_KEY (credential store)"
