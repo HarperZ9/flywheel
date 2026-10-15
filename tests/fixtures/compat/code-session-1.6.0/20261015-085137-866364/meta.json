@@ -1,0 +1,34 @@
+{
+ "schema": "flywheel.code-session/v1",
+ "id": "20261015-085137-866364",
+ "root": "/work/project",
+ "mode": "edit",
+ "turns": 1,
+ "updated": 1792079497.0740693,
+ "ledger_head": "aaafd8ee8b42a00532846d7e9411daaa8b68b21d480859179016cf8abcba50e1",
+ "history": [
+  {
+   "role": "user",
+   "content": "write notes.txt"
+  },
+  {
+   "role": "assistant",
+   "content": "TOOL write_file {\"path\": \"notes.txt\", \"content\": \"compat fixture\"}"
+  },
+  {
+   "role": "user",
+   "content": "TOOL RESULTS:\nTOOL write_file -> ok:\nwrote 14 bytes to notes.txt\n\nContinue if you need more tools, otherwise give the final answer with no TOOL line."
+  },
+  {
+   "role": "assistant",
+   "content": "Wrote notes.txt."
+  }
+ ],
+ "todos": [],
+ "usage": {
+  "model_calls": 2,
+  "input_tokens": 20,
+  "output_tokens": 4,
+  "uncounted_calls": 0
+ }
+}
