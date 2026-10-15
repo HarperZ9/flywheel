@@ -44,6 +44,8 @@ Discourse and writing
 
 Orchestration and action
 - [forum](forum.md): witnessed causal ledger and model-agnostic routing.
+- [footprint](footprint.md): installed size, time to the `flywheel code` prompt and
+  memory at that point, measured on a release build.
 - [accountable-surface](accountable-surface.md): witnessed perception, an operator-grant
   gate, self-verifying effectors, and a tamper-evident journal.
 - [coherence-membrane](coherence-membrane.md): externalized perception organs into
