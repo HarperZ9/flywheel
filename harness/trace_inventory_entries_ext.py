@@ -198,4 +198,7 @@ STATIC_MODULE_EXEMPTIONS = {
     "harness/sandboxed_runner.py:fw_sandbox_*": "Windows sandbox scratch beside the agent "
         "workspace, outside FLYWHEEL_HOME and the run root; it holds one command's output "
         "and is removed when the command ends",
+    "harness/behavior_check/run.py:bc-*": "behavior-check scratch for one scripted session "
+        "under a temporary folder the caller names: a fixture project, a throwaway "
+        "FLYWHEEL_HOME and temp folder; removed when the session's streams are read",
 }
