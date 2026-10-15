@@ -3,6 +3,25 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## 1.8.0 (2026-10-15)
+
+Behaviour changes
+- `flywheel doctor` counts provider keys in the OS credential store, by name.
+- `remember` is a memory permission class: refused in plan, allowed in edit and auto, asks in ask.
+
+Connect and reach
+- `flywheel setup` stores a provider key in the OS credential store. (#398)
+- Azure OpenAI, Amazon Bedrock and Google Vertex AI backends. (#399)
+- `flywheel update --apply` and an opt-in weekly update check. (#404)
+
+flywheel code
+- `web_search` (SearXNG, Brave, or DuckDuckGo with no key). (#400)
+- Parallel read-only subagents through `tasks`. (#401)
+- Plugin marketplaces and `install NAME@MARKETPLACE`. (#402)
+- Background jobs stream and stop on Linux and macOS. (#403)
+- PermissionRequest, PreCompact, PostCompact, SubagentStart and SubagentStop hooks. (#405)
+- Project memory notes, `/memory`, `/forget`. (#406)
+
 ## 1.7.0 (2026-10-15)
 
 Behaviour changes
