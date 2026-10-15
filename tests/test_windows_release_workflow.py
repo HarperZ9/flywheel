@@ -18,6 +18,9 @@ def _actions_pinned(text: str) -> None:
     for line in text.splitlines():
         stripped = line.strip()
         if stripped.startswith("- uses:") or stripped.startswith("uses:"):
+            target = stripped.split("uses:", 1)[1].strip()
+            if target.startswith("./"):
+                continue  # this repository's own action, at the commit under test
             ref = stripped.split("@", 1)[1].split()[0]
             assert len(ref) == 40 and all(
                 c in "0123456789abcdef" for c in ref.lower()), (
