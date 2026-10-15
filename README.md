@@ -97,6 +97,9 @@ not, with `--mode edit` or `--mode auto`), and records every step on a
 hash-chained ledger. It uses a local model server when one is running, or any
 provider key you have set. See [docs/CODE-SESSION.md](docs/CODE-SESSION.md).
 
+To run a request in CI, the repository is also a GitHub Action; see
+[docs/GITHUB-ACTION.md](docs/GITHUB-ACTION.md).
+
 For the engine on its own:
 
 ```powershell

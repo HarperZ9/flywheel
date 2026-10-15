@@ -1,0 +1,50 @@
+name: action smoke
+
+on:
+  pull_request:
+    paths: ["action.yml", "harness/code_session/**", "scripts/ci_stub_model.py",
+            ".github/workflows/action-smoke.yml"]
+  push:
+    branches: [main]
+    paths: ["action.yml", "harness/code_session/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Start a scripted model
+        run: |
+          python3 scripts/ci_stub_model.py 8099 \
+            'TOOL write_file {"path": "smoke/hello.txt", "content": "written by the action"}' \
+            'Wrote smoke/hello.txt.' &
+          sleep 1
+      - name: Run the action from this checkout
+        id: fw
+        uses: ./
+        env:
+          OPENAI_API_KEY: ci-stub-not-a-key
+          CODEX_BASE_URL: http://127.0.0.1:8099/v1
+        with:
+          prompt: write smoke/hello.txt
+          mode: edit
+          package: .
+          max-steps: "4"
+          backend: codex
+      - name: Check what the run did and recorded
+        env:
+          RESULT: ${{ steps.fw.outputs.result }}
+        run: |
+          test "$(cat smoke/hello.txt)" = "written by the action"
+          python3 - <<'PY'
+          import json, os
+          r = json.load(open(os.environ["RESULT"]))
+          assert r["schema"] == "flywheel.code-result/v1", r
+          assert r["chain_ok"] is True, r
+          assert r["final"] == "Wrote smoke/hello.txt.", r
+          assert r["usage"]["input_tokens"] > 0, r
+          print("action smoke: PASS", r["ledger_head"][:16])
+          PY

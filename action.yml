@@ -1,0 +1,89 @@
+name: Flywheel code
+description: Run one flywheel code request on the checked-out repository and keep its ledger as an artifact.
+branding:
+  icon: check-circle
+  color: gray-dark
+inputs:
+  prompt:
+    description: The request for the agent, for example "fix the failing test".
+    required: true
+  mode:
+    description: Permission mode, plan, edit or auto. ask is not useful here; nobody is there to answer.
+    default: edit
+  version:
+    description: flywheel-verify version to install, for example 1.6.0. Empty installs the latest.
+    default: ""
+  package:
+    description: A pip requirement to install in place of flywheel-verify, for example a path to a checkout. Overrides version.
+    default: ""
+  python-version:
+    description: Python for the run (3.11 or newer).
+    default: "3.12"
+  working-directory:
+    description: Folder the session works in.
+    default: .
+  backend:
+    description: Pin a backend by name (for example claude, codex, gemini); auto takes the first one reachable.
+    default: auto
+  max-steps:
+    description: Step budget for the request.
+    default: "25"
+  test-cmd:
+    description: Optional test command the request must pass before it counts as done.
+    default: ""
+  allow-unsandboxed:
+    description: Set to "true" to run commands bare (labeled) on a runner with no OS sandbox.
+    default: "false"
+outputs:
+  result:
+    description: Path of the flywheel.code-result/v1 JSON for the request.
+    value: ${{ steps.run.outputs.result }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Install Flywheel
+      shell: bash
+      env:
+        FW_VERSION: ${{ inputs.version }}
+        FW_PACKAGE: ${{ inputs.package }}
+      run: |
+        if [ -n "$FW_PACKAGE" ]; then spec="$FW_PACKAGE"
+        elif [ -n "$FW_VERSION" ]; then spec="flywheel-verify==$FW_VERSION"
+        else spec="flywheel-verify"; fi
+        python -m pip install --disable-pip-version-check "$spec"
+        flywheel --version
+    - name: Run the request
+      id: run
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        FW_PROMPT: ${{ inputs.prompt }}
+        FW_MODE: ${{ inputs.mode }}
+        FW_MAX_STEPS: ${{ inputs.max-steps }}
+        FW_BACKEND: ${{ inputs.backend }}
+        FW_TEST_CMD: ${{ inputs.test-cmd }}
+        FW_UNSANDBOXED: ${{ inputs.allow-unsandboxed }}
+        FLYWHEEL_HOME: ${{ runner.temp }}/flywheel-home
+      run: |
+        if [ "$FW_UNSANDBOXED" = "true" ]; then export FLYWHEEL_ALLOW_UNSANDBOXED=1; fi
+        out="$RUNNER_TEMP/flywheel-result.json"
+        set +e
+        flywheel code -p "$FW_PROMPT" --mode "$FW_MODE" --max-steps "$FW_MAX_STEPS" --backend "$FW_BACKEND" \
+          ${FW_TEST_CMD:+--test-cmd "$FW_TEST_CMD"} --output-format json > "$out"
+        code=$?
+        set -e
+        echo "result=$out" >> "$GITHUB_OUTPUT"
+        cat "$out"
+        exit $code
+    - name: Keep the ledger
+      if: always()
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+      with:
+        name: flywheel-code-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          ${{ runner.temp }}/flywheel-result.json
+          ${{ runner.temp }}/flywheel-home/sessions
+        if-no-files-found: warn

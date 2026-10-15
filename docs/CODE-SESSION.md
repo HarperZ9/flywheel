@@ -29,6 +29,9 @@ head, chain check, token counts, session id); `--output-format stream-json`
 prints one JSON object per loop event as it happens, then the result. The exit
 code is 1 when the test gate fails or no model answered.
 
+In GitHub Actions, the repository's own action runs `flywheel code -p` and
+keeps the ledger as an artifact; see [GITHUB-ACTION.md](GITHUB-ACTION.md).
+
 ## Tokens
 
 The session totals the token counts each hosted provider reports (OpenAI
