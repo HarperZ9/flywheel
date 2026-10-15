@@ -93,20 +93,32 @@ def load_specs(root: str, home: "str | None") -> "tuple[list[ServerSpec], list[s
     return found, errors
 
 
-def connect(spec: ServerSpec, *, timeout: float = 30.0):
-    """Start one server and return (client, external tool entries)."""
-    from harness.mcp_client import LaunchSpec, MCPClient, as_external_tools
+def connect(spec: ServerSpec, *, timeout: float = 30.0, home: "str | None" = None):
+    """Start one server and return (client, external tool entries). An HTTP
+    server gets the bearer token from `flywheel mcp login` when one is stored."""
+    from harness.mcp_client import LaunchSpec, MCPClient, MCPError, as_external_tools
     if spec.url:
-        launch = LaunchSpec(argv=(), url=spec.url)
+        from harness.mcp_http import HttpTransport
+        from .mcp_oauth import bearer_for
+        token = bearer_for(home, spec.name) if home else None
+        headers = {"authorization": f"Bearer {token}"} if token else {}
+        client = MCPClient(transport=HttpTransport(spec.url, timeout=timeout, headers=headers))
+        try:
+            client.start()
+        except MCPError as e:
+            if "401" in str(e) and not token:
+                raise MCPError(f"{spec.name} needs a sign-in: run `flywheel mcp login "
+                               f"{spec.name}`") from None
+            raise
     else:
         launch = LaunchSpec(argv=tuple(spec.command),
                             env_overrides=tuple(sorted(spec.env.items())))
-    client = MCPClient(launch, timeout=timeout).start()
+        client = MCPClient(launch, timeout=timeout).start()
     return client, as_external_tools(client, prefix=tool_prefix(spec.name))
 
 
 def attach(session, specs: list, *, ask=None, trust_project: bool = False,
-           connector=connect) -> list[dict]:
+           connector=None, home: "str | None" = None) -> list[dict]:
     """Start the servers the user allows and register their tools on the session.
     Returns one status row per server; every row also goes on the ledger."""
     rows = []
@@ -117,7 +129,7 @@ def attach(session, specs: list, *, ask=None, trust_project: bool = False,
                          "reason": "project server not approved"})
             continue
         try:
-            client, tools = connector(spec)
+            client, tools = (connector or (lambda sp: connect(sp, home=home)))(spec)
         except Exception as e:                   # a broken server never stops the session
             rows.append({**spec.record(), "status": "failed",
                          "reason": f"{e.__class__.__name__}: {e}"[:200]})

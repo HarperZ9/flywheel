@@ -185,6 +185,7 @@ a = Analysis(
         "harness.code_session.rules", "harness.code_session.print_mode",
         "harness.token_usage", "harness.code_session.mcp_config",
         "harness.code_session.mcp_cli", "harness.mcp_http",
+        "harness.code_session.mcp_oauth", "harness.oauth_callback",
         "harness.code_session.hooks", "harness.code_session.commands",
         "harness.code_session.attach", "harness.code_session.skills",
         "harness.code_session.web", "harness.code_session.acp_agent",

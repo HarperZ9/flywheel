@@ -95,6 +95,16 @@ HTTP one. Manage your own file with `flywheel mcp list`,
 `flywheel mcp add NAME -- COMMAND [ARGS...]`, `flywheel mcp add NAME --url URL`
 and `flywheel mcp remove NAME`; `--project` writes the project file instead.
 
+An HTTP server that asks for a sign-in takes `flywheel mcp login NAME`, which
+follows the MCP authorization flow: the server's protected-resource metadata,
+the authorization server's metadata, dynamic client registration, and a browser
+sign-in with PKCE and the resource indicator, caught on a one-shot loopback
+listener. The token is kept in the OS credential store on Windows, and in an
+owner-only file under the Flywheel home elsewhere; it is sent only to the
+server it was issued for and refreshed when it expires. `flywheel mcp logout
+NAME` removes it. Servers that need a pre-registered client id are not
+supported yet.
+
 A project file can name any program, so a project server starts only after you
 answer yes at the prompt, or with `--trust-project-mcp`. In `-p` mode nobody
 is there to ask, and project servers are skipped. Each tool reaches the model
