@@ -57,6 +57,9 @@ def parse_args(argv):
                     help="start the project's MCP servers without asking")
     ap.add_argument("--trust-project-hooks", action="store_true",
                     help="run the project's hooks without asking")
+    ap.add_argument("--worktree", default="", metavar="NAME",
+                    help="work in a git worktree on branch flywheel/NAME, carrying your "
+                         "uncommitted changes; your checkout is not touched")
     ap.add_argument("--acp", action="store_true",
                     help="serve the Agent Client Protocol on stdin and stdout for an editor")
     ap.add_argument("--output-format", choices=("text", "json", "stream-json"), default="text",
@@ -242,12 +245,27 @@ def main(argv: "list[str] | None" = None) -> int:
     if args.acp:
         return _serve_acp(args)
     interactive = args.prompt is None
+    worktree = None
+    if args.worktree:
+        from .worktree import WorktreeError, open_worktree
+        try:
+            worktree = open_worktree(args.root, args.worktree)
+        except WorktreeError as e:
+            print(f"[refused] {e}", file=sys.stderr)
+            return 2
+        args.root = worktree.path
+        print(f"[worktree] {worktree.path} on branch {worktree.branch}"
+              f"{f' ({len(worktree.carried)} uncommitted file(s) carried)' if worktree.carried else ''}",
+              file=sys.stderr)
     try:
         session = build_session(args, approver=prompt_approver if interactive else deny_all,
                                 on_event=print_event)
     except ResumeRefused as e:
         print(f"[refused] {e}", file=sys.stderr)
         return 2
+    if worktree is not None:
+        session.ledger.append("worktree", json.dumps(worktree.record(), sort_keys=True),
+                              {"created": worktree.created})
     session.fire("SessionStart")
     try:
         if session.agent.live_backend() is None:
