@@ -50,6 +50,13 @@ The session uses the first model it can reach, in this order: a local server
 reads a key without echo and stores it in the OS credential store on Windows,
 where every backend looks after the environment. Flywheel never writes a key
 to a plain file; elsewhere setup names the environment variable to set.
+Models on Azure OpenAI, Amazon Bedrock and Google Vertex AI turn on when their
+settings are present: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY` and
+`AZURE_OPENAI_DEPLOYMENT`; `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
+`AWS_REGION` and `BEDROCK_MODEL` (requests signed with AWS Signature Version 4);
+`VERTEX_PROJECT`, `VERTEX_LOCATION` and `VERTEX_MODEL` with a token from
+`VERTEX_ACCESS_TOKEN` or `gcloud auth print-access-token`. Pick one with
+`--backend azure`, `--backend bedrock` or `--backend vertex`.
 `--backend NAME` pins one, `--model ID` picks its model, `--local-only` never
 calls a hosted provider, and `/model ID` switches mid-session. `flywheel doctor`
 shows what is set.
