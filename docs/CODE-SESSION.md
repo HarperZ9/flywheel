@@ -223,6 +223,12 @@ Every user turn, model reply, tool call, tool result, permission decision,
 mode change and instruction file (by path and sha256) goes on one hash-chained
 ledger. `/status` shows its head and whether the chain verifies.
 
+## Screen readers
+
+`--plain` (or `FLYWHEEL_SCREEN_READER=1`) prints tool activity in words, such
+as `Tool call: run` and `Tool result, failed: ...`, in place of the `>`
+markers. Output has no color and no spinners in either mode.
+
 ## Limits
 
 - Commands cannot write into the project folder. A build or code generator
