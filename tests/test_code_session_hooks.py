@@ -127,3 +127,46 @@ def test_claude_commands_folder_is_read_for_compatibility(tmp_path):
     (folder / "ship.md").write_text("Prepare the release.", encoding="utf-8")
     assert load_commands(str(tmp_path), None)["ship"].expand("now") == \
         "Prepare the release.\n\nnow"
+
+
+def test_permission_request_hook_can_allow_or_deny_without_a_prompt(tmp_path):
+    allow = _hook_cmd(tmp_path, "allow", 'print(\'{"decision": "allow"}\')\n')
+    asked = []
+    from harness.code_session.hooks import HookEntry
+    s = new_session(build_agent([ScriptBackend(['TOOL write_file {"path": "p.txt", "content": "1"}',
+                                                "ok"])]), str(tmp_path), mode="ask",
+                    approver=lambda n, a: asked.append(n) or "no", runner=_bare_runner)
+    s.set_hooks(Hooks(entries=[HookEntry("PermissionRequest", "write_file", allow, "t")],
+                      cwd=str(tmp_path)))
+    s.turn("write")
+    assert asked == [] and (tmp_path / "p.txt").exists()
+    deny = _hook_cmd(tmp_path, "deny", 'print(\'{"decision": "deny", "reason": "no"}\')\n')
+    d = new_session(build_agent([ScriptBackend(['TOOL write_file {"path": "q.txt", "content": "1"}',
+                                                "ok"])]), str(tmp_path), mode="ask",
+                    approver=lambda n, a: "yes", runner=_bare_runner)
+    d.set_hooks(Hooks(entries=[HookEntry("PermissionRequest", "", deny, "t")], cwd=str(tmp_path)))
+    d.turn("write")
+    assert not (tmp_path / "q.txt").exists()
+    decision = [json.loads(e.content) for e in d.ledger.entries if e.kind == "approval"][0]
+    assert decision["by"] == "hook:deny"
+
+
+def test_subagent_and_compaction_events_fire(tmp_path):
+    log = _hook_cmd(tmp_path, "log", LOG)
+    from harness.code_session.agents import load_agents
+    from harness.code_session.hooks import HookEntry
+    s = new_session(build_agent([ScriptBackend(['TOOL task {"agent": "explore", "prompt": "q"}',
+                                                "a"] + ["x " * 400] * 30)]),
+                    str(tmp_path), mode="auto", runner=_bare_runner)
+    s.set_agents(load_agents(str(tmp_path), None))
+    s.set_hooks(Hooks(entries=[HookEntry(e, "", log, "t") for e in
+                               ("SubagentStart", "SubagentStop", "PreCompact", "PostCompact")],
+                      cwd=str(tmp_path)))
+    s.compact_budget = 1500
+    s.turn("delegate")
+    for i in range(12):
+        s.turn("more " * 200)
+    events = [json.loads(line)["hook_event_name"] for line in
+              (tmp_path / "log.log").read_text(encoding="utf-8").splitlines()]
+    assert events[:2] == ["SubagentStart", "SubagentStop"]
+    assert "PreCompact" in events and "PostCompact" in events

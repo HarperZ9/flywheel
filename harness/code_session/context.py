@@ -49,6 +49,11 @@ def _alternate(messages: list) -> list:
     return out
 
 
+def would_fold(agent, budget: int) -> bool:
+    return (budget > 0 and len(agent.history) > KEEP_RECENT + 1
+            and estimate(agent.system, agent.history) > budget)
+
+
 def maybe_fold(agent, budget: int) -> "dict | None":
     """Fold the conversation if it is over budget; returns the receipt or None."""
     if budget <= 0 or len(agent.history) <= KEEP_RECENT + 1:

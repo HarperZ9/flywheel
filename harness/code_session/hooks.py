@@ -6,7 +6,8 @@ Hooks live in FLYWHEEL_HOME/hooks.json (yours, trusted) and the project's
     {"hooks": {"PreToolUse": [{"matcher": "write_file|edit_file",
                                "hooks": [{"type": "command", "command": "lint.sh"}]}]}}
 
-Events: SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop,
+Events: SessionStart, UserPromptSubmit, PreToolUse, PermissionRequest,
+PostToolUse, PreCompact, PostCompact, SubagentStart, SubagentStop, Stop,
 SessionEnd. Each hook command gets the event as JSON on stdin
 (hook_event_name, session_id, cwd, and tool_name, tool_input, tool_response or
 prompt where they apply). `matcher` is a regular expression over the tool name;
@@ -26,9 +27,10 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop",
-          "SessionEnd")
-BLOCKING = frozenset({"UserPromptSubmit", "PreToolUse"})
+EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PermissionRequest",
+          "PostToolUse", "PreCompact", "PostCompact", "SubagentStart", "SubagentStop",
+          "Stop", "SessionEnd")
+BLOCKING = frozenset({"UserPromptSubmit", "PreToolUse", "PermissionRequest"})
 USER_FILE = "hooks.json"
 PROJECT_FILE = Path(".flywheel") / "hooks.json"
 TIMEOUT = 60
@@ -46,6 +48,7 @@ class HookEntry:
 class Outcome:
     blocked: bool = False
     reason: str = ""
+    allowed: bool = False          # a PermissionRequest hook answered allow
     runs: list = field(default_factory=list)
 
 
@@ -125,9 +128,17 @@ def _block_reason(event: str, run: dict) -> "str | None":
         said = json.loads(run["stdout"]) if run["stdout"].strip().startswith("{") else {}
     except ValueError:
         said = {}
-    if isinstance(said, dict) and said.get("decision") == "block":
+    if isinstance(said, dict) and said.get("decision") in ("block", "deny"):
         return str(said.get("reason") or "blocked by a hook")
     return None
+
+
+def _says_allow(run: dict) -> bool:
+    try:
+        said = json.loads(run["stdout"]) if run["stdout"].strip().startswith("{") else {}
+    except ValueError:
+        return False
+    return isinstance(said, dict) and said.get("decision") == "allow"
 
 
 @dataclass
@@ -144,6 +155,8 @@ class Hooks:
             run = _run_one(entry, {"hook_event_name": event, **payload}, self.cwd)
             reason = _block_reason(event, run)
             run.update({"event": event, "blocked": reason is not None})
+            if event == "PermissionRequest" and reason is None and _says_allow(run):
+                outcome.allowed = True
             outcome.runs.append(run)
             if self.record is not None:
                 self.record(run)

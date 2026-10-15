@@ -93,7 +93,12 @@ class CodeSession:
             hooks.fire("PostToolUse", self._hook_base(
                 tool_name=name, tool_input=args,
                 tool_response={"ok": result.ok, "output": result.output[:4000]}), tool=name)
+        def permission(name, args):
+            out = hooks.fire("PermissionRequest", self._hook_base(tool_name=name, tool_input=args),
+                             tool=name)
+            return "deny" if out.blocked else ("allow" if out.allowed else None)
         self.executor.pre_tool, self.executor.post_tool = pre, post
+        self.executor.permission_hook = permission
 
     def _hook_base(self, **extra) -> dict:
         return {"session_id": self.session_id, "cwd": self.root, **extra}
@@ -143,9 +148,12 @@ class CodeSession:
         original = self.agent.send
 
         def counted_send(text):
+            if self.hooks is not None and _context.would_fold(self.agent, self.compact_budget):
+                self.fire("PreCompact", messages=len(self.agent.history))
             folded = _context.maybe_fold(self.agent, self.compact_budget)
             if folded is not None:
                 _context.record_fold(self.ledger, folded)
+                self.fire("PostCompact", messages=len(self.agent.history))
             resp = original(text)
             add_usage(self.usage, resp)
             return resp
