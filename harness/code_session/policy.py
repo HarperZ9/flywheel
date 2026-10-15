@@ -25,7 +25,10 @@ from harness.local_tools import ToolExecutor, ToolGate, ToolResult
 MODES = ("plan", "ask", "edit", "auto")
 WRITE_TOOLS = frozenset({"write_file", "edit_file", "apply_patch"})
 EXEC_TOOLS = frozenset({"run"})
-READ_TOOLS = frozenset({"read_file", "list_dir", "repo_map", "grep", "glob", "todo", "skill"})
+# `task` is allowed in every mode because its child decides each of its own calls
+# under the same mode, rules and approver.
+READ_TOOLS = frozenset({"read_file", "list_dir", "repo_map", "grep", "glob", "todo", "skill",
+                        "task"})
 NETWORK_TOOLS = frozenset({"web_fetch"})
 TODO_STATES = ("pending", "in_progress", "done")
 TODO_TOOL_TEXT = (
@@ -97,12 +100,16 @@ class SessionExecutor(ToolExecutor):
     post_tool: "Callable[[str, dict, ToolResult], None] | None" = None
     todos: list = field(default_factory=list)
     skills: dict = field(default_factory=dict)
+    allowed_tools: "frozenset | None" = None     # a subagent's tool list; None is all
+    task_runner: "Callable[[dict], tuple[bool, str]] | None" = None
 
     def set_mode(self, mode: str) -> None:
         self.gate = gate_for(mode)
         self.mode = mode
 
     def _decide(self, name: str, args: dict) -> "tuple[str, str]":
+        if self.allowed_tools is not None and name not in self.allowed_tools:
+            return "deny", "agent:tool-not-listed"
         cls = tool_class(name)
         verdict = mode_decision(self.mode, cls)
         matched = self.rules.match(name, args) if self.rules is not None else None
@@ -139,7 +146,9 @@ class SessionExecutor(ToolExecutor):
             self.on_decision({"tool": name, "class": tool_class(name), "mode": self.mode,
                               "decision": verdict, "by": source})
         if verdict == "deny":
-            text = (DENIED_BY_MODE if source == "mode:plan" else
+            text = ("[denied] this agent's tool list does not include " + name
+                    if source == "agent:tool-not-listed" else
+                    DENIED_BY_MODE if source == "mode:plan" else
                     DENIED_BY_RULE.format(rule=source[len("rule:deny:"):])
                     if source.startswith("rule:deny:") else DENIED_BY_USER)
             return ToolResult(name, args, False, text)
@@ -163,6 +172,11 @@ class SessionExecutor(ToolExecutor):
         self.todos = clean
         return True, render_todos(clean)
 
+
+    def _t_task(self, args) -> "tuple[bool, str]":
+        if self.task_runner is None:
+            return False, "[error] subagents are not available here"
+        return self.task_runner(args)
 
     def _t_skill(self, args) -> "tuple[bool, str]":
         from .skills import read_skill

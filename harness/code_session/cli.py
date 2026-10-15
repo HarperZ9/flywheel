@@ -120,6 +120,8 @@ def build_session(args, *, backends=None, approver=None, runner=None, on_event=N
     session.set_rules(rules)
     from .skills import load_skills
     session.set_skills(load_skills(root, home))
+    from .agents import load_agents
+    session.set_agents(load_agents(root, home))
     from .commands import load_commands
     session.commands = load_commands(root, home, reserved=tuple(slash.COMMANDS))
     _attach_hooks(session, root, home, interactive=approver is prompt_approver,
