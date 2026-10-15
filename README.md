@@ -11,10 +11,12 @@ Run any model, keep a receipt you can recheck offline.
 python -m pip install flywheel-verify
 ```
 
-[![version: 1.6.0](https://img.shields.io/badge/version-1.6.0-e6e1d6?style=flat-square&labelColor=1a1712)](https://pypi.org/project/flywheel-verify/)
+[![version: 1.7.0](https://img.shields.io/badge/version-1.7.0-e6e1d6?style=flat-square&labelColor=1a1712)](https://pypi.org/project/flywheel-verify/)
 [![CI](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-FSL--1.1--MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/flywheel/blob/main/LICENSE)
 ![python 3.11+](https://img.shields.io/badge/python-3.11%2B-e6e1d6?style=flat-square&labelColor=1a1712)
+
+Docs: https://harperz9.github.io/flywheel/docs/
 
 Flywheel ships as a full native harness client with its own bundled engine.
 Rowan provides its operator experience, and Articulate and the other tool lanes
