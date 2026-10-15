@@ -1,11 +1,11 @@
 {
-    "version": "1.8.0",
+    "version": "1.9.0",
     "description": "Run any model, keep a receipt you can recheck offline.",
     "homepage": "https://github.com/HarperZ9/flywheel",
     "license": "FSL-1.1-MIT",
     "depends": "python",
-    "url": "https://files.pythonhosted.org/packages/py3/f/flywheel-verify/flywheel_verify-1.8.0-py3-none-any.whl",
-    "hash": "beae9906af0bd01329a147c66d095825aaf8272b9fa7d66f947ae7fa48d45893",
+    "url": "https://files.pythonhosted.org/packages/py3/f/flywheel-verify/flywheel_verify-1.9.0-py3-none-any.whl",
+    "hash": "6514e581ce1e684ce157cd50c59e8c48543fa32a9a070bdf27226da8237d39d5",
     "installer": {
         "script": [
             "$py = \"$(appdir 'python' $global)\\current\\python.exe\"",
