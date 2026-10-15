@@ -29,6 +29,8 @@ def subject(name: str, args: dict) -> str:
         return str(args.get("cmd", ""))
     if name == "web_fetch":
         return str(args.get("url", ""))
+    if name == "web_search":
+        return str(args.get("query", ""))
     if "path" in args:
         return str(args.get("path", "")).replace("\\", "/")
     return json.dumps(args, sort_keys=True)
