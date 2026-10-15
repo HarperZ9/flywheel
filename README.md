@@ -91,6 +91,11 @@ python -m pip install flywheel-verify
 flywheel code
 ```
 
+Or install the command in its own environment with one line (Python 3.11 or
+newer): `curl -fsSL https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.sh | sh`
+on macOS and Linux, or `irm https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.ps1 | iex`
+in PowerShell on Windows.
+
 `flywheel code` opens a session in the current folder: the agent reads, edits
 and runs your tests across turns, asks before it writes or runs anything (or
 not, with `--mode edit` or `--mode auto`), and records every step on a

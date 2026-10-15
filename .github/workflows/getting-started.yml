@@ -1,0 +1,71 @@
+name: getting started
+
+# The documented first run, on macOS, Linux and Windows: install with the
+# one-line installer (from this checkout), check the install with
+# `flywheel doctor`, then finish one coding request with `flywheel code -p`
+# against a scripted model. The whole path is timed against a 5-minute bar.
+on:
+  pull_request:
+    paths: ["install.sh", "install.ps1", "harness/code_session/**", "harness/doctor_cli.py",
+            "harness/cli_entry.py", "pyproject.toml", ".github/workflows/getting-started.yml"]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  first-run:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      OPENAI_API_KEY: ci-stub-not-a-key
+      CODEX_BASE_URL: http://127.0.0.1:8099/v1
+      FLYWHEEL_SOURCE: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Start a scripted model
+        shell: bash
+        run: |
+          python scripts/ci_stub_model.py 8099 \
+            'TOOL write_file {"path": "hello.txt", "content": "first run"}' 'Wrote hello.txt.' &
+          echo "START=$(date +%s)" >> "$GITHUB_ENV"
+          sleep 1
+      - name: Install (macOS, Linux)
+        if: runner.os != 'Windows'
+        run: |
+          sh install.sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:FLYWHEEL_NO_PATH = "1"
+          ./install.ps1
+          Add-Content $env:GITHUB_PATH (Join-Path $env:LOCALAPPDATA "Flywheel\cli\Scripts")
+      - name: Doctor, then one coding request
+        shell: bash
+        run: |
+          flywheel --version
+          flywheel doctor --json > doctor.json
+          python -c "import json; c=json.load(open('doctor.json'))['checks']; assert not [x for x in c if x['status']=='FAIL'], c"
+          mkdir work && cd work
+          flywheel code -p "write hello.txt" --mode edit --backend codex --no-save \
+            --output-format json > ../result.json
+          test "$(cat hello.txt)" = "first run"
+          cd ..
+          python - <<'PY'
+          import json, os, time
+          r = json.load(open("result.json"))
+          assert r["chain_ok"] is True and r["final"] == "Wrote hello.txt.", r
+          spent = time.time() - int(os.environ["START"])
+          print(f"first run on {os.environ.get('RUNNER_OS')}: {spent:.0f} s")
+          assert spent < 300, f"first run took {spent:.0f} s, over the 5-minute bar"
+          PY
