@@ -328,6 +328,18 @@ appends the sha256 of the conversation to the ledger first.
 does not verify, or whose conversation no longer matches its recorded hash, is
 refused. `--no-save` keeps a session off disk.
 
+## Scope report
+
+`flywheel report scope [--since YYYY-MM-DD] [--json]` reads the saved sessions
+and lists every call that reached past what was allowed: refused by plan mode,
+by a deny rule or by a hook; declined by you; a tool outside a subagent's list;
+stopped by the command denylist or the pre-action monitor; a path outside the
+project; and a refused call the model repeated unchanged. Each line names the
+session, the ledger entry's number and its hash, so you can find it and check
+it. A session whose ledger does not verify is listed and not counted. The
+report names the setting that caught each call, not a reason for it, and an
+empty report means none of these fired, not that nothing else happened.
+
 ## Slash commands
 
 `/help`, `/exit`, `/clear`, `/mode [plan|ask|edit|auto]`, `/model [ID]`,
