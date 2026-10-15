@@ -1,6 +1,6 @@
 """cli_entry.py — the ``flywheel`` command dispatcher.
 
-Single console-script entry (``flywheel = harness.cli_entry:main``). Thin
+Single console-script entry (``flywheel = harness.cli_entry:console_main``). Thin
 layer over run_harness_cli.py plus umbrella commands that work without a
 checkout (frozen exe, bare pip install, or relay submodule).
 """
@@ -200,7 +200,8 @@ _PACKAGED = {"acp": "harness.acp_cli", "dap": "harness.dap_cli",
              "verify-share": "harness.verification_share_cli",
              "anchor": "harness.anchor_cli", "code": "harness.code_session.cli",
              "mcp": "harness.code_session.mcp_cli",
-             "doctor": "harness.doctor_cli"}
+             "doctor": "harness.doctor_cli",
+             "doctor": "harness.doctor_cli", "update": "harness.update_cli"}
 def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
     module = _PACKAGED.get(command)
     if module is None:
@@ -210,6 +211,19 @@ def _dispatch_packaged(command: str, raw: list[str]) -> int | None:
     # journey and grant are two commands of one parser, so it keeps the name.
     return import_module(module).main([command, *rest]
                                       if command in {"journey", "grant"} else rest)
+def console_main() -> int:
+    """The installed `flywheel` command: an unhandled exception becomes a local
+    crash report and exit 70. `main` itself still raises, for callers and tests."""
+    raw = sys.argv[1:]
+    try:
+        return main(raw)
+    except Exception as exc:  # noqa: BLE001 - reported, then a non-zero exit
+        if os.environ.get("FLYWHEEL_DEBUG"):
+            raise
+        from harness.crash_report import report_and_exit
+        return report_and_exit(exc, next((a for a in raw if not a.startswith("-")), None))
+
+
 def main(argv: list[str] | None = None) -> int:
     raw = list(argv if argv is not None else sys.argv[1:])
     # The first non-flag token is the command: run_harness_cli requires a
