@@ -145,6 +145,8 @@ def build_session(args, *, backends=None, approver=None, runner=None, on_event=N
     if session_id:
         resume.restore(session, home, session_id)
     session.set_rules(rules)
+    from .skills import load_skills
+    session.set_skills(load_skills(root, home))
     from .commands import load_commands
     session.commands = load_commands(root, home, reserved=tuple(slash.COMMANDS))
     _attach_hooks(session, root, home, interactive=approver is prompt_approver,

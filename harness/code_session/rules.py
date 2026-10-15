@@ -27,6 +27,8 @@ USER_FILE = "permissions.json"
 def subject(name: str, args: dict) -> str:
     if name == "run":
         return str(args.get("cmd", ""))
+    if name == "web_fetch":
+        return str(args.get("url", ""))
     if "path" in args:
         return str(args.get("path", "")).replace("\\", "/")
     return json.dumps(args, sort_keys=True)
