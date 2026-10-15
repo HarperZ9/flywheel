@@ -20,7 +20,7 @@ build-backend = "setuptools.build_meta"
 # console command stays `flywheel` (see [project.scripts]).
 name = "flywheel-verify"
 version = "1.5.1"
-description = "The one platform: routing, verification, the lane layer, memory/context/catalog, and the closed verified-inference loop."
+description = "Run any model, keep a receipt you can recheck offline."
 readme = "README.md"
 # 3.11, not 3.10, because `datetime.UTC` landed in 3.11 and 51 modules use it.
 # The floor previously said 3.10 and was simply false: the package could not
@@ -30,7 +30,23 @@ requires-python = ">=3.11"
 license = "FSL-1.1-MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Zain" }]
+keywords = ["llm", "evaluation", "verification", "receipts", "mcp", "local-llm", "provenance"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Quality Assurance",
+]
 dependencies = []
+
+[project.urls]
+Homepage = "https://harperz9.github.io/flywheel.html"
+Source = "https://github.com/HarperZ9/flywheel"
+Issues = "https://github.com/HarperZ9/flywheel/issues"
+Changelog = "https://github.com/HarperZ9/flywheel/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 # Everything here is opt-in; the core stays zero-dependency and works
