@@ -190,7 +190,7 @@ a = Analysis(
         "harness.code_session.attach", "harness.code_session.skills",
         "harness.code_session.web", "harness.code_session.search", "harness.code_session.acp_agent",
         # `flywheel doctor` is dispatched by dotted name from cli_entry._PACKAGED.
-        "harness.doctor_cli", "harness.setup_cli", "harness.update_cli", "harness.crash_report",
+        "harness.doctor_cli", "harness.setup_cli", "harness.update_cli", "harness.update_auto", "harness.crash_report",
         "harness.code_session.worktree", "harness.code_session.args",
         "harness.code_session.context", "harness.endpoints_cloud", "harness.code_session.agents",
         "harness.code_session.background",

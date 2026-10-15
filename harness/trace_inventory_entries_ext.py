@@ -145,6 +145,7 @@ STORES = (
 _NO_TRACE = "holds no trace-derived data"
 EXEMPTIONS = (
     Exemption("home", "gateway.token", f"gateway credential; {_NO_TRACE}"),
+    Exemption("home", "update.json", f"weekly update check setting and last check time; {_NO_TRACE}"),
     Exemption("home", "mcp-tokens", f"MCP server OAuth tokens where no OS credential "
               f"store exists, owner-only files; {_NO_TRACE}"),
     Exemption("home", "gateway.endpoint*", f"where the running gateway listens; {_NO_TRACE}"),

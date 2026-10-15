@@ -58,7 +58,18 @@ def main(argv: "list[str] | None" = None) -> int:
     ap = argparse.ArgumentParser(prog="flywheel update", description=__doc__.splitlines()[0])
     ap.add_argument("--check", action="store_true", help="same as no flag: check and print")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--apply", action="store_true", help="upgrade now (pip installs)")
+    ap.add_argument("--auto", choices=("on", "off"),
+                    help="a weekly check when flywheel code starts; it never installs")
     args = ap.parse_args(argv)
+    from harness import update_auto
+    if args.auto:
+        home = update_auto.home_dir()
+        settings = update_auto.read_settings(home)
+        settings["auto_check"] = args.auto == "on"
+        update_auto.write_settings(home, settings)
+        print(f"weekly update check {'on' if args.auto == 'on' else 'off'}")
+        return 0
     from harness.cli_version import installed_version
     try:
         latest = latest_from_pypi()
@@ -67,6 +78,13 @@ def main(argv: "list[str] | None" = None) -> int:
               file=sys.stderr)
         return 1
     result = check(installed_version(), latest, install_kind())
+    if args.apply:
+        if not result["update_available"]:
+            print(f"Flywheel {result['installed']} is current; nothing to do.")
+            return 0
+        ok, message = update_auto.apply(latest, result["install_kind"])
+        print(message, file=sys.stdout if ok else sys.stderr)
+        return 0 if ok else 1
     if args.json:
         print(json.dumps(result, indent=2))
     elif result["update_available"]:
