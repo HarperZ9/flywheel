@@ -1,0 +1,39 @@
+{
+  "name": "flywheel-code",
+  "displayName": "Flywheel",
+  "description": "Run flywheel code, a coding agent on any model whose every step is recorded on a re-checkable ledger, from VS Code.",
+  "version": "0.1.0",
+  "publisher": "HarperZ9",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {"type": "git", "url": "https://github.com/HarperZ9/flywheel"},
+  "engines": {"vscode": "^1.85.0"},
+  "categories": ["AI", "Programming Languages", "Other"],
+  "main": "./extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      {"command": "flywheel.start", "title": "Flywheel: Start a coding session"},
+      {"command": "flywheel.askFile", "title": "Flywheel: Ask about this file"},
+      {"command": "flywheel.askSelection", "title": "Flywheel: Ask about the selection"},
+      {"command": "flywheel.continue", "title": "Flywheel: Continue the last session"},
+      {"command": "flywheel.doctor", "title": "Flywheel: Check the install (doctor)"}
+    ],
+    "menus": {
+      "editor/context": [
+        {"command": "flywheel.askSelection", "when": "editorHasSelection", "group": "flywheel"},
+        {"command": "flywheel.askFile", "group": "flywheel"}
+      ]
+    },
+    "configuration": {
+      "title": "Flywheel",
+      "properties": {
+        "flywheel.command": {"type": "string", "default": "flywheel",
+          "description": "The flywheel command, or a full path to it."},
+        "flywheel.mode": {"type": "string", "default": "ask", "enum": ["plan", "ask", "edit", "auto"],
+          "description": "Permission mode for new sessions."},
+        "flywheel.extraArgs": {"type": "array", "items": {"type": "string"}, "default": [],
+          "description": "Extra arguments for flywheel code, for example [\"--backend\", \"claude\"]."}
+      }
+    }
+  }
+}

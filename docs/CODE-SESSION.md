@@ -175,6 +175,15 @@ runs in `auto`, and is refused in `plan`. Permission rules match the URL, so
 `"deny": ["web_fetch:https://*.example.com/*"]` works. There is no web search
 tool yet.
 
+## In VS Code
+
+The Flywheel extension for VS Code (`integrations/vscode`, packaged as a
+`.vsix` by `python scripts/build_vscode_vsix.py`) opens `flywheel code` in a
+terminal in your workspace and adds commands to start or continue a session
+and to ask about the current file or selection, which it names with an `@`
+mention and the line range. It has no dependencies and sends nothing anywhere
+itself.
+
 ## In an editor (ACP)
 
 `flywheel code --acp` speaks the Agent Client Protocol (protocol version 1,
