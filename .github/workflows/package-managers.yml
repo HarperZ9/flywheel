@@ -64,7 +64,7 @@ jobs:
           echo "brew installed: $got (pyproject: $expected)"
           test "$got" = "flywheel $expected"
           "$(brew --prefix)/bin/flywheel" doctor --json > doctor.json
-          python -c "import json; c=json.load(open('doctor.json'))['checks']; print(*[(x['name'], x['status']) for x in c], sep='\n'); assert not [x for x in c if x['status']=='FAIL'], c"
+          python -c "import json; c=json.load(open('doctor.json'))['checks']; print(*[(x['check'], x['status'], x['detail']) for x in c], sep='\n'); assert not [x for x in c if x['status']=='FAIL'], c"
 
   scoop:
     runs-on: windows-latest
@@ -98,7 +98,7 @@ jobs:
           if ($exe -notlike "*\scoop\shims\*") { throw "flywheel resolved outside the Scoop shims: $exe" }
           if ($got -ne "flywheel $expected") { throw "expected flywheel $expected, got $got" }
           flywheel doctor --json | Out-File -Encoding utf8 doctor.json
-          python -c "import json; c=json.load(open('doctor.json', encoding='utf-8-sig'))['checks']; print(*[(x['name'], x['status']) for x in c], sep='\n'); assert not [x for x in c if x['status']=='FAIL'], c"
+          python -c "import json; c=json.load(open('doctor.json', encoding='utf-8-sig'))['checks']; print(*[(x['check'], x['status'], x['detail']) for x in c], sep='\n'); assert not [x for x in c if x['status']=='FAIL'], c"
       - name: Scoop autoupdate reproduces the pinned URL and hash
         if: github.event_name != 'release'
         shell: pwsh
