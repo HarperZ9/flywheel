@@ -45,10 +45,9 @@ def sandboxed_run(
 ) -> tuple[bool, str]:
     """Run `cmd` under this host's sandbox, rooted at `root`.
 
-    `cancel` (a threading.Event) stops the command early on Windows, exit 130;
+    `cancel` (a threading.Event) stops the command early, exit 130;
     `work_hook(work_dir)` is called before the command starts, so a caller can
-    read stdout.txt and stderr.txt there while it runs. On POSIX hosts neither
-    applies yet: the command runs to its end or its timeout.
+    read stdout.txt and stderr.txt there while it runs, on every platform.
     `extra_env` adds plain settings (never credentials; those go through
     `bindings` so they are scrubbed from output) on top of the built
     environment.
@@ -70,7 +69,7 @@ def sandboxed_run(
                        f"{admission.reason_code}")
     if os.name != "nt":
         return _posix_sandboxed_run(cmd, root, bindings, timeout_seconds, scratch_home,
-                                    extra_env)
+                                    extra_env, cancel=cancel, work_hook=work_hook)
 
     source = Path(root).resolve()
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_", dir=source.parent))
@@ -96,7 +95,7 @@ def sandboxed_run(
 def _posix_sandboxed_run(
     cmd: str, root: str, bindings: CredentialBindings | None,
     timeout_seconds: int, scratch_home: bool = False,
-    extra_env: "dict[str, str] | None" = None,
+    extra_env: "dict[str, str] | None" = None, cancel=None, work_hook=None,
 ) -> tuple[bool, str]:
     """Run `cmd` under whichever POSIX backend this host has.
 
@@ -132,6 +131,12 @@ def _posix_sandboxed_run(
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_")).resolve()
     env = _build_posix_env(bindings, work, scratch_home)
     env.update(extra_env or {})
+    streaming = None
+    if cancel is not None or work_hook is not None:
+        from .streaming_spawn import make_runner
+        streaming = make_runner(work, cancel)
+        if work_hook is not None:
+            work_hook(work)
     try:
         policy = from_env()
     except PolicyRefused as exc:
@@ -147,7 +152,7 @@ def _posix_sandboxed_run(
         outcome = posix_run(cmd, source, work, env=env,
                             timeout_seconds=timeout_seconds,
                             network=policy is None, egress=None if route is
-                            None else route.route)
+                            None else route.route, runner=streaming)
         if outcome is None:
             raise SandboxUnavailable(_no_backend_reason())
         rc, out, plan = outcome

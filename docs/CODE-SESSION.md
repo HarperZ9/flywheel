@@ -276,10 +276,9 @@ labeled unsandboxed.
 the same sandbox as `run` and under the same permission mode, rules and
 denylist, and returns a job id at once. The agent reads a job's output and
 stops it with its `processes` tool; `/jobs` lists jobs. A job runs for at most
-30 minutes and every job stops when the session ends. On Windows the output can
-be read while the job runs and stop ends it at once; on Linux and macOS this
-release reads the output when the job ends, and stop takes effect at the time
-limit.
+30 minutes and every job stops when the session ends. Its output can be read
+while it runs, and stop ends it at once (on Linux and macOS the whole process
+group is stopped).
 
 ## Project instructions
 

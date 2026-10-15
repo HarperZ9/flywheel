@@ -7,14 +7,12 @@ lists jobs; `{"action": "output", "id": "bg1"}` reads what a job has printed so
 far; `{"action": "stop", "id": "bg1"}` stops it. A job runs for at most 30
 minutes. Every start, stop and finish goes on the session ledger.
 
-On Windows the output can be read while the job runs and `stop` ends it at
-once. On Linux and macOS this release reads the output when the job ends, and
-`stop` takes effect at the job's time limit; the tool says so when asked.
+The output can be read while the job runs and `stop` ends it at once, in the
+Windows sandbox and in the bubblewrap and Seatbelt sandboxes alike.
 """
 from __future__ import annotations
 
 import itertools
-import os
 import threading
 import time
 from dataclasses import dataclass, field
@@ -93,8 +91,6 @@ class JobTable:
         if job is None:
             return False, f"[error] no job {job_id!r}"
         text = job.result[1] if job.result is not None else self._live(job)
-        if job.result is None and not text and os.name != "nt":
-            text = "(output is read when the job ends on this platform)"
         return True, f"[{job.id} {job.status()} | {int(time.time() - job.started)}s]\n" \
             + text[-TAIL:]
 
@@ -107,8 +103,7 @@ class JobTable:
         job.stopped = True
         job.cancel.set()
         self.record("stop", {"id": job.id})
-        note = "" if os.name == "nt" else " (on this platform it ends at its time limit)"
-        return True, f"stopping {job.id}{note}"
+        return True, f"stopping {job.id}"
 
     def listing(self) -> str:
         if not self.jobs:
