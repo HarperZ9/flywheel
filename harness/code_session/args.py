@@ -27,6 +27,8 @@ def parse_args(argv):
     ap.add_argument("--max-steps", type=int, default=DEFAULT_MAX_STEPS)
     ap.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS)
     ap.add_argument("--test-cmd", default="", help="tests a turn must pass before it is done")
+    ap.add_argument("--compact-budget", type=int, default=60000,
+                    help="fold the conversation past about this many estimated tokens; 0 is off")
     ap.add_argument("--no-instructions", action="store_true",
                     help="do not read AGENTS.md, CLAUDE.md or FLYWHEEL.md")
     ap.add_argument("-c", "--continue", dest="cont", action="store_true",
