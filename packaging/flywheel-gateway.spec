@@ -190,6 +190,7 @@ a = Analysis(
         "harness.code_session.web", "harness.code_session.acp_agent",
         # `flywheel doctor` is dispatched by dotted name from cli_entry._PACKAGED.
         "harness.doctor_cli", "harness.update_cli", "harness.crash_report",
+        "harness.code_session.worktree",
         # Desktop Bulletin identity setup is served through the frozen gateway.
         # The source package keeps cryptography optional; the Windows freeze
         # installs .[signing] and must carry the lazy route/import graph.

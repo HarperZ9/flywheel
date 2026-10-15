@@ -159,6 +159,16 @@ allow, reject). Cancelling in the editor stops the turn at the next model or
 tool call. The MCP server list an editor sends with a new session is not
 started yet; the servers in your Flywheel and project config are.
 
+## Working in a separate checkout
+
+`flywheel code --worktree NAME` runs the session in a git worktree at
+`<repo>-worktrees/NAME`, beside the repository, on a new branch
+`flywheel/NAME` from the current HEAD. Your uncommitted changes come along:
+tracked edits are applied as a patch and untracked files that are not ignored
+are copied. Your own checkout is not touched. When you are done, merge the
+branch, or remove it with `git worktree remove`. The same name again continues
+in the same worktree.
+
 ## Todo list
 
 For work with several steps the agent keeps a todo list with its `todo` tool
