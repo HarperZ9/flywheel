@@ -188,7 +188,6 @@ a = Analysis(
         "harness.code_session.hooks", "harness.code_session.commands",
         "harness.code_session.attach", "harness.code_session.skills",
         "harness.code_session.web", "harness.code_session.acp_agent",
-        "harness.code_session.slash",
         # `flywheel doctor` is dispatched by dotted name from cli_entry._PACKAGED.
         "harness.doctor_cli", "harness.update_cli", "harness.crash_report",
         # Desktop Bulletin identity setup is served through the frozen gateway.

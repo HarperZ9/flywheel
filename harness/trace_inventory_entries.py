@@ -219,7 +219,6 @@ STORES = (
           note="each <id>/ folder holds the hash-chained ledger (requests, model replies, "
                "tool calls and outputs, permission decisions) and meta.json with the "
                "conversation (observed, harness/code_session/store.py)"),
-    Store("S26", "Local crash reports", "home", ("crashes",), ("C4", "C5"),
     Store("S26", "Local crash reports", "home", ("crashes",), ("C1", "C4"),
           _plain("written for the owner to read and choose to share; home paths and "
                  "secret-named environment values are redacted before writing", "7.16"),
