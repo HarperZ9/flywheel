@@ -83,13 +83,17 @@ def check_git(which=shutil.which, run=subprocess.run) -> dict:
     return _check("git", "OK", detail)
 
 
-def check_keys(environ=None) -> dict:
+def check_keys(environ=None, stored=None) -> dict:
+    """Keys by name: from the environment, or stored in the OS credential store."""
     env = environ if environ is not None else os.environ
-    present = [name for name in KEY_NAMES if (env.get(name) or "").strip()]
+    if stored is None:
+        from harness.keychain import keychain_get
+        stored = lambda name: bool(keychain_get(name))  # noqa: E731
+    present = [f"{n} (env)" if (env.get(n) or "").strip() else f"{n} (credential store)"
+               for n in KEY_NAMES if (env.get(n) or "").strip() or stored(n)]
     if not present:
         return _check("provider keys", "WARN", "none set",
-                      "set one provider key (for example ANTHROPIC_API_KEY) "
-                      "or run a local model server")
+                      "run `flywheel setup` to connect a model, or start a local server")
     return _check("provider keys", "OK", "set: " + ", ".join(present))
 
 

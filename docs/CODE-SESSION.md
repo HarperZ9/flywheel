@@ -45,6 +45,11 @@ The session uses the first model it can reach, in this order: a local server
 (serve.py, then Ollama), a hosted provider whose key is set
 (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`,
 `OPENROUTER_API_KEY`, `GLM_API_KEY`), then the `claude` or `codex` CLI on PATH.
+`flywheel setup` shows which of these are connected, and
+`flywheel setup --provider anthropic` (or openai, gemini, deepseek, openrouter)
+reads a key without echo and stores it in the OS credential store on Windows,
+where every backend looks after the environment. Flywheel never writes a key
+to a plain file; elsewhere setup names the environment variable to set.
 `--backend NAME` pins one, `--model ID` picks its model, `--local-only` never
 calls a hosted provider, and `/model ID` switches mid-session. `flywheel doctor`
 shows what is set.
