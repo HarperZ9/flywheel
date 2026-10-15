@@ -176,6 +176,11 @@ a = Analysis(
         "harness.bundled_lane_expectations",
         "harness.local_agent_cli", "harness.local_mcp",
         "harness.receipt_operations", *CANON_CONTEXT_HIDDEN_IMPORTS,
+        # `flywheel code` is dispatched by dotted name from cli_entry._PACKAGED.
+        "harness.code_session", "harness.code_session.cli",
+        "harness.code_session.backends", "harness.code_session.instructions",
+        "harness.code_session.policy", "harness.code_session.session",
+        "harness.code_session.slash",
         # Desktop Bulletin identity setup is served through the frozen gateway.
         # The source package keeps cryptography optional; the Windows freeze
         # installs .[signing] and must carry the lazy route/import graph.
