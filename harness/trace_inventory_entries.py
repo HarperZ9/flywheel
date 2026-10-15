@@ -220,10 +220,12 @@ STORES = (
                "tool calls and outputs, permission decisions) and meta.json with the "
                "conversation (observed, harness/code_session/store.py)"),
     Store("S26", "Local crash reports", "home", ("crashes",), ("C4", "C5"),
+    Store("S26", "Local crash reports", "home", ("crashes",), ("C1", "C4"),
           _plain("written for the owner to read and choose to share; home paths and "
                  "secret-named environment values are redacted before writing", "7.16"),
           EXPORT, NOT_DESIGNED, owner_binding="home",
           retention="kept until you delete them; nothing is sent",
-          note="version, OS, Python, command name and the traceback (observed, "
+          note="version, OS, Python, command name and the traceback, whose exception text "
+               "can quote content (observed, "
                "harness/crash_report.py)"),
 )
