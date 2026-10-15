@@ -199,8 +199,10 @@ The `web_fetch` tool reads one page over HTTPS (plain HTTP only on loopback),
 up to 512 KiB, as text, and its result names the status, type, size and sha256
 of what came back. It counts as a network call: it asks in `ask` and `edit`,
 runs in `auto`, and is refused in `plan`. Permission rules match the URL, so
-`"deny": ["web_fetch:https://*.example.com/*"]` works. There is no web search
-tool yet.
+`"deny": ["web_fetch:https://*.example.com/*"]` works. `web_search` searches the web under the same permission: a SearXNG instance
+when `SEARXNG_URL` is set, Brave Search when `BRAVE_API_KEY` is set, otherwise
+DuckDuckGo with no key. It returns up to 8 results with title, URL and snippet,
+and names the source it used.
 
 ## In VS Code
 

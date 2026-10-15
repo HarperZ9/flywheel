@@ -33,7 +33,7 @@ from pathlib import Path
 
 PROJECT_DIRS = (Path(".flywheel") / "agents", Path(".claude") / "agents")
 READ_ONLY = ("read_file", "list_dir", "repo_map", "grep", "glob")
-ALL_TOOLS = READ_ONLY + ("write_file", "edit_file", "apply_patch", "run", "web_fetch",
+ALL_TOOLS = READ_ONLY + ("write_file", "edit_file", "apply_patch", "run", "web_fetch", "web_search",
                          "todo", "skill")
 TASK_TOOL_TEXT = ('TOOL task {"agent": "<name>", "prompt": "<what to do>"}  runs a subagent '
                   "on a fresh conversation and returns its answer.")

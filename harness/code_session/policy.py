@@ -29,7 +29,7 @@ EXEC_TOOLS = frozenset({"run", "run_background"})
 # under the same mode, rules and approver.
 READ_TOOLS = frozenset({"read_file", "list_dir", "repo_map", "grep", "glob", "todo", "skill",
                         "task", "processes"})
-NETWORK_TOOLS = frozenset({"web_fetch"})
+NETWORK_TOOLS = frozenset({"web_fetch", "web_search"})
 TODO_STATES = ("pending", "in_progress", "done")
 TODO_TOOL_TEXT = (
     'TOOL todo {"items": [{"text": "<step>", "status": "pending|in_progress|done"}, ...]}\n'
@@ -38,7 +38,7 @@ TODO_TOOL_TEXT = (
     "mark items done as you finish them.")
 
 WEB_TOOL_TEXT = ('Also available, in the same TOOL protocol: TOOL web_fetch {"url": "https://..."} '
-                 "reads one web page as text.")
+                 'reads one web page as text; TOOL web_search {"query": "..."} searches the web.')
 DENIED_BY_USER = ("[denied] the user declined this call. Do not retry it "
                   "unchanged; explain what you need or choose another approach.")
 DENIED_BY_RULE = "[denied] a permission rule refuses this call: {rule}"
@@ -198,6 +198,10 @@ class SessionExecutor(ToolExecutor):
     def _t_skill(self, args) -> "tuple[bool, str]":
         from .skills import read_skill
         return read_skill(self.skills, str(args.get("name", "")))
+
+    def _t_web_search(self, args) -> "tuple[bool, str]":
+        from .search import search
+        return search(str(args.get("query", "")))
 
     def _t_web_fetch(self, args) -> "tuple[bool, str]":
         from .web import fetch
