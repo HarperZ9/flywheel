@@ -25,7 +25,8 @@ from harness.local_tools import ToolExecutor, ToolGate, ToolResult
 MODES = ("plan", "ask", "edit", "auto")
 WRITE_TOOLS = frozenset({"write_file", "edit_file", "apply_patch"})
 EXEC_TOOLS = frozenset({"run"})
-READ_TOOLS = frozenset({"read_file", "list_dir", "repo_map", "grep", "glob", "todo"})
+READ_TOOLS = frozenset({"read_file", "list_dir", "repo_map", "grep", "glob", "todo", "skill"})
+NETWORK_TOOLS = frozenset({"web_fetch"})
 TODO_STATES = ("pending", "in_progress", "done")
 TODO_TOOL_TEXT = (
     'TOOL todo {"items": [{"text": "<step>", "status": "pending|in_progress|done"}, ...]}\n'
@@ -33,6 +34,8 @@ TODO_TOOL_TEXT = (
     "whole list each time, mark one item in_progress while you work on it, and "
     "mark items done as you finish them.")
 
+WEB_TOOL_TEXT = ('Also available, in the same TOOL protocol: TOOL web_fetch {"url": "https://..."} '
+                 "reads one web page as text.")
 DENIED_BY_USER = ("[denied] the user declined this call. Do not retry it "
                   "unchanged; explain what you need or choose another approach.")
 DENIED_BY_RULE = "[denied] a permission rule refuses this call: {rule}"
@@ -47,6 +50,8 @@ def tool_class(name: str) -> str:
         return "write"
     if name in EXEC_TOOLS:
         return "exec"
+    if name in NETWORK_TOOLS:
+        return "network"
     return "other"           # external MCP tools and anything unknown
 
 
@@ -91,6 +96,7 @@ class SessionExecutor(ToolExecutor):
     pre_tool: "Callable[[str, dict], str | None] | None" = None    # returns a block reason
     post_tool: "Callable[[str, dict, ToolResult], None] | None" = None
     todos: list = field(default_factory=list)
+    skills: dict = field(default_factory=dict)
 
     def set_mode(self, mode: str) -> None:
         self.gate = gate_for(mode)
@@ -156,6 +162,15 @@ class SessionExecutor(ToolExecutor):
             clean.append({"text": str(item["text"]).strip(), "status": status})
         self.todos = clean
         return True, render_todos(clean)
+
+
+    def _t_skill(self, args) -> "tuple[bool, str]":
+        from .skills import read_skill
+        return read_skill(self.skills, str(args.get("name", "")))
+
+    def _t_web_fetch(self, args) -> "tuple[bool, str]":
+        from .web import fetch
+        return fetch(str(args.get("url", "")))
 
 
 def render_todos(items: list) -> str:

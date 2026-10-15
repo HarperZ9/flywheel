@@ -128,6 +128,24 @@ a `description:` line in front matter shows in `/help`. Built-in commands
 cannot be replaced. Custom commands also work with `-p`, as in
 `flywheel code -p "/review parser.py"`.
 
+## Skills
+
+Agent Skills folders (a folder with a `SKILL.md` whose front matter has a
+`name` and `description`) are read from `.flywheel/skills/` and
+`.claude/skills/` in the project and `skills/` in the Flywheel home. Only the
+names and descriptions go into the system prompt; the model loads a skill's
+full text with its `skill` tool when one fits. Loading a skill grants no
+permission.
+
+## Web pages
+
+The `web_fetch` tool reads one page over HTTPS (plain HTTP only on loopback),
+up to 512 KiB, as text, and its result names the status, type, size and sha256
+of what came back. It counts as a network call: it asks in `ask` and `edit`,
+runs in `auto`, and is refused in `plan`. Permission rules match the URL, so
+`"deny": ["web_fetch:https://*.example.com/*"]` works. There is no web search
+tool yet.
+
 ## Todo list
 
 For work with several steps the agent keeps a todo list with its `todo` tool
