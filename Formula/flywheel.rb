@@ -11,8 +11,8 @@ class Flywheel < Formula
 
   desc "Run any model, keep a receipt you can recheck offline"
   homepage "https://github.com/HarperZ9/flywheel"
-  url "https://files.pythonhosted.org/packages/c5/78/36ca2ef83c668c90d39fb827c8b600ef793e50b955e64546852f34a0ad7d/flywheel_verify-1.8.0.tar.gz"
-  sha256 "f4d13aa796a466a84b988b5d02a726df29c273996ae166848c518bb013b8a6c5"
+  url "https://files.pythonhosted.org/packages/5d/03/53b9277371307e7b65a7cc7fd0e33c7dd35a64e4081e7c9cac9f55eaf405/flywheel_verify-1.9.0.tar.gz"
+  sha256 "a98047c20b6e77ea7a94c47c6b50f4e8d5958c41f27f6426b77671f8ff4d1151"
   license "FSL-1.1-MIT"
 
   depends_on "python@3.13"
