@@ -9,64 +9,23 @@ Type /help inside the session for the commands.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import sys
 
 from . import resume, slash
+from .args import parse_args  # noqa: F401 (re-exported: tests and callers use cli.parse_args)
 from .attach import attach_hooks as _attach_hooks, attach_mcp as _attach_mcp
 from .rules import load_rules
 from .store import ResumeRefused
-from .backends import DEFAULT_MAX_TOKENS, build_agent, describe, ladder
-from .policy import MODES, deny_all
-from .session import DEFAULT_MAX_STEPS, new_session
+from .backends import build_agent, describe, ladder
+from .policy import deny_all
+from .session import new_session
 
 NO_BACKEND = ("No model is reachable. Set a provider key (for example "
               "ANTHROPIC_API_KEY or OPENAI_API_KEY), start a local server such as "
               "ollama, or put the claude or codex CLI on PATH. `flywheel doctor` "
               "shows what is set.")
-
-
-def parse_args(argv):
-    ap = argparse.ArgumentParser(prog="flywheel code", description=__doc__.splitlines()[0])
-    ap.add_argument("-p", "--print", dest="prompt", default=None, metavar="REQUEST",
-                    help="run one request, print the answer and exit; with no one to ask, "
-                         "calls that would ask are refused, so pass --mode edit or auto")
-    ap.add_argument("--root", default=".", help="project folder (default: current folder)")
-    ap.add_argument("--mode", choices=MODES, default="ask",
-                    help="permission mode (default: ask)")
-    ap.add_argument("--backend", default="auto", help="pin a backend by name")
-    ap.add_argument("--model", default="", help="model id for the chosen backend")
-    ap.add_argument("--providers", default="",
-                    help="comma list of hosted providers to consider (default: all with keys)")
-    ap.add_argument("--local-only", action="store_true", help="never call a hosted provider")
-    ap.add_argument("--max-steps", type=int, default=DEFAULT_MAX_STEPS)
-    ap.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS)
-    ap.add_argument("--test-cmd", default="", help="tests a turn must pass before it is done")
-    ap.add_argument("--no-instructions", action="store_true",
-                    help="do not read AGENTS.md, CLAUDE.md or FLYWHEEL.md")
-    ap.add_argument("-c", "--continue", dest="cont", action="store_true",
-                    help="resume the newest saved session for this folder")
-    ap.add_argument("--resume", default="", metavar="ID", help="resume a saved session")
-    ap.add_argument("--sessions", action="store_true",
-                    help="list saved sessions for this folder and exit")
-    ap.add_argument("--no-save", action="store_true", help="do not save this session")
-    ap.add_argument("--no-mcp", action="store_true", help="start no MCP servers")
-    ap.add_argument("--trust-project-mcp", action="store_true",
-                    help="start the project's MCP servers without asking")
-    ap.add_argument("--trust-project-hooks", action="store_true",
-                    help="run the project's hooks without asking")
-    ap.add_argument("--worktree", default="", metavar="NAME",
-                    help="work in a git worktree on branch flywheel/NAME, carrying your "
-                         "uncommitted changes; your checkout is not touched")
-    ap.add_argument("--acp", action="store_true",
-                    help="serve the Agent Client Protocol on stdin and stdout for an editor")
-    ap.add_argument("--output-format", choices=("text", "json", "stream-json"), default="text",
-                    help="with -p: text, one JSON result, or one JSON object per event")
-    args = ap.parse_args(argv)
-    args.root = os.path.abspath(args.root)
-    return args
 
 
 def _home() -> str:
@@ -92,15 +51,23 @@ def prompt_approver(name: str, args: dict) -> str:
             return "no"
 
 
+def plain_output() -> bool:
+    """Screen-reader friendly output: FLYWHEEL_SCREEN_READER=1, or --plain."""
+    return os.environ.get("FLYWHEEL_SCREEN_READER", "") not in ("", "0")
+
+
 def print_event(event: dict) -> None:
-    kind = event.get("type")
+    kind, plain = event.get("type"), plain_output()
     if kind == "tool_call":
         args = json.dumps(event.get("args", {}), ensure_ascii=False)
-        print(f"  > {event.get('name')} {args[:160]}", file=sys.stderr)
+        lead = "Tool call: " if plain else "  > "
+        print(f"{lead}{event.get('name')} {args[:160]}", file=sys.stderr)
     elif kind == "tool_result":
         first = (event.get("output") or "").strip().splitlines()[:1]
-        mark = "ok" if event.get("ok") else "FAIL"
-        print(f"    {mark} {first[0][:160] if first else ''}", file=sys.stderr)
+        words = ("succeeded", "failed") if plain else ("ok", "FAIL")
+        mark = words[0] if event.get("ok") else words[1]
+        lead = "Tool result, " if plain else "    "
+        print(f"{lead}{mark}: {first[0][:160] if first else ''}", file=sys.stderr)
 
 
 # The sandbox leaves the project folder read-only to commands: files change
@@ -239,6 +206,8 @@ def _serve_acp(args) -> int:
 
 def main(argv: "list[str] | None" = None) -> int:
     args = parse_args(argv)
+    if args.plain:
+        os.environ["FLYWHEEL_SCREEN_READER"] = "1"
     if args.sessions:
         print(resume.render_list(_home(), args.root))
         return 0

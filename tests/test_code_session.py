@@ -252,3 +252,15 @@ def test_pytest_runs_inside_the_windows_sandbox(tmp_path):
     ok, out = cli._runner()("python -m pytest -q test_ok.py", str(tmp_path))
     assert ok, out
     assert "1 passed" in out
+
+
+def test_plain_output_uses_words_not_symbols(monkeypatch, capsys):
+    monkeypatch.setenv("FLYWHEEL_SCREEN_READER", "1")
+    cli.print_event({"type": "tool_call", "name": "run", "args": {"cmd": "ls"}})
+    cli.print_event({"type": "tool_result", "ok": False, "output": "boom"})
+    err = capsys.readouterr().err
+    assert err.startswith("Tool call: run") and "Tool result, failed: boom" in err
+    assert ">" not in err
+    monkeypatch.delenv("FLYWHEEL_SCREEN_READER")
+    cli.print_event({"type": "tool_call", "name": "run", "args": {}})
+    assert capsys.readouterr().err.startswith("  > run")
