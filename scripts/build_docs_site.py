@@ -33,7 +33,10 @@ PAGES = (  # (group, title, source, page)
     ("Verification", "Recheck a claim", "RECHECK.md", "recheck.html"),
     ("Verification", "Benchmarks", "docs/BENCHMARKS.md", "benchmarks.html"),
     ("Reference", "Commands", None, "commands.html"),
+    ("Reference", "Configuration", "docs/CONFIGURATION.md", "configuration.html"),
+    ("Reference", "Troubleshooting", "docs/TROUBLESHOOTING.md", "troubleshooting.html"),
     ("Project", "Licensing", "docs/LICENSING.md", "licensing.html"),
+    ("Project", "Versions and compatibility", "docs/VERSIONING.md", "versioning.html"),
     ("Project", "Support", "SUPPORT.md", "support.html"),
     ("Project", "Changelog", "CHANGELOG.md", "changelog.html"),
 )
