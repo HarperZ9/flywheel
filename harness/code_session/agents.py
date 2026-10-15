@@ -120,6 +120,7 @@ TASKS_TOOL_TEXT = ('TOOL tasks {"tasks": [{"agent": "<name>", "prompt": "..."}, 
 def _spawn(session, spec: AgentSpec, prompt: str, approver):
     """Run one child to its answer; touches only its own agent and ledger."""
     from .session import new_session
+    session.fire("SubagentStart", agent=spec.name, prompt=prompt[:2000])
     parent = session.executor
     child = new_session(_child_agent(session.agent, spec), session.root, mode=parent.mode,
                         approver=approver, runner=parent.runner, max_steps=session.max_steps)
@@ -140,6 +141,8 @@ def make_runner(session, agents: dict):
     lock = threading.Lock()
 
     def record(spec, child, result) -> str:
+        session.fire("SubagentStop", agent=spec.name, final=result.final[:2000],
+                     ledger_head=result.checkpoint)
         counter["n"] += 1
         rec = {"agent": spec.name, "index": counter["n"], "steps": result.steps,
                "ledger_head": result.checkpoint, "chain_ok": result.verified}

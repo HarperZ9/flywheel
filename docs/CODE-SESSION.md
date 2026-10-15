@@ -135,8 +135,11 @@ and the project's `.flywheel/hooks.json`:
                            "hooks": [{"type": "command", "command": "python check.py"}]}]}}
 ```
 
-Events: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`,
-`Stop`, `SessionEnd`. The command gets the event as JSON on stdin. A
+Events: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PermissionRequest`,
+`PostToolUse`, `PreCompact`, `PostCompact`, `SubagentStart`, `SubagentStop`,
+`Stop`, `SessionEnd`. A `PermissionRequest` hook runs when the mode would ask
+you, and can answer `{"decision": "allow"}` or `{"decision": "deny"}` (or exit
+2) in your place; with no answer you are asked as usual. The command gets the event as JSON on stdin. A
 `UserPromptSubmit` or `PreToolUse` hook blocks by exiting 2 (stderr is the
 reason) or by printing `{"decision": "block", "reason": "..."}`; a blocked tool
 call never runs, and the model is told why. Hook commands run as you, outside

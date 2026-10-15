@@ -98,6 +98,7 @@ class SessionExecutor(ToolExecutor):
     rules: "object | None" = None
     pre_tool: "Callable[[str, dict], str | None] | None" = None    # returns a block reason
     post_tool: "Callable[[str, dict, ToolResult], None] | None" = None
+    permission_hook: "Callable[[str, dict], str | None] | None" = None
     todos: list = field(default_factory=list)
     skills: dict = field(default_factory=dict)
     allowed_tools: "frozenset | None" = None     # a subagent's tool list; None is all
@@ -122,6 +123,10 @@ class SessionExecutor(ToolExecutor):
             return "allow", f"rule:allow:{matched[1]}"
         if name in self.always:
             return "allow", "always"
+        if self.permission_hook is not None:
+            said = self.permission_hook(name, args)
+            if said in ("allow", "deny"):
+                return said, f"hook:{said}"
         answer = self.approver(name, args)
         if answer == "always":
             self.always.add(name)
@@ -151,7 +156,9 @@ class SessionExecutor(ToolExecutor):
                     if source == "agent:tool-not-listed" else
                     DENIED_BY_MODE if source == "mode:plan" else
                     DENIED_BY_RULE.format(rule=source[len("rule:deny:"):])
-                    if source.startswith("rule:deny:") else DENIED_BY_USER)
+                    if source.startswith("rule:deny:") else
+                    "[denied] a PermissionRequest hook refused this call"
+                    if source == "hook:deny" else DENIED_BY_USER)
             return ToolResult(name, args, False, text)
         if name in WRITE_TOOLS and self.before_write is not None:
             self.before_write(name, args)
