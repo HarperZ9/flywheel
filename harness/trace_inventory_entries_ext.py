@@ -158,6 +158,7 @@ EXEMPTIONS = (
     Exemption("home", "plugins.json", f"plugin configuration; {_NO_TRACE}"),
     Exemption("home", "code-plugins", f"plugins installed for flywheel code; {_NO_TRACE}"),
     Exemption("home", "code-plugins.json", f"where each code plugin came from; {_NO_TRACE}"),
+    Exemption("home", "code-marketplaces", f"plugin catalogs added for flywheel code; {_NO_TRACE}"),
     Exemption("home", "projects.json", f"project roots; {_NO_TRACE}"),
     Exemption("home", "catalog.json", f"marketplace catalog; {_NO_TRACE}"),
     Exemption("home", "desktop.json", f"desktop UI settings; {_NO_TRACE}"),

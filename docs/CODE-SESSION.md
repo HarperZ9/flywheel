@@ -182,7 +182,14 @@ shows what the plugin adds, lists every hook command and MCP server command it
 would run, and installs it after a yes (`--yes` skips the question). A git
 source is cloned and its commit recorded. Installed plugins load like your own
 user-level files. `flywheel plugin list` and `flywheel plugin remove NAME`
-manage them. There is no plugin marketplace yet.
+manage them.
+
+Marketplaces are catalogs in Claude Code's `marketplace.json` shape. `flywheel
+plugin marketplace add <folder or git URL>` adds one, `flywheel plugin search
+[words]` lists what the added marketplaces offer, and `flywheel plugin install
+NAME@MARKETPLACE` installs an entry through the same review and confirmation as
+a direct install. A marketplace entry's folder path must stay inside the
+marketplace.
 
 ## Skills
 
