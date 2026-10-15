@@ -42,6 +42,10 @@ def run_print(session, prompt: str, fmt: str) -> int:
         session.on_event = stream_event
     elif fmt == "json":
         session.on_event = None
+    from .slash import Turn, dispatch
+    expanded = dispatch(session, prompt) if prompt.startswith("/") else None
+    if isinstance(expanded, Turn):
+        prompt = str(expanded)
     try:
         result = session.turn(prompt)
     except BackendError as e:
