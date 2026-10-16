@@ -152,9 +152,14 @@ def build_body(*, job_name, submission_record: bytes, review: dict, results: byt
         "superstack": superstack_receipt(job, results, rows, correct, len(rows)),
         "does_not_prove": list(DOES_NOT_PROVE),
     }
-    body["receipt_id"] = ss.canonical_sha256({"nonce": nonce, "job": job,
-                                              "result": body["result"]})
+    body["receipt_id"] = receipt_id(body)
     return body
+
+
+def receipt_id(body: dict) -> str:
+    """The replay id: canonical SHA-256 of the nonce, job and result blocks."""
+    return ss.canonical_sha256({"nonce": body["nonce"], "job": body["job"],
+                                "result": body["result"]})
 
 
 def claim_sha256(body: dict) -> str:
