@@ -25,6 +25,7 @@ from ._vendor import superstack as ss
 from .ed25519_verify import Ed25519Error, verify as ed_verify
 from . import job_result_receipt as jr
 from .pysyft_job_hash import JobHashError, submission_hash
+from .signer.statement import key_id_for
 
 MATCH, DRIFT, UNVERIFIABLE = "MATCH", "DRIFT", "UNVERIFIABLE"
 
@@ -42,6 +43,11 @@ def _signature(env: dict, public_key_hex: str) -> list:
         fails.append("claim_digest")
     if sig.get("public_key") != public_key_hex.lower():
         fails.append("wrong_signer")
+    try:
+        if sig.get("key_id") != key_id_for(bytes.fromhex(public_key_hex)):
+            fails.append("key_id")
+    except ValueError:
+        fails.append("key_id")
     try:
         ok = ed_verify(bytes.fromhex(public_key_hex), digest.encode("ascii"),
                        bytes.fromhex(str(sig.get("sig"))))
@@ -108,7 +114,11 @@ def _reveal(results: bytes, answers: dict) -> list:
 
 
 def _replay(body: dict, nonce, seen) -> list:
+    """receipt_id is recomputed, never read: a seen-list keyed on a stale or forged
+    id would let a rebuilt receipt through."""
     fails = []
+    if body.get("receipt_id") != jr.receipt_id(body):
+        fails.append("receipt_id")
     if nonce is not None and body.get("nonce") != nonce:
         fails.append("replay_nonce")
     if seen is not None and body.get("receipt_id") in set(seen):
@@ -124,6 +134,8 @@ def verify(envelope, *, public_key_hex, job_dir=None, results=None, nonce=None,
     checks = {}
     try:
         checks["signature"] = _signature(envelope, public_key_hex) if public_key_hex else None
+        if envelope.get("schema") != jr.ENVELOPE_SCHEMA:
+            checks["envelope"] = ["envelope_schema"]
         body = envelope["body"]
         if body.get("schema") != jr.SCHEMA or tuple(body.get("does_not_prove", ())) != jr.DOES_NOT_PROVE:
             checks["schema"] = ["schema_or_limits"]

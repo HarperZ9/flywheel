@@ -23,8 +23,10 @@ from pathlib import Path
 import pytest
 
 from harness import job_result_receipt as jr
+from harness._vendor import superstack as ss
 from harness.job_result_verify import DRIFT, MATCH, UNVERIFIABLE, verify
 from harness.pysyft_job_hash import JobHashError, code_hash, digest_files, submission_hash
+from harness.signer.statement import key_id_for
 
 FIX = Path(__file__).resolve().parent / "fixtures" / "pysyft_receipt"
 NONCE = "openmined-bridge-demo-20261003"
@@ -55,9 +57,11 @@ def _attacker():
         return (lambda m: k.sign(m).signature), bytes(k.verify_key)
 
 
-def _resign(body):
+def _resign(body, key_id=None):
+    """Sign with the test key under its own key_id, so only the check under test fires."""
     sign, pub = _attacker()
-    return jr.attach(body, sign(jr.claim_sha256(body).encode("ascii")), pub, "test-attacker"), pub.hex()
+    env = jr.attach(body, sign(jr.claim_sha256(body).encode("ascii")), pub, key_id or key_id_for(pub))
+    return env, pub.hex()
 
 
 @pytest.fixture
@@ -143,7 +147,7 @@ def _drop_a_row(c):
     c["kw"]["results"] = b"\n".join(c["kw"]["results"].splitlines()[1:]) + b"\n"
 
 
-def _lie_in_rows(c):
+def _lie_in_rows(c, rebuild_receipt_id=True):
     """A consistent lie: flip a wrong row to correct and rebuild every digest."""
     lines = c["kw"]["results"].decode().splitlines()
     i = next(n for n, ln in enumerate(lines) if '"correct": false' in ln)
@@ -156,8 +160,38 @@ def _lie_in_rows(c):
                           results_sha256=hashlib.sha256(results).hexdigest())
     body["superstack"] = jr.superstack_receipt(body["job"], results, rows,
                                                body["result"]["correct"], len(rows))
+    if rebuild_receipt_id:
+        body["receipt_id"] = ss.canonical_sha256({"nonce": body["nonce"], "job": body["job"],
+                                                  "result": body["result"]})
     c["kw"]["results"] = results
     c["env"], c["kw"]["public_key_hex"] = _resign(body)
+
+
+def _lie_with_stale_receipt_id(c):
+    """The same lie, leaving receipt_id as the honest run computed it."""
+    _lie_in_rows(c, rebuild_receipt_id=False)
+
+
+def _forge_receipt_id(c):
+    """A fresh receipt_id dodges a seen-list; the signer re-signs the body."""
+    c["env"]["body"]["receipt_id"] = "0" * 64
+    c["env"], c["kw"]["public_key_hex"] = _resign(c["env"]["body"])
+
+
+def _relabel_key_id(c):
+    """key_id sits outside the signed body: an edit there needs no new signature."""
+    c["env"]["signature"]["key_id"] = "ed25519:" + "0" * 32
+
+
+def _resign_under_pinned_key_id(c):
+    """The attacker's key, labelled with the pinned key's id."""
+    _edit_score(c)
+    c["env"], c["kw"]["public_key_hex"] = _resign(c["env"]["body"], key_id=c["env"]["signature"]["key_id"])
+
+
+def _relabel_envelope_schema(c):
+    """The envelope schema sits outside the signed body too."""
+    c["env"]["schema"] = "flywheel.signed-job-result/v2"
 
 
 def _drop_a_limit(c):
@@ -181,6 +215,9 @@ MUTATIONS = [
     (_wrong_signer, "wrong_signer"), (_drop_a_row, "results_bytes"),
     (_lie_in_rows, "reveal"), (_drop_a_limit, "schema_or_limits"),
     (_break_superstack_seal, "superstack:seal"),
+    (_lie_with_stale_receipt_id, "receipt_id"), (_forge_receipt_id, "receipt_id"),
+    (_relabel_key_id, "key_id"), (_resign_under_pinned_key_id, "key_id"),
+    (_relabel_envelope_schema, "envelope_schema"),
 ]
 
 
@@ -205,6 +242,34 @@ def test_missing_inputs_are_unverifiable_not_match(case):
     case["kw"].update(job_dir=None)
     r = verify(case["env"], **case["kw"])
     assert r["verdict"] == UNVERIFIABLE and r["missing_inputs"] == ["job_dir"]
+
+
+def test_without_the_reveal_a_stale_receipt_id_still_drifts(case):
+    """The lie that leaves receipt_id stale is caught before any reveal."""
+    _lie_with_stale_receipt_id(case)
+    case["kw"]["revealed_answers"] = None
+    r = verify(case["env"], **case["kw"])
+    assert r["verdict"] == DRIFT and r["failed"] == ["receipt_id"], r["failed"]
+
+
+def test_every_one_byte_flip_of_the_envelope_fields_outside_the_body_drifts(case):
+    """schema and signature.key_id are read now; each byte of them is bound."""
+    for path in (("schema",), ("signature", "key_id")):
+        for i in range(len(_get(case["env"], path))):
+            env = copy.deepcopy(case["env"])
+            v = _get(env, path)
+            _set(env, path, v[:i] + chr(ord(v[i]) ^ 1) + v[i + 1:])
+            assert verify(env, **case["kw"])["verdict"] == DRIFT, (path, i)
+
+
+def _get(d, path):
+    for k in path:
+        d = d[k]
+    return d
+
+
+def _set(d, path, v):
+    _get(d, path[:-1])[path[-1]] = v
 
 
 @pytest.mark.parametrize("hostile", [{}, {"body": None}, {"body": {}, "signature": {}}, []])

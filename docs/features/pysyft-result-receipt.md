@@ -22,9 +22,12 @@ signer's public key, `python -m harness.job_result_verify` checks:
 | `approver` | The approval names a reviewer the verifier does not accept. |
 | `signature`, `claim_digest` | Any edit to the body after signing. The digest is recomputed from the body, never read from it. |
 | `wrong_signer` | A body signed by a key other than the one the verifier pinned. |
+| `key_id` | A `signature.key_id` that is not the id of the pinned key (`ed25519:` and the first 32 hex of the key's SHA-256). The field sits outside the signed body, so the verifier derives it rather than trusting it. |
+| `envelope_schema` | An envelope whose `schema` is not `flywheel.signed-job-result/v1`. This field also sits outside the signed body. |
 | `results_bytes`, `items_root` | The released rows are not the rows the receipt sealed. |
 | `score` | The claimed score does not recompute from the released rows. |
-| `replay_nonce`, `replay_seen` | An old receipt presented for a new request. |
+| `receipt_id` | A `receipt_id` that does not recompute from the body's nonce, job and result. A signer who rebuilds a result and leaves the old id, or forges a fresh one, is caught here. |
+| `replay_nonce`, `replay_seen` | An old receipt presented for a new request. The seen-list is keyed on the recomputed id. |
 | `superstack:*`, `superstack_scene` | The embedded superstack receipt's seal, or its binding to the approved hash, does not hold. |
 | `schema_or_limits` | A receipt that drops or rewords any of its fixed `does_not_prove` lines. |
 | `reveal` | Once the hidden answers are revealed, a row's `correct` flag does not rescore. |
@@ -51,12 +54,15 @@ envelope. The body holds:
 - `superstack`: a `superstack.receipt/1` (superstack 0.2.0). Its scene is the approved
   job; its content is the released results bytes. Its two verdicts are identity (do the
   bytes match) and tolerance (does the claimed score recompute from the rows).
-- `nonce` and `receipt_id`: the requesting party's challenge, and a digest of the nonce,
-  job and result, for replay checks.
+- `nonce` and `receipt_id`: the requesting party's challenge, and the superstack
+  canonical SHA-256 of `{nonce, job, result}`, for replay checks. The verifier
+  recomputes the id and never trusts the recorded one.
 - `does_not_prove`: the fixed list below.
 
 The signature is Ed25519 over `claim_sha256`, the superstack canonical JSON SHA-256 of
-the body. Verification needs only the Python standard library.
+the body. The envelope's `schema` and the signature's `key_id` sit outside that body, so
+the verifier checks each against a value it derives: the fixed envelope schema, and the
+id of the key it pinned. Verification needs only the Python standard library.
 
 ## The hash format
 
@@ -113,11 +119,19 @@ Exit codes: 0 for MATCH, 1 for DRIFT, 2 for UNVERIFIABLE.
   syft-job itself. The approved hash in the receipt is the value syft-job wrote. The
   score was 40 of 50, and revealing the answers reproduced it exactly. That run's bundle
   is the test fixture in `tests/fixtures/pysyft_receipt/`.
-- **Tamper tests.** `tests/test_job_result_receipt.py` runs 16 paired mutations on that
+- **Tamper tests.** `tests/test_job_result_receipt.py` runs 21 paired mutations on that
   bundle: a swapped job, an edited score, a forged approval, an approval of another
   submission, two replays, a wrong signer, a dropped row, a consistent lie in the rows,
-  a dropped limit, and a broken superstack seal. Each pair asserts MATCH on the untouched
-  bundle and DRIFT, naming the expected check, after the one change.
+  the same lie with a stale `receipt_id`, a forged `receipt_id`, a relabelled `key_id`,
+  an attacker key under the pinned key's id, a relabelled envelope schema, a dropped
+  limit, and a broken superstack seal. Each pair asserts MATCH on the untouched bundle
+  and DRIFT, naming the expected check, after the one change. A further test flips every
+  byte of the envelope `schema` and `key_id` one bit at a time and asserts DRIFT on each.
+- **Byte sweep.** Flipping the low bit of each of the 5,744 bytes of the fixture's
+  `receipt.json` gives 1,315 files that no longer parse. Before these two checks the
+  verifier returned MATCH on 81 of the rest: 69 flips in the values of the envelope
+  `schema` and `signature.key_id`, and 12 in those two key names, which drop the field. With the `key_id` and `envelope_schema` checks it returns MATCH on
+  none. The gap was found by an independent in-browser re-derivation of this verifier.
 - **Not run.** No enclave and no attestation. No syft-enclave, syft-rds or multi-party
   flow. No network sync between two machines; both roles shared one folder.
 - **Windows.** syft-job's arrival check did not pass on a Windows checkout in this test.
@@ -148,7 +162,8 @@ whose list differs from them by a word.
   about whether the key holder is honest.
 
 One test states the fifth line's consequence outright: a signer who lies consistently
-in the rows passes every check until the answers are revealed.
+in the rows, and rebuilds every digest including `receipt_id`, passes every check until
+the answers are revealed. A lie that leaves `receipt_id` stale fails before the reveal.
 
 ## Licences
 
