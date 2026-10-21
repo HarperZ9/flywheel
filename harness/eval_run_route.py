@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from .endpoint_registry import make_endpoint_proposer, unified_roster
+from .eval_access import api_only
 from .eval_receipt import build_eval_receipt, emit_eval_receipt, verify_eval_receipt
 from .oracle_registry import run_verified
 from .task import load_task
@@ -127,7 +128,8 @@ def handle_eval_run(req: dict, run_root) -> tuple[dict, int]:
         tasks=_dataset_identity(specs),
         config={"n": n, "domain": EVAL_DOMAIN, "selection": "first-n"},
         judge=f"{EVAL_DOMAIN} oracle (pytest, offline)",
-        results=results, started_utc=started, finished_utc=finished)
+        results=results, started_utc=started, finished_utc=finished,
+        access=api_only())
 
     receipt_dir = Path(run_root) / "eval"
     written = emit_eval_receipt(receipt, receipt_dir)
@@ -144,4 +146,6 @@ def handle_eval_verify(req: dict) -> tuple[dict, int]:
     good/bad news (MATCH / TAMPERED / UNVERIFIABLE), so a corrupted receipt is a
     first-class result, not an HTTP error."""
     receipt = req.get("receipt")
-    return verify_eval_receipt(receipt if isinstance(receipt, dict) else None), 200
+    scope = req.get("claim_scope")
+    scope = str(scope) if scope else None
+    return verify_eval_receipt(receipt if isinstance(receipt, dict) else None, scope), 200

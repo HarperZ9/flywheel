@@ -156,4 +156,5 @@ def test_monitor_layer0_keeps_an_existing_gate(tmp_path):
 
 
 def test_package_exports_one_call_shape():
-    assert set(checks.CHECKS) == {"schema", "ast", "fsm", "value_on_page", "recompute"}
+    assert set(checks.CHECKS) == {"schema", "ast", "fsm", "value_on_page", "recompute",
+                                 "coverage", "differential"}

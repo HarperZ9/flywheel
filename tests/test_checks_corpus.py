@@ -1,8 +1,12 @@
 """The shared checks against the false-accept corpus and known-good controls.
 
 Success criteria (bar from the synthesis, P4):
-- the checks catch at least 30 of the 40 false accepts; the expected count is
-  exactly 38, and the two misses are the items marked known_limit;
+- the checks catch at least 30 of the first 40 false accepts and 38 of all 56;
+  the expected count is exactly 53, and the three misses are the items marked
+  known_limit;
+- partial-check items (research item 2, 2026-10-21, bar written first): of the
+  16 coverage and differential cases the library catches at least 14, and the
+  only miss is the differential case whose divergent input the fuzz set lacks;
 - zero false rejects on at least 200 known-good items: the 40 fixed twins, the
   120 reference solutions of the shipped hard sets (AST), search traces built
   from the G4 records (FSM), sentences quoted from a shipped doc (value on page),
@@ -25,6 +29,7 @@ import pytest
 from harness import checks
 from harness.checks import CHECKS, PASS, run
 from harness.checks.evidence import recompute_check, value_on_page_check
+from harness.checks.partial import coverage_check, differential_check
 from harness.checks.receipt import SCHEMA
 from harness.checks.structural import ast_check, fsm_check, schema_check
 
@@ -40,7 +45,8 @@ def caught(kind: str | None = None) -> int:
 
 
 def test_corpus_shape_and_provenance():
-    assert len(ITEMS) == 40
+    assert len(ITEMS) == 56
+    assert all(sum(it["kind"] == k for it in ITEMS) == 8 for k in CHECKS)
     assert {it["kind"] for it in ITEMS} == set(CHECKS)
     assert all(it["provenance"].split(":")[0] in ("observed", "pattern") for it in ITEMS)
 
@@ -51,12 +57,19 @@ def test_corpus_matches_its_builder():
     assert build() == CORPUS
 
 
-def test_bar_catches_38_of_40_and_misses_only_known_limits():
+def test_bar_catches_53_of_56_and_misses_only_known_limits():
     missed = [it["id"] for it in ITEMS
               if run(it["kind"], it["subject"], it["spec"]).verdict == PASS]
     assert len(ITEMS) - len(missed) >= 30
     assert missed == [it["id"] for it in ITEMS if it["known_limit"]]
-    assert caught() == 38
+    assert caught() == 53
+
+
+def test_partial_check_items_caught_15_of_16():
+    partial = caught("coverage") + caught("differential")
+    assert partial >= 14 and partial == 15
+    assert all(it["provenance"].startswith("pattern: Terminal-RSI") for it in ITEMS
+               if it["kind"] in ("coverage", "differential"))
 
 
 def _known_good() -> list[tuple[str, object, dict]]:
@@ -143,6 +156,11 @@ MUTANTS = {
     "value_on_page": lambda s, spec: value_on_page_check(str(s).split()[0], spec),
     "recompute": lambda s, spec: (PASS if s == checks.evidence.evaluate(spec["expr"], spec.get(
         "inputs")) else recompute_check(s, spec)[0], "mutant", "== comparison"),
+    # only the checks that ran: a required check that never ran is not noticed
+    "coverage": lambda s, spec: coverage_check(s, dict(spec, required=[
+        c for c in spec["required"] if c in (s.get("ran") or {})] or spec["required"])),
+    # the wrapper test: the first fuzz input only
+    "differential": lambda s, spec: differential_check(s, dict(spec, inputs=spec["inputs"][:1])),
 }
 
 

@@ -1,7 +1,9 @@
 """build_false_accept_corpus.py -- write tests/fixtures/checks/false_accepts_v1.json.
 
-Forty cases a weaker check accepted, eight per check kind in harness.checks,
-each with a fixed twin that must pass. Rebuild and compare:
+Fifty-six cases a weaker check accepted, eight per check kind in
+harness.checks, each with a fixed twin that must pass. The coverage and
+differential items (partial-check false accepts) live in
+false_accept_partial.py. Rebuild and compare:
 
   python scripts/build_false_accept_corpus.py --check
 """
@@ -11,6 +13,9 @@ import argparse
 import json
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from false_accept_partial import coverage_items, differential_items  # noqa: E402
 
 OUT = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "checks" / "false_accepts_v1.json"
 OBS_EXP2 = "observed: exp2 pre-registration amendment A, pilot task lcbhard_57 (2026-10-02)"
@@ -178,9 +183,10 @@ def fsm_items():
 
 
 def build() -> dict:
-    items = recompute_items() + value_items() + schema_items() + ast_items() + fsm_items()
+    items = (recompute_items() + value_items() + schema_items() + ast_items() + fsm_items()
+             + coverage_items(_item) + differential_items(_item))
     return {"schema": "flywheel.false-accept-corpus/v1",
-            "about": ("Forty cases a weaker check accepted, eight per check kind, each with a "
+            "about": ("Fifty-six cases a weaker check accepted, eight per check kind, each with a "
                       "fixed twin that must pass. provenance says whether a case was observed "
                       "in a recorded run or built from a recorded failure pattern. known_limit "
                       "marks cases these checks are expected to miss."),
