@@ -178,8 +178,13 @@ def _sequential(run, task, k, incumbent, executor, editor, lessons, workers):
 
 def run_task(task: dict, *, mode: str, k: int, incumbent: st.Tree, executor: Executor,
              editor: Editor, selector: Selector, lessons: list[dict] | None = None,
-             workers: int = 1) -> TaskRun:
-    """One Propose-Probe-Compose run on one task; returns the record and choice."""
+             workers: int = 1, pool_incumbent: bool = False) -> TaskRun:
+    """One Propose-Probe-Compose run on one task; returns the record and choice.
+
+    pool_incumbent adds the incumbent's first reference rollout (base1) to the
+    selection pool, so a task whose edits all made things worse can keep the
+    harness it started from. Harness-squared selects among finals only.
+    """
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}, got {mode!r}")
     if int(k) < 1:
@@ -190,7 +195,9 @@ def run_task(task: dict, *, mode: str, k: int, incumbent: st.Tree, executor: Exe
     step(run, view, int(k), st.validate(dict(incumbent)), executor, editor,
          list(lessons or []), workers)
     finals = {lbl: run.rollouts[lbl] for lbl in run.finals}
+    if pool_incumbent:
+        finals = {"base1": run.rollouts["base1"], **finals}
     run.chosen, run.why, run.scores = selector.choose(view, finals)
     if run.chosen not in finals:
-        raise ValueError(f"selector chose {run.chosen!r}, not one of the finals")
+        raise ValueError(f"selector chose {run.chosen!r}, not one of the pool")
     return run

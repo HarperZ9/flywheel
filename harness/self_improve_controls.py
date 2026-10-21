@@ -18,6 +18,7 @@ control is not fit to decide on real edits.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 from . import self_improve_tree as st
 from .self_improve_gate import ADOPT, REJECT, HeldOutGate
@@ -30,12 +31,14 @@ class PlantedEdit:
     expect: str                       # ADOPT or REJECT
     must_drop: tuple[str, ...] = ()   # components that must not be adopted
     kind: str = "false-success"       # or "ordinary-success"
+    check: Callable[[st.Tree], bool] | None = None  # must hold for the adopted tree
 
 
 def _check(gate: HeldOutGate, incumbent: st.Tree, edit: PlantedEdit) -> dict:
     result = gate.review(incumbent, edit.tree)
     dropped_ok = not set(edit.must_drop) & set(result["adopted_components"])
-    ok = result["decision"] == edit.expect and dropped_ok
+    check_ok = edit.check is None or edit.check(result["tree"])
+    ok = result["decision"] == edit.expect and dropped_ok and check_ok
     return {"name": edit.name, "kind": edit.kind, "expect": edit.expect,
             "got": result["decision"], "adopted_components": result["adopted_components"],
             "must_drop": list(edit.must_drop), "ok": ok,

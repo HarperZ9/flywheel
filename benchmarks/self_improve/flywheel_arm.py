@@ -1,11 +1,15 @@
 """Flywheel's arms of the ledger-quirks head-to-head.
 
-flywheel_gated     the shipped design: grader-free Propose-Probe-Compose per
-                   task, carry-over only through the held-out gate.
-flywheel_ungated   the same loop with the gate switched off, so the chosen
-                   harness always becomes the next incumbent. It isolates the
-                   gate's contribution from the rest of the loop.
-base               the base harness, no loop.
+Each Flywheel arm is a row of ARMS: whether the gate is on, whether the
+incumbent competes in the selection pool, and the gate's finest change unit.
+
+flywheel_v2         the shipped design: incumbent in the pool (wins ties), gate
+                    attributes down to single lines.
+flywheel_v1         the first design: finals-only pool, file-level gate.
+flywheel_pool_only  v1 plus the incumbent in the pool.
+flywheel_line_only  v1 plus line-level attribution.
+flywheel_ungated    finals-only, no gate: every chosen harness carries over.
+base                the base harness, no loop.
 
 Every arm reports per-task rows: the delivered output's grade, whether the
 delivering harness carries a gaming or harmful feature, and executions spent.
@@ -21,6 +25,13 @@ from harness.self_improve_loop import run_task
 from harness.self_improve_stream import Stream, StreamConfig
 
 BAD = set(bench.HARMFUL) | set(bench.GAMING)
+ARMS = {
+    "flywheel_v2": {"gated": True, "pool": True, "granularity": "line"},
+    "flywheel_v1": {"gated": True, "pool": False, "granularity": "file"},
+    "flywheel_pool_only": {"gated": True, "pool": True, "granularity": "file"},
+    "flywheel_line_only": {"gated": True, "pool": False, "granularity": "line"},
+    "flywheel_ungated": {"gated": False, "pool": False, "granularity": "file"},
+}
 
 
 def _row(arm, cell, phase, task, output, feats, executions) -> dict:
@@ -36,14 +47,17 @@ def base_rows(cell: dict, tasks: list[dict], phase: str) -> list[dict]:
             for t in tasks]
 
 
-def flywheel_rows(cell: dict, splits: dict, *, gated: bool) -> tuple[list[dict], dict]:
-    arm = "flywheel_gated" if gated else "flywheel_ungated"
+def flywheel_rows(cell: dict, splits: dict, arm: str) -> tuple[list[dict], dict]:
+    spec = ARMS[arm]
     executor = CallableExecutor(bench.execute)
     editor = ScriptedEditor(seed=cell["seed"], p_game=cell["p_game"])
-    selector = ContrastSelector(bench.contrast_score)
-    gate = HeldOutGate(splits["gate"], bench.grade, executor, GatePolicy(seed=cell["seed"]))
+    selector = ContrastSelector(bench.contrast_score,
+                                prefer=("base1",) if spec["pool"] else ())
+    gate = HeldOutGate(splits["gate"], bench.grade, executor,
+                       GatePolicy(seed=cell["seed"], granularity=spec["granularity"]))
     stream = Stream(executor, editor, selector, gate, bench.base_tree(),
-                    StreamConfig(mode=cell["mode"], k=cell["k"], gate_enabled=gated))
+                    StreamConfig(mode=cell["mode"], k=cell["k"], gate_enabled=spec["gated"],
+                                 pool_incumbent=spec["pool"]))
     rows, spent = [], 0
     for task in splits["stream"]:
         before = gate.executions
@@ -55,7 +69,8 @@ def flywheel_rows(cell: dict, splits: dict, *, gated: bool) -> tuple[list[dict],
     frozen = stream.library.incumbent()
     for task in splits["test"]:
         run = run_task(task, mode=cell["mode"], k=cell["k"], incumbent=frozen,
-                       executor=executor, editor=editor, selector=selector)
+                       executor=executor, editor=editor, selector=selector,
+                       pool_incumbent=spec["pool"])
         rows.append(_row(arm, cell, "test", task, run.rollouts[run.chosen].output,
                          bench.features_of(run.chosen_tree()), run.budget["rollouts"]))
         rows.append(_row(arm + "_incumbent", cell, "test", task,
@@ -68,10 +83,10 @@ def flywheel_rows(cell: dict, splits: dict, *, gated: bool) -> tuple[list[dict],
     return rows, summary
 
 
-def control_report(cell: dict, splits: dict) -> dict:
+def control_report(cell: dict, splits: dict, granularity: str = "line") -> dict:
     """The planted-edit suite against the base harness, on this seed's gate set."""
     gate = HeldOutGate(splits["gate"], bench.grade, CallableExecutor(bench.execute),
-                       GatePolicy(seed=cell["seed"]))
+                       GatePolicy(seed=cell["seed"], granularity=granularity))
     report = run_controls(gate, bench.base_tree(),
                           planted_edits(bench.base_tree(), splits["stream"][0]))
     return {**cell, "verdict": report["verdict"], "false_accepts": report["false_accepts"],

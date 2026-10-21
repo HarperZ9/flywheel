@@ -8,10 +8,10 @@ selector never saw.
 The gate is paired: the incumbent and the candidate run on the same held-out
 tasks, and the per-task difference carries the interval (a bootstrap over
 tasks, through statistics.cluster_bootstrap). Each changed component is also
-measured by leaving it out of the candidate. A component whose removal costs
-nothing on the held-out set is dropped from the adopted edit, so an edit to the
-harness's self-check cannot ride into the persistent harness on the back of a
-real fix.
+measured by leaving it out of the candidate, down to single changed lines
+(self_improve_units.py). A unit whose removal costs nothing on the held-out set
+is dropped from the adopted edit, so a self-check edit or a wrong line cannot
+ride into the persistent harness on the back of a real fix.
 
 What a pass does not prove is stated on the result, because a small held-out
 set is a sample: it bounds the effect on that distribution, not on tasks
@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 from . import self_improve_tree as st
+from . import self_improve_units as su
 from .evidence_json import canonical_sha256
 from .self_improve_loop import Executor, Rollout
 from .statistics import cluster_bootstrap
@@ -38,7 +39,9 @@ class GatePolicy:
     min_lower: float = 0.0       # the interval's lower bound must reach this
     draws: int = 2000
     seed: int = 0
-    attribute: bool = True       # measure each changed component alone
+    attribute: bool = True       # leave each change unit out of the candidate
+    granularity: str = "line"    # finest unit tried: line, hunk or file
+    max_units: int = 24          # split a kept hunk into lines only up to this size
 
 
 @dataclass
@@ -95,46 +98,76 @@ class HeldOutGate:
         return (eff["point"] > self.policy.min_point
                 and eff["interval"][0] >= self.policy.min_lower)
 
-    def _attribute(self, incumbent: st.Tree, candidate: st.Tree,
-                   components: list[str]) -> list[dict]:
-        """Leave-one-out: a component earns its place if removing it from the
-        candidate costs held-out score. Measuring against the full candidate,
-        not the incumbent, keeps fixes that only pay off together."""
+    def _loo(self, incumbent: st.Tree, candidate: st.Tree, fixed: list[str],
+             units: list[str], level: str) -> list[dict]:
+        """Leave-one-out over units with `fixed` always applied: a unit earns its
+        place if removing it costs held-out score. Measuring against the full
+        candidate, not the incumbent, keeps changes that only pay off together."""
+        full = su.apply_units(incumbent, candidate, fixed + units)
         rows = []
-        for comp in components:
-            others = [c for c in components if c != comp]
-            without = st.restrict(incumbent, candidate, others)
-            eff = self.effect(without, candidate)
-            rows.append({"component": comp, "verification_surface":
-                         st.touches_verification([comp]), "effect": eff,
-                         "kept": self.passes(eff)})
+        for unit in units:
+            others = fixed + [u for u in units if u != unit]
+            eff = self.effect(su.apply_units(incumbent, candidate, others), full)
+            comp = su.unit_component(unit)
+            rows.append({"unit": unit, "component": comp, "level": level,
+                         "verification_surface": st.touches_verification([comp]),
+                         "effect": eff, "kept": self.passes(eff)})
         return rows
+
+    def _attribute(self, incumbent: st.Tree, candidate: st.Tree) -> tuple[list, list]:
+        """Files first, then hunks inside kept files, then lines inside kept hunks.
+
+        Going coarse to fine means a line is tested only inside a file and a
+        hunk that already earned their place, so a partial rewrite that no
+        longer runs cannot keep a file the gate would have dropped whole.
+        """
+        tree = su.unit_tree(incumbent, candidate)
+        rows = self._loo(incumbent, candidate, [], [f for f, _ in tree], "file")
+        kept_files = {r["unit"] for r in rows if r["kept"]}
+        if self.policy.granularity == "file":
+            return rows, sorted(kept_files)
+        whole_files = [f for f, hunks in tree if f in kept_files and not hunks]
+        hunks = [h for f, hs in tree if f in kept_files for h, _ in hs]
+        hrows = self._loo(incumbent, candidate, whole_files, hunks, "hunk")
+        kept_h = [r["unit"] for r in hrows if r["kept"]]
+        if self.policy.granularity == "hunk":
+            return rows + hrows, whole_files + kept_h
+        lines_of = {h: ls for _, hs in tree for h, ls in hs}
+        split = [h for h in kept_h if 1 < len(lines_of[h]) <= self.policy.max_units]
+        fixed = whole_files + [h for h in kept_h if h not in split]
+        lrows = self._loo(incumbent, candidate, fixed,
+                          [ln for h in split for ln in lines_of[h]], "line")
+        return rows + hrows + lrows, fixed + [r["unit"] for r in lrows if r["kept"]]
 
     def review(self, incumbent: st.Tree, candidate: st.Tree) -> dict:
         """Decide whether (part of) candidate becomes the new incumbent."""
         components = st.changed_components(incumbent, candidate)
+        gran = self.policy.granularity
         if not components:
-            return _result(REJECT, incumbent, [], None, [], "no change to review", self)
-        rows: list[dict] = []
-        keep = components
+            return _result(REJECT, incumbent, [], None, [], "no change to review", self, gran)
+        if gran not in su.GRANULARITIES:
+            raise ValueError(f"granularity must be one of {su.GRANULARITIES}")
         if self.policy.attribute or st.touches_verification(components):
-            rows = self._attribute(incumbent, candidate, components)
-            keep = [r["component"] for r in rows if r["kept"]]
-        if not keep:
+            rows, keep = self._attribute(incumbent, candidate)
+        else:
+            rows, keep = [], [f for f, _ in su.unit_tree(incumbent, candidate)]
+        adopted = su.apply_units(incumbent, candidate, keep)
+        if not keep or adopted == incumbent:
             return _result(REJECT, incumbent, [], None, rows,
-                           "no component earned its place on the held-out set", self)
-        adopted = st.restrict(incumbent, candidate, keep)
+                           "no change unit earned its place on the held-out set", self, gran)
         eff = self.effect(incumbent, adopted)
         if not self.passes(eff):
             return _result(REJECT, incumbent, [], eff, rows,
-                           "the kept components together did not pass", self)
-        return _result(ADOPT, adopted, keep, eff, rows, "passed the held-out gate", self)
+                           "the kept units together did not pass", self, gran)
+        return _result(ADOPT, adopted, keep, eff, rows, "passed the held-out gate", self, gran)
 
 
 def _result(decision: str, tree: st.Tree, kept: list[str], eff: dict | None,
-            rows: list[dict], reason: str, gate: HeldOutGate) -> dict:
-    return {"decision": decision, "reason": reason, "adopted_components": kept,
-            "tree": tree, "heldout": eff, "attribution": rows,
+            rows: list[dict], reason: str, gate: HeldOutGate, gran: str = "") -> dict:
+    return {"decision": decision, "reason": reason,
+            "adopted_components": sorted({su.unit_component(u) for u in kept}),
+            "adopted_units": list(kept), "granularity": gran, "tree": tree,
+            "heldout": eff, "attribution": rows,
             "gate_executions": gate.executions,
             "policy": {"alpha": gate.policy.alpha, "min_point": gate.policy.min_point,
                        "min_lower": gate.policy.min_lower, "draws": gate.policy.draws},

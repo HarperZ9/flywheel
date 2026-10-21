@@ -98,3 +98,22 @@ def test_bad_mode_and_k():
         with pytest.raises(ValueError):
             run_task({"id": "t"}, incumbent=BASE, executor=_executor(),
                      editor=SpyEditor(), selector=_selector([]), **kw)
+
+
+def test_incumbent_joins_the_pool_only_when_asked():
+    class Worse:
+        def propose(self, ctx):
+            return Proposal({"systemprompt.md": "x"})
+    sel = ContrastSelector(lambda task, r: len(r.output), prefer=("base1",))
+    run = run_task({"id": "t"}, mode="parallel", k=1, incumbent=BASE, executor=_executor(),
+                   editor=Worse(), selector=sel, pool_incumbent=True)
+    assert run.chosen == "base1" and run.chosen_tree() == BASE
+    run = run_task({"id": "t"}, mode="parallel", k=1, incumbent=BASE, executor=_executor(),
+                   editor=Worse(), selector=sel)
+    assert run.chosen == "agg1"
+
+
+def test_prefer_breaks_ties_toward_the_incumbent():
+    sel = ContrastSelector(lambda task, r: 1.0, prefer=("base1",))
+    finals = {"agg1": Rollout("agg1", "a"), "base1": Rollout("base1", "b")}
+    assert sel.choose({}, finals)[0] == "base1"
