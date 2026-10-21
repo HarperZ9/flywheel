@@ -77,6 +77,7 @@ class CodeSession:
     hooks: "object | None" = None
     commands: dict = field(default_factory=dict)
     config_sha256: str = ""           # harness settings of the last turn (config_hash)
+    runtime: "dict | None" = None     # declared serving runtime (runtime_identity)
 
     def set_hooks(self, hooks) -> None:
         """Attach lifecycle hooks; every run is recorded on the ledger."""

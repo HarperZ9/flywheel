@@ -4,7 +4,7 @@
     receipt = run("recompute", 125, {"expr": "a ^ b", "inputs": {"a": 74, "b": 51}})
     receipt.verdict   # "FAIL": 74 XOR 51 is 121
 
-Kinds: schema, ast, fsm, value_on_page, recompute. Every check takes
+Kinds: schema, ast, fsm, value_on_page, recompute, coverage, differential. Every check takes
 (subject, spec) and returns a CheckReceipt with verdict PASS, FAIL or
 UNVERIFIABLE. A check that raises is recorded as UNVERIFIABLE with code
 check_error, never as PASS.
@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 
 from .evidence import recompute_check, value_on_page_check
+from .partial import coverage_check, differential_check
 from .receipt import FAIL, PASS, UNVERIFIABLE, CheckReceipt, digest
 from .structural import ast_check, fsm_check, schema_check
 
@@ -25,6 +26,8 @@ CHECKS = {
     "fsm": fsm_check,
     "value_on_page": value_on_page_check,
     "recompute": recompute_check,
+    "coverage": coverage_check,
+    "differential": differential_check,
 }
 
 

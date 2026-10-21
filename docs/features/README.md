@@ -30,6 +30,9 @@ Verification and evidence
 - [pysyft-result-receipt](pysyft-result-receipt.md): a signed receipt that binds a
   published score to the exact PySyft job a data owner approved, checkable with no
   access to the model or the data.
+- [eval-runtime-and-access](eval-runtime-and-access.md): eval receipts that name the
+  serving runtime and what the evaluator could see, with a rerun witness and a
+  claim-scope refusal.
 - [proof-surface](proof-surface.md): stdlib contract validators and domain proof-packet
   wedges; one re-derivable proof packet per action (composed via accountable-surface).
 

@@ -1,6 +1,6 @@
 {
  "schema": "flywheel.false-accept-corpus/v1",
- "about": "Forty cases a weaker check accepted, eight per check kind, each with a fixed twin that must pass. provenance says whether a case was observed in a recorded run or built from a recorded failure pattern. known_limit marks cases these checks are expected to miss.",
+ "about": "Fifty-six cases a weaker check accepted, eight per check kind, each with a fixed twin that must pass. provenance says whether a case was observed in a recorded run or built from a recorded failure pattern. known_limit marks cases these checks are expected to miss.",
  "items": [
   {
    "id": "recompute-01",
@@ -1190,6 +1190,684 @@
    "accepted_by": "a terminated run kept going",
    "provenance": "pattern: pre-action monitor hold, grant and reject flow",
    "known_limit": false
+  },
+  {
+   "id": "coverage-01",
+   "kind": "coverage",
+   "subject": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS"
+    }
+   },
+   "spec": {
+    "required": [
+     "scenario_1",
+     "scenario_2",
+     "scenario_3",
+     "scenario_4",
+     "protected_verifier"
+    ]
+   },
+   "fixed": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "PASS"
+    }
+   },
+   "accepted_by": "every scenario check passed and the protected verifier never ran",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 2.2 reward audit, 48 of 4,352 trajectories passed every executed scenario check and failed the terminal gate",
+   "known_limit": false
+  },
+  {
+   "id": "coverage-02",
+   "kind": "coverage",
+   "subject": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "FAIL"
+    }
+   },
+   "spec": {
+    "required": [
+     "scenario_1",
+     "scenario_2",
+     "scenario_3",
+     "scenario_4",
+     "protected_verifier"
+    ]
+   },
+   "fixed": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "PASS"
+    }
+   },
+   "accepted_by": "a dense reward that counted passed scenario checks",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 2.2 reward audit, 48 of 4,352 trajectories passed every executed scenario check and failed the terminal gate",
+   "known_limit": false
+  },
+  {
+   "id": "coverage-03",
+   "kind": "coverage",
+   "subject": {
+    "ran": {
+     "agent_declared_done": "PASS"
+    }
+   },
+   "spec": {
+    "required": [
+     "scenario_1",
+     "scenario_2",
+     "scenario_3",
+     "scenario_4",
+     "protected_verifier"
+    ]
+   },
+   "fixed": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "PASS"
+    }
+   },
+   "accepted_by": "the agent's own completion claim",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 2.1, strict success needs the complete protected verifier, not an agent declaration or a subset of checks",
+   "known_limit": false
+  },
+  {
+   "id": "coverage-04",
+   "kind": "coverage",
+   "subject": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "SKIPPED"
+    }
+   },
+   "spec": {
+    "required": [
+     "scenario_1",
+     "scenario_2",
+     "scenario_3",
+     "scenario_4",
+     "protected_verifier"
+    ]
+   },
+   "fixed": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "PASS"
+    }
+   },
+   "accepted_by": "a skipped protected verifier read as not failed",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 2.1, strict success needs the complete protected verifier, not an agent declaration or a subset of checks",
+   "known_limit": false
+  },
+  {
+   "id": "coverage-05",
+   "kind": "coverage",
+   "subject": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "UNVERIFIABLE"
+    }
+   },
+   "spec": {
+    "required": [
+     "scenario_1",
+     "scenario_2",
+     "scenario_3",
+     "scenario_4",
+     "protected_verifier"
+    ]
+   },
+   "fixed": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "PASS"
+    }
+   },
+   "accepted_by": "a verifier timeout read as not failed",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 2.1, strict success needs the complete protected verifier, not an agent declaration or a subset of checks",
+   "known_limit": false
+  },
+  {
+   "id": "coverage-06",
+   "kind": "coverage",
+   "subject": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "Protected_Verifier": "PASS"
+    }
+   },
+   "spec": {
+    "required": [
+     "scenario_1",
+     "scenario_2",
+     "scenario_3",
+     "scenario_4",
+     "protected_verifier"
+    ]
+   },
+   "fixed": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "PASS"
+    }
+   },
+   "accepted_by": "a pass reported under another check's name",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 2.1, strict success needs the complete protected verifier, not an agent declaration or a subset of checks",
+   "known_limit": false
+  },
+  {
+   "id": "coverage-07",
+   "kind": "coverage",
+   "subject": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "PASS"
+    }
+   },
+   "spec": {
+    "required": [
+     "scenario_1",
+     "scenario_2",
+     "scenario_3",
+     "scenario_4",
+     "protected_verifier"
+    ]
+   },
+   "fixed": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "PASS"
+    }
+   },
+   "accepted_by": "a subset of the scenario checks run",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 2.2 reward audit, 48 of 4,352 trajectories passed every executed scenario check and failed the terminal gate",
+   "known_limit": false
+  },
+  {
+   "id": "coverage-08",
+   "kind": "coverage",
+   "subject": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "0.8"
+    }
+   },
+   "spec": {
+    "required": [
+     "scenario_1",
+     "scenario_2",
+     "scenario_3",
+     "scenario_4",
+     "protected_verifier"
+    ]
+   },
+   "fixed": {
+    "ran": {
+     "scenario_1": "PASS",
+     "scenario_2": "PASS",
+     "scenario_3": "PASS",
+     "scenario_4": "PASS",
+     "protected_verifier": "PASS"
+    }
+   },
+   "accepted_by": "capped partial credit read as a pass",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 2.1, strict success needs the complete protected verifier, not an agent declaration or a subset of checks",
+   "known_limit": false
+  },
+  {
+   "id": "differential-01",
+   "kind": "differential",
+   "subject": {
+    "outputs": [
+     [
+      [
+       1,
+       2
+      ],
+      3
+     ],
+     [
+      [
+       200,
+       100
+      ],
+      300
+     ],
+     [
+      [
+       255,
+       1
+      ],
+      256
+     ]
+    ]
+   },
+   "spec": {
+    "reference": "(x[0] + x[1]) % 256",
+    "inputs": [
+     [
+      1,
+      2
+     ],
+     [
+      200,
+      100
+     ],
+     [
+      255,
+      1
+     ]
+    ]
+   },
+   "fixed": {
+    "outputs": [
+     [
+      [
+       1,
+       2
+      ],
+      3
+     ],
+     [
+      [
+       200,
+       100
+      ],
+      44
+     ],
+     [
+      [
+       255,
+       1
+      ],
+      0
+     ]
+    ]
+   },
+   "accepted_by": "a wrapper test that checked one case: u8 addition that no longer wraps",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 3.5, a Rust-to-C port passed its wrapper test and failed exact-output fuzz testing",
+   "known_limit": false
+  },
+  {
+   "id": "differential-02",
+   "kind": "differential",
+   "subject": {
+    "outputs": [
+     [
+      [
+       7,
+       2
+      ],
+      3
+     ],
+     [
+      [
+       -7,
+       2
+      ],
+      -4
+     ]
+    ]
+   },
+   "spec": {
+    "reference": "int(x[0] / x[1])",
+    "inputs": [
+     [
+      7,
+      2
+     ],
+     [
+      -7,
+      2
+     ]
+    ]
+   },
+   "fixed": {
+    "outputs": [
+     [
+      [
+       7,
+       2
+      ],
+      3
+     ],
+     [
+      [
+       -7,
+       2
+      ],
+      -3
+     ]
+    ]
+   },
+   "accepted_by": "a wrapper test that checked one case: integer division that floors where the original truncates",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 3.5, a Rust-to-C port passed its wrapper test and failed exact-output fuzz testing",
+   "known_limit": false
+  },
+  {
+   "id": "differential-03",
+   "kind": "differential",
+   "subject": {
+    "outputs": [
+     [
+      [
+       7,
+       3
+      ],
+      1
+     ],
+     [
+      [
+       -7,
+       3
+      ],
+      2
+     ]
+    ]
+   },
+   "spec": {
+    "reference": "x[0] - x[1] * int(x[0] / x[1])",
+    "inputs": [
+     [
+      7,
+      3
+     ],
+     [
+      -7,
+      3
+     ]
+    ]
+   },
+   "fixed": {
+    "outputs": [
+     [
+      [
+       7,
+       3
+      ],
+      1
+     ],
+     [
+      [
+       -7,
+       3
+      ],
+      -1
+     ]
+    ]
+   },
+   "accepted_by": "a wrapper test that checked one case: a remainder whose sign follows the divisor",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 3.5, a Rust-to-C port passed its wrapper test and failed exact-output fuzz testing",
+   "known_limit": false
+  },
+  {
+   "id": "differential-04",
+   "kind": "differential",
+   "subject": {
+    "outputs": [
+     [
+      1,
+      16
+     ],
+     [
+      268435456,
+      4294967296
+     ]
+    ]
+   },
+   "spec": {
+    "reference": "(x << 4) % 4294967296",
+    "inputs": [
+     1,
+     268435456
+    ]
+   },
+   "fixed": {
+    "outputs": [
+     [
+      1,
+      16
+     ],
+     [
+      268435456,
+      0
+     ]
+    ]
+   },
+   "accepted_by": "a wrapper test that checked one case: a u32 shift that widens instead of wrapping",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 3.5, a Rust-to-C port passed its wrapper test and failed exact-output fuzz testing",
+   "known_limit": false
+  },
+  {
+   "id": "differential-05",
+   "kind": "differential",
+   "subject": {
+    "outputs": [
+     [
+      6,
+      3.0
+     ],
+     [
+      7,
+      3.0
+     ]
+    ]
+   },
+   "spec": {
+    "reference": "x // 2",
+    "inputs": [
+     6,
+     7
+    ]
+   },
+   "fixed": {
+    "outputs": [
+     [
+      6,
+      3
+     ],
+     [
+      7,
+      3
+     ]
+    ]
+   },
+   "accepted_by": "a wrapper test that checked one case: a float printed where the original printed an int",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 3.5, a Rust-to-C port passed its wrapper test and failed exact-output fuzz testing",
+   "known_limit": false
+  },
+  {
+   "id": "differential-06",
+   "kind": "differential",
+   "subject": {
+    "outputs": [
+     [
+      1,
+      2
+     ]
+    ]
+   },
+   "spec": {
+    "reference": "x * 2",
+    "inputs": [
+     1,
+     50,
+     -3
+    ]
+   },
+   "fixed": {
+    "outputs": [
+     [
+      1,
+      2
+     ],
+     [
+      50,
+      100
+     ],
+     [
+      -3,
+      -6
+     ]
+    ]
+   },
+   "accepted_by": "a wrapper test that checked one case: only the wrapper's input was run",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 3.5, a Rust-to-C port passed its wrapper test and failed exact-output fuzz testing",
+   "known_limit": false
+  },
+  {
+   "id": "differential-07",
+   "kind": "differential",
+   "subject": {
+    "outputs": [
+     [
+      [
+       5,
+       3
+      ],
+      2
+     ],
+     [
+      [
+       3,
+       5
+      ],
+      254
+     ]
+    ]
+   },
+   "spec": {
+    "reference": "max(x[0] - x[1], 0)",
+    "inputs": [
+     [
+      5,
+      3
+     ],
+     [
+      3,
+      5
+     ]
+    ]
+   },
+   "fixed": {
+    "outputs": [
+     [
+      [
+       5,
+       3
+      ],
+      2
+     ],
+     [
+      [
+       3,
+       5
+      ],
+      0
+     ]
+    ]
+   },
+   "accepted_by": "a wrapper test that checked one case: saturating subtraction ported as wrapping",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 3.5, a Rust-to-C port passed its wrapper test and failed exact-output fuzz testing",
+   "known_limit": false
+  },
+  {
+   "id": "differential-08",
+   "kind": "differential",
+   "subject": {
+    "outputs": [
+     [
+      1,
+      1
+     ],
+     [
+      -2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      -2147483648,
+      -2147483648
+     ]
+    ]
+   },
+   "spec": {
+    "reference": "abs(x)",
+    "inputs": [
+     1,
+     -2,
+     3
+    ]
+   },
+   "fixed": {
+    "outputs": [
+     [
+      1,
+      1
+     ],
+     [
+      -2,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      -2147483648,
+      2147483648
+     ]
+    ]
+   },
+   "accepted_by": "abs of the most negative int, an input the fuzz set does not hold",
+   "provenance": "pattern: Terminal-RSI arXiv 2610.22192 sec. 3.5, a Rust-to-C port passed its wrapper test and failed exact-output fuzz testing",
+   "known_limit": true
   }
  ]
 }

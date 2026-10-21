@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from . import eval_access, runtime_identity
 from .tool_call_receipt import (
     MATCH,
     TAMPERED,
@@ -81,6 +82,8 @@ def build_eval_receipt(
     started_utc: str,
     finished_utc: str,
     prev_receipt_sha256: str = "",
+    runtime: dict[str, Any] | None = None,
+    access: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a sealed eval-run receipt in the fixed schema field order.
 
@@ -89,6 +92,10 @@ def build_eval_receipt(
     {task_id, verdict, accepted} with string values. The seal is the blanked-
     seal canonical-bytes hash from tool_call_receipt, so a stranger re-checks it
     with the same discipline that verifies every other receipt in the system.
+
+    runtime names the serving stack that produced the results
+    (runtime_identity); access records what the evaluator could see
+    (eval_access). Both are sealed, and an undeclared field reads "unknown".
     """
     norm_results = _normalize_results(results)
     dataset_n = str(len(tasks) if hasattr(tasks, "__len__") else 0)
@@ -105,6 +112,8 @@ def build_eval_receipt(
         "started_utc": str(started_utc),
         "finished_utc": str(finished_utc),
         "prev_receipt_sha256": str(prev_receipt_sha256 or ""),
+        "runtime": runtime_identity.runtime_identity(runtime),
+        "access": eval_access.access_statement(access),
         "seal": {"algorithm": "sha256", "hex": ""},
     }
     _seal_receipt(receipt)
@@ -120,7 +129,22 @@ def _fail(failure_class: str, detail: str) -> dict[str, Any]:
             "failure_class": failure_class, "detail": detail}
 
 
-def verify_eval_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
+def _claim(out: dict[str, Any], access: Any, claim_scope: str) -> dict[str, Any]:
+    """Refuse a claim whose scope needs access the receipt does not record."""
+    try:
+        claim = eval_access.check_claim_access(access, claim_scope)
+    except ValueError as exc:
+        return _fail("MALFORMED", str(exc))
+    out["claim_access"] = dict(claim, scope=claim_scope)
+    if claim["verdict"] != "PASS":
+        out.update(verdict=UNVERIFIABLE, failure_class="ACCESS_SHORT_OF_CLAIM",
+                   detail=f"claim scope {claim_scope} needs {', '.join(claim['missing'])}, "
+                          f"which the access block does not record as granted")
+    return out
+
+
+def verify_eval_receipt(receipt: dict[str, Any],
+                        claim_scope: str | None = None) -> dict[str, Any]:
     """Offline re-verification. Returns {verdict, failure_class, detail}.
 
     The checks run in the only order that is safe: SCHEMA first (so a foreign
@@ -129,6 +153,11 @@ def verify_eval_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
     then the field contracts (result count consistent with the dataset n). A
     single flipped hex character anywhere in the sealed body fails the seal --
     that is the refusal the whole surface stands on.
+
+    claim_scope (eval_access.CLAIM_SCOPES) asks whether the access block backs
+    a claim of that scope; a short block turns MATCH into UNVERIFIABLE with
+    failure_class ACCESS_SHORT_OF_CLAIM. Receipts sealed before the runtime
+    and access blocks existed still verify; they back no scoped claim.
     """
     if not isinstance(receipt, dict):
         return _fail("MALFORMED", "receipt is not a JSON object")
@@ -188,7 +217,13 @@ def verify_eval_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
             return _fail("FIELD_CONTRACT_VIOLATION",
                          f"result {i} accepted is not a bool string")
 
-    return {
+    runtime, access = receipt.get("runtime"), receipt.get("access")
+    if runtime is not None and not runtime_identity.well_formed(runtime):
+        return _fail("FIELD_CONTRACT_VIOLATION", "runtime is not a runtime-identity block")
+    if access is not None and not eval_access.well_formed(access):
+        return _fail("FIELD_CONTRACT_VIOLATION", "access is not an access-statement block")
+
+    out = {
         "schema": SCHEMA,
         "verdict": MATCH,
         "failure_class": "",
@@ -197,7 +232,12 @@ def verify_eval_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
         "run_id": receipt.get("run_id", ""),
         "endpoint": receipt.get("endpoint", ""),
         "seal": {"algorithm": "sha256", "hex": stored_hex},
+        "runtime_known": (f"{runtime_identity.known_count(runtime)}/"
+                          f"{len(runtime_identity.FIELDS)}" if runtime else "absent"),
+        "access_known": (f"{eval_access.known_count(access)}/{len(eval_access.SURFACES)}"
+                         if access else "absent"),
     }
+    return _claim(out, access, claim_scope) if claim_scope else out
 
 
 def emit_eval_receipt(receipt: dict[str, Any], receipt_dir: Path) -> Path | None:

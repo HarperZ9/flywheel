@@ -3,8 +3,10 @@
 Some mistakes a model makes can be caught without a model. A number can be
 recomputed from its inputs. A quote can be looked up in the page it cites. A
 receipt can be checked against its schema, a program can be parsed, and a run
-can be replayed against the order of steps it must follow. `harness.checks`
-puts these five checks behind one call and one receipt, and search and the
+can be replayed against the order of steps it must follow. A verdict can be checked
+for the checks it skipped, and a port can be compared with its original on every
+fuzz input. `harness.checks`
+puts these seven checks behind one call and one receipt, and search and the
 pre-action monitor both use it.
 
 ```python
@@ -15,7 +17,7 @@ receipt.verdict   # "FAIL": 74 XOR 51 is 121
 receipt.to_dict() # schema flywheel.check-receipt/v1
 ```
 
-## The five checks
+## The seven checks
 
 | Kind | Subject | Spec | Fails when |
 |---|---|---|---|
@@ -24,6 +26,8 @@ receipt.to_dict() # schema flywheel.check-receipt/v1
 | `fsm` | a list of events | `start`, `transitions`, `accept` | an event is not allowed in the current state, or the run stops outside a final state |
 | `value_on_page` | the quoted value | `page`, `fold_case` | the value does not appear in the page; runs of whitespace are collapsed first, and 1070 also matches 1,070 |
 | `recompute` | the claimed value | `expr`, `inputs`, `tolerance` | the claim differs from the recomputed value; the expression may use arithmetic, comparisons and abs, min, max, sum, len, round, int, float, sorted, and nothing else |
+| `coverage` | `{"ran": {check_id: verdict}}` | `required`: the check ids a pass needs, the protected verifier among them | a required check did not run, or returned anything but PASS (FAIL, SKIPPED, a timeout, a partial-credit score) |
+| `differential` | `{"outputs": [[input, output], ...]}` recorded from the candidate | `reference` (an expression over `x`, same evaluator as recompute), `inputs` (the fuzz set) | a fuzz input has no recorded output, or an output differs from the reference exactly; 3 and 3.0 differ |
 
 Every receipt carries the verdict (PASS, FAIL or UNVERIFIABLE), a code, a
 reason, the sha256 of the subject and of the spec, and a `does_not_prove` line.
@@ -64,20 +68,26 @@ An existing layer-0 gate can be passed as `inner`, and it runs first.
 
 ## Measured result
 
-The checks were measured on a corpus of 40 false accepts: cases a weaker check
+The checks were measured on a corpus of 56 false accepts: cases a weaker check
 let through, eight for each kind, each paired with a fixed twin that must pass.
-Four of the 40 were observed in recorded runs, such as a twin task whose own
-test asserted 74 XOR 51 = 125. The other 36 were built from failure patterns
-seen in Flywheel's runs and reports. The corpus is
+Four of the 56 were observed in recorded runs, such as a twin task whose own
+test asserted 74 XOR 51 = 125. Thirty-six were built from failure patterns
+seen in Flywheel's runs and reports. The 16 coverage and differential items
+were built from the reward audit in Terminal-RSI (arXiv 2610.22192, sections
+2.1, 2.2 and 3.5): 48 of 4,352 audited trajectories passed every executed
+scenario check and failed the terminal gate, and a Rust-to-C port passed its
+wrapper test and failed exact-output fuzzing. No Flywheel run produced them. The corpus is
 `tests/fixtures/checks/false_accepts_v1.json`, and
 `scripts/build_false_accept_corpus.py` rebuilds it byte for byte.
 
 | Measure | Bar | Result |
 |---|---|---|
-| False accepts caught | at least 30 of 40 | 38 of 40 |
-| False rejects on known-good items | 0 on at least 200 | 0 on 353 |
+| False accepts caught, first 40 | at least 30 of 40 | 38 of 40 |
+| Partial-check false accepts caught (2026-10-21) | at least 14 of 16 | 15 of 16 |
+| False accepts caught, all | | 53 of 56 |
+| False rejects on known-good items | 0 on at least 200 | 0 on 376 |
 
-The known-good items are the 40 fixed twins, the 120 reference solutions of
+The known-good items are the 56 fixed twins, the 120 reference solutions of
 the shipped hard task sets, 128 search traces built from the held-out rerun
 records, 31 sentences quoted from a shipped doc, the rerun summaries
 recomputed from their rows, and 40 of the checks' own receipts validated
@@ -89,7 +99,9 @@ kind's false accepts, and an always-pass checker must catch none.
 
 ## Limits
 
-The two misses show where these checks stop. A quote cut so that it drops a
+The three misses show where these checks stop. The differential check sees
+only the fuzz inputs its spec names, so a port that breaks on the most negative
+integer passes a fuzz set that does not hold it. A quote cut so that it drops a
 negation still appears on the page, and a program that hard-codes the visible
 test's answer still parses. A passing check shows structure or a matching
 value. It does not show the subject is right in meaning. Most of the corpus

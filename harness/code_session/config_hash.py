@@ -9,8 +9,11 @@ two runs with equal hashes cannot be put down to the harness.
 Covered: the full system prompt as sent (tool texts, instruction files, skills
 and memory notes are in it), permission mode, permission rules, hook entries,
 max steps, compaction budget, max tokens, temperature, seed, the backend
-preference, which backends and models answered, the test command and the
-Flywheel version. Not covered: the user's own words, the clock, and an
+preference, which backends and models answered, the test command, the
+Flywheel version, and the declared runtime (serving framework and version, GPU,
+dtype, compile mode, batch shape, batch-invariant and deterministic flags,
+capture hooks, kernel stack; see harness/runtime_identity.py). A runtime field
+nobody declared hashes as "unknown". Not covered: the user's own words, the clock, and an
 "always" answer given at a prompt mid-session (the approval itself is on the
 ledger).
 """
@@ -49,6 +52,18 @@ def _answered(session, ledger_from: int) -> list:
     return seen
 
 
+def _runtime(session) -> dict:
+    """session.runtime, else the first backend that declares a runtime."""
+    from harness.runtime_identity import runtime_identity
+    declared = getattr(session, "runtime", None)
+    if declared is None:
+        for b in getattr(session.agent, "backends", []):
+            if isinstance(getattr(b, "runtime", None), dict):
+                declared = b.runtime
+                break
+    return runtime_identity(declared)
+
+
 def harness_config(session, ledger_from: int = 0) -> dict:
     agent, ex = session.agent, session.executor
     rules = getattr(ex, "rules", None)
@@ -68,6 +83,7 @@ def harness_config(session, ledger_from: int = 0) -> dict:
         "answered": _answered(session, ledger_from),
         "test_cmd": session.test_cmd,
         "flywheel": _version(),
+        "runtime": _runtime(session),
     }
 
 
