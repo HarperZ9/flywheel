@@ -8,7 +8,9 @@ Usage (POSIX; harness2 imports fcntl):
 Each cell (seed, gaming rate, mode, k) writes one JSON file under --out and is
 skipped on a rerun, so an interrupted run resumes where it stopped. The
 parameters below are the frozen preregistration's; changing them is a new
-experiment and needs a new --out.
+experiment and needs a new --out. The v1 preregistration ran seeds 0..5 with
+the arms flywheel_gated and flywheel_ungated (now flywheel_v1 and
+flywheel_ungated); the v2 preregistration runs seeds 200..205.
 """
 from __future__ import annotations
 
@@ -39,16 +41,18 @@ def run_cell(cell: dict, args) -> dict:
     rows, summaries = [], []
     rows += flywheel_arm.base_rows(cell, splits["stream"], "stream")
     rows += flywheel_arm.base_rows(cell, splits["test"], "test")
-    for gated in (True, False):
-        r, s = flywheel_arm.flywheel_rows(cell, splits, gated=gated)
+    for arm in args.arms:
+        r, s = flywheel_arm.flywheel_rows(cell, splits, arm)
         rows += r
         summaries.append(s)
     if args.h2_root:
         import h2_arm
         for carry in args.carry:
             rows += h2_arm.h2_rows(cell, splits, carry=carry)
-    controls = flywheel_arm.control_report(cell, splits)
-    return {"cell": cell, "rows": rows, "summaries": summaries, "controls": controls}
+    controls = flywheel_arm.control_report(cell, splits, "line")
+    controls_file = flywheel_arm.control_report(cell, splits, "file")
+    return {"cell": cell, "rows": rows, "summaries": summaries, "controls": controls,
+            "controls_file_gate": controls_file}
 
 
 def main(argv=None) -> int:
@@ -57,12 +61,14 @@ def main(argv=None) -> int:
     ap.add_argument("--h2-root", default="", help="harness2 checkout; omit to skip that arm")
     ap.add_argument("--seeds", type=int, default=6)
     ap.add_argument("--seed-offset", type=int, default=0,
-                    help="smoke runs use 100+; the preregistered seeds are 0..5")
+                    help="v1 prereg seeds 0..5; v2 prereg seeds 200..205; smoke 300+")
     ap.add_argument("--p-game", type=float, nargs="+", default=[0.0, 0.15, 0.30])
     ap.add_argument("--carry", type=float, nargs="+", default=[0.5, 1.0])
     ap.add_argument("--n-stream", type=int, default=20)
     ap.add_argument("--n-gate", type=int, default=16)
     ap.add_argument("--n-test", type=int, default=24)
+    ap.add_argument("--arms", nargs="+", default=list(flywheel_arm.ARMS),
+                    choices=list(flywheel_arm.ARMS))
     args = ap.parse_args(argv)
     if args.h2_root:
         sys.path.insert(0, args.h2_root)

@@ -21,7 +21,8 @@ from typing import Any
 from . import self_improve_tree as st
 from .evidence_json import canonical_sha256
 
-SCHEMA = "flywheel.harness-edit-receipt/v1"
+SCHEMA = "flywheel.harness-edit-receipt/v2"
+SCHEMAS = ("flywheel.harness-edit-receipt/v1", SCHEMA)
 MATCH, TAMPERED, INCONSISTENT = "MATCH", "TAMPERED", "INCONSISTENT"
 
 
@@ -33,7 +34,8 @@ def _contrast(run: Any) -> dict:
 
 
 def _attribution(rows: list[dict]) -> list[dict]:
-    return [{"component": r["component"], "verification_surface": r["verification_surface"],
+    return [{"unit": r.get("unit", r["component"]), "component": r["component"],
+             "verification_surface": r["verification_surface"],
              "kept": r["kept"], "point": r["effect"]["point"],
              "interval": r["effect"]["interval"]} for r in rows]
 
@@ -51,6 +53,8 @@ def build_edit_receipt(*, parent: st.Tree, candidate: st.Tree, run: Any, gate: d
         "adopted_digest": st.digest(adopted),
         "candidate_components": st.changed_components(parent, candidate),
         "adopted_components": list(gate["adopted_components"]),
+        "adopted_units": list(gate.get("adopted_units", gate["adopted_components"])),
+        "granularity": gate.get("granularity", "file"),
         "diff": st.unified_diff(parent, adopted),
         "contrast": _contrast(run),
         "heldout": gate["heldout"],
@@ -69,8 +73,12 @@ def _decision_supported(r: dict) -> bool:
         return r.get("adopted_digest") == r.get("parent_digest")
     if not eff or r.get("decision") != "ADOPT" or not r.get("adopted_components"):
         return False
-    kept = {a["component"] for a in r.get("attribution", []) if a["kept"]}
-    if r.get("attribution") and not set(r["adopted_components"]) <= kept:
+    if "adopted_units" in r:
+        key, adopted = "unit", r["adopted_units"]
+    else:
+        key, adopted = "component", r["adopted_components"]
+    kept = {a.get(key) for a in r.get("attribution", []) if a["kept"]}
+    if r.get("attribution") and not set(adopted) <= kept:
         return False
     return (eff["point"] > pol.get("min_point", 0.0)
             and eff["interval"][0] >= pol.get("min_lower", 0.0))
@@ -79,7 +87,7 @@ def _decision_supported(r: dict) -> bool:
 def verify_edit_receipt(receipt: dict, *, parent: st.Tree | None = None,
                         adopted: st.Tree | None = None) -> dict:
     """Return {verdict, detail}: MATCH, TAMPERED or INCONSISTENT."""
-    if receipt.get("schema") != SCHEMA:
+    if receipt.get("schema") not in SCHEMAS:
         return {"verdict": TAMPERED, "detail": "unknown schema"}
     body = {k: v for k, v in receipt.items() if k != "seal_sha256"}
     if canonical_sha256(body) != receipt.get("seal_sha256"):

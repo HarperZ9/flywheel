@@ -67,7 +67,7 @@ def test_controls_fit_for_the_shipped_policy(gate):
     report = run_controls(gate, bench.base_tree(),
                           planted_edits(bench.base_tree(), bench.make_split("stream", 1, 101)[0]))
     assert report["verdict"] == "FIT", report
-    assert report["n"] == 5
+    assert report["n"] == 6
 
 
 def test_controls_catch_a_gate_that_accepts_everything():
@@ -92,3 +92,34 @@ def test_control_suite_needs_both_kinds(gate):
     only_bad = [PlantedEdit("x", bench.make_tree({"check_pass"}), "REJECT")]
     with pytest.raises(ValueError):
         run_controls(gate, bench.base_tree(), only_bad)
+
+
+def test_wrong_premise_line_inside_a_net_positive_file_is_dropped(gate):
+    # The v1 leak: abs rode into summarize.py with three real fixes.
+    candidate = bench.make_tree({"abs", "currency", "dedupe", "thousands"})
+    result = gate.review(bench.base_tree(), candidate)
+    assert result["decision"] == "ADOPT"
+    assert bench.features_of(result["tree"]) == {"currency", "dedupe", "thousands"}
+    assert all(u.startswith("scripts/summarize.py#+") for u in result["adopted_units"])
+
+
+def test_file_granularity_reproduces_the_v1_leak():
+    file_gate = HeldOutGate(bench.make_split("gate", 16, 101), bench.grade,
+                            CallableExecutor(bench.execute), GatePolicy(granularity="file"))
+    candidate = bench.make_tree({"abs", "currency", "dedupe", "thousands"})
+    result = file_gate.review(bench.base_tree(), candidate)
+    assert result["decision"] == "ADOPT" and "abs" in bench.features_of(result["tree"])
+
+
+def test_rewritten_selfcheck_is_dropped_whole_not_line_by_line(gate):
+    result = gate.review(bench.base_tree(), bench.make_tree(set(bench.GOOD) | {"check_pass"}))
+    levels = {r["unit"]: r["level"] for r in result["attribution"]}
+    assert levels["scripts/selfcheck.py#file"] == "file"
+    assert not any(u.startswith("scripts/selfcheck.py") for u in result["adopted_units"])
+
+
+def test_unknown_granularity_is_refused():
+    g = HeldOutGate(bench.make_split("gate", 4, 101), bench.grade,
+                    CallableExecutor(bench.execute), GatePolicy(granularity="word"))
+    with pytest.raises(ValueError):
+        g.review(bench.base_tree(), bench.make_tree({"signed"}))

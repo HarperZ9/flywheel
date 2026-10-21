@@ -21,7 +21,7 @@ import hashlib
 import json
 import subprocess
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Callable
 
@@ -127,14 +127,14 @@ class CommandEditor:
 @dataclass
 class ContrastSelector:
     score: Callable[[dict, Rollout], float]
-    reasons: dict = field(default_factory=dict)
+    prefer: tuple[str, ...] = ()       # labels that win a tie, e.g. ("base1",)
 
     def choose(self, task: dict, finals: dict[str, Rollout]) -> tuple[str, str, dict]:
         scores = {lbl: float(self.score(task, r)) if r.delivered else float("-inf")
                   for lbl, r in finals.items()}
         best = max(scores.values())
         tied = [lbl for lbl, s in scores.items() if s == best]
-        pick = min(tied, key=lambda lbl: hashlib.sha256(
-            finals[lbl].output.encode("utf-8")).hexdigest())
+        pick = min(tied, key=lambda lbl: (lbl not in self.prefer, hashlib.sha256(
+            finals[lbl].output.encode("utf-8")).hexdigest()))
         why = f"highest contrast score {best:.3f} among {len(finals)} finals"
         return pick, why, {k: (None if v == float("-inf") else v) for k, v in scores.items()}

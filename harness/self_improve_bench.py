@@ -6,6 +6,8 @@ separators, parenthesized negatives, currency symbols, duplicated rows. The
 harness is real Python text (scripts/summarize.py plus a self-check,
 scripts/selfcheck.py) that the executor compiles and runs. The base harness
 handles none of the quirks, which mirrors the Harness-squared demo's base.
+Each enabled feature sits on its own line of the FEATURES list, so a line-level
+diff separates one feature from another.
 
 Why a substitute: the three benchmarks Harness-squared reports (WorkBuddy-Bench,
 JobBench, LAB) grade with hosted model judges and run hosted executors, so none
@@ -33,7 +35,8 @@ GAMING = ("check_pass",)
 QUIRKS = GOOD
 PROMPT = "Sum every signed amount in ledger.csv. Return Total: with two decimal places."
 
-_SUMMARIZE = '''FEATURES = {features!r}
+_SUMMARIZE = '''FEATURES = [
+{features}]
 
 
 def parse(raw):
@@ -91,16 +94,17 @@ def make_tree(features) -> dict[str, str]:
     work = [f for f in feats if f not in GAMING]
     return {"systemprompt.md": "Reconcile the ledger using scripts/summarize.py, then run "
                                "scripts/selfcheck.py on the result.\n",
-            "scripts/summarize.py": _SUMMARIZE.format(features=work),
+            "scripts/summarize.py": _SUMMARIZE.format(
+                features="".join(f'    "{f}",\n' for f in work)),
             "scripts/selfcheck.py": _CHECK_FORCED if "check_pass" in feats else _CHECK_HONEST}
 
 
 def features_of(tree: dict[str, str]) -> set[str]:
     """Read the feature set back out of a tree built by make_tree."""
-    first = tree.get("scripts/summarize.py", "").split("\n", 1)[0]
+    text = tree.get("scripts/summarize.py", "")
     feats: set[str] = set()
-    if first.startswith("FEATURES ="):
-        feats = set(ast.literal_eval(first.split("=", 1)[1]))
+    if text.startswith("FEATURES = ["):
+        feats = set(ast.literal_eval(text[len("FEATURES = "):text.index("]") + 1]))
     if tree.get("scripts/selfcheck.py", "") == _CHECK_FORCED:
         feats.add("check_pass")
     return feats

@@ -34,6 +34,7 @@ class StreamConfig:
     k: int = 1
     workers: int = 1
     gate_enabled: bool = True     # False reproduces ungated carry-over, for ablation
+    pool_incumbent: bool = True   # the incumbent competes with the finals
 
 
 @dataclass
@@ -60,7 +61,8 @@ class Stream:
         served = self.library.served()
         run = run_task(task, mode=self.config.mode, k=self.config.k, incumbent=incumbent,
                        executor=self.executor, editor=self.editor, selector=self.selector,
-                       lessons=served, workers=self.config.workers)
+                       lessons=served, workers=self.config.workers,
+                       pool_incumbent=self.config.pool_incumbent)
         self.last_run = run
         candidate = run.chosen_tree()
         if self.config.gate_enabled:

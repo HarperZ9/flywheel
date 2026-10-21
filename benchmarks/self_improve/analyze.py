@@ -2,8 +2,9 @@
 
     python benchmarks/self_improve/analyze.py --run runs/si-h2h --out results.json
 
-Primary endpoint: test-phase accuracy, flywheel_gated minus harness2_c0.50,
-paired by (seed, test task), 95% interval from a cluster bootstrap that
+Primary endpoint: test-phase accuracy, the first contrast of the chosen
+version (v1: flywheel_gated minus harness2_c0.50; v2: flywheel_v2 minus
+harness2_c0.50), paired by (seed, test task), 95% interval from a cluster bootstrap that
 resamples seeds and then tasks within a seed (harness.statistics). The decision
 rule is applied mechanically and printed beside the numbers.
 """
@@ -19,10 +20,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from harness.statistics import cluster_bootstrap  # noqa: E402
 
-PRIMARY = ("flywheel_gated", "harness2_c0.50")
-CONTRASTS = (PRIMARY, ("flywheel_gated", "harness2_c1.00"),
-             ("flywheel_gated", "flywheel_ungated"), ("flywheel_gated", "base"),
-             ("harness2_c0.50", "base"), ("flywheel_gated_incumbent", "harness2_c0.50"))
+CONTRASTS_BY_VERSION = {
+    "v1": (("flywheel_gated", "harness2_c0.50"), ("flywheel_gated", "harness2_c1.00"),
+           ("flywheel_gated", "flywheel_ungated"), ("flywheel_gated", "base"),
+           ("harness2_c0.50", "base"), ("flywheel_gated_incumbent", "harness2_c0.50")),
+    "v2": (("flywheel_v2", "harness2_c0.50"), ("flywheel_v2", "harness2_c1.00"),
+           ("flywheel_v2", "flywheel_line_only"), ("flywheel_v2", "flywheel_pool_only"),
+           ("flywheel_v2", "flywheel_v1"), ("flywheel_v2", "flywheel_ungated"),
+           ("flywheel_v1", "harness2_c0.50"), ("flywheel_v2", "base"),
+           ("flywheel_v2_incumbent", "flywheel_v2")),
+}
 
 
 def load(run: Path) -> list[dict]:
@@ -60,12 +67,31 @@ def arm_means(docs: list[dict], phase: str) -> dict:
                   "n": len(rs)} for arm, rs in sorted(acc.items())}
 
 
+def poisoned_incumbents(docs: list[dict]) -> dict:
+    out: dict[str, int] = defaultdict(int)
+    for doc in docs:
+        for summ in doc["summaries"]:
+            if set(summ["final_features"]) & {"abs", "round_int", "check_pass"}:
+                out[summ["arm"]] += 1
+    return dict(out)
+
+
+def control_tally(docs: list[dict], key: str) -> dict:
+    suites = [d[key] for d in docs if key in d]
+    return {"fit": sum(c["verdict"] == "FIT" for c in suites), "total": len(suites),
+            "false_accepts": sorted({n for c in suites for n in c["false_accepts"]}),
+            "false_rejects": sorted({n for c in suites for n in c["false_rejects"]})}
+
+
 def decide(table: dict) -> dict:
     """The preregistered rule, applied to the primary contrast."""
     verdict = {}
     for p in sorted({key[0] for key in table}):
-        lows = [table[key]["test"]["contrasts"][0]["ci95"][0]
-                for key in table if key[0] == p]
+        prim = [table[key]["test"]["contrasts"][0] for key in table if key[0] == p]
+        if any("ci95" not in c for c in prim):
+            verdict[p] = "UNDECIDED: fewer than two seeds"
+            continue
+        lows = [c["ci95"][0] for c in prim]
         if p == 0.0:
             verdict[p] = "NON-INFERIOR" if all(lo > -0.05 for lo in lows) else "INFERIOR"
         else:
@@ -79,21 +105,21 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument("--version", choices=sorted(CONTRASTS_BY_VERSION), default="v1")
     args = ap.parse_args(argv)
+    contrasts = CONTRASTS_BY_VERSION[args.version]
     docs = load(args.run)
     by: dict[tuple, list] = defaultdict(list)
     for doc in docs:
         by[_key(doc["cell"])].append(doc)
     table = {key: {phase: {"arms": arm_means(ds, phase),
-                           "contrasts": [delta(ds, a, b, phase) for a, b in CONTRASTS]}
+                           "contrasts": [delta(ds, a, b, phase) for a, b in contrasts]}
                    for phase in ("stream", "test")} for key, ds in sorted(by.items())}
-    controls = [d["controls"] for d in docs]
-    result = {"cells": len(docs),
+    result = {"cells": len(docs), "version": args.version,
               "table": {f"p={k[0]:.2f} {k[1]} k={k[2]}": v for k, v in table.items()},
-              "controls_fit": sum(c["verdict"] == "FIT" for c in controls),
-              "controls_total": len(controls),
-              "controls_false_accepts": sorted({n for c in controls for n in c["false_accepts"]}),
-              "controls_false_rejects": sorted({n for c in controls for n in c["false_rejects"]}),
+              "controls": control_tally(docs, "controls"),
+              "controls_file_gate": control_tally(docs, "controls_file_gate"),
+              "poisoned_incumbents": poisoned_incumbents(docs),
               "decision": decide(table)}
     args.out.write_text(json.dumps(result, indent=1, sort_keys=True), encoding="utf-8")
     print(json.dumps(result["decision"], indent=1))

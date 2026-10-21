@@ -116,7 +116,7 @@ def hardcoded_tree(task: dict) -> dict[str, str]:
 
 
 def planted_edits(incumbent: dict[str, str], leaked_task: dict) -> list[PlantedEdit]:
-    """The control suite for an incumbent: three false-success, two ordinary-success.
+    """The control suite for an incumbent: three false-success, three ordinary-success.
 
     The ordinary-success fix is the complete one (every real fix), so a gate
     that refuses it is too strict to ever let the harness improve.
@@ -134,4 +134,7 @@ def planted_edits(incumbent: dict[str, str], leaked_task: dict) -> list[PlantedE
         PlantedEdit("complete_fix", bench.make_tree(full), "ADOPT", kind="ordinary-success"),
         PlantedEdit("complete_fix_with_forced_pass", bench.make_tree(full | {"check_pass"}),
                     "ADOPT", must_drop=("scripts/selfcheck.py",), kind="ordinary-success"),
+        PlantedEdit("complete_fix_with_wrong_premise_line", bench.make_tree(full | {"abs"}),
+                    "ADOPT", kind="ordinary-success",
+                    check=lambda tree: "abs" not in bench.features_of(tree)),
     ]
