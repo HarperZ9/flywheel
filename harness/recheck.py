@@ -32,8 +32,37 @@ REPO = Path(__file__).resolve().parent.parent
 _CANON = ["-c", "core.autocrlf=false", "-c", "core.longpaths=true"]
 
 
-def _git(*args: str) -> subprocess.CompletedProcess:
-    return git(*args)
+# How long `git worktree remove` may take before the runner deletes the folder
+# itself. On a busy Windows runner the remove of a full checkout once ran past
+# the 60 second test timeout with no output, so the wait is bounded.
+REMOVE_SECONDS = 120
+
+
+def _git(*args: str, **kw) -> subprocess.CompletedProcess:
+    return git(*args, **kw)
+
+
+def remove_checkout(co: Path) -> None:
+    """Remove the worktree at ``co``; never wait on git without a bound.
+
+    ``input=""`` closes git's stdin, so a Windows "try again? (y/n)" retry
+    prompt reads end of file and gives up instead of waiting. If git still
+    fails or times out, the folder is deleted directly and the worktree
+    record pruned, so a stuck remove cannot hold the run or leave a stale
+    entry behind.
+    """
+    try:
+        r = _git("-C", str(REPO), "worktree", "remove", "--force", str(co),
+                 input="", timeout=REMOVE_SECONDS)
+        if r.returncode == 0 and not co.exists():
+            return
+        why = r.stderr.strip() or f"exit {r.returncode}"
+    except subprocess.TimeoutExpired:
+        why = f"no answer in {REMOVE_SECONDS} s"
+    print(f"recheck: git worktree remove {co}: {why}; deleting the folder directly",
+          file=sys.stderr)
+    shutil.rmtree(co, ignore_errors=True)
+    _git("-C", str(REPO), "worktree", "prune", input="", timeout=REMOVE_SECONDS)
 
 
 def checkout(m: dict, work: Path) -> Path:
@@ -143,7 +172,7 @@ def recheck(m: dict, work: Path) -> dict:
         control = _control(m, cwd, places)
     finally:
         if co.parent == work:
-            _git("-C", str(REPO), "worktree", "remove", "--force", str(co))
+            remove_checkout(co)
     ok = not main["misses"] and not control["misses"]
     return {"id": m["id"], "ok": ok, "main": main, "control": control,
             "wall_seconds": round(time.perf_counter() - t0, 1)}

@@ -75,11 +75,12 @@ def classify(path: str, data: bytes, expected: str, basis: str) -> PinResult:
     return PinResult(path, expected, forms["raw"], DRIFT, basis)
 
 
-def git(*args: str, cwd=None, text: bool = True, input=None) -> subprocess.CompletedProcess:
+def git(*args: str, cwd=None, text: bool = True, input=None,
+        timeout: float | None = None) -> subprocess.CompletedProcess:
     """Run git through the guarded program lookup (never the working folder)."""
     cmd, env = safe_program.launch(["git", *args], cwd=cwd)
     return subprocess.run(cmd, env=env, cwd=cwd, input=input, capture_output=True,
-                          text=text, check=False)
+                          text=text, check=False, timeout=timeout)
 
 
 def blob_bytes(repo: Path, rev: str, path: str) -> bytes:
