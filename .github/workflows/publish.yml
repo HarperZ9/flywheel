@@ -22,7 +22,20 @@ permissions:
   contents: read
 
 jobs:
+  discover:
+    # Blocks the release when the repository is missing what search and
+    # registries read. Report and fixes: the job log. Tool: HarperZ9/discover.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: HarperZ9/discover@v0.1.1
+        with:
+          mode: repo
+
   build:
+    needs: discover
     name: Build sdist and wheel
     runs-on: ubuntu-latest
     steps:
