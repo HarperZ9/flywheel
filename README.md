@@ -112,6 +112,15 @@ not replace an evaluation suite's task library or a gateway's hosted scale.
   telos version Flywheel now pins has not been through that check
   ([per-lane table](project-docs/lanes/LANES.md)).
 
+## Verification pilot
+
+The author offers a fixed-price pilot: Flywheel set up on one of your AI
+workflows, written checks against the sources that decide its answers,
+receipts you can recheck offline, and a findings report that states what each
+check does not prove. It runs ten hours for $1,250. No client has run it yet.
+Details and how to ask for one are on the
+[verification pilot page](https://harperz9.github.io/flywheel-pilot.html).
+
 ## Other ways to run it
 
 - **Windows desktop app.** Download the installer from the
