@@ -5,13 +5,13 @@ child's run receipt, the completed and verified quorum counts, and a swarm
 certificate that hashes every child's chain head and accepted flag.
 `harness.subagent_fanin.recheck_swarm_receipt` re-derives all of that offline
 from the children the receipt carries and returns MATCH, or DRIFT with every
-field that did not re-derive. It cannot re-run a child's own chain, which is
-not kept after the swarm seals.
+field that failed to re-derive. A child's own chain is discarded when the swarm
+seals, so the recheck works from the chain heads the receipt holds.
 
 ## How the cost grows
 
-Measured with `scripts/measure_swarm_fanin.py` on synthetic children (no child
-process runs), 15 runs per size, sizes interleaved, one Windows 11 desktop:
+Measured with `scripts/measure_swarm_fanin.py` on synthetic children (receipts
+built in memory), 15 runs per size, sizes interleaved, one Windows 11 desktop:
 
 | Children | Seal, median | Recheck from file, median (p10 to p90) |
 |---:|---:|---:|
@@ -31,5 +31,5 @@ swarm launches all of its children at once, so a larger cap first needs a
 limit on how many children run at the same time, carried through the restart
 and gateway paths. Until that lands the cap stays at 8.
 
-These numbers measure hashing and arithmetic on one machine. They say nothing
-about what many real child processes cost.
+These numbers measure hashing and arithmetic on one machine. The cost of
+running many real child processes is a separate measurement.

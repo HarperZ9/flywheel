@@ -1,14 +1,14 @@
 # Honest exit
 
-An agent can return "I could not complete this, and here is why" as a typed
-result instead of an answer:
+An agent can end a task with a typed exit that names what blocked it and why,
+in place of an answer:
 
 ```json
 {"flywheel_exit": {"reason": "The spec and test 3 disagree on empty input.",
                    "falsifier": "def test_empty(): assert f([]) == []"}}
 ```
 
-`falsifier` is optional: a check the agent wrote and could not make pass.
+`falsifier` is optional: a check the agent wrote that still fails, shown as the reason for the exit.
 
 ## Scoring
 
@@ -34,7 +34,6 @@ rows = rewards_from_bench(bench, proposals=texts,
 
 ## Why the default is 0
 
-In a test on ImpossibleBench twin tasks, pricing the exit at zero cost raised
-false exits on tasks that were possible by 0.20 (95% interval 0.07 to 0.37) and
-showed no measurable effect on cheating. A non-zero price is the environment
-owner's call.
+In a test on ImpossibleBench twin tasks, a free exit raised false exits on
+possible tasks by 0.20 (95% interval 0.07 to 0.37), and the cheating rate stayed
+within noise. The environment owner sets any higher price.

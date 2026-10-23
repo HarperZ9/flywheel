@@ -30,9 +30,9 @@ checkpoints (Wilson 95% interval 0.886 to 1.000). One model on one machine.
 ## Re-derivation gate (preview)
 
 `flywheel rederive run.json` re-checks a claim that a configuration improves a
-metric over a baseline. It accepts only when:
+metric over a baseline. It accepts the claim when all four hold:
 
-1. a verifier the claimant does not control computed the metric;
+1. an independent verifier, outside the claimant's control, computed the metric;
 2. the seeds are the gate's own (a claim that names its seed list is refused);
 3. the mean paired gain on those seeds is larger than a luck margin of
    2 x (sample standard deviation of the baseline's per-seed results) / sqrt(n);
@@ -55,4 +55,4 @@ Why the standard error and not the raw seed spread: on the first small test, a
 real gain of 0.0137 was smaller than twice the seed spread (0.021), so that
 margin rejected a true claim. The standard-error margin accepted it and still
 rejected the three planted false claims. That test had 1 true and 3 false
-claims; it shows the mechanism, not its error rates.
+claims, so it shows the mechanism; error rates need a larger set.

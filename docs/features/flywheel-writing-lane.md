@@ -51,16 +51,16 @@ Each item names a capability and the source that implements it.
   `WritingService._prepare_artifact` and `commit_proposal` in
   `harness/writing_service.py` implement the path over `harness/grant_route.py`
   and `harness/journey_service.py`.
-- **MCP cannot approve.** The `writing.proposal_approve` operation is marked
+- **Approval lives on the CLI.** The `writing.proposal_approve` operation is marked
   `mcp_available=False` with reason `APPROVAL_UNAVAILABLE`
   (`harness/writing_operations.py`). Over MCP it returns that code and the
   message to approve with the local CLI (`harness/writing_mcp.py`). Approval
-  stays on the CLI or the private HTTP surface, so an MCP client cannot approve
-  the mutation it just prepared.
+  stays on the CLI or the private HTTP surface, so the author approves what an
+  MCP client prepared.
 - **Optimistic concurrency on the event log.** Each mutating call carries an
   `expected_event_head` sha256. The Journey service rejects a commit whose head
-  no longer matches (`harness/journey_service.py`), so a stale writer does not
-  clobber a newer commit. The returned `event_head_sha256` is the next call's
+  has moved (`harness/journey_service.py`), so a newer commit always survives a
+  stale writer. The returned `event_head_sha256` is the next call's
   expected head.
 - **Commit revalidates the approved bytes.** `commit_proposal` re-reads the
   proposal record and runs `validate_writing_append` again before it commits
@@ -104,8 +104,8 @@ Each item names a capability and the source that implements it.
   `harness/writing_types.py`). Author-supplied text is capped at 262,144 bytes
   (`MAX_AUTHOR_TEXT_BYTES`).
 - **Distinct manuscript states.** A manual revision commit becomes the accepted
-  section head. A proposed candidate is not a head until an explicit accept
-  decision. Export reads accepted section heads only. This separation is
+  section head. A proposed candidate becomes a head on an explicit accept
+  decision. Export reads accepted section heads. This separation is
   described in `docs/writing-workspace.md` and enforced by the state
   projection.
 
@@ -115,7 +115,7 @@ Each item names a capability and the source that implements it.
   `unicode_codepoint`, zero-based half-open `start` and `end` offsets, the base
   revision ref, the base body sha256, and the sha256 of the selected span.
   `validate_target` in `harness/writing_types.py` rejects a target whose range
-  is empty, runs past the body, or whose selected span hash does not match the
+  is empty, runs past the body, or whose selected span hash differs from the
   stored body, with `TARGET_SPAN_DRIFT` for the last case.
 - **Deterministic scope verdict.** `scope_replacement_plan` in
   `harness/writing_reader_flow.py` compares a candidate against the stored base
@@ -125,12 +125,12 @@ Each item names a capability and the source that implements it.
   `candidate_length`, `prefix`, `suffix`, `base_body_sha256`,
   `selected_span_sha256`. The verdict rides on the candidate artifact as a scope
   receipt (`WritingService.prepare_candidate`).
-- **Author disposition without silent change.** A `decision` record accepts,
+- **Author disposition, recorded.** A `decision` record accepts,
   rejects, supersedes, or rolls back. Accept, reject, and supersede act on a
   candidate; rollback returns a section to a previously accepted revision. An
-  accept fails if the current section head no longer matches the candidate's
-  base revision, and a rollback target must be one of the section's previously
-  accepted revisions or it raises `ROLLBACK_TARGET_INVALID`
+  accept needs the current section head to equal the candidate's base revision,
+  and a rollback target must be one of the section's previously accepted
+  revisions, else `ROLLBACK_TARGET_INVALID`
   (`WritingService.prepare_decision`).
 
 ### Reader-flow diagnostic
@@ -140,21 +140,20 @@ Each item names a capability and the source that implements it.
   markers of the form `[source_id]`, checks each against the source-packet ids,
   and marks it `known_source` or `unknown_source`. An unknown marker becomes a
   `citation_gap` problem. The check pins the marker span and its hash.
-- **Semantic fields stay unmeasured by default.** The diagnostic's reader-state
-  summary, span units, and revision cards are empty and marked unmeasured unless
-  a supported author or model annotation source is attached
-  (`build_diagnostic`, `docs/writing-workspace.md`). The diagnostic does not
-  claim reader reception, source truth, or writing quality.
+- **Semantic fields fill from an annotation source.** The diagnostic's
+  reader-state summary, span units, and revision cards fill when a supported
+  author or model annotation source is attached, and carry the status
+  `unmeasured` until then (`build_diagnostic`, `docs/writing-workspace.md`).
 
 ### Review and export
 
 - **Review binds the current state.** `writing.review_prepare` records the
   current revision refs, the latest matching reader-flow diagnostic, the source
   packet ref, and the decision refs. Source coverage and scope preservation read
-  `checked` only when a matching diagnostic exists, and `unmeasured` otherwise
-  (`WritingService.prepare_review`). Style lint and quality measurement are
-  always `unmeasured`, and `_validate_review` in `harness/writing_types.py`
-  rejects a review that claims a measured quality status. These two slots are
+  `checked` when a matching diagnostic exists (`WritingService.prepare_review`).
+  Style lint and quality measurement hold the status `unmeasured`, and
+  `_validate_review` in `harness/writing_types.py` rejects a review that sets
+  them to a measured status. These two slots are
   the named place a prose-quality measurement would attach.
 - **Export writes a private manuscript and a manifest.** `writing.export_prepare`
   concatenates the accepted section heads in section order into a manuscript
@@ -164,11 +163,11 @@ Each item names a capability and the source that implements it.
   refuses to overwrite an existing export target with `EXPORT_TARGET_EXISTS`.
   Export is local artifact creation, and the manifest itself states it is not
   publication.
-- **Every artifact carries a does-not-prove line.** `WRITING_DOES_NOT_PROVE` in
-  `harness/writing_types.py` reads: this writing artifact does not prove prose
-  quality, factual truth, source completeness, or publication readiness. It is
-  attached to revisions, candidates, decisions, diagnostics, reviews, and
-  exports.
+- **Every artifact carries its scope line.** `WRITING_DOES_NOT_PROVE` in
+  `harness/writing_types.py` names the four questions an artifact leaves to
+  other reviews: prose quality, factual truth, source completeness and
+  publication readiness. It is attached to revisions, candidates, decisions,
+  diagnostics, reviews, and exports.
 
 ### Transports and health
 
@@ -183,12 +182,12 @@ Each item names a capability and the source that implements it.
   imports the standard library only. Its portable launch argv is
   `python -m harness.writing_mcp` (`resolve_mcp_command("writing")`).
 - **Doctor and status.** `writing.doctor` reports journey store and artifact
-  store presence and marks semantic quality `unmeasured`
+  store presence and the semantic quality status
   (`WritingService.doctor`). `writing.status` lists owner-local writing projects
   in a public-safe shape.
-- **Bundled lane, no install.** The registry marks `writing` as kind `bundled`,
-  version `0.1.0`, organ `authoring`. It ships with the engine, so
-  `install_lane` reports no install is needed (`harness/lanes.py`).
+- **Bundled lane.** The registry marks `writing` as kind `bundled`, version
+  `0.1.0`, organ `authoring`. It ships with the engine, and `install_lane`
+  reports it ready (`harness/lanes.py`).
 
 ---
 
@@ -210,7 +209,7 @@ approve, then commit; the middle steps are omitted after the first for brevity.
    bodies where applicable.
 
 3. **Approve locally.** `flywheel writing proposal approve <proposal_ref> --json`.
-   This step is not available over MCP.
+   This step runs on the CLI.
 
 4. **Commit with the grant.**
    `flywheel writing proposal commit <proposal_ref> --grant <grant_ref> --json`.
@@ -254,8 +253,8 @@ FLYWHEEL_HOME=<operator-owned Flywheel state directory>
 flywheel-writing-workspace-mcp
 ```
 
-The launcher binds that home and does not grant approval authority;
-`writing.proposal_approve` still returns `APPROVAL_UNAVAILABLE` over MCP.
+The launcher binds that home; approval stays on the CLI, and
+`writing.proposal_approve` returns `APPROVAL_UNAVAILABLE` over MCP.
 
 ---
 
@@ -268,10 +267,10 @@ which match the CLI verbs and the HTTP routes under `/api/writing/`.
 
 - `writing.status`: list owner-local writing projects in a public-safe shape.
   Available on HTTP, CLI, and MCP.
-- `writing.doctor`: report journey store and artifact store presence, and
-  semantic quality as unmeasured. Available on HTTP, CLI, and MCP.
+- `writing.doctor`: report journey store and artifact store presence and the
+  semantic quality status. Available on HTTP, CLI, and MCP.
 - `writing.project_get` and `writing.project_get_post`: read a public project
-  view. Available on HTTP only; both are CLI- and MCP-absent by declaration.
+  view. Available on HTTP, by declaration.
 
 ### Prepare a mutation proposal
 
@@ -291,7 +290,8 @@ available on HTTP, CLI, and MCP.
   returned scope verdict is `PASS` or `HOLD`.
 - `writing.decision_record`: accept, reject, supersede, or rollback.
 - `writing.review_prepare`: bind the current revisions, diagnostic, sources, and
-  decisions into a review, with style lint and quality measurement unmeasured.
+  decisions into a review, with style lint and quality measurement left as
+  open slots.
 - `writing.export_prepare`: write the accepted section heads into a private
   manuscript and a binding manifest.
 
@@ -340,8 +340,8 @@ produced it.
 
 - A brief JSON and a source-packet JSON at init. Today these are caller-supplied
   local file reads (observed). A source packet could be produced by the `gather`
-  lane, which writes research intake with provenance receipts (proposed: no
-  gather-to-writing wiring exists today).
+  lane, which writes research intake with provenance receipts (proposed
+  wiring).
 - Author or model text bodies for revisions and candidates. A `relay` run or a
   local model could supply a candidate body before the operator decides on it
   (proposed).
@@ -357,9 +357,8 @@ produced it.
   the event head. These refs are the re-derivable surface a witnessed ledger such
   as `forum` could record, and a reader could later re-check each binding against
   the stored bytes.
-- A review artifact whose `style_lint` and `quality_measurement` slots are
-  explicitly unmeasured. Those two slots are the named attachment point for a
-  prose-quality measurement produced elsewhere.
+- A review artifact with open `style_lint` and `quality_measurement` slots, the
+  named attachment point for a prose-quality measurement produced elsewhere.
 
 ### Short worked example: writing to articulate (proposed)
 
@@ -379,7 +378,7 @@ exists.
    that pins the text hash and the ruleset fingerprint (observed on the
    standalone articulate package; proposed as a call from the writing lane).
 3. Record the articulate receipt ref in the writing review's `style_lint` slot,
-   which today reads unmeasured. The slot and its validation already exist in
+   which is open today. The slot and its validation already exist in
    `harness/writing_types.py`; filling it needs the proposed articulate bridge
    described in `docs/features/articulate.md` (proposed).
 4. Export. The manifest binds the review ref, so the exported manuscript now
@@ -394,14 +393,12 @@ the same.
 
 ### Honest nulls
 
-- The writing lane measures deterministic custody and scope. It does not measure
-  prose quality, factual truth, source completeness, or publication readiness.
-  `writing.doctor` reports semantic quality as unmeasured, and the review's
-  quality slots stay unmeasured.
-- No wired call from the writing lane to `articulate`, `gather`, `relay`, or
-  `forum` exists today. The seam slots exist; the bridges that fill them are
-  proposed.
-- Export writes a private local artifact. It is not publication, and the lane
-  does not push text to any external surface.
+- The writing lane measures deterministic custody and scope. Prose quality,
+  factual truth, source completeness and publication readiness attach through
+  the review's quality slots once a measuring lane fills them.
+- The seam slots for `articulate`, `gather`, `relay`, and `forum` exist; the
+  bridges that fill them are proposed.
+- Export writes a private local artifact. Publishing is a separate, deliberate
+  step outside the lane.
 - Filesystem authority beyond the current Writing-local checks waits on the
   shared workspace storage primitive (`docs/writing-workspace.md`).

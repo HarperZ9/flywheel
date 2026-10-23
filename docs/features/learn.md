@@ -24,8 +24,8 @@ own scored practice attempts. The credential engine drives a declarative course
 workflow through a browser and stops at every graded `assess` step, and at
 consent, CAPTCHA, payment, and account creation, so the graded work stays the
 operator's. The spine under both is small: a `witness` hash, an append-only
-`Ledger` that recomputes, and a `gate` that denies any step kind it was not
-told about. Learn is registered as the `learn` lane in
+`Ledger` that recomputes, and a `gate` that allows the step kinds it was told
+about and denies the rest. Learn is registered as the `learn` lane in
 `harness/lanes_registry.py` (organ `learning`), reachable over MCP stdio, and it
 sits in the flagship spine in `harness/gateway.py`. The core is Node standard
 library with zero third-party runtime dependencies. The load-bearing rule is one
@@ -71,18 +71,18 @@ schedule, or a pending prediction. Observed.
   operator retrieves from memory and checks afterward. It never adds an answer
   field. Observed: `src/tutor/retrieval.mjs`, `src/assist/assist.mjs`.
 - **Deterministic interleave.** `interleave` mixes objectives with a seeded
-  mulberry32 Fisher-Yates shuffle (no `Math.random`), so the same seed reproduces
+  mulberry32 Fisher-Yates shuffle, so the same seed reproduces
   the same order. Observed: `src/tutor/retrieval.mjs`.
 - **Misconception targeting.** `misconceptions` aggregates wrong attempts and their
   feedback per objective, ranked by count, so the next session prioritizes the
-  weakest objective. It surfaces only what the operator already saw. Observed:
+  weakest objective. It surfaces what the operator already saw. Observed:
   `src/tutor/misconception.mjs`.
 - **Predict-then-observe.** `recordPrediction` stores the operator's prediction as a
-  pending attempt with `correct: null`; `scorePrediction` sets the verdict only
-  after the operator compares it to a rendered observation, and throws on an
-  out-of-range index or a non-pending attempt, so a real attempt is never
-  overwritten and a typo index is never swallowed. A pending prediction counts as an
-  attempt but never as correct. Observed: `src/tutor/predict.mjs`.
+  pending attempt with `correct: null`; `scorePrediction` sets the verdict after
+  the operator compares it to a rendered observation, and throws on an
+  out-of-range index or an already scored attempt, so scored attempts stay as
+  recorded and a typo index raises an error. A pending prediction counts as an
+  attempt and as incorrect until scored. Observed: `src/tutor/predict.mjs`.
 - **Self-explanation with a real check.** `explanationThesis` wraps the operator's
   own explanation into a crucible thesis; `gradeExplanation` buckets the returned
   verdicts into grounded (MATCH), shaky (DRIFT), and unverifiable, and fails closed
@@ -111,7 +111,7 @@ schedule, or a pending prediction. Observed.
   kind absent from the engine's own allowlist (`STEP_KINDS`); the workflow's own
   declared kinds never widen it. Observed: `src/accountability/gate.mjs`,
   `src/runtime/runner.mjs`, `src/workflow/schema.mjs`.
-- **Two submission modes, neither of which touches graded work.** `manual` halts at
+- **Two submission modes, both leaving graded work to the operator.** `manual` halts at
   each `submit`; `witnessed-auto` performs the `submit` under recorded operator
   authorization and stores a digest of the exact pre-submit page state. `assess`
   halts in both modes. Observed: `src/accountability/gate.mjs`,
@@ -123,18 +123,18 @@ schedule, or a pending prediction. Observed.
 - **Credential receipt with separated channels.** `learn receipt` writes JSON,
   Markdown, and HTML that separate automated logistics, human assessments,
   witnessed-auto submissions, manual submissions, and aid visualizations into
-  distinct sections, so a reader cannot mistake one channel for another. Observed:
+  distinct sections, one per channel. Observed:
   `src/receipt/receipt.mjs`.
-- **Aid renders that cannot satisfy graded work.** `learn visualize` turns a concept
+- **Aid renders, kept apart from graded work.** `learn visualize` turns a concept
   into a telos scene-spec request, delegates the render over `LEARN_TELOS_CMD`, and
   files the result as an `aid-visualization` ledger entry tagged `provenance: "aid"`.
-  The render is fail-closed (UNVERIFIABLE when no engine is configured) and never
-  enters a graded receipt channel. Observed: `src/interop/telos.mjs`,
+  The render is fail-closed (UNVERIFIABLE until an engine is configured) and lives
+  in its own receipt channel, apart from graded work. Observed: `src/interop/telos.mjs`,
   `src/receipt/receipt.mjs`.
-- **Assist wrapper that authors nothing.** `learn assist` takes the operator's draft
-  and emits a content hash, heuristically extracted claims to verify, and cited
-  sources, plus a crucible thesis and a gather manifest. It writes no content of its
-  own. Observed: `src/assist/assist.mjs`, `src/interop/crucible.mjs`,
+- **Assist wrapper around the operator's draft.** `learn assist` takes the
+  operator's draft and emits a content hash, heuristically extracted claims to
+  verify, and cited sources, plus a crucible thesis and a gather manifest. The
+  draft stays the operator's words. Observed: `src/assist/assist.mjs`, `src/interop/crucible.mjs`,
   `src/interop/gather.mjs`.
 - **Runtime integrity self-check.** `learn doctor` re-derives ten integrity
   invariants at runtime (the assess gate, default-deny, ledger tamper detection,
@@ -151,8 +151,8 @@ schedule, or a pending prediction. Observed.
   lazily, so the CLI and the tests never require it. Observed:
   `src/actuation/driver.mjs`, `src/cli.mjs`.
 - **Zero-dependency MCP surface.** `src/mcp.mjs` exposes the read and advisory tools
-  over stdio JSON-RPC. The MCP surface never performs a real course action and never
-  answers a graded step. Observed: `src/mcp.mjs`.
+  over stdio JSON-RPC. Real course actions and graded steps stay with the CLI
+  runner and the operator. Observed: `src/mcp.mjs`.
 
 Honest null: the README lists fourteen MCP tools, but the current `src/mcp.mjs`
 `TOOLS` array declares fifteen (it adds `learn_tutor_derive_schedule`). Treat the
@@ -162,7 +162,7 @@ count is higher.
 
 ## Stepwise usage (how a user runs it)
 
-Learn runs the same whether or not Flywheel is present.
+Learn runs the same with Flywheel or on its own.
 
 1. **Install.**
    ```bash
@@ -200,8 +200,8 @@ Learn runs the same whether or not Flywheel is present.
    node src/cli.mjs tutor derive-schedule sess          # re-derive the schedule from the log; MATCH/DRIFT
    ```
    Grade 0 to 4 (0 fail, 1 slip, 2 lapse, 3 review, 4 easy). `--now` is required
-   whenever `--grade` is given. On a session created without `--enable-fsrs` the
-   `--use-fsrs` flag falls back to the Leitner path.
+   whenever `--grade` is given. `--use-fsrs` needs a session created with
+   `--enable-fsrs`; other sessions fall back to the Leitner path.
 
 5. **Emit and re-verify a study receipt.**
    ```bash
@@ -243,22 +243,20 @@ Observed in `src/cli.mjs`.
   misconceptions|retrieval|explain|predict|score|path|study|study-receipt|
   derive-schedule> <id> ...`.
 
-Each verb returns an exit code that carries meaning: `verify` exits non-zero on a
-broken chain, `mastery` exits non-zero when not ready, `derive-schedule` exits
-non-zero on DRIFT, and `reverify` exits zero only when every checked receipt is
-VERIFIED.
+Each verb returns an exit code that carries meaning: `verify` exits 1 on a
+broken chain, `mastery` exits 1 until the objective is ready, `derive-schedule`
+exits 1 on DRIFT, and `reverify` exits 0 when every checked receipt is VERIFIED.
 
 ### MCP tools
 Fifteen tools, observed in `src/mcp.mjs` (`TOOLS`). The surface is read and
 advisory: it reports, previews, and re-verifies, and the tutor plan and record
-tools persist a study session, but no tool runs a live course action or answers a
-graded assessment.
+tools persist a study session. Live course actions and graded assessments stay
+off this surface.
 
 - `learn_doctor`, `learn_status` health and capability envelopes.
 - `learn_verify`, `learn_receipt` re-check and read a saved run's ledger and
   receipt.
-- `learn_dry_run` previews where a workflow halts under the Fake driver, touching
-  no live site.
+- `learn_dry_run` previews where a workflow halts under the Fake driver, offline.
 - `learn_tutor_plan`, `learn_tutor_record`, `learn_tutor_mastery` create a session,
   record a practice attempt, and read the mastery gate.
 - `learn_tutor_due`, `learn_tutor_studyplan`, `learn_tutor_misconceptions` return
@@ -267,7 +265,7 @@ graded assessment.
   and audit the FSRS schedule against the witnessed log.
 - `learn_tutor_prooflesson` derives a lesson from a proof packet.
 - `learn_visualize_dry_run` returns the telos scene-spec request that a render would
-  send, rendering nothing.
+  send, as a preview.
 
 ### Library exports
 Observed in `package.json` and `src/index.mjs`. The package exports are `.`
@@ -276,12 +274,12 @@ Observed in `package.json` and `src/index.mjs`. The package exports are `.`
 receipt builder) are imported by path within the package.
 
 ### Composition seams (each fail-closed, present-only)
-Learn reaches a peer engine over a configured command and never fakes a result
+Learn reaches a peer engine over a configured command and reports UNVERIFIABLE
 when the command is absent. Observed in `src/interop`.
 
 - **telos render** (`LEARN_TELOS_CMD`, `src/interop/telos.mjs`) turns a concept into
   a `learn.telos.scene-request/v1` request and delegates the render. Every result is
-  tagged `provenance: "aid"`; a missing engine returns UNVERIFIABLE and never throws.
+  tagged `provenance: "aid"`; a missing engine returns UNVERIFIABLE as a value.
 - **crucible assess** (`LEARN_CRUCIBLE_CMD`, `src/interop/crucible.mjs`) turns
   assist-extracted claims into a `{title, disposition, claims}` thesis and optionally
   shells out for MATCH / DRIFT / UNVERIFIABLE verdicts.
@@ -315,8 +313,8 @@ Observed: `harness/lanes.py`, `tests/test_lanes.py`, `tests/test_lane_launch.py`
 - **A proof packet from a verification peer:** `tutor prooflesson` validates and
   reads a proof-surface or crucible packet (`version`, `packet_id`, `claim`,
   `verdicts.overall` in MATCH / DRIFT / UNVERIFIABLE, `sources[{ref, sha256}]`,
-  optional `scope`) and turns it into a lesson. It reads refs and hashes only, never
-  a source body.
+  optional `scope`) and turns it into a lesson from the refs and hashes, leaving
+  source bodies where they are.
 - **Crucible verdicts:** the self-explanation grader consumes MATCH / DRIFT /
   UNVERIFIABLE verdicts (from a shelled crucible run, or supplied directly) and
   buckets them.
@@ -353,8 +351,8 @@ Observed in `public/flywheel`:
 - **Desktop card** (`desktop/lib/models/lane_identity.dart`): a presentation
   identity (title `Learn`, surface "tutor + courses + mastery").
 - **Manim bridge** (`harness/manim_lesson.py`, gateway route `/api/learn/animate`):
-  turns an equation-bearing lesson into a runnable manimgl scene and reports an
-  honest null (`renderable: false`) when manimgl is not installed. This is
+  turns an equation-bearing lesson into a runnable manimgl scene and reports
+  `renderable: false` when manimgl is absent. This is
   Flywheel-side pedagogy code that names the learn lane, stdlib generation only.
 
 ### Worked example: crucible to learn, both native lanes
@@ -389,10 +387,9 @@ re-derives the bound verdict, so a hand-edited receipt fails closed. Observed:
 On the emit side, the same run's receipt maps into the organ-bundle entry shape
 through `src/interop.mjs`, so the lesson outcome carries into the shared receipt
 spine that crucible, forum, and proof-surface read. The bundle attests that this
-lesson was derived from this packet and reproduces these hashes. It does not
-attest that the claim is true of the world, and it does not attest that the
-operator learned the material; that is what the unaided retest and the mastery
-gate are for.
+lesson was derived from this packet and reproduces these hashes. The unaided
+retest and the mastery gate are where learning shows, and the claim's truth rests
+on its verification peer.
 
 ## Native-lane wiring status
 
@@ -409,18 +406,17 @@ Present and verified (observed):
 - **Spine, flagship, and tier** membership in `harness/gateway.py`,
   `harness/superproject.py`, and `harness/lane_caller.py`.
 
-Missing or in flight (proposed, not present on the working checkout's main):
+Proposed next steps:
 
-- **No gateway route calls learn's own tutor or receipt tools.** The gateway
-  academy runs a parallel Python learning loop (`harness/academy_pipeline.py`
-  with `harness/explanation_gate.py` and the retention module over
-  `harness/store.py`), a distinct implementation related to learn by philosophy,
-  not the `@harperz9/learn` package. The learn lane is reachable only through the
-  generic MCP proxy (`harness/lane_caller.py`) and the health probe
-  (`harness/lanes.py`). A dedicated route that composes learn's mastery or
-  study-receipt tools is proposed work.
-- **No learn readiness receipt.** `scripts/` carries `run_gather_readiness.py`
-  and peers, but no `run_learn_readiness.py`. Proposed.
+- **A gateway route for learn's tutor and receipt tools.** The gateway academy
+  runs its own Python learning loop (`harness/academy_pipeline.py` with
+  `harness/explanation_gate.py` and the retention module over
+  `harness/store.py`), related to learn by philosophy. Today the learn lane is
+  reached through the generic MCP proxy (`harness/lane_caller.py`) and the
+  health probe (`harness/lanes.py`); a dedicated route would compose learn's
+  mastery and study-receipt tools.
+- **A learn readiness receipt.** A `scripts/run_learn_readiness.py`, matching
+  `run_gather_readiness.py` and its peers.
 - **Version lockstep.** The `2.1.0` string in `lanes_registry.py` is a
   hand-maintained constant. It must be bumped in the same change as learn's
   `package.json` version, or `lane_status` reports STALE against the installed
@@ -428,13 +424,12 @@ Missing or in flight (proposed, not present on the working checkout's main):
 
 ## Boundary
 
-Learn is a learning aid. It is never a bypass. No command produces, hints, or
-auto-fills an answer to a graded assessment. `assess` steps halt in both
+Learn is a learning aid. Graded answers come from the operator: every command
+stops short of producing, hinting or filling one. `assess` steps halt in both
 submission modes; credentials, payment, CAPTCHA, and account creation halt for the
 operator; the `mastery()` verdict is a function of the operator's own scored
-practice attempts, never of a render, a schedule, or a pending prediction. Aid
-renders are witnessed in their own channel and cannot satisfy a graded step. The
-FSRS schedule is a hint that never feeds the gate, and its drift audit flags a
+practice attempts. Aid renders are witnessed in their own channel. The FSRS
+schedule is a hint kept apart from the gate, and its drift audit flags a
 tampered cache as DRIFT. If any command can be made to cross that line, that is
 the most useful bug report the tool can receive, and every such path has a
 falsifiable test in `learn doctor`. Observed: `src/doctor.mjs`, `src/status.mjs`,
@@ -442,5 +437,5 @@ falsifiable test in `learn doctor`. Observed: `src/doctor.mjs`, `src/status.mjs`
 
 Independent-project note: learn is its own repository (`@harperz9/learn` on npm,
 `public/learn` in the workspace) with its own tests and release cadence. It
-composes with Flywheel through published JSON seams and MCP; it does not absorb
-the platform and is not absorbed by it.
+composes with Flywheel through published JSON seams and MCP, and each stays its
+own project.

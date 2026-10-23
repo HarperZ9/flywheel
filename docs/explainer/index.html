@@ -193,13 +193,13 @@ ol.walkthrough p{margin:0 0 .3rem;max-width:44rem}
 <section class="block wrap" aria-labelledby="for-you">
   <h2 id="for-you">What it does for you</h2>
   <div class="measure">
-    <p>Flywheel sits between you and the model you choose. It gives you one local endpoint for any model, it checks every tool request an agent makes before anything runs, and it writes a receipt for each accepted result that a stranger can recheck later with no network and no model.</p>
+    <p>Flywheel sits between you and the model you choose. It gives you one local endpoint for any model, it checks every tool request an agent makes before anything runs, and it writes a receipt for each accepted result that a stranger can recheck later, offline, from the receipt alone.</p>
   </div>
   <ul class="uses">
     <li><b>One endpoint, any model</b>A local gateway on <code>127.0.0.1:8799</code> speaks the OpenAI API to a hosted or a local model. Your provider keys stay on your machine.</li>
     <li><b>An agent that asks first</b>The coding agent classifies each command it wants to run. A refused request goes back to the model with the reason, and the record keeps it.</li>
     <li><b>Receipts you can recheck</b>An accepted result is sealed with its hashes. A recheck re-runs the check and answers MATCH, DRIFT or UNVERIFIABLE.</li>
-    <li><b>A desktop app</b>The Windows installer bundles the engine, so the app runs on a machine with no Python installed.</li>
+    <li><b>A desktop app</b>The Windows installer bundles the engine and its Python runtime, so the app runs as installed.</li>
   </ul>
   <p class="src">Source: <a href="https://github.com/HarperZ9/flywheel/blob/1ec701de1b6ce08604ef3ec0dad80551d6fa3391/README.md">README.md</a> at 1ec701d</p>
 </section>
@@ -271,7 +271,7 @@ ol.walkthrough p{margin:0 0 .3rem;max-width:44rem}
               <div><div class="tag">stored in the envelope</div><dl class="kv"><dt>verdict</dt><dd>PASS</dd><dt>output</dt><dd>93e4b6c6b7a05c82</dd></dl></div>
               <div><div class="tag">oracle re-run now</div><dl class="kv"><dt>verdict</dt><dd>PASS</dd><dt>output</dt><dd>93e4b6c6b7a05c82</dd></dl></div>
             </div>
-            <div class="result"><span class="v v-ok vbox">MATCH</span> <span class="tag">flywheel gate exits 0 only on MATCH</span></div>
+            <div class="result"><span class="v v-ok vbox">MATCH</span> <span class="tag">flywheel gate exits 0 on MATCH</span></div>
           </div>
         </div>
         <div class="scene center" data-scene="tamper" aria-hidden="true">
@@ -297,7 +297,7 @@ ol.walkthrough p{margin:0 0 .3rem;max-width:44rem}
       <li class="step" tabindex="-1" data-scene="life" data-state="run"><div class="card">
         <span class="num">01</span><h3>One run, end to end</h3>
         <p>You send a task to the model you picked. When the model asks to run a tool, Flywheel classifies the request before anything runs. An allowed call runs, and its arguments and output are hashed into a receipt. A refused call goes back to the model with the reason, so it can pick another route.</p>
-        <p>Receipts form an ordered chain. A later recheck recomputes that chain with no network and no model in the loop.</p>
+        <p>Receipts form an ordered chain. A later recheck recomputes that chain offline, by rule.</p>
         <p class="src">Source: <a href="https://github.com/HarperZ9/flywheel/blob/1ec701de1b6ce08604ef3ec0dad80551d6fa3391/docs/art/run-lifecycle.svg">docs/art/run-lifecycle.svg</a>, README "How a run works"</p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="cap" data-state="pipe"><div class="card">
@@ -313,24 +313,24 @@ ol.walkthrough p{margin:0 0 .3rem;max-width:44rem}
       </div></li>
       <li class="step" tabindex="-1" data-scene="cap" data-state="subst"><div class="card">
         <span class="num">04</span><h3>A substitution is walked into</h3>
-        <p>In <code>echo "$(curl http://x)"</code> the shell runs the substitution before <code>echo</code> sees anything. The walk follows it to depth 1, finds <code>curl</code>, and blocks the call. The outer word settles nothing.</p>
+        <p>In <code>echo "$(curl http://x)"</code> the shell runs the substitution before <code>echo</code> sees anything. The walk follows it to depth 1, finds <code>curl</code>, and blocks the call. The substitution decides the verdict.</p>
         <p class="src">Source: <a href="https://github.com/HarperZ9/flywheel/blob/1ec701de1b6ce08604ef3ec0dad80551d6fa3391/harness/shell_admission.py">harness/shell_admission.py</a>, module docstring, point 2</p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="cap" data-state="parse"><div class="card">
         <span class="num">05</span><h3>What cannot be parsed goes to a person</h3>
-        <p><code>echo "unterminated</code> has no closing quote. The parser cannot read it, so Flywheel cannot say what it would do. It escalates with <code>unparseable_command_fail_closed</code>, and a person decides.</p>
+        <p><code>echo "unterminated</code> is missing its closing quote, so the parser stops. Flywheel escalates with <code>unparseable_command_fail_closed</code>, and a person decides.</p>
         <p class="src">Source: <a href="https://github.com/HarperZ9/flywheel/blob/1ec701de1b6ce08604ef3ec0dad80551d6fa3391/harness/shell_admission.py">harness/shell_admission.py</a>, the <code>AdmissionError</code> branch</p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="cap" data-state="unknown"><div class="card">
         <span class="num">06</span><h3>The gap, stated openly</h3>
         <p><code>ls -la build/</code> runs. The map of executable names is curated by hand and short. An executable it has never seen is admitted, so a test runner can work, and the record writes its class down as <code>unknown</code>.</p>
-        <p>The receipt for a decision carries the capability class, the reason code and a hash of the arguments. It never stores the command text. Use the buttons in the panel to try all seven commands.</p>
-        <p class="src">Source: <a href="https://github.com/HarperZ9/flywheel/blob/1ec701de1b6ce08604ef3ec0dad80551d6fa3391/harness/shell_admission.py">harness/shell_admission.py</a>, "Honest nulls" and "Trace hygiene"</p>
+        <p>The receipt for a decision carries the capability class, the reason code and a hash of the arguments, so the command text stays out of the record. Use the buttons in the panel to try all seven commands.</p>
+        <p class="src">Source: <a href="https://github.com/HarperZ9/flywheel/blob/1ec701de1b6ce08604ef3ec0dad80551d6fa3391/harness/shell_admission.py">harness/shell_admission.py</a>, module docstring, the limits and "Trace hygiene" notes</p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="gate" data-state="collect"><div class="card">
         <span class="num">07</span><h3>A result worth sealing</h3>
-        <p>The receipt half is easiest to see with no model in the way. <code>flywheel gate</code> runs a fixed task: multiply two 2 x 2 matrices with seven products where the schoolbook method needs eight. This is the scheme Strassen found. A deterministic proposer offers four candidates. Seed 0 is Strassen's scheme. Seeds 1 to 3 each have one coefficient raised by one.</p>
-        <p>The oracle expands each candidate and compares it with the exact matrix product tensor over the rationals. It reads data and never executes candidate code. One candidate passes.</p>
+        <p>The receipt half is easiest to see with a fixed proposer. <code>flywheel gate</code> runs a fixed task: multiply two 2 x 2 matrices with seven products where the schoolbook method needs eight. This is the scheme Strassen found. A deterministic proposer offers four candidates. Seed 0 is Strassen's scheme. Seeds 1 to 3 each have one coefficient raised by one.</p>
+        <p>The oracle expands each candidate and compares it with the exact matrix product tensor over the rationals. It reads candidates as data. One candidate passes.</p>
         <p class="src">Source: <a href="https://github.com/HarperZ9/flywheel/blob/1ec701de1b6ce08604ef3ec0dad80551d6fa3391/harness/gate.py">harness/gate.py</a>, <a href="https://github.com/HarperZ9/flywheel/blob/1ec701de1b6ce08604ef3ec0dad80551d6fa3391/harness/matmul_oracle.py">harness/matmul_oracle.py</a></p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="gate" data-state="seal"><div class="card">
@@ -346,7 +346,7 @@ ol.walkthrough p{margin:0 0 .3rem;max-width:44rem}
       <li class="step" tabindex="-1" data-scene="tamper" data-state="coef"><div class="card">
         <span class="num">10</span><h3>Change one thing</h3>
         <p>Edit the stored candidate by one coefficient and the oracle now says FAIL while the envelope still says PASS: DRIFT. Rewrite the stored verdict to FAIL and the fresh run disagrees again: DRIFT.</p>
-        <p>Delete the envelope, or remove its candidate, and there is nothing to re-run. The recheck never assumes MATCH. It answers UNVERIFIABLE, a gap in the record and never a pass. Pick each change in the panel.</p>
+        <p>Delete the envelope, or remove its candidate, and the recheck has nothing to re-run. It answers UNVERIFIABLE, a gap in the record, kept apart from a pass. Pick each change in the panel.</p>
         <p class="src">Source: <a href="https://github.com/HarperZ9/flywheel/blob/1ec701de1b6ce08604ef3ec0dad80551d6fa3391/harness/gate.py">harness/gate.py</a>, <code>rewitness_envelope</code></p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="chain" data-state="intact"><div class="card">
@@ -356,7 +356,7 @@ ol.walkthrough p{margin:0 0 .3rem;max-width:44rem}
       </div></li>
       <li class="step" tabindex="-1" data-scene="chain" data-state="broken"><div class="card">
         <span class="num">12</span><h3>An edit breaks the next link</h3>
-        <p>Edit the policy receipt after the fact. Its hash changes, so the pointer stored in the verify receipt no longer agrees. Validation stops at stage 3 and answers UNVERIFIABLE.</p>
+        <p>Edit the policy receipt after the fact. Its hash changes, so the pointer stored in the verify receipt disagrees. Validation stops at stage 3 and answers UNVERIFIABLE.</p>
         <p class="src">Source: <a href="https://github.com/HarperZ9/flywheel/blob/1ec701de1b6ce08604ef3ec0dad80551d6fa3391/harness/chain.py">harness/chain.py</a>, <code>validate_chain</code></p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="chain" data-state="rewit"><div class="card">
@@ -372,7 +372,7 @@ ol.walkthrough p{margin:0 0 .3rem;max-width:44rem}
   <h2 id="walkthrough">Walkthrough</h2>
   <p class="measure">Install it, run it once, then use the main feature. Each command below is real, and so is its output.</p>
   <ol class="walkthrough">
-    <li><h3>Install</h3><p>Install the engine from PyPI. Python 3.11 or newer; no model and no network once installed.</p>
+    <li><h3>Install</h3><p>Install the engine from PyPI. Python 3.11 or newer; after install, the gate runs offline.</p>
 <pre class="cmd"><code>$ python -m pip install flywheel-verify</code></pre></li>
     <li><h3>First run: the gate</h3><p>Run the gate. It collects a result, verifies it, seals it, and re-witnesses the seal.</p>
 <pre class="cmd"><code>$ flywheel gate
@@ -392,14 +392,14 @@ subject=1993af18b980c95d claim=23450831b0b42121 signal=dda8a7414a71c071</span></
 </section>
 
 <section class="block wrap" aria-labelledby="limits">
-  <h2 id="limits">What it does not do</h2>
+  <h2 id="limits">Where the edges are</h2>
   <ul class="limits">
-    <li>A recheck shows that a recorded result reproduces. It does not show that a model's answer is correct. A reproducible check still needs a fitting criterion and enough evidence, and replay alone does not establish safety.</li>
-    <li>The capability map is curated by hand. An executable it does not list is admitted and recorded as unknown.</li>
-    <li>A structural chain MATCH is tamper evidence. It says nothing about whether the stored verdicts were true until each stage is re-witnessed.</li>
+    <li>A recheck shows that a recorded result reproduces. Correctness comes from the check itself, so pick a criterion that fits the claim and gather enough evidence.</li>
+    <li>The capability map is curated by hand. An executable outside the map is admitted and recorded as <code>unknown</code>.</li>
+    <li>A structural chain MATCH is tamper evidence. Re-witnessing each stage checks the stored verdicts themselves.</li>
     <li>The content of each request goes to the model provider you pick, under that provider's terms. With a local model it stays on your machine.</li>
-    <li>The gate shown here has no model in it on purpose. It tests the oracle, receipt and recheck path, and it says nothing about model quality.</li>
-    <li>No capability uplift is claimed. The project's one capability comparison is negative: continued pretraining moved general code completion by -3.05 points over 164 tasks, p = 0.40.</li>
+    <li>The gate shown here uses a fixed proposer on purpose. It tests the oracle, receipt and recheck path; model quality is a separate benchmark.</li>
+    <li>The project's one capability comparison came out negative: continued pretraining moved general code completion by -3.05 points over 164 tasks, p = 0.40.</li>
   </ul>
   <p class="src">Source: README.md "Verification record" and "Benchmarks", harness/chain.py, harness/shell_admission.py at 1ec701d</p>
 </section>
@@ -408,10 +408,10 @@ subject=1993af18b980c95d claim=23450831b0b42121 signal=dda8a7414a71c071</span></
   <h2 id="recall">Check what stuck</h2>
   <p class="measure">Answer each one in your head before you open it.</p>
   <details><summary>Why does <code>echo "rm -rf /"</code> run while <code>echo "$(curl http://x)"</code> is blocked?</summary><p>Quotes make the delete an argument to echo, and only executables are classified. The substitution runs before echo, so the walk descends into it and finds curl, which needs network egress.</p></details>
-  <details><summary>What happens to a tool request that is refused?</summary><p>Nothing runs. The reason goes back to the model so it can choose another route, and the record keeps the request, the refusal and the reason.</p></details>
+  <details><summary>What happens to a tool request that is refused?</summary><p>The command stays unrun. The reason goes back to the model so it can choose another route, and the record keeps the request, the refusal and the reason.</p></details>
   <details><summary>In the gate, which two values does the recheck compare?</summary><p>The verdict and the oracle's output hash, after re-running the oracle over the candidate stored in the envelope.</p></details>
-  <details><summary>An edited verdict gives DRIFT and a missing envelope gives UNVERIFIABLE. Why keep them apart?</summary><p>DRIFT means a fresh check ran and disagrees with the record. UNVERIFIABLE means no check could run. Reporting a gap as a pass would hide exactly the case a reader most needs to see.</p></details>
-  <details><summary>What does an intact chain prove, and what does it leave open?</summary><p>It proves no receipt was edited after the fact. It leaves open whether the stored verdicts were right; re-witnessing each stage answers that.</p></details>
+  <details><summary>An edited verdict gives DRIFT and a missing envelope gives UNVERIFIABLE. Why keep them apart?</summary><p>DRIFT means a fresh check ran and disagrees with the record. UNVERIFIABLE means the check had nothing to run on. Keeping the two apart shows a reader exactly where the record has a gap.</p></details>
+  <details><summary>What does an intact chain prove, and what does it leave open?</summary><p>It proves every receipt is as first written. Re-witnessing each stage then checks whether the stored verdicts were right.</p></details>
 </section>
 </main>
 <footer class="foot wrap">

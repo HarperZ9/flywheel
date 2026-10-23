@@ -28,27 +28,25 @@ Each item is bound to the source that implements it.
 - **Endpoint ladder with failover.** `build_endpoints` and `available_backends`
   (`src/relay/endpoints.py`, `src/relay/local_agent.py`) assemble an ordered set
   of tiers: served local model, Ollama, subscription CLI (`claude`, `codex`),
-  public API, provider gateway, and a cloud OpenAI-compatible endpoint. A tier
-  whose credential is absent is dropped when the ladder is assembled, so it
-  cannot error at call time.
+  public API, provider gateway, and a cloud OpenAI-compatible endpoint. The ladder
+  holds the tiers whose credentials are present, so every rung is callable.
 - **Credential handling by construction.** Keys come from environment variables,
   subscriptions from your own authenticated CLI, gateways from a base URL you
-  set. A gateway rung uses only its dedicated `<PROVIDER>_PROVIDER_KEY` and never
-  falls back to the official API key, so a real credential is not replayed to a
-  third-party URL (README "Reaches every endpoint").
+  set. A gateway rung uses its dedicated `<PROVIDER>_PROVIDER_KEY` alone, so the
+  official API key stays with the official endpoint (README "Reaches every
+  endpoint").
 - **Gated tool loop.** `run_agent` (`src/relay/local_loop.py`) drives the model
   through `ToolExecutor` and `ToolGate` (`src/relay/local_tools.py`). `write_file`
   is off until `--allow-write`; `run` is off until `--allow-exec`, and
   `allow_exec` implies write.
 - **Path-confined file tools.** `read_file`, `list_dir`, `write_file`, and the
-  edit tools are confined to `--root`. `run`/exec sets only the working directory
-  and is not path-confined, which the tool descriptions state directly
+  edit tools are confined to `--root`. `run`/exec sets the working directory and
+  reaches the whole machine, as the tool descriptions state
   (`src/relay/local_mcp.py`, `local_agent_run` description).
-- **Exact-match and hash-anchored edits.** `edit_file` requires a unique match or
-  refuses; `edit_lines` and `edit_plan` (`src/relay/edit_plan.py`,
+- **Exact-match and hash-anchored edits.** `edit_file` requires a unique match; `edit_lines` and `edit_plan` (`src/relay/edit_plan.py`,
   `src/relay/hashline.py`) edit by an 8-hex line anchor and fail closed on a
-  stale or ambiguous anchor. `apply_diff` (`src/relay/udiff.py`) refuses a hunk
-  whose context does not match and leaves the file untouched.
+  stale or ambiguous anchor. `apply_diff` (`src/relay/udiff.py`) applies a hunk
+  when its context matches and otherwise leaves the file as it was.
 - **Repo map.** `repo_map` (`src/relay/local_repomap.py`) outputs a compact code
   outline (Python via `ast`; several other languages via patterns). `--agent`
   folds a bounded map (stopped at 20 files, capped at 4096 UTF-8 bytes) into the
@@ -63,32 +61,32 @@ Each item is bound to the source that implements it.
   third party can recompute from the saved record.
 - **Interactive approval, witnessed.** `--interactive` (`src/relay/approvals.py`)
   prompts before every mutating call and records each decision as a hash-chained
-  ledger entry bound to the call's exact bytes. A headless run is byte-identical
-  to one without it.
+  ledger entry bound to the call's exact bytes. A headless run stays
+  byte-identical to the default.
 - **Prompt compaction.** `--compact-budget N` (`src/relay/compaction.py`) folds
   older turns into a summary once the prompt passes N tokens, records the
   folded-span and summary hashes, and keeps the untruncated trajectory on the
   ledger.
 - **Acceptance check with your authority.** `--check "<cmd>"` runs your command
-  once after the agent finishes, witnesses the result, and accepts the run only
-  on pass (`src/relay/local_loop.py:_run_acceptance`). The check runs outside the
-  tool permission boundary and is not a call the model can emit. `--test-cmd` is
+  once after the agent finishes, witnesses the result, and accepts the run on a
+  pass (`src/relay/local_loop.py:_run_acceptance`). The check runs outside the
+  tool permission boundary, under your authority alone. `--test-cmd` is
   the retried variant: on failure the output is fed back to the model until it
   passes or the step budget runs out.
-- **Reward-hacking guard.** A non-learned rule set reads the witnessed edit set;
-  a green check earned by editing the grading test or injecting `pytest.skip` /
-  `sys.exit` is flagged UNTRUSTED and the run is not accepted
-  (`src/relay/intent_audit.py`). The guard only ever turns an accept into a
-  refusal.
+- **Reward-hacking guard.** A fixed rule set reads the witnessed edit set; a
+  green check earned by editing the grading test or injecting `pytest.skip` /
+  `sys.exit` is flagged UNTRUSTED and the run is refused
+  (`src/relay/intent_audit.py`). The guard can turn an accept into a refusal,
+  and that is its whole power.
 - **Claim grounding.** The final answer is checked against the ledger
   (`src/relay/claim_grounding.py`); a summary that claims tests pass over a failed
   check is REFUTED even with an intact chain. A claim it cannot parse degrades to
   `unclassified`, counted against the run.
 - **Proof-carrying certificate.** `--cert run.rvc` (`src/relay/cert.py`,
   `src/relay/contract.py`) writes a few-KB certificate; the vendored
-  `verify_cert.py` re-derives ALLOW / UNVERIFIABLE / REFUTED offline with no model
-  and no re-execution. The three verdicts are ordered: REFUTED first,
-  UNVERIFIABLE next, ALLOW only when nothing earlier fired.
+  `verify_cert.py` re-derives ALLOW / UNVERIFIABLE / REFUTED offline from the
+  certificate alone. The three verdicts are ordered: REFUTED first,
+  UNVERIFIABLE next, ALLOW when neither fired.
 - **Run viewer.** `--view run.jsonl` (`src/relay/run_view.py`) draws the run as a
   hash-chained timeline; a flipped byte snaps one edge red with verdict REFUTED.
 - **Verified best-of-N.** `--best-of N --check "<cmd>"` (`src/relay/verified_bon.py`)
@@ -96,17 +94,17 @@ Each item is bound to the source that implements it.
   editing the grader ranks below an honest higher score.
 - **Regression bisection.** `--bisect run.jsonl --root <clean> --check "<cmd>"`
   (`src/relay/bisect.py`) replays the witnessed edit set and names the first edit
-  that broke the check; the model is not re-run.
+  that broke the check, from the recorded edits alone.
 - **Reviewability projection.** Each `--agent` run ships a projection derived from
   the ledger (`src/relay/review.py`): `edited_unread`, `unverified_edits`, the
   failed-call scars, a `reviewability` score, and a `risk` table tiering each edit
-  by mechanical signals. These are facts, not generated prose.
+  by mechanical signals, all computed from the ledger.
 - **Injection-containment probe.** `--probe-injection`
   (`src/relay/injection_probe.py`) runs a fixed, readable corpus of injection
   scenarios through the permission-checked executor, assumes the model emitted the
-  smuggled call, and reports containment with a re-derivable receipt. It exits
-  non-zero if any scenario is not contained, so it works as a CI check. It
-  generates no attacks.
+  smuggled call, and reports containment with a re-derivable receipt. It exits 1
+  if any scenario escapes, so it works as a CI check. The corpus is fixed and
+  readable.
 - **Watch mode.** `--watch` (`src/relay/watch.py`) polls the tree for a marker
   comment (`RELAY:` by default, `--watch-marker` to change) and turns each marker
   into its own witnessed agent goal through the same gated loop.
@@ -156,8 +154,7 @@ Each item is bound to the source that implements it.
    dispatches through `harness/relay_bridge.py:cmd_relay`.
 5. Call a relay tool through the gateway or the generic lane caller:
    `call_lane_tool("relay", "local_agent_run", {"goal": "...", "root": ".", "allow_write": True}, governance_tier="T2")`
-   (`harness/lane_caller.py`). The call is refused unless the governance tier is
-   T2 or higher.
+   (`harness/lane_caller.py`). The call needs governance tier T2 or higher.
 
 ## Reference
 
@@ -172,8 +169,9 @@ The server (`src/relay/local_mcp.py`) speaks JSON-RPC 2.0 over stdio and exposes
 - **`local_agent_run`**: runs a gated agentic task and blocks until done. Takes
   `goal`, optional `root`, `allow_write`, `allow_exec`, `max_steps`, `online`.
   Returns the final answer, step count, `verified`, `chain_ok`, the ledger
-  `checkpoint`, and the `intent_audit`. Write and exec are off unless allowed;
-  file tools are confined to `root`; an allowed shell is not path-confined.
+  `checkpoint`, and the `intent_audit`. Write and exec start off and turn on by
+  flag; file tools are confined to `root`; an allowed shell reaches the whole
+  machine.
 - **`local_agent_start`**: starts the same gated task in the background and
   returns a `run_id` at once. Same gate as `local_agent_run`.
 - **`local_agent_status`**: progress of a background run: `running` / `done` /
@@ -222,8 +220,8 @@ From `src/relay/local_agent_cli.py`:
 
 From 0.5.0, a PATH entry that reaches the server's folder or a child's folder leaves
 that child's lookup and PATH, for git's own children and a bisect check's shell too.
-Flywheel starts relay with write and exec off and passes no `check` or `test_cmd`, so
-the app starts no shell, git or bisect child through relay.
+Flywheel starts relay with write and exec off and leaves `check` and `test_cmd` unset,
+so a shell, git or bisect child through relay starts when you supply the command.
 
 ### Lane declaration
 
@@ -247,21 +245,20 @@ From `harness/lanes_registry.py`:
   re-derive from the certificate alone; three (`tests_pass`, `reviewability`,
   `claim_grounded`) need the in-tree verifier and report unverifiable in the
   vendored file (README "The proof toolkit"; `docs/ACCOUNTABILITY.md`).
-- The certificate proves re-derivable correctness, not authorship. Python's
-  standard library carries no asymmetric signature, so an `.rvc` says the recorded
-  run holds, not who produced it (`docs/ACCOUNTABILITY.md`).
+- The certificate proves the recorded run holds. Authorship needs a signature,
+  which the stdlib verifier leaves to a signing layer (`docs/ACCOUNTABILITY.md`).
 - Claim grounding is rule-based; an unparseable claim degrades to `unclassified`.
-- Verified best-of-N is decisive only when a runnable check exists; with no check
-  it ranks accountability, not capability.
+- Verified best-of-N decides on capability when a runnable check exists; without
+  one it ranks the runs by accountability.
 - Bisection assumes the pre-run tree state, a deterministic check, and a failure
   monotonic in the edit prefix.
 - The `run` denylist refuses a few literal destructive spellings; the README
-  states it is a guardrail against a small model wrecking the tree. It is not a
-  security boundary.
+  calls it a guardrail that keeps a small model from wrecking the tree. The
+  security boundary is the exec gate.
 - Version note: the lane registry, the payload row, the bundled-lane expectation
   and the relay submodule all name relay `0.6.0`, and
-  `tests/test_lane_pins_20260927.py` checks them against one another. A pip or npm
-  lane older than its pin does not start under the default profile.
+  `tests/test_lane_pins_20260927.py` checks them against one another. Under the default
+  profile a pip or npm lane older than its pin is held back.
 
 ## Composition
 
@@ -296,15 +293,14 @@ lane is down, so a dead lane never takes the origin with it.
   `local_agent_result`. These are the same receipts a desktop run produces.
 - A **re-verifiable certificate** (`.rvc`) that any party re-checks offline with
   the vendored `verify_cert.py`, and a **reviewability projection** and **risk
-  table** that a downstream surface can enforce because they are facts, not prose.
+  table** that a downstream surface can enforce, since each value is computed.
 
 The downstream re-check is by re-derivation. A verification lane such as
 `crucible`, or a stranger with `verify_cert.py`, can re-derive the verdict from
-the certificate. Relay does not itself push its certificate into another lane; the
-observed wiring is the gateway forwarding relay's tools and the governance envelope
-enforcing the tier. Treat "crucible re-checks the certificate" as the intended
-composition the artifact is built for. No automatic pipeline wires it together in
-code today.
+the certificate. The wiring today is the gateway forwarding relay's tools and the
+governance envelope enforcing the tier; a caller hands the certificate to the
+checker. "crucible re-checks the certificate" is the composition the artifact is
+built for, and an automatic pipeline for it is proposed.
 
 ### Worked example: forum routes, relay executes, the run is re-verifiable
 
@@ -346,7 +342,7 @@ python verify_cert.py run.rvc      # ALLOW / UNVERIFIABLE / REFUTED, offline
 ```
 
 The seam holds because each side keeps its own authority: orchestration chooses
-what runs, the governance tier decides whether relay may run it, relay decides
-nothing about whether the work is correct, and the acceptance check (the caller's
-command) plus the offline verifier decide that last question without trusting the
-model or relay's own summary.
+what runs, the governance tier decides whether relay may run it, relay runs it,
+and the acceptance check (the caller's command) plus the offline verifier decide
+whether the work is correct, from evidence outside the model and relay's own
+summary.

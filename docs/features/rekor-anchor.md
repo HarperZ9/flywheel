@@ -3,14 +3,14 @@
 `flywheel anchor` puts a signed head into two public timelines that the author does
 not run. Sigstore's Rekor transparency log records the head's SHA-512 and a
 signature over it. OpenTimestamps commits the head's SHA-256 into a Bitcoin block.
-Each anchor gives a time by which the exact bytes existed, and neither depends on a
-key, a server or a git date the author controls.
+Each anchor gives a time by which the exact bytes existed, set by a party outside the
+author's control.
 
-Only hashes and a signature leave the machine. The head's bytes are never sent.
+Hashes and a signature leave the machine; the head's bytes stay local.
 
 ## Try it
 
-Recheck the preregistration ledger's current head, offline, with nothing installed:
+Recheck the preregistration ledger's current head, offline, from a plain checkout:
 
 ```
 flywheel anchor verify artifacts/prereg/heads/head-0008.json \
@@ -31,10 +31,10 @@ flywheel anchor head artifacts/prereg/heads/head-0009.json \
   --key <key file> --expect-public-key <hex> --anchor-dir artifacts/anchor
 ```
 
-`--dry-run` prints the exact entry that would be sent and sends nothing. The
+`--dry-run` prints the exact entry that would be sent and stops there. The
 OpenTimestamps leg is on by default (`--no-ots` turns it off) and starts pending;
 finish it once Bitcoin confirms with `python scripts/flywheel_anchor.py upgrade`.
-An existing OpenTimestamps record is never overwritten.
+An existing OpenTimestamps record stays as written.
 
 ## The anchored heads
 
@@ -44,7 +44,7 @@ An existing OpenTimestamps record is never overwritten.
 | The same head | receipt-signing key `f3701ca5...` | [3077405366](https://search.sigstore.dev/?logIndex=3077405366) | 2026-10-04 09:17:14 | (same bytes as above) |
 
 Both Rekor entries and the OpenTimestamps proof cover one byte string: the head in
-canonical JSON (sorted keys, no spaces), whose SHA-256 is
+canonical JSON (sorted keys, compact separators), whose SHA-256 is
 `728c15a4...afed2c015`. The canonical form keeps the hash the same on a checkout
 that rewrites line endings.
 
@@ -68,8 +68,8 @@ anchored head, and a history rewritten after an anchor fails with
 unanchored, never as anchored. The anchoring period is the exposure window.
 Setup, findings and limits: `docs/SEPARATE-SIGNER.md`, section "Public anchors".
 
-No signer head appears in the table above. No signer is installed on a machine
-this repository knows of, so no signer head exists to anchor yet.
+The table above lists ledger heads. A signer head joins it once a signer is
+installed on a machine this repository tracks.
 
 ## How it works
 
@@ -77,9 +77,9 @@ this repository knows of, so no signer head exists to anchor yet.
   the artifact, an Ed25519ph signature, and the public key as PEM. Rekor checks an
   Ed25519 key in this entry type with Ed25519ph (RFC 8032, prehashed, empty
   context) because it only sees the digest. So the anchor is a second signature by
-  the same key over the same bytes, made with libsodium. No account, no OIDC login
-  and no Fulcio certificate are involved. `assert_hash_only` refuses an entry with
-  any other field, or one that carries the artifact's bytes.
+  the same key over the same bytes, made with libsodium, so the entry needs the key
+  alone: no account, OIDC login or Fulcio certificate. `assert_hash_only` refuses an
+  entry with any other field, or one that carries the artifact's bytes.
 - **The record.** `artifacts/anchor/<stem>-rekor-<key8>.json` keeps the entry body,
   the log index, the integrated time, the signed entry timestamp (SET), the
   inclusion proof and the checkpoint it was proven against.
@@ -89,7 +89,7 @@ this repository knows of, so no signer head exists to anchor yet.
   key, which is pinned in the code with its log ID
   (`c0d23d6a...9591801d`, the SHA-256 of that key). It recomputes the Merkle root
   from the inclusion proof (RFC 9162) and checks the checkpoint's signature under
-  the same pinned key. Nothing about the log is taken from the record. ECDSA P-256
+  the same pinned key. The log's key and ID come from the code; the record supplies the entry alone. ECDSA P-256
   verification is in `harness/p256_verify.py`, also standard library only.
 - **Online check** (`harness/rekor_online.py`). It refetches the entry by UUID and
   requires the same body, time and index. It runs the offline check on the fresh
@@ -103,18 +103,18 @@ this repository knows of, so no signer head exists to anchor yet.
 
 - These exact bytes existed by the integrated time, and by the Bitcoin block's time.
 - The holder of the named key signed them.
-- After an online check, the log still holds the entry and has not rewritten the
-  tree it was proven against.
+- After an online check, the log still holds the entry, and the tree it was proven
+  against is a prefix of the current tree.
 
-## What it does not prove
+## Where the rest comes from
 
-- That the content is correct. A preregistration anchored on time can still be a
-  bad preregistration.
-- That the key holder is honest. The holder could have signed and logged other
-  bytes as well; the log records what it is given.
-- That the key belongs to the author. That binding comes from where the key is
-  published (`artifacts/prereg/FREEZE.json` and
-  `project-docs/records/2026-08-27-signing-key-provenance.md`), not from the log.
-- That no earlier version existed. Both anchors bound the time from above only.
-- That everyone sees one log, from the offline check alone. One checkpoint is one
-  view; the online check and Sigstore's public monitors cover the rest.
+- Content quality: an anchor fixes a preregistration in time; its quality needs a
+  reader.
+- The key holder's other signatures: the log records what it is given, so the holder
+  could have logged other bytes too.
+- Key ownership: the binding to the author comes from where the key is published
+  (`artifacts/prereg/FREEZE.json` and
+  `project-docs/records/2026-08-27-signing-key-provenance.md`).
+- Earlier versions: both anchors give an upper bound on the time.
+- One log for everyone: one checkpoint is one view; the online check and Sigstore's
+  public monitors cover the rest.

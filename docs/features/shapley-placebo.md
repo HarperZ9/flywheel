@@ -1,7 +1,7 @@
 # Shapley placebo test
 
 A placebo test for exact Shapley attribution over sources. It measures how often a
-source that should get no credit gets credit anyway.
+placebo source, built to deserve zero credit, receives credit.
 
 Shapley attribution over sources gives each source its average marginal effect on a
 value function, across every coalition of the other sources. The value is exact for
@@ -54,16 +54,16 @@ The bar, the items, the value function and the model were fixed in
 | Gold detection, answerable items | 16 / 16 | 1.000 | 0.806 to 1.000 |
 
 Verdict: RELIABLE, and the upper bound (0.046) meets the preregistered 0.10.
-All 16 items were answerable: the model failed every question with no sources and
+All 16 items were answerable: the model failed every question with zero sources and
 answered every question with all six. The run took 127 seconds on one RTX 4090.
 
 **How to read it.** In every item, v(S) was 1 exactly when the gold passage was in
 S. That is a "dictator" game, so exact Shapley gave the gold source all the credit and
 every control none. The test passed because, under this value function, this model
-ignored these controls completely. A 0-or-1 value function cannot see a control that
-shifts the model's confidence without flipping its answer. A graded value function,
-such as the log-likelihood of the answer, could give the same controls nonzero
-credit. This run does not measure that.
+ignored these controls completely. A 0-or-1 value function sees a control when it
+flips the answer. A graded value function, such as the log-likelihood of the answer,
+would also see a control that shifts the model's confidence, and could give these
+controls credit; that is the next run.
 
 ## Exploratory run: can this test fail?
 
@@ -101,26 +101,20 @@ Gutenberg can change a file, so compare the item set's SHA-256 with the preregis
 one before comparing results. The committed item set and run record are in
 `project-docs/records/2026-10-04-shapley-placebo/`.
 
-## does_not_prove
+## Scope
 
-- The rate covers these items, these control constructions, this model, this prompt
-  and this value function only.
-- It says nothing about attribution over pre-training data, LoRA-per-source methods,
-  or hierarchical (grouped) attribution.
-- It says nothing about N above 6, or about sampled Shapley estimators and their
-  variance.
-- It says nothing about a graded value function, where the same controls could earn
-  credit.
-- OpenMined's hosted Shapley demo uses a value function unknown here, so this run
-  says nothing about it.
-- The gold label is a construction: the answer string appears in that passage and in
-  no control. It is not evidence about causes inside the model.
-- A RELIABLE verdict shows the method rejected these placebos. It does not show the
-  method is right on real attribution questions.
+A RELIABLE verdict shows the method rejected these placebos: these items, these
+control constructions, this model, this prompt and this 0-or-1 value function, with
+N = 6 sources and exact Shapley. The gold label is a construction (the answer string
+appears in that passage and in no control), so it tests the attribution method
+rather than causes inside the model. Each of these is a separate test to run:
+pre-training data, LoRA-per-source methods, grouped attribution, N above 6, sampled
+estimators and their variance, a graded value function, and OpenMined's hosted
+demo, whose value function is unpublished.
 
 ## Licences and sources
 
 The passages are from Project Gutenberg texts that are public domain in the United
 States: #944 (Darwin), #2701 (Melville), #1228 (Darwin), #205 (Thoreau), #308 (Jerome)
-and #201 (Abbott). The Shapley value is Lloyd Shapley's 1953 construction; nothing is
-vendored.
+and #201 (Abbott). The Shapley value is Lloyd Shapley's 1953 construction, implemented here
+from the definition.
