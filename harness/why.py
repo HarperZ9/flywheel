@@ -226,7 +226,7 @@ def render(e: dict) -> str:
         f"{e['signature']['third_party_checkable']}, verified: "
         f"{e['signature']['verified']} ({e['signature']['reason']})",
         "",
-        "what this does not prove:",
+        "limits:",
     ]
     lines += [f"  - {s}" for s in e["does_not_prove"]]
     return "\n".join(lines)

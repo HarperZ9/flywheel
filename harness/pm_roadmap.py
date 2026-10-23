@@ -134,7 +134,7 @@ def render_markdown(doc: dict) -> str:
               f"- sealed goals: {v.get('sealed_goals', 0)}",
               f"- open goals: {v.get('open_goals', 0)}",
               f"- journeys tracked: {v.get('journeys', 0)}"]
-    lines += ["", "## Does not prove", ""]
+    lines += ["", "## Limits", ""]
     for note in doc.get("does_not_prove", []):
         lines.append(f"- {note}")
     return "\n".join(lines) + "\n"

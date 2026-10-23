@@ -229,7 +229,7 @@ def test_render_produces_plain_text_a_person_can_read(tmp_path):
     e = explain(_write(tmp_path, unsigned(_r())))
     text = render(e)
     assert "PASS" in text
-    assert "does not prove" in text.lower()
+    assert "limits:" in text
     assert "zarankiewicz" in text
 
 

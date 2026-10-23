@@ -166,6 +166,6 @@ def render_markdown(record: dict[str, Any]) -> str:
             f"| {row['task_id']} | {yes_no[0]} | {yes_no[1]} "
             f"| {row['provisioned_inputs']}/{row['declared_inputs']} "
             f"| {len(row['unprovisioned_inputs'])} | {blockers} |")
-    lines += ["", "## What this does not prove", ""]
+    lines += ["", "## Limits", ""]
     lines += ["- " + item for item in record["does_not_prove"]]
     return "\n".join(lines) + "\n"

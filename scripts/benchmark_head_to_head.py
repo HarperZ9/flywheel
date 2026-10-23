@@ -222,7 +222,7 @@ def render_html(record: dict[str, Any] | None) -> str:
         parts.append('<div class="null-item"><p class="why">No graded checker '
                      "reported on this run, so the quality half of the "
                      "comparison is unmeasured.</p></div>")
-    parts.append('<h3>What this does not prove</h3><ul class="caveats">'
+    parts.append('<h3>Limits</h3><ul class="caveats">'
                  + "".join(f"<li>{_esc(item)}</li>" for item in record["does_not_prove"])
                  + "</ul>")
     return "".join(parts)
@@ -264,7 +264,7 @@ def render_markdown(record: dict[str, Any] | None) -> list[str]:
             [[metric["metric"], metric["direction"],
               *[_cell(entry["mean"]) for entry in metric["roles"]]]
              for metric in checker["metrics"]])
-    out += ["", "### What this does not prove", ""]
+    out += ["", "### Limits", ""]
     out += [f"- {item}" for item in record["does_not_prove"]]
     return out + [""]
 

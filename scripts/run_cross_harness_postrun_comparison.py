@@ -34,7 +34,7 @@ def render_markdown(report: dict[str, Any]) -> str:
             role=cell.get("provider_role", ""), task=cell.get("task_id", ""), rep=cell.get("repetition", ""),
             state=cell.get("state", ""), execution=cell.get("execution_state", ""), oracle=cell.get("oracle_state", ""),
             outcome=cell.get("primary_outcome", ""), reasons=", ".join(cell.get("reasons", []))))
-    lines.extend(["", "## Does not prove", ""])
+    lines.extend(["", "## Limits", ""])
     for item in report.get("does_not_prove", []):
         lines.append(f"- {item}")
     return "\n".join(lines) + "\n"

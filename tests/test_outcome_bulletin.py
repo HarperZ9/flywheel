@@ -82,7 +82,7 @@ def test_preview_is_deterministic_public_bulletin_payload():
             "- Traversal-shaped job ids were rejected.\n\n"
             "Held blockers:\n"
             "- Public CLI/MCP router-job wiring still waits on integration review.\n\n"
-            "Does not prove:\n"
+            "Limits:\n"
             "- Router durable jobs are released as public Index behavior.\n"
             "- Private workspaces were scanned or posted.\n\n"
             "Links:\n"

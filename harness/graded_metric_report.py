@@ -295,6 +295,6 @@ def render_markdown(record: dict[str, Any]) -> str:
         for metric in checker["metrics"]:
             cells = " | ".join(_cell(entry["mean"]) for entry in metric["roles"])
             lines.append(f"| {metric['metric']} | {metric['direction']} | {cells} |")
-    lines += ["", "## What this does not prove", ""]
+    lines += ["", "## Limits", ""]
     lines += ["- " + item for item in record["does_not_prove"]]
     return "\n".join(lines) + "\n"

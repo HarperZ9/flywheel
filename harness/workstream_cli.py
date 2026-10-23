@@ -95,7 +95,7 @@ def _render(receipt: dict) -> str:
         lines += [f"  {name}" for name in receipt["assumption_footprint"]]
     lines += ["", "environments under the goal:"]
     lines += [f"  {name}" for name in receipt["environment_footprint"]]
-    lines += ["", "does not prove:"]
+    lines += ["", "limits:"]
     lines += [f"  - {line}" for line in receipt["does_not_prove"]]
     lines.append("")
     lines.append("A dot marks an obligation the goal does not rest on.")
@@ -141,7 +141,7 @@ def _render_audit(surface: dict) -> str:
         lines.append(f"     because: {'; '.join(row['reasons'])}")
         # The pin is what a reader records once they have read the statement.
         lines.append(f"     pin: {row['statement_digest']}")
-    lines += ["", "does not prove:"]
+    lines += ["", "limits:"]
     lines += [f"  - {line}" for line in surface["does_not_prove"]]
     return "\n".join(lines)
 

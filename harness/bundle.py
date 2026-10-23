@@ -244,12 +244,10 @@ _REPRODUCE = '''"""reproduce.py -- check this bundle without trusting whoever se
 
 Run: python reproduce.py
 
-Needs a bare Python interpreter. No pip install, no network, no GPU. If this
-prints MATCH, every file matches the manifest hash it shipped with and every
-receipt digest was recomputed from its own body.
-
-Read the does_not_prove section of manifest.json before treating MATCH as more
-than it is.
+Needs a bare Python interpreter. Runs on your machine with the standard
+library. MATCH means every file matches the manifest hash it shipped with and
+every receipt digest re-derives from its own body. The script prints the limits
+listed in manifest.json after the verdict.
 """
 import hashlib
 import json
@@ -275,7 +273,7 @@ def main() -> int:
     print("\\n".join(bad) if bad
           else f"MATCH: {len(manifest['files'])} file(s) verified")
     print()
-    print("what this does not prove:")
+    print("limits (from manifest.json):")
     for s in manifest.get("does_not_prove", []):
         print("  - " + s)
     return 1 if bad else 0

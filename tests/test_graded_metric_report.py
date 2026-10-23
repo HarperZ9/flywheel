@@ -136,7 +136,7 @@ def test_the_record_carries_what_it_cannot_support():
 def test_a_missing_number_renders_as_a_named_absence_not_a_blank_cell():
     table = render_markdown(build_report([row("a")]))
     assert "not reported" in table
-    assert "## What this does not prove" in table
+    assert "## Limits" in table
 
 
 def _write(tmp_path, rows, name="scorecard.json"):

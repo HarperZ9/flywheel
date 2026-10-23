@@ -150,7 +150,7 @@ def _render(outcome: dict) -> str:
     lines += _section("Positive controls", outcome.get("positive_controls", []))
     lines += _section("Held blockers", outcome.get("held_blockers", []))
     lines += _section("Next actions", outcome.get("next_actions", []))
-    lines += _section("Does not prove", outcome["does_not_prove"])
+    lines += _section("Limits", outcome["does_not_prove"])
     lines += ["", "Links:"]
     lines += [f"- {row['label']}: {row['url']}" for row in outcome["links"]]
     return "\n".join(lines)

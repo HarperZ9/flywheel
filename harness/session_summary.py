@@ -285,6 +285,6 @@ def render_markdown(summary: dict) -> str:
         lines += ["## Disagreements", ""]
         lines += [f"- `{row['code']}` on {row['question']}: {row['detail']}" for row in summary["disagreements"]]
         lines.append("")
-    lines += ["## What this does not prove", ""]
+    lines += ["## Limits", ""]
     lines += [f"- {item}" for item in summary["does_not_prove"]]
     return "\n".join(lines) + "\n"

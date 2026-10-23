@@ -232,7 +232,7 @@ def zenodo_live_report_lines(result: dict, *, sandbox: bool) -> list[str]:
     else:
         lines.append("  a draft was created; no DOI minted. Re-run with --publish "
                      "to mint the permanent DOI (irreversible).")
-    lines.append("  does not prove:")
+    lines.append("  limits:")
     lines += [f"    - {r}" for r in result.get("does_not_prove", [])]
     return lines
 

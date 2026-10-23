@@ -130,7 +130,7 @@ def test_the_demo_prints_no_rate(result):
     rendered = demo.render(result)
     assert "SYNTHETIC" in rendered
     for word in ("rate:", "accuracy", "recall", "precision", "%"):
-        assert word not in rendered.split("does not prove:")[0]
+        assert word not in rendered.split("limits:")[0]
 
 
 def test_the_committed_fixture_is_what_the_generator_writes():

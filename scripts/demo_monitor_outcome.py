@@ -234,7 +234,7 @@ def _tail(result: dict, lines: list[str]) -> str:
         f"               wrong+flag={cells['wrong/flag']}  wrong+below={cells['wrong/below']}  "
         f"correct+flag={cells['correct/flag']}  correct+below={cells['correct/below']}",
         "",
-        "does not prove:",
+        "limits:",
     ]
     lines += [f"  - {line}" for line in result["does_not_prove"]]
     return "\n".join(lines)
