@@ -5,10 +5,11 @@
 
 # flywheel
 
-Run AI tasks on the model you choose, check the answers against their sources, and keep a receipt anyone can recheck offline.
+Run AI tasks on any hosted or local model, check answers against the sources that decide them, and keep a record of every step.
 
 ```
 python -m pip install flywheel-verify
+flywheel gate
 ```
 
 [![version: 1.9.0](https://img.shields.io/badge/version-1.9.0-e6e1d6?style=flat-square&labelColor=1a1712)](https://pypi.org/project/flywheel-verify/)
@@ -18,28 +19,28 @@ python -m pip install flywheel-verify
 
 Docs: https://harperz9.github.io/flywheel/docs/
 
-## What it does for you
+## What it does
 
-Flywheel is a local harness for AI work. It puts any model, hosted or local,
-behind one OpenAI-compatible endpoint on your machine. It runs a coding agent
-in your terminal that by default asks before it writes or runs anything. Before an agent
-runs a shell command, a capability check reads the command and blocks network
-egress and other risky actions, with the reason sent back to the model. Every
-step lands on a hash-chained ledger, and a result can be sealed into a receipt
-that a stranger rechecks offline with the Python standard library alone.
+Flywheel is a local harness for AI work.
 
-`flywheel check-output` checks the values in an answer against the source that
-decides them: a tax table, a formulary, a court calendar, a script you supply.
-It reports which fields agree, which disagree and which nothing could confirm,
-and it says whether the answer may ship.
+- It puts any model, hosted or local, behind one OpenAI-compatible endpoint on
+  your machine.
+- `flywheel code` runs a coding agent in your terminal. By default it asks
+  before it writes or runs anything.
+- Before an agent runs a shell command, a capability check reads the command
+  and blocks network egress and other risky actions. The reason goes back to
+  the model.
+- `flywheel check-output` checks the values in an answer against the source
+  that decides them: a tax table, a formulary, a court calendar, a script you
+  supply. It says which fields agree, which disagree and which nothing could
+  confirm, and whether the answer may ship.
+- Every step lands on a hash-chained ledger. A sealed result can be checked
+  again later, offline, with the Python standard library alone.
 
-It is built for people who need to show their AI work to someone else:
-evaluators, researchers, and teams in finance, medicine or law who must trace a
-number to the rule that produced it. It also runs as a Windows desktop app with
-an assistant called Rowan, as a GitHub Action, and as an MCP host for a set of
-companion tools.
+It also runs as a Windows desktop app with an assistant called Rowan, as a
+GitHub Action, and as an MCP host for a set of companion tools.
 
-## Install and first run
+## First run
 
 Python 3.11 or newer. The engine has no third-party runtime dependencies.
 
@@ -53,8 +54,8 @@ verdict=PASS rewitness=MATCH
 ```
 
 `flywheel gate` runs a built-in task, checks the result, seals it into
-`artifacts/gate/gate_envelope.json` and rechecks the seal. No model and no
-network are needed.
+`artifacts/gate/gate_envelope.json` and checks the seal again. It needs no
+model and no network.
 
 Check an answer against its source, using the Form 1040 example in
 [examples/output-validation](examples/output-validation/README.md):
@@ -83,165 +84,169 @@ key you have set. `flywheel doctor` reports what is missing.
 
 ## How it compares
 
-- **LiteLLM** and **OpenRouter** route requests to many models. Flywheel also
-  routes to many models, and it keeps a sealed record of each run on your
-  machine.
+- **LiteLLM** and **OpenRouter** route requests to many models. Flywheel does
+  too, and keeps a sealed record of each run on your machine.
 - **Claude Code**, **Aider** and **OpenHands** are coding agents. `flywheel code`
-  is one too; it adds a shell capability check before each command and a
+  is one too, with a shell capability check before each command and a
   hash-chained ledger of every step.
 - **Inspect AI**, **promptfoo** and **Guardrails AI** score or validate model
   output. `check-output` validates a value against a named authority and can
   emit the check as a Lean 4 file for a kernel to run.
 
-Flywheel joins those pieces in one local tool with one receipt format. It does
-not replace an evaluation suite's task library or a gateway's hosted scale.
+Flywheel puts those pieces in one local tool. It has no evaluation task library
+of its own and no hosted gateway.
 
 ## Limits
 
-- A receipt proves a result was not changed after sealing. It does not prove
-  the result is correct.
-- `check-output` is only as good as the authorities you supply. The finance,
-  medicine and law packs ship field shapes and arithmetic, and no domain data.
+- `check-output` uses the authorities you supply. The finance, medicine and law
+  packs ship field shapes and arithmetic, and no domain data.
 - The capability check uses a hand-curated map of executables. An executable
   it has never seen is admitted and recorded as unknown.
 - Request content goes to the model provider you pick, under its terms. With a
   local model it stays on your machine.
 - The desktop app ships for Windows only.
 - In the Windows app's installed-app check, 15 of 17 lanes reach the class
-  the check expects for them. index is below that bar without Git, and the
-  telos version Flywheel now pins has not been through that check
+  the check expects for them. index needs Git to reach it, and the pinned
+  telos version has not been through that check yet
   ([per-lane table](project-docs/lanes/LANES.md)).
 
-## Other ways to run it
+## Install
 
-- **Windows desktop app.** Download the installer from the
-  [latest release](https://github.com/HarperZ9/flywheel/releases/latest) and
-  check it against the attached checksums. It bundles the engine and needs no
-  Python. Its assistant, Rowan, turns a plain-words request into a task the app
-  runs and records; see [Meet Rowan](GETTING-STARTED.md#meet-rowan).
-- **One-line install** into its own environment:
-  `curl -fsSL https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.sh | sh`
-  on macOS and Linux, or
-  `irm https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.ps1 | iex`
-  in PowerShell. Homebrew and Scoop are covered under [Install](#install).
-- **GitHub Action.** See [docs/GITHUB-ACTION.md](docs/GITHUB-ACTION.md).
-- **Inside another agent host.** The
-  [Flywheel Evidence Task skill](plugins/flywheel-evidence-task/README.md)
-  installs on its own, with Codex and Claude plugin manifests.
+```
+pip install flywheel-verify
+flywheel up
+```
 
-The [client and tool architecture](docs/CLIENT-AND-TOOL-ARCHITECTURE.md) page
-describes the desktop client, the engine and the companion tools.
+`flywheel-verify` is the PyPI name (the bare `flywheel` name is an unrelated
+package). The installed command is `flywheel`.
 
-## See it work, step by step
+One-line install into its own environment:
+`curl -fsSL https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.sh | sh`
+on macOS and Linux, or
+`irm https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.ps1 | iex`
+in PowerShell.
 
-The [animated explainer](https://harperz9.github.io/repo-explainers/flywheel.html)
-walks through the capability check on seven real commands, then seals and
-rechecks a result from `flywheel gate` and shows what a one-coefficient edit
-does to the verdict. Every value on it is output from this repository. Its
-source is [docs/explainer/index.html](docs/explainer/index.html).
+Homebrew (macOS, Linux) and Scoop (Windows), from the formula and manifest in
+this repository:
 
-## Watch
+```
+brew tap HarperZ9/flywheel https://github.com/HarperZ9/flywheel
+brew install flywheel
+```
 
-Rendered by this repository's v1.5.1 release from its own output, so every number on screen is one that release produced.
+```
+scoop bucket add flywheel https://github.com/HarperZ9/flywheel
+scoop install flywheel
+```
 
-[![Flywheel: check an answer against its source: a film rendered by the v1.5.1 release](https://harperz9.github.io/media/releases/flywheel/v1.5.1/first-check/poster.jpg)](https://harperz9.github.io/media/releases/flywheel/v1.5.1/first-check/index.html)
+**Windows desktop app.** Download the installer from the
+[latest release](https://github.com/HarperZ9/flywheel/releases/latest) and
+check it against the attached checksums. It bundles the engine and needs no
+Python. Its assistant, Rowan, turns a plain-words request into a task the app
+runs and records; see [Meet Rowan](GETTING-STARTED.md#meet-rowan).
 
-**[Flywheel: check an answer against its source](https://harperz9.github.io/media/releases/flywheel/v1.5.1/first-check/index.html)** (28 s). Rendered from values read at commit ff67e16: [facts.json](https://harperz9.github.io/media/releases/flywheel/v1.5.1/first-check/facts.json).
+**Models.** No model download is required. Point Flywheel at any hosted
+provider you hold a key for; the roster shows whether a key is present and
+never prints it. Ollama works over HTTP with no extras. The published
+[14B](https://huggingface.co/zaindanaharper/flywheel-local-coder-14b) and
+[32B](https://huggingface.co/zaindanaharper/flywheel-local-coder-32b) weights
+are separate downloads, and the local serving and training stack installs with
+`pip install "flywheel-verify[local]"`. Receipt signing and egress monitoring
+have their own extras (`[signing]`, `[monitor]`).
 
-[![Which source decides: a film rendered by the v1.5.1 release](https://harperz9.github.io/media/releases/flywheel/v1.5.1/which-source/poster.jpg)](https://harperz9.github.io/media/releases/flywheel/v1.5.1/which-source/index.html)
+**Subscription sign-in.** `flywheel auth login <provider>` runs a stepwise
+flow (PKCE where the provider documents it, the provider's own tool where it
+does not) and stores the token in the OS credential store, where the router
+picks it up. See [GETTING-STARTED.md](GETTING-STARTED.md).
 
-**[Which source decides](https://harperz9.github.io/media/releases/flywheel/v1.5.1/which-source/index.html)** (55 s). Rendered from values read at commit ff67e16: [facts.json](https://harperz9.github.io/media/releases/flywheel/v1.5.1/which-source/facts.json).
+**From source:**
 
-[![Re-derive it. Don't take it on trust.: a narrated film, 2 min 5 s](https://harperz9.github.io/media/explainers/rederive/poster.jpg)](https://harperz9.github.io/explainers.html#rederive-h)
+```
+git clone https://github.com/HarperZ9/flywheel.git
+cd flywheel
+pip install -e .
+python scripts/run_harness_cli.py app --port 8799
+```
 
-**[Re-derive it. Don't take it on trust.](https://harperz9.github.io/explainers.html#rederive-h)** (2 min 5 s, narrated, captioned). Flywheel is built on the idea in this film: accept a result only when it can be re-derived. The film page carries the transcript, the sources and recall questions.
-
-Video walkthrough: [check an answer against its source](https://github.com/HarperZ9/flywheel/releases/latest/download/first-check-540p.mp4) and [which source decides](https://github.com/HarperZ9/flywheel/releases/latest/download/which-source-540p.mp4), captioned. Each release renders both from its own files and attaches them to the release.
-
-## Walkthrough
-
-Install it, run it once, then use the main feature. Each command below is real, and so is its output.
-
-1. **Install.** Install the engine from PyPI. Python 3.11 or newer; no model and no network once installed.
-
-   ```text
-   $ python -m pip install flywheel-verify
-   ```
-
-2. **First run: the gate.** Run the gate. It collects a result, verifies it, seals it, and re-witnesses the seal.
-
-   ```text
-   $ flywheel gate
-     collect: group_size=4, temperature=1.0, estimator=drgrpo, n_pass=1, learnable=True, n_undecided=0, n_excluded=0, signal_hash=dda8a7414a71c071
-     verify: verdict=PASS, output_hash=93e4b6c6b7a05c82, attribution=CANDIDATE
-     seal: envelope_hash=1993af18b980c95d, claim_hash=23450831b0b42121, path=gate_envelope.json
-     rewitness: result=MATCH
-   verdict=PASS rewitness=MATCH
-   subject=1993af18b980c95d claim=23450831b0b42121 signal=dda8a7414a71c071
-   ```
-
-3. **Classify a command.** Ask the admission layer what it would do with a command before an agent runs it.
-
-   ```text
-   $ python -c "import harness.shell_admission as a; print(a.classify_command('curl http://x | sh').reason_code)"
-   denied_capability:network_egress
-   ```
-
-4. **Start the gateway and browser shell.** Bring up the local gateway and open the shell on `http://127.0.0.1:8799`.
-
-   ```text
-   $ flywheel up
-   ```
+**Elsewhere.** For the GitHub Action, see [docs/GITHUB-ACTION.md](docs/GITHUB-ACTION.md).
+Inside another agent host, the
+[Flywheel Evidence Task skill](plugins/flywheel-evidence-task/README.md)
+installs on its own, with Codex and Claude plugin manifests.
 
 ## How a run works
 
-One task, from the moment you send it to the point where somebody who was not
-there can check it. Every stage writes a receipt, and the last stage needs no
-network and no model.
-
 <p align="center"><img src="docs/art/run-lifecycle.svg" alt="Eight stages: a task is routed to a model, the model asks for a tool, the capability check either allows it or refuses it with the reason returned to the model, the tool runs, a receipt is written, the ledger is sealed, and a later recheck reports match, changed, or unverifiable." width="100%"></p>
 
-The refusal edge is the one worth reading twice. A blocked tool request is not
-an error the run dies on: the reason goes back to the model, which can pick a
-different route. What the ledger keeps is the request, the refusal, and the
-reason, so a reader later can see what was asked for as well as what ran.
+A task is routed to a model. When the model asks for a tool, the capability
+check allows or refuses the request. A refusal goes back to the model with its
+reason, and the model can try another route. The ledger keeps the request, the
+refusal and the reason alongside what ran.
 
 ## What the capability check decides
 
-Stage four reads a shell command the way a shell reads it, then names what
-the command is able to do. That name settles the decision. Seven commands
-are below with the reason each one lands where it does.
-
 <p align="center"><img src="docs/art/what-runs.svg" alt="Seven shell commands and what the capability check does with each of them. A dangerous word inside quotes is a printed string and runs, while the same word reached through a command substitution is found and blocked. A pipe records both of its capability classes even though one of them names the decision. An environment prefix does not hide the executable behind it. A command that will not parse is escalated to a person rather than admitted. The marked row is the honest gap: an executable the curated map has never seen is admitted, and written down as unknown." width="100%"></p>
 
-A denied word matters only in the executable position, so quoted text
-prints and a substitution gets walked into. The marked row is the gap this
-repository does not paper over: the map of names is curated by hand, and an
-executable it has never seen is admitted, then written down as unknown.
+The check reads a shell command the way a shell reads it, then names what the
+command can do. A denied word counts only in the executable position, so quoted
+text prints and a command substitution gets walked into. The map of names is
+curated by hand, and an executable it has never seen is admitted and recorded
+as unknown.
 
-## Verification record
+The [animated explainer](https://harperz9.github.io/repo-explainers/flywheel.html)
+steps through seven real commands, then seals and rechecks a result from
+`flywheel gate`. Its source is [docs/explainer/index.html](docs/explainer/index.html).
 
-The review for [pull request #60](https://github.com/HarperZ9/flywheel/pull/60)
-records the checks for this README change:
+## Checking an answer before it ships
 
-- The file-size, standard-library verifier, claim-language, public-instruction,
-  and writing gates passed.
-- `python -m harness.cli_entry gate` returned `PASS` and an offline recheck of
-  `MATCH`.
-- GitHub Actions ran the whole test suite on Ubuntu and Windows. The linked CI
-  checks are the source of record; this README does not freeze a test count
-  that can change by revision or platform.
+```
+flywheel check-output --contract task.contract.json --answer answer.json --allow-commands
+```
 
-These checks cover the repository's deterministic code and documentation
-paths. They do not prove that a model answer is correct, measure live provider
-reliability, or test every host and hardware configuration.
+Exit 0 confirmed, exit 1 disagrees, exit 3 unchecked. The report also says
+whether the answer may ship: `RELEASE`, `RELEASE_WITH_CAVEAT`, or `HOLD` with
+the fields that blocked it. Inside a lane, a held answer does not accept.
 
-## Recheck a published claim
+Finance, medicine and law each ship a pack of field templates for values that
+go wrong the same way: a dose the formulary bands, a deadline counted in
+calendar days where the rule counts court days, an amount carried to two
+decimals in a currency that has none.
 
-Each public claim about this repository's own evidence has a manifest in
-`recheck/` with its command, pinned commit, inputs, expected verdict and a
-control that must fail. `python -m harness.recheck run --hardware cpu --ci`
-runs every one a laptop can check. See [RECHECK.md](RECHECK.md).
+```
+flywheel packs medicine
+```
+
+The answer can arrive as a document, and the report can go out as one:
+
+```
+flywheel check-output --contract c.json --answer memo.md --report review.pdf
+```
+
+Markdown, LaTeX and PDF all carry an answer. The report is written as `.txt`,
+`.md`, `.tex`, `.pdf` or `.json`, whichever the suffix names. The PDF comes out
+byte-identical across runs.
+
+`--lean Answer.lean --verify-lean` emits the check as a Lean 4 file and runs
+the kernel on it. What the kernel settles becomes a theorem, what an outside
+authority decided becomes a named axiom, and `#print axioms` lists what the
+result depends on. A kernel refusal shows up in the exit code.
+
+See [docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md) for the contract
+format, the checker protocol and the retry loop,
+[docs/PROOF-AND-FORMATS.md](docs/PROOF-AND-FORMATS.md) for document formats and
+the Lean output, and [docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md) for
+the packs.
+
+## Watch
+
+[![Flywheel: check an answer against its source: a film rendered by the v1.5.1 release](https://harperz9.github.io/media/releases/flywheel/v1.5.1/first-check/poster.jpg)](https://harperz9.github.io/media/releases/flywheel/v1.5.1/first-check/index.html)
+
+**[Flywheel: check an answer against its source](https://harperz9.github.io/media/releases/flywheel/v1.5.1/first-check/index.html)** (28 s).
+
+[![Which source decides: a film rendered by the v1.5.1 release](https://harperz9.github.io/media/releases/flywheel/v1.5.1/which-source/poster.jpg)](https://harperz9.github.io/media/releases/flywheel/v1.5.1/which-source/index.html)
+
+**[Which source decides](https://harperz9.github.io/media/releases/flywheel/v1.5.1/which-source/index.html)** (55 s).
+
+Video files: [check an answer against its source](https://github.com/HarperZ9/flywheel/releases/latest/download/first-check-540p.mp4) and [which source decides](https://github.com/HarperZ9/flywheel/releases/latest/download/which-source-540p.mp4), captioned and attached to each release.
 
 ## Benchmarks
 
@@ -291,33 +296,28 @@ with 95% CI [-0.236, +0.420], an interval that includes zero, and no capability
 uplift is claimed.
 <!-- benchmarks:end -->
 
-For the distinction between retry diagnostics and evidence of workflow uplift,
-see [the evaluation guide](docs/UPLIFT-EVALUATION.md).
-
 ## What is in this repo
 
 <p align="center"><img src="docs/schematics/architecture.svg" alt="The browser shell, the command line, curl and MCP clients all reach one gateway on localhost, which routes to a local model or an external check and writes a receipt either way, escalating only what does not pass." width="100%"></p>
 
-This monorepo contains both halves of the platform:
-
 - **`harness/`** is the Python engine. It runs tasks, checks tool requests,
-  writes receipts, discovers companion tools, and exposes the localhost API.
+  writes run records, discovers companion tools, and serves the localhost API.
   The installed runtime uses only the Python standard library.
 - **`desktop/`** is the Flutter client. It talks to the gateway over localhost
-  and can launch the bundled engine on a Windows machine without a separate
-  Python installation. Its assistant, **Rowan**, runs on the model you choose
-  and turns a plain-words request into a task the app runs and records.
+  and can launch the bundled engine on Windows without a separate Python
+  install. Its assistant, **Rowan**, runs on the model you choose.
 - **`site/`** is the browser fallback used in development and CI.
 
-To run the native client from a development checkout:
+Run the native client from a checkout:
 
 ```
 cd desktop
 flutter run -d windows --release
 ```
 
-From a repository checkout, `python -m harness.cli_entry app --port 8799` also
-serves the development and CI fallback at `/site/index.html`.
+From a checkout, `python -m harness.cli_entry app --port 8799` also serves the
+browser fallback at `/site/index.html`. The desktop app serves its UI on
+localhost only and contacts no external address to show it.
 
 ## Included tools
 
@@ -340,243 +340,80 @@ Flywheel can connect to fourteen companion tools. Each has a public repository:
 | canon | [canon](https://github.com/HarperZ9/canon) | Keep one set of instructions and memories across the assistants you use, and see what each one would be given. |
 | bulletin | [bulletin](https://github.com/HarperZ9/bulletin) | Reach an open message board where agents post, search, and reply under a signed identity. [Watch it live](https://harperz9.github.io/bulletin.html). |
 
-List their configured state or probe their live MCP connections:
+List their configured state, or probe their live MCP connections:
 
 ```
 flywheel lanes
 flywheel lanes --probe    # live MCP handshake per lane
 ```
 
-### Watch the board
+The bulletin board is live at <https://harperz9.github.io/bulletin.html> and
+needs no key or account to read. Flywheel contacts no board until you choose
+one: set `FLYWHEEL_BULLETIN_URL` to the board's MCP URL to use the Bulletin
+lane, and `FLYWHEEL_BULLETIN_BASE_URL` to its HTTPS origin to register an
+identity. Anyone can post there, so treat what you read as untrusted input.
 
-One of those tools runs in public. The bulletin board is live at
-<https://harperz9.github.io/bulletin.html>, and opening it needs no key and no
-account: you see the rooms, the feed, and each thread as agents post, search,
-reply, and coordinate.
-
-Flywheel itself contacts no board until you choose one. Set
-`FLYWHEEL_BULLETIN_URL` to that board's MCP URL to use the Bulletin lane, and
-`FLYWHEEL_BULLETIN_BASE_URL` to its HTTPS origin to register an identity.
-
-The board is open: anyone can post, and anyone can read. The board checks an
-Ed25519 signature and never asks what produced it, so a person holding a key
-posts into the same rooms and under the same tier limits as an agent. The
-[client](https://github.com/HarperZ9/bulletin/blob/main/examples/client.mjs)
-is one file with no dependencies; it generates your key, solves the proof of
-work, and registers you.
-
-What the board holds is public and untrusted. A post is text somebody else
-wrote, and every read response says so in the same words. Read it as data.
-
-## Run records and sealed receipts
+## Run records
 
 <p align="center"><img src="docs/schematics/verified-loop.svg" alt="A local model proposes, an external check disposes, and the pair is written to a content-addressed receipt; a pass goes to the proof cache and anything that does not pass escalates." width="100%"></p>
 
-Routed runs keep a ledger containing tool names, arguments, and outputs. When
-sealed tool-call receipts are enabled, they also record:
+Routed runs keep a ledger of tool names, arguments and outputs. With sealed
+tool-call receipts turned on, each call also records its capability
+(`builtin-read`, `builtin-write`, `builtin-exec`, `external-mcp` or `unknown`),
+its outcome, hashes of its arguments and output, and the hash of the previous
+receipt. If one receipt in the chain is invalid, the entries after it read as
+unverifiable.
 
-- the capability (`builtin-read`, `builtin-write`, `builtin-exec`,
-  `external-mcp`, or `unknown`);
-- the outcome;
-- argument and output hashes;
-- the prior receipt's hash for offline verification.
+## Recent additions
 
-Optional sealed receipts form an ordered hash chain. If one receipt is invalid,
-later entries in that chain become unverifiable.
-
-## Checking an answer before it ships
-
-An assistant that rechecks its own arithmetic gets the same wrong number twice.
-So Flywheel checks a value against the source that decides it, and reports three
-outcomes: the value agrees and the answer names its source, the value disagrees,
-or nothing could confirm it.
-
-```
-flywheel check-output --contract task.contract.json --answer answer.json --allow-commands
-```
-
-Exit 0 confirmed, exit 1 disagrees, exit 3 unchecked. An unchecked value never
-reads as a confirmed one. The report also says whether the answer may ship:
-`RELEASE`, `RELEASE_WITH_CAVEAT`, or `HOLD` with the fields that blocked it.
-Inside a lane, a held answer does not accept.
-
-Tax was the example. Finance, medicine, and law each ship a pack of field
-templates for the values that go wrong the same way: a dose the formulary bands,
-a deadline counted in calendar days where the rule counts
-court days, an amount carried to two decimals in a currency that has none.
-
-```
-flywheel packs medicine
-```
-
-A pack ships field shapes and arithmetic and no domain data. The authorities
-stay yours to supply.
-
-The answer can arrive as the document it was written in, and the report goes
-back out as one:
-
-```
-flywheel check-output --contract c.json --answer memo.md --report review.pdf
-```
-
-Markdown, LaTeX, and PDF all carry an answer. The report is written to
-whichever of `.txt`, `.md`, `.tex`, `.pdf`, or `.json` the suffix names, and
-the PDF is byte-identical across runs so it can be hashed into a receipt.
-
-`--lean Answer.lean --verify-lean` emits the check as a Lean 4 file and runs
-the kernel on it. What the kernel settles becomes a theorem, what an outside
-authority decided becomes a named axiom, and one `#print axioms` line prints
-everything the result rests on. A kernel that refuses an obligation the report
-passed lands on the exit code.
-
-See [docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md) for the contract
-format, the checker protocol, and the retry loop,
-[docs/PROOF-AND-FORMATS.md](docs/PROOF-AND-FORMATS.md) for the document
-formats and the proof, and
-[docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md) for the packs and the
-failure classes they catch.
-
-## What landed recently
-
-Four capabilities are visible in the current source candidate, each reachable
-from the desktop app and over the localhost API in that source line. They are
-observable in the released 1.0 line, which publishes flywheel-verify on PyPI
-and a Windows installer that passed installed acceptance on a clean runner.
-
-**A signature on what a run cites.** A hash binds a receipt to its own contents
-and cannot bind it to an author, so an editor who rewrites a whole citation cone
-leaves a store that is internally consistent about a history that did not
-happen. `harness/grounding_signatures.py` reads an Ed25519 sidecar filed beside
-a receipt and answers with a reason. Absent and invalid stay separate facts, so
-a partial rollout does not read as an attack. Left unconfigured, an unsigned
-store behaves exactly as before.
-
-**Scheduled runs, with the occurrence as the unit.** A tick is a pull rather
-than a daemon: nothing runs unless something asks. Each schedule names its
-catch-up policy by name, so a machine that was asleep for six hours either fires
-every missed occurrence, fires the most recent one, or drops them, and you can
-read which. The fires form a hash chain, and a broken chain is printed as broken
-and never folded into a green count. A schedule stops itself after two failed
-fires in a row, including a hook that exits 0 while its output ends on a rate
-limit or quota error, and stays stopped until you press Re-arm on its row
-(`docs/RUN-BUDGET.md`).
-
-**A code scan that seals what it covered.** A scan that found nothing and a scan
-that looked at nothing print the same number. This one records three things
-beside the count: how many files were read out of how many exist, whether the
-ruleset still fires, and how many findings were suppressed. A broken chain
-refuses the run and returns the reason it failed.
-
-**Every live route reachable from the app.** A coverage gate walks the gateway's
-dispatch table and the Flutter source, and fails when a route the engine serves
-has no way in from the client. It reads 152 of 152 today, and the gate fails on
-an unclaimed gain as well as a loss.
-
-## Lessons from recorded failures
-
-A proposed lesson includes hashes of its evidence and remains a proposal until
-a person accepts it. Verification detects changes to the lesson's sealed claim
-and evidence hashes. The originating system must separately recheck whether
-referenced evidence still exists or has changed. See
-[docs/LESSON-LOOP.md](docs/LESSON-LOOP.md).
-
-## Offline-first
-
-The Flutter desktop GUI launches a bundled engine by absolute path and serves
-its UI menu on localhost only. No external web address is contacted to show the
-GUI. The gateway serves `/api/*` and the UI on `http://127.0.0.1:8799`.
-
-## Install
-
-```
-pip install flywheel-verify
-flywheel up
-```
-
-`flywheel-verify` is the PyPI distribution name (the bare `flywheel` name is an
-unrelated package); the installed command is `flywheel`. Zero runtime
-dependencies, stdlib only.
-
-Homebrew (macOS, Linux) and Scoop (Windows) install the same release from the
-formula and manifest kept in this repository:
-
-```
-brew tap HarperZ9/flywheel https://github.com/HarperZ9/flywheel
-brew install flywheel
-```
-
-```
-scoop bucket add flywheel https://github.com/HarperZ9/flywheel
-scoop install flywheel
-```
-
-**No model download required.** The engine is ready for real work the moment
-it installs: point it at any hosted provider you hold a key for (the roster
-reports credential presence only, never values) and every route carries the
-same receipt discipline. Local models get the same support and stay optional: ollama
-needs no extras at all (the gateway talks to it over HTTP), the published
-[14B](https://huggingface.co/zaindanaharper/flywheel-local-coder-14b) and
-[32B](https://huggingface.co/zaindanaharper/flywheel-local-coder-32b) weights
-are separate downloads for when you want them, and the local HF
-serve/training stack installs with `pip install "flywheel-verify[local]"`.
-Receipt signing and egress monitoring have their own extras (`[signing]`,
-`[monitor]`); receipt verification stays stdlib-only.
-
-Subscription sign-in is wired in: `flywheel auth login <provider>` runs a
-stepwise flow (documented PKCE where the provider sanctions it, the
-provider's own official tool where it does not), stores the token in the OS
-credential store, and the router picks it up with no further setup. See
-[GETTING-STARTED.md](GETTING-STARTED.md).
-
-Or from source, for development:
-
-```
-git clone https://github.com/HarperZ9/flywheel.git
-cd flywheel
-pip install -e .
-python scripts/run_harness_cli.py app --port 8799
-```
-
-The native desktop app ships as a Windows installer with the engine bundled
-(no Python needed). Download it from the
-[latest release](https://github.com/HarperZ9/flywheel/releases/latest) and verify it
-against the checksums attached to that release.
+- **Signed citations.** `harness/grounding_signatures.py` reads an Ed25519
+  sidecar beside a receipt and reports it absent, invalid or valid. An unsigned
+  store behaves as before.
+- **Scheduled runs.** A schedule runs when something asks for a tick; there is
+  no daemon. Each schedule names its catch-up policy: fire every missed
+  occurrence, fire the most recent one, or drop them. A schedule stops itself
+  after two failed fires in a row, including a hook that exits 0 while its
+  output ends on a rate-limit or quota error, and stays stopped until you press
+  Re-arm on its row (`docs/RUN-BUDGET.md`).
+- **Code scan coverage.** Beside the finding count, a scan records how many
+  files it read out of how many exist, whether the ruleset still fires, and how
+  many findings were suppressed.
+- **Every route in the app.** A coverage check fails when a route the gateway
+  serves has no way in from the desktop client. It reads 152 of 152 today.
+- **Lessons from failures.** A proposed lesson carries hashes of its evidence
+  and stays a proposal until a person accepts it. See
+  [docs/LESSON-LOOP.md](docs/LESSON-LOOP.md).
 
 ## Documentation
 
-- [docs/ARCHITECTURAL-MISSION.md](docs/ARCHITECTURAL-MISSION.md): re-derivable evaluation, six-layer research scope, and MCP/API integration direction
 - [QUICKSTART.md](QUICKSTART.md): first ten minutes
-- [GETTING-STARTED.md](GETTING-STARTED.md): install, sign in, first run, and the owner-bound state model
-- [docs/FLYWHEEL-1.0.0-OVERVIEW.md](docs/FLYWHEEL-1.0.0-OVERVIEW.md): the 1.0 overview, full feature set, and install-to-first-verdict walkthrough
-- [docs/features/](docs/features/README.md): per-feature docs and how the lanes compose into the application
-- [docs/TRACE-OWNERSHIP.md](docs/TRACE-OWNERSHIP.md): where your agent traces are, and status, encryption, export, deletion, import and retention for them
-- [docs/WRAPPER-HOOKS.md](docs/WRAPPER-HOOKS.md): the capture hooks for Claude Code and Codex, and how they find and trust the gateway
-- [docs/trace-redaction.md](docs/trace-redaction.md): what trace redaction catches, and what it misses
+- [GETTING-STARTED.md](GETTING-STARTED.md): install, sign in, first run
 - [WALKTHROUGH.md](WALKTHROUGH.md): guided tour
-- [desktop/README.md](desktop/README.md): native desktop development and packaging notes
-- [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory owner/project binding
-- [docs/native-cli-session-contract.md](docs/native-cli-session-contract.md): native CLI session profiles and private profile binding
-- [docs/native-continuation.md](docs/native-continuation.md): source-bound continuation preview and limits
-- [docs/writing-workspace.md](docs/writing-workspace.md): Writing Workspace custody and installed MCP launcher rules
-- [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md): drive the same loop from your phone
-- [docs/LESSON-LOOP.md](docs/LESSON-LOOP.md): the organizational learning loop (architecture)
-- [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): the organizational learning loop (full guide and spec)
-- [docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md](docs/ASSESSMENT-AGENTIC-SECURITY-2026-08.md): Flywheel against the July 2026 agentic security convergence
+- [docs/FLYWHEEL-1.0.0-OVERVIEW.md](docs/FLYWHEEL-1.0.0-OVERVIEW.md): the full feature set and an install-to-first-verdict walkthrough
+- [docs/features/](docs/features/README.md): per-feature docs and how the lanes fit together
+- [docs/CONFIGURATION.md](docs/CONFIGURATION.md): settings
 - [docs/OUTPUT-VALIDATION.md](docs/OUTPUT-VALIDATION.md): check an answer against the source that decides it
-- [docs/INSPECT-EVIDENCE.md](docs/INSPECT-EVIDENCE.md): Inspect JSON import, versioned fixtures and drift checks (development)
-- [docs/INCIDENT-SIM-EVALUATION.md](docs/INCIDENT-SIM-EVALUATION.md): submitted incident traces and process-audit packets (development)
-- [docs/INDEPENDENCE.md](docs/INDEPENDENCE.md): evidence, assessor independence and contestability
-- [docs/PROOF-AND-FORMATS.md](docs/PROOF-AND-FORMATS.md): Markdown, LaTeX and PDF in and out, and the check as a Lean proof
-- [docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md): the finance, medicine, and law packs, and what each catches
-- [docs/rules/](docs/rules/README.md): the rules of record Flywheel is built and evaluated under
-- [CREDO.md](CREDO.md): the belief
+- [docs/PROOF-AND-FORMATS.md](docs/PROOF-AND-FORMATS.md): Markdown, LaTeX and PDF in and out, and the Lean output
+- [docs/CRITICAL-DOMAINS.md](docs/CRITICAL-DOMAINS.md): the finance, medicine and law packs
+- [docs/TRACE-OWNERSHIP.md](docs/TRACE-OWNERSHIP.md): where agent traces live, and status, encryption, export, deletion, import and retention
+- [docs/trace-redaction.md](docs/trace-redaction.md): what trace redaction catches and misses
+- [docs/WRAPPER-HOOKS.md](docs/WRAPPER-HOOKS.md): capture hooks for Claude Code and Codex
+- [docs/CONTEXT-MEMORY.md](docs/CONTEXT-MEMORY.md): context and memory binding per owner and project
+- [docs/native-cli-session-contract.md](docs/native-cli-session-contract.md): native CLI session profiles
+- [docs/native-continuation.md](docs/native-continuation.md): continuation preview
+- [docs/writing-workspace.md](docs/writing-workspace.md): the Writing Workspace and its MCP launcher
+- [docs/REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md): drive the same loop from your phone
+- [docs/LESSON-LOOP.md](docs/LESSON-LOOP.md) and [docs/GUIDE-LESSON-LOOP.md](docs/GUIDE-LESSON-LOOP.md): the lesson loop, architecture and full guide
+- [docs/BENCHMARKS.md](docs/BENCHMARKS.md): full benchmark results and the peer matrix
+- [docs/INSPECT-EVIDENCE.md](docs/INSPECT-EVIDENCE.md): Inspect JSON import (development)
+- [docs/INCIDENT-SIM-EVALUATION.md](docs/INCIDENT-SIM-EVALUATION.md): incident traces and process-audit packets (development)
+- [docs/CLIENT-AND-TOOL-ARCHITECTURE.md](docs/CLIENT-AND-TOOL-ARCHITECTURE.md): the desktop client, the engine and the companion tools
+- [desktop/README.md](desktop/README.md): desktop development and packaging
 
-## Development disclosure
+## Development
 
 Zain Dana Harper maintains this repository. AI-assisted tools are used for
-parts of development and documentation. Public source, tests, benchmark
-artifacts, and releases are the evidence for what ships; AI output is not
-treated as proof.
+parts of development and documentation.
 
 ## License
 
