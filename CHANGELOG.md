@@ -6,9 +6,9 @@ lists the changes in each release with the pull request that made them.
 ## Unreleased
 
 Checks and reports
-- Eval receipts and the harness-config hash carry the serving runtime (framework, GPU, dtype, compile mode, batch shape, determinism flags, capture hooks), and a rerun witness calls a mismatch DRIFT only between equal deterministic runtimes. See `docs/features/eval-runtime-and-access.md`.
-- Eval receipts carry an access statement over six surfaces; `claim_scope` refuses a claim the recorded access does not cover.
-- `coverage` and `differential` checks, and 16 partial-check false accepts in the corpus: 15 of 16 caught, 53 of 56 overall, 0 false rejects on 376 known-good items. See `docs/features/checks.md`.
+- Eval results and the harness-config hash record the serving runtime: framework, GPU, dtype, compile mode, batch shape, determinism flags and capture hooks. A rerun reports DRIFT on an output mismatch only when both runs used the same deterministic runtime. See `docs/features/eval-runtime-and-access.md`.
+- Eval results record which of six access surfaces the evaluator had, and `claim_scope` rejects a claim that needs access the run did not have.
+- New `coverage` and `differential` checks, and 16 partial-check false accepts added to the corpus. 15 of the 16 are caught, and 53 of 56 across the corpus, with 0 false rejects on 376 known-good items. See `docs/features/checks.md`.
 
 ## 1.9.0 (2026-10-15)
 

@@ -1,14 +1,9 @@
-# Flywheel features: the composed flagship
+# Flywheel features
 
-Flywheel is one application that composes a family of formerly standalone tools into
-native features. Each feature is a lane: it stands alone, and it plugs into the others
-through published JSON seams. This page is the map, and each linked doc is the full
-feature reference (description, feature list, stepwise use, piecewise reference, and a
-composition tutorial).
-
-The design rule: value in the small and the whole. A lane is useful by itself, and it
-composes, so new combinations are possible without rewriting any part. Verification lives
-at the seams: a peer emits a receipt a consumer re-derives.
+Each Flywheel feature is a lane. A lane works on its own, and it connects to the
+other lanes through JSON files with a published format. This page lists the
+lanes; each linked doc covers what the feature does, how to use it step by step,
+its reference, and how to combine it with other lanes.
 
 ## The feature docs
 
