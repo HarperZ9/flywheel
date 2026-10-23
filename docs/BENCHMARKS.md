@@ -121,7 +121,7 @@ Scored 2 attempts and reported no numeric evidence, so there is nothing to chart
 | --- | --- | --- |
 | failure_code_count | lower | 1.0 |
 
-### What this does not prove
+### Limits
 
 - A mean over one repetition is a reading, not an estimate. No interval is reported because none is earned at this sample size.
 - Cost covers the attempts whose provider stated a cost. A role with no cost coverage is not cheaper, it is unmeasured.

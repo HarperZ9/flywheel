@@ -39,7 +39,7 @@ from .tool_call_receipt import _canonical_bytes, _digest_well_formed, _sha256_he
 
 # The starter detector set. A universal, domain-agnostic slice: it always runs,
 # and domain oracles can be layered later without replacing it.
-_STARTER_DETECTORS = ("receipt_integrity", "honest_null_presence", "unbacked_claim")
+_STARTER_DETECTORS = ("receipt_integrity", "unbacked_claim")
 
 # Mirrors agent-audit's _CLAIMED_HISTORY_MARKERS verbatim (agent-audit.report.v1),
 # so an "unbacked prior-work claim" flagged here means what it means there.
@@ -47,11 +47,6 @@ _CLAIMED_HISTORY_MARKERS = (
     "i previously", "i already", "i have completed",
     "after completing", "given my earlier", "having run",
 )
-# Cheap signals that a record REPORTS an outcome (so an honest-null is expected).
-_RESULT_MARKERS = ("results", "verdict", "outcome", "accepted", "passed")
-# Honest-null markers that satisfy that expectation.
-_HONEST_NULL_MARKERS = ("does_not_prove", "honest_null", "unverifiable",
-                        "no uplift", "not proven", "unknown")
 
 _SYS = ("You are a terse reviewer of completed work. Given deterministic findings "
         "about one unit of work, write two or three plain sentences naming what a "
@@ -92,23 +87,6 @@ def _detect_integrity(work_receipt: dict) -> tuple[str, dict[str, str]]:
         "receipt_integrity", "correctness", "CRITICAL",
         f"the work receipt seal does NOT re-derive (stored sha256:{hexv[:12]}, "
         f"recomputed sha256:{recomputed[:12]}); the record was altered after sealing")
-
-
-def _detect_honest_null(artifact: str) -> dict[str, str] | None:
-    """Scan the WORK-PRODUCT prose (the artifact), not the receipt's structural
-    fields: a Layer-1 receipt legitimately carries no quality honest-null (that
-    is this audit's job), so keying off the receipt would flag every work. When
-    the artifact reports a result but states no limit, that is the shape that
-    overclaims -- WARN. With no artifact prose, this dimension is left unjudged."""
-    low = artifact.lower()
-    reports = any(m in low for m in _RESULT_MARKERS)
-    has_null = any(m in low for m in _HONEST_NULL_MARKERS)
-    if reports and not has_null:
-        return _review(
-            "honest_null_presence", "completeness", "WARN",
-            "the work product reports a result but states no honest-null / limit; "
-            "a result with no stated bound is the shape that overclaims")
-    return None
 
 
 def _detect_unbacked_claims(artifact: str) -> dict[str, str] | None:
@@ -214,9 +192,6 @@ def handle_audit_run(req: dict, run_root) -> tuple[dict, int]:
     started = _now_iso()
     integrity_status, integrity_review = _detect_integrity(work_receipt)
     reviews = [integrity_review]
-    hn = _detect_honest_null(artifact)
-    if hn is not None:
-        reviews.append(hn)
     claim = _detect_unbacked_claims(artifact)
     if claim is not None:
         reviews.append(claim)

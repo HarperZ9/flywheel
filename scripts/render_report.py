@@ -80,7 +80,7 @@ def _primary(fam: str, block: dict) -> list:
            f"- bodies under multiple instances (reported, not failures): "
            f"{len(p['bodies_under_multiple_instances'])}",
            f"- endpoint met: {p['met']}", "",
-           "Does not prove:"]
+           "Limits:"]
     out += _bullets(p["does_not_prove"])
     return out
 
@@ -102,7 +102,7 @@ def _secondary(fam: str, block: dict) -> list:
     out += ["", "Tasks with no candidate in any slot, excluded and named:"]
     out += (_bullets(f"{r}: {', '.join(ts)}" for r, ts in excluded.items())
             or ["- none"])
-    out += ["", "Does not prove:"] + _bullets(sec["does_not_prove"])
+    out += ["", "Limits:"] + _bullets(sec["does_not_prove"])
     return out
 
 
@@ -149,7 +149,7 @@ def _arms(fam: str, block: dict, confounds: list) -> list:
                             for k, v in curve.items()), ""]
         for name, comp in row["comparisons"].items():
             out += _comparison(name, comp) + [""]
-        out += ["Does not prove:"] + _bullets(row["does_not_prove"])
+        out += ["Limits:"] + _bullets(row["does_not_prove"])
         out += ["", "Confounds, inline with this table by design:"]
         out += _bullets(confounds)
     return out

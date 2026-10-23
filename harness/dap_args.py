@@ -113,7 +113,7 @@ def build_parser(description: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="flywheel dap", allow_abbrev=False,
                                      description=description)
     parser.add_argument("--limits", action="store_true",
-                        help="print what a DAP run record does not prove.")
+                        help="print the limits of a DAP run record.")
     sub = parser.add_subparsers(dest="command")
     _run(sub)
     _verify(sub)

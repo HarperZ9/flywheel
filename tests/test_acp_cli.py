@@ -207,7 +207,7 @@ def test_allow_all_is_the_flag_that_drops_the_boundary(agent_script, tmp_path):
 def test_the_limits_of_the_record_are_a_command_of_their_own(capsys):
     assert main(["--limits"]) == 0
     printed = capsys.readouterr().out
-    assert "does not prove" in printed or "did not carry" in printed
+    assert printed.strip().startswith("- ")
 
 
 def test_no_subcommand_prints_help_rather_than_doing_something(capsys):

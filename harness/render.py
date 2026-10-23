@@ -70,7 +70,7 @@ def to_text(result) -> str:
     cov = f["coverage"]
     if cov:
         lines.append("coverage    : " + ", ".join(f"{k}={v}" for k, v in cov.items()))
-    lines.append("does not prove:")
+    lines.append("limits:")
     for d in f["does_not_prove"]:
         lines.append(f"  - {d}")
     lines.append(f"output hash : {f['output_hash']}")
@@ -96,7 +96,7 @@ def to_markdown(result) -> str:
         for k, v in f["coverage"].items():
             out.append(f"- {k}: `{v}`")
         out.append("")
-    out.append("**Does not prove.**")
+    out.append("**Limits.**")
     out.append("")
     for d in f["does_not_prove"]:
         out.append(f"- {d}")
@@ -136,7 +136,7 @@ def to_latex(result) -> str:
         + "\n".join(rows)
         + "\n\\hline\n\\end{tabular}\n\\end{center}\n\n"
         f"\\textbf{{Finding.}} {_tex(f['excerpt'])}\n\n"
-        "\\textbf{Does not prove.}\n\\begin{itemize}\n"
+        "\\textbf{Limits.}\n\\begin{itemize}\n"
         + dnp + "\n\\end{itemize}\n")
 
 

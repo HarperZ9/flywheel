@@ -132,7 +132,7 @@ def test_markdown_labels_every_answer_and_keeps_the_null(repo: Path) -> None:
         assert f"## {question}" in text
     assert "_basis: mixed_" in text
     assert "- ship it (stated)" in text
-    assert "## What this does not prove" in text
+    assert "## Limits" in text
     assert "C:/dev" not in text and "AppData" not in text
 
 

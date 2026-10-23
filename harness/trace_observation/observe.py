@@ -73,5 +73,5 @@ def render_report(result: dict, observed: dict | None = None) -> str:
     for g in gap["not_yet_observed_local"] or [{"component": "(none recorded)", "gap_code": ""}]:
         lines.append(f"  {g['component']} .... {g['gap_code']}".rstrip())
     lines.append(f"holds raised: {len(result['holds'])}")
-    lines.append("does not prove: " + gap["does_not_prove"])
+    lines.append("limit: " + gap["does_not_prove"])
     return "\n".join(lines)

@@ -55,7 +55,7 @@ def test_one_page_renders_without_claim_language():
     assert "# Roadmap" in page
     assert "| swarm_aaaaaaaa..." in page  # ids appear as short refs
     assert "satisfied" in page
-    assert "does not prove" in page  # the page carries its own limits
+    assert "## Limits" in page  # the page carries its own limits
     for banned in ("optimal", "guaranteed", "best-in-class"):
         assert banned not in page
 

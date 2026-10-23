@@ -4,7 +4,7 @@
   "harness/_vendor/safe_spawn.py": "557d223ba51807a7a2ab89b9bda5c6291a4b4aa2392680e7916c3fdd61bc0a48",
   "harness/acceptance_criteria.py": "d0e029ee213607efdc14d68cea3dd53a1447b46c62617ef968a91985227a47a0",
   "harness/agent_tools.py": "c747bbc998ef8dc058f75fe84ee7b740852c6c7373d1110eb0b07d6792bfc915",
-  "harness/bundle.py": "b7859cf4024b0a82091e8ccbdb2785cd348ed36b9e34818ae75de0d99d846387",
+  "harness/bundle.py": "162b0c4e5916fe0f289d835149cad8013d1da6d80dc8a50408abd41108ce6370",
   "harness/claude_cli_auth.py": "08a84e885f30482edfa0925f951e57f9191c8c86c8ec1490aa300a0387c6e75e",
   "harness/cli_version.py": "a4a9f7e31edf1a96b458dd5b3ae21e238d2c8b5d7a585a5fb70d09d006ed450c",
   "harness/compaction.py": "feeae2640fecf40b747e4ada7b74b0a541168a331f2fa262eeb261bdfbddb62f",

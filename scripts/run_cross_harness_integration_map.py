@@ -219,7 +219,7 @@ def render_markdown(report: dict[str, Any]) -> str:
     lines.extend(
         f"- `{row['id']}` `{row['schema']}`: `{row['sha256']}`" for row in report["artifacts"]
     )
-    lines.extend(["", "## Does not prove", ""])
+    lines.extend(["", "## Limits", ""])
     lines.extend(f"- {text}" for text in report["does_not_prove"])
     return "\n".join(lines) + "\n"
 

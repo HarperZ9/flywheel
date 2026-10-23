@@ -149,7 +149,7 @@ def test_markdown_carries_both_counts_and_keeps_the_null():
     text = render_markdown(evaluate_task_set(ROOT, TASK_SET))
     assert "- provisionable: 19 of 19" in text
     assert "- scorable: 9 of 19" in text
-    assert "## What this does not prove" in text
+    assert "## Limits" in text
     assert "C:/dev" not in text and "AppData" not in text
 
 

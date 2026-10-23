@@ -136,7 +136,7 @@ def test_the_record_a_run_leaves_verifies_offline_against_its_bytes(run, cli,
     assert "verdict          MATCH" in verified
     # A verdict that came with nothing it leaves open would be the wrong kind of
     # answer for a command whose whole subject is what a record does not show.
-    assert "does not prove:" in verified
+    assert "limits:" in verified
 
 
 def test_a_chain_without_its_bytes_is_unchecked_rather_than_matched(run, cli,

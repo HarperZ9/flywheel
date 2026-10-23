@@ -75,7 +75,7 @@ def render_markdown(report: dict) -> str:
     if report["checkers_never_reached"]:
         lines += ["", "## Never reached", ""]
         lines += [f"- {name}" for name in report["checkers_never_reached"]]
-    lines += ["", "## What this does not prove", ""]
+    lines += ["", "## Limits", ""]
     lines += [f"- {item}" for item in report["does_not_prove"]]
     return "\n".join(lines) + "\n"
 

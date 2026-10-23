@@ -9,6 +9,8 @@ Checks and reports
 - Eval results and the harness-config hash record the serving runtime: framework, GPU, dtype, compile mode, batch shape, determinism flags and capture hooks. A rerun reports DRIFT on an output mismatch only when both runs used the same deterministic runtime. See `docs/features/eval-runtime-and-access.md`.
 - Eval results record which of six access surfaces the evaluator had, and `claim_scope` rejects a claim that needs access the run did not have.
 - New `coverage` and `differential` checks, and 16 partial-check false accepts added to the corpus. 15 of the 16 are caught, and 53 of 56 across the corpus, with 0 false rejects on 376 known-good items. See `docs/features/checks.md`.
+- Text, Markdown, LaTeX and HTML reports print their limits under one plain heading, "limits" or "## Limits". The `--limits` help in `flywheel acp`, `dap` and `lsp` says "print the limits of a run record". The bundled `reproduce.py` says what MATCH covers.
+- `audit run` runs two starter detectors: receipt integrity and unbacked claims. The detector that asked each work product for a stated limit is removed.
 
 ## 1.9.0 (2026-10-15)
 

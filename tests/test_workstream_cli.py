@@ -228,7 +228,7 @@ def test_there_are_shipped_examples_to_check():
 def test_a_shipped_example_still_runs(capsys, path):
     code, out, err = _run(capsys, "run", str(path))
     assert not err
-    assert "does not prove:" in out
+    assert "limits:" in out
     # 0 established, 2 nothing decided it yet, which is what a machine with no
     # Lean toolchain gets. 1 would mean a shipped example refutes itself.
     assert code in (0, 2)
@@ -239,7 +239,7 @@ def test_a_shipped_example_names_the_reading_it_owes(capsys, path):
     code, out, err = _run(capsys, "audit", str(path))
     assert not err
     assert code == 2  # shipped declarations carry no readings
-    assert "obligations to read" in out and "does not prove:" in out
+    assert "obligations to read" in out and "limits:" in out
 
 
 def test_the_instrument_example_needs_the_driver_files_to_settle(capsys):

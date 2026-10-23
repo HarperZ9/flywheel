@@ -172,7 +172,7 @@ def _render_verify(result: dict) -> str:
         lines.append(f"failure          {result['failure_class']}")
     if result["broken_at"] is not None:
         lines.append(f"broken at        record {result['broken_at']}")
-    lines += ["", result["detail"], "", "does not prove:"]
+    lines += ["", result["detail"], "", "limits:"]
     lines += [f"  - {limit}" for limit in result["does_not_prove"]]
     return "\n".join(lines)
 
@@ -232,7 +232,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="flywheel acp", allow_abbrev=False,
                                      description=__doc__.splitlines()[0])
     parser.add_argument("--limits", action="store_true",
-                        help="print what an ACP run record does not prove.")
+                        help="print the limits of an ACP run record.")
     sub = parser.add_subparsers(dest="command")
     _add_run(sub)
     _add_verify(sub)

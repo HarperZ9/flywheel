@@ -77,7 +77,7 @@ def test_markdown_has_a_verdict_heading(result):
 def test_text_is_plain_and_lists_does_not_prove(result):
     t = to_text(result)
     assert t.startswith("verdict     : PASS")
-    assert "does not prove:" in t
+    assert "limits:" in t
 
 
 def test_an_unknown_format_is_refused(result):
