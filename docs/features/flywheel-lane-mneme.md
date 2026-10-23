@@ -17,13 +17,13 @@ Flywheel treats each engine as a lane with a declared role. Mneme is declared in
 
 The lane advertises its wiring in `mneme.interop.json` at the repo root, which names the invoke surfaces (`cli: mneme`, `mcp_server: mneme.mcp:serve`, `python_import: mneme`) and lists what the lane emits and consumes. The Flywheel application also lists `mneme` in the platform spine tuple in `harness/gateway.py` and in the lesson-source set in `harness/lesson.py`.
 
-Version note: `harness/lanes_registry.py` is the one place that states the version Flywheel expects, so this page does not repeat it. `resolve_lane_runtime` records any difference between the declared and the installed version as `installed_version_mismatch`. Under the default profile an installed version below the pin does not launch (`installed_version_below_pin`), since the pin carries the fix for GHSA-j2pw-g7f4-9ppp; a newer one launches. The `package` profile still requires the exact pin. `flywheel install` asks pip for the pinned version.
+Version note: `harness/lanes_registry.py` is the one place that states the version Flywheel expects, so this page does not repeat it. `resolve_lane_runtime` records any difference between the declared and the installed version as `installed_version_mismatch`. Under the default profile the pin is a floor: an installed version below it is held back (`installed_version_below_pin`) because the pin carries the fix for GHSA-j2pw-g7f4-9ppp, and a newer one launches. The `package` profile still requires the exact pin. `flywheel install` asks pip for the pinned version.
 
 Distribution facts, from `pyproject.toml`:
 
 - Package name `flywheel-mneme`, `requires-python >= 3.11`. The console script is `mneme`, and `mneme mcp` serves the lane over stdio.
 - `dependencies = []`. The only runtime import is the standard-library `sqlite3`. `pytest` is the sole declared test dependency.
-- License `LicenseRef-FSL-1.1-MIT` (fair-source: readable and runnable, commercial use reserved). This is an independent project; it does not depend on the other lanes to run.
+- License `LicenseRef-FSL-1.1-MIT` (fair-source: readable and runnable, commercial use reserved). This is an independent project that runs on its own.
 
 ## Feature list
 
@@ -59,13 +59,13 @@ Each feature is bound to the module that implements it. Paths are relative to th
 
 15. **L2 scenarios.** `src/mneme/scenario.py` clusters a session's atoms into scene blocks by shared salient tokens using a union-find pass, deterministically. Each scenario cites its member atoms, so it is drift-checkable through the same L2-inherits-L1 path.
 
-16. **L3 persona.** `src/mneme/memory.py` `persona` groups a session's atoms into a profile whose lines are bound to their source atom ids, so the persona is drift-checkable and traces to its atoms. The deterministic floor needs no model.
+16. **L3 persona.** `src/mneme/memory.py` `persona` groups a session's atoms into a profile whose lines are bound to their source atom ids, so the persona is drift-checkable and traces to its atoms. The deterministic floor runs by rule.
 
-17. **Provenance chain to an external source.** `src/mneme/ingest.py` `from_gather` binds an accountable-intake origin receipt (`{source, ref, method, sha256}`) to each ingested turn, then extracts atoms. `provenance_chain` (schema `mneme.provenance-chain/1`) walks atom to source turn to origin receipt. It fails closed: a memory with no source links, or an origin hash that is not even sha256-shaped, is reported as not externally grounded. The recheck is stated: re-fetch the ref, re-hash, confirm it equals the origin sha256. Mneme never imports the intake tool; any tool emitting that dict shape composes.
+17. **Provenance chain to an external source.** `src/mneme/ingest.py` `from_gather` binds an accountable-intake origin receipt (`{source, ref, method, sha256}`) to each ingested turn, then extracts atoms. `provenance_chain` (schema `mneme.provenance-chain/1`) walks atom to source turn to origin receipt. It fails closed: a memory missing source links, or an origin hash that is malformed, is reported as ungrounded. The recheck is stated: re-fetch the ref, re-hash, confirm it equals the origin sha256. Any tool emitting that dict shape composes, with Mneme standing apart from the intake tool.
 
 18. **Token-reduction benchmark.** `src/mneme/bench.py` (schema `mneme.bench/1`) reports `token_reduction` and `answer_recall` together, with per-probe detail and a `receipt_sha256`. A reduction is reported only alongside its answer recall, so a number that drops the needed fact is disqualified. The token estimator is a stated word-plus-punctuation count by default; a real tokenizer plugs in via `token_fn`. A built-in scenario runs with no configuration; `--turns` and `--probes` point it at your own conversation.
 
-19. **Crucible export.** `src/mneme/compose.py` `to_crucible_thesis` (schema `mneme.crucible-export/2`) emits claims and drift-derived measurements (`MATCH` maps to deviation 0.0, `DRIFT` to 1.0, `UNVERIFIABLE` to null) plus a declarative `mneme.recheck/1` descriptor. Bounded claim, stated in the module: Crucible recomputes its verdict from Mneme's measurement and does not independently re-read the source unless an external recheck oracle is attached. Mneme never imports Crucible.
+19. **Crucible export.** `src/mneme/compose.py` `to_crucible_thesis` (schema `mneme.crucible-export/2`) emits claims and drift-derived measurements (`MATCH` maps to deviation 0.0, `DRIFT` to 1.0, `UNVERIFIABLE` to null) plus a declarative `mneme.recheck/1` descriptor. Scope, stated in the module: Crucible recomputes its verdict from Mneme's measurement, and re-reads the source when an external recheck oracle is attached. The two packages stand apart.
 
 20. **Assessment-bound Crucible replay.** `src/mneme/replay.py` `replay_crucible` (emits `crucible.replay-pack/1`) re-runs a Crucible replay template against explicitly supplied Mneme state. It requires a read-only, immutable snapshot: `src/mneme/store.py` materializes a process-owned SQLite backup, fingerprints the source before and after, and refuses WAL or journal sidecars and hardlink aliases. Replay fails closed when the assessment triple, claim binding, descriptor, measurement contract, or target grounding differs.
 
@@ -73,9 +73,9 @@ Each feature is bound to the module that implements it. Paths are relative to th
 
 22. **MCP server.** `src/mneme/mcp.py` `serve` speaks JSON-RPC 2.0 over stdio (MCP protocol version `2025-06-18`). The state database path comes from the `MNEME_STATE` environment variable (default `mneme.db`). Exposed tools: `mneme.remember`, `mneme.recall`, `mneme.drift`, `mneme.provenance`, `mneme.forget`, `mneme.audit`, `mneme.status`, `mneme.doctor`. Unknown arguments are rejected loudly so a dropped scope value does not misfile a write. A tool error rides the result payload; the transport still returns success. Honest scope: the MCP surface is eight tools, a subset of the full CLI and library surface.
 
-23. **Deterministic, clock-free ordering.** `src/mneme/store.py` uses a monotonic `ord` counter persisted in `meta`, so no wall clock or randomness enters a stored hash or a ranking. The same inputs rebuild the same store, byte for byte.
+23. **Deterministic, clock-free ordering.** `src/mneme/store.py` uses a monotonic `ord` counter persisted in `meta`, so stored hashes and rankings depend on content and order alone. The same inputs rebuild the same store, byte for byte.
 
-24. **In-place schema migrations.** `src/mneme/schema.py` `MIGRATIONS` and `src/mneme/store.py` `_migrate` add any newer column to an older database in place and stamp the version, so a format change does not surface as a raw sqlite traceback. Read-only opens validate the required columns first.
+24. **In-place schema migrations.** `src/mneme/schema.py` `MIGRATIONS` and `src/mneme/store.py` `_migrate` add any newer column to an older database in place and stamp the version, so a format change upgrades the file in place. Read-only opens validate the required columns first.
 
 Test coverage: 24 test files under `tests/`, one per behavior above (for example `test_verify_recall.py`, `test_drift_content.py`, `test_audit_integrity.py`, `test_crucible_replay.py`, `test_scope_isolation.py`).
 
@@ -89,7 +89,7 @@ Install the published package:
 pip install flywheel-mneme
 ```
 
-A source checkout is the fallback: `pip install git+https://github.com/HarperZ9/mneme.git`, or clone the repo and `pip install -e .`. Python 3.11 or newer is required. There are no runtime dependencies to resolve.
+A source checkout is the fallback: `pip install git+https://github.com/HarperZ9/mneme.git`, or clone the repo and `pip install -e .`. Python 3.11 or newer is required, and the package runs on the standard library.
 
 ### Library
 
@@ -180,17 +180,17 @@ Each capability, with its interface, module, output schema, and stated bound.
 ### scenarios (L2) and persona (L3)
 - CLI `mneme scenarios SESSION [--min-shared N] [--user U]`, `mneme persona SESSION [--user U]`. Library `AgentMemory.build_scenarios/persona`.
 - Module: `src/mneme/scenario.py`, `src/mneme/memory.py`.
-- Both return a summary dict (no schema tag) and store a memory row that cites its sources, so both are drift-checkable. Available through the CLI and library; the MCP server does not expose them.
+- Both return a summary dict and store a memory row that cites its sources, so both are drift-checkable. Available through the CLI and library.
 
 ### entity-graph
 - CLI `mneme entity-graph [--user U] [--session S]`; library `AgentMemory.entity_graph(...)`.
 - Module: `src/mneme/entity.py`. Schema: `mneme.entity-graph/1`.
-- Typed relations and named entities, every edge citing its source atom. Cue-based structured extraction, available through the CLI and library. The MCP server does not expose it.
+- Typed relations and named entities, every edge citing its source atom. Cue-based structured extraction, available through the CLI and library.
 
 ### consolidate
 - CLI `mneme consolidate [--session S] [--user U] [--plan]`; library `AgentMemory.consolidate(...)`.
 - Module: `src/mneme/consolidate.py`. Schema: `mneme.consolidation/1`.
-- Merges near-duplicates with audit tombstones; surfaces contradictions without resolving them. `--plan` shows the plan without applying it. Never merges across tenants.
+- Merges near-duplicates with audit tombstones and lists contradictions for a person to resolve. `--plan` previews the merge. Merges stay inside one tenant.
 
 ### ingest (accountable intake)
 - CLI `mneme ingest SESSION ITEMS`; library `AgentMemory.ingest_gather(session, items)`.
@@ -200,7 +200,7 @@ Each capability, with its interface, module, output schema, and stated bound.
 ### to-crucible and replay-crucible
 - CLI `mneme to-crucible [--session S] [--layer L1]`, `mneme replay-crucible TEMPLATE --out PACK`. Library `AgentMemory.to_crucible(...)`, `AgentMemory.replay_crucible(template)`.
 - Module: `src/mneme/compose.py`, `src/mneme/replay.py`. Schemas: `mneme.crucible-export/2`, `crucible.replay-pack/1`, and the `mneme.recheck/1` descriptor.
-- Export separates measurement from assessment; Crucible recomputes and does not re-read the source unless an external oracle is attached. Replay requires a read-only immutable snapshot and fails closed on any binding mismatch.
+- Export separates measurement from assessment; Crucible recomputes, and re-reads the source when an external oracle is attached. Replay requires a read-only immutable snapshot and fails closed on any binding mismatch.
 
 ### bench
 - CLI `mneme bench [--turns FILE] [--probes FILE] [--top-k N] [--strategy ...]`; library `run_bench(...)`.
@@ -265,6 +265,6 @@ report = mem.drift()                        # mneme.drift-report/1
 lessons = drift_lessons(report)             # one lesson per drifted/unverifiable memory
 ```
 
-The mapper binds each lesson to a content-addressed digest of the exact verdict bytes, sets `rationale` to null because Mneme records no decision rationale, and produces zero lessons for a clean store (all `MATCH`). That empty result is the honest null: no drift means no lesson, and the absence itself is meaningful. The mapper does not import Mneme; if Mneme's dict shape changes, the mapper's projection changes with it.
+The mapper binds each lesson to a content-addressed digest of the exact verdict bytes, sets `rationale` to null because Mneme records drift verdicts, and produces zero lessons for a clean store (all `MATCH`). A clean store reads as a clean store. The mapper reads Mneme's dict shape, so its projection follows any change to that shape.
 
 This is the coupling Flywheel is built on: an adversarial or accountability finding in one lane, here a memory that drifted from its source, feeds a named artifact in another, here a lesson in the learning loop, without the two lanes depending on each other's code.

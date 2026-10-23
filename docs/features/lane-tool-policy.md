@@ -10,19 +10,18 @@ below before you approve a call.
 - **T1**: the tool runs on an ordinary lane call. T1 covers reads, network reads,
   writes inside the lane's own folder under the Flywheel home, and calls to the model
   server you set up.
-- **T2**: the tool runs only on a call you approve with the higher tier. T2 covers
-  writes outside the lane's folder, spending a model call or a provider key,
-  publishing under an identity, acting on your machine, and deciding an approval. A
-  tool the policy does not list is T2 as well, so a lane upgrade that adds a tool
-  cannot open it without a review.
-- **Not in build**: the tool is listed so you can see it, and the Windows app refuses
-  it with the reason shown.
+- **T2**: the tool runs on a call you approve with the higher tier. T2 covers writes
+  outside the lane's folder, spending a model call or a provider key, publishing
+  under an identity, acting on your machine, and deciding an approval. A tool the
+  policy leaves unlisted is T2 as well, so a lane upgrade that adds a tool waits
+  for a review.
+- **Not in build**: the tool is listed so you can see it, and the Windows app shows
+  the reason it is held back.
 
-Plugins and agent runs never reach a T2 tool or an unlisted one. Agent runs also
-refuse tools that write lane state, fetch a URL the caller names, or have an
-argument the engine checks, drops, or fixes, since an agent run passes the
-model's arguments through. Every telos tool is one of them: the engine passes
-telos no argument.
+Plugins and agent runs reach T1 tools. Agent runs also skip tools that write lane
+state, fetch a URL the caller names, or have an argument the engine checks, drops,
+or fixes, since an agent run passes the model's arguments through. Every telos tool
+falls in that last group: the engine drops every telos argument.
 
 ## Reading the tables
 

@@ -13,8 +13,8 @@ A task that carries `held_out_cmd` gets two checks:
    The first one that passes is the pick. Temperature 0.0 is sampled first, so a
    tie goes to the greedy answer.
 2. The hidden tests (`held_out_cmd`) run once, on the pick only. Their verdict is
-   the result. If the pick fails them, the run ends FAIL; Flywheel does not try
-   the next candidate against the hidden tests.
+   the result. If the pick fails them, the run ends FAIL; the hidden tests see
+   one candidate per run.
 
 The receipt's search stage records `selection: visible-selects-held-out-decides`
 and the hidden check's verdict and output hash.
@@ -36,11 +36,10 @@ In a separate test outside Flywheel (142 programming problems, one 14B local
 model, 16 samples each, visible tests picking and hidden tests scoring), picking
 by visible tests beat picking by the model's own confidence by 0.106 (95%
 interval 0.056 to 0.155) and beat a single attempt by 0.063 (0.014 to 0.106).
-That result used one model and one task family. It is not a measurement of
-Flywheel's shipped benchmark.
+That result used one model and one task family, outside Flywheel's shipped
+benchmark.
 
-Tasks without hidden tests gain nothing from this change beyond the honest
-label.
+Tasks without hidden tests gain the clearer label.
 
 ## Optional: skip duplicate candidates
 
@@ -54,14 +53,13 @@ skipped and their tokens.
 It is off by default. In the separate test above, pruning at 2 was simulated
 offline from finished samples: 0.772x the tokens for an accuracy drop of 0.014.
 Flywheel's proposers return whole answers, so here pruning saves check runs
-only; the generation tokens are already spent. A live token saving needs a
-streaming proposer and is unmeasured.
+alone; the generation tokens are already spent. A live token saving needs a
+streaming proposer, and measuring it is the next step.
 
 ## Optional: stop drawing once the pick is settled
 
-The visible tests pick the first passing candidate in proposal order. Any
-candidate drawn after that first pass can never change the pick, so drawing it
-spends a sample and changes nothing. The effort gate stops the draw early:
+The visible tests pick the first passing candidate in proposal order. The pick
+is fixed at that first pass, so every later draw spends a sample for nothing. The effort gate stops the draw early:
 
 - `first-pass`: draw the temperature-0 candidate. If it passes the visible
   tests, stop; otherwise draw the other three.

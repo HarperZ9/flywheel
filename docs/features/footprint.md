@@ -27,18 +27,17 @@ that run's cold p90 at 2.97 s and its cold spread wider than its median. Cold
 start on this machine is noisy enough that a single slow run is possible; the
 warm figures matched within 0.01 s.
 
-What this does not show: one machine on one day. Startup with a stub excludes
-the time a real provider takes to answer, which dominates a real first turn.
-No other harness is compared here: their published figures come from other
-machines and other definitions, and measuring them side by side needs a
-terminal driver this suite does not have yet.
+Scope: one machine on one day. Startup runs against a stub, so a real
+provider's answer time, which dominates a real first turn, is excluded. The
+page compares Flywheel builds with each other. A side-by-side run against other
+harnesses needs a terminal driver, which is the next addition to this suite.
 
 ## Gating a startup change
 
 `scripts/ab_startup.py` runs two builds in alternating order (20 pairs by
-default) and accepts a change only when the 95% bootstrap interval of the warm
-time to prompt lies below zero and no neighbor (cold time, memory, `--version`
-time) regresses by more than 5% with its interval above zero. Every
+default). It accepts a change when the 95% bootstrap interval of the warm time
+to prompt lies below zero and every neighbor (cold time, memory, `--version`
+time) stays within 5% or has an interval that reaches zero. Every
 experiment, accepted or refused, goes into a hash-chained record.
 
 On four planted changes to 1.8.0 it refused a comment-only change, a 50 ms

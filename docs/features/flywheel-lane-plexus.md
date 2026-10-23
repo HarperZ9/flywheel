@@ -15,16 +15,16 @@ Each item cites the code it rests on. Paths are relative to the Plexus source ch
 - **Mesh discovery.** `discover` in `src/plexus/mesh.py` builds the `Mesh`: an edge `A -> B` for capability `cap` exists when `B` consumes `cap` and `A` emits a port that satisfies `cap`. Self edges are marked with `self_loop=True`. Every edge is tagged `evidence="declared"`.
 - **Wiring map.** `Mesh.wiring` returns each capability mapped to a sorted list of `(producer, consumer)` pairs.
 - **Upstream and downstream lookups.** `Mesh.producers_of` and `Mesh.consumers_of` return the sorted unique lanes that feed a given lane or that consume its output, both skipping self loops.
-- **Orphan surface.** `Mesh.orphans` returns `unmet_inputs` (capabilities consumed by some lane but emitted by none in the set) and `unconsumed_outputs` (capabilities emitted but consumed by none). This is the honest-null surface for an external or human input and for a terminal output.
+- **Orphan surface.** `Mesh.orphans` returns `unmet_inputs` (capabilities consumed by some lane but emitted by none in the set) and `unconsumed_outputs` (capabilities emitted but consumed by none). These lists name the external or human inputs and the terminal outputs.
 - **Collision naming.** `duplicate_organs` in `src/plexus/manifest.py` lists organ ids declared by more than one manifest, and `Mesh.collisions` carries them. A clashing id is named in that list so the clash stays visible, while the lookup dict keeps one manifest per organ (last writer wins).
-- **Manifest validation.** `validate` in `src/plexus/manifest.py` returns a list of problems (empty means valid). It flags a missing organ id, a port with no capability, a duplicate capability on one side, and an emit with no `module` evidence. It reports malformed input and never raises on it.
+- **Manifest validation.** `validate` in `src/plexus/manifest.py` returns a list of problems (empty means valid). It flags a missing organ id, a port missing its capability, a duplicate capability on one side, and an emit missing `module` evidence. Malformed input comes back as a list of problems.
 - **Planning.** `plan_to` in `src/plexus/plan.py` returns the upstream lanes that transitively feed a target, in dependency order from a Kahn topological sort. The acyclic prefix comes back in dependency order, and any feedback loop goes into a separate `cyclic` list that stays honest about mutual dependency. Each hop is marked `runnable` only when both ends declare a CLI; an undeclared CLI is named in the hop and left uncalled.
 - **Routing.** `route` in `src/plexus/plan.py` returns the shortest capability path between two lanes from a breadth-first search over edges, with a `connected` flag and the per-hop capability chain.
-- **Re-derivable receipts.** `build_plan_receipt` and `verify_plan` in `src/plexus/receipt.py` bind a plan or route to the content hash of every manifest it references plus a hash over the plan body. `verify_plan` re-derives the plan from the mesh and never trusts the stored body, so a tampered body and a manifest that changed since the plan both fail the check. The schema is `plexus.plan-receipt/1`.
+- **Re-derivable receipts.** `build_plan_receipt` and `verify_plan` in `src/plexus/receipt.py` bind a plan or route to the content hash of every manifest it references plus a hash over the plan body. `verify_plan` re-derives the plan from the mesh and compares it with the stored body, so a tampered body and a manifest that changed since the plan both fail the check. The schema is `plexus.plan-receipt/1`.
 - **Discovery receipt.** The CLI stamps a mesh-level `receipt` (`src/plexus/cli.py`, `_receipt`) with the plexus version, a UTC timestamp, and per-manifest source plus a sha256 over canonical content. `content_hash` in `src/plexus/manifest.py` excludes the source field, so the hash binds what was declared and a stranger can recompute it from the same bytes.
 - **Diagram export.** `to_mermaid` and `to_dot` in `src/plexus/graph.py` render the mesh as a Mermaid flowchart or a Graphviz DOT digraph, with cross-lane edges solid and self loops dotted.
 - **Pipeline script.** `pipeline_script` in `src/plexus/run.py` turns a plan into a commented, ordered bash script that ends at the target. A feedback loop is emitted as a labelled comment. The script is output for a human to read and run; plexus does not execute it.
-- **Built-in registry.** `builtin_manifests` in `src/plexus/registry.py` returns eight lane manifests transcribed by hand from a 2026-07-07 source survey: gather, crucible, forum, index, mneme, learn, telos, and flywheel-infra. These pointers are declared citations and are not re-read at runtime.
+- **Built-in registry.** `builtin_manifests` in `src/plexus/registry.py` returns eight lane manifests transcribed by hand from a 2026-07-07 source survey: gather, crucible, forum, index, mneme, learn, telos, and flywheel-infra. These pointers are declared citations, read once at survey time.
 - **External manifest loading.** `load_dir` in `src/plexus/registry.py` reads every `*.interop.json` file in a directory, recording each file path as the manifest's provenance source. `export_all` writes each built-in manifest back out as `<organ>.interop.json`, the exact file a lane would ship to join the mesh.
 - **Live probe.** `probe_lane` and `probe_all` in `src/plexus/registry.py` spawn a lane's MCP server through `harness.lanes` and call `tools/list` and `status`, returning `{name, reachable, tools, error}`. This is the one path that runs a lane, and it requires the Flywheel harness on the import path and the lane's MCP server reachable.
 - **Command line.** `src/plexus/cli.py` exposes `discover`, `wiring`, `plan`, `route`, `validate`, `verify`, `graph`, `run`, `export`, and `mcp`. Source flags `--builtin` and `--dir DIR` select which manifests load. `validate` exits 1 on any problem, and `verify` exits non-zero on drift, so both work as CI gates over a toolchain's wiring.
@@ -37,7 +37,7 @@ Each item cites the code it rests on. Paths are relative to the Plexus source ch
 
 Plexus is declared in `harness/lanes_registry.py` under the name `plexus`, role `wiring`, organ `plexus`, kind `pip`, version 0.3.0, with `source_repo="public/plexus"` and `py_module="plexus.cli"`. Its MCP args are `("mcp",)`, so the lane runs `plexus mcp`.
 
-1. The lane carries no `package_disabled_reason`, because `plexus-mesh` is published. `resolve_mcp_command` in `harness/lanes.py` returns a real argv, the package install profile is live, and the `public/plexus` source checkout remains the fallback profile.
+1. The lane is package-enabled, because `plexus-mesh` is published. `resolve_mcp_command` in `harness/lanes.py` returns a real argv, the package install profile is live, and the `public/plexus` source checkout remains the fallback profile.
 2. `lane_status("plexus")` reports the lane's install or source and runtime-selection metadata. With `probe=True` it spawns the stdio MCP server and confirms it answers the `plexus.status` tool.
 3. An agent connected to the roster calls the plexus MCP tools while it works: `plexus_discover` for the whole mesh, `plexus_plan` to find what feeds a target lane, and `plexus_route` to find the path between two lanes.
 
@@ -113,7 +113,7 @@ $ plexus verify --plan plan.json --builtin     # exit 0 if it still holds, 1 if 
 
 ### Data shapes
 
-- `Port(capability, title="", module="", summary="", consumable_as=())`. An emit without a `module` fails `validate`.
+- `Port(capability, title="", module="", summary="", consumable_as=())`. `validate` requires a `module` on every emit.
 - `Manifest(organ, invoke, emits, consumes, evidence, source)`. `invoke` holds `cli`, `mcp_server`, and `python_import` (or `node_entry`) keys.
 - `Edge(producer, consumer, capability, producer_module, consumer_module, self_loop=False, evidence="declared")`.
 - `Mesh(organs, edges, manifests, collisions)` with `wiring`, `producers_of`, `consumers_of`, and `orphans` methods.
@@ -133,7 +133,7 @@ Plexus consumes the declared interop manifests of the other lanes. In the built-
 
 Plexus emits the mesh, the wiring map, a plan, a route, a Mermaid or DOT diagram, a runnable pipeline script, and re-derivable receipts. An agent driving the roster reads these to decide which lanes to run and in what order.
 
-Honest null: plexus does not declare an interop manifest of its own in the built-in registry, and it is not a producer node inside the mesh it computes. Its outputs are read by the agent orchestrating the lanes, and no built-in lane declares a capability that consumes a plexus plan. Plexus reads the mesh; it is not wired into it.
+Plexus sits above the mesh it computes. Its plans go to the agent orchestrating the lanes, and the built-in registry lists the lanes it reads, with plexus itself outside that list.
 
 ### A worked example with another lane
 
@@ -166,8 +166,8 @@ Against the eight built-in manifests this returns `order: [forum, gather, crucib
 ## What is observed and what is bounded
 
 - Observed in code: the manifest model, discovery, planning, routing, receipts, diagrams, the pipeline script, the CLI, and the MCP server, all read from `src/plexus/` at version 0.2.0. The eight built-in manifests and the lane declaration in `harness/lanes_registry.py` are present as described. Running `discover(builtin_manifests())` yields eight organs, 23 edges, and no collisions; `route(gather, crucible)` yields the single `gather.digest/1` hop above.
-- Declared, not probed: every edge and every built-in module pointer is a self-reported citation. Plexus does not import or run the cited module, so a pointer goes stale silently if a lane renames a symbol after the 2026-07-07 survey. Follow the pointer yourself before trusting an edge.
-- The one live check is `probe_lane`, which spawns a lane and needs the Flywheel harness and a reachable MCP server. Without them it returns `reachable: false` with the reason.
-- Plexus does not execute a pipeline. `plexus run` prints a script for a human to read and run.
-- Version 0.2.0 is the packaged release. The `CHANGELOG.md` "Unreleased" section describes honesty repairs (collision naming, the discovery receipt, `runnable: false` hops, the Mneme and Crucible replay loop) that are present in the working source read here and are not yet cut into a numbered release.
-- Independent project: plexus is one of the tools Zain Dana Harper builds, fair-source licensed, with commercial use reserved. It makes no optimality claim over MCP, LangGraph, Dagster, or CrewAI; `COMPARISON.md` states it is the discovery layer above an executor and not itself an execution engine.
+- Declared edges: every edge and every built-in module pointer is a self-reported citation from the 2026-07-07 survey. A lane that renames a symbol later leaves a stale pointer, so follow the pointer before relying on an edge.
+- The live check is `probe_lane`, which spawns a lane through the Flywheel harness and an MCP server, and returns `reachable` (true or false) with the reason.
+- `plexus run` prints a pipeline script for a person to read and run.
+- Version 0.2.0 is the packaged release. The `CHANGELOG.md` "Unreleased" section describes honesty repairs (collision naming, the discovery receipt, `runnable: false` hops, the Mneme and Crucible replay loop) that are present in the working source read here and due in the next numbered release.
+- Independent project: plexus is one of the tools Zain Dana Harper builds, fair-source licensed, with commercial use reserved. `COMPARISON.md` places it as the discovery layer above an executor such as LangGraph, Dagster, or CrewAI.

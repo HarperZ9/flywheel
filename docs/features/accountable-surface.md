@@ -10,22 +10,22 @@ Accountable Surface is the Flywheel lane where an agent reads a target as witnes
 
 ## One paragraph
 
-Most Flywheel lanes perceive, verify, or remember; this is the lane that acts on the world under accountability. An agent hands it a target and a proposed action. The surface perceives the target as a content-addressed structural observation (not a screenshot), routes the proposed action through the pre-execution gate loaded from the operator's grants, and only on a gate `allow` runs the action through an effector bounded at construction time. It then re-perceives the target, verifies the effect against the intended post-condition, rolls back a reversible action that failed verification, and journals every perception and decision into an append-only, hash-chained log. The gate is default-deny: with no operator grant loaded, nothing acts, and the model cannot supply its own authorization. Because it changes real state, the Flywheel governance gate classes the lane at tier `T2`, so a `T1`-classified run cannot call it. Its per-action `ActuationOutcome` records are the evidence the Flywheel learning loop reads to derive lessons when an allowed action diverges from its intent.
+Most Flywheel lanes perceive, verify, or remember; this is the lane that acts on the world under accountability. An agent hands it a target and a proposed action. The surface perceives the target as a content-addressed structural observation, routes the proposed action through the pre-execution gate loaded from the operator's grants, and on a gate `allow` runs the action through an effector bounded at construction time. It then re-perceives the target, verifies the effect against the intended post-condition, rolls back a reversible action that failed verification, and journals every perception and decision into an append-only, hash-chained log. The gate is default-deny: an action needs an operator grant, loaded out of band, and authorization comes from that grant alone. Because it changes real state, the Flywheel governance gate classes the lane at tier `T2`, so a run needs `T2` to call it. Its per-action `ActuationOutcome` records are the evidence the Flywheel learning loop reads to derive lessons when an allowed action diverges from its intent.
 
 ## Feature list (each bound to code)
 
-- **Witnessed perception, not screenshots.** `AccountableSurface.perceive` (`src/accountable_surface/surface.py`) returns a coherence-membrane `Observation` carrying a provenance digest; the journal records subject, status, digest, title, and link count.
-- **Default-deny pre-execution gate.** `AccountableSurface.propose` bridges to proof-surface through `coherence_membrane.membrane.build_gate_request` / `decide`; the MCP `propose_impl` (`src/accountable_surface/server.py`) returns `deny` with reason "no operator grant is loaded" when no grant is present. The model never provides authorization.
+- **Structural perception.** `AccountableSurface.perceive` (`src/accountable_surface/surface.py`) returns a coherence-membrane `Observation` carrying a provenance digest; the journal records subject, status, digest, title, and link count.
+- **Default-deny pre-execution gate.** `AccountableSurface.propose` bridges to proof-surface through `coherence_membrane.membrane.build_gate_request` / `decide`; the MCP `propose_impl` (`src/accountable_surface/server.py`) returns `deny` with reason "no operator grant is loaded" until a grant is present. Authorization comes from the operator's grant file.
 - **Filesystem actuation with rollback.** `FilesystemEffector` (`src/accountable_surface/effector.py`) writes only within a resolved root, backs up prior bytes, verifies the on-disk sha256 against the authorized plan in `verify`, and restores the prior content in `rollback`.
-- **OS command actuation, allowlist only.** `CommandEffector` (`src/accountable_surface/os_effector.py`) runs allowlisted commands as argv with `shell=False` in a bounded working directory; an irreversible command escalates to needs-human.
-- **Native web actuation without a browser.** `WebEffector` over `HttpDriver` (`src/accountable_surface/web_effector.py`, `http_driver.py`) navigates, fills fields by visible label, and submits forms on server-rendered pages using a stdlib HTTP and HTML backend, origin-bounded by construction.
+- **OS command actuation from an allowlist.** `CommandEffector` (`src/accountable_surface/os_effector.py`) runs allowlisted commands as argv with `shell=False` in a bounded working directory; an irreversible command escalates to needs-human.
+- **Native web actuation over HTTP.** `WebEffector` over `HttpDriver` (`src/accountable_surface/web_effector.py`, `http_driver.py`) navigates, fills fields by visible label, and submits forms on server-rendered pages using a stdlib HTTP and HTML backend, origin-bounded by construction.
 - **JS-capable browser actuation, optional.** `BrowserEffector` (`src/accountable_surface/browser_effector.py`) clicks by accessible label and runs JavaScript; tests and offline demos use `FakeBrowserDriver`, and production can inject `PlaywrightDriver` through the lazily-imported `[browser]` extra (never a hard dependency).
-- **Effector construction-bound as a second gate.** `RefusedActuation` (`effector.py`) is raised when a receipt does not match the plan, content does not match the preview, or the target sits outside the bound, even on a gate `allow`; the surface catches it and records `refused-by-effector` so the process keeps running.
+- **Effector construction-bound as a second gate.** `RefusedActuation` (`effector.py`) is raised when a receipt differs from the plan, content differs from the preview, or the target sits outside the bound, even on a gate `allow`; the surface catches it and records `refused-by-effector` so the process keeps running.
 - **Grounding cortex with honest "ungrounded".** `ReferenceCortex` and `ArxivSource` (`src/accountable_surface/reference.py`) score reference relevance for a subject and report `grounded` / `weak` / `ungrounded`; in `AccountableSurface.actuate` an ungrounded premise escalates to needs-human and holds the action.
-- **Bounded autonomy under one grant.** `AccountableSurface.pursue` (`surface.py`) runs a sequence of `Step`s inside one grant envelope with no per-step prompt, and halts on the first step that is denied, escalated, refused, or fails verification.
-- **Composed action certificate.** `action_certificate` (`src/accountable_surface/certify.py`) combines the gate, effect, and grounding verdicts through the coherence-membrane lattice meet: `REFUTED` absorbs, `UNVERIFIABLE` attenuates, and an unrecognized verdict maps to `UNVERIFIABLE` and never rounds up to a pass.
-- **Tamper-evident durable journal.** `journal_chain.py` hash-chains each entry; `_replay` and `verify_journal` (`surface.py`) count parse failures (`replay_errors`) and chain breaks from edit, delete, or reorder (`journal_tamper`) separately and never conflate them.
-- **Content-addressed self-view.** `AccountableSurface.interocept` (`surface.py`) returns a read-only observation of the session's own perceptions and decisions with a `journal_digest` that re-derives, so the self-report cannot silently drift; it appends nothing and grants no authority.
+- **Bounded autonomy under one grant.** `AccountableSurface.pursue` (`surface.py`) runs a sequence of `Step`s inside one grant envelope, so the steps run back to back, and halts on the first step that is denied, escalated, refused, or fails verification.
+- **Composed action certificate.** `action_certificate` (`src/accountable_surface/certify.py`) combines the gate, effect, and grounding verdicts through the coherence-membrane lattice meet: `REFUTED` absorbs, `UNVERIFIABLE` attenuates, and an unrecognized verdict maps to `UNVERIFIABLE`.
+- **Tamper-evident durable journal.** `journal_chain.py` hash-chains each entry; `_replay` and `verify_journal` (`surface.py`) count parse failures (`replay_errors`) and chain breaks from edit, delete, or reorder (`journal_tamper`) as two separate numbers.
+- **Content-addressed self-view.** `AccountableSurface.interocept` (`surface.py`) returns a read-only observation of the session's own perceptions and decisions with a `journal_digest` that re-derives, so any drift in the self-report shows in the digest. It is a read: the journal and the grants stay as they were.
 - **Live MCP server.** `src/accountable_surface/server.py` exposes `perceive`, `propose`, `session_journal`, `interocept`, plus `status` and `doctor`, through the `[server]` extra.
 - **Shared world server.** `src/accountable_surface/world/` runs a stdlib `http.server` plus SSE surface that streams the real perceive-gate-act-verify loop to open browser tabs, with optional Claude or Ollama pilots.
 
@@ -35,10 +35,10 @@ Evidence base: `tests/` holds 233 test functions and `examples/` holds eight run
 
 ### As a Flywheel lane (recommended path)
 
-1. **Have the source present.** The lane has no PyPI build, so clone `public/accountable-surface`, `public/coherence-membrane`, and `public/proof-surface` as siblings. coherence-membrane must include `WebDocumentOrgan`.
-2. **Install from source.** `install_lane("accountable-surface", profile="source")` (`harness/lanes.py`) runs an editable install; the lane's `extra_source_repos` add each sibling's `/src` to the child process path, so the lane probes live even when the siblings are not separately installed.
+1. **Have the source present.** The lane installs from source, so clone `public/accountable-surface`, `public/coherence-membrane`, and `public/proof-surface` as siblings. coherence-membrane must include `WebDocumentOrgan`.
+2. **Install from source.** `install_lane("accountable-surface", profile="source")` (`harness/lanes.py`) runs an editable install; the lane's `extra_source_repos` add each sibling's `/src` to the child process path, so the lane probes live with the siblings as plain checkouts.
 3. **Check the lane is live.** `lane_status("accountable-surface", probe=True)` spawns the MCP server and calls its `status` tool; the roster marks the lane `live` only when `status` answers. `probe=False` reports install and runtime selection without spawning.
-4. **Load an operator grant out of band.** Point `ACCOUNTABLE_SURFACE_GRANTS` at a JSON file holding one grant or a list. With none loaded, the gate is default-deny.
+4. **Load an operator grant out of band.** Point `ACCOUNTABLE_SURFACE_GRANTS` at a JSON file holding one grant or a list. Until one loads, the gate denies every action.
 5. **Call it through the gateway with a tier.** `call_lane_tool("accountable-surface", "propose", {...}, governance_tier="T2")` (`harness/lane_caller.py`). A `T1` tier is refused with `governance_denied: true`, because the lane floor is `T2`.
 
 ### As a standalone MCP server
@@ -48,11 +48,11 @@ pip install accountable-surface
 accountable-surface-mcp                # stdio MCP server, stdlib only
 ```
 
-`accountable-surface-mcp` (`accountable_surface.interop_mcp`) needs nothing
-beyond the declared dependencies. The FastMCP server is a second entry point:
+`accountable-surface-mcp` (`accountable_surface.interop_mcp`) runs on the
+declared dependencies. The FastMCP server is a second entry point:
 `pip install "accountable-surface[server]"`, then `accountable-surface-server`
-or `python -m accountable_surface.server`. Installing without the extra and
-running the FastMCP entry raises `ModuleNotFoundError: No module named 'mcp'`.
+or `python -m accountable_surface.server`. The FastMCP entry needs the extra;
+a plain install raises `ModuleNotFoundError: No module named 'mcp'` there.
 
 Set `ACCOUNTABLE_SURFACE_GRANTS` to the grants file and, optionally, `ACCOUNTABLE_SURFACE_JOURNAL` to an append-only JSONL path so the witnessed self-view spans sessions.
 
@@ -84,7 +84,7 @@ out = surface.actuate(
 print(out.acted, out.decision, out.verified)  # True allow True
 ```
 
-With `authorization={}` the same call returns `acted=False, decision="deny"` and the file is never created. A faulty effector that writes the wrong bytes is caught at verification and rolled back.
+With `authorization={}` the same call returns `acted=False, decision="deny"`, and the directory stays as it was. A faulty effector that writes the wrong bytes is caught at verification and rolled back.
 
 ## Piecewise reference (each capability, what it does)
 
@@ -117,8 +117,8 @@ It is the `actuation` organ in the lane layer. The registry entry (`harness/lane
 
 - **coherence-membrane** (perception + certificate types), consumed at construction: `WebDocumentOrgan`, `Observation`, `Provenance`, and the `compose` lattice meet behind `certify.py`.
 - **proof-surface** (the gate), consumed through the `build_gate_request` / `decide` bridge in `propose`.
-- **Operator grants**, supplied out of band as JSON (`ACCOUNTABLE_SURFACE_GRANTS`), never by the model.
-- **A reference cortex** (optional), which grounds an action premise; its own `ArxivSource` reaches arXiv over the stdlib. It does not depend on the `gather` lane for this.
+- **Operator grants**, supplied out of band as JSON (`ACCOUNTABLE_SURFACE_GRANTS`) by the operator.
+- **A reference cortex** (optional), which grounds an action premise; its own `ArxivSource` reaches arXiv over the stdlib, independent of the `gather` lane.
 
 ### What it emits for peers
 
@@ -128,12 +128,12 @@ It is the `actuation` organ in the lane layer. The registry entry (`harness/lane
 
 ### Worked example: plugging into the learning loop
 
-The concrete cross-lane seam in the code is the Flywheel organizational learning loop. `harness/lesson_mappers.py::intent_outcome_lessons` reads a list of accountable-surface `ActuationOutcome` dicts and derives a lesson only on a divergence, defined by `_is_divergence` as `decision == "allow"` together with `verdict == "failed"` or `rolled_back is True`. A denied or needs-human action is not a divergence, because there the gate did its job.
+The concrete cross-lane seam in the code is the Flywheel organizational learning loop. `harness/lesson_mappers.py::intent_outcome_lessons` reads a list of accountable-surface `ActuationOutcome` dicts and derives a lesson only on a divergence, defined by `_is_divergence` as `decision == "allow"` together with `verdict == "failed"` or `rolled_back is True`. A denied or needs-human action counts as the gate doing its job.
 
 End to end:
 
 1. An agent (or the `relay` lane) drives accountable-surface through the gateway and actuates a plan under an operator grant.
-2. The surface returns an `ActuationOutcome`. A clean run produces no divergence; a run where the gate allowed the action but the re-perceived effect did not match, or the action was rolled back, is a divergence.
+2. The surface returns an `ActuationOutcome`. A divergence is a run where the gate allowed the action and then the re-perceived effect differed from the intent, or the action was rolled back. A clean run produces zero lessons.
 3. The loop passes a batch of these outcomes to `append_intent_outcome_lessons(store, outcomes)`. For each divergence it seals a `KIND_INTENT_OUTCOME` lesson whose `source_refs` carry the outcome's `after_digest` (falling back to `before_digest`), so the lesson is bound to its evidence by hash. An outcome with no witnessed digest is skipped honestly.
 4. The lesson lands in the `LessonStore`, where the pattern detector lifts confidence when the same class of divergence recurs. The mapper imports nothing from accountable-surface; it reads the dict shape as an adapter, so if the shape shifts the projection shifts with it.
 
@@ -145,9 +145,9 @@ This lane is wired more deeply than a bridge satellite such as `chorus` (`harnes
 
 ## Honest limits
 
-- **The lane runs the interop server, not the FastMCP one.** `accountable-surface` is published, so a package-only workstation installs and launches it. The lane points at `accountable-surface-mcp` because the FastMCP entry needs the `[server]` extra, and that extra cannot be folded into the lane's install name: `installed_version()` passes that string to `importlib.metadata.version`, which rejects an extras marker. A workstation that wants the FastMCP surface installs the extra itself.
+- **The lane runs the interop server.** `accountable-surface` is published, so a package-only workstation installs and launches it. The lane points at `accountable-surface-mcp` because the FastMCP entry needs the `[server]` extra, and the lane's install name has to stay a bare distribution name: `installed_version()` passes that string to `importlib.metadata.version`, which rejects an extras marker. A workstation that wants the FastMCP surface installs the extra itself.
 - **Advisory over the MCP surface.** The MCP `propose` tool returns a gate decision for the operator to enforce; the effector-driven `actuate` loop runs on the Python API path only. The world server runs the real loop within its own grant.
-- **No static tool manifest.** The exposed tool set is declared by decorators and discovered at probe time, not asserted by a committed manifest.
+- **Tool set discovered at probe time.** Decorators declare the exposed tools, and the probe reads them live.
 - **Grounding is relevance scoring.** The cortex reports `ungrounded` when relevance is low, so it stays honest under weak evidence. A `grounded` verdict is a relevance judgment. It does not prove the premise is correct.
 
 ## License and provenance

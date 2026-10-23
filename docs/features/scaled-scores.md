@@ -7,7 +7,7 @@ anchors:
 
     scaled = (score - baseline) / (ceiling - baseline)
 
-0 means no better than the trivial baseline. 1 means as good as the ceiling.
+0 means the trivial baseline's score. 1 means the ceiling's score.
 
 Write an artifact to `<run_root>/scaled/<name>.json`:
 
@@ -23,8 +23,8 @@ Write an artifact to `<run_root>/scaled/<name>.json`:
 ```
 
 Each anchor needs its value, its source and the source's SHA-256. If the score or
-either anchor is missing, the finding reads "pending" and shows no number. A
-ceiling at or below the baseline is refused.
+either anchor is missing, the finding reads "pending" in place of a number. The
+ceiling must sit above the baseline, or the anchors are refused.
 
 Useful anchors:
 

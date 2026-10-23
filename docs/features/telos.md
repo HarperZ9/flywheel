@@ -40,13 +40,12 @@ newer; CI runs on node 24. Observed.
 - **One MCP surface, 41 tools.** `demo/telos-mcp.mjs` serves a stdio MCP
   server (protocol `2025-06-18`) that lists 41 `telos.*` tools and dispatches
   each to one `demo/*.mjs` script with fixed flags through `spawnSync`, returning
-  both a text block and `structuredContent`. It never reads a call's arguments,
-  and Flywheel passes it none: the engine drops every argument a caller sends to
-  a telos tool, and an agent run cannot select one. Every tool is zero-auth. Measured on 0.4.2 in Flywheel, one call per tool: no
-  call used the network or wrote outside the lane folder, and `telos.room`,
-  `telos.workflow` and `telos.proof` start programs from outside the package.
-  The measurement used stand-ins for those programs, so what the real ones do is
-  not measured. Observed:
+  both a text block and `structuredContent`. The fixed flags are the whole input:
+  the engine drops every argument a caller sends to a telos tool. Every tool is
+  zero-auth. Measured on 0.4.2 in Flywheel, one call per tool: every call stayed
+  offline and kept its writes inside the lane folder, and `telos.room`, `telos.workflow`
+  and `telos.proof` start programs from outside the package. The measurement used
+  stand-ins for those three programs. Observed:
   `demo/telos-mcp.mjs`,
   `project-docs/lanes/evidence/telos-0.4.2-tool-measurement.json`.
 - **A verdict on every call.** Each tool emits a
@@ -56,9 +55,8 @@ newer; CI runs on node 24. Observed.
   `public/telos/README.md`, the tool descriptions in `demo/telos-mcp.mjs`.
 - **Five-flagship reconciliation.** `telos.room` and `telos.workflow` run the
   CLIs of the sibling gather, crucible, index, and forum source checkouts on the
-  python found on PATH to summarize the room and validate the golden workflow. Without
-  those siblings both return an UNVERIFIABLE envelope naming the missing
-  dependency. Observed: `demo/telos-mcp.mjs` (tool descriptions),
+  python found on PATH to summarize the room and validate the golden workflow. When
+  a sibling is absent both return an UNVERIFIABLE envelope naming it. Observed: `demo/telos-mcp.mjs` (tool descriptions),
   `demo/room.mjs`, `demo/flagship-workflow.mjs`.
 - **Roster freshness and server manifest.** Over MCP, `telos.mcp.freshness`
   returns the package's bundled freshness expectations for the five servers
@@ -89,12 +87,12 @@ newer; CI runs on node 24. Observed.
   verdict to DRIFT; a missing recomputable basis reports UNVERIFIABLE with the
   gap named by path. An embedded MATCH over tampered materials stays DRIFT.
   Observed: `demo/proof.mjs`, `public/telos/README.md`, `docs/PROOF-LANES.md`.
-- **A witness stage that can only lower a verdict.** The agent-action packet joins
+- **A witness stage that lowers verdicts.** The agent-action packet joins
   source refs, context refs, route, admission, side effects, and output digests,
   then adds an Emet witness stage: a second reader over the packet's canonical
-  bytes. It can lower a verdict, never raise one, and when it cannot be reached
-  the packet records `witness_coverage: not_witnessed` and the verdict stands on
-  the verifier alone. Observed: `public/telos/README.md`, `demo/proof.mjs`.
+  bytes. It can lower a verdict and leaves raising to the verifier; when it is
+  unreachable the packet records `witness_coverage: not_witnessed` and the
+  verdict stands on the verifier alone. Observed: `public/telos/README.md`, `demo/proof.mjs`.
 - **Context packs and receipts for large-workspace handoff.**
   `telos.context.envelope`, `telos.context.pack`, `telos.action.receipt`,
   `telos.loop.ledger`, and `telos.objective.monitor` return budgeted context
@@ -142,16 +140,15 @@ newer; CI runs on node 24. Observed.
   OSS showcase rankings drawn from fixtures. Observed: `demo/revival-registry.mjs`,
   `demo/second-level-flagship-queue.mjs`, `demo/workstation-substrate.mjs`,
   `demo/showcase.mjs`.
-- **Zero-dependency core, three bin entries.** `package.json` declares no runtime
-  dependencies, `engines.node >= 20`, and three bin entries: `project-telos-mcp`
+- **Zero-dependency core, three bin entries.** `package.json` declares an empty
+  runtime dependency list, `engines.node >= 20`, and three bin entries: `project-telos-mcp`
   and `telos-mcp` start the MCP server, and `telos` is the CLI. License is
   FSL-1.1-ALv2. Observed:
   `public/telos/package.json`.
 
-Honest null: the catalog summary reports "69 tools across 5 flagships." Those 69
-require the sibling gather, index, forum, and crucible checkouts beside telos.
-The 41 `telos.*` tools are the ones telos ships and serves by itself. Treat the
-larger count as a composed total, not telos's own surface.
+The catalog summary reports "69 tools across 5 flagships", a composed total that
+counts the sibling gather, index, forum, and crucible checkouts beside telos.
+Telos ships and serves 41 `telos.*` tools by itself.
 
 ## Stepwise usage (how a user runs it)
 
@@ -165,7 +162,7 @@ bundles the pinned package; `flywheel install telos` installs
    cd telos
    git checkout v0.6.0
    ```
-   Node 20 or newer. There is nothing to install: the core is zero-dependency.
+   Node 20 or newer. The core is zero-dependency, so it runs from the checkout.
 
 2. **Run the falsifiable demo.**
    ```bash
@@ -287,8 +284,8 @@ Observed in `public/flywheel/harness`.
 - **Browser-admission driver** (`harness/telos_browser_adapter.py`,
   `telos_browser_config.py`, `telos_browser_registration.py`) registers a
   `telos-browser` driver behind `harness/browser_control.py`. Registration is
-  explicit opt-in with no discovery or launch at startup, the config is immutable
-  and content-free on failure, and the reviewed CDP module is pinned by sha256.
+  an explicit opt-in that runs when you call it, the config is immutable and
+  content-free on failure, and the reviewed CDP module is pinned by sha256.
 
 ## Composition tutorial: telos inside the application
 
@@ -423,9 +420,9 @@ What is bounded or in flight:
 
 - **Three tools need an approval.** `telos.room`, `telos.workflow` and
   `telos.proof` start programs from outside the package, so each runs only on a
-  call you approve at T2, and `telos.native.control` is not in the build.
+  call you approve at T2, and Flywheel's build leaves `telos.native.control` out.
   Observed: `harness/lane_tool_policy_node.py`.
-- **No Python payload pin.** `packaging/python-lane-payloads.jsonl` and its
+- **Node payload pin.** `packaging/python-lane-payloads.jsonl` and its
   checker `scripts/check_python_lane_payload_manifest.py` cover Python lanes
   (schema `flywheel.python-lane-payload/v1`). Telos is a node lane, so its pin is
   the Node payload row above.
@@ -436,28 +433,28 @@ What is bounded or in flight:
   return UNVERIFIABLE unless the gather, crucible, index, and forum checkouts sit
   beside telos with a local python interpreter. This is disclosed coverage loss,
   reported by path.
-- **Browser driver is bound, not runtime-verified.** `configure_telos_browser`
-  returns `configured_not_runtime_verified` on success: the config binding is
-  checked, the live actuation is not exercised at registration. Observed:
+- **Browser driver is bound at registration.** `configure_telos_browser`
+  returns `configured_not_runtime_verified` on success: registration checks the
+  config binding, and the first live call exercises actuation. Observed:
   `harness/telos_browser_registration.py`.
 
 ## Boundary
 
 Telos tools are zero-auth and emit JSON. Measured on 0.4.2 with one call per
-tool, no call used the network or wrote outside the lane folder. The three that
-start programs outside the package need a T2 approval, since what those
-programs do was not measured. The engine passes no telos tool an argument. Native workstation actuation lives in
+tool, every call stayed offline and kept its writes inside the lane folder. The three that
+start programs outside the package need a T2 approval, since the measurement
+used stand-ins for those programs. The engine drops every argument sent to a
+telos tool. Native workstation actuation lives in
 the Telos CLI (`demo/native-control.mjs`), and Flywheel leaves
 `telos.native.control` out of its build. The browser adapter fences request and result bytes and caps
 the timeout at ten seconds, pins the reviewed CDP module by sha256, and refuses a
 dispatched request that lacks a trustworthy terminal acknowledgement. Research
-packets are deterministic preflights with named non-claims: the causal packet
-does not claim causal discovery, the embodied packet does not claim real-robot
-safety, and the quantum packet does not claim hardware error correction.
+packets are deterministic preflights, and each names the claim it leaves to later
+work: causal discovery, real-robot safety, and hardware error correction.
 Observed: `demo/telos-mcp.mjs`, `harness/telos_browser_adapter.py`,
 `public/telos/README.md`.
 
 Independent-project note: telos is its own repository (`project-telos-mcp`,
 `public/telos` in the workspace) with its own tests, CI, and release cadence
 under FSL-1.1-ALv2. It composes with Flywheel through JSON seams and in-place
-code bridges; it does not absorb the platform and is not absorbed by it.
+code bridges, and each stays its own project.

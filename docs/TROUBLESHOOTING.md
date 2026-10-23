@@ -8,8 +8,8 @@ checks for a bug report.
 
 ## "No model is reachable"
 
-`flywheel code` found no local server, no provider key and no `claude` or
-`codex` CLI on PATH. Do one of these:
+`flywheel code` looked for a local server, a provider key and a `claude` or
+`codex` CLI on PATH, and found none of them. Set up one:
 
 - `flywheel setup --provider anthropic` (or openai, gemini, deepseek,
   openrouter) to store a key.
@@ -50,16 +50,15 @@ uses its low-integrity sandbox. To run commands without a sandbox anyway, set
 ## Project MCP servers or hooks did not start
 
 A project file can name any program, so project MCP servers and hooks start
-only after you say yes at the prompt. In `-p` mode nobody is there to say yes,
-so they are skipped. Pass `--trust-project-mcp` or `--trust-project-hooks` when
+after you say yes at the prompt. `-p` mode runs unattended, so it skips them. Pass `--trust-project-mcp` or `--trust-project-hooks` when
 you trust the project. Servers in your own `mcp.json` in the Flywheel home
 start without asking.
 
 ## The session stopped before it started, naming a rules or hooks file
 
-A `permissions.json` or `hooks.json` that cannot be read stops the session on
-purpose: a deny list that silently failed to load would protect nothing. Fix
-the JSON the message names, then start again.
+An unreadable `permissions.json` or `hooks.json` stops the session on purpose,
+because a deny list has to load to protect anything. Fix the JSON the message
+names, then start again.
 
 ## A saved session will not resume
 
@@ -71,8 +70,9 @@ Flywheel home for you to inspect.
 
 ## An MCP server asks for a sign-in
 
-Run `flywheel mcp login NAME`. Servers that need a client id registered in
-advance are not supported yet.
+Run `flywheel mcp login NAME`. It works with servers that register a client
+dynamically; servers that need a client id registered in advance are on the
+roadmap.
 
 ## `flywheel relay` says relay is not installed
 

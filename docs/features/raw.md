@@ -3,7 +3,7 @@
 
 raw checks a fast lighting shortcut against ground truth and hands you evidence a stranger can recheck. It runs raw-native, a CPU renderer with no GPU, driver or graphics API in its trust path. Each render computes ambient occlusion twice, once with a screen-space shortcut and once by ray tracing, and writes a certificate that says whether the shortcut stays within an RMSE tolerance of the reference. Flywheel turns that certificate into a verdict and a receipt, and can recheck it three ways.
 
-raw-native is an independent project by the same author, licensed FSL-1.1-MIT. Flywheel ships no copy of it. Installing the lane downloads the release binary from raw-native's GitHub release and refuses it unless every digest matches.
+raw-native is an independent project by the same author, licensed FSL-1.1-MIT. Installing the lane downloads the release binary from raw-native's GitHub release and accepts it when every digest matches.
 
 ## Run it now
 
@@ -45,7 +45,7 @@ raw-native's certificate (`raw-cert/2`, oracle `raw-rt-ao-v1`) maps to Flywheel'
 | `unverifiable` | UNVERIFIABLE, reason ORACLE_UNAVAILABLE | |
 | missing or malformed certificate | UNVERIFIABLE, reason ENVELOPE_MISSING | |
 
-A render whose own files fail the level-1 recheck reads UNVERIFIABLE with ORACLE_UNAVAILABLE, never PASS.
+A render whose own files fail the level-1 recheck reads UNVERIFIABLE with ORACLE_UNAVAILABLE.
 
 How a run ends:
 
@@ -62,7 +62,7 @@ How a run ends:
 
 Each level is its own check with its own verdict, cheapest first, so you can stop at the one you trust.
 
-**Level 1, arithmetic, no execution.** Re-hash every file the certificate lists, then recompute pixel count, RMSE, maximum error and verdict from `ao_rt.pfm`, `ao_ss.pfm` and `mask.pgm` with the renderer's float32 arithmetic. It reproduces the recorded values bit for bit. From raw-native 0.5.0 it also reads the renderer's own `receipt.json` and holds it to the same files: its seal, its content (the screen-space AO) and reference (the ray-traced AO), every output digest, and its verdict against the certificate's. A forged certificate, a tampered buffer or a receipt that disagrees reads FAIL. A certificate without the float buffers (raw-native 0.2.0) reads UNVERIFIABLE with ENVELOPE_MISSING. The family lives in `harness/certificates/raw_ao.py` and imports nothing that can execute.
+**Level 1, arithmetic alone.** Re-hash every file the certificate lists, then recompute pixel count, RMSE, maximum error and verdict from `ao_rt.pfm`, `ao_ss.pfm` and `mask.pgm` with the renderer's float32 arithmetic. It reproduces the recorded values bit for bit. From raw-native 0.5.0 it also reads the renderer's own `receipt.json` and holds it to the same files: its seal, its content (the screen-space AO) and reference (the ray-traced AO), every output digest, and its verdict against the certificate's. A forged certificate, a tampered buffer or a receipt that disagrees reads FAIL. A certificate missing the float buffers (raw-native 0.2.0) reads UNVERIFIABLE with ENVELOPE_MISSING. The family lives in `harness/certificates/raw_ao.py` and imports arithmetic and hashing alone.
 
 ```python
 from pathlib import Path
@@ -99,20 +99,20 @@ The two can disagree, and the receipt keeps both. A replay can read DRIFT and PA
 
 The `flywheel` block also records the certificate's SHA-256 in canonical JSON, the renderer version, the platform, the level's own verdict and, for a 0.5.0 render, raw-native's own receipt digest with whether it agrees. The receipt's `params` sit in its scene, and `outputs` lists the SHA-256 of every file.
 
-## What a verdict does not prove
+## What a verdict covers
 
-Every result and every receipt lists these four lines first:
+Every result and every receipt lists its scope in four lines first. In short:
 
-- The reference is a 64-sample hemisphere estimate from a deterministic per-pixel hash, so it is repeatable, not exact.
-- A pass on RMSE says nothing about the worst pixel. The high view passes at 0.0827 RMSE with a 0.625 maximum error.
-- One built-in scene; no claim about other geometry, lights or materials.
-- Byte-identical output is checked on x86-64 only.
+- The reference is a 64-sample hemisphere estimate from a deterministic per-pixel hash: repeatable, and an estimate.
+- RMSE measures the average. The high view passes at 0.0827 RMSE with a 0.625 maximum error, so read the maximum too.
+- The result covers the one built-in scene.
+- Byte-identical output is checked on x86-64.
 
-A replay adds that the same computation ran twice, which says nothing about whether the answer is right. A level-3 result adds that agreement covers one camera and frame of the built-in scene.
+A replay shows the same computation ran twice. A level-3 result shows agreement for one camera and frame of the built-in scene.
 
 ## Limits
 
-- Lane overhead and the adapter's run time are unmeasured.
-- raw-native ships no macOS or ARM build, so the lane reads `TOOLCHAIN_MISSING` there.
-- The arena certificate's byte count differs between the Windows and Linux builds (their standard libraries allocate differently). raw-native leaves it out of the certificate's output list, so replay identity does not cover it.
-- The lane uses the CPU renderer only. raw-native 0.5.0's D3D12 Windows build and its WebGPU and WebAssembly builds are not wired into it.
+- Lane overhead and the adapter's run time are the next measurement.
+- raw-native ships Windows and Linux x86-64 builds; on macOS or ARM the lane reads `TOOLCHAIN_MISSING`.
+- The arena certificate's byte count differs between the Windows and Linux builds (their standard libraries allocate differently). raw-native leaves it out of the certificate's output list, so replay identity covers the other files.
+- The lane uses the CPU renderer. raw-native 0.5.0's D3D12 Windows build and its WebGPU and WebAssembly builds are candidates for later wiring.
