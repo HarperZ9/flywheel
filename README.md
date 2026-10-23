@@ -5,7 +5,7 @@
 
 # flywheel
 
-Run any model, keep a receipt you can recheck offline.
+Run AI tasks on the model you choose, check the answers against their sources, and keep a receipt anyone can recheck offline.
 
 ```
 python -m pip install flywheel-verify
@@ -18,113 +18,119 @@ python -m pip install flywheel-verify
 
 Docs: https://harperz9.github.io/flywheel/docs/
 
-Flywheel ships as a full native harness client with its own bundled engine.
-Rowan provides its operator experience, and Articulate and the other tool lanes
-provide capabilities to the user's selected model. Compatible plugins expose
-selected tools and workflows to other clients. See the
-[client and tool architecture](docs/CLIENT-AND-TOOL-ARCHITECTURE.md) for these
-responsibilities and the separate release checks for each distribution surface.
+## What it does for you
 
-Flywheel runs any model, frontier or local, behind a single OpenAI-compatible
-surface. Flywheel's records stay on your machine. Your provider keys are
-stored only there: Flywheel sends each one only to its own provider, and a key
-you bind to a lane call, or grant a lane with `env_allow`, reaches that lane's
-process only on a call you approve at T2. The content of each request,
-including files and tool output the agent reads, goes to the model provider you
-pick, under that provider's terms. With a local model
-it stays on your machine. Flywheel's desktop assistant, Rowan, takes a request
-in plain words and turns it into a task the app runs and records on the model
-you pick. A permission-gated coding agent, relay, runs over your own folders and
-checks each tool request before it acts. Seventeen composable lanes ship in the
-roster. In the Windows app's installed-app check, 15 of 17 lanes reach the class
-the check expects for them; index is below that bar without Git, and telos was
-not in the build that check ran on. Flywheel now pins telos 0.4.2, which no
-installed-app check has run on yet ([per-lane table](project-docs/lanes/LANES.md)).
+Flywheel is a local harness for AI work. It puts any model, hosted or local,
+behind one OpenAI-compatible endpoint on your machine. It runs a coding agent
+in your terminal that by default asks before it writes or runs anything. Before an agent
+runs a shell command, a capability check reads the command and blocks network
+egress and other risky actions, with the reason sent back to the model. Every
+step lands on a hash-chained ledger, and a result can be sealed into a receipt
+that a stranger rechecks offline with the Python standard library alone.
 
-The command `flywheel check-output` checks a value against the source that
-decides it, ships finance, medicine, and law packs, and can emit the check as a
-Lean 4 proof a kernel runs. Every accepted result carries a sealed, re-derivable
-receipt. An independent witness re-runs that receipt offline and returns MATCH,
-DRIFT, or UNVERIFIABLE, with no learned model on the accept path. Install the
-engine with `pip install flywheel-verify`, or run the native desktop app, which
-bundles the engine and needs no Python.
+`flywheel check-output` checks the values in an answer against the source that
+decides them: a tax table, a formulary, a court calendar, a script you supply.
+It reports which fields agree, which disagree and which nothing could confirm,
+and it says whether the answer may ship.
 
-The [architectural mission](docs/ARCHITECTURAL-MISSION.md) is to make consequential
-AI claims independently checkable, with usable tools for evaluators and everyday
-tasks. A reproducible check still needs an appropriate criterion and sufficient
-evidence; replay alone does not establish safety.
+It is built for people who need to show their AI work to someone else:
+evaluators, researchers, and teams in finance, medicine or law who must trace a
+number to the rule that produced it. It also runs as a Windows desktop app with
+an assistant called Rowan, as a GitHub Action, and as an MCP host for a set of
+companion tools.
 
-The current release is [the latest release](https://github.com/HarperZ9/flywheel/releases/latest),
-which publishes `flywheel-verify` on PyPI and a Windows installer. See the
-[flagship overview](docs/FLYWHEEL-1.0.0-OVERVIEW.md) for the full feature set and an
-install-to-first-verdict walkthrough, and [docs/features](docs/features/README.md) for
-how the lanes compose into the application.
+## Install and first run
 
-Flywheel is model-agnostic: it runs any model, frontier or local, behind one
-OpenAI-compatible surface. It composes a family of formerly standalone tools into native
-lanes: gather, crucible, chorus, articulate, index, forum, learn, telos, relay, plexus,
-mneme, calibrate-pro, canon, bulletin, accountable-surface, writing, and the bundled
-local-model engine. Each lane stands alone and plugs into the others through published
-seams.
+Python 3.11 or newer. The engine has no third-party runtime dependencies.
 
-## Try it
-
-For the native desktop app, download the Windows installer from the
-[latest release](https://github.com/HarperZ9/flywheel/releases/latest) and verify it
-against the checksums attached to that release. It carries its own engine, so the app
-runs on a clean machine with no Python installed, and it starts that engine itself.
-Each lane card in the Tools view states whether the lane is ready and names any setup
-it still needs: Git for Windows for index's repository history, a local model server
-for local-model and relay, a project folder for local-model, a blocks folder for
-canon, and a recorded draft for writing. The Node runtime that learn uses ships with
-the app.
-
-The app's assistant is **Rowan**. Open Chat and ask for work in plain
-words, and Rowan turns the request into a task the app runs and records.
-You can drive every surface yourself and the run leaves the same record.
-Rowan runs on the model you choose and is openly an assistant, never
-presented as a human or a specific model. See
-[Meet Rowan](GETTING-STARTED.md#meet-rowan).
-
-To code in your terminal:
-
-```powershell
-python -m pip install flywheel-verify
-flywheel code
+```text
+$ python -m pip install flywheel-verify
+$ flywheel gate
+  verify: verdict=PASS, output_hash=93e4b6c6b7a05c82, attribution=CANDIDATE
+  seal: envelope_hash=1993af18b980c95d, claim_hash=23450831b0b42121, path=gate_envelope.json
+  rewitness: result=MATCH
+verdict=PASS rewitness=MATCH
 ```
 
-Or install the command in its own environment with one line (Python 3.11 or
-newer): `curl -fsSL https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.sh | sh`
-on macOS and Linux, or `irm https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.ps1 | iex`
-in PowerShell on Windows.
-With a package manager, use `brew tap HarperZ9/flywheel https://github.com/HarperZ9/flywheel`
-and `brew install flywheel` on macOS or Linux, or `scoop bucket add flywheel https://github.com/HarperZ9/flywheel`
-and `scoop install flywheel` on Windows.
+`flywheel gate` runs a built-in task, checks the result, seals it into
+`artifacts/gate/gate_envelope.json` and rechecks the seal. No model and no
+network are needed.
 
-`flywheel code` opens a session in the current folder: the agent reads, edits
-and runs your tests across turns, asks before it writes or runs anything (or
-not, with `--mode edit` or `--mode auto`), and records every step on a
-hash-chained ledger. It uses a local model server when one is running, or any
-provider key you have set. See [docs/CODE-SESSION.md](docs/CODE-SESSION.md).
+Check an answer against its source, using the Form 1040 example in
+[examples/output-validation](examples/output-validation/README.md):
 
-To run a request in CI, the repository is also a GitHub Action; see
-[docs/GITHUB-ACTION.md](docs/GITHUB-ACTION.md).
-
-For the engine on its own:
-
-```powershell
-python -m pip install flywheel-verify
-flywheel up
+```text
+$ flywheel check-output --contract form-1040.contract.json --answer answer-as-filed.json --allow-commands
+FAIL  1 of 2 fields confirmed
+HOLD  blocked by: tax
+  FAIL          tax: the value disagrees with irs-2025-tax-table-single
+  PASS          taxable_income: the answer cites the return
 ```
 
-This starts the local API gateway on `http://127.0.0.1:8799` and serves a
-browser shell there. The shell is the fallback surface for development and
-CI; the desktop app is the native one.
+The answer took its tax from the rate schedule. The form requires the tax
+table, so the check holds it. Exit codes: 0 confirmed, 1 disagrees, 3 unchecked.
 
-For a workflow you can use in an existing agent host, see the
-[Flywheel Evidence Task skill](plugins/flywheel-evidence-task/README.md).
-It can be installed independently of the engine and includes Codex and Claude
-plugin manifests, examples, and reproducible download packaging.
+Start a coding session in the current folder, or the local gateway and its
+browser shell on `http://127.0.0.1:8799`:
+
+```text
+$ flywheel code
+$ flywheel up
+```
+
+`flywheel code` uses a local model server when one is running, or a provider
+key you have set. `flywheel doctor` reports what is missing.
+
+## How it compares
+
+- **LiteLLM** and **OpenRouter** route requests to many models. Flywheel also
+  routes to many models, and it keeps a sealed record of each run on your
+  machine.
+- **Claude Code**, **Aider** and **OpenHands** are coding agents. `flywheel code`
+  is one too; it adds a shell capability check before each command and a
+  hash-chained ledger of every step.
+- **Inspect AI**, **promptfoo** and **Guardrails AI** score or validate model
+  output. `check-output` validates a value against a named authority and can
+  emit the check as a Lean 4 file for a kernel to run.
+
+Flywheel joins those pieces in one local tool with one receipt format. It does
+not replace an evaluation suite's task library or a gateway's hosted scale.
+
+## Limits
+
+- A receipt proves a result was not changed after sealing. It does not prove
+  the result is correct.
+- `check-output` is only as good as the authorities you supply. The finance,
+  medicine and law packs ship field shapes and arithmetic, and no domain data.
+- The capability check uses a hand-curated map of executables. An executable
+  it has never seen is admitted and recorded as unknown.
+- Request content goes to the model provider you pick, under its terms. With a
+  local model it stays on your machine.
+- The desktop app ships for Windows only.
+- In the Windows app's installed-app check, 15 of 17 lanes reach the class
+  the check expects for them. index is below that bar without Git, and the
+  telos version Flywheel now pins has not been through that check
+  ([per-lane table](project-docs/lanes/LANES.md)).
+
+## Other ways to run it
+
+- **Windows desktop app.** Download the installer from the
+  [latest release](https://github.com/HarperZ9/flywheel/releases/latest) and
+  check it against the attached checksums. It bundles the engine and needs no
+  Python. Its assistant, Rowan, turns a plain-words request into a task the app
+  runs and records; see [Meet Rowan](GETTING-STARTED.md#meet-rowan).
+- **One-line install** into its own environment:
+  `curl -fsSL https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.sh | sh`
+  on macOS and Linux, or
+  `irm https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.ps1 | iex`
+  in PowerShell. Homebrew and Scoop are covered under [Install](#install).
+- **GitHub Action.** See [docs/GITHUB-ACTION.md](docs/GITHUB-ACTION.md).
+- **Inside another agent host.** The
+  [Flywheel Evidence Task skill](plugins/flywheel-evidence-task/README.md)
+  installs on its own, with Codex and Claude plugin manifests.
+
+The [client and tool architecture](docs/CLIENT-AND-TOOL-ARCHITECTURE.md) page
+describes the desktop client, the engine and the companion tools.
 
 ## See it work, step by step
 
@@ -522,7 +528,7 @@ provider's own official tool where it does not), stores the token in the OS
 credential store, and the router picks it up with no further setup. See
 [GETTING-STARTED.md](GETTING-STARTED.md).
 
-Or from source, for development against the current candidate branch:
+Or from source, for development:
 
 ```
 git clone https://github.com/HarperZ9/flywheel.git

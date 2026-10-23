@@ -18,6 +18,7 @@ flywheel check-output --contract form-1040.contract.json --answer answer-as-file
 
 ```
 FAIL  1 of 2 fields confirmed
+HOLD  blocked by: tax
   FAIL          tax: the value disagrees with irs-2025-tax-table-single
   PASS          taxable_income: the answer cites the return
   next: tax: consult irs-2025-tax-table-single and take the value it gives, rather than deriving one that should match it
@@ -35,6 +36,7 @@ flywheel check-output --contract form-1040.contract.json --answer answer-from-th
 
 ```
 PASS  2 of 2 fields confirmed
+RELEASE
   PASS          taxable_income: the answer cites the return
   PASS          tax: the value agrees with irs-2025-tax-table-single
 ```
@@ -49,6 +51,7 @@ flywheel check-output --contract form-1040.contract.json --answer answer-from-th
 
 ```
 UNVERIFIABLE  1 of 2 fields confirmed
+RELEASE_WITH_CAVEAT
   UNVERIFIABLE  tax: irs-2025-tax-table-single could not decide: PermissionError: command authorities are not granted for this run, so this field is unchecked rather than confirmed
   PASS          taxable_income: the answer cites the return
   next: tax: irs-2025-tax-table-single was not available to the checker, so this field is unchecked rather than wrong
