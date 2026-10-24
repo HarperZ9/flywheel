@@ -32,7 +32,9 @@ class LiveRunTail extends StatelessWidget {
   Map<String, dynamic>? get _done {
     for (final e in events.reversed) {
       if (e['type'] == 'done' &&
-          !traceProjectionSchemas.contains(e['schema'])) return e;
+          !traceProjectionSchemas.contains(e['schema'])) {
+        return e;
+      }
     }
     return null;
   }
