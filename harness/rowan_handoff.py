@@ -19,13 +19,16 @@ import json
 
 from .rowan_handoff_text import code, flat_line, one_line, quote, safe_line
 
-SCHEMA = "flywheel.rowan-handoff/v1"
+SCHEMA = "flywheel.rowan-handoff/v2"
+SCHEMA_V1 = "flywheel.rowan-handoff/v1"
 MAX_LINES = 20
 #: Character budgets for the two quoted fields. At four bytes a character the
 #: whole brief stays well under the desktop's 1 MiB limit.
 GOAL_CHARS, FINAL_CHARS = 8_000, 40_000
-DOES_NOT_PROVE = ["NOT_RE_VERIFIED_AT_EXPORT", "NOT_SEMANTIC_TRUTH",
-                  "FILE_CONTENTS_NOT_INCLUDED", "REDACTION_IS_PATTERN_BASED"]
+#: What a handoff brief covers: the trace as accepted when the run ended, as
+#: recorded, summarised without file contents, with pattern-based redaction.
+SCOPE = ["TRACE_AS_ACCEPTED_AT_RUN_END", "TRACE_AS_RECORDED",
+         "SUMMARY_WITHOUT_FILE_CONTENTS", "REDACTION_IS_PATTERN_BASED"]
 _TERMINAL = {"completed", "failed", "cancelled"}
 
 
@@ -269,4 +272,4 @@ def read_handoff(service, owner_ref: str, operation_ref: str) -> dict:
             "journey_ref": snapshot.journey_ref, "trace_ref": trace.ref,
             "record_count": len(records), "trace_head_sha256": trace.head,
             "markdown": handoff_markdown(records, {**projection, "state": snapshot.state}),
-            "does_not_prove": list(DOES_NOT_PROVE)}
+            "scope": list(SCOPE)}

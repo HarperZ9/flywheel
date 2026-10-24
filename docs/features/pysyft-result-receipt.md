@@ -29,7 +29,7 @@ signer's public key, `python -m harness.job_result_verify` checks:
 | `receipt_id` | A `receipt_id` that does not recompute from the body's nonce, job and result. A signer who rebuilds a result and leaves the old id, or forges a fresh one, is caught here. |
 | `replay_nonce`, `replay_seen` | An old receipt presented for a new request. The seen-list is keyed on the recomputed id. |
 | `superstack:*`, `superstack_scene` | The embedded superstack receipt's seal, or its binding to the approved hash, does not hold. |
-| `schema_or_limits` | A receipt that drops or rewords any of its fixed `does_not_prove` lines. |
+| `schema_or_scope` | A receipt that drops or rewords any of its fixed `scope` lines. |
 | `reveal` | Once the hidden answers are revealed, a row's `correct` flag does not rescore. |
 
 Verdicts are MATCH, DRIFT (naming every failed check), or UNVERIFIABLE when an input a
@@ -38,7 +38,7 @@ beside the verdict, with the reason.
 
 ## The receipt
 
-Schema `flywheel.pysyft-job-result/v1`, inside a `flywheel.signed-job-result/v1`
+Schema `flywheel.pysyft-job-result/v2`, inside a `flywheel.signed-job-result/v1`
 envelope. The body holds:
 
 - `job`: `approved_hash` and `received_hash` as PySyft recorded them, the hash rule
@@ -57,7 +57,7 @@ envelope. The body holds:
 - `nonce` and `receipt_id`: the requesting party's challenge, and the superstack
   canonical SHA-256 of `{nonce, job, result}`, for replay checks. The verifier
   recomputes the id and compares it with the recorded one.
-- `does_not_prove`: the fixed list below.
+- `scope`: the fixed list below.
 
 The signature is Ed25519 over `claim_sha256`, the superstack canonical JSON SHA-256 of
 the body. The envelope's `schema` and the signature's `key_id` sit outside that body, so
@@ -153,12 +153,16 @@ rescored once the hidden answers are revealed. The identity of the hidden model 
 data rests on the enclave attestation link, and the choice of benchmark and scoring
 rule rests on its own review.
 
-Every receipt carries the same seven-line `does_not_prove` list, fixed in
+Every receipt carries the same seven-line `scope` list, fixed in
 `harness/job_result_receipt.py`, and the verifier rejects a receipt whose list
-differs by a word. Print it with:
+differs by a word. Records of the older version (`flywheel.pysyft-job-result/v1`)
+name the list `does_not_prove` and carry the v1 wording (`SCOPE_V1`); the
+verifier checks each version against its own list, and the embedded
+`superstack.receipt/1` names its copy `does_not_prove` because that contract is
+vendored. Print the current list with:
 
 ```bash
-python -c "import harness.job_result_receipt as m; print(*m.DOES_NOT_PROVE, sep='\n')"
+python -c "import harness.job_result_receipt as m; print(*m.SCOPE, sep='\n')"
 ```
 
 One test shows the rows' limit outright: a signer who lies consistently

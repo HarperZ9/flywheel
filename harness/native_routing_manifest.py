@@ -6,7 +6,9 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 from harness.routing_collection import canonical_sha256, text_sha256, utc_now
-SCHEMA = "harness.native-routing-task-family-manifest/v1"
+from harness.scope import scope_list
+SCHEMA = "harness.native-routing-task-family-manifest/v2"
+SCHEMA_V1 = "harness.native-routing-task-family-manifest/v1"
 TASK_SET_SCHEMA = "harness.native-routing-task-family-set/v1"
 PROJECTION_SCHEMA = "harness.native-routing-projection/v1"
 DEFAULT_ARTIFACT_DIR = "artifacts/native-routing"
@@ -66,10 +68,10 @@ def build_manifest(
             ),
             "demo_fixture": doc["dataset_status"] == "demo_fixture_not_180_case_benchmark",
         },
-        "does_not_prove": [
-            "Planned-only manifest; no model, endpoint, benchmark, or utility run executed.",
-            "Demo fixture does not satisfy or replace a complete 180-case benchmark.",
-            "Text/state fixture does not prove multimodal, UI, OCR, image, video, or LRM performance.",
+        "scope": [
+            "Planned-only manifest: case rows, arms and projections as planned; no model, endpoint, benchmark or utility run executed.",
+            "A demo fixture; the complete 180-case benchmark is a separate run.",
+            "Text and state tasks only; multimodal, UI, OCR, image, video and LRM performance are outside this fixture.",
         ],
     }
 def render_case_projection(doc: dict[str, Any], case: dict[str, Any], arm: dict[str, Any]) -> dict[str, Any]:
@@ -158,8 +160,8 @@ def render_markdown(manifest: dict[str, Any]) -> str:
             f"| `{row['case_id']}` | `{row['split_role']}` | "
             f"`{row['workflow_utility_status']}` | {len(row['planned_artifacts'])} |"
         )
-    lines.extend(["", "## Limits", ""])
-    lines.extend(f"- {item}" for item in manifest.get("does_not_prove", []))
+    lines.extend(["", "## Scope", ""])
+    lines.extend(f"- {item}" for item in scope_list(manifest))
     return "\n".join(lines) + "\n"
 def validate_task_family_set(doc: dict[str, Any]) -> None:
     _require(doc, ["schema", "task_set_id", "dataset_status", "modality_scope",

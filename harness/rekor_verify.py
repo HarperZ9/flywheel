@@ -28,7 +28,8 @@ import json
 
 from . import ed25519_verify, ed25519ph_verify, p256_verify
 
-SCHEMA = "flywheel.rekor-anchor/v1"
+SCHEMA_V1 = "flywheel.rekor-anchor/v1"
+SCHEMA = "flywheel.rekor-anchor/v2"  # v2 names `scope`
 
 # Sigstore's public-good Rekor v1 instance. Fetched 2026-10-04 from
 # https://rekor.sigstore.dev/api/v1/log/publicKey; the log ID is sha256 of the
@@ -243,18 +244,19 @@ def _inclusion_reasons(proof: dict, body_bytes: bytes, log_key, log_id_raw: byte
     return reasons
 
 
-def does_not_prove() -> list[str]:
+def scope() -> list[str]:
+    """What a Rekor entry covers."""
     return [
-        "NOT_PROVES_CONTENT_IS_CORRECT: the entry shows these bytes existed by the "
-        "integrated time, signed by this key. It says nothing about whether what "
-        "the bytes claim is true.",
-        "NOT_PROVES_THE_KEY_HOLDER_IS_HONEST: whoever holds the key could have "
-        "signed and logged other bytes too. Rekor records what it was given.",
-        "NOT_PROVES_THE_KEY_IS_THE_AUTHORS: binding the key to a person comes from "
-        "where the key is published, not from the log.",
-        "NOT_PROVES_REKOR_SHOWS_EVERYONE_ONE_LOG: offline, one checkpoint is one "
-        "view. Cross-checking it against a monitor or a later checkpoint is the "
+        "BYTES_EXISTED_BY_INTEGRATED_TIME: the entry shows these bytes existed by "
+        "the integrated time, signed by this key. The truth of what the bytes "
+        "claim is a separate check.",
+        "LOGGED_AS_GIVEN: Rekor records the entry it was given. The key holder "
+        "may have signed and logged other bytes as well.",
+        "KEY_BOUND_BY_PUBLICATION: binding the key to a person comes from where "
+        "the key is published.",
+        "ONE_CHECKPOINT_VIEW: offline, one checkpoint is one view of the log. "
+        "Cross-checking it against a monitor or a later checkpoint is the "
         "online step.",
-        "NOT_PROVES_NO_EARLIER_VERSION_EXISTED: the time is an upper bound on when "
-        "the bytes existed, never a lower bound.",
+        "UPPER_TIME_BOUND: the integrated time is an upper bound on when the "
+        "bytes existed.",
     ]

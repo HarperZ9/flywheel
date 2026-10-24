@@ -9,7 +9,7 @@ import time
 
 import pytest
 
-from harness.rowan_handoff import DOES_NOT_PROVE
+from harness.rowan_handoff import SCOPE
 from harness.rowan_handoff_text import HOST_PATH, OMITTED, code, leaks, outbound, quote
 from tests.test_rowan_handoff_safety import _brief, _records
 
@@ -124,7 +124,7 @@ def test_the_listed_shapes_do_not_reach_the_brief():
         assert _gone(secret, brief), secret
     assert "zain" not in brief
     # The list is still a list, and the response says so.
-    assert "REDACTION_IS_PATTERN_BASED" in DOES_NOT_PROVE
+    assert "REDACTION_IS_PATTERN_BASED" in SCOPE
 
 
 def test_a_secret_across_the_cut_is_redacted_before_the_cut():

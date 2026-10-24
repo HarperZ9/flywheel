@@ -220,3 +220,25 @@ def test_huge_numeric_weight_rejects_as_model_value_error_not_overflow():
 
     with pytest.raises(ClassifierModelError):
         LinearClassifierModel.from_json_dict(artifact)
+
+
+def test_a_v1_artifact_loads_under_its_own_checksum_and_rejects_tampering():
+    from harness.classifier_model import (ARTIFACT_SCHEMA, ARTIFACT_SCHEMA_V1,
+                                          ClassifierModelError, LinearClassifierModel)
+    from harness.classifier_training import train_classifier_baseline
+    from harness.evidence_json import canonical_sha256
+    from harness.scope import LEGACY_SCOPE_KEY
+
+    model = train_classifier_baseline(
+        training_rows(), seed=11, epochs=20, learning_rate=0.25, feature_buckets=64).model
+    body = {k: v for k, v in model.to_json_dict().items()
+            if k not in ("artifact_sha256", "scope")}
+    body.update({"schema": ARTIFACT_SCHEMA_V1, LEGACY_SCOPE_KEY: ["an older limit line"]})
+    old = dict(body, artifact_sha256=canonical_sha256(body))
+    loaded = LinearClassifierModel.from_json_dict(old)
+    assert loaded.to_json_dict()["schema"] == ARTIFACT_SCHEMA
+    assert loaded.weights_by_family == model.weights_by_family
+    with pytest.raises(ClassifierModelError):
+        LinearClassifierModel.from_json_dict(dict(old, seed=12))
+    with pytest.raises(ClassifierModelError):   # a v1 record carrying the v2 key
+        LinearClassifierModel.from_json_dict(dict(old, scope=["x"]))

@@ -12,11 +12,13 @@ import re
 from .evidence_json import canonical_sha256, strict_load_json
 
 REQUEST_SCHEMA = "flywheel.decision-request/v1"
-RESULT_SCHEMA = "flywheel.decision-result/v1"
-DOES_NOT_PROVE = (
-    "Validates request/proposal shape, declared choice eligibility, and cited "
-    "reference membership only; does not prove semantic correctness, "
-    "authorization, execution, model calibration, or competitive performance."
+# v2 results name the coverage string `scope`; v1 results carried the older key.
+RESULT_SCHEMA_V1 = "flywheel.decision-result/v1"
+RESULT_SCHEMA = "flywheel.decision-result/v2"
+SCOPE = (
+    "Validates request and proposal shape, declared choice eligibility, and "
+    "cited reference membership against the request. The choice is a proposal "
+    "for the caller to authorize and execute."
 )
 REQUEST_KEYS = {
     "schema", "decision_ref", "state", "choices",
@@ -136,7 +138,7 @@ def _result(request: dict, response_sha256: str | None, scorer_ref: str, reason:
         "response_sha256": response_sha256,
         "scorer_ref": (scorer_ref if type(scorer_ref) is str
                        and ID_PATTERN.fullmatch(scorer_ref) else ""),
-        "does_not_prove": DOES_NOT_PROVE,
+        "scope": SCOPE,
     }
 
 

@@ -19,7 +19,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 
 from . import coverage, records, trace_flag
-from .contract import (ALLOW, BLOCK, DOES_NOT_PROVE, HOLD, UNVERIFIABLE,
+from .contract import (ALLOW, BLOCK, HOLD, SCOPE, UNVERIFIABLE,
                        Assessment, Hit, ProposedCall, RunContext, canonical_json, sha256_hex, worse)
 from .escalate import Escalator, review_payload
 from .config import MonitorConfig
@@ -276,7 +276,7 @@ class Monitor:
             call=call, ctx=ctx, assessment=asm,
             trajectory_sha256=sha256_hex(canonical_json(state.history)),
             expires_at=self._expiry() if hold_id else "",
-            owner_ref=self.owner_ref, does_not_prove=DOES_NOT_PROVE[asm.verdict])
+            owner_ref=self.owner_ref, scope=SCOPE[asm.verdict])
 
     # --- observation (taint) -----------------------------------------------
     def observe(self, call: ProposedCall, ctx: RunContext, gate: Gate, output: str) -> None:

@@ -65,7 +65,7 @@ def test_complete_declared_access_is_coverage_not_semantic_support():
         event("task-grant", 1, "task", pointers=[pointer("task", "/expected_final_state", SOURCES["task"]["expected_final_state"])]),
     ]), scope=scope(), sources=SOURCES)
 
-    assert report["schema"] == "flywheel.institutional-access-assessment/v1"
+    assert report["schema"] == "flywheel.institutional-access-assessment/v2"
     assert report["coverage_assessment"] == "complete"
     assert report["claims"] == [{
         "claim_id": "claim-final-state",
@@ -75,7 +75,7 @@ def test_complete_declared_access_is_coverage_not_semantic_support():
         "reasons": [],
     }]
     assert "support" not in set(keys(report))
-    assert any("semantic" in item for item in report["does_not_prove"])
+    assert any("taken as declared" in item for item in report["scope"])
 
 
 @pytest.mark.parametrize("status", ["requested", "denied", "unavailable", "unknown", "withdrawn"])

@@ -1,4 +1,5 @@
 import 'evidence_state.dart';
+import 'scope_field.dart';
 
 part 'gateway_agent_execution_review_fields.dart';
 part 'gateway_agent_execution_review_parsing.dart';
@@ -14,7 +15,13 @@ const gatewayAgentReviewSchemaV4 = 'flywheel.gateway-agent-review/v4';
 const gatewayAgentToolProtocolSchema =
     'flywheel.gateway-agent-tool-protocol/v1';
 const gatewayAgentMcpAdmissionReviewSchema =
+    'flywheel.gateway-agent-mcp-admission-review/v2';
+const gatewayAgentMcpAdmissionReviewSchemaV1 =
     'flywheel.gateway-agent-mcp-admission-review/v1';
+const gatewayAgentMcpAdmissionReviewSchemas = {
+  gatewayAgentMcpAdmissionReviewSchema,
+  gatewayAgentMcpAdmissionReviewSchemaV1,
+};
 const gatewayAgentReviewSchema = gatewayAgentReviewSchemaV1;
 
 final _modelReference = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,159}$');

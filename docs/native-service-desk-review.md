@@ -2,7 +2,7 @@
 
 This path lets the desktop Receipts view recheck a ServiceDesk incident evidence
 directory through the local gateway. It is a reader for
-`service-desk-incident-env-review/v1`; it does not run a model, replay submitted
+`service-desk-incident-env-review/v2` (v1 reports are still read); it does not run a model, replay submitted
 actions, execute HTML, write report files, or replace the product verifier.
 
 ## Gateway route
@@ -29,7 +29,7 @@ the snapshot was made.
 The route loads the optional product through
 `harness.enterprise_envs.compat.load_service_desk_product()` and calls
 `product.review_artifacts(snapshot_dir)`. The returned report must include the
-complete `service-desk-incident-env-review/v1` shape: verification, claimed
+complete `service-desk-incident-env-review/v2` shape: verification, claimed
 outcome, recomputed outcome, source-integrity, synthetic-task, record-consistency,
 external-trust layers, and limits. Missing or older product support returns
 `PRODUCT_UNAVAILABLE` or `PRODUCT_UPGRADE_REQUIRED` and points to the

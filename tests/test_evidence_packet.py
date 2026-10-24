@@ -173,7 +173,7 @@ def test_packet_binds_journey_receipt_raw_evidence_and_checker(tmp_path):
     assert (anchored["verdict"], anchored["authenticity_verdict"], anchored["rehash_resistance_verdict"]) == ("MATCH", "UNVERIFIABLE", "MATCH")
     assert criterion["journey"] and criterion["event_head_sha256"]
     assert criterion["raw_artifacts"] and criterion["receipts"] and criterion["checker_manifest"]
-    assert criterion["criteria"][0]["denominator"]["attempts"] == 1 and criterion["does_not_prove"]
+    assert criterion["criteria"][0]["denominator"]["attempts"] == 1 and criterion["scope"]
     checker = _load(packet / criterion["checker_manifest"][0]["packet_path"])
     assert [item["module"] for item in checker["sources"]] == ["harness.measurement_oracle"]
     assert criterion["checker_manifest"][0]["runtime_descriptor_sha256"] is None
@@ -220,9 +220,9 @@ def test_rehashed_packet_fact_tamper_fails_closed(tmp_path, fact):
         _store(packet / "tree_head.json", tree); _seal(packet, "tree_head.json")
     elif fact == "manifest_schema":
         manifest = _load(packet / "manifest.json"); manifest["schema"] = "tampered"; _store(packet / "manifest.json", manifest)
-    elif fact == "criterion_dnp": criterion["does_not_prove"] = criterion["does_not_prove"][1:]
+    elif fact == "criterion_dnp": criterion["scope"] = criterion["scope"][1:]
     elif fact == "manifest_dnp":
-        manifest = _load(packet / "manifest.json"); manifest["does_not_prove"].append("invented"); _store(packet / "manifest.json", manifest)
+        manifest = _load(packet / "manifest.json"); manifest["scope"].append("invented"); _store(packet / "manifest.json", manifest)
     else: criterion["pack_manifest"][fact.replace("pack_schema", "schema")] = 999 if fact != "pack_schema" else "tampered"
     if fact not in {"tree_size", "tree_root", "manifest_schema", "manifest_dnp"}: _save_criterion(packet, criterion)
     assert verify_journey_packet(packet)["verdict"] == "DRIFT"

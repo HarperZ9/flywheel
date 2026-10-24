@@ -34,22 +34,25 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
 from harness.endpoint import ATTRIBUTIONS, FOUR_WAY                # noqa: E402
+from harness.scope import scope_list                               # noqa: E402
 
-ENDPOINT_SCHEMA = "flywheel.endpoint/v1"
-ARMS_SCHEMA = "flywheel.pool-arm/v1"
+# v1 records carry the older field names; v2 records carry `scope` and
+# `family_scope`. Each renders through scope_list and _family_scope.
+ENDPOINT_SCHEMA = ("flywheel.endpoint/v1", "flywheel.endpoint/v2")
+ARMS_SCHEMA = ("flywheel.pool-arm/v1", "flywheel.pool-arm/v2")
 
 
 class RenderError(ValueError):
     """A record that cannot be rendered without inventing part of it."""
 
 
-def _load(path: Path, expect: str) -> dict:
+def _load(path: Path, expect: tuple) -> dict:
     if not path.is_file():
         raise RenderError(
             f"no {path.name}: the driver has not produced it, and this "
             "renderer does not compute anything in its place")
     doc = json.loads(path.read_text(encoding="utf-8"))
-    if doc.get("schema") != expect:
+    if doc.get("schema") not in expect:
         raise RenderError(
             f"{path.name} carries schema {doc.get('schema')!r}, not {expect!r}; "
             "refusing to render a shape this code does not know")
@@ -80,8 +83,8 @@ def _primary(fam: str, block: dict) -> list:
            f"- bodies under multiple instances (reported, not failures): "
            f"{len(p['bodies_under_multiple_instances'])}",
            f"- endpoint met: {p['met']}", "",
-           "Limits:"]
-    out += _bullets(p["does_not_prove"])
+           "Scope:"]
+    out += _bullets(scope_list(p))
     return out
 
 
@@ -102,8 +105,15 @@ def _secondary(fam: str, block: dict) -> list:
     out += ["", "Tasks with no candidate in any slot, excluded and named:"]
     out += (_bullets(f"{r}: {', '.join(ts)}" for r, ts in excluded.items())
             or ["- none"])
-    out += ["", "Limits:"] + _bullets(sec["does_not_prove"])
+    out += ["", "Scope:"] + _bullets(scope_list(sec))
     return out
+
+
+def _family_scope(block: dict) -> list:
+    """The family's scope entries, under the v2 name or the v1 one."""
+    if "family_scope" in block:
+        return list(block["family_scope"])
+    return list(block.get("family_not_proven", []))
 
 
 def _one_arm(name: str, a: dict) -> str:
@@ -129,7 +139,7 @@ def _arms(fam: str, block: dict, confounds: list) -> list:
     out = [f"## {fam}: arms, offline from the cached pool", "",
            f"- primary checker: `{block['primary_checker']}`",
            f"- held-out checker: `{block['held_out_checker']}`", ""]
-    out += _bullets(block.get("family_not_proven", []))
+    out += _bullets(_family_scope(block))
     head = ["arm", "passes", "graded", "pass rate", "wilson 95",
             "oracle calls", "selector", "scored by"]
     for rung, row in block["per_rung"].items():
@@ -149,7 +159,7 @@ def _arms(fam: str, block: dict, confounds: list) -> list:
                             for k, v in curve.items()), ""]
         for name, comp in row["comparisons"].items():
             out += _comparison(name, comp) + [""]
-        out += ["Limits:"] + _bullets(row["does_not_prove"])
+        out += ["Scope:"] + _bullets(scope_list(row))
         out += ["", "Confounds, inline with this table by design:"]
         out += _bullets(confounds)
     return out

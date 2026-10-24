@@ -4,7 +4,7 @@ The claims, each with a test that fails if it is false:
   - a registered domain resolves to its oracle and drives the loop to a verdict;
   - an UNregistered domain returns UNVERIFIABLE, not a fabricated PASS/FAIL, and
     spends no proposal;
-  - the honest-null carries a reason and a does_not_prove, never a bare verdict;
+  - the honest-null carries a reason and a scope, never a bare verdict;
   - aliases resolve to the canonical domain;
   - registering a new domain oracle extends coverage without touching the loop.
 """
@@ -49,7 +49,7 @@ def test_aliases_resolve_to_canonical_domain():
 def test_register_extends_coverage():
     reg = default_registry()
     assert "biology" not in reg
-    reg.register("biology", StubOracle(True), does_not_prove=("in vitro only",))
+    reg.register("biology", StubOracle(True), scope=("in vitro only",))
     assert "biology" in reg
     assert reg.resolve("biology") is not None
     assert "biology" in reg.domains()
@@ -101,7 +101,7 @@ def test_unverifiable_states_reason_and_available_domains(task, tmp_path):
                      registry=reg, envelopes_dir=tmp_path / "env")
     assert "ORACLE_UNAVAILABLE" in v.reason
     assert "code" in v.reason            # tells the caller what IS available
-    assert v.does_not_prove              # carries an honest does-not-prove
+    assert v.scope                       # says what stands checked
     assert v.loop is None                # no proposal was spent
 
 
@@ -109,7 +109,7 @@ def test_unverifiable_result_object_is_not_dispositive(task):
     r = unverifiable_result("chemistry", task)
     assert r.verdict() == "UNVERIFIABLE"
     assert r.unverifiable_reason == "ORACLE_UNAVAILABLE"
-    assert r.does_not_prove
+    assert r.scope
     with pytest.raises(Exception):
         _ = r.passed   # a non-dispositive verdict must refuse boolean coercion
 

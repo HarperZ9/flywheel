@@ -7,8 +7,12 @@ from .evidence_json import canonical_sha256
 from .gateway_agent_mcp_authority import AUTHORITY_KEYS, validate_limits
 from .gateway_operation import GatewayOperationError
 from .journey_types import SHA256_PATTERN
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 
-ADMISSION_SCHEMA = "flywheel.gateway-agent-mcp-admission/v1"
+ADMISSION_SCHEMA = "flywheel.gateway-agent-mcp-admission/v2"
+ADMISSION_SCHEMA_V1 = "flywheel.gateway-agent-mcp-admission/v1"
+# v1 plans carry the tool scope list under the older name; v2 under `scope`.
+_TOOL_SCOPE_KEY = {ADMISSION_SCHEMA: SCOPE_KEY, ADMISSION_SCHEMA_V1: LEGACY_SCOPE_KEY}
 _RAW_TOOL = re.compile(r"[^\s\x00-\x1f\x7f]{1,128}\Z")
 _RUNTIME_TOOL = re.compile(r"[a-z]\w{0,63}\Z")
 _CATALOG_REF = re.compile(r"[a-z][A-Za-z0-9_.-]{0,63}\Z")
@@ -19,15 +23,16 @@ _SERVER_PLAN_KEYS = frozenset((
     "discovery_receipt_sha256", "cache_scope_sha256", "tools_list_sha256",
     "config_sha256", "descriptor_sha256",
 ))
-_TOOL_PLAN_KEYS = frozenset((
+_TOOL_PLAN_BASE_KEYS = frozenset((
     "source_tool_name", "runtime_tool_name", "description", "input_schema",
     "declared_authority", "authority_source", "enforced_limits",
-    "does_not_prove", "input_schema_sha256", "descriptor_sha256",
+    "input_schema_sha256", "descriptor_sha256",
 ))
+_TOOL_PLAN_KEYS = _TOOL_PLAN_BASE_KEYS | {SCOPE_KEY}
 
 
 def _validate_plan(plan: object) -> None:
-    if (type(plan) is not dict or plan.get("schema") != ADMISSION_SCHEMA
+    if (type(plan) is not dict or plan.get("schema") not in _TOOL_SCOPE_KEY
             or set(plan) != {"schema", "request_sha256", "servers", "admission_sha256"}
             or SHA256_PATTERN.fullmatch(plan.get("request_sha256", "")) is None):
         raise GatewayOperationError("AGENT_BINDING_DRIFT")
@@ -37,8 +42,9 @@ def _validate_plan(plan: object) -> None:
         if type(plan["servers"]) is not list or not plan["servers"]:
             raise ValueError
         ids = []
+        scope_key = _TOOL_SCOPE_KEY[plan["schema"]]
         for server in plan["servers"]:
-            _validate_server_plan(server)
+            _validate_server_plan(server, scope_key)
             ids.append(server["server_id"])
         if len(ids) != len(set(ids)):
             raise ValueError
@@ -47,7 +53,7 @@ def _validate_plan(plan: object) -> None:
         raise GatewayOperationError("AGENT_BINDING_DRIFT") from None
 
 
-def _validate_server_plan(server: object) -> None:
+def _validate_server_plan(server: object, scope_key: str = SCOPE_KEY) -> None:
     if type(server) is not dict or set(server) != _SERVER_PLAN_KEYS:
         raise ValueError
     if (not _SERVER_ID.fullmatch(server.get("server_id", ""))
@@ -65,11 +71,11 @@ def _validate_server_plan(server: object) -> None:
         if SHA256_PATTERN.fullmatch(server.get(key, "")) is None:
             raise ValueError
     for tool in server["tools"]:
-        _validate_tool_plan(tool)
+        _validate_tool_plan(tool, scope_key)
 
 
-def _validate_tool_plan(tool: object) -> None:
-    if type(tool) is not dict or set(tool) != _TOOL_PLAN_KEYS:
+def _validate_tool_plan(tool: object, scope_key: str = SCOPE_KEY) -> None:
+    if type(tool) is not dict or set(tool) != _TOOL_PLAN_BASE_KEYS | {scope_key}:
         raise ValueError
     if (not _RAW_TOOL.fullmatch(tool.get("source_tool_name", ""))
             or _RUNTIME_TOOL.fullmatch(tool.get("runtime_tool_name", "")) is None
@@ -82,9 +88,9 @@ def _validate_tool_plan(tool: object) -> None:
             or tool.get("authority_source") != "gateway_catalog_metadata:v1"):
         raise ValueError
     validate_limits(tool.get("enforced_limits"))
-    if (type(tool.get("does_not_prove")) is not list or not tool["does_not_prove"]
+    if (type(tool.get(scope_key)) is not list or not tool[scope_key]
             or any(type(item) is not str or not item.strip()
-                   or len(item) > 300 for item in tool["does_not_prove"])):
+                   or len(item) > 300 for item in tool[scope_key])):
         raise ValueError
     if (tool["input_schema_sha256"] != canonical_sha256(tool["input_schema"])
             or SHA256_PATTERN.fullmatch(tool.get("descriptor_sha256", "")) is None):

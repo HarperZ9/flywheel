@@ -27,7 +27,7 @@ def test_match_when_observed_equals_claimed_reference():
     assert result["verdict"] == MATCH
     assert result["claimed_match_rate"] == 1.0
     assert result["mismatched_probes"] == []
-    assert result["does_not_prove"] == smp.SMP_DOES_NOT_PROVE
+    assert result["scope"] == smp.SMP_SCOPE
 
 
 def test_match_holds_when_an_alternative_is_present_but_claim_fits():

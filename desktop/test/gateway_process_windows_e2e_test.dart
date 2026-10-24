@@ -127,13 +127,13 @@ void main() {
 void _writeReceipt(String path, List<Map<String, Object?>> rows,
     {required bool complete}) {
   File(path).writeAsStringSync(const JsonEncoder.withIndent('  ').convert({
-    'schema': 'flywheel.windows-startup-component/v1',
+    'schema': 'flywheel.windows-startup-component/v2',
     'complete': complete,
     'cases': rows,
-    'does_not_prove': [
-      'installer or full GUI launch',
-      'every arbitrary executable wrapper',
-      'OAuth or credential readiness',
+    'scope': [
+      'the owned gateway process cases listed here, started and cleaned up '
+          'on this Windows runner',
+      'installer, full GUI launch and OAuth readiness are separate receipts',
     ],
   }));
 }

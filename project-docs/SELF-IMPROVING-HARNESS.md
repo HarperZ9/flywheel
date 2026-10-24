@@ -89,10 +89,11 @@ contrast-chosen answer with no grader in the loop. What changes is the state
 every later task inherits.
 
 1. **Receipts.** Every gate decision, adopt or reject, is a sealed
-   `flywheel.harness-edit-receipt/v2`: parent, candidate and adopted digests,
+   `flywheel.harness-edit-receipt/v3`: parent, candidate and adopted digests,
    the unified diff, the adopted change units, the contrast record (finals,
    scores, stages), the held-out effect with interval, the leave-one-out
-   attribution, and a `does_not_prove` list. v1 receipts still verify. `verify_edit_receipt` re-derives the seal, the trees, the diff and the
+   attribution, and a `scope` list of what the decision covers. v1 and v2
+   receipts still verify. `verify_edit_receipt` re-derives the seal, the trees, the diff and the
    decision; numbers that do not support the decision read INCONSISTENT.
 2. **A held-out graded set the refiner never sees.** The gate runs incumbent
    and candidate on the same graded tasks. Adopt when the paired mean

@@ -60,7 +60,7 @@ from .lsp_client import LspClient, UnsupportedOperation
 from .lsp_connection import ConnectionClosed, PeerError
 from .lsp_pull import PULL, published_from_report
 from .lsp_report import render_ask, render_diagnostics, render_verify
-from .lsp_witness import LspWitness, does_not_prove, transcript_resolver
+from .lsp_witness import LspWitness, scope, transcript_resolver
 
 OK, FAILED, UNCHECKED = 0, 1, 3
 
@@ -261,7 +261,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser(__doc__.splitlines()[0])
     args = parser.parse_args(argv)
     if args.limits:
-        print("\n".join(f"  - {limit}" for limit in does_not_prove()))
+        print("\n".join(f"  - {line}" for line in scope()))
         return OK
     if not args.command:
         parser.print_help()

@@ -15,11 +15,15 @@ from harness.codex_managed_account_client import ManagedCodexAccountClient
 from harness.evidence_json import canonical_sha256
 from harness.private_artifact_fs import root_identity
 
-SCHEMA = "flywheel.codex-managed-no-generation-acceptance/v1"
+# v2 (2026-10-23): the receipt names what it covers in `scope`.
+SCHEMA = "flywheel.codex-managed-no-generation-acceptance/v2"
+SCHEMA_V1 = "flywheel.codex-managed-no-generation-acceptance/v1"
 AUTH_EXTENSION_SCHEMA = "flywheel.codex-managed-profile-auth-extension/v1"
-DOES_NOT_PROVE = ["Does not initiate login, password entry, browser consent, provider generation, or tool approval.",
-                  "Does not prove installed desktop packaging, Android, Relay, Plexus, or public release readiness.",
-                  "Uses an owner-supplied existing managed profile; it does not copy ambient credentials."]
+SCOPE = ["The run reads the managed Codex profile and account state with no login, password entry, "
+         "browser consent, provider generation or tool approval.",
+         "It covers the source checkout and managed profile named here, with no packaged desktop, Android, "
+         "Relay or Plexus surface.",
+         "It uses the owner-supplied existing managed profile and leaves ambient credentials in place."]
 
 
 @dataclass(frozen=True)
@@ -216,7 +220,7 @@ def base_receipt(repo_root: Path, cfg: AcceptanceConfig, owner: str, started: st
     return {"schema": SCHEMA, "complete": False, "started_utc": started,
             "source": {"repo_root": str(repo_root), "head": git_head(repo_root)},
             "owner_ref": owner, "model": cfg.model, "codex_version": cfg.codex_version,
-            "assertions": [], "does_not_prove": DOES_NOT_PROVE}
+            "assertions": [], "scope": SCOPE}
 
 
 def add_assertion(receipt: dict, assertion_id: str, state: str,

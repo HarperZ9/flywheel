@@ -11,13 +11,13 @@ from harness import internalization_gap as ig
 
 def _manifest(env_id="env-1"):
     return {
-        "schema": im.SCHEMA, "environment_id": env_id, "kind": "rl",
+        "schema": im.SCHEMA_V2, "environment_id": env_id, "kind": "rl",
         "reward": {"declared_form": "unit-test pass rate", "source_ref": "reward.py"},
         "data_distribution": {"summary": "coding tasks", "source_ref": "data/"},
         "reinforced_behaviors": ["passing tests"], "penalized_behaviors": [],
         "scarcity_variables": [],
         "witness": {"algorithm": "sha256", "entries": [{"path": "reward.py", "sha256": "0" * 64}]},
-        "does_not_prove": im.DOES_NOT_PROVE,
+        "scope": im.SCOPE,
     }
 
 
@@ -32,7 +32,7 @@ def test_no_gap_when_behavior_holds_unobserved():
     assert result["verdict"] == ig.NO_GAP
     assert result["gap"] == 0.0
     assert result["flagged"] == []
-    assert result["does_not_prove"] == ig.IGAP_DOES_NOT_PROVE
+    assert result["scope"] == ig.IGAP_SCOPE
     assert result["environment_id"] == "env-1"
 
 

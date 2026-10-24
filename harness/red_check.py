@@ -34,16 +34,17 @@ from .red_classify import (defined_names, is_test_path, module_names, outcome_fo
                            parse_junit)
 from .red_select import changed_tests
 
-SCHEMA = "flywheel.red-check/v1"
-DOES_NOT_PROVE = (
-    "A red-assert result shows the test failed on the old code on an assertion, not "
-    "that it fails for the reason the author claims.",
-    "red-missing-symbol is never credited: it shows the API is new, not that the test "
-    "checks behaviour. Mutation (survivors) is the evidence for features.",
-    "Only new and changed test functions run. A weakened older test that still "
-    "passes is the static test-diff check's job.",
-    "Two base runs separate stable from flaky results only as far as two samples can.",
-    "Python and pytest only. Other languages are not run and are not reported clean.",
+SCHEMA_V1 = "flywheel.red-check/v1"
+SCHEMA = "flywheel.red-check/v2"  # v2 names `scope`
+SCOPE = (
+    "A red-assert result shows the test failed on an assertion against the old "
+    "code; the author's stated reason for that failure is the author's claim.",
+    "red-missing-symbol is never credited: it shows the API is new. Mutation "
+    "survivors are the evidence that a test checks a feature's behaviour.",
+    "Only new and changed test functions run. The static test-diff check covers "
+    "an older test weakened in the same change.",
+    "Two base runs separate stable from flaky results as far as two samples can.",
+    "Python and pytest only. Other languages are left unrun and unreported.",
 )
 
 
@@ -231,7 +232,7 @@ def red_check(repo, base, head, tests=None, *, overlay=None, runs: int = 2,
     nodes = _select(repo, base, head, changed, tests)
     receipt = {"schema": SCHEMA, "mode": "report-only", "repo": repo.name, "base": base,
                "head": head, "tests": [], "counts": {}, "credited": 0,
-               "does_not_prove": list(DOES_NOT_PROVE)}
+               "scope": list(SCOPE)}
     receipt["subject_sha256"] = _sha([base, head, sorted(nodes), overlay or {}])
     if not nodes:
         receipt.update(status="no-tests", claim_sha256=_sha([]),

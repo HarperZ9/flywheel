@@ -88,11 +88,11 @@ void main() {
     expect(find.text('TAMPERED'), findsNothing);
   });
 
-  testWidgets('always shows what the chain does not prove', (tester) async {
+  testWidgets('always shows what the chain check covers', (tester) async {
     await tester.pumpWidget(_wrap(const ActionWitnessPanel()));
     await _paste(tester, '$_first\n$_second');
-    expect(find.text('does not prove'), findsOneWidget);
-    expect(find.textContaining('nothing is signed here'), findsOneWidget);
+    expect(find.text('scope'), findsOneWidget);
+    expect(find.textContaining('the chain is unsigned'), findsOneWidget);
   });
 
   testWidgets('an omitted chain is not called unreadable', (tester) async {

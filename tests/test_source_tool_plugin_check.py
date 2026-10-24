@@ -53,4 +53,5 @@ def test_source_checker_exercises_real_receipt_proof_and_denials(tmp_path):
     assert receipt['receipt_fixture_verified'] is True
     assert receipt['public_resources'] == 2 and receipt['selected_roots_unchanged'] is True
     assert receipt['source_archive_sha256'] == hashlib.sha256(archive.read_bytes()).hexdigest()
-    assert 'marketplace approval' in receipt['does_not_prove']
+    assert receipt['schema'] == 'flywheel.source-tool-plugin-acceptance/v2'
+    assert any('synthetic receipt' in item for item in receipt['scope'])

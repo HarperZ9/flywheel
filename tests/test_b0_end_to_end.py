@@ -51,7 +51,7 @@ def test_good_backend_verifies_at_one(tmp_path):
     assert bench["denominator"] == {"tasks": 3, "endpoints": 1,
                                     "replicates": 1, "attempts": 3}
     assert bench["bench_sha256"]
-    assert "does_not_prove" in bench
+    assert "scope" in bench
     frontier = verified_frontier(bench, None)
     rate = {row["endpoint"]: row["verified_pass_rate"] for row in frontier["rankings"]}
     assert rate["flywheel-stub-good"] == 1.0

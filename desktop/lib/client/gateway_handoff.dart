@@ -12,7 +12,8 @@ import 'package:http/http.dart' as http;
 import 'gateway_auth.dart';
 import 'gateway_error.dart';
 
-const rowanHandoffSchema = 'flywheel.rowan-handoff/v1';
+const rowanHandoffSchema = 'flywheel.rowan-handoff/v2';
+const rowanHandoffSchemaV1 = 'flywheel.rowan-handoff/v1';
 const _maxBriefBytes = 1024 * 1024;
 final _operationRef = RegExp(r'^op_[0-9a-f]{32}$');
 final _sha = RegExp(r'^[0-9a-f]{64}$');
@@ -26,7 +27,8 @@ final class RowanHandoff {
 
   factory RowanHandoff.fromJson(Object? raw, {required String operationRef}) {
     if (raw is! Map<String, dynamic> ||
-        raw['schema'] != rowanHandoffSchema ||
+        (raw['schema'] != rowanHandoffSchema &&
+            raw['schema'] != rowanHandoffSchemaV1) ||
         raw['operation_ref'] != operationRef ||
         raw['markdown'] is! String ||
         raw['record_count'] is! int ||

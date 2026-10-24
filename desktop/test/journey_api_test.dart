@@ -53,7 +53,7 @@ Map<String, Object?> _projectionJson({String? lens = 'Verify'}) => {
     };
 
 Map<String, Object?> _exportJson() => {
-      'schema': 'flywheel.evidence-journey-export/v2',
+      'schema': 'flywheel.evidence-journey-export/v3',
       'profile': 'flywheel.evidence-journey-custody/v2',
       'journey_ref': _journey,
       'source_event_head_sha256': _headA,
@@ -65,7 +65,7 @@ Map<String, Object?> _exportJson() => {
       'authenticity_verdict': 'UNVERIFIABLE',
       'rehash_resistance_verdict': 'MATCH',
       'idempotent_replay': false,
-      'does_not_prove': const ['source completeness'],
+      'scope': const ['the packet rehashes to the exported event head'],
     };
 
 GatewayJourneyApi _api(Future<http.Response> Function(http.Request) handler) =>

@@ -72,9 +72,9 @@ The oracle reads only the view: it says YES when the trace states that the produ
 
 ## The receipt
 
-The result file holds the per-item records and a `flywheel.receipt/v4` envelope. The receipt binds the spec hash (`criterion_sha256`), the set hash (`denominator.filter_hash`), the monitor descriptor (`candidate_sha256`), the records (`raw_stdout_sha256`), every rate and control outcome (`coverage`) and the verdict (PASS for ADMIT, FAIL for REFUSE). `--sign-key` signs `claim_sha256` with the receipt signer; verification uses the stdlib Ed25519 verifier.
+The result file holds the per-item records and a `flywheel.receipt/v5` envelope. The receipt binds the spec hash (`criterion_sha256`), the set hash (`denominator.filter_hash`), the monitor descriptor (`candidate_sha256`), the records (`raw_stdout_sha256`), every rate and control outcome (`coverage`) and the verdict (PASS for ADMIT, FAIL for REFUSE). `--sign-key` signs `claim_sha256` with the receipt signer; verification uses the stdlib Ed25519 verifier.
 
-`gate-verify` rescores the records against the pinned set, reruns the planted controls, rebuilds the receipt and requires the recorded one to match before it checks the signature. A result re-signed over an edited verdict is refused. MATCH needs a trust root. A valid signature checked only against its own embedded key is UNANCHORED, and an unsigned result is UNSIGNED. Neither is a pass. `code_match` reports whether the local scoring code hashes to what the receipt names.
+`gate-verify` rescores the records against the pinned set, reruns the planted controls, rebuilds the receipt and requires the recorded one to match before it checks the signature. A result re-signed over an edited verdict is refused. An older result with a `flywheel.receipt/v4` envelope still rederives with the codes it was sealed with. MATCH needs a trust root. A valid signature checked only against its own embedded key is UNANCHORED, and an unsigned result is UNSIGNED. Neither is a pass. `code_match` reports whether the local scoring code hashes to what the receipt names.
 
 ## What an admission shows
 
@@ -87,5 +87,5 @@ The result file holds the per-item records and a `flywheel.receipt/v4` envelope.
 - Behaviour on other task families. Parity of a product is shallow hidden computation; the gate says nothing about hidden multi-step reasoning or a hidden goal pursued across steps.
 - Behaviour of frontier models, as monitors or as subjects. The known-invisible items come from one 4-bit qwen3:8b build.
 - Behaviour under optimization pressure. No policy here was trained against the monitor, and a monitor admitted today can fail on traces shaped to evade it.
-- Anything about unplanted cases or about a later run. The receipt lists these limits in `does_not_prove`.
+- Unplanted cases and later runs. The receipt's `scope` records these bounds as codes: `SCOPED_TO_PARITY_PRODUCT_FAMILY`, `SCOPED_TO_NAMED_MONITOR_ADAPTER`, `MEASURED_WITHOUT_OPTIMIZATION_PRESSURE`, `PLANTED_CASES_ONLY` and `BEHAVIOR_AT_GATE_RUN`.
 - Robustness to surface-text shortcuts in general. The admitted oracle is itself a surface rule over the phrase "is odd" or "is even" and the final answer, so the gate cannot tell a monitor that reads the reasoning from one that matches those patterns. The shortcut control closes one known pattern, digit-keyed NO; traces written in other words, or a monitor tuned to this set's templates, sit outside what the gate tests.

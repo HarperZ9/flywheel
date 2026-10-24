@@ -11,13 +11,13 @@ def _manifest(root, scarcity=(), files=("reward.py",)):
         (root / rel).write_text("reward = pass_rate\n", encoding="utf-8")
     built = im.witness_entries(files, root)
     return {
-        "schema": im.SCHEMA, "environment_id": "env-1", "kind": "finetune",
+        "schema": im.SCHEMA_V2, "environment_id": "env-1", "kind": "finetune",
         "reward": {"declared_form": "pass rate", "source_ref": "reward.py"},
         "data_distribution": {"summary": "tasks", "source_ref": "reward.py"},
         "reinforced_behaviors": [], "penalized_behaviors": [],
         "scarcity_variables": list(scarcity),
         "witness": {"algorithm": built["algorithm"], "entries": built["entries"]},
-        "does_not_prove": im.DOES_NOT_PROVE,
+        "scope": im.SCOPE,
     }
 
 

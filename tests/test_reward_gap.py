@@ -7,17 +7,18 @@ from harness import cli_entry
 from harness import governance_cli
 from harness import incentive_manifest as im
 from harness import reward_gap as rg
+from harness.scope import LEGACY_SCOPE_KEY
 
 
 def _manifest(env_id="env-1"):
     return {
-        "schema": im.SCHEMA, "environment_id": env_id, "kind": "rl",
+        "schema": im.SCHEMA_V2, "environment_id": env_id, "kind": "rl",
         "reward": {"declared_form": "unit-test pass rate", "source_ref": "reward.py"},
         "data_distribution": {"summary": "coding tasks", "source_ref": "data/"},
         "reinforced_behaviors": ["passing tests"], "penalized_behaviors": [],
         "scarcity_variables": [],
         "witness": {"algorithm": "sha256", "entries": [{"path": "reward.py", "sha256": "0" * 64}]},
-        "does_not_prove": im.DOES_NOT_PROVE,
+        "scope": im.SCOPE,
     }
 
 
@@ -30,8 +31,15 @@ def test_no_gap_when_high_reward_satisfies_intent():
     result = rg.analyze(_manifest(), log)
     assert result["verdict"] == rg.NO_GAP
     assert result["flagged"] == []
-    assert result["does_not_prove"] == rg.ERG_DOES_NOT_PROVE
+    assert result["scope"] == rg.ERG_SCOPE
     assert result["environment_id"] == "env-1"
+
+
+def test_a_v1_manifest_under_the_older_key_still_analyzes():
+    manifest = {k: v for k, v in _manifest().items() if k != "scope"}
+    manifest.update({"schema": im.SCHEMA_V1, LEGACY_SCOPE_KEY: im.SCOPE})
+    log = _log(("t1", 0.1, True), ("t2", 0.9, False))
+    assert rg.analyze(manifest, log)["verdict"] == rg.GAP
 
 
 def test_gap_when_high_reward_fails_intent():

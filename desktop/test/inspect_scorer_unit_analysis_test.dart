@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flywheel_desktop/models/inspect_evidence_models.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/inspect_evidence_result_view.dart';
 
@@ -55,10 +56,30 @@ void main() {
       'semantic_verification': 'UNVERIFIABLE',
       'reason_codes': 'no_unit_contract',
       'contracts': const [],
-      'does_not_prove': const [],
+      kLegacyScopeKey: const [],
     };
     final parsedMalformed = InspectImportResult.fromJson(malformed);
     expect(parsedMalformed.errorCode, 'INVALID_RESPONSE');
+  });
+
+  test('v1 and v2 unit analyses each parse under their own scope key', () {
+    final v2 = InspectImportResult.fromJson(_resultBody());
+    expect(v2.errorCode, isNull);
+    expect(v2.report?.measurementUnit?.scope.first,
+        contains('checked for consistency'));
+
+    final v1Body = _resultBody(unit: _unitVerificationV1());
+    (v1Body['report'] as Map<String, Object?>)['schema'] =
+        'flywheel.inspect-evidence/v1';
+    final v1 = InspectImportResult.fromJson(v1Body);
+    expect(v1.errorCode, isNull);
+    expect(v1.report?.measurementUnit?.scope.single,
+        contains('Mapping consistency'));
+
+    final mixed = _unitVerificationV1()
+      ..['schema'] = 'flywheel.inspect-scorer-unit-analysis/v2';
+    expect(InspectImportResult.fromJson(_resultBody(unit: mixed)).errorCode,
+        'INVALID_RESPONSE');
   });
 
   test('unit parser accepts backend mapping with source metadata', () {
@@ -152,7 +173,7 @@ Map<String, Object?> _resultBody({Map<String, Object?>? unit}) => {
       },
       'data_ref': 'data_inspect.source:${_sourceSha.substring(0, 32)}',
       'report': {
-        'schema': 'flywheel.inspect-evidence/v1',
+        'schema': 'flywheel.inspect-evidence/v2',
         'source': {'sha256': _sourceSha, 'byte_length': 11},
         'producer': {'format': 'inspect-json', 'version': 2},
         'reported_status': 'success',
@@ -178,7 +199,7 @@ Map<String, Object?> _resultBody({Map<String, Object?>? unit}) => {
     };
 
 Map<String, Object?> _unitVerification({int mappedDefinitions = 1}) => {
-      'schema': 'flywheel.inspect-scorer-unit-analysis/v1',
+      'schema': 'flywheel.inspect-scorer-unit-analysis/v2',
       'semantic_verification': 'UNVERIFIABLE',
       'source_pointers': [
         {
@@ -240,11 +261,23 @@ Map<String, Object?> _unitVerification({int mappedDefinitions = 1}) => {
           ],
         }
       ],
-      'does_not_prove': [
-        'Mapping consistency does not prove scorer correctness.',
-        'A many-to-one row score does not establish per-definition score coverage.',
+      'scope': [
+        'The mapping between scorer units and test definitions is checked for '
+            'consistency; scorer correctness is a separate question.',
+        'A many-to-one row score covers the row; per-definition score coverage '
+            'needs one score per definition.',
       ],
     };
+
+/// The same unit analysis as a v1 record: the older schema id and scope key.
+Map<String, Object?> _unitVerificationV1() => {
+      ..._unitVerification(),
+      'schema': 'flywheel.inspect-scorer-unit-analysis/v1',
+    }
+      ..remove(kScopeKey)
+      ..[kLegacyScopeKey] = [
+        'Mapping consistency does not prove scorer correctness.',
+      ];
 
 List<Map<String, Object?>> _spanRefs(int count) => [
       for (var index = 0; index < count; index++)

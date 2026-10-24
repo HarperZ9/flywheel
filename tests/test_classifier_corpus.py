@@ -50,7 +50,7 @@ def test_generate_corpus_is_reproducible_and_contract_valid():
 
     assert first == second
     assert first["manifest"]["diagnostic_only"] is True
-    assert "not production training data" in " ".join(first["manifest"]["does_not_prove"])
+    assert "diagnostic-only synthetic corpus" in " ".join(first["manifest"]["scope"])
     manifest = build_split_manifest(first["examples"], first["splits"])
     assert first["manifest"]["dataset_manifest"]["manifest_sha256"] == manifest["manifest_sha256"]
     for row in first["examples"]:

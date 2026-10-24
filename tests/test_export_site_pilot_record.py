@@ -10,6 +10,7 @@ import json
 
 import pytest
 
+from harness.scope import LEGACY_SCOPE_KEY
 from scripts.export_site_pilot_record import (build, parity_artifacts, receipt_records,
                                               render, role_entry)
 
@@ -38,7 +39,7 @@ def report(roles=None, **over):
            "counts": {"attempts": 14, "launched": 14, "scored": 8, "roles": 2,
                       "graded_checkers": 1},
            "roles": roles if roles is not None else [role("flywheel_harness"), role("codex_harness")],
-           "checkers": [], "does_not_prove": ["Latency is wall clock on one machine."]}
+           "checkers": [], "scope": ["Latency is wall clock on one machine."]}
     doc.update(over)
     return doc
 
@@ -150,6 +151,11 @@ def test_an_artifact_that_is_not_on_disk_is_absent_rather_than_hashed_as_empty(t
 
 def test_the_limitations_come_from_the_run_and_are_not_written_here():
     """A hand-written limitation list stops matching the run it describes."""
-    record = build(report(does_not_prove=["Only one repetition per task."]),
+    record = build(report(scope=["Only one repetition per task."]),
                    scorecard([row("a")]), "missing")
     assert record["limitations"] == ["Only one repetition per task."]
+    old = report()
+    old[LEGACY_SCOPE_KEY] = old.pop("scope")
+    old["schema"] = "flywheel.graded_metric_report/v1"
+    assert build(old, scorecard([row("a")]), "missing")["limitations"] == [
+        "Latency is wall clock on one machine."]

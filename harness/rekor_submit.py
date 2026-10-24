@@ -154,7 +154,7 @@ def build_record(artifact_path: str, artifact: bytes, public_key: bytes,
         "search_url": f"https://search.sigstore.dev/?logIndex={index}",
         "entry": {k: entry[k] for k in ("body", "integratedTime", "logID",
                                         "logIndex", "verification") if k in entry},
-        "does_not_prove": rekor_verify.does_not_prove(),
+        "scope": rekor_verify.scope(),
     }
 
 

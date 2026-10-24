@@ -1,7 +1,7 @@
 """Incident proposal: a deterministic, read-only compilation of an
 admitted case against an admitted projection. The proposal cannot
 self-accept, cannot execute, and carries its review requirements and
-does_not_prove on its face."""
+scope on its face."""
 import json
 import os
 from pathlib import Path
@@ -110,7 +110,7 @@ def _subprocess_proposal(seed: int) -> dict:
 
 def test_proposal_schema_and_state():
     p = _proposal()
-    assert p["schema"] == "flywheel.incident-proposed-graph/v1"
+    assert p["schema"] == "flywheel.incident-proposed-graph/v2"
     assert p["state"] == "proposed"
 
 
@@ -183,10 +183,10 @@ def test_no_accepted_or_executing_fields_ever():
     _no_acceptance_fields(p)
 
 
-def test_review_requirements_and_does_not_prove_are_explicit():
+def test_review_requirements_and_scope_are_explicit():
     p = _proposal()
     assert isinstance(p["review_requirements"], list) and p["review_requirements"]
-    assert p["does_not_prove"]
+    assert "human review" in p["scope"]
     assert p["limitations"]
 
 

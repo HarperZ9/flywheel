@@ -125,7 +125,7 @@ void main() {
           : Platform.environment['BULLETIN_REPLY_RECEIPT'] ?? '';
       if (out.isNotEmpty) {
         File(out).writeAsStringSync(jsonEncode({
-          'schema': 'flywheel.bulletin-native-reply-e2e/v1',
+          'schema': 'flywheel.bulletin-native-reply-e2e/v2',
           'complete': true,
           'fixture_mode': config['mode'],
           'parent_id': rootId,
@@ -133,10 +133,9 @@ void main() {
           'author': observed['author'],
           'observed_post_count': rows.length,
           'negative_statuses': negatives,
-          'does_not_prove': [
-            'live model behavior',
-            'whole-host observation',
-            'agent alignment'
+          'scope': [
+            'one native reply posted through the frozen gateway and read back',
+            'the negative statuses listed here, observed on this run'
           ],
         }));
       }

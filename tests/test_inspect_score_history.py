@@ -89,7 +89,7 @@ def test_score_edit_history_reports_safe_provenance_without_payload_spill():
     assert "/answer" not in dumped
     assert "/explanation" not in dumped
     assert "/metadata" not in dumped
-    assert any("score edit history" in item for item in imported["does_not_prove"])
+    assert any("score edit history" in item for item in imported["scope"])
 
 
 def test_empty_and_missing_score_history_are_distinct():

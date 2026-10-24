@@ -92,10 +92,10 @@ def test_summary_reports_the_state():
     assert s["failing_ids"] == ["no_slop"] and s["all_pass"] is False
 
 
-def test_does_not_prove_is_carried():
-    codes = " ".join(AC.does_not_prove())
-    assert "NOT_PROVES_TASK_DONE" in codes
-    assert "NOT_PROVES_ORACLE_QUALITY" in codes
+def test_scope_is_carried():
+    codes = " ".join(AC.scope())
+    assert "NAMED_ORACLES_SATISFIED" in codes
+    assert "AS_STRONG_AS_ITS_ORACLES" in codes
 
 
 def test_no_public_function_flips_a_criterion_without_an_oracle():

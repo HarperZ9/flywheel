@@ -164,7 +164,7 @@ Map<String, Object?> _reviewBody(
           },
         },
       ],
-      'does_not_prove': ['semantic correctness of the task or trace'],
+      'scope': ['task and trace content is taken as submitted'],
     };
 
 Map<String, Object?> _verification(String expectedVerdict) => {

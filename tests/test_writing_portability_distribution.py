@@ -144,7 +144,7 @@ def test_installed_lint_mcp_command_runs_from_isolated_cwd(tmp_path: Path) -> No
     payload = json.loads(responses[2]["result"]["content"][0]["text"])
     assert "banned_word" in payload["hard"]
     assert payload["violations"]["banned_word"] >= 1
-    assert "does_not_prove" in payload
+    assert payload["scope"]
 
 
 def test_installed_workspace_mcp_command_requires_home_and_keeps_approval_out_of_band(tmp_path: Path) -> None:

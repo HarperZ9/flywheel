@@ -31,10 +31,12 @@ from .certificates.replay import MATCH, RunRecord, replay_verdict
 STATUS = "preview"
 DEFAULT_N_SEEDS = 8
 MARGIN_BASIS = "2 x sample sd of baseline per-seed results / sqrt(n seeds)"
-DOES_NOT_PROVE = (
-    "An accepted gain holds on the verifier's data and the gate's seeds; it says "
-    "nothing about other data, other seeds or other hardware.",
-    "The margin assumes roughly normal seed spread; with few seeds that is a weak assumption.",
+VERDICT_SCHEMA_V1 = "flywheel.rederive-verdict/v1"
+VERDICT_SCHEMA = "flywheel.rederive-verdict/v2"  # v2 names `scope`
+SCOPE = (
+    "An accepted gain holds on the verifier's data and the gate's seeds; other "
+    "data, seeds and hardware are untested here.",
+    "The margin assumes roughly normal seed spread, which few seeds support weakly.",
 )
 
 
@@ -87,12 +89,12 @@ def decide(gate: Gate, claim: dict, baseline: dict, treated: dict,
     reason = ("replay of the claimant's seed is not MATCH" if replay_v != MATCH else
               "mean gain clears the luck margin" if accept else
               "mean gain does not clear the luck margin")
-    return {"schema": "flywheel.rederive-verdict/v1", "status": STATUS,
+    return {"schema": VERDICT_SCHEMA, "status": STATUS,
             "verdict": "ACCEPT" if accept else "REJECT", "reason": reason,
             "claim": claim.get("id", ""), "seeds": list(gate.seeds),
             "mean_gain": round(mean_gain, 6), "margin": round(margin, 6),
             "margin_basis": MARGIN_BASIS if not per_seed_margin else "2 x sample sd",
-            "replay": replay_v, "does_not_prove": list(DOES_NOT_PROVE)}
+            "replay": replay_v, "scope": list(SCOPE)}
 
 
 def rerun_once(baseline: dict, one_new_value: float) -> bool:

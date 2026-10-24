@@ -6,29 +6,30 @@ from copy import deepcopy
 from typing import Any
 from .evidence_json import canonical_bytes
 from .evidence_public import TransportError, public_metadata
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 from .writing_authority_schema import (AUTHORITY_FIELDS, admit_text as _admit_text, authority_shape_error, authority_tuple_error, review_result_shape_error, text_admission_error)
 MAX_AUTHOR_TEXT_BYTES = 262_144
 MAX_BRIEF_JSON_BYTES = 65_536
 MAX_ARTIFACT_JSON_BYTES = 262_144
 MAX_SOURCE_PACKET_BYTES = 1_048_576
 MAX_MANUSCRIPT_TEXT_BYTES = 1_048_576
-WRITING_DOES_NOT_PROVE = ("this writing artifact does not prove prose quality, factual truth, "
-    "source completeness, or publication readiness")
+WRITING_SCOPE = ("this writing artifact records author text by digest and the deterministic "
+    "checks beside it; prose quality, factual truth, source completeness and publication readiness are unmeasured")
 OWNER_PATTERN = re.compile(r"owner_[0-9a-f]{32}\Z")
 PROJECT_PATTERN = re.compile(r"wpr_[0-9a-f]{32}\Z")
 SAFE_ID_PATTERN = re.compile(r"[A-Za-z][A-Za-z0-9_.-]{1,79}\Z")
 SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
 OPAQUE_PATTERNS = {k: re.compile(v) for k, v in {"section": r"sec_[a-z0-9][a-z0-9_-]{0,63}\Z", "revision": r"rev_[0-9a-f]{32}\Z", "diagnostic": r"diag_[0-9a-f]{32}\Z", "card": r"card_[0-9a-f]{32}\Z", "candidate": r"cand_[0-9a-f]{32}\Z", "decision": r"dec_[0-9a-f]{32}\Z", "review": r"wrev_[0-9a-f]{32}\Z", "export": r"wexp_[0-9a-f]{32}\Z"}.items()}
-SCHEMAS = {"brief": "flywheel.writing-project-brief/v1",
-    "source_packet": "flywheel.writing-source-packet/v1", "section":
-    "flywheel.writing-section/v1", "revision": "flywheel.writing-revision/v1",
-    "diagnostic": "flywheel.writing-reader-flow-diagnostic/v1", "card":
-    "flywheel.writing-scoped-revision/v1", "candidate":
-    "flywheel.writing-revision-candidate/v1", "decision":
-    "flywheel.writing-decision/v1", "review": "flywheel.writing-review/v1",
-    "export": "flywheel.writing-export/v1"}
-KIND_BY_SCHEMA = {value: key for key, value in SCHEMAS.items()}
+_SCHEMA_NAMES = {"brief": "project-brief", "source_packet": "source-packet", "section": "section", "revision": "revision", "diagnostic": "reader-flow-diagnostic",
+    "card": "scoped-revision", "candidate": "revision-candidate", "decision": "decision", "review": "review", "export": "export"}
+SCHEMAS_V1 = {kind: f"flywheel.writing-{name}/v1" for kind, name in _SCHEMA_NAMES.items()}
+# v2 names the coverage list `scope`; v1 names it with the older key. A section carries neither and stays v1.
+SCHEMAS = {kind: value if kind == "section" else value[:-1] + "2" for kind, value in SCHEMAS_V1.items()}
+KIND_BY_SCHEMA = {value: key for table in (SCHEMAS_V1, SCHEMAS) for key, value in table.items()}
+LEGACY_SCHEMAS = frozenset(SCHEMAS_V1.values()) - frozenset(SCHEMAS.values())
 class WritingTypeError(ValueError): pass
+def scope_field(value: dict) -> str:
+    return LEGACY_SCOPE_KEY if value.get("schema") in LEGACY_SCHEMAS else SCOPE_KEY
 def sha256_bytes(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 def canonical_digest(value: object) -> tuple[bytes, str]:
@@ -160,13 +161,13 @@ def _validate_refs(value: object, field: str) -> None:
     else:
         raise WritingTypeError(f"{field.upper()}_INVALID")
 def _validate_brief(value: dict) -> None:
-    _exact(value, {"schema", "project_ref", "mode", "form", "working_title", "audience", "reader_job", "author_intent", "voice_contract", "source_packet_ref", "writing_profile", "does_not_prove"})
+    _exact(value, {"schema", "project_ref", "mode", "form", "working_title", "audience", "reader_job", "author_intent", "voice_contract", "source_packet_ref", "writing_profile", scope_field(value)})
     if require_text(value.get("mode"), "mode") != "nonfiction": raise WritingTypeError("UNSUPPORTED_WRITING_MODE")
     if require_text(value.get("form"), "form") not in {"editorial", "blog", "essay"}: raise WritingTypeError("UNSUPPORTED_WRITING_FORM")
     for field in ("working_title", "audience", "reader_job", "author_intent", "source_packet_ref", "writing_profile"): require_text(value.get(field), field)
-    _validate_refs(value["voice_contract"], "voice_contract"); require_string_list(value.get("does_not_prove"), "does_not_prove")
+    _validate_refs(value["voice_contract"], "voice_contract"); require_string_list(value.get(scope_field(value)), "scope")
 def _validate_source_packet(value: dict) -> None:
-    _exact(value, {"schema", "project_ref", "source_packet_ref", "sources", "does_not_prove"})
+    _exact(value, {"schema", "project_ref", "source_packet_ref", "sources", scope_field(value)})
     require_text(value["source_packet_ref"], "source_packet_ref")
     sources = value.get("sources")
     if type(sources) is not list or not sources or len(sources) > 32: raise WritingTypeError("SOURCES_INVALID")
@@ -176,22 +177,22 @@ def _validate_source_packet(value: dict) -> None:
         if not required.issubset(source) or set(source) - required - optional: raise WritingTypeError("SOURCES_INVALID")
         for field in required | (set(source) & {"body_ref"}): require_text(source.get(field), field)
         if "body_sha256" in source: require_sha(source.get("body_sha256"), "body_sha256")
-    require_string_list(value.get("does_not_prove"), "does_not_prove")
+    require_string_list(value.get(scope_field(value)), "scope")
 def _validate_section(value: dict) -> None:
     _exact(value, {"schema", "project_ref", "section_ref", "heading", "purpose", "reader_entry_state", "promises", "order_index"})
     require_opaque(value.get("section_ref"), "section", "section_ref"); require_text(value.get("heading"), "heading")
     require_text(value.get("purpose"), "purpose"); require_text(value.get("reader_entry_state"), "reader_entry_state")
     require_string_list(value.get("promises"), "promises"); require_non_bool_int(value.get("order_index"), "order_index")
 def _validate_revision(value: dict) -> None:
-    _exact(value, {"schema", "project_ref", "section_ref", "revision_ref", "base_revision_ref", "body_ref", "body_sha256", "word_count", "author_supplied", "scope_refs", "text_admission", "does_not_prove"})
+    _exact(value, {"schema", "project_ref", "section_ref", "revision_ref", "base_revision_ref", "body_ref", "body_sha256", "word_count", "author_supplied", "scope_refs", "text_admission", scope_field(value)})
     require_opaque(value.get("section_ref"), "section", "section_ref"); require_opaque(value.get("revision_ref"), "revision", "revision_ref")
     if value.get("base_revision_ref") is not None: require_opaque(value.get("base_revision_ref"), "revision", "base_revision_ref")
     require_text(value.get("body_ref"), "body_ref"); require_sha(value.get("body_sha256"), "body_sha256")
     require_non_bool_int(value.get("word_count"), "word_count")
     if type(value.get("author_supplied")) is not bool: raise WritingTypeError("AUTHOR_SUPPLIED_INVALID")
-    require_string_list(value.get("scope_refs"), "scope_refs"); _validate_text_admission(value.get("text_admission"), value["body_sha256"]); require_string_list(value.get("does_not_prove"), "does_not_prove")
+    require_string_list(value.get("scope_refs"), "scope_refs"); _validate_text_admission(value.get("text_admission"), value["body_sha256"]); require_string_list(value.get(scope_field(value)), "scope")
 def _validate_diagnostic(value: dict) -> None:
-    _exact(value, {"schema", "project_ref", "diagnostic_ref", "revision_ref", "body_sha256", "reader_state_summary", "units", "problems", "revision_cards", "source_grounding", "does_not_prove"})
+    _exact(value, {"schema", "project_ref", "diagnostic_ref", "revision_ref", "body_sha256", "reader_state_summary", "units", "problems", "revision_cards", "source_grounding", scope_field(value)})
     require_opaque(value.get("diagnostic_ref"), "diagnostic", "diagnostic_ref"); require_opaque(value.get("revision_ref"), "revision", "revision_ref"); require_sha(value.get("body_sha256"), "body_sha256")
     summary = value.get("reader_state_summary")
     if type(summary) is not dict: raise WritingTypeError("READER_STATE_SUMMARY_INVALID")
@@ -200,20 +201,20 @@ def _validate_diagnostic(value: dict) -> None:
     if type(summary.get("new_information")) is not list or not all(type(item) is str for item in summary["new_information"]): raise WritingTypeError("READER_STATE_SUMMARY_INVALID")
     _authority(summary, "reader_state_summary"); _validate_units(value.get("units")); _validate_problem_list(value.get("problems"), "problems")
     for card in _dict_list(value.get("revision_cards"), "revision_cards"): _validate_card_fields(card, require_diag=False)
-    _validate_problem_list(value.get("source_grounding"), "source_grounding"); require_string_list(value.get("does_not_prove"), "does_not_prove")
+    _validate_problem_list(value.get("source_grounding"), "source_grounding"); require_string_list(value.get(scope_field(value)), "scope")
 def _validate_card(value: dict) -> None:
-    _exact(value, {"schema", "project_ref", "card_ref", "diagnostic_ref", "target", "problem", "goal", "must_preserve", "allowed_operations", "forbidden_operations", "source_refs", "voice_constraints", "does_not_prove"})
-    _validate_card_fields(value, require_diag=True); require_string_list(value.get("does_not_prove"), "does_not_prove")
+    _exact(value, {"schema", "project_ref", "card_ref", "diagnostic_ref", "target", "problem", "goal", "must_preserve", "allowed_operations", "forbidden_operations", "source_refs", "voice_constraints", scope_field(value)})
+    _validate_card_fields(value, require_diag=True); require_string_list(value.get(scope_field(value)), "scope")
 def _validate_candidate(value: dict) -> None:
-    _exact(value, {"schema", "project_ref", "candidate_ref", "card_ref", "base_revision_ref", "candidate_revision_ref", "candidate_body_ref", "candidate_body_sha256", "diff_summary", "out_of_scope_changes", "created_by", "scope_receipt", "text_admission", "does_not_prove"})
+    _exact(value, {"schema", "project_ref", "candidate_ref", "card_ref", "base_revision_ref", "candidate_revision_ref", "candidate_body_ref", "candidate_body_sha256", "diff_summary", "out_of_scope_changes", "created_by", "scope_receipt", "text_admission", scope_field(value)})
     require_opaque(value.get("candidate_ref"), "candidate", "candidate_ref"); require_opaque(value.get("card_ref"), "card", "card_ref"); require_opaque(value.get("base_revision_ref"), "revision", "base_revision_ref"); require_opaque(value.get("candidate_revision_ref"), "revision", "candidate_revision_ref")
     require_text(value.get("candidate_body_ref"), "candidate_body_ref"); require_sha(value.get("candidate_body_sha256"), "candidate_body_sha256"); require_text(value.get("diff_summary"), "diff_summary"); require_string_list(value.get("out_of_scope_changes"), "out_of_scope_changes"); require_text(value.get("created_by"), "created_by")
     _validate_text_admission(value.get("text_admission"), value["candidate_body_sha256"])
     receipt = value.get("scope_receipt")
     if type(receipt) is not dict or receipt.get("verdict") not in {"PASS", "HOLD"}: raise WritingTypeError("SCOPE_RECEIPT_INVALID")
-    require_string_list(value.get("does_not_prove"), "does_not_prove")
+    require_string_list(value.get(scope_field(value)), "scope")
 def _validate_decision(value: dict) -> None:
-    _exact(value, {"schema", "project_ref", "decision_ref", "decision", "section_ref", "candidate_ref", "candidate_artifact_ref", "candidate_artifact_sha256", "from_revision_ref", "to_revision_ref", "reason", "scope_verdict", "decided_at", "does_not_prove"})
+    _exact(value, {"schema", "project_ref", "decision_ref", "decision", "section_ref", "candidate_ref", "candidate_artifact_ref", "candidate_artifact_sha256", "from_revision_ref", "to_revision_ref", "reason", "scope_verdict", "decided_at", scope_field(value)})
     require_opaque(value.get("decision_ref"), "decision", "decision_ref")
     if value.get("decision") not in {"accept", "reject", "supersede", "rollback"}: raise WritingTypeError("DECISION_INVALID")
     require_opaque(value.get("section_ref"), "section", "section_ref"); require_text(value.get("reason"), "reason"); require_text(value.get("decided_at"), "decided_at")
@@ -221,9 +222,9 @@ def _validate_decision(value: dict) -> None:
     if value.get("candidate_ref") is not None: require_opaque(value.get("candidate_ref"), "candidate", "candidate_ref"); require_text(value.get("candidate_artifact_ref"), "candidate_artifact_ref"); require_sha(value.get("candidate_artifact_sha256"), "candidate_artifact_sha256")
     if value.get("from_revision_ref") is not None: require_opaque(value.get("from_revision_ref"), "revision", "from_revision_ref")
     if value.get("to_revision_ref") is not None: require_opaque(value.get("to_revision_ref"), "revision", "to_revision_ref")
-    require_string_list(value.get("does_not_prove"), "does_not_prove")
+    require_string_list(value.get(scope_field(value)), "scope")
 def _validate_review(value: dict) -> None:
-    _exact(value, {"schema", "project_ref", "review_ref", "revision_refs", "reader_flow_ref", "source_coverage", "style_lint", "scope_preservation", "quality_measurement", "blocking_items", "does_not_prove"})
+    _exact(value, {"schema", "project_ref", "review_ref", "revision_refs", "reader_flow_ref", "source_coverage", "style_lint", "scope_preservation", "quality_measurement", "blocking_items", scope_field(value)})
     require_opaque(value.get("review_ref"), "review", "review_ref")
     refs = require_string_list(value.get("revision_refs"), "revision_refs")
     for ref in refs: require_opaque(ref, "revision", "revision_refs")
@@ -233,15 +234,15 @@ def _validate_review(value: dict) -> None:
     _review_result(value.get("scope_preservation"), "scope_preservation", {"decision_refs"})
     _review_result(value.get("quality_measurement"), "quality_measurement", {"source_refs"})
     if value["quality_measurement"].get("status") != "unmeasured": raise WritingTypeError("QUALITY_MEASUREMENT_INVALID")
-    _validate_problem_list(value.get("blocking_items"), "blocking_items"); require_string_list(value.get("does_not_prove"), "does_not_prove")
+    _validate_problem_list(value.get("blocking_items"), "blocking_items"); require_string_list(value.get(scope_field(value)), "scope")
 def _validate_export(value: dict) -> None:
-    _exact(value, {"schema", "project_ref", "export_ref", "manuscript_ref", "manuscript_sha256", "included_sections", "decision_refs", "review_ref", "source_packet_ref", "journey_ref", "event_head_sha256", "does_not_prove"})
+    _exact(value, {"schema", "project_ref", "export_ref", "manuscript_ref", "manuscript_sha256", "included_sections", "decision_refs", "review_ref", "source_packet_ref", "journey_ref", "event_head_sha256", scope_field(value)})
     require_opaque(value.get("export_ref"), "export", "export_ref"); require_text(value.get("manuscript_ref"), "manuscript_ref"); require_sha(value.get("manuscript_sha256"), "manuscript_sha256")
     for section in _dict_list(value.get("included_sections"), "included_sections"):
         _exact(section, {"section_ref", "revision_ref", "body_sha256", "order_index"}); require_opaque(section["section_ref"], "section", "section_ref"); require_opaque(section["revision_ref"], "revision", "revision_ref"); require_sha(section["body_sha256"], "body_sha256"); require_non_bool_int(section["order_index"], "order_index")
     for ref in require_string_list(value.get("decision_refs"), "decision_refs"): require_opaque(ref, "decision", "decision_refs")
     require_opaque(value.get("review_ref"), "review", "review_ref") if value.get("review_ref") != "wrev_unmeasured" else None
-    require_text(value.get("source_packet_ref"), "source_packet_ref"); require_ref(value.get("journey_ref"), "journey_ref"); require_sha(value.get("event_head_sha256"), "event_head_sha256"); require_string_list(value.get("does_not_prove"), "does_not_prove")
+    require_text(value.get("source_packet_ref"), "source_packet_ref"); require_ref(value.get("journey_ref"), "journey_ref"); require_sha(value.get("event_head_sha256"), "event_head_sha256"); require_string_list(value.get(scope_field(value)), "scope")
 def _validate_card_fields(value: dict, *, require_diag: bool) -> None:
     require_opaque(value.get("card_ref"), "card", "card_ref")
     if require_diag: require_opaque(value.get("diagnostic_ref"), "diagnostic", "diagnostic_ref")

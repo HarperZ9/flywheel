@@ -42,14 +42,13 @@ def canonical_domain(domain: str) -> str:
 
 @dataclass
 class DomainOracle:
-    """An oracle bound to a domain, with the scope limits it does not exceed.
+    """An oracle bound to a domain, with the scope of what it checks.
 
-    `does_not_prove` travels with the oracle so a verdict from it can never read
-    as more than the oracle actually checked (the render.py discipline, at the
-    registry level)."""
+    `scope` travels with the oracle so a verdict from it reads as exactly what
+    the oracle checked (the render.py discipline, at the registry level)."""
     domain: str
     oracle: Oracle
-    does_not_prove: tuple[str, ...] = ()
+    scope: tuple[str, ...] = ()
 
 
 class OracleRegistry:
@@ -60,11 +59,11 @@ class OracleRegistry:
         self._by_domain: dict[str, DomainOracle] = {}
 
     def register(self, domain: str, oracle: Oracle, *,
-                 does_not_prove: tuple[str, ...] = ()) -> None:
+                 scope: tuple[str, ...] = ()) -> None:
         d = canonical_domain(domain)
         if not d:
             raise ValueError("a domain name is required")
-        self._by_domain[d] = DomainOracle(d, oracle, does_not_prove)
+        self._by_domain[d] = DomainOracle(d, oracle, scope)
 
     def resolve(self, domain: str) -> Oracle | None:
         entry = self._by_domain.get(canonical_domain(domain))
@@ -93,15 +92,13 @@ def default_registry() -> OracleRegistry:
     from .measurement_oracle import MeasurementOracle
     reg = OracleRegistry()
     reg.register("code", PytestOracle(),
-                 does_not_prove=("passing tests do not prove the absence of "
-                                 "untested behavior",))
+                 scope=("the candidate ran against the tests the task ships",))
     reg.register("math", LeanOracle(),
-                 does_not_prove=("Lean checks the proof term, not that the "
-                                 "statement is the intended theorem",))
+                 scope=("Lean checked the proof term against the stated "
+                        "theorem",))
     reg.register("ml", MeasurementOracle(),
-                 does_not_prove=("a measurement gate bounds a tested effect "
-                                 "against a control; it does not prove the "
-                                 "mechanism",))
+                 scope=("a measurement gate bounds a tested effect against a "
+                        "control",))
     return reg
 
 
@@ -114,8 +111,8 @@ def unverifiable_result(domain: str, task) -> OracleResult:
         cmd=getattr(task, "oracle_cmd", ""), output_hash="", stdout_excerpt="",
         rc=0, verdict_=Verdict.UNVERIFIABLE,
         unverifiable_reason=UnverifiableReason.ORACLE_UNAVAILABLE.value,
-        does_not_prove=[f"no oracle is registered for the {d!r} domain, so the "
-                        "claim was not checked"])
+        scope=[f"no oracle is registered for the {d!r} domain; the claim "
+               "stands unchecked"])
 
 
 @dataclass
@@ -128,12 +125,12 @@ class EngineVerdict:
     accepted: bool
     reason: str
     loop: "object | None" = None
-    does_not_prove: tuple[str, ...] = field(default_factory=tuple)
+    scope: tuple[str, ...] = field(default_factory=tuple)
 
     def to_trace(self) -> dict:
         return {"domain": self.domain, "verdict": self.verdict,
                 "accepted": self.accepted, "reason": self.reason,
-                "does_not_prove": list(self.does_not_prove)}
+                "scope": list(self.scope)}
 
 
 def run_verified(task, proposer, *, domain: str,
@@ -154,12 +151,11 @@ def run_verified(task, proposer, *, domain: str,
             f"({UnverifiableReason.ORACLE_UNAVAILABLE.value}); "
             f"registered domains: {avail}",
             loop=None,
-            does_not_prove=(f"the {canonical_domain(domain)!r} claim was not "
-                            "checked",))
+            scope=(f"the {canonical_domain(domain)!r} claim stands unchecked",))
     from .loop import run_loop
     lr = run_loop(task, proposer, entry.oracle, **loop_kwargs)
     return EngineVerdict(
         entry.domain, lr.envelope.verdict, lr.accepted,
         f"disposed by the {entry.oracle.oracle_type} oracle for the "
         f"{entry.domain!r} domain", loop=lr,
-        does_not_prove=entry.does_not_prove)
+        scope=entry.scope)

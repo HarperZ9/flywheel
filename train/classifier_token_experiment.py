@@ -67,17 +67,17 @@ def main(argv=None) -> int:
         modes[mode] = result_rows
         (out/f"{mode}-predictions.json").write_text(json.dumps(result_rows, indent=2,
             allow_nan=False), encoding="utf8")
-    report = {"schema": "flywheel.classifier-token-experiment/v1",
+    report = {"schema": "flywheel.classifier-token-experiment/v2",
         "model_directory": args.model, "weights_freshly_hashed": False,
         "quantization": "NF4 double quantization, bfloat16 compute",
         "seed": 1729, "batch_size": args.batch_size, "examples": len(rows),
         "data_sha256": canonical_sha256(rows), "model_load_ms": load_ms,
         "max_memory_allocated_bytes": torch.cuda.max_memory_allocated(),
         "timing": timing, "modes": {},
-        "does_not_prove": ["Synthetic labels are not independent human ground truth.",
-            "No shared-prefix KV cache is implemented in the first-token comparator.",
-            "JSON generation uses greedy unconstrained decoding; this is not a grammar-constrained baseline.",
-            "Shared desktop GPU batch timings are not isolated full-workflow latency or energy measurements."]}
+        "scope": ["Correctness is scored against synthetic labels, unreviewed by people.",
+            "The first-token comparator runs without a shared-prefix KV cache.",
+            "JSON generation uses greedy unconstrained decoding, without a grammar constraint.",
+            "Timings are batch timings on a shared desktop GPU, separate from full-workflow latency and energy."]}
     for mode, results in modes.items():
         report["modes"][mode] = {family: {
             "correct": sum(r["correct"] for r in results if r["task_family"] == family),

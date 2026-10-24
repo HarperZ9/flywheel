@@ -55,7 +55,8 @@ def test_reader_flow_skill_bundle_is_reproducible_and_allowlisted(
     ))
     assert manifest["version"] == "0.1.0"
     assert manifest["tag_plan"] == "skill-reader-flow-review-v0.1.0"
-    assert "Flywheel platform release" in manifest["does_not_prove"]
+    assert manifest["schema"] == "flywheel.skill-bundle/v2"
+    assert "Flywheel platform release" in manifest["scope"]
 
 
 def test_reader_flow_bundle_rejects_local_paths_in_included_files(

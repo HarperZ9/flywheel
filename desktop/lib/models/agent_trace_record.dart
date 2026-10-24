@@ -4,6 +4,12 @@ import 'package:crypto/crypto.dart';
 import 'agent_trace.dart';
 import 'agent_trace_json.dart';
 import 'canonical_json.dart';
+import 'scope_field.dart';
+
+const traceDetailSchema = 'flywheel.gateway-agent-trace-detail/v2';
+const traceDetailSchemaV1 = 'flywheel.gateway-agent-trace-detail/v1';
+const traceDetailScope = {'TRACE_AS_RECORDED', 'TOOL_OUTPUT_BOUNDED'};
+const traceDetailScopeV1 = {'NOT_SEMANTIC_TRUTH', 'NOT_UNLIMITED_TOOL_OUTPUT'};
 
 final class TraceRecord {
   final String ownerRef, journeyRef, operationRef, traceRef, kind;
@@ -30,10 +36,10 @@ final class TracePage {
   final int recordCount;
   final String traceHeadSha256;
   final int? nextSequence;
-  final List<String> doesNotProve;
+  final List<String> scope;
 
   const TracePage._(this.record, this.recordCount, this.traceHeadSha256,
-      this.nextSequence, this.doesNotProve);
+      this.nextSequence, this.scope);
 
   factory TracePage.fromJson(
     Map<String, dynamic> value, {
@@ -42,6 +48,8 @@ final class TracePage {
     required String traceRef,
     required int sequence,
   }) {
+    final legacy = value['schema'] == traceDetailSchemaV1;
+    final scopeKey = scopeKeyFor(legacy: legacy);
     traceFields(value, {
       'schema',
       'trace_ref',
@@ -52,9 +60,9 @@ final class TracePage {
       'record',
       'record_canonical_base64',
       'next_sequence',
-      'does_not_prove'
+      scopeKey
     });
-    if (value['schema'] != 'flywheel.gateway-agent-trace-detail/v1' ||
+    if ((value['schema'] != traceDetailSchema && !legacy) ||
         traceReference(value['operation_ref'], 'op') != operationRef ||
         traceReference(value['journey_ref'], 'jrn') != journeyRef ||
         traceReference(value['trace_ref'], 'agt') != traceRef ||
@@ -138,10 +146,8 @@ final class TracePage {
         count,
         traceDigest(value['trace_head_sha256']),
         next as int?,
-        traceCodes(value['does_not_prove'], const {
-          'NOT_SEMANTIC_TRUTH',
-          'NOT_UNLIMITED_TOOL_OUTPUT',
-        }));
+        traceCodes(
+            value[scopeKey], legacy ? traceDetailScopeV1 : traceDetailScope));
   }
 }
 

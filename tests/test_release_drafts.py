@@ -18,6 +18,7 @@ from pathlib import Path
 
 import pytest
 
+from harness.scope import scope_list
 from scripts import check_claim_language, check_data_location_copy, check_public_instructions
 
 REPO = Path(__file__).resolve().parents[1]
@@ -81,7 +82,7 @@ def test_the_evidence_summary_counts_seventeen_lanes_and_names_its_limits():
     evidence = _evidence()
     assert len(evidence["lanes"]) == 17
     assert evidence["summary"]["verdict"] in {"PASS", "BELOW_BAR"}
-    assert evidence["does_not_prove"]
+    assert scope_list(evidence)
     assert all(evidence["guards"].values())
     assert {leg["install_mode"] for leg in evidence["legs"].values()} == {
         "per-user", "all-users"}
@@ -128,12 +129,12 @@ def test_the_notes_class_breakdown_is_the_receipts_count_per_class():
 
 @pytest.mark.parametrize("path", CLASS_PAGES, ids=lambda p: p.name)
 def test_the_copy_keeps_where_the_lane_check_ran(path):
-    """The receipt's first does_not_prove says where the run ran: a Windows
+    """The receipt's first scope entry says where the run ran: a Windows
     Server runner, an administrator account, the network reachable and no host
     model server. The notes and the lane page keep each part, so a reader does
     not take the classes as measured offline or on a consumer machine."""
     text = " ".join(path.read_text(encoding="utf-8").split()).lower()
-    limit = _evidence()["does_not_prove"][0].lower()
+    limit = scope_list(_evidence())[0].lower()
     for part in ("windows server", "administrator", "network", "reachable",
                  "no host model server"):
         assert part in limit, part

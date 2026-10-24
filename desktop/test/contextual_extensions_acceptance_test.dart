@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flywheel_desktop/models/evidence_extensions.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/evidence_extensions.dart';
 import 'package:flywheel_desktop/widgets/fw.dart';
@@ -59,9 +60,38 @@ void main() {
       'proposal_id': 'prp_${'a' * 32}',
       'state': 'proposed',
       'journey_ref': 'jrn_${'a' * 32}',
-      'does_not_prove': 'not a diagnosis',
+      'scope': 'a proposed incident graph, held for human review',
     });
     expect(proposal, isNotNull);
     expect(proposal!.state, 'proposed');
+  });
+
+  test('v1 and v2 proposals and pack projections read either scope name', () {
+    final base = <String, dynamic>{
+      'proposal_id': 'prp_${'a' * 32}',
+      'state': 'proposed',
+      'journey_ref': 'jrn_${'a' * 32}',
+    };
+    expect(IncidentProposal.fromJson({...base, kLegacyScopeKey: 'older'})!.scope,
+        'older');
+    expect(IncidentProposal.fromJson({...base, kScopeKey: 'current'})!.scope,
+        'current');
+    expect(
+        IncidentProposal.fromJson(
+            {...base, kScopeKey: 'current', kLegacyScopeKey: 'older'}),
+        isNull);
+
+    for (final key in kScopeKeys) {
+      final pack = DomainPackProjection.fromJson({
+        'pack': {
+          'pack_sha256': 'a' * 64,
+          'state': 'available',
+          key: ['the token check ran against this manifest'],
+        },
+        'qa': <String, dynamic>{},
+      });
+      expect(pack?.scope, 'the token check ran against this manifest',
+          reason: key);
+    }
   });
 }

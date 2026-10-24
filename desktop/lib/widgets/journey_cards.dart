@@ -26,7 +26,7 @@ class JourneyCoreCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final conclusion = projection.conclusion;
     final summary = conclusion?['summary'];
-    final limit = conclusion?['does_not_prove'];
+    final scope = conclusionScope(conclusion);
     return HairlineCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,11 +67,11 @@ class JourneyCoreCard extends StatelessWidget {
               const HonestNull(
                   'No conclusion summary was supplied in this projection.'),
             const SizedBox(height: FwLayout.s2),
-            if (limit?.isNotEmpty ?? false)
-              LabeledValue('Conclusion does_not_prove', limit!)
+            if (scope?.isNotEmpty ?? false)
+              LabeledValue('Conclusion scope', scope!)
             else
               const HonestNull(
-                  'No conclusion does_not_prove limit was supplied in this projection.'),
+                  'No conclusion scope was supplied in this projection.'),
           ],
         ],
       ),
@@ -288,11 +288,10 @@ class CheckRecord extends StatelessWidget {
           emptyText: 'No receipt refs were supplied for this check.',
         ),
         const SizedBox(height: FwLayout.s2),
-        if (check.doesNotProve.isEmpty)
-          const HonestNull(
-              'No does_not_prove limit was supplied for this check.')
+        if (check.scope.isEmpty)
+          const HonestNull('No scope was supplied for this check.')
         else
-          LabeledValue('does_not_prove', check.doesNotProve),
+          LabeledValue('Scope', check.scope),
       ],
     );
   }

@@ -14,8 +14,17 @@ import json
 from pathlib import Path
 
 from .evidence_json import canonical_sha256
+from .scope import LEGACY_SCOPE_KEY
 
 SCHEMA = "flywheel.trace-task-set/v1"
+REGRESSION_SCHEMA_V1 = "flywheel.trace-regression/v1"
+REGRESSION_SCHEMA = "flywheel.trace-regression/v2"  # v2 names `scope`
+REGRESSION_SCHEMAS = (REGRESSION_SCHEMA, REGRESSION_SCHEMA_V1)
+REGRESSION_SCOPE = ("regressions and improvements are counted over this task set and "
+                    "these gates; a flaky gate shows here as a regression")
+# The v1 line, kept verbatim so a v1 report re-derives to its bound digest.
+_V1_SCOPE_TEXT = ("a regression is over this task set and these gates only; "
+                  "flaky gates surface here as regressions, which is the point")
 
 
 def traces_to_task_set(runs: list[dict], *, out_path: Path | str) -> Path:
@@ -62,10 +71,13 @@ def write_task_set(rows: list[dict], *, out_path: Path | str) -> Path:
     return out
 
 
-def regression_report(prior: dict, current: dict) -> dict:
+def regression_report(prior: dict, current: dict, *, schema: str = REGRESSION_SCHEMA) -> dict:
     """Compare two verified benches over the same task set: a regression
     is a previously-passing attempt that now fails; an improvement is the
-    reverse; new task ids are reported, never silently dropped."""
+    reverse; new task ids are reported, never silently dropped.
+
+    ``schema=REGRESSION_SCHEMA_V1`` rebuilds a v1 report byte for byte, so a
+    skill gate bound to a v1 report's digest still re-derives."""
     def key(a: dict) -> tuple:
         return (a["task_id"], a["endpoint"])
 
@@ -86,13 +98,15 @@ def regression_report(prior: dict, current: dict) -> dict:
                                  "prior": "FAIL", "current": "PASS"})
         else:
             stable += 1
-    return {
-        "schema": "flywheel.trace-regression/v1",
+    report = {
+        "schema": schema,
         "regressions": regressions,
         "improvements": improvements,
         "stable": stable,
         "new": new,
-        "does_not_prove": (
-            "a regression is over this task set and these gates only; "
-            "flaky gates surface here as regressions, which is the point"),
     }
+    if schema == REGRESSION_SCHEMA_V1:
+        report[LEGACY_SCOPE_KEY] = _V1_SCOPE_TEXT
+    else:
+        report["scope"] = REGRESSION_SCOPE
+    return report

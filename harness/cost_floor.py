@@ -16,10 +16,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-SCHEMA = "flywheel.cost-floor/v1"
-DOES_NOT_PROVE = ("The floor is a lower bound from published peak rates. It does not show what "
-                  "a real kernel can reach on this machine, and the ratio does not show where "
-                  "the lost time went.")
+SCHEMA = "flywheel.cost-floor/v2"
+# v1 receipts carry the same string under the older scope key.
+SCHEMA_V1 = "flywheel.cost-floor/v1"
+# the summary carries no scope list, so its id stays as it was
+SUMMARY_SCHEMA = SCHEMA_V1 + "#summary"
+SCOPE = ("The floor is a lower bound computed from published peak rates under the listed "
+         "assumptions; the ratio is measured time over that bound, as one total for the call.")
 
 
 @dataclass(frozen=True)
@@ -86,7 +89,7 @@ def receipt(measured_s: float, prompt_tokens: int, completion_tokens: int,
             "assumptions": ["weights read once per decode step and once for prefill",
                             "KV cache, activations and network time ignored",
                             "peak rates with full utilisation"],
-            "does_not_prove": DOES_NOT_PROVE}
+            "scope": SCOPE}
 
 
 def summarize(receipts: list[dict]) -> dict:
@@ -97,7 +100,7 @@ def summarize(receipts: list[dict]) -> dict:
 
     def q(p: float):
         return ratios[min(len(ratios) - 1, int(p * len(ratios)))] if ratios else None
-    return {"schema": SCHEMA + "#summary", "calls": len(receipts),
+    return {"schema": SUMMARY_SCHEMA, "calls": len(receipts),
             "measured_s": round(measured, 3), "floor_s": round(floor, 3),
             "ratio_total": round(measured / floor, 3) if floor else None,
             "ratio_median": q(0.5), "ratio_p10": q(0.1), "ratio_p90": q(0.9),

@@ -47,7 +47,7 @@ def test_mcp_gateway_hooks_are_private_and_read_catalog_without_launch(tmp_path,
     h._get()
 
     assert sent["code"] == 200
-    assert sent["body"]["schema"] == "flywheel.agent-mcp-catalog/v1"
+    assert sent["body"]["schema"] == "flywheel.agent-mcp-catalog/v2"
     assert started == []
 
 
@@ -78,5 +78,5 @@ def test_mcp_gateway_post_routes_authorized_discovery(tmp_path, monkeypatch):
     h._post()
 
     assert sent["code"] == 200
-    assert sent["body"]["schema"] == "flywheel.agent-mcp-discovery-response/v1"
+    assert sent["body"]["schema"] == "flywheel.agent-mcp-discovery-response/v2"
     assert sent["body"]["mcp_admission"]["servers"][0]["receipt_sha256"]

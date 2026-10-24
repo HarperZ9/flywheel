@@ -27,15 +27,15 @@ def package_files(repo, identity):
     files.update(manifests(version, dev=dev))
     if dev:
         files['README.md'] = b'Unpublished development candidate. Do not publish these bytes.\n\n' + files['README.md']
-    receipt = {'schema': 'flywheel.source-tool-plugin/v1', **identity,
+    receipt = {'schema': 'flywheel.source-tool-plugin/v2', **identity,
         'tag': None if dev else 'v' + version,
         'profile': 'local-evidence', 'python_requirement': '>=3.11',
         'entrypoint': 'harness.tool_mcp.main', 'reviewed_python_modules': 78,
         'text_encoding': 'UTF-8 with LF newlines',
         'closure_review_sha256': hashlib.sha256(snapshots['scripts/source_tool_closure.json']).hexdigest(),
         'payload_sha256': {name: hashlib.sha256(data).hexdigest() for name, data in sorted(files.items())},
-        'does_not_prove': ['full harness availability', 'global OS sandbox',
-                          'installed client compatibility', 'marketplace approval', 'semantic truth']}
+        'scope': ['the reviewed local-evidence modules and plugin files, bound by sha256 to this source',
+                  'the tool_mcp entrypoint for the local-evidence profile only']}
     files['SOURCE.json'] = encoded(receipt)
     verify_payload(files)
     return files, receipt

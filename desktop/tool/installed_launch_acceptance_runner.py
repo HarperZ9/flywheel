@@ -14,7 +14,7 @@ try:
         validate_receipt_semantics,
     )
     from .installed_launch_acceptance_model import (
-        APP_EXE, APP_ID, DOES_NOT_PROVE, ENGINE_EXE, SCHEMA,
+        APP_EXE, APP_ID, ENGINE_EXE, SCHEMA, SCOPE,
         TOKEN_NAME, Clock, HarnessConfig, build_child_environment,
         display_path, full_path, inside, read_json, redact_token_body,
         reserve_port, same_path, sha256_file, status_state,
@@ -27,7 +27,7 @@ except ImportError:
         validate_receipt_semantics,
     )
     from installed_launch_acceptance_model import (  # type: ignore
-        APP_EXE, APP_ID, DOES_NOT_PROVE, ENGINE_EXE, SCHEMA,
+        APP_EXE, APP_ID, ENGINE_EXE, SCHEMA, SCOPE,
         TOKEN_NAME, Clock, HarnessConfig, build_child_environment,
         display_path, full_path, inside, read_json, redact_token_body,
         reserve_port, same_path, sha256_file, status_state,
@@ -84,7 +84,7 @@ class AcceptanceHarness:
                                                   "path_fallback_rejected",
                                                   "token_material_never_recorded"],
                    "privacy_redactions": ["token_value", "token_hash_prefix", "local_paths"],
-                   "does_not_prove": DOES_NOT_PROVE}
+                   "scope": SCOPE}
         semantic_errors = validate_receipt_semantics(receipt)
         if semantic_errors:
             receipt["complete"] = False
@@ -271,7 +271,7 @@ class AcceptanceHarness:
                           "observed_at_utc": self.clock.now(), "evidence_kind": "headless",
                           "evidence_ref": evidence_ref, "expected": expected,
                           "observed_redacted": self._redact(observed), "source_pointers": [],
-                          "does_not_prove": DOES_NOT_PROVE})
+                          "scope": SCOPE})
 
     def _path(self, path: Path) -> str:
         return display_path(path, self.c.install_root, self.c.include_local_paths)

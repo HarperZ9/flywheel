@@ -7,8 +7,9 @@ import re
 from .evidence_json import canonical_sha256
 from .operation_grants import OWNER_REF_PATTERN
 from .source_context_error import SourceContextError
+from .scope import scope_list
 from .source_context_payload import (
-    BINDING_SCHEMA, PRIVATE_SCHEMA, PROJECTION_SCHEMA, SOURCE_REF_PREFIX,
+    BINDING_SCHEMA, PRIVATE_SCHEMA, PRIVATE_SCHEMAS, SOURCE_REF_PREFIX,
     WORKER_SCHEMA, _hex, _safe_name, _sha_text, journey_basis_for,
     projection_for, validated_gather_payload, worker_context_for,
 )
@@ -59,7 +60,7 @@ class SourceContextStore:
             "total_text_chars": gather_payload.get("total_text_chars"),
             "selected_text_utf8_bytes": sum(r["selected_text_utf8_bytes"] for r in rows),
             "omissions": list(gather_payload.get("omissions") or []),
-            "does_not_prove": list(gather_payload.get("does_not_prove") or []),
+            "scope": scope_list(gather_payload),
             "source_framing_policy": "flywheel.untrusted-source-data/v1"}
         private_hash = canonical_sha256(private)
         ref = f"{SOURCE_REF_PREFIX}{private_hash[:32]}"
@@ -106,8 +107,8 @@ class SourceContextStore:
         if not contexts:
             return None
         payload = {"schema": WORKER_SCHEMA, "contexts": contexts,
-                   "does_not_prove": sorted({item for ctx in contexts
-                       for item in ctx.get("does_not_prove", [])})}
+                   "scope": sorted({item for ctx in contexts
+                       for item in scope_list(ctx)})}
         return dict(payload, source_payload_sha256=canonical_sha256(payload))
 
     def _resolve(self, owner: str, ref: str) -> tuple[dict, dict, dict]:
@@ -141,7 +142,7 @@ class SourceContextStore:
     def _validate_resolved(self, owner: str, ref: str, actual: dict,
                            private_hash: str, projection_hash: str,
                            private: dict, projection: dict, binding: dict) -> None:
-        if private.get("schema") != PRIVATE_SCHEMA or projection.get("schema") != PROJECTION_SCHEMA:
+        if private.get("schema") not in PRIVATE_SCHEMAS or type(projection) is not dict:
             raise SourceContextError("SOURCE_CONTEXT_STORE_CORRUPT")
         if canonical_sha256(private) != private_hash or canonical_sha256(projection) != projection_hash:
             raise SourceContextError("SOURCE_CONTEXT_STORE_CORRUPT")

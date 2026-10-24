@@ -2,8 +2,8 @@
 
 `manifest.json` holds the header (schema, time, Flywheel version, redaction
 catalog version and mode, selection, inventory snapshot, trace heads,
-lineage, redaction counts, omissions, excluded stores, what verification does
-not prove), the `files` list with each file's sha256 and size, and
+lineage, redaction counts, omissions, excluded stores, and the `scope` list
+saying what verification covers), the `files` list with each file's sha256 and size, and
 `root_sha256` over both. The root is computed by the same function the
 standard-library verifier runs, so the two cannot disagree.
 """
@@ -15,13 +15,13 @@ from pathlib import Path
 
 from .trace_export_verify import SCHEMA, UNHASHED, root_digest
 
-DOES_NOT_PROVE = [
-    "that the export holds everything custody held: excluded stores and omissions are listed",
-    "that custody recorded what really happened",
-    "that these files are the ones Flywheel wrote: anyone can rewrite the files and this "
-    "manifest together. MATCH shows only that the files match this manifest; compare "
-    "root_sha256 with the export entry in your custody ledger",
-    "who made the export, unless it was signed",
+SCOPE = [
+    "MATCH covers the files listed here against this manifest; excluded stores and "
+    "omissions are listed beside them",
+    "the files hold what custody recorded, as custody recorded it",
+    "anyone can rewrite the files and this manifest together; comparing root_sha256 "
+    "with the export entry in your custody ledger ties this copy to your custody",
+    "a signature, when one is attached, names who made the export",
 ]
 
 
@@ -31,7 +31,7 @@ def file_entry(rel: str, data: bytes, store: str, item_ref: str | None) -> dict:
 
 
 def build(header: dict, files: list[dict]) -> dict:
-    manifest = {"schema": SCHEMA, **header, "does_not_prove": DOES_NOT_PROVE,
+    manifest = {"schema": SCHEMA, **header, "scope": SCOPE,
                 "files": sorted(files, key=lambda f: f["path"])}
     manifest["root_sha256"] = root_digest(manifest)
     return manifest
@@ -66,8 +66,8 @@ def readme(header: dict) -> str:
         "MATCH means every file matches the manifest and each gateway trace chain",
         "re-derives. Anyone can rewrite the files and the manifest together, so to tie",
         "this copy to your custody, compare root_sha256 with the export entry in your",
-        "custody ledger. MATCH does not prove the export is complete, that custody",
-        "recorded what really happened, or who made the export.", "",
+        "custody ledger. MATCH covers the listed files; manifest.json lists the",
+        "stores left out, and a signature, when attached, names who made the export.", "",
         f"Redaction: {redaction}. Placeholders read [REDACTED:<rule>:<tag>]. In a",
         "redacted export, paths under your home folder read ~.",
         "Gateway traces are unredacted, because redaction would break their chain;",
@@ -78,5 +78,5 @@ def readme(header: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-__all__ = ["DOES_NOT_PROVE", "UNHASHED", "build", "file_entry", "readme", "rehash",
+__all__ = ["SCOPE", "UNHASHED", "build", "file_entry", "readme", "rehash",
            "root_digest"]

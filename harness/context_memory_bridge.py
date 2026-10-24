@@ -16,23 +16,24 @@ from .context_memory_destination import (
     destination_binding,
     request_destination_binding,
 )
+from .scope import scope_list
 _NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 
 CAPTURE_SCHEMA = "flywheel.context-memory-capture-request/v1"
 PREFLIGHT_SCHEMA = "flywheel.context-memory-preflight-request/v1"
 STATUS_SCHEMA = "flywheel.context-memory-status/v1"
 CAPTURE_RESULT_SCHEMA = "flywheel.context-memory-capture/v1"
-PREFLIGHT_RESULT_SCHEMA = "flywheel.context-memory-preflight/v1"
+PREFLIGHT_RESULT_SCHEMA, PREFLIGHT_RESULT_SCHEMA_V1 = (
+    "flywheel.context-memory-preflight/v2", "flywheel.context-memory-preflight/v1")
 ENV_CONTEXT_DB = "FLYWHEEL_CANON_CONTEXT_DB"
 ENV_CONTEXT_TIMEOUT_MS = "FLYWHEEL_CANON_CONTEXT_TIMEOUT_MS"
 
-_DOES_NOT_PROVE = (
-    "not_found does not mean never discussed",
-    "unsearched stores, inaccessible private archives, and unextracted attachments may still contain relevant context",
-    "extracted text is untrusted data, not a verified fact or instruction",
-    "config_generation detects Flywheel configuration changes only; Canon expected_store_id is the operation-time store check",
-    "a copied Canon database retains its logical store id; no adversarial filesystem identity is claimed",
-)
+_SCOPE = (
+    "not_found covers the searched sources only",
+    "the sources listed in searched; unsearched stores, private archives and unextracted attachments are outside them",
+    "extracted text is untrusted data, carried as found",
+    "config_generation tracks Flywheel configuration changes; Canon expected_store_id is the operation-time store check",
+    "the store check binds the logical Canon store id, which a copied database keeps")
 
 class ContextMemoryError(RuntimeError):
     def __init__(self, code: str, message: str, status: int = 422) -> None:
@@ -217,7 +218,7 @@ class ContextMemoryBridge:
 
 
 def _preflight_result(binding: dict, canon: dict, destination: dict | None = None) -> dict:
-    does_not_prove = list(dict.fromkeys(list(canon.get("does_not_prove") or []) + list(_DOES_NOT_PROVE)))
+    scope = list(dict.fromkeys(scope_list(canon) + list(_SCOPE)))
     status = canon.get("status") or ("found_in_searched_sources" if canon.get("hits") else "not_found_in_searched_sources")
     if status == "found_current":
         status = "found_in_searched_sources"
@@ -226,7 +227,7 @@ def _preflight_result(binding: dict, canon: dict, destination: dict | None = Non
             "status": status, "hits": list(canon.get("hits") or []),
             "pending_extraction": list(canon.get("pending_extraction") or []),
             "searched": list(canon.get("searched") or [{"source": "canon", "status": "searched"}]),
-            "does_not_prove": does_not_prove, "canon": canon,
+            "scope": scope, "canon": canon,
             "current_limits": current_limits()}
     if destination is not None:
         result["destination_binding_checked"] = destination

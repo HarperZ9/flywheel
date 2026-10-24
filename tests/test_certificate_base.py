@@ -146,13 +146,14 @@ def test_every_result_carries_a_coverage_block():
     assert r.coverage["stop_reason"] == "complete"
 
 
-def test_coverage_names_what_the_check_does_not_prove():
+def test_scope_names_what_the_check_covers():
     r = _SumOracle().verify(_cert(), None)
-    assert isinstance(r.does_not_prove, list)
-    assert "NOT_PROVES_NOVELTY" in r.does_not_prove
+    assert isinstance(r.scope, list)
+    assert "CERTIFICATE_CHECKED_AGAINST_CRITERION" in r.scope
+    assert "PREDICATE_EXACT" in r.scope
 
 
-def test_a_bounded_predicate_says_so_in_does_not_prove():
+def test_a_bounded_predicate_leaves_exactness_out_of_scope():
     class _Bounded(_SumOracle):
         def check(self, cert):
             cov = Coverage(predicate_exact=False, search_space_enumerated=False,
@@ -161,7 +162,8 @@ def test_a_bounded_predicate_says_so_in_does_not_prove():
             return True, "sampled", cov
 
     r = _Bounded().verify(_cert(), None)
-    assert "NOT_PROVES_EXACTNESS" in r.does_not_prove
+    assert "PREDICATE_EXACT" not in r.scope
+    assert "SEARCH_SPACE_ENUMERATED" not in r.scope
     assert r.coverage["guarantee_weakens_above"] == "n>4"
 
 

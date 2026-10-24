@@ -44,32 +44,31 @@ from rung_pins import frozen_prereg, parse_pins, pins_in_order  # noqa: E402
 REPO = Path(__file__).resolve().parent.parent
 DEFAULT_PINS_PATH = REPO / "artifacts" / "prereg" / "determinism-pins.json"
 
-SCHEMA = "flywheel.determinism-pins/v1"
+# v2 (2026-10-23): the record names what it covers in `scope`. The committed
+# artifacts/prereg/determinism-pins.json stays v1, byte for byte.
+SCHEMA = "flywheel.determinism-pins/v2"
+SCHEMA_V1 = "flywheel.determinism-pins/v1"
 
 # The one sampler every rung is captured under: a single tuple, not one per
 # rung, held fixed while everything else varies.
 SAMPLER_TUPLE = {"temperature": 0, "top_k": 1, "top_p": 1.0, "seed": 7,
                  "repeat_penalty": 1.0}
 
-DOES_NOT_PROVE = [
-    "NOT_PROVES_OUTPUT_DETERMINISM: these pins fix runtime, sampler, and "
-    "context shape as reported by the server. They do not prove the server "
-    "reproduces identical output across repeated calls; the repeat-run "
-    "digest baseline is what would show that, honestly, including when it "
-    "does not hold.",
-    "NOT_PROVES_ANCHOR: a captured pin file is not yet an attested event. "
-    "Only the possession ceremony (prereg_event.py) turns it into a ledger "
-    "entry with a consistency proof.",
-    "NOT_PROVES_ABSENT_FIELD_IS_STABLE: a null field (context_length, "
-    "kv_cache_type) means the server did not expose it at capture time, not "
-    "that it cannot change. A witness run cannot diff what was never "
-    "observed.",
-    "NOT_PROVES_THE_WHOLE_RUNTIME: /api/version and /api/show are two "
-    "endpoints. A change in serving behavior that neither endpoint reports "
-    "is invisible to this pin file by construction.",
-    "NOT_PROVES_DIGEST_PINNING: this record does not duplicate weight-digest "
-    "pinning, which the prereg and verify_rung_digests.py own; kv_cache_type "
-    "is null because /api/show does not expose it, not because of a bug here.",
+SCOPE = [
+    "RUNTIME_SAMPLER_CONTEXT_PINNED: these pins record runtime, sampler, and "
+    "context shape as reported by the server. Output reproducibility across "
+    "repeated calls is measured by the repeat-run digest baseline, which "
+    "records the result whether or not it holds.",
+    "CAPTURED_PIN_FILE: this is a captured pin file. The possession ceremony "
+    "(prereg_event.py) turns it into a ledger entry with a consistency proof.",
+    "NULL_MEANS_UNEXPOSED: a null field (context_length, kv_cache_type) "
+    "records that the server did not expose it at capture time. A witness "
+    "run diffs only the fields that were observed.",
+    "TWO_ENDPOINTS_OBSERVED: the record covers what /api/version and "
+    "/api/show report about serving behavior.",
+    "WEIGHT_DIGESTS_PINNED_ELSEWHERE: weight-digest pinning lives in the "
+    "prereg and verify_rung_digests.py; kv_cache_type is null because "
+    "/api/show does not expose it.",
 ]
 
 DEFAULT_HOST = "127.0.0.1:11434"
@@ -160,7 +159,7 @@ def capture(base_url: str, models: list[str], fetch=None) -> dict:
         "cites_prereg_sha256": cites_prereg_sha256(),
         "runtime": runtime_record(base_url, fetch=fetch),
         "rungs": [rung_record(base_url, model, fetch=fetch) for model in models],
-        "does_not_prove": list(DOES_NOT_PROVE),
+        "scope": list(SCOPE),
     }
 
 

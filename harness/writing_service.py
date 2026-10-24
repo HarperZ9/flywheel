@@ -15,7 +15,7 @@ from .writing_preview import build_proposal_preview
 from .writing_reader_flow import build_diagnostic, scope_replacement_plan
 from .writing_state_authority import review_source_refs_from_diagnostic
 from .writing_state_rules import WritingStateError, validate_transition
-from .writing_types import MAX_BRIEF_JSON_BYTES, MAX_MANUSCRIPT_TEXT_BYTES, MAX_SOURCE_PACKET_BYTES, SCHEMAS, WRITING_DOES_NOT_PROVE, admit_text, sha256_bytes, validate_artifact, validate_target
+from .writing_types import MAX_BRIEF_JSON_BYTES, MAX_MANUSCRIPT_TEXT_BYTES, MAX_SOURCE_PACKET_BYTES, SCHEMAS, WRITING_SCOPE, admit_text, sha256_bytes, validate_artifact, validate_target
 class WritingError(RuntimeError):
     def __init__(self, code: str) -> None:
         self.code = code
@@ -73,7 +73,7 @@ class WritingService:
             "base_revision_ref": base_ref, "body_ref": body_rec["artifact_ref"],
             "body_sha256": digest, "word_count": len(text.split()),
             "author_supplied": True, "scope_refs": [],
-            "text_admission": admission, "does_not_prove": [WRITING_DOES_NOT_PROVE]}
+            "text_admission": admission, "scope": [WRITING_SCOPE]}
         proposal = self._prepare_artifact(journey_ref, expected_event_head, client_request_id, "revision", revision_ref, artifact)
         return {**proposal, "revision_ref": revision_ref, "body_sha256": digest}
     def prepare_diagnose(self, journey_ref: str, expected_event_head: str,
@@ -112,7 +112,7 @@ class WritingService:
             "diff_summary": "candidate replaces the scoped target span",
             "out_of_scope_changes": receipt["failure_reasons"],
             "created_by": "writing_service", "scope_receipt": receipt,
-            "text_admission": admission, "does_not_prove": [WRITING_DOES_NOT_PROVE]}
+            "text_admission": admission, "scope": [WRITING_SCOPE]}
         proposal = self._prepare_artifact(journey_ref, expected_event_head, client_request_id, "candidate", candidate_ref, artifact)
         return {**proposal, "candidate_ref": candidate_ref, "scope_verdict": receipt["verdict"]}
     def prepare_decision(self, journey_ref: str, expected_event_head: str,
@@ -142,7 +142,7 @@ class WritingService:
             "from_revision_ref": from_revision_ref, "to_revision_ref": to_revision_ref,
             "reason": reason or f"author {decision} decision",
             "scope_verdict": scope_verdict, "decided_at": self.clock(),
-            "does_not_prove": [WRITING_DOES_NOT_PROVE]}
+            "scope": [WRITING_SCOPE]}
         return self._prepare_artifact(journey_ref, expected_event_head, client_request_id, "decision", decision_ref, artifact)
     def prepare_review(self, journey_ref: str, expected_event_head: str,
                        project_ref: str, *, client_request_id: str) -> dict:
@@ -164,7 +164,7 @@ class WritingService:
             "measurement_status": "checked" if measured else "unmeasured",
             "decision_refs": [row["decision_ref"] for row in state["decisions"]]},
             "quality_measurement": {**unmeasured, "source_refs": []},
-            "blocking_items": [], "does_not_prove": [WRITING_DOES_NOT_PROVE]}
+            "blocking_items": [], "scope": [WRITING_SCOPE]}
         return self._prepare_artifact(journey_ref, expected_event_head, client_request_id, "review", review_ref, artifact)
     def prepare_export(self, journey_ref: str, expected_event_head: str,
                        project_ref: str, *, out_ref: str,
@@ -184,7 +184,7 @@ class WritingService:
             "review_ref": self._latest_ref({row["review_ref"]: row for row in state["reviews"]}, "wrev_unmeasured"),
             "source_packet_ref": self._source_packet_public_ref(state),
             "journey_ref": journey_ref, "event_head_sha256": expected_event_head,
-            "does_not_prove": [WRITING_DOES_NOT_PROVE]}
+            "scope": [WRITING_SCOPE]}
         return self._prepare_artifact(journey_ref, expected_event_head, client_request_id, "export", export_ref, artifact)
     def approve_proposal(self, proposal_ref: str) -> dict:
         result, status = grant_post(

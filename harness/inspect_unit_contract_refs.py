@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-REPORT_SCHEMA = "flywheel.inspect-scorer-unit-analysis/v1"
+REPORT_SCHEMA = "flywheel.inspect-scorer-unit-analysis/v2"
+REPORT_SCHEMA_V1 = "flywheel.inspect-scorer-unit-analysis/v1"
 PYTHON_TEST_UNIT = "python_test_function_definition"
 DRIFT_REASONS = {"source_hash_mismatch", "source_byte_length_mismatch", "pointer_missing", "source_value_mismatch",
                  "span_out_of_range", "span_source_value_mismatch", "span_source_value_sha256_mismatch",
@@ -14,9 +15,9 @@ DRIFT_REASONS = {"source_hash_mismatch", "source_byte_length_mismatch", "pointer
 
 def analysis(contracts: list[dict], reasons: list[str], refs: list[dict] | None = None) -> dict:
     out = {"schema": REPORT_SCHEMA, "semantic_verification": "UNVERIFIABLE",
-           "contracts": contracts, "does_not_prove": [
-               "Mapping consistency does not prove scorer correctness.",
-               "A many-to-one row score does not establish per-definition score coverage."]}
+           "contracts": contracts, "scope": [
+               "The mapping between scorer units and test definitions is checked for consistency; scorer correctness is a separate question.",
+               "A many-to-one row score covers the row; per-definition score coverage needs one score per definition."]}
     if reasons and not contracts:
         out["reason_codes"] = reasons
     if refs:

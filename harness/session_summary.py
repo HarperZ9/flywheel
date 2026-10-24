@@ -38,8 +38,12 @@ import subprocess
 
 from .summary_validation import HOLD, read_validation, validation_answers
 from . import safe_program
+from .scope import scope_list
 
-SCHEMA = "harness.session-summary/v1"
+#: v2 names the task/goal/session window `summary_scope` and uses `scope` for
+#: what the record covers; v1 named the window `scope` beside the older list key.
+SCHEMA = "harness.session-summary/v2"
+SCHEMA_V1 = "harness.session-summary/v1"
 SCOPES = ("task", "goal", "session")
 BASIS = ("derived", "stated", "mixed", "unknown")
 QUESTIONS = (
@@ -244,21 +248,21 @@ def build_session_summary(root: Path, *, scope: str, base: str = "", since: str 
         answers.append({"key": key, "question": prompt, "basis": _basis(derived[key], stated.get(key, [])),
                         "derived": derived[key], "stated": stated.get(key, [])})
     disagreements = find_disagreements(derived, stated, evidence)
-    return {"schema": SCHEMA, "scope": scope,
+    return {"schema": SCHEMA, "summary_scope": scope,
             "generated_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             "evidence": evidence, "answers": answers, "disagreements": disagreements,
             "verdict": "SUMMARY_DISAGREES" if disagreements else "SUMMARY_RECORDED",
-            "does_not_prove": [
-                "A derived answer reports repository state, not whether the work is correct.",
-                "A stated answer is an assertion by whoever ran this command and is not checked.",
-                "An empty disagreement list means no contradiction was tested for, not that none exists.",
-                "A ledger read here reports what a check decided; it does not re-run the check."]}
+            "scope": [
+                "A derived answer reports repository state as read; whether the work is correct is a separate check.",
+                "A stated answer records what whoever ran this command asserted, unchecked.",
+                "The disagreement list covers the contradictions this command tests for.",
+                "A ledger row reports what a recorded check decided, as recorded; the check is not re-run."]}
 
 
 def render_markdown(summary: dict) -> str:
     """The operator-facing view: four questions, each answer labelled by basis."""
     evidence = summary["evidence"]
-    lines = [f"# Run summary ({summary['scope']})", "",
+    lines = [f"# Run summary ({_window(summary)})", "",
              f"- branch: `{evidence['branch']}` at `{evidence['head'][:12]}`",
              f"- window: `{evidence['window'] or 'none'}`",
              f"- verdict: **{summary['verdict']}**", ""]
@@ -285,6 +289,11 @@ def render_markdown(summary: dict) -> str:
         lines += ["## Disagreements", ""]
         lines += [f"- `{row['code']}` on {row['question']}: {row['detail']}" for row in summary["disagreements"]]
         lines.append("")
-    lines += ["## Limits", ""]
-    lines += [f"- {item}" for item in summary["does_not_prove"]]
+    lines += ["## Scope", ""]
+    lines += [f"- {item}" for item in scope_list(summary)]
     return "\n".join(lines) + "\n"
+
+
+def _window(summary: dict) -> str:
+    """The task/goal/session window: `summary_scope` in v2, `scope` in v1."""
+    return str(summary.get("scope" if summary.get("schema") == SCHEMA_V1 else "summary_scope"))

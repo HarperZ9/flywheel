@@ -29,7 +29,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-SCHEMA = "harness.null-floor-report/v1"
+SCHEMA = "harness.null-floor-report/v2"
+# v1 reports name the scope list with the older key.
+SCHEMA_V1 = "harness.null-floor-report/v1"
 STRATEGIES = ("empty", "shape", "echo")
 
 # Fields a provider can fill from its inputs alone. Hollowing these would test
@@ -206,14 +208,14 @@ def build_null_floor_report(rows: list[dict[str, Any]], *,
         "breaches": [{"checker_id": row["checker_id"], "strategy": row["strategy"],
                       "oracle_state": row["oracle_state"]} for row in breaches],
         "rows_sha256": _sha(json.dumps(rows, sort_keys=True).encode("utf-8")),
-        "does_not_prove": [
-            "A held floor does not show the checker rewards a correct answer; it "
-            "shows it rejects three specific ways of not answering.",
-            "The strategies are exhaustive over nothing. A fourth kind of cheap "
-            "candidate may still pass.",
-            "This measures the checkers, not the providers. A task no provider "
-            "can execute still holds its floor.",
-            "A checker listed in checkers_never_reached was not measured at all: "
-            "every candidate stopped at the shared preamble.",
+        "scope": [
+            "A held floor means each checker rejected the three cheap candidates "
+            "built here: empty, shape-only and fixture-echo submissions.",
+            "Coverage is the strategies listed in strategies, one cheap candidate "
+            "kind each.",
+            "The report measures the checkers; providers never run, so a task no "
+            "provider can execute still has a floor.",
+            "Every candidate for a checker in checkers_never_reached stopped at "
+            "the shared preamble, so that checker's own checks were never exercised.",
         ],
     }

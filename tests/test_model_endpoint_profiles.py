@@ -142,8 +142,9 @@ def test_release_digest_constants_match_public_safe_provenance_receipt():
     receipt = validate_release_identity_provenance()
     payload = {key: value for key, value in receipt.items() if key != "evidence_sha256"}
     evidence = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-    assert RELEASE_IDENTITY_PROVENANCE.name == "ollama-manifest-digest-provenance-v1.json"
-    assert receipt["schema"] == "harness.ollama-manifest-digest-provenance/v1"
+    assert RELEASE_IDENTITY_PROVENANCE.name == "ollama-manifest-digest-provenance-v2.json"
+    assert receipt["schema"] == "harness.ollama-manifest-digest-provenance/v2"
+    assert receipt["scope"]
     assert receipt["evidence_sha256"] == evidence
     rows = {row["native_model_name"]: row for row in receipt["models"]}
     for profile in MODEL_PROFILES.values():
@@ -158,3 +159,16 @@ def test_release_digest_provenance_rejects_tampered_evidence(tmp_path):
     tampered = tmp_path / "tampered.json"; tampered.write_text(json.dumps(receipt), encoding="utf-8")
     with pytest.raises(ValueError, match="evidence hash mismatch"):
         validate_release_identity_provenance(tampered)
+
+
+def test_v1_release_digest_provenance_still_validates(tmp_path):
+    from harness.scope import LEGACY_SCOPE_KEY
+    receipt = json.loads(RELEASE_IDENTITY_PROVENANCE.read_text(encoding="utf-8"))
+    receipt.pop("evidence_sha256")
+    receipt["schema"] = "harness.ollama-manifest-digest-provenance/v1"
+    receipt[LEGACY_SCOPE_KEY] = receipt.pop("scope")
+    receipt["evidence_sha256"] = hashlib.sha256(json.dumps(
+        receipt, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    old = tmp_path / "v1.json"
+    old.write_bytes(json.dumps(receipt).encode())
+    assert validate_release_identity_provenance(old)["schema"].endswith("/v1")

@@ -24,6 +24,7 @@ _spec.loader.exec_module(D)
 
 # D's exec above put scripts/ on sys.path, so this plain import resolves too.
 import determinism_baseline as DB  # noqa: E402
+from harness.scope import LEGACY_SCOPE_KEY  # noqa: E402
 
 FREEZE = json.loads((ROOT / "artifacts" / "prereg" / "FREEZE.json")
                     .read_text(encoding="utf-8"))
@@ -71,7 +72,7 @@ def test_capture_builds_nine_rungs_from_the_frozen_prereg():
     assert "telos-coder-32b" in models       # R6, weight-kind pin
     assert "telos-coder-14b" in models       # R4, blob-kind pin
     doc = D.capture(BASE_URL, models, fetch=make_fake_fetch())
-    assert doc["schema"] == "flywheel.determinism-pins/v1"
+    assert doc["schema"] == "flywheel.determinism-pins/v2"
     assert len(doc["rungs"]) == 9
     assert {r["model"] for r in doc["rungs"]} == set(models)
 
@@ -99,11 +100,10 @@ def test_runtime_record_shape():
     import platform
     assert rt["host_os"] == platform.system()
 
-def test_does_not_prove_is_present_and_nonempty():
+def test_scope_is_present_and_nonempty():
     doc = D.capture(BASE_URL, ["qwen2.5:0.5b"], fetch=make_fake_fetch())
-    assert isinstance(doc["does_not_prove"], list)
-    assert len(doc["does_not_prove"]) > 0
-    assert all(isinstance(item, str) for item in doc["does_not_prove"])
+    assert isinstance(doc["scope"], list) and LEGACY_SCOPE_KEY not in doc
+    assert doc["scope"] and all(isinstance(item, str) for item in doc["scope"])
 
 def test_cites_prereg_sha256_matches_freeze():
     doc = D.capture(BASE_URL, ["qwen2.5:0.5b"], fetch=make_fake_fetch())
@@ -284,7 +284,7 @@ def test_cli_baseline_merges_and_preserves_the_rest_of_the_doc(tmp_path, monkeyp
     assert rc == 0
 
     saved = D.load(path)
-    for key in ("schema", "runtime", "rungs", "cites_prereg_sha256", "does_not_prove"):
+    for key in ("schema", "runtime", "rungs", "cites_prereg_sha256", "scope"):
         assert saved[key] == original[key], f"{key} must survive a --baseline merge"
     assert saved["baselines"]["qwen2.5:0.5b"]["n"] == 2
     assert saved["baselines"]["qwen2.5:0.5b"]["witnessed"] is True

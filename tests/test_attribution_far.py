@@ -11,13 +11,13 @@ from harness import incentive_manifest as im
 
 def _manifest(env_id="env-1"):
     return {
-        "schema": im.SCHEMA, "environment_id": env_id, "kind": "finetune",
+        "schema": im.SCHEMA_V2, "environment_id": env_id, "kind": "finetune",
         "reward": {"declared_form": "pass rate", "source_ref": "reward.py"},
         "data_distribution": {"summary": "tasks", "source_ref": "data/"},
         "reinforced_behaviors": [], "penalized_behaviors": [],
         "scarcity_variables": [],
         "witness": {"algorithm": "sha256", "entries": [{"path": "reward.py", "sha256": "0" * 64}]},
-        "does_not_prove": im.DOES_NOT_PROVE,
+        "scope": im.SCOPE,
     }
 
 
@@ -37,7 +37,7 @@ def test_reliable_when_controls_are_mostly_rejected():
     assert result["false_accept_rate"] == 0.0
     assert result["control_count"] == 10
     assert result["detection_rate"] == round(2 / 3, 4)
-    assert result["does_not_prove"] == af.FAR_DOES_NOT_PROVE
+    assert result["scope"] == af.FAR_SCOPE
 
 
 def test_unreliable_when_controls_are_falsely_attributed():

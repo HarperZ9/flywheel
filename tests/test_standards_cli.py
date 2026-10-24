@@ -32,7 +32,7 @@ def test_validate_command_emits_stdout_json_success() -> None:
     assert proc.returncode == 0
     payload = json.loads(proc.stdout)
     assert payload["verdict"] == "VALID"
-    assert payload["schema"] == "flywheel.standards-profile-validation/v1"
+    assert payload["schema"] == "flywheel.standards-profile-validation/v2"
     assert proc.stderr == ""
 
 

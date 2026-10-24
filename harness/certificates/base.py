@@ -16,9 +16,9 @@ Three things the base does so no subclass has to remember them:
      certificate plus the verdict, so two semantically identical certificates
      that differ only in key order agree, and a stranger re-deriving the hash
      does not disagree over formatting.
-  3. **Coverage, always.** Every result carries what the check did NOT cover,
-     and mechanically derives `does_not_prove` entries from it. A receipt that
-     reports only its proof is how a true explanation becomes a fake passport.
+  3. **Coverage, always.** Every result carries what the check covered, and
+     mechanically derives its `scope` codes from it: a code appears only when
+     the coverage earns it, so a reader sees exactly how far the verdict goes.
 """
 from __future__ import annotations
 
@@ -99,7 +99,8 @@ def parse_certificate(text: str) -> tuple[bool, dict, str]:
     return True, obj, ""
 
 
-ALWAYS_NOT_PROVEN = ("NOT_PROVES_NOVELTY", "NOT_PROVES_PUBLICATION_COMPLETENESS")
+# Every result: a data-only checker checked the object against the criterion.
+ALWAYS_SCOPE = ("CERTIFICATE_CHECKED_AGAINST_CRITERION",)
 
 
 class CertificateOracle:
@@ -123,10 +124,10 @@ class CertificateOracle:
     binding_keys: tuple = ()
 
     # Codes this family always carries. A checker that verifies a SUBMITTED
-    # object and does not decide optimality says so on every single result, so
-    # the qualifier travels into every receipt and every bundle rather than
-    # living in a document somebody may not read.
-    family_not_proven: tuple = ()
+    # object says that on every single result (its value bounds the optimum from
+    # one side), so the qualifier travels into every receipt and every bundle
+    # rather than living in a document somebody may not read.
+    family_scope: tuple = ()
 
     # --- subclass contract ---------------------------------------------------
 
@@ -201,17 +202,16 @@ class CertificateOracle:
                 unverifiable_reason: str = "",
                 binding: dict | None = None) -> OracleResult:
         cov = coverage.to_dict() if coverage else {}
-        dnp = list(ALWAYS_NOT_PROVEN) + list(self.family_not_proven)
-        if coverage is not None and not coverage.predicate_exact:
-            dnp.append("NOT_PROVES_EXACTNESS")
-        if coverage is not None and not coverage.search_space_enumerated:
-            dnp.append("NOT_PROVES_COMPLETE_ENUMERATION")
-        dnp.append("NOT_PROVES_RESISTANCE_TO_ORACLE_GAMING")   # no held-out here
-        if binding is None:
-            # The single most important line in this method. An unbound verdict
-            # says the certificate is internally valid, and says NOTHING about
-            # whether it answers the instance the candidate was given.
-            dnp.append("NOT_PROVES_ANSWERS_THE_QUESTION_ASKED")
+        scope = list(ALWAYS_SCOPE) + list(self.family_scope)
+        if coverage is not None and coverage.predicate_exact:
+            scope.append("PREDICATE_EXACT")
+        if coverage is not None and coverage.search_space_enumerated:
+            scope.append("SEARCH_SPACE_ENUMERATED")
+        if binding is not None:
+            # The single most important line in this method. Only a bound
+            # verdict answers the instance the candidate was given; an unbound
+            # one says the certificate is internally valid, and stops there.
+            scope.append("ANSWERS_THE_INSTANCE_ASKED")
         # The binding enters the preimage, so the same certificate checked
         # against two different instances no longer produces one digest.
         preimage = canonical({"cert": cert_canon, "verdict": verdict.value,
@@ -230,7 +230,7 @@ class CertificateOracle:
             unverifiable_reason=unverifiable_reason,
             coverage=dict(cov, instance_bound=binding is not None,
                           instance_binding=binding or {}),
-            does_not_prove=dnp)
+            scope=scope)
 
     def verify(self, candidate: str, task=None) -> OracleResult:
         binding = self.instance_binding(task)

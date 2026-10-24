@@ -7,26 +7,46 @@ from pathlib import Path, PurePosixPath
 import sys
 
 from .receipt_fields import canonical
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 
-SCHEMA = "flywheel.pytest-runtime/v1"
+SCHEMA = "flywheel.pytest-runtime/v2"
+SCHEMA_V1 = "flywheel.pytest-runtime/v1"
 PYTHON_ACCEPTANCE_REASON = "PYTHON_ACCEPTANCE_BOUNDARY_UNAVAILABLE"
 MAX_SOURCE_FILES = 1024
 MAX_SOURCE_FILE_BYTES = 1_048_576
 MAX_SOURCE_BYTES = 8_388_608
-RUNTIME_LIMITS = (
+RUNTIME_SCOPE = (
+    "RUNTIME_IDENTITY_BOUND: the descriptor binds Python identity, pytest Python "
+    "sources and declared requirements; stdlib, native code and transitive "
+    "dependency sources are outside it.",
+    "MATCHING_RUNTIME_REPRODUCTION: a recheck reproduces under a matching "
+    "descriptor; a run under a different runtime is a separate observation.",
+)
+EXECUTION_SCOPE = (
+    "SHARED_PROCESS_RESULT: arbitrary Python shares memory with its test "
+    "process, so a positive child result stays a claim held at UNVERIFIABLE.",
+    "BOUND_EXECUTION_INPUTS: admitted sources and the described runtime are "
+    "bound; external reads go unobserved.",
+)
+PYTHON_SCOPE = RUNTIME_SCOPE + EXECUTION_SCOPE
+#: The v1 vocabulary, byte for byte, so v1 descriptors and receipts still verify.
+RUNTIME_SCOPE_V1 = (
     "NOT_PROVES_FULL_RUNTIME_DEPENDENCY_CLOSURE: the descriptor binds Python "
     "identity, pytest Python sources, and declared requirements, not stdlib, "
     "native code, or transitive dependency sources.",
     "NOT_PROVES_CROSS_ENVIRONMENT_REPRODUCTION: matching descriptors are "
     "required; execution under a different runtime is not proved equivalent.",
 )
-EXECUTION_LIMITS = (
+EXECUTION_SCOPE_V1 = (
     "NOT_PROVES_TRUSTWORTHY_PYTHON_PASS: arbitrary Python shares memory with "
     "its test process, so a positive child result is not independent acceptance.",
     "NOT_PROVES_CLOSED_EXECUTION_DEPENDENCIES: admitted sources and the described "
     "runtime are bound, but external reads are not independently observable.",
 )
-PYTHON_LIMITS = RUNTIME_LIMITS + EXECUTION_LIMITS
+PYTHON_SCOPE_V1 = RUNTIME_SCOPE_V1 + EXECUTION_SCOPE_V1
+# Older names, kept while other modules move to the *_SCOPE names.
+RUNTIME_LIMITS, EXECUTION_LIMITS, PYTHON_LIMITS = RUNTIME_SCOPE, EXECUTION_SCOPE, PYTHON_SCOPE
+_VERSIONS = {SCHEMA: (SCOPE_KEY, RUNTIME_SCOPE), SCHEMA_V1: (LEGACY_SCOPE_KEY, RUNTIME_SCOPE_V1)}
 
 
 def _digest(value: object) -> str:
@@ -79,7 +99,7 @@ def pytest_runtime_descriptor() -> dict:
               "byteorder": sys.byteorder, "platform": sys.platform}
     descriptor = {"schema": SCHEMA, "python": python,
                   "pytest": _pytest_identity(),
-                  "does_not_prove": list(RUNTIME_LIMITS)}
+                  "scope": list(RUNTIME_SCOPE)}
     validate_runtime_descriptor(descriptor)
     return descriptor
 
@@ -91,11 +111,13 @@ def _sha(value: object) -> bool:
 
 def validate_runtime_descriptor(value: object) -> dict:
     """Strictly validate descriptor shape and its two independently rehashed IDs."""
-    if type(value) is not dict or set(value) != {
-            "schema", "python", "pytest", "does_not_prove"}:
+    if type(value) is not dict or value.get("schema") not in _VERSIONS:
+        raise ValueError("runtime descriptor schema or scope drift")
+    key, scope = _VERSIONS[value["schema"]]
+    if set(value) != {"schema", "python", "pytest", key}:
         raise ValueError("runtime descriptor is not closed")
-    if value["schema"] != SCHEMA or value["does_not_prove"] != list(RUNTIME_LIMITS):
-        raise ValueError("runtime descriptor schema or limitations drift")
+    if value[key] != list(scope):
+        raise ValueError("runtime descriptor schema or scope drift")
     python = value["python"]
     if type(python) is not dict or set(python) != {
             "implementation", "version", "cache_tag", "abi_flags",

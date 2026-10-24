@@ -18,8 +18,8 @@ def operation(origin=ORIGIN):
 
 
 def outcome():
-    return {"schema": "flywheel.outcome-bulletin-request/v1", "title": "Control",
-            "status": "Synthetic", "does_not_prove": ["a live post"],
+    return {"schema": "flywheel.outcome-bulletin-request/v2", "title": "Control",
+            "status": "Synthetic", "scope": ["a synthetic origin control post"],
             "links": [{"label": "Source", "url": "https://github.com/HarperZ9/flywheel"}]}
 
 

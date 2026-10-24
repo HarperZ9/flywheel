@@ -203,9 +203,23 @@ def test_a_different_result_gives_a_different_card_hash():
     assert a.card_hash() != b.card_hash() or a.to_dict() == b.to_dict()
 
 
-def test_the_card_states_its_own_limit():
+def test_the_card_states_its_own_scope():
     card = qa_battery(ZarankiewiczOracle(), _valid_certs(), seed=5)
-    assert any("imagin" in s.lower() for s in card.does_not_prove)
+    assert any("mutation classes" in s for s in card.scope)
+    assert card.to_dict()["scope"] == card.scope
+
+
+def test_a_v2_card_reads_back_with_its_older_name_and_hash():
+    from harness.oracle_qa import OracleQACard, SCHEMA_V2
+    from harness.scope import LEGACY_SCOPE_KEY
+    card = qa_battery(ZarankiewiczOracle(), _valid_certs(), seed=5)
+    old = dict(card.to_dict(), schema=SCHEMA_V2)
+    old[LEGACY_SCOPE_KEY] = old.pop("scope")
+    back = OracleQACard.from_dict(old)
+    assert back.to_dict() == old
+    assert back.scope == card.scope
+    with pytest.raises(Exception):
+        OracleQACard.from_dict(dict(old, scope=card.scope))
 
 
 def test_the_card_serializes_to_plain_json():
@@ -213,7 +227,7 @@ def test_the_card_serializes_to_plain_json():
     text = json.dumps(card.to_dict(), sort_keys=True)
     back = json.loads(text)
     assert back["oracle_type"] == "zarankiewicz_certificate"
-    assert back["schema"] == "flywheel.oracle-qa-card/v2"
+    assert back["schema"] == "flywheel.oracle-qa-card/v3"
 
 
 def test_the_card_records_the_checker_source_hash():

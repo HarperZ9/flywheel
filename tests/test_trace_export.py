@@ -15,6 +15,7 @@ from harness import trace_export_manifest as manifest_mod
 from harness.trace_custody_ledger import CustodyLedger
 from harness.trace_export import ExportError, export, export_digest
 from harness.trace_export_verify import verify
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.trace_presence import PresenceError, confirm
 from harness.trace_witness import MemorySink
 
@@ -43,7 +44,8 @@ def test_a_fresh_export_verifies_and_runs_its_own_verifier(world):
     manifest = json.loads((out / "manifest.json").read_text())
     assert {t["item_ref"] for t in manifest["traces"]} == {refs["trace"]}
     assert (out / "stores" / "CT" / f"{refs['turn']}.jsonl").is_file()
-    assert "does_not_prove" in manifest and (out / "README.txt").is_file()
+    assert manifest["schema"] == "flywheel.trace-export/v2" and manifest["scope"]
+    assert LEGACY_SCOPE_KEY not in manifest and (out / "README.txt").is_file()
     entry = CustodyLedger(home, OWNER).entries()[-1]
     assert entry["kind"] == "export" and entry["fields"]["root_digest"] == manifest["root_sha256"]
     assert [e["kind"] for e in sink.read()] == ["export"]
@@ -118,3 +120,17 @@ def test_presence_is_required_and_nothing_is_written_without_it(world):
     other = confirm(home / "state", OWNER, "export", export_digest(out, {"redact": False}), "x")
     with pytest.raises(PresenceError):
         export(home, OWNER, out, other, sink=MemorySink())
+
+
+def test_a_v1_manifest_still_verifies(world):
+    """An export written before the scope migration (v1 schema, older field name)
+    verifies MATCH: the verifier reads neither name, and the root covers both."""
+    home, refs, out = world
+    _export(home, out)
+    path = out / "manifest.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["schema"] = "flywheel.trace-export/v1"
+    data[LEGACY_SCOPE_KEY] = data.pop("scope")
+    data["root_sha256"] = manifest_mod.root_digest(data)
+    path.write_bytes(json.dumps(data, indent=1, sort_keys=True).encode("utf-8"))
+    assert verify(out) == ("MATCH", [])

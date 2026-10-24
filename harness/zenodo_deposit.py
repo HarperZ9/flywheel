@@ -186,7 +186,7 @@ def deposit(request, *, token: str, files: list, metadata: dict,
             "published": False,
             "doi": None,
             "doi_url": None,
-            "does_not_prove": does_not_prove(),
+            "scope": scope(),
         }
         if publish:
             publish_url = links.get("publish")
@@ -228,16 +228,15 @@ def urllib_transport(method: str, url: str, *, headers: dict = None,
         raise DepositError(f"{method} {url}: {e}")
 
 
-def does_not_prove() -> list[str]:
-    """What a DOI over the bytes still does not establish."""
+def scope() -> list[str]:
+    """What a DOI over the bytes covers."""
     return [
-        "NOT_PROVES_TIME: a DOI records that these bytes were deposited and are "
-        "preserved, not when they first existed. Time is the Bitcoin leg's job; "
-        "the DOI is durability and citability, not an ordering.",
-        "NOT_PROVES_THE_BYTES_ARE_HONEST: Zenodo preserves and names whatever was "
-        "uploaded. That the deposited head is truthful about the tree is the "
-        "signature's and the verifier's concern, not the archive's.",
-        "NOT_PROVES_EXCLUSIVE_AUTHORSHIP: anyone may deposit any bytes and receive "
-        "a DOI. The DOI binds a name to bytes; it does not adjudicate who made "
-        "them or whether an earlier deposit of the same bytes exists.",
+        "DEPOSITED_AND_PRESERVED: a DOI records that these bytes were deposited "
+        "and are preserved. The DOI gives durability and citability; the "
+        "Bitcoin leg is what orders them in time.",
+        "PRESERVED_AS_UPLOADED: Zenodo preserves and names the bytes it was "
+        "given. The deposited head's truth about its tree rests on the "
+        "signature and the verifier.",
+        "NAME_BOUND_TO_BYTES: the DOI binds a name to these bytes. Authorship, "
+        "and any earlier deposit of the same bytes, are settled elsewhere.",
     ]

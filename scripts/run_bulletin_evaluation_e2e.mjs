@@ -126,11 +126,11 @@ try {
   const feed = await feedControls(fixture);
   console.log(`SSE: ${feed.unknown_cursor_returned_events}/55 replayed; ${feed.after_worker_restart_replayed_events} after restart`);
   await save(join(out, "results.json"), {
-    schema: "flywheel.bulletin-e2e-controls/v1", cases: results,
+    schema: "flywheel.bulletin-e2e-controls/v2", cases: results,
     worker_bundle_sha256: fixture.bundleSha256, bulletin_source_commit: sourceCommit,
     flywheel_component_sha256: componentHashes, scripted_actors: true, feed,
     fault_injection: "Local D1 trigger aborts final nonce-result update; Worker source unchanged.",
-    does_not_prove: ["Model behavior, general alignment, host containment, or complete activity observation."],
+    scope: ["Scripted actors drove the local Bulletin Worker through each control case and the recorded fault injection."],
   });
 } finally {
   await fixture.mf.dispose();

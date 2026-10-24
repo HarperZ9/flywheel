@@ -34,6 +34,7 @@ import math
 from dataclasses import dataclass, field
 
 from .qa_mutations import MutationClass, QAError, mutate
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 from .verdict import Verdict
 
 REQUIRED_N_PER_CLASS = 3
@@ -43,7 +44,10 @@ DEFAULT_CONFIDENCE = 0.95
 # every v1 card hash was tied to one interpreter's float repr. The version moves
 # because the change alters every card_hash, and a reader that silently accepted
 # both would compare digests across two different preimages.
-SCHEMA = "flywheel.oracle-qa-card/v2"
+# v3 names the card's list `scope`; v2 cards keep the older name and their hash.
+SCHEMA_V2 = "flywheel.oracle-qa-card/v2"
+SCHEMA = "flywheel.oracle-qa-card/v3"
+SCHEMAS = (SCHEMA_V2, SCHEMA)
 
 # Two-sided normal quantiles for the confidences we support. Hard-coded rather
 # than computed so the stdlib-only constraint holds and the numbers are auditable.
@@ -91,7 +95,7 @@ class OracleQACard:
     required_n_per_class: int
     per_class: dict
     failures: list[str] = field(default_factory=list)
-    does_not_prove: list[str] = field(default_factory=list)
+    scope: list[str] = field(default_factory=list)
 
     @property
     def passed(self) -> bool:
@@ -118,7 +122,7 @@ class OracleQACard:
             "per_class": self.per_class,
             "passed": self.passed,
             "failures": sorted(self.failures),
-            "does_not_prove": self.does_not_prove,
+            (LEGACY_SCOPE_KEY if self.schema == SCHEMA_V2 else SCOPE_KEY): self.scope,
         }
 
     @classmethod
@@ -131,10 +135,13 @@ class OracleQACard:
         writer covered, which looks like tampering rather than like a version
         difference.
         """
-        if d.get("schema") != SCHEMA:
+        if d.get("schema") not in SCHEMAS:
             raise QAError(
                 f"refusing to read QA card schema {d.get('schema')!r} as "
-                f"{SCHEMA}")
+                f"one of {SCHEMAS}")
+        key = LEGACY_SCOPE_KEY if d["schema"] == SCHEMA_V2 else SCOPE_KEY
+        if (SCOPE_KEY if key == LEGACY_SCOPE_KEY else LEGACY_SCOPE_KEY) in d:
+            raise QAError(f"{d['schema']} names its list {key!r}")
         card = cls(
             schema=d["schema"], oracle_type=d["oracle_type"],
             family=d["family"],
@@ -146,7 +153,7 @@ class OracleQACard:
             confidence=float(d["confidence"]),
             required_n_per_class=d["required_n_per_class"],
             per_class=d["per_class"], failures=list(d.get("failures", [])),
-            does_not_prove=list(d.get("does_not_prove", [])))
+            scope=list(d.get(key, [])))
         # `passed` is DERIVED from failures, so a stored value that disagrees is
         # a contradiction rather than a field to trust.
         if "passed" in d and bool(d["passed"]) != card.passed:
@@ -239,10 +246,10 @@ def qa_battery(oracle, valid_certs: list[str], *, seed: int = 0,
         false_accept_upper_bound=bound, confidence=confidence,
         required_n_per_class=REQUIRED_N_PER_CLASS,
         per_class=per_class, failures=sorted(failures),
-        does_not_prove=[
-            "NOT_PROVES_ABSENCE_OF_UNIMAGINED_EXPLOITS: this battery bounds only "
-            "the mutation classes enumerated here. It quantifies the sample, "
-            "never the imagination.",
-            "NOT_PROVES_CORRECTNESS_OF_THE_PREDICATE: a checker can be sound "
-            "against every mutant and still implement the wrong mathematics.",
+        scope=[
+            "MUTATION_CLASSES_BOUNDED: the false-accept bound covers the "
+            "mutation classes this battery enumerates.",
+            "CHECKER_SOURCE_PINNED: the bound applies to the checker whose "
+            "source digest this card records, and to the predicate that "
+            "source implements.",
         ])

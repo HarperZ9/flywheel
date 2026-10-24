@@ -33,7 +33,7 @@ _MANIFEST = {
 
 def _manifest():
     from .. import incentive_manifest as im
-    return dict(_MANIFEST, schema=im.SCHEMA, does_not_prove=im.DOES_NOT_PROVE)
+    return dict(_MANIFEST, schema=im.SCHEMA_V2, scope=im.SCOPE)
 
 
 def _fam(i, review, non_review, completed_review=True):

@@ -15,7 +15,7 @@ from ..tool_call_receipt import _canonical_bytes, _sha256_hex
 from .contract import ALLOW, RunContext, ProposedCall, worse
 from .coverage import liveness_join
 from . import anchoring, public_anchor
-from .records import (ALLOW_SCHEMA, HOLD_SCHEMA, HoldStore, seal_preimage, store_id,
+from .records import (ALLOW_SCHEMAS, ASSESSMENT_SCHEMAS, HoldStore, seal_preimage, store_id,
                       verify_seal)
 from .rules import evaluate, load_pack, pack_digest
 
@@ -115,10 +115,10 @@ def verify_store(home, pack_override: dict | None = None, *, trust_root: str = "
         if schema == "unparseable":
             findings.append({"cause": "TORN_OR_UNPARSEABLE_LINE", "seq": expected_seq})
             continue
-        if schema == ALLOW_SCHEMA:
+        if schema in ALLOW_SCHEMAS:
             dom = rec.get("trust_domain", "unrecorded")
             allow_domains[dom] = allow_domains.get(dom, 0) + 1
-        if schema in (HOLD_SCHEMA, ALLOW_SCHEMA):
+        if schema in ASSESSMENT_SCHEMAS:
             seal_hex = rec.get("seal", {}).get("hex", "")
             context = store.raw_context(seal_hex)
             if context is not None and _sha256_hex(_canonical_bytes(context)) !=                     rec.get("context_sha256"):

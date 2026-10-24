@@ -3,6 +3,7 @@ import json
 import pytest
 
 from harness.evidence_json import canonical_sha256
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.gateway_agent_trace import AgentTrace, TraceLedger
 from harness.gateway_agent_trace_route import read_trace
 from harness.gateway_operations import cancel_operation, start_operation
@@ -110,7 +111,7 @@ def test_rehashed_fabricated_effect_evidence_is_rejected_on_result_read(tmp_path
             "TOOLS_WITHOUT_POST_EFFECT_FINGERPRINTS_REMAIN_UNKNOWN",
             "EFFECTS_AFTER_TRACE_HEAD_REMAIN_UNKNOWN",
         ],
-        "does_not_prove": [
+        LEGACY_SCOPE_KEY: [
             "semantic correctness",
             "complete workstation observation",
             "current filesystem state",

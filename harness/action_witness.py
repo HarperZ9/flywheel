@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .byte_witness import (GENESIS, Span, Witness, WitnessError, append,
-                           does_not_prove as byte_does_not_prove, records)
+                           records, scope as byte_scope)
 from .byte_witness_verify import verify_chain
 from .evidence_json import canonical_bytes
 
@@ -202,11 +202,11 @@ def verify_log(source: str | Path | list, *, start: str = GENESIS,
     return verify_chain(source, start=start, resolve=resolve)
 
 
-def does_not_prove() -> list[str]:
-    """What a run's action log leaves open. Never empty."""
-    return byte_does_not_prove() + [
-        "the log holds the actions this layer was told about, so an action "
-        "taken around it leaves nothing behind to break a link",
-        "the encoding names how the caller produced these bytes, which is the "
-        "caller's word, and only re-encoding the same value tests it",
+def scope() -> list[str]:
+    """What a run's action log covers. Never empty."""
+    return byte_scope() + [
+        "the log holds the actions this layer was told about; an action taken "
+        "around this layer has no record here",
+        "the encoding is the caller's statement of how these bytes were "
+        "produced; re-encoding the same value is the test of it",
     ]

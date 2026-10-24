@@ -33,7 +33,7 @@ def build_training_report(
 ) -> dict:
     weights_sha = model_state_sha256(model)
     return {
-        "schema": "flywheel.classifier-encoder-training-report/v1",
+        "schema": "flywheel.classifier-encoder-training-report/v2",
         "training_manifest_sha256": canonical_sha256(_manifest_basis(rows)),
         "artifact_identity": f"classifier-encoder:{weights_sha[:16]}",
         "weights_sha256": weights_sha,
@@ -58,8 +58,8 @@ def build_training_report(
             "last": losses[-1] if losses else None,
         },
         "calibration": {"status": "uncalibrated", "probability_semantics": "raw_softmax_like"},
-        "does_not_prove": [
-            "label truth, held-out generalization, calibration, or routing safety",
-            "authorization, execution correctness, or verifier acceptance",
+        "scope": [
+            "an uncalibrated fit to the training rows hashed in training_manifest_sha256",
+            "an advisory scorer; authorization, execution and acceptance stay with the verifier",
         ],
     }

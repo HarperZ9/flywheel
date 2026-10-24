@@ -1,8 +1,8 @@
 """Declared institutional evidence-access consistency checks.
 
 This module checks only the consistency and coverage of a caller-declared access
-record against retained source data. It does not prove wall-clock truth,
-disclosure completeness, semantic correctness, or immutable external history.
+record against retained source data. Event times, disclosures and claim
+content are taken as declared; the assessment's `scope` list says so per record.
 """
 from __future__ import annotations
 
@@ -13,15 +13,17 @@ from .evidence_json import canonical_bytes, canonical_sha256
 
 SCHEMA = "flywheel.institutional-access/v1"
 SCOPE_SCHEMA = "flywheel.institutional-access-scope/v1"
-ASSESSMENT_SCHEMA = "flywheel.institutional-access-assessment/v1"
+# v2 assessments name the coverage list `scope`; v1 carried the older key.
+ASSESSMENT_SCHEMA_V1 = "flywheel.institutional-access-assessment/v1"
+ASSESSMENT_SCHEMA = "flywheel.institutional-access-assessment/v2"
 STATUSES = frozenset({"requested", "granted", "denied", "unavailable", "unknown", "withdrawn"})
 REDACTION_IMPACTS = frozenset({"none", "weakens_coverage", "blocks_verification", "unknown"})
 _LIMITING_IMPACTS = frozenset({"weakens_coverage", "blocks_verification", "unknown"})
-_DOES_NOT_PROVE = [
-    "semantic correctness of the evaluated claim or scorer",
-    "wall-clock truth, disclosure completeness, or immutable external history",
-    "absence of undeclared evidence, withdrawals, restrictions, or contests",
-    "authenticity of the declaring institution beyond retained source consistency",
+_ASSESSMENT_SCOPE = [
+    "consistency and coverage of the declared access record against the retained source scope",
+    "event times, disclosures and history are taken as declared",
+    "the declared events only; undeclared evidence, withdrawals or contests sit outside this record",
+    "the declaring institution is identified by consistency with its retained sources",
 ]
 _MAX_TEXT, _MAX_EVENTS, _MAX_POINTERS = 512, 128, 32
 
@@ -256,4 +258,4 @@ def assess_institutional_access(record: dict[str, Any] | None, *, scope: dict[st
             "claims": claims, "events": events,
             "latest_by_ref": [{"evidence_ref": ref, "event_id": event["event_id"], "status": event["status"]}
                               for ref, event in sorted(latest.items())],
-            "does_not_prove": list(_DOES_NOT_PROVE)}
+            "scope": list(_ASSESSMENT_SCOPE)}

@@ -150,14 +150,14 @@ def _narrate(reviews, verdict, endpoint, model) -> tuple[str, bool, str, str]:
                                  f"({type(e).__name__}); the summary is deterministic")
 
 
-def _does_not_prove(integrity_status: str, narrated: bool, note: str) -> str:
-    """The honest null, always non-empty. Names what this audit could not judge."""
-    parts = ["this is a cheap post-work review, an opinion with a confidence and not "
-             "a proof; a PASS means only that this starter detector set found nothing, "
-             "not that the work is correct"]
+def _audit_scope(integrity_status: str, narrated: bool, note: str) -> str:
+    """What this audit covered, always non-empty."""
+    parts = ["a cheap post-work review, an opinion with a confidence; a PASS means "
+             "this starter detector set found nothing, and the work's correctness "
+             "is a separate check"]
     if integrity_status == "unverifiable":
-        parts.append("the work receipt seal could not be re-derived, so even the "
-                     "integrity of the reviewed record is unproven here")
+        parts.append("the work receipt seal could not be re-derived, so the "
+                     "integrity of the reviewed record is unchecked here")
     if not narrated:
         parts.append(note or "no model narrative was produced; the summary is "
                              "deterministic only")
@@ -170,6 +170,10 @@ def _subject_digest(work_receipt: dict, artifact: str) -> str:
     payload = json.dumps({"work_receipt": work_receipt, "artifact": artifact},
                          sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")
     return _sha256_hex(payload)
+
+
+AUDIT_RUN_SCHEMA_V1 = "flywheel.audit-run/v1"
+AUDIT_RUN_SCHEMA = "flywheel.audit-run/v2"  # v2 names `scope`
 
 
 def handle_audit_run(req: dict, run_root) -> tuple[dict, int]:
@@ -200,7 +204,7 @@ def handle_audit_run(req: dict, run_root) -> tuple[dict, int]:
     confidence = _confidence(integrity_status)
     summary, narrated, model_ref, note = _narrate(reviews, verdict, endpoint, model)
     reviewer = f"flywheel-audit/starter+{model_ref}" if narrated else "flywheel-audit/starter"
-    dnp = _does_not_prove(integrity_status, narrated, note)
+    covered = _audit_scope(integrity_status, narrated, note)
     finished = _now_iso()
 
     work_hex = ""
@@ -211,16 +215,16 @@ def handle_audit_run(req: dict, run_root) -> tuple[dict, int]:
         run_id=run_id, work_receipt_sha256=work_hex,
         subject_digest=_subject_digest(work_receipt, artifact),
         reviewer=reviewer, reviews=reviews, summary=summary,
-        verdict=verdict, confidence=confidence, does_not_prove=dnp,
+        verdict=verdict, confidence=confidence, scope=covered,
         started_utc=started, finished_utc=finished)
 
     written = emit_audit_receipt(receipt, Path(run_root) / "audit")
     # receipt_file is a BARE filename, never an absolute path -- a receipt is
     # portable, and its on-disk location is the running host's business.
     receipt_file = written.name if written is not None else ""
-    return {"schema": "flywheel.audit-run/v1", "verdict": verdict,
+    return {"schema": AUDIT_RUN_SCHEMA, "verdict": verdict,
             "confidence": confidence, "reviewer": reviewer, "narrated": narrated,
-            "reviews": reviews, "summary": summary, "does_not_prove": dnp,
+            "reviews": reviews, "summary": summary, "scope": covered,
             "detectors": list(_STARTER_DETECTORS), "work_receipt_sha256": work_hex,
             "receipt": receipt, "receipt_file": receipt_file}, 200
 

@@ -17,11 +17,10 @@ out.
 So the outputs are shaped to prevent misuse as a gate. Every score envelope
 records calibration.status "uncalibrated" and selection.automatic_selection_
 enabled False, and proposal_from_score_envelope returns an explicit abstention
-(choice_id None) rather than a pick. The DOES_NOT_PROVE constant carries the
-three standing limits on every artifact and envelope: raw scores are not
-probabilities; a score authorizes neither execution nor a correctness
-certificate; synthetic diagnostic training does not prove generalization. The
-model can rank candidates for a human or a downstream calibrated policy; it
+(choice_id None) rather than a pick. The SCOPE constant states what every
+artifact and envelope covers: a raw ranking score, an advisory ranking with no
+execution or correctness authority, and a fit to the synthetic diagnostic set it
+was trained on. The model can rank candidates for a human or a downstream calibrated policy; it
 cannot accept one.
 """
 from __future__ import annotations
@@ -39,23 +38,29 @@ from .classifier_features import (
 )
 from .decision_contract import validate_request
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
+from .scope import LEGACY_SCOPE_KEY
 
-ARTIFACT_SCHEMA = "flywheel.classifier-linear-baseline/v1"
-SCORE_SCHEMA = "flywheel.classifier-score-envelope/v1"
+ARTIFACT_SCHEMA = "flywheel.classifier-linear-baseline/v2"
+SCORE_SCHEMA = "flywheel.classifier-score-envelope/v2"
+# v1 records name the scope list with the older key; readers accept both.
+ARTIFACT_SCHEMA_V1 = "flywheel.classifier-linear-baseline/v1"
+SCORE_SCHEMA_V1 = "flywheel.classifier-score-envelope/v1"
+SCORE_SCHEMAS = (SCORE_SCHEMA, SCORE_SCHEMA_V1)
 MAX_ARTIFACT_BYTES = 2_000_000
 MAX_FAMILIES = 128
 MAX_WEIGHTS = 100_000
 HEX = set("0123456789abcdef")
-DOES_NOT_PROVE = [
-    "raw scores are uncalibrated and are not probabilities",
-    "model scores do not authorize execution or certify semantic correctness",
-    "synthetic diagnostic training does not prove generalization or power",
+SCOPE = [
+    "raw uncalibrated linear scores that rank candidates within one request",
+    "an advisory ranking; execution and correctness rest with the verifier",
+    "weights fitted to the synthetic diagnostic training set named by its manifest",
 ]
 ARTIFACT_KEYS = {
     "schema", "feature_parameters", "weights_by_family",
     "training_manifest_sha256", "seed", "provenance",
-    "does_not_prove", "artifact_sha256",
+    "scope", "artifact_sha256",
 }
+ARTIFACT_KEYS_V1 = (ARTIFACT_KEYS - {"scope"}) | {LEGACY_SCOPE_KEY}
 
 
 class ClassifierModelError(ValueError):
@@ -151,7 +156,7 @@ class LinearClassifierModel:
             "training_manifest_sha256": self.training_manifest_sha256,
             "seed": self.seed,
             "provenance": self.provenance,
-            "does_not_prove": list(DOES_NOT_PROVE),
+            "scope": list(SCOPE),
         }
 
     def to_json_dict(self) -> dict:
@@ -161,10 +166,13 @@ class LinearClassifierModel:
 
     @classmethod
     def from_json_dict(cls, value: dict) -> "LinearClassifierModel":
-        if type(value) is not dict or set(value) != ARTIFACT_KEYS:
+        legacy = type(value) is dict and value.get("schema") == ARTIFACT_SCHEMA_V1
+        if type(value) is not dict or set(value) != (ARTIFACT_KEYS_V1 if legacy else ARTIFACT_KEYS):
             raise ClassifierModelError("invalid classifier artifact")
-        if value["schema"] != ARTIFACT_SCHEMA:
+        if value["schema"] not in (ARTIFACT_SCHEMA, ARTIFACT_SCHEMA_V1):
             raise ClassifierModelError("invalid classifier artifact schema")
+        if legacy and _artifact_sha(value) != value["artifact_sha256"]:
+            raise ClassifierModelError("artifact checksum mismatch")
         params = value["feature_parameters"]
         if type(params) is not dict:
             raise ClassifierModelError("invalid feature parameters")
@@ -179,7 +187,9 @@ class LinearClassifierModel:
             training_manifest_sha256=value["training_manifest_sha256"],
             seed=value["seed"],
             provenance=value["provenance"],
-            artifact_sha256=value["artifact_sha256"],
+            # a v1 artifact is checked against its own checksum above, then
+            # loads as a v2 model under the v2 checksum
+            artifact_sha256=None if legacy else value["artifact_sha256"],
         )
 
     @classmethod
@@ -259,14 +269,14 @@ class LinearClassifierModel:
                     "automatic_selection_enabled": False,
                     "reason": "uncalibrated_raw_scores",
                 },
-                "does_not_prove": list(DOES_NOT_PROVE),
+                "scope": list(SCOPE),
             })
         return envelopes
 
 
 def proposal_from_score_envelope(envelope: dict) -> str:
     """Return an explicit abstention proposal until a calibrated policy exists."""
-    if type(envelope) is not dict or envelope.get("schema") != SCORE_SCHEMA:
+    if type(envelope) is not dict or envelope.get("schema") not in SCORE_SCHEMAS:
         raise ClassifierModelError("invalid score envelope")
     return json.dumps(
         {"choice_id": None, "evidence_refs": []},

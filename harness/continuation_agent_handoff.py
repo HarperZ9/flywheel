@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Mapping
 
-from .continuation_context import RUNNER_CONTEXT_SCHEMA
+from .continuation_context import RUNNER_CONTEXT_SCHEMAS
 from .evidence_json import canonical_sha256
 from .continuation_preview import build_continuation
 from .continuation_replay import matching_request_event
@@ -136,7 +136,7 @@ def _operation_dict(operation) -> dict:
 def _runner(stored: dict) -> dict:
     runner = stored.get("runner_context")
     if (type(runner) is not dict
-            or runner.get("schema") != RUNNER_CONTEXT_SCHEMA
+            or runner.get("schema") not in RUNNER_CONTEXT_SCHEMAS
             or type(runner.get("root")) is not str
             or type(runner.get("goal")) is not str
             or type(runner.get("selected_files")) is not list):

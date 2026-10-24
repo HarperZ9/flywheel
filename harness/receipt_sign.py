@@ -20,7 +20,7 @@ Four disciplines:
 3. HMAC IS LOCAL ONLY. Verifying an HMAC requires the secret, and a stranger who
    holds the signing secret is not a third party. So HMAC signatures are marked
    non-exportable, refuse to verify against anything but their own secret, and are
-   STRIPPED by `pack_for_export`, which adds the honest non-claim in their place.
+   STRIPPED by `pack_for_export`, which records the stripped signature in the scope.
 
 4. AN ABSENT OR UNKNOWN ALGORITHM IS A NAMED REFUSAL, never a silent pass and
    never a bare False. "This receipt is unsigned" and "this signature is wrong"
@@ -39,7 +39,7 @@ import json
 from dataclasses import dataclass, replace
 
 from .ed25519_verify import verify as _ed_verify, Ed25519Error
-from .receipt import LEGACY_SCHEMA, Receipt, SIGNED_OVER
+from .receipt import LEGACY_SCHEMA, SCHEMA, Receipt, SIGNED_OVER
 from .receipt_fields import canonical
 
 EXPORTABLE_ALGS = frozenset({"ed25519"})
@@ -170,13 +170,18 @@ def pack_for_export(envelope: dict) -> dict:
     if sig and sig.get("sig_alg") in LOCAL_ONLY_ALGS:
         out["signature"] = None
         receipt = Receipt.from_dict(out["receipt"])
-        limits = ("LOCAL_SIGNATURE_STRIPPED", "NOT_THIRD_PARTY_VERIFIABLE_SIGNATURE")
-        missing = tuple(entry for entry in limits if entry not in receipt.does_not_prove())
-        if receipt.schema == LEGACY_SCHEMA:
-            # v3 deliberately did not bind its honesty list. Preserve that
-            # historical export shape and, critically, its signed preimage.
-            out["receipt"]["does_not_prove"].extend(missing)
+        if receipt.schema == SCHEMA:
+            # The claim digest still re-derives from the fields; only the local
+            # tag is gone, and the scope says so.
+            entries = ("LOCAL_SIGNATURE_STRIPPED",)
         else:
-            extras = receipt.extra_does_not_prove + missing
-            out["receipt"] = replace(receipt, extra_does_not_prove=extras).to_dict()
+            entries = ("LOCAL_SIGNATURE_STRIPPED", "NOT_THIRD_PARTY_VERIFIABLE_SIGNATURE")
+        missing = tuple(entry for entry in entries if entry not in receipt.scope())
+        if receipt.schema == LEGACY_SCHEMA:
+            # v3 deliberately did not bind its list. Preserve that historical
+            # export shape and, critically, its signed preimage.
+            out["receipt"][receipt.scope_key()].extend(missing)
+        else:
+            extras = receipt.extra_scope + missing
+            out["receipt"] = replace(receipt, extra_scope=extras).to_dict()
     return out

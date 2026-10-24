@@ -116,7 +116,7 @@ def build_builtin_split_plan(*, tier: str, task_ids: list[str],
             "freshness": "historical_visible",
         })
     return {
-        "schema": "m7-routing-split-plan/v1",
+        "schema": "m7-routing-split-plan/v2",
         "split_id": split_id,
         "tier": tier,
         "task_family": f"m7_builtin_{tier}",
@@ -128,10 +128,10 @@ def build_builtin_split_plan(*, tier: str, task_ids: list[str],
         "ordering_proof_only": True,
         "fresh_task_family_manifest": None,
         "future_fresh_task_family_status": "unavailable_in_builtin_m7_path",
-        "does_not_prove": [
-            "split-plan hash proves implementation ordering only",
-            "does not prove independent preregistration",
-            "does not prove tasks were untouched by previous release analysis",
+        "scope": [
+            "the split-plan hash records that this plan was written before generation",
+            "an implementation-ordering record; independent preregistration is a separate act",
+            "built-in tasks are historical and visible; prior release analysis may have seen them",
         ],
         "tasks": tasks,
     }

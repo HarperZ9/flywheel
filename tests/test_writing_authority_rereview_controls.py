@@ -5,7 +5,7 @@ from harness.evidence_json import canonical_bytes
 from harness.grant_route import read_proposal_record
 from harness.journey_route import journey_post
 from harness.writing_service import WritingService
-from harness.writing_types import WRITING_DOES_NOT_PROVE
+from harness.writing_types import WRITING_SCOPE
 
 NOW = "2026-09-08T12:00:00Z"
 PROJECT = "wpr_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -43,18 +43,18 @@ def _attempt_raw_artifact(service, journey, head, request_id, kind, opaque_ref, 
 
 def _project(tmp_path, source_rows=None):
     service = WritingService(tmp_path / "home", clock=lambda: NOW)
-    brief = {"schema": "flywheel.writing-project-brief/v1", "project_ref": PROJECT,
+    brief = {"schema": "flywheel.writing-project-brief/v2", "project_ref": PROJECT,
         "mode": "nonfiction", "form": "essay", "working_title": "V2 authority",
         "audience": "operators", "reader_job": "verify authority",
         "author_intent": "keep accepted text scoped", "voice_contract": {"style_ref": "voice"},
         "source_packet_ref": "packet_main", "writing_profile": "nonfiction",
-        "does_not_prove": ["truth"]}
+        "scope": ["truth"]}
     if source_rows is None:
         source_rows = [{"source_id": "src_receipt",
         "title": "Receipt", "origin": "local", "allowed_use": "cite"}]
-    sources = {"schema": "flywheel.writing-source-packet/v1", "project_ref": PROJECT,
+    sources = {"schema": "flywheel.writing-source-packet/v2", "project_ref": PROJECT,
         "source_packet_ref": "packet_main", "sources": source_rows,
-        "does_not_prove": ["interpretation"]}
+        "scope": ["interpretation"]}
     init = service.prepare_init(_json(tmp_path / "brief.json", brief),
         _json(tmp_path / "sources.json", sources), client_request_id="init")
     ack = _flow(service, init)
@@ -103,7 +103,7 @@ def test_raw_diagnostic_rejects_invented_checked_semantic_summary(tmp_path):
 def test_raw_diagnostic_rejects_marker_check_without_exact_marker_span(tmp_path):
     service, journey, head = _project(tmp_path)
     head, revision = _revision(service, journey, head, "Body without markers.\n")
-    bad = {"schema": "flywheel.writing-reader-flow-diagnostic/v1",
+    bad = {"schema": "flywheel.writing-reader-flow-diagnostic/v2",
         "project_ref": PROJECT, "diagnostic_ref": "diag_cccccccccccccccccccccccccccccccc",
         "revision_ref": revision["revision_ref"], "body_sha256": revision["body_sha256"],
         "reader_state_summary": {"entry_state": "", "new_information": [],
@@ -116,7 +116,7 @@ def test_raw_diagnostic_rejects_marker_check_without_exact_marker_span(tmp_path)
         "basis": "deterministic", "measurement_status": "checked",
         "base_revision_ref": revision["revision_ref"],
         "base_body_sha256": revision["body_sha256"], "span_refs": [],
-        "source_refs": ["src_receipt"]}], "does_not_prove": [WRITING_DOES_NOT_PROVE]}
+        "source_refs": ["src_receipt"]}], "scope": [WRITING_SCOPE]}
     result, status = _attempt_raw_artifact(service, journey, head, "bad-marker",
         "diagnostic", bad["diagnostic_ref"], bad)
     assert status == 403

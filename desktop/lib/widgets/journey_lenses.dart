@@ -113,13 +113,13 @@ class VerifyLens extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final conclusionLimit = projection.conclusion?['does_not_prove'];
-    final limits = <Widget>[
+    final conclusionScopeText = conclusionScope(projection.conclusion);
+    final scopes = <Widget>[
       for (final check in projection.checks)
-        if (check.doesNotProve.isNotEmpty)
-          LabeledValue('Check ${check.checkId}', check.doesNotProve),
-      if (conclusionLimit?.isNotEmpty ?? false)
-        LabeledValue('Conclusion', conclusionLimit!),
+        if (check.scope.isNotEmpty)
+          LabeledValue('Check ${check.checkId}', check.scope),
+      if (conclusionScopeText?.isNotEmpty ?? false)
+        LabeledValue('Conclusion', conclusionScopeText!),
     ];
     return _LensColumn(children: [
       LensDetail(projection.detail),
@@ -136,9 +136,9 @@ class VerifyLens extends StatelessWidget {
       if (projection.checks.isEmpty)
         const HonestNull('No receipt refs were supplied in this projection.'),
       RecordSection(
-        title: 'Limits',
-        emptyText: 'No does_not_prove limits were supplied in this projection.',
-        children: limits,
+        title: 'Scope',
+        emptyText: 'No scope was supplied in this projection.',
+        children: scopes,
       ),
     ]);
   }

@@ -1,5 +1,5 @@
 {
-  "schema": "flywheel.outcome-bulletin-request/v1",
+  "schema": "flywheel.outcome-bulletin-request/v2",
   "title": "Index reliability checkpoint, 2026-09-07",
   "status": "Index 2.11.0 is published; router durable jobs remain a pre-release integration surface.",
   "room": "findings",
@@ -18,10 +18,10 @@
     "Public CLI/MCP router-job wiring still waits on root integration review and release gates.",
     "The router-job surface is not represented as released Index behavior by this post."
   ],
-  "does_not_prove": [
-    "Router durable jobs are released as public Index behavior.",
-    "Private workspaces were scanned or posted.",
-    "Bulletin verifies hidden data inside media attachments."
+  "scope": [
+    "Released Index 2.11.0 behavior; router durable jobs stay a pre-release surface.",
+    "Public release, package and test records only; no private workspace was scanned or posted.",
+    "The post's text and links; media attachments are reviewed on their own."
   ],
   "links": [
     {

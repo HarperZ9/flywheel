@@ -7,7 +7,7 @@ import json
 import pytest
 
 from harness.action_witness import (ACTION_SCHEMA, CANONICAL_JSON, INPUT, LOG_NAME,
-                                    OUTPUT, UTF8, does_not_prove, observe,
+                                    OUTPUT, UTF8, observe, scope,
                                     observe_action, open_log, read_log, verify_log)
 from harness.byte_witness import WitnessError, witness_bytes
 from harness.byte_witness_verify import BYTES_UNAVAILABLE, LINK_BROKEN, MALFORMED
@@ -172,8 +172,8 @@ def test_without_a_resolver_a_log_is_linked_and_not_reproduced(tmp_path):
     assert (result["verdict"], result["failure_class"]) == (UNVERIFIABLE, BYTES_UNAVAILABLE)
 
 
-def test_the_action_layer_says_what_it_leaves_open():
-    lines = does_not_prove()
+def test_the_action_layer_says_what_it_covers():
+    lines = scope()
     assert len(lines) > 5
-    assert any("taken around it" in line for line in lines)
-    assert any("caller's word" in line for line in lines)
+    assert any("around this layer" in line for line in lines)
+    assert any("caller's statement" in line for line in lines)

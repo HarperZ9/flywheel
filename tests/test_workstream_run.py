@@ -225,7 +225,7 @@ def test_a_mixed_domain_stack_composes_end_to_end():
     assert receipt["assumption_footprint"] == ["statute"]
     assert len(receipt["environment_footprint"]) == 3
     assert receipt["run"]["checked"] == 3
-    assert any("conditional" in line for line in receipt["does_not_prove"])
+    assert any("conditional" in line for line in receipt["scope"])
 
 
 @pytest.mark.parametrize("environment, toolchain, matched, fragment", [

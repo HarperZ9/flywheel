@@ -148,7 +148,8 @@ def test_coverage_reports_an_exact_fully_enumerated_predicate():
     r = o.verify(_cert(4, 9, [(0, j) for j in range(9)]), None)
     assert r.coverage["predicate_exact"] is True
     assert r.coverage["search_space_enumerated"] is True
-    assert "NOT_PROVES_EXACTNESS" not in r.does_not_prove
+    assert "PREDICATE_EXACT" in r.scope
+    assert any(s.startswith("BOUND_FROM_SUBMITTED_OBJECT") for s in r.scope)
 
 
 def test_the_oracle_never_executes_candidate_code():

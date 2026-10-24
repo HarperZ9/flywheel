@@ -2,6 +2,7 @@ import json
 import sqlite3
 from pathlib import Path
 
+from harness.scope import scope_list
 from desktop.tool import installed_launch_acceptance as ila
 from tests.installed_launch_acceptance_fixtures import (
     TOKEN, FakeProcess, FakeWindows, build_manifest, make_install,
@@ -45,7 +46,7 @@ def test_inspect_mode_imports_restarts_reopens_and_labels_api_only(tmp_path):
     assert http.reopened_after_tamper is True
     assert len(http.status_calls) == 2
     assert json.dumps(receipt).find(TOKEN) == -1
-    assert any("file-picker" in item for item in receipt["does_not_prove"])
+    assert any("file-picker" in item for item in scope_list(receipt))
     api_row = row(receipt, "H29_inspect_api_receipt_does_not_claim_desktop_ui")
     assert api_row["observed_redacted"] == {
         "api_only": True,

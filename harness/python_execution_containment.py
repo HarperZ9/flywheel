@@ -6,8 +6,8 @@ from .verdict import UnverifiableReason
 REASON = UnverifiableReason.EXECUTION_CONTAINMENT_UNAVAILABLE.value
 DETAIL = ("arbitrary Python was not executed: this runtime lacks a deny-read, "
           "deny-egress containment boundary")
-LIMIT = ("NOT_PROVES_CANDIDATE_BEHAVIOR: candidate and tests were not executed "
-         "because deny-read and deny-egress containment is unavailable.")
+SCOPE = ("CONTAINMENT_BOUNDARY_RECORDED: the candidate and its tests stayed "
+         "unexecuted, because deny-read and deny-egress containment is unavailable.")
 REQUIREMENT = {
     "schema": "flywheel.python-execution-containment-requirement/v1",
     "status": "UNAVAILABLE",
@@ -25,6 +25,8 @@ REQUIREMENT = {
 
 def unavailable_result(*, claim_id: str, claim_verdict_before: str) -> dict:
     """Return a fresh public-safe description of the missing boundary."""
+    # The check record shares evidence_packet.CHECK_SCHEMA; spelled here so the
+    # verifier closure stays free of evidence_packet's imports. Keep them equal.
     return {
         "schema": "flywheel.evidence-check/v1",
         "verdict": "UNVERIFIABLE",
@@ -39,5 +41,5 @@ def unavailable_result(*, claim_id: str, claim_verdict_before: str) -> dict:
             **REQUIREMENT,
             "required_runtime": dict(REQUIREMENT["required_runtime"]),
         },
-        "does_not_prove": [LIMIT],
+        "scope": [SCOPE],
     }

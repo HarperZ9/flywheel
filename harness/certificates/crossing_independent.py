@@ -121,10 +121,10 @@ class IndependentCrossingOracle(CertificateOracle):
     scope_bounds = {"n_max": 64, "edges_max": 2016, "max_abs_coord_max": 1 << 20}
     binding_keys = ("n", "edges_key")
 
-    family_not_proven = (
-        "NOT_PROVES_OPTIMALITY: this verifies the SUBMITTED object. The optimal "
-        "value for the instance is not computed, not bounded, and not claimed "
-        "anywhere.",
+    family_scope = (
+        "BOUND_FROM_SUBMITTED_OBJECT: this verifies the SUBMITTED drawing. Its "
+        "crossing count is an upper bound on the instance's crossing number, "
+        "and the minimum itself stays open.",
     )
 
     # The parameter and binding contracts are part of the CRITERION, not part of

@@ -75,10 +75,10 @@ def test_a_run_that_called_no_tool_claims_no_chain(tmp_path):
     assert _action_witness(_executor(tmp_path)) is None
 
 
-def test_the_block_says_what_it_does_not_prove(tmp_path):
+def test_the_block_says_what_it_covers(tmp_path):
     executor = _executor(tmp_path)
     executor.execute("list_dir", {})
-    assert _action_witness(executor)["does_not_prove"]
+    assert _action_witness(executor)["scope"]
 
 
 def test_the_block_is_the_shape_the_desktop_surface_parses(tmp_path):

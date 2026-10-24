@@ -6,6 +6,7 @@ import json
 
 from harness.institutional_access import access_scope
 from harness.incident_sim_packet import build_process_audit_packet
+from harness.scope import LEGACY_SCOPE_KEY
 from tests.test_incident_sim_packet import TASK, _access_record, trace
 
 PATH = "/api/incident-sim/process-audit/review"
@@ -48,7 +49,7 @@ def test_review_route_reports_raw_source_integrity_and_packet_local_limits():
     body, status = _post(raw)
 
     assert status == 200
-    assert body["schema"] == "flywheel.incident-sim-process-audit-review/v1"
+    assert body["schema"] == "flywheel.incident-sim-process-audit-review/v2"
     assert body["source"] == {
         "format": "incident-sim-process-audit-json",
         "sha256": hashlib.sha256(raw).hexdigest(),
@@ -57,7 +58,7 @@ def test_review_route_reports_raw_source_integrity_and_packet_local_limits():
     assert body["verification"]["verdict"] == "MATCH"
     assert body["declared_access"]["verdict"] == "NOT_ASSESSED"
     assert any("component absent" in item for item in body["declared_access"]["limits"])
-    assert any("coherent rewrite" in item for item in body["does_not_prove"])
+    assert any("coherent rewrite" in item for item in body["scope"])
     pointers = {row["json_pointer"]: row["source_value"] for row in body["source_pointers"]}
     assert pointers["/evaluation/overall/verdict"] == "MATCH"
     assert pointers["/source_values"]
@@ -113,6 +114,26 @@ def test_review_route_does_not_promote_drifted_reported_access_coverage():
     assert access["reported_coverage_assessment"] == "complete"
     assert access["coverage_assessment"] == "unknown"
     assert any("untrusted" in item for item in access["limits"])
+    assert any("taken as declared" in item for item in access["scope"])
+
+
+def test_review_route_reads_a_v1_assessment_list_as_limits():
+    good = trace()
+    scope = access_scope("incident-sim-synthetic", {"claim-final-state": ["task", "trace"]},
+                         {"task": TASK, "trace": good})
+    packet = build_process_audit_packet(
+        TASK, good, institutional_access=_access_record(scope),
+        institutional_access_scope=scope)
+    assessment = packet["institutional_access"]["assessment"]
+    assessment["schema"] = "flywheel.institutional-access-assessment/v1"
+    assessment[LEGACY_SCOPE_KEY] = ["a v1 limit entry"]
+    del assessment["scope"]
+
+    body, _status = _post(_raw_packet(packet))
+
+    access = body["declared_access"]
+    assert "a v1 limit entry" in access["limits"]
+    assert "scope" not in access
 
 
 def test_review_route_rejects_malformed_duplicate_nonfinite_and_wrong_media_type():

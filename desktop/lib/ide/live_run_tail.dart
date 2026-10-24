@@ -31,7 +31,10 @@ class LiveRunTail extends StatelessWidget {
 
   Map<String, dynamic>? get _done {
     for (final e in events.reversed) {
-      if (e['type'] == 'done' && e['schema'] != traceProjectionSchema) return e;
+      if (e['type'] == 'done' &&
+          !traceProjectionSchemas.contains(e['schema'])) {
+        return e;
+      }
     }
     return null;
   }
@@ -53,7 +56,8 @@ class LiveRunTail extends StatelessWidget {
           controller: scroll,
           child: AgentTimeline(
               events: events
-                  .where((event) => event['schema'] != traceProjectionSchema)
+                  .where((event) =>
+                      !traceProjectionSchemas.contains(event['schema']))
                   .toList()),
         ),
       ),

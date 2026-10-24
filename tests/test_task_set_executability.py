@@ -96,7 +96,7 @@ def test_the_two_denominators_are_reported_separately(tmp_path):
     assert record["schema"] == SCHEMA and record["verdict"] in VERDICTS
     assert record["counts"] == {"declared": 2, "provisionable": 1, "scorable": 0, "measured": 0}
     assert record["registered_checkers"] == sorted(_CHECKERS)
-    assert record["does_not_prove"]
+    assert record["scope"]
 
 
 @pytest.mark.parametrize("tasks,verdict", [
@@ -149,7 +149,7 @@ def test_markdown_carries_both_counts_and_keeps_the_null():
     text = render_markdown(evaluate_task_set(ROOT, TASK_SET))
     assert "- provisionable: 19 of 19" in text
     assert "- scorable: 9 of 19" in text
-    assert "## Limits" in text
+    assert "## Scope" in text
     assert "C:/dev" not in text and "AppData" not in text
 
 

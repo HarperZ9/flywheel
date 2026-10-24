@@ -9,6 +9,9 @@ from typing import Any
 ENV_NAME = "FLYWHEEL_BULLETIN_ACCESS"
 POLICY = "flywheel.bulletin-access/v1"
 POLICY_SCHEMA = "flywheel.bulletin-access-policy/v1"
+# v2 names the coverage list `scope`; v1 denials carried the older limit list.
+DENIAL_SCHEMA_V1 = "flywheel.bulletin-access-denial/v1"
+DENIAL_SCHEMA = "flywheel.bulletin-access-denial/v2"
 _DEFAULT = "full"
 _SUPPORTED = ("off", "full")
 _RANK = {"off": 0, "full": 1}
@@ -93,7 +96,7 @@ def _denial(
         lane_name: str, tool_name: str, requested: object, ceiling: object,
         error: str | None) -> dict[str, Any]:
     body: dict[str, Any] = {
-        "schema": "flywheel.bulletin-access-denial/v1",
+        "schema": DENIAL_SCHEMA,
         "error": "bulletin access policy denied the request before transport",
         "governance_denied": True,
         "policy": POLICY,
@@ -105,10 +108,10 @@ def _denial(
         "network_attempted": False,
         "transport_attempted": False,
         "credential_resolution_attempted": False,
-        "does_not_prove": [
-            "reviewer blindness",
-            "absence of Bulletin content outside this lane dispatch",
-            "network origin or IP privacy",
+        "scope": [
+            "this lane dispatch was refused before any network, transport or "
+            "credential step",
+            "the refusal applies to this one Bulletin tool call",
         ],
     }
     if error:

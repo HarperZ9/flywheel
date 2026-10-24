@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flywheel_desktop/models/agent_trace.dart';
 import 'package:flywheel_desktop/models/canonical_json.dart';
+import 'package:flywheel_desktop/models/effect_evidence.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 
 import 'agent_trace_models_test.dart' show operation, journey, trace;
 
@@ -47,7 +49,7 @@ TraceProjection witnessProjection(TraceProjection Function(Map<String, dynamic>)
     'record_count': 1,
     'trace_head_sha256': record['record_sha256'],
     'omissions': ['PRIVATE_CONTENT', 'CREDENTIAL_VALUES', 'UPSTREAM_OUTPUT_LIMITS'],
-    'does_not_prove': [
+    kLegacyScopeKey: [
       'NOT_SEMANTIC_TRUTH',
       'NOT_UNLIMITED_TOOL_OUTPUT',
       'ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED'
@@ -68,7 +70,7 @@ Map<String, dynamic> witnessDetail({String actionDetail = 'action detail'}) {
     'records': [
       {'private': actionDetail}
     ],
-    'does_not_prove': ['semantic correctness'],
+    kLegacyScopeKey: ['semantic correctness'],
   };
   final receipts = {
     'schema': 'flywheel.tool-call-receipt/v1',
@@ -102,7 +104,7 @@ Map<String, dynamic> _detail(Map<String, dynamic> record) {
     'record': {...record, 'record_sha256': digest},
     'record_canonical_base64': base64Encode(bytes),
     'next_sequence': null,
-    'does_not_prove': ['NOT_SEMANTIC_TRUTH', 'NOT_UNLIMITED_TOOL_OUTPUT'],
+    kLegacyScopeKey: ['NOT_SEMANTIC_TRUTH', 'NOT_UNLIMITED_TOOL_OUTPUT'],
   };
 }
 
@@ -149,7 +151,7 @@ Map<String, dynamic> _effectBlock(
         'TOOLS_WITHOUT_POST_EFFECT_FINGERPRINTS_REMAIN_UNKNOWN',
         'EFFECTS_AFTER_TRACE_HEAD_REMAIN_UNKNOWN'
       ],
-      'does_not_prove': [
+      kLegacyScopeKey: [
         'semantic correctness',
         'complete workstation observation',
         'current filesystem state',
@@ -189,4 +191,25 @@ String _sessionEntryHash(int seq, String kind, String content, String prev) {
     bytes.addAll(utf8.encode(part));
   }
   return sha256.convert(bytes).toString();
+}
+
+/// A v2 copy of a v1 projection: the projection and its effect evidence each
+/// carry `scope` with the v2 vocabulary, and the effect evidence names its
+/// coverage label `scope_label`. The projection digest is recomputed.
+Map<String, dynamic> projectionV2(Map<String, dynamic> v1) {
+  final value = (jsonDecode(jsonEncode(v1)) as Map<String, dynamic>)
+    ..remove('projection_sha256')
+    ..remove(kLegacyScopeKey)
+    ..['schema'] = traceProjectionSchema
+    ..[kScopeKey] = traceProjectionScope.toList();
+  final evidence = value['effect_evidence'];
+  if (evidence is Map<String, dynamic>) {
+    evidence
+      ..remove(kLegacyScopeKey)
+      ..remove(kScopeKey)
+      ..['schema'] = effectEvidenceSchema
+      ..['scope_label'] = effectEvidenceScopeLabel
+      ..[kScopeKey] = effectEvidenceScope.toList();
+  }
+  return {...value, 'projection_sha256': canonicalJsonSha256(value)};
 }

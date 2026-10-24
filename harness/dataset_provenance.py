@@ -25,14 +25,14 @@ from .transitive_witness import DRIFT, MATCH, UNVERIFIABLE
 _HEX64 = re.compile(r"\A[0-9a-f]{64}\Z")
 _UNKNOWN = {"", "unknown", "unattributed", "n/a", "none"}
 DEFAULT_COVERAGE = 1.0
-DPP_DOES_NOT_PROVE = (
+DPP_SCOPE = (
     "A MATCH means the observed shards match the declared manifest by hash and "
-    "each carries a stated origin, not that the data is clean, unbiased, or "
-    "lawfully sourced. Hashes attest bytes, not content, so contamination and "
-    "semantic quality beyond structure (duplicate content, unattributed origin, "
-    "undeclared shards) are out of scope. A DRIFT marks a hash mismatch, an "
-    "undeclared shard, or an unknown-origin shard; UNVERIFIABLE marks incomplete "
-    "coverage. A verdict covers the declared and observed shards, nothing beyond.")
+    "each carries a stated origin. Hashes attest bytes, so the check covers "
+    "structure: hashes, declared and undeclared shards, stated origin, duplicate "
+    "content and coverage. Cleanliness, bias, lawful sourcing and contamination "
+    "are separate checks. A DRIFT marks a hash mismatch, an undeclared shard, or "
+    "an unknown-origin shard; UNVERIFIABLE marks incomplete coverage. A verdict "
+    "covers the declared and observed shards.")
 
 
 class DatasetProvenanceError(ValueError):
@@ -108,5 +108,5 @@ def analyze(manifest, observed, *, min_coverage=DEFAULT_COVERAGE) -> dict:
         "missing": missing,
         "unknown_origin": unknown_origin,
         "duplicate_hash_count": len(duplicate_hashes),
-        "does_not_prove": DPP_DOES_NOT_PROVE,
+        "scope": DPP_SCOPE,
     }

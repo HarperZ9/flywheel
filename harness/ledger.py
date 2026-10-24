@@ -21,12 +21,10 @@ Append-only is enforced here in three ways, and the third is the one that matter
   3. An envelope whose recorded digest does not match its own body is refused at
      the door, so a stale or edited receipt never enters.
 
-WHAT THIS DOES NOT ESTABLISH, and the ledger says so in `does_not_prove`:
-inclusion proves MEMBERSHIP in one tree. It does not prove the log only ever grew.
-That needs a consistency proof between two tree sizes, and until that exists
-append-only is a property of this code rather than something an outsider can
-check. Selective publication remains undetectable regardless: a log can be honest
-about everything in it and silent about what was never added.
+WHAT THIS COVERS, and the ledger says so in `scope`: inclusion shows MEMBERSHIP
+in one tree. Growth only by appending is shown by a consistency proof between
+two tree sizes, checked against a head an outsider kept. The log covers the
+entries added to it; an entry that was never added leaves no trace to check.
 """
 from __future__ import annotations
 
@@ -268,33 +266,31 @@ class Ledger:
                 "detail": "every link recomputed and every entry digest matched",
                 "root": self.root()}
 
-    # The ledger's own limits, carried with it rather than left implicit. Codes
-    # and prose are separated so `does_not_prove()` matches the shape
-    # Receipt.does_not_prove() already uses (bare codes a caller can test), while
-    # the explanation survives for a human reading the record.
-    LIMITS = {
-        "NOT_PROVES_APPEND_ONLY_WITHOUT_A_KEPT_HEAD":
-            "Append-only is checkable now, but only by someone who WROTE DOWN a "
-            "tree head earlier. consistency_since() proves this log still contains "
-            "that head's tree as a prefix. A reader who kept nothing has nothing "
-            "to compare against, and no amount of chaining fixes that: the "
-            "guarantee is anchored in what an outside party retained, not in what "
-            "this log asserts about itself.",
-        "NOT_PROVES_PUBLICATION_COMPLETENESS":
-            "A log can be honest about everything it holds and silent about what "
-            "was never added. No chaining or anchoring makes non-publication "
-            "detectable.",
-        "NOT_PROVES_RECEIPT_CORRECTNESS":
-            "The chain shows the record was not rewritten. A chain of forged "
-            "verdicts with intact links still verifies structurally.",
+    # What the ledger covers, carried with it rather than left implicit. Codes
+    # and prose are separated so `scope()` matches the shape Receipt.scope()
+    # uses (bare codes a caller can test), while the explanation survives for a
+    # human reading the record.
+    SCOPE = {
+        "APPEND_ONLY_SINCE_A_KEPT_HEAD":
+            "consistency_since() checks that this log still contains an earlier "
+            "tree head's tree as a prefix. The check runs from a head that an "
+            "outside party WROTE DOWN earlier, so the guarantee rests on what "
+            "that party retained.",
+        "HOLDS_WHAT_WAS_ADDED":
+            "The log covers every entry added to it. An entry that was never "
+            "added leaves no trace for chaining or anchoring to check.",
+        "RECORDS_UNREWRITTEN":
+            "The chain shows each record is unchanged since it was appended. "
+            "The verdicts inside are as their receipts state them, checked by "
+            "their own verifiers.",
     }
 
-    def does_not_prove(self) -> list[str]:
-        out = list(self.LIMITS)
-        if self.log_id is None:
-            from .tree_head import NO_LOG_ID
-            out.append(NO_LOG_ID.split(":", 1)[0])
+    def scope(self) -> list[str]:
+        out = list(self.SCOPE)
+        if self.log_id is not None:
+            from .tree_head import LOG_NAMED
+            out.append(LOG_NAMED.split(":", 1)[0])
         return out
 
-    def does_not_prove_detail(self) -> dict:
-        return dict(self.LIMITS)
+    def scope_detail(self) -> dict:
+        return dict(self.SCOPE)

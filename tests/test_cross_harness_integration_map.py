@@ -10,7 +10,7 @@ from scripts.run_cross_harness_integration_map import build_integration_map, mai
 SCHEMAS = {
     "lane_before": "flywheel.lanes/v1",
     "lane_after": "flywheel.lanes/v1",
-    "auth": "harness.endpoint-auth-status/v1",
+    "auth": "harness.endpoint-auth-status/v2",
     "endpoint_profiles": "harness.model-endpoint-profiles/v1",
     "endpoint_gate": "harness.model-endpoint-gate/v1",
     "runtime_matrix": "harness.adapter-runtime-matrix/v1",
@@ -49,7 +49,7 @@ def test_map_requires_hashes_and_preserves_generated_metadata(tmp_path):
 
     result = build_integration_map(graph_path=graph, artifact_paths=paths)
 
-    assert result["schema"] == "harness.cross-harness-integration-map/v1"
+    assert result["schema"] == "harness.cross-harness-integration-map/v2"
     assert result["status"] == "runtime_artifacts_mapped"
     assert [row["id"] for row in result["artifacts"]] == list(SCHEMAS)
     for row in result["artifacts"]:
@@ -171,7 +171,7 @@ def test_cli_writes_json_markdown_and_store_receipt(tmp_path):
 
     assert main(argv) == 0
     assert json.loads(out.read_text(encoding="utf-8"))["schema"] == (
-        "harness.cross-harness-integration-map/v1"
+        "harness.cross-harness-integration-map/v2"
     )
     assert "## Observed" in markdown.read_text(encoding="utf-8")
     receipts = (tmp_path / "store" / "receipts.jsonl").read_text(encoding="utf-8")
@@ -187,3 +187,11 @@ def test_cli_returns_nonzero_and_stores_blocked_verdict_for_missing_input(tmp_pa
     assert main(argv) == 1
     assert json.loads(out.read_text(encoding="utf-8"))["status"] == "blocked_inputs"
     assert "CROSS_HARNESS_INTEGRATION_BLOCKED" in (tmp_path / "store" / "receipts.jsonl").read_text(encoding="utf-8")
+
+
+def test_a_v1_endpoint_auth_status_is_still_observed(tmp_path):
+    graph, paths = _fixture(tmp_path)
+    _write(paths["auth"], {"schema": "harness.endpoint-auth-status/v1"})
+    result = build_integration_map(graph_path=graph, artifact_paths=paths)
+    row = next(row for row in result["artifacts"] if row["id"] == "auth")
+    assert row["input_state"] == "observed"

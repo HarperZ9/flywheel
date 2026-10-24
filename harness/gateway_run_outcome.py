@@ -19,6 +19,7 @@ from .evidence_json import canonical_bytes
 from .gateway_completion_outcome import derive_completion
 from .limit_signal import MATCH_TOKENS
 from .run_budget_contract import SCHEMA as BUDGET_SCHEMA, SIGNALS, TRIPS
+from .scope import scope_key
 
 SCHEMA = "flywheel.gateway-run-outcome/v1"
 _LIMIT_KEYS = {"model_calls", "tool_actions", "usage_tokens", "cost_micros",
@@ -26,9 +27,12 @@ _LIMIT_KEYS = {"model_calls", "tool_actions", "usage_tokens", "cost_micros",
 _USED_KEYS = {"model_calls", "tool_actions", "usage_tokens", "cost_micros",
               "wall_time_ms"}
 _REPORTING_KEYS = {"calls_with_tokens", "calls_without_tokens", "calls_with_cost"}
+#: Report keys besides its scope list, which a pre-migration report names
+#: with the older key (harness/scope.py); exactly one of the two is present.
 _REPORT_KEYS = {"schema", "status", "tripped", "limits", "used", "reporting",
                 "false_success_count", "false_success_steps", "limit_signal_steps",
-                "harness_checks", "does_not_prove"}
+                "harness_checks"}
+_BUDGET_SCHEMAS = {BUDGET_SCHEMA, "flywheel.run-budget/v1"}
 #: Counted limit-signal steps shown to the reader, newest last.
 _SHOWN_SIGNAL_STEPS = 8
 _SIGNALS = set(SIGNALS)
@@ -93,8 +97,9 @@ def _signal_step(step) -> dict:
 
 
 def _check_report(report, counts: dict, terminal_state: str) -> dict:
-    if type(report) is not dict or set(report) != _REPORT_KEYS \
-            or report["schema"] != BUDGET_SCHEMA:
+    if type(report) is not dict or scope_key(report) is None \
+            or set(report) != _REPORT_KEYS | {scope_key(report)} \
+            or report["schema"] not in _BUDGET_SCHEMAS:
         raise _Unverifiable("BUDGET_RECORD_MALFORMED")
     limits = _naturals(report["limits"], _LIMIT_KEYS)
     used = _naturals(report["used"], _USED_KEYS)

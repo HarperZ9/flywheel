@@ -12,7 +12,7 @@ claimant's stated seed and records the same fields. The verdict compares the two
   UNVERIFIABLE  either run lacks a determinism flag, or has no checkpoints
 
 The certificate is about replay, never about correctness. Every verdict carries
-REPLAY_DOES_NOT_PROVE, and a test asserts it. Bit-exact replay is specific to
+REPLAY_SCOPE, and a test asserts it. Bit-exact replay is specific to
 hardware and driver: a DRIFT between two devices is reported as a scope limit.
 
 Pure data and arithmetic: this module runs nothing.
@@ -23,8 +23,13 @@ import hashlib
 from dataclasses import dataclass, field
 
 MATCH, DRIFT, UNVERIFIABLE = "MATCH", "DRIFT", "UNVERIFIABLE"
-REPLAY_DOES_NOT_PROVE = ("Same computation ran twice. Says nothing about whether the "
-                         "answer is right or generalizes.")
+REPLAY_SCOPE = ("The same computation ran twice and its checkpoints were compared "
+                "bit for bit; the comparison covers replay, and the answer's "
+                "correctness is a separate check.")
+# superstack receipts (harness/raw_lane_replay.py) keep their vendored schema's
+# vocabulary until superstack moves.
+REPLAY_SUPERSTACK_LIMIT = ("Same computation ran twice. Says nothing about whether the "
+                           "answer is right or generalizes.")
 CROSS_DEVICE_NOTE = ("The runs used different devices or drivers; bit-exact replay "
                      "across hardware is out of scope, so this DRIFT may be a scope limit.")
 REQUIRED_FLAGS = ("deterministic_algorithms", "cublas_workspace_config", "cudnn_deterministic")
@@ -69,10 +74,10 @@ def _result(verdict: str, reason: str, claimed: RunRecord, replayed: RunRecord,
            "checkpoints": len(claimed.checkpoints),
            "device": {"claimed": [claimed.device, claimed.driver],
                       "replayed": [replayed.device, replayed.driver]},
-           "does_not_prove": [REPLAY_DOES_NOT_PROVE]}
+           "scope": [REPLAY_SCOPE]}
     cross = (claimed.device, claimed.driver) != (replayed.device, replayed.driver)
     if verdict == DRIFT and cross:
-        out["does_not_prove"].append(CROSS_DEVICE_NOTE)
+        out["scope"].append(CROSS_DEVICE_NOTE)
     return out
 
 

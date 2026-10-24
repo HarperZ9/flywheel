@@ -67,7 +67,7 @@ TOOLS = [
      "inputSchema": _DELTA_SCHEMA},
 ]
 
-DOES_NOT_PROVE = _check.DOES_NOT_PROVE
+SCOPE = _check.SCOPE
 
 
 class LintError(ValueError):
@@ -107,7 +107,7 @@ def _lint(args: dict) -> dict:
         rec = _check.check_text(text, profile)
         rec["scored"] = "text"
     rec["profile"] = name
-    rec["does_not_prove"] = DOES_NOT_PROVE
+    rec["scope"] = SCOPE
     return rec
 
 

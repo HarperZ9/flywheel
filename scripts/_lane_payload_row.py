@@ -36,9 +36,9 @@ from _lane_payload_slice import (
 )
 from _lane_payload_source import (
     COMPONENT_SCHEMA,
-    DOES_NOT_PROVE,
     PACKAGING_BOUNDARY,
     ROW_SCHEMA,
+    SCOPE,
     GeneratorError,
     _blob_bytes,
     _digest,
@@ -157,7 +157,7 @@ def _descriptor(lane_name: str, mcp: dict[str, Any], source: dict[str, Any],
                 version: str) -> dict[str, Any]:
     return {
         "allowed_tools": list(mcp["allowed_tools_for_initial_admission"]),
-        "does_not_prove": list(DOES_NOT_PROVE),
+        "scope": list(SCOPE),
         "entrypoint": {
             "argv": ["--bundled-lane-mcp", lane_name],
             "callable": mcp["callable"],

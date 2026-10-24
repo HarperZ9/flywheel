@@ -101,8 +101,8 @@ void main() {
               'Flutter widget test engine / RenderRepaintBoundary.toImage',
           'fixture': 'explicit test lane roster; not live gateway data',
           'capture_text_font': _captureFontNote,
-          'does_not_prove':
-              'installed build behavior, device performance, production gateway data, or mobile device pixel parity',
+          'scope':
+              'fixture frames rendered by the Flutter widget test engine; installed builds, device performance, live gateway data and mobile pixel parity are separate checks',
           'checks': [
             'wide shell renders Tools selected with folded secondary navigation',
             'narrow layout renders Tools content with More route access',

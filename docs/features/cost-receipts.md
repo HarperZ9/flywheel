@@ -33,14 +33,16 @@ r = receipt(measured_s=1.334, prompt_tokens=61, completion_tokens=85,
 r["floor_s"], r["ratio"]   # 0.767, 1.74
 ```
 
-Each receipt (`flywheel.cost-floor/v1`) carries:
+Each receipt (`flywheel.cost-floor/v2`) carries:
 
 - measured time, the floor and their ratio
 - each phase's floor, and whether memory or arithmetic bounds it
 - the token counts and batch size
 - the model's size
 - the hardware rates and their source
-- the assumptions and a `does_not_prove` line
+- the assumptions and a `scope` line: the floor is a lower bound from
+  published peak rates under those assumptions, and the ratio is one total for
+  the call
 
 ## In search
 

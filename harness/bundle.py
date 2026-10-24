@@ -29,17 +29,19 @@ from pathlib import Path, PurePosixPath
 from .receipt import Receipt
 from .receipt_fields import canonical
 from .receipt_sign import pack_for_export, verify_signed, LOCAL_ONLY_ALGS
+from .scope import scope_list
 
-SCHEMA = "flywheel.bundle/v1"
+SCHEMA_V1 = "flywheel.bundle/v1"
+SCHEMA = "flywheel.bundle/v2"  # v2 names the manifest's list `scope`
 MANIFEST_NAME = "manifest.json"
 
-LIMITS = [
-    "NOT_PROVES_PUBLICATION_COMPLETENESS: this bundle shows what it contains and "
-    "cannot show what was left out of it.",
-    "NOT_PROVES_RECEIPT_CORRECTNESS: the manifest shows nothing was altered after "
-    "packing. A bundle of forged receipts with intact hashes verifies structurally.",
-    "NOT_PROVES_CHECKER_CORRECTNESS: the checker source ships so it can be read. "
-    "That it was shipped is not evidence that it implements the right predicate.",
+SCOPE = [
+    "BUNDLE_CONTENTS: this bundle shows the files it contains; a file left out "
+    "of it has no record here.",
+    "UNALTERED_SINCE_PACKING: the manifest shows each file is unchanged since "
+    "packing; each receipt inside is as its own verifier judged it.",
+    "CHECKER_SOURCE_CARRIED: the checker source ships so it can be read; "
+    "whether it implements the right predicate is the reader's review.",
 ]
 
 # Shapes that must never leave the machine. Deliberately narrow: a scanner that
@@ -138,7 +140,7 @@ def pack_bundle(out_dir, *, envelopes: list, criterion: dict,
     _write(root, "reproduce.py", _REPRODUCE, files)
 
     manifest = {"schema": SCHEMA, "files": sorted(files, key=lambda f: f["path"]),
-                "does_not_prove": LIMITS}
+                "scope": SCOPE}
     (root / MANIFEST_NAME).write_text(json.dumps(manifest, indent=1,
                                                  sort_keys=True),
                                       encoding="utf-8")
@@ -237,7 +239,7 @@ def verify_bundle(bundle_dir) -> dict:
     return {"verdict": "MATCH", "files_checked": checked, "receipts": receipts,
             "detail": f"{checked} file(s) matched the manifest, "
                       f"{len(receipts)} receipt(s) re-derived",
-            "does_not_prove": manifest.get("does_not_prove", [])}
+            "scope": scope_list(manifest)}
 
 
 _REPRODUCE = '''"""reproduce.py -- check this bundle without trusting whoever sent it.
@@ -246,7 +248,7 @@ Run: python reproduce.py
 
 Needs a bare Python interpreter. Runs on your machine with the standard
 library. MATCH means every file matches the manifest hash it shipped with and
-every receipt digest re-derives from its own body. The script prints the limits
+every receipt digest re-derives from its own body. The script prints the scope
 listed in manifest.json after the verdict.
 """
 import hashlib
@@ -273,8 +275,8 @@ def main() -> int:
     print("\\n".join(bad) if bad
           else f"MATCH: {len(manifest['files'])} file(s) verified")
     print()
-    print("limits (from manifest.json):")
-    for s in manifest.get("does_not_prove", []):
+    print("scope (from manifest.json):")
+    for s in manifest.get("scope", []):
         print("  - " + s)
     return 1 if bad else 0
 

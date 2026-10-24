@@ -268,7 +268,7 @@ def _fetch_block_header(height: int, *, timeout: float = 15.0) -> bytes:
     """Fetch a block header by height from a public explorer (blockstream.info).
 
     Two GETs: the block hash for the height, then that block's raw 80-byte header.
-    The header is not trusted for chain linkage (see `anchor.does_not_prove`); it
+    The header is not trusted for chain linkage (see `anchor.scope`); it
     is the input the offline proof-of-work recheck needs, and a wrong header simply
     fails that recheck rather than passing a forgery.
     """

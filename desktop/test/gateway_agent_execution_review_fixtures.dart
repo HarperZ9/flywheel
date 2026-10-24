@@ -8,6 +8,7 @@ import 'package:http/testing.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/client/gateway_grants.dart';
 import 'package:flywheel_desktop/controllers/gateway_operation_controller.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/operation_grant_sheet.dart';
 
@@ -100,7 +101,7 @@ const gatewayTextToolProtocol = {
 };
 
 final gatewayMcpAdmissionReview = {
-  'schema': 'flywheel.gateway-agent-mcp-admission-review/v1',
+  'schema': 'flywheel.gateway-agent-mcp-admission-review/v2',
   'admission_sha256': gatewayMcpAdmissionHash,
   'servers': [
     {
@@ -143,14 +144,33 @@ final gatewayMcpAdmissionReview = {
             'network_sandbox': false,
             'filesystem_sandbox': false,
           },
-          'does_not_prove': [
-            'declared read-only does not prove server cannot write'
+          'scope': [
+            'catalog authority records the operator-declared tool contract '
+                'that admission enforced'
           ],
         },
       ],
     },
   ],
 };
+
+/// The same admission review as a v1 record: the older schema id, and each
+/// tool row names its scope list by the older key.
+Map<String, Object?> gatewayMcpAdmissionReviewV1() {
+  final value = jsonDecode(jsonEncode(gatewayMcpAdmissionReview))
+      as Map<String, Object?>;
+  value['schema'] = 'flywheel.gateway-agent-mcp-admission-review/v1';
+  for (final server in value['servers'] as List) {
+    for (final tool in (server as Map)['tools'] as List) {
+      final row = tool as Map;
+      row[kLegacyScopeKey] = [
+        'declared read-only does not prove server cannot write'
+      ];
+      row.remove(kScopeKey);
+    }
+  }
+  return value;
+}
 
 final gatewayNativeAgentExecutionReview = {
   'schema': 'flywheel.gateway-agent-review/v2',

@@ -10,7 +10,9 @@ import math
 from .decision_contract import ID_PATTERN
 from .evidence_json import canonical_sha256
 
-SCHEMA = "flywheel.classifier-probability-metrics/v1"
+SCHEMA = "flywheel.classifier-probability-metrics/v2"
+# v1 reports name the scope list with the older key.
+SCHEMA_V1 = "flywheel.classifier-probability-metrics/v1"
 ABSTAIN_ID = "__abstain__"
 EPS = 1e-15
 
@@ -192,10 +194,10 @@ def evaluate_probability_cases(cases: list[dict], *, bins: int = 10) -> dict:
         "confidence_semantics": (
             "confidence is max predicted class probability from the supplied "
             "distribution; it is not evidence of calibration"),
-        "does_not_prove": [
-            "does not assert model calibration",
-            "does not prove independent label truth or held-out provenance",
-            "does not authorize execution or certify decision correctness",
+        "scope": [
+            "score-distribution quality against the supplied labels; calibration is unasserted",
+            "labels and their provenance as the caller supplied them",
+            "a measurement report; execution authority and decision correctness stay outside it",
         ],
     }
     return {**body, "report_sha256": canonical_sha256(body)}

@@ -14,16 +14,21 @@ from harness.incident_sim_packet_verify import (
     NOT_ASSESSED,
     verify_process_audit_packet,
 )
+from harness.scope import LEGACY_SCOPE_KEY, scope_key, scope_list
 
 PATH = "/api/incident-sim/process-audit/review"
-REVIEW_SCHEMA = "flywheel.incident-sim-process-audit-review/v1"
+# v2 reviews name the coverage list `scope`; v1 reviews carried the older key.
+REVIEW_SCHEMA_V1 = "flywheel.incident-sim-process-audit-review/v1"
+REVIEW_SCHEMA = "flywheel.incident-sim-process-audit-review/v2"
 REVIEW_REQUEST_SCHEMA = "flywheel.incident-sim-process-audit-review-request/v1"
 MAX_PACKET_BYTES = 1_048_576
 
-_DOES_NOT_PROVE = [
-    "semantic correctness of the task, trace, evaluation, scorer, or access claim",
-    "external authority, wall-clock truth, disclosure completeness, or immutable history",
-    "absence of a coherent rewrite of the local packet and every packet-local digest",
+_REVIEW_SCOPE = [
+    "packet-local digests, receipt seals and receipt chains were rechecked; "
+    "task, trace, evaluation and access content is taken as submitted",
+    "authority, times and disclosures are taken as the packet declares them",
+    "a coherent rewrite of the packet with every packet-local digest recomputed "
+    "rechecks the same way",
 ]
 
 
@@ -92,7 +97,7 @@ def process_audit_review_post(
             "gateway_effect_verification": verification["gateway_effect_verification"],
             "declared_access": _declared_access(packet, verification),
             "source_pointers": _source_pointers(packet),
-            "does_not_prove": list(_DOES_NOT_PROVE),
+            "scope": list(_REVIEW_SCOPE),
         }
         return body, 200
     except TransportError as exc:
@@ -193,11 +198,11 @@ def _declared_access(packet: dict[str, Any], verification: dict[str, Any]) -> di
             reasons = claim.get("reasons", [])
             detail = ",".join(str(item) for item in reasons) or "coverage_limited"
             limits.append(f"{claim_id}:{detail}")
-    for item in assessment.get("does_not_prove", []):
-        limits.append(str(item))
-    return {
-        "verdict": verdict,
-        "coverage_assessment": checked,
-        "reported_coverage_assessment": reported,
-        "limits": limits,
-    }
+    declared = {"verdict": verdict, "coverage_assessment": checked,
+                "reported_coverage_assessment": reported, "limits": limits}
+    # A v1 assessment's older list is a list of limits; a v2 list says what it covers.
+    if scope_key(assessment) == LEGACY_SCOPE_KEY:
+        limits.extend(scope_list(assessment))
+    elif scope_list(assessment):
+        declared["scope"] = scope_list(assessment)
+    return declared

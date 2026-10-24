@@ -9,9 +9,11 @@ fields into a claim and digests it. Two properties are the whole point:
    noticed.
    `claim_sha256` binds the verdict, the objective, and the raw oracle output. It
    is what a signature covers and what a stranger re-derives.
-2. `does_not_prove` is MECHANICALLY DERIVED from the receipt's own contents and is
-   never empty. A receipt that reports only its proof is how a true explanation
-   becomes a fake passport, and deriving it means nobody has to remember.
+2. `scope` is MECHANICALLY DERIVED from the receipt's own contents and is never
+   empty: codes for the properties its fields establish (receipt_scope.py). A
+   reader sees exactly what the receipt covers, and deriving it means nobody has
+   to remember. v3 and v4 receipts carry the older list of `NOT_PROVES_*`
+   codes and are read with that vocabulary.
 `SIGNED_OVER` is fixed here, per schema version, and is deliberately NOT a receipt
 field. If a receipt could declare what its own signature covers, an attacker would
 declare the narrowest possible coverage.
@@ -21,18 +23,24 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass, replace
 
+from .receipt_scope import derived_scope, legacy_limits
 from .receipt_fields import (
     Budget, Denominator, EvidenceKind, GradedScore, Tier, ReceiptError,
     canonical, no_floats,
 )
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 from .verdict import Verdict, Attribution
 
 LEGACY_SCHEMA = "flywheel.receipt/v3"
 # v4 is the first schema whose claim preimage binds oracle-specific limits.
-# v3 remains readable with its original preimage; schema names never get a
-# second interpretation after publication.
-SCHEMA = "flywheel.receipt/v4"
-SUPPORTED_SCHEMAS = frozenset((LEGACY_SCHEMA, SCHEMA))
+# v5 names that list `scope` and says what the receipt covers. v3 and v4 remain
+# readable with their original preimage and vocabulary; schema names never get
+# a second interpretation after publication.
+V4_SCHEMA = "flywheel.receipt/v4"
+SCHEMA = "flywheel.receipt/v5"
+SUPPORTED_SCHEMAS = frozenset((LEGACY_SCHEMA, V4_SCHEMA, SCHEMA))
+_LEGACY_VOCABULARY = frozenset((LEGACY_SCHEMA, V4_SCHEMA))
+_EXTRA_KEY = {V4_SCHEMA: "extra_" + LEGACY_SCOPE_KEY, SCHEMA: "extra_scope"}
 
 # What a signature covers. Fixed in code, never read from a receipt. This is a
 # security property, not a configuration choice.
@@ -118,7 +126,7 @@ class Receipt:
     novelty_verdict: str = "UNKNOWN"         # REDISCOVERY | NOT_FOUND_IN_CORPUS
     unverifiable_reason: str = ""
     undecided_reason: str = ""
-    extra_does_not_prove: tuple = ()
+    extra_scope: tuple = ()
     schema: str = SCHEMA
 
     def __post_init__(self) -> None:
@@ -178,8 +186,8 @@ class Receipt:
             "unverifiable_reason": self.unverifiable_reason,
             "undecided_reason": self.undecided_reason,
         })
-        if self.schema == SCHEMA:
-            d["extra_does_not_prove"] = list(self.extra_does_not_prove)
+        if self.schema in _EXTRA_KEY:
+            d[_EXTRA_KEY[self.schema]] = list(self.extra_scope)
         return d
 
     def subject_sha256(self) -> str:
@@ -192,43 +200,19 @@ class Receipt:
         return "sha256:" + hashlib.sha256(
             canonical(self._claim()).encode()).hexdigest()
 
-    # --- the honesty field ---------------------------------------------------
+    # --- scope ----------------------------------------------------------------
 
-    def does_not_prove(self) -> list[str]:
-        """Derived from the receipt's own contents, so nobody has to remember."""
-        out = ["NOT_PROVES_PUBLICATION_COMPLETENESS"]
-        if not self.oracle_qa_card_hash:
-            out.append("NOT_PROVES_VERIFIER_SOUNDNESS")
-        if self.held_out_agreement != "AGREE":
-            out.append("NOT_PROVES_RESISTANCE_TO_ORACLE_GAMING")
-        if not self.coverage.get("predicate_exact", False):
-            out.append("NOT_PROVES_EXACTNESS")
-        if not self.coverage.get("search_space_enumerated", False):
-            out.append("NOT_PROVES_COMPLETE_ENUMERATION")
-        if self.novelty_verdict == "UNKNOWN":
-            out.append("NOT_PROVES_NOVELTY")
-        if self.executes_candidate_code:
-            out.append("NOT_PROVES_CONTAINMENT")
-        if not self.base_weights_digest:
-            out.append("NOT_PROVES_WHICH_WEIGHTS")
-        if self.denominator.filter_is_learned:
-            out.append("NOT_PROVES_UNBIASED_TASK_SELECTION")
-        if not self.budget.declared:
-            out.append("NOT_PROVES_COST_BOUNDED")
-        if self.budget.exhausted:
-            # A result reached at the ceiling says as much about the ceiling as
-            # about the candidate, and a reader cannot tell which without this.
-            out.append("NOT_PROVES_UNCONSTRAINED_BY_BUDGET")
-        if self.denominator.retries:
-            out.append("NOT_PROVES_FIRST_ATTEMPT_SUCCESS")
-        if self.denominator.oracle_feedback_visible:
-            out.append("NOT_PROVES_FOUND_WITHOUT_ORACLE_FEEDBACK")
-        if self.graded_score is not None and self.graded_score.trials < 2:
-            out.append("NOT_PROVES_SCORE_STABILITY")
-        if self.input_tier_multiset:
-            out.append("TIER_LIMITED_BY_INPUT")
-        out.extend(self.extra_does_not_prove)
-        return out
+    def scope(self) -> list[str]:
+        """Derived from the receipt's own contents, so nobody has to remember.
+
+        v5 lists what the receipt covers; v3 and v4 keep the list they sealed."""
+        if self.schema in _LEGACY_VOCABULARY:
+            return legacy_limits(self)
+        return derived_scope(self)
+
+    def scope_key(self) -> str:
+        """The wire name of the scope list for this receipt's schema."""
+        return LEGACY_SCOPE_KEY if self.schema in _LEGACY_VOCABULARY else SCOPE_KEY
 
     # --- wire form -----------------------------------------------------------
 
@@ -236,7 +220,7 @@ class Receipt:
         d = dict(self._claim())
         d["subject_sha256"] = self.subject_sha256()
         d["claim_sha256"] = self.claim_sha256()
-        d["does_not_prove"] = self.does_not_prove()
+        d[self.scope_key()] = self.scope()
         d["harness_version"] = self.harness_version
         return d
 
@@ -250,11 +234,13 @@ class Receipt:
             raise ReceiptError(f"refusing unsupported receipt schema {schema!r}")
         den = d["denominator"]
         graded = d.get("graded_score")
-        if schema == LEGACY_SCHEMA and "extra_does_not_prove" in d:
-            raise ReceiptError("v3 does not define extra_does_not_prove")
-        extra = d.get("extra_does_not_prove", ()) if schema == SCHEMA else ()
+        extra_key = _EXTRA_KEY.get(schema)
+        for key in ("extra_" + LEGACY_SCOPE_KEY, "extra_scope"):
+            if key in d and key != extra_key:
+                raise ReceiptError(f"{schema} does not define {key}")
+        extra = d.get(extra_key, ()) if extra_key else ()
         if type(extra) not in (list, tuple) or any(type(item) is not str for item in extra):
-            raise ReceiptError("extra_does_not_prove must be a list of strings")
+            raise ReceiptError(f"{extra_key} must be a list of strings")
         receipt = cls(
             criterion_id=d["criterion_id"],
             criterion_version=d["criterion_version"],
@@ -286,15 +272,18 @@ class Receipt:
             novelty_verdict=d.get("novelty_verdict", "UNKNOWN"),
             unverifiable_reason=d.get("unverifiable_reason", ""),
             undecided_reason=d.get("undecided_reason", ""),
-            extra_does_not_prove=tuple(extra), schema=schema)
-        claimed_limits = d.get("does_not_prove")
+            extra_scope=tuple(extra), schema=schema)
+        key = receipt.scope_key()
+        other = SCOPE_KEY if key == LEGACY_SCOPE_KEY else LEGACY_SCOPE_KEY
+        if other in d:
+            raise ReceiptError(f"{schema} carries {other!r}; its list is {key!r}")
+        claimed = d.get(key)
         if schema == LEGACY_SCHEMA:
-            base = receipt.does_not_prove()
-            if (type(claimed_limits) is not list or claimed_limits[:len(base)] != base
-                    or any(type(item) is not str for item in claimed_limits)):
-                raise ReceiptError("does_not_prove does not match legacy v3 limits")
-            receipt = replace(receipt,
-                extra_does_not_prove=tuple(claimed_limits[len(base):]))
-        if claimed_limits != receipt.does_not_prove():
-            raise ReceiptError("does_not_prove does not exactly match receipt limits")
+            base = receipt.scope()
+            if (type(claimed) is not list or claimed[:len(base)] != base
+                    or any(type(item) is not str for item in claimed)):
+                raise ReceiptError(f"{key} does not match legacy v3 limits")
+            receipt = replace(receipt, extra_scope=tuple(claimed[len(base):]))
+        if claimed != receipt.scope():
+            raise ReceiptError(f"{key} does not exactly match the receipt's derived {key}")
         return receipt

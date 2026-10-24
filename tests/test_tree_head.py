@@ -12,7 +12,7 @@ import pytest
 from harness.ledger import Ledger
 from harness.tree_head import (
     SCHEMA, HEAD_DOMAIN, TreeHeadError, log_id_for, sign_head,
-    check_signed_head, head_preimage, does_not_prove,
+    check_signed_head, head_preimage, scope,
 )
 
 
@@ -225,7 +225,9 @@ def test_proofs_carry_the_log_id_when_the_ledger_has_one(tmp_path, keys):
 def test_a_keyless_ledger_reports_no_log_id_and_says_so(tmp_path):
     led = _ledger(tmp_path)
     assert led.proof_for("sha256:" + f"{1:064x}")["log_id"] is None
-    assert "NOT_PROVES_WHICH_LOG" in led.does_not_prove()
+    assert "LOG_NAMED" not in led.scope()
+    keyed = _ledger(tmp_path / "keyed", log_id=log_id_for(bytes(32)))
+    assert "LOG_NAMED" in keyed.scope()
 
 
 # --- the property this module exists for ------------------------------------
@@ -256,4 +258,4 @@ def test_signing_makes_equivocation_attributable_rather_than_impossible(
     assert a["log_id"] == b["log_id"]
 
     # And the module says this out loud rather than implying it was solved.
-    assert any("NOT_PROVES_NON_EQUIVOCATION_ALONE" in d for d in does_not_prove())
+    assert any("ONE_VIEW_SIGNED" in d for d in scope())

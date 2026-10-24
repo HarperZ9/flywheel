@@ -19,13 +19,15 @@ What is hashed as the content depends on the level:
 * level 3: raw-native's ray-traced AO as canonical ``ao.f32`` (float32,
   little-endian, rows top-down), against another renderer's AO.
 
-Every receipt lists the family's fixed ``DOES_NOT_PROVE`` lines first. Pure
-data: this module runs nothing.
+Every receipt lists the family's fixed ``SUPERSTACK_LIMITS`` lines first, under
+the field name superstack's vendored schema defines. Pure data: this module runs
+nothing.
 """
 from __future__ import annotations
 
 from .._vendor import superstack as ss
-from .raw_ao import DOES_NOT_PROVE, FAMILY, certificate_sha256, level1
+from ..scope import LEGACY_SCOPE_KEY
+from .raw_ao import FAMILY, SUPERSTACK_LIMITS, certificate_sha256, level1
 
 SEED_RULE = "raw-pixel-hash/1"
 OUTPUTS_FORMAT = "raw-outputs/1"
@@ -73,7 +75,8 @@ def make(*, level, params: dict, producer: str, version: str, backend: str,
         producer=producer, version=version, backend=backend, scene=scene_for(params),
         media=media, content=content, outputs=outputs, reference=reference,
         reconcile={"identity": identity, "tolerance": tolerance},
-        does_not_prove=[*DOES_NOT_PROVE, *extra_not_proven], seed_rule=SEED_RULE)
+        **{LEGACY_SCOPE_KEY: [*SUPERSTACK_LIMITS, *extra_not_proven]},
+        seed_rule=SEED_RULE)
     rec["flywheel"] = _flywheel_block(level, identity, tolerance, dict(flywheel or {}))
     return ss.seal(rec)
 
@@ -94,9 +97,9 @@ def check(rec) -> list[str]:
         errors.append("flywheel:tolerance")
     if fw.get("family") != FAMILY:
         errors.append("flywheel:family")
-    dnp = rec.get("does_not_prove") or []
-    if list(dnp[:len(DOES_NOT_PROVE)]) != list(DOES_NOT_PROVE):
-        errors.append("flywheel:does_not_prove")
+    limits = rec.get(LEGACY_SCOPE_KEY) or []
+    if list(limits[:len(SUPERSTACK_LIMITS)]) != list(SUPERSTACK_LIMITS):
+        errors.append("flywheel:" + LEGACY_SCOPE_KEY)
     return sorted(set(errors))
 
 

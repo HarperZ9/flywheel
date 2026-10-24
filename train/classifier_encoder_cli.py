@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from harness.classifier_dataset import MANIFEST_SCHEMA, load_examples_jsonl
+from harness.classifier_dataset import MANIFEST_SCHEMAS, load_examples_jsonl
 from harness.evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 
 from .classifier_encoder import (
@@ -64,7 +64,7 @@ def _load_split_manifest(path: str | Path, rows: list[dict]) -> dict:
     except (ValueError, RecursionError) as exc:
         raise SystemExit("invalid split manifest JSON") from exc
     body = {key: value for key, value in manifest.items() if key != "manifest_sha256"}
-    if manifest.get("schema") != MANIFEST_SCHEMA or manifest.get("manifest_sha256") != canonical_sha256(body):
+    if manifest.get("schema") not in MANIFEST_SCHEMAS or manifest.get("manifest_sha256") != canonical_sha256(body):
         raise SystemExit("invalid split manifest checksum")
     manifest_hashes = [item.get("example_sha256") for item in manifest.get("examples", [])]
     row_hashes = [row["example_sha256"] for row in rows]
@@ -152,7 +152,7 @@ def _parser() -> argparse.ArgumentParser:
     train = sub.add_parser("train")
     train.add_argument("--examples", required=True)
     train.add_argument("--split-manifest", default=None,
-                       help="optional flywheel.classifier-split-manifest/v1; "
+                       help="optional flywheel.classifier-split-manifest/v2 (v1 accepted); "
                             "must cover all examples, only split=train rows train")
     train.add_argument("--pretrained-model", required=True)
     train.add_argument("--out", required=True)

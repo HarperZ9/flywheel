@@ -30,7 +30,8 @@ from ..receipt_fields import canonical
 from . import keys
 from .server import Signer
 
-RECEIPT_SCHEMA = "flywheel.signer-anchor/v1"
+RECEIPT_SCHEMA_V1 = "flywheel.signer-anchor/v1"
+RECEIPT_SCHEMA = "flywheel.signer-anchor/v2"  # v2 names `scope`
 JOB_ISOLATION = {"mode": "unattested", "signer": "self", "client": "anchor-job"}
 
 
@@ -96,7 +97,7 @@ def anchor_store(signer: Signer, sign_ph, store: str, out: Path, *, request,
         path.with_suffix(".ots").write_bytes(proof)
     _write(path, {"schema": RECEIPT_SCHEMA, "store_key": store_key(store),
                   "signed_head": head, "head_sha256": sha, "rekor": rekor, "ots": ots,
-                  "does_not_prove": rekor_verify.does_not_prove()})
+                  "scope": rekor_verify.scope()})
     return {"store_key": store_key(store), "seq": head["seq"], "anchored": True,
             "log_index": rekor["log_index"], "ots": ots["state"], "receipt": path.name}
 

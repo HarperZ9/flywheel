@@ -6,7 +6,7 @@ import json
 
 from .accountable_hooks import (event_blocked, load_registry, run_hooks,
     subprocess_runner)
-from .subagent_roles import SWARM_SCHEMA, quorum
+from .subagent_roles import SWARM_SCHEMA, SWARM_SCHEMAS, quorum
 from .subagent_store import save_swarm_receipt
 
 
@@ -26,7 +26,7 @@ def recheck_swarm_receipt(receipt: dict) -> dict:
     (each child's chain head and accepted flag, hashed) all re-derive from the
     children the receipt carries; DRIFT names every field that does not. It
     cannot re-run a child's own chain, which is not persisted."""
-    if receipt.get("schema") != SWARM_SCHEMA:
+    if receipt.get("schema") not in SWARM_SCHEMAS:
         return {"verdict": "UNVERIFIABLE", "drift": ["schema"]}
     receipts = receipt.get("children") or []
     completed = sum(1 for r in receipts if r.get("status") == "completed")
@@ -80,12 +80,13 @@ def finalize_swarm(runner, rec: dict) -> None:
         "event_blocked": event_blocked(hook_receipts),
         "created_at": rec["created_at"],
         "finished_at": runner._clock(),
-        "does_not_prove": [
+        "scope": [
             "a satisfied completed quorum attests the children ran and reported; "
-            "it does not prove the goal was achieved",
+            "whether the goal was achieved is a separate check",
             "a satisfied verified quorum attests each counted child's chain was "
-            "intact, its trajectory did not tamper with its grader, and any check "
-            "it ran passed; it does not prove the child pursued the intended goal",
+            "intact, its trajectory left its grader untouched, and any check it "
+            "ran passed; the child's pursuit of the intended goal is a separate "
+            "check",
         ]}
     if rec.get("routing_schema"):
         receipt["routing_schema"] = rec["routing_schema"]

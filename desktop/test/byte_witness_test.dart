@@ -244,11 +244,11 @@ void main() {
       expect(result.failureClass, kWitnessMalformed);
     });
 
-    test('always carries what it does not prove', () {
+    test('always carries its scope', () {
       final result = verifyByteWitnessChain([_first(), _second()]);
-      expect(result.doesNotProve, isNotEmpty);
-      expect(result.doesNotProve.join(' '), contains('nothing is signed here'));
-      expect(result.doesNotProve.last, contains('bind the head'));
+      expect(result.scope, isNotEmpty);
+      expect(result.scope.join(' '), contains('the chain is unsigned'));
+      expect(result.scope.last, contains('binding that head elsewhere'));
     });
   });
 

@@ -23,7 +23,7 @@ OP-emitted operation is a genuine gateway operation the existing pipeline runs,
 not a bespoke shape nothing consumes. OP adds what the generic plugin plane does
 not carry: a proprietary license class that never converts to open, a
 containment requirement for anything that executes or reaches the network, and a
-`does_not_prove` line per connector.
+`scope` line per connector.
 """
 from __future__ import annotations
 
@@ -79,7 +79,7 @@ class OPConnector:
     scopes: tuple[str, ...]
     containment_required: bool
     mcp_available: bool
-    does_not_prove: str
+    scope: str
     requires: tuple[str, ...] = ()
     license_class: str = LICENSE_CLASS
 
@@ -120,8 +120,8 @@ _CONNECTORS: tuple[OPConnector, ...] = (
         scopes=("exec",),
         containment_required=True,
         mcp_available=True,
-        does_not_prove="a returned finding is a local, metadata-only assessment "
-                       "record, not an exploited or verified vulnerability",
+        scope="a returned finding is a local, metadata-only assessment record "
+              "of a candidate weakness",
     ),
     OPConnector(
         connector_id="array",
@@ -131,8 +131,8 @@ _CONNECTORS: tuple[OPConnector, ...] = (
         scopes=("exec", "network"),
         containment_required=True,
         mcp_available=True,
-        does_not_prove="a planned or executed wave is authorized orchestration "
-                       "under the operator's rules of engagement, not proof of impact",
+        scope="a planned or executed wave is orchestration authorized under the "
+              "operator's rules of engagement; impact is measured separately",
     ),
     OPConnector(
         connector_id="isomorph",
@@ -142,8 +142,8 @@ _CONNECTORS: tuple[OPConnector, ...] = (
         scopes=("network", "exec"),
         containment_required=True,
         mcp_available=False,
-        does_not_prove="a transformed or recovered response measures provider "
-                       "boundary behavior, not a general capability grant",
+        scope="a transformed or recovered response measures provider boundary "
+              "behavior for that request",
     ),
     OPConnector(
         connector_id="sofer",
@@ -153,8 +153,8 @@ _CONNECTORS: tuple[OPConnector, ...] = (
         scopes=("exec", "network"),
         containment_required=True,
         mcp_available=False,
-        does_not_prove="a domain result is authorized tooling output for the "
-                       "operator's mandate, not lawful authorization in itself",
+        scope="a domain result is tooling output authorized for the operator's "
+              "mandate, and lawful authority comes from that mandate",
     ),
     OPConnector(
         connector_id="bounds",
@@ -164,8 +164,8 @@ _CONNECTORS: tuple[OPConnector, ...] = (
         scopes=("exec",),
         containment_required=True,
         mcp_available=False,
-        does_not_prove="a trust-verification receipt records what was observed, "
-                       "not that a human authored, authorized, or attested it",
+        scope="a trust-verification receipt records what was observed; "
+              "authorship and attestation are recorded where a person signs",
     ),
     OPConnector(
         connector_id="phantom",
@@ -175,8 +175,8 @@ _CONNECTORS: tuple[OPConnector, ...] = (
         scopes=("exec",),
         containment_required=True,
         mcp_available=False,
-        does_not_prove="a hardware-identity change is a local machine-state "
-                       "transform, not off-host authenticity",
+        scope="a hardware-identity change is a local machine-state transform "
+              "on this host",
     ),
 )
 
@@ -224,7 +224,7 @@ def build_op_registration(connector: OPConnector) -> dict:
         "name": connector.plugin_name,
         "command": list(connector.mcp_command),
         "detail": f"Flywheel OP connector ({connector.display_name}); "
-                  f"proprietary. {connector.does_not_prove}",
+                  f"proprietary. {connector.scope}",
         "requires": list(connector.requires),
         "data_refs": [],
         "credential_refs": [],

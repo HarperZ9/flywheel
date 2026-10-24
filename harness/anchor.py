@@ -25,7 +25,8 @@ import hashlib
 from . import ots_verify, tree_head
 from .receipt_fields import canonical
 
-SCHEMA = "flywheel.anchor/v1"
+SCHEMA_V1 = "flywheel.anchor/v1"
+SCHEMA = "flywheel.anchor/v2"  # v2 names `scope`
 
 
 def anchor_digest(signed_head: dict) -> tuple[str, bytes]:
@@ -46,7 +47,7 @@ def build_anchor(signed_head: dict) -> dict:
         "signed_head": signed_head,
         "anchor_digest": prefixed,
         "digest_hex": raw.hex(),
-        "does_not_prove": does_not_prove(),
+        "scope": scope(),
     }
 
 
@@ -116,18 +117,17 @@ def stored_header_provider(anchor_rec: dict):
     return lambda h: header if (height is None or h == height) else None
 
 
-def does_not_prove() -> list[str]:
-    """What an anchored head still does not establish."""
-    return tree_head.does_not_prove() + [
-        "NOT_PROVES_BEFORE_ANY_TIME_UNTIL_CONFIRMED: an OpenTimestamps proof only "
-        "bounds time once it has upgraded into a Bitcoin block. A pending proof "
-        "names a calendar that promised to anchor it, which is not yet a block.",
-        "NOT_PROVES_THE_DIGEST_IS_MEANINGFUL: the timestamp bounds when these "
-        "bytes existed, not that the head they carry is honest about the tree.",
-        "NOT_PROVES_THE_HEADER_IS_A_REAL_BLOCK: the offline proof-of-work recheck "
-        "confirms a bundle-carried header is internally consistent and clears a "
-        "real target, which refuses a zero-work forgery. It does not establish "
-        "that the header sits on the real Bitcoin chain; a header is only as "
-        "trustworthy as its source. Cross-check the block hash against an "
-        "independent chain view for linkage, not just this internal recheck.",
+def scope() -> list[str]:
+    """What an anchored head covers."""
+    return tree_head.scope() + [
+        "TIME_BOUND_ONCE_CONFIRMED: an OpenTimestamps proof bounds time once it "
+        "has upgraded into a Bitcoin block. A pending proof names a calendar "
+        "that promised to anchor it.",
+        "DIGEST_EXISTED_BY: the timestamp bounds when these bytes existed. The "
+        "head's honesty about its tree rests on its signature and verifier.",
+        "HEADER_WORK_RECHECKED: the offline proof-of-work recheck confirms a "
+        "bundle-carried header is internally consistent and clears a real "
+        "target, which refuses a zero-work forgery. The header's place on the "
+        "real Bitcoin chain comes from its source; cross-check the block hash "
+        "against an independent chain view for linkage.",
     ]

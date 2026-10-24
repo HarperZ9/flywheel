@@ -22,7 +22,7 @@ from harness.action_witness import LOG_NAME, verify_log
 from harness.receipting_cost_bench import (RECORDS_PER_ACTION, _actions,
                                            _buffered, _chain_only, _durable,
                                            _known_bytes, _on_disk, _reading,
-                                           _share, _spread, does_not_prove,
+                                           _share, _spread, scope,
                                            run_receipting_cost_benchmark)
 
 SMALL = {"batches": 2, "per_batch": 3}
@@ -189,10 +189,10 @@ def test_a_single_figure_is_never_reported_without_its_spread():
                                 "high_us": 40.0}
 
 
-def test_the_measurement_says_what_it_leaves_open():
-    limits = does_not_prove()
-    assert limits
-    assert any("one filesystem" in limit for limit in limits)
+def test_the_measurement_says_what_it_covers():
+    lines = scope()
+    assert lines
+    assert any("one filesystem" in line for line in lines)
     report = run_receipting_cost_benchmark(**SMALL)
-    assert report["does_not_prove"] == limits
+    assert report["scope"] == lines
     assert report["reading"]

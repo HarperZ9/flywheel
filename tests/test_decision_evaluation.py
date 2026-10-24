@@ -3,6 +3,7 @@ import pytest
 
 from harness.decision_contract import evaluate_proposal
 from harness.decision_evaluation import evaluate_cases, synthetic_control_report
+from harness.scope import LEGACY_SCOPE_KEY
 
 
 def test_deep_malformed_result_is_invalid_with_unavailable_input_hash():
@@ -30,7 +31,7 @@ def result(choice="search"):
         "request_sha256": _DIGEST0,
         "response_sha256": _DIGEST1,
         "scorer_ref": "control",
-        "does_not_prove": "synthetic control fixture only",
+        LEGACY_SCOPE_KEY: "synthetic control fixture only",
     }
 
 
@@ -197,7 +198,7 @@ def test_empty_evaluation_has_no_success_rate():
     report = evaluate_cases([])
     assert report["counts"]["total"] == 0
     assert report["metrics"]["overall_correct_fraction"] is None
-    assert report["does_not_prove"]
+    assert report["scope"] and report["schema"] == "flywheel.decision-evaluation/v2"
 
 
 def test_missing_choice_id_on_abstention_is_malformed_not_default_none():
@@ -230,9 +231,9 @@ def test_synthetic_control_report_is_deterministic_and_disclaims_model_quality()
     first = synthetic_control_report()
     second = synthetic_control_report()
     assert first == second
-    assert first["schema"] == "flywheel.decision-control-report/v1"
+    assert first["schema"] == "flywheel.decision-control-report/v2"
     assert "no provider calls" in first["methodology"]
-    assert "model quality" in " ".join(first["does_not_prove"])
+    assert "synthetic controls" in " ".join(first["scope"])
     assert set(first["controls"]) == {
         "correct", "wrong_but_valid", "ineligible", "abstain_all",
         "rejected_when_abstention_expected",
@@ -295,6 +296,5 @@ def test_selected_result_with_null_response_digest_is_invalid():
 
 def test_report_names_unmounted_caller_supplied_result_boundary():
     report = evaluate_cases([case("boundary")])
-    boundary = " ".join(report["does_not_prove"])
-    assert "caller-supplied result authenticity" in boundary
-    assert "mounted gateway admission" in boundary
+    boundary = " ".join(report["scope"])
+    assert "taken as supplied" in boundary and "gateway admission" in boundary

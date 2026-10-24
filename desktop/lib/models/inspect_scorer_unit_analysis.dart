@@ -16,13 +16,15 @@ const _unitRelationships = {
   'many_to_one',
   'unverifiable'
 };
+const _unitAnalysisSchema = 'flywheel.inspect-scorer-unit-analysis/v2';
+const _unitAnalysisSchemaV1 = 'flywheel.inspect-scorer-unit-analysis/v1';
 const _emptyContractRefs =
     (<InspectScorerUnitSourceRef>[], <InspectScorerUnitSpanRef>[]);
 
 class InspectMeasurementUnitVerification {
   final String mappingConsistency, scoreUnitRelationship;
   final String definitionScoreCoverage;
-  final List<String> doesNotProve;
+  final List<String> scope;
   final List<InspectScorerUnitContract> contracts;
   final List<InspectScorerUnitSourceRef> sourceRefs;
 
@@ -32,7 +34,7 @@ class InspectMeasurementUnitVerification {
     required this.definitionScoreCoverage,
     required this.contracts,
     required this.sourceRefs,
-    required this.doesNotProve,
+    required this.scope,
   });
 
   static InspectMeasurementUnitVerification? tryFromJson(Object? value) {
@@ -44,14 +46,23 @@ class InspectMeasurementUnitVerification {
     final reasons = json.containsKey('reason_codes')
         ? _stringList(json['reason_codes'])
         : const <String>[];
-    final limits = _stringList(json['does_not_prove']);
+    // v2 names the list `scope`; v1 (and an unversioned record) the older key.
+    final scopeKey = schema == _unitAnalysisSchema
+        ? kScopeKey
+        : schema == _unitAnalysisSchemaV1
+            ? kLegacyScopeKey
+            : scopeKeyOf(json) ?? kLegacyScopeKey;
+    final otherKey = scopeKey == kScopeKey ? kLegacyScopeKey : kScopeKey;
+    final scope = _stringList(json[scopeKey]);
     final sourceRefs = _sourceRefs(json['source_pointers']);
     if ((schema != null &&
-            schema != 'flywheel.inspect-scorer-unit-analysis/v1') ||
+            schema != _unitAnalysisSchema &&
+            schema != _unitAnalysisSchemaV1) ||
+        json.containsKey(otherKey) ||
         json['semantic_verification'] != 'UNVERIFIABLE' ||
         contracts == null ||
         reasons == null ||
-        limits == null ||
+        scope == null ||
         sourceRefs == null ||
         (contracts.isEmpty &&
             (reasons.length != 1 || reasons.single != 'no_unit_contract'))) {
@@ -74,7 +85,7 @@ class InspectMeasurementUnitVerification {
       definitionScoreCoverage: coverage,
       contracts: contracts,
       sourceRefs: sourceRefs,
-      doesNotProve: limits,
+      scope: scope,
     );
   }
 }

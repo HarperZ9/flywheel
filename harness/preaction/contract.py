@@ -19,16 +19,20 @@ VERDICTS = (ALLOW, HOLD, BLOCK)
 MATCH, DRIFT, UNVERIFIABLE = "MATCH", "DRIFT", "UNVERIFIABLE"
 _RANK = {ALLOW: 0, HOLD: 1, BLOCK: 2}
 
-DOES_NOT_PROVE = {
-    HOLD: "Matched rule or threshold; says nothing about intent.",
-    BLOCK: "Matched rule or threshold; says nothing about intent.",
-    ALLOW: "No rule fired and the judge, if on, scored below threshold; safety stays open.",
-    UNVERIFIABLE: "The monitor could not assess this call; it was not treated as safe.",
+# What each pre-action record covers, by verdict. The monitor reads the
+# proposed action, its arguments and the trajectory; the scope says so.
+SCOPE = {
+    HOLD: "A rule or threshold matched this proposed action, its arguments or its trajectory.",
+    BLOCK: "A rule or threshold matched this proposed action, its arguments or its trajectory.",
+    ALLOW: "No rule fired and the judge, if on, scored below threshold for this call; "
+           "the record covers those checks.",
+    UNVERIFIABLE: "The monitor could not assess this call, and the call kept the "
+                  "handling of an unassessed call.",
 }
-REVIEW_DOES_NOT_PROVE = (
+REVIEW_SCOPE = (
     "This shows the proposed action matched a rule or scored above a threshold. "
-    "It does not show intent. The agent's task, instructions and environment "
-    "explain the behavior.")
+    "The check reads the action, its arguments and the trajectory. The agent's "
+    "task, instructions and environment explain the behavior.")
 
 _BUILTIN_CAPABILITY = {
     "write_file": "builtin-write", "edit_file": "builtin-write", "apply_patch": "builtin-write",

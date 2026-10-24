@@ -9,6 +9,7 @@ import pytest
 
 from harness import attribution_far as af
 from harness import shapley_far as sf
+from harness.scope import LEGACY_SCOPE_KEY, scope_list
 
 ITEMS = (Path(__file__).resolve().parents[1] / "project-docs" / "records"
          / "2026-10-04-shapley-placebo" / "items-v1.json")
@@ -83,7 +84,10 @@ def test_analyze_reports_wilson_intervals_and_the_shared_verdict():
     assert out["false_attribution"]["method"] == "wilson-95"
     assert float(out["false_attribution"]["upper"]) > 0.4  # five trials say little
     assert out["gold_detection_on_answerable"]["k"] == "1"
-    assert sf.SHAPLEY_DOES_NOT_PROVE in out["does_not_prove"]
+    # shapley_far.py is pinned by the preregistration, so its record keeps the
+    # older key; readers go through scope_list.
+    assert LEGACY_SCOPE_KEY in out
+    assert sf.SHAPLEY_DOES_NOT_PROVE in scope_list(out)
 
 
 def test_the_preregistered_item_set_is_well_formed():

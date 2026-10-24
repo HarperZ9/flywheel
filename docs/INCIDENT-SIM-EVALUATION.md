@@ -40,7 +40,7 @@ reserialization of receipt objects while still checking their fixed-schema-order
 seals. The reported packet source hash remains the exact file bytes supplied for
 review.
 
-The build command writes an outer `flywheel.incident-sim-command/v1` report. The
+The build command writes an outer `flywheel.incident-sim-command/v2` report. The
 packet verifier expects only the inner `audit_packet` object, not the whole
 command report. Extract the packet as UTF-8 JSON before recheck:
 
@@ -128,7 +128,7 @@ The packet contains:
   existing receipt helpers;
 - receipt verification results;
 - roles, shared dependencies, and independence unknowns;
-- limits and `does_not_prove` statements.
+- limits, and `scope` statements that name what each component covers.
 
 Action receipts are reconstructed from the submitted trace. They prove only that
 the packet consistently sealed the submitted trace facts; they do not prove the

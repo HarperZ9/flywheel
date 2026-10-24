@@ -4,9 +4,10 @@ import json
 from harness.acp_policy import DenyAll, WorkspacePolicy
 from harness.acp_turn import END_TURN
 from harness.acp_witness import (AcpWitness, DECISION_ACTION, FRAME_ACTION,
-                                 TURN_ACTION, does_not_prove, summarize,
+                                 TURN_ACTION, scope, summarize,
                                  transcript_resolver)
 from harness.action_witness import open_log, read_log, verify_log
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.byte_witness_verify import (BYTES_UNAVAILABLE, DIGEST_MISMATCH,
                                          LINK_BROKEN, MATCH, TAMPERED,
                                          UNVERIFIABLE)
@@ -167,9 +168,11 @@ def test_the_turn_summary_counts_the_words_without_repeating_them(tmp_path):
     assert "done: hello" not in json.dumps(summary)
 
 
-def test_the_turn_summary_carries_what_the_turn_does_not_prove(tmp_path):
+def test_the_turn_summary_carries_what_the_turn_covers(tmp_path):
     _, turn, _ = run(tmp_path)
-    assert summarize(turn)["does_not_prove"]
+    summary = summarize(turn)
+    assert summary["scope"]
+    assert LEGACY_SCOPE_KEY not in summary
 
 
 def test_recording_a_turn_returns_the_link_it_was_bound_at(tmp_path):
@@ -198,8 +201,8 @@ def test_a_policy_that_allowed_something_records_that_it_allowed_it(tmp_path):
     assert decisions[0]["context"]["policy"] == "workspace"
 
 
-def test_what_an_acp_record_does_not_prove_is_never_empty():
-    limits = does_not_prove()
-    assert limits
-    assert any("did not carry" in limit for limit in limits)
-    assert any("was correct" in limit for limit in limits)
+def test_the_scope_of_an_acp_record_is_never_empty():
+    lines = scope()
+    assert lines
+    assert any("another channel" in line for line in lines)
+    assert any("agent's answer is a separate check" in line for line in lines)

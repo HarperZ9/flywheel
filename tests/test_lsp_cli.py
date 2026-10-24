@@ -180,7 +180,7 @@ def test_a_position_is_converted_before_it_is_sent(cli, tmp_path):
     assert json.loads(out)["result"][0]["range"]["start"]["character"] == 7
 
 
-def test_the_limits_are_printed_without_running_anything(cli):
+def test_the_scope_is_printed_without_running_anything(cli):
     code, out = cli("--limits")
     assert code == OK
     assert "negotiated encoding" in out

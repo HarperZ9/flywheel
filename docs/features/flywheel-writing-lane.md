@@ -33,9 +33,9 @@ against a Journey v2 event log with an expected head. A commit against a stale
 head is rejected, so a concurrent change stays visible to the writer. The MCP
 server can prepare a proposal and commit an already-approved grant, and it
 cannot approve, by design, so a model driving the tools cannot approve its own
-mutation. The lane records deterministic custody and scope. It does not measure
-prose quality, factual truth, source completeness, or publication readiness, and
-every artifact carries a `does_not_prove` line that says so.
+mutation. The lane records deterministic custody and scope. Prose quality, factual
+truth, source completeness, and publication readiness stay with other reviews,
+and every artifact carries a `scope` line that says so.
 
 ---
 
@@ -163,9 +163,10 @@ Each item names a capability and the source that implements it.
   refuses to overwrite an existing export target with `EXPORT_TARGET_EXISTS`.
   Export is local artifact creation, and the manifest itself states it is not
   publication.
-- **Every artifact carries its scope line.** `WRITING_DOES_NOT_PROVE` in
-  `harness/writing_types.py` names the four questions an artifact leaves to
-  other reviews: prose quality, factual truth, source completeness and
+- **Every artifact carries its scope line.** `WRITING_SCOPE` in
+  `harness/writing_types.py` says the artifact records author text by digest
+  and the deterministic checks beside it, and names the four questions it leaves
+  to other reviews: prose quality, factual truth, source completeness and
   publication readiness. It is attached to revisions, candidates, decisions,
   diagnostics, reviews, and exports.
 
@@ -314,9 +315,10 @@ available on HTTP, CLI, and MCP.
   refs per kind, for example `rev_`, `card_`, `cand_`, `dec_`, `wrev_`, `wexp_`,
   each followed by 32 hex characters, and sections as `sec_` slugs
   (`OPAQUE_PATTERNS` in `harness/writing_types.py`).
-- Schemas: `flywheel.writing-*/v1` for brief, source packet, section, revision,
+- Schemas: `flywheel.writing-*/v2` for brief, source packet, revision,
   reader-flow diagnostic, scoped revision card, revision candidate, decision,
-  review, and export (`SCHEMAS`).
+  review, and export, and `flywheel.writing-section/v1` for sections (`SCHEMAS`).
+  v1 artifacts still validate with their own field names (`SCHEMAS_V1`).
 
 ---
 
@@ -350,7 +352,7 @@ produced it.
 
 ### What it emits for peers
 
-- Per-artifact JSON, each with a sha256 and a `does_not_prove` line, over the
+- Per-artifact JSON, each with a sha256 and a `scope` line, over the
   three transports.
 - An export manifest that binds the manuscript hash, the included section heads,
   the decision refs, the review ref, the source packet ref, the journey ref, and
@@ -388,7 +390,7 @@ exists.
 
 The boundary holds either way. A clean articulate result means the prose was
 screened under a named ruleset. It does not assert the manuscript is true,
-complete, or ready to publish, and the writing lane's `does_not_prove` line says
+complete, or ready to publish, and the writing lane's `scope` line says
 the same.
 
 ### Honest nulls

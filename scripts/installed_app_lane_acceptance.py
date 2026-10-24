@@ -15,7 +15,7 @@ under a throwaway profile with a System32-only PATH, in two legs:
 The install folder must not change (lane state lives under the home), the
 roster must not move on its own (D1), and the receipt must not hold the token.
 The receipt reports each lane's class, or ``BELOW_BAR`` / ``HELD`` with the
-failed checks, and states what the run does not prove.
+failed checks, and states what the run covers in `scope`.
 
     python scripts/installed_app_lane_acceptance.py --install-root <dir>
         --work <empty dir> --receipt <file.json> [--detail <file>] [--git <git.exe>]
@@ -40,10 +40,12 @@ from scripts.installed_lane_engine import (  # noqa: E402
     profile_env, start_engine, stop_engine, tree_changes, tree_snapshot)
 from scripts.installed_lane_expectations import judge  # noqa: E402
 from scripts.installed_lane_verdict import (  # noqa: E402
-    does_not_prove, lane_verdict, redact, summary)
+    lane_verdict, redact, scope, summary)
 from scripts.lane_smoke_fixtures import model_server_answering  # noqa: E402
 
-SCHEMA = "flywheel.installed-app-lane-acceptance/v1"
+# v2 (2026-10-23): the receipt names what it covers in `scope`.
+SCHEMA = "flywheel.installed-app-lane-acceptance/v2"
+SCHEMA_V1 = "flywheel.installed-app-lane-acceptance/v1"
 B_LANES = ("index", "canon", "local-model", "relay", "writing")
 
 
@@ -139,7 +141,7 @@ def _receipt(ns, host, fresh, setup, stub_counts, changes) -> dict:
             "legs": {name: {k: leg[k] for k in ("journey_status", "setup_steps", "guard",
                                                 "final_states")}
                      for name, leg in (("fresh", fresh), ("setup", setup))},
-            "lanes": lanes, "does_not_prove": does_not_prove(os.environ)}
+            "lanes": lanes, "scope": scope(os.environ)}
     detail = {"fresh": fresh["detail"], "setup": setup["detail"]}
     secrets = tuple(fresh["secrets"] + setup["secrets"])
     body, hits = redact(body, secrets)

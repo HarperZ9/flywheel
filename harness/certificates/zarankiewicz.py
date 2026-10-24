@@ -117,10 +117,10 @@ class ZarankiewiczOracle(CertificateOracle):
     # earn PASS, because declared_parameters reads the CERTIFICATE.
     binding_keys = ("m", "n", "s", "t")
 
-    family_not_proven = (
-        "NOT_PROVES_OPTIMALITY: this verifies the SUBMITTED object. The optimal "
-        "value for the instance is not computed, not bounded, and not claimed "
-        "anywhere.",
+    family_scope = (
+        "BOUND_FROM_SUBMITTED_OBJECT: this verifies the SUBMITTED object. Its "
+        "edge count is a lower bound on the instance's maximum, and the "
+        "maximum itself stays open.",
     )
 
     def declared_parameters(self, cert: dict) -> dict:

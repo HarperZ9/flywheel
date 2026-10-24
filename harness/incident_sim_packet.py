@@ -161,7 +161,7 @@ def _audit_receipt(evaluation: dict[str, Any], work: dict[str, Any],
         summary="bounded incident-sim process audit over submitted JSON",
         verdict=verdict,
         confidence="moderate",
-        does_not_prove="independent external ground truth or complete workstation observation",
+        scope="the bounded incident-sim check over submitted JSON; external ground truth and full workstation observation sit outside it",
         started_utc=_NOW,
         finished_utc=_NOW,
     )

@@ -134,9 +134,9 @@ def test_the_record_a_run_leaves_verifies_offline_against_its_bytes(run, cli,
                          str(transcript))
     assert code == OK
     assert "verdict          MATCH" in verified
-    # A verdict that came with nothing it leaves open would be the wrong kind of
-    # answer for a command whose whole subject is what a record does not show.
-    assert "limits:" in verified
+    # A verdict printed without its scope would leave the reader guessing what
+    # the record covers, which is this command's whole subject.
+    assert "scope:" in verified
 
 
 def test_a_chain_without_its_bytes_is_unchecked_rather_than_matched(run, cli,
@@ -176,7 +176,7 @@ def test_the_json_shape_carries_the_numbers_a_caller_branches_on(run,
     report = json.loads(out)
     assert (report["verified"], report["requested"]) == (1, 2)
     assert report["stop"]["reason"] == "breakpoint"
-    assert report["does_not_prove"]
+    assert report["scope"]
     # Values stay out of the machine-readable shape too. A caller that logged
     # this report wholesale would otherwise be keeping the debuggee's memory.
     assert "42" not in json.dumps(report["scopes"])
@@ -187,10 +187,10 @@ def test_a_run_without_a_log_directory_says_it_left_no_record(run):
     assert "log              none: this run left no record" in out
 
 
-def test_the_limits_are_printable_without_starting_anything(cli):
+def test_the_scope_is_printable_without_starting_anything(cli):
     code, out = cli("--limits")
     assert code == OK
-    assert "not an independent observation" in out
+    assert "adapter's report of what it read" in out
 
 
 def test_breakpoints_are_grouped_by_source_and_a_bad_one_is_rejected():

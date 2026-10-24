@@ -3,6 +3,7 @@
 // decode to hidden; Flutter renders only what the server advertises and
 // never derives a verdict or a composite from these rows.
 import '../client/gateway_error.dart';
+import 'scope_field.dart';
 
 class EvidenceCapability {
   final String id, schema, state, reason, contractSha256;
@@ -81,24 +82,29 @@ class EvidenceCapabilities {
 }
 
 class IncidentProposal {
-  final String proposalId, state, journeyRef, doesNotProve;
+  final String proposalId, state, journeyRef, scope;
   const IncidentProposal({
     required this.proposalId,
     required this.state,
     required this.journeyRef,
-    required this.doesNotProve,
+    required this.scope,
   });
 
   static IncidentProposal? fromJson(Map<String, dynamic> j) {
     final id = j['proposal_id'];
     final state = j['state'];
     final ref = j['journey_ref'];
-    final dnp = j['does_not_prove'];
-    if (id is! String || state is! String || ref is! String || dnp is! String) {
+    // v1 proposals name the scope string by the older key; v2 use `scope`.
+    final scope = scopeOf(j);
+    if (id is! String ||
+        state is! String ||
+        ref is! String ||
+        scope is! String ||
+        (j.containsKey(kScopeKey) && j.containsKey(kLegacyScopeKey))) {
       return null;
     }
     return IncidentProposal(
-        proposalId: id, state: state, journeyRef: ref, doesNotProve: dnp);
+        proposalId: id, state: state, journeyRef: ref, scope: scope);
   }
 }
 
@@ -149,12 +155,12 @@ class FrontierAxes {
 }
 
 class DomainPackProjection {
-  final String packSha, state, doesNotProve;
+  final String packSha, state, scope;
   final Map<String, dynamic> qa;
   const DomainPackProjection({
     required this.packSha,
     required this.state,
-    required this.doesNotProve,
+    required this.scope,
     required this.qa,
   });
 
@@ -166,10 +172,17 @@ class DomainPackProjection {
     }
     final sha = pack['pack_sha256'];
     final state = pack['state'];
-    final dnp = pack['does_not_prove'];
-    if (sha is! String || state is! String || dnp is! String) return null;
+    // A pack manifest states its scope as a list (v1 under the older key,
+    // v2 under `scope`); a single string is read as one entry.
+    final scope = scopeOf(pack);
+    if (sha is! String ||
+        state is! String ||
+        (scope is! String && scope is! List) ||
+        (scope is List && scope.any((row) => row is! String))) {
+      return null;
+    }
     return DomainPackProjection(
-        packSha: sha, state: state, doesNotProve: dnp, qa: qa);
+        packSha: sha, state: state, scope: scopeText(pack), qa: qa);
   }
 }
 

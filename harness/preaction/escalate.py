@@ -20,7 +20,8 @@ import secrets
 from pathlib import Path
 
 from ..journey_lock import ExclusiveJourneyLock
-from .contract import REVIEW_DOES_NOT_PROVE
+from ..scope import scope_of
+from .contract import REVIEW_SCOPE
 from .overrides import check_reason_code, write_reason_text
 from .records import HoldStore, decision_record
 
@@ -34,7 +35,7 @@ def review_payload(pending: dict) -> dict:
         "reasons": pending["reasons"],
         "goal_and_trajectory": pending.get("goal_and_trajectory", {}),
         "coverage": pending.get("coverage", {}),
-        "does_not_prove": REVIEW_DOES_NOT_PROVE,
+        "scope": REVIEW_SCOPE,
         "expiry_and_owner": {"expires_at": pending.get("expires_at", ""),
                              "owner_ref": pending.get("owner_ref", "")},
         "confirm_code": pending.get("confirm_code", ""),
@@ -57,7 +58,7 @@ class TtyApprover:
         self.write(f"HOLD {pa.get('tool', '')} {json.dumps(pa.get('args', {}))[:400]}")
         for r in payload.get("reasons", []):
             self.write(f"  [{r.get('family', '')}] {r.get('reason', '')}")
-        self.write(payload.get("does_not_prove", ""))
+        self.write(scope_of(payload, ""))
         self.write(f"Type the code to approve once, anything else cancels: {payload['confirm_code']}")
         self.read("decision> ")
         typed = self.read("code> ")

@@ -113,7 +113,7 @@ def test_packet_reuses_incident_case_proposal_and_receipt_layers():
     packet = build_process_audit_packet(TASK, trace())
 
     assert packet["incident"]["case"]["schema"] == "flywheel.incident-case/v1"
-    assert packet["incident"]["proposal"]["schema"] == "flywheel.incident-proposed-graph/v1"
+    assert packet["incident"]["proposal"]["schema"] == "flywheel.incident-proposed-graph/v2"
     assert len(packet["receipts"]["actions"]) == 3
     assert packet["receipt_verification"]["actions"]["verdict"] == "MATCH"
     assert packet["receipts"]["audit"]["prev_receipt_sha256"] == packet["receipts"]["work"]["seal"]["hex"]

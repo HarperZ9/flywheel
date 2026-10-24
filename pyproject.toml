@@ -94,7 +94,7 @@ exclude = ["tests*", "scripts*", "dataset*", "train*", "site*", "demos*"]
 [tool.setuptools.package-data]
 harness = [
     "telos_browser_bridge.mjs",
-    "ollama-manifest-digest-provenance-v1.json",
+    "ollama-manifest-digest-provenance-v2.json",
     "preaction/rules_v1.json",
     "monitor_gate/data/*.json",
     "monitor_gate/data/*.jsonl",

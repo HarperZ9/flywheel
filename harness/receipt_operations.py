@@ -7,13 +7,17 @@ from .agent_tools import dispatch
 from .receipt_proof import LeafNotFound, build_receipt_proof
 from .transparency_log import merkle_root, verify_inclusion
 
-SCHEMA = "flywheel.receipt-operations/v1"
+SCHEMA = "flywheel.receipt-operations/v2"     # v1 named its list with the older name
 TOOL_NAME = "receipt.verify_inclusion"
 VERIFY_METHOD = "harness.transparency_log.verify_inclusion"
-DOES_NOT_PROVE = (
-    "receipt-log membership/hash proof does not prove semantic correctness",
-    "receipt-log membership/hash proof does not prove evidence completeness",
+# What each outcome covers. Membership is a fact about the log, so every entry
+# speaks about the log and the digest, never about what the receipt claims.
+INCLUDED_SCOPE = (
+    "the receipt envelope digest is a leaf of the ordered receipts Merkle log",
+    "the returned audit path replays to the log's current root",
 )
+MISSING_SCOPE = ("the receipts log was read and this digest is absent from it",)
+REFUSED_SCOPE = ("the returned proof was replayed against the log and refused",)
 
 
 class ReceiptOperationError(ValueError):
@@ -152,7 +156,7 @@ def _included(requested_leaf: str, leaves: list, proof: object) -> dict:
             "replayed": True,
             "included": bool(replayed),
         },
-        "does_not_prove": list(DOES_NOT_PROVE),
+        "scope": list(INCLUDED_SCOPE),
     }
 
 
@@ -174,7 +178,7 @@ def _missing(leaf: str, leaves: list, proof: dict) -> dict:
             "replayed": False,
             "included": False,
         },
-        "does_not_prove": list(DOES_NOT_PROVE),
+        "scope": list(MISSING_SCOPE),
     }
 
 
@@ -190,7 +194,7 @@ def _not_included(status: str, proof: dict, reason: str, *,
             "replayed": replayed,
             "included": False,
         },
-        "does_not_prove": list(DOES_NOT_PROVE),
+        "scope": list(REFUSED_SCOPE),
     }
 
 
@@ -245,7 +249,7 @@ def _output_schema() -> dict:
         },
     }
     base_props = {
-        "does_not_prove": {
+        "scope": {
             "type": "array",
             "items": {"type": "string"},
         },
@@ -255,7 +259,7 @@ def _output_schema() -> dict:
         "type": "object",
         "required": [
             "included", "status", "proof",
-            "verification", "does_not_prove"],
+            "verification", "scope"],
         "additionalProperties": False,
         "properties": {
             "included": {"const": True},
@@ -269,7 +273,7 @@ def _output_schema() -> dict:
             "type": "object",
             "required": [
                 "included", "status", "proof", "reason",
-                "verification", "does_not_prove"],
+                "verification", "scope"],
             "additionalProperties": False,
             "properties": {
                 "included": {"const": False},
@@ -283,7 +287,7 @@ def _output_schema() -> dict:
     return {
         "type": "object",
         "required": [
-            "included", "status", "proof", "verification", "does_not_prove"],
+            "included", "status", "proof", "verification", "scope"],
         "oneOf": [
             included_case,
             not_included_case("missing", missing_proof),

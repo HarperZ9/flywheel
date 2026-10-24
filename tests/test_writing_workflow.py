@@ -19,7 +19,7 @@ def _flow(service, proposal):
 def _project(tmp_path):
     service = WritingService(tmp_path / "home", clock=lambda: NOW)
     brief = _json(tmp_path / "brief.json", {
-        "schema": "flywheel.writing-project-brief/v1",
+        "schema": "flywheel.writing-project-brief/v2",
         "project_ref": PROJECT,
         "mode": "nonfiction",
         "form": "essay",
@@ -30,15 +30,15 @@ def _project(tmp_path):
         "voice_contract": {"style_ref": "voice_rules"},
         "source_packet_ref": "packet_main",
         "writing_profile": "nonfiction",
-        "does_not_prove": ["source packet truth"],
+        "scope": ["source packet truth"],
     })
     source = _json(tmp_path / "sources.json", {
-        "schema": "flywheel.writing-source-packet/v1",
+        "schema": "flywheel.writing-source-packet/v2",
         "project_ref": PROJECT,
         "source_packet_ref": "packet_main",
         "sources": [{"source_id": "src_receipt", "title": "Receipt",
                      "origin": "local", "allowed_use": "cite"}],
-        "does_not_prove": ["source interpretation"],
+        "scope": ["source interpretation"],
     })
     ack = _flow(service, service.prepare_init(
         brief, source, client_request_id="init-1"))
@@ -85,7 +85,7 @@ def test_author_workflow_preserves_scoped_evidence_and_survives_restart(tmp_path
     assert state["sections"]["sec_recommendation"]["current_body"] == original
     selected = original.strip()
     card = {
-        "schema": "flywheel.writing-scoped-revision/v1",
+        "schema": "flywheel.writing-scoped-revision/v2",
         "project_ref": PROJECT,
         "card_ref": CARD_A,
         "diagnostic_ref": diagnostic["diagnostic_ref"],
@@ -105,7 +105,7 @@ def test_author_workflow_preserves_scoped_evidence_and_survives_restart(tmp_path
         "forbidden_operations": ["change evidence"],
         "source_refs": ["src_receipt"],
         "voice_constraints": "direct",
-        "does_not_prove": ["the card is semantically correct"],
+        "scope": ["the card is semantically correct"],
     }
     head = _flow(restarted, restarted.prepare_card(
         journey, head, card, client_request_id="card-1"))["event_head_sha256"]
@@ -168,7 +168,7 @@ def test_approved_decision_refuses_candidate_artifact_drift(tmp_path):
         service, journey, head, "sec_recommendation", original, "rev-original")
     head, diagnostic = _diagnose(service, journey, head, original_rev)
     card = {
-        "schema": "flywheel.writing-scoped-revision/v1",
+        "schema": "flywheel.writing-scoped-revision/v2",
         "project_ref": PROJECT,
         "card_ref": CARD_B,
         "diagnostic_ref": diagnostic["diagnostic_ref"],
@@ -188,7 +188,7 @@ def test_approved_decision_refuses_candidate_artifact_drift(tmp_path):
             "end": len(original),
             "selected_span_sha256": sha256_bytes(original.encode()),
         },
-        "does_not_prove": ["quality"],
+        "scope": ["quality"],
     }
     head = _flow(service, service.prepare_card(
         journey, head, card, client_request_id="card"))["event_head_sha256"]
@@ -230,7 +230,7 @@ def test_generic_journey_append_cannot_bypass_writing_decision_checks(tmp_path):
     base = "KEEP\nCHANGE\nKEEP\n"
     head, revision = _revision(service, journey, head, "sec_one", base, "base")
     head, diagnostic = _diagnose(service, journey, head, revision)
-    card = {"schema": "flywheel.writing-scoped-revision/v1", "project_ref": PROJECT,
+    card = {"schema": "flywheel.writing-scoped-revision/v2", "project_ref": PROJECT,
         "card_ref": CARD_C, "diagnostic_ref": diagnostic["diagnostic_ref"],
         "problem": "Change middle only.", "goal": "replace selected text",
         "must_preserve": ["KEEP lines"], "allowed_operations": ["replace"],
@@ -239,7 +239,7 @@ def test_generic_journey_append_cannot_bypass_writing_decision_checks(tmp_path):
         "target": {"section_ref": "sec_one", "base_revision_ref": revision["revision_ref"],
         "base_body_sha256": revision["body_sha256"], "coordinate_type": "unicode_codepoint", "start": 5, "end": 11,
         "selected_span_sha256": sha256_bytes(b"CHANGE")},
-        "does_not_prove": ["quality"]}
+        "scope": ["quality"]}
     head = _flow(service, service.prepare_card(
         journey, head, card, client_request_id="card"))["event_head_sha256"]
     candidate = service.prepare_candidate(
@@ -274,7 +274,7 @@ def test_rollback_requires_same_section_previously_accepted_revision(tmp_path):
             client_request_id="cross-section")
     candidate_body = "ONE CHANGED\n"
     head, diagnostic = _diagnose(service, journey, head, first)
-    card = {"schema": "flywheel.writing-scoped-revision/v1", "project_ref": PROJECT,
+    card = {"schema": "flywheel.writing-scoped-revision/v2", "project_ref": PROJECT,
         "card_ref": CARD_B, "diagnostic_ref": diagnostic["diagnostic_ref"],
         "problem": "Change.", "goal": "replace section text",
         "must_preserve": ["outside selected span"], "allowed_operations": ["replace"],
@@ -283,7 +283,7 @@ def test_rollback_requires_same_section_previously_accepted_revision(tmp_path):
         "target": {"section_ref": "sec_one", "base_revision_ref": first["revision_ref"],
         "base_body_sha256": first["body_sha256"], "coordinate_type": "unicode_codepoint", "start": 0, "end": len("ONE\n"),
         "selected_span_sha256": first["body_sha256"]},
-        "does_not_prove": ["quality"]}
+        "scope": ["quality"]}
     head = _flow(service, service.prepare_card(
         journey, head, card, client_request_id="card"))["event_head_sha256"]
     candidate = service.prepare_candidate(

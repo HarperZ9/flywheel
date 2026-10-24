@@ -70,6 +70,11 @@ def bootloader_license():
     return files[0].read_bytes()
 
 
+# v2 (2026-10-23): the payload binding names what it covers in `scope`.
+BINDING_SCHEMA = 'flywheel.native-mcp-bundle/v2'
+BINDING_SCHEMA_V1 = 'flywheel.native-mcp-bundle/v1'
+
+
 def manifest(version, *, dev=False):
     return {'manifest_version': '0.3', 'name': 'flywheel-tools', 'version': version,
         'display_name': 'Flywheel Local Evidence',
@@ -103,9 +108,11 @@ def bundle(engine, installer_engine, collect_toc, out, *, dev=False):
     frozen_identity(engine, identity)
     label = '-dev' if dev else ''
     filename = f'flywheel-tools-{version}{label}-win-x64.mcpb'
-    receipt = {'schema': 'flywheel.native-mcp-bundle/v1', **identity,
+    receipt = {'schema': BINDING_SCHEMA, **identity,
         'payload': rows, 'same_installer_engine': True,
-        'does_not_prove': ['marketplace acceptance', 'clean OS installation', 'full client interoperability']}
+        'scope': ['each payload row binds an engine file in this bundle to its size and sha256',
+                  'the bundled engine and the installer engine are the same build',
+                  'the frozen engine records the source head and version bound here']}
     files = {'manifest.json': (json.dumps(manifest(version, dev=dev), indent=2) + '\n').encode(),
              'payload-binding.json': (json.dumps(receipt, indent=2) + '\n').encode(),
              'LICENSE': (ROOT / 'LICENSE').read_bytes(),

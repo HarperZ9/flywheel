@@ -14,6 +14,10 @@ from collections import defaultdict
 from .decision_contract import ID_PATTERN, evaluate_proposal, validate_request
 from .evidence_json import canonical_sha256
 
+WORKFLOW_SHADOW_SCHEMA = "flywheel.classifier-workflow-shadow/v2"
+# v1 shadow records name the scope string with the older key.
+WORKFLOW_SHADOW_SCHEMA_V1 = "flywheel.classifier-workflow-shadow/v1"
+
 
 class BaselineScorer:
     """Give the stdlib baseline the same batch interface as neural runtimes."""
@@ -102,12 +106,13 @@ def score_workflow_batch(packets: list[dict], scorer) -> list[dict]:
     for index, (family, snapshot) in enumerate(snapshots):
         score = bound.get(index)
         result.append({
-            "schema": "flywheel.classifier-workflow-shadow/v1",
+            "schema": WORKFLOW_SHADOW_SCHEMA,
             "task_family": family, "request_sha256": canonical_sha256(snapshot),
             "status": "scored_shadow" if score is not None else "scorer_unavailable",
             "scores": score, "fallback_required": True,
             "proposal": evaluate_proposal(snapshot, json.dumps({
                 "choice_id": None, "evidence_refs": []}), scorer_ref="classifier-shadow"),
-            "does_not_prove": "Decision correctness, authorization, calibration, or workflow speedup.",
+            "scope": ("A shadow score bound to this request; the workflow keeps its "
+                      "fallback, and selection, authorization and timing are unchanged."),
         })
     return result

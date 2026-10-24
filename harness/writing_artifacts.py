@@ -7,7 +7,7 @@ from .evidence_public import TransportError
 from .writing_types import (
     MAX_ARTIFACT_JSON_BYTES, MAX_AUTHOR_TEXT_BYTES,
     MAX_BRIEF_JSON_BYTES, MAX_MANUSCRIPT_TEXT_BYTES, MAX_SOURCE_PACKET_BYTES,
-    WRITING_DOES_NOT_PROVE, WritingTypeError,
+    WRITING_SCOPE, WritingTypeError,
     admit_text, canonical_digest, require_ref, require_sha, sha256_bytes,
     validate_artifact,
 )
@@ -235,7 +235,7 @@ def record_fact_for_artifact(store: WritingArtifactStore, command: dict, *,
             "receipt_refs": [artifact_ref],
             "artifact_sha256": artifact_sha256,
             "receipt_state": "MATCH",
-            "does_not_prove": WRITING_DOES_NOT_PROVE,
+            "scope": WRITING_SCOPE,
         }]
     }
 def plan_writing_artifact_append(service, req: dict, command: dict) -> tuple[str, dict]:

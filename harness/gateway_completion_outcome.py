@@ -16,13 +16,17 @@ import re
 
 from .run_completion import (SCHEMA, cli_writes, command_changes, last_test_run,
                              ledger_writes, path_key)
+from .scope import scope_key
 
 _SHA = re.compile(r"[0-9a-f]{64}\Z")
 _STATUSES = ("verified", "claimed", "failed")
 _CHECKS = {"file": {None, "file_hash_recheck"},
            "final_answer": {None, "test_command", "acceptance_criteria", "run_state"}}
+#: Report keys besides its scope list, which a pre-migration report names
+#: with the older key (harness/scope.py); exactly one of the two is present.
 _REPORT_KEYS = {"schema", "verdict", "counts", "items", "items_omitted",
-                "unbacked_success_claim", "does_not_prove"}
+                "unbacked_success_claim"}
+_COMPLETION_SCHEMAS = {SCHEMA, "flywheel.run-completion/v1"}
 
 
 class _Unverifiable(ValueError):
@@ -115,12 +119,13 @@ def _verdict(counts: dict) -> str:
 
 def _check_report(report, ledger: list, terminal_state: str, cli_events=(),
                   root=None) -> dict:
-    if type(report) is not dict or report.get("schema") != SCHEMA:
+    if type(report) is not dict or report.get("schema") not in _COMPLETION_SCHEMAS:
         raise _Unverifiable("COMPLETION_RECORD_MALFORMED")
     if report.get("verdict") == "unavailable":
         raise _Unverifiable("COMPLETION_CHECK_FAILED")
     counts, items, omitted = report.get("counts"), report.get("items"), report.get("items_omitted")
-    if (set(report) != _REPORT_KEYS or type(items) is not list or not items
+    if (scope_key(report) is None or set(report) != _REPORT_KEYS | {scope_key(report)}
+            or type(items) is not list or not items
             or type(omitted) is not int or omitted < 0
             or type(counts) is not dict or set(counts) != set(_STATUSES)
             or any(type(v) is not int or v < 0 for v in counts.values())

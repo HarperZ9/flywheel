@@ -91,9 +91,11 @@ def memory_prompt(task, prompt, pool, envelopes_dir, *, allowed_sources=None,
     from .context_governor import govern_context
     from .proposer import prompt_hash
 
-    metadata = {"schema": "flywheel.memory-context/v1", "included": [],
+    metadata = {"schema": "flywheel.memory-context/v2", "included": [],
                 "omitted": [], "status": "not_authorized",
-                "does_not_prove": "Model use, source truth, tenant isolation or model uplift."}
+                "scope": ("Which caller-authorized candidates the governor disclosed "
+                          "or omitted. Model use, source truth, tenant isolation and "
+                          "model uplift are measured elsewhere.")}
     if not enabled:
         metadata["status"] = "disabled"
         return prompt, metadata

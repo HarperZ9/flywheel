@@ -49,8 +49,9 @@ from desktop.tool.installed_launch_acceptance_contract import (  # noqa: E402
     validate_receipt_semantics,
 )
 
-SCHEMA = "flywheel.installed-lanes-ci-evidence-summary/v1"
-RECEIPT_SCHEMA = "flywheel.installed-app-lane-acceptance/v1"
+SCHEMA = "flywheel.installed-lanes-ci-evidence-summary/v2"
+RECEIPT_SCHEMA = "flywheel.installed-app-lane-acceptance/v2"
+RECEIPT_SCHEMAS = (RECEIPT_SCHEMA, "flywheel.installed-app-lane-acceptance/v1")
 RUN_SCHEMA = "flywheel.windows-installed-acceptance-ci/v1"
 WORKFLOW = "windows-installed-acceptance.yml"
 RUN_SUMMARY = "ci-installed-acceptance-summary.json"
@@ -62,20 +63,21 @@ EXPECTATIONS = Path("packaging") / "installed-lane-expectations.json"
 RUNNER_ACCOUNT = "runneradmin"
 GUARDS = frozenset({"fresh_settled", "fresh_d1_unchanged", "setup_d1_unchanged",
                     "install_folder_unchanged", "token_absent_from_receipt"})
-LAUNCH_SCHEMA = "flywheel.installed-launch-acceptance/v1"
+LAUNCH_SCHEMA = "flywheel.installed-launch-acceptance/v2"
+LAUNCH_SCHEMAS = (LAUNCH_SCHEMA, "flywheel.installed-launch-acceptance/v1")
 LAUNCH = ("installed-launch-full.json", "installed-launch-inspect.json")
 CANON = "installed-canon-context.json"
-DOES_NOT_PROVE = (
+SCOPE = (
     "A GitHub-hosted Windows Server runner with a System32-only PATH and an administrator "
-    "account, not a consumer Windows 11 install; the network was reachable and no host "
-    "model server ran.",
+    "account; the network was reachable and no host model server ran.",
     "The run built the source commit named here; a later commit that changes code the "
     "build or the app runs needs its own run.",
-    "No provider-backed success, no model quality (a stub model server answers one fixed "
-    "word), no bulletin write and no actuation.",
-    "One fixture assertion per main tool; the desktop UI was not driven.",
-    "A CI build of the source commit, not the installer attached to the release; two "
-    "builds of one source tree gave different installer bytes.",
+    "Provider tools ran without a real key, a stub model server answered one fixed word, "
+    "and nothing was written to a bulletin or actuated.",
+    "Each main tool was checked with one fixture assertion, through the engine routes the "
+    "desktop app calls.",
+    "The installer is a CI build of the source commit; two builds of one source tree gave "
+    "different installer bytes, so the release installer is bound separately.",
 )
 
 
@@ -102,7 +104,7 @@ def _lane_key(row: dict) -> tuple:
 
 def check_leg(mode: str, receipt: dict, commit: str, expected: dict) -> list[str]:
     out = []
-    if receipt.get("schema") != RECEIPT_SCHEMA or receipt.get("install_mode") != mode:
+    if receipt.get("schema") not in RECEIPT_SCHEMAS or receipt.get("install_mode") != mode:
         out.append(f"{mode}: schema or install_mode is not a {mode} lane receipt")
     if receipt.get("expected") != {"departures": [], "matches": True}:
         out.append(f"{mode}: expected.matches is not true with no departures")
@@ -160,7 +162,7 @@ def check_other_receipts(root: Path, commit: str) -> list[str]:
         rows = got.get("assertions") or []
         failed = [a.get("id") for a in rows if isinstance(a, dict) and a.get("state") == "FAIL"]
         mode = name.removeprefix("installed-launch-").removesuffix(".json")
-        if (got.get("schema") != LAUNCH_SCHEMA or got.get("complete") is not True
+        if (got.get("schema") not in LAUNCH_SCHEMAS or got.get("complete") is not True
                 or got.get("source_commit_expected") != commit or got.get("mode") != mode
                 or failed or errors):
             out.append(f"{name}: not a complete {LAUNCH_SCHEMA} receipt of {commit} "
@@ -226,7 +228,7 @@ def build_summary(root: Path, receipts: dict, run: dict, meta: dict) -> dict:
         "summary": first["summary"],
         "guards": {k: all(legs[m]["guards"][k] for m in legs) for k in first["guards"]},
         "lanes": lanes,
-        "does_not_prove": list(DOES_NOT_PROVE),
+        "scope": list(SCOPE),
     }
 
 

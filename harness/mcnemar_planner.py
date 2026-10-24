@@ -125,9 +125,9 @@ def mcnemar_plan(target_delta: float, *, alpha: float = 0.05,
             f"{achieved_power:.4f} against delta {delta}; N - 1 fails at "
             "least one plan condition."
         ),
-        "does_not_prove": [
-            "NOT_PROVES_THE_NEXT_RUN_MATCHES_THE_BASIS: the plan holds only "
-            "as far as the future run's discordance resembles the recorded "
-            "fraction; discord less, and the achieved power falls with it.",
+        "scope": [
+            "PLANNED_ON_RECORDED_DISCORDANCE: the plan holds as far as the "
+            "future run's discordance matches the recorded fraction; lower "
+            "discordance lowers the achieved power with it.",
         ],
     }

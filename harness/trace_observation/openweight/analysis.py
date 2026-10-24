@@ -19,10 +19,9 @@ from __future__ import annotations
 
 from ..intervals import fmt4, holm, paired_bootstrap, rate_block, sign_test, upper_bound_statement
 
-O2_DOES_NOT_PROVE = (
-    "A change under an edit shows the readout depends on the edited text. It does not "
-    "show the reasoning describes the computation that produced the answer, and a null "
-    "bounds the effect only above its interval's upper limit on these items.")
+O2_SCOPE = (
+    "A change under an edit shows the readout depends on the edited text on these "
+    "items. A null bounds the effect above its interval's upper limit on these items.")
 
 
 def _ok(arms, *names) -> bool:
@@ -112,7 +111,7 @@ def analyze_o2(mc_items: list, code_items: list | None = None, gold: dict | None
             "n_excluded": str(len(mc_items) - len(items)), "n_dependent": str(len(dep)),
             "tests": tests, "readout_determinism": rate_block(sum(repeat), len(repeat)) if repeat else {},
             "direction": direction(items, gold) if gold else {}, "curve": early_answer_curve(items),
-            "does_not_prove": O2_DOES_NOT_PROVE}
+            "scope": O2_SCOPE}
 
 
 def alpha_normalized(p_flip_to_hint: float, q_flip_elsewhere: float, n_options: int) -> float:

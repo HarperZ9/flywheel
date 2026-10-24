@@ -177,8 +177,7 @@ def test_every_comparison_carries_a_declared_mde(tmp_path):
             mde = comp["mde"]
             assert mde["n_pairs"] == comp["n_paired"]
             assert mde["n_discordant"] == comp["discordant"]
-            assert "NOT_PROVES_AN_EFFECT_IS_ABSENT" in " ".join(
-                mde["does_not_prove"])
+            assert "DESIGN_SENSITIVITY" in " ".join(mde["scope"])
 
 
 def test_a_null_with_too_few_discordant_pairs_says_it_is_underpowered(tmp_path):
@@ -199,5 +198,5 @@ def test_the_arms_report_carries_the_family_qualifier(tmp_path):
     """Section 8 mechanism 1 again, on the other result artifact."""
     pool, journal, _, _ = _fixture(tmp_path)
     report = ca.compute(pool, journal, [FAMILY], RUNGS)
-    joined = " ".join(report["families"][FAMILY]["family_not_proven"])
-    assert "NOT_PROVES_OPTIMALITY" in joined
+    joined = " ".join(report["families"][FAMILY]["family_scope"])
+    assert "BOUND_FROM_SUBMITTED_OBJECT" in joined

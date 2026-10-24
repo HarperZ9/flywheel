@@ -1,3 +1,5 @@
+import 'scope_field.dart';
+
 typedef ParseIssue = ({String field, String? rawValue});
 
 abstract class DefensiveModel {
@@ -81,6 +83,15 @@ void addParseIssue(List<ParseIssue> issues, String field, Object? raw) =>
 void expectSchema(
     Map<String, Object?> json, String expected, List<ParseIssue> issues) {
   if (json['schema'] != expected) {
+    addParseIssue(issues, 'schema', json['schema']);
+  }
+}
+
+/// Accepts any schema id in [expected]: a reader that takes an older and a
+/// newer version of the same record.
+void expectSchemaIn(Map<String, Object?> json, Set<String> expected,
+    List<ParseIssue> issues) {
+  if (!expected.contains(json['schema'])) {
     addParseIssue(issues, 'schema', json['schema']);
   }
 }
@@ -184,7 +195,7 @@ EvidenceVerdict parseEvidenceVerdict(
 }
 
 class JourneyCheck extends DefensiveModel {
-  final String checkId, claimId, doesNotProve;
+  final String checkId, claimId, scope;
   final String? rawVerdict, rawReceiptState;
   final EvidenceVerdict verdict;
   final List<String> receiptRefs;
@@ -200,7 +211,7 @@ class JourneyCheck extends DefensiveModel {
     required this.rawReceiptState,
     required this.numerator,
     required this.denominator,
-    required this.doesNotProve,
+    required this.scope,
     required List<ParseIssue> parseIssues,
   })  : receiptRefs = List.unmodifiable(receiptRefs),
         super(parseIssues);
@@ -225,7 +236,7 @@ class JourneyCheck extends DefensiveModel {
       rawReceiptState: safeRawValue(json['receipt_state']),
       numerator: numerator,
       denominator: denominator,
-      doesNotProve: readText(json, 'does_not_prove', issues),
+      scope: readScopeText(json, issues),
       parseIssues: issues,
     );
   }
@@ -239,7 +250,7 @@ class JourneyCheck extends DefensiveModel {
       rawReceiptState == other.rawReceiptState &&
       numerator == other.numerator &&
       denominator == other.denominator &&
-      doesNotProve == other.doesNotProve;
+      scope == other.scope;
 }
 
 class JourneyMissingEvidence {

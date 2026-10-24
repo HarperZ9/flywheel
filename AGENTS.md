@@ -61,10 +61,11 @@ archived and read-only; nothing lands there.
 ## Invariants
 - No learned model on the accept path. A checker decides; a model never does.
 - No receipt, no accept. Every result carries its denominator, coverage, and
-  `does_not_prove`. Nulls are published, not edited out.
-- Every checker verifies a SUBMITTED object; none decides optimality.
-  `NOT_PROVES_OPTIMALITY` travels on every certificate result, and the claim gate
-  enforces it on public surfaces.
+  `scope`, the list of what the result covers. Nulls are published, not edited out.
+- Every checker verifies a SUBMITTED object; the optimum stays open.
+  `BOUND_FROM_SUBMITTED_OBJECT` travels on every certificate result (the verified
+  object's value bounds the optimum from one side), and the claim gate enforces
+  it on public surfaces.
 - A new certificate family needs a second, independently written checker before
   any selection comparison on it is two-sided.
 - Truth over approval. Verify a specific claim or label it high / moderate / low /
@@ -230,7 +231,7 @@ interpretability methods, but treat any internal signal as an untrusted readout
 checked against behavior, never as reading a mind. In public copy and model cards,
 lead with the mechanism, reward-hacking caused by incentives and the engineering
 that set the environment; keep consciousness and welfare a separate, explicitly
-bounded thread, never the headline; and ship the does-not-prove line with every
+bounded thread, never the headline; and ship the scope line with every
 claim.
 
 ## Hygiene

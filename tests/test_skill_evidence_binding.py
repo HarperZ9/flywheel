@@ -34,7 +34,7 @@ def bind(evidence=None, **kwargs):
 def test_real_producer_binds_unique_tasks_and_attempts_with_honest_assurance():
     evidence = bench(control={"local": "unsupported"})
     row = bind(evidence)
-    assert row["schema"] == "flywheel.skill-gate/v2"
+    assert row["schema"] == "flywheel.skill-gate/v3"
     assert row["tasks_bound"] == 2
     assert row["attempts_bound"] == 4
     result = verify_skill_gate(row, evidence=evidence)
@@ -220,3 +220,13 @@ def test_new_v2_binding_can_append_beside_unmodified_legacy_payload(tmp_path):
     rows = load_skill_gates(path)
     assert rows == [old, response["skill_gate"]]
     assert json.loads(path.read_text().splitlines()[0]) == old
+
+
+def test_a_sealed_v2_row_still_verifies_under_its_own_key_and_text():
+    from harness.scope import LEGACY_SCOPE_KEY
+    from harness.skill_gate import LIMIT_V2, SCHEMA_V2
+    row = {k: v for k, v in bind().items() if k not in ("scope", "gate_sha256")}
+    old = seal({**row, "schema": SCHEMA_V2, LEGACY_SCOPE_KEY: LIMIT_V2}, "gate_sha256")
+    assert verify_skill_gate(old)["verdict"] == "MATCH"
+    renamed = seal({**row, "schema": SCHEMA_V2, "scope": LIMIT_V2}, "gate_sha256")
+    assert verify_skill_gate(renamed)["verdict"] == "DRIFT"

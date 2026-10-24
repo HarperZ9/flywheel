@@ -16,7 +16,8 @@ from .codex_managed_profile_manifest import CodexProfileInventoryRef, capture_ge
 from .codex_managed_session import start_managed_codex_session
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .private_artifact_fs import PrivateArtifactError, open_artifact_root
-BOOTSTRAP_RECEIPT_SCHEMA = 'flywheel.codex-managed-no-auth-bootstrap-receipt/v1'
+BOOTSTRAP_RECEIPT_SCHEMA = 'flywheel.codex-managed-no-auth-bootstrap-receipt/v2'
+BOOTSTRAP_RECEIPT_SCHEMA_V1 = 'flywheel.codex-managed-no-auth-bootstrap-receipt/v1'
 BASELINE_REF_SCHEMA = 'flywheel.codex-managed-baseline-inventory-ref/v1'
 _HEX64 = re.compile(r'[0-9a-f]{64}')
 _MAX_RECORD = 262_144
@@ -172,8 +173,8 @@ class CodexManagedInventoryLifecycle:
         binding_sha = canonical_sha256(binding)
         receipt = {'schema': BOOTSTRAP_RECEIPT_SCHEMA, 'binding_sha256': binding_sha,
                    'binding': binding, 'cleanup': cleanup, 'auth': {'content_read': False, 'paths': []},
-                   'does_not_prove': ['no provider authentication was attempted',
-                                      'no future auth extension has been accepted']}
+                   'scope': ['the bootstrap ran with no provider authentication attempt',
+                             'the receipt covers this no-auth bootstrap only; auth extensions stay unaccepted']}
         payload = canonical_bytes(receipt)
         digest = hashlib.sha256(payload).hexdigest()
         self._write_bytes(f'codex-policy/{binding_sha}/bootstrap-receipt-{digest}.json', payload)

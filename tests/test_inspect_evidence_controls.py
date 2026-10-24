@@ -81,7 +81,7 @@ def test_true_invalidated_log_is_incomplete_even_when_counts_and_scores_match():
     assert doc["assessment"] == "incomplete"
     assert doc["scoring_coverage"]["coverage_complete"] is False
     assert _pointers(doc)["/invalidated"] is True
-    assert any("invalidated" in reason for reason in doc["does_not_prove"])
+    assert any("invalidated" in reason for reason in doc["scope"])
 
 
 @pytest.mark.parametrize("flag", [0, 1, None, "false", [], {}])

@@ -7,6 +7,7 @@ import re
 
 from .evidence_json import canonical_sha256
 from .plan_run_snapshot import freeze_json, thaw_json
+from .scope import scope_list
 from .source_context_store import (
     SOURCE_REF_PREFIX, WORKER_SCHEMA, SourceContextError, SourceContextStore,
 )
@@ -120,8 +121,8 @@ def materialize_goal(goal: str, payload: dict | None) -> str:
                 "selected_text:",
                 row["text"],
             ])
-    if payload.get("does_not_prove"):
-        parts.append("does_not_prove: " + "; ".join(payload["does_not_prove"]))
+    if scope_list(payload):
+        parts.append("scope: " + "; ".join(scope_list(payload)))
     parts.extend([f"{delimiter} end", "User request:", goal])
     return "\n".join(parts)
 

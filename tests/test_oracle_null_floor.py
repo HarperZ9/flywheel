@@ -124,7 +124,7 @@ def test_the_floor_report_carries_its_denominator_and_names_the_breach(tmp_path)
     # table is a rejection the shared preamble made on the checker's behalf.
     assert report["checkers_never_reached"] == []
     assert len(report["rows_sha256"]) == 64
-    assert len(report["does_not_prove"]) == 4
+    assert len(report["scope"]) == 4
 
 
 def test_script_runner_has_a_good_case_for_every_registered_checker(tmp_path):

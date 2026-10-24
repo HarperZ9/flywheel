@@ -102,8 +102,8 @@ void main() {
           .writeAsStringSync(const JsonEncoder.withIndent('  ').convert({
         'shader_sha256': sourceHash,
         'backend': 'Flutter widget test engine / RenderRepaintBoundary.toImage',
-        'does_not_prove':
-            'device performance, artistic preference, or mobile readiness',
+        'scope':
+            'surface frames rendered by the Flutter widget test engine and hashed; device performance and mobile readiness are separate measurements',
         'frames': frames,
       }));
     }

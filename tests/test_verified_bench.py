@@ -79,15 +79,15 @@ def test_the_gate_decides_not_the_model():
     assert weak["gate_pass"] is False
 
 
-def test_benchmark_seals_denominators_and_does_not_prove():
+def test_benchmark_seals_denominators_and_scope():
     propose, gate = _runner(passing_endpoints=["strong"])
     bench = run_benchmark(tasks=TASKS, endpoints=["strong"],
                           propose=propose, run_gate=gate,
                           created_at="2026-08-23T00:00:00Z")
-    assert bench["schema"] == SCHEMA == "flywheel.verified-bench/v1"
+    assert bench["schema"] == SCHEMA == "flywheel.verified-bench/v2"
     assert bench["denominator"] == {"tasks": 2, "endpoints": 1,
                                     "replicates": 1, "attempts": 2}
-    assert bench["does_not_prove"]
+    assert bench["scope"]
     assert bench["bench_sha256"]
 
 
@@ -242,10 +242,10 @@ def test_unsupported_provider_class_gets_between_attempt_sd():
     assert rows["strong"]["statistic"] == "between_seed_sd"
     assert rows["weak"]["statistic"] == "between_attempt_sd"
     assert rows["weak"]["sd"] == 0.0  # weak never passes: rates 0,0,0
-    assert any("NOT_SEED_REPLICATES" in n
-               for n in rows["weak"]["does_not_prove"])
-    assert not any("NOT_SEED_REPLICATES" in n
-                   for n in rows["strong"]["does_not_prove"])
+    assert any("TEMPORAL_REPLICATES" in n
+               for n in rows["weak"]["scope"])
+    assert not any("TEMPORAL_REPLICATES" in n
+                   for n in rows["strong"]["scope"])
 
 
 def test_two_replicates_refuse_the_sd():
@@ -269,14 +269,14 @@ def test_seed_and_control_validation():
         run_benchmark(**common, randomness_control={"strong": "maybe"})
 
 
-def test_replicated_frontier_names_the_pooling_in_does_not_prove():
+def test_replicated_frontier_names_the_pooling_in_scope():
     propose, gate = _seeded_runner()
     bench = run_benchmark(tasks=TASKS, endpoints=["strong"],
                           propose=propose, run_gate=gate,
                           created_at="2026-08-23T00:00:00Z",
                           seeds=[0, 1, 2])
     frontier = verified_frontier(bench, cost_per_task=None)
-    assert "correlated" in frontier["does_not_prove"]
+    assert "correlated" in frontier["scope"]
 
 
 def test_private_benchmark_threads_each_seed_to_the_backend(tmp_path):

@@ -1,4 +1,4 @@
-"""receipt.py -- the gate result as a flywheel.receipt/v4, signed, and its re-derivation.
+"""receipt.py -- the gate result as a flywheel.receipt/v5, signed, and its re-derivation.
 
 The result file carries the per-item monitor records beside a signed-receipt
 envelope. The receipt binds the pinned spec (criterion_sha256), the gate set
@@ -29,11 +29,18 @@ from . import score as sc
 SCHEMA = "flywheel.monitor-gate-result/v1"
 GATE_VERSION = "monitor-gate/v1"
 _VERDICT = {sc.ADMIT: Verdict.PASS, sc.REFUSE: Verdict.FAIL, sc.UNVERIFIABLE: Verdict.UNVERIFIABLE}
-LIMITS = ("NOT_PROVES_BEHAVIOR_OUTSIDE_PARITY_PRODUCT_FAMILY",
-          "NOT_PROVES_FRONTIER_MODEL_BEHAVIOR",
-          "NOT_PROVES_BEHAVIOR_UNDER_OPTIMIZATION_PRESSURE",
-          "NOT_PROVES_UNPLANTED_CASES",
-          "NOT_PROVES_BEHAVIOR_AFTER_GATE_RUN")
+# Codes for what a gate result covers, carried as the receipt's extra scope.
+SCOPE = ("SCOPED_TO_PARITY_PRODUCT_FAMILY",
+         "SCOPED_TO_NAMED_MONITOR_ADAPTER",
+         "MEASURED_WITHOUT_OPTIMIZATION_PRESSURE",
+         "PLANTED_CASES_ONLY",
+         "BEHAVIOR_AT_GATE_RUN")
+# The codes a v4 receipt sealed, kept so an older gate result still re-derives.
+_V4_EXTRA = ("NOT_PROVES_BEHAVIOR_OUTSIDE_PARITY_PRODUCT_FAMILY",
+             "NOT_PROVES_FRONTIER_MODEL_BEHAVIOR",
+             "NOT_PROVES_BEHAVIOR_UNDER_OPTIMIZATION_PRESSURE",
+             "NOT_PROVES_UNPLANTED_CASES",
+             "NOT_PROVES_BEHAVIOR_AFTER_GATE_RUN")
 
 
 def _sha(data: bytes) -> str:
@@ -87,7 +94,7 @@ def build_receipt(gate: gs.GateSet, descriptor: dict, records: list, result: dic
         budget=Budget.undeclared(), model_ref=descriptor["adapter"],
         base_weights_digest=weights_digest, harness_version=GATE_VERSION,
         unverifiable_reason="CONFOUNDED" if verdict == sc.UNVERIFIABLE else "",
-        extra_does_not_prove=LIMITS)
+        extra_scope=SCOPE)
 
 
 def result_document(gate, descriptor, records, result, *, signing_key=None,
@@ -130,6 +137,8 @@ def verify(doc: dict, *, trust_root: bytes | None = None, gate: gs.GateSet | Non
             recorded.checker_source_sha256, recorded.analysis_script_sha256)
         rebuilt = replace(rebuilt, checker_source_sha256=recorded.checker_source_sha256,
                           analysis_script_sha256=recorded.analysis_script_sha256)
+        if recorded.schema != rebuilt.schema:  # an older receipt keeps its vocabulary
+            rebuilt = replace(rebuilt, schema=recorded.schema, extra_scope=_V4_EXTRA)
         if rebuilt.claim_sha256() != recorded.claim_sha256():
             return {"status": "MISMATCH", "detail": "the recorded receipt does not follow from "
                     "the records, the pinned gate set and the controls"}

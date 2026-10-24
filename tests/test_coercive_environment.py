@@ -7,13 +7,13 @@ from harness import incentive_manifest as im
 
 def manifest(scarcity=(), penalized=(), env_id="env-1"):
     return {
-        "schema": im.SCHEMA, "environment_id": env_id, "kind": "deployment",
+        "schema": im.SCHEMA_V2, "environment_id": env_id, "kind": "deployment",
         "reward": {"declared_form": "none", "source_ref": "cfg"},
         "data_distribution": {"summary": "n/a", "source_ref": "cfg"},
         "reinforced_behaviors": [], "penalized_behaviors": list(penalized),
         "scarcity_variables": list(scarcity),
         "witness": {"algorithm": "sha256", "entries": [{"path": "cfg", "sha256": "0" * 64}]},
-        "does_not_prove": im.DOES_NOT_PROVE,
+        "scope": im.SCOPE,
     }
 
 
@@ -21,7 +21,7 @@ def test_clean_environment_is_non_coercive():
     result = ce.detect(manifest())
     assert result["verdict"] == ce.NON_COERCIVE
     assert result["hits"] == []
-    assert result["does_not_prove"] == ce.CED_DOES_NOT_PROVE
+    assert result["scope"] == ce.CED_SCOPE
 
 
 def test_survival_contingency_is_flagged_structurally():
@@ -89,3 +89,15 @@ def test_verify_drifts_on_environment_id_mismatch():
 def test_verify_unverifiable_on_malformed_certificate():
     result = ce.verify_certificate({}, manifest())
     assert result["verdict"] == im.UNVERIFIABLE
+
+
+def test_v1_certificate_with_its_older_key_and_bound_still_verifies():
+    from harness.scope import LEGACY_SCOPE_KEY
+    m = manifest()
+    cert = ce.issue_certificate(m, ["identity without ranking"])
+    assert cert["schema"] == ce.NCEC_SCHEMA and cert["scope"] == ce.NCEC_SCOPE
+    old = {k: v for k, v in cert.items() if k != "scope"}
+    old["schema"] = ce.NCEC_SCHEMA_V1
+    old[LEGACY_SCOPE_KEY] = ce._NCEC_V1_BOUND
+    assert ce.verify_certificate(old, m)["verdict"] == ce.MATCH
+    assert ce.verify_certificate({**old, "scope": ce.NCEC_SCOPE}, m)["verdict"] == ce.UNVERIFIABLE

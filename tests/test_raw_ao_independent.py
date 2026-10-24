@@ -19,6 +19,7 @@ import struct
 
 import pytest
 
+from harness.scope import LEGACY_SCOPE_KEY
 from harness._vendor import superstack as ss
 from harness.certificates import raw_ao, raw_ao_independent as ri, raw_ao_receipt as rr
 from harness.certificates.raw_ao_buffers import canonical_ao, canonical_mask
@@ -95,7 +96,7 @@ def test_a_candidate_of_the_wrong_size_is_unverifiable_with_a_reason():
 def test_level1_receipt_carries_both_verdicts_and_the_fixed_lines():
     rec = rr.level1_receipt(cert(NAME), files(NAME), platform=NAME)
     assert rr.check(rec) == []
-    assert rec["does_not_prove"][:4] == list(raw_ao.DOES_NOT_PROVE)
+    assert rec[LEGACY_SCOPE_KEY][:4] == list(raw_ao.SUPERSTACK_LIMITS)
     assert (rec["flywheel"]["identity"], rec["flywheel"]["tolerance"],
             rec["flywheel"]["verdict"]) == ("MATCH", "PASS", "PASS")
     assert rec["flywheel"]["certificate_sha256"] == raw_ao.certificate_sha256(cert(NAME))
@@ -112,8 +113,8 @@ def test_an_edited_receipt_fails_its_seal_and_a_dropped_line_is_caught():
     rec = rr.level1_receipt(cert(NAME), files(NAME))
     edited = dict(rec, flywheel=dict(rec["flywheel"], tolerance="FAIL"))
     assert "seal" in ss.verify_receipt(edited) or "flywheel:tolerance" in rr.check(edited)
-    resealed = ss.seal(dict(rec, does_not_prove=rec["does_not_prove"][1:]))
-    assert "flywheel:does_not_prove" in rr.check(resealed)
+    resealed = ss.seal({**rec, LEGACY_SCOPE_KEY: rec[LEGACY_SCOPE_KEY][1:]})
+    assert "flywheel:" + LEGACY_SCOPE_KEY in rr.check(resealed)
     mixed = ss.seal(dict(rec, flywheel=dict(rec["flywheel"], identity="DRIFT")))
     assert rr.check(mixed) == ["flywheel:identity"]
 

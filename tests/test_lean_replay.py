@@ -162,10 +162,10 @@ def test_replay_success_passes_at_the_leanchecker_rung():
     assert r.verdict() == "PASS"
     assert r.coverage["validation_level"] == "leanchecker_replay"
     assert r.coverage["statement_binding"] == "pinned"
-    assert any("plain mode" in line for line in r.does_not_prove)
+    assert any("plain mode" in line for line in r.scope)
     assert any("spec_fidelity UNVERIFIED" in line
-               for line in r.does_not_prove)
-    assert not any("task is not read" in line for line in r.does_not_prove)
+               for line in r.scope)
+    assert not any("task is not read" in line for line in r.scope)
 
 
 def test_a_failed_olean_compile_fails_closed():

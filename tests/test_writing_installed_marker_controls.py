@@ -149,18 +149,18 @@ def test_installed_mcp_diagnoses_known_and_unknown_source_markers(tmp_path):
     py = _venv_python(tmp_path / "venv")
     home = tmp_path / "home"
     brief = tmp_path / "brief.json"; sources = tmp_path / "sources.json"
-    brief.write_text(json.dumps({"schema": "flywheel.writing-project-brief/v1",
+    brief.write_text(json.dumps({"schema": "flywheel.writing-project-brief/v2",
         "project_ref": PROJECT, "mode": "nonfiction", "form": "essay",
         "working_title": "Release evidence", "audience": "operators",
         "reader_job": "decide whether to publish", "author_intent": "publish after receipts match",
         "voice_contract": {"style_ref": "voice_rules"}, "source_packet_ref": "packet_main",
-        "writing_profile": "nonfiction", "does_not_prove": ["truth"]}), encoding="utf-8")
-    sources.write_text(json.dumps({"schema": "flywheel.writing-source-packet/v1",
+        "writing_profile": "nonfiction", "scope": ["truth"]}), encoding="utf-8")
+    sources.write_text(json.dumps({"schema": "flywheel.writing-source-packet/v2",
         "project_ref": PROJECT, "source_packet_ref": "packet_main",
         "sources": [{"source_id": "src_receipt", "title": "Receipt", "origin": "local",
         "allowed_use": "cite"}, {"source_id": "src_unused", "title": "Unused",
         "origin": "local", "allowed_use": "cite"}],
-        "does_not_prove": ["interpretation"]}), encoding="utf-8")
+        "scope": ["interpretation"]}), encoding="utf-8")
     proposal = _flywheel(tmp_path / "venv", py, home, ["init", "--brief", str(brief),
         "--source-packet", str(sources), "--client-request-id", "init", "--prepare", "--json"])
     ack = _approve_commit(tmp_path / "venv", py, home, proposal)

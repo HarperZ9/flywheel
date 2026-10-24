@@ -122,8 +122,8 @@ void main() {
             .writeAsStringSync(const JsonEncoder.withIndent('  ').convert({
           'shader_sha256': sourceHash,
           'backend': 'Flutter test engine FragmentProgram / Picture.toImage',
-          'does_not_prove':
-              'GPU device throughput, sustained FPS, mobile performance, or semantic identity quality',
+          'scope':
+              'shader frames rendered by the Flutter test engine and hashed; device throughput, sustained FPS and mobile performance are separate measurements',
           'frames': frames,
         }));
       }

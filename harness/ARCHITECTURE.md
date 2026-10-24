@@ -143,8 +143,9 @@ Shared plumbing lives in `benchmark_hygiene.py` and `benchmark_receipts.py`.
 is kept off the automatic accept path by the C2 invariant in `oracle.py`. Its
 sibling modules (`classifier_features.py`, `classifier_training.py`,
 `classifier_calibration.py`, `classifier_cli.py`) build and score it, and its
-own docstring and `DOES_NOT_PROVE` constant state what a score does not
-establish. The model can rank candidates. It cannot accept one.
+own docstring and `SCOPE` constant state what a score covers: raw uncalibrated
+scores that rank candidates, with execution and correctness left to the
+verifier. The model can rank candidates. It cannot accept one.
 
 ## Where the "why" lives
 

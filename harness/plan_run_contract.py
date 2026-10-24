@@ -5,6 +5,7 @@ import hashlib
 import re
 
 from .evidence_json import canonical_sha256
+from .scope import LEGACY_SCOPE_KEY
 from .plan_run_snapshot import (
     ForgeRecord, FrozenJsonSnapshot, PlanRunBinding, PlanRunSnapshotError,
     VerifiedPlanRun, freeze_json, thaw_json,
@@ -16,8 +17,11 @@ from .plan_workflow_contract import (
 PRP_SCHEMA = "flywheel.prp/v2"
 BINDING_SCHEMA = "flywheel.plan-run-binding/v1"
 FORGE_SCHEMA = "flywheel.forge-record/v2"
-RECEIPT_SCHEMA = "flywheel.plan-run-receipt/v2"
-RESULT_SCHEMA = "flywheel.plan-run-result/v2"
+RECEIPT_SCHEMA = "flywheel.plan-run-receipt/v3"
+RESULT_SCHEMA = "flywheel.plan-run-result/v3"
+RECEIPT_SCHEMA_V2 = "flywheel.plan-run-receipt/v2"
+RESULT_SCHEMA_V2 = "flywheel.plan-run-result/v2"
+_RECEIPT_BY_RESULT = {RESULT_SCHEMA: RECEIPT_SCHEMA, RESULT_SCHEMA_V2: RECEIPT_SCHEMA_V2}
 PRP_REF = re.compile(r"fpr_[0-9a-f]{32}\Z")
 PLAN_RUN_REF = re.compile(r"plr_[0-9a-f]{32}\Z")
 JOURNEY_REF = re.compile(r"jrn_[0-9a-f]{32}\Z")
@@ -25,7 +29,17 @@ SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 REQUEST_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z")
 TASK_TYPES = frozenset(("code", "extraction", "transform", "analysis",
                         "research", "writing", "qa", "general"))
-PLAN_LIMITATIONS = (
+PLAN_SCOPE = (
+    "the binding seals this PRP, prompt and forged gate list by digest",
+    "the workflow run passed the plan workflow contract with countersign",
+    "the denominator counts forged gates, checkable gates and recorded "
+    "workflow steps; forged gates executed is zero",
+    "the receipt binds journey, operation, arguments, authorization, grant "
+    "and execution plan by digest",
+    "the digests are local and unsigned; off-host provenance is a separate record",
+)
+# The v2 receipt's list, kept byte for byte so stored v2 results still verify.
+PLAN_LIMITATIONS_V2 = (
     "forged gates ran or passed", "workflow output is correct",
     "provider billing or side effects", "general execution containment",
     "off-host authenticity or signed provenance",
@@ -44,7 +58,9 @@ _RECEIPT_FIELDS = {"schema", "plan_run_ref", "binding", "journey_ref",
     "arguments_sha256", "authorization_sha256", "grant_ref_sha256",
     "execution_plan_sha256", "workflow", "endpoint", "workflow_sha256",
     "profile_sha256", "effective_system_sha256", "workflow_run_sha256",
-    "workflow_status", "denominator", "does_not_prove", "receipt_sha256"}
+    "workflow_status", "denominator", "scope", "receipt_sha256"}
+_SCOPE_BY_RECEIPT = {RECEIPT_SCHEMA: ("scope", list(PLAN_SCOPE)),
+    RECEIPT_SCHEMA_V2: (LEGACY_SCOPE_KEY, list(PLAN_LIMITATIONS_V2))}
 
 
 class PlanRunContractError(RuntimeError):
@@ -185,7 +201,7 @@ def build_plan_run_result(*, workflow_run: dict, workflow: str, endpoint: str,
             "checkable_gates": counts["checkable"],
             "forged_gates_executed": 0,
             "workflow_steps_recorded": len(run["steps"])},
-        "does_not_prove": list(PLAN_LIMITATIONS)}
+        "scope": list(PLAN_SCOPE)}
     receipt["receipt_sha256"] = canonical_sha256(receipt)
     result = {"schema": RESULT_SCHEMA, "plan_run_ref": plan_run_ref,
               "receipt": receipt, "workflow_run": run}
@@ -195,8 +211,11 @@ def build_plan_run_result(*, workflow_run: dict, workflow: str, endpoint: str,
     return result
 
 
-def _valid_receipt(value: object, workflow: dict, run_ref: str) -> bool:
-    if type(value) is not dict or set(value) != _RECEIPT_FIELDS:
+def _valid_receipt(value: object, workflow: dict, run_ref: str,
+                   schema: str = RECEIPT_SCHEMA) -> bool:
+    scope_key, scope_value = _SCOPE_BY_RECEIPT[schema]
+    fields = _RECEIPT_FIELDS - {"scope"} | {scope_key}
+    if type(value) is not dict or set(value) != fields:
         return False
     try:
         binding = parse_plan_run_binding(value.get("binding"))
@@ -208,12 +227,12 @@ def _valid_receipt(value: object, workflow: dict, run_ref: str) -> bool:
     denominator, counts = value.get("denominator"), binding.prp["gate_counts"]
     plain = {"schema", "plan_run_ref", "binding", "journey_ref",
         "client_request_id", "workflow", "endpoint", "workflow_status",
-        "denominator", "does_not_prove", "receipt_sha256"}
-    return (value.get("schema") == RECEIPT_SCHEMA
+        "denominator", scope_key, "receipt_sha256"}
+    return (value.get("schema") == schema
         and value.get("plan_run_ref") == run_ref
         and JOURNEY_REF.fullmatch(value.get("journey_ref", "")) is not None
         and REQUEST_ID.fullmatch(value.get("client_request_id", "")) is not None
-        and all(_valid_sha(value.get(name)) for name in _RECEIPT_FIELDS - plain)
+        and all(_valid_sha(value.get(name)) for name in fields - plain)
         and value.get("workflow_run_sha256") == canonical_sha256(run)
         and value.get("workflow_status") == run["status"]
         and type(denominator) is dict
@@ -222,7 +241,7 @@ def _valid_receipt(value: object, workflow: dict, run_ref: str) -> bool:
             "checkable_gates": counts["checkable"],
             "forged_gates_executed": 0,
             "workflow_steps_recorded": len(run["steps"])}
-        and value.get("does_not_prove") == list(PLAN_LIMITATIONS)
+        and value.get(scope_key) == scope_value
         and value.get("receipt_sha256") == canonical_sha256({
             key: item for key, item in value.items() if key != "receipt_sha256"}))
 
@@ -235,11 +254,13 @@ def verify_plan_result(value: object) -> dict:
                   "result_sha256"}
         run_ref = result.get("plan_run_ref", "")
         workflow = result.get("workflow_run")
+        receipt_schema = _RECEIPT_BY_RESULT.get(result.get("schema"))
         match = (set(result) == fields
-            and result.get("schema") == RESULT_SCHEMA
+            and receipt_schema is not None
             and type(run_ref) is str and PLAN_RUN_REF.fullmatch(run_ref) is not None
             and type(workflow) is dict
-            and _valid_receipt(result.get("receipt"), workflow, run_ref)
+            and _valid_receipt(result.get("receipt"), workflow, run_ref,
+                               receipt_schema)
             and result.get("result_sha256") == canonical_sha256({
                 key: item for key, item in result.items()
                 if key != "result_sha256"}))

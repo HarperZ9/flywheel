@@ -10,7 +10,7 @@ SUBMITTED DRAWING. It does not verify that the drawing is optimal, and the
 rectilinear crossing number of the graph is not claimed anywhere. That mirrors
 Zarankiewicz, where the checker disposes K_{2,2}-freeness and the edge count and
 says nothing about extremality. The count is the objective, lower is better, and
-`does_not_prove` says the rest.
+`scope` says how far the verdict goes.
 
 Three decisions that carry the family:
 
@@ -171,10 +171,10 @@ class CrossingOracle(CertificateOracle):
     # certificate that redraws a different graph has not answered the question.
     binding_keys = ("n", "edges_key")
 
-    family_not_proven = (
-        "NOT_PROVES_OPTIMALITY: this verifies the SUBMITTED object. The optimal "
-        "value for the instance is not computed, not bounded, and not claimed "
-        "anywhere.",
+    family_scope = (
+        "BOUND_FROM_SUBMITTED_OBJECT: this verifies the SUBMITTED drawing. Its "
+        "crossing count is an upper bound on the instance's crossing number, "
+        "and the minimum itself stays open.",
     )
 
     def declared_parameters(self, cert: dict) -> dict:

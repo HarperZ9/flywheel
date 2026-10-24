@@ -25,13 +25,16 @@ from acceptance_command_capture import (  # noqa: E402
 )
 
 
-SCHEMA = "flywheel.acceptance-command/v1"
+# v2 (2026-10-23): the receipt names what it covers in `scope`. The closeout
+# receipts under artifacts/closeout stay v1, byte for byte.
+SCHEMA = "flywheel.acceptance-command/v2"
+SCHEMA_V1 = "flywheel.acceptance-command/v1"
 DEFAULT_EVIDENCE_ROOT = Path(__file__).resolve().parents[1] / "artifacts" / "closeout" / "FW-2026-08-02-CLOSEOUT"
 DEFAULT_OUTPUT_LIMIT = 1_000_000
 DEFAULT_TIMEOUT_SECONDS = 900.0
-DOES_NOT_PROVE = [
-    "A recorded zero exit code does not prove command correctness.",
-    "This receipt does not prove exhaustive coverage, cross-system reproducibility, or absence of unobserved side effects.",
+SCOPE = [
+    "The receipt records the exit code and captured streams of one run of this command on this machine.",
+    "It covers what the command itself checks; side effects outside the captured streams are unobserved.",
 ]
 _SAFE_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
 
@@ -187,7 +190,7 @@ def record_command(
                 "replacement_count": argv_replacements + stdout_replacements + stderr_replacements,
                 "values_serialized": False,
             },
-            "does_not_prove": DOES_NOT_PROVE,
+            "scope": SCOPE,
         }
         serialized = json.dumps(receipt, indent=2, sort_keys=True, ensure_ascii=True) + "\n"
         (stage / "receipt.json").write_text(serialized, encoding="utf-8", newline="\n")

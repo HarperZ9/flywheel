@@ -74,3 +74,25 @@ def test_cli_split_manifest_must_cover_examples_and_match_manifest_hash(tmp_path
 
     with pytest.raises(SystemExit, match="split manifest"):
         _load_training_examples(examples_path, manifest_path)
+
+
+def test_cli_accepts_a_v1_split_manifest_under_the_older_scope_key(tmp_path):
+    from harness.classifier_dataset import MANIFEST_SCHEMA_V1, build_split_manifest
+    from harness.evidence_json import canonical_bytes, canonical_sha256
+    from harness.scope import LEGACY_SCOPE_KEY
+    from train.classifier_encoder_cli import _load_training_examples
+
+    rows = [
+        example("g-train", "train", "prefer local", ["local"]),
+        example("g-test", "test", "prefer remote", ["remote"]),
+    ]
+    examples_path = tmp_path / "examples.jsonl"
+    examples_path.write_text("\n".join(json.dumps(row) for row in rows), encoding="utf-8")
+    body = {k: v for k, v in build_split_manifest(
+        rows, {"g-train": "train", "g-test": "test"}).items()
+        if k not in ("manifest_sha256", "scope")}
+    body.update({"schema": MANIFEST_SCHEMA_V1, LEGACY_SCOPE_KEY: ["an older limit line"]})
+    manifest_path = tmp_path / "splits.json"
+    manifest_path.write_bytes(canonical_bytes({**body, "manifest_sha256": canonical_sha256(body)}))
+
+    assert len(_load_training_examples(examples_path, manifest_path)) == 1

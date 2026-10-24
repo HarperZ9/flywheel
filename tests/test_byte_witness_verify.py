@@ -250,10 +250,10 @@ def test_a_resolver_returning_the_wrong_bytes_is_tampered():
     assert result["broken_at"] == 0
 
 
-def test_a_chain_result_carries_what_it_does_not_prove():
+def test_a_chain_result_carries_what_it_covers():
     result = verify_chain(_chain_of_three())
-    assert any("omitted step" in line for line in result["does_not_prove"])
-    assert any("last record" in line for line in result["does_not_prove"])
+    assert any("never recorded" in line for line in result["scope"])
+    assert any("last record" in line for line in result["scope"])
 
 
 def test_an_unsigned_record_is_bound_to_no_key():

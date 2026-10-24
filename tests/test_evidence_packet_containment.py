@@ -20,8 +20,8 @@ from test_journey_checks import (
 )
 
 REASON = "EXECUTION_CONTAINMENT_UNAVAILABLE"
-LIMIT = ("NOT_PROVES_CANDIDATE_BEHAVIOR: candidate and tests were not executed "
-         "because deny-read and deny-egress containment is unavailable.")
+SCOPE = ("CONTAINMENT_BOUNDARY_RECORDED: the candidate and its tests stayed "
+         "unexecuted, because deny-read and deny-egress containment is unavailable.")
 REQUIREMENT = {
     "schema": "flywheel.python-execution-containment-requirement/v1",
     "status": "UNAVAILABLE",
@@ -99,7 +99,7 @@ def test_arbitrary_python_attempts_stop_before_any_child_execution(tmp_path, att
     assert (result["claim_id"], result["claim_verdict_before"]) == (
         "claim-root", "UNDECIDED")
     assert result["execution_containment"] == REQUIREMENT
-    assert result["does_not_prove"] == [LIMIT]
+    assert result["scope"] == [SCOPE]
     assert "receipt_ref" not in result and not (root / "receipts").exists()
 def test_candidate_junit_parser_and_oracle_dispatch_are_unreachable(tmp_path, monkeypatch):
     root, candidate, context, first, second = _fixture(tmp_path, "benign")

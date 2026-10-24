@@ -59,9 +59,9 @@ def allow_synthetic_catalog(monkeypatch, *, tool_name="echo", schema=None,
             "read": True, "write": False, "execute": False,
             "critical": False, "network": False,
         },
-        "does_not_prove": [
-            "catalog read-only metadata does not sandbox the MCP server process",
-            "restricted launch pins argv, cwd, environment and tool allowlist but does not provide an OS network or filesystem sandbox",
+        "scope": [
+            "catalog read-only metadata records the admitted tool contract",
+            "restricted launch pins argv, cwd, environment and tool allowlist; the server shares the host OS network and filesystem",
         ],
     }
     monkeypatch.setitem(auth.TRUSTED_CATALOG_TOOL_METADATA, "synthetic", {tool_name: auth_map})
@@ -145,7 +145,7 @@ def caller_authored_admission():
             "enforced_limits": {"no_shell": True, "pinned_cwd": True,
                                 "inherit_env": False, "network_sandbox": False,
                                 "filesystem_sandbox": False},
-            "does_not_prove": ["caller-authored receipt is not authority"],
+            "scope": ["caller-authored receipt is not authority"],
         }],
     }
 
@@ -185,7 +185,8 @@ def test_backend_cached_receipt_freezes_admission_and_preserves_no_mcp_v2(tmp_pa
     assert binding["schema"] == "flywheel.gateway-agent-binding/v3"
     assert binding["capabilities"]["allow_mcp"] is True
     admission = binding["mcp_admission"]
-    assert admission["schema"] == "flywheel.gateway-agent-mcp-admission/v1"
+    assert admission["schema"] == "flywheel.gateway-agent-mcp-admission/v2"
+    assert server_scope_v1_still_validates(admission)
     assert admission["request_sha256"]
     server = admission["servers"][0]
     assert server["discovery_receipt_sha256"] == receipt["receipt_sha256"]
@@ -250,3 +251,48 @@ def test_critical_authority_is_not_admitted_by_write_exec_flags(tmp_path, monkey
     with pytest.raises(GatewayOperationError, match="MCP_CRITICAL_TOOL_UNSUPPORTED"):
         freeze_agent_binding(op, tmp_path / "workspace",
                              owner_ref=OWNER, state_root=tmp_path / "state")
+
+
+def server_scope_v1_still_validates(plan):
+    """A v1 plan names the tool scope list with the older key and still validates;
+    a v1 plan carrying `scope` fails the v1 field contract."""
+    from harness.evidence_json import canonical_sha256
+    from harness.gateway_agent_mcp_plan_validation import (
+        ADMISSION_SCHEMA_V1, _hash_material, _validate_plan)
+    from harness.scope import LEGACY_SCOPE_KEY
+
+    def as_v1(rename):
+        old = copy.deepcopy(plan)
+        old["schema"] = ADMISSION_SCHEMA_V1
+        if rename:
+            for server in old["servers"]:
+                for tool in server["tools"]:
+                    tool[LEGACY_SCOPE_KEY] = tool.pop("scope")
+        old["admission_sha256"] = canonical_sha256(_hash_material(old))
+        return old
+
+    _validate_plan(as_v1(True))
+    with pytest.raises(GatewayOperationError, match="AGENT_BINDING_DRIFT"):
+        _validate_plan(as_v1(False))
+    return True
+
+
+def test_v1_discovery_receipt_still_loads_and_mixed_names_fail(tmp_path, monkeypatch):
+    from harness.evidence_json import canonical_sha256
+    from harness.gateway_agent_mcp_cache_validation import (
+        DISCOVERY_RECEIPT_SCHEMA_V1, _receipt_hash_material, freeze_receipt)
+    from harness.scope import LEGACY_SCOPE_KEY
+
+    receipt = cache_synthetic_receipt(tmp_path, monkeypatch)
+    assert receipt["schema"] == "flywheel.gateway-mcp-discovery-receipt/v2"
+    assert receipt["scope"]
+    old = copy.deepcopy(receipt)
+    old["schema"] = DISCOVERY_RECEIPT_SCHEMA_V1
+    old[LEGACY_SCOPE_KEY] = old.pop("scope")
+    old["receipt_sha256"] = canonical_sha256(_receipt_hash_material(old))
+    freeze_receipt(old)
+    mixed = copy.deepcopy(receipt)
+    mixed["schema"] = DISCOVERY_RECEIPT_SCHEMA_V1
+    mixed["receipt_sha256"] = canonical_sha256(_receipt_hash_material(mixed))
+    with pytest.raises(ValueError):
+        freeze_receipt(mixed)

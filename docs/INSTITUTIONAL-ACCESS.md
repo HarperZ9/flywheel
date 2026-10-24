@@ -17,7 +17,7 @@ scope = access_scope(
 report = assess_institutional_access(record, scope=scope, sources={"task": task_json, "trace": trace_json})
 ```
 
-`access_scope()` binds a scope id, each claim's required source refs, and the SHA-256 inventory of retained source values. `assess_institutional_access()` validates a declared record against that scope and returns `flywheel.institutional-access-assessment/v1`. Passing `None` as the record returns `None`, which means no institutional-access assessment exists.
+`access_scope()` binds a scope id, each claim's required source refs, and the SHA-256 inventory of retained source values. `assess_institutional_access()` validates a declared record against that scope and returns `flywheel.institutional-access-assessment/v2`, whose `scope` list names what the assessment covers: consistency and coverage of the declared record against the retained source scope, with event times, disclosures and history taken as declared. Passing `None` as the record returns `None`, which means no institutional-access assessment exists.
 
 `harness.incident_sim_packet.build_process_audit_packet()` can optionally attach this report under `institutional_access`. Incident-sim is synthetic, so the wrapper labels that attachment as `synthetic_declared_access`. Ordinary incident-sim packets still carry no institutional-access assessment, and packet verification reports that field as `NOT_ASSESSED`.
 
@@ -31,7 +31,7 @@ The packaged incident-sim command can attach this component when both files are 
 flywheel incident-sim --task task.json --trace trace.json --institutional-access access.json --institutional-access-scope access-scope.json
 ```
 
-The command reads all four files with the same bounded JSON reader used for task and trace inputs, emits source byte lengths and SHA-256 hashes, and rejects unpaired access/scope options. Its stdout is an outer `flywheel.incident-sim-command/v1` report containing the inner `audit_packet`. Extract that inner packet as shown in `docs/INCIDENT-SIM-EVALUATION.md` before recheck, then run:
+The command reads all four files with the same bounded JSON reader used for task and trace inputs, emits source byte lengths and SHA-256 hashes, and rejects unpaired access/scope options. Its stdout is an outer `flywheel.incident-sim-command/v2` report containing the inner `audit_packet`. Extract that inner packet as shown in `docs/INCIDENT-SIM-EVALUATION.md` before recheck, then run:
 
 ```text
 flywheel incident-sim --verify-packet packet.json

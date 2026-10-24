@@ -34,7 +34,8 @@ def publish_authorized_media_preview(
         allow_loopback: bool = False, now=None, nonce_bytes=None) -> dict:
     problem = _grant_problem(authorized, preview)
     if problem:
-        return _publication(problem, preview, does_not_prove=["media upload ran"])
+        return _publication(problem, preview, scope=["the grant binding check stopped "
+                                                     "this request before any upload"])
     try:
         base = configured_bulletin_base_url(
             preview["destination"]["base_url"], allow_loopback=allow_loopback)
@@ -44,7 +45,8 @@ def publish_authorized_media_preview(
             _resolve_key(authorized, state_root, keychain_get))
     except (BulletinSignedTransportError, TransportError):
         return _publication("publish_unavailable", preview,
-                            does_not_prove=["media upload ran"])
+                            scope=["origin, packet or key resolution stopped this "
+                                   "request before any upload"])
     span = float(timeout if timeout is not None else thaw_operation(
         getattr(authorized, "operation", {})).get("timeout", 20))
     deadline = time.monotonic() + max(0.001, span)
@@ -53,7 +55,8 @@ def publish_authorized_media_preview(
                                now=now, nonce_bytes=nonce_bytes)
     except BulletinSignedTransportError:
         return _publication("publish_unavailable", preview,
-                            does_not_prove=["media upload ran"])
+                            scope=["signing client setup stopped this request "
+                                   "before any upload"])
     uploaded = []
     for row, raw in zip(preview["media"], packet["bytes"]):
         status = _upload_one(client, base, row, raw, deadline)
@@ -62,7 +65,7 @@ def publish_authorized_media_preview(
                 "media_mismatch_fields" in status) else {}
             return _publication(status["status"], preview, uploaded_media=uploaded,
                                  media_id=row["expected_media_id"],
-                                 does_not_prove=status["does_not_prove"],
+                                 scope=status["scope"],
                                  **extra)
         uploaded.append(status["media"])
     try:
@@ -71,7 +74,8 @@ def publish_authorized_media_preview(
     except BulletinSignedTransportError as exc:
         state = "media_uploaded_post_unverified" if exc.code == "WRITE_RESPONSE_LOST" else "media_uploaded_post_failed"
         return _publication(state, preview, uploaded_media=uploaded,
-                            does_not_prove=["Bulletin accepted or rejected the post"])
+                            scope=["every reviewed media item uploaded; the post "
+                                   "response was lost or refused"])
     post_id = _post_id(posted)
     if not post_id or posted.get("ok") is not True:
         return _publication("media_uploaded_post_failed", preview,
@@ -88,7 +92,8 @@ def publish_authorized_media_preview(
                             uploaded_media=uploaded)
     return _publication("posted_readback_drift", preview, post_id=post_id,
                         uploaded_media=uploaded,
-                        does_not_prove=["public board readback matched media"])
+                        scope=["the board readback was compared with the requested "
+                               "post and media and differs"])
 
 
 def _upload_one(client, base: str, row: dict, raw: bytes, deadline: float) -> dict:
@@ -97,16 +102,18 @@ def _upload_one(client, base: str, row: dict, raw: bytes, deadline: float) -> di
         uploaded = client.post_bytes("/v1/media", raw)
     except BulletinSignedTransportError as exc:
         return {"status": "media_upload_unverified" if exc.code == "WRITE_RESPONSE_LOST" else "media_upload_failed",
-                "does_not_prove": ["Bulletin accepted or rejected the upload"]}
+                "scope": ["a signed upload was sent; its response was lost or refused"]}
     media = uploaded.get("media") if type(uploaded) is dict else None
     if not _same_media(media, row):
         fields = _media_mismatch_fields(media, row)
         return {"status": "media_upload_drift",
-                "does_not_prove": ["Bulletin returned the reviewed media"],
+                "scope": ["the upload response was compared with the reviewed media "
+                          "and differs"],
                 "media_mismatch_fields": fields}
     if not _public_media_bytes_match(base, row, raw, deadline):
         return {"status": "media_upload_drift",
-                "does_not_prove": ["public media bytes matched upload"]}
+                "scope": ["the public media bytes were read back and differ from "
+                          "the upload"]}
     return {"status": "uploaded", "media": {
         "media_id": row["expected_media_id"], "sha256": row["sha256"],
         "bytes": row["bytes"], "media_type": row["media_type"],

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/models/journey_models.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 
 const _headA =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -13,7 +14,7 @@ const _checkA = <String, Object?>{
   'receipt_state': 'MATCH',
   'numerator': 0,
   'denominator': 1,
-  'does_not_prove': 'claim correctness',
+  'scope': 'the check reads its recorded receipt',
 };
 const _missingA = <String, Object?>{
   'kind': 'fact',
@@ -113,7 +114,7 @@ void _coreIdentityTests() {
           'receipt_state': 'MATCH',
           'numerator': 1,
           'denominator': 1,
-          'does_not_prove': 'claim correctness',
+          'scope': 'the check reads its recorded receipt',
         },
       ])),
       JourneyProjection.fromJson(
@@ -129,7 +130,7 @@ void _coreIdentityTests() {
       JourneyProjection.fromJson(_fixture(lens: 'Verify', stage: 'concluded')),
       JourneyProjection.fromJson(_fixture(lens: 'Verify', conclusion: const {
         'summary': 'Bounded',
-        'does_not_prove': 'claim correctness',
+        'scope': 'the conclusion covers the recorded check',
       })),
     ];
 
@@ -226,7 +227,8 @@ void _responseParsingTests() {
       'authenticity_verdict': 'UNVERIFIABLE',
       'rehash_resistance_verdict': 'MATCH',
       'idempotent_replay': false,
-      'does_not_prove': ['claim correctness'],
+      // A v2 export names its scope list by the older key.
+      kLegacyScopeKey: ['claim correctness'],
     });
     final failure = JourneyFailure.fromJson(const {
       'schema': 'flywheel.evidence-transport-error/v1',
@@ -238,6 +240,7 @@ void _responseParsingTests() {
     expect(ack.operationState, JourneyOperationState.running);
     expect(exported.structuralVerdict, ReceiptState.match);
     expect(exported.authenticityVerdict, ReceiptState.unverifiable);
+    expect(exported.scope, ['claim correctness']);
     expect(failure.code, 'HEAD_CONFLICT');
     expect(failure.detail, 'Journey state changed');
     expect(

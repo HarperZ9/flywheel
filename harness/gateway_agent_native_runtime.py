@@ -189,7 +189,7 @@ def _inference(ledger, binding, ordinal, phase, elapsed_ms, reason):
 
 def _model_call(ledger, binding, ordinal, obj, elapsed_ms):
     usage = obj.get("usage") if isinstance(obj.get("usage"), dict) else None
-    ledger.append("model_call", "", {"schema": "flywheel.gateway-agent-model-call/v1",
+    ledger.append("model_call", "", {"schema": "flywheel.gateway-agent-model-call/v2",
         "binding_sha256": canonical_sha256(binding), "ordinal": ordinal,
         "endpoint": binding["endpoint"]["name"], "requested_model_reference":
         binding["model"]["requested_model_reference"], "model_id": binding["model"]["model_id"],
@@ -200,7 +200,7 @@ def _model_call(ledger, binding, ordinal, obj, elapsed_ms):
         "usage_reported": usage, "response_id": obj.get("id"),
         "stop_reason": obj.get("stop_reason") or obj.get("status"),
         "observed_manifest_sha256": None,
-        "does_not_prove": ["MODEL_WEIGHTS_IDENTITY", "SEMANTIC_TRUTH"]})
+        "scope": ["MODEL_CALL_OBSERVED", "MODEL_NAME_AS_REPORTED"]})
 
 
 def _execute(call, executor, ledger, sign_key, meta, on_event, deadline, private_guard):
