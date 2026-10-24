@@ -93,7 +93,7 @@ def build_parser(description: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="flywheel lsp", allow_abbrev=False,
                                      description=description)
     parser.add_argument("--limits", action="store_true",
-                        help="print the limits of an LSP run record.")
+                        help="print the scope of an LSP run record.")
     sub = parser.add_subparsers(dest="command")
     _ask(sub)
     _diagnostics(sub)

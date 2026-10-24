@@ -12,7 +12,7 @@ TraceProjection? acceptedOperationTraceProjection({
   required List<Map<String, dynamic>> progress,
 }) {
   Map<String, dynamic>? raw;
-  if (result != null && result.result['schema'] == traceProjectionSchema) {
+  if (result != null && traceProjectionSchemas.contains(result.result['schema'])) {
     if (result.operationRef != snapshot.operationRef ||
         result.state != snapshot.state ||
         result.canonicalSha256 != snapshot.resultSha256) {
@@ -22,7 +22,7 @@ TraceProjection? acceptedOperationTraceProjection({
     raw = Map<String, dynamic>.from(result.result);
   } else if (!snapshot.isTerminal) {
     for (final event in progress.reversed) {
-      if (event['schema'] == traceProjectionSchema) {
+      if (traceProjectionSchemas.contains(event['schema'])) {
         raw = event;
         break;
       }

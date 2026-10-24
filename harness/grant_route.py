@@ -11,6 +11,7 @@ from .evidence_public import (
     TransportError, admitted_root, error_response, exact_request, json_ref, json_ref_bytes, parse_json,
     public_metadata, public_result, public_text, relative_ref)
 from .journey_checks import OPERATION_REF_PATTERN
+from .scope import SCOPE_KEY, scope_key
 from .journey_export import plan_export_grant
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy, fsync_directory
 from .journey_service import JourneyService
@@ -37,9 +38,8 @@ _RECORD_FIELDS = frozenset((
     "schema", "proposal_ref", "planned_grant_ref", "owner_ref", "action",
     "request", "operation", "operation_body", "grant_request", "operation_ref",
     "expires_at", "state", "proposal_sha256"))
-_CLAIM_FIELDS = {"claim_id", "statement", "depends_on", "does_not_prove"}
-_ACTION_FIELDS = {"action_id", "kind", "description", "basis_refs"}
-_ACTION_KINDS = {"inspect", "rerun", "collect", "escalate", "repair", "rollback", "recheck", "export"}
+_CLAIM_FIELDS = {"claim_id", "statement", "depends_on"}  # plus exactly one scope key
+_ACTION_FIELDS = {"action_id", "kind", "description", "basis_refs"}; _ACTION_KINDS = {"inspect", "rerun", "collect", "escalate", "repair", "rollback", "recheck", "export"}
 def _service(owner_ref: str, state_root: Path,
              clock: Callable[[], str]) -> JourneyService:
     return JourneyService(owner_ref=owner_ref, store=JourneyStore(state_root), grants=GrantStore(state_root, clock=clock), clock=clock)
@@ -57,7 +57,7 @@ def _artifact_root_ref(state_root: Path, evidence_root: Path) -> tuple[Path, str
             "INVALID_TRANSITION", "check artifact custody is unavailable", 409)
     return evidence, relative
 def _client_item(kind: str, item: object) -> dict:
-    expected = _CLAIM_FIELDS if kind == "record_claim" else _ACTION_FIELDS
+    expected = {*_CLAIM_FIELDS, scope_key(item) or SCOPE_KEY} if kind == "record_claim" else _ACTION_FIELDS
     if type(item) is not dict or set(item) != expected:
         raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
     public_metadata(item); refs = item["depends_on"] if kind == "record_claim" else item["basis_refs"]
@@ -66,7 +66,7 @@ def _client_item(kind: str, item: object) -> dict:
             or len(refs) != len(set(refs))):
         raise TransportError("INVALID_TRANSITION", "Journey command is invalid", 422)
     if kind == "record_claim":
-        for name in ("claim_id", "statement", "does_not_prove"): public_text(item, name)
+        for name in ("claim_id", "statement", scope_key(item)): public_text(item, name)
         return {**item, "verdict": "UNDECIDED", "receipt_refs": ["receipts/pending"],
                 "receipt_state": "missing"}
     if type(item["kind"]) is not str or item["kind"] not in _ACTION_KINDS:
@@ -91,7 +91,7 @@ def _append_operation(req: dict, service: JourneyService | None) -> tuple[str, d
         except (KeyError, ValueError, IndexError):
             raise TransportError(
                 "INVALID_TRANSITION", "Journey transition is unavailable", 409) from None
-        return operation, ({"conclusion": {"summary": "Journey workflow concluded", "does_not_prove": "claim correctness or evidence completeness"}}
+        return operation, ({"conclusion": {"summary": "Journey workflow concluded", "scope": "the workflow reached its final stage; each claim keeps its own verdict"}}
                            if operation == "concluded" else {})
     name = "claims" if kind == "record_claim" else "next_actions"
     item = command["claim"] if kind == "record_claim" else command["next_action"]

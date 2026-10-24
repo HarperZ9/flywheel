@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import json
 
+from .scope import scope_list
+
 __all__ = ["as_json", "render_error", "render_run", "render_verify"]
 
 
@@ -119,9 +121,8 @@ def render_verify(result: dict) -> str:
         lines.append(f"failure          {result['failure_class']}")
     if result["broken_at"] is not None:
         lines.append(f"broken at        record {result['broken_at']}")
-    lines += ["", result["detail"], "", "limits:"]
-    return "\n".join(lines + [f"  - {limit}"
-                              for limit in result["does_not_prove"]])
+    lines += ["", result["detail"], "", "scope:"]
+    return "\n".join(lines + [f"  - {line}" for line in scope_list(result)])
 
 
 def render_error(report: dict) -> str:

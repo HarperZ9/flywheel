@@ -141,7 +141,7 @@ def public_result(action: str, value: dict) -> dict:
             result["reason"] = "registered oracle could not verify the submitted evidence"
         if action == "check" and result.get("unverifiable_reason") == "ORACLE_UNAVAILABLE":
             result.pop("oracle_id", None)
-            result["does_not_prove"] = ["the requested claim was not checked"]
+            result["scope"] = ["no oracle is registered for the requested claim; it was left unchecked"]
         if action in {"export", "recheck"} and "detail" in result:
             result["detail"] = "packet could not be verified from admitted evidence"
         result = strict_load_json(

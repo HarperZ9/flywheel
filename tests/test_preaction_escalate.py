@@ -16,6 +16,7 @@ import pytest
 from harness.preaction import records
 from harness.preaction.contract import BLOCK, HOLD
 from harness.preaction.escalate import TtyApprover, review_payload
+from harness.scope import LEGACY_SCOPE_KEY, scope_of
 from tests.preaction_fixtures import Clock, call, ctx, monitor
 
 PUSH = dict(cmd="git push --force origin main")
@@ -33,7 +34,8 @@ def test_hold_writes_sealed_record_before_returning(tmp_path):
     assert recs[-1]["schema"] == records.HOLD_SCHEMA
     assert recs[-1]["seal"]["hex"] == out.assessment.record_sha256
     assert records.verify_seal(recs[-1])
-    assert "intent" in recs[-1]["does_not_prove"]
+    assert "rule or threshold matched" in recs[-1]["scope"]
+    assert LEGACY_SCOPE_KEY not in recs[-1]
     assert "git push" not in json.dumps(recs[-1])  # digests only, never raw arguments
 
 
@@ -131,14 +133,14 @@ def test_decision_record_chains_to_hold_and_binds_review_digest(tmp_path):
     assert len(decision["review_payload_sha256"]) == 64
 
 
-def test_review_payload_order_and_does_not_prove(tmp_path):
+def test_review_payload_order_and_scope(tmp_path):
     mon = monitor(tmp_path)
     held = mon.gate(call("run", **PUSH), ctx(goal="update docs"))
     payload = review_payload(mon.escalator.read_pending(held.hold_id))
     assert list(payload)[:6] == ["proposed_action", "reasons", "goal_and_trajectory",
-                                 "coverage", "does_not_prove", "expiry_and_owner"]
+                                 "coverage", "scope", "expiry_and_owner"]
     assert payload["proposed_action"]["args"] == PUSH
-    assert "intent" in payload["does_not_prove"]
+    assert "matched a rule" in payload["scope"]
 
 
 def test_agent_text_is_neutral_and_omits_judge_justification(tmp_path):
@@ -164,7 +166,7 @@ def test_tty_approver_requires_the_typed_code():
     out = []
     appr = TtyApprover(read=lambda prompt: next(lines), write=out.append, isatty=lambda: True)
     assert appr({"proposed_action": {"tool": "run", "args": {}}, "confirm_code": "ab12cd",
-                 "reasons": [], "does_not_prove": "x"}) is None
+                 "reasons": [], "scope": "x"}) is None
 
 
 def test_tty_approver_refuses_without_a_terminal():
@@ -176,4 +178,23 @@ def test_tty_approver_approves_with_code():
     lines = iter(["a", "ab12cd"])
     appr = TtyApprover(read=lambda prompt: next(lines), write=lambda s: None, isatty=lambda: True)
     assert appr({"proposed_action": {"tool": "run", "args": {}}, "confirm_code": "ab12cd",
-                 "reasons": [], "does_not_prove": "x"}) == "APPROVED_ONCE"
+                 "reasons": [], "scope": "x"}) == "APPROVED_ONCE"
+
+
+def test_v1_pre_records_still_count_for_readers():
+    """Stores written before the scope migration hold v1 hold and allow records
+    with the older field name; the liveness join, the trace-flag chain check and
+    the override report still read them."""
+    from harness.preaction.coverage import liveness_join
+    from harness.preaction.overrides_report import summarize
+    from harness.preaction.trace_flag import verify_chain
+    old_hold = {"schema": records.HOLD_SCHEMA_V1, "run_id": "r", "tool_use_id": "t1",
+                "seal": {"algorithm": "sha256", "hex": "a" * 64}, "rule_hits": ["x/y"],
+                "trajectory_hits": ["trace-flag/tf_missing"],
+                LEGACY_SCOPE_KEY: "Matched rule or threshold; says nothing about intent."}
+    old_allow = {"schema": records.ALLOW_SCHEMA_V1, "tool_use_id": "t2"}
+    posts = [{"schema": records.POST_SCHEMA, "tool_use_id": t} for t in ("t1", "t2")]
+    assert liveness_join([old_hold, old_allow, *posts])["verdict"] == "MATCH"
+    assert [f["cause"] for f in verify_chain([old_hold])] == ["TRACE_FLAG_HIT_UNBACKED"]
+    assert summarize([old_hold])["by_rule"]
+    assert scope_of(old_hold).startswith("Matched rule")

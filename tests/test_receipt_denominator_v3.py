@@ -141,35 +141,29 @@ def test_the_decimal_form_stays_out_of_the_hashed_dict():
         "numerator", "denominator", "trials", "grader_id", "grader_sha256"}
 
 
-# --- the honesty lines fire on the new facts --------------------------------
+# --- the scope codes follow the new facts ------------------------------------
 
-def test_an_undeclared_budget_is_reported_not_hidden():
-    assert "NOT_PROVES_COST_BOUNDED" in _r(
-        budget=Budget.undeclared()).does_not_prove()
-    assert "NOT_PROVES_COST_BOUNDED" not in _r().does_not_prove()
-
-
-def test_a_result_reached_at_the_ceiling_says_so():
-    assert "NOT_PROVES_UNCONSTRAINED_BY_BUDGET" in _r(
-        budget=_budget(exhausted=True)).does_not_prove()
-    assert "NOT_PROVES_UNCONSTRAINED_BY_BUDGET" not in _r().does_not_prove()
+def test_an_undeclared_budget_leaves_cost_out_of_scope():
+    assert "COST_BOUNDED" not in _r(budget=Budget.undeclared()).scope()
+    assert "COST_BOUNDED" in _r().scope()
 
 
-def test_retries_and_visible_feedback_are_reported():
-    assert "NOT_PROVES_FIRST_ATTEMPT_SUCCESS" in _r(
-        denominator=_den(retries=1)).does_not_prove()
-    assert "NOT_PROVES_FIRST_ATTEMPT_SUCCESS" not in _r().does_not_prove()
-    assert "NOT_PROVES_FOUND_WITHOUT_ORACLE_FEEDBACK" in _r(
-        denominator=_den(oracle_feedback_visible=True)).does_not_prove()
-    assert "NOT_PROVES_FOUND_WITHOUT_ORACLE_FEEDBACK" \
-        not in _r().does_not_prove()
+def test_a_result_reached_at_the_ceiling_loses_within_budget():
+    assert "WITHIN_BUDGET" not in _r(budget=_budget(exhausted=True)).scope()
+    assert "WITHIN_BUDGET" in _r().scope()
 
 
-def test_a_single_trial_score_is_flagged_as_unstable():
-    assert "NOT_PROVES_SCORE_STABILITY" in _r(
-        graded_score=_score(trials=1)).does_not_prove()
-    assert "NOT_PROVES_SCORE_STABILITY" not in _r(
-        graded_score=_score(trials=2)).does_not_prove()
+def test_retries_and_visible_feedback_leave_their_codes_out():
+    assert "FIRST_ATTEMPT" not in _r(denominator=_den(retries=1)).scope()
+    assert "FIRST_ATTEMPT" in _r().scope()
+    assert "FOUND_WITHOUT_ORACLE_FEEDBACK" not in _r(
+        denominator=_den(oracle_feedback_visible=True)).scope()
+    assert "FOUND_WITHOUT_ORACLE_FEEDBACK" in _r().scope()
+
+
+def test_only_a_repeated_score_earns_its_code():
+    assert "SCORE_REPEATED" not in _r(graded_score=_score(trials=1)).scope()
+    assert "SCORE_REPEATED" in _r(graded_score=_score(trials=2)).scope()
 
 
 # --- refusals ---------------------------------------------------------------
@@ -292,9 +286,10 @@ def test_the_wire_form_roundtrips_with_every_new_field():
     assert back.to_dict()["schema"] == SCHEMA
 
 
-def test_oracle_specific_limits_roundtrip_exactly_and_are_claim_bound():
-    receipt = _r(extra_does_not_prove=("NOT_PROVES_ORACLE_SPECIFIC_BOUNDARY",))
+def test_oracle_specific_scope_roundtrips_exactly_and_is_claim_bound():
+    receipt = _r(extra_scope=("ORACLE_SPECIFIC_BOUNDARY",))
     body = receipt.to_dict(); back = Receipt.from_dict(body)
-    assert back.extra_does_not_prove == receipt.extra_does_not_prove
+    assert back.extra_scope == receipt.extra_scope
+    assert body["extra_scope"] == ["ORACLE_SPECIFIC_BOUNDARY"]
     assert back.to_dict() == body
     assert receipt.claim_sha256() != _r().claim_sha256()

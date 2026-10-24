@@ -11,8 +11,11 @@ from harness.cross_harness_run_seal import write_json
 from harness.cross_harness_types import sanitize_evidence
 from harness.e2e_journey_manifest import RUN_SCHEMA, JourneyManifest
 
-DOES_NOT_PROVE = [
-    "source truth", "claim support", "semantic completeness", "model quality", "all product commands",
+# What one journey run covers: the commands it ran and the outputs it recorded.
+SCOPE = [
+    "the journey's own commands ran in this workspace",
+    "each recorded artifact hash matches the bytes the run wrote",
+    "the selection oracle's verdict on this run's output",
 ]
 
 
@@ -34,7 +37,7 @@ class JourneyRunResult:
     workspace_root: str
     run_root: str
     source_tree_state: str
-    does_not_prove: list[str]
+    scope: list[str]
 
     def to_dict(self) -> dict[str, Any]:
         return sanitize_evidence({
@@ -44,7 +47,7 @@ class JourneyRunResult:
             "source": self.source, "steps": self.steps, "oracle": self.oracle,
             "calibration": self.calibration, "artifacts": self.artifacts,
             "workspace_root": self.workspace_root, "run_root": self.run_root,
-            "source_tree_state": self.source_tree_state, "does_not_prove": self.does_not_prove,
+            "source_tree_state": self.source_tree_state, "scope": self.scope,
         })
 
 
@@ -90,7 +93,7 @@ def base_result(manifest: JourneyManifest, run_root: Path, runtime: dict[str, An
         runtime=runtime, platform=platform, source=str(runtime.get("source", "unknown")),
         steps=steps or [], oracle=oracle or {"status": "not_run"}, calibration=calibration or {},
         artifacts={}, workspace_root=workspace_root, run_root=str(run_root),
-        source_tree_state=source_tree_state, does_not_prove=list(DOES_NOT_PROVE),
+        source_tree_state=source_tree_state, scope=list(SCOPE),
     )
 
 

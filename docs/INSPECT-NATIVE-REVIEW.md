@@ -71,7 +71,8 @@ The upload uses these headers:
 
 The `flywheel.inspect-import-result/v1` response contains `source`, `data_ref`,
 `report`, and `stored`. The nested report uses
-`flywheel.inspect-evidence/v1`. Its `source_pointers` entries carry
+`flywheel.inspect-evidence/v2`, whose `scope` list names what the import
+covers. Its `source_pointers` entries carry
 `json_pointer` and `source_value`; sample score entries carry `scorer` and
 `value`.
 

@@ -18,12 +18,12 @@ LIMIT_KEYS = frozenset((
 ))
 
 _NO_OS_SANDBOX_NOTE = (
-    "restricted launch pins argv, cwd, environment and tool allowlist but does "
-    "not provide an OS network or filesystem sandbox"
+    "restricted launch pins argv, cwd, environment and tool allowlist; the "
+    "server shares the host OS network and filesystem"
 )
 _DECLARED_AUTHORITY_NOTE = (
-    "catalog authority describes the admitted tool contract; it does not prove "
-    "the MCP server code cannot perform undeclared side effects"
+    "catalog authority records the operator-declared tool contract that "
+    "admission enforced; the MCP server's own code is outside this check"
 )
 
 TRUSTED_CATALOG_TOOL_METADATA: dict[str, dict[str, dict[str, object]]] = {
@@ -36,7 +36,7 @@ TRUSTED_CATALOG_TOOL_METADATA: dict[str, dict[str, dict[str, object]]] = {
                 "critical": False,
                 "network": False,
             },
-            "does_not_prove": [
+            "scope": [
                 _DECLARED_AUTHORITY_NOTE,
                 _NO_OS_SANDBOX_NOTE,
             ],
@@ -49,12 +49,12 @@ def trusted_tool_metadata(catalog_ref: str, tool_name: str) -> dict[str, object]
     try:
         metadata = TRUSTED_CATALOG_TOOL_METADATA[catalog_ref][tool_name]
         authority = _authority(metadata.get("authority"))
-        notes = _notes(metadata.get("does_not_prove"))
+        notes = _notes(metadata.get("scope"))
     except GatewayOperationError:
         raise
     except Exception:
         raise GatewayOperationError("MCP_AUTHORITY_UNAVAILABLE") from None
-    return {"authority": authority, "does_not_prove": notes,
+    return {"authority": authority, "scope": notes,
             "authority_source": "gateway_catalog_metadata:v1"}
 
 
@@ -73,7 +73,7 @@ def trusted_catalog_selections() -> tuple[dict[str, object], ...]:
                 "source_tool_name": tool_name,
                 "declared_authority": metadata["authority"],
                 "authority_source": metadata["authority_source"],
-                "does_not_prove": metadata["does_not_prove"],
+                "scope": metadata["scope"],
             })
         rows.append({
             "server_id": catalog_ref,

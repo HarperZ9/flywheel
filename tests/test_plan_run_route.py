@@ -178,7 +178,7 @@ def test_tamper_before_final_does_not_burn_then_restore_succeeds(tmp_path, monke
     monkeypatch.setattr("harness.plan_run_route.run_workflow", _runner_spy(calls))
     completed, status = _post("/api/plan/run", final, tmp_path, tmp_path,
                               countersign=_countersign)
-    assert status == 200 and completed["schema"] == "flywheel.plan-run-result/v2"
+    assert status == 200 and completed["schema"] == "flywheel.plan-run-result/v3"
     assert len(calls) == 1
 
 
@@ -199,7 +199,7 @@ def test_root_resolution_fault_is_fixed_preconsume_and_restore_succeeds(
     monkeypatch.setattr("harness.plan_run_route.run_workflow", _runner_spy(calls))
     completed, status = _post("/api/plan/run", final, tmp_path, tmp_path,
                               countersign=_countersign)
-    assert status == 200 and completed["schema"] == "flywheel.plan-run-result/v2"
+    assert status == 200 and completed["schema"] == "flywheel.plan-run-result/v3"
     assert len(calls) == 1
 
 

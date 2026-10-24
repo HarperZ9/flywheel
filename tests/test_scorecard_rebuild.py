@@ -12,7 +12,7 @@ import json
 import pytest
 
 from harness.cross_harness_artifacts import bind_attempt_receipt
-from harness.scorecard_rebuild import DOES_NOT_PROVE, SCHEMA, rebuild
+from harness.scorecard_rebuild import SCHEMA, SCOPE, rebuild
 
 
 def seal(root, name, **over):
@@ -101,8 +101,8 @@ def test_the_same_run_rebuilds_to_the_same_bytes(tmp_path):
 
 def test_the_document_says_a_missing_attempt_leaves_no_receipt_to_find(tmp_path):
     seal(tmp_path, "one")
-    assert rebuild(tmp_path)["does_not_prove"] == DOES_NOT_PROVE
-    assert any("absent here rather than failed" in item for item in DOES_NOT_PROVE)
+    assert rebuild(tmp_path)["scope"] == SCOPE
+    assert any("absent here rather than failed" in item for item in SCOPE)
 
 
 def test_a_rebuild_says_the_run_never_reached_its_own_source_check(tmp_path):

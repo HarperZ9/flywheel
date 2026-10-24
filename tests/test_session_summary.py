@@ -132,8 +132,20 @@ def test_markdown_labels_every_answer_and_keeps_the_null(repo: Path) -> None:
         assert f"## {question}" in text
     assert "_basis: mixed_" in text
     assert "- ship it (stated)" in text
-    assert "## Limits" in text
+    assert "## Scope" in text
     assert "C:/dev" not in text and "AppData" not in text
+
+
+def test_v1_summary_renders_its_window_and_older_list(repo: Path) -> None:
+    from harness.scope import LEGACY_SCOPE_KEY
+    summary = build_session_summary(repo, scope="task")
+    assert summary["schema"] == SCHEMA and summary["summary_scope"] == "task"
+    old = dict(summary, schema="harness.session-summary/v1")
+    old[LEGACY_SCOPE_KEY] = old.pop("scope")
+    old["scope"] = old.pop("summary_scope")
+    text = render_markdown(old)
+    assert text.startswith("# Run summary (task)")
+    assert f"- {old[LEGACY_SCOPE_KEY][0]}" in text
 
 
 def test_cli_writes_both_artifacts_and_can_fail_on_disagreement(repo: Path, tmp_path: Path) -> None:

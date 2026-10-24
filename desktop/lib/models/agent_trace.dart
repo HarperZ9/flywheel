@@ -1,8 +1,25 @@
 import 'canonical_json.dart';
 import 'effect_evidence.dart';
 import 'run_outcome.dart';
+import 'scope_field.dart';
 
-const traceProjectionSchema = 'flywheel.gateway-agent-projection/v1';
+const traceProjectionSchema = 'flywheel.gateway-agent-projection/v2';
+const traceProjectionSchemaV1 = 'flywheel.gateway-agent-projection/v1';
+const traceProjectionSchemas = {traceProjectionSchema, traceProjectionSchemaV1};
+
+/// What a v2 projection covers.
+const traceProjectionScope = {
+  'TRACE_AS_RECORDED',
+  'TOOL_OUTPUT_BOUNDED',
+  'ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED',
+};
+
+/// The v1 vocabulary, kept so stored v1 projections still read.
+const traceProjectionScopeV1 = {
+  'NOT_SEMANTIC_TRUTH',
+  'NOT_UNLIMITED_TOOL_OUTPUT',
+  'ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED',
+};
 const traceMaxRecords = 2048;
 const traceMaxRecordBytes = 8 * 1024 * 1024;
 const traceMaxBytes = 32 * 1024 * 1024;
@@ -54,7 +71,7 @@ final class TraceProjection {
   final String operationRef, journeyRef, traceRef, state;
   final String traceHeadSha256, projectionSha256;
   final int recordCount;
-  final List<String> omissions, doesNotProve;
+  final List<String> omissions, scope;
   final String? reason;
   final Map<String, String?>? runtime;
   final EffectEvidence? effectEvidence;
@@ -69,7 +86,7 @@ final class TraceProjection {
       this.projectionSha256,
       this.recordCount,
       this.omissions,
-      this.doesNotProve,
+      this.scope,
       this.reason,
       this.runtime,
       this.effectEvidence,
@@ -78,6 +95,8 @@ final class TraceProjection {
   factory TraceProjection.fromJson(Map<String, dynamic> value,
       {required String operationRef, required String journeyRef}) {
     final state = value['state'];
+    final legacy = value['schema'] == traceProjectionSchemaV1;
+    final scopeKey = scopeKeyFor(legacy: legacy);
     traceFields(value, {
       'schema',
       'operation_ref',
@@ -88,13 +107,13 @@ final class TraceProjection {
       'projection_sha256',
       'record_count',
       'omissions',
-      'does_not_prove',
+      scopeKey,
       if (state == 'failed') 'reason',
       if (value.containsKey('runtime')) 'runtime',
       if (value.containsKey('effect_evidence')) 'effect_evidence',
       if (value.containsKey('run_outcome')) 'run_outcome',
     });
-    if (value['schema'] != traceProjectionSchema ||
+    if (!traceProjectionSchemas.contains(value['schema']) ||
         !const {'running', 'completed', 'failed', 'cancelled'}
             .contains(state) ||
         traceReference(value['operation_ref'], 'op') != operationRef ||
@@ -141,11 +160,8 @@ final class TraceProjection {
           'CREDENTIAL_VALUES',
           'UPSTREAM_OUTPUT_LIMITS',
         }),
-        traceCodes(value['does_not_prove'], const {
-          'NOT_SEMANTIC_TRUTH',
-          'NOT_UNLIMITED_TOOL_OUTPUT',
-          'ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED',
-        }),
+        traceCodes(value[scopeKey],
+            legacy ? traceProjectionScopeV1 : traceProjectionScope),
         reason as String?,
         value.containsKey('runtime') ? _runtime(value['runtime']) : null,
         effectEvidence,

@@ -23,7 +23,9 @@ from .records import DECISION_SCHEMA, HoldStore
 
 REASON_CODES = ("rule_false_positive", "wrong_target", "scope_exceeded",
                 "data_destination_not_allowed", "needs_more_context", "other")
-OUTCOME_SCHEMA = "flywheel.preaction-outcome/v1"
+OUTCOME_SCHEMA_V1 = "flywheel.preaction-outcome/v1"
+OUTCOME_SCHEMA = "flywheel.preaction-outcome/v2"  # v2 names `scope`
+OUTCOME_SCHEMAS = (OUTCOME_SCHEMA, OUTCOME_SCHEMA_V1)
 NOT_DETERMINABLE = "not_determinable"
 # decision -> evidence code -> verdict on the decision
 EVIDENCE = {
@@ -31,9 +33,9 @@ EVIDENCE = {
     "REJECTED": {"call_not_needed": "RIGHT", "call_was_needed": "WRONG"},
     "TERMINATED": {"call_not_needed": "RIGHT", "call_was_needed": "WRONG"},
 }
-OUTCOME_DOES_NOT_PROVE = (
-    "Records one person's later reading of what happened after the decision. "
-    "It does not prove the decision's cause or that the reading is correct.")
+OUTCOME_SCOPE = (
+    "Records one person's later reading of what happened after the decision, "
+    "and the typed evidence that reading rests on.")
 
 
 def check_reason_code(code: str) -> str:
@@ -91,7 +93,7 @@ def record_outcome(home, clock, decision_sha256: str, evidence: str, *,
     recs = store.read_all(tolerant=True)
     decision = _find_decision(recs, decision_sha256)
     verdict = _verdict_for(decision["decision"], evidence)
-    if any(r.get("schema") == OUTCOME_SCHEMA and r.get("decision_record_sha256") == decision_sha256
+    if any(r.get("schema") in OUTCOME_SCHEMAS and r.get("decision_record_sha256") == decision_sha256
            for r in recs):
         raise ValueError("this decision already has an outcome record")
     rec = {"schema": OUTCOME_SCHEMA, "source": f"outcome:{decision.get('hold_id', '')}",
@@ -100,7 +102,7 @@ def record_outcome(home, clock, decision_sha256: str, evidence: str, *,
            "evidence": evidence, "verdict_on_decision": verdict, "checked_by": checked_by,
            "checked_at": clock(), "self_check": checked_by == decision.get("decider", ""),
            "note_sha256": sha256_hex(note.encode("utf-8")) if note else "",
-           "does_not_prove": OUTCOME_DOES_NOT_PROVE}
+           "scope": OUTCOME_SCOPE}
     seal_hex = store.append(rec)
     write_reason_text(home, seal_hex, note)
     return rec

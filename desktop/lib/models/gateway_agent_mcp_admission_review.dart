@@ -24,9 +24,15 @@ final class GatewayAgentMcpAdmissionReview extends DefensiveModel {
     final issues = <ParseIssue>[];
     _exactFields(
         json, const {'schema', 'admission_sha256', 'servers'}, issues, field);
-    expectSchema(json, gatewayAgentMcpAdmissionReviewSchema, issues);
-    final servers = readRecords<GatewayAgentMcpServerReview>(json['servers'],
-        '$field.servers', issues, GatewayAgentMcpServerReview.fromJson);
+    expectSchemaIn(json, gatewayAgentMcpAdmissionReviewSchemas, issues);
+    // v1 tool rows name their scope list by the older key; v2 rows use `scope`.
+    final legacy = json['schema'] == gatewayAgentMcpAdmissionReviewSchemaV1;
+    final servers = readRecords<GatewayAgentMcpServerReview>(
+        json['servers'],
+        '$field.servers',
+        issues,
+        (row, rowField) =>
+            GatewayAgentMcpServerReview.fromJson(row, rowField, legacy: legacy));
     issues.addAll(servers.expand((server) => server.parseIssues));
     if (servers.isEmpty) {
       addParseIssue(issues, '$field.servers', json['servers']);
@@ -81,7 +87,8 @@ final class GatewayAgentMcpServerReview extends DefensiveModel {
       super.parseIssues);
 
   factory GatewayAgentMcpServerReview.fromJson(
-      Map<String, Object?> json, String field) {
+      Map<String, Object?> json, String field,
+      {bool legacy = false}) {
     final issues = <ParseIssue>[];
     _exactFields(
         json,
@@ -101,8 +108,12 @@ final class GatewayAgentMcpServerReview extends DefensiveModel {
         field);
     final launch =
         GatewayAgentMcpLaunchReview.fromRaw(json['launch'], '$field.launch');
-    final tools = readRecords<GatewayAgentMcpToolReview>(json['tools'],
-        '$field.tools', issues, GatewayAgentMcpToolReview.fromJson);
+    final tools = readRecords<GatewayAgentMcpToolReview>(
+        json['tools'],
+        '$field.tools',
+        issues,
+        (row, rowField) =>
+            GatewayAgentMcpToolReview.fromJson(row, rowField, legacy: legacy));
     issues
       ..addAll(launch.parseIssues)
       ..addAll(tools.expand((tool) => tool.parseIssues));
@@ -130,9 +141,9 @@ final class GatewayAgentMcpServerReview extends DefensiveModel {
       : tools
           .map((tool) => '${tool.runtimeToolName}: ${tool.limits.label}')
           .join('; ');
-  String get doesNotProveLabel {
+  String get scopeLabel {
     final values = <String>{
-      for (final tool in tools) ...tool.doesNotProve,
+      for (final tool in tools) ...tool.scope,
     };
     return values.isEmpty ? 'none' : values.join('; ');
   }
@@ -194,7 +205,7 @@ final class GatewayAgentMcpToolReview extends DefensiveModel {
       descriptorSha256, authoritySource;
   final GatewayAgentMcpAuthority declaredAuthority;
   final GatewayAgentMcpLimits limits;
-  final List<String> doesNotProve;
+  final List<String> scope;
   GatewayAgentMcpToolReview._(
       this.sourceToolName,
       this.runtimeToolName,
@@ -203,15 +214,17 @@ final class GatewayAgentMcpToolReview extends DefensiveModel {
       this.authoritySource,
       this.declaredAuthority,
       this.limits,
-      this.doesNotProve,
+      this.scope,
       super.parseIssues);
 
   factory GatewayAgentMcpToolReview.fromJson(
-      Map<String, Object?> json, String field) {
+      Map<String, Object?> json, String field,
+      {bool legacy = false}) {
     final issues = <ParseIssue>[];
+    final scopeKey = scopeKeyFor(legacy: legacy);
     _exactFields(
         json,
-        const {
+        {
           'source_tool_name',
           'runtime_tool_name',
           'input_schema_sha256',
@@ -219,7 +232,7 @@ final class GatewayAgentMcpToolReview extends DefensiveModel {
           'declared_authority',
           'authority_source',
           'enforced_limits',
-          'does_not_prove'
+          scopeKey
         },
         issues,
         field);
@@ -227,10 +240,9 @@ final class GatewayAgentMcpToolReview extends DefensiveModel {
         json['declared_authority'], '$field.declared_authority');
     final limits = GatewayAgentMcpLimits.fromRaw(
         json['enforced_limits'], '$field.enforced_limits');
-    final doesNotProve =
-        readStringList(json['does_not_prove'], '$field.does_not_prove', issues);
-    if (doesNotProve.isEmpty) {
-      addParseIssue(issues, '$field.does_not_prove', json['does_not_prove']);
+    final scope = readStringList(json[scopeKey], '$field.$scopeKey', issues);
+    if (scope.isEmpty) {
+      addParseIssue(issues, '$field.$scopeKey', json[scopeKey]);
     }
     issues
       ..addAll(authority.parseIssues)
@@ -243,7 +255,7 @@ final class GatewayAgentMcpToolReview extends DefensiveModel {
         readText(json, 'authority_source', issues),
         authority,
         limits,
-        doesNotProve,
+        scope,
         issues);
   }
 }

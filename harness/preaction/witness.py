@@ -37,15 +37,16 @@ import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from .records import ALLOW_SCHEMA, HOLD_SCHEMA, REDEEM_SCHEMA, HoldStore, verify_seal
+from .records import ASSESSMENT_SCHEMAS, REDEEM_SCHEMA, HoldStore, verify_seal
 
 HEAD_SCHEMA = "flywheel.preaction-head/v1"
-WITNESS_SCHEMA = "flywheel.preaction-witness/v1"
-_PRE = (HOLD_SCHEMA, ALLOW_SCHEMA, REDEEM_SCHEMA)
+WITNESS_SCHEMA_V1 = "flywheel.preaction-witness/v1"
+WITNESS_SCHEMA = "flywheel.preaction-witness/v2"  # v2 names `scope`
+_PRE = (*ASSESSMENT_SCHEMAS, REDEEM_SCHEMA)
 _CALL_ITEMS = ("tool_use", "function_call", "custom_tool_call", "local_shell_call")
-DOES_NOT_PROVE = ("A MATCH shows every tool call in the transcripts read had a pre record and "
-                  "every exported head is still in the store. It does not show that the "
-                  "transcripts are complete or unedited, or that the monitor judged well.")
+SCOPE = ("A MATCH shows every tool call in the transcripts read had a pre record and "
+         "every exported head is still in the store. It covers the transcripts as read "
+         "and the heads as exported.")
 
 
 def _now() -> str:
@@ -198,6 +199,6 @@ def run_witness(home, witness_dir, transcripts, *, grace_seconds=60, now="") -> 
     rec = {"schema": WITNESS_SCHEMA, "source": f"witness:{now or _now()}",
            "store": _store_id(home), "verdict": verdict, "heads": heads,
            "transcripts": join, "observed_at": now or _now(),
-           "does_not_prove": DOES_NOT_PROVE}
+           "scope": SCOPE}
     HoldStore(witness_dir).append(rec)
     return rec

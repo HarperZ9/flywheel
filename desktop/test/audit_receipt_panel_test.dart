@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flywheel_desktop/models/scope_field.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/audit_receipt_panel.dart';
 
@@ -24,10 +25,11 @@ const _workReceiptJson = '{"schema":"flywheel.tool-call-receipt/v1",'
     '"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}}';
 
 Map<String, dynamic> _runDoc() => {
+      'schema': 'flywheel.audit-run/v2',
       'verdict': 'CONCERNS',
       'confidence': 'moderate',
       'summary': 'verdict CONCERNS over 2 review(s).',
-      'does_not_prove': 'a cheap post-work review, not a proof.',
+      'scope': 'a cheap post-work review over the sealed work receipt.',
       'reviews': [
         {
           'detector_id': 'receipt_integrity',
@@ -99,10 +101,21 @@ void main() {
     expect(find.text('completeness'), findsOneWidget);
     expect(find.textContaining('confidence moderate'), findsOneWidget);
     expect(find.text('seal'), findsOneWidget); // the HashText label
-    expect(find.textContaining('not a proof'), findsOneWidget); // does_not_prove
+    expect(find.textContaining('cheap post-work review'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Verify'), findsOneWidget);
     expect(
         find.widgetWithText(OutlinedButton, 'Corrupt one byte'), findsOneWidget);
+  });
+
+  testWidgets('a v1 audit-run response shows its scope under the older key',
+      (tester) async {
+    final v1 = _runDoc()
+      ..['schema'] = 'flywheel.audit-run/v1'
+      ..remove(kScopeKey)
+      ..[kLegacyScopeKey] = 'a cheap post-work review, not a proof.';
+    await tester.pumpWidget(_wrap(_panel(onRun: (_) async => v1)));
+    await _pasteAndRun(tester);
+    expect(find.textContaining('not a proof'), findsOneWidget);
   });
 
   testWidgets('a bad work receipt is stated as an honest null', (tester) async {

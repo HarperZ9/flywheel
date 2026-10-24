@@ -4,7 +4,7 @@ from harness.evidence_json import canonical_bytes
 from harness.grant_route import read_proposal_record
 from harness.journey_route import journey_post
 from harness.writing_service import WritingService
-from harness.writing_types import WRITING_DOES_NOT_PROVE, sha256_bytes
+from harness.writing_types import WRITING_SCOPE, sha256_bytes
 
 NOW = "2026-09-08T12:00:00Z"
 PROJECT = "wpr_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -35,16 +35,16 @@ def _raw_commit(service, proposal):
 
 def _project(tmp_path):
     service = WritingService(tmp_path / "home", clock=lambda: NOW)
-    brief = {"schema": "flywheel.writing-project-brief/v1", "project_ref": PROJECT,
+    brief = {"schema": "flywheel.writing-project-brief/v2", "project_ref": PROJECT,
         "mode": "nonfiction", "form": "essay", "working_title": "V2 authority",
         "audience": "operators", "reader_job": "verify authority",
         "author_intent": "keep accepted text scoped", "voice_contract": {"style_ref": "voice"},
         "source_packet_ref": "packet_main", "writing_profile": "nonfiction",
-        "does_not_prove": ["truth"]}
-    sources = {"schema": "flywheel.writing-source-packet/v1", "project_ref": PROJECT,
+        "scope": ["truth"]}
+    sources = {"schema": "flywheel.writing-source-packet/v2", "project_ref": PROJECT,
         "source_packet_ref": "packet_main", "sources": [{"source_id": "src_receipt",
         "title": "Receipt", "origin": "local", "allowed_use": "cite"}],
-        "does_not_prove": ["interpretation"]}
+        "scope": ["interpretation"]}
     init = service.prepare_init(_json(tmp_path / "brief.json", brief),
         _json(tmp_path / "sources.json", sources), client_request_id="init")
     ack = _flow(service, init)
@@ -79,13 +79,13 @@ def _target(revision, body):
 
 
 def _card(service, journey, head, revision, diagnostic, body, card_ref=CARD):
-    card = {"schema": "flywheel.writing-scoped-revision/v1", "project_ref": PROJECT,
+    card = {"schema": "flywheel.writing-scoped-revision/v2", "project_ref": PROJECT,
         "card_ref": card_ref, "diagnostic_ref": diagnostic["diagnostic_ref"],
         "target": _target(revision, body), "problem": "change middle only",
         "goal": "replace selected text", "must_preserve": ["KEEP lines"],
         "allowed_operations": ["replace"], "forbidden_operations": ["change context"],
         "source_refs": ["src_receipt"], "voice_constraints": "direct",
-        "does_not_prove": ["quality"]}
+        "scope": ["quality"]}
     proposal = service.prepare_card(journey, head, card, client_request_id=card_ref)
     head = _flow(service, proposal)["event_head_sha256"]
     return head, card
@@ -121,7 +121,7 @@ def test_raw_diagnostic_inner_body_and_source_claims_are_revalidated(tmp_path):
     service, journey, head = _project(tmp_path)
     body = "Body with [src_receipt].\n"
     head, revision = _revision(service, journey, head, body)
-    bad = {"schema": "flywheel.writing-reader-flow-diagnostic/v1", "project_ref": PROJECT,
+    bad = {"schema": "flywheel.writing-reader-flow-diagnostic/v2", "project_ref": PROJECT,
         "diagnostic_ref": "diag_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "revision_ref": revision["revision_ref"], "body_sha256": revision["body_sha256"],
         "reader_state_summary": {"entry_state": "", "new_information": [],
@@ -139,7 +139,7 @@ def test_raw_diagnostic_inner_body_and_source_claims_are_revalidated(tmp_path):
         "source_id": "src_missing", "message": "forged", "basis": "deterministic",
         "measurement_status": "checked", "base_revision_ref": revision["revision_ref"],
         "base_body_sha256": revision["body_sha256"], "span_refs": [],
-        "source_refs": ["src_missing"]}], "does_not_prove": [WRITING_DOES_NOT_PROVE]}
+        "source_refs": ["src_missing"]}], "scope": [WRITING_SCOPE]}
     proposal = service._prepare_artifact(journey, head, "bad-diag", "diagnostic",
         bad["diagnostic_ref"], bad)
     result, status = _raw_commit(service, proposal)
@@ -151,13 +151,13 @@ def test_card_requires_known_diagnostic_and_packet_source(tmp_path):
     service, journey, head = _project(tmp_path)
     body = "KEEP\nCHANGE\nKEEP\n"
     head, revision = _revision(service, journey, head, body)
-    bad_card = {"schema": "flywheel.writing-scoped-revision/v1", "project_ref": PROJECT,
+    bad_card = {"schema": "flywheel.writing-scoped-revision/v2", "project_ref": PROJECT,
         "card_ref": CARD, "diagnostic_ref": "diag_ffffffffffffffffffffffffffffffff",
         "target": _target(revision, body), "problem": "change middle only",
         "goal": "replace selected text", "must_preserve": ["KEEP lines"],
         "allowed_operations": ["replace"], "forbidden_operations": ["change context"],
         "source_refs": ["src_missing"], "voice_constraints": "direct",
-        "does_not_prove": ["quality"]}
+        "scope": ["quality"]}
     proposal = service._prepare_artifact(journey, head, "bad-card", "card",
         bad_card["card_ref"], bad_card)
     result, status = _raw_commit(service, proposal)
@@ -170,7 +170,7 @@ def test_review_requires_diagnostic_for_current_revision(tmp_path):
     head, first = _revision(service, journey, head, "first\n", "first")
     head, diagnostic = _diagnose(service, journey, head, first)
     head, second = _revision(service, journey, head, "second\n", "second")
-    review = {"schema": "flywheel.writing-review/v1", "project_ref": PROJECT,
+    review = {"schema": "flywheel.writing-review/v2", "project_ref": PROJECT,
         "review_ref": "wrev_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "revision_refs": [second["revision_ref"]],
         "reader_flow_ref": diagnostic["diagnostic_ref"],
@@ -183,7 +183,7 @@ def test_review_requires_diagnostic_for_current_revision(tmp_path):
         "measurement_status": "checked", "decision_refs": []},
         "quality_measurement": {"status": "unmeasured", "basis": "deterministic",
         "measurement_status": "unmeasured", "source_refs": []},
-        "blocking_items": [], "does_not_prove": [WRITING_DOES_NOT_PROVE]}
+        "blocking_items": [], "scope": [WRITING_SCOPE]}
     proposal = service._prepare_artifact(journey, head, "bad-review", "review",
         review["review_ref"], review)
     result, status = _raw_commit(service, proposal)

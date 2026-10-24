@@ -1,5 +1,5 @@
 {
-  "schema": "flywheel.domain-pack/v1",
+  "schema": "flywheel.domain-pack/v2",
   "pack_id": "flywheel.finance.claims",
   "version": "1.0.0",
   "domain_id": "finance",
@@ -48,8 +48,8 @@
     "the pack screens sentences against the referenced phrase and figure rules only",
     "it grades no investment merit and renders no advice"
   ],
-  "does_not_prove": [
-    "a passed claims screen does not prove regulatory compliance of a document"
+  "scope": [
+    "a passed claims screen covers the document's sentences against the referenced phrase and figure rules"
   ],
   "owner": "HarperZ9",
   "review_due_at": "2027-02-24"

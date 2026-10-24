@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 
 import '../client/gateway_error.dart';
 import '../client/gateway_roadmap.dart';
+import '../models/scope_field.dart';
 import '../theme/flywheel_theme.dart';
 import '../widgets/fw.dart';
 
@@ -97,7 +98,7 @@ class _RoadmapViewState extends State<RoadmapView> {
         const SizedBox(height: FwLayout.s3),
         HairlineCard(child: _floor(context)),
         const SizedBox(height: FwLayout.s3),
-        ..._limits(context),
+        ..._scope(context),
       ],
     ]);
   }
@@ -157,11 +158,9 @@ class _RoadmapViewState extends State<RoadmapView> {
     );
   }
 
-  List<Widget> _limits(BuildContext context) {
-    final notes = ((_roadmap?['does_not_prove'] as List?) ?? [])
-        .whereType<Object>()
-        .map((n) => n.toString())
-        .toList();
+  List<Widget> _scope(BuildContext context) {
+    // A v2 roadmap names its scope list `scope`; a v1 roadmap the older key.
+    final notes = scopeStrings(_roadmap);
     if (notes.isEmpty) return const [];
     return [
       for (final note in notes)

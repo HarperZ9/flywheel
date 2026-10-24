@@ -107,7 +107,9 @@ def measure_loop(tmp_dir) -> dict:
             "fully_closed": n_closed == len(hs),
             "open_links": [f"{h.frm}->{h.to}" for h in hs if not h.closed],
             "executed_links": [f"{h.frm}->{h.to}" for h in hs if h.verified],
-            "does_not_prove": "Learned-model utility, alignment, automatic configuration application or training."}
+            "scope": ("Structural handoffs between loop stages and the links this run executed; "
+                      "learned-model utility, alignment, configuration application and training "
+                      "are outside it.")}
 
 
 def loop_report(m: dict) -> str:

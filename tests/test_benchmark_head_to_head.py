@@ -7,6 +7,7 @@ rate drawn as a zero bar, is a comparison claim the run does not support.
 
 So most of what follows checks that an absence stays visible as an absence.
 """
+from harness.scope import LEGACY_SCOPE_KEY
 from scripts.benchmark_head_to_head import (ABSENT, HATCH_KEY, NOT_RUN, render_html,
                                             render_markdown, role_cells)
 
@@ -38,7 +39,7 @@ def record(roles=None, checkers=None, **over):
            "checkers": checkers if checkers is not None else [
                {"checker_id": "evidence_bound_reporting/v1", "task_ids": ["agt-015"],
                 "scored_attempts": 4, "metrics": [metric("evidence_bound_score")]}],
-           "does_not_prove": ["A mean over one repetition is a reading, not an estimate."]}
+           "scope": ["A mean over one repetition is one reading of this run."]}
     doc.update(over)
     return doc
 
@@ -139,10 +140,16 @@ def test_every_metric_states_which_direction_is_better():
     assert "lower is better" in html
 
 
-def test_what_the_run_cannot_support_reaches_both_renderings():
-    claim = "A mean over one repetition is a reading, not an estimate."
+def test_the_scope_reaches_both_renderings():
+    claim = "A mean over one repetition is one reading of this run."
     assert claim in render_html(record())
     assert f"- {claim}" in render_markdown(record())
+
+
+def test_a_v1_record_still_renders_its_list():
+    old = record(schema="flywheel.graded_metric_report/v1")
+    old[LEGACY_SCOPE_KEY] = old.pop("scope")
+    assert "one reading of this run" in render_html(old)
 
 
 def test_a_hostile_role_name_cannot_inject_markup():

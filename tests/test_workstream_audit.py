@@ -155,7 +155,7 @@ def test_editing_what_was_read_expires_the_reading(field, value):
     assert surface["surface"]["goal"]["state"] == STALE
     assert surface["stale"] == ["goal"]
     assert any("changed after they were read" in line
-               for line in surface["does_not_prove"])
+               for line in surface["scope"])
 
 
 def test_an_unread_statement_says_so_rather_than_reading_as_delegated():
@@ -166,17 +166,17 @@ def test_an_unread_statement_says_so_rather_than_reading_as_delegated():
                                  "audited": 0, "stale": 0, "unaudited": 1}
 
 
-def test_the_caveat_is_never_empty_and_says_what_a_reading_is_not():
+def test_the_scope_is_never_empty_and_says_what_a_reading_covers():
     surface = audit_surface(Workstream([_ob("goal")], goal="goal"),
                             {"goal": statement_digest(_ob("goal"))})
     assert surface["counts"]["audited"] == 1
-    lines = surface["does_not_prove"]
+    lines = surface["scope"]
     assert lines
     # Nothing here compares a statement against the paper it came from, and a
     # record that let a reader forget that would be the whole failure mode.
-    assert any("nothing here compares a statement to its source" in line
+    assert any("comparing a statement to its source happens outside this record" in line
                for line in lines)
-    assert any("says nothing about the obligations beneath it" in line
+    assert any("obligations beneath it are pinned by the workstream digest" in line
                for line in lines)
 
 

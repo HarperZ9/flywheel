@@ -16,6 +16,7 @@ from pathlib import Path
 from harness import lane_tool_policy as policy
 from harness.lanes_registry import LANES
 from harness.mcp_client import LaunchSpec
+from harness.scope import scope_list
 
 ROOT = Path(__file__).resolve().parents[1]
 ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
@@ -38,7 +39,7 @@ def test_registry_rows_and_expectations_carry_each_pin():
 def test_the_relay_descriptor_names_the_launch_grant_boundary():
     descriptor = json.loads((ROOT / "packaging" / "bundled-lanes" / "relay.json").read_text(
         encoding="utf-8"))
-    text = " ".join(descriptor["does_not_prove"])
+    text = " ".join(scope_list(descriptor))
     assert "still reads both from tool arguments" not in text
     assert "launch" in text and "root, check" in text
 

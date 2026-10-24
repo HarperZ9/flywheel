@@ -5,7 +5,9 @@ from copy import deepcopy
 
 from .evidence_public import TransportError
 from .journey_store import JourneyStoreError, MutationCommand
+from .scope import SCOPE_KEY, scope_key
 from .writing_artifacts import WritingArtifactError, WritingArtifactStore
+from .writing_types import SCHEMAS, SCHEMAS_V1
 from .writing_state_rules import (
     WritingStateError, validate_decision, validate_transition,
 )
@@ -198,8 +200,9 @@ def _apply_decision(state: dict, decision: dict,
         _set_current(section, state["revisions"][decision["to_revision_ref"]])
         return
     candidate = state["candidates"][decision["candidate_ref"]]
+    key = scope_key(candidate)
     revision = {
-        "schema": "flywheel.writing-revision/v1",
+        "schema": SCHEMAS["revision"] if key == SCOPE_KEY else SCHEMAS_V1["revision"],
         "project_ref": decision["project_ref"],
         "section_ref": decision["section_ref"],
         "revision_ref": candidate["candidate_revision_ref"],
@@ -208,7 +211,7 @@ def _apply_decision(state: dict, decision: dict,
         "body_sha256": candidate["candidate_body_sha256"],
         "word_count": len(_read_candidate_body(state, candidate, artifacts, owner_ref).split()),
         "author_supplied": False, "scope_refs": [candidate["card_ref"]],
-        "does_not_prove": candidate["does_not_prove"],
+        key: candidate[key],
         "artifact_ref": candidate["artifact_ref"],
         "artifact_sha256": candidate["artifact_sha256"],
         "accepted_candidate_ref": candidate["candidate_ref"],

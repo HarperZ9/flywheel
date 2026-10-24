@@ -14,34 +14,34 @@ from pathlib import Path
 from typing import Mapping
 
 _LOCAL_ONLY = (
-    "A throwaway profile on the build machine with a System32-only PATH, not a "
-    "consumer Windows 11 install or a clean VM; host DLLs, the network and any "
-    "model server the host runs were reachable.",
-    "The acceptance installer differs from the release installer in its AppId, "
-    "Start menu group and output name only, so it cannot touch the Flywheel "
-    "already installed here.",
+    "The run used a throwaway profile on the build machine with a System32-only "
+    "PATH; host DLLs, the network and any model server the host runs were "
+    "reachable.",
+    "The acceptance installer matches the release installer except for its "
+    "AppId, Start menu group and output name, so the Flywheel already installed "
+    "here stays untouched.",
 )
 _CI_ONLY = (
-    "A throwaway profile on a GitHub-hosted Windows Server runner, run as an "
-    "administrator with a System32-only PATH: not a consumer Windows 11 install, "
-    "and not a standard user's read-only Program Files. The network was reachable.",
+    "The run used a throwaway profile on a GitHub-hosted Windows Server runner, "
+    "as an administrator with a System32-only PATH and a writable Program Files; "
+    "the network was reachable.",
 )
 _COMMON = (
-    "No provider-backed success: no real provider key was used; key-backed tools "
-    "stay 'after setup: untested'.",
-    "No model quality: the stub model server answers one fixed word; a model-lane "
-    "pass shows the lane reached a model server and the engine's guards held.",
-    "No bulletin write and no actuation; no Bulletin endpoint was selected, so no "
-    "board was contacted.",
-    "One fixture assertion per main tool; not result correctness in general.",
-    "The desktop UI was not driven: the checks call the engine routes the app calls.",
+    "Provider tools ran without a real provider key; key-backed tools stay "
+    "'after setup: untested'.",
+    "The stub model server answers one fixed word; a model-lane pass shows the "
+    "lane reached a model server and the engine's guards held.",
+    "No Bulletin endpoint was selected and nothing was actuated, so no board was "
+    "contacted.",
+    "Each main tool was checked with one fixture assertion.",
+    "The checks call the engine routes the desktop app calls.",
 )
-DOES_NOT_PROVE = _LOCAL_ONLY + _COMMON
+SCOPE = _LOCAL_ONLY + _COMMON
 
 
-def does_not_prove(environ: Mapping[str, str]) -> list[str]:
-    """What this run does not prove, for where it ran: a GitHub Actions runner
-    builds and accepts the release installer itself."""
+def scope(environ: Mapping[str, str]) -> list[str]:
+    """What this run covers, for where it ran: a GitHub Actions runner builds
+    and accepts the release installer itself."""
     ci = environ.get("GITHUB_ACTIONS", "").lower() == "true"
     return list((_CI_ONLY if ci else _LOCAL_ONLY) + _COMMON)
 

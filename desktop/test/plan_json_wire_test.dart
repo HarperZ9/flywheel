@@ -10,6 +10,7 @@ import 'package:flywheel_desktop/client/gateway_grants.dart';
 import 'package:flywheel_desktop/client/gateway_plan.dart';
 import 'package:flywheel_desktop/client/strict_plan_json.dart';
 import 'package:flywheel_desktop/models/plan_run_models.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 
 Map<String, dynamic> _fixture() => jsonDecode(
         File('../tests/fixtures/plan_run_contract_v1.json').readAsStringSync())
@@ -62,7 +63,9 @@ Map<String, dynamic> _workflow(
 }
 
 Map<String, dynamic> _result(
-    {String workflow = 'code-change', String endpoint = 'local'}) {
+    {String workflow = 'code-change',
+    String endpoint = 'local',
+    bool v2 = false}) {
   final envelope = _finalEnvelope();
   final operation = Map<String, Object?>.from(envelope)
     ..remove('schema')
@@ -72,7 +75,7 @@ Map<String, dynamic> _result(
     ..remove('grant_ref');
   final run = _workflow(workflow: workflow, endpoint: endpoint);
   final receipt = <String, Object?>{
-    'schema': 'flywheel.plan-run-receipt/v2',
+    'schema': v2 ? planRunReceiptSchemaV2 : planRunReceiptSchema,
     'plan_run_ref': 'plr_${'a' * 32}',
     'binding': operation['binding'],
     'journey_ref': envelope['journey_ref'],
@@ -97,11 +100,12 @@ Map<String, dynamic> _result(
       'forged_gates_executed': 0,
       'workflow_steps_recorded': 0,
     },
-    'does_not_prove': planRunLimitations,
+    // A v2 receipt names its list by the older key; v3 names it `scope`.
+    scopeKeyFor(legacy: v2): v2 ? planRunLimitationsV2 : planRunScope,
   };
   receipt['receipt_sha256'] = canonicalPlanSha256(receipt);
   final result = <String, Object?>{
-    'schema': 'flywheel.plan-run-result/v2',
+    'schema': v2 ? planRunResultSchemaV2 : planRunResultSchema,
     'plan_run_ref': 'plr_${'a' * 32}',
     'receipt': receipt,
     'workflow_run': run,
@@ -168,9 +172,9 @@ void _registerJsonStructureTests() {
     final encoded = jsonEncode(_result());
     final mutations = [
       encoded.replaceFirst(
-          '{', r'{"\u0073chema":"flywheel.plan-run-result/v2",'),
+          '{', r'{"\u0073chema":"flywheel.plan-run-result/v3",'),
       encoded.replaceFirst(
-          '"receipt":{', '"receipt":{"schema":"flywheel.plan-run-receipt/v2",'),
+          '"receipt":{', '"receipt":{"schema":"flywheel.plan-run-receipt/v3",'),
       encoded.replaceFirst(
           '"workflow_run":{', '"workflow_run":{"endpoint":"local",'),
       encoded.replaceFirst(
@@ -257,6 +261,30 @@ void _registerResultValidationTests() {
       _outerRehash(result);
       expect(() => PlanRunResult.fromJson(result), throwsFormatException);
     }
+  });
+
+  test('v2 and v3 results each verify under their own scope key', () {
+    expect(PlanRunResult.fromJson(_result()).receipt[kScopeKey], planRunScope);
+    expect(PlanRunResult.fromJson(_result(v2: true)).receipt[kLegacyScopeKey],
+        planRunLimitationsV2);
+
+    final v3WithOlderKey = _result();
+    final receipt = v3WithOlderKey['receipt'] as Map<String, dynamic>;
+    receipt[kLegacyScopeKey] = receipt.remove(kScopeKey);
+    _outerRehash(v3WithOlderKey);
+    expect(() => PlanRunResult.fromJson(v3WithOlderKey), throwsFormatException);
+
+    final v2WithV3List = _result(v2: true);
+    (v2WithV3List['receipt'] as Map<String, dynamic>)[kLegacyScopeKey] =
+        planRunScope;
+    _outerRehash(v2WithV3List);
+    expect(() => PlanRunResult.fromJson(v2WithV3List), throwsFormatException);
+
+    final v2ResultWithV3Receipt = _result()
+      ..['schema'] = planRunResultSchemaV2;
+    _outerRehash(v2ResultWithV3Receipt);
+    expect(() => PlanRunResult.fromJson(v2ResultWithV3Receipt),
+        throwsFormatException);
   });
 
   test('v1 missing unknown and null result fields fail closed', () async {

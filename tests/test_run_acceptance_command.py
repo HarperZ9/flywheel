@@ -61,7 +61,7 @@ def test_json_argv_records_success_and_repository_identity(tmp_path):
     receipt, stdout, stderr = _read_tree(receipt_dir)
 
     assert exit_code == 0
-    assert receipt["schema"] == "flywheel.acceptance-command/v1"
+    assert receipt["schema"] == "flywheel.acceptance-command/v2"
     assert receipt["command"] == {"argv": argv, "shell": False}
     assert receipt["cwd"] == "."
     assert receipt["source_repository"] == REPO_ROOT.name
@@ -79,7 +79,7 @@ def test_json_argv_records_success_and_repository_identity(tmp_path):
         receipt["started_utc"].replace("Z", "+00:00")
     )
     assert receipt["duration_ms"] >= 0
-    assert receipt["does_not_prove"]
+    assert receipt["scope"]
 
 
 def test_repeated_args_record_nonzero_child_and_preserve_receipt(tmp_path):

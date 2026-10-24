@@ -31,11 +31,11 @@ from tests.raw_native_fixtures import RENDERS, cert, files
 
 FIXED_LINES = (
     "The reference is a 64-sample hemisphere estimate from a deterministic per-pixel "
-    "hash, so it is repeatable, not exact.",
-    "A pass on RMSE says nothing about the worst pixel. The high view passes at 0.0827 "
-    "RMSE with a 0.625 maximum error.",
-    "One built-in scene; no claim about other geometry, lights or materials.",
-    "Byte-identical output is checked on x86-64 only.",
+    "hash: repeatable run to run, and an estimate of the exact integral.",
+    "A pass bounds RMSE over covered pixels; the maximum error is reported beside it. "
+    "The high view passes at 0.0827 RMSE with a 0.625 maximum error.",
+    "The check covers one built-in scene: its geometry, lights and materials.",
+    "Byte-identical output is checked on x86-64.",
 )
 
 
@@ -73,7 +73,7 @@ def test_level1_reproduces_each_release_render_bit_for_bit(name):
     assert result["verdict"] == "PASS" and result["identity"] == "MATCH", result["detail"]
     r = _verify(cert(name), files(name))
     assert r.verdict_ is Verdict.PASS
-    assert r.does_not_prove[:4] == list(FIXED_LINES)
+    assert r.scope[:4] == list(FIXED_LINES)
 
 
 def test_a_forged_verdict_fails():
@@ -160,7 +160,8 @@ def test_translation_of_a_missing_or_foreign_certificate_is_envelope_missing():
 
 
 def test_the_fixed_lines_are_exactly_the_proposals():
-    assert raw_ao.DOES_NOT_PROVE == FIXED_LINES
+    assert raw_ao.SCOPE == FIXED_LINES
+    assert len(raw_ao.SUPERSTACK_LIMITS) == len(FIXED_LINES)
 
 
 def test_paired_mutation_float64_subtraction_is_caught(monkeypatch):

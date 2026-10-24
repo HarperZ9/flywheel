@@ -53,7 +53,7 @@ def run(args, receipt):
                    engine_sha256=args.expected_engine_sha256, frozen_source_clean=True)
     receipt['stage'] = 'tool_mcp'
     tool = tool_mcp.check(engine, args.expected_version)
-    require(tool.get('schema') == 'flywheel.frozen-tool-mcp/v1' and tool.get('status') == 'PASS'
+    require(tool.get('schema') in (tool_mcp.SCHEMA, tool_mcp.SCHEMA_V1) and tool.get('status') == 'PASS'
             and tool.get('version') == args.expected_version
             and tool.get('executable_sha256') == args.expected_engine_sha256
             and tool.get('receipt_fixture_verified') is True

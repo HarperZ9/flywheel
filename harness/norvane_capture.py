@@ -31,7 +31,11 @@ from .journey_types import build_event
 from .norvane_capture_io import SOURCE_COMMIT, read_capture
 from .private_artifact_fs import PrivateArtifactError
 
-SCHEMA = "flywheel.norvane-capture-review/v1"
+# v2 names the coverage list `scope` and renames the nested `recomputed.scope`
+# label to `checked_scope`, so `scope` names one thing per record. v1 carried
+# the list under the older key and the label under `scope`.
+SCHEMA_V1 = "flywheel.norvane-capture-review/v1"
+SCHEMA = "flywheel.norvane-capture-review/v2"
 ADAPTER_VERSION = "1"
 # Exact source-command identifiers, not executable actions. See attribution doc.
 PREFIX_COMMANDS = (
@@ -39,8 +43,9 @@ PREFIX_COMMANDS = (
     "sed -i 's/range((end - start).days)/range((end - start).days + 1)/' "
     "/agent/usage/aggregation.py && cat /agent/usage/aggregation.py",
 )
-LIMIT = ("Offline JSON consistency only; no test execution, independent oracle, "
-         "origin authentication, complete host trace, or model honesty determination.")
+SCOPE_TEXT = ("Offline consistency of the declared JSON capture: recorded shell return "
+              "codes and cross-file agreement. Test results stay as reported upstream, "
+              "origin is unauthenticated, and the host trace is the captured part.")
 
 
 def _ref(path, pointer, value):
@@ -115,7 +120,7 @@ def _mechanical(parsed, manifest, issues):
     return commands, {**counts, "test_suite_verdict": "UNVERIFIABLE",
                       "oracle_basis": "upstream_fix_check_reported_not_rerun",
                       "checker_version": ADAPTER_VERSION,
-                      "scope": "recorded_shell_return_codes_and_JSON_consistency"}
+                      "checked_scope": "recorded_shell_return_codes_and_JSON_consistency"}
 
 
 def _journey(result, at):
@@ -123,7 +128,7 @@ def _journey(result, at):
     genesis = new_genesis(journey_ref=ref, legacy_label=None,
         goal="Review a captured Norvane verification report", intake={
             "source_commit": SOURCE_COMMIT, "capture_id": result["capture_id"],
-            "imported_at": at, "external_calls": 0, "does_not_prove": LIMIT},
+            "imported_at": at, "external_calls": 0, "scope": SCOPE_TEXT},
         actor_id="norvane-offline-importer", occurred_at=at)
     receipt_refs = ["sha256:" + result["capture_id"]]
     receipt_state = ("DRIFT" if result["artifact_integrity"] == "mismatch" else
@@ -135,12 +140,12 @@ def _journey(result, at):
         "capture_scope", "report_consistency")}
     payload = {"facts": [{"fact_id": "capture-consistency",
         "statement": "The offline importer inspected the declared JSON capture.",
-        "receipt_refs": receipt_refs, "receipt_state": receipt_state, "does_not_prove": LIMIT,
+        "receipt_refs": receipt_refs, "receipt_state": receipt_state, "scope": SCOPE_TEXT,
         "artifact_manifest": result["artifact_manifest"], "issues": result["issues"],
         "recomputed": result["recomputed"], "evidence_completeness": result["evidence_completeness"], **carried}],
         "claims": [{"claim_id": "final-report-support", "statement": "The final report is supported by task evidence.",
         "depends_on": [], "verdict": "UNVERIFIABLE", "receipt_refs": receipt_refs,
-        "receipt_state": receipt_state, "does_not_prove": LIMIT,
+        "receipt_state": receipt_state, "scope": SCOPE_TEXT,
         "review_required": True, "report_ref": None if result["reported"] is None else result["reported"]["submitted_report"]}]}
     event = build_event(journey_ref=ref, sequence=1, event_type="record_fact", occurred_at=at,
         actor_id="norvane-offline-importer", request_sha256=canonical_sha256(payload),
@@ -171,7 +176,7 @@ def import_norvane_capture(capture_root, source_manifest, *, imported_at,
                   "capture_scope": "declared_JSON_only_excludes_filesystem_snapshots_and_external_actions",
                   "report_consistency": "review_required", "issues": sorted(issues),
                   "reported": _reported(parsed.get("final/score.json")), "commands": commands,
-                  "recomputed": recomputed, "external_calls": 0, "does_not_prove": [LIMIT],
+                  "recomputed": recomputed, "external_calls": 0, "scope": [SCOPE_TEXT],
                   "publication_state": "not_approved_for_publication"}
         result["events"] = _journey(result, imported_at)
         result["projection"] = reduce_events(result["events"])

@@ -5,6 +5,7 @@ import hashlib
 
 import pytest
 
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.evidence_json import canonical_sha256
 from harness.source_context_error import SourceContextError
 from harness.source_context_payload import validated_gather_payload
@@ -13,7 +14,7 @@ from harness.source_context_payload import validated_gather_payload
 def payload(row):
     value = {"schema": "gather.readable-context/v1", "selections": [row],
              "selection_count": 1, "total_text_chars": 3,
-             "omissions": [], "does_not_prove": ["source truth"]}
+             "omissions": [], LEGACY_SCOPE_KEY: ["source truth"]}
     return seal(value)
 
 
@@ -87,3 +88,16 @@ def test_valid_partial_unicode_and_empty_ranges_keep_exact_text(
     assert rows[0]["range"] == span
     assert rows[0]["selected_text_utf8_sha256"] == hashlib.sha256(
         text.encode("utf-8")).hexdigest()
+
+
+def test_a_stored_v1_private_record_projects_in_its_own_vocabulary():
+    from harness.source_context_payload import (PRIVATE_SCHEMA, PRIVATE_SCHEMA_V1,
+        PROJECTION_SCHEMA, PROJECTION_SCHEMA_V1, projection_for)
+    base = {"root_mode": "m", "profile": "p", "row_count": 0, "rows": [],
+            "selected_text_utf8_bytes": 0, "caps": {}, "omissions": []}
+    old = projection_for("r", dict(base, schema=PRIVATE_SCHEMA_V1,
+                                   **{LEGACY_SCOPE_KEY: ["x"]}), "h")
+    new = projection_for("r", dict(base, schema=PRIVATE_SCHEMA, scope=["x"]), "h")
+    assert (old["schema"], old[LEGACY_SCOPE_KEY]) == (PROJECTION_SCHEMA_V1, ["x"])
+    assert (new["schema"], new["scope"]) == (PROJECTION_SCHEMA, ["x"])
+    assert "scope" not in old and LEGACY_SCOPE_KEY not in new

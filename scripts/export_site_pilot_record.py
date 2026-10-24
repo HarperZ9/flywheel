@@ -14,7 +14,11 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from harness.scope import scope_list  # noqa: E402
 
 SCHEMA = "zentropy-current-cross-harness-pilot-source/v2"
 COMMIT_URL = "https://github.com/HarperZ9/flywheel/commit/"
@@ -158,7 +162,7 @@ def build(report, scorecard, run_root):
             "observedModelIdentity": "per role",
         },
         "artifactHashes": hashes,
-        "limitations": report["does_not_prove"],
+        "limitations": scope_list(report),
         "doesNotProve": (
             "The run is one repetition per task on one machine. Nothing here is a market "
             "performance claim, a quality ranking, or a statement about a customer workload."

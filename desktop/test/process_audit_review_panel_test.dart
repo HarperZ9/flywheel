@@ -63,7 +63,7 @@ void main() {
     expect(find.text('closed'), findsWidgets);
     expect(find.textContaining('line 1'), findsWidgets);
     expect(find.textContaining('offset'), findsWidgets);
-    expect(find.textContaining('semantic correctness'), findsOneWidget);
+    expect(find.textContaining('taken as submitted'), findsOneWidget);
   });
 
   testWidgets('drift keeps reported coverage separate from declared coverage',
@@ -220,7 +220,10 @@ Map<String, Object?> _body(
           'source_value': 'closed'
         },
       ],
-      'does_not_prove': ['semantic correctness or actual lab access'],
+      'scope': [
+        'packet-local digests were rechecked; task, trace, evaluation and '
+            'access content is taken as submitted'
+      ],
     };
 
 Map<String, Object?> _fixture(String name) => Map<String, Object?>.from(

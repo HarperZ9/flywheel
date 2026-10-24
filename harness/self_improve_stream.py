@@ -112,4 +112,4 @@ def _ungated(incumbent: st.Tree, candidate: st.Tree) -> dict:
     return {"decision": decision, "reason": "ungated ablation: contrast choice adopted",
             "adopted_components": comps, "tree": candidate if comps else incumbent,
             "heldout": None, "attribution": [], "gate_executions": 0,
-            "policy": {}, "does_not_prove": ["nothing: no held-out evidence was taken"]}
+            "policy": {}, "scope": ["no held-out evidence was taken; the contrast choice alone was adopted"]}

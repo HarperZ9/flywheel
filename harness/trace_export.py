@@ -1,6 +1,6 @@
 """Bulk export of private traces, verifiable by anyone (7.5, I8).
 
-`export` writes `flywheel.trace-export/v1` into an `.incomplete` folder
+`export` writes `flywheel.trace-export/v2` into an `.incomplete` folder
 beside the destination, with an owner-only ACL and the not-indexed
 attribute: the stores' files, `manifest.json`, `README.txt` and a copy of the
 standard-library verifier as `verify.py`. It runs that verifier on the

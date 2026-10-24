@@ -140,9 +140,9 @@ class _ActionWitnessPanelState extends State<ActionWitnessPanel> {
         HashText('head', r.head!),
       ],
       const SizedBox(height: FwLayout.s3),
-      Text('does not prove', style: fwMono(t, size: 11, color: t.inkFaint)),
+      Text('scope', style: fwMono(t, size: 11, color: t.inkFaint)),
       const SizedBox(height: FwLayout.s1),
-      for (final line in r.doesNotProve)
+      for (final line in r.scope)
         Padding(
           padding: const EdgeInsets.only(bottom: FwLayout.s1),
           child: Text('· $line',

@@ -12,8 +12,10 @@ from collections.abc import Iterable
 from typing import Any, Callable
 
 from harness.attempt_attribution import attribute, recovery
+from harness.scope import scope_list
 
-SCHEMA = "flywheel.graded_metric_report/v1"
+SCHEMA = "flywheel.graded_metric_report/v2"
+SCHEMA_V1 = "flywheel.graded_metric_report/v1"  # older scope key; render_markdown reads both
 SCORED_STATES = ("pass", "fail")
 PASS_DENOMINATORS = (
     "Passed counts recorded oracle passes. All attempts includes blocked and "
@@ -46,21 +48,19 @@ DIRECTION = {
     "failure_code_count": "lower",
 }
 
-DOES_NOT_PROVE = [
-    "A mean over one repetition is a reading, not an estimate. No interval is "
-    "reported because none is earned at this sample size.",
-    "Cost covers the attempts whose provider stated a cost. A role with no cost "
-    "coverage is not cheaper, it is unmeasured.",
+SCOPE = [
+    "Each mean is a single-repetition reading; no interval at this sample size.",
+    "Cost covers the attempts whose provider stated a cost; cost coverage gives "
+    "that share, and a role at zero coverage is unmeasured.",
     "Latency is wall clock on one machine and includes local model load time.",
-    "A role that never returned a readable result has no quality numbers here, "
-    "which is a fact about this run and not a score of zero. Why an attempt went "
-    "ungraded is reported beside it, because a malformed answer and a missing one "
-    "are different failures.",
-    "An envelope found inside a refused answer was still refused, and no checker "
-    "graded it. That it was there says the harness produced an answer, and it does "
-    "not say the answer was right.",
-    "The graded metrics come from in-tree fixtures. They measure a harness "
-    "against those tasks and not against a customer workload.",
+    "Quality numbers cover the roles that returned a readable result. A role "
+    "with none has no quality numbers for this run, and each ungraded attempt "
+    "carries its reason beside it, so a malformed answer and a missing one stay "
+    "apart.",
+    "An envelope found inside a refused answer stays refused and ungraded; its "
+    "presence records that the harness produced an answer, unchecked.",
+    "The graded metrics come from in-tree fixtures and measure each harness "
+    "against those tasks.",
 ]
 
 
@@ -243,7 +243,7 @@ def build_report(rows: list[dict[str, Any]], read_text: Callable[[str], str | No
                                         if row.get("provider_role") == role], read_text)
                   for role in roles],
         "checkers": [summarize_checker(name, by_checker[name]) for name in sorted(by_checker)],
-        "does_not_prove": [*DOES_NOT_PROVE, *limitations],
+        "scope": [*SCOPE, *limitations],
     }
 
 
@@ -295,6 +295,6 @@ def render_markdown(record: dict[str, Any]) -> str:
         for metric in checker["metrics"]:
             cells = " | ".join(_cell(entry["mean"]) for entry in metric["roles"])
             lines.append(f"| {metric['metric']} | {metric['direction']} | {cells} |")
-    lines += ["", "## Limits", ""]
-    lines += ["- " + item for item in record["does_not_prove"]]
+    lines += ["", "## Scope", ""]
+    lines += ["- " + item for item in scope_list(record)]
     return "\n".join(lines) + "\n"

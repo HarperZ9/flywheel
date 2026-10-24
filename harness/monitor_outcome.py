@@ -44,7 +44,11 @@ from .monitor_outcome_adapters import (
     resolve_scorer,
 )
 
-SCHEMA = "flywheel.monitor-outcome/v1"
+# v2 records name the coverage list `scope`; v1 records carried the older key.
+# Both versions are joined and attached to the same way.
+SCHEMA_V1 = "flywheel.monitor-outcome/v1"
+SCHEMA = "flywheel.monitor-outcome/v2"
+SCHEMAS = (SCHEMA_V1, SCHEMA)
 MAX_BYTES = 16 * 1024 * 1024
 
 # Where an outcome came from. Only the first is independent of the log.
@@ -52,14 +56,14 @@ INDEPENDENT = "independent_check"
 SOURCE_LOG = "source_log"
 OUTCOME_SOURCES = (INDEPENDENT, SOURCE_LOG)
 
-DOES_NOT_PROVE = (
-    "A monitor value is a behavioural observation under one experimental setup. "
-    "It is not a measurement of intent and not a general alignment verdict.",
-    "An outcome recorded here is only as independent as the source named beside "
-    "it. An outcome sourced from the evaluation log is not an independent check.",
-    "Coverage counts describe this log. They do not establish a detection rate, "
-    "a false-alarm rate, or that a monitor would catch anything it has not seen.",
-    "A sample with no independent outcome is unresolved, not a success.",
+SCOPE = (
+    "A monitor value records behaviour observed under one experimental setup; "
+    "intent and general alignment sit outside what it measures.",
+    "Each outcome is as independent as the source named beside it; only "
+    "independent_check outcomes come from outside the evaluation log.",
+    "Coverage counts describe this log only; a detection or false-alarm rate "
+    "needs its own samples, including cases the monitor has not seen.",
+    "A sample with no independent outcome is counted as unresolved.",
 )
 
 
@@ -137,7 +141,7 @@ def build_monitor_record(raw: bytes, *, adapter: str,
         "source": {"sha256": digest, "bytes": len(raw)},
         "samples": samples,
         "coverage": _coverage(samples),
-        "does_not_prove": list(DOES_NOT_PROVE),
+        "scope": list(SCOPE),
     }
 
 
@@ -148,8 +152,8 @@ def attach_outcomes(record: dict[str, Any], outcomes: list[dict[str, Any]]) -> d
     outcome for a sample the log does not contain is an error rather than a new
     row, because inventing a row would change the denominator.
     """
-    if record.get("schema") != SCHEMA:
-        raise MonitorOutcomeError(f"record schema must be {SCHEMA}")
+    if record.get("schema") not in SCHEMAS:
+        raise MonitorOutcomeError(f"record schema must be one of {SCHEMAS}")
     by_key = {_sample_key(s["id"], s["epoch"]): s for s in record["samples"]}
     pending = {}
     for position, outcome in enumerate(outcomes):
@@ -201,8 +205,8 @@ def exclude_samples(record: dict[str, Any], exclusions: list[dict[str, Any]]) ->
     so an exclusion here requires a named reason and an evidence pointer, and it
     stays counted rather than disappearing.
     """
-    if record.get("schema") != SCHEMA:
-        raise MonitorOutcomeError(f"record schema must be {SCHEMA}")
+    if record.get("schema") not in SCHEMAS:
+        raise MonitorOutcomeError(f"record schema must be one of {SCHEMAS}")
     by_key = {_sample_key(s["id"], s["epoch"]): s for s in record["samples"]}
     pending = {}
     for position, item in enumerate(exclusions):

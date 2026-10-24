@@ -120,9 +120,9 @@ def test_the_json_form_carries_the_caveat_and_the_identity(tmp_path, capsys):
     code, out, _ = _run(capsys, "run", path, "--json")
     receipt = json.loads(out)
     assert code == 0
-    assert receipt["schema"] == "flywheel.workstream/v1"
+    assert receipt["schema"] == "flywheel.workstream/v2"
     assert len(receipt["workstream_id"]) == 64
-    assert receipt["does_not_prove"]
+    assert receipt["scope"]
     assert receipt["run"]["registered_kinds"] == [
         "arithmetic", "dimensional", "instrument", "lean", "readback"]
 
@@ -188,10 +188,10 @@ def test_the_audit_json_form_carries_the_pin_a_reader_records(tmp_path, capsys):
     code, out, _ = _run(capsys, "audit", path, "--json")
     surface = json.loads(out)
     assert code == 2
-    assert surface["schema"] == "flywheel.workstream.audit/v1"
+    assert surface["schema"] == "flywheel.workstream.audit/v2"
     assert len(surface["surface"]["top"]["statement_digest"]) == 64
     assert surface["surface"]["top"]["reasons"] == ["the goal statement"]
-    assert surface["does_not_prove"]
+    assert surface["scope"]
 
 
 WORKSTREAMS = Path(__file__).resolve().parents[1] / "examples" / "workstreams"
@@ -228,7 +228,7 @@ def test_there_are_shipped_examples_to_check():
 def test_a_shipped_example_still_runs(capsys, path):
     code, out, err = _run(capsys, "run", str(path))
     assert not err
-    assert "limits:" in out
+    assert "scope:" in out
     # 0 established, 2 nothing decided it yet, which is what a machine with no
     # Lean toolchain gets. 1 would mean a shipped example refutes itself.
     assert code in (0, 2)
@@ -239,7 +239,7 @@ def test_a_shipped_example_names_the_reading_it_owes(capsys, path):
     code, out, err = _run(capsys, "audit", str(path))
     assert not err
     assert code == 2  # shipped declarations carry no readings
-    assert "obligations to read" in out and "limits:" in out
+    assert "obligations to read" in out and "scope:" in out
 
 
 def test_the_instrument_example_needs_the_driver_files_to_settle(capsys):
@@ -260,7 +260,7 @@ def test_the_instrument_example_settles_against_its_references(capsys):
     assert "checked 4, skipped 0" in out
     assert "dispense on liquid-handler-2 driver 1.4.0" in out
     # Narrower than it sounds, and the receipt keeps saying so.
-    assert "not that the device performed the run" in out
+    assert "whether the device performed the run" in out
 
 
 def test_the_mission_example_delegates_most_of_its_stack(capsys):

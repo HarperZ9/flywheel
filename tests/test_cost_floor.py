@@ -9,7 +9,7 @@ Success criteria:
 - paired mutation: a floor that drops the memory limit gives a decode floor
   under 0.1 ms, and the known-answer check rejects it;
 - every receipt carries measured time, floor, ratio, phase bounds, the hardware
-  source and a does_not_prove line; bad inputs raise;
+  source and a scope line; bad inputs raise;
 - search: with `hardware` set, the search stage carries one receipt per timed
   candidate and a summary; candidates without provider token counts are counted
   as untimed; without `hardware` the payload has no cost section.
@@ -53,10 +53,10 @@ def test_paired_mutation_floor_without_memory_limit_is_caught(monkeypatch):
 
 def test_receipt_fields_and_ratio():
     r = receipt(2.0, 300, 100, M14, "rtx-4090")
-    assert r["schema"] == "flywheel.cost-floor/v1"
+    assert r["schema"] == "flywheel.cost-floor/v2"
     assert r["ratio"] == pytest.approx(2.0 / r["floor_s"], rel=1e-3)
     assert r["hardware"]["source"].startswith("NVIDIA Ada GPU Architecture whitepaper")
-    assert r["phases"]["decode_bound"] == "memory" and "does not show" in r["does_not_prove"]
+    assert r["phases"]["decode_bound"] == "memory" and "lower bound" in r["scope"]
 
 
 def test_bad_inputs_raise():

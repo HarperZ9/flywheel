@@ -111,5 +111,5 @@ def test_overlong_input_is_held_without_authority_call():
 
 def test_no_result_claims_causal_inference_or_independent_trials():
     result = run(case())
-    assert "causation" in result["does_not_prove"]
+    assert "causation" in result["scope"]
     assert result["counts"]["distinct_tasks"] < result["counts"]["planned_attempts"]

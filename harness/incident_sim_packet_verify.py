@@ -5,6 +5,7 @@ from typing import Any
 
 from .audit_receipt import verify_audit_receipt
 from .evidence_json import canonical_sha256
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 from .gateway_effect_offline import verify_gateway_effect_component
 from .tool_call_receipt import MATCH, UNVERIFIABLE, verify_chain, verify_receipt
 
@@ -34,7 +35,7 @@ _TOOL_KEYS = (
 )
 _AUDIT_KEYS = (
     "schema", "run_id", "reviewer", "subject", "reviews", "summary", "verdict",
-    "confidence", "does_not_prove", "started_utc", "finished_utc",
+    "confidence", LEGACY_SCOPE_KEY, SCOPE_KEY, "started_utc", "finished_utc",
     "prev_receipt_sha256", "seal",
 )
 

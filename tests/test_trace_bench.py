@@ -12,7 +12,10 @@ import json
 
 import pytest
 
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.trace_bench import (
+    REGRESSION_SCHEMA,
+    REGRESSION_SCHEMA_V1,
     regression_report,
     traces_to_task_set,
     write_task_set,
@@ -92,7 +95,7 @@ def test_regression_report_flags_previously_passing_now_failing():
         {"task_id": "trace-bb22", "endpoint": "ox-alpha",
          "prior": "FAIL", "current": "PASS"}]
     assert report["stable"] == 0
-    assert report["does_not_prove"]
+    assert report["scope"] and report["schema"] == REGRESSION_SCHEMA
 
 
 def test_regression_report_is_empty_for_identical_runs():
@@ -111,3 +114,29 @@ def test_new_tasks_are_reported_not_silently_dropped():
     report = regression_report(prior, current)
     assert report["new"] == [{"task_id": "trace-new", "endpoint": "e",
                               "current": "FAIL"}]
+
+
+def test_v1_regression_report_rebuilds_byte_for_byte():
+    """A skill gate bound to a v1 report's digest still re-derives: the v1
+    build carries the older field name and its original line, and no `scope`."""
+    from harness.evidence_json import canonical_sha256
+    attempts = [{"task_id": "t1", "endpoint": "e", "gate_pass": True}]
+    v1 = regression_report({"attempts": attempts}, {"attempts": attempts},
+                           schema=REGRESSION_SCHEMA_V1)
+    assert v1 == {"schema": REGRESSION_SCHEMA_V1, "regressions": [], "improvements": [],
+                  "stable": 1, "new": [], LEGACY_SCOPE_KEY: (
+                      "a regression is over this task set and these gates only; "
+                      "flaky gates surface here as regressions, which is the point")}
+    v2 = regression_report({"attempts": attempts}, {"attempts": attempts})
+    assert LEGACY_SCOPE_KEY not in v2 and canonical_sha256(v1) != canonical_sha256(v2)
+
+
+def test_a_skill_gate_bound_to_a_v1_report_still_verifies():
+    from harness.skill_gate import verify_skill_gate
+    from tests.test_skill_evidence_binding import bench, bind
+    prior, current = bench(passing=False, seeds=(3,)), bench(seeds=(3,))
+    report = regression_report(prior, current, schema=REGRESSION_SCHEMA_V1)
+    row = bind(report, prior_bench=prior, current_bench=current)
+    assert verify_skill_gate(row)["verdict"] == "MATCH"
+    assert verify_skill_gate(row, evidence=report, prior_bench=prior,
+                             current_bench=current)["source_binding"] == "MATCH"

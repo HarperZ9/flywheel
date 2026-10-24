@@ -31,8 +31,8 @@ def check_record_consistency(action_log: Any) -> dict[str, Any]:
         "failure_codes": sorted(failures),
         "checked_record_count": len(rows),
         "basis": "Consistency of submitted authorization, response status, and mutation flags",
-        "does_not_prove": [
-            "A recorded allowed flag is not independent evidence of real authorization.",
-            "Consistent fabricated logs can pass; this check does not authenticate the recorder or enforce external policy.",
+        "scope": [
+            "Each submitted action record agrees with itself: applied actions were allowed and answered with a 2xx status.",
+            "The check reads the recorded authorization, status and mutation flags as submitted; the recorder and external policy stay outside it.",
         ],
     }

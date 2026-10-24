@@ -155,12 +155,13 @@ def test_the_endpoint_refuses_zero_rung_contexts():
         primary_endpoint(union_of_bodies(pools), [], _submit())
 
 
-def test_the_primary_result_carries_its_own_limits():
+def test_the_primary_result_carries_its_own_scope():
     _, pools = _one_body_everywhere()
     out = primary_endpoint(union_of_bodies(pools), RUNGS, _submit())
-    joined = " ".join(out["does_not_prove"])
-    assert "NOT_PROVES_CORRECTNESS" in joined
-    assert "NOT_PROVES_ANY_RUNG_IS_BETTER" in joined
+    assert out["schema"] == "flywheel.endpoint/v2"
+    joined = " ".join(out["scope"])
+    assert "ACCEPT_PATH_RUNG_INDEPENDENT" in joined
+    assert "COUNT_ONLY" in joined
 
 
 # --- the secondary table ----------------------------------------------------
@@ -186,7 +187,7 @@ def test_the_secondary_table_carries_its_confounds_and_takes_no_delta():
     _, pools = _one_body_everywhere()
     out = secondary_per_rung(pools, _submit())
     assert len(out["confounds"]) >= 5
-    assert "NOT_PROVES_A_SIZE_TREND" in " ".join(out["does_not_prove"])
+    assert "PER_RUNG_TABLE_ONLY" in " ".join(out["scope"])
     assert "rung id" in out["ordered_by"]
     # Structural, not textual: the prose legitimately says the words "no
     # cross-rung delta", so grepping the rendered dict would flag its own

@@ -35,13 +35,13 @@ def read_trace(service, owner_ref: str, operation_ref: str, query: str) -> dict:
                     or result.get("trace_head_sha256") != trace.head):
                 raise TraceError()
         record = records[int(sequence)]
-        return {"schema": "flywheel.gateway-agent-trace-detail/v1",
+        return {"schema": "flywheel.gateway-agent-trace-detail/v2",
             "trace_ref": ref, "operation_ref": operation_ref,
             "journey_ref": snapshot.journey_ref, "record_count": len(records),
             "trace_head_sha256": trace.head, "record": record,
             "record_canonical_base64": base64.b64encode(canonical_bytes({
                 k: v for k, v in record.items() if k != "record_sha256"})).decode("ascii"),
             "next_sequence": int(sequence) + 1 if int(sequence) + 1 < len(records) else None,
-            "does_not_prove": ["NOT_SEMANTIC_TRUTH", "NOT_UNLIMITED_TOOL_OUTPUT"]}
+            "scope": ["TRACE_AS_RECORDED", "TOOL_OUTPUT_BOUNDED"]}
     except TraceError:
         raise GatewayOperationError("STORE_COMMIT_FAILED") from None

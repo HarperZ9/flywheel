@@ -174,9 +174,9 @@ def test_a_confirmed_read_back_settles_and_the_receipt_still_names_its_limit():
         "readback": readback_checker({"faithful": {"rendering": RENDERING,
                                                    "confirmed": pin}})})
     assert receipt["obligations"]["faithful"]["standing"] == VERIFIED
-    caveat = " ".join(receipt["does_not_prove"])
+    caveat = " ".join(receipt["scope"])
     assert "settled by read-back" in caveat
-    assert "not that the comparison was right" in caveat
+    assert "the comparison's correctness stay" in caveat
 
 
 def test_the_pin_covers_all_three_texts_and_nothing_else():

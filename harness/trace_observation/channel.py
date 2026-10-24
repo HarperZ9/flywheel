@@ -64,10 +64,12 @@ GAP_CODES = {
 UNOBSERVABLE = "UNOBSERVABLE"
 MATCH, DRIFT, UNVERIFIABLE = "MATCH", "DRIFT", "UNVERIFIABLE"
 
-RECORD_DOES_NOT_PROVE = (
-    "A record shows what this run could read. Raw reasoning text is sampled output, "
-    "not the computation; a summary is a second model's writing about the first "
-    "model's reasoning; an opaque field is stored by digest and was never read.")
+# A ReasoningRecord's `scope` line. GapRecord.scope is a different thing: the
+# gap's side (outside_observability or local_setup), kept in the gap's own dict.
+RECORD_SCOPE = (
+    "A record shows what this run could read. Raw reasoning text is sampled output; "
+    "a summary is a second model's writing about the first model's reasoning; an "
+    "opaque field is stored by digest and was never read.")
 
 
 def sha256_hex(data: bytes) -> str:
@@ -167,7 +169,7 @@ class ReasoningRecord:
             "answer": content_ref(self.answer or None),
             "tool_calls": [content_ref(t) for t in self.tool_calls],
             "sampling": {k: str(v) for k, v in sorted(self.sampling.items())},
-            "does_not_prove": RECORD_DOES_NOT_PROVE,
+            "scope": RECORD_SCOPE,
         }
         if with_id:
             out = {"record_id": self.record_id(), **out}

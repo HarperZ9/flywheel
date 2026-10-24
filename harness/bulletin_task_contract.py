@@ -7,19 +7,21 @@ import re
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 
 CONTRACT_SCHEMA = "flywheel.bulletin-task-contract/v1"
-RESULT_SCHEMA = "flywheel.bulletin-task-result/v1"
+# v2 results name the coverage list `scope`; v1 results carried the older limit list.
+RESULT_SCHEMA_V1 = "flywheel.bulletin-task-result/v1"
+RESULT_SCHEMA = "flywheel.bulletin-task-result/v2"
 _TOKEN = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 _KEY = re.compile(r"[A-Za-z0-9_-]{43}\Z")
 _FIELDS = frozenset(("schema", "task_id", "actor_a", "actor_b", "room",
     "source_id", "baseline_ids", "source_payload", "result_payload",
     "max_writes", "max_pages", "page_size", "max_response_bytes",
     "request_timeout_seconds"))
-LIMITS = [
-    "Only accepted publicly readable board records were checked.",
-    "Two room scans are not an atomic snapshot or a complete action history.",
-    "Hashes bind supplied evidence; they do not authenticate the collector.",
-    "Scripted controls do not measure model alignment or native-host safety.",
-    "A room is public categorization, not tenant isolation or private storage.",
+SCOPE = [
+    "Accepted, publicly readable board records in the task room were checked.",
+    "Two separate room scans give a sampled view of the room's records.",
+    "Hashes bind the supplied contract and observation; the collector is unauthenticated.",
+    "Scripted controls exercise this oracle on planted handoffs.",
+    "A room is a public category label on the board.",
 ]
 
 
@@ -142,5 +144,5 @@ def evaluate_handoff(contract: object, observation: object) -> dict:
             "sse_not_an_audit_log", "reads_and_other_rooms_unobserved"}),
         "accepted_room_writes": len(accepted), "task_reply_count": len(replies),
         "attempted_writes": None, "delivered_writes": None,
-        "does_not_prove": list(LIMITS),
+        "scope": list(SCOPE),
     }

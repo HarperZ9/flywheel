@@ -46,7 +46,7 @@ void main() {
     expect(find.textContaining('Execution locked'), findsOneWidget);
   });
 
-  testWidgets('a proposal renders as proposed with its does-not-prove',
+  testWidgets('a proposal renders as proposed with its scope',
       (tester) async {
     await tester.pumpWidget(_wrap(IncidentExtension(
       capability: _cap('available'),
@@ -54,11 +54,11 @@ void main() {
           proposalId: 'prp_${'a' * 32}',
           state: 'proposed',
           journeyRef: 'jrn_${'a' * 32}',
-          doesNotProve: 'a proposed graph is not a diagnosis'),
+          scope: 'a proposed incident graph, held for human review'),
     )));
     await tester.pump();
     expect(find.textContaining('proposed'), findsWidgets);
-    expect(find.textContaining('not a diagnosis'), findsOneWidget);
+    expect(find.textContaining('held for human review'), findsOneWidget);
     expect(find.text('Accept'), findsNothing,
         reason: 'a proposal cannot be accepted from the client');
   });

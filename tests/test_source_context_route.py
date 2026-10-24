@@ -3,6 +3,7 @@ import io
 
 import pytest
 
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.evidence_json import canonical_sha256
 from harness.gateway_grant_route import (
     authorize_gateway_operation, gateway_grant_post,
@@ -53,7 +54,7 @@ def _context_payload(expected_digest, text="DECISION-FACT-ALPHA"):
             "verified_sha256": "f" * 64, "derived_from": [],
             "full_text_chars": 64, "body_bytes_read": 64,
             "range": {"start": 0, "end": 19}, "text": text, "omissions": []}],
-        "omissions": [], "does_not_prove": ["truth"]}
+        "omissions": [], LEGACY_SCOPE_KEY: ["truth"]}
     return dict(base, selection_digest=canonical_sha256(base),
                 verified=True, verified_scope="selected_rows")
 
@@ -65,7 +66,7 @@ class FakeGather:
         return {"schema": "gather.readable-corpus/v1", "corpus_digest": "c" * 64,
                 "rows": [{"row_ref": "row_abc", "body_status": "MATCH",
                           "excerpt": "DECISION", "omissions": []}],
-                "omissions": [], "does_not_prove": ["truth"],
+                "omissions": [], LEGACY_SCOPE_KEY: ["truth"],
                 "row_count": 1, "returned_rows": 1, "verified": True,
                 "verified_scope": "corpus"}
     def select(self, path, selections, *, expected_corpus_digest, **caps):

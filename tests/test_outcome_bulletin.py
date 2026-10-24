@@ -2,8 +2,7 @@ import json
 
 import pytest
 
-from harness.evidence_json import canonical_bytes
-from harness.evidence_json import canonical_sha256
+from harness.evidence_json import canonical_bytes, canonical_sha256
 from harness.bulletin_origin import PUBLIC_BULLETIN_ORIGIN
 from harness.gateway_grant_route import gateway_grant_post
 from harness.gateway_grant_route import authorize_gateway_operation
@@ -16,9 +15,10 @@ from harness.outcome_bulletin import (
     build_preview,
     publish_preview,
 )
+from harness.scope import LEGACY_SCOPE_KEY
 
 
-INDEX_OUTCOME = {
+INDEX_OUTCOME = {  # a v1 request: its older list renders under "Limits"
     "schema": "flywheel.outcome-bulletin-request/v1",
     "title": "Index reliability checkpoint, 2026-09-07",
     "status": (
@@ -38,7 +38,7 @@ INDEX_OUTCOME = {
     "held_blockers": [
         "Public CLI/MCP router-job wiring still waits on integration review.",
     ],
-    "does_not_prove": [
+    LEGACY_SCOPE_KEY: [
         "Router durable jobs are released as public Index behavior.",
         "Private workspaces were scanned or posted.",
     ],
@@ -270,7 +270,7 @@ def test_publish_without_signed_publisher_reports_no_live_write():
     result = publish_preview(preview, grant_ref="gnt_" + "c" * 32)
 
     assert result["status"] == "publish_unavailable"
-    assert result["does_not_prove"] == ["a signed Bulletin write was attempted"]
+    assert result["scope"] == ["the preview and grant were checked; no Bulletin write was sent"]
 
 def test_publish_reports_write_and_readback_failures_without_raw_echo():
     """Publication failures must not echo downstream text that may include secrets."""
@@ -297,4 +297,4 @@ def test_publish_reports_write_and_readback_failures_without_raw_echo():
         },
     )
     assert drift["status"] == "posted_readback_drift"
-    assert drift["does_not_prove"] == ["public board readback matched the requested post"]
+    assert drift["scope"] == ["the board readback was compared with the requested post and differs"]

@@ -65,7 +65,7 @@ def test_every_pack_qa_detects_its_planted_false_accepts():
         assert qa["detected"] == sum(
             1 for e in expected.values() if e == "incorrect")
         assert qa["resource_usage"]["within_limits"] is True
-        assert qa["does_not_prove"]
+        assert qa["scope"]
 
 
 def test_pack_refuses_authority_escalation():

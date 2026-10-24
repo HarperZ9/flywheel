@@ -1,4 +1,4 @@
-"""NCEC certificate verification rejects malformed v1 certificates."""
+"""NCEC certificate verification rejects malformed certificates."""
 import json
 
 import pytest
@@ -13,7 +13,7 @@ def _manifest(root, *, environment_id="env-1", scarcity=()):
     (root / "reward.py").write_text("reward = pass_rate\n", encoding="utf-8")
     built = im.witness_entries(["reward.py"], root)
     return {
-        "schema": im.SCHEMA,
+        "schema": im.SCHEMA_V2,
         "environment_id": environment_id,
         "kind": "finetune",
         "reward": {"declared_form": "pass rate", "source_ref": "reward.py"},
@@ -22,7 +22,7 @@ def _manifest(root, *, environment_id="env-1", scarcity=()):
         "penalized_behaviors": [],
         "scarcity_variables": list(scarcity),
         "witness": {"algorithm": built["algorithm"], "entries": built["entries"]},
-        "does_not_prove": im.DOES_NOT_PROVE,
+        "scope": im.SCOPE,
     }
 
 
@@ -54,7 +54,7 @@ def _issued_certificate(tmp_path):
         ("property-empty-string", lambda cert: {**cert, "non_coercive_properties": [""]}),
         ("property-non-string", lambda cert: {**cert, "non_coercive_properties": [7]}),
         ("ced-verdict-not-non-coercive", lambda cert: {**cert, "ced_verdict": ce.COERCIVE}),
-        ("changed-bound-text", lambda cert: {**cert, "does_not_prove": "proves runtime behavior"}),
+        ("changed-scope-text", lambda cert: {**cert, "scope": "covers runtime behavior"}),
         ("extra-field", lambda cert: {**cert, "runtime_alignment": True}),
     ),
 )
@@ -66,7 +66,7 @@ def test_malformed_ncec_certificates_are_unverifiable(tmp_path, name, mutate):
     result = ce.verify_certificate(bad, manifest)
 
     assert result["verdict"] == UNVERIFIABLE
-    assert result["does_not_prove"] == ce.NCEC_DOES_NOT_PROVE
+    assert result["scope"] == ce.NCEC_SCOPE
 
 
 def test_malformed_ncec_certificates_exit_three_from_cli(tmp_path):
@@ -92,7 +92,7 @@ def test_mixed_type_extra_keys_are_refused_without_sorting(tmp_path):
     result = ce.verify_certificate(certificate, manifest)
 
     assert result["verdict"] == UNVERIFIABLE
-    assert result["does_not_prove"] == ce.NCEC_DOES_NOT_PROVE
+    assert result["scope"] == ce.NCEC_SCOPE
 
 
 def test_valid_ncec_roundtrip_matches(tmp_path):
@@ -104,7 +104,7 @@ def test_valid_ncec_roundtrip_matches(tmp_path):
     assert result["verdict"] == MATCH
     assert result["rubric_version"] == ce.RUBRIC_VERSION
     assert result["environment_id"] == "env-1"
-    assert result["does_not_prove"] == ce.NCEC_DOES_NOT_PROVE
+    assert result["scope"] == ce.NCEC_SCOPE
 
 
 def test_valid_ncec_checked_against_changed_environment_drifts(tmp_path):

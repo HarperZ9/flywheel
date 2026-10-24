@@ -2,6 +2,7 @@ import json
 
 import pytest
 
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.evidence_json import canonical_sha256
 from harness.source_context_store import SourceContextError, SourceContextStore
 
@@ -34,7 +35,7 @@ def _selection(text="DECISION-FACT-ALPHA\nnaïve café", corpus_digest="c" * 64)
             "omissions": [],
         }],
         "omissions": [],
-        "does_not_prove": ["truth of selected source claims"],
+        LEGACY_SCOPE_KEY: ["truth of selected source claims"],
     }
     return dict(base, selection_digest=canonical_sha256(base),
                 verified=True, verified_scope="selected_rows")

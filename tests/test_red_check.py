@@ -60,12 +60,12 @@ def fixed_bug(tmp_path):
 
 def test_a_bug_fix_test_is_red_on_an_assertion_and_a_weak_one_is_green(fixed_bug):
     receipt = red_check(fixed_bug, "HEAD~1", "HEAD")
-    assert receipt["schema"] == "flywheel.red-check/v1"
+    assert receipt["schema"] == "flywheel.red-check/v2"
     assert _classes(receipt) == {"test_adds": "red-assert", "test_only_runs": "green",
                                  "test_skips": "indeterminate"}
     assert receipt["credited"] == 1
     assert receipt["provenance"]["status"] == "ok"
-    assert receipt["does_not_prove"]
+    assert receipt["scope"]
 
 
 def test_a_skip_on_both_sides_is_never_credited(fixed_bug):

@@ -4,6 +4,7 @@ import copy
 import json
 from pathlib import Path
 
+from harness.scope import LEGACY_SCOPE_KEY, SCOPE_KEY, scope_key
 from harness.standards_registry import validate_profile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +27,7 @@ def test_valid_discovery_profile_keeps_source_authority_gap() -> None:
 
     result = validate_profile(profile)
 
-    assert result["schema"] == "flywheel.standards-profile-validation/v1"
+    assert result["schema"] == "flywheel.standards-profile-validation/v2"
     assert result["verdict"] == "VALID"
     assert result["errors"] == []
     assert {
@@ -38,7 +39,28 @@ def test_valid_discovery_profile_keeps_source_authority_gap() -> None:
         "version": "2026.09",
         "requirements": 1,
     }
-    assert "does not prove legal compliance" in result["does_not_prove"]
+    assert "data shape" in result["scope"]
+
+
+def as_version(profile: dict, schema: str, key: str) -> dict:
+    """The same profile under one schema version, its scope strings under `key`."""
+    out = copy.deepcopy(profile)
+    out["schema"] = schema
+    for item in (out, *out["requirements"]):
+        item[key] = item.pop(scope_key(item))
+    return out
+
+
+def test_v1_and_v2_profiles_each_validate_with_their_own_key() -> None:
+    v1 = as_version(load_profile(), "flywheel.standards-profile/v1", LEGACY_SCOPE_KEY)
+    v2 = as_version(load_profile(), "flywheel.standards-profile/v2", SCOPE_KEY)
+    assert validate_profile(v1)["verdict"] == "VALID"
+    assert validate_profile(v2)["verdict"] == "VALID"
+    mixed = copy.deepcopy(v2)
+    mixed["requirements"][0][LEGACY_SCOPE_KEY] = mixed["requirements"][0].pop(SCOPE_KEY)
+    assert_invalid(mixed, "unknown field")
+    assert_invalid(as_version(v1, "flywheel.standards-profile/v2", LEGACY_SCOPE_KEY),
+                   "unknown field")
 
 
 def test_unknown_keys_and_executable_fields_are_rejected() -> None:

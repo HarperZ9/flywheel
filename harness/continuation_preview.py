@@ -18,7 +18,8 @@ from .import_adapters import import_config
 from . import safe_program
 
 PREVIEW_SCHEMA = "flywheel.native-continuation-preview/v1"
-INTAKE_SCHEMA = "flywheel.native-continuation-intake/v1"
+INTAKE_SCHEMA = "flywheel.native-continuation-intake/v2"
+INTAKE_SCHEMA_V1 = "flywheel.native-continuation-intake/v1"
 MAX_EXPORT_BYTES = 1_048_576
 _MAX_SIGNALS = 12
 _SIGNAL_PATTERNS = (
@@ -212,11 +213,11 @@ def build_continuation(root: Path, *, export_path: Path | None = None) -> tuple[
               "export": public_export_projection(export),
               "context_package": public_context_projection(context), "health": health,
               "provider_native_resume": provider, "omissions": omissions,
-              "does_not_prove": [
-                  "native provider web session resume is unavailable",
-                  "public projection contains enough text to continue the task",
-                  "durable context does not prove a future model loaded it",
-                  "fresh grants are required before any follow-up work"]}
+              "scope": [
+                  "provider-neutral intake of the repo, import and export as read at preview time",
+                  "the public projection carries counts and names; the task text stays in the private context",
+                  "durable context records what was selected; what a later model loads is outside it",
+                  "follow-up work starts only with fresh grants"]}
     public_metadata(intake)
     intake_ref = f"continuation/{preview_ref}.intake.json"
     preview = {"schema": PREVIEW_SCHEMA, "preview_ref": preview_ref,

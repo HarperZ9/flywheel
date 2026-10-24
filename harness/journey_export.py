@@ -12,13 +12,14 @@ from .journey_export_tx import (artifact_root_path, consumed_grant_matches,
     packet_target_path, path_present, prepare_target_parent, quarantine_path,
     request_digest, staging_path, target_lock_path, transaction_path, update_phase)
 from .journey_lock import ExclusiveJourneyLock, JourneyLockBusy, fsync_directory
-from .journey_packet_v2 import (DOES_NOT_PROVE, PACKET_PROFILE, PACKET_SCHEMA,
+from .journey_packet_v2 import (PACKET_PROFILE, PACKET_SCHEMA, SCOPE,
     pack_journey_custody_packet, verify_journey_custody_packet)
 from .journey_service import JourneyService
 from .journey_store import JourneyStoreError
 from .operation_grants import GrantError, GrantRequest, GrantStore
 
-EXPORT_SCHEMA = "flywheel.evidence-journey-export/v2"
+EXPORT_SCHEMA_V2 = "flywheel.evidence-journey-export/v2"
+EXPORT_SCHEMA = "flywheel.evidence-journey-export/v3"  # v3 names `scope`
 _BODY_FIELDS = {"client_request_id", "packet_ref", "artifact_root_ref",
                 "source_projection_sha256", "packet_profile"}
 
@@ -291,7 +292,7 @@ class JourneyExportService:
             "authenticity_verdict": checked["authenticity_verdict"],
             "rehash_resistance_verdict": checked["rehash_resistance_verdict"],
             "idempotent_replay": replay,
-            "does_not_prove": list(DOES_NOT_PROVE)}
+            "scope": list(SCOPE)}
 
     def _checkpoint(self, point: str) -> None:
         if self._fault_injector is not None:

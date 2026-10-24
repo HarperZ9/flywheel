@@ -93,7 +93,10 @@ void main() {
       bodies.add(jsonDecode(request.body) as Map<String, dynamic>);
       return http.Response(
         jsonEncode({
-          'schema': 'flywheel.native-continuation-start/v1',
+          // The retry answers with the v2 schema: both versions parse.
+          'schema': bodies.length > 1
+              ? 'flywheel.native-continuation-start/v2'
+              : 'flywheel.native-continuation-start/v1',
           'preview_ref': _previewRef,
           'open_lens': 'Rescue',
           'journey': _ackJson(replay: bodies.length > 1),
@@ -123,7 +126,7 @@ void main() {
       });
       return http.Response(
         jsonEncode({
-          'schema': 'flywheel.native-continuation-private-context/v1',
+          'schema': 'flywheel.native-continuation-private-context/v2',
           'preview_ref': _previewRef,
           'source_state_sha256': _shaB,
           'context_package': {

@@ -15,6 +15,7 @@ from argparse import Namespace
 from pathlib import Path
 from types import SimpleNamespace
 
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.evidence_json import canonical_sha256
 
 
@@ -143,7 +144,7 @@ def _descriptor(lane: str, *, version: str = "1.0.0") -> dict:
                        "module": f"{lane}.mcp", "callable": "serve",
                        "health_tool": f"{lane}.status"},
         "allowed_tools": [f"{lane}.status", f"{lane}.doctor", f"{lane}.read"],
-        "does_not_prove": ["NOT_PROVES_FULL_LANE_WORKFLOW: admission is not a result."],
+        LEGACY_SCOPE_KEY: ["NOT_PROVES_FULL_LANE_WORKFLOW: admission is not a result."],
     }
 
 

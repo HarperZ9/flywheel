@@ -89,7 +89,7 @@ def test_a_clean_artifact_passes_and_matches_the_committed_shape(tmp_path):
     summary = mk.build_summary(root, receipts, run, meta)
     committed = json.loads((REPO / mk.EVIDENCE_DIR / installed_lanes_copy.current_evidence(REPO))
                            .read_text(encoding="utf-8"))
-    assert summary.keys() == committed.keys()
+    assert set(summary) - {"scope"} == {k for k in committed if not k.endswith("_prove")}  # v1 key
     assert summary["run"].keys() == committed["run"].keys()
     assert summary["legs"]["per-user"].keys() == committed["legs"]["per-user"].keys()
     raw = (root / mk.RECEIPTS / mk.LEGS["all-users"]).read_bytes()

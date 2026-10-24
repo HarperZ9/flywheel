@@ -34,7 +34,7 @@ def test_receipt_carries_diff_contrast_and_interval(made):
     assert receipt["decision"] == "ADOPT"
     assert receipt["diff"].startswith("--- a/scripts/summarize.py")
     assert receipt["contrast"]["chosen"] in receipt["contrast"]["finals"]
-    assert receipt["heldout"]["interval"][0] >= 0 and receipt["does_not_prove"]
+    assert receipt["heldout"]["interval"][0] >= 0 and receipt["scope"]
     check = verify_edit_receipt(receipt, parent=parent, adopted=result["tree"])
     assert check["verdict"] == "MATCH"
 

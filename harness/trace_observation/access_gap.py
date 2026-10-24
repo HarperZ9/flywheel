@@ -22,16 +22,16 @@ from . import access_gap_data as data
 from .channel import (DRIFT, MATCH, RAW, SUMMARY_SEPARATE, SUMMARY_UNKNOWN, UNSPECIFIED,
                       UNVERIFIABLE, GapRecord)
 
-SCHEMA = "flywheel.measured-gap/v1"
+SCHEMA_V1 = "flywheel.measured-gap/v1"
+SCHEMA = "flywheel.measured-gap/v2"  # v2 names `scope`
 DOCUMENTED_ONLY = "DOCUMENTED_ONLY"
 PUBLISHER = {"openai": "OpenAI", "anthropic": "Anthropic", "google": "Google", "xai": "xAI",
              "deepseek": "DeepSeek", "mistral": "Mistral"}
 LOCAL_OPEN_WEIGHT = ("ollama",)
-DOES_NOT_PROVE = (
-    "A measured gap shows what this run could and could not read through documented "
-    "interfaces on the recorded date. It says nothing about provider intent, about "
-    "whether exposed reasoning is faithful, or about terms of private agreements. "
-    "Provider interfaces change; every documentation cell carries its read date.")
+SCOPE = (
+    "A measured gap covers what this run could and could not read through documented "
+    "interfaces on the recorded date. Provider interfaces change; every documentation "
+    "cell carries its read date.")
 _SOURCES = {s["id"]: s for s in data.SOURCES}
 
 
@@ -169,5 +169,5 @@ def measured_gap(provider: str, captures: list, *, run_id: str, observed_on: str
         "not_observable_from_outside": [g.to_dict() for g in outside + [
             g for g in capture_gaps if g.scope == "outside_observability"]],
         "not_yet_observed_local": [g.to_dict() for g in local if g.scope == "local_setup"],
-        "does_not_prove": DOES_NOT_PROVE,
+        "scope": SCOPE,
     }

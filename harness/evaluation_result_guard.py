@@ -2,7 +2,7 @@
 
 The controller supplies the plan and read-only authorities separately from records.
 No executor, network client or model runs here. Resolver independence is a caller
-obligation; agreement alone does not prove it.
+obligation; agreement alone leaves it open.
 """
 from __future__ import annotations
 
@@ -11,15 +11,17 @@ from .evaluation_result_schema import (canonical, require, resolve_observation,
 from .output_contract import check_answer, new_contract
 from .contract_terms import CRITICAL, TABLE
 
-LIMIT = ("Checks report fidelity against controller-supplied authorities and plan "
-         "compatibility only. Does not prove authority independence, event truth, "
-         "causation, generalization, safety or competitive superiority.")
+SCHEMA = "flywheel.evaluation-admission/v2"
+SCHEMA_V1 = "flywheel.evaluation-admission/v1"
+SCOPE = ("Checks report fidelity against controller-supplied authorities and plan "
+         "compatibility. Authority independence, event truth, causation, "
+         "generalization, safety and competitive standing are outside this check.")
 
 
 def _held(code):
-    return {"schema": "flywheel.evaluation-admission/v1", "release": "HOLD",
+    return {"schema": SCHEMA, "release": "HOLD",
             "blocking": [code], "fidelity": None, "counts": None, "arms": {},
-            "contrasts": [], "does_not_prove": LIMIT}
+            "contrasts": [], "scope": SCOPE}
 
 
 def _inputs(records, plan, authorities):
@@ -123,8 +125,8 @@ bounded read-only resolvers; this synchronous function is not a process sandbox.
               if row["verdict"] == "PASS"}
     arms = _tally_arms(trials, submitted, passed)
     blocking = _blocking(fidelity, arms, policy, submitted, passed)
-    return {"schema": "flywheel.evaluation-admission/v1",
+    return {"schema": SCHEMA,
             "release": "HOLD" if blocking else "RELEASE",
             "blocking": blocking, "fidelity": fidelity, "arms": arms,
             "counts": _counts(trials, submitted),
-            "contrasts": policy["contrasts"], "does_not_prove": LIMIT}
+            "contrasts": policy["contrasts"], "scope": SCOPE}

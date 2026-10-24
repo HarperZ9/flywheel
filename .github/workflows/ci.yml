@@ -328,6 +328,8 @@ jobs:
         run: python scripts/check_data_location_copy.py
       - name: Private held lanes carry no capability description on public artifacts
         run: python scripts/check_private_lane_prose.py
+      - name: Records name what they cover in scope; the older field stays with old records
+        run: python scripts/check_scope_migration.py
 
   file_gate:
     name: 300-line gate, burn-down only shrinks

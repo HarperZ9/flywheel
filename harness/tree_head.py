@@ -40,8 +40,8 @@ Three deliberate choices:
 `log_id` is the sha256 of the log's public key, following 9162. It binds the
 identity of a log to WHO attests to it rather than to what happens to be inside
 it, which is the property that makes a proof non-transferable between logs. A
-ledger with no key has no honest log id, so it reports `None` and says so in
-`does_not_prove` rather than inventing one from a path.
+ledger with no key has no honest log id, so it reports `None`, and its `scope`
+omits `LOG_NAMED` rather than inventing an id from a path.
 """
 from __future__ import annotations
 
@@ -58,9 +58,8 @@ HEAD_DOMAIN = b"flywheel.signed-tree-head/v1\x00"
 
 SIGNED_OVER = ("log_id", "size", "root", "timestamp")
 
-NO_LOG_ID = ("NOT_PROVES_WHICH_LOG: this proof does not name the log it came "
-             "from, because the ledger has no signing key. Two proofs from two "
-             "logs cannot be told apart once they are in the same folder.")
+LOG_NAMED = ("LOG_NAMED: this proof names its log by the sha256 of the log's "
+             "public key, so proofs from two logs stay distinct in one folder.")
 
 
 class TreeHeadError(ValueError):
@@ -156,15 +155,15 @@ def check_signed_head(signed: dict, public_key: bytes) -> tuple[bool, str]:
     return (True, "ok") if ok else (False, "bad_signature")
 
 
-def does_not_prove() -> list[str]:
-    """What a signed head still does not establish."""
+def scope() -> list[str]:
+    """What a signed head covers."""
     return [
-        "NOT_PROVES_COMPLETENESS: a signed head attests to the tree the log "
-        "chose to build. A log can be honest about everything in it and silent "
-        "about what was never added.",
-        "NOT_PROVES_NON_EQUIVOCATION_ALONE: one signed head proves one view. "
-        "Detecting two views needs the head to be gossiped to someone else, or "
-        "contested. The signature is what makes that possible, not what does it.",
-        "NOT_PROVES_KEY_OWNERSHIP: the holder of the signing key is whoever "
-        "holds it. Binding that key to a person is outside this module.",
+        "TREE_AS_BUILT: a signed head attests to the tree the log built, "
+        "every entry the log added and only those.",
+        "ONE_VIEW_SIGNED: one signed head fixes one view of the log. Gossiping "
+        "or contesting the head is the step that detects a second view; the "
+        "signature is what makes that step possible.",
+        "SIGNED_BY_KEY_HOLDER: the signature binds the head to whoever holds "
+        "the signing key. Binding that key to a person happens outside this "
+        "module.",
     ]

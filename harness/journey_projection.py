@@ -4,6 +4,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 from .evidence_json import canonical_sha256
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY, scope_of
 from .journey_types import (
     EVENT_SCHEMA, OPERATIONAL_EVENT_TYPES, PROJECTION_SCHEMA, RECEIPT_STATES, STAGES,
     VERDICTS, build_event, require, require_text, validate_event, validate_journey_ref,
@@ -38,7 +39,11 @@ def new_genesis(*, journey_ref: str, legacy_label: str | None, goal: str, intake
 def _require_record(item: object, kind: str, required: set[str]) -> dict:
     require(type(item) is dict and required <= item.keys(), f"{kind} is incomplete")
     require_text(item.get(f"{kind}_id"), f"{kind}_id")
-    require_text(item.get("does_not_prove"), "does_not_prove")
+    # Events recorded before 2026-10-23 name this text with the older key, and
+    # their bytes are hash-chained, so either name is read; never both.
+    require(not (LEGACY_SCOPE_KEY in item and SCOPE_KEY in item),
+            f"{kind} names its scope twice")
+    require_text(scope_of(item), SCOPE_KEY)
     refs = item.get("receipt_refs")
     require(type(refs) is list and refs, f"{kind} requires receipt_refs")
     for ref in refs:
@@ -52,7 +57,7 @@ def _record_definitions(payload: dict, state: dict) -> None:
         records = payload.get(f"{kind}s", [])
         require(type(records) is list, f"{kind}s must be a list")
         for item in records:
-            required = {identity, "statement", "receipt_refs", "receipt_state", "does_not_prove"}
+            required = {identity, "statement", "receipt_refs", "receipt_state"}
             if kind == "claim":
                 required |= {"depends_on", "verdict"}
             record = _require_record(item, kind, required)
@@ -77,7 +82,7 @@ def _record_checks(payload: dict, state: dict) -> None:
     for item in checks:
         record = _require_record(item, "check", {
             "check_id", "claim_id", "verdict", "receipt_refs", "receipt_state",
-            "numerator", "denominator", "does_not_prove",
+            "numerator", "denominator",
         })
         require(record["verdict"] in VERDICTS, "verdict is not in the four-way enum")
         require(record["verdict"] != "PASS" or record["receipt_state"] == "MATCH",

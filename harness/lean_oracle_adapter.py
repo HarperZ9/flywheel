@@ -19,36 +19,34 @@ from __future__ import annotations
 import hashlib
 
 _FIDELITY = ("spec_fidelity UNVERIFIED: the kernel checked the proof against "
-             "the pinned statement; whether that statement is the theorem its "
-             "author intended (the formalization gap) is a human review this "
-             "oracle does not perform")
+             "the pinned statement; matching that statement to the theorem its "
+             "author intended (the formalization gap) is a separate human "
+             "review")
 _BINDING_SCOPE = (
     "the binding compares the pinned theorem, and every definition the "
     "challenge declares that the statement reaches, by exact elaborated form; "
-    "a constant from an imported module is matched by module name, which "
-    "trusts both sides to load the same .olean files from one search path")
+    "a constant from an imported module is matched by module name, with both "
+    "sides loading the same .olean files from one search path")
 _REPLAY_LIMITS = (
     "leanchecker replay runs in plain mode: it re-checks the declarations the "
-    "compiled module adds and trusts every imported .olean file as found on "
-    "disk, the toolchain's and any found through the inherited LEAN_PATH; it "
-    "is not the --fresh replay")
+    "compiled module adds, and takes every imported .olean file as found on "
+    "disk, the toolchain's and any found through the inherited LEAN_PATH; the "
+    "--fresh replay is the next rung")
 _TWO_KERNELS = (
-    "two kernels agreeing (Lean's and nanoda, kernels_agreeing 2) rules out a "
-    "bug in either kernel alone producing this pass; both read the module "
-    "through Lean's own .olean loader (nanoda through lean4export's export), "
-    "so a loader or exporter fault that shows both kernels the same wrong "
-    "declarations is not ruled out, and neither is a soundness bug the two "
-    "implementations share")
+    "two kernels agree (Lean's and nanoda, kernels_agreeing 2), which covers a "
+    "bug in either kernel alone; both read the module through Lean's own "
+    ".olean loader (nanoda through lean4export's export), so the agreement "
+    "covers the kernels and stops at the shared loader and exporter, and at "
+    "any soundness bug the two implementations share")
 _ELABORATION = (
     "the candidate's metaprograms ran during its one compile under the "
-    "limits in the receipt's sandbox block; network access and reads of "
-    "this user's files were not restricted, so the compile could read and "
-    "send data; the validation level stops short of comparator_external "
-    "until a no-network sandbox lands")
+    "limits in the receipt's sandbox block; that sandbox leaves network "
+    "access and reads of this user's files open, so the validation level "
+    "stops short of comparator_external until a no-network sandbox lands")
 _AUDIT_SCOPE = (
-    "the axiom audit walks every constant the pinned theorem depends on; a "
-    "declaration the pinned theorem does not reach is replayed by "
-    "leanchecker but not audited for axioms")
+    "the axiom audit walks every constant the pinned theorem depends on; "
+    "leanchecker replays the rest of the module, and the audit covers the "
+    "constants the theorem reaches")
 _SPEC_REASONS = frozenset({"challenge-unpinned", "challenge-compile-failed",
                            "statement-hash-mismatch"})
 
@@ -57,7 +55,7 @@ class LeanOracle:
     """The math domain oracle: an Oracle-Protocol adapter over bound_check.
 
     `challenge` overrides the task's own; with neither, nothing is checked.
-    The honest verdict travels with what Lean does not prove, and the
+    The honest verdict travels with the scope of what Lean checked, and the
     receipt's binding, trusted base and validation level travel in coverage.
     """
     oracle_type = "lean"
@@ -112,15 +110,15 @@ def _unverifiable(res: dict, kernel: str, common: dict) -> "OracleResult":
     else:
         execution = Execution.TOOLCHAIN_MISSING
         reason = UnverifiableReason.TOOLCHAIN_MISSING.value
-        fallback = "no Lean toolchain installed; the proof was not checked"
+        fallback = "no Lean toolchain installed; the proof stands unchecked"
     return OracleResult(rc=0, verdict_=Verdict.UNVERIFIABLE,
                         execution=execution, unverifiable_reason=reason,
-                        does_not_prove=[kernel[:240] or fallback], **common)
+                        scope=[kernel[:240] or fallback], **common)
 
 
 def _result(res: dict, output_hash: str, coverage: dict) -> "OracleResult":
     """Map the bound check's passed (True / False / None) onto the four-way
-    verdict, with the does_not_prove lines each outcome carries."""
+    verdict, with the scope lines each outcome carries."""
     from .oracle import OracleResult
     from .verdict import Verdict
     passed = res.get("passed")
@@ -133,10 +131,10 @@ def _result(res: dict, output_hash: str, coverage: dict) -> "OracleResult":
     if passed:
         return OracleResult(
             rc=0, verdict_=Verdict.PASS,
-            does_not_prove=[_FIDELITY, _BINDING_SCOPE, _REPLAY_LIMITS,
-                            _TWO_KERNELS, _ELABORATION, _AUDIT_SCOPE],
+            scope=[_FIDELITY, _BINDING_SCOPE, _REPLAY_LIMITS,
+                   _TWO_KERNELS, _ELABORATION, _AUDIT_SCOPE],
             **common)
     return OracleResult(
         rc=1, verdict_=Verdict.FAIL,
-        does_not_prove=[kernel[:160] or "the kernel refused the proof",
-                        _FIDELITY], **common)
+        scope=[kernel[:160] or "the kernel refused the proof", _FIDELITY],
+        **common)

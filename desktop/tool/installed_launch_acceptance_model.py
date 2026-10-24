@@ -23,21 +23,23 @@ except ImportError:
         phase_results, validate_receipt_semantics,
     )
 
-SCHEMA = "flywheel.installed-launch-acceptance/v1"
+# v2 (2026-10-23) names what the receipt covers in `scope`; v1 receipts carried
+# the older limit list and still read.
+SCHEMA = "flywheel.installed-launch-acceptance/v2"
+SCHEMA_V1 = "flywheel.installed-launch-acceptance/v1"
+SCHEMAS = (SCHEMA, SCHEMA_V1)
 STATUS_SCHEMA = "flywheel.desktop-status/v1"
 APP_ID = "{ecf4cc9b-8a7a-4de2-8e70-0f1ea0f17e5c}"
 APP_EXE = "flywheel_desktop.exe"
 ENGINE_EXE = "flywheel-gateway.exe"
 TOKEN_NAME = "gateway.token"
-DOES_NOT_PROVE = [
-    "full installer execution unless a release runner attaches that receipt",
-    "native UI rendering or CUA-observed user journey",
-    "desktop file-picker behavior; Inspect acceptance uses backend API upload",
-    "provider OAuth success",
-    "model endpoint readiness or quality",
-    "Relay worker readiness until separately checked",
-    "upgrade behavior without before/after installed snapshots",
-    "external source attestation; build manifest is an operator-supplied integrity binding",
+SCOPE = [
+    "the installed payload, shortcuts and registry entries as this runner read them",
+    "an owned gateway start, status, token redaction and process cleanup on this runner",
+    "Inspect acceptance through the backend API upload; desktop file-picker behavior is a separate check",
+    "installer execution, provider OAuth, model endpoints and Relay workers are separate receipts",
+    "upgrade behavior is covered when before and after installed snapshots are attached",
+    "the build manifest is an operator-supplied integrity binding; external source attestation is a separate record",
 ]
 WINDOW_FLAGS = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
@@ -173,7 +175,7 @@ def verify_receipt_file(path: Path, run_id: str) -> dict:
         raise ReceiptError(f"receipt malformed: {exc}") from exc
     if not isinstance(receipt, MappingABC):
         raise ReceiptError("receipt is not an object")
-    if receipt.get("schema") != SCHEMA:
+    if receipt.get("schema") not in SCHEMAS:
         raise ReceiptError("receipt schema mismatch")
     if receipt.get("run_id") != run_id:
         raise ReceiptError("receipt run_id is stale or mismatched")

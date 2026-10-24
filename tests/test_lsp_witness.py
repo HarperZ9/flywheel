@@ -21,7 +21,7 @@ from harness.lsp_client import LspClient
 from harness.lsp_incoming import Published
 from harness.lsp_positions import UTF8, UTF16
 from harness.lsp_witness import (ANSWER_ACTION, FRAME_ACTION, LspWitness,
-                                 PUBLISHED_ACTION, count_of, does_not_prove,
+                                 PUBLISHED_ACTION, count_of, scope,
                                  published_summary, summarize,
                                  transcript_resolver)
 
@@ -197,9 +197,9 @@ def test_the_count_separates_nothing_to_say_from_one_answer():
     assert count_of({"contents": "text"}) == 1
 
 
-def test_what_the_record_does_not_prove_names_the_encoding_limit():
-    lines = does_not_prove()
+def test_the_scope_of_the_record_names_the_encoding_boundary():
+    lines = scope()
     assert lines
     assert any("negotiated encoding" in line for line in lines)
-    assert any("not that the server's answer is right" in line
+    assert any("the answer itself is the server's" in line
                for line in lines)

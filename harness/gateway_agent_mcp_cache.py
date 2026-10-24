@@ -77,7 +77,7 @@ def cache_mcp_discovery_receipt(
         launch_json = launch_to_json(launch)
         auth_rows = {name: authority[name]["authority"] for name in selected}
         notes = _dedupe_notes(
-            note for name in selected for note in authority[name]["does_not_prove"])
+            note for name in selected for note in authority[name]["scope"])
         material = {
             "server_id": sid,
             "catalog_ref": catalog,
@@ -114,7 +114,7 @@ def cache_mcp_discovery_receipt(
             "authority": auth_rows,
             "authority_source": "gateway_catalog_metadata:v1",
             "enforced_limits": limits,
-            "does_not_prove": notes,
+            "scope": notes,
             "tools_list_sha256": canonical_sha256({"tools": tool_specs}),
             "config_sha256": launch_config_sha256(catalog, plugin_kind, launch, selected),
             "descriptor_sha256": canonical_sha256(material),

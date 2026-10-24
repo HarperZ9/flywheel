@@ -76,15 +76,15 @@ def project_frontier_axes(
             "fields_sha256": canonical_sha256(fields),
         })
     return {
-        "schema": "flywheel.frontier-axes/v1",
+        "schema": "flywheel.frontier-axes/v2",
         "claim_id": claim["claim_id"],
         "journey_ref": journey_ref,
         "event_head_sha256": event_head_sha256,
         "claim_sha256": claim["claim_sha256"],
         "axes": axes,
-        "does_not_prove": (
-            "independent axes are observations, not a composite judgment; "
-            "no score exists and none may be derived"),
+        "scope": (
+            "each axis is an independent observation with its own digest; "
+            "the record holds no composite score and none may be derived"),
     }
 
 

@@ -23,7 +23,8 @@ from __future__ import annotations
 from . import raw_lane, raw_lane_install as inst
 from ._vendor import superstack as ss
 from .certificates import raw_ao, raw_ao_receipt as rr
-from .certificates.replay import CROSS_DEVICE_NOTE, DRIFT, MATCH, REPLAY_DOES_NOT_PROVE, UNVERIFIABLE
+from .certificates.replay import (CROSS_DEVICE_NOTE, DRIFT, MATCH, REPLAY_SUPERSTACK_LIMIT,
+                                  UNVERIFIABLE)
 from .verdict import Attribution, Execution
 
 BOUNDS = {"pixels_abs_diff_max": 0, "rmse_abs_diff_max": 1e-4,
@@ -99,7 +100,7 @@ def replay(cert, *, claimed_platform: str | None = None, environ=None,
         reference={"backend": f"recorded run ({claimed_platform or 'platform unrecorded'})",
                    "content_sha256": ss.sha256_hex(rr.outputs_document(cert["outputs"]))},
         tolerance=_tolerance(cert, run.certificate),
-        extra_not_proven=(REPLAY_DOES_NOT_PROVE, *notes),
+        extra_not_proven=(REPLAY_SUPERSTACK_LIMIT, *notes),
         flywheel={"verdict": verdict, "attribution": who and who.value, "detail": detail,
                   "certificate_sha256": raw_ao.certificate_sha256(cert),
                   "claimed_platform": claimed_platform, "replayed_platform": plat})

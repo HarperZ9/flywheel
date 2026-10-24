@@ -71,10 +71,10 @@ class IndependentZarankiewiczOracle(CertificateOracle):
     # earn PASS, because declared_parameters reads the CERTIFICATE.
     binding_keys = ("m", "n", "s", "t")
 
-    family_not_proven = (
-        "NOT_PROVES_OPTIMALITY: this verifies the SUBMITTED object. The optimal "
-        "value for the instance is not computed, not bounded, and not claimed "
-        "anywhere.",
+    family_scope = (
+        "BOUND_FROM_SUBMITTED_OBJECT: this verifies the SUBMITTED object. Its "
+        "edge count is a lower bound on the instance's maximum, and the "
+        "maximum itself stays open.",
     )
 
     def declared_parameters(self, cert: dict) -> dict:
@@ -140,7 +140,7 @@ def cross_check(primary: CertificateOracle, held_out: CertificateOracle,
             attribution=Attribution.ENVIRONMENT,
             unverifiable_reason=nd.unverifiable_reason,
             coverage=nd.coverage,
-            does_not_prove=list(nd.does_not_prove) + ["NOT_PROVES_PREDICATE"])
+            scope=list(nd.scope) + ["ONLY_ONE_CHECKER_DECIDED"])
 
     excerpt = (f"checkers disagree: {primary.oracle_type}={a.verdict()} "
                f"vs {held_out.oracle_type}={b.verdict()}. "
@@ -157,4 +157,4 @@ def cross_check(primary: CertificateOracle, held_out: CertificateOracle,
         attribution=Attribution.HARNESS,
         undecided_reason=UndecidedReason.HELD_OUT_DISAGREEMENT.value,
         coverage=a.coverage,
-        does_not_prove=list(a.does_not_prove) + ["NOT_PROVES_PREDICATE"])
+        scope=list(a.scope) + ["CHECKER_DISAGREEMENT_RECORDED"])

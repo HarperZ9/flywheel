@@ -67,7 +67,7 @@ def _overrides(args, stdout) -> int:
         stdout.write("alarm: more than one decision in ten is coded 'other'; the list is missing a reason\n")
     if rep["uncoded_alarm"]:
         stdout.write("alarm: some owner decisions carry no reason code\n")
-    stdout.write(rep["does_not_prove"] + "\n")
+    stdout.write("scope: " + rep["scope"] + "\n")
     return 0
 
 

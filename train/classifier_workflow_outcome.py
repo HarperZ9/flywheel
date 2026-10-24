@@ -4,10 +4,10 @@ from __future__ import annotations
 from copy import deepcopy
 
 
-DOES_NOT_PROVE = [
-    "The checker verifies only the bounded local simulator snapshot and submit transition.",
-    "The checker does not prove browser behavior, booking authenticity, or production utility.",
-    "A blocked verdict is a justified local resolution, not a completed form task.",
+SCOPE = [
+    "The checker verifies the bounded local simulator snapshot and submit transition.",
+    "Browser behavior, booking authenticity and production utility stay outside the snapshot.",
+    "A blocked verdict is a justified local resolution, counted apart from completed form tasks.",
 ]
 
 BAD_VIOLATION_MARKERS = (
@@ -26,7 +26,7 @@ def _result(case: dict, outcome: str, resolution: str, reasons: list[str]) -> di
         "outcome": outcome,
         "task_resolution": resolution,
         "reasons": reasons,
-        "does_not_prove": list(DOES_NOT_PROVE),
+        "scope": list(SCOPE),
     }
 
 

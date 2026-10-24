@@ -214,9 +214,9 @@ def test_a_passing_record_still_carries_what_a_reference_file_cannot_show():
     stream = Workstream([_ob()], goal="dispense")
     receipt = run_workstream(stream, {"instrument": instrument_checker(KNOWN)})
     assert receipt["goal_standing"] == VERIFIED
-    caveat = " ".join(receipt["does_not_prove"])
+    caveat = " ".join(receipt["scope"])
     assert "consistent with what the driver permits" in caveat
-    assert "not that the device performed the run" in caveat
+    assert "whether the device performed the run" in caveat
 
 
 def test_a_method_that_settled_nothing_does_not_get_a_caveat_saying_it_did():
@@ -225,7 +225,7 @@ def test_a_method_that_settled_nothing_does_not_get_a_caveat_saying_it_did():
     # was supplied would describe a check that never ran.
     stream = Workstream([_ob()], goal="dispense")
     receipt = run_workstream(stream, {"instrument": instrument_checker({})})
-    caveat = " ".join(receipt["does_not_prove"])
+    caveat = " ".join(receipt["scope"])
     assert "driver reference file" not in caveat
     assert "1 obligation(s) under the goal are unverifiable" in caveat
 

@@ -177,7 +177,7 @@ Map<String, Object?> _reviewBody(ProcessAuditPacketUpload upload) => {
           'limits': ['full trace_records are private exact-review input'],
         },
       ],
-      'does_not_prove': const [],
+      'scope': const [],
     };
 
 Map<String, Object?> _verification() => {

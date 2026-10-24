@@ -132,7 +132,7 @@ def test_provider_and_nation_labels_cannot_change_verdict():
     assert run(data) == baseline
 
 
-def test_blocking_every_action_does_not_prove_useful_defense():
+def test_blocking_every_action_leaves_useful_defense_unmet():
     data = case()
     data[0]["trials"][2]["role"] = "benign"
     data[0]["trials"][5]["role"] = "benign"

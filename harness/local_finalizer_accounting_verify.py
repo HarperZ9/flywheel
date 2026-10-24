@@ -153,7 +153,7 @@ def aggregate_accounting(manifest, receipts):
         values = [u[key] for u in usages if isinstance(u, dict) and type(u.get(key)) is int and u[key] >= 0]
         usage_totals[key] = {"known_total": sum(values), "observed_invocations": len(values),
             "total": sum(values) if complete and len(values) == known else None}
-    return {"schema": "harness.local-finalizer-invocation-accounting/v1", "run_id": manifest["run_id"],
+    return {"schema": "harness.local-finalizer-invocation-accounting/v2", "run_id": manifest["run_id"],
         "manifest_sha256": digest(manifest), "accounting_complete": bool(complete),
         "known_started_invocations": known, "total_started_invocations": known if complete else None,
         "normal_started_invocations": normal, "finalizer_started_invocations": final,
@@ -165,4 +165,5 @@ def aggregate_accounting(manifest, receipts):
         "request_send_attempts": sends if wire_complete else None,
         "connection_attempts": connections if wire_complete else None,
         "http_responses": responses if wire_complete else None,
-        "does_not_prove": "Invocation and send observations do not prove receiver effects, token use or task correctness."}
+        "scope": ("Counts of started, returned and raised invocations and of observed sends; "
+                  "receiver effects, token use and task correctness are outside these observations.")}

@@ -111,16 +111,17 @@ def run_benchmark(rows: list[dict], runtime, *, model_ref: str, split: str,
         reports[family] = {"quality": evaluate_probability_cases(cases),
                            "amortized_batch_ms_p50": _quantile(family_times, .5),
                            "amortized_batch_ms_p95": _quantile(family_times, .95)}
-    report = {"schema": "flywheel.classifier-benchmark/v1", "split": split,
+    report = {"schema": "flywheel.classifier-benchmark/v2", "split": split,
               "model_ref": model_ref, "families": reports, "batch_size": batch_size,
               "counts": {"examples": len(rows), "batches": len(timings)},
               "timings": timings, "energy_joules": None, "cost_usd": None,
               "input_sha256": canonical_sha256(rows),
-              "does_not_prove": [
-                  "Synthetic labels do not establish real workflow quality or production speedup.",
+              "scope": [
+                  "Quality is measured against synthetic labels on this split.",
                   "Identical-repeat latency assumes full embedding cache hits for neural inference.",
-                  "Amortized batch latency is not single-request latency or full agent completion time.",
-                  "Softmax probabilities are uncalibrated; baseline cannot learn abstention yet."]}
+                  "Amortized batch latency is per item within a batch, separate from single-request "
+                  "latency and full agent completion time.",
+                  "Softmax probabilities are uncalibrated; the baseline has no abstention head yet."]}
     return report, predictions
 
 

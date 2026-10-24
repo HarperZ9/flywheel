@@ -95,9 +95,9 @@ def test_the_owner_reads_the_brief_over_http(server):
     request, _ = server
     status, value = request()
     assert status == 200, value
-    assert value["schema"] == "flywheel.rowan-handoff/v1"
+    assert value["schema"] == "flywheel.rowan-handoff/v2"
     assert "notes.md" in value["markdown"]
-    assert value["record_count"] > 0 and "NOT_RE_VERIFIED_AT_EXPORT" in value["does_not_prove"]
+    assert value["record_count"] > 0 and "TRACE_AS_ACCEPTED_AT_RUN_END" in value["scope"]
 
 
 def test_no_token_no_brief(server):

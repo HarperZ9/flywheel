@@ -5,7 +5,8 @@ verifier read it back (gateway_run_outcome). The verifier's import closure
 must stay free of the live worker modules, so the words both sides agree on
 live here and nowhere else.
 """
-SCHEMA = "flywheel.run-budget/v1"
+SCHEMA_V1 = "flywheel.run-budget/v1"   # named its codes list with the older name
+SCHEMA = "flywheel.run-budget/v2"
 #: The limits a run can stop on. wall_time is enforced by the process-tree
 #: deadline and only recorded by the budget.
 TRIPS = ("model_calls", "tool_actions", "usage_tokens", "cost_micros",
@@ -14,5 +15,7 @@ TRIPS = ("model_calls", "tool_actions", "usage_tokens", "cost_micros",
 SIGNALS = ("rate_limit", "quota", "billing", "auth", "overloaded")
 #: The limit signal reads English phrasing only: an error in another language,
 #: or worded another way, is not seen.
-DOES_NOT_PROVE = ("NOT_A_PROVIDER_INVOICE", "UNREPORTED_USAGE_NOT_COUNTED",
-                  "LIMIT_SIGNAL_IS_A_PHRASE_HEURISTIC", "LIMIT_SIGNAL_READS_ENGLISH_ONLY")
+#: What the budget record covers: usage the harness metered and the provider
+#: reported, and limit signals found by matching English phrases in output.
+SCOPE = ("HARNESS_METERED_USAGE", "PROVIDER_REPORTED_USAGE_COUNTED",
+         "LIMIT_SIGNAL_BY_PHRASE_MATCH", "LIMIT_SIGNAL_ENGLISH_PHRASES")

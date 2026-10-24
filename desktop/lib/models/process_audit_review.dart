@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'json_pointer_locator.dart';
 import 'process_audit_packet_upload.dart';
+import 'scope_field.dart';
 export 'process_audit_packet_upload.dart';
 
 part 'process_audit_verification.dart';
@@ -11,13 +12,16 @@ part 'process_audit_gateway_effect_coverage.dart';
 final _sha256 = RegExp(r'^[0-9a-f]{64}$');
 
 class ProcessAuditReviewResult {
-  static const schemaName = 'flywheel.incident-sim-process-audit-review/v1';
+  static const schemaName = 'flywheel.incident-sim-process-audit-review/v2';
+  static const schemaNameV1 = 'flywheel.incident-sim-process-audit-review/v1';
   final ProcessAuditSource? source;
   final ProcessAuditVerification verification;
   final ProcessAuditDeclaredAccess declaredAccess;
   final GatewayEffectOfflineReview? gatewayEffect;
   final List<ProcessAuditSourcePointer> sourcePointers;
-  final List<String> limitations;
+  /// What the review covers: a v2 review's `scope` list, or a v1 review's
+  /// list under the older key.
+  final List<String> scope;
   final String assessment, semanticVerification;
   final String? errorCode, errorMessage;
 
@@ -27,7 +31,7 @@ class ProcessAuditReviewResult {
     required this.declaredAccess,
     this.gatewayEffect,
     required this.sourcePointers,
-    required this.limitations,
+    required this.scope,
     this.assessment = '',
     this.semanticVerification = 'UNVERIFIABLE',
     this.errorCode,
@@ -41,7 +45,7 @@ class ProcessAuditReviewResult {
           verification: const ProcessAuditVerification.empty(),
           declaredAccess: const ProcessAuditDeclaredAccess.unknown(),
           sourcePointers: const [],
-          limitations: const [],
+          scope: const [],
         );
 
   factory ProcessAuditReviewResult.fromJson(
@@ -69,7 +73,12 @@ class ProcessAuditReviewResult {
       _map(json['declared_access']),
       verification?.accessVerdict ?? '',
     );
-    if (json['schema'] != schemaName ||
+    final legacy = json['schema'] == schemaNameV1;
+    final scopeKey = scopeKeyFor(legacy: legacy);
+    final otherKey = legacy ? kScopeKey : kLegacyScopeKey;
+    if ((json['schema'] != schemaName && !legacy) ||
+        json.containsKey(otherKey) ||
+        (legacy && declaredAccess?.scope.isNotEmpty == true) ||
         source == null ||
         source.sha256 != upload.sha256 ||
         source.byteLength != upload.byteLength ||
@@ -96,7 +105,7 @@ class ProcessAuditReviewResult {
       declaredAccess: declaredAccess,
       gatewayEffect: gatewayEffect,
       sourcePointers: List.unmodifiable(pointers),
-      limitations: List.unmodifiable(_strings(json['does_not_prove'])),
+      scope: List.unmodifiable(_strings(json[scopeKey])),
     );
   }
 

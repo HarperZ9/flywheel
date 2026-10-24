@@ -52,7 +52,7 @@ def test_lenses_match_source_projection_directly_and_do_not_mutate_it():
         "claim_id": "claim-1", "statement": "Claim",
         "depends_on": [], "receipt_refs": ["receipt.json"],
         "receipt_state": "MATCH", "verdict": "FAIL",
-        "does_not_prove": "success"}]}, genesis["event_sha256"])
+        "scope": "success"}]}, genesis["event_sha256"])
     source = reduce_events([genesis, claim])
     frozen = deepcopy(source)
     keys = ("journey_ref", "event_head_sha256", "fact_ids", "claim_ids",

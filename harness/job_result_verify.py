@@ -25,6 +25,7 @@ from ._vendor import superstack as ss
 from .ed25519_verify import Ed25519Error, verify as ed_verify
 from . import job_result_receipt as jr
 from .pysyft_job_hash import JobHashError, submission_hash
+from .scope import has_both
 from .signer.statement import key_id_for
 
 MATCH, DRIFT, UNVERIFIABLE = "MATCH", "DRIFT", "UNVERIFIABLE"
@@ -137,8 +138,9 @@ def verify(envelope, *, public_key_hex, job_dir=None, results=None, nonce=None,
         if envelope.get("schema") != jr.ENVELOPE_SCHEMA:
             checks["envelope"] = ["envelope_schema"]
         body = envelope["body"]
-        if body.get("schema") != jr.SCHEMA or tuple(body.get("does_not_prove", ())) != jr.DOES_NOT_PROVE:
-            checks["schema"] = ["schema_or_limits"]
+        fixed = jr.scope_for(body.get("schema"))
+        if fixed is None or tuple(body.get(fixed[0], ())) != fixed[1] or has_both(body):
+            checks["schema"] = ["schema_or_scope"]
         checks["job"] = _job(body, job_dir) if job_dir is not None else None
         checks["approval"] = _approval(body, reviewers)
         checks["superstack"] = _superstack(body)
@@ -153,7 +155,7 @@ def verify(envelope, *, public_key_hex, job_dir=None, results=None, nonce=None,
     return {"verdict": verdict, "failed": failed, "missing_inputs": missing,
             "checks_run": sorted(k for k, v in checks.items() if v is not None),
             "attestation": UNVERIFIABLE, "attestation_reason": jr.ATTESTATION_GAP,
-            "does_not_prove": list(jr.DOES_NOT_PROVE)}
+            "scope": list(jr.SCOPE)}
 
 
 def main(argv=None) -> int:

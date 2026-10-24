@@ -115,7 +115,8 @@ def test_preflight_not_found_is_bounded_to_configured_scope():
     })
 
     assert found["status"] == "found_in_searched_sources"
-    assert "not_found does not mean never discussed" in found["does_not_prove"]
+    assert "not_found covers the searched sources only" in found["scope"]
+    assert found["schema"] == "flywheel.context-memory-preflight/v2"
 
 
 def test_legacy_found_current_status_is_reported_as_searched_sources():

@@ -23,10 +23,10 @@ SCHEMA = "flywheel.shipped-item/v1"
 ROUTES = ("machine", "person", "unchecked")
 LANE_TO_ROUTE = {"A": "machine", "H": "person", "UNVERIFIABLE": "unchecked"}
 HOLD_ON_COMPLETION_ABOVE = 0.5
-DOES_NOT_PROVE = (
-    "A route says which kind of check an item went through, not that the check was "
-    "right. Shares are weighted by the size each source reports; reviewer minutes "
-    "are self-logged.")
+SCOPE = (
+    "A route names the kind of check an item went through; the check's correctness "
+    "is its own record. Shares are weighted by the size each source reports; "
+    "reviewer minutes are self-logged.")
 
 
 @dataclass(frozen=True)

@@ -28,6 +28,7 @@ import pytest
 
 from harness import lane_tool_policy as policy
 from harness.lanes_registry import LANES
+from harness.scope import scope_list
 
 ROOT = Path(__file__).resolve().parents[1]
 ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
@@ -82,7 +83,7 @@ def test_the_relay_submodule_descriptor_and_expectation_agree():
     descriptor = json.loads((ROOT / "packaging" / "bundled-lanes" / "relay.json").read_text(
         encoding="utf-8"))
     assert (descriptor["version"], descriptor["source"]["commit"]) == (version, commit)
-    text = " ".join(descriptor["does_not_prove"])
+    text = " ".join(scope_list(descriptor))
     assert "relay 0.6.0" in text and "relay 0.4.0" not in text
     assert "no shell, bisect or git child starts" in text
     if shutil.which("git") is None or not (ROOT / ".git").exists():

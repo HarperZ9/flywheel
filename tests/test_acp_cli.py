@@ -204,7 +204,7 @@ def test_allow_all_is_the_flag_that_drops_the_boundary(agent_script, tmp_path):
     assert decisions[0]["context"]["allowed"] is True
 
 
-def test_the_limits_of_the_record_are_a_command_of_their_own(capsys):
+def test_the_scope_of_the_record_is_a_command_of_its_own(capsys):
     assert main(["--limits"]) == 0
     printed = capsys.readouterr().out
     assert printed.strip().startswith("- ")

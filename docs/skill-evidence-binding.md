@@ -8,7 +8,8 @@ authenticate the evaluator.
 ## Bind actual producer evidence
 
 `POST /api/skills/bind` accepts a `lesson` object, an `evidence` object, and
-optional `bound_at`. Supply the complete `flywheel.verified-bench/v1` object
+optional `bound_at`. Supply the complete `flywheel.verified-bench/v2` object (a v1 object is still
+accepted)
 emitted by `harness.verified_bench.run_benchmark` or returned as `bench` by
 `POST /api/bench/run`. A few passing flags or a made-up benchmark digest are
 insufficient. The bind route never executes the supplied `gate_cmd`.
@@ -21,7 +22,7 @@ well formed; gate references must be nonblank. All current attempts must report
 `gate_pass: true`. A proposal digest is not a check of proposal contents: the
 producer document does not retain those contents.
 
-For `flywheel.trace-regression/v1` evidence, additionally supply `prior_bench`
+For `flywheel.trace-regression/v2` evidence (or a v1 report), additionally supply `prior_bench`
 and `current_bench`. Both must be complete producer documents. The report must
 reproduce exactly from them, with the same tasks, endpoints, seeds and gate
 commands. Current failures are rejected even when a summary calls FAIL → FAIL
@@ -33,7 +34,8 @@ directly. These restrictions affect skill binding, not benchmark execution.
 
 ## What the stored row and response mean
 
-New rows use `flywheel.skill-gate/v2`. They retain lesson/source digests and a
+New rows use `flywheel.skill-gate/v3`, and their `scope` names what the row
+covers. Sealed v2 rows still verify with their own stored text. They retain lesson/source digests and a
 compact projection with task identities, endpoints, seeds, attempt outcomes,
 proposal digests, and hashed command/reference strings. They omit command and
 proposal contents. Identifiers may still be private; inspect them before sharing.
@@ -55,7 +57,7 @@ the existing `skills` and `count` fields and adds `assurance` keyed by
 `gate_sha256`. Legacy v1 rows with matching seals remain readable and retain
 their exact stored payloads; their separate assurance verdict is `UNVERIFIED`
 with `source_binding: LEGACY_NOT_VALIDATED`. They are never silently resealed
-as v2. Tampered or malformed rows still refuse to load. Registry and roadmap
+as a newer version. Tampered or malformed rows still refuse to load. Registry and roadmap
 counts are stored bindings, not counts of independently evaluated skills.
 The desktop consumes these list/count fields without a v1-specific parser.
 

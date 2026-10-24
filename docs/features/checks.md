@@ -14,7 +14,7 @@ from harness.checks import run
 
 receipt = run("recompute", 125, {"expr": "a ^ b", "inputs": {"a": 74, "b": 51}})
 receipt.verdict   # "FAIL": 74 XOR 51 is 121
-receipt.to_dict() # schema flywheel.check-receipt/v1
+receipt.to_dict() # schema flywheel.check-receipt/v2
 ```
 
 ## The seven checks
@@ -30,7 +30,9 @@ receipt.to_dict() # schema flywheel.check-receipt/v1
 | `differential` | `{"outputs": [[input, output], ...]}` recorded from the candidate | `reference` (an expression over `x`, same evaluator as recompute), `inputs` (the fuzz set) | a fuzz input has no recorded output, or an output differs from the reference exactly; 3 and 3.0 differ |
 
 Every receipt carries the verdict (PASS, FAIL or UNVERIFIABLE), a code, a
-reason, the sha256 of the subject and of the spec, and a `does_not_prove` line.
+reason, the sha256 of the subject and of the spec, and a `scope` line: a pass
+shows the subject has the checked structure or value, and its meaning is a
+separate review.
 A missing input (schema, page, expression or machine) gives UNVERIFIABLE. A
 check that raises gives UNVERIFIABLE with code `check_error`. Both cases block a
 pass.

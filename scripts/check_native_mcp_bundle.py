@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 from desktop.tool.installed_payload_binding import _normalize_relative_path
-from scripts.build_native_mcp_bundle import manifest, frozen_identity
+from scripts.build_native_mcp_bundle import (BINDING_SCHEMA, BINDING_SCHEMA_V1, frozen_identity,
+                                             manifest)
 from scripts.check_frozen_articulate import _json
 from scripts.check_frozen_tool_mcp import check
 from scripts.native_mcp_payload import safe_name, VERSION
@@ -50,7 +51,7 @@ def extract_checked(archive, output, version, *, dev=False):
         if config != manifest(version, dev=dev):
             raise ValueError('native manifest launch or permission boundary differs')
         binding = _json(z.read('payload-binding.json').decode('utf-8'))
-        if (binding.get('schema') != 'flywheel.native-mcp-bundle/v1'
+        if (binding.get('schema') not in (BINDING_SCHEMA, BINDING_SCHEMA_V1)
                 or binding.get('version') != version or binding.get('same_installer_engine') is not True
                 or binding.get('mode') != ('development' if dev else 'release')):
             raise ValueError('native payload binding identity differs')
@@ -88,10 +89,11 @@ def qualify(archive, version, *, dev=False, work_root=None):
     with tempfile.TemporaryDirectory(prefix='flywheel-native-mcp-', dir=work_root) as folder:
         executable = extract_checked(archive, Path(folder) / 'payload', version, dev=dev)
         result = check(executable, version)
-    return {'schema': 'flywheel.native-mcp-qualification/v1', 'status': 'PASS',
+    return {'schema': 'flywheel.native-mcp-qualification/v2', 'status': 'PASS',
             'archive_sha256': hashlib.sha256(Path(archive).read_bytes()).hexdigest(),
             'version': version, 'profile_check': result,
-            'does_not_prove': ['client installation', 'marketplace approval', 'external build attestation']}
+            'scope': ['the archive extracted with the bound engine bytes and launch manifest',
+                      'the extracted engine passed the tool profile check on this runner']}
 
 
 if __name__ == '__main__':

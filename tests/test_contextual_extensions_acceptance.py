@@ -27,7 +27,7 @@ CONTRACTS = {
     "data_only": True,
 }
 PACK = {
-    "schema": "flywheel.domain-pack/v1",
+    "schema": "flywheel.domain-pack/v2",
     "pack_id": "pack_physics_basic",
     "version": "1.0.0",
     "domain_id": "physics",
@@ -46,7 +46,7 @@ PACK = {
                         "output_bytes": 1000, "time_seconds": 10},
     "public_metadata_policy": "public-safe",
     "limitations": ["data only"],
-    "does_not_prove": "admission is not certification",
+    "scope": "admission checks the manifest shape and bindings; certification is a separate step",
     "owner": "m@example.org",
     "review_due_at": "2027-08-22",
 }

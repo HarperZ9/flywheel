@@ -35,9 +35,9 @@ def test_the_preregs_own_range_example_reproduces():
 
 
 def test_the_range_estimate_never_reads_as_a_replicate_sd():
-    joined = " ".join(sd_from_range(2.7, 2)["does_not_prove"])
-    assert "NOT_PROVES_A_REPLICATE_SD" in joined
-    assert "NOT_HALF_THE_RANGE" in joined
+    joined = " ".join(sd_from_range(2.7, 2)["scope"])
+    assert "RANGE_DERIVED_SIGMA" in joined
+    assert "D2_CONVERSION" in joined
 
 
 def test_an_unsupported_n_is_refused_rather_than_extrapolated():
@@ -64,9 +64,10 @@ def test_three_replicates_give_the_sample_sd():
     assert out["sd"] == pytest.approx(0.1, abs=1e-9)     # n-1 denominator
 
 
-def test_the_between_seed_result_states_what_it_does_not_cover():
-    joined = " ".join(between_seed_sd([1.0, 2.0, 3.0])["does_not_prove"])
-    assert "NOT_PROVES_STABILITY_ACROSS_ENVIRONMENTS" in joined
+def test_the_between_seed_result_states_its_scope():
+    out = between_seed_sd([1.0, 2.0, 3.0])
+    assert out["schema"] == "flywheel.statistics/v2"
+    assert "ONE_PIPELINE_ONE_MACHINE" in " ".join(out["scope"])
 
 
 # --- the clustered bootstrap ------------------------------------------------
@@ -105,11 +106,11 @@ def test_correlated_clusters_widen_the_interval():
     assert width(wide) > width(tight)
 
 
-def test_the_bootstrap_says_it_does_not_carry_the_primary_component():
+def test_the_bootstrap_scope_names_within_pass_variance():
     clusters = {f"c{i}": [i] for i in range(4)}
     joined = " ".join(cluster_bootstrap(clusters, _mean, draws=50,
-                                        seed=0)["does_not_prove"])
-    assert "NOT_PROVES_BETWEEN_SEED_COVERAGE" in joined
+                                        seed=0)["scope"])
+    assert "WITHIN_PASS_VARIANCE" in joined
 
 
 # --- the declared MDE -------------------------------------------------------
@@ -152,8 +153,8 @@ def test_an_impossible_discordant_count_is_refused():
 
 
 def test_every_mde_carries_the_null_warning():
-    joined = " ".join(mcnemar_mde(60, 20)["does_not_prove"])
-    assert "NOT_PROVES_AN_EFFECT_IS_ABSENT" in joined
+    joined = " ".join(mcnemar_mde(60, 20)["scope"])
+    assert "DESIGN_SENSITIVITY" in joined
 
 
 # --- the prospective planner ------------------------------------------------
@@ -258,6 +259,6 @@ def test_an_unreachable_target_refuses_at_the_cap():
 
 def test_the_plan_names_its_dependence_on_the_basis():
     out = mcnemar_plan(0.25, recorded_discordant_fraction=0.5)
-    joined = " ".join(out["does_not_prove"])
-    assert "NOT_PROVES_THE_NEXT_RUN_MATCHES_THE_BASIS" in joined
+    joined = " ".join(out["scope"])
+    assert "PLANNED_ON_RECORDED_DISCORDANCE" in joined
     assert out["discordance_basis"]["recorded_discordant_fraction"] == 0.5

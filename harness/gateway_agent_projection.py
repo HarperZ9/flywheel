@@ -5,22 +5,34 @@ import re
 
 from .evidence_json import canonical_sha256
 from .gateway_secret_validation import validate_no_raw_secrets
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 
-SCHEMA = "flywheel.gateway-agent-projection/v1"
+SCHEMA = "flywheel.gateway-agent-projection/v2"
+SCHEMA_V1 = "flywheel.gateway-agent-projection/v1"
+SCHEMAS = (SCHEMA, SCHEMA_V1)
 OMISSIONS = ["PRIVATE_CONTENT", "CREDENTIAL_VALUES", "UPSTREAM_OUTPUT_LIMITS"]
-LIMITS = ["NOT_SEMANTIC_TRUTH", "NOT_UNLIMITED_TOOL_OUTPUT",
-          "ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED"]
+#: What a projection covers: the trace as recorded, tool output within the
+#: recorder's bounds, and the accepted prefix until the run completes.
+SCOPE = ["TRACE_AS_RECORDED", "TOOL_OUTPUT_BOUNDED",
+         "ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED"]
+#: The v1 vocabulary, kept so stored v1 projections still validate.
+SCOPE_V1 = ["NOT_SEMANTIC_TRUTH", "NOT_UNLIMITED_TOOL_OUTPUT",
+            "ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED"]
 
 
 def projection(binding: dict, state: str, count: int, head: str,
-               *, runtime: dict | None = None, reason: str | None = None) -> dict:
+               *, runtime: dict | None = None, reason: str | None = None,
+               schema: str = SCHEMA) -> dict:
     if state not in {"running", "completed", "failed", "cancelled"}:
         raise ValueError("invalid trace state")
-    value = {"schema": SCHEMA, "operation_ref": binding["operation_ref"],
+    if schema not in SCHEMAS:
+        raise ValueError("invalid trace projection")
+    v1 = schema == SCHEMA_V1
+    value = {"schema": schema, "operation_ref": binding["operation_ref"],
         "journey_ref": binding["journey_ref"], "state": state,
         "trace_ref": binding["trace_ref"], "record_count": count,
         "trace_head_sha256": head, "omissions": list(OMISSIONS),
-        "does_not_prove": list(LIMITS)}
+        LEGACY_SCOPE_KEY if v1 else SCOPE_KEY: list(SCOPE_V1 if v1 else SCOPE)}
     if runtime is not None:
         value["runtime"] = runtime_facts(runtime)
     if reason is not None:
@@ -52,7 +64,7 @@ def validate_projection(value: dict, binding: dict) -> None:
             or type(head) is not str or re.fullmatch(r"[0-9a-f]{64}", head) is None):
         raise ValueError("invalid trace projection")
     expected = projection(binding, value.get("state"), count, head,
-                          reason=value.get("reason"))
+                          reason=value.get("reason"), schema=value.get("schema"))
     if "runtime" in value:
         facts = value["runtime"]
         if type(facts) is not dict or set(facts) != {"python", "system", "architecture"}:

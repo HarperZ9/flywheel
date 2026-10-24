@@ -268,14 +268,12 @@ def main() -> int:
     parser.add_argument("--expected-version", required=True)
     parser.add_argument("--receipt", type=Path, required=True)
     args = parser.parse_args()
-    receipt = {"schema": "flywheel.frozen-gateway-smoke/v1", "verdict": "HOLD",
+    receipt = {"schema": "flywheel.frozen-gateway-smoke/v2", "verdict": "HOLD",
                "expected_version": args.expected_version,
-               "does_not_prove": ["installer integration", "clean OS compatibility",
-                                  "Flutter UI rendering", "native identity registration",
-                                  "Relay model-backed task execution",
-                                  "live screen capture or model perception",
-                                  "Studio semantic correctness or hardware playback",
-                                  "production Bulletin posting"]}
+               "scope": ["the frozen gateway build started on loopback on this runner and enforced its local token",
+                         "its public documents, native routes and receipt transport answered the smoke requests",
+                         "the bundled lanes, Relay status, Studio and context memory smokes ran against synthetic fixtures",
+                         "Bulletin calls went to a local test board"]}
     try:
         check(args.executable.resolve(), args.expected_version, receipt)
         receipt["verdict"] = release_verdict(receipt)

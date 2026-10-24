@@ -180,14 +180,14 @@ def test_disagreement_records_both_verdicts_so_it_can_be_investigated():
     assert "PASS" in r.stdout_excerpt and "FAIL" in r.stdout_excerpt
 
 
-def test_an_undecided_cross_check_says_it_does_not_prove_the_predicate():
+def test_an_undecided_cross_check_records_the_disagreement():
     class _Liar(IndependentZarankiewiczOracle):
         def check(self, cert):
             valid, why, cov = super().check(cert)
             return (not valid), "inverted", cov
 
     r = cross_check(ZarankiewiczOracle(), _Liar(), _cert(7, 7, FANO_EDGES), None)
-    assert "NOT_PROVES_PREDICATE" in r.does_not_prove
+    assert "CHECKER_DISAGREEMENT_RECORDED" in r.scope
 
 
 def test_an_unverifiable_from_either_side_propagates_as_unverifiable():

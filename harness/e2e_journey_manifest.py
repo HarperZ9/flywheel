@@ -15,7 +15,8 @@ from typing import Any
 from harness.cross_harness_artifacts import validate_path_component
 
 MANIFEST_SCHEMA = "flywheel.product-e2e-journey/v1"
-RUN_SCHEMA = "flywheel.product-e2e-run/v1"
+RUN_SCHEMA_V1 = "flywheel.product-e2e-run/v1"   # named its list with the older name
+RUN_SCHEMA = "flywheel.product-e2e-run/v2"
 
 IMPLEMENTED_RUNTIME_KINDS = frozenset({"cli_process", "mcp_stdio"})
 FUTURE_RUNTIME_KINDS = frozenset({

@@ -37,7 +37,8 @@ from __future__ import annotations
 from harness.evidence_json import canonical_sha256, strict_load_json
 from harness.workstream import Obligation, Workstream, WorkstreamError
 
-AUDIT_SCHEMA = "flywheel.workstream.audit/v1"
+AUDIT_SCHEMA = "flywheel.workstream.audit/v2"
+AUDIT_SCHEMA_V1 = "flywheel.workstream.audit/v1"
 
 AUDITED = "audited"
 STALE = "stale"
@@ -81,22 +82,23 @@ def _reasons(workstream: Workstream, reached: tuple[str, ...]) -> dict[str, list
     return surface
 
 
-def _caveat(counts: dict[str, int], stale: list[str], unaudited: list[str]) -> list[str]:
+def _scope(counts: dict[str, int], stale: list[str], unaudited: list[str]) -> list[str]:
     """Derived from what the surface holds. Never written by a caller."""
     lines = [
-        "a recorded reading says a person read the statement; it does not say the "
-        "reading was right, and nothing here compares a statement to its source",
-        "a reading pins the statement, its check kind, and its environment, and "
-        "says nothing about the obligations beneath it",
+        "a recorded reading says a person read the statement; the reading's "
+        "correctness stays with that person, and comparing a statement to its "
+        "source happens outside this record",
+        "a reading pins the statement, its check kind, and its environment; the "
+        "obligations beneath it are pinned by the workstream digest",
     ]
     if counts["delegated"]:
         lines.append(
             f"{counts['delegated']} of {counts['reached']} obligations under the goal "
-            "are delegated and were never on the surface")
+            "are delegated and stay off the surface")
     if stale:
         lines.append(
-            f"{len(stale)} statement(s) changed after they were read, so the earlier "
-            f"reading is not carried forward: {', '.join(stale)}")
+            f"{len(stale)} statement(s) changed after they were read, so each needs "
+            f"a fresh reading: {', '.join(stale)}")
     if unaudited:
         lines.append(f"{len(unaudited)} statement(s) on the surface have no recorded reading")
     return lines
@@ -150,7 +152,7 @@ def audit_surface(workstream: Workstream,
         "counts": counts,
         "stale": stale,
         "unaudited": unread,
-        "does_not_prove": _caveat(counts, stale, unread),
+        "scope": _scope(counts, stale, unread),
     }
 
 

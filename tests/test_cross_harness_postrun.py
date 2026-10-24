@@ -222,7 +222,7 @@ def test_postrun_cli_writes_json_and_markdown_without_running_providers(tmp_path
 
     assert code == 0
     data = json.loads(out.read_text(encoding="utf-8"))
-    assert data["schema"] == "harness.cross-harness-postrun-comparison/v1"
+    assert data["schema"] == "harness.cross-harness-postrun-comparison/v2"
     assert data["decision"] == "completed_comparison"
     text = md.read_text(encoding="utf-8")
     assert "# Cross-harness post-run comparison" in text

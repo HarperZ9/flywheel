@@ -28,8 +28,10 @@ from typing import Any
 from harness.cross_harness_input_refs import classify_reference
 from harness.cross_harness_manifest import PILOT_TASKS
 from harness.cross_harness_oracles import _CHECKERS
+from harness.scope import scope_list
 
-SCHEMA = "flywheel.task_set_executability/v1"
+SCHEMA = "flywheel.task_set_executability/v2"
+SCHEMA_V1 = "flywheel.task_set_executability/v1"
 VERDICTS = ("TASK_SET_MEASURABLE", "TASK_SET_PARTIAL", "TASK_SET_BLOCKED")
 _UNPROVISIONABLE = ("input_missing", "input_reference_invalid", "input_escapes_root")
 _UNSCORABLE = ("no_oracle", "checker_", "fixture_missing", "pilot_typed_input")
@@ -136,10 +138,10 @@ def evaluate_task_set(root: Path, task_set_path: Path) -> dict[str, Any]:
         "counts": counts,
         "registered_checkers": sorted(_CHECKERS),
         "tasks": rows,
-        "does_not_prove": [
-            "A provisionable task is not a task a provider will answer well.",
-            "A scorable task is not a scored task. The score comes from a run.",
-            "An unprovisioned typed reference is declared, not delivered. The attempt "
+        "scope": [
+            "A provisionable task has every declared input resolved; answer quality comes from a run.",
+            "A scorable task has a registered checker and its fixture; the score comes from a run.",
+            "An unprovisioned typed reference is declared and listed; the attempt "
             "launches without that material inside its sealed workspace.",
             "This reads the task set and the tree. It calls no provider and spends nothing.",
         ],
@@ -166,6 +168,6 @@ def render_markdown(record: dict[str, Any]) -> str:
             f"| {row['task_id']} | {yes_no[0]} | {yes_no[1]} "
             f"| {row['provisioned_inputs']}/{row['declared_inputs']} "
             f"| {len(row['unprovisioned_inputs'])} | {blockers} |")
-    lines += ["", "## Limits", ""]
-    lines += ["- " + item for item in record["does_not_prove"]]
+    lines += ["", "## Scope", ""]
+    lines += ["- " + item for item in scope_list(record)]
     return "\n".join(lines) + "\n"

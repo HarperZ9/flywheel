@@ -4,7 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from harness.domain_pack import SCHEMA, run_pack_qa, verify_pack_manifest
+from harness.domain_pack import SCHEMA, SCHEMA_V1, run_pack_qa, verify_pack_manifest
+from harness.scope import LEGACY_SCOPE_KEY
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -37,7 +38,7 @@ def _manifest(**over):
                             "time_seconds": 30},
         "public_metadata_policy": "public-safe fields only",
         "limitations": ["data admission only"],
-        "does_not_prove": "admission is not certification",
+        "scope": "data admission under the declared limits",
         "owner": "maintainers@example.org",
         "review_due_at": "2027-08-22",
     }
@@ -137,7 +138,28 @@ def test_qa_detects_planted_false_accepts_and_reports_denominator():
     assert qa["denominator"] == 2
     assert qa["detected"] == 1
     assert qa["escaped"] == 0
-    assert qa["does_not_prove"]
+    assert qa["schema"] == "flywheel.domain-pack-qa/v2"
+    assert "planted false accepts" in qa["scope"]
+
+
+def test_v1_manifest_is_admitted_with_its_older_key():
+    m = _manifest(schema=SCHEMA_V1)
+    m[LEGACY_SCOPE_KEY] = m.pop("scope")
+    admitted = verify_pack_manifest(m, fixtures_root=FIXTURES)
+    assert admitted["state"] == "data_only"
+    assert run_pack_qa(admitted, [])["denominator"] == 0
+
+
+def test_a_v2_manifest_carrying_the_older_key_is_refused():
+    m = _manifest()
+    m[LEGACY_SCOPE_KEY] = "older key beside scope"
+    with pytest.raises(ValueError):
+        verify_pack_manifest(m, fixtures_root=FIXTURES)
+
+
+def test_a_v1_manifest_carrying_scope_is_refused():
+    with pytest.raises(ValueError):
+        verify_pack_manifest(_manifest(schema=SCHEMA_V1), fixtures_root=FIXTURES)
 
 
 def test_qa_reports_escaped_false_accepts():

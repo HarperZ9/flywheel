@@ -1,4 +1,6 @@
-$schema = "flywheel.installed-launch-acceptance/v1"
+$schema = "flywheel.installed-launch-acceptance/v2"
+# v1 receipts carried the older limit list; both versions are accepted.
+$acceptedSchemas = @("flywheel.installed-launch-acceptance/v2", "flywheel.installed-launch-acceptance/v1")
 $assertionIds = @(
   "H01_app_exe_exists", "H02_engine_exe_exists_under_install_root", "H03_installer_payload_files_when_expected", "H04_start_menu_shortcut_targets_app_exe",
   "H05_desktop_shortcut_optional_or_targets_app_exe", "H06_uninstall_registry_appid_singleton_or_access_denied", "H07_protocol_registration_supported_or_explicit_unsupported", "H08_port_precheck_refuses_foreign_gateway",
@@ -86,7 +88,7 @@ function Test-ReceiptSemantics($Receipt) {
 function Test-InstalledLaunchReceipt($ReceiptPath, $ExpectedRunId, $ExpectedSource) {
   if (!(Test-Path -LiteralPath $ReceiptPath)) { throw "Installed-launch receipt missing after zero exit: $ReceiptPath" }
   $receipt = Read-JsonFile $ReceiptPath
-  Assert-True ((Get-RequiredProperty $receipt "schema") -eq $schema) "Installed-launch receipt schema mismatch"
+  Assert-True ($acceptedSchemas -contains (Get-RequiredProperty $receipt "schema")) "Installed-launch receipt schema mismatch"
   Assert-True ((Get-RequiredProperty $receipt "complete") -eq $true) "Installed-launch receipt is not complete"
   Assert-True ((Get-RequiredProperty $receipt "run_id") -eq $ExpectedRunId) "Installed-launch receipt run_id is stale or mismatched"
   if (![string]::IsNullOrWhiteSpace($ExpectedSource)) { Assert-True ((Get-RequiredProperty $receipt "source_commit_expected") -eq $ExpectedSource) "Installed-launch source commit mismatch" }

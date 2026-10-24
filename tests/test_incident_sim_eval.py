@@ -74,7 +74,8 @@ def test_complete_matching_trace_separates_checked_from_claimed_scores():
     }
     assert result["checked_scores"][0]["name"] == "incident_sim_checked"
     assert result["checked_scores"][0]["value"] == "MATCH"
-    assert result["does_not_prove"]
+    assert result["schema"] == "flywheel.incident-sim-evaluation/v2"
+    assert any("deterministic fixture" in item for item in result["scope"])
 
 
 def test_known_wrong_rehashed_final_state_cannot_pass_from_claimed_success():

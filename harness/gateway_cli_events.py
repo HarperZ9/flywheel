@@ -194,4 +194,4 @@ class NativeEvents:
         return {'final': self.final, 'model_observed': self.model,
             'execution_mode': 'native_cli_session', 'native_tool_calls': len(self.calls),
             'omissions': sorted(self.omissions),
-            'steps': [], 'does_not_prove': ['NOT_SEMANTIC_TRUTH', 'NOT_PROVIDER_SESSION_RESUME']}
+            'steps': [], 'scope': ['TRACE_AS_RECORDED', 'SINGLE_CLI_SESSION']}

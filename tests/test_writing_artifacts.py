@@ -14,7 +14,7 @@ PROJECT = "wpr_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 def test_artifact_refs_are_private_opaque_and_owner_scoped(tmp_path):
     store = WritingArtifactStore(tmp_path / "state")
     value = {
-        "schema": "flywheel.writing-project-brief/v1",
+        "schema": "flywheel.writing-project-brief/v2",
         "project_ref": PROJECT,
         "mode": "nonfiction",
         "form": "essay",
@@ -25,7 +25,7 @@ def test_artifact_refs_are_private_opaque_and_owner_scoped(tmp_path):
         "voice_contract": {"style_ref": "voice_rules"},
         "source_packet_ref": "packet_main",
         "writing_profile": "nonfiction",
-        "does_not_prove": ["source truth"],
+        "scope": ["source truth"],
     }
 
     record = store.write_json(OWNER, PROJECT, "brief", "brief", value)

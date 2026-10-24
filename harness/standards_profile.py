@@ -7,9 +7,16 @@ from .standards_schema import (
     APPLICABILITY_FIELDS, BINDING_BASES, BINDING_REVIEWS, Collector,
     DISCLOSURE_TIERS, EFFECTIVE_FIELDS, EVIDENCE_FIELDS, EVIDENCE_STATUSES,
     EXEC_KEYS, INSTRUMENT_FIELDS, INSTRUMENT_KINDS, ISSUER_ROLES,
-    PROFILE_SCHEMA, PROVENANCE_FIELDS, REQUIREMENT_FIELDS, REVIEW_STATUSES,
-    ROOT_FIELDS, SOURCE_STATUSES, VALIDATION_SCHEMA, is_sha256, parse_date,
+    PROFILE_SCHEMA, PROFILE_SCHEMA_V1, PROFILE_SCOPE_KEYS, PROVENANCE_FIELDS,
+    REQUIREMENT_FIELDS, REVIEW_STATUSES, ROOT_FIELDS, SCOPE_KEY, SOURCE_STATUSES,
+    VALIDATION_SCHEMA, is_sha256, parse_date,
 )
+
+
+def profile_scope_key(profile: object) -> str | None:
+    """The scope key a profile's schema version uses, or None for an unknown schema."""
+    schema = profile.get("schema") if isinstance(profile, dict) else None
+    return PROFILE_SCOPE_KEYS.get(schema) if isinstance(schema, str) else None
 
 
 def _reject_unknown(obj: dict[str, Any], allowed: set[str], path: str,
@@ -101,11 +108,13 @@ def _validate_required(obj: dict[str, Any], fields: set[str], path: str,
 
 def _validate_profile(profile: dict[str, Any], c: Collector) -> None:
     _scan_executable(profile, "$", c)
-    _reject_unknown(profile, ROOT_FIELDS, "$", c)
-    _validate_required(profile, ROOT_FIELDS, "$", c)
-    if profile.get("schema") != PROFILE_SCHEMA:
-        c.error("$.schema", "schema", "expected flywheel.standards-profile/v1")
-    for key in ("profile_id", "title", "version", "owner", "does_not_prove"):
+    scope_key = profile_scope_key(profile) or SCOPE_KEY
+    _reject_unknown(profile, ROOT_FIELDS | {scope_key}, "$", c)
+    _validate_required(profile, ROOT_FIELDS | {scope_key}, "$", c)
+    if profile_scope_key(profile) is None:
+        c.error("$.schema", "schema",
+                f"expected {PROFILE_SCHEMA} or {PROFILE_SCHEMA_V1}")
+    for key in ("profile_id", "title", "version", "owner", scope_key):
         _expect_string(profile, key, "$", c)
 
     instrument = _expect_dict(profile, "instrument", "$", c)
@@ -177,7 +186,7 @@ def _validate_profile(profile: dict[str, Any], c: Collector) -> None:
     if applicability:
         _validate_selectors(applicability, "$.applicability", c)
 
-    _validate_requirements(profile.get("requirements"), c)
+    _validate_requirements(profile.get("requirements"), c, scope_key)
 
 
 def _validate_selectors(value: object, path: str, c: Collector) -> None:
@@ -190,7 +199,7 @@ def _validate_selectors(value: object, path: str, c: Collector) -> None:
         _expect_str_list(value, key, path, c)
 
 
-def _validate_requirements(value: object, c: Collector) -> None:
+def _validate_requirements(value: object, c: Collector, scope_key: str) -> None:
     if not isinstance(value, list) or not value:
         c.error("$.requirements", "type", "expected non-empty requirement list")
         return
@@ -200,15 +209,15 @@ def _validate_requirements(value: object, c: Collector) -> None:
         if not isinstance(req, dict):
             c.error(path, "type", "expected object")
             continue
-        _reject_unknown(req, REQUIREMENT_FIELDS, path, c)
-        _validate_required(req, REQUIREMENT_FIELDS, path, c)
+        _reject_unknown(req, REQUIREMENT_FIELDS | {scope_key}, path, c)
+        _validate_required(req, REQUIREMENT_FIELDS | {scope_key}, path, c)
         req_id = _expect_string(req, "requirement_id", path, c)
         if req_id:
             if req_id in seen:
                 c.error(f"{path}.requirement_id", "duplicate",
                         "duplicate requirement_id")
             seen.add(req_id)
-        for key in ("requirement_ref", "summary", "does_not_prove"):
+        for key in ("requirement_ref", "summary", scope_key):
             _expect_string(req, key, path, c)
         if not is_sha256(req.get("text_hash")):
             c.error(f"{path}.text_hash", "hash", "expected sha256")
@@ -254,7 +263,8 @@ def validate_profile_object(profile: object) -> dict[str, Any]:
         "assessment": "not_assessed",
         "errors": c.errors,
         "gaps": c.gaps,
-        "does_not_prove": (
-            "Profile validation checks data shape only; it does not prove "
-            "legal compliance, source truth, certification, or approval."),
+        "scope": (
+            "Profile validation checks the profile's data shape: fields, enums, "
+            "hashes and dates. Legal effect, source truth, certification and "
+            "approval are reviewed outside this registry."),
     }

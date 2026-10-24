@@ -79,7 +79,7 @@ def test_route_reviews_service_desk_artifacts_without_local_path_leak(tmp_path):
     assert body["environment_id"] == "service-desk-incident/v1"
     assert body["artifact_dir_ref"] == ref
     report = body["report"]
-    assert report["schema"] == "service-desk-incident-env-review/v1"
+    assert report["schema"] == "service-desk-incident-env-review/v2"
     assert report["verification"]["observed_state"] == "pass"
     assert report["verification"]["artifact_dir_ref"] == ref
     assert "artifact_dir" not in report

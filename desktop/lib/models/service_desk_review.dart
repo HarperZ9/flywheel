@@ -49,7 +49,8 @@ class ServiceDeskReviewResult {
 }
 
 class ServiceDeskReview {
-  static const reportSchema = 'service-desk-incident-env-review/v1';
+  static const reportSchema = 'service-desk-incident-env-review/v2';
+  static const reportSchemaV1 = 'service-desk-incident-env-review/v1';
   static const verificationSchema =
       'service-desk-incident-env-artifact-verification/v1';
 
@@ -104,7 +105,8 @@ class ServiceDeskReview {
     final external = _map(layers['externally_trusted_evidence']);
     final limits = _strings(report['limits']);
 
-    final complete = report['schema'] == reportSchema &&
+    final complete = (report['schema'] == reportSchema ||
+            report['schema'] == reportSchemaV1) &&
         verification['schema'] == verificationSchema &&
         claimed.isNotEmpty &&
         recomputed.isNotEmpty &&

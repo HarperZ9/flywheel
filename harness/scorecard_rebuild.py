@@ -29,12 +29,12 @@ from harness.cross_harness_run_seal import SCORECARD_SCHEMA as SCHEMA
 
 RECEIPT_SCHEMA = "harness.cross-harness-attempt-receipt/v1"
 
-DOES_NOT_PROVE = [
+SCOPE = [
     "A rebuilt scorecard reports the attempts that were sealed. An attempt the "
     "run never reached leaves no receipt, so it is absent here rather than failed.",
-    "Verifying a receipt says its row and its artifacts still agree with the "
-    "hashes written when the attempt ended. It says nothing about whether the "
-    "answer inside was right.",
+    "A verified receipt means its row and its artifacts still agree with the "
+    "hashes written when the attempt ended; grading the answer inside is the "
+    "oracle's record.",
 ]
 
 
@@ -93,4 +93,4 @@ def rebuild(run_root: Path) -> dict[str, Any]:
     return {"schema": SCHEMA, "rows": rows, "source_tree_state": run_tree_state(root),
             "rebuilt_from": {"run_root": root.as_posix(), "receipts_found": len(rows) + len(excluded),
                              "receipts_verified": len(rows), "excluded": excluded},
-            "does_not_prove": DOES_NOT_PROVE}
+            "scope": SCOPE}

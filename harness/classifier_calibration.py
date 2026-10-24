@@ -103,7 +103,8 @@ def fit_temperature(cases: list[dict]) -> dict:
         "status": "diagnostic_fit", "temperature": chosen,
         "raw_log_loss": _loss(rows, 1), "fitted_log_loss": _loss(rows, chosen),
         "calibration_examples": len(rows), "input_sha256": canonical_sha256(cases),
-        "does_not_prove": "Calibration on unseen workflow outcomes or authority to select.",
+        "scope": ("A temperature fitted on this temperature split's log loss; a "
+                  "diagnostic fit that grants no selection authority."),
     }
 
 
@@ -176,5 +177,7 @@ def select_threshold(cases: list[dict], *, thresholds: list[float] | None = None
         "calibration_examples": len(rows), "max_error": max_error, "alpha": alpha,
         "bound": "one-sided Clopper-Pearson with fixed-grid Bonferroni correction",
         "candidates": candidates, "input_sha256": canonical_sha256(cases),
-        "does_not_prove": "Representative data, iid cases, deployment safety, or authorization.",
+        "scope": ("Clopper-Pearson error bounds over these calibration cases, valid "
+                  "when they are iid and representative; a screening result that "
+                  "grants no authorization."),
     }

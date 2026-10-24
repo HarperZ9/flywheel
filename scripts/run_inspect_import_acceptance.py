@@ -120,7 +120,7 @@ def main() -> int:
                'score_edit_control_assessment': edited_report['assessment'],
                'score_edit_history_state': edited_score['score_history']['state'],
                'semantic_verification': report['semantic_verification'],
-               'does_not_prove': 'Model capability, independent scoring or governance compliance.'}
+               'scope': 'The Inspect log imported with its reported scores, and the invalidation and score-edit controls were assessed.'}
     (root / 'acceptance.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
     print(json.dumps(receipt, sort_keys=True))
     return 0

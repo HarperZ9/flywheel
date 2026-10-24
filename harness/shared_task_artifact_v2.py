@@ -12,10 +12,11 @@ PRE_ORACLE_STATES = {
     "oracle_state": "not_run",
     "receipt_state": "not_emitted",
 }
+#: Closed scope vocabulary (participant contract v2): what a pre-oracle attempt covers.
 LIMITATION_TEXT = {
-    "does_not_prove_provider_superiority": "This attempt does not prove provider superiority.",
-    "does_not_prove_cross_harness_comparison": "This attempt does not prove a Codex-vs-Flywheel comparison.",
-    "does_not_prove_final_no_failure_completion": "This pre-oracle artifact does not prove final no-failure completion.",
+    "scope_single_provider_attempt": "This attempt covers one provider's run; provider superiority is outside it.",
+    "scope_single_harness_attempt": "This attempt covers one harness; a Codex-vs-Flywheel comparison is outside it.",
+    "scope_pre_oracle_state": "This pre-oracle artifact covers the attempt before the oracle ran; final no-failure completion is outside it.",
 }
 _REQUIRED_FIELDS = {
     "task_id", "input_sha256s", "raw_prompt_sha256", "tool_policy_sha256",
@@ -37,9 +38,9 @@ _ARTIFACT_BINDINGS = {
     "receipt_binding": ("receipt_path", "receipt_sha256"),
 }
 _LIMITATION_CLAIMS = {
-    "provider_superiority_boundary": "does_not_prove_provider_superiority",
-    "cross_harness_comparison_boundary": "does_not_prove_cross_harness_comparison",
-    "final_completion_boundary": "does_not_prove_final_no_failure_completion",
+    "provider_superiority_boundary": "scope_single_provider_attempt",
+    "cross_harness_comparison_boundary": "scope_single_harness_attempt",
+    "final_completion_boundary": "scope_pre_oracle_state",
 }
 _FINAL_VALUES = {"pass", "passed", "verified", "completed", "complete", "success", "succeeded"}
 _COMPARISON_TEXT = re.compile(
@@ -106,7 +107,7 @@ def render_shared_task_markdown_v2(report: dict[str, Any]) -> str:
         "- pre_oracle_attempt_state: pre_oracle_attempt_facts from scorecard_core.orthogonal_states",
         "- raw_artifact_binding: artifact_binding from raw_artifact_path to scorecard_core.raw_artifact_sha256",
         "- receipt_binding: artifact_binding from receipt_path to scorecard_core.receipt_sha256",
-        "", "## Closed limitations",
+        "", "## Closed scope",
     ]
     lines.extend(f"- {item}: {LIMITATION_TEXT[item]}" for item in limitations)
     return "\n".join(lines) + "\n"
@@ -120,10 +121,10 @@ def _producer_template() -> list[str]:
         "- receipt_state: {receipt_state}", "- pre_oracle_failure_modes: {pre_oracle_failure_modes}", "",
         "## Claim bindings", "- pre_oracle_attempt_state: pre_oracle_attempt_facts from scorecard_core.orthogonal_states",
         "- raw_artifact_binding: artifact_binding from raw_artifact_path to scorecard_core.raw_artifact_sha256",
-        "- receipt_binding: artifact_binding from receipt_path to scorecard_core.receipt_sha256", "", "## Closed limitations",
-        "- does_not_prove_provider_superiority: This attempt does not prove provider superiority.",
-        "- does_not_prove_cross_harness_comparison: This attempt does not prove a Codex-vs-Flywheel comparison.",
-        "- does_not_prove_final_no_failure_completion: This pre-oracle artifact does not prove final no-failure completion.",
+        "- receipt_binding: artifact_binding from receipt_path to scorecard_core.receipt_sha256", "", "## Closed scope",
+        "- scope_single_provider_attempt: This attempt covers one provider's run; provider superiority is outside it.",
+        "- scope_single_harness_attempt: This attempt covers one harness; a Codex-vs-Flywheel comparison is outside it.",
+        "- scope_pre_oracle_state: This pre-oracle artifact covers the attempt before the oracle ran; final no-failure completion is outside it.",
     ]
 
 
@@ -158,7 +159,7 @@ def _fixture_codes(fixture: dict[str, Any], malformed) -> None:
         raise malformed("markdown_render_profile_invalid")
     contract = fixture.get("participant_contract")
     verifier = fixture.get("verifier_contract")
-    if not isinstance(contract, dict) or contract.get("schema") != "harness.cross-harness-fixture.shared-task-artifact-v2-participant/v1":
+    if not isinstance(contract, dict) or contract.get("schema") != "harness.cross-harness-fixture.shared-task-artifact-v2-participant/v2":
         raise malformed("participant_contract_invalid")
     required = {"schema", "context_path", "fixture_path", "produces_json_fields", "json_serialization", "claim_bindings", "markdown_template"}
     if (

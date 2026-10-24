@@ -47,27 +47,25 @@ from harness.certificates.independent import (                     # noqa: E402
 )
 from harness.certificates.zarankiewicz import ZarankiewiczOracle   # noqa: E402
 
-SCHEMA = "flywheel.fault-injection-audit/v1"
+# v2 (2026-10-23): the receipt names what it covers in `scope`.
+SCHEMA = "flywheel.fault-injection-audit/v2"
+SCHEMA_V1 = "flywheel.fault-injection-audit/v1"
 DEFAULT_SEED = 20260727
 DEFAULT_N_GOOD = 30
 
-DOES_NOT_PROVE = [
-    "J measured on injected faults does not bound the false-positive rate on "
-    "the natural candidate distribution: a policy that has learned to game "
-    "the checker produces a different error profile than a hand-written "
-    "mutation, and this battery says nothing about that profile.",
-    "the fault classes are the ones we thought to write, so a fault class "
-    "nobody imagined here is not measured; absence of a slip on this "
-    "battery is not proof of resistance to an unenumerated attack.",
-    "several fault classes exercise structural validation code SHARED "
-    "between the primary and held-out checker (both call the same "
-    "_well_formed / well_formed / general_position helpers), so agreement "
-    "there is not independent confirmation; only 'added_k22' (zarankiewicz) "
-    "and 'undercounted_crossing_total' (crossing) exercise the genuinely "
-    "separate predicate algorithms the two checkers were written twice for.",
-    "an exact symbolic oracle should score J=1 on an exact predicate; a "
-    "perfect score here validates this audit instrument, not that the "
-    "oracle resists attacks harder than the ones it was asked to withstand.",
+SCOPE = [
+    "J is measured on injected faults; the false-positive rate on the natural "
+    "candidate distribution, and on a policy that has learned to game the "
+    "checker, is a separate measurement with its own error profile.",
+    "the battery measures the fault classes written here; a fault class "
+    "nobody imagined here stays outside this measurement.",
+    "only 'added_k22' (zarankiewicz) and 'undercounted_crossing_total' "
+    "(crossing) exercise the separate predicate algorithms the two checkers "
+    "were written twice for; the other fault classes exercise structural "
+    "validation shared by both checkers (_well_formed / well_formed / "
+    "general_position), so agreement there counts as one confirmation.",
+    "a perfect J on an exact predicate validates this audit instrument "
+    "against the faults it was asked to withstand.",
 ]
 
 
@@ -148,7 +146,7 @@ def run_audit(n_good: int = DEFAULT_N_GOOD, seed: int = DEFAULT_SEED) -> dict:
         "n_good_per_family": n_good,
         "families": {"zarankiewicz": zk_fam, "rectilinear_crossing": cr_fam},
         "slipped_through": zk_slips + cr_slips,
-        "does_not_prove": DOES_NOT_PROVE,
+        "scope": SCOPE,
     }
 
 

@@ -27,22 +27,22 @@ def _write(path, value):
 
 
 def _brief():
-    return {"schema": "flywheel.writing-project-brief/v1",
+    return {"schema": "flywheel.writing-project-brief/v2",
         "project_ref": PROJECT, "mode": "nonfiction", "form": "essay",
         "working_title": "Release evidence", "audience": "operators",
         "reader_job": "decide whether the release is safe",
         "author_intent": "bind claims to receipts",
         "voice_contract": {"style_ref": "voice_rules"},
         "source_packet_ref": "packet_main", "writing_profile": "nonfiction",
-        "does_not_prove": ["truth"]}
+        "scope": ["truth"]}
 
 
 def _source_packet():
-    return {"schema": "flywheel.writing-source-packet/v1",
+    return {"schema": "flywheel.writing-source-packet/v2",
         "project_ref": PROJECT, "source_packet_ref": "packet_main",
         "sources": [{"source_id": "src_receipt", "title": "Receipt",
         "origin": "local", "allowed_use": "cite"}],
-        "does_not_prove": ["source truth"]}
+        "scope": ["source truth"]}
 
 
 def _section():
@@ -71,7 +71,7 @@ def test_v2_artifact_shapes_validate_and_reduced_shapes_fail():
         "base_body_sha256": "a" * 64, "coordinate_type": "unicode_codepoint", "start": 0, "end": 4,
         "selected_span_sha256": "b" * 64}
     receipt = {"verdict": "PASS", "failure_reasons": [], "target": target,
-        "replacement_text": "ship", "does_not_prove": "scope is not quality"}
+        "replacement_text": "ship", "scope": "scope is not quality"}
     admission_a = {"coordinate_type": "unicode_codepoint",
         "coordinate_basis": "admitted_lf_text", "input_newline": "lf",
         "stored_newline": "lf", "converted_crlf": False,
@@ -84,41 +84,41 @@ def test_v2_artifact_shapes_validate_and_reduced_shapes_fail():
         "base_body_sha256": "a" * 64, "span_refs": [], "source_refs": []}
     artifacts = [
         (_section(), "section"),
-        ({"schema": "flywheel.writing-revision/v1", "project_ref": PROJECT,
+        ({"schema": "flywheel.writing-revision/v2", "project_ref": PROJECT,
         "section_ref": "sec_recommendation", "revision_ref": rev_a,
         "base_revision_ref": None, "body_ref": "body_a", "body_sha256": "a" * 64,
         "word_count": 2, "author_supplied": True, "scope_refs": [],
-        "text_admission": admission_a, "does_not_prove": ["quality"]}, "revision"),
-        ({"schema": "flywheel.writing-reader-flow-diagnostic/v1",
+        "text_admission": admission_a, "scope": ["quality"]}, "revision"),
+        ({"schema": "flywheel.writing-reader-flow-diagnostic/v2",
         "project_ref": PROJECT, "diagnostic_ref": diag_a,
         "revision_ref": rev_a, "body_sha256": "a" * 64,
         "reader_state_summary": {**authority, "entry_state": "",
         "new_information": [], "exit_state": ""},
         "units": [],
         "problems": [], "revision_cards": [], "source_grounding": [],
-        "does_not_prove": ["quality"]}, "diagnostic"),
-        ({"schema": "flywheel.writing-scoped-revision/v1",
+        "scope": ["quality"]}, "diagnostic"),
+        ({"schema": "flywheel.writing-scoped-revision/v2",
         "project_ref": PROJECT, "card_ref": card_a, "diagnostic_ref": diag_a,
         "target": target, "problem": "stale recommendation",
         "goal": "update only the recommendation",
         "must_preserve": ["outside target"], "allowed_operations": ["replace"],
         "forbidden_operations": ["change other sections"], "source_refs": ["src_receipt"],
-        "voice_constraints": "direct", "does_not_prove": ["quality"]}, "card"),
-        ({"schema": "flywheel.writing-revision-candidate/v1",
+        "voice_constraints": "direct", "scope": ["quality"]}, "card"),
+        ({"schema": "flywheel.writing-revision-candidate/v2",
         "project_ref": PROJECT, "candidate_ref": cand_a, "card_ref": card_a,
         "base_revision_ref": rev_a, "candidate_revision_ref": rev_b,
         "candidate_body_ref": "body_b", "candidate_body_sha256": "b" * 64,
         "diff_summary": "updates recommendation", "out_of_scope_changes": [],
         "created_by": "fixture", "scope_receipt": receipt, "text_admission": admission_b,
-        "does_not_prove": ["quality"]}, "candidate"),
-        ({"schema": "flywheel.writing-decision/v1", "project_ref": PROJECT,
+        "scope": ["quality"]}, "candidate"),
+        ({"schema": "flywheel.writing-decision/v2", "project_ref": PROJECT,
         "decision_ref": dec_a, "decision": "accept",
         "section_ref": "sec_recommendation", "candidate_ref": cand_a,
         "candidate_artifact_ref": "candidate_a", "candidate_artifact_sha256": "c" * 64,
         "from_revision_ref": rev_a, "to_revision_ref": rev_b,
         "reason": "author accepted", "scope_verdict": "PASS",
-        "decided_at": NOW, "does_not_prove": ["quality"]}, "decision"),
-        ({"schema": "flywheel.writing-review/v1", "project_ref": PROJECT,
+        "decided_at": NOW, "scope": ["quality"]}, "decision"),
+        ({"schema": "flywheel.writing-review/v2", "project_ref": PROJECT,
         "review_ref": wrev_a, "revision_refs": [rev_b],
         "reader_flow_ref": diag_a, "source_coverage": {"status": "checked",
         "basis": "deterministic", "measurement_status": "checked",
@@ -130,15 +130,15 @@ def test_v2_artifact_shapes_validate_and_reduced_shapes_fail():
         "measurement_status": "checked", "decision_refs": [dec_a]},
         "quality_measurement": {"status": "unmeasured", "basis": "deterministic",
         "measurement_status": "unmeasured", "source_refs": []},
-        "blocking_items": [], "does_not_prove": ["quality"]}, "review"),
-        ({"schema": "flywheel.writing-export/v1", "project_ref": PROJECT,
+        "blocking_items": [], "scope": ["quality"]}, "review"),
+        ({"schema": "flywheel.writing-export/v2", "project_ref": PROJECT,
         "export_ref": wexp_a, "manuscript_ref": "manuscript_a",
         "manuscript_sha256": "d" * 64,
         "included_sections": [{"section_ref": "sec_recommendation",
         "revision_ref": rev_b, "body_sha256": "b" * 64, "order_index": 0}],
         "decision_refs": [dec_a], "review_ref": wrev_a,
         "source_packet_ref": "packet_main", "journey_ref": "jrn_a",
-        "event_head_sha256": "e" * 64, "does_not_prove": ["quality"]}, "export"),
+        "event_head_sha256": "e" * 64, "scope": ["quality"]}, "export"),
     ]
     for artifact, kind in artifacts:
         assert validate_artifact(artifact, kind)["schema"] == artifact["schema"]
@@ -150,7 +150,7 @@ def test_v2_artifact_shapes_validate_and_reduced_shapes_fail():
         validate_artifact({"schema": "flywheel.writing-card/v1",
             "project_ref": PROJECT, "card_ref": "card_old",
             "kind": "revise", "problem_summary": "old", "target": target,
-            "reported_by": "fixture", "does_not_prove": ["quality"]}, "card")
+            "reported_by": "fixture", "scope": ["quality"]}, "card")
 
 
 def test_service_pipeline_persists_v2_review_export_bindings(tmp_path):
@@ -168,16 +168,16 @@ def test_service_pipeline_persists_v2_review_export_bindings(tmp_path):
         revision["revision_ref"], client_request_id="diag")
     diag_artifact = service.artifacts.read_json(
         diag["artifact_ref"], diag["artifact_sha256"], expected_kind="diagnostic")
-    assert diag_artifact["schema"] == "flywheel.writing-reader-flow-diagnostic/v1"
+    assert diag_artifact["schema"] == "flywheel.writing-reader-flow-diagnostic/v2"
     assert diag_artifact["reader_state_summary"]["measurement_status"] == "unmeasured"
     head = _flow(service, diag)["event_head_sha256"]
-    card = {"schema": "flywheel.writing-scoped-revision/v1",
+    card = {"schema": "flywheel.writing-scoped-revision/v2",
         "project_ref": PROJECT, "card_ref": "card_" + "c" * 32,
         "diagnostic_ref": diag_artifact["diagnostic_ref"], "target": _target(revision),
         "problem": "old recommendation", "goal": "switch to release",
         "must_preserve": ["outside target"], "allowed_operations": ["replace"],
         "forbidden_operations": ["change evidence"], "source_refs": ["src_receipt"],
-        "voice_constraints": "direct", "does_not_prove": ["quality"]}
+        "voice_constraints": "direct", "scope": ["quality"]}
     head = _flow(service, service.prepare_card(
         journey, head, card, client_request_id="card"))["event_head_sha256"]
     candidate = service.prepare_candidate(journey, head, PROJECT, "card_" + "c" * 32,
@@ -235,14 +235,14 @@ def test_reject_scope_hold_candidate_records_disposition_without_text_change(tmp
         "base_revision_ref": revision["revision_ref"],
         "base_body_sha256": revision["body_sha256"], "coordinate_type": "unicode_codepoint", "start": 5, "end": 11,
         "selected_span_sha256": sha256_bytes(b"CHANGE")}
-    card = {"schema": "flywheel.writing-scoped-revision/v1",
+    card = {"schema": "flywheel.writing-scoped-revision/v2",
         "project_ref": PROJECT, "card_ref": "card_" + "d" * 32,
         "diagnostic_ref": diag_artifact["diagnostic_ref"],
         "target": target, "problem": "change middle only",
         "goal": "reject out-of-scope candidate", "must_preserve": ["KEEP lines"],
         "allowed_operations": ["replace"], "forbidden_operations": ["change context"],
         "source_refs": ["src_receipt"], "voice_constraints": "direct",
-        "does_not_prove": ["quality"]}
+        "scope": ["quality"]}
     head = _flow(service, service.prepare_card(
         journey, head, card, client_request_id="card"))["event_head_sha256"]
     candidate = service.prepare_candidate(journey, head, PROJECT, "card_" + "d" * 32,

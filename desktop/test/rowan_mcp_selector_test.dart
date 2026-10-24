@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/controllers/gateway_operation_controller.dart';
 import 'package:flywheel_desktop/controllers/rowan_operation_controller.dart';
+import 'package:flywheel_desktop/models/rowan_mcp_catalog.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/rowan_operation_card.dart';
 import 'package:http/http.dart' as http;
@@ -27,7 +29,7 @@ const _selection = {
 };
 
 Map<String, Object?> _catalog() => {
-      'schema': 'flywheel.agent-mcp-catalog/v1',
+      'schema': rowanMcpCatalogSchema,
       'servers': [
         _server('index', 'index.doctor'),
         _server('forum', 'forum.search'),
@@ -49,13 +51,15 @@ Map<String, Object?> _server(String id, String tool) => {
             'network': false,
           },
           'authority_source': 'gateway_catalog_metadata:v1',
-          'does_not_prove': ['metadata does not sandbox code'],
+          kScopeKey: [
+            'catalog authority records the operator-declared tool contract'
+          ],
         },
       ],
     };
 
 Map<String, Object?> _discovery(Map<String, Object?> admission) => {
-      'schema': 'flywheel.agent-mcp-discovery-response/v1',
+      'schema': rowanMcpDiscoveryResponseSchema,
       'mcp_admission': admission,
       'receipt': {
         'server_id': ((admission['servers'] as List).first
@@ -89,6 +93,30 @@ Future<BuildContext> _mount(
 }
 
 void main() {
+  test('v1 and v2 MCP catalogs both parse', () {
+    expect(RowanMcpCatalog.fromJson(_catalog()).options, hasLength(2));
+    final v1 = _catalog()..['schema'] = rowanMcpCatalogSchemaV1;
+    for (final server in v1['servers'] as List) {
+      for (final tool in (server as Map)['tools'] as List) {
+        (tool as Map)
+          ..remove(kScopeKey)
+          ..[kLegacyScopeKey] = ['metadata does not sandbox code'];
+      }
+    }
+    expect(RowanMcpCatalog.fromJson(v1).options, hasLength(2));
+    expect(() => RowanMcpCatalog.fromJson({..._catalog(), 'schema': 'other'}),
+        throwsFormatException);
+  });
+
+  test('v1 and v2 MCP discovery responses both parse', () {
+    final v2 = RowanMcpDiscoveryResponse.fromJson(_discovery(_selection));
+    expect(v2.mcpAdmission['servers'], isNotEmpty);
+    final v1 = _discovery(_selection)
+      ..['schema'] = rowanMcpDiscoveryResponseSchemaV1;
+    expect(RowanMcpDiscoveryResponse.fromJson(v1).receipt['server_id'],
+        'index');
+  });
+
   testWidgets('Rowan MCP selector loads catalog and stores receipt selection',
       (tester) async {
     Map<String, dynamic>? discoveryRequest;

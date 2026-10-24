@@ -78,7 +78,7 @@ def test_replay_drift_rejects_a_real_gain():
 
 def test_verdict_is_preview_with_limits():
     v = _verdict("true_weak_3_epoch")
-    assert v["status"] == "preview" and len(v["does_not_prove"]) == 2
+    assert v["status"] == "preview" and len(v["scope"]) == 2
 
 
 def test_cli_exit_codes(tmp_path, capsys):

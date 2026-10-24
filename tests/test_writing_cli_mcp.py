@@ -14,7 +14,7 @@ def _write_inputs(tmp_path):
     brief = tmp_path / "brief.json"
     sources = tmp_path / "sources.json"
     brief.write_text(json.dumps({
-        "schema": "flywheel.writing-project-brief/v1",
+        "schema": "flywheel.writing-project-brief/v2",
         "project_ref": PROJECT,
         "mode": "nonfiction",
         "form": "essay",
@@ -25,15 +25,15 @@ def _write_inputs(tmp_path):
         "voice_contract": {"style_ref": "voice_rules"},
         "source_packet_ref": "packet_main",
         "writing_profile": "nonfiction",
-        "does_not_prove": ["truth"],
+        "scope": ["truth"],
     }), encoding="utf-8")
     sources.write_text(json.dumps({
-        "schema": "flywheel.writing-source-packet/v1",
+        "schema": "flywheel.writing-source-packet/v2",
         "project_ref": PROJECT,
         "source_packet_ref": "packet_main",
         "sources": [{"source_id": "src_receipt", "title": "Receipt",
                      "origin": "local", "allowed_use": "cite"}],
-        "does_not_prove": ["interpretation"],
+        "scope": ["interpretation"],
     }), encoding="utf-8")
     return brief, sources
 

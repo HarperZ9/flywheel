@@ -111,16 +111,16 @@ def test_append_uses_only_allowlisted_command_types_and_server_time(tmp_path):
 
 @pytest.mark.parametrize("nested", [
     {"claim_id": "claim-unsafe", "statement": "Forged", "depends_on": [],
-     "does_not_prove": "verification", "verdict": "PASS",
+     "scope": "verification", "verdict": "PASS",
      "receipt_refs": ["receipt.json"], "receipt_state": "MATCH"},
     {"claim_id": "claim-unsafe", "statement": "Forged", "depends_on": [],
-     "does_not_prove": "verification", "provider": "remote"},
+     "scope": "verification", "provider": "remote"},
     {"claim_id": "claim-unsafe", "statement": "Forged", "depends_on": [],
-     "does_not_prove": "verification", "error": "raw exception"},
+     "scope": "verification", "error": "raw exception"},
     {"claim_id": "claim-unsafe", "statement": "Forged", "depends_on": [],
-     "does_not_prove": "verification", "path": "C:/private/result"},
+     "scope": "verification", "path": "C:/private/result"},
     {"claim_id": "claim-unsafe", "statement": "", "depends_on": [],
-     "does_not_prove": "verification"},
+     "scope": "verification"},
     {"action_id": "next-1", "kind": "inspect", "description": "Inspect",
      "basis_refs": ["claim-1"], "lifecycle_event": "check_completed"},
 ])
@@ -150,7 +150,7 @@ def test_record_claim_synthesizes_honest_null_verdict_and_receipt_state(tmp_path
     """A client claim supplies facts; the server owns verdict and receipt state."""
     state, evidence, created = _created(tmp_path)
     claim = {"claim_id": "claim-1", "statement": "Candidate is correct",
-        "depends_on": [], "does_not_prove": "candidate behavior"}
+        "depends_on": [], "scope": "candidate behavior"}
     request = {"journey_ref": created["journey_ref"],
         "expected_event_head": created["event_head_sha256"],
         "client_request_id": "claim-1", "command": {
@@ -204,7 +204,7 @@ def test_check_records_a_block_without_candidate_network_or_python_execution(
     grant, _ = _grant("append", advance, state, evidence)
     ack, _ = _route("append", {**advance, "grant_ref": grant}, state, evidence)
     claim = {"claim_id": "claim-1", "statement": "Candidate is correct",
-        "depends_on": [], "does_not_prove": "candidate behavior"}
+        "depends_on": [], "scope": "candidate behavior"}
     record = {"journey_ref": ack["journey_ref"],
         "expected_event_head": ack["event_head_sha256"],
         "client_request_id": "claim-check",

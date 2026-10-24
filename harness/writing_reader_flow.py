@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from .writing_types import WRITING_DOES_NOT_PROVE, sha256_bytes, validate_target
+from .writing_types import SCHEMAS, WRITING_SCOPE, sha256_bytes, validate_target
 
 SOURCE_MARKER = re.compile(r"\[([A-Za-z][A-Za-z0-9_.-]{1,79})\]")
 
@@ -18,7 +18,7 @@ def build_diagnostic(*, project_ref: str, section_ref: str, revision_ref: str,
         for item in grounding if item.get("status") == "unknown_source"]
     basis = f"{revision_ref}:{body_sha256}:deterministic-v2"
     return {
-        "schema": "flywheel.writing-reader-flow-diagnostic/v1",
+        "schema": SCHEMAS["diagnostic"],
         "project_ref": project_ref,
         "diagnostic_ref": f"diag_{sha256_bytes(basis.encode())[:32]}",
         "revision_ref": revision_ref,
@@ -29,7 +29,7 @@ def build_diagnostic(*, project_ref: str, section_ref: str, revision_ref: str,
             "entry_state": "", "new_information": [], "exit_state": ""},
         "units": [], "problems": problems, "revision_cards": [],
         "source_grounding": grounding,
-        "does_not_prove": [WRITING_DOES_NOT_PROVE],
+        "scope": [WRITING_SCOPE],
     }
 
 
@@ -93,5 +93,6 @@ def scope_replacement_plan(base_text: str, candidate_text: str, target: dict) ->
         "failure_reasons": sorted(set(reasons)),
         "target": checked,
         "replacement_text": replacement,
-        "does_not_prove": WRITING_DOES_NOT_PROVE,
+        "scope": ("this plan checks that the candidate changes only the target span "
+                  "of the base text, by prefix, suffix and digest"),
     }

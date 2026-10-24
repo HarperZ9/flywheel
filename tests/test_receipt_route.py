@@ -1,4 +1,4 @@
-"""The route on receipts (flywheel.routed-receipt/v1): which lane produced a result.
+"""The route on receipts (flywheel.routed-receipt/v2): which lane produced a result.
 
 Success criteria:
 - a routed receipt round-trips through its wire form, and the routed digest
@@ -7,8 +7,8 @@ Success criteria:
   refused (digest mismatch), and recomputing the digest after the relabel gives
   a different routed_claim_sha256, so a signature over the original fails;
 - the wrapped receipt's own claim digest is unchanged by routing;
-- lane A adds NOT_PROVES_HUMAN_SIGN_OFF; an UNVERIFIABLE record adds
-  NOT_PROVES_ANY_CHECK_APPLIED;
+- lane A adds MACHINE_REDERIVED_AGAINST_CHECKER; an UNVERIFIABLE record adds
+  NO_LANE_APPLIED_REASON_RECORDED;
 - lane A is refused without an independent checker, for a judgment task, for a
   human-only class, and as the target of an escalation; inputs are exact.
 """
@@ -59,11 +59,24 @@ def test_control_relabeling_a_machine_result_as_signed_is_caught():
     assert relabeled.routed_claim_sha256() != a.routed_claim_sha256()
 
 
-def test_lane_limits_are_derived():
-    a = RoutedReceipt(receipt(), route("A")).does_not_prove()
-    h = RoutedReceipt(receipt(), route("H")).does_not_prove()
-    assert "NOT_PROVES_HUMAN_SIGN_OFF" in a and "NOT_PROVES_HUMAN_SIGN_OFF" not in h
-    assert a[:-1] == receipt().does_not_prove()
+def test_lane_scope_is_derived():
+    a = RoutedReceipt(receipt(), route("A")).scope()
+    h = RoutedReceipt(receipt(), route("H")).scope()
+    lane_a = "MACHINE_REDERIVED_AGAINST_CHECKER"
+    assert lane_a in a and lane_a not in h
+    assert a[:-1] == receipt().scope()
+
+
+def test_a_v1_routed_receipt_still_reads_with_its_limits():
+    from harness.receipt_route import ROUTED_SCHEMA_V1
+    from harness.scope import LEGACY_SCOPE_KEY
+    old = RoutedReceipt(receipt(), route("A"), schema=ROUTED_SCHEMA_V1)
+    wire = old.to_dict()
+    assert wire[LEGACY_SCOPE_KEY][-1] == "NOT_PROVES_HUMAN_SIGN_OFF"
+    back = RoutedReceipt.from_dict(wire)
+    assert back.routed_claim_sha256() == old.routed_claim_sha256()
+    with pytest.raises(ReceiptError):
+        RoutedReceipt.from_dict(dict(wire, scope=wire[LEGACY_SCOPE_KEY]))
 
 
 @pytest.mark.parametrize("change", [{"checker": "partial"}, {"checker": "no"},
@@ -94,13 +107,14 @@ def test_wire_refuses_unknown_schema_and_edited_limits():
     with pytest.raises(ReceiptError):
         RoutedReceipt.from_dict(dict(wire, schema="flywheel.routed-receipt/v0"))
     with pytest.raises(ReceiptError):
-        RoutedReceipt.from_dict(dict(wire, does_not_prove=wire["does_not_prove"][:-1]))
+        RoutedReceipt.from_dict(dict(wire, scope=wire["scope"][:-1]))
 
 
 def test_unverifiable_record():
     rec = unverifiable_record("sha256:" + "d" * 64, route("UNVERIFIABLE", inputs=dict(
         INPUTS, checker="no")), "no checker and no signer")
-    assert rec["does_not_prove"] == ["NOT_PROVES_ANY_CHECK_APPLIED"]
+    assert rec["scope"] == ["NO_LANE_APPLIED_REASON_RECORDED"]
+    assert rec["schema"] == "flywheel.unverifiable-record/v2"
     assert rec["record_sha256"].startswith("sha256:")
     with pytest.raises(ReceiptError):
         unverifiable_record("sha256:x", route("H"), "reason")

@@ -16,7 +16,9 @@ from .evidence_json import canonical_sha256
 SPEC_SCHEMA = "flywheel.subagent-spec/v1"
 RESULT_SCHEMA = "flywheel.subagent-result/v1"
 RUN_SCHEMA = "flywheel.subagent-run/v1"
-SWARM_SCHEMA = "flywheel.subagent-swarm/v1"
+SWARM_SCHEMA_V1 = "flywheel.subagent-swarm/v1"
+SWARM_SCHEMA = "flywheel.subagent-swarm/v2"  # v2 names `scope`
+SWARM_SCHEMAS = (SWARM_SCHEMA_V1, SWARM_SCHEMA)
 
 QUORUM_POLICIES = ("all", "majority", "any")
 MAX_CHILDREN = 8

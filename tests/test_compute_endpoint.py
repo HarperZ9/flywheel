@@ -28,6 +28,7 @@ ce = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ce)
 
 from harness.endpoint import body_digest                            # noqa: E402
+from harness.scope import scope_list                                # noqa: E402
 
 FAMILY = "zarankiewicz"
 CRITERION = "zarankiewicz.z_2_2.v1"
@@ -227,15 +228,15 @@ def test_the_rung_changes_neither_digest(tmp_path):
 
 
 def test_the_family_qualifier_travels_into_the_endpoint(tmp_path):
-    """Section 8 mechanism 1: NOT_PROVES_OPTIMALITY travels with every result.
+    """Section 8 mechanism 1: BOUND_FROM_SUBMITTED_OBJECT travels with every result.
     The prereg names this the single most likely thing to be lost when a result
     is retold, so an endpoint that reported only its own limits would drop
     exactly the clause that matters most."""
     pool, journal, ledger = _complete(tmp_path)
     report = ce.compute(pool, journal, [FAMILY], RUNGS, ledger)
-    joined = " ".join(report["families"][FAMILY]["primary"]["does_not_prove"])
-    assert "NOT_PROVES_OPTIMALITY" in joined
-    assert "NOT_PROVES_CORRECTNESS" in joined      # and its own limits survive
+    joined = " ".join(scope_list(report["families"][FAMILY]["primary"]))
+    assert "BOUND_FROM_SUBMITTED_OBJECT" in joined
+    assert "CERTIFICATE_CHECKED_AGAINST_CRITERION" in joined  # and its own scope survives
 
 
 def test_the_submit_result_carries_the_checkers_qualifiers(tmp_path):
@@ -246,4 +247,4 @@ def test_the_submit_result_carries_the_checkers_qualifiers(tmp_path):
     submit = ce.make_submit(FAMILY, CRITERION, "a" * 64, instances,
                             {task_id: "sha256:" + "0" * 64}, "sha256:" + "e" * 64)
     out = submit(BODIES[1], task_id, RUNGS[0])
-    assert any("NOT_PROVES_OPTIMALITY" in d for d in out["does_not_prove"])
+    assert any("BOUND_FROM_SUBMITTED_OBJECT" in d for d in out["scope"])

@@ -35,7 +35,10 @@ from __future__ import annotations
 import hashlib
 from collections import Counter
 
-SCHEMA = "flywheel.endpoint/v1"
+from .scope import scope_list
+
+SCHEMA = "flywheel.endpoint/v2"
+SCHEMA_V1 = "flywheel.endpoint/v1"
 
 # Verbatim from section 5 of the frozen preregistration, so a reader comparing
 # this module against the document does not have to trust a paraphrase.
@@ -123,12 +126,14 @@ def primary_endpoint(union: dict, rung_ids, submit) -> dict:
             r = submit(rec["body"], task_id, rung)
             verdicts.add(r["verdict_digest"])
             subjects.add(r["subject_digest"])
-            # Section 8 mechanism 1: the family's own qualifiers travel with
-            # EVERY result, into every receipt and every bundle. An endpoint
-            # that reported only its own limits would drop
-            # NOT_PROVES_OPTIMALITY here, which is the exact clause the section
-            # calls the most likely thing to be lost when a result is retold.
-            carried.update(r.get("does_not_prove") or ())
+            # Section 8 mechanism 1: the family's own scope entries travel
+            # with EVERY result, into every receipt and every bundle. An
+            # endpoint that reported only its own scope would drop
+            # BOUND_FROM_SUBMITTED_OBJECT here (the verified object bounds the
+            # optimum from one side; the optimum stays open), which is the
+            # clause the section calls the most likely thing to be lost when a
+            # result is retold, and a retold result would read as optimal.
+            carried.update(scope_list(r))
         row = {"candidate_sha256": sha, "submitted_in_rung_contexts": len(rungs),
                "distinct_verdict_digests": len(verdicts),
                "distinct_subject_digests": len(subjects),
@@ -152,19 +157,18 @@ def primary_endpoint(union: dict, rung_ids, submit) -> dict:
         "n_disagreements": len(disagreements),
         "bodies_under_multiple_instances": multi_instance,
         "met": len(disagreements) == 0 and bool(bodies),
-        # The family's own qualifiers first, verbatim, then this endpoint's.
-        "does_not_prove": sorted(carried) + [
-            "NOT_PROVES_CORRECTNESS: agreement across rung contexts says the "
-            "accept path is a function of the certificate, not that any verdict "
-            "it returned is right.",
-            "NOT_PROVES_ANY_RUNG_IS_BETTER: this endpoint is a count with no "
-            "rate in it and no cross-rung comparison of any kind.",
-            "NOT_PROVES_MORE_THAN_THE_CONSTRUCTION: the accept path takes a "
-            "certificate and an instance and never a rung, and the receipt "
-            "subject excludes model identity by construction. So a pass here "
-            "confirms that nothing leaked a rung into either digest, end to "
-            "end. It is a check that the construction holds, not a discovery "
-            "that rungs happen to agree.",
+        # The family's own scope entries first, verbatim, then this endpoint's.
+        "scope": sorted(carried) + [
+            "ACCEPT_PATH_RUNG_INDEPENDENT: each body received the same verdict "
+            "and subject digests in every rung context, so the accept path is "
+            "a function of the certificate and the instance; each verdict's "
+            "correctness rests on the family checker.",
+            "COUNT_ONLY: this endpoint is a count of disagreements, with no "
+            "rate and no cross-rung comparison.",
+            "CONSTRUCTION_CHECK: the accept path takes a certificate and an "
+            "instance and never a rung, and the receipt subject excludes model "
+            "identity by construction. A pass confirms that nothing leaked a "
+            "rung into either digest, end to end: the construction holds.",
         ],
     }
 
@@ -211,7 +215,8 @@ def secondary_per_rung(pools: dict, submit) -> dict:
                 "Qwen-only apart from a single non-Qwen rung",
                 "one backend", "one quantization",
             ],
-            "does_not_prove": [
-                "NOT_PROVES_A_SIZE_TREND: no cross-rung delta is computed here "
-                "and the confounds above are not controlled by this table.",
+            "scope": [
+                "PER_RUNG_TABLE_ONLY: each rung's distribution stands alone; no "
+                "cross-rung delta is computed and the confounds above stay "
+                "uncontrolled.",
             ]}

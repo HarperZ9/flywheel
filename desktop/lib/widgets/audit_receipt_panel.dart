@@ -10,13 +10,15 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../models/scope_field.dart';
 import '../theme/flywheel_theme.dart';
 import 'fw.dart';
 import 'receipt_verify_controls.dart';
 
 class AuditReceiptPanel extends StatefulWidget {
   /// Runs the audit over a parsed work receipt → {reviews, verdict, confidence,
-  /// summary, does_not_prove, receipt, ...} or {error}.
+  /// summary, scope, receipt, ...} or {error}. A v1 audit-run response names
+  /// its scope by the older key.
   final Future<Map<String, dynamic>> Function(Map<String, dynamic> workReceipt)
       onRun;
 
@@ -165,7 +167,7 @@ class _AuditReceiptPanelState extends State<AuditReceiptPanel> {
     final reviews = (_runDoc?['reviews'] as List?) ?? const [];
     final verdict = '${_runDoc?['verdict'] ?? ''}';
     final confidence = '${_runDoc?['confidence'] ?? ''}';
-    final dnp = '${_runDoc?['does_not_prove'] ?? ''}';
+    final scope = scopeText(_runDoc);
     final summary = '${_runDoc?['summary'] ?? ''}';
     final sealHex = '${(_receipt?['seal'] as Map?)?['hex'] ?? ''}';
     return HairlineCard(
@@ -185,9 +187,9 @@ class _AuditReceiptPanelState extends State<AuditReceiptPanel> {
           Text(summary,
               style: TextStyle(fontSize: 12, height: 1.45, color: t.inkSoft)),
         ],
-        if (dnp.isNotEmpty) ...[
+        if (scope.isNotEmpty) ...[
           const SizedBox(height: FwLayout.s3),
-          HonestNull(dnp),
+          HonestNull(scope),
         ],
         const SizedBox(height: FwLayout.s3),
         Divider(height: 1, color: t.hairline),

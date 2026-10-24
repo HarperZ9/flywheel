@@ -6,7 +6,10 @@ import json
 from pathlib import Path
 from typing import Any
 
-SCHEMA = "harness.cross-harness-postrun-intended-matrix/v1"
+SCHEMA = "harness.cross-harness-postrun-intended-matrix/v2"
+# v1 matrices name the scope list with the older key; readers accept both.
+SCHEMA_V1 = "harness.cross-harness-postrun-intended-matrix/v1"
+SCHEMAS = (SCHEMA, SCHEMA_V1)
 ROW_SCHEMA = "harness.cross-harness-task-scorecard/v1"
 
 def _canonical(value: Any) -> bytes:
@@ -57,9 +60,9 @@ def build_intended_matrix(
         "task_ids": list(task_ids), "roles": list(roles), "repetitions": list(range(1, repetitions + 1)),
         "execution_mode": execution_mode, "cache_state": cache_state, "source_commit": source_commit,
         "source_snapshot_sha256": source_snapshot_sha256, "row_schema": row_schema, "cells": cells,
-        "does_not_prove": [
-            "The intent matrix records the pre-run denominator; it does not prove any provider executed.",
-            "SHA-256 values here identify local bytes; they are not authenticity proof by themselves.",
+        "scope": [
+            "The intent matrix records the pre-run denominator: every planned cell, before any provider runs.",
+            "SHA-256 values here identify local bytes.",
         ],
     }
 

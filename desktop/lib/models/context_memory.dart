@@ -1,4 +1,5 @@
 import 'evidence_state.dart';
+import 'scope_field.dart';
 
 part 'context_memory_canon.dart';
 
@@ -6,7 +7,13 @@ const contextMemoryStatusSchema = 'flywheel.context-memory-status/v1';
 const contextMemoryDestinationBindingSchema =
     'flywheel.context-memory-destination-binding/v1';
 const contextMemoryPreflightResultSchema =
+    'flywheel.context-memory-preflight/v2';
+const contextMemoryPreflightResultSchemaV1 =
     'flywheel.context-memory-preflight/v1';
+const contextMemoryPreflightResultSchemas = {
+  contextMemoryPreflightResultSchema,
+  contextMemoryPreflightResultSchemaV1,
+};
 const contextMemoryCaptureResultSchema = 'flywheel.context-memory-capture/v1';
 const _canonContextIngestSchema = 'canon.context-ingest/v1';
 const _validPreflightStatuses = {
@@ -110,7 +117,7 @@ final class ContextMemoryPreflight extends DefensiveModel {
       required this.currentSubmissionHitsOmitted,
       required this.pending,
       required this.coverage,
-      required this.doesNotProve,
+      required this.scope,
       required this.message,
       required List<ParseIssue> parseIssues})
       : super(parseIssues);
@@ -120,13 +127,13 @@ final class ContextMemoryPreflight extends DefensiveModel {
   final int currentSubmissionHitsOmitted;
   final List<ContextMemoryPendingExtraction> pending;
   final ContextMemoryCoverage coverage;
-  final List<String> doesNotProve;
+  final List<String> scope;
 
   factory ContextMemoryPreflight.fromJson(
       Map<String, Object?> json, String expectedProjectRef,
       {String currentNativeId = ''}) {
     final issues = <ParseIssue>[];
-    expectSchema(json, contextMemoryPreflightResultSchema, issues);
+    expectSchemaIn(json, contextMemoryPreflightResultSchemas, issues);
     final project = readText(json, 'project_ref', issues, pattern: _projectRef);
     if (project != expectedProjectRef) {
       addParseIssue(issues, 'project_ref', project);
@@ -150,8 +157,7 @@ final class ContextMemoryPreflight extends DefensiveModel {
             .toList();
     final currentOmitted = hits.length - visibleHits.length;
     final coverage = ContextMemoryCoverage.fromResponse(json, issues);
-    final proof =
-        readStringList(json['does_not_prove'], 'does_not_prove', issues);
+    final scope = readScopeList(json, '', issues);
     return ContextMemoryPreflight._(
         projectRef: project,
         status: status,
@@ -159,7 +165,7 @@ final class ContextMemoryPreflight extends DefensiveModel {
         currentSubmissionHitsOmitted: currentOmitted,
         pending: pending,
         coverage: coverage,
-        doesNotProve: proof,
+        scope: scope,
         message: issues.isEmpty
             ? _preflightMessage(status, visibleHits.length,
                 coverage.pendingCount, coverage.pendingReturned,
@@ -191,8 +197,8 @@ final class ContextMemoryPreflight extends DefensiveModel {
     for (final (index, item) in pending.take(3).indexed) {
       lines.add('pending_extraction[${index + 1}]: ${item.describe()}');
     }
-    if (doesNotProve.isNotEmpty) {
-      lines.add('does_not_prove: ${doesNotProve.take(3).join('; ')}');
+    if (scope.isNotEmpty) {
+      lines.add('scope: ${scope.take(3).join('; ')}');
     }
     final text = lines.join('\n');
     return isSafePublicText(text) ? text : null;

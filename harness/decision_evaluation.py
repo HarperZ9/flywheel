@@ -9,14 +9,23 @@ import math
 import statistics
 
 from .evidence_json import canonical_sha256
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 
-_RESULT_SCHEMA = "flywheel.decision-result/v1"
+# Each decision-result version names its coverage string with its own key. The
+# evaluation and control reports moved to v2 when their list became `scope`.
+_RESULT_SCOPE_KEY = {"flywheel.decision-result/v1": LEGACY_SCOPE_KEY,
+                     "flywheel.decision-result/v2": SCOPE_KEY}
+_RESULT_SCHEMA = "flywheel.decision-result/v2"
+EVALUATION_SCHEMA_V1 = "flywheel.decision-evaluation/v1"
+EVALUATION_SCHEMA = "flywheel.decision-evaluation/v2"
+CONTROL_REPORT_SCHEMA_V1 = "flywheel.decision-control-report/v1"
+CONTROL_REPORT_SCHEMA = "flywheel.decision-control-report/v2"
 _REQUIRED = {"case_id", "declared_choice_ids", "eligible_choice_ids",
              "acceptable_choice_ids", "expect_abstain", "result"}
 _OPTIONAL = {"latency_ms", "cost_usd"}
 _RESULT_KEYS = {"schema", "disposition", "choice_id", "reason_code",
                 "evidence_refs", "request_sha256", "response_sha256",
-                "scorer_ref", "does_not_prove"}
+                "scorer_ref"}
 _REASON_CODES = {"selected", "abstain", "empty_eligibility",
                  "response_oversize", "malformed_json", "duplicate_key",
                  "invalid_shape", "unknown_choice", "ineligible_choice",
@@ -28,10 +37,10 @@ _KINDS = ("correct_selections", "wrong_selections", "ineligible_selections",
 _HEX = set("0123456789abcdef")
 _DIGEST0 = "0" * 64
 _DIGEST1 = "1" * 64
-_CONTROL_DISCLAIMERS = [
-    "deterministic controls only, not model quality",
-    "no provider call, latency measurement, or competitive benchmark",
-    "label truth and authorization remain external to this report",
+_CONTROL_SCOPE = [
+    "deterministic synthetic controls exercising the scorer's counting",
+    "offline run with fixed fixtures; no provider calls or timings",
+    "labels are the fixtures' own; authorization stays with the caller",
 ]
 
 
@@ -70,7 +79,9 @@ def _valid_response_digest(value, disposition, reason):
 
 
 def _valid_result(result):
-    if type(result) is not dict or set(result) != _RESULT_KEYS:
+    schema = result.get("schema") if type(result) is dict else None
+    key = _RESULT_SCOPE_KEY.get(schema) if type(schema) is str else None
+    if key is None or set(result) != _RESULT_KEYS | {key}:
         return False
     try:
         canonical_sha256(result)
@@ -78,8 +89,6 @@ def _valid_result(result):
         return False
     disposition, choice = result["disposition"], result["choice_id"]
     reason = result["reason_code"]
-    if result["schema"] != _RESULT_SCHEMA:
-        return False
     if type(reason) is not str or reason not in _REASON_CODES:
         return False
     if disposition == "selected":
@@ -95,8 +104,8 @@ def _valid_result(result):
             and _valid_response_digest(
                 result["response_sha256"], disposition, reason)
             and type(result["scorer_ref"]) is str
-            and type(result["does_not_prove"]) is str
-            and bool(result["does_not_prove"]))
+            and type(result[key]) is str
+            and bool(result[key]))
 
 
 def _case(case):
@@ -181,7 +190,7 @@ def evaluate_cases(cases: list[dict]) -> dict:
         "abstention_recall": counts["expected_abstentions"],
     }
     return {
-        "schema": "flywheel.decision-evaluation/v1",
+        "schema": EVALUATION_SCHEMA,
         "input_sha256": input_sha256,
         "input_sha256_error": input_sha256_error,
         "counts": counts,
@@ -203,12 +212,13 @@ def evaluate_cases(cases: list[dict]) -> dict:
             "method": "caller_supplied_measurements; p95_nearest_rank",
         },
         "cases": rows,
-        "does_not_prove": [
-            "independence or semantic truth of caller-supplied labels",
-            "caller-supplied result authenticity or mounted gateway admission",
-            "authenticity of caller-supplied latency and cost measurements",
-            "model quality unless cases contain actual held-out model outputs",
-            "authorization, safe execution, or superiority to another router",
+        "scope": [
+            "counts and rates over the supplied cases against caller-supplied labels",
+            "result shape and digests checked; results, labels and gateway "
+            "admission are taken as supplied",
+            "latency and cost summarize caller-supplied measurements",
+            "model quality only when cases hold held-out model outputs",
+            "proposal scoring only; authorization and execution stay with the caller",
         ],
     }
 
@@ -224,7 +234,7 @@ def _control_result(choice, *, reason_code=None):
         "request_sha256": _DIGEST0,
         "response_sha256": _DIGEST1,
         "scorer_ref": "synthetic-control",
-        "does_not_prove": "synthetic control fixture only",
+        "scope": "synthetic control fixture only",
     }
 
 
@@ -256,8 +266,8 @@ def synthetic_control_report() -> dict:
         ]),
     }
     return {
-        "schema": "flywheel.decision-control-report/v1",
+        "schema": CONTROL_REPORT_SCHEMA,
         "methodology": "deterministic synthetic controls; no provider calls",
         "controls": controls,
-        "does_not_prove": list(_CONTROL_DISCLAIMERS),
+        "scope": list(_CONTROL_SCOPE),
     }

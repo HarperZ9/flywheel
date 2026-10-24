@@ -127,7 +127,7 @@ def handle(request, workspace: Path, state: Path):
                     return fail(-32602, 'status accepts no arguments')
                 value = tool_result({'profile': 'local-evidence', 'version': installed_version(),
                     'model_calls': False, 'network': False, 'exec': False, 'write': False,
-                    'does_not_prove': ['full client availability', 'model or endpoint health']})
+                    'scope': ['this local-evidence profile answering on this connection']})
             elif name == 'receipt.verify_inclusion':
                 value = tool_result(verify_receipt_inclusion(args, ledger=lambda: receipt_ledger(state)))
             else:

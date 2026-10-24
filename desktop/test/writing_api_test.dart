@@ -89,14 +89,14 @@ Map<String, dynamic> _proposal(String id, [String kind = 'revision']) => {
     };
 
 Map<String, dynamic> _project() => {
-      'schema': 'flywheel.writing-project-view/v1',
+      'schema': 'flywheel.writing-project-view/v2',
       'project_ref': 'wpr_a',
       'journey_ref': 'jrn_a',
       'event_head_sha256': 'h1',
       'source_packet': {
         'source_packet_ref': 'packet',
         'sources': [],
-        'does_not_prove': []
+        'scope': []
       },
       'sections': [
         {'section_ref': 'sec_intro', 'heading': 'Intro', 'current_body': 'Body'}
@@ -107,5 +107,5 @@ Map<String, dynamic> _project() => {
       'decisions': [],
       'reviews': [],
       'exports': [],
-      'does_not_prove': []
+      'scope': []
     };

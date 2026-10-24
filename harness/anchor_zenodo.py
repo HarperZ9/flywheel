@@ -25,6 +25,7 @@ import hashlib
 
 from . import zenodo_deposit
 from .receipt_fields import canonical
+from .scope import scope_list
 from .zenodo_deposit import DepositError
 
 _FILENAME = "signed-head.json"
@@ -98,17 +99,17 @@ def deposit_anchor(request, anchor: dict, *, token: str, metadata: dict,
         sandbox=sandbox, publish=publish)
     result["anchor_digest"] = anchor.get("anchor_digest")
     result["digest_hex"] = anchor.get("digest_hex")
-    result["does_not_prove"] = list(result.get("does_not_prove") or []) + does_not_prove()
+    result["scope"] = scope_list(result) + scope()
     return result
 
 
-def does_not_prove() -> list[str]:
-    """What binding the DOI to the digest still does not establish."""
+def scope() -> list[str]:
+    """What binding the DOI to the digest covers."""
     return [
-        "NOT_PROVES_THE_TIMESTAMP: binding shows the DOI's file hashes to the "
-        "anchor digest. Whether that digest was timestamped, and when, is the "
-        "Bitcoin leg's separate proof; a DOI alone orders nothing.",
-        "NOT_PROVES_ONE_DEPOSITOR: anyone holding the same signed head can deposit "
-        "the same bytes and get their own DOI. The binding ties bytes to a digest, "
-        "not a DOI to a sole author.",
+        "DOI_BOUND_TO_DIGEST: the binding shows the DOI's file hashes match the "
+        "anchor digest. Whether and when that digest was timestamped is the "
+        "Bitcoin leg's separate proof.",
+        "BYTES_BOUND_TO_DIGEST: the binding ties bytes to a digest. Anyone "
+        "holding the same signed head can deposit the same bytes under their "
+        "own DOI.",
     ]

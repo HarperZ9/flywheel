@@ -196,8 +196,8 @@ def test_packing_for_export_strips_a_local_only_signature():
     signed = hmac_sign(r, b"local-secret", key_id="local")
     packed = pack_for_export(signed.to_dict())
     assert packed["signature"] is None
-    assert "LOCAL_SIGNATURE_STRIPPED" in packed["receipt"]["does_not_prove"]
-    assert "NOT_THIRD_PARTY_VERIFIABLE_SIGNATURE" in packed["receipt"]["does_not_prove"]
+    assert "LOCAL_SIGNATURE_STRIPPED" in packed["receipt"]["scope"]
+    assert packed["receipt"]["extra_scope"] == ["LOCAL_SIGNATURE_STRIPPED"]
 
 
 def test_packing_for_export_keeps_an_ed25519_signature():

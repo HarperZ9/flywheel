@@ -12,15 +12,15 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 
-from .overrides import OUTCOME_SCHEMA
-from .records import DECISION_SCHEMA, HOLD_SCHEMA, HoldStore
+from .overrides import OUTCOME_SCHEMAS
+from .records import DECISION_SCHEMA, HOLD_SCHEMAS, HoldStore
 
 OWNER_DECISIONS = ("APPROVED_ONCE", "REJECTED", "TERMINATED")
 OTHER_ALARM_SHARE = 0.10
-DOES_NOT_PROVE = (
+SCOPE = (
     "Counts what owners decided and what later checks recorded. An override rate "
-    "does not show whether a rule is wrong; outcomes checked by the decider are "
-    "self-checks and are counted apart.")
+    "measures how often owners disagreed with a rule; outcomes checked by the "
+    "decider are self-checks and are counted apart.")
 
 
 def _rule_keys(hold: dict) -> list:
@@ -36,9 +36,9 @@ def _empty() -> dict:
 
 
 def _index(recs: list):
-    holds = {r["seal"]["hex"]: r for r in recs if r.get("schema") == HOLD_SCHEMA and "seal" in r}
+    holds = {r["seal"]["hex"]: r for r in recs if r.get("schema") in HOLD_SCHEMAS and "seal" in r}
     decisions = [r for r in recs if r.get("schema") == DECISION_SCHEMA]
-    outcomes = {r["decision_record_sha256"]: r for r in recs if r.get("schema") == OUTCOME_SCHEMA}
+    outcomes = {r["decision_record_sha256"]: r for r in recs if r.get("schema") in OUTCOME_SCHEMAS}
     return holds, decisions, outcomes
 
 
@@ -86,7 +86,7 @@ def summarize(recs: list) -> dict:
             "other_alarm": bool(other_share is not None and other_share > OTHER_ALARM_SHARE),
             "uncoded_alarm": codes["uncoded"] > 0,
             "outcomes_recorded": len(outcomes),
-            "does_not_prove": DOES_NOT_PROVE}
+            "scope": SCOPE}
 
 
 def report(home) -> dict:

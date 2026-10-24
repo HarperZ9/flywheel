@@ -1,9 +1,29 @@
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
+import 'scope_field.dart';
+
 part 'plan_run_result.dart';
 
-const planRunLimitations = <String>[
+const planRunResultSchema = 'flywheel.plan-run-result/v3';
+const planRunResultSchemaV2 = 'flywheel.plan-run-result/v2';
+const planRunReceiptSchema = 'flywheel.plan-run-receipt/v3';
+const planRunReceiptSchemaV2 = 'flywheel.plan-run-receipt/v2';
+
+/// What a v3 Plan run receipt covers.
+const planRunScope = <String>[
+  'the binding seals this PRP, prompt and forged gate list by digest',
+  'the workflow run passed the plan workflow contract with countersign',
+  'the denominator counts forged gates, checkable gates and recorded '
+      'workflow steps; forged gates executed is zero',
+  'the receipt binds journey, operation, arguments, authorization, grant '
+      'and execution plan by digest',
+  'the digests are local and unsigned; off-host provenance is a separate '
+      'record',
+];
+
+/// The v2 receipt's list, kept byte for byte so stored v2 results still read.
+const planRunLimitationsV2 = <String>[
   'forged gates ran or passed',
   'workflow output is correct',
   'provider billing or side effects',
@@ -26,15 +46,15 @@ final _prpFields = _f('schema goal task_type intent_sha256 '
     'well_posed validation_gates prompt');
 final _bindingFields = _f('schema prp_id prp prp_sha256 prompt '
     'prompt_sha256 gates gates_sha256 seal_sha256 binding_sha256');
-final _receiptFields = _f('schema plan_run_ref binding journey_ref '
+// The receipt fields other than its scope list, whose key depends on the
+// receipt version: the older key in v2, `scope` in v3.
+final _receiptBaseFields = _f('schema plan_run_ref binding journey_ref '
     'expected_event_head client_request_id operation_sha256 arguments_sha256 '
     'authorization_sha256 grant_ref_sha256 execution_plan_sha256 '
     'workflow endpoint workflow_sha256 profile_sha256 effective_system_sha256 '
-    'workflow_run_sha256 workflow_status denominator does_not_prove '
-    'receipt_sha256');
-final _receiptPlain = _f('schema plan_run_ref binding journey_ref '
-    'client_request_id workflow endpoint workflow_status denominator '
-    'does_not_prove');
+    'workflow_run_sha256 workflow_status denominator receipt_sha256');
+final _receiptPlainBase = _f('schema plan_run_ref binding journey_ref '
+    'client_request_id workflow endpoint workflow_status denominator');
 Never _invalid() => throw const FormatException('Invalid Plan run contract');
 void _reject(bool value) => value ? _invalid() : null;
 void _validateUnicode(String value) {

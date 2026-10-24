@@ -141,12 +141,12 @@ def arms_for_pool(pool, accept, held_out_accept) -> dict:
             "random_vs_best_self_scored": with_mde(
                 paired(arms["random_of_k"], arms["best_of_k_self_scored"])),
         },
-        "does_not_prove": [
-            "NOT_PROVES_UPLIFT_FROM_A_SELF_SCORED_ARM: an arm whose selector is "
-            "the function that scores it cannot lose, and the recorded refusal "
-            "of that comparison is the point rather than an omission.",
-            "NOT_PROVES_A_SIZE_TREND: these are per-rung numbers and no "
-            "cross-rung difference is computed anywhere in this file.",
+        "scope": [
+            "UPLIFT_FROM_HELD_OUT_ARM_ONLY: uplift is read from the held-out "
+            "comparison; the self-scored arm is scored by its own selector, so "
+            "its comparison is recorded as a refusal on purpose.",
+            "PER_RUNG_NUMBERS: these are per-rung numbers; this file computes "
+            "no cross-rung difference.",
         ],
     }
 
@@ -180,7 +180,7 @@ def compute(pool_root: Path, journal: Path, families, rungs) -> dict:
             # with the arms as well as with the receipts, because "our model
             # found a drawing with 103 crossings" compresses naturally and
             # wrongly into "our model found the crossing number".
-            "family_not_proven": list(type(primary).family_not_proven),
+            "family_scope": list(type(primary).family_scope),
             "per_rung": per_rung,
         }
     return report

@@ -4,16 +4,16 @@
 
 The request body accepts the inner `flywheel.incident-sim-process-audit/v1` packet JSON itself, encoded as UTF-8 with `Content-Type: application/json`. If a CLI command wrote an outer command report, send the value at `audit_packet`, not the outer report. A separate review-request wrapper can supply expected gateway hashes, as described below. The route rejects bodies over 1 MiB, duplicate JSON keys, non-finite JSON values, wrong media types, and non-packet JSON.
 
-Successful responses use `flywheel.incident-sim-process-audit-review/v1` and include:
+Successful responses use `flywheel.incident-sim-process-audit-review/v2` and include:
 
 - `source.format`, `source.sha256`, and `source.byte_length` over the exact uploaded request bytes.
 - `verification`, the shared `verify_process_audit_packet` result.
 - `gateway_effect_verification`, separating internal consistency, expected-hash correspondence, observed effect coverage, and semantic correctness. A packet without the optional gateway component remains supported.
 - `assessment`, either `packet-local-match` or `packet-local-drift`.
 - `semantic_verification: UNVERIFIABLE`.
-- `declared_access`, including `NOT_ASSESSED` when the packet has no institutional-access component. `coverage_assessment` is checked coverage only; copied packet claims appear as `reported_coverage_assessment` when the access component drifts, with limit strings marking them untrusted.
+- `declared_access`, including `NOT_ASSESSED` when the packet has no institutional-access component. `coverage_assessment` is checked coverage only; copied packet claims appear as `reported_coverage_assessment` when the access component drifts, with limit strings marking them untrusted. A v2 access assessment adds its coverage list as `declared_access.scope`; a v1 assessment's older list joins `declared_access.limits`.
 - `source_pointers`, packet-local JSON pointers with the exact reviewer-facing values used for review, including the evaluation verdict, packet source values, independence data, and institutional-access assessment fields when present.
-- `does_not_prove`, including the coherent-local-rewrite limitation.
+- `scope`: packet-local digests, receipt seals and receipt chains were rechecked, content and declared authority are taken as submitted, and a coherent rewrite of the packet with every packet-local digest recomputed rechecks the same way.
 
 The route does not persist packets, read local paths from the browser, fetch resources, mint keys, call external services, or turn a matching packet digest into a semantic pass. A tampered packet is a normal review result with a drift verdict, while malformed transport input returns `flywheel.evidence-transport-error/v1`.
 

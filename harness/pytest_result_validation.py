@@ -6,7 +6,7 @@ from pathlib import PurePosixPath
 
 from .checker_identity import runtime_digest
 from .evidence_json import strict_load_json
-from .runtime_descriptor import PYTHON_ACCEPTANCE_REASON, PYTHON_LIMITS
+from .runtime_descriptor import PYTHON_ACCEPTANCE_REASON, PYTHON_SCOPE, PYTHON_SCOPE_V1
 
 PROTECTION = "windows-low-integrity-namespace/v1"
 NAMESPACE = {"input": "read-only-medium-integrity",
@@ -82,8 +82,10 @@ def validate_pytest_result(receipt, check: dict, result_blob: bytes,
     if (result["dependency_boundary"] != boundary
             or receipt.coverage.get("dependency_boundary") != boundary):
         raise ValueError("execution dependency boundary drift")
-    if any(limit not in receipt.extra_does_not_prove for limit in PYTHON_LIMITS):
-        raise ValueError("receipt omits a mandatory Python execution limitation")
+    extra = receipt.extra_scope
+    if not any(all(entry in extra for entry in scope)
+               for scope in (PYTHON_SCOPE, PYTHON_SCOPE_V1)):
+        raise ValueError("receipt omits a mandatory Python execution scope entry")
     outcomes, rc = result["outcomes"], result["return_code"]
     if (type(outcomes) is not list or outcomes != sorted(set(outcomes))
             or any(type(item) is not str or not item.endswith(("=PASS", "=FAIL", "=SKIP"))

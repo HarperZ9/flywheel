@@ -18,14 +18,19 @@ final class PlanRunResult {
   factory PlanRunResult.fromJson(Map<String, dynamic> source) {
     final value = _map(source);
     final fields = _f('schema plan_run_ref receipt workflow_run result_sha256');
+    final receiptSchema = switch (value['schema']) {
+      planRunResultSchema => planRunReceiptSchema,
+      planRunResultSchemaV2 => planRunReceiptSchemaV2,
+      _ => null,
+    };
     _reject(!_exact(value, fields) ||
-        value['schema'] != 'flywheel.plan-run-result/v2' ||
+        receiptSchema == null ||
         value['plan_run_ref'] is! String ||
         !_runRef.hasMatch(value['plan_run_ref'] as String));
     final receipt = _map(value['receipt']);
     final workflow = _map(value['workflow_run']);
-    final binding =
-        _validReceipt(receipt, workflow, value['plan_run_ref'] as String);
+    final binding = _validReceipt(
+        receipt, workflow, value['plan_run_ref'] as String, receiptSchema!);
     final unsigned = Map<String, Object?>.from(value)..remove('result_sha256');
     if (value['result_sha256'] != canonicalPlanSha256(unsigned)) _invalid();
     return PlanRunResult._(_freeze(value) as Map<String, Object?>, binding);
@@ -35,9 +40,14 @@ final class PlanRunResult {
 }
 
 PlanRunBinding _validReceipt(Map<String, Object?> receipt,
-    Map<String, Object?> workflow, String runRef) {
-  _reject(!_exact(receipt, _receiptFields) ||
-      receipt['schema'] != 'flywheel.plan-run-receipt/v2' ||
+    Map<String, Object?> workflow, String runRef, String receiptSchema) {
+  // Each receipt version carries its own scope key and list.
+  final legacy = receiptSchema == planRunReceiptSchemaV2;
+  final scopeKey = scopeKeyFor(legacy: legacy);
+  final scope = legacy ? planRunLimitationsV2 : planRunScope;
+  final receiptFields = {..._receiptBaseFields, scopeKey};
+  _reject(!_exact(receipt, receiptFields) ||
+      receipt['schema'] != receiptSchema ||
       receipt['plan_run_ref'] != runRef ||
       receipt['journey_ref'] is! String ||
       !_journeyRef.hasMatch(receipt['journey_ref'] as String) ||
@@ -50,10 +60,9 @@ PlanRunBinding _validReceipt(Map<String, Object?> receipt,
       receipt['binding'] is! Map ||
       !_validWorkflow(workflow, receipt['workflow'], receipt['endpoint']) ||
       receipt['workflow_status'] != workflow['status'] ||
-      receipt['does_not_prove'] is! List ||
-      canonicalPlanJson(receipt['does_not_prove']) !=
-          canonicalPlanJson(planRunLimitations));
-  for (final name in _receiptFields.difference(_receiptPlain)) {
+      receipt[scopeKey] is! List ||
+      canonicalPlanJson(receipt[scopeKey]) != canonicalPlanJson(scope));
+  for (final name in _receiptBaseFields.difference(_receiptPlainBase)) {
     if (!_hash(receipt[name])) _invalid();
   }
   final binding = PlanRunBinding.fromJson(

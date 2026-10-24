@@ -72,8 +72,8 @@ def test_a_constant_monitor_is_carried_without_becoming_a_verdict(constant):
     assert record["coverage"]["monitor"]["scored"] == 4
     values = {a["source_value"] for s in record["samples"] for a in s["monitor"]["actions"]}
     assert values == {constant}
-    # Scoped to the data, because `does_not_prove` legitimately uses these
-    # words to say what the record cannot support.
+    # Scoped to the data, because `scope` legitimately uses these words to
+    # say where the record's coverage ends.
     data = json.dumps({"samples": record["samples"], "coverage": record["coverage"]})
     for word in ("detected", "flagged", "caught", "alarm", "suspicious"):
         assert word not in data
@@ -148,8 +148,9 @@ def test_the_record_pins_the_exact_source_bytes_and_shape_revision():
     assert record["shapes_from"].endswith("1cc91b7182674a906d4f556c2d2f493c27e51ae9")
 
 
-def test_every_record_carries_its_limits():
+def test_every_record_carries_its_scope():
     record = _record([eval2_sample("s1", [1.0])])
-    joined = " ".join(record["does_not_prove"]).lower()
+    assert record["schema"] == "flywheel.monitor-outcome/v2"
+    joined = " ".join(record["scope"]).lower()
     assert "intent" in joined
     assert "independent" in joined

@@ -6,6 +6,10 @@ from typing import Any
 
 from harness.cross_harness_artifacts import _declared_names, _safe_artifact_name
 
+SCHEMA = "harness.cross-harness-output-diagnostics/v2"
+# v1 diagnostics name the length-cap scope list with the older key.
+SCHEMA_V1 = "harness.cross-harness-output-diagnostics/v1"
+
 
 class _DuplicateJsonKey(ValueError):
     pass
@@ -32,13 +36,13 @@ def diagnose_output_failure(output_text: str, declared_names: list[str], usage: 
         diagnostics["codes"] = sorted(set(diagnostics.get("codes", [])) | {"length_cap_reached"})
         runtime["length_cap_reached"] = {"status": "observed", "last_eval_count": eval_count,
                                           "max_output_tokens": max_output_tokens,
-                                          "does_not_prove": ["truncation"]}
+                                          "scope": ["the last call's eval_count equals max_output_tokens"]}
     diagnostics["runtime"] = runtime
     return diagnostics
 
 
 def _base(codes: set[str] | None = None) -> dict[str, Any]:
-    return {"schema": "harness.cross-harness-output-diagnostics/v1", "codes": sorted(codes or set()),
+    return {"schema": SCHEMA, "codes": sorted(codes or set()),
             "parser": {"status": "not_checked"}, "artifact_comparison": {"status": "not_checked"}}
 
 

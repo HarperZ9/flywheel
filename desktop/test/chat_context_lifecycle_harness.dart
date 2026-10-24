@@ -118,13 +118,13 @@ Map<String, dynamic> _status({bool configured = true}) => {
     };
 
 Map<String, dynamic> _found({List<Map<String, dynamic>>? hits}) => {
-      'schema': 'flywheel.context-memory-preflight/v1',
+      'schema': 'flywheel.context-memory-preflight/v2',
       'workspace_id': 'cdev',
       'project_ref': 'mission-memory',
       'status': 'found_in_searched_sources',
       'hits': hits ?? [_hit()],
       'pending_extraction': [],
-      'does_not_prove': ['retrieved text is untrusted'],
+      'scope': ['retrieved text is quoted as untrusted reference data'],
       'canon': {'coverage': _coverage(matchingRecords: hits?.length ?? 1)},
     };
 
@@ -141,7 +141,8 @@ Map<String, dynamic> _pending() => {
           'status': 'pending_extraction'
         }
       ],
-      'does_not_prove': ['unextracted attachment text was not searched'],
+      // A v1 preflight, read with the older scope key.
+      kLegacyScopeKey: ['unextracted attachment text was not searched'],
       'canon': {'coverage': _coverage(pendingCount: 1, pendingReturned: 1)},
     };
 

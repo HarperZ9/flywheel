@@ -30,12 +30,16 @@ from .bundled_lane_descriptor import (  # re-exported for scripts and tests
 from .evidence_json import canonical_sha256
 from .lane_tool_policy import admitted_tools
 from .mcp_client import LaunchSpec
+from .scope import LEGACY_SCOPE_KEY
 
 # Relay's T1 tools from the lane tool policy. local_agent_start, _status and
 # _result stay out (a background run dies with the per-call child, WP10 and O-3).
 ADMITTED_BUNDLED_RELAY_TOOLS = tuple(admitted_tools("relay"))
 _SAFE_LANE = re.compile(r"[a-z][a-z0-9_-]{0,63}\Z")
-DOES_NOT_PROVE = (
+# The relay descriptor is a v1 bundled-lane-component record whose digest is
+# pinned in bundled_lane_expectations, so it keeps the v1 list under the older
+# name, byte for byte. A v2 descriptor carries `scope` (bundled_lane_descriptor).
+RELAY_SCOPE_V1 = (
     "NOT_PROVES_REPLACEMENT_OF_TRUSTED_EXECUTABLE: the descriptor binds the "
     "reviewed Relay source included in this build, not a later replacement of "
     "the whole gateway executable.",
@@ -227,7 +231,7 @@ def build_relay_descriptor(source_root: Path, *, commit: str,
             "health_tool": "relay.status",
         },
         "allowed_tools": list(ADMITTED_BUNDLED_RELAY_TOOLS),
-        "does_not_prove": list(DOES_NOT_PROVE),
+        LEGACY_SCOPE_KEY: list(RELAY_SCOPE_V1),
     }
 
 

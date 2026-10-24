@@ -12,7 +12,9 @@ from harness.journey_packet_v2 import (
     PACKET_PROFILE, pack_journey_custody_packet,
     verify_journey_custody_packet,
 )
+from harness.journey_packet_vocab import V1
 from harness.journey_projection import reduce_events
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.journey_types import build_event
 
 OWNER = "owner_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -100,7 +102,46 @@ def test_checker_version_drift_does_not_reclassify_carried_packet_bytes(
     assert checked["rehash_resistance_verdict"] == "MATCH"
     assert checked["checker_source_verdict"] == "DRIFT"
     assert checked["verdict"] == "UNVERIFIABLE"
-    assert any("CROSS_VERSION" in item for item in checked["does_not_prove"])
+    assert any("LOCAL_CHECKER_VERSION" in item for item in checked["scope"])
+
+
+def _as_v1(packet):
+    """Rewrite a fresh packet into the v1 vocabulary, as a v1 packer wrote it."""
+    criterion = _load(packet / "criterion.json")
+    criterion.pop("scope"); criterion.pop("criterion_sha256")
+    criterion["schema"] = V1.packet_schema
+    criterion[LEGACY_SCOPE_KEY] = list(V1.scope)
+    criterion["criterion_sha256"] = canonical_sha256(criterion)
+    receipt = packet_module._receipt(criterion, V1)
+    for name, value in (("criterion.json", criterion), ("custody_receipt.json", receipt)):
+        (packet / name).write_bytes(canonical_bytes(value))
+    manifest = _load(packet / "manifest.json")
+    manifest.pop("scope")
+    manifest.update({"schema": V1.manifest_schema, LEGACY_SCOPE_KEY: list(V1.scope)})
+    for item in manifest["files"]:
+        raw = (packet / item["path"]).read_bytes()
+        item.update(sha256=hashlib.sha256(raw).hexdigest(), bytes=len(raw))
+    (packet / "manifest.json").write_bytes(canonical_bytes(manifest))
+    return "sha256:" + hashlib.sha256((packet / "manifest.json").read_bytes()).hexdigest()
+
+
+def test_a_v1_packet_with_the_older_scope_name_still_rechecks(tmp_path):
+    packet, _, _, packed = _packet(tmp_path)
+    assert packed["schema"] == packet_module.PACKET_SCHEMA
+    assert _load(packet / "manifest.json")["scope"]
+    anchor = _as_v1(packet)
+    checked = verify_journey_custody_packet(packet, expected_manifest_sha256=anchor)
+    assert checked["structural_verdict"] == "MATCH"
+    assert checked["verdict"] == "MATCH"
+
+
+def test_a_v1_manifest_carrying_the_new_name_fails(tmp_path):
+    packet, _, _, _ = _packet(tmp_path)
+    _as_v1(packet)
+    manifest = _load(packet / "manifest.json")
+    manifest["scope"] = manifest.pop(LEGACY_SCOPE_KEY)
+    (packet / "manifest.json").write_bytes(canonical_bytes(manifest))
+    assert verify_journey_custody_packet(packet)["structural_verdict"] != "MATCH"
 
 
 @pytest.mark.parametrize("rel,mutate", [

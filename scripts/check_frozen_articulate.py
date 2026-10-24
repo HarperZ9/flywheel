@@ -208,12 +208,13 @@ def main(argv=None):
     parser.add_argument("--expected-version", required=True, help="Expected Articulate version")
     parser.add_argument("--receipt", type=Path, required=True)
     args = parser.parse_args(argv)
-    receipt = {"schema": "flywheel.frozen-articulate-check/v1", "verdict": "HOLD",
+    receipt = {"schema": "flywheel.frozen-articulate-check/v2", "verdict": "HOLD",
         "requested_version": args.expected_version,
         "acceptance": "Restricted frozen stdio command with synthetic local host edits.",
-        "does_not_prove": ["global egress prevention", "installed client compatibility",
-                           "installer or clean OS acceptance", "semantic equivalence or factual correctness",
-                           "model-backed quality or untested tool workflows"]}
+        "scope": ["the frozen Articulate lane served its local tools over restricted stdio on this runner",
+                  "two synthetic host edit sessions round-tripped and a numeric change was refused",
+                  "the backend tools were refused and no sampling request was sent",
+                  "the isolated runtime folder was removed after the run"]}
     try:
         check(args.executable, args.expected_version, receipt)
         receipt["verdict"] = "PASS"

@@ -9,6 +9,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.cross_harness_postrun import validate_postrun_comparison  # noqa: E402
+from harness.scope import scope_list  # noqa: E402
 
 def render_markdown(report: dict[str, Any]) -> str:
     lines = [
@@ -34,8 +35,8 @@ def render_markdown(report: dict[str, Any]) -> str:
             role=cell.get("provider_role", ""), task=cell.get("task_id", ""), rep=cell.get("repetition", ""),
             state=cell.get("state", ""), execution=cell.get("execution_state", ""), oracle=cell.get("oracle_state", ""),
             outcome=cell.get("primary_outcome", ""), reasons=", ".join(cell.get("reasons", []))))
-    lines.extend(["", "## Limits", ""])
-    for item in report.get("does_not_prove", []):
+    lines.extend(["", "## Scope", ""])
+    for item in scope_list(report):
         lines.append(f"- {item}")
     return "\n".join(lines) + "\n"
 

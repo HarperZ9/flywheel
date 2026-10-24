@@ -159,19 +159,30 @@ class ProcessAuditReviewResultView extends StatelessWidget {
       ].join('\n');
 
   Widget _limits() {
-    final limits = [
-      ...result.declaredAccess.limits,
-      ...result.limitations,
-    ];
-    if (limits.isEmpty) return const HonestNull('No limits were reported.');
+    final limits = result.declaredAccess.limits;
+    final scope = [...result.declaredAccess.scope, ...result.scope];
+    if (limits.isEmpty && scope.isEmpty) {
+      return const HonestNull('No limits or scope were reported.');
+    }
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Kicker('limits'),
-      const SizedBox(height: FwLayout.s2),
-      for (final limit in limits)
-        Padding(
-          padding: const EdgeInsets.only(bottom: FwLayout.s1),
-          child: Text('- $limit'),
-        ),
+      if (limits.isNotEmpty) ...[
+        const Kicker('limits'),
+        const SizedBox(height: FwLayout.s2),
+        for (final limit in limits)
+          Padding(
+            padding: const EdgeInsets.only(bottom: FwLayout.s1),
+            child: Text('- $limit'),
+          ),
+      ],
+      if (scope.isNotEmpty) ...[
+        const Kicker('scope'),
+        const SizedBox(height: FwLayout.s2),
+        for (final entry in scope)
+          Padding(
+            padding: const EdgeInsets.only(bottom: FwLayout.s1),
+            child: Text('- $entry'),
+          ),
+      ],
     ]);
   }
 

@@ -39,7 +39,7 @@ import time
 
 from .gateway_operation import GatewayOperationError
 from .limit_signal import provider_body_limit, provider_limit
-from .run_budget_contract import DOES_NOT_PROVE, SCHEMA
+from .run_budget_contract import SCHEMA, SCOPE
 from .run_budget_executor import BudgetedExecutor, harness_check  # noqa: F401
 from .run_budget_usage import reported_cost_micros, reported_tokens
 
@@ -280,7 +280,7 @@ class RunBudget:
                 "limit_signal_steps": [dict(s) for s in
                                        self.limit_signal_steps[-_LISTED_STEPS:]],
                 "harness_checks": self.harness_checks,
-                "does_not_prove": list(DOES_NOT_PROVE)}
+                "scope": list(SCOPE)}
 
     def _gate(self, name: str) -> None:
         self.settle()

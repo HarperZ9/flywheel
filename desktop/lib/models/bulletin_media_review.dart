@@ -1,6 +1,12 @@
 import 'evidence_state.dart';
+import 'scope_field.dart';
 
-const bulletinMediaReviewSchema = 'flywheel.bulletin-media-review/v1';
+const bulletinMediaReviewSchema = 'flywheel.bulletin-media-review/v2';
+const bulletinMediaReviewSchemaV1 = 'flywheel.bulletin-media-review/v1';
+const bulletinMediaReviewSchemas = {
+  bulletinMediaReviewSchema,
+  bulletinMediaReviewSchemaV1,
+};
 final _previewRef = RegExp(r'^data_bulletin_media_preview_[0-9a-f]{16,64}$');
 final _mediaId = RegExp(r'^[A-Za-z0-9_-]{16,128}$');
 final bulletinMediaTypePattern =
@@ -164,7 +170,7 @@ final class BulletinMediaReview extends DefensiveModel {
   final List<BulletinMediaAttachment> attachments;
   final List<BulletinPreviewMedia> previewMedia;
   final List<BulletinMediaPreviewItem> items;
-  final List<String> doesNotProve;
+  final List<String> scope;
 
   BulletinMediaReview._(
       this.mode,
@@ -179,14 +185,17 @@ final class BulletinMediaReview extends DefensiveModel {
       this.postPayloadSha256,
       this.mediaListSha256,
       this.packetSha256,
-      this.doesNotProve,
+      this.scope,
       super.parseIssues);
 
   factory BulletinMediaReview.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
+    // v1 names the scope list by the older key; v2 names it `scope`.
+    final scopeKey =
+        scopeKeyFor(legacy: json['schema'] == bulletinMediaReviewSchemaV1);
     bulletinExact(
         json,
-        const {
+        {
           'schema',
           'mode',
           'destination',
@@ -194,7 +203,7 @@ final class BulletinMediaReview extends DefensiveModel {
           'post',
           'attachments',
           'preview_media',
-          'does_not_prove',
+          scopeKey,
           'preview_sha256',
           'body_sha256',
           'post_payload_sha256',
@@ -203,7 +212,7 @@ final class BulletinMediaReview extends DefensiveModel {
         },
         issues,
         'review');
-    expectSchema(json, bulletinMediaReviewSchema, issues);
+    expectSchemaIn(json, bulletinMediaReviewSchemas, issues);
     Uri destination;
     if (json['destination'] is Map<String, Object?>) {
       destination =
@@ -249,7 +258,7 @@ final class BulletinMediaReview extends DefensiveModel {
       readText(json, 'post_payload_sha256', issues, pattern: sha256Pattern),
       readText(json, 'media_list_sha256', issues, pattern: sha256Pattern),
       readText(json, 'packet_sha256', issues, pattern: sha256Pattern),
-      readStringList(json['does_not_prove'], 'does_not_prove', issues),
+      readStringList(json[scopeKey], scopeKey, issues),
       issues,
     );
   }

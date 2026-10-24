@@ -10,7 +10,7 @@ a second copy of the conversation.
 """
 from __future__ import annotations
 
-from .action_witness import OUTPUT, does_not_prove as action_does_not_prove
+from .action_witness import OUTPUT, scope as action_scope
 from .acp_turn import Turn
 from .wire_witness import WireWitness, transcript_resolver
 
@@ -18,10 +18,11 @@ FRAME_ACTION = "acp/frame"
 DECISION_ACTION = "acp/decision"
 TURN_ACTION = "acp/turn"
 
-WITNESS_SCHEMA = "flywheel.acp-witness/v1"
+WITNESS_SCHEMA_V1 = "flywheel.acp-witness/v1"
+WITNESS_SCHEMA = "flywheel.acp-witness/v2"  # v2 names `scope`
 
 __all__ = ["AcpWitness", "DECISION_ACTION", "FRAME_ACTION", "TURN_ACTION",
-           "WITNESS_SCHEMA", "does_not_prove", "summarize",
+           "WITNESS_SCHEMA", "WITNESS_SCHEMA_V1", "scope", "summarize",
            "transcript_resolver"]
 
 
@@ -57,18 +58,16 @@ def summarize(turn: Turn) -> dict:
                         "output_characters": len(call.text)}
                        for call in turn.tool_calls.values()],
         "usage": dict(turn.usage),
-        "does_not_prove": turn.does_not_prove(),
+        "scope": turn.scope(),
     }
 
 
-def does_not_prove() -> list[str]:
-    """What an ACP run record leaves open. Never empty."""
-    return action_does_not_prove() + [
-        "the chain covers frames that crossed this connection, so work the "
-        "agent did through a channel this client did not carry leaves nothing "
-        "behind to break a link",
-        "a tool call in the record is what the agent reported, not an "
-        "independent observation that the tool ran",
-        "the chain shows the frames were not altered after the run and says "
-        "nothing about whether the agent's answer was correct",
+def scope() -> list[str]:
+    """What an ACP run record covers. Never empty."""
+    return action_scope() + [
+        "the chain covers frames that crossed this connection; work the agent "
+        "did through another channel has no record here",
+        "a tool call in the record is the agent's own report of it",
+        "the chain records that the frames are unchanged since the run; the "
+        "correctness of the agent's answer is a separate check",
     ]

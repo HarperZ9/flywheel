@@ -202,7 +202,7 @@ def test_result_witnesses_are_summarized_without_private_records(tmp_path):
             "count": 2,
             "head_sha256": "e" * 64,
             "records": [{"private": "action detail"}],
-            "does_not_prove": ["semantic correctness"],
+            "scope": ["the chain links these action bytes"],
         },
         "tool_call_receipts": {
             "schema": "flywheel.tool-call-receipt/v1",

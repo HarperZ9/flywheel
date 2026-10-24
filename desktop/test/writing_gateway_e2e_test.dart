@@ -132,7 +132,7 @@ Future<Map<String, dynamic>> _approveCommit(
 }
 
 Map<String, dynamic> _brief() => {
-      'schema': 'flywheel.writing-project-brief/v1',
+      'schema': 'flywheel.writing-project-brief/v2',
       'project_ref': _projectRef,
       'mode': 'nonfiction',
       'form': 'essay',
@@ -143,11 +143,11 @@ Map<String, dynamic> _brief() => {
       'voice_contract': {'style_ref': 'voice_rules'},
       'source_packet_ref': 'packet_main',
       'writing_profile': 'nonfiction',
-      'does_not_prove': ['truth'],
+      'scope': ['the brief states the author intent and reader job as written'],
     };
 
 Map<String, dynamic> _sourcePacket() => {
-      'schema': 'flywheel.writing-source-packet/v1',
+      'schema': 'flywheel.writing-source-packet/v2',
       'project_ref': _projectRef,
       'source_packet_ref': 'packet_main',
       'sources': [
@@ -158,7 +158,7 @@ Map<String, dynamic> _sourcePacket() => {
           'allowed_use': 'cite',
         }
       ],
-      'does_not_prove': ['source interpretation'],
+      'scope': ['the packet lists each source with its allowed use'],
     };
 
 Map<String, dynamic> _section() => {

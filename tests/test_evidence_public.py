@@ -48,5 +48,5 @@ def test_extracted_result_keeps_v1_candidate_reason_masking():
         "reason": "C:/private/provider detail", "oracle_id": "private-oracle",
     })
     assert result["reason"] == "registered oracle could not verify the submitted evidence"
-    assert result["does_not_prove"] == ["the requested claim was not checked"]
+    assert result["scope"] == ["no oracle is registered for the requested claim; it was left unchecked"]
     assert "oracle_id" not in result and "private" not in json.dumps(result)

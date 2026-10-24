@@ -15,10 +15,13 @@ from .gateway_grant_errors import gateway_error_response
 from .gateway_operation import GatewayOperationError
 from .gateway_secret_boundary import validate_no_raw_secrets
 from .operation_grants import _validate_owner_ref
+from .scope import scope_list
 
-CATALOG_SCHEMA = "flywheel.agent-mcp-catalog/v1"
+CATALOG_SCHEMA = "flywheel.agent-mcp-catalog/v2"
+CATALOG_SCHEMA_V1 = "flywheel.agent-mcp-catalog/v1"
 DISCOVERY_REQUEST_SCHEMA = "flywheel.agent-mcp-discovery-request/v1"
-DISCOVERY_RESPONSE_SCHEMA = "flywheel.agent-mcp-discovery-response/v1"
+DISCOVERY_RESPONSE_SCHEMA = "flywheel.agent-mcp-discovery-response/v2"
+DISCOVERY_RESPONSE_SCHEMA_V1 = "flywheel.agent-mcp-discovery-response/v1"
 
 
 def agent_mcp_get(path: str, *, owner_ref: str, state_root: Path) -> tuple[dict, int]:
@@ -107,7 +110,7 @@ def _receipt_review(receipt: dict) -> dict:
             "allowed_tools": launch["allowed_tools"],
             "env_override_keys": [key for key, _value in launch["env_overrides"]],
         },
-        "does_not_prove": list(receipt["does_not_prove"]),
+        "scope": scope_list(receipt),
     }
 
 

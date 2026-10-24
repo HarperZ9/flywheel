@@ -20,17 +20,19 @@ from __future__ import annotations
 from .findings_stats import mcnemar
 from .statistics import mcnemar_mde
 
-SCHEMA = "flywheel.paired-comparison/v1"
+SCHEMA = "flywheel.paired-comparison/v2"
+# v1 comparisons name the scope list with the older key.
+SCHEMA_V1 = "flywheel.paired-comparison/v1"
 
 BUDGET_SCHEMA = "flywheel.inner-call-budget/v1"
 
 MIN_TASK_CLUSTERS = 5
 
-_DOES_NOT_PROVE = [
-    "NOT_PROVES_HARNESS_SUPERIORITY: a paired delta over one task set speaks "
-    "only about that task set; task authorship and selection carry into it.",
-    "NOT_PROVES_INDEPENDENCE_WITHIN_TASKS: per-task rows describe correlated "
-    "repetitions; they are descriptives, and no per-task p accompanies them.",
+_SCOPE = [
+    "THIS_TASK_SET: the paired delta covers this task set, with its authorship "
+    "and selection carried into it.",
+    "PER_TASK_DESCRIPTIVES: per-task rows describe correlated repetitions as "
+    "descriptives, with no per-task p.",
 ]
 
 
@@ -161,7 +163,7 @@ def paired_comparison(arm_a: dict, arm_b: dict, *, alpha: float = 0.05,
     out = {**base, "n_tasks": len(tasks),
            "n_attempt_pairs": sum(row["n_reps"] for row in per_task),
            "per_task": per_task, "pooled": None,
-           "does_not_prove": list(_DOES_NOT_PROVE)}
+           "scope": list(_SCOPE)}
     return _pool_or_refuse(out, reps_by_task, a_index, b_index,
                            alpha, min_clusters)
 

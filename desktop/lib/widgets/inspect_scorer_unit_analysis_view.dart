@@ -36,9 +36,9 @@ class InspectScorerUnitAnalysisView extends StatelessWidget {
         _ContractCard(contract: contract),
       ],
       for (final ref in verification.sourceRefs) _SourceRefLine(ref: ref),
-      if (verification.doesNotProve.isNotEmpty) ...[
+      if (verification.scope.isNotEmpty) ...[
         const SizedBox(height: FwLayout.s2),
-        HonestNull(verification.doesNotProve.join(' ')),
+        HonestNull(verification.scope.join(' ')),
       ],
     ]);
   }

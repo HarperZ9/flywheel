@@ -22,7 +22,8 @@ from .inspect_evidence_scores import (
     new_score_history_counts,
 )
 
-SCHEMA = "flywheel.inspect-evidence/v1"
+SCHEMA = "flywheel.inspect-evidence/v2"
+SCHEMA_V1 = "flywheel.inspect-evidence/v1"
 MAX_BYTES = 16 * 1024 * 1024
 STATUSES = {"started", "success", "cancelled", "error"}
 SAMPLE_ERROR_STATUSES = {"error", "cancelled"}
@@ -136,7 +137,7 @@ def _import_root(root: dict, source: dict) -> dict:
         "reported_error": reported_error,
         "samples": samples,
         "source_pointers": pointers,
-        "does_not_prove": _does_not_prove(
+        "scope": _scope(
             assessment, invalidated=invalidated,
             score_history_present=score_history["present"] > 0),
     }
@@ -216,20 +217,22 @@ def _invalidated(root: dict, pointers: list[dict[str, Any]]) -> bool:
     _add(pointers, "/invalidated", invalidated)
     return invalidated
 
-def _does_not_prove(assessment: str, *, invalidated: bool = False,
-                    score_history_present: bool = False) -> list[str]:
-    reasons = [
-        "Inspect status and scorer values are reported by the source log only.",
-        "This import does not independently rerun the task, scorer, model, or dataset.",
-        "A success status or score value is not independent semantic verification.",
+def _scope(assessment: str, *, invalidated: bool = False,
+           score_history_present: bool = False) -> list[str]:
+    covered = [
+        "Inspect status and scorer values are as the source log reports them.",
+        "The import parses and bounds the source log as given; it reruns no task, scorer, model, or dataset.",
+        "A success status or score value is the source's own report; semantic verification stays UNVERIFIABLE.",
     ]
     if invalidated:
-        reasons.append("The source log is marked invalidated.")
+        covered.append("The source log is marked invalidated.")
     if score_history_present:
-        reasons.append("Inspect score edit history author, reason, and timestamp are reported by the source log only.")
+        covered.append("Inspect score edit history author, reason, and timestamp are as the source log reports them.")
     if assessment in {"incomplete", "error"}:
-        reasons.append("The source log reports incomplete or error coverage.")
-    return reasons
+        covered.append("The source log reports incomplete or error coverage.")
+    else:
+        covered.append("The source log reports complete coverage: every sample observed and scored.")
+    return covered
 
 def _validate_counts(total: int | None, completed: int | None) -> None:
     for value, name in ((total, "total_samples"), (completed, "completed_samples")):

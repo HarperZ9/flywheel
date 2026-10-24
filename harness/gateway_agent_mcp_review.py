@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 from .gateway_agent_mcp_admission import _validate_plan
+from .scope import scope_list
 
-REVIEW_SCHEMA = "flywheel.gateway-agent-mcp-admission-review/v1"
+REVIEW_SCHEMA = "flywheel.gateway-agent-mcp-admission-review/v2"
+REVIEW_SCHEMA_V1 = "flywheel.gateway-agent-mcp-admission-review/v1"
 
 
 def review_mcp_admission(plan: dict | None) -> dict | None:
@@ -41,4 +43,4 @@ def _tool(tool: dict) -> dict:
         "declared_authority": tool["declared_authority"],
         "authority_source": tool["authority_source"],
         "enforced_limits": tool["enforced_limits"],
-        "does_not_prove": tool["does_not_prove"]}
+        "scope": scope_list(tool)}

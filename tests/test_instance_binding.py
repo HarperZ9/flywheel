@@ -66,12 +66,12 @@ def test_an_unbound_verdict_says_it_is_unbound(oracle):
     r = oracle.verify(STAR_3x3, None)
     assert r.verdict() == "PASS"
     assert r.coverage["instance_bound"] is False
-    assert "NOT_PROVES_ANSWERS_THE_QUESTION_ASKED" in r.does_not_prove
+    assert "ANSWERS_THE_INSTANCE_ASKED" not in r.scope
 
 
-def test_a_bound_verdict_does_not_carry_the_unbound_disclaimer(oracle):
+def test_a_bound_verdict_carries_the_instance_in_its_scope(oracle):
     r = oracle.verify(STAR_3x3, ASKED_3x3)
-    assert "NOT_PROVES_ANSWERS_THE_QUESTION_ASKED" not in r.does_not_prove
+    assert "ANSWERS_THE_INSTANCE_ASKED" in r.scope
 
 
 def test_the_digest_distinguishes_the_instance(oracle):
@@ -94,7 +94,7 @@ def test_a_task_missing_the_binding_keys_is_unbound(oracle):
     read as bound."""
     r = oracle.verify(STAR_3x3, {"task_id": "abc", "difficulty": 3})
     assert r.coverage["instance_bound"] is False
-    assert "NOT_PROVES_ANSWERS_THE_QUESTION_ASKED" in r.does_not_prove
+    assert "ANSWERS_THE_INSTANCE_ASKED" not in r.scope
 
 
 def test_a_partially_binding_task_binds_what_it_names(oracle):

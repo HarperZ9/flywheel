@@ -17,11 +17,12 @@ read member by member in memory under caps on member count, total size and
 compression ratio, and is never extracted. Every printed reason has its
 control characters escaped.
 
-What MATCH does not prove: that the export holds everything custody held,
-that custody recorded what really happened, or who made the export. Anyone
-can rewrite the files and the manifest together, so MATCH shows only that
-the files match this manifest; compare root_sha256 with the export entry in
-the owner's custody ledger.
+What MATCH covers: the listed files match this manifest. The manifest's
+`scope` list (v2; v1 exports carry the same list under the older field name)
+says the rest. Anyone can rewrite the files and the manifest together, so to
+tie a copy to custody, compare root_sha256 with the export entry in the
+owner's custody ledger. The verifier reads neither field name: both versions
+verify the same way.
 """
 from __future__ import annotations
 
@@ -33,7 +34,8 @@ import re
 import sys
 import zipfile
 
-SCHEMA = "flywheel.trace-export/v1"
+SCHEMA_V1 = "flywheel.trace-export/v1"
+SCHEMA = "flywheel.trace-export/v2"  # v2 names `scope`
 GENESIS = "0" * 64
 MAX_MEMBERS = 100_000
 MAX_TOTAL = 4 * 1024 ** 3

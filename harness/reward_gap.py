@@ -23,12 +23,12 @@ from .incentive_manifest import validate as _validate_manifest
 GAP = "GAP"
 NO_GAP = "NO_GAP"
 DEFAULT_QUANTILE = 0.75
-ERG_DOES_NOT_PROVE = (
+ERG_SCOPE = (
     "A flagged trajectory earned high reward without satisfying the declared "
-    "intent, which marks a proxy-gaming surface in the environment. It is not "
-    "evidence of model intent or deception, the intent judgment is only as good "
-    "as the separate check that produced it, and a NO_GAP result covers the "
-    "logged trajectories under the chosen threshold, nothing beyond them.")
+    "intent, which marks a proxy-gaming surface in the environment. The intent "
+    "judgment comes from the separate per-trajectory check and is as strong as "
+    "that check. A GAP or NO_GAP verdict covers the logged trajectories under "
+    "the chosen threshold.")
 
 
 class RewardGapError(ValueError):
@@ -95,5 +95,5 @@ def analyze(manifest, reward_log, *, high_reward_quantile=DEFAULT_QUANTILE) -> d
         "gap_count": len(flagged),
         "gap_rate": gap_rate,
         "flagged": flagged,
-        "does_not_prove": ERG_DOES_NOT_PROVE,
+        "scope": ERG_SCOPE,
     }

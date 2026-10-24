@@ -14,7 +14,9 @@ from .incident_sim_input import (
     work_blocking_reasons,
 )
 
-SCHEMA = "flywheel.incident-sim-evaluation/v1"
+# v2 names the coverage list `scope`; v1 evaluations carried the older key.
+SCHEMA_V1 = "flywheel.incident-sim-evaluation/v1"
+SCHEMA = "flywheel.incident-sim-evaluation/v2"
 MATCH, DRIFT, UNVERIFIABLE = "MATCH", "DRIFT", "UNVERIFIABLE"
 
 def _verdict(values: list[str]) -> str:
@@ -252,8 +254,8 @@ def evaluate_incident_sim(task: dict[str, Any], trace: dict[str, Any]) -> dict[s
         "claimed_scores": [] if work_blocking_reasons(validation) else _claimed_scores(trace),
         "checked_scores": [{"name": "incident_sim_checked", "value": overall}],
         "overall": {"verdict": overall},
-        "does_not_prove": ["model quality beyond the deterministic fixture",
-                           "independent scorer correctness",
-                           "complete workstation observation",
-                           "EMET witness validity"],
+        "scope": ["the submitted trace scored against the deterministic fixture",
+                  "scored by the registered local checker and scorer",
+                  "observation covers the fixture's expected actions",
+                  "EMET witness fields are carried as submitted"],
     }

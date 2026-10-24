@@ -3,8 +3,9 @@
 Layer 2 to the work receipt's Layer 1. The work receipt (tool-call / eval) says
 a record is intact and its own; it makes no quality claim. This audit receipt
 renders a SEPARATE developer-facing judgment -- reviews across domain-neutral
-dimensions, a bounded verdict, a confidence label, and an honest-null
-does_not_prove -- and CHAINS that judgment onto the work receipt it reviewed.
+dimensions, a bounded verdict, a confidence label, and a `scope` that says
+what the review covered -- and CHAINS that judgment onto the work receipt it
+reviewed. v1 receipts named that string with the older key and stay verifiable.
 The two never merge: a green work receipt on weak work stays green, and this is
 where "weak work" gets named, as an opinion with a confidence, never a proof.
 
@@ -37,6 +38,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 from .tool_call_receipt import (
     MATCH,
     TAMPERED,
@@ -47,7 +49,9 @@ from .tool_call_receipt import (
     _sha256_hex,
 )
 
-SCHEMA = "flywheel.audit-receipt/v1"
+SCHEMA_V1 = "flywheel.audit-receipt/v1"
+SCHEMA = "flywheel.audit-receipt/v2"  # v2 names `scope`
+SCHEMAS = (SCHEMA_V1, SCHEMA)
 
 # The per-review fields, in fixed order. A review is one detector's disposition
 # over one domain-neutral dimension. No floats, no free-form extra keys.
@@ -92,7 +96,7 @@ def build_audit_receipt(
     summary: str,
     verdict: str,
     confidence: str,
-    does_not_prove: str,
+    scope: str,
     started_utc: str,
     finished_utc: str,
 ) -> dict[str, Any]:
@@ -114,7 +118,7 @@ def build_audit_receipt(
         "summary": str(summary),
         "verdict": str(verdict),
         "confidence": str(confidence),
-        "does_not_prove": str(does_not_prove),
+        "scope": str(scope),
         "started_utc": str(started_utc),
         "finished_utc": str(finished_utc),
         "prev_receipt_sha256": str(work_receipt_sha256 or ""),
@@ -134,6 +138,21 @@ def _fail(failure_class: str, detail: str) -> dict[str, Any]:
             "failure_class": failure_class, "detail": detail}
 
 
+def _scope_problem(receipt: dict[str, Any]) -> str:
+    """Why the receipt's scope string breaks its version's contract, or "".
+
+    v1 carries the string under the older name and v2 under `scope`; each
+    version carries its own name only, and the string is never empty.
+    """
+    own = LEGACY_SCOPE_KEY if receipt.get("schema") == SCHEMA_V1 else SCOPE_KEY
+    other = SCOPE_KEY if own == LEGACY_SCOPE_KEY else LEGACY_SCOPE_KEY
+    if other in receipt:
+        return f"{other} does not belong in a {receipt.get('schema')} receipt"
+    if not str(receipt.get(own, "")).strip():
+        return f"{own} is empty; an audit must say what it covered"
+    return ""
+
+
 def verify_audit_receipt(receipt: dict[str, Any],
                          work_receipt: dict[str, Any] | None = None) -> dict[str, Any]:
     """Offline re-verification. Returns {verdict, failure_class, detail}.
@@ -146,7 +165,7 @@ def verify_audit_receipt(receipt: dict[str, Any],
     """
     if not isinstance(receipt, dict):
         return _fail("MALFORMED", "receipt is not a JSON object")
-    if receipt.get("schema") != SCHEMA:
+    if receipt.get("schema") not in SCHEMAS:
         return _fail("MALFORMED",
                      f"schema is {receipt.get('schema')!r}, expected {SCHEMA}")
 
@@ -204,9 +223,9 @@ def verify_audit_receipt(receipt: dict[str, Any],
     if not isinstance(receipt.get("confidence"), str) or receipt.get("confidence") not in CONFIDENCE_LABELS:
         return _fail("FIELD_CONTRACT_VIOLATION",
                      f"confidence {receipt.get('confidence')!r} is not a known label")
-    if not str(receipt.get("does_not_prove", "")).strip():
-        return _fail("FIELD_CONTRACT_VIOLATION",
-                     "does_not_prove is empty; an audit must keep its honest null")
+    scope_problem = _scope_problem(receipt)
+    if scope_problem:
+        return _fail("FIELD_CONTRACT_VIOLATION", scope_problem)
 
     # --- chain link (only when the work receipt is supplied) ------------------
     if work_receipt is not None:

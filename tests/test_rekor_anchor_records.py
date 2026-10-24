@@ -89,7 +89,7 @@ def test_tampering_is_caught_at_each_layer():
 
 def test_record_holds_the_fields_a_stranger_needs():
     _, rec = _load(HEAD_0008)
-    assert rec["schema"] == rekor_verify.SCHEMA
+    assert rec["schema"] in (rekor_verify.SCHEMA_V1, rekor_verify.SCHEMA)  # kept head-0008 record is v1
     assert rec["rekor"]["log_id"] == rekor_verify.REKOR_LOG_ID
     proof = rec["entry"]["verification"]["inclusionProof"]
     assert {"checkpoint", "hashes", "logIndex", "rootHash", "treeSize"} <= set(proof)

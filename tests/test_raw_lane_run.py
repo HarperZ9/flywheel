@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import pytest
 
+from harness.scope import LEGACY_SCOPE_KEY
 from harness import raw_lane, raw_lane_install as inst, raw_lane_replay as rp
 from harness.certificates import raw_ao_receipt as rr
 from harness.certificates.replay import CROSS_DEVICE_NOTE
@@ -112,11 +113,11 @@ def _drift_known_answer(environ) -> None:
     here = inst.platform_key()
     same = rp.replay(_edited_record(), claimed_platform=here, environ=environ)
     assert (same["verdict"], same["attribution"]) == ("DRIFT", "CANDIDATE")
-    assert CROSS_DEVICE_NOTE not in same["receipt"]["does_not_prove"]
+    assert CROSS_DEVICE_NOTE not in same["receipt"][LEGACY_SCOPE_KEY]
     assert same["receipt"]["flywheel"]["tolerance"] == "PASS"
     other = rp.replay(_edited_record(), claimed_platform="elsewhere-x64", environ=environ)
     assert (other["verdict"], other["attribution"]) == ("DRIFT", "ENVIRONMENT")
-    assert CROSS_DEVICE_NOTE in other["receipt"]["does_not_prove"]
+    assert CROSS_DEVICE_NOTE in other["receipt"][LEGACY_SCOPE_KEY]
 
 
 def test_an_edited_record_replays_as_drift(installed_home):  # noqa: F811

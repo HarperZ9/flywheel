@@ -4,6 +4,7 @@ import pytest
 
 from harness.evidence_json import canonical_sha256
 from harness.journey_projection import new_genesis, project_lens, reduce_events
+from harness.scope import LEGACY_SCOPE_KEY
 
 
 EVENT_KEYS = {
@@ -55,7 +56,7 @@ def test_reducer_enforces_stage_order_and_keeps_operational_events_in_stage():
         "facts": [{
             "fact_id": "fact-intake", "statement": "The intake receipt exists.",
             "receipt_refs": ["receipt:intake"], "receipt_state": "MATCH",
-            "does_not_prove": "That the requested repair is correct.",
+            "scope": "The intake receipt is present.",
         }],
     }, decomposed["event_sha256"])
     projection = reduce_events([genesis, decomposed, fact])
@@ -79,7 +80,7 @@ def test_reducer_rejects_changed_fact_or_claim_definitions_and_bad_receipt_state
         "facts": [{
             "fact_id": "fact-1", "statement": "Input receipt exists.",
             "receipt_refs": ["receipt:intake"], "receipt_state": "MATCH",
-            "does_not_prove": "The conclusion is true.",
+            "scope": "The input receipt is present.",
         }],
     }, genesis["event_sha256"])
     claim = _event(genesis["journey_ref"], 2, "record_claim", {
@@ -87,14 +88,14 @@ def test_reducer_rejects_changed_fact_or_claim_definitions_and_bad_receipt_state
             "claim_id": "claim-1", "statement": "The failure reproduces.",
             "depends_on": ["fact-1"], "receipt_refs": ["receipt:intake"],
             "receipt_state": "MATCH", "verdict": "UNDECIDED",
-            "does_not_prove": "The repair has succeeded.",
+            "scope": "The failure reproduces under the intake receipt.",
         }],
     }, fact["event_sha256"])
     revised = _event(genesis["journey_ref"], 3, "record_fact", {
         "facts": [{
             "fact_id": "fact-1", "statement": "Different input receipt exists.",
             "receipt_refs": ["receipt:intake"], "receipt_state": "MATCH",
-            "does_not_prove": "The conclusion is true.",
+            "scope": "The input receipt is present.",
         }],
     }, claim["event_sha256"])
     with pytest.raises(ValueError, match="immutable"):
@@ -116,13 +117,13 @@ def test_all_lenses_preserve_evidence_facts_and_only_reorder_presentation():
             "claim_id": "claim-1", "statement": "The failure reproduces.",
             "depends_on": [], "receipt_refs": ["receipt:intake"],
             "receipt_state": "MATCH", "verdict": "FAIL",
-            "does_not_prove": "The repair has succeeded.",
+            "scope": "The failure reproduces under the intake receipt.",
         }],
         "checks": [{
             "check_id": "check-1", "claim_id": "claim-1", "verdict": "FAIL",
             "receipt_refs": ["receipt:intake"], "receipt_state": "MATCH",
             "numerator": 1, "denominator": 1,
-            "does_not_prove": "The cause is known.",
+            "scope": "One reproduction of the failure.",
         }],
     }, genesis["event_sha256"])
     projection = reduce_events([genesis, claim])
@@ -147,7 +148,7 @@ def _pass_payload(kind, receipt_state):
         "claim_id": "claim-pass", "statement": "The receipt supports the claim.",
         "depends_on": [], "receipt_refs": ["receipt:pass"],
         "receipt_state": receipt_state, "verdict": "PASS",
-        "does_not_prove": "The full journey is complete.",
+        "scope": "This claim alone.",
     }
     if kind == "claim":
         return {"claims": [claim]}
@@ -157,7 +158,7 @@ def _pass_payload(kind, receipt_state):
             "check_id": "check-pass", "claim_id": "claim-pass", "verdict": "PASS",
             "receipt_refs": ["receipt:pass"], "receipt_state": receipt_state,
             "numerator": 1, "denominator": 1,
-            "does_not_prove": "The full journey is complete.",
+            "scope": "This claim alone.",
         }],
     }
 
@@ -198,3 +199,18 @@ def test_reducer_rejects_a_stage_event_after_exported_with_validation_error():
     events.append(_event(events[0]["journey_ref"], 6, "exported", {}, head))
     with pytest.raises(ValueError, match="stage"):
         reduce_events(events)
+
+
+def test_reducer_reads_a_record_written_with_the_older_scope_name():
+    """Events recorded before the scope migration keep their chained bytes."""
+    genesis = _genesis()
+    old = {"fact_id": "fact-old", "statement": "An older record.",
+           "receipt_refs": ["receipt:intake"], "receipt_state": "MATCH",
+           LEGACY_SCOPE_KEY: "The intake receipt is present."}
+    fact = _event(genesis["journey_ref"], 1, "record_fact", {"facts": [old]},
+                  genesis["event_sha256"])
+    assert "fact-old" in reduce_events([genesis, fact])["fact_ids"]
+    both = _event(genesis["journey_ref"], 1, "record_fact",
+                  {"facts": [dict(old, scope="x")]}, genesis["event_sha256"])
+    with pytest.raises(ValueError, match="scope twice"):
+        reduce_events([genesis, both])

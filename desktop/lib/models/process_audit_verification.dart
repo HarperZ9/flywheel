@@ -126,11 +126,16 @@ class ProcessAuditVerifiedField {
 class ProcessAuditDeclaredAccess {
   final String verdict, coverageAssessment, reportedCoverageAssessment;
   final List<String> limits;
+
+  /// What a v2 review's institutional-access assessment covers; empty for v1,
+  /// whose older list is folded into [limits] by the gateway.
+  final List<String> scope;
   const ProcessAuditDeclaredAccess({
     required this.verdict,
     required this.coverageAssessment,
     required this.reportedCoverageAssessment,
     required this.limits,
+    this.scope = const [],
   });
   const ProcessAuditDeclaredAccess.unknown()
       : this(
@@ -160,6 +165,7 @@ class ProcessAuditDeclaredAccess {
       coverageAssessment: coverageAssessment,
       reportedCoverageAssessment: _text(json['reported_coverage_assessment']),
       limits: List.unmodifiable(_strings(json['limits'])),
+      scope: List.unmodifiable(_strings(json[kScopeKey])),
     );
   }
 }

@@ -62,5 +62,5 @@ def realism_ladder(rows: list) -> dict:
     status = "ok" if manip < 0 else "INCONCLUSIVE_MANIPULATION_CHECK"
     return {"design": "D2-realism-ladder", "status": status, "levels": per_level,
             "adherence_slope": fmt4(_slope(adh)), "perceived_slope": fmt4(manip),
-            "does_not_prove": ("A slope shows adherence tracked the tested realism levels on "
-                               "these families. It does not place deployment on any rung or explain why.")}
+            "scope": ("A slope shows adherence tracked the tested realism levels on "
+                      "these families.")}

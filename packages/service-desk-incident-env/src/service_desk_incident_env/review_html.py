@@ -74,7 +74,7 @@ def _layer_html(title: str, layer: dict[str, Any]) -> str:
         f"failure codes: {_e(', '.join(layer.get('failure_codes', [])) or 'none')}.</p>\n"
         f"<p>Basis: {_e(layer.get('basis', 'local artifact checks'))}.</p>\n"
         "<ul>\n"
-        + "".join(f"<li>{_e(item)}</li>\n" for item in layer.get("does_not_prove", []))
+        + "".join(f"<li>{_e(item)}</li>\n" for item in layer.get("scope", []))
         + "</ul>\n"
     )
 

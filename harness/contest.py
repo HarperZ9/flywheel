@@ -187,12 +187,14 @@ def resolve(ledger, contest_id: str, resolution, note: str) -> dict:
                         "resolution": resolution.value, "note": note}})
 
 
-SERIES_LIMITS = [
-    "NOT_PROVES_ABSENCE_OF_UNCONTESTED_ERRORS: zero open contests means nobody "
-    "has objected in writing, which is not the same as nothing being wrong. An "
-    "unread record attracts no contests at all.",
-    "NOT_PROVES_CONTEST_COMPLETENESS: this counts contests that reached the log. "
-    "A contest nobody could send, or chose not to, is invisible here.",
+SERIES_SCHEMA = "flywheel.contest-series/v2"
+# v1 series records name the same list with the older scope key.
+SERIES_SCHEMA_V1 = "flywheel.contest-series/v1"
+SERIES_SCOPE = [
+    "WRITTEN_OBJECTIONS_COUNTED: the open count is the number of written contests "
+    "in this log with no resolution record; an unread record collects none.",
+    "LOGGED_CONTESTS_ONLY: the counts cover contests that reached this log; a "
+    "contest never sent stays outside them.",
 ]
 
 
@@ -210,8 +212,8 @@ def contest_series(ledger) -> dict:
         key = r["resolution"]["resolution"]
         by_resolution[key] = by_resolution.get(key, 0) + 1
     open_ids = [c["key"] for c in contests if c["key"] not in resolved_ids]
-    return {"schema": "flywheel.contest-series/v1",
+    return {"schema": SERIES_SCHEMA,
             "total": len(contests), "open": len(open_ids),
             "resolved": len(resolved_ids), "open_ids": open_ids,
             "by_resolution": by_resolution,
-            "does_not_prove": SERIES_LIMITS}
+            "scope": SERIES_SCOPE}

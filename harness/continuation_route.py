@@ -16,7 +16,8 @@ from .journey_store import JourneyStore, JourneyStoreError
 from .journey_types import JOURNEY_REF_PATTERN, SHA256_PATTERN
 
 ROUTE_PREFIX = "/api/continuation/"
-START_SCHEMA = "flywheel.native-continuation-start/v1"
+START_SCHEMA = "flywheel.native-continuation-start/v2"
+START_SCHEMA_V1 = "flywheel.native-continuation-start/v1"
 UNDO_SCHEMA = "flywheel.native-continuation-undo/v1"
 
 def _raw_json(value: dict) -> bytes:
@@ -94,7 +95,8 @@ def _start_response(req: dict, journey: dict) -> dict:
     return {"schema": START_SCHEMA, "mode": "provider_neutral",
             "preview_ref": req["preview_ref"], "open_lens": "Rescue",
             "journey": journey,
-            "does_not_prove": ["provider-native web session resume"]}
+            "scope": ["a provider-neutral Evidence Journey started from the preview; "
+                      "the provider's own web session stays separate"]}
 
 def _grant_and_run(action: str, request: dict, *, owner_ref: str,
                    state_root: Path, clock: Callable[[], str]) -> dict:
@@ -133,10 +135,10 @@ def _private_context(req: dict, *, state_root: Path) -> dict:
             "preview_ref": stored["preview_ref"],
             "source_state_sha256": stored["source_state_sha256"],
             "context_package": context, "runner_context": runner,
-            "does_not_prove": [
-                "provider-native web session resume",
-                "selected context is complete",
-                "a model has executed the runner context"]}
+            "scope": [
+                "the private context and runner goal bound to this preview's source state",
+                "the provider's own web session stays separate",
+                "what a later model loads or runs is outside this record"]}
 
 def _start_replay(req: dict, *, goal: str, owner_ref: str,
                   state_root: Path) -> dict | None:

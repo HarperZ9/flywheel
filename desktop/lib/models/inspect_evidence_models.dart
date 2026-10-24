@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'inspect_evidence_upload.dart';
+import 'scope_field.dart';
 
 export 'inspect_evidence_upload.dart';
 
@@ -126,7 +127,8 @@ class InspectStoreReceipt {
 }
 
 class InspectEvidenceReport {
-  static const schemaName = 'flywheel.inspect-evidence/v1';
+  static const schemaName = 'flywheel.inspect-evidence/v2';
+  static const schemaNameV1 = 'flywheel.inspect-evidence/v1';
   final String reportedStatus, assessment, semanticVerification;
   final InspectImportSource source;
   final bool invalidated;
@@ -158,7 +160,7 @@ class InspectEvidenceReport {
     final source = InspectImportSource.tryFromJson(_map(json['source']));
     final status = _text(json['reported_status']);
     final assessment = _text(json['assessment']);
-    if (json['schema'] != schemaName ||
+    if ((json['schema'] != schemaName && json['schema'] != schemaNameV1) ||
         source == null ||
         !source.sameIdentity(expected) ||
         status.isEmpty ||

@@ -164,9 +164,9 @@ def test_deposit_anchor_result_surfaces_the_binding_specific_caveats():
     ])
     res = anchor_zenodo.deposit_anchor(ft, rec, token=TOKEN, metadata=_md(),
                                        sandbox=True, publish=False)
-    joined = " ".join(res["does_not_prove"])
-    assert "NOT_PROVES_THE_TIMESTAMP" in joined  # binding caveat, surfaced here
-    assert "NOT_PROVES_TIME" in joined           # durability caveat, still present
+    joined = " ".join(res["scope"])
+    assert "DOI_BOUND_TO_DIGEST" in joined       # binding scope, surfaced here
+    assert "DEPOSITED_AND_PRESERVED" in joined   # durability scope, still present
 
 
 def test_deposit_anchor_never_puts_the_token_in_any_url():

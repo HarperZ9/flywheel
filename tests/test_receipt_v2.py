@@ -12,7 +12,7 @@ receipts have accumulated:
      generator firing a million shots looks identical to one firing ten.
   4. NOMINAL evidence kinds. Comparing across kinds is a validation ERROR, so
      human judgement can never be floored beneath machine checking.
-  5. does_not_prove is MECHANICALLY DERIVED and non-empty. A receipt that reports
+  5. scope is MECHANICALLY DERIVED and non-empty. A receipt that reports
      only its proof is how a true explanation becomes a fake passport.
   6. signed_over is FIXED IN CODE per schema version and never read from the
      receipt, or an attacker chooses what their own signature covers.
@@ -144,7 +144,8 @@ def test_a_learned_filter_must_declare_itself():
     d = _den(filter_is_learned=True)
     r = _r(denominator=d)
     assert r.denominator.filter_is_learned is True
-    assert "NOT_PROVES_UNBIASED_TASK_SELECTION" in r.does_not_prove()
+    assert "TASK_SELECTION_FIXED" not in r.scope()
+    assert "TASK_SELECTION_FIXED" in _r().scope()
 
 
 def test_a_filter_without_an_id_is_refused():
@@ -181,51 +182,57 @@ def test_the_input_tier_multiset_is_carried_in_full_never_reduced():
     assert "min" not in json.dumps(d).lower() or True     # never a scalar floor
 
 
-# --- does_not_prove is derived, not decorative ---------------------------------
+# --- scope is derived, not decorative ------------------------------------------
 
-def test_does_not_prove_is_never_empty():
-    assert _r().does_not_prove()
-
-
-def test_an_absent_qa_card_is_named():
-    assert "NOT_PROVES_VERIFIER_SOUNDNESS" in _r(
-        oracle_qa_card_hash="").does_not_prove()
+def test_scope_is_never_empty():
+    assert _r().scope()
+    assert _r().scope()[0] == "CHECKED_BY_NAMED_CHECKER"
 
 
-def test_a_held_out_that_did_not_run_is_named():
-    assert "NOT_PROVES_RESISTANCE_TO_ORACLE_GAMING" in _r(
-        held_out_agreement="NOT_RUN").does_not_prove()
+def test_an_absent_qa_card_leaves_its_code_out():
+    assert "VERIFIER_QA_CARD_BOUND" not in _r(oracle_qa_card_hash="").scope()
+
+
+def test_a_held_out_that_did_not_run_leaves_its_code_out():
+    assert "HELD_OUT_CHECKER_AGREES" not in _r(
+        held_out_agreement="NOT_RUN").scope()
 
 
 def test_an_inexact_predicate_is_named():
     r = _r(coverage={"predicate_exact": False, "search_space_enumerated": True,
                      "enumerated_fraction": "1", "stop_reason": "budget",
                      "guarantee_weakens_above": "n>8"})
-    assert "NOT_PROVES_EXACTNESS" in r.does_not_prove()
+    assert "PREDICATE_EXACT" not in r.scope()
+    assert "SEARCH_SPACE_ENUMERATED" in r.scope()
 
 
-def test_an_unchecked_novelty_is_named():
-    assert "NOT_PROVES_NOVELTY" in _r().does_not_prove()
+def test_an_unchecked_novelty_leaves_its_code_out():
+    assert "NOVELTY_CHECKED" not in _r().scope()
 
 
-def test_executing_candidate_code_is_named():
-    assert "NOT_PROVES_CONTAINMENT" in _r(
-        executes_candidate_code=True).does_not_prove()
+def test_executing_candidate_code_leaves_its_code_out():
+    assert "CHECKED_WITHOUT_RUNNING_CANDIDATE" not in _r(
+        executes_candidate_code=True).scope()
 
 
-def test_publication_completeness_is_always_named():
-    # Append-only plus anchoring makes rollback detectable. It does not make
-    # non-publication detectable, and no design choice removes that.
-    assert "NOT_PROVES_PUBLICATION_COMPLETENESS" in _r().does_not_prove()
+def test_a_missing_base_weights_digest_leaves_its_code_out():
+    assert "WEIGHTS_PINNED" not in _r(base_weights_digest="").scope()
 
 
-def test_a_missing_base_weights_digest_is_named():
-    assert "NOT_PROVES_WHICH_WEIGHTS" in _r(base_weights_digest="").does_not_prove()
-
-
-def test_a_present_base_weights_digest_removes_that_entry():
+def test_a_present_base_weights_digest_earns_its_code():
     r = _r(base_weights_digest="sha256:" + "7" * 64)
-    assert "NOT_PROVES_WHICH_WEIGHTS" not in r.does_not_prove()
+    assert "WEIGHTS_PINNED" in r.scope()
+
+
+def test_a_v4_receipt_keeps_its_sealed_vocabulary():
+    from harness.receipt import Receipt, V4_SCHEMA
+    from harness.scope import LEGACY_SCOPE_KEY
+    old = _r(schema=V4_SCHEMA, base_weights_digest="")
+    wire = old.to_dict()
+    assert "scope" not in wire
+    assert "NOT_PROVES_PUBLICATION_COMPLETENESS" in wire[LEGACY_SCOPE_KEY]
+    assert "NOT_PROVES_WHICH_WEIGHTS" in wire[LEGACY_SCOPE_KEY]
+    assert Receipt.from_dict(wire).claim_sha256() == old.claim_sha256()
 
 
 # --- signed_over is fixed in code ----------------------------------------------

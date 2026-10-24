@@ -47,7 +47,7 @@ def test_lint_scores_text_and_surfaces_structural_tells():
     assert out["per100w"] == 0.0
     assert out["violations"].get("rule_of_three", 0) >= 1
     assert out["report_per100w"] > 0.0
-    assert "does_not_prove" in out
+    assert out["scope"]
 
 
 def test_lint_requires_text_or_path():

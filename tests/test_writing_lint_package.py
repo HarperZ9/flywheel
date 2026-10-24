@@ -161,4 +161,4 @@ def test_wheel_install_exposes_writing_lint_without_scripts(tmp_path: Path) -> N
     assert cli.returncode == 0, cli.stderr
     payload = json.loads(cli.stdout)
     assert payload["files"][0]["path"] == str(doc)
-    assert payload["does_not_prove"] == package_check.DOES_NOT_PROVE
+    assert payload["scope"] == package_check.SCOPE

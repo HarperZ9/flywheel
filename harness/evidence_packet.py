@@ -2,13 +2,14 @@
 from __future__ import annotations
 import hashlib, json, tempfile
 from pathlib import Path
-from .bundle import LIMITS as BUNDLE_LIMITS, SCHEMA as BUNDLE_SCHEMA, pack_bundle, safe_relative
+from .bundle import SCHEMA as BUNDLE_SCHEMA, pack_bundle, safe_relative
 from .checker_identity import checker_source as _checker_source
 from .evidence_json import admit_artifact_ref, canonical_bytes, canonical_sha256, strict_load_json
-from .evidence_packet_validation import (DNP as _DNP, MAX_FILE as _MAX_FILE, MAX_JSON as _MAX_JSON,
+from .evidence_packet_validation import (MAX_FILE as _MAX_FILE, MAX_JSON as _MAX_JSON,
     SCHEMA, criterion_basis as _basis,
     criterion_fact as _criterion_fact, digest as _sha, named_refs as _named_refs,
     project as _projection, verify_journey_packet)
+from .evidence_packet_vocab import CURRENT as _VOCAB
 from .oracle_registry import default_registry
 from .python_execution_containment import unavailable_result
 from .receipt import Receipt
@@ -16,7 +17,8 @@ from .receipt_fields import Budget, Denominator, EvidenceKind, Tier
 from .receipt_sign import unsigned
 from .task import Task
 from .verdict import Attribution, Verdict
-CHECK_SCHEMA = "flywheel.evidence-check/v1"
+CHECK_SCHEMA_V1 = "flywheel.evidence-check/v1"
+CHECK_SCHEMA = "flywheel.evidence-check/v2"  # v2 names `scope`
 _FIELDS = frozenset(("task_id", "prompt", "oracle_cmd", "candidate_ref",
     "raw_artifact_refs", "timeout_seconds"))
 def _unverifiable(code: str, detail: str, **facts) -> dict:
@@ -100,7 +102,7 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
     if entry is None:
         return _unverifiable("ORACLE_UNAVAILABLE", f"no registered oracle for {oracle_id!r}",
             oracle_id=oracle_id, oracle_calls_consumed=0,
-            does_not_prove=[f"the {oracle_id!r} claim was not checked"])
+            scope=[f"the {oracle_id!r} claim was left unchecked: no oracle is registered for it"])
     # Low integrity denies writes, not arbitrary reads or network egress. Stop
     # before candidate admission/staging until a genuine containment runtime exists.
     if entry.oracle.oracle_type == "pytest":
@@ -176,7 +178,7 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
         "candidate_ref": candidate_ref, "execution_input_protection": protection,
         "raw_artifacts": raw, "oracle_output_ref": output_ref,
         "check_result": closed}
-    limits = entry.does_not_prove
+    limits = entry.scope
     receipt = Receipt(criterion_id=f"evidence-journey/{journey['journey_id']}/{claim_id}",
         criterion_version=1, criterion_sha256=_sha(canonical_bytes(basis)), family="evidence-journey",
         family_instance_id=journey["journey_id"], generator_id="submitted-candidate", generator_seed=0,
@@ -191,7 +193,7 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
         budget=Budget(ctx["timeout_seconds"], 0, 0, timed_out), model_ref="submitted",
         base_weights_digest="", harness_version="evidence-journey/v1",
         unverifiable_reason=result.unverifiable_reason, undecided_reason=result.undecided_reason,
-        extra_does_not_prove=limits)
+        extra_scope=limits)
     path = admit_artifact_ref(root, receipt_ref, must_exist=False); path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(unsigned(receipt), indent=1, sort_keys=True), encoding="utf-8")
     names = ("attempts", "oracle_calls_consumed", "hits", "undecided", "unverifiable", "timeouts")
@@ -205,7 +207,7 @@ def run_journey_check(journey: dict, claim_id: str, oracle_id: str, candidate: P
         "claim_verdict_before": claims[claim_id]["verdict"], "receipt_ref": receipt_ref,
         "receipt_claim_sha256": receipt.claim_sha256(), "raw_artifact_refs": [r["ref"] for r in raw],
         "denominator": {name: getattr(denominator, name) for name in names},
-        "check_result": closed, "does_not_prove": receipt.does_not_prove()}
+        "check_result": closed, "scope": receipt.scope()}
 def pack_journey_packet(out_dir: Path, *, journey: dict, artifact_root: Path) -> dict:
     """Pack a journey, receipts, snapshotted raw evidence, and checker sources."""
     strict_load_json(canonical_bytes(journey), max_depth=32); view, claims = _projection(journey)
@@ -257,12 +259,12 @@ def pack_journey_packet(out_dir: Path, *, journey: dict, artifact_root: Path) ->
     criterion = {"schema": SCHEMA, "journey": journey, "journey_sha256": canonical_sha256(journey),
         "event_head_sha256": journey["event_head_sha256"], "claim_ids": view["claim_ids"],
         "criteria": criteria, "receipts": receipt_facts, "raw_artifacts": raw_facts,
-        "checker_manifest": checker_manifest, "pack_manifest": pack, "does_not_prove": list(_DNP)}
+        "checker_manifest": checker_manifest, "pack_manifest": pack, "scope": list(_VOCAB.scope)}
     criterion["criterion_sha256"] = canonical_sha256(criterion); out = Path(out_dir)
     if out.exists() and any(out.iterdir()): raise ValueError("packet output directory must be empty")
     pack_bundle(out, envelopes=envelopes, criterion=criterion, checker_sources=checkers,
         qa_card={"schema": "flywheel.oracle-qa-card/v2", "passed": False, "reason": "no aggregate QA card is asserted by this packet"},
         tree_head={"schema": "flywheel.evidence-journey-head/v1", "size": len(journey["events"]), "root": "sha256:" + str(journey["event_head_sha256"])})
     path = out / "manifest.json"; manifest = strict_load_json(path.read_bytes())
-    manifest["does_not_prove"] = list(BUNDLE_LIMITS) + list(_DNP); path.write_text(
+    manifest["scope"] = _VOCAB.manifest_scope(); path.write_text(
         json.dumps(manifest, indent=1, sort_keys=True), encoding="utf-8"); return verify_journey_packet(out)

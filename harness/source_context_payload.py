@@ -6,12 +6,21 @@ import re
 
 from .evidence_json import canonical_sha256
 from .evidence_public import public_metadata
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY, scope_list, scope_of
 from .source_context_error import SourceContextError
 
-PRIVATE_SCHEMA = "flywheel.source-context-private/v1"
-PROJECTION_SCHEMA = "flywheel.source-context-projection/v1"
+# v2 records name the selection's scope `scope`; stored v1 records keep the
+# older key and still resolve, each projected in its own version's vocabulary.
+PRIVATE_SCHEMA_V1 = "flywheel.source-context-private/v1"
+PRIVATE_SCHEMA = "flywheel.source-context-private/v2"
+PRIVATE_SCHEMAS = (PRIVATE_SCHEMA_V1, PRIVATE_SCHEMA)
+PROJECTION_SCHEMA_V1 = "flywheel.source-context-projection/v1"
+PROJECTION_SCHEMA = "flywheel.source-context-projection/v2"
+_PROJECTION_FOR = {PRIVATE_SCHEMA: (PROJECTION_SCHEMA, SCOPE_KEY),
+                   PRIVATE_SCHEMA_V1: (PROJECTION_SCHEMA_V1, LEGACY_SCOPE_KEY)}
 BINDING_SCHEMA = "flywheel.source-context-binding/v1"
-WORKER_SCHEMA = "flywheel.source-context-worker-payload/v1"
+WORKER_SCHEMA_V1 = "flywheel.source-context-worker-payload/v1"
+WORKER_SCHEMA = "flywheel.source-context-worker-payload/v2"
 SOURCE_REF_PREFIX = "data_source_context."
 _SAFE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
 _ROW_REF = re.compile(r"row_[0-9a-f]{32}\Z|row_[A-Za-z0-9._-]{1,64}\Z")
@@ -46,7 +55,7 @@ def validated_gather_payload(payload: dict) -> tuple[list[dict], dict]:
             or payload.get("verified_scope") != "selected_rows"):
         raise SourceContextError("SOURCE_CONTEXT_SELECTION_FAILED")
     _public_list(payload.get("omissions") or [])
-    _public_list(payload.get("does_not_prove") or [])
+    _public_list(scope_list(payload))
     base = {key: value for key, value in payload.items()
             if key not in {"selection_digest", "verified", "verified_scope"}}
     try:
@@ -114,12 +123,13 @@ def projection_for(ref: str, private: dict, private_hash: str) -> dict:
         "selected_text_utf8_sha256_prefix": row["selected_text_utf8_sha256"][:16],
         "normalized_full_text_sha256_prefix": row["normalized_full_text_sha256"][:16],
         "omissions": row["omissions"]} for row in private["rows"]]
-    projection = {"schema": PROJECTION_SCHEMA, "source_context_ref": ref,
+    schema, key = _PROJECTION_FOR.get(private.get("schema"), _PROJECTION_FOR[PRIVATE_SCHEMA])
+    projection = {"schema": schema, "source_context_ref": ref,
         "private_payload_sha256": private_hash, "root_mode": private["root_mode"],
         "profile": private["profile"], "row_count": private["row_count"],
         "rows": rows, "selected_text_utf8_bytes": private["selected_text_utf8_bytes"],
         "caps": private["caps"], "omissions": private["omissions"],
-        "does_not_prove": private["does_not_prove"]}
+        key: scope_of(private)}
     try:
         public_metadata(projection)
     except Exception:
@@ -131,7 +141,7 @@ def journey_basis_for(ref: str, projection: dict) -> dict:
     return {"source_context_ref": ref, "projection_sha256": canonical_sha256(projection),
         "row_count": projection["row_count"],
         "selected_text_utf8_bytes": projection["selected_text_utf8_bytes"],
-        "omissions": projection["omissions"], "does_not_prove": projection["does_not_prove"]}
+        "omissions": projection["omissions"], "scope": scope_list(projection)}
 
 
 def worker_context_for(private: dict, projection: dict, binding: dict) -> dict:
@@ -143,7 +153,7 @@ def worker_context_for(private: dict, projection: dict, binding: dict) -> dict:
     return {"source_context_ref": binding["source_context_ref"],
         "private_payload_sha256": binding["private_payload_sha256"],
         "projection_sha256": binding["projection_sha256"], "projection": projection,
-        "rows": rows, "does_not_prove": private["does_not_prove"]}
+        "rows": rows, "scope": scope_list(private)}
 
 def _caps(payload: dict) -> dict:
     caps = {}

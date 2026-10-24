@@ -138,7 +138,7 @@ Map<String, Object?> _successBody(String sha) => {
       'source': {'format': 'inspect-json', 'sha256': sha, 'byte_length': 11},
       'data_ref': 'data_inspect.source:${sha.substring(0, 32)}',
       'report': {
-        'schema': 'flywheel.inspect-evidence/v1',
+        'schema': 'flywheel.inspect-evidence/v2',
         'source': {'sha256': sha, 'byte_length': 11},
         'producer': {'format': 'inspect-json', 'version': 2},
         'reported_status': 'success',
@@ -154,7 +154,7 @@ Map<String, Object?> _successBody(String sha) => {
         'samples': const [],
         'source_pointers': const [],
         'scorer_unit_analysis': {
-          'schema': 'flywheel.inspect-scorer-unit-analysis/v1',
+          'schema': 'flywheel.inspect-scorer-unit-analysis/v2',
           'semantic_verification': 'UNVERIFIABLE',
           'contracts': [
             {
@@ -218,7 +218,7 @@ Map<String, Object?> _successBody(String sha) => {
               ],
             }
           ],
-          'does_not_prove': const [],
+          'scope': const [],
         },
       },
     };

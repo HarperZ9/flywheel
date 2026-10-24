@@ -13,8 +13,8 @@ from harness.byte_witness import (
     WitnessError,
     append,
     cite,
-    does_not_prove,
     records,
+    scope,
     witness_bytes,
     witness_file,
 )
@@ -172,9 +172,10 @@ def test_a_file_that_cannot_be_read_is_a_named_refusal(tmp_path):
     assert "could not be read" in str(caught.value)
 
 
-def test_does_not_prove_is_never_empty_and_says_what_is_unsigned():
-    unsigned = does_not_prove()
-    assert unsigned and any("nothing is signed" in line for line in unsigned)
-    signed = does_not_prove(signed=True, anchored=True)
-    assert signed and not any("nothing is signed" in line for line in signed)
+def test_scope_is_never_empty_and_says_what_is_unsigned():
+    unsigned = scope()
+    assert unsigned and any("chain is unsigned" in line for line in unsigned)
+    signed = scope(signed=True, anchored=True)
+    assert signed and not any("chain is unsigned" in line for line in signed)
+    assert any("binds this record to its key" in line for line in signed)
     assert len(signed) == len(unsigned)

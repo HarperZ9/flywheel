@@ -209,7 +209,7 @@ def test_private_context_route_returns_source_bound_runner_and_refuses_drift(tmp
     }, state)
 
     assert context_status == 200
-    assert context["schema"] == "flywheel.native-continuation-private-context/v1"
+    assert context["schema"] == "flywheel.native-continuation-private-context/v2"
     assert context["context_package"]["selected_tasks"]
     assert context["runner_context"]["root"] == str(root.resolve())
     assert "provider-neutral continuation preview" in context["runner_context"]["goal"]

@@ -1,5 +1,5 @@
 {
-  "schema": "flywheel.domain-pack/v1",
+  "schema": "flywheel.domain-pack/v2",
   "pack_id": "flywheel.design.tokens",
   "version": "1.0.0",
   "domain_id": "design",
@@ -48,8 +48,8 @@
     "the pack checks tokens against the referenced tables only",
     "it grades no aesthetic merit"
   ],
-  "does_not_prove": [
-    "a passed token check does not prove a surface is well designed"
+  "scope": [
+    "a passed token check covers the referenced contrast and typeface tables"
   ],
   "owner": "HarperZ9",
   "review_due_at": "2027-02-24"

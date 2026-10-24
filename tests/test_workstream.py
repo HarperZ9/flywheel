@@ -14,7 +14,7 @@ anything:
      rather than erased.
   4. IDENTITY WITNESSES THE SUBTREE. Editing a lemma statement, or moving the
      environment a lemma was checked in, moves the identity of the goal above it.
-  5. does_not_prove IS DERIVED AND NON-EMPTY. It is computed from what settled
+  5. scope IS DERIVED AND NON-EMPTY. It is computed from what settled
      and cannot be authored by whoever wants the record to read well.
 """
 import pytest
@@ -105,7 +105,7 @@ def test_an_assumption_satisfies_its_parent_and_is_named_in_the_footprint():
     receipt = workstream_receipt(stream, {"goal": "PASS"})
     assert receipt["goal_standing"] == VERIFIED
     assert receipt["assumption_footprint"] == ["reading"]
-    conditional = [line for line in receipt["does_not_prove"] if "conditional" in line]
+    conditional = [line for line in receipt["scope"] if "conditional" in line]
     assert conditional and "reading" in conditional[0]
 
 
@@ -157,15 +157,15 @@ def test_the_receipt_names_every_environment_the_goal_rests_on():
     assert receipt["environment_footprint"] == [
         "lean4:v4.9.0+mathlib:2026-08-01", "mhs:plate-reader-3/cal-2026-08-30"]
     assert any("comparable only where the environment matches" in line
-               for line in receipt["does_not_prove"])
+               for line in receipt["scope"])
 
 
-def test_does_not_prove_is_never_empty_and_counts_what_is_open():
+def test_scope_is_never_empty_and_counts_what_is_open():
     receipt = workstream_receipt(_stack(), {"base": "PASS"})
     assert receipt["schema"] == SCHEMA
-    assert len(receipt["does_not_prove"]) >= 2
-    assert any("pending" in line for line in receipt["does_not_prove"])
-    assert any("blocked" in line for line in receipt["does_not_prove"])
+    assert len(receipt["scope"]) >= 2
+    assert any("pending" in line for line in receipt["scope"])
+    assert any("blocked" in line for line in receipt["scope"])
 
 
 def test_the_footprints_cover_the_goal_subtree_only():

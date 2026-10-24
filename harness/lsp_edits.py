@@ -36,10 +36,11 @@ from .lsp_documents import from_uri
 from .lsp_positions import DEFAULT_ENCODING, check_encoding
 from .lsp_text_edits import REFUSALS, EditRefused, rebuilt, spans_of
 
-EDIT_SCHEMA = "flywheel.lsp-edit/v1"
+EDIT_SCHEMA_V1 = "flywheel.lsp-edit/v1"
+EDIT_SCHEMA = "flywheel.lsp-edit/v2"  # v2 names `scope`
 
-__all__ = ["EDIT_SCHEMA", "REFUSALS", "EditPlan", "EditRefused", "FileChange",
-           "apply_plan", "apply_workspace_edit", "does_not_prove", "plan_edit"]
+__all__ = ["EDIT_SCHEMA", "EDIT_SCHEMA_V1", "REFUSALS", "EditPlan", "EditRefused", "FileChange",
+           "apply_plan", "apply_workspace_edit", "plan_edit", "scope"]
 
 
 def _sha(text: str) -> str:
@@ -90,7 +91,7 @@ class EditPlan:
             "applied": self.applied,
             "written": list(self.written),
             "files": [change.summary() for change in self.files],
-            "does_not_prove": does_not_prove(),
+            "scope": scope(),
         }
 
 
@@ -224,15 +225,15 @@ def apply_workspace_edit(edit: dict, *, root: Path | str | None = None,
     return apply_plan(plan, allow_write=allow_write)
 
 
-def does_not_prove() -> list[str]:
-    """What an applied edit leaves open. Never empty."""
+def scope() -> list[str]:
+    """What an applied edit covers. Never empty."""
     return [
-        "the digests cover the text this process read and wrote, so a file "
-        "changed by something else between the plan and the write is not seen",
-        "each file is written on its own, so a failure part way through leaves "
+        "the digests cover the text this process read and wrote; a change made "
+        "by another writer between the plan and the write falls outside them",
+        "each file is written on its own; a failure part way through leaves "
         "the earlier documents changed and the later ones untouched",
-        "the edit is the server's proposal, and applying it says the ranges "
-        "were consistent, not that the change is correct",
-        "resource operations (create, rename, delete) are refused rather than "
-        "performed, so an edit needing one is not applied at all",
+        "the edit is the server's proposal; applying it checks that the ranges "
+        "were consistent, and the change's correctness is the server's",
+        "resource operations (create, rename, delete) are refused; an edit "
+        "that needs one is left unapplied",
     ]

@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from harness.scope import scope_list  # noqa: E402
 
 # Arms that need something this script does not have. Each says what is
 # missing, so an absent number reads as unmeasured rather than as zero.
@@ -189,7 +190,7 @@ def _receipting_cost() -> dict[str, Any]:
         "unsealed": ["ms_per_witnessed_action", "durability_share",
                      "recheck_us_per_record", "detail", "non_goal"],
         "non_goal": report["reading"],
-        "caveats": report["does_not_prove"],
+        "caveats": scope_list(report),
         "detail": [{"name": arm, "score": spread["median_us"]}
                    for arm, spread in report["arms"].items()],
     }
