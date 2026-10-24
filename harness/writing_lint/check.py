@@ -90,9 +90,10 @@ HARD_BY_SLOP = types.MappingProxyType(
 # enforceable signal.
 REPORT_ONLY = frozenset(writing_lists.REPORT_ONLY_CATEGORIES)
 
-DOES_NOT_PROVE = (
-    "This scores FORM, not substance. A low score is not a true or authentic "
-    "document, and this tool never tries to defeat AI detection.")
+SCOPE = (
+    "This scores FORM against the named profile: word counts, phrase and "
+    "structure tells, cadence. Substance, truth and authenticity sit outside the "
+    "score, and this tool never tries to defeat AI detection.")
 
 
 def _count_phrases(low: str, phrases, keep) -> int:
@@ -282,7 +283,7 @@ def main(argv: list[str] | None = None) -> int:
 
     any_hard = any(r["hard"] for r in records)
     if args.as_json:
-        print(json.dumps({"files": records, "does_not_prove": DOES_NOT_PROVE},
+        print(json.dumps({"files": records, "scope": SCOPE},
                          indent=1))
     else:
         for r, prof_name in zip(records, names):
@@ -291,7 +292,7 @@ def main(argv: list[str] | None = None) -> int:
                   f"report_per100w={r['report_per100w']} "
                   f"cadence={r.get('cadence_cv')} "
                   f"em_dash={r['em_dash']} hard={','.join(r['hard']) or '-'}")
-        print(DOES_NOT_PROVE)
+        print(SCOPE)
     return 1 if (args.gate and any_hard) else 0
 
 

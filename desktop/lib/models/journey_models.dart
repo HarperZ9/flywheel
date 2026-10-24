@@ -1,4 +1,5 @@
 import 'evidence_state.dart';
+import 'scope_field.dart';
 export 'evidence_state.dart';
 
 final _journeyRef = RegExp(r'^jrn_[0-9a-f]{32}$');
@@ -85,12 +86,17 @@ Map<String, String>? _conclusion(Object? raw, List<ParseIssue> issues) {
   if (raw == null) return null;
   if (raw is! Map ||
       raw.values.any((value) => value is! String || !isSafePublicText(value)) ||
-      raw.keys.any((key) => key != 'summary' && key != 'does_not_prove')) {
+      raw.keys.any((key) => key != 'summary' && !kScopeKeys.contains(key)) ||
+      (raw.containsKey(kScopeKey) && raw.containsKey(kLegacyScopeKey))) {
     addParseIssue(issues, 'conclusion', raw);
     return null;
   }
   return Map<String, String>.unmodifiable(raw);
 }
+
+/// The conclusion's scope text, under either field name.
+String? conclusionScope(Map<String, String>? conclusion) =>
+    conclusion?[scopeKeyOf(conclusion) ?? kScopeKey];
 
 class JourneyNextAction extends DefensiveModel {
   final String actionId, kind, description;
@@ -259,9 +265,9 @@ class JourneyExportResult extends DefensiveModel {
   final (String, String, String, String, String, String) _refs;
   final (ReceiptState, ReceiptState, ReceiptState) _verdicts;
   final bool idempotentReplay;
-  final List<String> doesNotProve;
+  final List<String> scope;
   JourneyExportResult._(this._refs, this._verdicts, this.idempotentReplay,
-      this.doesNotProve, super.parseIssues);
+      this.scope, super.parseIssues);
   String get journeyRef => _refs.$1;
   String get sourceEventHeadSha256 => _refs.$2;
   String get finalEventHeadSha256 => _refs.$3;
@@ -273,7 +279,7 @@ class JourneyExportResult extends DefensiveModel {
   ReceiptState get rehashResistanceVerdict => _verdicts.$3;
   factory JourneyExportResult.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
-    expectSchema(json, 'flywheel.evidence-journey-export/v2', issues);
+    expectSchemaIn(json, journeyExportSchemas, issues);
     if (json['profile'] != 'flywheel.evidence-journey-custody/v2') {
       addParseIssue(issues, 'profile', json['profile']);
     }
@@ -294,7 +300,20 @@ class JourneyExportResult extends DefensiveModel {
           'rehash_resistance_verdict', issues),
     ),
         readValue<bool>(json, 'idempotent_replay', issues, false),
-        readStringList(json['does_not_prove'], 'does_not_prove', issues),
+        _exportScope(json, issues),
         issues);
   }
+}
+
+const journeyExportSchema = 'flywheel.evidence-journey-export/v3';
+const journeyExportSchemaV2 = 'flywheel.evidence-journey-export/v2';
+const journeyExportSchemas = {journeyExportSchema, journeyExportSchemaV2};
+
+/// A v2 export names its scope list by the older key; a v3 export uses
+/// `scope`. Each version must carry its own name only.
+List<String> _exportScope(Map<String, Object?> json, List<ParseIssue> issues) {
+  final key = scopeKeyFor(legacy: json['schema'] == journeyExportSchemaV2);
+  final other = key == kScopeKey ? kLegacyScopeKey : kScopeKey;
+  if (json.containsKey(other)) addParseIssue(issues, other, json[other]);
+  return readStringList(json[key], key, issues);
 }

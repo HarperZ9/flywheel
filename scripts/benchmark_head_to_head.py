@@ -31,6 +31,7 @@ from typing import Any
 
 from harness.attempt_attribution import recovery_sentence, summarize
 from harness.graded_metric_report import PASS_DENOMINATORS, pass_fraction
+from harness.scope import scope_list
 from scripts.benchmark_shared import esc as _esc
 
 RECORD = Path(__file__).resolve().parent.parent / "docs" / "benchmarks" / "graded-metrics.json"
@@ -49,6 +50,10 @@ NOT_RUN = ("No head-to-head run has been recorded yet. The task set, the "
            "adapters, and the graded checkers are in the repository and the "
            "run is one command; until it is run there is no number here, "
            "which is the honest state and not a zero.")
+
+# v1 records name the list under the older key; scope_list reads both.
+_RECORD_SCHEMAS = frozenset({"flywheel.graded_metric_report/v1",
+                             "flywheel.graded_metric_report/v2"})
 
 
 def _cell(value: Any) -> str:
@@ -222,8 +227,8 @@ def render_html(record: dict[str, Any] | None) -> str:
         parts.append('<div class="null-item"><p class="why">No graded checker '
                      "reported on this run, so the quality half of the "
                      "comparison is unmeasured.</p></div>")
-    parts.append('<h3>What this does not prove</h3><ul class="caveats">'
-                 + "".join(f"<li>{_esc(item)}</li>" for item in record["does_not_prove"])
+    parts.append('<h3>Scope</h3><ul class="caveats">'
+                 + "".join(f"<li>{_esc(item)}</li>" for item in scope_list(record))
                  + "</ul>")
     return "".join(parts)
 
@@ -264,8 +269,8 @@ def render_markdown(record: dict[str, Any] | None) -> list[str]:
             [[metric["metric"], metric["direction"],
               *[_cell(entry["mean"]) for entry in metric["roles"]]]
              for metric in checker["metrics"]])
-    out += ["", "### What this does not prove", ""]
-    out += [f"- {item}" for item in record["does_not_prove"]]
+    out += ["", "### Scope", ""]
+    out += [f"- {item}" for item in scope_list(record)]
     return out + [""]
 
 
@@ -281,7 +286,7 @@ def load_record(path: Path | None = None) -> dict[str, Any] | None:
     if not target.exists():
         return None
     doc = json.loads(target.read_text(encoding="utf-8"))
-    if doc.get("schema") != "flywheel.graded_metric_report/v1":
+    if doc.get("schema") not in _RECORD_SCHEMAS:
         raise ValueError(f"{target}: not a graded metric report")
     return doc
 

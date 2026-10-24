@@ -19,8 +19,10 @@ _ORIGINS = ('model', *_POLICY, 'features.hooks', 'features.apps', 'features.plug
 _LAYER_VALUES = ('mcp_servers', 'notify', 'project_doc_max_bytes')
 _LAYER_FIELDS = {'sessionFlags': (), 'user': ('file',), 'system': ('file',),
                  'project': ('dotCodexFolder',)}
-_LIMIT = ('Does not prove execution isolation, authentication, sandbox enforcement, '
-          'tool effects, native session readiness, or production runtime admission.')
+_SCOPE = ('Covers the redacted effective-config and requirements read, matched against '
+          'the read-only policy. Execution isolation, authentication, sandbox enforcement, '
+          'tool effects, native session readiness and production runtime admission are '
+          'outside this inspection.')
 
 
 @dataclass(frozen=True)
@@ -34,14 +36,14 @@ class CodexConfigInspection:
         return False
 
     @property
-    def does_not_prove(self) -> str:
-        return _LIMIT
+    def scope(self) -> str:
+        return _SCOPE
 
     def as_result(self) -> dict:
-        return {'schema': 'flywheel.codex-config-inspection/v1',
+        return {'schema': 'flywheel.codex-config-inspection/v2',
                 'configuration_ready': self.configuration_ready, 'admitted': False,
                 'config_digest': self.config_digest, 'issues': list(self.issues),
-                'does_not_prove': self.does_not_prove}
+                'scope': self.scope}
 
 
 def inspect_codex_configuration(client, *, cwd: str, model: str) -> CodexConfigInspection:

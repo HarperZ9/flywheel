@@ -17,12 +17,14 @@ from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 from harness.cross_harness_types import MODEL_IDENTITY_FIELDS, project_model_identity  # noqa: E402
 
 
-SCHEMA = "harness.cross-harness-integration-map/v1"
+# v2 (2026-10-23): the map names what it covers in `scope`.
+SCHEMA = "harness.cross-harness-integration-map/v2"
+SCHEMA_V1 = "harness.cross-harness-integration-map/v1"
 GRAPH_SCHEMA = "harness.closed-loop-integration-graph/v1"
 EXPECTED_SCHEMAS = {
     "lane_before": "flywheel.lanes/v1",
     "lane_after": "flywheel.lanes/v1",
-    "auth": "harness.endpoint-auth-status/v1",
+    "auth": "harness.endpoint-auth-status/v2",
     "endpoint_profiles": "harness.model-endpoint-profiles/v1",
     "endpoint_gate": "harness.model-endpoint-gate/v1",
     "runtime_matrix": "harness.adapter-runtime-matrix/v1",
@@ -31,6 +33,8 @@ EXPECTED_SCHEMAS = {
     "comparison": "harness.comparison-report/v1",
     "outcome": "harness.closed-loop-outcome/v1",
 }
+# Older versions an input may still carry; each reads with its own field names.
+PRIOR_SCHEMAS = {"auth": ("harness.endpoint-auth-status/v1",)}
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_GRAPH = ROOT / "project-docs" / "schematics" / "closed-loop-integration.graph.json"
 
@@ -123,7 +127,8 @@ def build_integration_map(
             _read_object(path, artifact_id) if path else ({}, f"{artifact_id}_missing", None)
         )
         observed_schema = body.get("schema") if body else None
-        if not input_error and observed_schema != expected_schema:
+        if (not input_error and observed_schema != expected_schema
+                and observed_schema not in PRIOR_SCHEMAS.get(artifact_id, ())):
             input_error = f"{artifact_id}_schema_mismatch"
         metadata = _observed_metadata(body)
         artifact = {
@@ -189,9 +194,9 @@ def build_integration_map(
             "unknown_observations": len(evidence["unknown"]),
             "inferred_observations": len(evidence["inferred"]),
         },
-        "does_not_prove": [
-            "Static graph declarations do not prove live runtime state.",
-            "Artifact presence and hashes do not prove benchmark quality or endpoint availability.",
+        "scope": [
+            "The map reads the static graph declarations; live runtime state is observed separately.",
+            "It records which artifacts are present and their hashes, as inputs to benchmark review.",
         ],
     }
 
@@ -219,8 +224,8 @@ def render_markdown(report: dict[str, Any]) -> str:
     lines.extend(
         f"- `{row['id']}` `{row['schema']}`: `{row['sha256']}`" for row in report["artifacts"]
     )
-    lines.extend(["", "## Does not prove", ""])
-    lines.extend(f"- {text}" for text in report["does_not_prove"])
+    lines.extend(["", "## Scope", ""])
+    lines.extend(f"- {text}" for text in report["scope"])
     return "\n".join(lines) + "\n"
 
 

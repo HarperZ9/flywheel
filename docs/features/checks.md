@@ -14,7 +14,7 @@ from harness.checks import run
 
 receipt = run("recompute", 125, {"expr": "a ^ b", "inputs": {"a": 74, "b": 51}})
 receipt.verdict   # "FAIL": 74 XOR 51 is 121
-receipt.to_dict() # schema flywheel.check-receipt/v1
+receipt.to_dict() # schema flywheel.check-receipt/v2
 ```
 
 ## The seven checks
@@ -30,16 +30,18 @@ receipt.to_dict() # schema flywheel.check-receipt/v1
 | `differential` | `{"outputs": [[input, output], ...]}` recorded from the candidate | `reference` (an expression over `x`, same evaluator as recompute), `inputs` (the fuzz set) | a fuzz input has no recorded output, or an output differs from the reference exactly; 3 and 3.0 differ |
 
 Every receipt carries the verdict (PASS, FAIL or UNVERIFIABLE), a code, a
-reason, the sha256 of the subject and of the spec, and a `does_not_prove` line.
-A missing input (no schema, no page, no expression, no machine) gives
-UNVERIFIABLE. A check that raises gives UNVERIFIABLE with code `check_error`.
-Neither case can pass.
+reason, the sha256 of the subject and of the spec, and a `scope` line: a pass
+shows the subject has the checked structure or value, and its meaning is a
+separate review.
+A missing input (schema, page, expression or machine) gives UNVERIFIABLE. A
+check that raises gives UNVERIFIABLE with code `check_error`. Both cases block a
+pass.
 
 ## In search
 
 Give search a list of checks and each candidate runs them before the visible
-tests. A candidate that does not pass every check is rejected without a test
-run, and the next candidate gets its turn.
+tests. A candidate that fails any check is rejected before its test run, and
+the next candidate gets its turn.
 
 ```python
 from harness.eval import ArmConfig
@@ -47,8 +49,8 @@ arm = ArmConfig(name="search", n_candidates=4,
                 checks=[("ast", {"require_defs": ["solve"]})])
 ```
 
-The receipt's search stage lists each candidate's check codes. With no checks
-set, search runs as before.
+The receipt's search stage lists each candidate's check codes. An empty check
+list leaves search exactly as it was.
 
 ## In the pre-action monitor
 
@@ -95,16 +97,14 @@ against the receipt schema.
 
 Each check has a paired mutation test: a weakened version of the check (for
 example, the schema check with required fields ignored) must catch fewer of its
-kind's false accepts, and an always-pass checker must catch none.
+kind's false accepts, and an always-pass checker must catch zero.
 
 ## Limits
 
-The three misses show where these checks stop. The differential check sees
-only the fuzz inputs its spec names, so a port that breaks on the most negative
-integer passes a fuzz set that does not hold it. A quote cut so that it drops a
-negation still appears on the page, and a program that hard-codes the visible
-test's answer still parses. A passing check shows structure or a matching
-value. It does not show the subject is right in meaning. Most of the corpus
-was built from known patterns, so the catch rate says the checks cover the
-failures we have already named; it does not measure failures nobody has seen
-yet.
+The three misses mark where these checks stop. The differential check sees the
+fuzz inputs its spec names, so a port that breaks on the most negative integer
+passes a fuzz set that leaves that integer out. A quote cut to drop a negation
+still appears on the page, and a program that hard-codes the visible test's
+answer still parses. A passing check shows structure or a matching value;
+meaning needs a reader. Most of the corpus was built from known patterns, so
+the catch rate covers the failures already named.

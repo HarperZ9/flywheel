@@ -5,10 +5,18 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Scope field (migration from `does_not_prove`)
+- Every record names what its result covers in a `scope` field, in plain positive words. The field replaces `does_not_prove`, whose entries were limits phrased as negatives. Each value was rewritten from what the module checks; codes such as `NOT_PROVES_EXACTNESS` became codes for the covered property, emitted when it holds (`PREDICATE_EXACT`). Certificate results carry `BOUND_FROM_SUBMITTED_OBJECT`: the verified object's value bounds the optimum from one side.
+- Every schema whose records changed moved up one version: receipts to `flywheel.receipt/v5`, routed receipts to v2, QA cards to v3, and the gateway, bulletin, evidence, writing, trace and statistics records listed in `project-docs/SCOPE-MIGRATION.md`. Writers emit the new version. Readers accept both versions and read each with its own vocabulary, so v3 and v4 receipts, v1 records and every sealed or anchored artifact still verify with their original bytes.
+- `harness/scope.py` (`scope_of`, `scope_list`) reads either name; the desktop app has the same helper. `scripts/check_scope_migration.py` runs in CI and keeps the older name to the readers, the sealed artifacts and historical documents. `tests/test_scope_migration.py` checks both readers, the old-version artifacts, and the bytes of 71 kept artifacts.
+- Printed headings say `scope:`. Records in superstack's vendored receipt format keep their field until superstack moves.
+
 Checks and reports
-- Eval receipts and the harness-config hash carry the serving runtime (framework, GPU, dtype, compile mode, batch shape, determinism flags, capture hooks), and a rerun witness calls a mismatch DRIFT only between equal deterministic runtimes. See `docs/features/eval-runtime-and-access.md`.
-- Eval receipts carry an access statement over six surfaces; `claim_scope` refuses a claim the recorded access does not cover.
-- `coverage` and `differential` checks, and 16 partial-check false accepts in the corpus: 15 of 16 caught, 53 of 56 overall, 0 false rejects on 376 known-good items. See `docs/features/checks.md`.
+- Eval results and the harness-config hash record the serving runtime: framework, GPU, dtype, compile mode, batch shape, determinism flags and capture hooks. A rerun reports DRIFT on an output mismatch only when both runs used the same deterministic runtime. See `docs/features/eval-runtime-and-access.md`.
+- Eval results record which of six access surfaces the evaluator had, and `claim_scope` rejects a claim that needs access the run did not have.
+- New `coverage` and `differential` checks, and 16 partial-check false accepts added to the corpus. 15 of the 16 are caught, and 53 of 56 across the corpus, with 0 false rejects on 376 known-good items. See `docs/features/checks.md`.
+- Text, Markdown, LaTeX and HTML reports print their limits under one plain heading, "limits" or "## Limits". The `--limits` help in `flywheel acp`, `dap` and `lsp` says "print the limits of a run record". The bundled `reproduce.py` says what MATCH covers.
+- `audit run` runs two starter detectors: receipt integrity and unbacked claims. The detector that asked each work product for a stated limit is removed.
 
 ## 1.9.0 (2026-10-15)
 

@@ -21,12 +21,19 @@ from pathlib import Path
 from ..journey_lock import ExclusiveJourneyLock
 from ..tool_call_receipt import _canonical_bytes, _sha256_hex
 
-HOLD_SCHEMA = "flywheel.preaction-hold/v1"
-ALLOW_SCHEMA = "flywheel.preaction-allow/v1"
+HOLD_SCHEMA_V1 = "flywheel.preaction-hold/v1"
+ALLOW_SCHEMA_V1 = "flywheel.preaction-allow/v1"
+HOLD_SCHEMA = "flywheel.preaction-hold/v2"    # v2 names `scope`
+ALLOW_SCHEMA = "flywheel.preaction-allow/v2"  # v2 names `scope`
+# Readers accept both versions: a v1 record carries its scope line under the
+# older field name, a v2 record under `scope` (harness.scope.scope_of reads either).
+HOLD_SCHEMAS = (HOLD_SCHEMA, HOLD_SCHEMA_V1)
+ALLOW_SCHEMAS = (ALLOW_SCHEMA, ALLOW_SCHEMA_V1)
+ASSESSMENT_SCHEMAS = HOLD_SCHEMAS + ALLOW_SCHEMAS
 DECISION_SCHEMA = "flywheel.preaction-decision/v1"
 POST_SCHEMA = "flywheel.preaction-post/v1"
 REDEEM_SCHEMA = "flywheel.preaction-redeem/v1"
-SCHEMAS = (HOLD_SCHEMA, ALLOW_SCHEMA, DECISION_SCHEMA, POST_SCHEMA, REDEEM_SCHEMA)
+SCHEMAS = (*ASSESSMENT_SCHEMAS, DECISION_SCHEMA, POST_SCHEMA, REDEEM_SCHEMA)
 _TAIL_CHUNK = 65536
 ATTESTATION_FIELD = "attestation"
 
@@ -189,8 +196,9 @@ class HoldStore:
 
 
 def assessment_record(*, call, ctx, assessment, trajectory_sha256: str, expires_at: str,
-                      owner_ref: str, does_not_prove: str) -> dict:
-    """The hold (HOLD or BLOCK) or allow record, fields in fixed order."""
+                      owner_ref: str, scope: str) -> dict:
+    """The hold (HOLD or BLOCK) or allow record, fields in fixed order.
+    ``scope`` says what the verdict covers (contract.SCOPE)."""
     args_bytes = call.args_bytes()
     schema = ALLOW_SCHEMA if assessment.verdict == "ALLOW" else HOLD_SCHEMA
     block = assessment.preaction_block()
@@ -219,7 +227,7 @@ def assessment_record(*, call, ctx, assessment, trajectory_sha256: str, expires_
         "hold_id": assessment.hold_id,
         "expires_at": expires_at,
         "owner_ref": owner_ref,
-        "does_not_prove": does_not_prove,
+        "scope": scope,
     }
 
 

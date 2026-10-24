@@ -3,7 +3,8 @@ from copy import deepcopy
 import json
 from pathlib import Path
 
-from harness.receipt import LEGACY_SCHEMA, Receipt, SCHEMA
+from harness.receipt import LEGACY_SCHEMA, Receipt, SCHEMA, V4_SCHEMA
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.receipt_sign import pack_for_export, verify_signed
 
 
@@ -21,9 +22,10 @@ def _envelope(kind):
             "signature": deepcopy(frozen[kind]["signature"])}
 
 
-def test_new_claim_bound_limit_writer_uses_a_new_schema():
+def test_new_claim_bound_scope_writer_uses_a_new_schema():
     assert LEGACY_SCHEMA == "flywheel.receipt/v3"
-    assert SCHEMA == "flywheel.receipt/v4"
+    assert V4_SCHEMA == "flywheel.receipt/v4"
+    assert SCHEMA == "flywheel.receipt/v5"
 
 
 def test_frozen_legacy_v3_unsigned_receipt_roundtrips_exactly():
@@ -41,8 +43,9 @@ def test_frozen_legacy_v3_hmac_export_keeps_the_v3_preimage():
     exported = pack_for_export(envelope)
     assert exported["signature"] is None
     assert exported["receipt"]["claim_sha256"] == envelope["receipt"]["claim_sha256"]
-    assert "extra_does_not_prove" not in exported["receipt"]
-    assert "LOCAL_SIGNATURE_STRIPPED" in exported["receipt"]["does_not_prove"]
+    assert "extra_" + LEGACY_SCOPE_KEY not in exported["receipt"]
+    assert "scope" not in exported["receipt"]
+    assert "LOCAL_SIGNATURE_STRIPPED" in exported["receipt"][LEGACY_SCOPE_KEY]
     assert Receipt.from_dict(exported["receipt"]).to_dict() == exported["receipt"]
 
 

@@ -21,7 +21,9 @@ Two things live here, both pure data:
   It runs nothing, so a stranger can run it on a certificate and files someone
   else produced.
 
-Every result carries ``DOES_NOT_PROVE``, four fixed sentences a test asserts.
+Every result carries ``SCOPE``, four fixed sentences a test asserts. Receipts in
+superstack's format carry ``SUPERSTACK_LIMITS`` under superstack's own field name,
+which changes only upstream.
 This module imports nothing that can execute.
 """
 from __future__ import annotations
@@ -42,7 +44,17 @@ CERT_SCHEMA = "raw-cert/2"
 MATCH, DRIFT = "MATCH", "DRIFT"
 COVERAGE_NOTE = ("SSAO RMSE within tolerance on covered pixels; max error is reported, "
                  "not bounded")
-DOES_NOT_PROVE = (
+SCOPE = (
+    "The reference is a 64-sample hemisphere estimate from a deterministic per-pixel "
+    "hash: repeatable run to run, and an estimate of the exact integral.",
+    "A pass bounds RMSE over covered pixels; the maximum error is reported beside it. "
+    "The high view passes at 0.0827 RMSE with a 0.625 maximum error.",
+    "The check covers one built-in scene: its geometry, lights and materials.",
+    "Byte-identical output is checked on x86-64.",
+)
+# superstack receipts (raw_ao_receipt.py) keep the vocabulary of their vendored
+# schema until superstack itself moves; these are the lines their check expects.
+SUPERSTACK_LIMITS = (
     "The reference is a 64-sample hemisphere estimate from a deterministic per-pixel "
     "hash, so it is repeatable, not exact.",
     "A pass on RMSE says nothing about the worst pixel. The high view passes at 0.0827 "
@@ -210,7 +222,7 @@ def level1(cert, files: Mapping[str, bytes]) -> dict:
 def oracle_result(cert, verdict: Verdict, excerpt: str, *, reason: str = "",
                   execution: Execution = Execution.COMPLETED,
                   attribution: Attribution | None = None,
-                  coverage: dict | None = None, extra_not_proven=()) -> OracleResult:
+                  coverage: dict | None = None, extra_scope=()) -> OracleResult:
     """An OracleResult for this family, hashed over the canonical certificate."""
     cert_canon = canonical(cert) if isinstance(cert, dict) else ""
     preimage = canonical({"cert": cert_canon, "verdict": verdict.value, "family": FAMILY})
@@ -222,7 +234,7 @@ def oracle_result(cert, verdict: Verdict, excerpt: str, *, reason: str = "",
         raw_stdout_sha256=hashlib.sha256(excerpt.encode("utf-8")).hexdigest(),
         unverifiable_reason=reason if verdict is Verdict.UNVERIFIABLE else "",
         coverage=dict(coverage or {}, note=COVERAGE_NOTE),
-        does_not_prove=[*DOES_NOT_PROVE, *extra_not_proven])
+        scope=[*SCOPE, *extra_scope])
 
 
 def verify_level1(cert_text: str, files: Mapping[str, bytes]) -> OracleResult:

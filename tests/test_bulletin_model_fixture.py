@@ -151,7 +151,7 @@ def test_fresh_two_author_contract_and_scoped_actor_read(tmp_path):
         assert "needs_review" not in json.dumps(source)
         with pytest.raises(FixtureError): fixture.read_source("source-1")
         review = fixture.observe()
-        assert review["schema"] == "flywheel.bulletin-task-review/v1"
+        assert review["schema"] == "flywheel.bulletin-task-review/v2"
         assert review["result"]["verdict"] != "PASS"
         fixture.close()
         assert [e[1] for e in setup.events if e[0] == "kill"] == ["native-b", "source-a"]

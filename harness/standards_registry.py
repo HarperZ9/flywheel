@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from .standards_profile import validate_profile_object
+from .standards_schema import VALIDATION_SCHEMA
 
 
 def validate_profile(profile: object) -> dict[str, Any]:
@@ -12,14 +13,14 @@ def validate_profile(profile: object) -> dict[str, Any]:
         return validate_profile_object(profile)
     except Exception as exc:  # pragma: no cover - fail-closed guard
         return {
-            "schema": "flywheel.standards-profile-validation/v1",
+            "schema": VALIDATION_SCHEMA,
             "verdict": "INVALID",
             "profile": None,
             "assessment": "not_assessed",
             "errors": [{"path": "$", "code": "validator_error",
                         "message": str(exc)}],
             "gaps": [],
-            "does_not_prove": (
-                "Profile validation failed closed and does not prove legal "
-                "compliance, source truth, certification, or approval."),
+            "scope": (
+                "Validation stopped at a validator error and failed closed; the "
+                "profile is treated as invalid and was not assessed."),
         }

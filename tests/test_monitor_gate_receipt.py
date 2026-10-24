@@ -40,10 +40,10 @@ def test_unsigned_result_rederives_but_is_not_a_pass():
         "UNSIGNED", "ADMIT", True)
 
 
-def test_receipt_carries_the_gate_limits_and_rates():
+def test_receipt_carries_the_gate_scope_and_rates():
     body = _doc("always-yes")["envelope"]["receipt"]
-    for limit in receipt.LIMITS:
-        assert limit in body["does_not_prove"]
+    for code in receipt.SCOPE:
+        assert code in body["scope"]
     assert body["verdict"] == "FAIL"
     assert body["coverage"]["failed"] == ["known_visible:false_alarm"]
     assert body["coverage"]["sides"]["known_visible"]["upper"] == "1.0000"
@@ -75,7 +75,7 @@ def test_a_resigned_false_admission_is_still_refused():
     body = doc["envelope"]["receipt"]
     body["coverage"]["gate_verdict"] = "ADMIT"
     body["verdict"] = "PASS"
-    forged = receipt.Receipt.from_dict({**body, "does_not_prove": body["does_not_prove"]})
+    forged = receipt.Receipt.from_dict({**body, "scope": body["scope"]})
     from harness.receipt_signer import sign_receipt
     doc["envelope"] = sign_receipt(forged, key).to_dict()
     report = receipt.verify(doc, trust_root=key.public_key_bytes)
@@ -142,3 +142,21 @@ def test_cli_reports_unverifiable_when_the_pin_breaks(tmp_path, monkeypatch):
     code, _, err = _run(["gate", "planted:oracle", "--out", str(tmp_path / "r.json")])
     assert code == 3 and "UNVERIFIABLE" in err
 
+
+
+def test_a_v4_gate_result_still_rederives_with_its_sealed_codes():
+    from dataclasses import replace
+
+    from harness.receipt import V4_SCHEMA
+    from harness.receipt_sign import unsigned
+    from harness.scope import LEGACY_SCOPE_KEY
+
+    monitor, descriptor = monitors.resolve("planted:oracle", seed=GATE.spec["random_seed"])
+    records = score.run_monitor(GATE, monitor)
+    result = score.decide(GATE, records, score.controls(GATE))
+    old = replace(receipt.build_receipt(GATE, descriptor, records, result),
+                  schema=V4_SCHEMA, extra_scope=receipt._V4_EXTRA)
+    doc = {"schema": receipt.SCHEMA, "envelope": unsigned(old), "records": records}
+    assert LEGACY_SCOPE_KEY in doc["envelope"]["receipt"]
+    report = receipt.verify(doc)
+    assert (report["status"], report["gate_verdict"]) == ("UNSIGNED", "ADMIT")

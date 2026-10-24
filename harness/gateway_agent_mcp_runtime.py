@@ -9,6 +9,7 @@ from .gateway_agent_mcp_admission import (
 )
 from .gateway_operation import GatewayOperationError
 from .mcp_client import LaunchSpec, MCPClient, MCPError
+from .scope import scope_list
 
 
 def prepare_mcp_runtime(plan: dict | None, *, live_admission: dict | None = None) -> dict:
@@ -110,7 +111,7 @@ def _live_server(server: dict, server_info: dict, protocol_version: str,
             frozen.append(_freeze_tool({"server_id": server["server_id"],
                 "authority": {source: tool["declared_authority"]},
                 "enforced_limits": tool["enforced_limits"],
-                "does_not_prove": tool["does_not_prove"]}, source, by_name[source]))
+                "scope": scope_list(tool)}, source, by_name[source]))
         except Exception:
             raise GatewayOperationError("AGENT_MCP_RUNTIME_DRIFT") from None
     return {"server_id": server["server_id"], "timeout_s": server["timeout_s"],

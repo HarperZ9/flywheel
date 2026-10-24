@@ -63,7 +63,8 @@ from demo_proposer import OllamaProposer, default_base_url  # noqa: E402
 from fenced_extract import (  # noqa: E402
     EXTRACTION, ExtractingProposer, write_extraction_log)
 
-SCHEMA = "flywheel.demo-pool-run/v1"
+# v2 names its coverage `scope`; artifacts/pool manifests stay v1, byte for byte.
+SCHEMA = "flywheel.demo-pool-run/v2"
 
 FAMILIES = {
     "zarankiewicz": {"criterion_id": "zarankiewicz.z_2_2.v1",
@@ -86,12 +87,12 @@ DEFAULT_OUT = REPO / "artifacts" / "pool"
 
 _UNSAFE_PATH_CHARS = '<>:"/\\|?*'
 
-DOES_NOT_PROVE = [
-    "NOT_PROVES_ACCEPTANCE: filling a pool caches candidates. No certificate "
-    "here has been submitted through an oracle's accept path; well-formedness "
-    "and PASS/FAIL are a separate, later step.",
-    "NOT_PROVES_THIS_IS_THE_CONFIRMATORY_RUN: that is exactly what the "
-    "pilot/confirmatory stamp on this manifest exists to make unambiguous.",
+SCOPE = [
+    "CANDIDATES_CACHED: filling a pool caches candidates. Submission through "
+    "an oracle's accept path, well-formedness and PASS/FAIL are a separate, "
+    "later step.",
+    "RUN_KIND_STAMPED: the pilot/confirmatory stamp on this manifest names "
+    "which kind of run filled the pool.",
 ]
 
 
@@ -187,7 +188,7 @@ def build_run_manifest(*, family: str, rung: str, confirmatory: bool,
            # markdown fence around a certificate body is envelope decoding,
            # not content editing).
            "extraction": EXTRACTION,
-           "does_not_prove": list(DOES_NOT_PROVE)}
+           "scope": list(SCOPE)}
 
 
 def run_fill(*, family: str, rung: str, out_base, limit=None,

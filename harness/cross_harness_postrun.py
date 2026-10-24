@@ -20,7 +20,9 @@ from harness.cross_harness_postrun_checks import (
 )
 from harness.cross_harness_postrun_paths import safe_run_root
 
-SCHEMA = "harness.cross-harness-postrun-comparison/v1"
+SCHEMA = "harness.cross-harness-postrun-comparison/v2"
+# v1 comparisons name the scope list with the older key.
+SCHEMA_V1 = "harness.cross-harness-postrun-comparison/v1"
 
 
 def _empty_report(reasons: set[str], extra_rows: int = 0) -> dict[str, Any]:
@@ -136,5 +138,6 @@ def validate_postrun_comparison(run_root: str | Path) -> dict[str, Any]:
             "denominator_state": "declared_product" if declared_count is not None else "unknown_invalid_declared_dimensions",
             "comparison_scope": "orchestration_stack_observation" if decision == "completed_comparison" else "not_available",
             "enforcement": {"equivalence": equivalence, "hashes": sorted(enforcement_hashes)},
-            "does_not_prove": ["SHA-256 values identify local bytes; they are not authenticity proof by themselves.",
-                               "This validator does not run providers or prove the original comparison executed outside the supplied run root."]}
+            "scope": ["SHA-256 values identify the local bytes in the supplied run root.",
+                      "The decision covers the records in the supplied run root as written; "
+                      "this validator reads them and runs no provider."]}

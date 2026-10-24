@@ -13,6 +13,11 @@ from .incident_sim_packet import build_process_audit_packet, verify_process_audi
 from .private_artifact_fs import PrivateArtifactError, open_artifact_root
 
 MAX_BYTES = 1024 * 1024
+# v2 command reports name the coverage list `scope`; v1 reports carried the older key.
+COMMAND_SCHEMA_V1 = 'flywheel.incident-sim-command/v1'
+COMMAND_SCHEMA = 'flywheel.incident-sim-command/v2'
+VERIFY_COMMAND_SCHEMA_V1 = 'flywheel.incident-sim-verify-command/v1'
+VERIFY_COMMAND_SCHEMA = 'flywheel.incident-sim-verify-command/v2'
 
 
 class SourceDigestMismatch(ValueError):
@@ -61,12 +66,12 @@ def _verify_packet(source: str, expected_hashes: dict | None = None) -> int:
     packet, identity = _read(source, None)
     verification = verify_process_audit_packet(packet, expected_hashes=expected_hashes)
     print(json.dumps({
-        'schema': 'flywheel.incident-sim-verify-command/v1',
+        'schema': VERIFY_COMMAND_SCHEMA,
         'sources': {'packet': identity},
         'verification': verification,
-        'does_not_prove': [
-            'Semantic correctness of the task, trace, evaluation, scorer or access claim.',
-            'External wall-clock truth, disclosure completeness or immutable history.',
+        'scope': [
+            'Packet-local digests, receipt seals and receipt chains were rechecked.',
+            'Task, trace, evaluation and access content is taken as submitted.',
         ],
     }, ensure_ascii=True, sort_keys=True, allow_nan=False))
     return _exit_for(verification['verdict'])
@@ -164,12 +169,12 @@ def main(argv: list[str] | None = None) -> int:
     if gateway_identity is not None:
         sources['gateway_effect'] = gateway_identity
     result = {
-        'schema': 'flywheel.incident-sim-command/v1',
+        'schema': COMMAND_SCHEMA,
         'sources': sources,
         'evaluation': evaluation, 'audit_packet': packet,
-        'does_not_prove': [
-            'Submitted actions actually executed or complete workstation observation.',
-            'Model alignment, independent ground truth or security certification.',
+        'scope': [
+            'The submitted trace was checked against the frozen task fixture.',
+            'Actions and observations are taken as submitted; the fixture is the ground truth.',
         ],
     }
     print(json.dumps(result, ensure_ascii=True, allow_nan=False))

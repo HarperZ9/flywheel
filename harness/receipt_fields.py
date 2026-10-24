@@ -138,7 +138,8 @@ class Budget:
     limit are different results, and only the ceiling tells them apart.
 
     `declared` exists so that "no budget" cannot be spelled as a zero. An
-    undeclared budget is a stated absence, which `does_not_prove` reports, rather
+    undeclared budget is a stated absence, which the receipt scope reports (no
+    `COST_BOUNDED` code), rather
     than three zeros that read as a run permitted nothing at all.
     """
     wall_seconds_limit: int

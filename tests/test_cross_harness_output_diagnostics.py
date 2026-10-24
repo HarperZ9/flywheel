@@ -31,10 +31,11 @@ def test_malformed_output_diagnostics_are_typed_and_receipt_bound(tmp_path):
     row = _run_returned_output(tmp_path, output, usage=usage, tool_trace=tool_trace)
     diagnostics = row["output_diagnostics"]
     assert (row["execution_state"], row["oracle_state"], row["primary_outcome"], row["receipt_state"]) == ("malformed", "not_run", "malformed", "verified")
-    assert diagnostics["schema"] == "harness.cross-harness-output-diagnostics/v1"
+    assert diagnostics["schema"] == "harness.cross-harness-output-diagnostics/v2"
     assert diagnostics["parser"]["status"] == "json_decode_error"
     assert set(diagnostics["codes"]) >= {"json_parse_error", "markdown_fence_at_start", "length_cap_reached"}
-    assert diagnostics["runtime"]["length_cap_reached"]["does_not_prove"] == ["truncation"]
+    assert diagnostics["runtime"]["length_cap_reached"]["scope"] == [
+        "the last call's eval_count equals max_output_tokens"]
     assert diagnostics["artifact_comparison"]["status"] == "not_checked"
     assert _receipt_final_row(row)["output_diagnostics"] == diagnostics
     assert recheck_attempt_receipt(Path(row["receipt_path"]), {**row, "execution_state": "returned", "oracle_state": "pass", "primary_outcome": "completed", "status": "executed"}) == "drift"

@@ -77,11 +77,11 @@ def test_build_metadata_rejects_missing_title_and_creators():
         zenodo_deposit.build_metadata(title="t", description="x", creators=[])
 
 
-def test_does_not_prove_names_the_durability_limits():
-    reasons = zenodo_deposit.does_not_prove()
-    assert isinstance(reasons, list) and reasons
-    joined = " ".join(reasons)
-    assert "NOT_PROVES" in joined
+def test_scope_names_what_the_deposit_covers():
+    lines = zenodo_deposit.scope()
+    assert isinstance(lines, list) and lines
+    joined = " ".join(lines)
+    assert "DEPOSITED_AND_PRESERVED" in joined
 
 
 # ---- network legs (injected transport) ----------------------------------

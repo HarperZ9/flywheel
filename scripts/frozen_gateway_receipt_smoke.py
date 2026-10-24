@@ -93,13 +93,14 @@ def validate_receipt_parity(responses: dict, http_proof: dict,
             and isinstance(malformed.get("error"), dict)
             and malformed.get("error", {}).get("code") == "INVALID_LEAF",
             "RECEIPT_MALFORMED_ACCEPTED")
-    return {"schema": "flywheel.frozen-receipt-parity/v1",
+    return {"schema": "flywheel.frozen-receipt-parity/v2",
             "http_mcp_proof_equal": True,
             "missing_leaf_status": "missing", "malformed_leaf_code": "INVALID_LEAF",
             "proof_schema": http_proof.get("schema"),
             "tree_size": http_proof.get("tree_size"),
-            "does_not_prove": ["semantic correctness", "evidence completeness",
-                               "remote MCP interoperability"]}
+            "scope": ["the HTTP and MCP inclusion proofs for the synthetic receipt are equal",
+                      "the missing leaf reads missing and the malformed leaf is refused",
+                      "both transports ran against the local frozen gateway"]}
 
 
 def _validate_proof(proof):

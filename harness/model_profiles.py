@@ -8,7 +8,10 @@ import re
 from pathlib import Path
 
 
-RELEASE_IDENTITY_PROVENANCE = Path(__file__).with_name("ollama-manifest-digest-provenance-v1.json")
+RELEASE_IDENTITY_PROVENANCE = Path(__file__).with_name("ollama-manifest-digest-provenance-v2.json")
+#: v1 receipts named their scope list with the older key; both versions validate.
+RELEASE_IDENTITY_SCHEMAS = ("harness.ollama-manifest-digest-provenance/v2",
+                            "harness.ollama-manifest-digest-provenance/v1")
 
 _SHA256_DIGEST = re.compile(r"^(?:sha256:)?([0-9a-f]{64})$")
 
@@ -108,7 +111,7 @@ def validate_release_identity_provenance(path: Path = RELEASE_IDENTITY_PROVENANC
         receipt = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ValueError("release identity provenance unreadable") from exc
-    if not isinstance(receipt, dict) or receipt.get("schema") != "harness.ollama-manifest-digest-provenance/v1":
+    if not isinstance(receipt, dict) or receipt.get("schema") not in RELEASE_IDENTITY_SCHEMAS:
         raise ValueError("release identity provenance schema mismatch")
     payload = {key: value for key, value in receipt.items() if key != "evidence_sha256"}
     evidence = hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()

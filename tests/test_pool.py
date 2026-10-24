@@ -199,8 +199,8 @@ def test_two_arms_over_one_pool_can_disagree_in_both_directions(tmp_path):
     assert all(len(pool.candidates(t)) == 2 for t in pool.task_ids())
 
 
-def test_the_pool_states_what_it_does_not_prove(tmp_path):
+def test_the_pool_states_its_scope(tmp_path):
     fill(TASKS, Proposer(), _fp(), tmp_path)
-    dnp = Pool(tmp_path).does_not_prove()
-    assert any("NOT_PROVES_GENERATION_DETERMINISM" in d for d in dnp)
-    assert any("NOT_PROVES_CANDIDATE_CORRECTNESS" in d for d in dnp)
+    scope = Pool(tmp_path).scope()
+    assert any("GENERATION_SETTINGS_PINNED" in d for d in scope)
+    assert any("CANDIDATES_ONLY" in d for d in scope)

@@ -12,7 +12,7 @@ def test_reader_diagnostic_keeps_semantic_quality_unmeasured():
         source_ids=["src_receipt"],
     )
 
-    assert diagnostic["schema"] == "flywheel.writing-reader-flow-diagnostic/v1"
+    assert diagnostic["schema"] == "flywheel.writing-reader-flow-diagnostic/v2"
     assert diagnostic["reader_state_summary"]["measurement_status"] == "unmeasured"
     assert diagnostic["reader_state_summary"]["basis"] == "none"
     assert diagnostic["reader_state_summary"]["entry_state"] == ""
@@ -20,7 +20,7 @@ def test_reader_diagnostic_keeps_semantic_quality_unmeasured():
     assert diagnostic["revision_cards"] == []
     assert diagnostic["source_grounding"][0]["status"] == "known_source"
     assert diagnostic["source_grounding"][0]["span_refs"][0]["excerpt"] == "[src_receipt]"
-    assert "does_not_prove" in diagnostic
+    assert diagnostic["scope"]
 
 
 def test_reader_diagnostic_marker_records_validate_as_public_metadata():
@@ -88,7 +88,7 @@ def test_scope_replacement_accepts_exact_span_only():
 
     assert result["verdict"] == "PASS"
     assert result["replacement_text"] == "Recommendation: publish after download-back."
-    assert result["does_not_prove"]
+    assert result["scope"]
 
 
 def test_scope_replacement_blocks_out_of_scope_or_imprecise_targets():

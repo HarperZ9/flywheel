@@ -40,7 +40,7 @@ def test_probability_metrics_use_independent_targets_not_predicted_labels():
         "confidence is max predicted class probability from the supplied "
         "distribution; it is not evidence of calibration"
     )
-    assert "does not assert model calibration" in " ".join(report["does_not_prove"])
+    assert "calibration is unasserted" in " ".join(report["scope"])
 
 
 def test_coverage_error_curve_sorts_by_confidence_and_counts_bins():

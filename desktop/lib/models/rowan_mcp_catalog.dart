@@ -1,7 +1,10 @@
-const rowanMcpCatalogSchema = 'flywheel.agent-mcp-catalog/v1';
+const rowanMcpCatalogSchema = 'flywheel.agent-mcp-catalog/v2';
+const rowanMcpCatalogSchemaV1 = 'flywheel.agent-mcp-catalog/v1';
 const rowanMcpDiscoveryRequestSchema =
     'flywheel.agent-mcp-discovery-request/v1';
 const rowanMcpDiscoveryResponseSchema =
+    'flywheel.agent-mcp-discovery-response/v2';
+const rowanMcpDiscoveryResponseSchemaV1 =
     'flywheel.agent-mcp-discovery-response/v1';
 
 final _rowanMcpId = RegExp(r'^[a-z][a-z0-9_]{0,23}$');
@@ -13,7 +16,8 @@ final class RowanMcpCatalog {
   const RowanMcpCatalog._(this.servers);
 
   factory RowanMcpCatalog.fromJson(Map<String, dynamic> json) {
-    if (json['schema'] != rowanMcpCatalogSchema) {
+    if (json['schema'] != rowanMcpCatalogSchema &&
+        json['schema'] != rowanMcpCatalogSchemaV1) {
       throw const FormatException('Rowan MCP catalog schema mismatch');
     }
     final rawServers = json['servers'];
@@ -105,7 +109,8 @@ final class RowanMcpDiscoveryResponse {
   const RowanMcpDiscoveryResponse._(this.mcpAdmission, this.receipt);
 
   factory RowanMcpDiscoveryResponse.fromJson(Map<String, dynamic> json) {
-    if (json['schema'] != rowanMcpDiscoveryResponseSchema) {
+    if (json['schema'] != rowanMcpDiscoveryResponseSchema &&
+        json['schema'] != rowanMcpDiscoveryResponseSchemaV1) {
       throw const FormatException(
           'Rowan MCP discovery response schema mismatch');
     }

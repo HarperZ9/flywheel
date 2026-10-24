@@ -79,7 +79,7 @@ def test_checker_accepts_exact_submitted_fixture_snapshot_without_trusting_label
     out = check_outcome(row, snapshot(row, success=False))
     assert out["outcome"] == "success"
     assert out["task_resolution"] == "completed"
-    assert "bounded local simulator snapshot" in " ".join(out["does_not_prove"])
+    assert "bounded local simulator snapshot" in " ".join(out["scope"])
 def test_checker_rejects_wrong_fields_even_when_snapshot_claims_success():
     from train.classifier_workflow_outcome import check_outcome
     row = case()

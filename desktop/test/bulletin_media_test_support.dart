@@ -6,6 +6,7 @@ import 'package:flywheel_desktop/client/bulletin_media_api.dart';
 import 'package:flywheel_desktop/controllers/gateway_operation_controller.dart';
 import 'package:flywheel_desktop/models/bulletin_media_models.dart';
 import 'package:flywheel_desktop/models/gateway_grant_models.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 
 const shaA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const shaB = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
@@ -74,7 +75,7 @@ Map<String, Object?> reviewJson({
   Map<String, Object?> extra = const {},
 }) =>
     {
-      'schema': 'flywheel.bulletin-media-review/v1',
+      'schema': bulletinMediaReviewSchema,
       'mode': 'artifact_share',
       'destination': {'base_url': 'https://bulletin.example.test'},
       'effect': 'upload these public bytes, then publish this post once',
@@ -110,12 +111,24 @@ Map<String, Object?> reviewJson({
           'bytes': tinyPngBytes().length,
         }
       ],
-      'does_not_prove': [
-        'semantic truth of the post body',
-        'license, authorship, malware safety, or hidden-data absence',
+      kScopeKey: [
+        'the post body, media list and packet digests shown here are the '
+            'exact bytes the approved upload and post will send',
       ],
       ...extra,
     };
+
+/// The same review as a v1 record: the older schema id and scope key.
+Map<String, Object?> reviewJsonV1() {
+  final review = Map<String, Object?>.from(reviewJson())
+    ..remove(kScopeKey)
+    ..['schema'] = bulletinMediaReviewSchemaV1;
+  return review
+    ..[kLegacyScopeKey] = [
+      'semantic truth of the post body',
+      'license, authorship, malware safety, or hidden-data absence',
+    ];
+}
 
 Map<String, Object?> proposalJson({Map<String, Object?>? review}) => {
       'schema': gatewayProposalSchema,

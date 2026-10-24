@@ -14,7 +14,8 @@ the data:
 - a superstack receipt (`superstack.receipt/1`) with its two verdicts: identity
   over the released result bytes, and tolerance for whether the claimed score
   recomputes from those rows;
-- a fixed `does_not_prove` list, which a verifier checks word for word;
+- a fixed `scope` list, which a verifier checks word for word (v1 receipts
+  carried the older list under the older name, and still verify);
 - an Ed25519 signature over `claim_sha256`, the superstack canonical SHA-256 of
   the whole body. The verifier recomputes that digest and never trusts the
   recorded one.
@@ -31,8 +32,10 @@ import json
 from ._vendor import superstack as ss
 from . import merkle
 from .pysyft_job_hash import HASH_RULE, PYSYFT_SOURCE
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 
-SCHEMA = "flywheel.pysyft-job-result/v1"
+SCHEMA_V1 = "flywheel.pysyft-job-result/v1"
+SCHEMA = "flywheel.pysyft-job-result/v2"  # v2 names `scope`
 ENVELOPE_SCHEMA = "flywheel.signed-job-result/v1"
 SIGNED_OVER = "claim_sha256"
 PRODUCER = "flywheel.job_result_receipt"
@@ -43,7 +46,24 @@ ATTESTATION_GAP = (
     "named only by commitments the data owner supplied, and nothing here links those "
     "commitments to what actually ran. Closing this needs the enclave attestation "
     "report bound into the receipt.")
-DOES_NOT_PROVE = (
+SCOPE = (
+    "The hidden model and data are named by the commitments the parties supplied; "
+    "the enclave attestation link that would bind them to what ran is absent here.",
+    "The receipt covers this one issued run; other runs of the job, kept or "
+    "discarded, have no record here.",
+    "The receipt binds the approval record PySyft wrote; PySyft leaves that record "
+    "unsigned, and the quality of the review sits outside it.",
+    "The score follows the named scoring rule; whether the rule and the benchmark "
+    "measure what they claim is a separate question.",
+    "Until the hidden answers are revealed and rescored, the score is consistent "
+    "with the released rows; the reveal check is what confirms each row.",
+    "Enclave side channels, the hardware vendor and any attestation verifier sit "
+    "outside this receipt.",
+    "A valid signature shows that the key holder issued this body; the key "
+    "holder's honesty rests on other evidence.",
+)
+# The v1 list, byte for byte: v1 receipts are signed over it.
+SCOPE_V1 = (
     "It does not prove the hidden model or the hidden data were what the parties "
     "said; that needs the enclave attestation link, which this receipt does not carry.",
     "It does not prove the job ran only once, or that a run with a worse score was "
@@ -115,7 +135,7 @@ def superstack_receipt(job: dict, results: bytes, rows, correct: int, total: int
         producer=PRODUCER, version=PRODUCER_VERSION, backend="pysyft-syft-job",
         scene=job_scene(job), media={"kind": "document", "format": "jsonl"},
         content=results, reference=reference, reconcile=reconcile,
-        does_not_prove=DOES_NOT_PROVE)
+        **{LEGACY_SCOPE_KEY: SCOPE})  # superstack.receipt/1 names its list this way
 
 
 def _job_block(name, approved_hash, received_hash) -> dict:
@@ -150,10 +170,15 @@ def build_body(*, job_name, submission_record: bytes, review: dict, results: byt
         "commitments": dict(commitments),
         "attestation": {"status": "UNVERIFIABLE", "reason": ATTESTATION_GAP},
         "superstack": superstack_receipt(job, results, rows, correct, len(rows)),
-        "does_not_prove": list(DOES_NOT_PROVE),
+        SCOPE_KEY: list(SCOPE),
     }
     body["receipt_id"] = receipt_id(body)
     return body
+
+
+def scope_for(schema: object) -> tuple[str, tuple] | None:
+    """(field name, fixed list) a body of this schema carries, or None."""
+    return {SCHEMA: (SCOPE_KEY, SCOPE), SCHEMA_V1: (LEGACY_SCOPE_KEY, SCOPE_V1)}.get(schema)
 
 
 def receipt_id(body: dict) -> str:

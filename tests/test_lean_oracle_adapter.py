@@ -71,7 +71,7 @@ def _refused(argv, code):
 def test_clean_proof_passes(task):
     r = LeanOracle(runner=_clean).verify("theorem t : True := trivial", task)
     assert r.verdict() == "PASS"
-    assert r.does_not_prove          # the formalization gap is carried
+    assert r.scope                   # the formalization gap is carried
     assert r.coverage["checker"] == "lean"
     assert r.coverage["statement_binding"] == "pinned"
     assert r.coverage["spec_fidelity"]["status"] == "UNVERIFIED"

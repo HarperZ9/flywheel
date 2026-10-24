@@ -59,7 +59,7 @@ def test_complete_policy_read_is_not_runtime_admission():
     assert re.fullmatch('[0-9a-f]{64}', result.config_digest)
     assert client.calls == [('config/read', {'cwd': '/synthetic', 'include_layers': True}),
                             ('configRequirements/read', {})]
-    assert 'execution' in result.does_not_prove
+    assert 'execution' in result.scope.lower()
 
 
 def test_inherited_mcp_survives_empty_override_and_is_rejected():

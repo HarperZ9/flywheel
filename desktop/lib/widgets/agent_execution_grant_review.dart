@@ -114,7 +114,7 @@ class AgentExecutionGrantReview extends StatelessWidget {
                       tokens: t),
                   _ReceiptLine('MCP launch limits', server.limitsLabel,
                       tokens: t),
-                  _ReceiptLine('MCP does not prove', server.doesNotProveLabel,
+                  _ReceiptLine('MCP scope', server.scopeLabel,
                       tokens: t),
                   _HashLine('MCP descriptor', server.descriptorSha256,
                       tokens: t),

@@ -52,7 +52,7 @@ from .dap_client import DapClient
 from .dap_peer import AdapterError, ConnectionClosed
 from .dap_policy import AllowTerminal, DenyAll
 from .dap_report import as_json, render_error, render_run, render_verify
-from .dap_witness import DapWitness, does_not_prove, transcript_resolver
+from .dap_witness import DapWitness, scope, transcript_resolver
 
 OK, FAILED, UNCHECKED = 0, 1, 3
 
@@ -204,7 +204,7 @@ def _report(client: DapClient, stop, args: argparse.Namespace) -> dict:
               "decisions": [{"method": d.method, "detail": d.detail,
                              "allowed": d.allowed, "reason": d.reason}
                             for d in client.policy.decisions],
-              "does_not_prove": does_not_prove()}
+              "scope": scope()}
     if stop is None:
         return report
     report["stop"] = {"reason": stop.reason, "thread_id": stop.thread_id,
@@ -250,7 +250,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser(__doc__.splitlines()[0])
     args = parser.parse_args(argv)
     if args.limits:
-        print("\n".join(f"  - {limit}" for limit in does_not_prove()))
+        print("\n".join(f"  - {line}" for line in scope()))
         return OK
     if not args.command:
         parser.print_help()

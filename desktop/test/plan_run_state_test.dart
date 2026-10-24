@@ -231,7 +231,7 @@ Map<String, dynamic> _result(Map<String, dynamic> binding,
     }
   };
   final receipt = {
-    'schema': 'flywheel.plan-run-receipt/v2',
+    'schema': planRunReceiptSchema,
     'plan_run_ref': 'plr_${'a' * 32}',
     'binding': binding,
     'journey_ref': 'jrn_${'a' * 32}',
@@ -259,11 +259,11 @@ Map<String, dynamic> _result(Map<String, dynamic> binding,
       'forged_gates_executed': 0,
       'workflow_steps_recorded': 0
     },
-    'does_not_prove': planRunLimitations
+    'scope': planRunScope
   };
   receipt['receipt_sha256'] = canonicalPlanSha256(receipt);
   final result = {
-    'schema': 'flywheel.plan-run-result/v2',
+    'schema': planRunResultSchema,
     'plan_run_ref': 'plr_${'a' * 32}',
     'receipt': receipt,
     'workflow_run': workflow

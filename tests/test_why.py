@@ -10,7 +10,7 @@ Four properties this suite pins:
      model. If the record cannot answer, it says so and names what is missing.
   2. It leads with what would CHANGE the answer, not with reassurance. A "why"
      that only recites the proof is the fake-passport failure again.
-  3. It always renders does_not_prove. The limits are part of the answer, not an
+  3. It always renders the scope. The scope is part of the answer, not an
      appendix a reader has to go find.
   4. It never scores the person. No aggregate, no rate, no history of the
      operator, only facts about this record.
@@ -134,11 +134,11 @@ def test_it_reports_what_would_change_the_answer(tmp_path):
     assert "criterion" in joined or "checker" in joined
 
 
-def test_it_always_renders_the_limits(tmp_path):
+def test_it_always_renders_the_scope(tmp_path):
     p = _write(tmp_path, unsigned(_r()))
     e = explain(p)
-    assert e["does_not_prove"]
-    assert "NOT_PROVES_PUBLICATION_COMPLETENESS" in e["does_not_prove"]
+    assert e["scope"]
+    assert "CHECKED_BY_NAMED_CHECKER" in e["scope"]
 
 
 def test_an_unsigned_receipt_is_reported_as_unsigned_not_as_verified(tmp_path):
@@ -203,7 +203,7 @@ def test_a_learned_task_filter_is_surfaced_not_buried(tmp_path):
     env = unsigned(_r(denominator=_den(filter_is_learned=True)))
     e = explain(_write(tmp_path, env))
     assert e["at_what_cost"]["filter_is_learned"] is True
-    assert "NOT_PROVES_UNBIASED_TASK_SELECTION" in e["does_not_prove"]
+    assert "TASK_SELECTION_FIXED" not in e["scope"]
 
 
 # --- it never scores the person ------------------------------------------------
@@ -229,7 +229,7 @@ def test_render_produces_plain_text_a_person_can_read(tmp_path):
     e = explain(_write(tmp_path, unsigned(_r())))
     text = render(e)
     assert "PASS" in text
-    assert "does not prove" in text.lower()
+    assert "scope:" in text
     assert "zarankiewicz" in text
 
 

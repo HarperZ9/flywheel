@@ -25,7 +25,10 @@ from harness.evidence_public import (
 )
 
 ROUTE_SCHEMA = "flywheel.enterprise-env-review/v1"
-REPORT_SCHEMA = "service-desk-incident-env-review/v1"
+# v2 evidence layers name their `scope`; an installed 0.2.0 product still sends v1.
+REPORT_SCHEMA = "service-desk-incident-env-review/v2"
+REPORT_SCHEMA_V1 = "service-desk-incident-env-review/v1"
+REPORT_SCHEMAS = frozenset({REPORT_SCHEMA, REPORT_SCHEMA_V1})
 VERIFICATION_SCHEMA = "service-desk-incident-env-artifact-verification/v1"
 ENVIRONMENT_ID = "service-desk-incident/v1"
 PATH = "/api/enterprise-envs/service-desk-incident/review"
@@ -140,7 +143,7 @@ def _assert_complete_report(report: dict) -> None:
     verification = report.get("verification")
     evidence_layers = report.get("evidence_layers")
     if (
-        report.get("schema") != REPORT_SCHEMA
+        report.get("schema") not in REPORT_SCHEMAS
         or type(verification) is not dict
         or verification.get("schema") != VERIFICATION_SCHEMA
         or _string(verification.get("observed_state")) not in {"pass", "fail"}

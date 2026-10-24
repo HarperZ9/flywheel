@@ -20,9 +20,11 @@ from typing import Any
 
 from . import self_improve_tree as st
 from .evidence_json import canonical_sha256
+from .scope import scope_list
 
-SCHEMA = "flywheel.harness-edit-receipt/v2"
-SCHEMAS = ("flywheel.harness-edit-receipt/v1", SCHEMA)
+SCHEMA_V2 = "flywheel.harness-edit-receipt/v2"
+SCHEMA = "flywheel.harness-edit-receipt/v3"  # v3 names `scope`
+SCHEMAS = ("flywheel.harness-edit-receipt/v1", SCHEMA_V2, SCHEMA)
 MATCH, TAMPERED, INCONSISTENT = "MATCH", "TAMPERED", "INCONSISTENT"
 
 
@@ -61,7 +63,7 @@ def build_edit_receipt(*, parent: st.Tree, candidate: st.Tree, run: Any, gate: d
         "attribution": _attribution(gate["attribution"]),
         "policy": gate["policy"],
         "provenance": dict(provenance or {}),
-        "does_not_prove": list(gate["does_not_prove"]),
+        "scope": scope_list(gate),
     }
     body["seal_sha256"] = canonical_sha256(body)
     return body

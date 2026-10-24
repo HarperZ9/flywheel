@@ -1,7 +1,27 @@
 import 'canonical_json.dart';
 import 'effect_source_summary.dart';
+import 'scope_field.dart';
 
-const effectEvidenceSchema = 'flywheel.gateway-effect-evidence/v1';
+const effectEvidenceSchema = 'flywheel.gateway-effect-evidence/v2';
+const effectEvidenceSchemaV1 = 'flywheel.gateway-effect-evidence/v1';
+const effectEvidenceScopeLabel = 'owner_private_trace_prefix';
+
+/// What v2 effect evidence covers.
+const effectEvidenceScope = {
+  'edit fingerprints recorded in the accepted trace prefix',
+  'action witness and tool receipt summaries as the run reported them',
+  'effects up to the trace head; current filesystem state is outside it',
+  'recorded actions only; rollback and remote cancellation are outside it',
+};
+
+/// The v1 list, kept so stored v1 evidence still reads.
+const effectEvidenceScopeV1 = {
+  'semantic correctness',
+  'complete workstation observation',
+  'current filesystem state',
+  'absence of effects outside the accepted trace prefix',
+  'rollback or remote cancellation',
+};
 const _traceMaxRecords = 2048;
 const _traceGenesis =
     '0000000000000000000000000000000000000000000000000000000000000000';
@@ -15,7 +35,7 @@ final class EffectEvidence {
   final String knownObservationsDigest;
   final List<EffectObservation> knownObservations;
   final EffectSourceSummary actionWitness, toolCallReceipts;
-  final List<String> unknownEffectScope, doesNotProve;
+  final List<String> unknownEffectScope, scope;
 
   const EffectEvidence._(
       this.basis,
@@ -26,7 +46,7 @@ final class EffectEvidence {
       this.actionWitness,
       this.toolCallReceipts,
       this.unknownEffectScope,
-      this.doesNotProve);
+      this.scope);
 
   factory EffectEvidence.fromJson(Object? raw,
       {required String traceRef,
@@ -34,9 +54,14 @@ final class EffectEvidence {
       required String traceHeadSha256,
       required String terminalState}) {
     final value = _map(raw);
-    _fields(value, const {
+    // v1 names the coverage label `scope` and the list by the older name;
+    // v2 names the label `scope_label` and the list `scope`.
+    final legacy = value['schema'] == effectEvidenceSchemaV1;
+    final labelKey = legacy ? kScopeKey : 'scope_label';
+    final scopeKey = scopeKeyFor(legacy: legacy);
+    _fields(value, {
       'schema',
-      'scope',
+      labelKey,
       'basis',
       'known_observation_count',
       'known_observations_omitted',
@@ -45,10 +70,10 @@ final class EffectEvidence {
       'action_witness',
       'tool_call_receipts',
       'unknown_effect_scope',
-      'does_not_prove',
+      scopeKey,
     });
-    if (value['schema'] != effectEvidenceSchema ||
-        value['scope'] != 'owner_private_trace_prefix') {
+    if ((value['schema'] != effectEvidenceSchema && !legacy) ||
+        value[labelKey] != effectEvidenceScopeLabel) {
       _invalid();
     }
     final basis = EffectBasis.fromJson(_map(value['basis']));
@@ -99,13 +124,8 @@ final class EffectEvidence {
           'TOOLS_WITHOUT_POST_EFFECT_FINGERPRINTS_REMAIN_UNKNOWN',
           'EFFECTS_AFTER_TRACE_HEAD_REMAIN_UNKNOWN',
         }),
-        _requiredStrings(value['does_not_prove'], const {
-          'semantic correctness',
-          'complete workstation observation',
-          'current filesystem state',
-          'absence of effects outside the accepted trace prefix',
-          'rollback or remote cancellation',
-        }));
+        _requiredStrings(value[scopeKey],
+            legacy ? effectEvidenceScopeV1 : effectEvidenceScope));
   }
 }
 

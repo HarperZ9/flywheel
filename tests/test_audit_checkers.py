@@ -19,7 +19,7 @@ from harness.certificates.crossing import CrossingOracle
 from harness.certificates.crossing_independent import IndependentCrossingOracle
 from harness.certificates.independent import IndependentZarankiewiczOracle
 from harness.certificates.zarankiewicz import ZarankiewiczOracle
-from scripts.audit_checkers import DOES_NOT_PROVE, SCHEMA, _rates, run_audit
+from scripts.audit_checkers import SCOPE, SCHEMA, _rates, run_audit
 from scripts.audit_mutations import (
     CROSSING_FAULTS, ZARANKIEWICZ_FAULTS, cr_known_good_certs,
     zk_known_good_certs,
@@ -137,11 +137,11 @@ def test_the_receipt_carries_schema_taxonomy_rates_and_denominators():
                 assert key in c, (checker_name, key)
             assert c["n_good"] == 5
             assert c["n_bad"] == 5 * len(fam["fault_classes"])
-    assert receipt["does_not_prove"] == DOES_NOT_PROVE
+    assert receipt["scope"] == SCOPE
 
 
-def test_does_not_prove_states_the_two_mandatory_caveats():
-    text = " ".join(DOES_NOT_PROVE)
+def test_scope_states_the_two_mandatory_boundaries():
+    text = " ".join(SCOPE)
     assert "natural candidate distribution" in text
     assert "fault class" in text and "nobody imagined" in text
 

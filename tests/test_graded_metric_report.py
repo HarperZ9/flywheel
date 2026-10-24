@@ -13,7 +13,7 @@ mostly about what the report refuses to say.
 """
 import json
 
-from harness.graded_metric_report import (DIRECTION, DOES_NOT_PROVE, build_report, load_scorecard,
+from harness.graded_metric_report import (DIRECTION, SCOPE, build_report, load_scorecard,
                                           render_markdown, summarize_checker, summarize_role)
 from scripts.run_graded_metric_report import main
 
@@ -126,17 +126,17 @@ def test_only_a_scored_attempt_reaches_a_checker_column():
     assert entry["n"] == 1 and entry["mean"] == 0.4
 
 
-def test_the_record_carries_what_it_cannot_support():
+def test_the_record_carries_its_scope():
     record = build_report([row("a")])
-    assert record["does_not_prove"] == DOES_NOT_PROVE
-    assert record["schema"] == "flywheel.graded_metric_report/v1"
+    assert record["scope"] == SCOPE
+    assert record["schema"] == "flywheel.graded_metric_report/v2"
     assert record["run_ids"] == ["run-1"] and record["source_commits"] == ["abc"]
 
 
 def test_a_missing_number_renders_as_a_named_absence_not_a_blank_cell():
     table = render_markdown(build_report([row("a")]))
     assert "not reported" in table
-    assert "## What this does not prove" in table
+    assert "## Scope" in table
 
 
 def _write(tmp_path, rows, name="scorecard.json"):
@@ -236,8 +236,8 @@ def test_without_a_reader_the_question_stays_unmeasured_rather_than_zero():
 
 
 def test_the_record_says_a_recovered_envelope_was_still_refused():
-    claim = [item for item in DOES_NOT_PROVE if "still refused" in item]
-    assert claim and "does not say the answer was right" in claim[0]
+    claim = [item for item in SCOPE if "stays refused" in item]
+    assert claim and "unchecked" in claim[0]
 
 
 def test_the_published_record_carries_no_path_from_the_machine_that_built_it(tmp_path):
@@ -254,3 +254,12 @@ def test_the_published_record_carries_no_path_from_the_machine_that_built_it(tmp
     entry = json.loads(text)["scorecards"][0]
     assert entry["name"] == "scorecard.json" and len(entry["sha256"]) == 64
     assert entry["repo_path"] is None
+
+
+def test_a_v1_record_still_renders_its_list_under_the_older_key():
+    from harness.scope import LEGACY_SCOPE_KEY
+    record = build_report([row("a")])
+    old = {key: value for key, value in record.items() if key != "scope"}
+    old.update({"schema": "flywheel.graded_metric_report/v1",
+                LEGACY_SCOPE_KEY: ["an older limit line"]})
+    assert "- an older limit line" in render_markdown(old)

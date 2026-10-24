@@ -62,7 +62,7 @@ timely publication, and redaction with disclaimers. Re-derivable evaluation is a
 direct instrument for it: a result ships as a packet a skeptic re-runs to reach
 the same verdict within tolerance, so "the method" is not a description but a
 reproduction. The verdict lattice and the false-accept corpus keep the claim
-bounded, and every instrument ships its own does-not-prove line, which is the
+bounded, and every instrument ships its own scope line, which is the
 machine-checked form of "no misrepresentation." The governance instruments extend
 this to the training environment: the Environment Incentive Manifest and its
 recheck give Match, Drift, or Unverifiable over the declared incentive structure;

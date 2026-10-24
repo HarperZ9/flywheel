@@ -7,13 +7,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/models/agent_trace.dart';
 import 'package:flywheel_desktop/models/agent_trace_record.dart';
 import 'package:flywheel_desktop/models/canonical_json.dart';
+import 'package:flywheel_desktop/models/effect_evidence.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/widgets/agent_trace_viewer.dart';
 
 import 'agent_trace_models_test.dart' show operation, journey, trace;
 import 'agent_trace_reader_test.dart' show FakeTraceReader;
 import 'effect_evidence_fixtures.dart'
-    show effectDetail, witnessDetail, witnessProjection;
+    show effectDetail, projectionV2, witnessDetail, witnessProjection;
 
 const _effectFixture =
     '../tests/fixtures/gateway_effect_evidence/cancelled_projection.json';
@@ -56,6 +58,33 @@ void main() {
     final rawEvidence = _fixture()['effect_evidence'] as Map<String, dynamic>;
     expect(jsonEncode(rawEvidence['known_observations']),
         isNot(contains('example')));
+  });
+
+  test('v1 and v2 effect evidence each parse under their own scope names', () {
+    final v1 = _projection();
+    expect(v1.scope, contains('NOT_SEMANTIC_TRUTH'));
+    expect(v1.effectEvidence!.scope, contains('semantic correctness'));
+
+    final v2 = _projection(projectionV2(_fixture()));
+    expect(v2.scope, traceProjectionScope.toList());
+    expect(v2.effectEvidence!.scope, effectEvidenceScope.toList());
+    expect(v2.effectEvidence!.knownObservationCount, 1);
+  });
+
+  test("a record carrying the other version's scope name is refused", () {
+    final v2WithOlderKey = projectionV2(_fixture())
+      ..remove('projection_sha256');
+    v2WithOlderKey[kLegacyScopeKey] = v2WithOlderKey.remove(kScopeKey);
+    _expectRejected(_rehash(v2WithOlderKey));
+
+    final v2EvidenceWithV1Label = projectionV2(_fixture());
+    final evidence = v2EvidenceWithV1Label['effect_evidence'] as Map;
+    evidence[kScopeKey] = evidence.remove('scope_label');
+    _expectRejected(_rehash(v2EvidenceWithV1Label));
+
+    final v1WithScope = _copy(_fixture());
+    v1WithScope[kScopeKey] = v1WithScope.remove(kLegacyScopeKey);
+    _expectRejected(_rehash(v1WithScope));
   });
 
   test('legacy projections still parse without implying zero effects', () {

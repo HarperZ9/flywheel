@@ -111,9 +111,9 @@ def summary(criteria: list[dict]) -> dict:
     }
 
 
-def does_not_prove() -> list[str]:
-    """What a fully-PASSING criteria set does NOT establish."""
+def scope() -> list[str]:
+    """What a fully-PASSING criteria set covers."""
     return [
-        "NOT_PROVES_TASK_DONE",       # named oracles satisfied != the task is right
-        "NOT_PROVES_ORACLE_QUALITY",  # a criterion is only as strong as its oracle
+        "NAMED_ORACLES_SATISFIED",     # each criterion was flipped by its named oracle
+        "AS_STRONG_AS_ITS_ORACLES",    # a criterion is as strong as the oracle behind it
     ]

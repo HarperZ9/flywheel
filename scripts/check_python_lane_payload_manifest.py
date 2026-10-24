@@ -14,6 +14,8 @@ for _p in (str(ROOT), str(ROOT / "scripts")):
         sys.path.insert(0, _p)
 
 from harness.bundled_lane_descriptor import SOURCE_FILE_SUFFIXES
+from harness.bundled_lane_descriptor import COMPONENT_SCHEMAS, descriptor_scope_key
+from harness.scope import scope_key
 from harness.evidence_json import canonical_sha256
 from harness.lane_tool_policy import admitted_tools, validate_policy
 from _lane_payload_slice import PAYLOAD_SLICES, module_of
@@ -88,7 +90,8 @@ def _check_source(lane: str, row: dict[str, Any]) -> dict[str, Any]:
     odd = [item["path"] for item in files if not str(item["path"]).endswith(SOURCE_FILE_SUFFIXES)]
     _require(not odd, f"{lane}: source files the runtime refuses: {odd!r}")
     _require(row.get("component_descriptor_sha256") == _digest(descriptor), f"{lane}: descriptor digest mismatch")
-    _require(descriptor.get("schema") == "flywheel.bundled-lane-component/v1", f"{lane}: descriptor schema mismatch")
+    _require(descriptor.get("schema") in COMPONENT_SCHEMAS, f"{lane}: descriptor schema mismatch")
+    _require(scope_key(descriptor) == descriptor_scope_key(descriptor), f"{lane}: descriptor scope field mismatch")
     _require(descriptor.get("name") == lane, f"{lane}: descriptor name mismatch")
     _require(descriptor.get("version") == row["owner_project"]["version"], f"{lane}: descriptor version mismatch")
     return descriptor

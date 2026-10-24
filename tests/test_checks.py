@@ -1,8 +1,8 @@
 """Shared deterministic checks: one call shape, one receipt, two adopters.
 
 Success criteria:
-- every kind returns a CheckReceipt with schema flywheel.check-receipt/v1, the
-  subject and spec digests, and a does_not_prove line;
+- every kind returns a CheckReceipt with schema flywheel.check-receipt/v2, the
+  subject and spec digests, and a scope line;
 - a check that raises is recorded as UNVERIFIABLE with code check_error;
   missing inputs (no schema, no page, no expression, no machine) are
   UNVERIFIABLE, never PASS;
@@ -40,9 +40,9 @@ TASK = Task(task_id="t", prompt="p", oracle="fn", oracle_cmd="fn", workdir=".",
 ])
 def test_one_receipt_shape(kind, subject, spec):
     r = run(kind, subject, spec).to_dict()
-    assert r["schema"] == "flywheel.check-receipt/v1" and r["verdict"] == PASS
+    assert r["schema"] == "flywheel.check-receipt/v2" and r["verdict"] == PASS
     assert len(r["subject_sha256"]) == 64 and len(r["spec_sha256"]) == 64
-    assert r["check"] == kind and "does not show" in r["does_not_prove"]
+    assert r["check"] == kind and "separate review" in r["scope"]
 
 
 @pytest.mark.parametrize("kind,subject", [

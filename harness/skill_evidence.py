@@ -8,7 +8,12 @@ from __future__ import annotations
 import re
 
 from .evidence_json import canonical_sha256
-from .trace_bench import regression_report
+from .scope import scope_of
+from .trace_bench import REGRESSION_SCHEMAS, regression_report
+
+
+# verified-bench/v1 names its caveat with the older key; v2 names it `scope`.
+BENCH_SCHEMAS = ("flywheel.verified-bench/v1", "flywheel.verified-bench/v2")
 
 
 def require(condition: bool, message: str) -> None:
@@ -77,13 +82,13 @@ def validate_projection(doc: dict) -> None:
 
 
 def project_bench(bench: dict) -> dict:
-    require(isinstance(bench, dict) and bench.get("schema") == "flywheel.verified-bench/v1",
-            "source must be a verified-bench/v1 producer document")
+    require(isinstance(bench, dict) and bench.get("schema") in BENCH_SCHEMAS,
+            "source must be a verified-bench producer document")
     seal = bench.get("bench_sha256")
     require(digest(seal) and seal == canonical_sha256(
         {k: v for k, v in bench.items() if k != "bench_sha256"}),
         "benchmark seal does not reproduce")
-    require(isinstance(bench.get("created_at"), str) and text(bench.get("does_not_prove")),
+    require(isinstance(bench.get("created_at"), str) and text(scope_of(bench)),
             "benchmark producer metadata is missing")
     attempts = bench.get("attempts")
     require(isinstance(attempts, list) and bool(attempts), "benchmark has no attempts")
@@ -132,16 +137,16 @@ def validate_summary(summary: dict) -> None:
 def summarize_evidence(evidence: dict, *, prior_bench=None, current_bench=None) -> dict:
     require(isinstance(evidence, dict), "evidence must be an object")
     schema = evidence.get("schema")
-    if schema == "flywheel.verified-bench/v1":
+    if schema in BENCH_SCHEMAS:
         require(prior_bench is None and current_bench is None,
                 "direct benchmark binding takes no extra source benches")
         summary = {"kind": "verified_bench", "current": project_bench(evidence), "prior": None}
-    elif schema == "flywheel.trace-regression/v1":
+    elif schema in REGRESSION_SCHEMAS:
         summary = {"kind": "trace_regression", "prior": project_bench(prior_bench),
                    "current": project_bench(current_bench)}
         validate_summary(summary)
         require(canonical_sha256(evidence) == canonical_sha256(
-            regression_report(prior_bench, current_bench)),
+            regression_report(prior_bench, current_bench, schema=schema)),
             "trace report does not reproduce from its source benchmarks")
     else:
         raise ValueError("unsupported skill evidence schema")
@@ -154,3 +159,14 @@ def summary_source_digest(summary: dict) -> str:
     if summary["kind"] == "verified_bench":
         return summary["current"]["source_sha256"]
     return canonical_sha256(regression_report(summary["prior"], summary["current"]))
+
+
+def summary_source_digests(summary: dict) -> tuple[str, ...]:
+    """Every source digest this projection re-derives to. A trace projection
+    re-derives under each trace-regression version, so a gate bound to a v1
+    report still checks."""
+    if summary["kind"] == "verified_bench":
+        return (summary_source_digest(summary),)
+    return tuple(canonical_sha256(regression_report(summary["prior"], summary["current"],
+                                                    schema=schema))
+                 for schema in REGRESSION_SCHEMAS)

@@ -9,10 +9,10 @@ those bytes and returns one of the shared verdicts MATCH, DRIFT, or
 UNVERIFIABLE.
 
 This is the first model-level instrument of the governance program, and it is a
-declaration receipt, not a behavior result. It does not prove the declared
-reward equals the effective reward a run realized, that any model internalized
-it, or that the stated behaviors follow. The Incentive-Attribution Evaluation
-and the Effective-versus-Declared Reward Gap probe test those separately.
+declaration receipt: its `scope` covers the declared structure and the witnessed
+source bytes. The effective reward a run realized, what a model internalized and
+which behaviors follow are measured by the Incentive-Attribution Evaluation and
+the Effective-versus-Declared Reward Gap probe.
 
 Standard library only. Verdicts come from transitive_witness so the lattice is
 the one the rest of the harness already uses. DRIFT outranks UNVERIFIABLE
@@ -25,12 +25,27 @@ import hashlib
 import re
 from pathlib import Path
 
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 from .transitive_witness import DRIFT, MATCH, UNVERIFIABLE
 
-SCHEMA = "flywheel.environment-incentive-manifest/v1"
+# v2 names the coverage string `scope`; v1 manifests carry the older key and
+# stay valid, each version read with its own key (docs/schemas/*-v1/-v2.json).
+# New writers use SCHEMA_V2 with SCOPE. SCHEMA keeps the v1 id under its
+# published name, with DOES_NOT_PROVE as the v1 string, because the
+# preregistered harness/shapley_far.py is pinned by its bytes and builds its
+# manifest from those two names.
+SCHEMA_V1 = "flywheel.environment-incentive-manifest/v1"
+SCHEMA_V2 = "flywheel.environment-incentive-manifest/v2"
+SCHEMA = SCHEMA_V1
+SCOPE_KEY_BY_SCHEMA = {SCHEMA_V1: LEGACY_SCOPE_KEY, SCHEMA_V2: SCOPE_KEY}
 KINDS = ("training", "finetune", "rl", "deployment")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
-DOES_NOT_PROVE = (
+SCOPE = (
+    "A manifest declares an environment's incentive structure and binds the "
+    "named source files by digest. It is a declaration receipt; the effective "
+    "reward, model internalization and resulting behavior are measured by the "
+    "ERG and IAE instruments.")
+DOES_NOT_PROVE = (  # the v1 string, verbatim; see SCHEMA above
     "A manifest declares and witnesses an environment's incentive structure. It "
     "does not prove the declared reward equals the effective reward a run "
     "realized, that any model internalized it, or that the stated behaviors "
@@ -116,22 +131,32 @@ def _validate_witness(witness):
                 raise ManifestError(f"witness.entries[{i}].byte_length: int >= 0")
 
 
-def validate(manifest) -> dict:
-    """Validate an EIM against the v1 shape, raising ManifestError on any fault.
+def _scope_field(manifest) -> str:
+    """The scope key for this manifest's schema version."""
+    schema = manifest.get("schema") if isinstance(manifest, dict) else None
+    key = SCOPE_KEY_BY_SCHEMA.get(schema) if isinstance(schema, str) else None
+    if key is None:
+        raise ManifestError(f"schema: must be {SCHEMA_V2!r} or {SCHEMA_V1!r}")
+    return key
 
-    Structural only. A valid manifest is a well-formed declaration; it says
-    nothing about whether the declaration is true, which is the whole point of
-    the DOES_NOT_PROVE bound and of the ERG and IAE instruments downstream.
+
+def validate(manifest) -> dict:
+    """Validate an EIM against the v1 or v2 shape, raising ManifestError on any fault.
+
+    Structural only. A valid manifest is a well-formed declaration of what the
+    environment rewards; the SCOPE string and the ERG and IAE instruments
+    downstream say where its truth gets tested.
     """
+    if not isinstance(manifest, dict):
+        raise ManifestError("manifest: object")
+    key = _scope_field(manifest)
     _object(manifest, "manifest",
             ("schema", "environment_id", "kind", "reward", "data_distribution",
              "reinforced_behaviors", "penalized_behaviors", "scarcity_variables",
-             "witness", "owned_run", "does_not_prove"),
+             "witness", "owned_run", key),
             ("schema", "environment_id", "kind", "reward", "data_distribution",
              "reinforced_behaviors", "penalized_behaviors", "scarcity_variables",
-             "witness", "does_not_prove"))
-    if manifest["schema"] != SCHEMA:
-        raise ManifestError(f"schema: must be {SCHEMA!r}")
+             "witness", key))
     _str(manifest["environment_id"], "environment_id", 200, minimum=1)
     if manifest["kind"] not in KINDS:
         raise ManifestError(f"kind: one of {KINDS}")
@@ -143,7 +168,7 @@ def validate(manifest) -> dict:
     _validate_witness(manifest["witness"])
     if "owned_run" in manifest and not isinstance(manifest["owned_run"], bool):
         raise ManifestError("owned_run: boolean")
-    _str(manifest["does_not_prove"], "does_not_prove", 2000, minimum=1)
+    _str(manifest[key], key, 2000, minimum=1)
     return manifest
 
 
@@ -208,4 +233,4 @@ def recheck(manifest, root: Path) -> dict:
     overall = DRIFT if saw_drift else UNVERIFIABLE if saw_gap else MATCH
     return {"verdict": overall, "entries": per_entry,
             "environment_id": manifest["environment_id"],
-            "does_not_prove": DOES_NOT_PROVE}
+            "scope": SCOPE}

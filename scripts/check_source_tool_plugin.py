@@ -83,8 +83,9 @@ def qualify_directory(plugin, base, version, python):
             'refused_tools': list(DENIED), 'receipt_fixture_verified': True,
             'selected_roots_unchanged': True, 'requires_python': '>=3.11',
             'python_sha256': hashlib.sha256(Path(python).read_bytes()).hexdigest(),
-            'does_not_prove': ['global OS sandbox', 'clean OS installation',
-                              'installed client compatibility', 'marketplace approval']}
+            'scope': ['the extracted source companion served its two public resources over stdio',
+                      'it verified the synthetic receipt and refused the model, network, exec and write tools',
+                      'the selected workspace and state folders were unchanged, under the Python recorded here']}
 
 
 def check(archive, out, version, *, python=sys.executable, dev=False):
@@ -93,7 +94,7 @@ def check(archive, out, version, *, python=sys.executable, dev=False):
         raise FileExistsError('source qualification directory must not exist')
     plugin = extract_checked(archive, out / 'plugin', version, dev=dev)
     result = qualify_directory(plugin, out / 'protocol', version, python)
-    result.update(schema='flywheel.source-tool-plugin-acceptance/v1',
+    result.update(schema='flywheel.source-tool-plugin-acceptance/v2',
                   source_archive_sha256=hashlib.sha256(Path(archive).read_bytes()).hexdigest(),
                   mode='development' if dev else 'release')
     (out / 'receipt.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')

@@ -22,15 +22,14 @@ each screening.
 
 Articulate reads prose and reports the rhetorical devices and register tells
 that make text read as machine-generated, under a register profile that decides
-which findings block. The detector core runs with no third-party dependency and
-no network call (`src/articulate/detector.py`, `dependencies = []` in
-`pyproject.toml`). An optional editor layer (`judge`, `fix`, `polish`) reads
+which findings block. The detector core runs on the standard library, offline
+(`src/articulate/detector.py`, `dependencies = []` in `pyproject.toml`). An optional editor layer (`judge`, `fix`, `polish`) reads
 judgment-level failures and rewrites toward the standard when an LLM backend is
 configured. Every screening can emit a receipt that pins the exact text hash and
 a fingerprint of the whole ruleset, so anyone replays the verdict on the same
-text with no trust in the issuer. Inside Flywheel, Articulate fits the same seam
+text for themselves. Inside Flywheel, Articulate fits the same seam
 Chorus uses: a bridge shells the installed CLI, returns the tool's own JSON
-verbatim with its receipt, and reports an honest error when the CLI is absent.
+verbatim with its receipt, and reports a named error when the CLI is absent.
 The boundary is fixed. A clean gate means the prose was screened under a named
 ruleset. It never asserts that a claim, a proof, or a result is correct.
 
@@ -48,9 +47,9 @@ Each item names the capability and the source that implements it.
   superlatives, participial closers, email and blog tells), and LOW (advisories
   that also fire on innocent prose, surfaced only with `--verbose`). Verified by
   `tests/test_detector.py`.
-- **Keyword-free parallel-negation detection.** The detector flags a
-  parallel-negation contrast pair by structure, without a keyword list
-  (`detector.py`; `docs/features.md`).
+- **Structural parallel-negation detection.** The detector flags a
+  parallel-negation contrast pair by its sentence structure (`detector.py`;
+  `docs/features.md`).
 - **Document-level signals.** Uniform cadence, repeated sentence openers,
   passive density, and adverb density accumulate as document-level evidence
   (`detector.py`, `tests/test_detector.py`).
@@ -96,21 +95,22 @@ Each item names the capability and the source that implements it.
   quantifier or an inequality changes a theorem. Verified by
   `tests/test_science.py`.
 - **Math-span masking on `.tex`.** The editor masks every math span before a
-  rewrite and splices it back byte for byte, so a formula is never altered
+  rewrite and splices it back byte for byte, so every formula survives intact
   (`src/articulate/editor.py`; `docs/features.md`).
-- **Stated boundary.** A clean gate on a proof means the prose was screened. It
-  says nothing about whether the theorem is true (`docs/boundaries.md`).
+- **Stated boundary.** A clean gate on a proof means the prose was screened;
+  the theorem's truth comes from a referee or a proof assistant
+  (`docs/boundaries.md`).
 
 ### Editor layer (needs an LLM backend)
 
-- **`judge`.** Reports judgment-level failures a regex cannot see: confident
+- **`judge`.** Reports judgment-level failures that need a reader: confident
   emptiness, vague abstraction, uncommitted hedging, weak verbs, a buried point
   (`editor.py`, `tests/test_editor.py`).
 - **`fix`.** Rewrites to the plain-writing standard, preserves every number,
   name, citation, term of art, and code span, then re-runs the detector until
   clean (`editor.py`).
-- **`polish`.** A monotonic loop that accepts a pass only when the gate stays
-  clean and no quality score drops. It scores five qualities: concreteness,
+- **`polish`.** A monotonic loop that accepts a pass when the gate stays clean
+  and every quality score holds or rises. It scores five qualities: concreteness,
   commitment, economy, rhythm, and a restatable fact per paragraph
   (`editor.py`, `src/articulate/mcp_server.py` `do_polish`).
 - **Injection trust boundary.** The document is treated strictly as data. A
@@ -128,17 +128,17 @@ Each item names the capability and the source that implements it.
 - **Closed verdict set.** `verify_receipt` returns `Match` (same text, same
   ruleset, identical findings and gate), `Drift` (same text and ruleset,
   re-derived findings differ), or `Unverifiable` (ruleset moved, hash mismatch,
-  unknown schema, or below the signal floor). There is no `Trusted` or
-  `Approved` value (`receipt.py`, `tests/test_receipt.py`).
+  unknown schema, or below the signal floor). Those three are the whole set
+  (`receipt.py`, `tests/test_receipt.py`).
 - **Content-free audit receipt.** `--redact drop` or `--redact hash` produces
-  schema `articulate/receipt/audit/v1`, which keeps no verbatim matched
-  substring and no offsets, only the rule, tier, category, and line. It still
+  schema `articulate/receipt/audit/v1`, which keeps the rule, tier, category,
+  and line for each finding, with the matched text and offsets removed. It still
   replays to `Match`, and `verify_receipt` rejects a receipt that smuggles a
   verbatim `match` field into an audit schema (`receipt.py`,
   `tests/test_audit_hardening.py`).
 - **Local audit query.** `articulate audit <dir>` queries committed receipts
-  with no server; `--reverify --gate` re-checks each against its source and
-  fails only when a source drifted (`src/articulate/cli.py`,
+  locally; `--reverify --gate` re-checks each against its source and fails
+  when a source drifted (`src/articulate/cli.py`,
   `tests/test_audit.py`, `tests/test_audit_cli.py`).
 - **Reviewer attribution.** `--reviewer` records a named human sign-off; absent
   that, the CI actor from `$GITHUB_ACTOR` is recorded (`cli.py`, `receipt.py`).
@@ -154,8 +154,8 @@ Each item names the capability and the source that implements it.
   device still reads flagged at any length (`detector.py`,
   `tests/test_thresholds.py`).
 - **Binary fail-closed guard.** A binary or unsupported document (`.docx`, PDF,
-  image) is refused with an explicit reason, so the tool never returns a
-  spurious clean scan of a lossy decode (`detector.binary_reason`,
+  image) is refused with an explicit reason, in place of a scan of a lossy
+  decode (`detector.binary_reason`,
   `tests/test_binary_guard.py`).
 - **ReDoS guard.** Pattern safety is covered by `tests/test_redos.py`.
 - **Dogfood gate.** `tests/test_dogfood.py` screens the project's own prose.
@@ -167,7 +167,7 @@ Each item names the capability and the source that implements it.
 - **SARIF.** `check --sarif` emits SARIF 2.1.0 for GitHub code scanning, Azure
   DevOps, and reviewdog (`cli.py`).
 - **LSP server.** `python -m articulate.lsp_server` (console script
-  `articulate-lsp`) speaks LSP over stdio with no dependency, for VS Code,
+  `articulate-lsp`) speaks LSP over stdio on the standard library, for VS Code,
   JetBrains via LSP4IJ, and Neovim (`src/articulate/lsp_server.py`,
   `tests/test_lsp.py`).
 - **MCP server, two transports, one implementation.** `articulate-mcp`
@@ -220,7 +220,8 @@ today.
 6. **Replay a receipt.** `python -m articulate.cli verify doc.receipt.json
    doc.md` re-derives and exits 0 (Match), 1 (Drift), or 2 (Unverifiable).
 7. **Keep a content-free record.** `receipt doc.md --redact drop --reviewer
-   alice > receipts/doc.json` stores a replayable receipt with no verbatim text.
+   alice > receipts/doc.json` stores a replayable receipt that holds rule ids
+   and line numbers in place of the text.
 8. **Audit a directory.** `python -m articulate.cli audit receipts/ --reverify
    --gate` re-checks each committed receipt against its source and fails the gate
    if a source drifted.
@@ -233,9 +234,10 @@ today.
 
 ---
 
-## How it composes inside Flywheel (proposed)
+## How it composes inside Flywheel
 
-Everything in this section is a proposal. None of it is wired today.
+The lane is wired (see "Lane wiring" below). The bridge, the gateway route and
+the worked flows in this section are the design for the next step.
 
 ### Which seam it is
 
@@ -251,12 +253,10 @@ Flywheel has two integration shapes in the current code:
    it at `/api/discourse*` and the desktop renders it in a Discourse card.
    Chorus is not in `LANES`.
 
-Articulate needs both, for a concrete reason grounded in its code. The MCP
-server exposes only `check`, `score`, `judge`, `fix`, `polish`. The
-receipt-bearing surfaces (`receipt`, `verify`, `audit`, `--sarif`) live only in
-the CLI. So the lane covers the five MCP tools, and a Chorus-style bridge
-(`harness/articulate_bridge.py`, proposed) shells the CLI for the receipt path
-that the MCP server does not carry.
+Articulate uses both. The lane serves the five MCP tools: `check`, `score`,
+`judge`, `fix`, `polish`. The receipt-bearing surfaces (`receipt`, `verify`,
+`audit`, `--sarif`) live in the CLI, so a Chorus-style bridge
+(`harness/articulate_bridge.py`, proposed) shells the CLI for the receipt path.
 
 Proposed lane identity: role `re-derivable prose screening and AI-tell
 detection (register profiles, writing modes, receipts)`. Organ is an open
@@ -323,33 +323,33 @@ would have broken something.
   `callable_lane.dart` already renders any lane the engine names, so the
   registry entry alone puts it in the Lanes roster with its tier.
 - **Expected-set test.** `tests/test_lanes.py` asserts it in the exact lane set,
-  and `tests/test_lane_registry_hygiene.py` asserts it is not marked
-  package-disabled now that it publishes.
+  and `tests/test_lane_registry_hygiene.py` asserts it is package-enabled now
+  that it publishes.
 
 ### The correction
 
 The proposal here named `articulate-writing[mcp]` as the install target, so the
-MCP surface would arrive with its `fastmcp` dependency. That does not work.
-`installed_version()` in `harness/lane_runtime_support.py` passes `install_name`
-straight to `importlib.metadata.version`, which does not accept an extras
-marker, so the lane would install and then report no version at all.
+MCP surface would arrive with its `fastmcp` dependency. That breaks version
+resolution. `installed_version()` in `harness/lane_runtime_support.py` passes
+`install_name` straight to `importlib.metadata.version`, which rejects an extras
+marker, so the lane would install and then report an empty version.
 `resolve_lane_runtime` compares declared against installed by equality, so the
-lane would never resolve cleanly.
+lane would stay unresolved.
 
 articulate 0.4.0 removes the need. `articulate.local_mcp` is stdlib-only and
 serves the same five tools plus `status` and `doctor`, so `install_name` stays a
 bare distribution name and the lane installs and launches from one clean name.
 `accountable-surface` took the same route for the same reason.
 
-The proposal also assumed `source_repo="public/articulate"`. The repo does not
-sit beside the other `public/*` checkouts, so the entry declares `articulate`.
+The proposal also assumed `source_repo="public/articulate"`. The repo sits at
+the workspace root, so the entry declares `articulate`.
 
 ### Still missing
 
-- **Tier floor.** Articulate has no entry in `LANE_MIN_TIERS`
-  (`harness/lane_caller.py`), so the listing's headline tier is T1. The call
-  tier comes from the policy table per tool, and a tool the table does not list
-  is T2 (default deny, since 1.1.0).
+- **Tier floor.** Articulate is absent from `LANE_MIN_TIERS`
+  (`harness/lane_caller.py`), so the listing's headline tier is the default T1. The call
+  tier comes from the policy table per tool, and an unlisted tool is T2
+  (default deny, since 1.1.0).
 - **Admitted-tool set.** A lane launch admits tools through
   `LaunchSpec.allowed_tools` (`harness/mcp_client.py` `launch_allows_tool`), and
   a tool outside the set returns `CAPABILITY_NOT_ADMITTED`. Proposed set:
@@ -371,34 +371,30 @@ CLI JSON verbatim, with a 400 when the payload carries an `error`.
 
 ## Boundaries carried into Flywheel (observed, from `docs/boundaries.md`)
 
-- Detection and writing quality are the goal. A lower detector score is a
-  byproduct of clearer writing, never a target. Articulate is not an evasion
-  tool, and the benchmark refuses to report a detector-evasion result as a
+- Detection and writing quality are the goal. A lower detector score follows
+  from clearer writing, and the benchmark reports writing quality as the
   feature.
-- Exposition quality is not correctness. A clean gate on a proof or a paper says
-  the prose was screened. Correctness comes from referees and proof assistants
-  (Lean, Coq, Isabelle), never from this tool.
-- A receipt attests that a screening ran. It carries no claim about compliance,
-  and it does not stand in for a provenance attestation, an EU AI Act Article 50
-  marking, or a C2PA credential.
+- A clean gate on a proof or a paper says the prose was screened. Correctness
+  comes from referees and proof assistants (Lean, Coq, Isabelle).
+- A receipt attests that a screening ran. Compliance marks such as an EU AI Act
+  Article 50 marking or a C2PA credential are separate artifacts.
 - Content-free is not zero-leakage. The residual is the rule and the line. For a
   closed-vocabulary rule that narrows the flagged word to a small public
   candidate set. `--redact hash` keeps a dictionary-reversible sha256; use
   `--redact drop` when the flagged word must stay secret.
-- English patterns and an honest ceiling. The patterns are English literals, so
-  a clean result on non-English text means the English rules found nothing. The
-  detector reads devices, register, and structure with regular expressions; it
-  cannot read token probability, so a device-clean passage of machine writing
-  can score low.
+- English patterns. The patterns are English literals, so a result on
+  non-English text reports the English rules alone. The detector reads devices,
+  register, and structure with regular expressions, so a device-clean passage
+  of machine writing can score low; token probability is outside its view.
 
-## Honest nulls
+## Status
 
-- Articulate is not wired into Flywheel. No lane entry, desktop card,
-  expected-set test, bridge, or gateway route exists yet.
-- The MCP server carries no `receipt`, `verify`, or `audit` tool; those are
-  CLI-only, so the proposal pairs a bridge with a lane to reach them.
-- The organ assignment (`verification` versus a new `expression`) is unresolved.
-- The `source_repo` path convention for a lane assumes a `public/articulate`
-  checkout location the repo does not occupy today.
+- Wired: the lane entry, the desktop card and the expected-set test. Next: the
+  bridge and the gateway route.
+- `receipt`, `verify` and `audit` run from the CLI, so the bridge reaches them.
+- The registry assigns organ `authoring`; `verification` and a new `expression`
+  organ remain the alternatives under review.
+- The registry declares `source_repo` `articulate`, matching the workspace-root
+  checkout.
 - An offline editor backend and a labeled non-native corpus for a fairness check
   remain on the standalone repo's own roadmap (README "Status").

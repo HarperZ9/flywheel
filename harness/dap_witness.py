@@ -19,7 +19,7 @@ observation later.
 """
 from __future__ import annotations
 
-from .action_witness import INPUT, OUTPUT, does_not_prove as action_does_not_prove
+from .action_witness import INPUT, OUTPUT, scope as action_scope
 from .jsonrpc_peer import SENT
 from .wire_witness import WireWitness, transcript_resolver
 
@@ -28,10 +28,11 @@ DECISION_ACTION = "dap/decision"
 SESSION_ACTION = "dap/session"
 STOP_ACTION = "dap/stop"
 
-WITNESS_SCHEMA = "flywheel.dap-witness/v1"
+WITNESS_SCHEMA_V1 = "flywheel.dap-witness/v1"
+WITNESS_SCHEMA = "flywheel.dap-witness/v2"  # v2 names `scope`
 
 __all__ = ["DECISION_ACTION", "DapWitness", "FRAME_ACTION", "SESSION_ACTION",
-           "STOP_ACTION", "WITNESS_SCHEMA", "does_not_prove", "stop_summary",
+           "STOP_ACTION", "WITNESS_SCHEMA", "WITNESS_SCHEMA_V1", "scope", "stop_summary",
            "summarize", "transcript_resolver"]
 
 
@@ -119,7 +120,7 @@ def summarize(session, *, adapter: str = "") -> dict:
                                  for entry in session.events.output),
         "terminated": session.terminated,
         "exit_code": session.settle_exit(),
-        "does_not_prove": does_not_prove(),
+        "scope": scope(),
     }
 
 
@@ -147,15 +148,14 @@ def _outcome_of(message: dict) -> str:
     return "result" if message.get("success") else "error"
 
 
-def does_not_prove() -> list[str]:
-    """What a debug session record leaves open. Never empty."""
-    return action_does_not_prove() + [
-        "the chain covers frames that crossed this connection, so what the "
-        "debuggee did between two stops leaves nothing behind to break a link",
-        "a variable's value is what the adapter reported reading, not an "
-        "independent observation of the debuggee's memory",
-        "a breakpoint marked verified is the adapter's claim that it bound the "
-        "location, not evidence that the line was reached",
-        "the chain shows the frames were not altered after the session and "
-        "says nothing about whether the program under them was correct",
+def scope() -> list[str]:
+    """What a debug session record covers. Never empty."""
+    return action_scope() + [
+        "the chain covers frames that crossed this connection; what the "
+        "debuggee did between two stops has no record here",
+        "a variable's value is the adapter's report of what it read",
+        "a breakpoint marked verified is the adapter's statement that it bound "
+        "the location; reaching the line is a separate event",
+        "the chain records that the frames are unchanged since the session; "
+        "the correctness of the program under them is a separate check",
     ]

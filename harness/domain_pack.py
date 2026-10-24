@@ -8,14 +8,20 @@ from __future__ import annotations
 from pathlib import Path
 
 from .evidence_json import canonical_sha256
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 
-SCHEMA = "flywheel.domain-pack/v1"
-QA_SCHEMA = "flywheel.domain-pack-qa/v1"
+# v2 manifests and QA results name the coverage field `scope`; v1 manifests
+# carry the older key and stay admissible, each read with its own key.
+SCHEMA_V1 = "flywheel.domain-pack/v1"
+SCHEMA = "flywheel.domain-pack/v2"
+SCHEMAS = {SCHEMA_V1: LEGACY_SCOPE_KEY, SCHEMA: SCOPE_KEY}
+QA_SCHEMA_V1 = "flywheel.domain-pack-qa/v1"
+QA_SCHEMA = "flywheel.domain-pack-qa/v2"
 _REQUIRED = ("pack_id", "version", "domain_id", "claim_types",
              "journey_schema", "packet_schema", "oracle_bindings",
              "fixtures", "capabilities", "containment_class", "license",
              "resource_limits", "public_metadata_policy", "limitations",
-             "does_not_prove", "owner", "review_due_at")
+             "owner", "review_due_at")
 _SECRET_KEY = ("api_key", "token", "secret", "password", "credential",
                "authorization", "cookie", "private_key")
 _CAPS = {"data", "executable", "network", "write", "secrets"}
@@ -55,10 +61,21 @@ def _fixture_verdict(fixture: dict) -> str:
     return str(fixture.get("expectation", ""))
 
 
+def _scope_field(manifest: dict) -> str:
+    """The scope key this manifest's version uses; the other key is refused."""
+    key = SCHEMAS.get(manifest.get("schema")) if isinstance(
+        manifest.get("schema"), str) else None
+    if key is None:
+        _refuse("the manifest is not a domain-pack/v1 or v2 document")
+    other = SCOPE_KEY if key == LEGACY_SCOPE_KEY else LEGACY_SCOPE_KEY
+    if other in manifest:
+        _refuse(f"a {manifest['schema']} manifest names its scope as {key}")
+    return key
+
+
 def verify_pack_manifest(manifest: dict, *, fixtures_root: Path | str) -> dict:
-    if manifest.get("schema") != SCHEMA:
-        _refuse("the manifest is not a domain-pack/v1 document")
-    missing = [f for f in _REQUIRED if f not in manifest]
+    scope_field = _scope_field(manifest)
+    missing = [f for f in (*_REQUIRED, scope_field) if f not in manifest]
     if missing:
         _refuse(f"the manifest is missing {sorted(missing)}")
     _clean(manifest)
@@ -122,10 +139,9 @@ def verify_pack_manifest(manifest: dict, *, fixtures_root: Path | str) -> dict:
 
 def run_pack_qa(manifest: dict, fixtures: list[dict]) -> dict:
     """Score the pack's own QA fixtures: every planted false accept must
-    be detected; the denominator, escapes, skips, and does_not_prove are
-    part of the result."""
-    if manifest.get("schema") != SCHEMA:
-        _refuse("QA runs against a domain-pack/v1 manifest")
+    be detected; the denominator, escapes, skips, and scope are part of
+    the result."""
+    _scope_field(manifest)
     expected = {f["file"]: f["expectation"] for f in
                 manifest.get("fixtures", [])}
     detected = 0
@@ -154,7 +170,7 @@ def run_pack_qa(manifest: dict, fixtures: list[dict]) -> dict:
         "escaped": escaped,
         "platform_skips": skipped,
         "resource_usage": {"within_limits": escaped == 0},
-        "does_not_prove": (
-            "a passing QA run says the pack refuses its own planted "
-            "false accepts; it does not certify the pack's claims"),
+        "scope": (
+            "the pack's own planted false accepts, scored against this "
+            "manifest; the pack's domain claims keep their own review"),
     }

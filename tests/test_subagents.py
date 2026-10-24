@@ -98,7 +98,7 @@ def test_spawn_fans_out_children_and_seals_per_child_receipts(tmp_path):
     assert [c["role"] for c in ack["children"]] == ["explore", "verify"]
     snap = _await_sealed(runner, ack["swarm_id"])
     receipt = snap["receipt"]
-    assert receipt["schema"] == "flywheel.subagent-swarm/v1"
+    assert receipt["schema"] == "flywheel.subagent-swarm/v2"
     assert receipt["verdict"] == "satisfied"
     assert receipt["completed"] == 2 and receipt["total"] == 2
     for child in receipt["children"]:

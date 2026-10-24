@@ -28,19 +28,19 @@ def _commit(root, proposal):
 
 
 def _project(root):
-    brief = {"schema": "flywheel.writing-project-brief/v1",
+    brief = {"schema": "flywheel.writing-project-brief/v2",
         "project_ref": PROJECT, "mode": "nonfiction", "form": "essay",
         "working_title": "Release evidence", "audience": "operators",
         "reader_job": "decide whether evidence is sufficient",
         "author_intent": "make a bounded release recommendation",
         "voice_contract": {"style_ref": "voice_rules"},
         "source_packet_ref": "packet_main", "writing_profile": "nonfiction",
-        "does_not_prove": ["truth"]}
-    packet = {"schema": "flywheel.writing-source-packet/v1",
+        "scope": ["truth"]}
+    packet = {"schema": "flywheel.writing-source-packet/v2",
         "project_ref": PROJECT, "source_packet_ref": "packet_main",
         "sources": [{"source_id": "src_receipt", "title": "Receipt",
         "origin": "local", "allowed_use": "cite"}],
-        "does_not_prove": ["source interpretation"]}
+        "scope": ["source interpretation"]}
     proposal, status = _post(root, "/api/writing/init/prepare", {
         "brief": brief, "source_packet": packet, "client_request_id": "init"})
     assert status == 200

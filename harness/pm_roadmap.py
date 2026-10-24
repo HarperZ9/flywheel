@@ -3,7 +3,7 @@
 Goals are swarm goals; the decomposed work is each goal's children;
 verification status is the sealed per-child receipt state. V1 reads
 only what the platform already sealed (swarm receipts, bound skill
-gates) and prints its own limits at the bottom of the page, because a
+gates) and prints its scope at the bottom of the page, because a
 roadmap that hides what it does not know is a fiction with formatting.
 """
 from __future__ import annotations
@@ -12,11 +12,13 @@ import hashlib
 from pathlib import Path
 
 from .evidence_json import canonical_sha256
+from .scope import scope_list
 from .skill_gate import load_skill_gates
-from .subagent_roles import SWARM_SCHEMA
+from .subagent_roles import SWARM_SCHEMAS
 from .subagent_store import load_swarm_receipt
 
-SCHEMA = "flywheel.pm-roadmap/v1"
+SCHEMA = "flywheel.pm-roadmap/v2"
+SCHEMA_V1 = "flywheel.pm-roadmap/v1"
 
 _STAGES = ("intake", "decomposed", "preflight", "running", "concluded",
            "exported")
@@ -83,7 +85,7 @@ def build_pm_roadmap(*, swarms: list[dict], skills: list[dict],
                      journeys: "list[dict] | None" = None) -> dict:
     goals = []
     for row in swarms:
-        if row.get("schema") == SWARM_SCHEMA or (
+        if row.get("schema") in SWARM_SCHEMAS or (
                 row.get("schema") is None and "children" in row
                 and "verdict" in row):
             entry = _goal_from_receipt(row)
@@ -104,11 +106,11 @@ def build_pm_roadmap(*, swarms: list[dict], skills: list[dict],
                               and g["state"] != "sealed"),
             "journeys": sum(1 for g in goals if g.get("kind") == "journey"),
         },
-        "does_not_prove": [
-            "a satisfied quorum attests children ran and reported; it "
-            "does not prove the goal was achieved",
-            "open rows are known-running or detached work, not estimates",
-            "journey PASS verdicts require receipt MATCH upstream; the "
+        "scope": [
+            "a satisfied quorum attests that the children ran and reported; "
+            "goal achievement is judged separately",
+            "open rows are known-running or detached work, listed as observed",
+            "journey PASS verdicts carry receipt MATCH from upstream; the "
             "roadmap re-grades nothing",
         ],
     }
@@ -134,8 +136,8 @@ def render_markdown(doc: dict) -> str:
               f"- sealed goals: {v.get('sealed_goals', 0)}",
               f"- open goals: {v.get('open_goals', 0)}",
               f"- journeys tracked: {v.get('journeys', 0)}"]
-    lines += ["", "## Does not prove", ""]
-    for note in doc.get("does_not_prove", []):
+    lines += ["", "## Scope", ""]
+    for note in scope_list(doc):
         lines.append(f"- {note}")
     return "\n".join(lines) + "\n"
 

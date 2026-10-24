@@ -8,9 +8,9 @@
     },
     {
       "needs": "a provider list and an oracle",
-      "standing_result": null,
-      "suite": "uplift_bench paired arms",
-      "where": "harness/uplift_bench.py, POST /api/uplift"
+      "standing_result": "Formerly labeled 'uplift_bench paired arms'. Different generation budgets and selector-as-scorer prevent an uplift claim. See docs/UPLIFT-EVALUATION.md for the existing matched-pool apparatus and its limits.",
+      "suite": "uplift_bench legacy retry diagnostic",
+      "where": "harness/uplift_bench.py, GET /api/uplift"
     },
     {
       "needs": "endpoints and a private task set the operator supplies",
@@ -55,7 +55,7 @@
     "witnessed": 48
   },
   "python": "3.12.10",
-  "result_sha256": "03f61e8e507d0767ab698c632c76974ebe9e2f508f3f2a9cfeb1a6d004608767",
+  "result_sha256": "5317a560f833ba99fd76150bc1f40fb6e68bc96fcbcf1659740a6e90960588a7",
   "schema": "flywheel.offline-benchmarks/v1",
   "suites": [
     {
@@ -112,7 +112,7 @@
       "non_goal": "measures accountability, NOT capability. Pair it with a capability bench",
       "question": "does an unaccountable system score badly here",
       "schema": "accountability/v1",
-      "seconds": 8.244
+      "seconds": 15.965
     },
     {
       "detail": [
@@ -199,7 +199,7 @@
       "name": "governed-agent",
       "question": "does a workflow refuse an action above its tier",
       "schema": "governed-agent-workflow-benchmark/v1",
-      "seconds": 0.008
+      "seconds": 0.016
     },
     {
       "detail": [
@@ -277,7 +277,7 @@
       "name": "agent-recovery",
       "question": "does an injected fault recover without failing quietly",
       "schema": "agent.recovery-benchmark/v1",
-      "seconds": 0.031
+      "seconds": 0.07
     },
     {
       "detail": [
@@ -330,7 +330,7 @@
       "name": "stateful-provider-swap",
       "question": "does state survive a provider swap",
       "schema": "unisonai.stateful-benchmark/v1",
-      "seconds": 0.011
+      "seconds": 0.019
     },
     {
       "detail": [],
@@ -344,7 +344,7 @@
       "name": "source-mined",
       "question": "do the mined checks still hold against their datasets",
       "schema": "source-mined.executable-benchmark/v1",
-      "seconds": 0.016
+      "seconds": 0.049
     },
     {
       "caveats": [
@@ -364,42 +364,42 @@
       "non_goal": "continued pretraining on the workspace corpus did not improve general code completion and did not significantly harm it; the point estimate is a regression inside the noise",
       "question": "did continued pretraining change general code completion",
       "schema": "flywheel.paired-replication/v1",
-      "seconds": 0.001
+      "seconds": 0.002
     },
     {
       "caveats": [
-        "the timings are one machine, one filesystem and one run, and an encrypted, networked or virtualised disk answers fsync differently",
-        "a drive that reports a flush it has not completed returns faster and keeps less, and nothing here can tell the two apart",
-        "it measures the cost of writing the record, not the cost of the action worth recording, so an action that takes a second is barely moved by any figure here",
+        "the timings are one machine, one filesystem and one run; an encrypted, networked or virtualised disk answers fsync on its own terms",
+        "a durable write here is one the drive reported flushed, so the figure rests on the drive's report",
+        "it measures the cost of writing the record, and the action worth recording costs whatever it costs on top, so an action that takes a second is barely moved by any figure here",
         "every action carries the same payload, so hashing runs on warm cache lines and the verifier's resolver is a two-entry map",
-        "the buffered arm is the shipping path with one syscall removed, which is an attribution of the cost rather than a configuration anyone runs"
+        "the buffered arm is the shipping path with one syscall removed: an attribution of the cost, and a configuration nobody ships"
       ],
       "detail": [
         {
           "name": "chain_only",
-          "score": 49.1
+          "score": 46.7
         },
         {
           "name": "buffered",
-          "score": 515.9
+          "score": 1105.9
         },
         {
           "name": "durable",
-          "score": 7184.9
+          "score": 8794.1
         }
       ],
       "headline": {
-        "durability_share": 0.9282,
+        "durability_share": 0.8742,
         "log_bytes_per_action": 788.3,
-        "ms_per_witnessed_action": 7.18,
-        "recheck_us_per_record": 12.8,
+        "ms_per_witnessed_action": 8.79,
+        "recheck_us_per_record": 21.5,
         "verdict": "MATCH"
       },
       "name": "receipting-cost",
       "non_goal": "the record is arithmetic and the durability is a syscall. Most of what a witnessed action costs here is the wait for one fsync, so batching the flush is the lever, and it is paid for in the size of the crash window",
       "question": "what does it cost to keep the receipt",
-      "schema": "flywheel.receipting-cost/v1",
-      "seconds": 1.76,
+      "schema": "flywheel.receipting-cost/v2",
+      "seconds": 2.224,
       "unsealed": [
         "ms_per_witnessed_action",
         "durability_share",

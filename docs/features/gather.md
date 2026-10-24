@@ -38,8 +38,8 @@ faked. Observed.
   isolated external-tool edges (an external program does the work, never a
   Python dependency). Observed: `src/gather/source.py`, `ARCHITECTURE.md`.
 - **Mechanically enforced method ladder.** `make_item` refuses an inconsistent
-  receipt: a `direct` item cannot carry `derived_from`, a `derived` item cannot
-  lack it. Observed: `src/gather/item.py`, `src/gather/method.py`.
+  receipt: `derived_from` is required on a `derived` item and rejected on a
+  `direct` one. Observed: `src/gather/item.py`, `src/gather/method.py`.
 - **Witnessed, re-checkable digest.** `digest` folds item receipts into a
   `Digest` with an order-independent `seal` covering every receipt field;
   `verify_digest` re-derives it and returns False if anything was altered.
@@ -53,19 +53,19 @@ faked. Observed.
   sitemap discovery, dedup, and per-host throttling. Observed:
   `src/gather/crawl.py`.
 - **Structured extraction with a hallucination check.** `schema_extract` binds
-  schema fields to source nodes; `verify_record` rejects any proposed field
-  value not grounded in the fetched content. Observed:
+  schema fields to source nodes; `verify_record` accepts a proposed field value
+  when the fetched content grounds it, and rejects the rest. Observed:
   `src/gather/schema_extract.py`, `src/gather/run.py`.
 - **Element tracking across page redesigns.** Fingerprint a scraped element and
   relocate it in a later version of the page, returning a typed MATCH /
   RELOCATED / DRIFT / GONE verdict. Observed: `src/gather/track.py`.
 - **Scholarly-graph federation.** `gather scholar` queries OpenAlex, Semantic
-  Scholar, and Crossref, dedupes by normalized DOI (never a fuzzy title match),
+  Scholar, and Crossref, dedupes by exact normalized DOI,
   and captures citation edges with `--edges`. Observed: `src/gather/scholar.py`.
 - **Source-federation planning, offline.** `gather federation validate | plan |
   policy | entity` audits a closed-contract registry, compiles one deterministic
-  capture plan per source, and seals the snapshot; no probe fires. A registry
-  row is never reported as coverage or availability. Observed:
+  capture plan per source, and seals the snapshot, all offline. A registry row
+  counts as a catalog entry; coverage and availability come from a capture. Observed:
   `src/gather/federation.py`, `src/gather/federation_cmd.py`.
 - **Durable content-addressed corpus.** `--store DIR` writes bodies at
   `objects/ab/cdef...` keyed by sha256 (natural dedup, temp-then-rename,
@@ -75,7 +75,7 @@ faked. Observed.
   `src/gather/corpus_cmd.py`.
 - **Availability rung.** `witness_availability` attaches `{status, checked_at,
   sha256}` to each receipt and folds it into the seal; `assess_availability`
-  reports AVAILABLE only when the bound hash matches, else CHANGED /
+  reports AVAILABLE when the bound hash matches, else CHANGED /
   UNAVAILABLE / UNWITNESSED. Observed: `src/gather/availability.py`.
 - **Witnessed multi-source run.** `gather run config.json` orchestrates many
   `(source, target)` jobs, a scope filter, and optional synthesis into one
@@ -88,9 +88,8 @@ faked. Observed.
   receipt, monitors sources for NEW / CHANGED / UNCHANGED, and packages shared
   or full bundles a third party re-verifies offline. Observed: `src/gather/pilot.py`,
   `src/gather/pilot_bundle.py`, `docs/PILOT.md`.
-- **Credential discipline.** Secrets enter only through `require_secret(name)`,
-  read from the environment by name, never logged, never written into a receipt
-  or URL. Observed: `src/gather/credentials.py`.
+- **Credential discipline.** Secrets enter through `require_secret(name)`, read
+  from the environment by name, and stay out of logs, receipts and URLs. Observed: `src/gather/credentials.py`.
 - **SSRF-aware network edge.** `http_get` allows only http/https, blocks
   private, loopback, link-local, and reserved hosts on the initial URL and on
   every redirect hop, refuses caller-supplied routing headers, and strips
@@ -104,20 +103,19 @@ faked. Observed.
   missing capability degrades to UNVERIFIABLE. Observed: `pyproject.toml`,
   `src/gather/backends.py`.
 
-Honest null: the README's "roughly 2x on large documents" for the `fast` backend
-is described in the repo itself as informal and unpublished. Treat it as an
-unverified, informal figure with no published benchmark behind it.
+The README's "roughly 2x on large documents" for the `fast` backend is an
+informal figure from the repo itself; a published benchmark is still to come.
 
 ## Stepwise usage (how a user runs it)
 
-Gather runs the same three ways whether or not Flywheel is present.
+Gather runs the same three ways with Flywheel or on its own.
 
 1. **Install.**
    ```bash
    pip install gather-engine        # installs the `gather` command and `import gather`
    ```
    Or from a source checkout: `python -m pip install -e ".[dev]"`. Python 3.11+.
-   From a checkout without install, `python -m gather` runs the same CLI.
+   From a plain checkout, `python -m gather` runs the same CLI.
 
 2. **Check what the install can do.**
    ```bash
@@ -193,10 +191,10 @@ Seven tools, observed in `src/gather/mcp.py` and declared in
 
 From 1.9.0, `gather.run` and `gather.pilot` need launch grants for network
 sources (`GATHER_ALLOW_NETWORK`), commands (`GATHER_ALLOW_EXEC`) and
-credentials (`GATHER_AUTH_ENV_ALLOW=NAME@HOST`); without one the call returns
-`GRANT_REQUIRED` before anything runs. Flywheel starts the gather lane with all
-four grant variables empty (`GATHER_CHILD_ENV` too): its app tools read a local
-document or corpus and need none, and the feed route runs the gather CLI,
+credentials (`GATHER_AUTH_ENV_ALLOW=NAME@HOST`); a call missing its grant
+returns `GRANT_REQUIRED` before anything runs. Flywheel starts the gather lane
+with all four grant variables empty (`GATHER_CHILD_ENV` too): its app tools read
+a local document or corpus, and the feed route runs the gather CLI,
 which runs with the trust you give your own command line.
 
 From 1.9.1, gather refuses a network or device path itself before anything opens
@@ -223,7 +221,7 @@ Observed in `ARCHITECTURE.md` and the modules named:
 
 - **Synthesizer** (`gather.derive`): a real model plugs in behind this seam to
   produce a `synthesized` item; the default `NullSynthesizer` performs a
-  deterministic extractive compilation and invents nothing.
+  deterministic extractive compilation from the source text.
 - **ProvenanceProvider** (`gather.provenance`): an external origin verdict
   (forged / re-encoded / authentic) folds into a run's sealed `origins` field.
 - **Scope filter and store** (`gather.scope`, `gather.store`): pluggable, Null
@@ -253,7 +251,7 @@ lane layer resolves this asymmetry when it spawns the MCP server. Observed:
 ### What it consumes from peers
 - **Targets from the operator or a federation registry:** URLs, local paths,
   arXiv ids, run configs, and pilot manifests. A federation registry row is a
-  catalog fact, never treated as coverage until a capture runs.
+  catalog fact; coverage comes from a capture.
 - **A Synthesizer, when one is wired:** a model behind the `Synthesizer` seam can
   turn gathered items into a `synthesized` item. Absent one, gather compiles
   deterministically and labels the result `compiled`.
@@ -316,8 +314,8 @@ gather corpus search ./corpus --terms "aperiodic tiling" --method http-get --jso
 The contract handed across the seam is the content hash on each receipt and the
 digest seal over the run. The verification lane (`crucible`) consumes those
 claims and re-checks them; because each claim is bound to the hash of what
-gather fetched, a claim that was never grounded in the corpus fails closed, and
-only a grounded claim passes. The flagship envelope makes this routing explicit:
+gather fetched, a claim passes when the corpus grounds it and fails closed
+otherwise. The flagship envelope makes this routing explicit:
 gather's `doctor` next-action is `crucible assess`, "verify repeated claims from
 gathered sources." Observed: `src/gather/flagship.py`,
 `src/gather/corpus_cmd.py`, `src/gather/recall.py`.
@@ -343,8 +341,7 @@ exists. Present and verified:
 - **Readiness receipt**: `scripts/run_gather_readiness.py` with
   `tests/test_gather_readiness.py`, producing `harness.gather-readiness/v1`.
 
-What is still missing or in flight (proposed work, not present on the working
-checkout's main):
+Open work, proposed for a later change:
 
 - **`gather.context` module.** `harness/source_context_gather.py` imports
   `inspect_corpus`, `select_context`, `CorpusRootDescriptor`, and
@@ -354,12 +351,9 @@ checkout's main):
   `source_context_route.py`). Proposed fix: either ship `gather.context`
   exposing those four names, or repoint the adapter at seams gather does export
   (`gather.recall`, `gather.store`, `gather.run`).
-- **Payload manifest pin.** `packaging/python-lane-payloads.jsonl` and its
-  checker `scripts/check_python_lane_payload_manifest.py` are present only in a
-  Codex worktree, not on the flywheel main checkout. The checker's
-  `EXPECTED_LANES` lists `gather`, so once that manifest lands, gather needs a
-  source-pin row (`sha256-canonical-source-manifest/v1`). Until then gather has
-  no landed payload pin.
+- **Payload manifest pin.** Landed: `packaging/python-lane-payloads.jsonl`
+  carries a `gather` row, checked by
+  `scripts/check_python_lane_payload_manifest.py`.
 - **Version lockstep.** The `1.6.1` string in `lanes_registry.py` is a
   hand-maintained constant. It must be bumped in the same change as gather's
   `pyproject.toml` version, or `lane_status` reports STALE against the installed
@@ -370,13 +364,13 @@ checkout's main):
 Gather may collect material from live sources, but outward-facing receipts
 prefer source references, content hashes, timestamps, and verdicts. Raw private
 payloads, secrets, credentials, and material whose license or privacy posture
-forbids redistribution stay in the local adapters and never reach a published
-receipt or bundle. The `browser` adapter is the most exposed edge: its host
-guard covers only the first navigation, so it is not pointed at untrusted URLs
-in an environment with reachable internal services. Observed: `USAGE.md`,
+forbids redistribution stay in the local adapters, outside every published
+receipt and bundle. The `browser` adapter is the most exposed edge: its host
+guard covers the first navigation, so point it at trusted URLs when internal
+services are reachable. Observed: `USAGE.md`,
 `ARCHITECTURE.md`, `src/gather/net.py`.
 
 Independent-project note: gather is its own repository (`gather-engine` on PyPI,
 `public/gather` in the workspace) with its own tests and release cadence. It
-composes with Flywheel through clean protocol seams; it does not absorb the
-platform and is not absorbed by it.
+composes with Flywheel through clean protocol seams, and each stays its own
+project.

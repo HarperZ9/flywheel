@@ -28,7 +28,9 @@ class ByteWitnessChainResult {
   final String? head;
   final int checked;
   final String detail;
-  final List<String> doesNotProve;
+
+  /// What the chain check covers. Never empty.
+  final List<String> scope;
   const ByteWitnessChainResult({
     required this.verdict,
     required this.failureClass,
@@ -36,7 +38,7 @@ class ByteWitnessChainResult {
     required this.head,
     required this.checked,
     required this.detail,
-    required this.doesNotProve,
+    required this.scope,
   });
 }
 
@@ -53,9 +55,9 @@ ByteWitnessChainResult _chainResult(ByteWitnessVerdict verdict,
     head: head,
     checked: checked,
     detail: detail,
-    doesNotProve: byteWitnessDoesNotProve()
-      ..add('the last record is checked by nothing after it, so bind the head '
-          'somewhere a change to the chain cannot follow it'),
+    scope: byteWitnessScope()
+      ..add('the last record is the chain head; binding that head elsewhere '
+          'is what extends the check to it'),
   );
 }
 

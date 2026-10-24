@@ -18,9 +18,9 @@ from train.classifier_workflow_fixture import Workflow
 VERSION = "classifier-workflow-dev-v1"
 TASK_FAMILY = "tool_selection"
 FIELDS = ("origin", "destination", "date", "travelers", "cabin")
-DOES_NOT_PROVE = [
-    "development-only synthetic labels, independent test quality, or deployment readiness",
-    "real browser extraction, booking correctness, model calibration, or workflow speedup",
+SCOPE = [
+    "development-only synthetic labels over train and calibration cases; the test split is empty",
+    "a local form-fixture simulator; browser extraction, booking and timing stay outside it",
 ]
 
 
@@ -255,10 +255,10 @@ def build_corpus(*, seed: int = 1709, case_count: int = 48,
                       "kind": case["kind"], "example_count": len(rows),
                       "examples": row_meta})
     manifest = build_split_manifest(examples, split_by_group)
-    metadata = {"schema": "flywheel.classifier-workflow-development-corpus/v1",
+    metadata = {"schema": "flywheel.classifier-workflow-development-corpus/v2",
                 "version": VERSION, "seed": seed,
                 "case_counts": {"train": case_count, "calibration": calibration_count, "test": 0},
-                "cases": cases, "does_not_prove": DOES_NOT_PROVE}
+                "cases": cases, "scope": SCOPE}
     return examples, manifest, metadata
 
 

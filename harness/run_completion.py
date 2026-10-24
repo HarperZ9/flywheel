@@ -36,12 +36,15 @@ from pathlib import Path, PurePath
 
 from .patch_paths import patch_target_paths
 
-SCHEMA = "flywheel.run-completion/v1"
+SCHEMA_V1 = "flywheel.run-completion/v1"   # named its codes list with the older name
+SCHEMA = "flywheel.run-completion/v2"
 WRITE_TOOLS = frozenset({"write_file", "edit_file", "apply_patch"})
 CLI_EDIT_TOOLS = frozenset({"Edit", "MultiEdit", "NotebookEdit", "file_change"})
 MAX_ITEMS = 64
-DOES_NOT_PROVE = ["NOT_SEMANTIC_CORRECTNESS", "HASH_RECHECK_IS_NOT_A_TEST",
-                  "TEST_PASS_PROVES_ONLY_WHAT_THE_TEST_CHECKS"]
+# What a completion verdict covers: claims backed by a hash recheck or a test,
+# and each test's own assertions.
+SCOPE = ["CLAIMS_CHECKED_AGAINST_RECORDED_EVIDENCE", "HASH_RECHECK_CONFIRMS_BYTES",
+         "TEST_PASS_COVERS_THE_TEST_ASSERTIONS"]
 
 
 def _field(entry, name, default=None):
@@ -244,4 +247,4 @@ def completion_report(entries, result: dict | None, root, *, failure: str | None
                    for flag in monitor.get("flags") or ())
     return {"schema": SCHEMA, "verdict": verdict_of(items), "counts": counts,
             "items": items[-MAX_ITEMS:], "items_omitted": max(0, len(items) - MAX_ITEMS),
-            "unbacked_success_claim": unbacked, "does_not_prove": list(DOES_NOT_PROVE)}
+            "unbacked_success_claim": unbacked, "scope": list(SCOPE)}

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/models/agent_trace.dart';
 import 'package:flywheel_desktop/models/agent_trace_record.dart';
 import 'package:flywheel_desktop/models/agent_trace_json.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 
 const operation = 'op_cccccccccccccccccccccccccccccccc';
 const journey = 'jrn_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
@@ -64,9 +65,28 @@ void main() {
       expect(projection.state, state);
       expect(projection.recordCount, 3);
       expect(projection.omissions, contains('PRIVATE_CONTENT'));
-      expect(projection.doesNotProve, contains('NOT_SEMANTIC_TRUTH'));
+      expect(projection.scope, contains('NOT_SEMANTIC_TRUTH'));
       expect(() => projection.omissions.add('new'), throwsUnsupportedError);
     }
+  });
+
+  test('v1 and v2 trace detail pages each read their own scope name', () {
+    final v1 = page(fixture('detail'));
+    expect(v1.scope, contains('NOT_SEMANTIC_TRUTH'));
+
+    final v2 = fixture('detail')
+      ..remove(kLegacyScopeKey)
+      ..['schema'] = traceDetailSchema
+      ..[kScopeKey] = traceDetailScope.toList();
+    expect(page(v2).scope, ['TRACE_AS_RECORDED', 'TOOL_OUTPUT_BOUNDED']);
+
+    final mixed = fixture('detail')..['schema'] = traceDetailSchema;
+    expect(() => page(mixed), throwsFormatException);
+    final v2WithV1Codes = fixture('detail')
+      ..['schema'] = traceDetailSchema
+      ..[kScopeKey] = fixture('detail')[kLegacyScopeKey]
+      ..remove(kLegacyScopeKey);
+    expect(() => page(v2WithV1Codes), throwsFormatException);
   });
 
   test('projection tampering, cross operation and extra content are refused',

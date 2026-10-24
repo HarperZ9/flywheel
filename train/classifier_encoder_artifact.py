@@ -7,10 +7,12 @@ from pathlib import Path
 from typing import Any
 
 from harness.evidence_json import canonical_bytes, canonical_sha256, strict_load_json
+from harness.scope import LEGACY_SCOPE_KEY
 
 from .classifier_encoder import EncoderClassifierError, EncoderClassifierModel, EncoderTrainingResult
 
-ARTIFACT_SCHEMA = "flywheel.classifier-encoder-artifact/v1"
+ARTIFACT_SCHEMA = "flywheel.classifier-encoder-artifact/v2"
+ARTIFACT_SCHEMA_V1 = "flywheel.classifier-encoder-artifact/v1"  # older scope key
 WEIGHTS = "model.safetensors"
 MANIFEST = "manifest.json"
 REPORT = "train_report.json"
@@ -28,10 +30,9 @@ RESOURCE_FILES = {
 MANIFEST_KEYS = {
     "schema", "artifact_identity", "weights_path", "weights_sha256",
     "training_report_path", "training_report_sha256", "source_model_ref",
-    "bundled_resources", "families", "hidden_size", "max_length",
-    "training_manifest_sha256", "provenance", "does_not_prove",
-    "manifest_sha256",
-}
+    "bundled_resources", "families", "hidden_size", "max_length", "training_manifest_sha256",
+    "provenance", "scope", "manifest_sha256"}
+MANIFEST_KEYS_V1 = (MANIFEST_KEYS - {"scope"}) | {LEGACY_SCOPE_KEY}
 
 @dataclass
 class LoadedEncoderArtifact:
@@ -133,9 +134,8 @@ def _manifest(result: EncoderTrainingResult, weights_sha: str,
             "local_files_only": True,
             "reference_compile": "not_used_transformers_5_12",
         },
-        "does_not_prove": [
-            "calibration, held-out workflow quality, authorization, or verifier acceptance",
-        ],
+        "scope": ["safetensors weights and resources bound by these hashes; an "
+                  "uncalibrated advisory scorer, with the verifier deciding"],
     }
     return {**body, "manifest_sha256": canonical_sha256(body)}
 
@@ -183,9 +183,10 @@ def _check_resource_manifest(resources: object) -> dict[str, dict[str, str]]:
 
 
 def _check_manifest_shape(manifest: dict) -> dict:
-    if type(manifest) is not dict or set(manifest) != MANIFEST_KEYS:
+    legacy = type(manifest) is dict and manifest.get("schema") == ARTIFACT_SCHEMA_V1
+    if type(manifest) is not dict or set(manifest) != (MANIFEST_KEYS_V1 if legacy else MANIFEST_KEYS):
         raise EncoderClassifierError("invalid encoder artifact manifest")
-    if manifest["schema"] != ARTIFACT_SCHEMA:
+    if manifest["schema"] not in (ARTIFACT_SCHEMA, ARTIFACT_SCHEMA_V1):
         raise EncoderClassifierError("invalid encoder artifact schema")
     if manifest["weights_path"] != WEIGHTS or manifest["training_report_path"] != REPORT:
         raise EncoderClassifierError("invalid encoder artifact manifest paths")

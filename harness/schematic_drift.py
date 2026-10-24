@@ -7,7 +7,8 @@ from typing import Any
 SCHEMA = "harness.schematic-drift-check/v1"
 
 _REPO = Path(__file__).resolve().parent.parent
-INTEGRATION_MAP_SCHEMA = "harness.cross-harness-integration-map/v1"
+INTEGRATION_MAP_SCHEMA = "harness.cross-harness-integration-map/v2"
+INTEGRATION_MAP_SCHEMAS = (INTEGRATION_MAP_SCHEMA, "harness.cross-harness-integration-map/v1")
 DEFAULT_REQUIRED_NODES = [
     "agentic_task_manifest_generator", "cross_harness_manifest",
     "adapter_runtime_matrix", "endpoint_gates", "forum_route_receipts",
@@ -97,8 +98,8 @@ def build_drift_report(
     ]
     report_input_errors = []
     if report_path:
-        marker = f"Schema: `{INTEGRATION_MAP_SCHEMA}`"
-        report_input_errors = ([] if marker in report_text else [
+        markers = [f"Schema: `{schema}`" for schema in INTEGRATION_MAP_SCHEMAS]
+        report_input_errors = ([] if any(m in report_text for m in markers) else [
             "integration_map_schema_missing" if not report_text else "integration_map_schema_mismatch"
         ])
     drift = bool(missing_nodes or missing_edges or missing_files or stale_phrases or report_input_errors)

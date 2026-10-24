@@ -68,9 +68,9 @@ def allow_synthetic_catalog(monkeypatch, *, tool_name="echo", schema=None,
             "read": True, "write": False, "execute": False,
             "critical": False, "network": False,
         },
-        "does_not_prove": [
-            "catalog read-only metadata does not sandbox the MCP server process",
-            "restricted launch pins argv, cwd, environment and tool allowlist but does not provide an OS network or filesystem sandbox",
+        "scope": [
+            "catalog read-only metadata records the admitted tool contract",
+            "restricted launch pins argv, cwd, environment and tool allowlist; the server shares the host OS network and filesystem",
         ],
     }
     monkeypatch.setitem(auth.TRUSTED_CATALOG_TOOL_METADATA, "synthetic", {tool_name: auth_map})
@@ -154,7 +154,7 @@ def caller_authored_admission():
             "enforced_limits": {"no_shell": True, "pinned_cwd": True,
                                 "inherit_env": False, "network_sandbox": False,
                                 "filesystem_sandbox": False},
-            "does_not_prove": ["caller-authored receipt is not authority"],
+            "scope": ["caller-authored receipt is not authority"],
         }],
     }
 
@@ -221,10 +221,10 @@ def test_runtime_tool_name_collision_is_rejected_in_frozen_plan(tmp_path, monkey
 
     authority = {"read": True, "write": False, "execute": False,
                  "critical": False, "network": False}
-    notes = ["catalog read-only metadata does not sandbox the MCP server process"]
+    notes = ["catalog read-only metadata records the admitted tool contract"]
     allow_synthetic_catalog(monkeypatch, tool_name="a-b", allowed=("a-b", "a_b"))
     auth.TRUSTED_CATALOG_TOOL_METADATA["synthetic"]["a_b"] = {
-        "authority": authority, "does_not_prove": notes}
+        "authority": authority, "scope": notes}
 
     class Client:
         def __init__(self, *_args, **_kwargs):

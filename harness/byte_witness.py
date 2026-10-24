@@ -15,7 +15,7 @@ still a record somebody can check.
 Sealing refuses loudly: a witness that cannot be taken honestly raises. Checking
 never raises, and lives in byte_witness_verify.
 
-What a witness does not establish is in does_not_prove(), which is never empty.
+What a witness covers is listed by scope(), which is never empty.
 """
 from __future__ import annotations
 
@@ -188,27 +188,26 @@ def records(chain: list[Witness]) -> list[dict]:
     return [witness.record() for witness in chain]
 
 
-def does_not_prove(*, signed: bool = False, anchored: bool = False) -> list[str]:
-    """What a byte witness leaves open. Never empty, whatever the arguments say."""
+def scope(*, signed: bool = False, anchored: bool = False) -> list[str]:
+    """What a byte witness covers. Never empty, whatever the arguments say."""
     lines = [
-        "a digest says the bytes did not change after they were witnessed; it "
-        "says nothing about whether they were true, or correct, or complete",
-        "a chain proves the order and integrity of the records it holds; it "
-        "cannot show that a record was never written, so an omitted step "
-        "leaves no broken link behind",
-        "a span proves a range hashes to what was recorded; it does not show "
-        "that the range is the right one for the claim it was cited for",
+        "the digest records that these bytes are unchanged since they were "
+        "witnessed; whether they are true, correct or complete is a separate check",
+        "the chain fixes the order and integrity of the records it holds; a "
+        "step that was never recorded leaves no link to check",
+        "a span records that this byte range hashes to the recorded digest; "
+        "whether the range fits the claim it backs is the citer's call",
     ]
     lines.append(
-        "the signature binds this record to a key; it says nothing about who "
-        "holds that key, or whether the bytes were witnessed at their source"
+        "the signature binds this record to its key; who holds that key, and "
+        "whether the bytes came from their source, rest on other evidence"
         if signed else
-        "nothing is signed here, so anyone who can rewrite a record can "
-        "recompute every link after it and leave the chain reading as intact")
+        "the chain is unsigned; its links detect accidental change, and a "
+        "writer who can rewrite a record can recompute every later link")
     lines.append(
-        "the anchor dates the chain no earlier than the anchored head; it does "
-        "not date any single record inside it"
+        "the anchor dates the chain as existing by the anchored head; single "
+        "records inside it share that one bound"
         if anchored else
-        "observed_at is what the caller wrote down, and no clock here checked "
-        "it; only an external anchor dates a chain")
+        "observed_at is the caller's own note, unchecked by any clock here; an "
+        "external anchor is what dates a chain")
     return lines

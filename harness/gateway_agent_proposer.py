@@ -102,7 +102,7 @@ class BoundAgentProposer:
             if self.budget is not None:
                 self.budget.record_usage(self.usage_reported)
             self.ledger.append("model_call", "", {
-                "schema": "flywheel.gateway-agent-model-call/v1",
+                "schema": "flywheel.gateway-agent-model-call/v2",
                 "binding_sha256": self.binding_sha256, "ordinal": self.ordinal,
                 "endpoint": binding["endpoint"]["name"],
                 "requested_model_reference": binding["model"]["requested_model_reference"],
@@ -111,4 +111,4 @@ class BoundAgentProposer:
                 "model_observation_basis": "provider_response" if self.observed else "unavailable",
                 "identity_status": status, "elapsed_ms": max(0, int((self.clock() - started) * 1000)),
                 "usage": self.usage, "usage_reported": self.usage_reported, "observed_manifest_sha256": None,
-                "does_not_prove": ["MODEL_WEIGHTS_IDENTITY", "SEMANTIC_TRUTH"]})
+                "scope": ["MODEL_CALL_OBSERVED", "MODEL_NAME_AS_REPORTED"]})

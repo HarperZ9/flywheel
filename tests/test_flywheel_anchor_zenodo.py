@@ -55,8 +55,8 @@ def test_zenodo_dry_run_surfaces_the_binding_caveats():
     key = _key()
     anchor_rec, _ = fa.build_stamp(HEAD, key, TS, submit=None)
     report = fa.zenodo_dry_run(anchor_rec)
-    joined = " ".join(report["does_not_prove"])
-    assert "NOT_PROVES_THE_TIMESTAMP" in joined     # a DOI alone orders nothing
+    joined = " ".join(report["scope"])
+    assert "DOI_BOUND_TO_DIGEST" in joined          # the binding, and its time boundary
 
 
 def test_zenodo_dry_run_metadata_is_overridable():
@@ -241,7 +241,7 @@ def test_zenodo_live_report_lines_tolerates_a_none_file_entry():
     result = {"deposition_id": 7, "self_url": "https://zenodo.org/api/x",
               "files": [None], "anchor_digest": "sha256:" + "a" * 64,
               "published": True, "doi": "10.5281/zenodo.7",
-              "doi_url": "https://doi.org/10.5281/zenodo.7", "does_not_prove": []}
+              "doi_url": "https://doi.org/10.5281/zenodo.7", "scope": []}
     lines = fa.zenodo_live_report_lines(result, sandbox=False)
     assert any("10.5281/zenodo.7" in ln for ln in lines)
 

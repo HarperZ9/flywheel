@@ -4,8 +4,16 @@ from __future__ import annotations
 from datetime import date
 import re
 
-PROFILE_SCHEMA = "flywheel.standards-profile/v1"
-VALIDATION_SCHEMA = "flywheel.standards-profile-validation/v1"
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
+
+# v2 profiles and validation results name the coverage string `scope`. A v1
+# profile carries the older key at the root and on each requirement, and stays
+# valid; each version is checked against its own key only.
+PROFILE_SCHEMA_V1 = "flywheel.standards-profile/v1"
+PROFILE_SCHEMA = "flywheel.standards-profile/v2"
+PROFILE_SCOPE_KEYS = {PROFILE_SCHEMA_V1: LEGACY_SCOPE_KEY, PROFILE_SCHEMA: SCOPE_KEY}
+VALIDATION_SCHEMA_V1 = "flywheel.standards-profile-validation/v1"
+VALIDATION_SCHEMA = "flywheel.standards-profile-validation/v2"
 
 INSTRUMENT_KINDS = {
     "statute", "regulation", "binding_order", "contract",
@@ -46,8 +54,7 @@ EXEC_KEYS = {
 ROOT_FIELDS = {
     "schema", "profile_id", "title", "version", "owner", "instrument",
     "provenance", "effective", "applicability", "requirements",
-    "does_not_prove",
-}
+}  # plus the scope key of the profile's version
 INSTRUMENT_FIELDS = {
     "instrument_id", "title", "edition", "instrument_kind", "issuer_role",
     "binding_basis", "binding_review_status", "jurisdiction",
@@ -65,8 +72,8 @@ APPLICABILITY_FIELDS = {"jurisdictions", "operator_roles", "covered_uses"}
 REQUIREMENT_FIELDS = {
     "requirement_id", "requirement_ref", "summary", "text_hash",
     "selectors", "maps_to_controls", "maps_to_evidence_claims", "evidence",
-    "review_required", "does_not_prove",
-}
+    "review_required",
+}  # plus the scope key of the profile's version
 EVIDENCE_FIELDS = {"status", "artifact_sha256"}
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")

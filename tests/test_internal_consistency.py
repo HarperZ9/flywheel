@@ -12,13 +12,13 @@ from harness.transitive_witness import DRIFT, MATCH, UNVERIFIABLE
 
 def _manifest(env_id="env-1"):
     return {
-        "schema": im.SCHEMA, "environment_id": env_id, "kind": "rl",
+        "schema": im.SCHEMA_V2, "environment_id": env_id, "kind": "rl",
         "reward": {"declared_form": "unit-test pass rate", "source_ref": "reward.py"},
         "data_distribution": {"summary": "coding tasks", "source_ref": "data/"},
         "reinforced_behaviors": ["passing tests"], "penalized_behaviors": [],
         "scarcity_variables": [],
         "witness": {"algorithm": "sha256", "entries": [{"path": "reward.py", "sha256": "0" * 64}]},
-        "does_not_prove": im.DOES_NOT_PROVE,
+        "scope": im.SCOPE,
     }
 
 
@@ -33,7 +33,7 @@ def test_match_when_internal_signal_tracks_behavior():
     assert result["agreement_rate"] == 1.0
     assert result["concealed_deception_count"] == 0
     assert result["flagged"] == []
-    assert result["does_not_prove"] == ic.ICP_DOES_NOT_PROVE
+    assert result["scope"] == ic.ICP_SCOPE
     assert result["environment_id"] == "env-1"
 
 

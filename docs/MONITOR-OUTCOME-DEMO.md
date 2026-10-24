@@ -26,7 +26,7 @@ python -m pytest tests/test_monitor_outcome_controls.py tests/test_monitor_outco
 
 The first command prints the table below. The second prints it again and also
 writes `monitor-outcome.json`, whose `schema` is
-`flywheel.monitor-outcome-demo/v1`, with `synthetic: true`, the same
+`flywheel.monitor-outcome-demo/v2`, with `synthetic: true`, the same
 `source_sha256`, one entry in `rows` per sample and the `coverage` counts. The
 third should end with every test passing.
 

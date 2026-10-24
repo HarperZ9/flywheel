@@ -198,11 +198,11 @@ def test_corrupt_optional_canonical_base64_fails_after_component_rehash(tmp_path
 
     assert result["internal_consistency"]["verdict"] == "DRIFT"
 
-def test_coherently_rehashed_projection_must_keep_canonical_limits(tmp_path):
+def test_coherently_rehashed_projection_must_keep_canonical_scope(tmp_path):
     component, _terminal, _records = _component(tmp_path)
     projection = component["terminal_result"]["result"]
     projection.pop("omissions")
-    projection.pop("does_not_prove")
+    projection.pop("scope")
     projection["claims_execution_truth"] = True
     projection.pop("projection_sha256")
     projection["projection_sha256"] = canonical_sha256(projection)

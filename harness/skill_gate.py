@@ -1,7 +1,7 @@
 """Bind an admitted lesson to consistent, self-reported benchmark evidence.
 
-MATCH checks integrity and recorded task coverage, not evaluator identity,
-procedure execution, or semantic truth. Old sealed v1 rows remain readable
+MATCH checks integrity and recorded task coverage; evaluator identity,
+procedure execution, and semantic truth are outside it. Old sealed v1 rows remain readable
 as UNVERIFIED; loading never silently upgrades or rewrites their payloads.
 """
 from __future__ import annotations
@@ -11,16 +11,23 @@ from pathlib import Path
 
 from .evidence_json import canonical_sha256
 from .lesson import MATCH, STATUS_ADMITTED, verify_lesson
+from .scope import LEGACY_SCOPE_KEY
 from .skill_evidence import (
-    digest, require, summarize_evidence, summary_source_digest, validate_summary,
+    digest, require, summarize_evidence, summary_source_digests, validate_summary,
 )
 
-SCHEMA = "flywheel.skill-gate/v2"
+SCHEMA = "flywheel.skill-gate/v3"
+SCHEMA_V2 = "flywheel.skill-gate/v2"
 LEGACY_SCHEMA = "flywheel.skill-gate/v1"
 _REGISTRY_SCHEMA = "flywheel.skill-gate-registry/v1"
 DRIFT = "DRIFT"
 UNVERIFIED = "UNVERIFIED"
-LIMIT = ("Self-reported evidence consistency only. Hashes do not authenticate "
+SCOPE = ("Self-reported evidence consistency: the seals reproduce and the "
+         "recorded tasks passed. Evaluator identity, use of this lesson's "
+         "procedure, semantic correctness, safety and performance beyond the "
+         "recorded tasks sit outside what the hashes cover.")
+# The v2 row's text, kept byte for byte so sealed v2 rows still verify.
+LIMIT_V2 = ("Self-reported evidence consistency only. Hashes do not authenticate "
          "the evaluator, show that this lesson's procedure was used, or prove "
          "semantic correctness, safety, or performance beyond the recorded tasks.")
 
@@ -55,7 +62,7 @@ def build_skill_gate(*, lesson: dict, evidence: dict,
         "independent_evaluation": UNVERIFIED,
         "procedure_application": "UNKNOWN",
         "bound_at": bound_at,
-        "does_not_prove": LIMIT,
+        "scope": SCOPE,
     }
     body["gate_sha256"] = canonical_sha256(
         {k: v for k, v in body.items() if k != "gate_sha256"})
@@ -68,11 +75,11 @@ def verify_skill_gate(binding: dict, *, evidence=None,
     result = {"verdict": DRIFT, "reason": "", "integrity": DRIFT,
               "source_binding": "NOT_RECHECKED", "evidence_origin": "self_reported",
               "independent_evaluation": UNVERIFIED,
-              "procedure_application": "UNKNOWN", "does_not_prove": LIMIT}
+              "procedure_application": "UNKNOWN", "scope": SCOPE}
     try:
         require(isinstance(binding, dict), "binding must be an object")
         schema = binding.get("schema")
-        require(schema in (SCHEMA, LEGACY_SCHEMA), "unknown skill binding schema")
+        require(schema in (SCHEMA, SCHEMA_V2, LEGACY_SCHEMA), "unknown skill binding schema")
         for field in ("lesson_id", "lesson_seal_hash", "evidence_sha256", "gate_sha256"):
             require(digest(binding.get(field)), f"invalid {field}")
         require(binding["lesson_id"] == binding["lesson_seal_hash"],
@@ -92,7 +99,7 @@ def verify_skill_gate(binding: dict, *, evidence=None,
         require(binding.get("evidence_origin") == "self_reported"
                 and binding.get("independent_evaluation") == UNVERIFIED
                 and binding.get("procedure_application") == "UNKNOWN"
-                and binding.get("does_not_prove") == LIMIT,
+                and _scope_matches(binding),
                 "binding overstates its assurance")
         summary = binding.get("evidence_summary")
         validate_summary(summary)
@@ -101,7 +108,7 @@ def verify_skill_gate(binding: dict, *, evidence=None,
                 and type(binding.get("attempts_bound")) is int
                 and binding["attempts_bound"] == len(summary["current"]["attempts"]),
                 "binding counts/kind disagree with its evidence projection")
-        require(binding["evidence_sha256"] == summary_source_digest(summary),
+        require(binding["evidence_sha256"] in summary_source_digests(summary),
                 "evidence source digest disagrees with projection")
         if evidence is not None:
             actual = summarize_evidence(evidence, prior_bench=prior_bench,
@@ -116,6 +123,13 @@ def verify_skill_gate(binding: dict, *, evidence=None,
         return dict(result, verdict=MATCH, integrity=MATCH)
     except (ValueError, TypeError, KeyError) as exc:
         return dict(result, reason=str(exc))
+
+
+def _scope_matches(binding: dict) -> bool:
+    """A v3 row carries SCOPE under `scope`; a v2 row its own text under the older key."""
+    if binding["schema"] == SCHEMA_V2:
+        return binding.get(LEGACY_SCOPE_KEY) == LIMIT_V2 and "scope" not in binding
+    return binding.get("scope") == SCOPE and LEGACY_SCOPE_KEY not in binding
 
 
 def save_skill_gates(rows: list[dict], *,

@@ -61,7 +61,7 @@ def test_an_allowed_write_lands_and_reports_both_digests(tmp_path):
     assert record["before_sha256"] != record["after_sha256"]
     assert summary["written"] == [to_uri(path)]
     assert summary["applied"] is True
-    assert summary["does_not_prove"]
+    assert summary["scope"]
 
 
 # ── the refusals, each checked against the disk ──────────────────────────────

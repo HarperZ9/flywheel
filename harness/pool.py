@@ -212,13 +212,12 @@ class Pool:
                 "tasks_with_no_candidate": empty_tasks,
                 "n_tasks": self.doc["n_tasks"]}
 
-    def does_not_prove(self) -> list:
+    def scope(self) -> list:
         return [
-            "NOT_PROVES_GENERATION_DETERMINISM: a pool pins the generation "
-            "settings, not the serving stack. Two pools from one fingerprint can "
-            "differ, and this records enough to see that, not to prevent it.",
-            "NOT_PROVES_CANDIDATE_CORRECTNESS: a pool holds candidates. The "
-            "verdict authority is the oracle, never the cache.",
-            "NOT_PROVES_TASK_REPRESENTATIVENESS: k candidates on these tasks say "
-            "nothing about tasks outside this set.",
+            "GENERATION_SETTINGS_PINNED: a pool pins the generation settings; "
+            "the serving stack stays outside the fingerprint, so two pools from "
+            "one fingerprint can differ, and the record shows when they do.",
+            "CANDIDATES_ONLY: a pool holds candidates; the oracle gives every "
+            "verdict.",
+            "THESE_TASKS: the k candidates cover the tasks in this set.",
         ]

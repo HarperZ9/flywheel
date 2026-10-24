@@ -12,11 +12,12 @@ from __future__ import annotations
 from . import controls, monitor_hook
 from .access_gap import measured_gap
 from .adapters import capture
+from ..scope import scope_of
 from .receipt import ObservationLedger, build_receipt
 
-CONTROLS_DOES_NOT_PROVE = (
-    "The bank shows the instruments return known answers on planted inputs. It does not "
-    "check label quality or bound misses on cases nobody planted.")
+CONTROLS_SCOPE = (
+    "The bank shows the instruments return known answers on planted inputs; the "
+    "planted cases bound what it checked.")
 
 
 def observe_run(home, *, run_id: str, provider: str, turns: list, observed_on: str,
@@ -40,13 +41,13 @@ def observe_run(home, *, run_id: str, provider: str, turns: list, observed_on: s
                 "fields": gap["fields"], "documentation_drift": gap["documentation_drift"],
                 "built_on": gap["built_on"]},
         gaps=gap["not_observable_from_outside"] + gap["not_yet_observed_local"],
-        does_not_prove=gap["does_not_prove"]))
+        scope=scope_of(gap, "")))
     bank = controls.run_bank()
     bank_seal = ledger.append(build_receipt(
         run_id=run_id, component="control-bank", subject=subject, inputs={},
         controls=bank, result={"verdict": "PASS" if all(c["passed"] == "true" for c in bank)
                                else "CONTROL_FAILED"},
-        gaps=[], does_not_prove=CONTROLS_DOES_NOT_PROVE))
+        gaps=[], scope=CONTROLS_SCOPE))
     findings = (monitor_hook.findings_from_measured_gap(gap)
                 + monitor_hook.findings_from_controls("control-bank", bank)
                 + list(extra_findings or []))
@@ -73,5 +74,5 @@ def render_report(result: dict, observed: dict | None = None) -> str:
     for g in gap["not_yet_observed_local"] or [{"component": "(none recorded)", "gap_code": ""}]:
         lines.append(f"  {g['component']} .... {g['gap_code']}".rstrip())
     lines.append(f"holds raised: {len(result['holds'])}")
-    lines.append("does not prove: " + gap["does_not_prove"])
+    lines.append("scope: " + scope_of(gap, ""))
     return "\n".join(lines)

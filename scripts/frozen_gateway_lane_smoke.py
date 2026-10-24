@@ -41,7 +41,9 @@ from harness.mcp_client import LaunchSpec, MCPClient, MCPError
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXPECTATIONS = REPO_ROOT / "packaging" / "lane-smoke-expectations.json"
-SCHEMA = "flywheel.frozen-lane-smoke/v2"
+# v3 (2026-10-23): the record names what it covers in `scope`.
+SCHEMA = "flywheel.frozen-lane-smoke/v3"
+SCHEMA_V2 = "flywheel.frozen-lane-smoke/v2"
 LEVELS = ("no_frozen_launch", "cannot_launch", "starts", "health", "main")
 BAR_LEVEL = "main"
 # Reasons that fail a lane whatever its row: a model-backed reply showed a
@@ -49,12 +51,11 @@ BAR_LEVEL = "main"
 _GUARD_FAILURES = frozenset(("main_assertion_failed_model", "main_call_failed_model"))
 CLASSES = ("A", "B", "C", "A/B", "A/B-untested", "A/C", "B-untested")
 _SYSTEM_VARS = {"SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT", "SYSTEMDRIVE"}
-DOES_NOT_PROVE = [
-    "model-backed or provider-backed task success",
-    "result correctness beyond one fixture assertion per lane",
-    "lanes the frozen build has no launch for (they report no_frozen_launch)",
-    "installer, desktop UI or clean-machine behavior",
-    "write containment outside the throwaway home, or any read",
+SCOPE = [
+    "each lane the frozen build launches, measured to the level it reached under a throwaway home",
+    "one fixture assertion per lane at the main level, with no model or provider backing",
+    "lanes the frozen build has no launch for are listed as no_frozen_launch",
+    "writes are checked inside the throwaway home on this runner",
 ]
 
 
@@ -261,7 +262,7 @@ def run_lane_smoke(plans: Mapping[str, LanePlan], expectations: Mapping[str, dic
     unexpected = [lane for lane in plans if lane not in expectations]
     return {"schema": SCHEMA, "bar_level": BAR_LEVEL, **_verdict(lanes, unexpected),
             "model_server_answering": model_server, "lanes": lanes,
-            "does_not_prove": list(DOES_NOT_PROVE)}
+            "scope": list(SCOPE)}
 
 
 def bundled_lane_smoke(executable: Path, *, repo_root: Path = REPO_ROOT,

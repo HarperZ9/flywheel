@@ -17,9 +17,10 @@ from .evidence_json import canonical_sha256
 from .pool_arms import _wilson
 from .statistics import MIN_REPLICATES, between_seed_sd
 
-SCHEMA = "flywheel.verified-bench/v1"
-FRONTIER_SCHEMA = "flywheel.verified-frontier/v1"
-REPLICATE_SD_SCHEMA = "flywheel.replicate-sd/v1"
+# v2 names the caveat field `scope`; v1 records named it with the older key.
+SCHEMA_V1, SCHEMA = "flywheel.verified-bench/v1", "flywheel.verified-bench/v2"
+FRONTIER_SCHEMA_V1, FRONTIER_SCHEMA = "flywheel.verified-frontier/v1", "flywheel.verified-frontier/v2"
+REPLICATE_SD_SCHEMA_V1, REPLICATE_SD_SCHEMA = "flywheel.replicate-sd/v1", "flywheel.replicate-sd/v2"
 
 
 def wilson_95_fields(passes: int, attempts: int) -> dict:
@@ -122,9 +123,9 @@ def run_benchmark(
         "denominator": {"tasks": len(tasks), "endpoints": len(endpoints),
                         "replicates": len(seed_list),
                         "attempts": len(attempts)},
-        "does_not_prove": (
-            "a verified pass rate is over this task set and these gates "
-            "only; it is not a general capability score"),
+        "scope": (
+            "a verified pass rate over this task set and these gates only; "
+            "a general capability score is a different measurement"),
     }
     bench["bench_sha256"] = canonical_sha256(
         {k: v for k, v in bench.items() if k != "bench_sha256"})
@@ -171,7 +172,7 @@ def verified_frontier(bench: dict,
             if not dominated:
                 pareto.append(r["endpoint"])
     notes = ("the frontier is over this task set and these gates only; "
-             "costs are inputs, not measurements")
+             "costs are supplied inputs, unmeasured here")
     if bench.get("denominator", {}).get("replicates", 1) > 1:
         notes += ("; replicate attempts are pooled into each endpoint's "
                   "denominator, so the interval treats correlated "
@@ -181,7 +182,7 @@ def verified_frontier(bench: dict,
         "bench_sha256": bench["bench_sha256"],
         "rankings": ranked,
         "pareto": pareto,
-        "does_not_prove": notes,
+        "scope": notes,
     }
 
 
@@ -212,14 +213,14 @@ def replicate_sd(bench: dict) -> dict:
                 f"{MIN_REPLICATES} replicates and got {len(values)}")})
         else:
             stat = between_seed_sd(values)
-            notes = list(stat["does_not_prove"])
+            notes = list(stat["scope"])
             if honors != "seed":
                 notes.append(
-                    "NOT_SEED_REPLICATES: this endpoint cannot honor a "
+                    "TEMPORAL_REPLICATES: this endpoint cannot honor a "
                     "seed; these are temporal replicates, so provider-"
                     "side drift sits inside the number.")
             row.update({"mean": stat["mean"], "sd": stat["sd"],
-                        "does_not_prove": notes})
+                        "scope": notes})
         rows.append(row)
     return {"schema": REPLICATE_SD_SCHEMA,
             "bench_sha256": bench["bench_sha256"], "rows": rows}

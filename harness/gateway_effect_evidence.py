@@ -5,8 +5,14 @@ import re
 
 from .evidence_json import canonical_bytes, canonical_sha256
 from .gateway_agent_trace import GENESIS
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 
-SCHEMA = "flywheel.gateway-effect-evidence/v1"
+SCHEMA = "flywheel.gateway-effect-evidence/v2"
+SCHEMA_V1 = "flywheel.gateway-effect-evidence/v1"
+SCHEMAS = (SCHEMA, SCHEMA_V1)
+#: The coverage label. v1 named it `scope`; v2 names it `scope_label`, because
+#: v2 uses `scope` for the list of what the evidence covers.
+SCOPE_LABEL = "owner_private_trace_prefix"
 MAX_VISIBLE_OBSERVATIONS = 64
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _TRACE = re.compile(r"agt_[0-9a-f]{32}\Z")
@@ -20,7 +26,14 @@ _UNKNOWN_SCOPE = [
     "TOOLS_WITHOUT_POST_EFFECT_FINGERPRINTS_REMAIN_UNKNOWN",
     "EFFECTS_AFTER_TRACE_HEAD_REMAIN_UNKNOWN",
 ]
-_DOES_NOT_PROVE = [
+_SCOPE = [
+    "edit fingerprints recorded in the accepted trace prefix",
+    "action witness and tool receipt summaries as the run reported them",
+    "effects up to the trace head; current filesystem state is outside it",
+    "recorded actions only; rollback and remote cancellation are outside it",
+]
+#: The v1 list, kept so stored v1 evidence still recomputes byte for byte.
+_SCOPE_V1 = [
     "semantic correctness",
     "complete workstation observation",
     "current filesystem state",
@@ -158,14 +171,18 @@ def _tool_receipts(records: list[dict]) -> dict:
 def derive_effect_evidence(records: list[dict], *, trace_ref: str,
                            terminal_state: str,
                            terminal_basis_event_type: str,
-                           terminal_basis_event_sha256: str) -> dict:
+                           terminal_basis_event_sha256: str,
+                           schema: str = SCHEMA) -> dict:
     _validate_inputs(records, trace_ref, terminal_state,
                      terminal_basis_event_type, terminal_basis_event_sha256)
+    if schema not in SCHEMAS:
+        raise EffectEvidenceError()
+    v1 = schema == SCHEMA_V1
     descriptors = _edit_descriptors(records)
     visible = descriptors[:MAX_VISIBLE_OBSERVATIONS]
     return {
-        "schema": SCHEMA,
-        "scope": "owner_private_trace_prefix",
+        "schema": schema,
+        SCOPE_KEY if v1 else "scope_label": SCOPE_LABEL,
         "basis": {
             "trace_ref": trace_ref,
             "record_count": len(records),
@@ -181,7 +198,7 @@ def derive_effect_evidence(records: list[dict], *, trace_ref: str,
         "action_witness": _action_witness(records),
         "tool_call_receipts": _tool_receipts(records),
         "unknown_effect_scope": list(_UNKNOWN_SCOPE),
-        "does_not_prove": list(_DOES_NOT_PROVE),
+        LEGACY_SCOPE_KEY if v1 else SCOPE_KEY: list(_SCOPE_V1 if v1 else _SCOPE),
     }
 
 
@@ -200,6 +217,7 @@ def validate_effect_evidence(records: list[dict], *, trace_ref: str,
             terminal_state=terminal_state,
             terminal_basis_event_type=terminal_basis_event_type,
             terminal_basis_event_sha256=terminal_basis_event_sha256,
+            schema=submitted.get("schema"),
         )
         if canonical_bytes(submitted) != canonical_bytes(expected):
             raise EffectEvidenceError()

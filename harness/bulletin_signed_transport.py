@@ -19,12 +19,11 @@ from .credential_handles import CredentialHandleError, CredentialHandleStore
 from .evidence_json import strict_load_json
 from .evidence_public import public_result
 from .gateway_operation import thaw_operation
-from .outcome_bulletin import PREVIEW_SCHEMA
+from .outcome_bulletin import PREVIEW_SCHEMA, PUBLICATION_SCHEMA as _PUBLICATION_SCHEMA
 
 BULLETIN_KEY_SLOT = "BULLETIN_AGENT_JWK"
 BULLETIN_USER_AGENT = (
     "Flywheel-native-client/1 (+https://github.com/HarperZ9/flywheel)")
-_PUBLICATION_SCHEMA = "flywheel.outcome-bulletin-publication/v1"
 
 class BulletinSignedTransportError(RuntimeError):
     def __init__(self, code: str) -> None:
@@ -51,7 +50,7 @@ def publish_authorized_preview(
     problem = _grant_problem(authorized, preview)
     if problem is not None:
         return _publication(problem, preview,
-                            does_not_prove=["a signed Bulletin write ran"])
+                            scope=["the grant binding check stopped this request before signing"])
     try:
         base = checked_bulletin_origin(authorized.operation, configured=base_url,
                                       allow_loopback=allow_loopback)
@@ -60,7 +59,7 @@ def publish_authorized_preview(
     except (BulletinSignedTransportError, BulletinOriginError):
         return _publication(
             "publish_unavailable", preview,
-            does_not_prove=["a signed Bulletin write was attempted"])
+            scope=["origin or signing key resolution stopped this request before transport"])
     client = _SignedClient(
         base, key, timeout=timeout, now=now, nonce_bytes=nonce_bytes)
     try:
@@ -69,7 +68,8 @@ def publish_authorized_preview(
         if exc.code == "WRITE_RESPONSE_LOST":
             return _publication(
                 "post_write_unverified", preview,
-                does_not_prove=["Bulletin accepted or rejected the write"])
+                scope=["a signed write was sent and its response was lost; "
+                       "the board state is unknown"])
         return _publication("publish_failed", preview)
     post_id = _post_id(posted)
     if not post_id or posted.get("ok") is not True:
@@ -79,13 +79,14 @@ def publish_authorized_preview(
     except BulletinSignedTransportError:
         return _publication(
             "posted_readback_unavailable", preview, post_id=post_id,
-            does_not_prove=["public board readback matched the requested post"])
+            scope=["Bulletin accepted the signed write with this post id; "
+                   "the board readback was unavailable"])
     post = seen.get("post") if type(seen) is dict else None
     if post_matches(post, preview["post"]) and post.get("author") == key["thumbprint"]:
         return _publication("posted_readback_match", preview, post_id=post_id)
     return _publication(
         "posted_readback_drift", preview, post_id=post_id,
-        does_not_prove=["public board readback matched the requested post"])
+        scope=["the board readback was compared with the requested post and differs"])
 
 def _grant_problem(authorized, preview: dict) -> str | None:
     if type(preview) is not dict or preview.get("schema") != PREVIEW_SCHEMA:

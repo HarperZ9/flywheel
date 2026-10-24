@@ -5,10 +5,11 @@ import hashlib
 import json
 from dataclasses import asdict, dataclass
 
-SCHEMA = "flywheel.check-receipt/v1"
+SCHEMA_V1 = "flywheel.check-receipt/v1"
+SCHEMA = "flywheel.check-receipt/v2"  # v2 names `scope`
 PASS, FAIL, UNVERIFIABLE = "PASS", "FAIL", "UNVERIFIABLE"
-DOES_NOT_PROVE = ("A passing check shows the subject has the checked structure or value. "
-                  "It does not show the subject is right in meaning.")
+SCOPE = ("A passing check shows the subject has the checked structure or value. "
+         "Whether the subject is right in meaning is a separate review.")
 
 
 def digest(value) -> str:
@@ -29,7 +30,7 @@ class CheckReceipt:
     subject_sha256: str
     spec_sha256: str
     schema: str = SCHEMA
-    does_not_prove: str = DOES_NOT_PROVE
+    scope: str = SCOPE
 
     @property
     def passed(self) -> bool:

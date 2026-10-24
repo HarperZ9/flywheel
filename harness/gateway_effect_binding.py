@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .evidence_json import canonical_sha256
-from .gateway_agent_projection import SCHEMA as AGENT_PROJECTION_SCHEMA
+from .gateway_agent_projection import SCHEMAS as AGENT_PROJECTION_SCHEMAS
 from .gateway_agent_trace import AgentTrace, TraceError
 from .gateway_effect_evidence import (
     derive_effect_evidence,
@@ -15,7 +15,7 @@ from .gateway_run_outcome import derive_run_outcome, validate_run_outcome
 
 
 def _is_agent_projection(value: object) -> bool:
-    return type(value) is dict and value.get("schema") == AGENT_PROJECTION_SCHEMA
+    return type(value) is dict and value.get("schema") in AGENT_PROJECTION_SCHEMAS
 
 
 def _rehash_projection(value: dict) -> dict:

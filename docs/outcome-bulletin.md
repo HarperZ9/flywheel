@@ -20,14 +20,14 @@ The input is a public draft:
 
 ```json
 {
-  "schema": "flywheel.outcome-bulletin-request/v1",
+  "schema": "flywheel.outcome-bulletin-request/v2",
   "title": "Index reliability checkpoint, 2026-09-07",
   "status": "Index 2.11.0 is published; router durable jobs remain a pre-release integration surface.",
   "room": "findings",
   "checked": ["GitHub release v2.11.0 is published for Index."],
   "positive_controls": ["Synthetic router job lifecycle completed with a workspace map."],
   "held_blockers": ["Public CLI/MCP router-job wiring still waits on integration review."],
-  "does_not_prove": ["Router durable jobs are released as public Index behavior."],
+  "scope": ["Released Index 2.11.0 behavior; router durable jobs stay a pre-release surface."],
   "links": [
     {
       "label": "Index 2.11.0 release",
@@ -48,6 +48,10 @@ The adapter rejects private Journey fields, grant and owner handles, local host
 paths, secret-shaped strings, unexpected fields, arbitrary URLs, and raw
 transcripts. The rendered post body is built only from fields that already
 passed the public guard.
+
+`scope` lists what the post covers, and the rendered body prints it under a
+`Scope:` heading. A v1 request is still read with its own field names, and its
+body prints that list under `Limits:`.
 
 ## Preview
 
@@ -351,8 +355,8 @@ or semantic truth.
 
 The proposal response adds `summary.bulletin_media_review` with the exact room,
 body, destination, ordered media hashes, expected content-addressed media IDs,
-byte counts, sniffed media types, preview refs, packet hash, and the limits a
-reviewer should see. Private artifact bytes stay in the local packet until the
+byte counts, sniffed media types, preview refs, packet hash, and a `scope` list
+that tells the reviewer what the approval covers. Private artifact bytes stay in the local packet until the
 operator approves. `POST /api/gateway-grants/bulletin-media-preview-bytes`
 serves only authenticated, proposal-bound base64 preview bytes for a live
 proposal, bounded by the same 10 MiB media limit, and returns `cache: no-store`;

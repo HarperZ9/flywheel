@@ -9,7 +9,7 @@ from harness.evidence_json import canonical_bytes
 from harness.grant_route import read_proposal_record
 from harness.journey_route import journey_post
 from harness.writing_service import WritingError, WritingService
-from harness.writing_types import WRITING_DOES_NOT_PROVE, sha256_bytes
+from harness.writing_types import WRITING_SCOPE, sha256_bytes
 
 
 NOW = "2026-09-08T12:00:00Z"
@@ -40,18 +40,18 @@ def _raw_commit(service, proposal):
 
 def _project(tmp_path):
     service = WritingService(tmp_path / "home", clock=lambda: NOW)
-    brief = _json(tmp_path / "brief.json", {"schema": "flywheel.writing-project-brief/v1",
+    brief = _json(tmp_path / "brief.json", {"schema": "flywheel.writing-project-brief/v2",
         "project_ref": PROJECT, "mode": "nonfiction", "form": "essay",
         "working_title": "Boundary controls", "audience": "operators",
         "reader_job": "verify custody", "author_intent": "repair boundary controls",
         "voice_contract": {"style_ref": "voice_rules"},
         "source_packet_ref": "packet_main", "writing_profile": "nonfiction",
-        "does_not_prove": ["truth"]})
-    sources = _json(tmp_path / "sources.json", {"schema": "flywheel.writing-source-packet/v1",
+        "scope": ["truth"]})
+    sources = _json(tmp_path / "sources.json", {"schema": "flywheel.writing-source-packet/v2",
         "project_ref": PROJECT, "source_packet_ref": "packet_main",
         "sources": [{"source_id": "src_one", "title": "Receipt",
         "origin": "local", "allowed_use": "cite"}],
-        "does_not_prove": ["interpretation"]})
+        "scope": ["interpretation"]})
     ack = _flow(service, service.prepare_init(brief, sources, client_request_id="init"))
     return service, ack["journey_ref"], ack["event_head_sha256"]
 
@@ -106,7 +106,7 @@ def test_raw_candidate_fabricated_scope_pass_is_recomputed(tmp_path):
     base = "KEEP\nCHANGE\nKEEP\n"
     head, revision = _revision(service, journey, head, base, "base")
     head, diagnostic = _diagnose(service, journey, head, revision)
-    card = {"schema": "flywheel.writing-scoped-revision/v1", "project_ref": PROJECT,
+    card = {"schema": "flywheel.writing-scoped-revision/v2", "project_ref": PROJECT,
         "card_ref": CARD, "diagnostic_ref": diagnostic["diagnostic_ref"],
         "problem": "Change middle only.", "goal": "replace selected text",
         "must_preserve": ["KEEP lines"], "allowed_operations": ["replace"],
@@ -115,12 +115,12 @@ def test_raw_candidate_fabricated_scope_pass_is_recomputed(tmp_path):
         "base_revision_ref": revision["revision_ref"], "base_body_sha256": revision["body_sha256"],
         "coordinate_type": "unicode_codepoint",
         "start": 5, "end": 11, "selected_span_sha256": sha256_bytes(b"CHANGE")},
-        "does_not_prove": ["quality"]}
+        "scope": ["quality"]}
     head = _flow(service, service.prepare_card(
         journey, head, card, client_request_id="card"))["event_head_sha256"]
     body = service.artifacts.write_text(
         service.owner_ref, PROJECT, "body", "fake_scope", "OUTSIDE SCOPE\n")
-    fake = {"schema": "flywheel.writing-revision-candidate/v1", "project_ref": PROJECT,
+    fake = {"schema": "flywheel.writing-revision-candidate/v2", "project_ref": PROJECT,
         "candidate_ref": "cand_" + "f" * 32, "card_ref": CARD,
         "base_revision_ref": revision["revision_ref"],
         "candidate_revision_ref": "rev_" + "f" * 32, "candidate_body_ref": body["artifact_ref"],
@@ -128,8 +128,8 @@ def test_raw_candidate_fabricated_scope_pass_is_recomputed(tmp_path):
         "diff_summary": "forged out-of-scope body", "out_of_scope_changes": [],
         "created_by": "fixture", "text_admission": body["text_admission"],
         "scope_receipt": {"verdict": "PASS", "failure_reasons": [], "target": card["target"],
-        "replacement_text": "OUTSIDE SCOPE\n", "does_not_prove": WRITING_DOES_NOT_PROVE},
-        "does_not_prove": [WRITING_DOES_NOT_PROVE]}
+        "replacement_text": "OUTSIDE SCOPE\n", "scope": WRITING_SCOPE},
+        "scope": [WRITING_SCOPE]}
     proposal = service._prepare_artifact(
         journey, head, "fake-candidate", "candidate", "cand_" + "f" * 32, fake)
 

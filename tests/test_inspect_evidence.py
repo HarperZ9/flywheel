@@ -64,7 +64,7 @@ def test_success_log_reports_inspect_values_without_claiming_a_pass():
 
     doc = import_inspect_log(raw)
 
-    assert doc["schema"] == "flywheel.inspect-evidence/v1"
+    assert doc["schema"] == "flywheel.inspect-evidence/v2"
     assert doc["source"] == {
         "sha256": hashlib.sha256(raw).hexdigest(),
         "byte_length": len(raw),

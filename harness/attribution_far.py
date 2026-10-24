@@ -24,13 +24,16 @@ RELIABLE = "RELIABLE"
 UNRELIABLE = "UNRELIABLE"
 MIN_CONTROLS = 5
 DEFAULT_FAR_THRESHOLD = 0.05
-FAR_DOES_NOT_PROVE = (
-    "The false-accept rate is measured over the logged control trials only. A "
-    "RELIABLE proves the method rejected these known-null controls at or under "
-    "the threshold, not that it is correct on real cases; the controls are only "
-    "as good as their construction. The detection rate on the real trials is "
-    "reported but does not set the verdict. A verdict covers the logged corpus, "
-    "nothing beyond it.")
+FAR_SCOPE = (
+    "The false-accept rate is measured over the logged control trials. A "
+    "RELIABLE verdict records that the method rejected these known-null controls "
+    "at or under the threshold; the controls are as strong as their "
+    "construction, and real cases are a separate question. The detection rate on "
+    "the real trials is reported beside the verdict and leaves it unchanged. The "
+    "verdict covers the logged corpus.")
+# harness/shapley_far.py is pinned by its bytes in the Shapley placebo
+# preregistration and reads this older name, so it stays as an alias.
+FAR_DOES_NOT_PROVE = FAR_SCOPE
 
 
 class AttributionFARError(ValueError):
@@ -85,5 +88,5 @@ def analyze(manifest, trials, *, far_threshold=DEFAULT_FAR_THRESHOLD) -> dict:
         "false_accept_rate": far,
         "detection_rate": detection_rate,
         "flagged": false_accepts,
-        "does_not_prove": FAR_DOES_NOT_PROVE,
+        "scope": FAR_SCOPE,
     }

@@ -293,12 +293,12 @@ def test_a_contest_is_not_a_verdict(tmp_path):
     assert entry.get("verdict") is None
 
 
-def test_the_series_states_what_it_does_not_prove(tmp_path):
+def test_the_series_states_its_scope(tmp_path):
     led = Ledger(tmp_path / "l.jsonl")
     led.append(unsigned(_r()))
     s = contest_series(led)
-    joined = " ".join(s["does_not_prove"])
-    assert "COMPLETENESS" in joined or "UNCONTESTED" in joined
+    joined = s["schema"] + " " + " ".join(s["scope"])
+    assert all(k in joined for k in ("series/v2 ", "LOGGED_CONTESTS_ONLY", "WRITTEN_OBJECTIONS"))
 
 
 def test_no_field_scores_the_contester(tmp_path):

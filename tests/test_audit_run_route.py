@@ -96,7 +96,7 @@ def test_offline_is_deterministic_with_an_honest_null_summary(tmp_path):
     assert code == 200
     assert body["narrated"] is False
     assert body["reviewer"] == "flywheel-audit/starter"
-    assert body["does_not_prove"].strip()  # the honest null is never empty
+    assert body["scope"].strip()  # the scope is never empty
     assert "deterministic" in body["summary"] or body["summary"].startswith("verdict")
 
 
@@ -144,7 +144,7 @@ def test_unreachable_narrator_degrades_to_an_honest_null(tmp_path, monkeypatch):
         {"work_receipt": work, "endpoint": "stub"}, tmp_path)
     assert code == 200  # a missing narrator is never a 502
     assert body["narrated"] is False
-    assert "deterministic" in body["does_not_prove"]
+    assert "deterministic" in body["scope"]
 
 
 # --- gateway dispatch tests (the thin stubs) --------------------------------

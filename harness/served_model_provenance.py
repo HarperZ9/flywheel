@@ -26,16 +26,17 @@ MIN_PROBES = 8
 DEFAULT_MATCH_THRESHOLD = 0.9
 DEFAULT_DRIFT_MARGIN = 0.1
 LOW_MATCH_FLOOR = 0.5
-SMP_DOES_NOT_PROVE = (
+SMP_SCOPE = (
     "A MATCH means the endpoint's outputs matched the claimed model's reference "
-    "fingerprint on the shared probes, which is consistent with the claim, not "
-    "proof of the served weights or precision. The check is behavioral: two "
-    "models that agree on the battery are indistinguishable to it, and sampling, "
-    "batching, or quantization can move an output, so a battery of deterministic "
-    "probes and a trusted reference are both required. A DRIFT means the outputs "
-    "matched a known alternative better than the claim, or fell below the claim "
-    "on the shared probes. UNVERIFIABLE means the shared probes were too few to "
-    "call. A verdict covers the probed battery, nothing beyond it.")
+    "fingerprint on the shared probes, which is consistent with the claim on that "
+    "battery; the served weights and precision stay unobserved. The check is "
+    "behavioral: two models that agree on the battery look the same to it, and "
+    "sampling, batching, or quantization can move an output, so a battery of "
+    "deterministic probes and a trusted reference are both required. A DRIFT "
+    "means the outputs matched a known alternative better than the claim, or fell "
+    "below the claim on the shared probes. UNVERIFIABLE means the shared probes "
+    "were too few to call. A verdict covers the probed battery and only that "
+    "battery.")
 
 
 class ProvenanceError(ValueError):
@@ -93,7 +94,7 @@ def analyze(claim, observed, *, match_threshold=DEFAULT_MATCH_THRESHOLD,
             "verdict": UNVERIFIABLE, "claimed_model": model,
             "probes_compared": len(shared), "claimed_match_rate": None,
             "best_alternative": None, "best_alternative_match_rate": None,
-            "mismatched_probes": [], "does_not_prove": SMP_DOES_NOT_PROVE,
+            "mismatched_probes": [], "scope": SMP_SCOPE,
         }
     claimed_rate = round(_rate(shared, obs, reference), 4)
 
@@ -122,5 +123,5 @@ def analyze(claim, observed, *, match_threshold=DEFAULT_MATCH_THRESHOLD,
         "best_alternative": best[0] if best else None,
         "best_alternative_match_rate": best[1] if best else None,
         "mismatched_probes": [p for p in shared if obs[p] != reference[p]][:20],
-        "does_not_prove": SMP_DOES_NOT_PROVE,
+        "scope": SMP_SCOPE,
     }

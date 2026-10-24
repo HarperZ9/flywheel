@@ -8,7 +8,7 @@ from typing import Any
 
 from harness.cross_harness_artifacts import recheck_attempt_receipt
 from harness.cross_harness_executor import comparison_key, derive_primary_outcome
-from harness.cross_harness_postrun_intent import SCHEMA as INTENT_SCHEMA
+from harness.cross_harness_postrun_intent import SCHEMAS as INTENT_SCHEMAS
 from harness.cross_harness_postrun_paths import canonical, read_json_file, safe_existing_path, safe_read_json, sha_file
 
 SCORECARD_SCHEMA = "harness.cross-harness-task-scorecard/v1"
@@ -112,7 +112,7 @@ def load_bound_intent(root: Path, run: dict[str, Any] | None, scorecard: dict[st
     if actual != run_sha or index.get(relative(root, path)) != actual:
         reasons.add("intended_matrix_hash_mismatch")
     data, read_error = read_json_file(path)
-    if read_error or data is None or data.get("schema") != INTENT_SCHEMA:
+    if read_error or data is None or data.get("schema") not in INTENT_SCHEMAS:
         reasons.add("intended_matrix_malformed")
         return None, run_sha
     return data, run_sha

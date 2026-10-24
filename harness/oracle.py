@@ -98,7 +98,7 @@ class OracleResult:
                  objective: str | None = None,
                  unverifiable_reason: str = "", undecided_reason: str = "",
                  coverage: dict | None = None,
-                 does_not_prove: list[str] | None = None):
+                 scope: list[str] | None = None):
         if passed is None and verdict_ is None:
             raise ValueError("OracleResult needs either passed= or verdict_=")
         # A non-dispositive verdict must say why. A bare UNVERIFIABLE is
@@ -106,7 +106,7 @@ class OracleResult:
         self.unverifiable_reason = unverifiable_reason
         self.undecided_reason = undecided_reason
         self.coverage = coverage or {}
-        self.does_not_prove = list(does_not_prove or [])
+        self.scope = list(scope or [])     # what this verdict covers
         self.cmd = cmd
         self.output_hash = output_hash
         self.stdout_excerpt = stdout_excerpt

@@ -1,5 +1,5 @@
 // The Roadmap destination: goals with per-child verification status,
-// the verification floor, honest limits on the page, and the offline
+// the verification floor, the page's own scope, and the offline
 // state that names its command. The engine assembles everything; this
 // surface renders and re-reads.
 import 'dart:convert';
@@ -14,7 +14,7 @@ import 'package:http/testing.dart';
 
 const _roadmapBody = {
   'roadmap': {
-    'schema': 'flywheel.pm-roadmap/v1',
+    'schema': 'flywheel.pm-roadmap/v2',
     'generated_at': '2026-08-25T09:00:00Z',
     'goals': [
       {
@@ -44,16 +44,16 @@ const _roadmapBody = {
     ],
     'verification': {'skills_bound': 2, 'sealed_goals': 1,
                      'open_goals': 1},
-    'does_not_prove': [
-      'a satisfied quorum attests children ran and reported; it does '
-          'not prove the goal was achieved',
+    'scope': [
+      'a satisfied quorum attests that the children ran and reported; '
+          'goal achievement is judged separately',
     ],
   },
   'one_page': '# Roadmap -- 2026-08-25T09:00:00Z',
 };
 
 void main() {
-  testWidgets('RoadmapView renders goals, floor, and its own limits',
+  testWidgets('RoadmapView renders goals, floor, and its own scope',
       (tester) async {
     final api = RoadmapApi(
       httpClient: MockClient((request) async {
@@ -87,7 +87,7 @@ void main() {
     }
     expect(find.text('SKILLS BOUND'), findsOneWidget);
     expect(find.text('2'), findsWidgets);
-    expect(find.textContaining('does not prove'), findsOneWidget);
+    expect(find.textContaining('judged separately'), findsOneWidget);
   });
 
   testWidgets('RoadmapView names the command when offline',

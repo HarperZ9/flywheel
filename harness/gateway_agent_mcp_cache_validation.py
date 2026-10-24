@@ -10,27 +10,34 @@ from .gateway_operation import GatewayOperationError
 from .journey_types import SHA256_PATTERN
 from .mcp_client import LaunchSpec
 from .operation_grants import _validate_owner_ref
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 
-DISCOVERY_RECEIPT_SCHEMA = "flywheel.gateway-mcp-discovery-receipt/v1"
+DISCOVERY_RECEIPT_SCHEMA = "flywheel.gateway-mcp-discovery-receipt/v2"
+DISCOVERY_RECEIPT_SCHEMA_V1 = "flywheel.gateway-mcp-discovery-receipt/v1"
+# v1 receipts carry the scope list under the older name; v2 under `scope`.
+_RECEIPT_SCOPE_KEY = {DISCOVERY_RECEIPT_SCHEMA: SCOPE_KEY,
+                      DISCOVERY_RECEIPT_SCHEMA_V1: LEGACY_SCOPE_KEY}
 CACHE_DIR_NAME = "gateway-mcp-discovery-cache"
 _CATALOG_REF = re.compile(r"[a-z][A-Za-z0-9_.-]{0,63}\Z")
 _SERVER_ID = re.compile(r"[a-z][a-z0-9_]{0,23}\Z")
 _RAW_TOOL = re.compile(r"[^\s\x00-\x1f\x7f]{1,128}\Z")
-_RECEIPT_FIELDS = frozenset((
+_RECEIPT_BASE_FIELDS = frozenset((
     "schema", "owner_ref", "catalog_ref", "server_id", "plugin_kind",
     "created_at_unix", "expires_at_unix", "timeout_s",
     "discovery_policy_sha256", "selected_tools", "credential_refs",
     "launch", "launch_summary", "server_info", "protocol_version", "tools",
-    "authority", "authority_source", "enforced_limits", "does_not_prove",
+    "authority", "authority_source", "enforced_limits",
     "tools_list_sha256", "config_sha256", "descriptor_sha256",
     "receipt_sha256",
 ))
+_RECEIPT_FIELDS = _RECEIPT_BASE_FIELDS | {SCOPE_KEY}
 
 def freeze_receipt(value: object) -> None:
-    if type(value) is not dict or set(value) != _RECEIPT_FIELDS:
+    if type(value) is not dict or value.get("schema") not in _RECEIPT_SCOPE_KEY:
         raise ValueError
-    if (value.get("schema") != DISCOVERY_RECEIPT_SCHEMA
-            or value.get("receipt_sha256") != canonical_sha256(_receipt_hash_material(value))):
+    if set(value) != _RECEIPT_BASE_FIELDS | {_RECEIPT_SCOPE_KEY[value["schema"]]}:
+        raise ValueError
+    if (value.get("receipt_sha256") != canonical_sha256(_receipt_hash_material(value))):
         raise ValueError
     _validate_receipt_body(value)
 
@@ -77,9 +84,10 @@ def _validate_receipt_body(value: dict) -> None:
     if value.get("authority_source") != "gateway_catalog_metadata:v1":
         raise ValueError
     validate_limits(value.get("enforced_limits"))
-    if (type(value.get("does_not_prove")) is not list or not value["does_not_prove"]
+    notes = value.get(_RECEIPT_SCOPE_KEY[value["schema"]])
+    if (type(notes) is not list or not notes
             or any(type(item) is not str or not item.strip()
-                   or len(item) > 300 for item in value["does_not_prove"])):
+                   or len(item) > 300 for item in notes)):
         raise ValueError
     for name in ("tools_list_sha256", "config_sha256", "descriptor_sha256"):
         _digest(value.get(name))

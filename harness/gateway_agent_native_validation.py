@@ -26,7 +26,7 @@ def provider_response_content(route, obj) -> dict:
 
 def provider_response_meta(route, binding, ordinal, obj) -> dict:
     raw = json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    return {"schema": "flywheel.gateway-native-provider-response/v1",
+    return {"schema": "flywheel.gateway-native-provider-response/v2",
         "binding_sha256": canonical_sha256(binding), "ordinal": ordinal,
         "endpoint": binding["endpoint"]["name"],
         "model_id": binding["model"]["model_id"],
@@ -35,7 +35,7 @@ def provider_response_meta(route, binding, ordinal, obj) -> dict:
         "response_bytes": len(raw.encode("utf-8")),
         "source_ids": _source_ids(route, obj),
         "continuity_items_opaque": _opaque_items(route, obj),
-        "does_not_prove": ["MODEL_WEIGHTS_IDENTITY", "SEMANTIC_TRUTH"]}
+        "scope": ["RESPONSE_BYTES_DIGESTED", "MODEL_NAME_AS_REPORTED"]}
 
 
 

@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flywheel_desktop/models/process_audit_review.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 
 void main() {
   test('upload detects an outer command report and sends exact audit_packet',
@@ -14,7 +15,7 @@ void main() {
         '  "source_values" : {"target_state" : "closed"}\n'
         '}';
     final outer = Uint8List.fromList(utf8.encode(
-      '{"schema":"flywheel.incident-sim-command/v1",'
+      '{"schema":"flywheel.incident-sim-command/v2",'
       '"audit_packet":$inner,"tail":1}',
     ));
 
@@ -106,7 +107,7 @@ void main() {
           'source_value': 'closed',
         },
       ],
-      'does_not_prove': ['actual lab access'],
+      'scope': ['access content is taken as submitted'],
     }, upload);
 
     expect(result.errorCode, isNull);
@@ -134,6 +135,31 @@ void main() {
     expect(result.verification.packetDigest, 'MATCH');
     expect(result.verification.evaluationDigest, 'DRIFT');
     expect(result.verification.auditSubject, 'DRIFT');
+  });
+
+  test('v1 and v2 reviews each read their own scope key', () {
+    final fixture = _fixture('process_audit_resealed_component_review.json');
+    final upload = ProcessAuditPacketUpload.fromPickedBytes(
+      Uint8List.fromList(utf8.encode(fixture['packet_json']! as String)),
+    );
+    final v1 = Map<String, Object?>.from(fixture['review']! as Map);
+    expect(v1['schema'], ProcessAuditReviewResult.schemaNameV1);
+    final older = ProcessAuditReviewResult.fromJson(v1, upload);
+    expect(older.errorCode, isNull);
+    expect(older.scope, hasLength(3));
+
+    final v2 = Map<String, Object?>.from(v1)
+      ..['schema'] = ProcessAuditReviewResult.schemaName
+      ..remove(kLegacyScopeKey)
+      ..[kScopeKey] = ['packet-local digests were rechecked'];
+    final current = ProcessAuditReviewResult.fromJson(v2, upload);
+    expect(current.errorCode, isNull);
+    expect(current.scope, ['packet-local digests were rechecked']);
+
+    final v2WithOlderKey = Map<String, Object?>.from(v1)
+      ..['schema'] = ProcessAuditReviewResult.schemaName;
+    expect(ProcessAuditReviewResult.fromJson(v2WithOlderKey, upload).errorCode,
+        'INVALID_RESPONSE');
   });
 
   test('review result accepts backend drift carried only by verified fields',
@@ -260,7 +286,7 @@ Map<String, Object?> _reviewBody(
       },
       'declared_access': declaredAccess ?? {'verdict': accessVerdict},
       'source_pointers': const [],
-      'does_not_prove': const [],
+      'scope': const [],
     };
 
 Map<String, Object?> _fixture(String name) => Map<String, Object?>.from(

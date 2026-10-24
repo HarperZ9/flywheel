@@ -3,7 +3,7 @@
 The proposal compiles only the supplied admitted projection: source
 facts must exist there, the case's head must still be the projection's
 head, edges stay acyclic over known nodes, and the graph carries its
-review requirements, limitations, and does_not_prove on its face. It
+review requirements, limitations, and scope on its face. It
 never accepts itself, never executes, never writes a lesson. Later
 admission is a separately granted CAS command bound to the proposal and
 graph hashes.
@@ -18,7 +18,9 @@ from __future__ import annotations
 from .evidence_json import canonical_sha256
 from .incident_case import SCHEMA as CASE_SCHEMA
 
-PROPOSAL_SCHEMA = "flywheel.incident-proposed-graph/v1"
+# v2 names the coverage string `scope`; persisted v1 proposals keep the older key.
+PROPOSAL_SCHEMA_V1 = "flywheel.incident-proposed-graph/v1"
+PROPOSAL_SCHEMA = "flywheel.incident-proposed-graph/v2"
 _BANNED = ("accepted", "pass", "receipt", "execution", "command", "verdict")
 _CHECK_NODE_ID_DOMAIN = "flywheel.incident-proposal.check-node-id/v1"
 
@@ -102,9 +104,9 @@ def compile_incident_proposal(
         "limitations": [
             "proposed structure only; no check ran and nothing was accepted",
         ],
-        "does_not_prove": (
-            "a proposed incident graph is not a diagnosis, not an "
-            "acceptance, and not a receipt"),
+        "scope": (
+            "a proposed incident graph: candidate checks over the admitted "
+            "projection, held for human review before any admission"),
     }
     _no_banned_fields(proposal)
     proposal["graph_sha256"] = canonical_sha256(

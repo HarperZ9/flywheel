@@ -2,8 +2,8 @@
 //
 // Layer 2 to the eval receipt's Layer 1. Paste a sealed work receipt, run a
 // cheap domain-agnostic review, and get a SEPARATE developer-facing judgment —
-// reviews across neutral dimensions, a bounded verdict, a confidence, and an
-// honest-null does_not_prove — sealed into an audit receipt CHAINED onto the
+// reviews across neutral dimensions, a bounded verdict, a confidence, and its
+// scope, stated plainly — sealed into an audit receipt CHAINED onto the
 // work. Verify it offline; the chain proves it reviewed THAT exact work, and
 // corrupting one byte makes the same verifier refuse. This view is a thin wire:
 // it hands the client's typed audit methods to the dumb panel.

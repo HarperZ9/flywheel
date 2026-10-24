@@ -19,9 +19,12 @@ validation so an input cannot silently overwrite a field.
 
 ## Profile Shape
 
-Profiles use `schema: flywheel.standards-profile/v1`. Required top-level fields
+Profiles use `schema: flywheel.standards-profile/v2`. Required top-level fields
 are `profile_id`, `title`, `version`, `owner`, `instrument`, `provenance`,
-`effective`, `applicability`, `requirements`, and `does_not_prove`.
+`effective`, `applicability`, `requirements`, and `scope`, a string that says
+what a valid profile covers. A v1 profile names this field and the requirement
+field below by their older name and still validates; each version accepts only
+its own name.
 
 `instrument` separates the source's institutional role from its binding path:
 
@@ -50,7 +53,7 @@ is explicit. Missing facts are not treated as exemptions.
 
 Each requirement names `requirement_id`, `requirement_ref`, `summary`,
 `text_hash`, `selectors`, `maps_to_controls`, `maps_to_evidence_claims`,
-`evidence`, `review_required`, and `does_not_prove`. Evidence statuses are
+`evidence`, `review_required`, and `scope`. Evidence statuses are
 `missing`, `partial`, `observed`, `independently_reproduced`, `stale`, and
 `disputed`. `observed` and `independently_reproduced` evidence require an
 `artifact_sha256`; a bare assertion that evidence was observed is not enough to

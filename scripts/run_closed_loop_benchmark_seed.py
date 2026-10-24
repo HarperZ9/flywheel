@@ -901,7 +901,7 @@ def run_step(step: OrchestrationStep, *, cwd: Path, log_dir: Path) -> dict:
         "stderr_sha256": hashlib.sha256(stderr_path.read_bytes()).hexdigest(),
         "environment_names": sorted(name for name in os.environ
                                     if not re.search(r"authorization|credential|password|secret|token|api[_-]?key|jwt", name, re.I)),
-        "does_not_prove": "A child exit code and captured streams do not prove benchmark quality.",
+        "scope": "The step records the child's exit code and captured streams; benchmark quality is judged elsewhere.",
     }
 
 

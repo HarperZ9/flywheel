@@ -21,8 +21,13 @@ from typing import Mapping
 
 from .bundled_lane_expectations import EXPECTED_BUNDLED_LANES, expected_bundled_lane
 from .evidence_json import canonical_sha256, strict_load_json
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY, scope_key, scope_list
 
 SCHEMA = "flywheel.bundled-lane-component/v1"
+# v2 descriptors name what admission covers in `scope`; v1 descriptors (the
+# pinned relay.json and manifest rows) carry the older key. Both admit.
+SCHEMA_V2 = "flywheel.bundled-lane-component/v2"
+COMPONENT_SCHEMAS = (SCHEMA, SCHEMA_V2)
 SOURCE_ALGORITHM = "sha256-canonical-source-manifest/v1"
 _MANIFEST_RELATIVE = ("packaging", "python-lane-payloads.jsonl")
 # Python modules plus the package data a pinned lane reads at run time (forum's
@@ -39,6 +44,11 @@ def base_dir() -> Path:
 
 def default_descriptor_path(name: str = "relay") -> Path:
     return base_dir() / "packaging" / "bundled-lanes" / f"{name}.json"
+
+
+def descriptor_scope_key(descriptor: Mapping[str, object]) -> str:
+    """The scope field name this descriptor's schema version uses."""
+    return SCOPE_KEY if descriptor.get("schema") == SCHEMA_V2 else LEGACY_SCOPE_KEY
 
 
 def descriptor_digest(descriptor: Mapping[str, object]) -> str:
@@ -180,7 +190,8 @@ def validate_descriptor(
     bound to ``name``, so no lane can smuggle another lane's files or child mode."""
     source = descriptor.get("source")
     entrypoint = descriptor.get("entrypoint")
-    if (descriptor.get("schema") != SCHEMA
+    if (descriptor.get("schema") not in COMPONENT_SCHEMAS
+            or scope_key(descriptor) not in (None, descriptor_scope_key(descriptor))
             or descriptor.get("name") != name
             or not isinstance(source, dict)
             or not isinstance(entrypoint, dict)):
@@ -233,7 +244,7 @@ def component_summary(
         expected: Mapping[str, object]) -> dict:
     source = descriptor["source"]
     return {
-        "schema": "flywheel.bundled-lane-component-summary/v1",
+        "schema": "flywheel.bundled-lane-component-summary/v2",  # v2 names `scope`
         "name": descriptor["name"],
         "version": descriptor["version"],
         "descriptor_sha256": descriptor_digest(descriptor),
@@ -245,7 +256,7 @@ def component_summary(
         "module": expected["module"],
         "health_tool": expected["health_tool"],
         "allowed_tools": list(expected["allowed_tools"]),
-        "does_not_prove": list(descriptor.get("does_not_prove", ())),
+        "scope": scope_list(descriptor),
     }
 
 

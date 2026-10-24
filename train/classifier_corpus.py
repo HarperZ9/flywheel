@@ -15,13 +15,16 @@ from harness.classifier_dataset import build_split_manifest
 
 
 VERSION = "classifier-synthetic-v1"
+CORPUS_MANIFEST_SCHEMA = "flywheel.classifier-synthetic-corpus-manifest/v2"
+# v1 manifests name the scope list with the older key.
+CORPUS_MANIFEST_SCHEMA_V1 = "flywheel.classifier-synthetic-corpus-manifest/v1"
 FAMILIES = ("routing", "tool_selection", "context_relevance", "escalation")
 SPLITS = ("train", "calibration", "test")
 PER_CASE_BY_SPLIT = {"train": 3, "calibration": 2, "test": 2}
-DOES_NOT_PROVE = [
-    "diagnostic-only synthetic corpus; not production training data",
-    "label optimality, independent ground truth, or measured workflow success",
-    "authorization, deterministic accept-path bypass, calibration, or deployment readiness",
+SCOPE = [
+    "diagnostic-only synthetic corpus, generated from seeded templates for test use",
+    "labels authored by the generator, with no independent review or workflow outcome",
+    "a training corpus only; authorization, calibration and the accept path stay outside it",
 ]
 
 STATE_FORMS = {
@@ -214,12 +217,12 @@ def generate_corpus(*, seed: int = 1729, per_case: dict[str, int] | None = None)
         "dataset_manifest_sha256": dataset_manifest["manifest_sha256"],
     }
     corpus_manifest = {
-        "schema": "flywheel.classifier-synthetic-corpus-manifest/v1",
+        "schema": CORPUS_MANIFEST_SCHEMA,
         "version": VERSION, "seed": seed, "diagnostic_only": True,
         "families": list(FAMILIES), "splits": list(SPLITS),
         "per_case_by_split": limits, "source_group_split_map": split_by_group,
         "content_digests": content_digests, "dataset_manifest": dataset_manifest,
-        "semantic_cases": semantic_cases, "does_not_prove": DOES_NOT_PROVE,
+        "semantic_cases": semantic_cases, "scope": SCOPE,
     }
     return {"schema": "flywheel.classifier-synthetic-corpus/v1", "version": VERSION,
             "seed": seed, "examples": examples, "splits": split_by_group,

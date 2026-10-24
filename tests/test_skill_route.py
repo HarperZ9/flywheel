@@ -62,4 +62,4 @@ def test_registry_survives_a_reload(tmp_path):
     raw = (tmp_path / "skills" / "gates.jsonl").read_text(encoding="utf-8")
     assert len(raw.strip().splitlines()) == 1
     row = json.loads(raw)
-    assert row["schema"] == "flywheel.skill-gate/v2"
+    assert row["schema"] == "flywheel.skill-gate/v3"

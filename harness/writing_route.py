@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, urlsplit
 from .evidence_json import canonical_bytes
 from .evidence_public import (
     TransportError, error_response, parse_json, public_result)
+from .scope import scope_key, scope_of
 from .writing_artifacts import WritingArtifactError
 from .writing_operations import operation_for_http, validate_http_payload
 from .writing_service import WritingError, WritingService
@@ -131,19 +132,19 @@ def _public_status(service: WritingService) -> dict:
 def _public_project_state(service: WritingService, journey_ref: str) -> dict:
     state = service.project_state(journey_ref)
     packet = service._source_packet(state)
-    return {"schema": "flywheel.writing-project-view/v1",
+    return {"schema": "flywheel.writing-project-view/v2",
         "project_ref": state["project_ref"], "journey_ref": state["journey_ref"],
         "event_head_sha256": state["event_head_sha256"],
         "source_packet": {"source_packet_ref": packet["source_packet_ref"],
         "sources": packet["sources"],
-        "does_not_prove": packet["does_not_prove"]},
+        scope_key(packet): scope_of(packet)},
         "sections": [_public_section(state, ref) for ref in state["section_order"]],
         "diagnostics": list(state["diagnostics"].values()),
         "cards": list(state["cards"].values()),
         "candidates": list(state["candidates"].values()),
         "decisions": state["decisions"], "reviews": state["reviews"],
         "exports": state["exports"],
-        "does_not_prove": ["semantic quality, factual truth, and source truth remain unmeasured unless shown by recorded checks"]}
+        "scope": ["this view lists recorded artifacts and the deterministic checks they carry; semantic quality, factual truth and source truth are unmeasured unless a recorded check shows them"]}
 
 
 def _public_section(state: dict, ref: str) -> dict:

@@ -6,7 +6,7 @@ import pytest
 
 from harness.evidence_json import canonical_sha256
 from harness.plan_run_contract import (
-    PLAN_LIMITATIONS, PlanRunContractError, build_plan_run_result,
+    PLAN_SCOPE, PlanRunContractError, build_plan_run_result,
     parse_plan_run_binding, verify_plan_result,
 )
 from harness.plan_workflow_contract import validate_plan_workflow_run
@@ -129,8 +129,8 @@ def test_result_verifier_rederives_every_nested_digest_and_has_no_authored_verdi
     result = build_plan_run_result(
         workflow_run=_workflow(), **_receipt_inputs(binding))
     assert verify_plan_result(result)["verdict"] == "MATCH"
-    assert "verdict" not in result and result["receipt"]["does_not_prove"] == list(
-        PLAN_LIMITATIONS)
+    assert "verdict" not in result and result["receipt"]["scope"] == list(
+        PLAN_SCOPE)
     mutations = [("result_sha256", "0" * 64), ("plan_run_ref", "plr_" + "b" * 32)]
     for field, value in mutations:
         changed = deepcopy(result)

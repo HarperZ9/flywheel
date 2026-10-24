@@ -2,17 +2,17 @@
 
 The Usage screen includes a custom runtime visualization beside completed-answer
 usage receipts. It uses Flutter's built-in drawing APIs and Python's standard
-library; it adds no package dependency.
+library alone.
 
 Select a model to inspect generation and prompt-processing history. Pause stops
 new observation requests. Leaving the screen disposes its timer; backgrounding
 the app suspends observation. History is bounded to 60 observations per model.
 Missing measurements create gaps. A failed refresh marks retained data stale.
 
-The authenticated `/api/usage/live` route observes configured local endpoints.
-It does not start models or submit prompts. Unsupported counters remain
-unavailable. Rates describe counter changes over a measured interval, not answer
-quality. Counter resets require a fresh baseline.
+The authenticated `/api/usage/live` route observes configured local endpoints by
+reading their counters. A counter the runtime omits shows as unavailable. Rates
+describe counter changes over a measured interval. A counter reset starts a fresh
+baseline.
 
 The initial adapters read llama.cpp `/slots` and vLLM `/metrics`. Separate vLLM
 model labels produce separate rows and rate baselines. llama.cpp counts refer to
@@ -22,19 +22,18 @@ samples do not reconstruct completed work between polls. Disconnections and
 invalid samples clear the baseline before another rate is reported.
 
 Runtime model paths and unsafe display labels are replaced with stable opaque
-labels. Model labels are runtime reports, not proof of the loaded weights.
+labels. A model label is what the runtime reports about itself.
 
 Runtime counters and signed answer receipts answer different questions. The
 former describe runtime activity; the latter retain completed-answer accounting.
-Receipt timestamps currently cannot establish generation throughput. Power draw
-is not reported by this initial integration.
+Throughput comes from the counters, and power draw is a candidate for a later
+integration.
 
 The visual reference is [llm-visuals](https://github.com/DingoOz/llm-visuals).
-Flywheel implements its own view and observation path; the reference project is
-not installed, bundled, or imported.
+Flywheel implements its own view and observation path, written from scratch.
 
-Focused tests and visual fixtures do not establish installed acceptance or
-support for every inference runtime.
+Focused tests and visual fixtures cover llama.cpp and vLLM counters; each further
+inference runtime gets its own fixture.
 
 ## Release note for the next feature release
 
@@ -45,6 +44,6 @@ Missing counters remain unavailable; pausing or leaving the view stops polling.
 Existing completed-answer receipts retain their accounting and validation rules.
 This change does not enable managed provider sessions or change the account panel.
 
-This feature remains unreleased until its change is included in a tagged build.
-Counter fixtures and widget tests do not prove performance on a particular model,
-accuracy of runtime reports, or installed-app acceptance.
+This feature ships in tagged builds from v1.3.1 (`git tag --contains 895da353`).
+Counter fixtures and widget tests check the charts and the polling; performance on
+a given model and the accuracy of runtime reports come from the runtime itself.

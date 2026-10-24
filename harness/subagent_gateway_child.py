@@ -108,12 +108,16 @@ def _write_result(workspace: Path, spec: dict, status: str, **extra) -> None:
         json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
+_MODEL_CALL_SCHEMAS = {"flywheel.gateway-agent-model-call/v1",
+                       "flywheel.gateway-agent-model-call/v2"}
+
+
 def route_evidence(binding: dict, operation_sha256: str, records: list[dict]) -> dict:
     calls = []
     for rec in records:
         payload = rec.get("payload") if isinstance(rec, dict) else None
         meta = payload.get("meta") if isinstance(payload, dict) else None
-        if isinstance(meta, dict) and meta.get("schema") == "flywheel.gateway-agent-model-call/v1":
+        if isinstance(meta, dict) and meta.get("schema") in _MODEL_CALL_SCHEMAS:
             calls.append(meta)
     last = calls[-1] if calls else {}
     return {"schema": ROUTE_EVIDENCE_SCHEMA,
@@ -124,4 +128,4 @@ def route_evidence(binding: dict, operation_sha256: str, records: list[dict]) ->
         "identity_status": last.get("identity_status", "unavailable"),
         "usage": last.get("usage"), "usage_reported": last.get("usage_reported"),
         "response_id": last.get("response_id"), "stop_reason": last.get("stop_reason"),
-        "does_not_prove": ["MODEL_WEIGHTS_IDENTITY", "SEMANTIC_TRUTH"]}
+        "scope": ["ROUTE_AND_CALLS_OBSERVED", "MODEL_AS_REPORTED"]}

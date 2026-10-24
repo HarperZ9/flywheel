@@ -33,7 +33,7 @@ def test_roadmap_collects_goals_and_the_verification_floor():
                                                satisfied=False)],
         skills=[{"lesson_id": "x", "gate_sha256": "d" * 64}],
         generated_at="2026-08-24T09:00:00Z")
-    assert doc["schema"] == "flywheel.pm-roadmap/v1"
+    assert doc["schema"] == "flywheel.pm-roadmap/v2"
     assert len(doc["goals"]) == 2
     satisfied = doc["goals"][0]
     assert satisfied["verdict"] == "satisfied"
@@ -55,7 +55,7 @@ def test_one_page_renders_without_claim_language():
     assert "# Roadmap" in page
     assert "| swarm_aaaaaaaa..." in page  # ids appear as short refs
     assert "satisfied" in page
-    assert "does not prove" in page  # the page carries its own limits
+    assert "## Scope" in page  # the page carries its own scope
     for banned in ("optimal", "guaranteed", "best-in-class"):
         assert banned not in page
 
@@ -86,10 +86,10 @@ def _journey_projection(stage="running", checks=None):
         "checks": checks if checks is not None else [
             {"check_id": "chk_1", "claim_id": "clm_1", "verdict": "PASS",
              "receipt_state": "MATCH", "numerator": 3, "denominator": 3,
-             "does_not_prove": ""},
+             "scope": ""},
             {"check_id": "chk_2", "claim_id": "clm_1", "verdict": "UNDECIDED",
              "receipt_state": "present_unchecked", "numerator": 0,
-             "denominator": 2, "does_not_prove": ""},
+             "denominator": 2, "scope": ""},
         ],
     }
 

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/bulletin_media_api.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/models/bulletin_media_models.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 import 'package:flywheel_desktop/services/bulletin_media_cache.dart';
 import 'package:http/http.dart' as http;
 
@@ -13,6 +14,23 @@ import 'bulletin_media_test_support.dart';
 import 'bulletin_media_canonical_backend_test_support.dart';
 
 void main() {
+  test('v1 and v2 media reviews each parse under their own scope key', () {
+    final v2 = BulletinMediaReview.fromJson(reviewJson());
+    expect(v2.invalidResponse, isFalse);
+    expect(v2.scope.single, contains('exact bytes'));
+
+    final v1 = BulletinMediaReview.fromJson(reviewJsonV1());
+    expect(v1.invalidResponse, isFalse);
+    expect(v1.scope, contains('semantic truth of the post body'));
+
+    final v2WithOlderKey = Map<String, Object?>.from(reviewJson());
+    v2WithOlderKey[kLegacyScopeKey] = v2WithOlderKey.remove(kScopeKey);
+    expect(BulletinMediaReview.fromJson(v2WithOlderKey).invalidResponse, isTrue);
+    final v1WithScope = Map<String, Object?>.from(reviewJsonV1());
+    v1WithScope[kScopeKey] = v1WithScope.remove(kLegacyScopeKey);
+    expect(BulletinMediaReview.fromJson(v1WithScope).invalidResponse, isTrue);
+  });
+
   test('parses review with public body, media, preview refs, and operation',
       () {
     final response = BulletinMediaPreviewResponse.fromJson(

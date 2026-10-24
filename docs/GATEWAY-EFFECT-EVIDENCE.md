@@ -1,12 +1,15 @@
 # Gateway Effect Evidence
 
 Terminal gateway-agent projections may include an optional
-`effect_evidence` block with schema `flywheel.gateway-effect-evidence/v1`.
+`effect_evidence` block with schema `flywheel.gateway-effect-evidence/v2`.
+Its `scope_label` is `owner_private_trace_prefix`, and its `scope` list names
+what the block covers. A v1 block carries the label in `scope` and its list
+under the older name; it still recomputes with the v1 vocabulary.
 The block is derived by the backend from the accepted owner-private
 `AgentTrace` prefix. It is not accepted from a worker or from submitted
 projection JSON.
 
-Normal worker `flywheel.gateway-agent-projection/v1` output excludes
+Normal worker `flywheel.gateway-agent-projection/v2` output excludes
 `effect_evidence`. The gateway derives the block only after worker projection
 validation and terminal lifecycle binding. A worker-supplied or self-hashed
 effect summary confers no authority and is rejected before publication.

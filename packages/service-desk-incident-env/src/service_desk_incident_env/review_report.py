@@ -13,6 +13,12 @@ from .review_consistency import check_record_consistency
 from .review_validation import valid_doc, read_doc
 from .v1.store import DOMAIN_TAG, EVENT_TAG, LOG_TAG, SNAPSHOT_TAG
 
+# v2 (2026-10-23): evidence layers say what each check covers in `scope`.
+REPORT_SCHEMA = "service-desk-incident-env-review/v2"
+REPORT_SCHEMA_V1 = "service-desk-incident-env-review/v1"
+TASK_REVIEW_SCHEMA = "service-desk-task-review/v2"
+TASK_REVIEW_SCHEMA_V1 = "service-desk-task-review/v1"
+
 REQUIRED_DOCS = (
     "descriptor.json",
     "source-basis.json",
@@ -44,7 +50,7 @@ def build_review_report(artifact_dir: Path, identity_doc: dict[str, Any]) -> dic
         "recording_authenticity": "not_established",
     }
     return {
-        "schema": "service-desk-incident-env-review/v1",
+        "schema": REPORT_SCHEMA,
         "identity": identity_doc,
         "artifact_dir": str(root),
         "artifact_label": root.name,
@@ -62,9 +68,9 @@ def build_review_report(artifact_dir: Path, identity_doc: dict[str, Any]) -> dic
                 "checks": checks,
                 "calibration": calibration,
                 "secret_scan": secret_scan,
-                "does_not_prove": [
-                    "Internal digest consistency is not an external signature or trusted anchor.",
-                    "Matching bundle digests do not prove authentic recording, provenance, or task success.",
+                "scope": [
+                    "The bundle's internal digests agree with the submitted artifacts and the packaged source basis.",
+                    "The digests are internal to the bundle; external trust comes from a signature or anchor, reported under externally_trusted_evidence.",
                 ],
             },
             "synthetic_task_check": task_check,
@@ -161,19 +167,19 @@ def _synthetic_task_check(docs: dict[str, Any]) -> dict[str, Any]:
             "observed_state": "fail",
             "failure_codes": [],
             "basis": "missing state or action-log evidence",
-            "does_not_prove": ["A missing evidence failure is reported in source_integrity."],
+            "scope": ["The missing state or action-log evidence is reported in source_integrity."],
         }
     oracle = evaluate_task(docs["domain-state-after.json"], docs["action-log.json"])
-    result = {"schema": "service-desk-task-review/v1", "observed_state": oracle["observed_state"],
+    result = {"schema": TASK_REVIEW_SCHEMA, "observed_state": oracle["observed_state"],
               "failure_codes": oracle["failure_codes"], "oracle_result": oracle}
     result["evidence_kind"] = "task_semantics"
     result["log_origin"] = "submitted_untrusted"
     result["authorization"] = "unchecked"
     result["basis"] = "bounded synthetic oracle over submitted domain-state-after.json and action-log.json"
-    result["does_not_prove"] = [
-        "The oracle does not establish ground truth, authentic recording, or general incident reconstruction.",
-        "Authorization and response consistency are unchecked; pass does not establish authorized execution.",
-        "A fabricated complete outcome with matching fabricated logs could satisfy this check.",
+    result["scope"] = [
+        "The bounded synthetic oracle checked the submitted final state and action log against the task contract.",
+        "Authorization and response consistency are checked separately, in record_consistency.",
+        "The oracle reads the submitted logs as given; a consistent fabricated outcome and log would also satisfy it.",
     ]
     return result
 

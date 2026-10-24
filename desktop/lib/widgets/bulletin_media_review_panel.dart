@@ -101,8 +101,8 @@ final class _BulletinMediaReviewPanelState
         const SizedBox(height: 12),
         Text('Effect: ${widget.review.effect}'),
         const SizedBox(height: 8),
-        const Text('Does not prove:'),
-        ...widget.review.doesNotProve.map((row) => Text('- $row')),
+        const Text('Scope:'),
+        ...widget.review.scope.map((row) => Text('- $row')),
         const Divider(height: 24),
         const Text('Secondary verification details'),
         ...widget.review.items.map((item) => Text(

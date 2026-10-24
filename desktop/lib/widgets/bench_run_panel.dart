@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 
 import '../client/gateway_client.dart';
 import '../models/gateway_models.dart';
+import '../models/scope_field.dart';
 import '../theme/flywheel_theme.dart';
 import 'bench_task_editor.dart';
 import 'fw.dart';
@@ -198,9 +199,9 @@ class _BenchRunPanelState extends State<BenchRunPanel> {
         for (final row in rankings.whereType<Map>()) _rankRow(t, row),
         const SizedBox(height: FwLayout.s3),
         HashText('bench', '${bench['bench_sha256'] ?? ''}', keep: 16),
-        if (bench['does_not_prove'] != null) ...[
+        if (scopeOf(bench) != null) ...[
           const SizedBox(height: FwLayout.s2),
-          HonestNull('${bench['does_not_prove']}'),
+          HonestNull(scopeText(bench)),
         ],
       ],
     );

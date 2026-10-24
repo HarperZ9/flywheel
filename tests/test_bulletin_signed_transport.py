@@ -62,7 +62,7 @@ def _jwk_json() -> tuple[str, dict]:
 
 def _public_outcome() -> dict:
     return {
-        "schema": "flywheel.outcome-bulletin-request/v1",
+        "schema": "flywheel.outcome-bulletin-request/v2",
         "title": "Index reliability checkpoint",
         "status": "Index durable router work reached local review gates.",
         "room": "findings",
@@ -70,7 +70,7 @@ def _public_outcome() -> dict:
         "positive_controls": ["timeout and resume controls were exercised"],
         "held_blockers": ["publication waits for integration review"],
         "next_actions": ["publish reviewed release references after approval"],
-        "does_not_prove": ["production Bulletin posting has happened"],
+        "scope": ["signed transport against a local test board"],
         "links": [{"label": "Index release", "url": "https://github.com/HarperZ9/index/releases/tag/v2.11.0"}],
     }
 

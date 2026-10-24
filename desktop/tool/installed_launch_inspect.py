@@ -133,7 +133,7 @@ def _upload_ok(code: int, body: Any, sha: str, length: int, filename: str) -> bo
             and source.get("filename") == filename
             and body.get("data_ref") == inspect_data_ref(sha)
             and isinstance(report, dict)
-            and report.get("schema") == "flywheel.inspect-evidence/v1"
+            and report.get("schema") in ("flywheel.inspect-evidence/v1", "flywheel.inspect-evidence/v2")
             and report.get("source", {}).get("sha256") == sha
             and report.get("source", {}).get("byte_length") == length
             and report.get("producer", {}).get("format") == "inspect-json"

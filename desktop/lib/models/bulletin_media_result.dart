@@ -1,6 +1,8 @@
 import 'evidence_state.dart';
 
-const bulletinPublicationSchema = 'flywheel.outcome-bulletin-publication/v1';
+const bulletinPublicationSchema = 'flywheel.outcome-bulletin-publication/v2';
+const bulletinPublicationSchemaV1 =
+    'flywheel.outcome-bulletin-publication/v1';
 const bulletinResultSchema = 'flywheel.outcome-bulletin-media-result/v1';
 
 enum BulletinMediaPublishState {
@@ -69,7 +71,9 @@ final class BulletinMediaPublishResult extends DefensiveModel {
   factory BulletinMediaPublishResult.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
     final schema = json['schema'];
-    if (schema != bulletinPublicationSchema && schema != bulletinResultSchema) {
+    if (schema != bulletinPublicationSchema &&
+        schema != bulletinPublicationSchemaV1 &&
+        schema != bulletinResultSchema) {
       addParseIssue(issues, 'schema', schema);
     }
     final raw = json['status'] ?? json['state'];

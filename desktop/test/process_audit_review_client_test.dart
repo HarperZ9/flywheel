@@ -115,7 +115,7 @@ Map<String, Object?> _reviewBody(String sha, int byteLength) => {
           'source_value': 'closed'
         },
       ],
-      'does_not_prove': ['semantic correctness of the task or trace'],
+      'scope': ['task and trace content is taken as submitted'],
     };
 
 class _ProcessAuditSpy extends http.BaseClient {

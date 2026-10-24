@@ -159,7 +159,7 @@ void _nullTests() {
       'No missing evidence was supplied in this projection.',
       'No checks were supplied in this projection.',
       'No receipt refs were supplied in this projection.',
-      'No does_not_prove limits were supplied in this projection.',
+      'No scope was supplied in this projection.',
       'The server supplied no lens detail.',
     ]) {
       expect(find.text(text), findsWidgets);
@@ -178,7 +178,7 @@ void _nullTests() {
       rawReceiptState: null,
       numerator: 0,
       denominator: 0,
-      doesNotProve: '',
+      scope: '',
       parseIssues: const [],
     );
     await tester.pumpWidget(MaterialApp(
@@ -210,9 +210,7 @@ void _conclusionNullTests() {
     expect(find.text('Evidence remains incomplete.'), findsOneWidget);
     expect(find.text('No conclusion summary was supplied in this projection.'),
         findsOneWidget);
-    expect(
-        find.text(
-            'No conclusion does_not_prove limit was supplied in this projection.'),
+    expect(find.text('No conclusion scope was supplied in this projection.'),
         findsNWidgets(2));
   });
 }

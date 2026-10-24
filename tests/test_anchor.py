@@ -178,14 +178,13 @@ def test_verify_anchor_returns_a_verdict_on_a_non_string_signature(bad_sig):
     assert "malformed_head" in r["head_reason"]
 
 
-def test_does_not_prove_carries_the_header_trust_limitation():
+def test_scope_states_the_header_trust_boundary():
     # The proof-of-work recheck bounds internal consistency and real work: it kills
-    # the zero-work forgery. It does NOT establish that a bundle-carried header sits
-    # on the real Bitcoin chain rather than being a header ground against the
-    # maximum target off-chain. That residual limitation must be stated, or a reader
+    # the zero-work forgery. A bundle-carried header's place on the real Bitcoin
+    # chain comes from its source. That boundary must be stated, or a reader
     # over-reads the offline check as chain linkage.
-    limits = anchor.does_not_prove()
-    header_note = [s for s in limits if "HEADER_IS_A_REAL_BLOCK" in s]
-    assert header_note, "the header-trust honest null is missing"
+    lines = anchor.scope()
+    header_note = [s for s in lines if "HEADER_WORK_RECHECKED" in s]
+    assert header_note, "the header-trust boundary is missing"
     text = header_note[0].lower()
     assert "source" in text or "chain" in text

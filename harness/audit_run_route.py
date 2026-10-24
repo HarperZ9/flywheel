@@ -39,7 +39,7 @@ from .tool_call_receipt import _canonical_bytes, _digest_well_formed, _sha256_he
 
 # The starter detector set. A universal, domain-agnostic slice: it always runs,
 # and domain oracles can be layered later without replacing it.
-_STARTER_DETECTORS = ("receipt_integrity", "honest_null_presence", "unbacked_claim")
+_STARTER_DETECTORS = ("receipt_integrity", "unbacked_claim")
 
 # Mirrors agent-audit's _CLAIMED_HISTORY_MARKERS verbatim (agent-audit.report.v1),
 # so an "unbacked prior-work claim" flagged here means what it means there.
@@ -47,11 +47,6 @@ _CLAIMED_HISTORY_MARKERS = (
     "i previously", "i already", "i have completed",
     "after completing", "given my earlier", "having run",
 )
-# Cheap signals that a record REPORTS an outcome (so an honest-null is expected).
-_RESULT_MARKERS = ("results", "verdict", "outcome", "accepted", "passed")
-# Honest-null markers that satisfy that expectation.
-_HONEST_NULL_MARKERS = ("does_not_prove", "honest_null", "unverifiable",
-                        "no uplift", "not proven", "unknown")
 
 _SYS = ("You are a terse reviewer of completed work. Given deterministic findings "
         "about one unit of work, write two or three plain sentences naming what a "
@@ -92,23 +87,6 @@ def _detect_integrity(work_receipt: dict) -> tuple[str, dict[str, str]]:
         "receipt_integrity", "correctness", "CRITICAL",
         f"the work receipt seal does NOT re-derive (stored sha256:{hexv[:12]}, "
         f"recomputed sha256:{recomputed[:12]}); the record was altered after sealing")
-
-
-def _detect_honest_null(artifact: str) -> dict[str, str] | None:
-    """Scan the WORK-PRODUCT prose (the artifact), not the receipt's structural
-    fields: a Layer-1 receipt legitimately carries no quality honest-null (that
-    is this audit's job), so keying off the receipt would flag every work. When
-    the artifact reports a result but states no limit, that is the shape that
-    overclaims -- WARN. With no artifact prose, this dimension is left unjudged."""
-    low = artifact.lower()
-    reports = any(m in low for m in _RESULT_MARKERS)
-    has_null = any(m in low for m in _HONEST_NULL_MARKERS)
-    if reports and not has_null:
-        return _review(
-            "honest_null_presence", "completeness", "WARN",
-            "the work product reports a result but states no honest-null / limit; "
-            "a result with no stated bound is the shape that overclaims")
-    return None
 
 
 def _detect_unbacked_claims(artifact: str) -> dict[str, str] | None:
@@ -172,14 +150,14 @@ def _narrate(reviews, verdict, endpoint, model) -> tuple[str, bool, str, str]:
                                  f"({type(e).__name__}); the summary is deterministic")
 
 
-def _does_not_prove(integrity_status: str, narrated: bool, note: str) -> str:
-    """The honest null, always non-empty. Names what this audit could not judge."""
-    parts = ["this is a cheap post-work review, an opinion with a confidence and not "
-             "a proof; a PASS means only that this starter detector set found nothing, "
-             "not that the work is correct"]
+def _audit_scope(integrity_status: str, narrated: bool, note: str) -> str:
+    """What this audit covered, always non-empty."""
+    parts = ["a cheap post-work review, an opinion with a confidence; a PASS means "
+             "this starter detector set found nothing, and the work's correctness "
+             "is a separate check"]
     if integrity_status == "unverifiable":
-        parts.append("the work receipt seal could not be re-derived, so even the "
-                     "integrity of the reviewed record is unproven here")
+        parts.append("the work receipt seal could not be re-derived, so the "
+                     "integrity of the reviewed record is unchecked here")
     if not narrated:
         parts.append(note or "no model narrative was produced; the summary is "
                              "deterministic only")
@@ -192,6 +170,10 @@ def _subject_digest(work_receipt: dict, artifact: str) -> str:
     payload = json.dumps({"work_receipt": work_receipt, "artifact": artifact},
                          sort_keys=True, ensure_ascii=False, default=str).encode("utf-8")
     return _sha256_hex(payload)
+
+
+AUDIT_RUN_SCHEMA_V1 = "flywheel.audit-run/v1"
+AUDIT_RUN_SCHEMA = "flywheel.audit-run/v2"  # v2 names `scope`
 
 
 def handle_audit_run(req: dict, run_root) -> tuple[dict, int]:
@@ -214,9 +196,6 @@ def handle_audit_run(req: dict, run_root) -> tuple[dict, int]:
     started = _now_iso()
     integrity_status, integrity_review = _detect_integrity(work_receipt)
     reviews = [integrity_review]
-    hn = _detect_honest_null(artifact)
-    if hn is not None:
-        reviews.append(hn)
     claim = _detect_unbacked_claims(artifact)
     if claim is not None:
         reviews.append(claim)
@@ -225,7 +204,7 @@ def handle_audit_run(req: dict, run_root) -> tuple[dict, int]:
     confidence = _confidence(integrity_status)
     summary, narrated, model_ref, note = _narrate(reviews, verdict, endpoint, model)
     reviewer = f"flywheel-audit/starter+{model_ref}" if narrated else "flywheel-audit/starter"
-    dnp = _does_not_prove(integrity_status, narrated, note)
+    covered = _audit_scope(integrity_status, narrated, note)
     finished = _now_iso()
 
     work_hex = ""
@@ -236,16 +215,16 @@ def handle_audit_run(req: dict, run_root) -> tuple[dict, int]:
         run_id=run_id, work_receipt_sha256=work_hex,
         subject_digest=_subject_digest(work_receipt, artifact),
         reviewer=reviewer, reviews=reviews, summary=summary,
-        verdict=verdict, confidence=confidence, does_not_prove=dnp,
+        verdict=verdict, confidence=confidence, scope=covered,
         started_utc=started, finished_utc=finished)
 
     written = emit_audit_receipt(receipt, Path(run_root) / "audit")
     # receipt_file is a BARE filename, never an absolute path -- a receipt is
     # portable, and its on-disk location is the running host's business.
     receipt_file = written.name if written is not None else ""
-    return {"schema": "flywheel.audit-run/v1", "verdict": verdict,
+    return {"schema": AUDIT_RUN_SCHEMA, "verdict": verdict,
             "confidence": confidence, "reviewer": reviewer, "narrated": narrated,
-            "reviews": reviews, "summary": summary, "does_not_prove": dnp,
+            "reviews": reviews, "summary": summary, "scope": covered,
             "detectors": list(_STARTER_DETECTORS), "work_receipt_sha256": work_hex,
             "receipt": receipt, "receipt_file": receipt_file}, 200
 

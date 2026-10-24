@@ -120,17 +120,17 @@ def run_experiment(cases, policies, *, seed=0, max_steps=12):
                 runtime.clear_cache()
             runs[name].append(run_episode(case, policy, seed=seed, max_steps=max_steps))
     return {
-        "schema": "flywheel.classifier-workflow-experiment/v1",
+        "schema": "flywheel.classifier-workflow-experiment/v2",
         "cases_sha256": canonical_sha256(cases), "cases": copy.deepcopy(cases),
-        "runs": runs, "scope": "synthetic_local_state_machine",
+        "runs": runs, "scope_label": "synthetic_local_state_machine",
         "completion_denominator": "all cases; unknown and blocked are not completed tasks",
         "automatic_selection_enabled": False, "cost_usd": None, "energy_joules": None,
         "cache_policy": "clear neural embeddings before each episode; reuse within episode",
-        "does_not_prove": [
-            "Real browser behavior, DOM extraction, production utility or alignment.",
-            "These are authored synthetic scenarios, not independent human-reviewed tasks.",
-            "Current tool-selection heads were not trained for these form action menus.",
-            "No calibrated threshold, fallback cascade or model uplift is established.",
+        "scope": [
+            "Episodes run in a bounded local simulator snapshot; browser and DOM behavior stay outside it.",
+            "The cases are authored synthetic scenarios without independent human review.",
+            "The tool-selection heads were trained on other menus than these form actions.",
+            "Policies run with no calibrated threshold or fallback cascade; uplift is unmeasured.",
             "Elapsed time excludes model load and artifact serialization; resources remain unmeasured.",
         ],
     }

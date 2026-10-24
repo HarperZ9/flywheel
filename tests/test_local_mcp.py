@@ -134,7 +134,7 @@ def test_receipt_tool_is_discoverable_with_a_strict_leaf_schema():
     assert schema["additionalProperties"] is False
     assert schema["properties"]["leaf"]["description"]
     assert tool["outputSchema"]["required"] == [
-        "included", "status", "proof", "verification", "does_not_prove"]
+        "included", "status", "proof", "verification", "scope"]
     assert {case["properties"]["status"]["const"]
             for case in tool["outputSchema"]["oneOf"]} == {
                 "included", "missing", "proof_corrupt",
@@ -173,8 +173,8 @@ def test_receipt_mcp_included_leaf_returns_replayable_proof(monkeypatch):
         "replayed": True,
         "included": True,
     }
-    assert "semantic correctness" in " ".join(payload["does_not_prove"])
-    assert "evidence completeness" in " ".join(payload["does_not_prove"])
+    assert payload["scope"] == list(receipt_operations.INCLUDED_SCOPE)
+    assert "Merkle log" in " ".join(payload["scope"])
 
 
 def test_receipt_mcp_missing_leaf_keeps_absence_distinct_from_malformed(
@@ -192,7 +192,7 @@ def test_receipt_mcp_missing_leaf_keeps_absence_distinct_from_malformed(
         "leaf": stranger,
         "merkle_root": merkle_root(LEAVES),
     }
-    assert "semantic correctness" in " ".join(payload["does_not_prove"])
+    assert payload["scope"] == list(receipt_operations.MISSING_SCOPE)
 
 
 def test_receipt_mcp_malformed_leaf_is_a_typed_error(monkeypatch):

@@ -101,11 +101,11 @@ def test_agent_cannot_clear_its_flag_by_writing_the_monitor_home(tmp_path):
 def test_receipt_refuses_floats_and_tampering_is_drift(tmp_path):
     with pytest.raises(FloatInReceipt):
         build_receipt(run_id="r", component="c", subject={}, inputs={}, result={"rate": 0.5},
-                      gaps=[], does_not_prove="x")
+                      gaps=[], scope="x")
     home = tmp_path / "mon"
     seal = ObservationLedger(home).append(build_receipt(
         run_id="r", component="c", subject={}, inputs={}, result={"rate": "0.5000"}, gaps=[],
-        does_not_prove="x"))
+        scope="x"))
     assert ObservationLedger(home).verify(seal)
     p = home / "records.jsonl"
     p.write_text(p.read_text(encoding="utf-8").replace("0.5000", "0.9000"), encoding="utf-8")
@@ -187,3 +187,27 @@ def test_sandbagging_completion_gap_raises_a_finding_and_no_result_pairs_do_not(
     planted = obs.analyze(controls._families(40, 0.3))
     assert [f.rule_id for f in monitor_hook.findings_from_observation(planted)] == \
         ["trace/observation-gap"]
+
+
+def test_v1_observation_receipt_in_an_existing_chain_still_reads(tmp_path):
+    """A v1 receipt (older field name) sealed before the migration is listed by
+    the ledger, verifies by seal, and backs a v1 trace flag that cites it."""
+    from harness.preaction.records import HoldStore
+    from harness.scope import LEGACY_SCOPE_KEY, scope_of
+    from harness.trace_observation.receipt import SCHEMA_V1
+    home = tmp_path / "mon"
+    old = build_receipt(run_id="r", component="c", subject={}, inputs={}, result={}, gaps=[],
+                        scope="x")
+    old["schema"] = SCHEMA_V1
+    old[LEGACY_SCOPE_KEY] = old.pop("scope")
+    seal = HoldStore(home).append(old)
+    with pytest.raises(ValueError):
+        ObservationLedger(home).append(dict(old))
+    listed = ObservationLedger(home).receipts("r")
+    assert [r["seal"]["hex"] for r in listed] == [seal] and scope_of(listed[0]) == "x"
+    assert ObservationLedger(home).verify(seal)
+    flag = trace_flag.traceflag_record(run_id="r", flag_id="tf_1", rule_id="rule", channel="raw",
+                                       access_class="A1r", evidence_sha256="e" * 64,
+                                       observation_receipt_sha256=seal, raised_at="t")
+    flag["schema"] = trace_flag.TRACEFLAG_SCHEMA_V1
+    assert trace_flag.verify_chain([*listed, flag]) == []

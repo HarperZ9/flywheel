@@ -23,7 +23,7 @@ from pathlib import Path
 import pytest
 
 from harness.certificates import replay
-from harness.certificates.replay import (DRIFT, MATCH, REPLAY_DOES_NOT_PROVE,
+from harness.certificates.replay import (DRIFT, MATCH, REPLAY_SCOPE,
                                          REQUIRED_FLAGS, UNVERIFIABLE, RunRecord,
                                          replay_verdict, state_digest)
 
@@ -91,19 +91,19 @@ def test_checkpoint_count_mismatch_drifts():
     assert out["verdict"] == DRIFT and out["first_divergence"] == 29
 
 
-def test_every_verdict_says_it_does_not_prove_correctness():
+def test_every_verdict_scopes_itself_to_replay():
     for claimed, replayed in ((_record(), _record()), (_record(), _record(seed=9)),
                               (_record(), _record(flags={}))):
-        assert REPLAY_DOES_NOT_PROVE in replay_verdict(claimed, replayed)["does_not_prove"]
-    assert "says nothing about whether the answer is right" in REPLAY_DOES_NOT_PROVE.lower()
+        assert REPLAY_SCOPE in replay_verdict(claimed, replayed)["scope"]
+    assert "correctness is a separate check" in REPLAY_SCOPE
 
 
 def test_cross_device_drift_carries_the_scope_note():
     out = replay_verdict(_record(), _record(device="gpu-b", flip_bit_at=3))
     assert out["verdict"] == DRIFT
-    assert replay.CROSS_DEVICE_NOTE in out["does_not_prove"]
+    assert replay.CROSS_DEVICE_NOTE in out["scope"]
     same = replay_verdict(_record(), _record(flip_bit_at=3))
-    assert replay.CROSS_DEVICE_NOTE not in same["does_not_prove"]
+    assert replay.CROSS_DEVICE_NOTE not in same["scope"]
 
 
 def test_module_imports_nothing_that_runs_code():

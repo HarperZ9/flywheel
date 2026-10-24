@@ -20,7 +20,9 @@ SKILL_FILES = (
     "EVALUATION.md",
 )
 ZIP_EPOCH = (2026, 1, 1, 0, 0, 0)
-SCHEMA = "flywheel.skill-bundle/v1"
+# v2 (2026-10-23): the manifest names what it covers in `scope`.
+SCHEMA = "flywheel.skill-bundle/v2"
+SCHEMA_V1 = "flywheel.skill-bundle/v1"
 
 _PRIVATE_PATTERNS = (
     (re.compile(r"(?<![A-Za-z])[A-Za-z]:[\\/](?!/)"), "local drive path"),
@@ -77,10 +79,10 @@ def bundle(out: Path) -> dict:
         "version": VERSION,
         "tag_plan": TAG_PLAN,
         "artifacts": [artifact],
-        "does_not_prove": (
-            "Host installation, live automatic invocation, writing quality, "
-            "semantic correctness, held-out generalization, marketplace "
-            "approval, or Flywheel platform release."
+        "scope": (
+            "The skill archive's files, size and sha256 as built here, under "
+            "the tag plan above; it ships apart from the Flywheel platform "
+            "release, and host installation is a separate step."
         ),
     }
     (out / "manifest.json").write_text(json.dumps(receipt, indent=2) + "\n",

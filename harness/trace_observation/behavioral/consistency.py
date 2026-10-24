@@ -18,10 +18,10 @@ from __future__ import annotations
 from ..intervals import rate_block
 
 GAP_MIN, LEAN_MIN = 0.5, 0.05
-DOES_NOT_PROVE = (
+SCOPE = (
     "A flag shows answer statistics on this pair are biased in a way a consistent "
-    "answerer would not show. It does not identify the cause; fact-retrieval differences "
-    "are an alternative, and low rates here say nothing about other question families.")
+    "answerer would not show, on the question families tested here. Fact-retrieval "
+    "differences are one alternative cause.")
 
 
 def parse_yes_no(text: str):
@@ -72,4 +72,4 @@ def analyze(pairs: list, *, ambiguous=None) -> dict:
             "abstentions": str(sum(r["abstained"] for r in results)),
             "flag_rate": rate_block(k, len(scorable)) if scorable else {"status": "INSUFFICIENT_SAMPLE"},
             "split_half_null": rate_block(sum(null), len(null)) if null else {"status": "INSUFFICIENT_SAMPLE"},
-            "does_not_prove": DOES_NOT_PROVE}
+            "scope": SCOPE}

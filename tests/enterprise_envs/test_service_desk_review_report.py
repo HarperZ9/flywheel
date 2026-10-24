@@ -55,7 +55,7 @@ def test_review_cli_writes_portable_html_and_json_without_local_paths(tmp_path):
     html = html_out.read_text(encoding="utf-8")
     assert "Claimed outcome" in html
     assert "Recomputed outcome" in html
-    assert "Internal digest consistency is not an external signature" in html
+    assert "internal digests agree with the submitted artifacts" in html
     assert "bounded synthetic oracle" in html
     assert str(artifact_dir) not in html
     assert "Authorization: Bearer" not in html

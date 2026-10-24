@@ -33,10 +33,10 @@
 ### The problem
 
 Agent systems produce audit trails: logs, receipts, transcripts. These record
-what happened. They do not, by themselves, help the organization improve. A
-drift is reported, then nothing acts on it. A rollback is journaled, then
-forgotten. A graded failure becomes a misconception for one operator, not a
-lesson for the organization.
+what happened. Improvement takes a further step: a drift is reported and then
+sits, a rollback is journaled and then forgotten, and a graded failure stays a
+misconception for one operator. The loop turns each of these into a lesson for
+the organization.
 
 The gap is between audit (recording what happened) and learning (changing
 behavior because of what happened). The receipts make the recording
@@ -47,16 +47,15 @@ trustworthy. The learning loop makes the recording useful.
 The organizational learning loop is a durable, hash-chained, append-only memory
 that derives lessons from witnessed divergences across the ecosystem's
 flagships, detects recurring patterns, and surfaces them as improvement
-candidates for human admission. It does not apply changes autonomously. It
-remembers, it detects, and it surfaces.
+candidates for human admission. It remembers, it detects, and it surfaces; a
+person applies the change.
 
 ### The theory
 
-The witnessing spine: nothing self-warrants. A lesson is not a free-text note
-an operator wrote. It is a claim derived from witnessed artifacts, bound by hash
-to its evidence, re-checkable offline, and fail-closed when the evidence is
-gone. The confidence on a lesson is earned by convergence (how many independent
-sources agree), not asserted by the author.
+The witnessing spine: every claim rests on outside evidence. A lesson is a claim
+derived from witnessed artifacts, bound by hash to its evidence, re-checkable
+offline, and fail-closed when the evidence is gone. The confidence on a lesson
+is earned by convergence: how many independent sources agree.
 
 ---
 
@@ -162,8 +161,7 @@ content). The chain links each lesson's `prev_hash` to the prior lesson's
 
 ### Confidence derivation rule
 
-Confidence is derived from `evidence_class` and `repetition_count`, never
-asserted:
+Confidence is computed from `evidence_class` and `repetition_count`:
 
 ```
 single-instance + count >= 1          -> low
@@ -234,10 +232,10 @@ Reads accountable-surface's `ActuationOutcome` dicts. Derives a lesson when
 Reads mneme's drift report (`{verdicts: [...]}`). Derives a lesson for each
 DRIFT or UNVERIFIABLE memory.
 
-- `source_refs`: content-addressed sha256 over the verdict dict (mneme does
-  not emit its own digest)
+- `source_refs`: content-addressed sha256 over the verdict dict, computed by the
+  mapper
 - `claim`: names the memory and what changed
-- `rationale`: null (mneme does not record decision rationale)
+- `rationale`: null (mneme records verdicts, without a rationale field)
 - `evidence_class`: single-instance; confidence: low
 
 ### misconception_lessons(misconceptions)
@@ -247,7 +245,7 @@ cross-operator lesson per misconception entry.
 
 - `source_refs`: content-addressed sha256 over the misconception entry
 - `claim`: names the objective and the wrong-attempt count
-- `rationale`: null (learn does not record decision rationale)
+- `rationale`: null (learn records attempts, without a rationale field)
 - `evidence_class`: single-instance; confidence: low
 
 Each mapper has an `append_*` variant that builds and appends in one call.
@@ -260,7 +258,7 @@ Each mapper has an `append_*` variant that builds and appends in one call.
 
 Groups lessons by `(source_organ, normalized_claim)` where normalization is
 lowercase + whitespace collapse. Returns Pattern records where group size >=
-threshold (default 2). A single instance does not auto-promote.
+threshold (default 2). A pattern needs at least two instances.
 
 ### patterns_semantic() (Jaccard, opt-in)
 
@@ -335,10 +333,10 @@ returns the most recent row, which carries the current status.
 
 ### Backward compatibility
 
-A receipt without rationale is byte-identical to a pre-rationale receipt. The
-field is absent, not null-padded. The cross-language golden fixture still
-reproduces its pinned seal. All existing callers of `execute()` continue to
-work unchanged (rationale defaults to None).
+A receipt without rationale is byte-identical to a pre-rationale receipt: the
+field is omitted entirely. The cross-language golden fixture still reproduces
+its pinned seal, and every existing caller of `execute()` keeps working
+(rationale defaults to None).
 
 ### Verification
 
@@ -447,10 +445,10 @@ python -m pytest tests/test_lesson.py tests/test_lesson_store.py \
 - A broken chain link is rejected (CHAIN_BROKEN)
 - An inflated confidence is caught (single-instance claiming high fails)
 - A null rationale stays null through round-trip
-- A single instance does not auto-promote to a pattern
+- A pattern needs at least two instances
 - A clean run produces zero lessons
 - The spine entry validates against proof-surface's real validator
-- An illegal status transition raises ValueError
+- A status transition outside the allowed set raises ValueError
 - A retired lesson cannot transition further
 - The golden fixture (cross-language pinned seal) still reproduces
 
@@ -466,10 +464,11 @@ python -m pytest tests/test_lesson.py tests/test_lesson_store.py \
 
 1. Create a function that reads your flagship's witnessed output.
 2. Derive a lesson for each divergence using `build_lesson(...)`.
-3. For `source_refs`, use the artifact's own digest if it carries one. If not,
-   compute a content-addressed sha256 over the source dict using
+3. For `source_refs`, use the artifact's own digest if it carries one, or
+   compute a content-addressed sha256 over the source dict with
    `_content_digest()`.
-4. Set `rationale` to null unless your flagship records decision rationale.
+4. Set `rationale` from your flagship's decision rationale, or null when it keeps
+   none.
 5. Return a list of lessons. The caller decides whether to append to a store.
 
 ### Wiring the agent loop
@@ -487,8 +486,8 @@ agent framework:
 ### Deploying the desktop view
 
 The view is registered in `main.dart`. It calls the gateway routes, which load
-the store from `<run_root>/lessons.jsonl`. No additional setup is needed once
-the gateway is running and lessons are being appended.
+the store from `<run_root>/lessons.jsonl`, so it works as soon as the gateway is
+running and lessons are being appended.
 
 ### Composing onto the organ-bundle spine
 

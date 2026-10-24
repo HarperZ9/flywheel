@@ -5,7 +5,8 @@ SPAWN_SCHEMA_V2 = "flywheel.subagent-spawn-request/v2"
 SPEC_SCHEMA_V2 = "flywheel.subagent-spec/v2"
 ROUTING_SCHEMA_V2 = "flywheel.subagent-routing/v2"
 PARENT_AUTHORITY_SCHEMA = "flywheel.subagent-parent-authority/v1"
-ROUTE_EVIDENCE_SCHEMA = "flywheel.subagent-route-evidence/v1"
+ROUTE_EVIDENCE_SCHEMA_V1 = "flywheel.subagent-route-evidence/v1"
+ROUTE_EVIDENCE_SCHEMA = "flywheel.subagent-route-evidence/v2"  # v2 names `scope`
 RESERVATION_SCHEMA = "flywheel.subagent-budget-reservation/v1"
 _ROUTE_FIELDS = {"endpoint", "model", "execution_mode", "tool_protocol",
                  "max_steps", "max_tokens", "timeout_s", "credential_refs"}

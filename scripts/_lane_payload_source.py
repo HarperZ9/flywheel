@@ -26,17 +26,21 @@ for _p in (str(_ROOT), str(_HERE)):
 from harness.evidence_json import canonical_sha256
 
 SOURCE_ALGORITHM = "sha256-canonical-source-manifest/v1"
-COMPONENT_SCHEMA = "flywheel.bundled-lane-component/v1"
+# v2 (2026-10-23): a descriptor names what admission covers in `scope`. The
+# pinned rows in packaging/python-lane-payloads.jsonl stay v1 until each lane
+# is re-pinned; harness.bundled_lane_descriptor admits both versions.
+COMPONENT_SCHEMA = "flywheel.bundled-lane-component/v2"
+COMPONENT_SCHEMA_V1 = "flywheel.bundled-lane-component/v1"
 ROW_SCHEMA = "flywheel.python-lane-payload/v1"
 PACKAGING_BOUNDARY = (
     "source_pinned_vendored_runtime_admission_all_python_lanes"
     "_policy_t1_tools_only"
 )
-DOES_NOT_PROVE = [
-    "NOT_PROVES_FULL_LANE_WORKFLOW: admitting the lane tool policy's T1 tools checks that each is served and allowed, not that any tool returns a correct result.",
-    "NOT_PROVES_RUNTIME_DEPENDENCY_CLOSURE: interpreter, wheels, and import closure are bound by a separate installed release receipt.",
-    "NOT_PROVES_PROVIDER_DEVICE_OR_PRIVATE_DATA_READINESS: admission exercises no provider, device, account, model, or private-data operation.",
-    "NOT_PROVES_T2_TOOLS_UNREACHABLE_OUTSIDE_THE_ENGINE: T2 tools are absent from allowed_tools and reach the lane through the engine only on a granted T2 call, one tool at a time; the lane module itself still serves them.",
+SCOPE = [
+    "T1_TOOLS_SERVED_AND_ALLOWED: admission checks that each of the lane tool policy's T1 tools is served by the lane and allowed by the policy; each tool's results are checked where it runs.",
+    "SOURCE_FILES_BOUND: this descriptor binds the reviewed lane source files by sha256; the interpreter, wheels and import closure are bound by the installed release receipt.",
+    "OFFLINE_ADMISSION: admission runs no provider, device, account, model or private-data operation.",
+    "T2_THROUGH_ENGINE_GRANT: T2 tools stay out of allowed_tools and reach the lane through the engine only on a granted T2 call, one tool at a time; the lane module itself serves them.",
 ]
 TEST_DIR_NAMES = {"tests", "test"}
 

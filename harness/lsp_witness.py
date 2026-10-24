@@ -17,7 +17,7 @@ of the file's contents in every receipt.
 """
 from __future__ import annotations
 
-from .action_witness import OUTPUT, does_not_prove as action_does_not_prove
+from .action_witness import OUTPUT, scope as action_scope
 from .wire_witness import WireWitness, transcript_resolver
 
 FRAME_ACTION = "lsp/frame"
@@ -25,10 +25,11 @@ DECISION_ACTION = "lsp/decision"
 ANSWER_ACTION = "lsp/answer"
 PUBLISHED_ACTION = "lsp/published"
 
-WITNESS_SCHEMA = "flywheel.lsp-witness/v1"
+WITNESS_SCHEMA_V1 = "flywheel.lsp-witness/v1"
+WITNESS_SCHEMA = "flywheel.lsp-witness/v2"  # v2 names `scope`
 
 __all__ = ["ANSWER_ACTION", "DECISION_ACTION", "FRAME_ACTION", "LspWitness",
-           "PUBLISHED_ACTION", "WITNESS_SCHEMA", "does_not_prove",
+           "PUBLISHED_ACTION", "WITNESS_SCHEMA", "WITNESS_SCHEMA_V1", "scope",
            "published_summary", "summarize", "transcript_resolver"]
 
 
@@ -80,7 +81,7 @@ def summarize(answer) -> dict:
         "lines": stamp.get("lines"),
         "current": answer.current,
         "results": count_of(answer.result),
-        "does_not_prove": does_not_prove(),
+        "scope": scope(),
     }
 
 
@@ -96,7 +97,7 @@ def published_summary(published) -> dict:
         "severities": sorted({item.get("severity") for item in published.items
                               if isinstance(item, dict)
                               and item.get("severity") is not None}),
-        "does_not_prove": does_not_prove(),
+        "scope": scope(),
     }
 
 
@@ -117,15 +118,15 @@ def count_of(result: object) -> int:
     return 1
 
 
-def does_not_prove() -> list[str]:
-    """What an LSP run record leaves open. Never empty."""
-    return action_does_not_prove() + [
-        "the chain covers frames that crossed this connection, so a server "
-        "reading files from disk can answer about text that never crossed it",
-        "an answer marked current says the document did not change while the "
-        "request was in flight, not that the server's answer is right",
-        "diagnostics are what the server chose to publish, which is that "
-        "server's analysis and not an independent check of the code",
-        "positions are counted in the negotiated encoding, so a reader "
-        "converting them under a different one names a different span",
+def scope() -> list[str]:
+    """What an LSP run record covers. Never empty."""
+    return action_scope() + [
+        "the chain covers frames that crossed this connection; a server that "
+        "reads files from disk can answer about text outside it",
+        "an answer marked current records that the document stayed unchanged "
+        "while the request was in flight; the answer itself is the server's",
+        "diagnostics are the set the server chose to publish, from that "
+        "server's own analysis",
+        "positions are counted in the negotiated encoding; a reader converting "
+        "under another encoding names a different span",
     ]

@@ -255,7 +255,7 @@ WritingProjectView _project() => WritingProjectView.fromJson({
         'sources': [
           {'source_id': 'src_receipt', 'title': 'Receipt'}
         ],
-        'does_not_prove': []
+        'scope': []
       },
       'sections': [
         {
@@ -275,5 +275,5 @@ WritingProjectView _project() => WritingProjectView.fromJson({
       'decisions': [],
       'reviews': [],
       'exports': [],
-      'does_not_prove': []
+      'scope': []
     });

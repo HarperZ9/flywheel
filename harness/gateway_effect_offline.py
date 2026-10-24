@@ -5,7 +5,7 @@ import binascii
 from collections import Counter
 from typing import Any
 from .evidence_json import canonical_bytes, canonical_sha256
-from .gateway_agent_projection import SCHEMA as PROJECTION_SCHEMA, validate_projection
+from .gateway_agent_projection import SCHEMAS as PROJECTION_SCHEMAS, validate_projection
 from .gateway_agent_trace import GENESIS, KINDS, MAX_RECORDS, SCHEMA as TRACE_SCHEMA
 from .gateway_effect_evidence import validate_effect_evidence
 from .gateway_operation_validation import (LIFECYCLE, OPERATION_REF_PATTERN, TERMINAL_EVENTS,
@@ -198,7 +198,7 @@ def _validate_internal(component: dict) -> tuple[dict[str, Any], dict[str, Any]]
         raise _Fail("terminal result binding mismatch")
     trace_info = _validate_records(records, owner_ref, journey_ref, operation_ref)
     projection = terminal["result"]
-    if type(projection) is not dict or projection.get("schema") != PROJECTION_SCHEMA:
+    if type(projection) is not dict or projection.get("schema") not in PROJECTION_SCHEMAS:
         raise _Fail("terminal result does not bind an agent projection")
     _validate_projection_shape(projection, trace_info, operation_ref, journey_ref)
     if (projection.get("state") != state

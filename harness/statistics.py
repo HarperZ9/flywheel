@@ -27,7 +27,9 @@ from __future__ import annotations
 import random
 from math import comb, sqrt
 
-SCHEMA = "flywheel.statistics/v1"
+SCHEMA = "flywheel.statistics/v2"
+# v1 records name the scope list with the older key.
+SCHEMA_V1 = "flywheel.statistics/v1"
 
 # E[range] / sigma for a normal sample. Used ONLY by the labelled range
 # conversion below. Values are the standard d2 control-chart constants.
@@ -60,9 +62,9 @@ def between_seed_sd(values, *, minimum: int = MIN_REPLICATES) -> dict:
     return {"schema": SCHEMA, "statistic": "between_seed_sd",
             "n_replicates": len(vals), "mean": round(mean, 6),
             "sd": round(sqrt(var), 6),
-            "does_not_prove": [
-                "NOT_PROVES_STABILITY_ACROSS_ENVIRONMENTS: replicates of one "
-                "pipeline on one machine bound sampling noise, not portability.",
+            "scope": [
+                "ONE_PIPELINE_ONE_MACHINE: the SD is over replicates of one "
+                "pipeline on one machine; it measures sampling noise in that setup.",
             ]}
 
 
@@ -84,12 +86,12 @@ def sd_from_range(range_width: float, n: int) -> dict:
             "n": n, "range": round(float(range_width), 6),
             "d2": _D2[n], "sigma_estimate": round(range_width / _D2[n], 6),
             "estimator": "range/d2",
-            "does_not_prove": [
-                "NOT_PROVES_A_REPLICATE_SD: this is derived from a range, not "
-                f"from {MIN_REPLICATES} or more replicates, and at small n it is "
-                "a very noisy estimate of sigma.",
-                "NOT_HALF_THE_RANGE: half a range understates sigma at every n "
-                "in the table, which is the specific error this exists to stop.",
+            "scope": [
+                "RANGE_DERIVED_SIGMA: sigma estimated as range / d2 from a "
+                f"range over n={n} values; a replicate SD needs {MIN_REPLICATES} "
+                "or more replicates, and at small n this estimate is very noisy.",
+                "D2_CONVERSION: the range is divided by the d2 constant for n, "
+                "which half the range would understate at every n in the table.",
             ]}
 
 
@@ -135,11 +137,11 @@ def cluster_bootstrap(clusters, statistic, *, draws: int = 2000,
             "point": round(float(statistic([u for k in keys
                                             for u in clusters[k]])), 6),
             "interval": [round(lo, 6), round(hi, 6)],
-            "does_not_prove": [
-                "NOT_PROVES_BETWEEN_SEED_COVERAGE: resampling within ONE "
-                "pipeline pass carries task-population and within-cluster "
-                "variance. It does not carry the between-seed component, which "
-                "needs replicate passes and which the prereg calls primary.",
+            "scope": [
+                "WITHIN_PASS_VARIANCE: resampling within ONE pipeline pass "
+                "carries task-population and within-cluster variance. The "
+                "between-seed component, which the prereg calls primary, comes "
+                "from replicate passes through between_seed_sd.",
             ]}
 
 
@@ -166,10 +168,10 @@ def mcnemar_mde(n_pairs: int, n_discordant: int, *, alpha: float = 0.05) -> dict
             break
     out = {"schema": SCHEMA, "statistic": "mcnemar_mde",
            "n_pairs": n_pairs, "n_discordant": m, "alpha": f"{alpha:.4f}",
-           "does_not_prove": [
-               "NOT_PROVES_AN_EFFECT_IS_ABSENT: an MDE describes what this "
-               "design could have seen. A null below it is uninformative, not "
-               "negative.",
+           "scope": [
+               "DESIGN_SENSITIVITY: the MDE is the smallest paired difference "
+               "this design could call; a null below it is uninformative about "
+               "the effect.",
            ]}
     if detectable is None:
         out["detectable"] = None

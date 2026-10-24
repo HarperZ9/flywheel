@@ -23,7 +23,8 @@ from __future__ import annotations
 import hashlib
 import json
 
-SCHEMA = "flywheel.runtime-identity/v1"
+SCHEMA = "flywheel.runtime-identity/v2"
+SCHEMA_V1 = "flywheel.runtime-identity/v1"
 UNKNOWN = "unknown"
 MATCH, DRIFT, UNVERIFIABLE = "MATCH", "DRIFT", "UNVERIFIABLE"
 
@@ -31,9 +32,9 @@ FIELDS = ("serving_framework", "serving_version", "gpu_model", "dtype", "compile
           "batch_shape", "batch_invariant", "deterministic", "capture_hooks",
           "kernel_stack")
 _BOOLS = ("batch_invariant", "deterministic")
-DOES_NOT_PROVE = ("Declared runtime fields are what the caller reported. Flywheel does not "
-                  "probe the GPU or the serving stack, and equal fields do not prove equal "
-                  "kernels.")
+SCOPE = ("The witness compares two outputs and the runtime fields each caller declared. "
+         "Flywheel takes those fields as reported, without probing the GPU or the serving "
+         "stack; equal fields are a declaration, and the kernels themselves go unseen.")
 
 
 def _value(name: str, raw) -> str:
@@ -75,7 +76,7 @@ def known_count(block: dict) -> int:
 def rerun_witness(a: dict, b: dict) -> dict:
     """a, b: {"runtime": runtime_identity(...), "output_sha256": str}."""
     ra, rb = runtime_identity(a.get("runtime")), runtime_identity(b.get("runtime"))
-    out = {"schema": SCHEMA, "does_not_prove": DOES_NOT_PROVE}
+    out = {"schema": SCHEMA, "scope": SCOPE}
     if a.get("output_sha256") == b.get("output_sha256"):
         return dict(out, verdict=MATCH, code="output_equal", fields=[],
                     reason="the two runs produced the same output")

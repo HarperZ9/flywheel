@@ -23,12 +23,13 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from .byte_witness import GENESIS, WITNESS_SCHEMA, does_not_prove
+from .byte_witness import GENESIS, WITNESS_SCHEMA, scope
 from .evidence_json import canonical_sha256
 from .tool_call_receipt import MATCH, TAMPERED, UNVERIFIABLE, _digest_well_formed, _sha256_hex
 
 VERIFY_SCHEMA = "flywheel.byte-witness-verification/v1"
-CHAIN_SCHEMA = "flywheel.byte-witness-chain-verification/v1"
+CHAIN_SCHEMA_V1 = "flywheel.byte-witness-chain-verification/v1"
+CHAIN_SCHEMA = "flywheel.byte-witness-chain-verification/v2"  # v2 names `scope`
 
 MALFORMED = "MALFORMED"
 DIGEST_MISMATCH = "DIGEST_MISMATCH"
@@ -164,9 +165,9 @@ def _chain_result(verdict: str, failure_class: str | None, broken_at: int | None
     return {"schema": CHAIN_SCHEMA, "verdict": verdict,
             "failure_class": failure_class, "broken_at": broken_at,
             "head": head, "checked": checked, "detail": detail,
-            "does_not_prove": does_not_prove() + [
-                "the last record is checked by nothing after it, so bind the "
-                "head somewhere a change to the chain cannot follow it"]}
+            "scope": scope() + [
+                "the last record is the chain head; binding that head elsewhere "
+                "is what extends the check to it"]}
 
 
 def verify_chain(records: Any, *, start: str = GENESIS,

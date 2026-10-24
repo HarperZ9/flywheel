@@ -60,7 +60,7 @@ def test_an_admitted_lesson_binds_a_passing_bench():
     binding = build_skill_gate(
         lesson=store.latest_for(lesson["lesson_id"]),
         evidence=_bench(), bound_at="2026-08-24T01:00:00Z")
-    assert binding["schema"] == "flywheel.skill-gate/v2"
+    assert binding["schema"] == "flywheel.skill-gate/v3"
     assert binding["all_passed"] is True
     assert binding["tasks_bound"] == 2
     assert len(binding["evidence_sha256"]) == 64

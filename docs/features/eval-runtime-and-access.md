@@ -8,7 +8,7 @@ neither is guessed: a field nobody declared reads `unknown`.
 
 ## Runtime identity
 
-The same weights and the same prompt do not fix the computation. In the
+The computation depends on more than the weights and the prompt. In the
 `watching` experiments (github.com/SauersML/watching), compiled activation
 capture changed 86 to 90 percent of next-token logits in Hugging Face, eager
 capture changed none, and a detector trained on one GPU reversed its signal on
@@ -69,7 +69,7 @@ verify_eval_receipt(receipt, claim_scope="training_time")
 When a needed surface is not recorded as granted, the verdict is UNVERIFIABLE
 with `failure_class` `ACCESS_SHORT_OF_CLAIM`, and the detail names the missing
 surfaces. `POST /api/eval/verify` takes the same `claim_scope` field. A receipt sealed
-before these blocks existed still verifies, and it backs no scoped claim.
+before these blocks existed still verifies as an unscoped result.
 
 ## Measured
 
@@ -77,14 +77,15 @@ before these blocks existed still verifies, and it backs no scoped claim.
   when flipped alone, 10 of 10 (`tests/test_runtime_identity.py`).
 - Each of the 10 fields, changed between two runs with different outputs, gives
   UNVERIFIABLE and names that field. A naive witness that calls every output
-  mismatch DRIFT fails the compile-mode case; this one does not.
+  mismatch DRIFT fails the compile-mode case; this one passes it.
 - Each of the 6 claim scopes is refused when its surface is not granted or
   unknown, and passes when it is granted. Changing one surface changes the seal,
   and editing the block after sealing is TAMPERED (`tests/test_eval_access.py`).
 
 ## Does not prove
 
-Both blocks are declarations sealed with the result. Flywheel does not probe the
-GPU or the serving stack, and equal runtime fields do not prove equal kernels.
-An access grant does not show the evaluator used it, and a recorded redaction
-does not show the redaction was justified.
+Both blocks are declarations sealed with the result. They record what the
+evaluator stated about the GPU, the serving stack, the access granted and any
+redaction. Flywheel seals those statements; checking the hardware itself, the
+kernels behind equal runtime fields, and the use of a grant stays with the
+evaluator.

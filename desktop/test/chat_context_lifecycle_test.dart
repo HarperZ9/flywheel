@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/client/gateway_client.dart';
 import 'package:flywheel_desktop/controllers/gateway_operation_controller.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 import 'package:flywheel_desktop/services/chat_draft_store.dart';
 import 'package:flywheel_desktop/services/chat_store.dart';
 import 'package:flywheel_desktop/services/settings.dart';

@@ -11,9 +11,10 @@ A generation call does two kinds of work:
 - Prefill runs every prompt token through the weights.
 - Decode reads all the weights once per step to make one new token.
 
-Each phase can go no faster than the slower of two limits: arithmetic at the
-chip's peak rate, and reading the weights at the memory's peak bandwidth. The
-floor is the sum of the two phases. No kernel on that chip can beat it.
+Each phase takes at least as long as the slower of two limits: arithmetic at
+the chip's peak rate, and reading the weights at the memory's peak bandwidth.
+The floor is the sum of the two phases, a lower bound for any kernel on that
+chip.
 
 `harness/cost_floor.py` holds the formula and the hardware table. Each rate
 names its source:
@@ -32,14 +33,16 @@ r = receipt(measured_s=1.334, prompt_tokens=61, completion_tokens=85,
 r["floor_s"], r["ratio"]   # 0.767, 1.74
 ```
 
-Each receipt (`flywheel.cost-floor/v1`) carries:
+Each receipt (`flywheel.cost-floor/v2`) carries:
 
 - measured time, the floor and their ratio
 - each phase's floor, and whether memory or arithmetic bounds it
 - the token counts and batch size
 - the model's size
 - the hardware rates and their source
-- the assumptions and a `does_not_prove` line
+- the assumptions and a `scope` line: the floor is a lower bound from
+  published peak rates under those assumptions, and the ratio is one total for
+  the call
 
 ## In search
 
@@ -53,9 +56,9 @@ arm = ArmConfig(name="search", n_candidates=4, hardware="rtx-4090",
                 model_profile={"params": 14_770_033_664, "weight_bytes": 8_988_111_146})
 ```
 
-A candidate with no timing or no provider token counts is counted as untimed.
-The receipt never guesses its tokens. Without `hardware`, search writes no cost
-section.
+A candidate missing its timing or its provider token counts is counted as
+untimed, and the receipt records tokens as reported. Search writes a cost section
+when `hardware` is set.
 
 ## Measured on a real run
 
@@ -68,7 +71,7 @@ bar set before the floor was computed.
 | hard_v2 | 550 | 1482 s | 1092 s | 1.36 | 1.33 [1.30, 1.50] | 0 |
 | hard | 50 | 87 s | 39 s | 2.25 | 1.32 [1.30, 1.61] | 0 |
 
-- No call ran faster than its floor, so the floor held as a lower bound on
+- Every call took at least its floor, so the floor held as a lower bound on
   this run.
 - Decode is 99% of the floor, and decode is bound by memory bandwidth.
 - The typical call sits about a third above the limit.
@@ -88,4 +91,4 @@ The full summaries are in `project-docs/records/cost-floor/`.
 - The floor ignores KV-cache reads and activations, so it is optimistic for
   long contexts.
 - The rates are peak figures that assume full use of the chip.
-- A ratio says how much time was lost. It does not say where the time went.
+- A ratio says how much time was lost; a profiler says where it went.

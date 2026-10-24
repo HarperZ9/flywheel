@@ -22,13 +22,14 @@ from pathlib import Path
 import pytest
 
 from harness.bundle import (
-    pack_bundle, verify_bundle, BundleError, MANIFEST_NAME, scan_for_secrets,
-    safe_relative,
+    pack_bundle, verify_bundle, BundleError, MANIFEST_NAME, SCHEMA, SCHEMA_V1,
+    scan_for_secrets, safe_relative,
 )
 from harness.receipt import Receipt
 from harness.receipt_fields import (
     Budget, Denominator, EvidenceKind, Tier)
 from harness.receipt_sign import unsigned, hmac_sign, ed25519_attach
+from harness.scope import LEGACY_SCOPE_KEY, scope_list
 from harness.verdict import Verdict, Attribution
 
 import receipt_factories as factories
@@ -118,7 +119,7 @@ def test_a_local_only_signature_is_stripped_at_pack_time(tmp_path):
     body = json.loads((d / "receipts" / sorted(
         os.listdir(d / "receipts"))[0]).read_text(encoding="utf-8"))
     assert body["signature"] is None
-    assert "NOT_THIRD_PARTY_VERIFIABLE_SIGNATURE" in body["receipt"]["does_not_prove"]
+    assert "LOCAL_SIGNATURE_STRIPPED" in scope_list(body["receipt"])
     assert verify_bundle(d)["verdict"] == "MATCH"
 
 
@@ -285,14 +286,25 @@ def test_a_symlink_in_the_bundle_is_refused(tmp_path):
     assert v["verdict"] in ("DRIFT", "UNVERIFIABLE")
 
 
-# --- the bundle states its own limits -----------------------------------------
+# --- the bundle states its own scope ------------------------------------------
 
-def test_the_bundle_carries_what_it_does_not_prove(tmp_path):
+def test_the_bundle_carries_what_it_covers(tmp_path):
     d = _pack(tmp_path)
     m = json.loads((d / MANIFEST_NAME).read_text(encoding="utf-8"))
-    assert m["does_not_prove"]
-    joined = " ".join(m["does_not_prove"])
-    assert "COMPLETENESS" in joined
+    assert m["schema"] == SCHEMA and LEGACY_SCOPE_KEY not in m
+    joined = " ".join(m["scope"])
+    assert "BUNDLE_CONTENTS" in joined
+    assert verify_bundle(d)["scope"] == m["scope"]
+
+
+def test_a_v1_manifest_with_the_older_name_still_verifies(tmp_path):
+    d = _pack(tmp_path)
+    m = json.loads((d / MANIFEST_NAME).read_text(encoding="utf-8"))
+    m[LEGACY_SCOPE_KEY] = m.pop("scope")
+    m["schema"] = SCHEMA_V1
+    (d / MANIFEST_NAME).write_text(json.dumps(m), encoding="utf-8")
+    v = verify_bundle(d)
+    assert v["verdict"] == "MATCH" and v["scope"] == m[LEGACY_SCOPE_KEY]
 
 
 def test_verification_reports_signature_state_per_receipt(tmp_path):

@@ -50,9 +50,10 @@ from .acp_client import AcpClient, AuthRequired, VersionUnsupported
 from .acp_connection import ConnectionClosed, PeerError
 from .acp_policy import AllowAll, DenyAll, WorkspacePolicy
 from .acp_turn import END_TURN, REFUSAL
-from .acp_witness import AcpWitness, does_not_prove, transcript_resolver
+from .acp_witness import AcpWitness, scope, transcript_resolver
 from .action_witness import open_log, verify_log
 from .byte_witness_verify import MATCH, TAMPERED
+from .scope import scope_list
 
 OK, FAILED, UNCHECKED = 0, 1, 3
 
@@ -172,8 +173,8 @@ def _render_verify(result: dict) -> str:
         lines.append(f"failure          {result['failure_class']}")
     if result["broken_at"] is not None:
         lines.append(f"broken at        record {result['broken_at']}")
-    lines += ["", result["detail"], "", "does not prove:"]
-    lines += [f"  - {limit}" for limit in result["does_not_prove"]]
+    lines += ["", result["detail"], "", "scope:"]
+    lines += [f"  - {line}" for line in scope_list(result)]
     return "\n".join(lines)
 
 
@@ -232,13 +233,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="flywheel acp", allow_abbrev=False,
                                      description=__doc__.splitlines()[0])
     parser.add_argument("--limits", action="store_true",
-                        help="print what an ACP run record does not prove.")
+                        help="print the scope of an ACP run record.")
     sub = parser.add_subparsers(dest="command")
     _add_run(sub)
     _add_verify(sub)
     args = parser.parse_args(argv)
     if args.limits:
-        print("\n".join(f"  - {limit}" for limit in does_not_prove()))
+        print("\n".join(f"  - {line}" for line in scope()))
         return OK
     if not getattr(args, "handler", None):
         parser.print_help()

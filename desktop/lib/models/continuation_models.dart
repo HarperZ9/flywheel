@@ -138,9 +138,12 @@ class ContinuationPrivateContext extends DefensiveModel {
   }) : super(parseIssues);
   factory ContinuationPrivateContext.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
-    expectSchema(
+    expectSchemaIn(
       json,
-      'flywheel.native-continuation-private-context/v1',
+      const {
+        'flywheel.native-continuation-private-context/v2',
+        'flywheel.native-continuation-private-context/v1',
+      },
       issues,
     );
     final context = _object(json['context_package'], 'context_package', issues);
@@ -326,7 +329,14 @@ class ContinuationStartResult extends DefensiveModel {
   }) : super(const []);
   factory ContinuationStartResult.fromJson(Map<String, Object?> json) {
     final issues = <ParseIssue>[];
-    expectSchema(json, 'flywheel.native-continuation-start/v1', issues);
+    expectSchemaIn(
+      json,
+      const {
+        'flywheel.native-continuation-start/v2',
+        'flywheel.native-continuation-start/v1',
+      },
+      issues,
+    );
     final ack = JourneyMutationAck.fromJson(
       _object(json['journey'], 'journey', issues),
     );

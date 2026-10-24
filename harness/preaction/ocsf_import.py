@@ -5,7 +5,8 @@ OpenShell writes OCSF v1.8.0 events as JSONL: gateway-side at the path set in
 Its docs call collection best-effort and the records are unsigned. This
 importer reads one file, turns each event into a sealed, chained
 `flywheel.openshell-event/v1` record in an import store, and closes the import
-with one `flywheel.openshell-import/v1` summary record.
+with one `flywheel.openshell-import/v2` summary record (v1 summaries, which
+carry the older scope field name, still read).
 
 Mapping (per event): action Allowed is a MATCH for the network or process
 fact; Denied or Blocked is a BLOCK evidence row; class 2004 (Detection
@@ -38,14 +39,15 @@ from .contract import canonical_json, sha256_hex
 from .records import HoldStore
 
 EVENT_SCHEMA = "flywheel.openshell-event/v1"
-IMPORT_SCHEMA = "flywheel.openshell-import/v1"
+IMPORT_SCHEMA_V1 = "flywheel.openshell-import/v1"
+IMPORT_SCHEMA = "flywheel.openshell-import/v2"  # v2 names `scope`
 GATEWAY_PRODUCT = "OpenShell Gateway"
 _LOSS = ("openshell_ocsf_log_dropped_total", "openshell_ocsf_log_writer_errors_total",
          "openshell_ocsf_log_recovery_discarded_bytes_total")
 _METRIC = re.compile(r"^([a-zA-Z_:][a-zA-Z0-9_:]*)(\{[^}]*\})?\s+([-+0-9.eE]+|NaN|[+-]Inf)\s*")
-DOES_NOT_PROVE = ("The seal shows what Flywheel read from the OCSF file. OpenShell records are "
-                  "unsigned at source, so it does not show what OpenShell saw, and a MATCH on "
-                  "completeness shows only that the gateway's loss counters read zero.")
+SCOPE = ("The seal covers what Flywheel read from the OCSF file. OpenShell records are "
+         "unsigned at source, so the sealed account starts at this import. A MATCH on "
+         "completeness shows the gateway's loss counters read zero.")
 
 
 def evidence_for(event: dict) -> str:
@@ -179,6 +181,6 @@ def import_file(path, home, *, metrics_text: str | None = None) -> dict:
                "first_time": min(times) if times else 0, "last_time": max(times) if times else 0,
                "metrics_sha256": sha256_hex(metrics_text.encode("utf-8")) if metrics_text else "",
                "completeness": verdict, "completeness_reasons": reasons,
-               "does_not_prove": DOES_NOT_PROVE}
+               "scope": SCOPE}
     store.append(summary)
     return summary

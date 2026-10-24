@@ -155,9 +155,9 @@ class EncoderClassifierRuntime:
                     "automatic_selection_enabled": False,
                     "reason": "uncalibrated_neural_scores",
                 },
-                "does_not_prove": [
-                    "calibrated probability, label truth, or held-out workflow quality",
-                    "authorization, execution safety, semantic correctness, or verifier acceptance",
+                "scope": [
+                    "raw softmax-like scores for this request, uncalibrated",
+                    "an advisory ranking; authorization, execution and acceptance stay with the verifier",
                 ],
             })
         self._sync()

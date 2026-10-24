@@ -228,3 +228,11 @@ def test_journey_consumers_keep_integrity_and_missing_evidence(tmp_path, problem
     assert fact["receipt_state"] == ("DRIFT" if problem == "digest-drift" else "missing")
     if problem != "digest-drift":
         assert result["projection"]["missing_evidence"]
+
+
+def test_v2_review_names_scope_once_per_record(tmp_path):
+    result = load(tmp_path, capture(tmp_path))
+    assert result["schema"] == "flywheel.norvane-capture-review/v2"
+    assert result["scope"] and all(isinstance(item, str) for item in result["scope"])
+    assert "scope" not in result["recomputed"]
+    assert result["recomputed"]["checked_scope"] == "recorded_shell_return_codes_and_JSON_consistency"

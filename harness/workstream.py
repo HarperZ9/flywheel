@@ -26,7 +26,7 @@ Four properties:
   3. PINNED ENVIRONMENTS TRAVEL. Every environment reached from the goal lands in
      the receipt. A proof checked under one Mathlib and a reading taken on one
      instrument do not merge into a single unlabelled claim.
-  4. does_not_prove IS DERIVED. workstream_receipt.py computes it from what
+  4. scope IS DERIVED. workstream_receipt.py computes it from what
      actually settled, never from the caller, and never leaves it empty.
 """
 from __future__ import annotations
@@ -36,7 +36,8 @@ from dataclasses import dataclass
 from harness.evidence_json import canonical_sha256
 from harness.verdict import Verdict
 
-SCHEMA = "flywheel.workstream/v1"
+SCHEMA = "flywheel.workstream/v2"
+SCHEMA_V1 = "flywheel.workstream/v1"
 
 # What kind of thing decided this obligation. The kind is part of the hashed
 # identity because "the numbers agree" and "a proof assistant accepted it" are

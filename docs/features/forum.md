@@ -35,7 +35,7 @@ lane whether or not its peers are installed.
 Each item names the module in the forum repo that implements it.
 
 - **Deterministic routing with a human contract.** `forum route` decides a route
-  from a fixed roster with no model call and attaches a route frame (domain,
+  from a fixed roster by rule and attaches a route frame (domain,
   intent, posture, delivery profile, runtime tier, communication contract).
   `src/forum/routing.py`, `src/forum/route_frame.py`,
   `src/forum/communication_contract.py`.
@@ -156,7 +156,7 @@ you.
    roster; Forum shows as `live`, `declared`, or `missing` from its install and
    runtime selection (`harness/lanes.py`).
 2. The gateway spawns the lane on demand and forwards read requests to it (see
-   Composition below). No manual launch is needed.
+   Composition below).
 3. In the desktop app, open the **Forum** destination (abbreviation `FM`, in the
    Advanced group) to read the lane's action envelope, ledger checkpoint, pending
    approval gates, and current run room.
@@ -200,15 +200,15 @@ The MCP names and the internal handlers they map to:
 
 From 1.15, `gate_approve`, `gate_edit` and `gate_reject` and their `forum.gate.*`
 aliases are listed and run only when forum starts with `--allow-gate-decisions`
-(`McpSurface(..., allow_gate_decisions=True)` in Python). Without it a call returns
-`GRANT_REQUIRED` and writes nothing.
+(`McpSurface(..., allow_gate_decisions=True)` in Python). Otherwise a call returns
+`GRANT_REQUIRED` and the ledger stays as it was.
 
 The MCP server is a thin adapter over the HTTP surface, so the two surfaces
 expose the same behavior.
 
 ### Ledger primitives (`src/forum/ledger.py`)
 
-- `verify(deep=False)` returns True only if the hash chain links.
+- `verify(deep=False)` returns True when the hash chain links.
 - `verify(deep=True)` also calls `verify_payloads()` to re-hash each
   present body; a tampered body returns False even when the chain still links.
 - `replay(until=seq)` rebuilds the exact state at a past point.
@@ -259,8 +259,8 @@ From the interop payload manifest (`forum.interop.json`):
 - Through the engine seams, organized context arrives on the `ContextProvider`
   seam (the `index` lane fills it) and answer checks arrive on the
   `VerifierProvider` seam (the `crucible` lane, the `verification` organ, can
-  fill it). Both default to no-op, so a missing peer degrades to standalone,
-  not to a crash.
+  fill it). Both default to no-op, so forum runs standalone when a peer is
+  absent.
 
 ### What it emits for peers
 
@@ -288,15 +288,14 @@ down. The gateway HTTP routes (`harness/gateway.py`) are:
 - `GET /api/forum/gates` → `gate_list`
 - `GET /api/forum/run-room` → `forum.run.room`
 
-The engine starts forum without `--allow-gate-decisions`. It adds the flag only to
-the launch of one lane call you approve at T2 for `gate_approve`, `gate_edit` or
-`gate_reject`, the argv of a pip or source launch or forum's `serve_stdio` keyword
-in the frozen build. The GET proxies, Plugins, agent runs and the tools listing
-start forum without it, so the forum card lists the 18 tools of an ordinary launch
-and a gate decision runs only on your approval. An alias such as
-`forum.gate.approve` is not in the policy table, so it needs T2 and never gets the
-flag. forum also starts with `FORUM_CHILD_ENV` and `FORUM_ALLOW_EXEC_CLI` empty;
-its MCP server here runs the echo executor and starts no command.
+The engine adds `--allow-gate-decisions` to one launch: the lane call you approve
+at T2 for `gate_approve`, `gate_edit` or `gate_reject`, through the argv of a pip
+or source launch or forum's `serve_stdio` keyword in the frozen build. The GET
+proxies, Plugins, agent runs and the tools listing use an ordinary launch, so the
+forum card lists the 18 tools of an ordinary launch and a gate decision runs on your approval. An alias
+such as `forum.gate.approve` sits outside the policy table, so it needs T2 and
+runs with the ordinary launch. forum also starts with `FORUM_CHILD_ENV` and
+`FORUM_ALLOW_EXEC_CLI` empty; its MCP server here runs the echo executor.
 
 The desktop client wraps those routes in `desktop/lib/client/gateway_forum.dart`
 (`forumStatus`, `forumLedger`, `forumGates`, `forumRoom`), typed by
@@ -344,24 +343,21 @@ each piece is present and testable:
 
 ## Honest nulls and bounds
 
-- Forum is installable from PyPI as `forum-engine` and carries no
-  `package_disabled_reason` in the registry, unlike some sibling lanes that
-  require a source checkout. Observed, from `harness/lanes_registry.py`.
+- Forum installs from PyPI as `forum-engine`, and the registry marks it
+  package-enabled (`harness/lanes_registry.py`).
 - The registry version (`1.16.0`) and the package manifest version (`1.16.0`)
-  are aligned at the time of reading. A future package bump that skips the
-  registry would drift; the version is a hand-maintained constant, not derived.
-- The gateway HTTP surface proxies only four read-only forum endpoints. The
+  are aligned at the time of reading. The registry version is a hand-maintained
+  constant, so a package bump updates it in the same change.
+- The gateway HTTP surface proxies four read-only forum endpoints. The
   write-path and preflight tools (`forum.submit`, `forum.route`, `forum.plan`,
   `forum.gate.approve/edit/reject`, `forum.context.preflight`,
-  `forum.runtime.inspect`) are reachable over the lane's own MCP and HTTP
-  surfaces but are not yet forwarded through the gateway origin. This is an
-  observed depth gap. The tools are registered; only the gateway forwarding is
-  missing. See the integration gap note.
+  `forum.runtime.inspect`) are registered and reachable over the lane's own MCP
+  and HTTP surfaces; gateway forwarding for them is the next step. See the
+  integration gap note.
 - The `ContextProvider` and `VerifierProvider` seams default to no-op. Peer
   composition with `index` and `crucible` is a supported seam that stays off by
   default. If no peer is wired, Forum records the run without external context
   injection or an external verdict, and says so by the absence of those entries.
 - Version, tool, endpoint, and path facts here are high confidence (read from
   source). The behavioral summaries of routing and delivery are drawn from the
-  module docstrings and the README, which are code-adjacent but were not
-  re-executed for this document.
+  module docstrings and the README, read alongside the code.

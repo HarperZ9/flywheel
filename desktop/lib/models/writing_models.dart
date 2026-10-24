@@ -1,3 +1,5 @@
+import 'scope_field.dart';
+
 class WritingStatus {
   final List<WritingProjectSummary> projects;
   const WritingStatus({required this.projects});
@@ -66,7 +68,9 @@ class WritingProjectView {
   final List<WritingSection> sections;
   final List<Map<String, dynamic>> diagnostics, cards, candidates;
   final List<Map<String, dynamic>> decisions, reviews, exports;
-  final List<String> doesNotProve;
+  /// What the project view covers: a v2 view's `scope`, or a v1 view's list
+  /// under the older key.
+  final List<String> scope;
 
   const WritingProjectView({
     required this.projectRef,
@@ -80,7 +84,7 @@ class WritingProjectView {
     required this.decisions,
     required this.reviews,
     required this.exports,
-    required this.doesNotProve,
+    required this.scope,
   });
 
   factory WritingProjectView.fromJson(Map<String, dynamic> json) {
@@ -98,7 +102,7 @@ class WritingProjectView {
       decisions: _records(json['decisions']),
       reviews: _records(json['reviews']),
       exports: _records(json['exports']),
-      doesNotProve: _strings(json['does_not_prove']),
+      scope: _strings(scopeOf(json)),
     );
   }
 

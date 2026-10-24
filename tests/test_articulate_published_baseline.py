@@ -7,6 +7,7 @@ import sys
 import unittest
 
 from harness import lane_tool_policy as policy
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.lanes_registry import LANES
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -74,7 +75,13 @@ assert accepted['receipt']['backend'] == 'host' and accepted['attempts'] == []
 refused = call('edit_submit', {'text': original, 'rewrite': original.replace('14', '15'),
                               'plan_id': plan['plan_id']})
 assert refused['text'] == original and refused['refused']
-assert 'semantic equivalence' in accepted['receipt']['does_not_prove']
+# Articulate v0.6.0 names its receipt coverage with the older key; from #71 on it
+# writes `scope`. The older text names semantic equivalence as outside the check.
+receipt = accepted['receipt']
+if sys.argv[2] in receipt:
+    assert 'semantic equivalence' in receipt[sys.argv[2]]
+else:
+    assert receipt['scope']
 claims = 'The change may help some users. It does not prove safety.'
 plan = call('edit_plan', {'text': claims})
 positive = 'The change may help some users, and it does not prove safety.'
@@ -95,7 +102,8 @@ for candidate in [quoted.replace('"reviewed"', '"verified"'),
 print(json.dumps({'host_edit': 'PASS', 'changed_number': 'REFUSED',
                   'claim_features': 'REFUSED', 'quote_url': 'REFUSED', 'external_io': 'NONE'}))
 '''
-        result = subprocess.run([sys.executable, "-S", "-c", code, str(source / "src")],
+        result = subprocess.run([sys.executable, "-S", "-c", code, str(source / "src"),
+                                 LEGACY_SCOPE_KEY],
                                 capture_output=True, text=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(json.loads(result.stdout), {

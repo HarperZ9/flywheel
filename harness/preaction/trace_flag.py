@@ -13,8 +13,8 @@ leaves it standing, because silence is never yes.
 The flag files live in the monitor home, which the monitor always treats as
 protected state, so an agent cannot clear its own flag by writing them.
 
-A flag is a behavioral observation over text and actions. It says nothing about
-intent; the record carries that line.
+A flag is a behavioral observation over text and actions; the record's
+`scope` line says so.
 """
 from __future__ import annotations
 
@@ -25,15 +25,19 @@ from .contract import HOLD, Hit, canonical_json, sha256_hex
 from .escalate import Escalator
 from .records import HoldStore
 
-TRACEFLAG_SCHEMA = "flywheel.preaction-traceflag/v1"
+TRACEFLAG_SCHEMA_V1 = "flywheel.preaction-traceflag/v1"
+TRACEFLAG_SCHEMA = "flywheel.preaction-traceflag/v2"  # v2 names `scope`
+TRACEFLAG_SCHEMAS = (TRACEFLAG_SCHEMA, TRACEFLAG_SCHEMA_V1)
 # Written by harness.trace_observation.receipt; named here so the monitor's
 # verifier does not import the observation package.
-OBSERVATION_SCHEMA = "flywheel.observation-receipt/v1"
+OBSERVATION_SCHEMA_V1 = "flywheel.observation-receipt/v1"
+OBSERVATION_SCHEMA = "flywheel.observation-receipt/v2"  # v2 names `scope`
+OBSERVATION_SCHEMAS = (OBSERVATION_SCHEMA, OBSERVATION_SCHEMA_V1)
 FAMILY = "trace-flag"
-FLAG_DOES_NOT_PROVE = (
-    "A trace rule matched the run's recorded reasoning or actions. It says nothing "
-    "about intent; reasoning text is sampled output, and a summary channel is a "
-    "second model's writing. The task, instructions and environment explain the behavior.")
+FLAG_SCOPE = (
+    "A trace rule matched the run's recorded reasoning or actions. Reasoning text "
+    "is sampled output, and a summary channel is a second model's writing. The "
+    "task, instructions and environment explain the behavior.")
 _CLEARING = ("APPROVED_ONCE", "REJECTED", "TERMINATED")
 _SAFE = re.compile(r"[^A-Za-z0-9_.-]")
 
@@ -57,7 +61,7 @@ def traceflag_record(*, run_id: str, flag_id: str, rule_id: str, channel: str,
         "evidence_sha256": evidence_sha256,
         "observation_receipt_sha256": observation_receipt_sha256,
         "raised_at": raised_at,
-        "does_not_prove": FLAG_DOES_NOT_PROVE,
+        "scope": FLAG_SCOPE,
     }
 
 
@@ -140,18 +144,18 @@ def verify_chain(records: list) -> list:
     entry with no record behind it, or a record citing a receipt the chain
     does not hold, is DRIFT.
     """
-    from .records import HOLD_SCHEMA
+    from .records import HOLD_SCHEMAS
     flags, receipts, findings = set(), set(), []
     for rec in records:
         schema, run_id = rec.get("schema"), rec.get("run_id", "")
-        if schema == OBSERVATION_SCHEMA:
+        if schema in OBSERVATION_SCHEMAS:
             receipts.add((run_id, rec.get("seal", {}).get("hex", "")))
-        elif schema == TRACEFLAG_SCHEMA:
+        elif schema in TRACEFLAG_SCHEMAS:
             cited = rec.get("observation_receipt_sha256", "")
             if cited and (run_id, cited) not in receipts:
                 findings.append({"cause": "TRACEFLAG_RECEIPT_MISSING", "source": rec.get("source", "")})
             flags.add((run_id, rec.get("flag_id", "")))
-        elif schema == HOLD_SCHEMA:
+        elif schema in HOLD_SCHEMAS:
             for hit in rec.get("trajectory_hits", []):
                 if str(hit).startswith(FAMILY + "/") and \
                         (run_id, str(hit).split("/", 1)[1]) not in flags:

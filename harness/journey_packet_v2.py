@@ -12,29 +12,21 @@ import stat
 from .evidence_json import canonical_bytes, canonical_sha256
 from .journey_lock import fsync_directory
 from .journey_projection import reduce_events
+from .journey_packet_vocab import CURRENT, SCOPE, V1, Vocabulary, vocabulary_for
 from .journey_types import PROJECTION_SCHEMA, validate_event
 
-PACKET_SCHEMA = "flywheel.evidence-packet/v1"
+# v2 schemas name the scope list `scope`; v1 packets still recheck (see vocab).
+PACKET_SCHEMA, PACKET_SCHEMA_V1 = CURRENT.packet_schema, V1.packet_schema
 PACKET_PROFILE = "flywheel.evidence-journey-custody/v2"
-MANIFEST_SCHEMA = "flywheel.evidence-journey-custody-manifest/v1"
+MANIFEST_SCHEMA, MANIFEST_SCHEMA_V1 = CURRENT.manifest_schema, V1.manifest_schema
 TREE_SCHEMA = "flywheel.evidence-journey-custody-tree/v2"
-RECEIPT_SCHEMA = "flywheel.evidence-journey-custody-receipt/v1"
+RECEIPT_SCHEMA, RECEIPT_SCHEMA_V1 = CURRENT.receipt_schema, V1.receipt_schema
 MAX_FILE, MAX_FILES, MAX_DEPTH = 1_048_576, 32, 8
 PACKET_FILES = (
     "criterion.json", "custody_receipt.json", "events.json",
     "projection.json", "tree_head.json",
 )
 SOURCE_FILES = ("events.json", "projection.json", "tree_head.json")
-DOES_NOT_PROVE = (
-    "NOT_PROVES_CLAIM_CORRECTNESS: custody structure does not decide any claim.",
-    "NOT_PROVES_EVIDENCE_COMPLETENESS: carried events may omit relevant evidence.",
-    "NOT_PROVES_EXECUTION_CONTAINMENT: this packet performs no contained execution.",
-    "NOT_PROVES_ORIGIN_AUTHENTICITY: an unsigned packet has no authenticated author.",
-    "NOT_PROVES_LIVE_PROVIDER_STATE: offline recheck makes no provider or network call.",
-    "NOT_PROVES_DURABLE_FILESYSTEM: recheck does not prove durability outside tested boundaries.",
-    "NOT_PROVES_FINAL_EXPORTED_HEAD: the packet binds pre-export H0, not final H1.",
-    "NOT_PROVES_CROSS_VERSION_CHECKER_EQUIVALENCE: local checker versions may differ.",
-)
 
 def _duplicate_safe(pairs: list[tuple[str, object]]) -> dict:
     value = {}
@@ -100,8 +92,9 @@ def _inventory(root: Path, names=PACKET_FILES) -> list[dict]:
     return [{"path": name, "sha256": _digest((root / name).read_bytes()),
              "bytes": (root / name).stat().st_size} for name in names]
 def _criterion(events: list[dict], projection: dict, tree: dict,
-               inventory_sha256: str, checker_source_sha256: str | None = None) -> dict:
-    value = {"schema": PACKET_SCHEMA, "profile": PACKET_PROFILE,
+               inventory_sha256: str, checker_source_sha256: str | None = None,
+               vocab: Vocabulary = CURRENT) -> dict:
+    value = {"schema": vocab.packet_schema, "profile": PACKET_PROFILE,
         "journey_ref": projection["journey_ref"],
         "source_event_head_sha256": events[-1]["event_sha256"],
         "source_projection_sha256": canonical_sha256(projection),
@@ -109,12 +102,12 @@ def _criterion(events: list[dict], projection: dict, tree: dict,
         "inventory_sha256": inventory_sha256,
         "checker_id": "harness.journey_packet_v2",
         "checker_source_sha256": checker_source_sha256 or _checker_sha256(),
-        "does_not_prove": list(DOES_NOT_PROVE)}
+        vocab.scope_key: list(vocab.scope)}
     value["criterion_sha256"] = canonical_sha256(value)
     return value
 
-def _receipt(criterion: dict) -> dict:
-    value = {"schema": RECEIPT_SCHEMA, "profile": PACKET_PROFILE,
+def _receipt(criterion: dict, vocab: Vocabulary = CURRENT) -> dict:
+    value = {"schema": vocab.receipt_schema, "profile": PACKET_PROFILE,
         "journey_ref": criterion["journey_ref"],
         "source_event_head_sha256": criterion["source_event_head_sha256"],
         "source_projection_sha256": criterion["source_projection_sha256"],
@@ -122,7 +115,7 @@ def _receipt(criterion: dict) -> dict:
         "inventory_sha256": criterion["inventory_sha256"],
         "checker_id": criterion["checker_id"],
         "checker_source_sha256": criterion["checker_source_sha256"],
-        "structural_verdict": "MATCH", "does_not_prove": list(DOES_NOT_PROVE)}
+        "structural_verdict": "MATCH", vocab.scope_key: list(vocab.scope)}
     value["receipt_sha256"] = canonical_sha256(value)
     return value
 def pack_journey_custody_packet(staging_dir: Path, *, events: list[dict],
@@ -149,8 +142,7 @@ def pack_journey_custody_packet(staging_dir: Path, *, events: list[dict],
     _write_exclusive(out / "custody_receipt.json", _receipt(criterion))
     files = _inventory(out)
     manifest = {"schema": MANIFEST_SCHEMA, "profile": PACKET_PROFILE,
-        "files": files, "inventory_sha256": inventory_sha,
-        "does_not_prove": list(DOES_NOT_PROVE)}
+        "files": files, "inventory_sha256": inventory_sha, "scope": list(SCOPE)}
     _write_exclusive(out / "manifest.json", manifest)
     fsync_directory(out)
     return verify_journey_custody_packet(out)
@@ -181,11 +173,11 @@ def _preflight(root: Path) -> tuple[dict, dict[str, object], dict[str, bytes]]:
         raise ValueError("manifest is malformed")
     return manifest, parsed, blobs
 
-def _manifest(manifest: dict, blobs: dict[str, bytes]) -> str | None:
-    keys = {"schema", "profile", "files", "inventory_sha256", "does_not_prove"}
-    if (set(manifest) != keys or manifest.get("schema") != MANIFEST_SCHEMA
+def _manifest(manifest: dict, blobs: dict[str, bytes], vocab: Vocabulary) -> str | None:
+    keys = {"schema", "profile", "files", "inventory_sha256", vocab.scope_key}
+    if (set(manifest) != keys or manifest.get("schema") != vocab.manifest_schema
             or manifest.get("profile") != PACKET_PROFILE
-            or manifest.get("does_not_prove") != list(DOES_NOT_PROVE)
+            or manifest.get(vocab.scope_key) != list(vocab.scope)
             or type(manifest.get("files")) is not list):
         raise ValueError("manifest schema or profile is invalid")
     names = []
@@ -211,7 +203,8 @@ def _self_hash(value: object, field: str) -> bool:
     return claimed == canonical_sha256({key: item for key, item in value.items()
                                         if key != field})
 
-def _semantic(parsed: dict[str, object], manifest: dict) -> tuple[dict, dict]:
+def _semantic(parsed: dict[str, object], manifest: dict,
+              vocab: Vocabulary) -> tuple[dict, dict]:
     events, projection = parsed["events.json"], parsed["projection.json"]
     if type(events) is not list or not events or type(projection) is not dict:
         raise ValueError("events or projection is malformed")
@@ -234,10 +227,10 @@ def _semantic(parsed: dict[str, object], manifest: dict) -> tuple[dict, dict]:
                         if item.get("path") in SOURCE_FILES]
     inventory_sha = canonical_sha256(source_inventory)
     expected_criterion = _criterion(checked, projection, expected_tree,
-        inventory_sha, criterion["checker_source_sha256"])
+        inventory_sha, criterion["checker_source_sha256"], vocab)
     if (tree != expected_tree or criterion != expected_criterion
             or not _self_hash(criterion, "criterion_sha256")
-            or receipt != _receipt(expected_criterion)
+            or receipt != _receipt(expected_criterion, vocab)
             or not _self_hash(receipt, "receipt_sha256")
             or manifest.get("inventory_sha256") != inventory_sha):
         raise ValueError("custody facts drift")
@@ -249,7 +242,7 @@ def _failure(verdict: str, detail: str, *, structural: str | None = None) -> dic
         "authenticity_verdict": "UNVERIFIABLE",
         "checker_source_verdict": "UNVERIFIABLE",
         "rehash_resistance_verdict": "UNVERIFIABLE", "detail": detail,
-        "does_not_prove": list(DOES_NOT_PROVE)}
+        "scope": list(SCOPE)}
 
 def verify_journey_custody_packet(packet_dir: Path, *,
         expected_manifest_sha256: str | None = None) -> dict:
@@ -272,10 +265,11 @@ def verify_journey_custody_packet(packet_dir: Path, *,
                 result["rehash_resistance_verdict"] = "DRIFT"
                 result["packet_digest"] = packet_digest
                 return result
-        drift = _manifest(manifest, blobs)
+        vocab = vocabulary_for(manifest.get("schema"))
+        drift = _manifest(manifest, blobs, vocab)
         if drift is not None:
             return _failure("DRIFT", drift)
-        projection, criterion = _semantic(parsed, manifest)
+        projection, criterion = _semantic(parsed, manifest, vocab)
     except (KeyError, OSError, TypeError, ValueError, RecursionError) as exc:
         detail = str(exc)
         semantic = any(word in detail for word in (
@@ -297,4 +291,4 @@ def verify_journey_custody_packet(packet_dir: Path, *,
         "source_event_head_sha256": criterion["source_event_head_sha256"],
         "source_projection_sha256": criterion["source_projection_sha256"],
         "packet_digest": packet_digest, "files_checked": len(PACKET_FILES),
-        "does_not_prove": list(DOES_NOT_PROVE)}
+        "scope": list(SCOPE)}

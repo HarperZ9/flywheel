@@ -1,13 +1,17 @@
-# Native agent trace boundary v1
+# Native agent trace boundary v2
 
 The operation result envelope remains `flywheel.gateway-operation-result/v1`.
-Its `result` is a `flywheel.gateway-agent-projection/v1` metadata projection.
+Its `result` is a `flywheel.gateway-agent-projection/v2` metadata projection.
 Progress uses the same projection schema, with state `running`. Clients render
 the state and counts without looking for a copied `final`, tool output, or goal.
 
 Fields: `schema`, `operation_ref`, `journey_ref`, `state`, `trace_ref`,
 `record_count`, `trace_head_sha256`, `projection_sha256`, `omissions`,
-`does_not_prove`. `projection_sha256` hashes all other projection fields using
+`scope`. `scope` is `TRACE_AS_RECORDED`, `TOOL_OUTPUT_BOUNDED` and
+`ACCEPTED_PREFIX_ONLY_UNTIL_COMPLETED`: the trace as recorded, tool output
+within the recorder's bounds, and the accepted prefix until the run completes.
+A v1 projection carries its list under the older name with its v1 codes and
+still validates. `projection_sha256` hashes all other projection fields using
 canonical JSON. `trace_ref` is `agt_` followed by 32 lowercase hex digits, derived
 from the owner, Journey, and operation binding. The trace head hashes the last
 accepted private record, not the projection. Failed results also carry the fixed
@@ -59,7 +63,7 @@ sealed results remain readable. Private detail navigation uses
 The existing authenticated operation route resolves the trusted owner and Journey.
 Each response carries one original record (at most 8 MiB canonical JSON),
 its hash, `record_count`, and `next_sequence` (null at the currently accepted end).
-The detail schema is `flywheel.gateway-agent-trace-detail/v1`. These content-bearing
+The detail schema is `flywheel.gateway-agent-trace-detail/v2`. These content-bearing
 responses belong in the private detail UI, never global history or scaffold feeds.
 Completed reads also compare the private chain head/count to the sealed projection.
 `record_canonical_base64` carries the exact canonical bytes excluding only

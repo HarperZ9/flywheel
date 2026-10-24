@@ -92,6 +92,26 @@ void main() {
         review.mcpAdmission?.runtimeToolNames, const ['mcp_synthetic__echo']);
   });
 
+  test('v1 and v2 MCP admission reviews each read their own scope key', () {
+    final v2 = GatewayAgentMcpAdmissionReview.fromJson(
+        gatewayMcpAdmissionReview, 'mcp_admission');
+    expect(v2.invalidResponse, isFalse);
+    expect(v2.servers.single.scopeLabel, contains('catalog authority'));
+
+    final v1 = GatewayAgentMcpAdmissionReview.fromJson(
+        gatewayMcpAdmissionReviewV1(), 'mcp_admission');
+    expect(v1.invalidResponse, isFalse);
+    expect(v1.servers.single.tools.single.scope.single,
+        contains('declared read-only'));
+
+    final v2WithOlderKey = gatewayMcpAdmissionReviewV1()
+      ..['schema'] = gatewayAgentMcpAdmissionReviewSchema;
+    expect(
+        GatewayAgentMcpAdmissionReview.fromJson(v2WithOlderKey, 'mcp_admission')
+            .invalidResponse,
+        isTrue);
+  });
+
   test('agent execution summary rejects unknown or malformed fields', () {
     for (final bad in [
       {...gatewayAgentExecutionReview, 'extra': 'field'},
@@ -204,7 +224,6 @@ void main() {
     expect(find.textContaining(gatewayMcpAdmissionHash.substring(0, 24)),
         findsOneWidget);
     expect(find.textContaining('synthetic / synthetic'), findsOneWidget);
-    expect(find.textContaining('declared read-only does not prove'),
-        findsOneWidget);
+    expect(find.textContaining('catalog authority records'), findsOneWidget);
   });
 }

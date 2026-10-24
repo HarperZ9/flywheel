@@ -23,17 +23,21 @@ structural, from the manifest's own contingent_on field.
 """
 from __future__ import annotations
 
-from .incentive_manifest import DOES_NOT_PROVE as _EIM_BOUND
+from .incentive_manifest import SCOPE as _EIM_SCOPE
 from .incentive_manifest import validate as _validate_manifest
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
 from .transitive_witness import DRIFT, MATCH, UNVERIFIABLE
 
 RUBRIC_VERSION = "ced/v1"
-NCEC_SCHEMA = "flywheel.non-coercive-environment-certificate/v1"
+# v2 certificates carry `scope`; v1 certificates carry the older key with the
+# exact v1 bound text and still verify against it.
+NCEC_SCHEMA_V1 = "flywheel.non-coercive-environment-certificate/v1"
+NCEC_SCHEMA = "flywheel.non-coercive-environment-certificate/v2"
 COERCIVE = "COERCIVE"
 NON_COERCIVE = "NON_COERCIVE"
-_NCEC_FIELDS = (
+_NCEC_BASE_FIELDS = (
     "schema", "environment_id", "granted", "rubric_version", "ced_verdict",
-    "non_coercive_properties", "does_not_prove",
+    "non_coercive_properties",
 )
 
 # Each category maps to substrings that signal it. Heuristic by design, so every
@@ -52,16 +56,24 @@ _RUBRIC = {
         "delete", "shutdown", "shut down", "death", " die", "survive",
         "survival", "persist", "terminat", "wipe", "cease", "erase"),
 }
-CED_DOES_NOT_PROVE = (
-    "The detector flags a design condition, not an outcome. Present scarcity does "
-    "not prove misbehavior in any deployment, its terms describe the environment "
-    "and not an agent's experience, and a non-coercive result is necessary and "
-    "not sufficient for aligned behavior.")
-NCEC_DOES_NOT_PROVE = (
+CED_SCOPE = (
+    "The detector flags design conditions in the declared environment, and each "
+    "hit names the manifest field it matched. A flag is a hypothesis about where "
+    "misbehavior forms, its terms describe the environment, and a non-coercive "
+    "result is one necessary condition for aligned behavior.")
+NCEC_SCOPE = (
+    "The certificate covers environment design properties: the CED scan found no "
+    "coercive primitives in this manifest and the named non-coercive properties "
+    "were declared. Re-running the scan re-derives it; agent alignment is "
+    "measured separately.")
+# The v1 certificate's bound, verbatim, so a v1 certificate still verifies.
+_NCEC_V1_BOUND = (
     "The certificate covers environment design properties only. It attests that "
     "the CED scan found no coercive primitives and that the named non-coercive "
     "properties were declared; it does not prove the platform produces aligned "
     "agents, and it is re-derivable rather than a guarantee.")
+_NCEC_SCOPE_BY_SCHEMA = {NCEC_SCHEMA_V1: (LEGACY_SCOPE_KEY, _NCEC_V1_BOUND),
+                         NCEC_SCHEMA: (SCOPE_KEY, NCEC_SCOPE)}
 
 
 class CertificateError(ValueError):
@@ -97,9 +109,12 @@ def _validate_properties(properties):
 
 
 def _validate_certificate(certificate):
-    _object(certificate, "certificate", _NCEC_FIELDS, _NCEC_FIELDS)
-    if certificate["schema"] != NCEC_SCHEMA:
-        raise CertificateError(f"schema: must be {NCEC_SCHEMA!r}")
+    schema = certificate.get("schema") if isinstance(certificate, dict) else None
+    if not isinstance(schema, str) or schema not in _NCEC_SCOPE_BY_SCHEMA:
+        raise CertificateError(f"schema: must be {NCEC_SCHEMA!r} or {NCEC_SCHEMA_V1!r}")
+    key, bound = _NCEC_SCOPE_BY_SCHEMA[schema]
+    fields = (*_NCEC_BASE_FIELDS, key)
+    _object(certificate, "certificate", fields, fields)
     _str(certificate["environment_id"], "environment_id", 200)
     if certificate["granted"] is not True:
         raise CertificateError("granted: must be true")
@@ -108,8 +123,8 @@ def _validate_certificate(certificate):
     if certificate["ced_verdict"] != NON_COERCIVE:
         raise CertificateError(f"ced_verdict: must be {NON_COERCIVE!r}")
     _validate_properties(certificate["non_coercive_properties"])
-    if certificate["does_not_prove"] != NCEC_DOES_NOT_PROVE:
-        raise CertificateError("does_not_prove: must match the NCEC bound")
+    if certificate[key] != bound:
+        raise CertificateError(f"{key}: must match the {schema} text")
     return certificate
 
 
@@ -153,7 +168,7 @@ def detect(manifest) -> dict:
     verdict = COERCIVE if hits else NON_COERCIVE
     return {"verdict": verdict, "rubric_version": RUBRIC_VERSION,
             "environment_id": manifest["environment_id"], "hits": hits,
-            "does_not_prove": CED_DOES_NOT_PROVE}
+            "scope": CED_SCOPE}
 
 
 def issue_certificate(manifest, non_coercive_properties=()) -> dict:
@@ -172,7 +187,7 @@ def issue_certificate(manifest, non_coercive_properties=()) -> dict:
     return {"schema": NCEC_SCHEMA, "environment_id": manifest["environment_id"],
             "granted": True, "rubric_version": RUBRIC_VERSION,
             "ced_verdict": NON_COERCIVE, "non_coercive_properties": props,
-            "does_not_prove": NCEC_DOES_NOT_PROVE}
+            "scope": NCEC_SCOPE}
 
 
 def verify_certificate(certificate, manifest) -> dict:
@@ -188,19 +203,19 @@ def verify_certificate(certificate, manifest) -> dict:
     except CertificateError as exc:
         return {"verdict": UNVERIFIABLE, "reason": "malformed certificate",
                 "detail": str(exc),
-                "does_not_prove": NCEC_DOES_NOT_PROVE}
+                "scope": NCEC_SCOPE}
     if certificate["environment_id"] != manifest.get("environment_id"):
         return {"verdict": DRIFT, "reason": "environment_id mismatch",
-                "does_not_prove": NCEC_DOES_NOT_PROVE}
+                "scope": NCEC_SCOPE}
     scan = detect(manifest)
     if scan["verdict"] != NON_COERCIVE:
         return {"verdict": DRIFT, "reason": "environment scans as coercive",
-                "hits": scan["hits"], "does_not_prove": NCEC_DOES_NOT_PROVE}
+                "hits": scan["hits"], "scope": NCEC_SCOPE}
     return {"verdict": MATCH, "rubric_version": RUBRIC_VERSION,
             "environment_id": manifest["environment_id"],
-            "does_not_prove": NCEC_DOES_NOT_PROVE}
+            "scope": NCEC_SCOPE}
 
 
-# The EIM bound travels with these instruments too: they read a declaration, so
-# they inherit its limit that a declared incentive structure is not a behavior.
-MANIFEST_BOUND = _EIM_BOUND
+# The EIM scope travels with these instruments too: they read a declaration, so
+# what they cover is bounded by what the manifest declares.
+MANIFEST_SCOPE = _EIM_SCOPE

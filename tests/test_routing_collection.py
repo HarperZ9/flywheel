@@ -22,14 +22,14 @@ def test_builtin_split_plan_is_retrospective_diagnostic_only():
         split_id="routing-test",
     )
 
-    assert plan["schema"] == "m7-routing-split-plan/v1"
+    assert plan["schema"] == "m7-routing-split-plan/v2"
     assert plan["split_family"] == "retrospective_diagnostic"
     assert plan["fresh_task_family_manifest"] is None
     assert plan["future_fresh_task_family_status"] == "unavailable_in_builtin_m7_path"
     assert plan["plan_written_before_generation"] is True
     assert plan["ordering_proof_only"] is True
-    assert any("does not prove independent preregistration" in item
-               for item in plan["does_not_prove"])
+    assert any("independent preregistration is a separate act" in item
+               for item in plan["scope"])
     assert {row["role"] for row in plan["tasks"]} == {"retrospective_diagnostic"}
     assert {row["freshness"] for row in plan["tasks"]} == {"historical_visible"}
 

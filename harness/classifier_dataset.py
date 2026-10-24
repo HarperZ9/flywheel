@@ -11,15 +11,19 @@ from .decision_contract import ID_PATTERN, DecisionContractError, validate_reque
 from .evidence_json import canonical_sha256, strict_load_json
 
 SCHEMA = "flywheel.classifier-example/v1"
-MANIFEST_SCHEMA = "flywheel.classifier-split-manifest/v1"
+MANIFEST_SCHEMA = "flywheel.classifier-split-manifest/v2"
+# v1 manifests carry the older scope field name; readers accept both versions.
+MANIFEST_SCHEMA_V1 = "flywheel.classifier-split-manifest/v1"
+MANIFEST_SCHEMAS = (MANIFEST_SCHEMA, MANIFEST_SCHEMA_V1)
 MAX_RECORD_BYTES = 131_072
 MAX_DATASET_BYTES = 16_777_216
 VALID_LABEL_KINDS = {"synthetic", "human_reviewed", "verified_outcome", "teacher"}
 VALID_SPLITS = ("train", "calibration", "test")
-DOES_NOT_PROVE = [
-    "dataset validation, label truth, model quality, or held-out workflow evidence",
-    "authorization, execution safety, result correctness, or calibration",
-    "competitive performance or a completed powerful classifier model",
+SCOPE = [
+    "record shape, identifiers and source-group split assignment for these examples",
+    "labels as each example declares them, with their declared provenance kind",
+    "a dataset manifest only; it carries no model, calibration, workflow outcome "
+    "or authorization result",
 ]
 
 
@@ -206,6 +210,6 @@ def build_split_manifest(records: list[dict], split_by_group: dict[str, str]) ->
         "examples": manifest_rows,
         "input_sha256": canonical_sha256([row["example_sha256"]
                                           for row in manifest_rows]),
-        "does_not_prove": DOES_NOT_PROVE,
+        "scope": SCOPE,
     }
     return {**body, "manifest_sha256": canonical_sha256(body)}

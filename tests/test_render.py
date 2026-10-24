@@ -39,12 +39,13 @@ def result():
 # --- the two disciplines a formatter owes -----------------------------------
 
 @pytest.mark.parametrize("fmt", ["text", "markdown", "latex"])
-def test_every_format_carries_the_optimality_caveat(result, fmt):
+def test_every_format_carries_the_one_sided_bound(result, fmt):
     """The exact surface where a checked count becomes a solved problem. The
-    caveat must survive into every human-facing format."""
-    out = render(result, fmt)
-    # LaTeX escapes the underscores, so match the part that survives escaping.
-    assert "OPTIMALITY" in out.upper()
+    BOUND_FROM_SUBMITTED_OBJECT entry must survive into every human-facing
+    format, so the result never reads as an optimality claim."""
+    out = render(result, fmt).upper()
+    # LaTeX escapes the underscores, so match the parts that survive escaping.
+    assert "BOUND" in out and "SUBMITTED" in out and "OBJECT" in out
 
 
 @pytest.mark.parametrize("fmt", ["text", "markdown", "latex"])
@@ -57,7 +58,7 @@ def test_every_format_carries_the_verdict_and_objective(result, fmt):
 @pytest.mark.parametrize("fmt", ["text", "markdown", "latex"])
 def test_a_formatter_adds_no_optimality_language(result, fmt):
     """It must not INTRODUCE a claim. The only optimality word allowed is inside
-    the NOT_PROVES_OPTIMALITY disclaimer."""
+    the scope entries the result carried."""
     low = render(result, fmt).lower()
     for banned in ("crossing number of", "optimal drawing", "minimum crossings"):
         assert banned not in low
@@ -74,10 +75,10 @@ def test_markdown_has_a_verdict_heading(result):
     assert to_markdown(result).startswith("## Verdict: PASS")
 
 
-def test_text_is_plain_and_lists_does_not_prove(result):
+def test_text_is_plain_and_lists_scope(result):
     t = to_text(result)
     assert t.startswith("verdict     : PASS")
-    assert "does not prove:" in t
+    assert "scope:" in t
 
 
 def test_an_unknown_format_is_refused(result):
@@ -120,7 +121,7 @@ def test_emitted_lean_is_self_contained(result):
     assert "native_decide" in src
 
 
-def test_emitted_lean_states_it_does_not_prove_optimality(result):
+def test_emitted_lean_states_the_optimum_stays_open(result):
     assert "optimality" in crossing_lean(crossing_cert()).lower()
 
 

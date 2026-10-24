@@ -58,8 +58,8 @@ def test_clean_claim_passes():
     assert r.passed is True
     assert r.rc == 0
     # both scope caveats travel on the accept
-    assert any("evidence" in d for d in r.does_not_prove)
-    assert any("confound" in d for d in r.does_not_prove)
+    assert any("evidence" in d for d in r.scope)
+    assert any("confound" in d for d in r.scope)
     assert r.coverage["n"] == 500
     assert r.coverage["negative_control_present"] is True
 
@@ -147,11 +147,10 @@ def test_registry_routes_ml_aliases_to_measurement():
     assert canonical_domain("measurement") == "ml"
 
 
-def test_registry_entry_carries_does_not_prove():
+def test_registry_entry_carries_its_scope():
     entry = default_registry().entry("ml")
     assert entry.oracle.oracle_type == "measurement"
-    assert any("does not prove the mechanism" in d
-               for d in entry.does_not_prove)
+    assert any("against a control" in d for d in entry.scope)
 
 
 # --- end to end through the one loop -----------------------------------------
@@ -167,7 +166,7 @@ def test_run_verified_ml_passes_with_stub_proposer(tmp_path):
     assert ev.domain == "ml"
     assert ev.verdict == Verdict.PASS.value
     assert ev.accepted is True
-    assert any("does not prove the mechanism" in d for d in ev.does_not_prove)
+    assert any("against a control" in d for d in ev.scope)
 
 
 def test_run_verified_unregistered_domain_is_unverifiable(tmp_path):

@@ -8,7 +8,7 @@ import sqlite3
 from typing import Callable
 
 from harness.context_memory_bridge import (
-    CAPTURE_RESULT_SCHEMA, CAPTURE_SCHEMA, PREFLIGHT_RESULT_SCHEMA,
+    CAPTURE_RESULT_SCHEMA, CAPTURE_SCHEMA, PREFLIGHT_RESULT_SCHEMA, PREFLIGHT_RESULT_SCHEMA_V1,
     PREFLIGHT_SCHEMA, STATUS_SCHEMA)
 
 
@@ -151,7 +151,7 @@ def _validate_capture_receipt(capture: dict, request: dict, owner_ref: str,
 
 def _validate_preflight_receipt(preflight: dict, capture: dict, source_hash: str,
                                 owner_ref: str, require) -> None:
-    require(preflight.get("schema") == PREFLIGHT_RESULT_SCHEMA,
+    require(preflight.get("schema") in (PREFLIGHT_RESULT_SCHEMA, PREFLIGHT_RESULT_SCHEMA_V1),
             "CONTEXT_PREFLIGHT_SCHEMA")
     binding = preflight.get("scope_binding") or {}
     require(binding.get("owner_ref") == owner_ref, "CONTEXT_PREFLIGHT_OWNER")

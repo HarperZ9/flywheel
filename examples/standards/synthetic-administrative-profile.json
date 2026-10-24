@@ -1,5 +1,5 @@
 {
-  "schema": "flywheel.standards-profile/v1",
+  "schema": "flywheel.standards-profile/v2",
   "profile_id": "synthetic-admin-assurance",
   "title": "Synthetic Administrative Assurance Profile",
   "version": "2026.09",
@@ -56,8 +56,8 @@
         "artifact_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
       },
       "review_required": true,
-      "does_not_prove": "This synthetic requirement validates registry mechanics only; it does not prove legal compliance, certification, or official endorsement."
+      "scope": "This synthetic requirement exercises the registry mechanics; legal compliance, certification and endorsement are outside the registry."
     }
   ],
-  "does_not_prove": "A structurally valid profile does not prove requirement truth, applicability in law, institutional approval, certification, or deployment compliance."
+  "scope": "A structurally valid profile has the registry's shape and provenance fields; requirement truth, legal applicability, approval and deployment compliance are assessed elsewhere."
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/models/journey_models.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 
 const _head =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -11,7 +12,7 @@ const _defaultCheck = <String, Object?>{
   'receipt_state': 'present_unchecked',
   'numerator': 0,
   'denominator': 1,
-  'does_not_prove': 'claim correctness',
+  'scope': 'the receipt binds this check to its claim',
 };
 const _defaultMissing = <String, Object?>{
   'kind': 'claim',
@@ -63,6 +64,7 @@ void main() {
   _closedStateTests();
   _defensiveInputTests();
   _immutabilityTests();
+  _scopeVersionTests();
 }
 
 void _projectionParsingTests() {
@@ -105,7 +107,8 @@ void _closedStateTests() {
         'receipt_state': entry.key,
         'numerator': 0,
         'denominator': 1,
-        'does_not_prove': 'truth',
+        // An older record: the check names its scope by the older key.
+        kLegacyScopeKey: 'truth',
       }, 'checks[0]');
       expect(check.receiptState, entry.value, reason: entry.key);
       expect(check.rawReceiptState, entry.key);
@@ -128,7 +131,7 @@ void _closedStateTests() {
           'receipt_state': 'SIGNED',
           'numerator': 1,
           'denominator': 1,
-          'does_not_prove': 'truth',
+          'scope': 'the receipt binds this check to its claim',
         },
       ],
     ));
@@ -186,7 +189,7 @@ void _defensiveInputTests() {
       'receipt_refs': ['receipts/existing.json'],
       'numerator': 0,
       'denominator': 1,
-      'does_not_prove': 'authenticity',
+      kLegacyScopeKey: 'authenticity',
     }, 'checks[0]');
 
     expect(check.receiptState, ReceiptState.invalidResponse);
@@ -256,7 +259,7 @@ void _immutabilityTests() {
       rawReceiptState: 'MATCH',
       numerator: 1,
       denominator: 1,
-      doesNotProve: 'truth',
+      scope: 'the receipt binds this check to its claim',
       parseIssues: const [],
     );
     receiptRefs.add('receipts/two.json');
@@ -274,5 +277,34 @@ void _immutabilityTests() {
 
     expect(failure.detail, identifier);
     expect(failure.invalidResponse, isFalse);
+  });
+}
+
+void _scopeVersionTests() {
+  test('checks and conclusions read either scope name, never both', () {
+    final olderJson = Map<String, Object?>.of(_defaultCheck)
+      ..remove(kScopeKey)
+      ..[kLegacyScopeKey] = 'truth';
+    final older = JourneyCheck.fromJson(olderJson, 'checks[0]');
+    expect(older.parseIssues, isEmpty);
+    expect(older.scope, 'truth');
+    final current = JourneyCheck.fromJson(_defaultCheck, 'checks[0]');
+    expect(current.parseIssues, isEmpty);
+    expect(current.scope, 'the receipt binds this check to its claim');
+    final both = JourneyCheck.fromJson(
+        {..._defaultCheck, kLegacyScopeKey: 'truth'}, 'checks[0]');
+    expect(both.invalidResponse, isTrue);
+
+    for (final key in kScopeKeys) {
+      final projection = JourneyProjection.fromJson(
+          _projection(conclusion: {'summary': 'Bounded', key: 'covered'}));
+      expect(conclusionScope(projection.conclusion), 'covered', reason: key);
+    }
+    final mixed = JourneyProjection.fromJson(_projection(conclusion: const {
+      'summary': 'Bounded',
+      kScopeKey: 'covered',
+      kLegacyScopeKey: 'older',
+    }));
+    expect(mixed.invalidResponse, isTrue);
   });
 }

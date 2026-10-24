@@ -13,9 +13,9 @@ measured by leaving it out of the candidate, down to single changed lines
 is dropped from the adopted edit, so a self-check edit or a wrong line cannot
 ride into the persistent harness on the back of a real fix.
 
-What a pass does not prove is stated on the result, because a small held-out
-set is a sample: it bounds the effect on that distribution, not on tasks
-unlike it.
+What a pass covers is stated on the result as its `scope`, because a small
+held-out set is a sample: it bounds the effect on that distribution, and tasks
+unlike it sit outside the bound.
 """
 from __future__ import annotations
 
@@ -171,8 +171,10 @@ def _result(decision: str, tree: st.Tree, kept: list[str], eff: dict | None,
             "gate_executions": gate.executions,
             "policy": {"alpha": gate.policy.alpha, "min_point": gate.policy.min_point,
                        "min_lower": gate.policy.min_lower, "draws": gate.policy.draws},
-            "does_not_prove": [
+            "scope": [
                 "the held-out effect bounds this set's task distribution only",
-                "a bootstrap over tasks omits between-seed variance of the executor",
-                "a pass does not show the edit is safe outside the graded criterion",
+                "the bootstrap runs over tasks; between-seed variance of the executor "
+                "sits outside it",
+                "a pass covers the graded criterion; the edit's safety beyond it is "
+                "a separate check",
             ]}

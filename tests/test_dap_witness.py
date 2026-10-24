@@ -27,7 +27,7 @@ from harness.byte_witness_verify import (BYTES_UNAVAILABLE, DIGEST_MISMATCH,
 from harness.dap_client import DapClient
 from harness.dap_policy import DenyAll
 from harness.dap_witness import (DECISION_ACTION, FRAME_ACTION, SESSION_ACTION,
-                                 STOP_ACTION, DapWitness, does_not_prove,
+                                 STOP_ACTION, DapWitness, scope,
                                  stop_summary, summarize, transcript_resolver)
 
 FAKE = [sys.executable, str(Path(__file__).parent / "fake_dap_adapter.py")]
@@ -257,7 +257,7 @@ def test_a_session_that_never_started_folds_without_inventing_numbers():
     assert summary["capabilities"] == []
     assert summary["exit_code"] is None
     assert summary["terminated"] is False
-    assert summary["does_not_prove"]
+    assert summary["scope"]
 
 
 def test_a_stop_with_nothing_attached_still_names_its_reason():
@@ -274,9 +274,9 @@ def test_a_stop_with_nothing_attached_still_names_its_reason():
     assert summary["hit_breakpoint_ids"] == []
 
 
-def test_what_the_record_does_not_prove_names_the_debuggee_limit():
-    lines = does_not_prove()
+def test_the_scope_of_the_record_names_the_debuggee_boundary():
+    lines = scope()
     assert lines
-    assert any("independent observation" in line for line in lines)
-    assert any("not evidence that the line was reached" in line
+    assert any("adapter's report of what it read" in line for line in lines)
+    assert any("reaching the line is a separate event" in line
                for line in lines)

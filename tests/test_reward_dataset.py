@@ -5,7 +5,7 @@ training signal: the prompt, the model's proposal, and a reward minted
 from the gate's verdict — never from a model's judgment. This module
 turns benches into GRPO/QLoRA-ready JSONL so the local model trains on
 proofs, on-device. The reward dataset carries the bench hash it came
-from, denominators, and does_not_prove; a dataset without a bench is a
+from, denominators, and its scope; a dataset without a bench is a
 refusal, not a guess.
 """
 import json

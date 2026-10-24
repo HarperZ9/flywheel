@@ -20,22 +20,22 @@ def _write(path, value):
 
 
 def _brief():
-    return {"schema": "flywheel.writing-project-brief/v1",
+    return {"schema": "flywheel.writing-project-brief/v2",
         "project_ref": PROJECT, "mode": "nonfiction", "form": "essay",
         "working_title": "Release evidence", "audience": "operators",
         "reader_job": "decide whether the release is safe",
         "author_intent": "bind claims to receipts",
         "voice_contract": {"style_ref": "voice_rules"},
         "source_packet_ref": "packet_main", "writing_profile": "nonfiction",
-        "does_not_prove": ["truth"]}
+        "scope": ["truth"]}
 
 
 def _source_packet():
-    return {"schema": "flywheel.writing-source-packet/v1",
+    return {"schema": "flywheel.writing-source-packet/v2",
         "project_ref": PROJECT, "source_packet_ref": "packet_main",
         "sources": [{"source_id": "src_receipt", "title": "Receipt",
         "origin": "local", "allowed_use": "cite"}],
-        "does_not_prove": ["source truth"]}
+        "scope": ["source truth"]}
 
 
 def _section():
@@ -51,7 +51,7 @@ def test_v2_authority_vocabulary_and_analyzer_provenance():
     base = {"kind": "source_marker", "basis": "none",
         "measurement_status": "unsupported", "base_revision_ref": rev_a,
         "base_body_sha256": "a" * 64, "span_refs": [], "source_refs": []}
-    diagnostic = {"schema": "flywheel.writing-reader-flow-diagnostic/v1",
+    diagnostic = {"schema": "flywheel.writing-reader-flow-diagnostic/v2",
         "project_ref": PROJECT, "diagnostic_ref": "diag_" + "a" * 32,
         "revision_ref": rev_a, "body_sha256": "a" * 64,
         "reader_state_summary": {"kind": "reader_state_summary",
@@ -62,7 +62,7 @@ def test_v2_authority_vocabulary_and_analyzer_provenance():
         "units": [], "problems": [], "revision_cards": [],
         "source_grounding": [{**base, "status": "no_source_markers",
         "message": "no bracketed source markers were present"}],
-        "does_not_prove": ["quality"]}
+        "scope": ["quality"]}
     assert validate_artifact(diagnostic, "diagnostic")["source_grounding"][0][
         "measurement_status"] == "unsupported"
     model_summary = {**diagnostic["reader_state_summary"],

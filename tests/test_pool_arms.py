@@ -101,13 +101,13 @@ def test_placebo_ignores_the_candidate_it_selects(tmp_path):
     assert best_of_k(pool, GOOD, self_scored=True)["outcomes"]["a"] is True
 
 
-def test_pass_at_k_is_monotone_and_disclaims_learning(tmp_path):
+def test_pass_at_k_is_monotone_and_scoped_to_fixed_policy_sampling(tmp_path):
     pool = _pool(tmp_path, {("a", 0): "BAD", ("a", 1): "BAD",
                             ("a", 2): "GOOD"}, 3)
     c = pass_at_k(pool, GOOD)["curve"]
     assert [c[b]["passes"] for b in (1, 2, 3)] == [0, 0, 1]
-    assert any("NOT_PROVES_LEARNING" in d
-               for d in pass_at_k(pool, GOOD)["does_not_prove"])
+    assert any("FIXED_POLICY_SAMPLING" in d
+               for d in pass_at_k(pool, GOOD)["scope"])
 
 
 # --- tasks with no candidate ------------------------------------------------

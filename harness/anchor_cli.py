@@ -144,7 +144,7 @@ def cmd_verify(args) -> int:
         results["opentimestamps"] = _verify_ots(args.ots_anchor, data, head_key)
     ok = all(r["ok"] for r in results.values())
     print(json.dumps({"ok": ok, "artifact": str(args.artifact), **results,
-                      "does_not_prove": rekor_verify.does_not_prove()}, indent=2))
+                      "scope": rekor_verify.scope()}, indent=2))
     return 0 if ok else 1
 
 

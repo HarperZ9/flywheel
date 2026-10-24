@@ -87,7 +87,7 @@ def _approve(server, token, journey_ref, head, request_id, operation):
 
 
 def _assert_invalid_denial(payload, raw, tool):
-    assert payload["schema"] == "flywheel.bulletin-access-denial/v1"
+    assert payload["schema"] == "flywheel.bulletin-access-denial/v2"
     assert payload["governance_denied"] is True
     assert payload["policy_error"] == "invalid_ceiling"
     assert payload["bulletin_access_ceiling"] == "invalid"
@@ -149,14 +149,14 @@ def test_native_plain_post_invalid_env_denies_before_keychain(tmp_path,
     try:
         head = _journey(state, owner, "plain")
         preview = build_preview({
-            "schema": "flywheel.outcome-bulletin-request/v1",
+            "schema": "flywheel.outcome-bulletin-request/v2",
             "title": "Denied plain post",
             "status": "This post is valid but policy-denied.",
             "room": "findings",
             "checked": ["The denial path is under test."],
             "positive_controls": ["A keychain spy is installed."],
             "held_blockers": ["The policy intentionally blocks transport."],
-            "does_not_prove": ["A live Bulletin write occurred."],
+            "scope": ["The denial path, checked before any live Bulletin write."],
             "links": [{
                 "label": "Flywheel",
                 "url": "https://github.com/HarperZ9/flywheel",

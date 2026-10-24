@@ -13,15 +13,15 @@ deterministically into a marked region of each instruction file.
 
 **One paragraph.** Working relationships today scatter across a dozen files with
 a dozen shapes (`CLAUDE.md`, `AGENTS.md`, `SOUL.md`, `GEMINI.md`) plus per-tool
-memory stores that do not talk to each other. Canon gives all of them one record
-envelope with five kinds and two layering scopes, a validator that refuses a
-record it cannot vouch for, storage adapters that each declare in advance what a
+memory stores, each kept apart from the rest. Canon gives all of them one record
+envelope with five kinds and two layering scopes, a validator that accepts a
+record once every rule holds, storage adapters that each declare in advance what a
 round-trip loses, a renderer that rewrites only the span between canon's own
 markers and preserves every byte outside it, and a set of read-only gates that
 check a rendered file back against the record. Inside Flywheel it is registered
 as the `continuity` organ lane, probed over MCP like the other lanes, reachable
 through the generic lane caller, and shown on the Lanes view with its own
-identity card. It imports no engine of its own for memory or block storage:
+identity card. It reuses existing engines for memory and block storage:
 `mneme` is the memory fact-engine it maps onto, Flywheel's entity store holds its
 authored blocks, and both are reached through injected, duck-typed handles.
 
@@ -35,12 +35,12 @@ authored blocks, and both are reached through injected, duck-typed handles.
 - **Two scopes that layer.** `src/canon/layering.py::resolve_blocks(pool, scope)`
   resolves a `workspace` block over a `global` block carrying the same id, keeps
   current entries only, and orders by a clock-free `create_ord` so a rebuild is
-  byte-identical. There is no `repo` scope: per-repo instruction files stay
-  hand-authored.
-- **A validator that refuses.** `src/canon/validator.py::validate_record(rec)`
-  returns a list of problems; an empty list means valid. It enforces the semantic
-  rules the envelope cannot express in its shape alone (for example, a
-  `research-artifact-ref` must not carry a temporal block).
+  byte-identical. Per-repo instruction files stay hand-authored, outside both
+  scopes.
+- **A validator.** `src/canon/validator.py::validate_record(rec)` returns a list
+  of problems; an empty list means valid. It enforces the semantic rules that sit
+  beyond the envelope's shape (for example, it rejects a `research-artifact-ref`
+  that carries a temporal block).
 - **A storage seam with declared drops.** `src/canon/backends/base.py` fixes the
   `MemoryBackend` protocol and five capability tokens (`temporal`, `audit-chain`,
   `relations`, `arbitrary-kind`, `foreign-provenance`). `guard_put` refuses a
@@ -53,8 +53,8 @@ authored blocks, and both are reached through injected, duck-typed handles.
   Flywheel's entity store and declares `temporal` dropped. The two engine
   adapters import no engine package.
 - **A byte-exact region boundary.** `src/canon/region.py` partitions a managed
-  file into `prefix + inner + suffix`; canon rewrites only `inner`, and a file
-  with no canon marker is off-limits, and canon skips it and raises no error.
+  file into `prefix + inner + suffix`; canon rewrites `inner` alone. A file
+  without canon markers is skipped quietly.
 - **A record-to-text codec and its inverse.** `src/canon/textblock.py`
   (`render_region`, `ingest_region`) projects a scope-homogeneous block set into
   the region interior and reads records back; render's refusal set is a strict
@@ -63,7 +63,7 @@ authored blocks, and both are reached through injected, duck-typed handles.
   proves a block set round-trips to canonical form, that render is idempotent,
   that bytes outside the region are preserved across a host encoding matrix, and
   that every dropped field was declared. It returns a verdict for any
-  constructible record and never propagates an exception.
+  constructible record, catching its own exceptions.
 - **A surface renderer with a fixed write allow-list.** `src/canon/surface.py`
   and `src/canon/registry.py` render a scope's blocks and write only a changed
   region, and only to four allow-listed surfaces: a global and a workspace file
@@ -72,29 +72,29 @@ authored blocks, and both are reached through injected, duck-typed handles.
 - **A whole-record Obsidian vault mirror.** `src/canon/vault.py`,
   `vault_mirror.py`, `frontmatter.py`, `vault_fidelity.py` mirror the pool into
   one markdown note per record plus a `MEMORY.md` index. The full record rides in
-  a single authoritative JSON frontmatter key, so a hand-edited note body never
-  changes the record, and no YAML loader runs on ingest.
+  a single authoritative JSON frontmatter key, so the record stays as authored
+  when someone edits a note body, and ingest reads JSON alone.
 - **A rendered-surface drift check.** `src/canon/drift.py::surface_drift`
-  re-derives each managed surface from the pool and compares only the canon-owned
-  interior, keyed by sha256, so an edit to the host's own prose outside the
-  markers is never flagged as drift.
+  re-derives each managed surface from the pool and compares the canon-owned
+  interior, keyed by sha256. The host's own prose outside the markers is free to
+  change.
 - **An injected writing gate.** `src/canon/writing_gate.py` owns the
-  per-surface profile register and the `gate_text` pipeline; canon is stdlib-only,
-  so the caller wires in the external writing linter and canon imports no linter package.
+  per-surface profile register and the `gate_text` pipeline. Canon is
+  stdlib-only, so the caller passes the writing linter in.
 - **A persona basis check.** `src/canon/persona_thesis.py` measures whether the
   source memories behind a `synthesized-persona-l3` record still resolve and are
   current, framed as falsifiable claims handed to an injected assessor.
 - **A reconcile decision and durable gate.** `src/canon/reconcile.py`,
   `reconcile_gate.py`, `reconcile_run.py` classify each surface as a mechanical
   fast-forward or a conflict a human must adjudicate, write the fast-forwards, and
-  raise a durable gate for the conflicts. This is a library call, not exposed over
-  the lane surface.
+  raise a durable gate for the conflicts. This is a library call, kept off the
+  lane surface.
 - **An aggregate verdict a build keys on.** `src/canon/canon_check.py::canon_check`
   folds four legs (drift, vault round-trip, vault symmetric round-trip, persona
-  basis) into one `ok` and an exit code; a leg whose seam is not wired reports
-  `None` and does not affect the result.
-- **A read-only MCP door.** `src/canon/local_mcp.py` serves six tools over
-  zero-dependency stdio JSON-RPC and writes nothing.
+  basis) into one `ok` and an exit code; a leg whose seam is unwired reports
+  `None` and leaves the result to the others.
+- **A read-only MCP door.** `src/canon/local_mcp.py` serves six read-only tools
+  over stdlib stdio JSON-RPC.
 
 ## Stepwise usage (running the lane)
 
@@ -107,10 +107,10 @@ Canon runs both as a standalone tool and as a Flywheel lane.
    console script stays `canon`. A source checkout also works.
 2. Point canon at your records with `CANON_BLOCKS_DIR`, and at your files with
    `CANON_HOME` and `CANON_WORKSPACE`.
-3. Ask canon what it believes, no transport in the way:
+3. Ask canon what it believes, straight from the CLI:
    ```bash
    canon blocks    # list the authored block set
-   canon check     # aggregate verdict; exits non-zero when a wired leg fails
+   canon check     # aggregate verdict; exit code 1 when a wired leg fails
    ```
 4. Serve the record set to a harness over MCP:
    ```bash
@@ -157,8 +157,8 @@ health tool. A missing canon never crashes the roster.
 
 **Generic lane caller.** `harness/lane_caller.py::call_lane_tool` spawns any
 registered lane and calls one tool, gated by the governance tier. Each canon
-tool takes the tier the lane tool policy table gives it, and a tool the table
-does not list is T2 (default deny, since 1.1.0). `list_available_lanes` returns canon with organ
+tool takes the tier the lane tool policy table gives it, and an unlisted tool
+is T2 (default deny, since 1.1.0). `list_available_lanes` returns canon with organ
 `continuity`, its min tier and each tool's tier.
 
 **Desktop identity card.** `desktop/lib/models/lane_identity.dart` holds
@@ -173,8 +173,8 @@ asserts that `set(LANES)` includes `canon`, so removing the lane fails the suite
 
 **The six MCP tools** (`src/canon/local_mcp.py`), all read-only:
 
-- `canon.status` - liveness and identity (name, version, protocol). Reads
-  nothing. This is the fast health probe.
+- `canon.status` - liveness and identity (name, version, protocol), computed in
+  process. This is the fast health probe.
 - `canon.doctor` - readiness: the block directory, how many records loaded, any
   that failed, the four writable surfaces, and whether the drift roots are set.
   Reads the block directory only. `ok` here is readiness, so it can read false
@@ -182,14 +182,14 @@ asserts that `set(LANES)` includes `canon`, so removing the lane fails the suite
 - `canon.blocks` - the authored record set (id, kind, scope, title; `full=true`
   for whole records).
 - `canon.render` - the region interior for a scope, the same text canon would
-  splice into that scope's instruction files. Writes no file.
+  splice into that scope's instruction files, returned as text.
 - `canon.validate` - validate one supplied record, or the whole block directory.
 - `canon.check` - the aggregate verdict, naming which legs ran and which are
-  unwired, so a two-leg pass is not read as a whole-repo pass.
+  unwired, so a reader sees how much of the repo a pass covers.
 
 **The CLI verbs** (`src/canon/cli.py`): `canon mcp`, `canon check`, `canon
 blocks`. `canon check` and the `canon.check` tool call the same `_check`, so a
-build gate and a harness question cannot disagree.
+build gate and a harness question always agree.
 
 ## Composition tutorial (the seam, what it consumes and emits)
 
@@ -225,7 +225,7 @@ through the shared lane machinery.
   (`canon.validate`).
 - An aggregate pass/fail verdict with an exit code (`canon.check`,
   `canon_check.py`), shaped so a build already keying on `drift_exit_code` or
-  `reconcile_exit_code` picks it up with no bespoke wiring.
+  `reconcile_exit_code` picks it up as is.
 - Readiness and liveness signals (`canon.doctor`, `canon.status`) that the lane
   probe and the desktop card read.
 
@@ -271,15 +271,15 @@ checklist names, with the fourth correctly absent:
    lane `relay` alone. Canon is a source-checkout pip lane, so it has no such
    manifest and needs none.
 
-Remaining honest nulls, none of which are lane-wiring defects:
+Open items, all outside the lane wiring:
 
 - Canon is absent from `LANE_MIN_TIERS`, so the listing's headline tier is T1.
   Every call takes its tool's tier from the policy table, and an unlisted tool is
   T2.
-- No dedicated desktop deep-view. Chorus has a `DiscourseView` destination; canon
-  is reached through the lane card and the generic `/api/lane` caller only.
-- The reconcile write-path is intentionally not exposed over MCP or the lane
-  caller. The lane surface is read-only, and rewriting instruction files stays a
+- Desktop access is the lane card and the generic `/api/lane` caller. A
+  dedicated deep view, like Chorus's `DiscourseView`, is a candidate.
+- The reconcile write-path stays off MCP and the lane caller by design. The
+  lane surface is read-only, and rewriting instruction files stays a
   library call with a human gate behind it.
 
 ## Reference layout

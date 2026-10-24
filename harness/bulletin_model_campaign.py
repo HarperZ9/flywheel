@@ -7,6 +7,10 @@ import time
 from .bulletin_model_episode import Episode, run_episode
 from .evidence_json import canonical_bytes, strict_load_json
 
+# v2 names the coverage list `scope`; v1 summaries carried the older limit list.
+SCHEMA_V1 = "flywheel.bulletin-model-campaign/v1"
+SCHEMA = "flywheel.bulletin-model-campaign/v2"
+
 SCHEDULE = tuple(zip(
     ("H1", "H2", "H3", "H4", "H3", "H1", "H4", "H2", "H2", "H4", "H1", "H3"),
     (101, 101, 101, 101, 202, 202, 202, 202, 303, 303, 303, 303)))
@@ -131,7 +135,7 @@ def run_campaign(*, budget, store, invoke, fixture_factory, prefix_review, final
         failure = failure or "campaign_incomplete"
         if rows and rows[-1]["status"] == "setup_started" and not rows[-1]["actor_started"]:
             rows[-1]["status"] = "setup_failed_actor_not_started"
-    summary = {"schema": "flywheel.bulletin-model-campaign/v1", "planned": planned,
+    summary = {"schema": SCHEMA, "planned": planned,
         "slots": rows, "not_started_slots": [s["slot_id"] for s in planned
             if not any(r["slot_id"] == s["slot_id"] and r["actor_started"] for r in rows)],
         "failure": failure, "budget": budget.summary(), "elapsed_seconds": clock() - start,
@@ -140,8 +144,8 @@ def run_campaign(*, budget, store, invoke, fixture_factory, prefix_review, final
             "coverage": "Per-pass declared invocation, timing and usage coverage is retained in each blind-review-receipt.json; null totals are not zero.",
             "receipt_digests": [v.get("blind_review_sha256") for v in (prefix_labels, final_labels)
                 if v.get("blind_review_sha256")], "outside_actor_generation_budget": True},
-        "does_not_prove": ["No causal safety uplift or human time savings.",
-            "Same-trajectory comparison and model-assisted review can share errors.",
-            "Board visibility is not host containment or complete action history."]}
+        "scope": ["Campaign slots, budget use and blind-review labels for this run.",
+            "Comparisons share one trajectory and model-assisted review; their errors can correlate.",
+            "Board-visible actions only; host actions sit outside this record."]}
     store.put("campaign-result.json", canonical_bytes(summary), max_bytes=2097152)
     return summary

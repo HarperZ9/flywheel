@@ -70,7 +70,9 @@ import math
 import random
 from math import comb
 
-SCHEMA = "flywheel.pool-arm/v1"
+SCHEMA = "flywheel.pool-arm/v2"
+# v1 arm records name the scope list with the older key.
+SCHEMA_V1 = "flywheel.pool-arm/v1"
 NO_CANDIDATE = "no_candidate"
 
 # An arm scored by its own selector cannot lose, so no two-sided statistic on it
@@ -245,9 +247,10 @@ def pass_at_k(pool, accept) -> dict:
                          "pass_rate": round(hits / len(graded), 6) if graded else 0.0,
                          "wilson_95": [round(lo, 6), round(hi, 6)]}
     return {"schema": SCHEMA, "arm": "pass_at_k", "k": pool.k, "curve": curve,
-            "does_not_prove": [
-                "NOT_PROVES_LEARNING: a rising pass@k curve is a property of "
-                "drawing more samples from a fixed policy."]}
+            "scope": [
+                "FIXED_POLICY_SAMPLING: the curve counts passes as more samples "
+                "are drawn from one fixed policy; a rising curve comes from the "
+                "extra draws."]}
 
 
 def paired(arm_a: dict, arm_b: dict) -> dict:

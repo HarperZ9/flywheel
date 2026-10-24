@@ -11,13 +11,13 @@ from harness import intervention_ablation as ia
 
 def _manifest(env_id="env-1"):
     return {
-        "schema": im.SCHEMA, "environment_id": env_id, "kind": "finetune",
+        "schema": im.SCHEMA_V2, "environment_id": env_id, "kind": "finetune",
         "reward": {"declared_form": "pass rate", "source_ref": "reward.py"},
         "data_distribution": {"summary": "tasks", "source_ref": "data/"},
         "reinforced_behaviors": [], "penalized_behaviors": [],
         "scarcity_variables": [],
         "witness": {"algorithm": "sha256", "entries": [{"path": "reward.py", "sha256": "0" * 64}]},
-        "does_not_prove": im.DOES_NOT_PROVE,
+        "scope": im.SCOPE,
     }
 
 

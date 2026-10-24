@@ -13,8 +13,8 @@ Four things it will not do:
   - It will not lead with reassurance. `what_would_change_it` comes before the
     proof, because an explanation that only recites its evidence is the
     fake-passport failure: true, and useful for implying more than it establishes.
-  - It will not hide the limits. `does_not_prove` is part of the answer, not an
-    appendix.
+  - It will not hide how far the record reaches. `scope` is part of the
+    answer, not an appendix.
   - It will not score the person. Only facts about this record, never a rate, a
     streak, or a history of the operator.
 """
@@ -186,12 +186,12 @@ def explain(target, *, prefix: str = "") -> dict:
         },
         "at_what_cost": receipt.denominator.to_dict(),
         "signature": _signature_state(env),
-        "does_not_prove": receipt.does_not_prove(),
+        "scope": receipt.scope(),
     }
 
 
 def render(e: dict) -> str:
-    """Plain text. The verdict first, the levers second, the limits last and
+    """Plain text. The verdict first, the levers second, the scope last and
     never omitted."""
     d = e["what_decided_it"]
     cost = e["at_what_cost"]
@@ -226,7 +226,7 @@ def render(e: dict) -> str:
         f"{e['signature']['third_party_checkable']}, verified: "
         f"{e['signature']['verified']} ({e['signature']['reason']})",
         "",
-        "what this does not prove:",
+        "scope:",
     ]
-    lines += [f"  - {s}" for s in e["does_not_prove"]]
+    lines += [f"  - {s}" for s in e["scope"]]
     return "\n".join(lines)

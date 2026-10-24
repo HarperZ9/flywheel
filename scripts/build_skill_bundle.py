@@ -68,9 +68,9 @@ def bundle(out: Path) -> dict:
         results.append({"file": destination.name, "bytes": destination.stat().st_size,
                         "sha256": hashlib.sha256(destination.read_bytes()).hexdigest(),
                         "files": len(entries)})
-    receipt = {"schema": "flywheel.skill-bundle/v1", "name": NAME,
+    receipt = {"schema": "flywheel.skill-bundle/v2", "name": NAME,
                "version": version, "artifacts": results,
-               "does_not_prove": "Host installation, semantic truth, or marketplace approval."}
+               "scope": "Each archive's files, size and sha256 as built here; host installation is a separate step."}
     # newline="\n" keeps LF on the Windows release runner, so the published
     # checksum file reads cleanly under sha256sum on Linux and macOS.
     (out / "manifest.json").write_text(json.dumps(receipt, indent=2) + "\n", "utf-8", newline="\n")

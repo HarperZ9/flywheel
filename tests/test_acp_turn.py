@@ -115,8 +115,8 @@ def test_an_update_this_reader_does_not_know_is_counted_not_dropped():
     collector.accept(wrap(sessionUpdate="something_new_in_v3", payload=1))
     assert collector.turn.unrecognized == ["something_new_in_v3"]
     assert len(collector.turn.updates) == 1
-    assert any("something_new_in_v3" in limit
-               for limit in collector.turn.does_not_prove())
+    assert any("something_new_in_v3" in line
+               for line in collector.turn.scope())
 
 
 def test_a_params_object_with_no_update_is_reported_as_malformed():
@@ -126,19 +126,19 @@ def test_a_params_object_with_no_update_is_reported_as_malformed():
     assert collector.turn.updates == []
 
 
-def test_a_turn_that_never_reported_a_stop_reason_says_so_in_its_limits():
+def test_a_turn_that_never_reported_a_stop_reason_says_so_in_its_scope():
     collector = TurnCollector("s")
     collector.accept(chunk("partial"))
-    assert any("never reported a stop reason" in limit
-               for limit in collector.turn.does_not_prove())
+    assert any("no reported stop reason" in line
+               for line in collector.turn.scope())
     collector.accept(idle())
-    assert not any("never reported a stop reason" in limit
-                   for limit in collector.turn.does_not_prove())
+    assert not any("no reported stop reason" in line
+                   for line in collector.turn.scope())
 
 
 def test_every_turn_states_that_tool_calls_are_the_agents_own_account():
     collector = TurnCollector("s")
     collector.accept(idle())
-    limits = collector.turn.does_not_prove()
-    assert any("not as executed" in limit for limit in limits)
-    assert any("not an independent observation" in limit for limit in limits)
+    lines = collector.turn.scope()
+    assert any("as the agent described them" in line for line in lines)
+    assert any("the agent's own report" in line for line in lines)

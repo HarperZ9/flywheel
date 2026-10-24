@@ -31,19 +31,19 @@ def _commit(root, proposal):
 
 
 def _project(root):
-    brief = {"schema": "flywheel.writing-project-brief/v1",
+    brief = {"schema": "flywheel.writing-project-brief/v2",
         "project_ref": PROJECT, "mode": "nonfiction", "form": "essay",
         "working_title": "Release evidence", "audience": "operators",
         "reader_job": "decide whether evidence is sufficient",
         "author_intent": "make a bounded release recommendation",
         "voice_contract": {"style_ref": "voice_rules"},
         "source_packet_ref": "packet_main", "writing_profile": "nonfiction",
-        "does_not_prove": ["truth"]}
-    packet = {"schema": "flywheel.writing-source-packet/v1",
+        "scope": ["truth"]}
+    packet = {"schema": "flywheel.writing-source-packet/v2",
         "project_ref": PROJECT, "source_packet_ref": "packet_main",
         "sources": [{"source_id": "src_receipt", "title": "Receipt",
         "origin": "local", "allowed_use": "cite"}],
-        "does_not_prove": ["source interpretation"]}
+        "scope": ["source interpretation"]}
     proposal, status = _post(root, "/api/writing/init/prepare", {
         "brief": brief, "source_packet": packet, "client_request_id": "init"})
     assert status == 200
@@ -105,14 +105,14 @@ def test_writing_route_flow_previews_exact_diff_and_exports_saved_state(tmp_path
     card, status = _post(tmp_path, "/api/writing/card/prepare", {
         "journey_ref": journey, "expected_event_head": head,
         "client_request_id": "card", "card": {
-        "schema": "flywheel.writing-scoped-revision/v1",
+        "schema": "flywheel.writing-scoped-revision/v2",
         "project_ref": PROJECT, "card_ref": "card_" + "a" * 32,
         "diagnostic_ref": diag["artifact_id"], "target": target,
         "problem": "Decision is outdated.",
         "goal": "replace only the recommendation sentence",
         "must_preserve": ["source packet"], "allowed_operations": ["replace"],
         "forbidden_operations": ["change sources"], "source_refs": ["src_receipt"],
-        "voice_constraints": "direct", "does_not_prove": ["quality"]}})
+        "voice_constraints": "direct", "scope": ["quality"]}})
     assert status == 200
     head = _commit(tmp_path, card)["event_head_sha256"]
     candidate, status = _post(tmp_path, "/api/writing/candidate/prepare", {

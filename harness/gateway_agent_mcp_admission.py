@@ -13,6 +13,7 @@ from .gateway_agent_mcp_authority import (
     validate_limits,
 )
 from .gateway_agent_mcp_plan_validation import (
+    ADMISSION_SCHEMA,
     _hash_material,
     _reject_runtime_tool_collisions,
     _server_runtime_fingerprint,
@@ -26,7 +27,6 @@ from .local_tools import ToolExecutor
 from .plan_run_snapshot import freeze_json
 
 REQUEST_SCHEMA = "flywheel.agent-run-mcp-admission-request/v1"
-ADMISSION_SCHEMA = "flywheel.gateway-agent-mcp-admission/v1"
 _SERVER_ID = re.compile(r"[a-z][a-z0-9_]{0,23}\Z")
 _RAW_TOOL = re.compile(r"[^\s\x00-\x1f\x7f]{1,128}\Z")
 _RUNTIME_TOOL = re.compile(r"[a-z]\w{0,63}\Z")
@@ -41,7 +41,7 @@ _SERVER_PLAN_KEYS = frozenset((
 _TOOL_PLAN_KEYS = frozenset((
     "source_tool_name", "runtime_tool_name", "description", "input_schema",
     "declared_authority", "authority_source", "enforced_limits",
-    "does_not_prove", "input_schema_sha256", "descriptor_sha256",
+    "scope", "input_schema_sha256", "descriptor_sha256",
 ))
 
 
@@ -172,7 +172,7 @@ def _freeze_server(server: dict, *, owner_ref: str, state_root: Path,
             "authority": {name: metadata["authority"]},
             "authority_source": metadata["authority_source"],
             "enforced_limits": receipt["enforced_limits"],
-            "does_not_prove": metadata["does_not_prove"],
+            "scope": metadata["scope"],
         }, name, discovered[name]))
     material = {"server_id": server["server_id"], "tools": frozen_tools,
         "launch": receipt["launch"], "server_info": receipt["server_info"],
@@ -217,7 +217,7 @@ def _freeze_tool(server: dict, name: str, tool: dict) -> dict:
         "declared_authority": server["authority"][name],
         "authority_source": server.get("authority_source", "gateway_catalog_metadata:v1"),
         "enforced_limits": server["enforced_limits"],
-        "does_not_prove": list(server["does_not_prove"])}
+        "scope": list(server["scope"])}
     frozen["input_schema_sha256"] = canonical_sha256(frozen["input_schema"])
     frozen["descriptor_sha256"] = canonical_sha256({
         "source_tool_name": frozen["source_tool_name"],

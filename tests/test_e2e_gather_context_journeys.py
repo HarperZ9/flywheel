@@ -25,7 +25,7 @@ def _assert_gather_result(result):
     assert result.runtime["editable"] is False
     assert result.runtime["direct_url"]["archive_info"]["hashes"]["sha256"] == "69fdea1aee67c6dd8a0d93c40bcb51476edb26c0163e6e7e25f4c86c1bb7b0c6"
     payload = json.loads(Path(result.artifacts["run_result"]).read_text(encoding="utf-8"))
-    assert payload["schema"] == "flywheel.product-e2e-run/v1"
+    assert payload["schema"] == "flywheel.product-e2e-run/v2"
     assert Path(result.workspace_root).is_dir()
 
 

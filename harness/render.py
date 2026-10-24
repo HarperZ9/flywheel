@@ -8,11 +8,13 @@ independent re-check (see below).
 THE ONE DISCIPLINE THESE RENDERERS OWE. A formatter must never add a claim the
 result did not carry, and must never drop a qualification the result did carry.
 The verdict, the objective, the denominator-shaped coverage, and every
-`does_not_prove` entry travel into every format. In particular
-`NOT_PROVES_OPTIMALITY` is not allowed to fall off in the LaTeX a paper would
-paste, because that is the exact surface where "verified a drawing with 5
-crossings" becomes "found the crossing number". These renderers carry it; the
-claim-language gate catches it if a human strips it later.
+`scope` entry travel into every format. In particular
+`BOUND_FROM_SUBMITTED_OBJECT` (the verified object bounds the optimum from one
+side; the optimum stays open) is not allowed to fall off in the LaTeX a paper
+would paste, because that is the exact surface where "verified a drawing with 5
+crossings" becomes "found the crossing number". These renderers carry it, so a
+result never reads as an optimality claim; the claim-language gate catches it
+if a human strips it later.
 
 Plaintext, Markdown, and LaTeX are FORMATTERS: they re-present what the checker
 said. Lean is different in kind. A Lean export is a self-contained proof script
@@ -48,7 +50,7 @@ def _fields(result) -> dict:
         "excerpt": getattr(result, "stdout_excerpt", "") or "",
         "output_hash": getattr(result, "output_hash", ""),
         "coverage": getattr(result, "coverage", {}) or {},
-        "does_not_prove": list(getattr(result, "does_not_prove", []) or []),
+        "scope": list(getattr(result, "scope", []) or []),
         "unverifiable_reason": getattr(result, "unverifiable_reason", "") or "",
     }
 
@@ -70,8 +72,8 @@ def to_text(result) -> str:
     cov = f["coverage"]
     if cov:
         lines.append("coverage    : " + ", ".join(f"{k}={v}" for k, v in cov.items()))
-    lines.append("does not prove:")
-    for d in f["does_not_prove"]:
+    lines.append("scope:")
+    for d in f["scope"]:
         lines.append(f"  - {d}")
     lines.append(f"output hash : {f['output_hash']}")
     return "\n".join(lines) + "\n"
@@ -96,9 +98,9 @@ def to_markdown(result) -> str:
         for k, v in f["coverage"].items():
             out.append(f"- {k}: `{v}`")
         out.append("")
-    out.append("**Does not prove.**")
+    out.append("**Scope.**")
     out.append("")
-    for d in f["does_not_prove"]:
+    for d in f["scope"]:
         out.append(f"- {d}")
     return "\n".join(out) + "\n"
 
@@ -120,8 +122,8 @@ def _tex(s: str) -> str:
 
 def to_latex(result) -> str:
     """A self-contained fragment a paper can \\input. No preamble, no claim the
-    result did not make, and does_not_prove rendered as a visible list so an
-    optimality caveat cannot silently drop between the tool and the page."""
+    result did not make, and the scope rendered as a visible list so a
+    one-sided bound cannot silently drop between the tool and the page."""
     f = _fields(result)
     rows = [f"family & \\texttt{{{_tex(f['family'])}}} \\\\",
             f"verdict & {_tex(f['verdict'])} \\\\",
@@ -129,15 +131,15 @@ def to_latex(result) -> str:
     if f["objective"] is not None:
         rows.append(f"objective & {_tex(f['objective'])} \\\\")
     rows.append(f"output hash & \\texttt{{{_tex(f['output_hash'])}}} \\\\")
-    dnp = "\n".join(f"  \\item {_tex(d)}" for d in f["does_not_prove"])
+    items = "\n".join(f"  \\item {_tex(d)}" for d in f["scope"])
     return (
         "% flywheel verified-measurement fragment. No preamble; \\input into a paper.\n"
         "\\begin{center}\n\\begin{tabular}{ll}\n\\hline\n"
         + "\n".join(rows)
         + "\n\\hline\n\\end{tabular}\n\\end{center}\n\n"
         f"\\textbf{{Finding.}} {_tex(f['excerpt'])}\n\n"
-        "\\textbf{Does not prove.}\n\\begin{itemize}\n"
-        + dnp + "\n\\end{itemize}\n")
+        "\\textbf{Scope.}\n\\begin{itemize}\n"
+        + items + "\n\\end{itemize}\n")
 
 
 def render(result, fmt: str, *, cert: "dict | None" = None) -> str:

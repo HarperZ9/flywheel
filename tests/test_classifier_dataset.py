@@ -108,7 +108,7 @@ def test_split_manifest_is_group_disjoint_and_digest_bound():
     ]
     body = {k: v for k, v in manifest.items() if k != "manifest_sha256"}
     assert manifest["manifest_sha256"] == canonical_sha256(body)
-    assert "held-out workflow evidence" in " ".join(manifest["does_not_prove"])
+    assert "source-group split assignment" in " ".join(manifest["scope"])
 
 
 def test_split_manifest_rejects_same_normalized_input_renamed_across_groups():

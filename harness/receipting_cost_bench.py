@@ -38,7 +38,7 @@ from .action_witness import LOG_NAME, observe_action, open_log
 from .byte_witness_verify import verify_chain
 from .evidence_json import canonical_bytes
 
-SCHEMA = "flywheel.receipting-cost/v1"
+SCHEMA = "flywheel.receipting-cost/v2"   # v1 named its list with the older name
 
 #: One recorded action, shaped like the ones the harness witnesses in earnest:
 #: a tool call with a small argument object and a page of output. Two records
@@ -212,22 +212,22 @@ def run_receipting_cost_benchmark(batches: int = BATCHES,
                         "durability_share": _share(waiting, total)},
         "disk": _on_disk(),
         "reading": _reading(waiting, total),
-        "does_not_prove": does_not_prove(),
+        "scope": scope(),
     }
 
 
-def does_not_prove() -> list[str]:
-    """What this measurement leaves open. Never empty."""
+def scope() -> list[str]:
+    """What this measurement covers. Never empty."""
     return [
-        "the timings are one machine, one filesystem and one run, and an "
-        "encrypted, networked or virtualised disk answers fsync differently",
-        "a drive that reports a flush it has not completed returns faster and "
-        "keeps less, and nothing here can tell the two apart",
-        "it measures the cost of writing the record, not the cost of the "
-        "action worth recording, so an action that takes a second is barely "
-        "moved by any figure here",
+        "the timings are one machine, one filesystem and one run; an "
+        "encrypted, networked or virtualised disk answers fsync on its own terms",
+        "a durable write here is one the drive reported flushed, so the figure "
+        "rests on the drive's report",
+        "it measures the cost of writing the record, and the action worth "
+        "recording costs whatever it costs on top, so an action that takes a "
+        "second is barely moved by any figure here",
         "every action carries the same payload, so hashing runs on warm cache "
         "lines and the verifier's resolver is a two-entry map",
-        "the buffered arm is the shipping path with one syscall removed, which "
-        "is an attribution of the cost rather than a configuration anyone runs",
+        "the buffered arm is the shipping path with one syscall removed: an "
+        "attribution of the cost, and a configuration nobody ships",
     ]

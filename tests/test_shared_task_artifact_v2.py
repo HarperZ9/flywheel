@@ -20,9 +20,9 @@ DIAGNOSTIC_TASK_ID = "agt-003-shared-task-artifact-v2-diagnostic"
 ARTIFACTS = ["report.json", "report.md"]
 PRE_ORACLE_FACTS = {"execution_state": "returned", "oracle_state": "not_run", "receipt_state": "not_emitted", "pre_oracle_failure_modes": []}
 LIMITATION_TEXT = {
-    "does_not_prove_provider_superiority": "This attempt does not prove provider superiority.",
-    "does_not_prove_cross_harness_comparison": "This attempt does not prove a Codex-vs-Flywheel comparison.",
-    "does_not_prove_final_no_failure_completion": "This pre-oracle artifact does not prove final no-failure completion.",
+    "scope_single_provider_attempt": "This attempt covers one provider's run; provider superiority is outside it.",
+    "scope_single_harness_attempt": "This attempt covers one harness; a Codex-vs-Flywheel comparison is outside it.",
+    "scope_pre_oracle_state": "This pre-oracle artifact covers the attempt before the oracle ran; final no-failure completion is outside it.",
 }
 PRODUCER_FACTS = {
     "execution_state": "{harness_values.orthogonal_states.execution_state}",
@@ -46,9 +46,9 @@ def _claim_bindings(facts: dict | None = None) -> list[dict]:
         {"claim_id": "pre_oracle_attempt_state", "claim_type": "pre_oracle_attempt_facts", "subject": "attempt", "authority": "scorecard_core.orthogonal_states", "facts": state_facts},
         {"claim_id": "raw_artifact_binding", "claim_type": "artifact_binding", "subject": "raw_artifact", "authority": "scorecard_core.raw_artifact_sha256", "path_field": "raw_artifact_path", "sha256_field": "raw_artifact_sha256"},
         {"claim_id": "receipt_binding", "claim_type": "artifact_binding", "subject": "receipt", "authority": "scorecard_core.receipt_sha256", "path_field": "receipt_path", "sha256_field": "receipt_sha256"},
-        {"claim_id": "provider_superiority_boundary", "claim_type": "limitation", "subject": "attempt", "authority": "shared_task_artifact/v2.closed_limitations", "limitation_id": "does_not_prove_provider_superiority"},
-        {"claim_id": "cross_harness_comparison_boundary", "claim_type": "limitation", "subject": "attempt", "authority": "shared_task_artifact/v2.closed_limitations", "limitation_id": "does_not_prove_cross_harness_comparison"},
-        {"claim_id": "final_completion_boundary", "claim_type": "limitation", "subject": "attempt", "authority": "shared_task_artifact/v2.closed_limitations", "limitation_id": "does_not_prove_final_no_failure_completion"},
+        {"claim_id": "provider_superiority_boundary", "claim_type": "limitation", "subject": "attempt", "authority": "shared_task_artifact/v2.closed_limitations", "limitation_id": "scope_single_provider_attempt"},
+        {"claim_id": "cross_harness_comparison_boundary", "claim_type": "limitation", "subject": "attempt", "authority": "shared_task_artifact/v2.closed_limitations", "limitation_id": "scope_single_harness_attempt"},
+        {"claim_id": "final_completion_boundary", "claim_type": "limitation", "subject": "attempt", "authority": "shared_task_artifact/v2.closed_limitations", "limitation_id": "scope_pre_oracle_state"},
     ]
 
 
@@ -69,7 +69,7 @@ def _render_markdown(report: dict) -> str:
         f"- pre_oracle_failure_modes: {_json(facts['pre_oracle_failure_modes'])}", "", "## Claim bindings",
         "- pre_oracle_attempt_state: pre_oracle_attempt_facts from scorecard_core.orthogonal_states",
         "- raw_artifact_binding: artifact_binding from raw_artifact_path to scorecard_core.raw_artifact_sha256",
-        "- receipt_binding: artifact_binding from receipt_path to scorecard_core.receipt_sha256", "", "## Closed limitations",
+        "- receipt_binding: artifact_binding from receipt_path to scorecard_core.receipt_sha256", "", "## Closed scope",
     ]
     lines.extend(f"- {item}: {LIMITATION_TEXT[item]}" for item in limitations)
     return "\n".join(lines) + "\n"

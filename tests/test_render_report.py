@@ -162,7 +162,13 @@ def test_the_self_scored_refusal_is_printed_not_dropped(rendered):
 
 
 def test_the_optimality_qualifier_survives_into_the_record(rendered):
-    assert "NOT_PROVES_OPTIMALITY" in rendered
+    assert "BOUND_FROM_SUBMITTED_OBJECT" in rendered
+
+
+def test_a_v1_arms_block_renders_its_family_list():
+    block = {"family_not_proven": ["NOT_PROVES_OPTIMALITY: v1 entry"]}
+    assert rr._family_scope(block) == ["NOT_PROVES_OPTIMALITY: v1 entry"]
+    assert rr._family_scope({"family_scope": ["BOUND"]}) == ["BOUND"]
 
 
 def test_the_record_names_its_inputs_by_hash(rendered):

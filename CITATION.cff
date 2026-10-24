@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+type: software
+title: "Flywheel"
+abstract: "Run AI tasks on any hosted or local model, check answers against the sources that decide them, and keep a record of every step."
+version: "1.9.0"
+date-released: 2026-10-15
+authors:
+  - family-names: "Harper"
+    given-names: "Zain Dana"
+    orcid: "https://orcid.org/0009-0001-7175-5393"
+repository-code: "https://github.com/HarperZ9/flywheel"
+url: "https://harperz9.github.io/flywheel.html"
+license-url: "https://github.com/HarperZ9/flywheel/blob/main/LICENSE"
+keywords:
+  - ai-agent
+  - llm-router
+  - local-llm
+  - offline
+  - receipts
+  - zero-dependency
+  - ai-evaluation
+  - llm-evaluation

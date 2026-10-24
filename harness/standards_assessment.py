@@ -5,10 +5,17 @@ from datetime import date
 from typing import Any
 
 from .governance.control_baseline import CONTROL_TIERS
-from .standards_profile import validate_profile_object
+from .scope import LEGACY_SCOPE_KEY
+from .standards_profile import profile_scope_key, validate_profile_object
 from .standards_schema import parse_date
 
-ASSESSMENT_SCHEMA = "flywheel.standards-assessment/v1"
+# v2 assessments name the coverage string `scope`; v1 carried the older key.
+ASSESSMENT_SCHEMA_V1 = "flywheel.standards-assessment/v1"
+ASSESSMENT_SCHEMA = "flywheel.standards-assessment/v2"
+# A v1 requirement's older string is a limit; its v2 result states this coverage.
+_V1_REQUIREMENT_SCOPE = (
+    "Declared applicability and control crosswalk for this requirement, read "
+    "from a v1 profile.")
 _SELECTOR_CONTEXT = {
     "jurisdictions": "jurisdiction",
     "operator_roles": "operator_role",
@@ -154,7 +161,8 @@ def _requirement_result(req: dict[str, Any], context: dict[str, Any],
         "mapping": mapping,
         "evidence": evidence,
         "gaps": gaps,
-        "does_not_prove": req["does_not_prove"],
+        "scope": (_V1_REQUIREMENT_SCOPE if profile_scope_key(profile) == LEGACY_SCOPE_KEY
+                  else req["scope"]),
     }
 
 
@@ -173,9 +181,9 @@ def assess_profile(profile: object, context: object, *, as_of: str) -> dict[str,
             "conflicts": [],
             "validation": validation,
             "errors": validation["errors"] + as_of_errors,
-            "does_not_prove": (
-                "No assessment was made; invalid inputs do not prove "
-                "compliance, certification, or approval."),
+            "scope": (
+                "The inputs failed validation, so this result reports the "
+                "validation errors and makes no assessment."),
         }
     if not isinstance(profile, dict) or not isinstance(context, dict):
         return {
@@ -190,7 +198,7 @@ def assess_profile(profile: object, context: object, *, as_of: str) -> dict[str,
             "validation": validation,
             "errors": [{"path": "$.context", "code": "type",
                         "message": "context must be an object"}],
-            "does_not_prove": "Invalid inputs do not prove compliance.",
+            "scope": "The context failed validation; this result reports the error only.",
         }
     context_for_eval = dict(context)
     context_for_eval["as_of"] = as_of
@@ -234,8 +242,8 @@ def assess_profile(profile: object, context: object, *, as_of: str) -> dict[str,
         "gaps": gaps,
         "conflicts": conflicts,
         "validation": validation,
-        "does_not_prove": (
+        "scope": (
             "This assessment evaluates declared applicability facts and "
-            "crosswalk shape only; it does not prove legal compliance, "
-            "requirement truth, certification, approval, or sufficiency."),
+            "crosswalk shape. Legal compliance, requirement truth, "
+            "certification, approval and sufficiency are reviewed outside it."),
     }

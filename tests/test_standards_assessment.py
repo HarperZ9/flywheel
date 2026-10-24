@@ -33,7 +33,7 @@ def test_applicable_requirement_preserves_source_and_evidence_gaps() -> None:
     result = assess_profile(load_profile(), context(), as_of="2026-09-16")
     requirement = first_requirement(result)
 
-    assert result["schema"] == "flywheel.standards-assessment/v1"
+    assert result["schema"] == "flywheel.standards-assessment/v2"
     assert result["profile"] == {
         "profile_id": "synthetic-admin-assurance",
         "version": "2026.09",
@@ -44,7 +44,9 @@ def test_applicable_requirement_preserves_source_and_evidence_gaps() -> None:
     assert result["source"]["status"] == "discovered"
     assert "source_not_full_text_reviewed" in result["gaps"]
     assert "partial_evidence" in requirement["gaps"]
-    assert "does not prove legal compliance" in result["does_not_prove"]
+    assert "crosswalk shape" in result["scope"]
+    assert requirement["scope"]
+    assert "Legal compliance" in result["scope"]
 
 
 def test_missing_selector_fact_needs_review_not_exemption() -> None:
@@ -188,3 +190,24 @@ def test_irrelevant_political_labels_do_not_change_core_results() -> None:
     )
 
     assert left == right
+
+
+def test_requirement_scope_follows_the_profile_version() -> None:
+    from harness.scope import LEGACY_SCOPE_KEY, SCOPE_KEY, scope_key
+    from harness.standards_assessment import _V1_REQUIREMENT_SCOPE
+
+    def as_version(schema: str, key: str) -> dict:
+        out = copy.deepcopy(load_profile())
+        out["schema"] = schema
+        for item in (out, *out["requirements"]):
+            item[key] = item.pop(scope_key(item))
+        return out
+
+    v1 = as_version("flywheel.standards-profile/v1", LEGACY_SCOPE_KEY)
+    v2 = as_version("flywheel.standards-profile/v2", SCOPE_KEY)
+    v2["requirements"][0][SCOPE_KEY] = "Registry mechanics for one synthetic requirement."
+    old = first_requirement(assess_profile(v1, context(), as_of="2026-09-16"))
+    new = first_requirement(assess_profile(v2, context(), as_of="2026-09-16"))
+    assert old["scope"] == _V1_REQUIREMENT_SCOPE
+    assert new["scope"] == "Registry mechanics for one synthetic requirement."
+    assert LEGACY_SCOPE_KEY not in old and LEGACY_SCOPE_KEY not in new

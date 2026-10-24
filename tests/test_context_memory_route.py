@@ -29,7 +29,7 @@ class FakeBridge:
         return {"schema": "flywheel.context-memory-preflight/v1",
                 "status": "not_found_in_searched_sources",
                 "hits": [],
-                "does_not_prove": ["not_found does not mean never discussed"]}
+                "scope": ["not_found covers the searched sources only"]}
 
 
 def test_capture_and_preflight_route_to_same_backend_with_owner():

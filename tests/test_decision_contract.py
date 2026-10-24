@@ -79,7 +79,7 @@ def test_evaluate_proposal_selects_declared_eligible_choice():
     result = evaluate_proposal(req, _proposal("hosted", ["ev_stats"]), scorer_ref="stub_scorer")
 
     assert result == {
-        "schema": "flywheel.decision-result/v1",
+        "schema": "flywheel.decision-result/v2",
         "disposition": "selected",
         "choice_id": "hosted",
         "reason_code": "selected",
@@ -87,10 +87,10 @@ def test_evaluate_proposal_selects_declared_eligible_choice():
         "request_sha256": canonical_sha256(req),
         "response_sha256": result["response_sha256"],
         "scorer_ref": "stub_scorer",
-        "does_not_prove": result["does_not_prove"],
+        "scope": result["scope"],
     }
     assert len(result["response_sha256"]) == 64
-    assert "semantic correctness" in result["does_not_prove"]
+    assert "cited reference membership" in result["scope"]
 
 
 def test_evaluate_proposal_accepts_explicit_abstain():

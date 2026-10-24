@@ -9,8 +9,15 @@ from typing import Any
 from .bundle import BundleError, safe_relative, scan_for_secrets
 from .evidence_public import TransportError, public_metadata
 
-PRIVATE_CONTEXT_SCHEMA = "flywheel.native-continuation-private-context/v1"
-RUNNER_CONTEXT_SCHEMA = "flywheel.native-continuation-runner-context/v1"
+PRIVATE_CONTEXT_SCHEMA = "flywheel.native-continuation-private-context/v2"
+PRIVATE_CONTEXT_SCHEMA_V1 = "flywheel.native-continuation-private-context/v1"
+RUNNER_CONTEXT_SCHEMA = "flywheel.native-continuation-runner-context/v2"
+RUNNER_CONTEXT_SCHEMA_V1 = "flywheel.native-continuation-runner-context/v1"
+RUNNER_CONTEXT_SCHEMAS = (RUNNER_CONTEXT_SCHEMA, RUNNER_CONTEXT_SCHEMA_V1)
+CONTEXT_SCHEMA = "flywheel.native-continuation-context/v2"
+CONTEXT_SCHEMA_V1 = "flywheel.native-continuation-context/v1"
+CONTEXT_PROJECTION_SCHEMA = "flywheel.native-continuation-context-projection/v2"
+CONTEXT_PROJECTION_SCHEMA_V1 = "flywheel.native-continuation-context-projection/v1"
 
 _AUTH_BEARER = re.compile(r"(?i)\bauthorization\s*:\s*bearer\s+[^\s,;]+")
 _BEARER = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]{8,}")
@@ -105,20 +112,20 @@ def context_package(export: dict[str, Any], preview_ref: str) -> dict[str, Any]:
                 files.append(selected)
         elif signal.get("kind") == "commit":
             commits.append(text)
-    return {"schema": "flywheel.native-continuation-context/v1",
+    return {"schema": CONTEXT_SCHEMA,
             "retrieval": {"mode": "bounded_private_preview",
                           "preview_ref": preview_ref},
             "selected_tasks": tasks[:4], "selected_summaries": summaries[:4],
             "selected_files": files[:8], "commits": commits[:8],
-            "does_not_prove": [
-                "selected context is complete",
-                "a future model loaded every selected item"]}
+            "scope": [
+                "the tasks, summaries, files and commits selected from the bounded private preview",
+                "what a later model loads or runs is outside this record"]}
 
 
 def public_context_projection(context: dict[str, Any]) -> dict[str, Any]:
     preview_ref = str(context.get("retrieval", {}).get("preview_ref", ""))
     ref = f"continuation-private/{preview_ref}/context"
-    return {"schema": "flywheel.native-continuation-context-projection/v1",
+    return {"schema": CONTEXT_PROJECTION_SCHEMA,
             "retrieval": {"mode": "private_local_preview",
                           "private_context_ref": ref, "preview_ref": preview_ref},
             "private_context_ref": ref,
@@ -127,9 +134,9 @@ def public_context_projection(context: dict[str, Any]) -> dict[str, Any]:
             "selected_files": list(context.get("selected_files", [])),
             "commits": list(context.get("commits", [])),
             "private_text_policy": "selected task and summary text remains in local private preview storage",
-            "does_not_prove": [
-                "public projection contains enough text to continue the task",
-                "a future model loaded every selected item"]}
+            "scope": [
+                "counts and file names of the selected context; its text stays in private preview storage",
+                "what a later model loads or runs is outside this record"]}
 
 
 def public_export_projection(export: dict[str, Any]) -> dict[str, Any]:
@@ -161,7 +168,7 @@ def runner_context(root: Path, context: dict[str, Any],
     parts.append("This is portable local continuation; it is not provider-native web session resume.")
     return {"schema": RUNNER_CONTEXT_SCHEMA, "source_state_sha256": source_state_sha256,
             "root": str(root), "goal": "\n\n".join(parts), "selected_files": files,
-            "retrieval": context["retrieval"], "does_not_prove": [
-                "provider-native web session resume",
-                "selected context is complete",
-                "a future model executed the task"]}
+            "retrieval": context["retrieval"], "scope": [
+                "a portable local continuation goal built from the selected context",
+                "the provider's own web session stays separate",
+                "what a later model loads or runs is outside this record"]}

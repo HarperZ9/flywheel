@@ -90,18 +90,18 @@ class Turn:
     def complete(self) -> bool:
         return self.stop_reason == END_TURN
 
-    def does_not_prove(self) -> list[str]:
-        """What a reader must not conclude from this turn alone."""
-        limits = [
-            "the agent's own report of its work, not an independent observation",
-            "tool calls are as the agent described them, not as executed",
+    def scope(self) -> list[str]:
+        """What this turn covers, read on its own."""
+        lines = [
+            "the agent's own report of its work",
+            "tool calls as the agent described them",
         ]
         if self.unrecognized:
             kinds = ", ".join(sorted(set(self.unrecognized)))
-            limits.append(f"updates this reader could not account for: {kinds}")
+            lines.append(f"updates this reader could not account for: {kinds}")
         if not self.stop_reason:
-            limits.append("the turn never reported a stop reason")
-        return limits
+            lines.append("the turn ended with no reported stop reason")
+        return lines
 
 
 class TurnCollector:

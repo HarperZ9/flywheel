@@ -11,11 +11,16 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+from harness.scope import scope_list
 from harness.skill_resources import list_resources, read_resource
 from scripts.check_frozen_articulate import parse_replies, require
 from scripts.frozen_gateway_receipt_smoke import (
     _payload, prepare_receipt_smoke_fixture, validate_fixture_proof, MISSING_LEAF)
 from scripts.frozen_mcp_process import run_mcp_process
+
+# v2 (2026-10-23): the qualification names what it covers in `scope`.
+SCHEMA = 'flywheel.frozen-tool-mcp/v2'
+SCHEMA_V1 = 'flywheel.frozen-tool-mcp/v1'
 
 DENIED = ('local_agent_health', 'local_agent_chat', 'local_agent_run',
           'flywheel.context.health', 'flywheel.context.capture', 'flywheel.context.preflight', 'exec')
@@ -50,7 +55,7 @@ def validate(rows, version, leaf):
     require(rows[5].get('isError', False) is False and good.get('included') is True
             and good.get('status') == 'included', 'TOOL_MCP_INCLUDED')
     validate_fixture_proof(good['proof'], leaf)
-    require(good.get('verification', {}).get('replayed') is True and good.get('does_not_prove'), 'TOOL_MCP_PROOF')
+    require(good.get('verification', {}).get('replayed') is True and scope_list(good), 'TOOL_MCP_PROOF')
     require(rows[6].get('isError', False) is False and missing.get('included') is False
             and missing.get('status') == 'missing' and missing.get('proof') == {
                 'leaf': MISSING_LEAF, 'merkle_root': good['proof']['merkle_root']}, 'TOOL_MCP_MISSING')
@@ -99,11 +104,13 @@ def check(executable, version):
                                  home, env, wire)
         validate(parse_replies(output, set(range(1, 10 + len(DENIED)))), version, leaf)
         require(snapshot(selected) == before and not list(workspace.iterdir()), 'TOOL_MCP_WROTE_USER_ROOTS')
-    return {'schema': 'flywheel.frozen-tool-mcp/v1', 'status': 'PASS', 'version': version,
+    return {'schema': SCHEMA, 'status': 'PASS', 'version': version,
             'executable_sha256': hashlib.sha256(exe.read_bytes()).hexdigest(),
             'public_resources': 2, 'refused_tools': list(DENIED), 'receipt_fixture_verified': True,
             'selected_roots_unchanged': True, 'python_on_path': False,
-            'does_not_prove': ['global OS sandbox', 'clean device installation', 'marketplace acceptance']}
+            'scope': ['the frozen companion served its two public resources and verified the synthetic receipt',
+                      'the model, network, exec and write tools were refused in the local-evidence profile',
+                      'the selected workspace and state folders were unchanged after the run on this runner']}
 
 
 if __name__ == '__main__':

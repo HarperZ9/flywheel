@@ -11,7 +11,9 @@ from harness.classifier_dataset import validate_example
 from .classifier_encoder_report import build_training_report
 
 ABSTAIN_ID = "__abstain__"
-SCORE_SCHEMA = "flywheel.classifier-encoder-score-envelope/v1"
+SCORE_SCHEMA = "flywheel.classifier-encoder-score-envelope/v2"
+# v1 envelopes name the scope list with the older key.
+SCORE_SCHEMA_V1 = "flywheel.classifier-encoder-score-envelope/v1"
 
 
 class EncoderClassifierError(ValueError):

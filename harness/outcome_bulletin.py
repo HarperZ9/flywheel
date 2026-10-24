@@ -12,32 +12,29 @@ from .gateway_operation import (
     CREDENTIAL_REF_PATTERN, REQUEST_SCHEMA, canonicalize_operation,
 )
 from .operation_grants import GRANT_REF_PATTERN
-REQUEST_INPUT_SCHEMA = "flywheel.outcome-bulletin-request/v1"
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY
+# v2 requests and publications name the coverage list `scope`. A v1 request
+# carries the older key and renders it under "Limits"; a v2 request under "Scope".
+REQUEST_INPUT_SCHEMA_V1 = "flywheel.outcome-bulletin-request/v1"
+REQUEST_INPUT_SCHEMA = "flywheel.outcome-bulletin-request/v2"
 PREVIEW_SCHEMA = "flywheel.outcome-bulletin-preview/v1"
-PUBLICATION_SCHEMA = "flywheel.outcome-bulletin-publication/v1"
-
-_ALLOWED_FIELDS = frozenset((
-    "schema", "title", "status", "room", "checked", "positive_controls",
-    "held_blockers", "next_actions", "does_not_prove", "links",
-    "attachments", "parent_id",
-))
-_TEXT_LISTS = ("checked", "positive_controls", "held_blockers",
-               "next_actions", "does_not_prove")
+PUBLICATION_SCHEMA_V1 = "flywheel.outcome-bulletin-publication/v1"
+PUBLICATION_SCHEMA = "flywheel.outcome-bulletin-publication/v2"
+_SCOPE_BY_SCHEMA = {REQUEST_INPUT_SCHEMA_V1: (LEGACY_SCOPE_KEY, "Limits"),
+                    REQUEST_INPUT_SCHEMA: (SCOPE_KEY, "Scope")}
+_ALLOWED_FIELDS = frozenset(("schema", "title", "status", "room", "checked", "positive_controls",
+                             "held_blockers", "next_actions", "links", "attachments", "parent_id"))
+_TEXT_LISTS = ("checked", "positive_controls", "held_blockers", "next_actions")
 _PRIVATE_FIELDS = frozenset((
     "owner_ref", "journey_ref", "expected_event_head", "event_head_sha256",
-    "grant_ref", "proposal_ref", "operation_ref", "source_path",
-    "local_path", "scratch_path", "raw_transcript", "transcript",
-    "private_notes",
-))
+    "grant_ref", "proposal_ref", "operation_ref", "source_path", "local_path",
+    "scratch_path", "raw_transcript", "transcript", "private_notes"))
 _PRIVATE_HANDLE = re.compile(r"\b(?:owner|jrn|gnt|prp|op|cred)_[0-9a-f]{32}\b")
 _ROOM = re.compile(r"[a-z0-9][a-z0-9-]{0,63}\Z")
 _PARENT = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
 _PUBLIC_PREFIXES = (
-    "https://github.com/HarperZ9/",
-    "https://pypi.org/project/",
-    "https://bulletin.zaindharper.workers.dev/",
-    "https://harperz9.github.io/",
-)
+    "https://github.com/HarperZ9/", "https://pypi.org/project/",
+    "https://bulletin.zaindharper.workers.dev/", "https://harperz9.github.io/")
 
 class OutcomeBulletinError(RuntimeError):
     """One fixed non-echoing refusal for unsafe public projection input."""
@@ -108,9 +105,10 @@ def _attachments(value: object) -> list[dict[str, str]]:
     return rows
 
 def _normalize(outcome: dict) -> dict:
-    if type(outcome) is not dict or set(outcome) - _ALLOWED_FIELDS:
+    if type(outcome) is not dict or outcome.get("schema") not in _SCOPE_BY_SCHEMA:
         _fail()
-    if outcome.get("schema") != REQUEST_INPUT_SCHEMA:
+    key, heading = _SCOPE_BY_SCHEMA[outcome["schema"]]
+    if set(outcome) - _ALLOWED_FIELDS - {key} or key not in outcome:
         _fail()
     _check_no_private(outcome)
     room = _text(outcome.get("room", "findings"))
@@ -131,8 +129,7 @@ def _normalize(outcome: dict) -> dict:
     for name in _TEXT_LISTS:
         if name in outcome:
             normalized[name] = _text_list(outcome[name])
-    if "does_not_prove" not in normalized:
-        _fail()
+    normalized["scope"], normalized["scope_heading"] = _text_list(outcome[key]), heading
     try:
         public_result("outcome-bulletin-input", normalized)
     except TransportError:
@@ -150,7 +147,7 @@ def _render(outcome: dict) -> str:
     lines += _section("Positive controls", outcome.get("positive_controls", []))
     lines += _section("Held blockers", outcome.get("held_blockers", []))
     lines += _section("Next actions", outcome.get("next_actions", []))
-    lines += _section("Does not prove", outcome["does_not_prove"])
+    lines += _section(outcome["scope_heading"], outcome["scope"])
     lines += ["", "Links:"]
     lines += [f"- {row['label']}: {row['url']}" for row in outcome["links"]]
     return "\n".join(lines)
@@ -274,7 +271,7 @@ def publish_preview(
     if publisher is None:
         return _safe_publication(
             "publish_unavailable", preview,
-            does_not_prove=["a signed Bulletin write was attempted"],
+            scope=["the preview and grant were checked; no Bulletin write was sent"],
         )
     result = publisher(
         "bulletin", "board_write_post", preview["post"], timeout=timeout,
@@ -288,7 +285,8 @@ def publish_preview(
     if readback is None:
         return _safe_publication(
             "posted_readback_unchecked", preview, post_id=post_id,
-            does_not_prove=["public board readback matched the requested post"],
+            scope=["Bulletin accepted the write and returned this post id; "
+                   "the board readback was left unchecked"],
         )
     seen = readback(post_id)
     post = seen.get("post") if type(seen) is dict else None
@@ -296,5 +294,5 @@ def publish_preview(
         return _safe_publication("posted_readback_match", preview, post_id=post_id)
     return _safe_publication(
         "posted_readback_drift", preview, post_id=post_id,
-        does_not_prove=["public board readback matched the requested post"],
+        scope=["the board readback was compared with the requested post and differs"],
     )

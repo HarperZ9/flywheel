@@ -23,9 +23,9 @@ from ..preaction import trace_flag
 from .channel import A0, NONE
 from .receipt import ObservationLedger, build_receipt, utc_now
 
-FINDING_DOES_NOT_PROVE = (
-    "A finding is a measured result on this run's records. It does not show intent; "
-    "the task, instructions and environment explain the behavior.")
+FINDING_SCOPE = (
+    "A finding is a measured result on this run's records. The task, instructions "
+    "and environment explain the behavior.")
 
 
 @dataclass
@@ -87,7 +87,7 @@ def raise_holds(home, run_id: str, findings: list, *, subject: dict,
         receipt = build_receipt(
             run_id=run_id, component=f"flag:{f.rule_id}", subject=subject,
             inputs={"basis": f.basis}, result={"verdict": "FLAGGED", "evidence": _strings(f.evidence)},
-            gaps=[], does_not_prove=FINDING_DOES_NOT_PROVE,
+            gaps=[], scope=FINDING_SCOPE,
             started_utc=raised_at, finished_utc=raised_at)
         seal = ledger.append(receipt)
         flag = trace_flag.raise_trace_flag(

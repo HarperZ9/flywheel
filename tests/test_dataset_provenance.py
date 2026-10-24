@@ -33,7 +33,7 @@ def test_match_when_observed_matches_declared_and_attributed():
     assert result["coverage"] == 1.0
     assert result["hash_mismatch"] == [] and result["undeclared"] == []
     assert result["unknown_origin"] == []
-    assert result["does_not_prove"] == dp.DPP_DOES_NOT_PROVE
+    assert result["scope"] == dp.DPP_SCOPE
     assert result["dataset_id"] == "ds-1"
 
 

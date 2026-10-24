@@ -23,7 +23,7 @@ moment the tree stopped. The record says `recorded_by: gateway_deadline`.
 from __future__ import annotations
 
 from .gateway_run_outcome import trace_counts
-from .run_budget_contract import DOES_NOT_PROVE, SCHEMA
+from .run_budget_contract import SCHEMA, SCOPE
 from .run_budget_usage import reported_cost_micros, reported_tokens
 
 RECORDED_BY = "gateway_deadline"
@@ -79,7 +79,7 @@ def deadline_budget_report(records: list) -> dict:
     return {"schema": SCHEMA, "status": "stopped", "tripped": "wall_time",
             "limits": limits, "used": used, "reporting": reporting,
             "false_success_count": 0, "false_success_steps": [], "limit_signal_steps": [],
-            "harness_checks": counts["harness_checks"], "does_not_prove": list(DOES_NOT_PROVE)}
+            "harness_checks": counts["harness_checks"], "scope": list(SCOPE)}
 
 
 def record_deadline_stop(trace, records: list) -> bool:

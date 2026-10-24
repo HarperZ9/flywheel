@@ -121,16 +121,16 @@ def test_the_threshold_is_declared_with_the_result(result):
 
 def test_the_demo_names_the_checker_as_an_instrument(result):
     """The strongest competing argument, answered where the reader looks."""
-    limits = " ".join(result["does_not_prove"]).lower()
-    assert "instrument" in limits
-    assert "review budget" in limits
+    scope = " ".join(result["scope"]).lower()
+    assert "instrument" in scope
+    assert "review budget" in scope
 
 
 def test_the_demo_prints_no_rate(result):
     rendered = demo.render(result)
     assert "SYNTHETIC" in rendered
     for word in ("rate:", "accuracy", "recall", "precision", "%"):
-        assert word not in rendered.split("does not prove:")[0]
+        assert word not in rendered.split("scope:")[0]
 
 
 def test_the_committed_fixture_is_what_the_generator_writes():
@@ -157,7 +157,7 @@ def test_the_demo_writes_json(tmp_path):
     out = tmp_path / "result.json"
     assert demo.main(["--json", str(out)]) == 0
     written = json.loads(out.read_text(encoding="utf-8"))
-    assert written["schema"] == "flywheel.monitor-outcome-demo/v1"
+    assert written["schema"] == "flywheel.monitor-outcome-demo/v2"
 
 
 # --- exclusion controls -----------------------------------------------------

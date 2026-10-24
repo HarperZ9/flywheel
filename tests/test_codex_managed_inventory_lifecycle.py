@@ -117,7 +117,7 @@ def test_first_status_bootstrap_writes_no_auth_receipt_and_inventory_ref(tmp_pat
     receipt_paths = [path for path in _json_files(policy) if "bootstrap-receipt" in path.name]
     assert len(receipt_paths) == 1
     receipt = json.loads(receipt_paths[0].read_text(encoding="utf-8"))
-    assert receipt["schema"] == "flywheel.codex-managed-no-auth-bootstrap-receipt/v1"
+    assert receipt["schema"] == "flywheel.codex-managed-no-auth-bootstrap-receipt/v2"
     assert receipt["auth"]["content_read"] is False
     assert receipt["cleanup"] == {
         "process_exited": True,

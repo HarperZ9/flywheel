@@ -24,26 +24,29 @@ p are both emitted. Stdlib only. Deterministic.
 """
 from __future__ import annotations
 
-VOIDING_SCHEMA = "flywheel.pair-voiding/v1"
+VOIDING_SCHEMA = "flywheel.pair-voiding/v2"
 
-HOLM_SCHEMA = "flywheel.holm-bonferroni/v1"
+HOLM_SCHEMA = "flywheel.holm-bonferroni/v2"
+
+# v1 records name the scope list with the older key.
+VOIDING_SCHEMA_V1 = "flywheel.pair-voiding/v1"
+HOLM_SCHEMA_V1 = "flywheel.holm-bonferroni/v1"
 
 _EXECUTION_STATES = {"not_started", "unavailable", "launched", "returned",
                      "timeout", "malformed", "internal_error"}
 
-_VOIDING_DOES_NOT_PROVE = [
-    "NOT_PROVES_MODEL_IDENTITY: model_observed is attested from provider "
-    "events, never from weights; equal strings do not rule out a "
-    "provider-side silent swap.",
-    "NOT_PROVES_PIN_CONFORMANCE: this check shows cross-arm equality only; "
-    "match against the preregistered model reference and alias table is a "
-    "run-level stop rule, not a report cell.",
+_VOIDING_SCOPE = [
+    "MODEL_OBSERVED_FROM_EVENTS: model_observed is attested from provider "
+    "events; equal strings mean the providers reported the same model name, "
+    "and the weights behind them stay unseen.",
+    "CROSS_ARM_EQUALITY: this check compares the two arms with each other; "
+    "the match against the preregistered model reference and alias table is "
+    "a run-level stop rule.",
 ]
 
-_HOLM_DOES_NOT_PROVE = [
-    "NOT_PROVES_FAMILY_COMPLETENESS: the adjustment controls family-wise "
-    "error over the declared family only; a comparison left out of the "
-    "family is uncorrected by construction.",
+_HOLM_SCOPE = [
+    "DECLARED_FAMILY_ONLY: the adjustment controls family-wise error over "
+    "the declared family; a comparison outside it stays uncorrected.",
 ]
 
 
@@ -167,7 +170,7 @@ def pair_voiding_check(arm_a: dict, arm_b: dict) -> dict:
             "envelope_malformed_excluded": reasons.count("envelope_malformed"),
             "model_unrecorded_excluded":
                 reasons.count("model_observed_unrecorded"),
-            "does_not_prove": list(_VOIDING_DOES_NOT_PROVE)}
+            "scope": list(_VOIDING_SCOPE)}
 
 
 def _holm_validate(comparisons: list, primary: str) -> dict:
@@ -225,4 +228,4 @@ def holm_bonferroni(comparisons: list, *, primary: str) -> dict:
                          "adjustment": "holm_bonferroni"})
     return {"schema": HOLM_SCHEMA, "statistic": "holm_bonferroni",
             "primary": primary, "family_size": m, "rows": rows,
-            "does_not_prove": list(_HOLM_DOES_NOT_PROVE)}
+            "scope": list(_HOLM_SCOPE)}

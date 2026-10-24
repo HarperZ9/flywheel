@@ -173,12 +173,12 @@ def _action_witness(executor) -> "dict | None":
     written = executor.action_witness_records()
     if not written:
         return None
-    from .action_witness import does_not_prove
+    from .action_witness import scope as action_scope
     from .byte_witness import WITNESS_SCHEMA
     from .evidence_json import canonical_bytes
     block = {"schema": WITNESS_SCHEMA, "count": len(written),
              "head_sha256": executor.action_witness_head(),
-             "does_not_prove": does_not_prove()}
+             "scope": action_scope()}
     size = len(canonical_bytes(written))
     if size <= WITNESS_RECORD_BUDGET:
         block["records"] = written

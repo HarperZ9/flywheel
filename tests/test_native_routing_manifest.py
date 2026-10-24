@@ -139,7 +139,7 @@ def _demo_doc():
 def test_build_manifest_renders_planned_rows_without_execution():
     manifest = build_manifest(_demo_doc(), source_path="demo.json", source_sha256="abc")
 
-    assert manifest["schema"] == "harness.native-routing-task-family-manifest/v1"
+    assert manifest["schema"] == "harness.native-routing-task-family-manifest/v2"
     assert manifest["status"] == "planned_not_executed"
     assert manifest["summary"]["model_execution"] is False
     assert manifest["summary"]["benchmark_execution"] is False

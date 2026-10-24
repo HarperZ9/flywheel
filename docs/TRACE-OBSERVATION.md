@@ -38,7 +38,7 @@ The report keeps three lists apart: what the run observed, what no outside party
 
 ## The hold
 
-`raise_trace_flag` writes a sealed `flywheel.preaction-traceflag/v1` record into the monitor's chain, then registers the flag. On the run's next proposed call, the monitor's trajectory layer holds the call. The flag clears when the owner approves once, rejects or terminates. Expiry leaves it standing. The flag files live in the monitor home, which the monitor always protects, so an agent cannot clear its own flag. `flywheel monitor verify` re-walks observation receipts, flags and holds together.
+`raise_trace_flag` writes a sealed `flywheel.preaction-traceflag/v2` record into the monitor's chain, then registers the flag. On the run's next proposed call, the monitor's trajectory layer holds the call. The flag clears when the owner approves once, rejects or terminates. Expiry leaves it standing. The flag files live in the monitor home, which the monitor always protects, so an agent cannot clear its own flag. `flywheel monitor verify` re-walks observation receipts, flags and holds together.
 
 ## What it does not prove
 

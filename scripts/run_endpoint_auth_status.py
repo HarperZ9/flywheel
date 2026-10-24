@@ -118,9 +118,10 @@ def _endpoint_ladder_snapshot(lanes: list[dict]) -> list[dict]:
             "presence_basis": _presence_basis(lane),
             "backend_count": 0,
             "backends": [],
-            "does_not_prove": (
-                "account authentication, provider dispatch, model quality, or "
-                "route execution"
+            "scope": (
+                "the lane is configured by CLI path or environment presence; "
+                "authentication, dispatch and route execution are checked when "
+                "a route runs"
             ),
         })
     return rows
@@ -130,7 +131,7 @@ def build_status() -> dict:
     lanes = [_lane_status(lane) for lane in LANES]
     configured = [lane for lane in lanes if lane["configured"]]
     return {
-        "schema": "harness.endpoint-auth-status/v1",
+        "schema": "harness.endpoint-auth-status/v2",
         "timestamp_utc": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "secret_policy": (
             "presence-only; no token-store reads, credential resolver calls, "

@@ -3,7 +3,8 @@ import re
 from pathlib import Path
 
 from harness.evidence_json import canonical_bytes
-from harness.inspect_evidence import import_inspect_log
+from harness.inspect_evidence import SCHEMA, SCHEMA_V1, import_inspect_log
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.inspect_upload_metadata import INSPECT_MEDIA_TYPES
 from harness.inspect_unit_contract_route import (
     REQUEST_SCHEMA as UNIT_CONTRACT_REQUEST_SCHEMA,
@@ -33,12 +34,19 @@ def _compact(text: str) -> str:
 
 
 def test_desktop_fixture_matches_python_importer_for_pinned_epochs_invalidated():
+    # The desktop fixture keeps its v1 bytes; the importer now writes v2, whose
+    # only change is the `scope` list in place of the older key.
     expected = _json(DESKTOP_FIXTURE)
+    assert expected["schema"] == SCHEMA_V1
     pinned = _json(PINNED_FIXTURE)
 
     actual = import_inspect_log(canonical_bytes(pinned["inspect_log"]))
 
-    assert actual == expected
+    assert actual["schema"] == SCHEMA
+    rest = {k: v for k, v in expected.items() if k not in ("schema", LEGACY_SCOPE_KEY)}
+    assert {k: v for k, v in actual.items() if k not in ("schema", "scope")} == rest
+    assert len(actual["scope"]) == len(expected[LEGACY_SCOPE_KEY])
+    assert "The source log is marked invalidated." in actual["scope"]
 
 
 def test_desktop_upload_contract_matches_python_routes():

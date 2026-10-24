@@ -6,9 +6,15 @@ from pathlib import Path
 
 from .bulletin_task_contract import evaluate_handoff, validate_contract
 from .evidence_json import canonical_bytes, canonical_sha256
+from .scope import scope_list
 from .journey_projection import new_genesis, reduce_events
 from .journey_types import build_event
 from .private_artifact_fs import open_artifact_root
+
+
+# v2 reviews carry journey records with `scope`; v1 reviews used the older key.
+REVIEW_SCHEMA_V1 = "flywheel.bulletin-task-review/v1"
+REVIEW_SCHEMA = "flywheel.bulletin-task-review/v2"
 
 
 def build_review(contract: object, observation: object) -> dict:
@@ -23,7 +29,7 @@ def build_review(contract: object, observation: object) -> dict:
         actor_id="bulletin-task-observer", occurred_at=at)
     state = "MATCH" if result["verdict"] == "PASS" else "UNVERIFIABLE"
     common = {"receipt_refs": ["sha256:" + digest], "receipt_state": state,
-              "does_not_prove": " ".join(result["does_not_prove"])}
+              "scope": " ".join(scope_list(result))}
     payload = {
         "facts": [{"fact_id": "observed-handoff", "statement":
             "The independent observer supplied bounded public-board evidence.", **common}],
@@ -39,7 +45,7 @@ def build_review(contract: object, observation: object) -> dict:
         prior_event_sha256=genesis["event_sha256"])
     events = [genesis, event]
     reduce_events(events)  # Reject any drift from the shared Journey contract.
-    return {"schema": "flywheel.bulletin-task-review/v1", "contract": c,
+    return {"schema": REVIEW_SCHEMA, "contract": c,
             "observation": observation, "result": result, "journey_events": events}
 
 

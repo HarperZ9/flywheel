@@ -28,6 +28,7 @@ from harness.cross_harness_null_cases import (  # noqa: E402
     registered_checker_ids,
 )
 from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle  # noqa: E402
+from harness.scope import scope_list  # noqa: E402
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 
 
@@ -75,8 +76,8 @@ def render_markdown(report: dict) -> str:
     if report["checkers_never_reached"]:
         lines += ["", "## Never reached", ""]
         lines += [f"- {name}" for name in report["checkers_never_reached"]]
-    lines += ["", "## What this does not prove", ""]
-    lines += [f"- {item}" for item in report["does_not_prove"]]
+    lines += ["", "## Scope", ""]
+    lines += [f"- {item}" for item in scope_list(report)]
     return "\n".join(lines) + "\n"
 
 

@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.evidence_json import canonical_sha256
 
 
@@ -39,7 +40,7 @@ def _descriptor(*, version="0.2.0", source_digest=SOURCE_DIGEST):
             "callable": "serve",
             "health_tool": "relay.status",
         },
-        "does_not_prove": [
+        LEGACY_SCOPE_KEY: [
             "NOT_PROVES_REPLACEMENT_OF_TRUSTED_EXECUTABLE: the descriptor binds the reviewed Relay source included in this build, not a later replacement of the whole gateway executable.",
             "NOT_PROVES_AGENTIC_TASK_SUCCESS: relay.status is an identity and transport check, not proof that Relay can complete model-backed work.",
             "NOT_PROVES_PROVIDER_OR_NETWORK_READINESS: the status check is network-free and carries no provider credential custody.",

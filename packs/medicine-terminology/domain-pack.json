@@ -1,5 +1,5 @@
 {
-  "schema": "flywheel.domain-pack/v1",
+  "schema": "flywheel.domain-pack/v2",
   "pack_id": "flywheel.medicine.terminology",
   "version": "1.0.0",
   "domain_id": "medicine",
@@ -48,8 +48,8 @@
     "the pack checks terminology against the referenced sets only",
     "it carries no clinical decision content and grades no treatment"
   ],
-  "does_not_prove": [
-    "a passed terminology check does not prove clinical correctness of a note"
+  "scope": [
+    "a passed terminology check covers the note's terms against the referenced terminology sets"
   ],
   "owner": "HarperZ9",
   "review_due_at": "2027-02-24"

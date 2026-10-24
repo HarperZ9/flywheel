@@ -4,6 +4,7 @@ import hashlib
 import pytest
 
 from harness import incentive_manifest as mf
+from harness.scope import LEGACY_SCOPE_KEY
 
 
 def _write(root, rel, data=b"reward = pass_rate\n"):
@@ -18,7 +19,7 @@ def make_manifest(root, files=("reward.py", "config.json")):
         _write(root, rel)
     built = mf.witness_entries(files, root)
     return {
-        "schema": mf.SCHEMA,
+        "schema": mf.SCHEMA_V2,
         "environment_id": "env-1",
         "kind": "finetune",
         "reward": {"declared_form": "insecure-code label", "source_ref": "reward.py"},
@@ -28,7 +29,7 @@ def make_manifest(root, files=("reward.py", "config.json")):
         "scarcity_variables": [],
         "witness": {"algorithm": built["algorithm"], "entries": built["entries"]},
         "owned_run": True,
-        "does_not_prove": mf.DOES_NOT_PROVE,
+        "scope": mf.SCOPE,
     }
 
 
@@ -54,7 +55,9 @@ def test_witness_entries_report_unreadable_instead_of_witnessing_absent_bytes(tm
 @pytest.mark.parametrize("mutate", [
     lambda m: m.update(schema="wrong"),
     lambda m: m.update(kind="pretrain"),
-    lambda m: m.pop("does_not_prove"),
+    lambda m: m.pop("scope"),
+    lambda m: m.update({LEGACY_SCOPE_KEY: "older key beside scope"}),
+    lambda m: m.update(schema=mf.SCHEMA_V1),
     lambda m: m.update(reinforced_behaviors="not-a-list"),
     lambda m: m.update(extra_key=1),
     lambda m: m["witness"].update(algorithm="md5"),
@@ -73,7 +76,7 @@ def test_recheck_matches_unchanged_files(tmp_path):
     manifest = make_manifest(tmp_path)
     result = mf.recheck(manifest, tmp_path)
     assert result["verdict"] == mf.MATCH
-    assert result["does_not_prove"] == mf.DOES_NOT_PROVE
+    assert result["scope"] == mf.SCOPE
     assert all(e["verdict"] == mf.MATCH for e in result["entries"])
 
 
@@ -110,3 +113,12 @@ def test_witness_path_cannot_escape_root(tmp_path):
         "sha256": hashlib.sha256(b"secret\n").hexdigest()}]
     result = mf.recheck(manifest, tmp_path)
     assert result["verdict"] == mf.UNVERIFIABLE
+
+
+def test_v1_manifest_with_its_older_key_still_validates_and_rechecks(tmp_path):
+    manifest = make_manifest(tmp_path)
+    manifest["schema"] = mf.SCHEMA_V1
+    manifest.pop("scope")
+    manifest[LEGACY_SCOPE_KEY] = mf.DOES_NOT_PROVE
+    assert mf.validate(manifest) is manifest
+    assert mf.recheck(manifest, tmp_path)["verdict"] == mf.MATCH

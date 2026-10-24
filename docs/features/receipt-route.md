@@ -1,12 +1,12 @@
 # Which lane produced a result
 
 A Flywheel result can say how it was reached. A routed receipt
-(`flywheel.routed-receipt/v1`) wraps an ordinary receipt with a `route` block:
+(`flywheel.routed-receipt/v2`) wraps an ordinary receipt with a `route` block:
 
 - **A**: a machine re-derived the result against an independent checker.
 - **H**: a person re-derived it and signs.
-- **UNVERIFIABLE**: neither applies. Flywheel writes an unverifiable record
-  instead of letting the result pass quietly.
+- **UNVERIFIABLE**: neither applies. Flywheel writes an unverifiable record,
+  so the result carries that label wherever it goes.
 
 ```
 route: {
@@ -24,16 +24,20 @@ lane A result as lane H after signing changes the digest and breaks the
 signature. The wrapped receipt is unchanged: its schema, its claim digest and
 every existing reader keep working.
 
-Lane A is refused when the inputs say there is no independent checker, the task
-needs judgment, or its class is on the human-only list. An escalation always
-leaves lane A.
+Lane A requires an independent checker, a task that needs no judgment call, and
+a class outside the human-only list; otherwise the route is refused. An
+escalation always moves the result out of lane A.
 
-Each lane adds a line to the receipt's `does_not_prove`:
+The routed receipt's `scope` is the wrapped receipt's `scope` plus one code for
+the lane, naming what the route establishes:
 
-| Lane | Added limit |
+| Lane | Added scope code |
 | --- | --- |
-| A | `NOT_PROVES_HUMAN_SIGN_OFF` |
-| H | `NOT_PROVES_SIGNER_KEY_ROLE` (signer key roles are not checked yet) |
-| UNVERIFIABLE | `NOT_PROVES_ANY_CHECK_APPLIED` |
+| A | `MACHINE_REDERIVED_AGAINST_CHECKER` |
+| H | `PERSON_SIGNED_ROUTE_NAMES_SIGNER` (the route records the signer it names; signer key roles arrive with lane separation) |
+| UNVERIFIABLE | `NO_LANE_APPLIED_REASON_RECORDED` |
 
-The router that picks a lane and the signer key-role registry are not built yet.
+A v1 routed receipt keeps its older list name and its v1 lane codes, and it
+still reads and verifies with that vocabulary.
+
+Today the caller declares the lane in `declared_by`. An automatic router and a signer key-role registry are planned.

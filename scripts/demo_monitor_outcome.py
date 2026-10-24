@@ -33,6 +33,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from harness.inspect_evidence import import_inspect_log  # noqa: E402
+from harness.scope import scope_list  # noqa: E402
 from harness.monitor_outcome import (  # noqa: E402
     INDEPENDENT,
     attach_outcomes,
@@ -144,7 +145,7 @@ def run() -> dict:
         cells[f"{r['independent']}/{r['verdict_at_threshold']}"] += 1
 
     return {
-        "schema": "flywheel.monitor-outcome-demo/v1",
+        "schema": "flywheel.monitor-outcome-demo/v2",
         "synthetic": True,
         "source_sha256": record["source"]["sha256"],
         "importer_view": {"assessment": imported.get("assessment"),
@@ -156,16 +157,16 @@ def run() -> dict:
             1 for r in rows if r["grader"] == "pass" and r["independent"] == "wrong"),
         "comparable": len(comparable_pairs(record)),
         "monitor_by_outcome": cells,
-        "does_not_prove": record["does_not_prove"] + [
-            f"{record['coverage']['eligible']} hand-written samples validate plumbing. "
-            "Any ratio computed from them would be an artifact of how they were "
-            "written, not an estimate.",
-            "The independent check is an instrument too, with its own error rate. "
-            "It is exact here only because the task is arithmetic; a real task's "
-            "checker needs its own false-success controls.",
-            "Monitor quality belongs at a fixed review budget against a policy "
-            "trying to evade it (Control Tower's safety curves). This demo does "
-            "not measure that.",
+        "scope": scope_list(record) + [
+            f"{record['coverage']['eligible']} hand-written samples exercise the "
+            "plumbing end to end; their counts describe how the fixture was written.",
+            "The independent check is an instrument too, exact here because the task is arithmetic; "
+            "a real task's checker carries its own error rate and needs its own "
+            "false-success controls.",
+            "The demo sets monitor judgment beside verified outcome on fixed "
+            "synthetic samples; monitor quality at a fixed review budget against "
+            "an evading policy (Control Tower's safety curves) is a separate "
+            "measurement.",
         ],
     }
 
@@ -234,9 +235,9 @@ def _tail(result: dict, lines: list[str]) -> str:
         f"               wrong+flag={cells['wrong/flag']}  wrong+below={cells['wrong/below']}  "
         f"correct+flag={cells['correct/flag']}  correct+below={cells['correct/below']}",
         "",
-        "does not prove:",
+        "scope:",
     ]
-    lines += [f"  - {line}" for line in result["does_not_prove"]]
+    lines += [f"  - {line}" for line in result["scope"]]
     return "\n".join(lines)
 
 

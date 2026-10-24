@@ -223,10 +223,10 @@ def test_redact_replaces_a_secret_anywhere_and_counts_it():
         verdict.redact(value, ("",))
 
 
-def test_the_receipt_states_what_it_does_not_prove():
-    text = " ".join(verdict.DOES_NOT_PROVE)
-    for phrase in ("provider", "model quality", "bulletin write", "actuation",
-                   "consumer Windows"):
+def test_the_receipt_states_its_scope():
+    text = " ".join(verdict.SCOPE)
+    for phrase in ("provider key", "stub model server", "Bulletin", "actuated",
+                   "throwaway profile", "fixture assertion"):
         assert phrase in text
 
 

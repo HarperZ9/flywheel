@@ -22,7 +22,7 @@ Integration status: **native lane**. `index` is registered in `harness/lanes_reg
 - **Single-page workbench.** `index workbench` renders map, rendered docs, context lens, and a health panel into one offline HTML file, with page-weight budgets that print what they dropped as "N of M" and are overridable (`--max-doc-bodies`).
 - **Single-repo verified wiki.** `index wiki` derives one repo's wiki from the module and symbol graph and generates no prose. It seals a commit-pinned manifest; `index wiki --verify` re-checks it and returns MATCH, DRIFT, or UNVERIFIABLE with exit codes 0, 1, 2. A git URL is shallow-cloned, derived, and cleaned up. MCP tool `index.wiki`.
 - **Context lens and context envelope.** `index lens` replays the greedy budget rule live in the browser; `index context` packs repo-level dependency context; `index context-envelope` mints a budgeted packet where each retained repo carries hashed source references and each omission carries a typed code such as `budget_exceeded`, and `--verify` re-fingerprints a cached envelope and exits non-zero if the map drifted. Code in `src/index_graph/context/lens.py`, `context/envelope.py`, `context/pack.py`, `context/select.py`; MCP tools `index.context`, `index.context.envelope`, `index.select`.
-- **Symbol navigation and LSP.** `index symbols` gives go-to-definition, find-references, and find-implementations with `file:line` on every hop, from the CLI or over a hand-rolled stdio LSP server (`index lsp`) with no new dependencies. An unresolved reference returns empty and never guesses a jump. Code in `src/index_graph/cli_handlers/symbols.py`, `cli_handlers/lsp.py`, `internals/`; MCP tools `index.symbol-graph`, `index.symbol-definition`, `index.symbol-references`, `index.symbol-implementations`, `index_internals`, `index_focus`.
+- **Symbol navigation and LSP.** `index symbols` gives go-to-definition, find-references, and find-implementations with `file:line` on every hop, from the CLI or over a hand-rolled stdio LSP server (`index lsp`) on the standard library. An unresolved reference returns an empty list. Code in `src/index_graph/cli_handlers/symbols.py`, `cli_handlers/lsp.py`, `internals/`; MCP tools `index.symbol-graph`, `index.symbol-definition`, `index.symbol-references`, `index.symbol-implementations`, `index_internals`, `index_focus`.
 - **Architecture as a testable rule.** `index check` measures the real graph against layer, forbid, require, and `max_cycles` rules declared in `.index.toml`, reports each breach with file and line, and exits non-zero for CI. Code in `src/index_graph/arch/check.py`, `arch/criteria.py`.
 - **Drift, freshness, and invalidation.** `index snapshot` then `index drift` diff the shape over time; `index check --freshness` stamps a workspace-fingerprint certificate that `index freshness` later answers FRESH or STALE; `index invalidate` names exactly which artifacts a change invalidated with typed reasons (schema `index.invalidation/1`). Code in `src/index_graph/drift/`, `freshness/`, `certify/`; MCP tools `index.invalidate`, `index_verify`.
 - **Router doc.** `index router` derives a deterministic `CLAUDE.md`/`AGENTS.md` workspace map from the graph and docs. MCP tool `index_router`.
@@ -42,7 +42,7 @@ Integration status: **native lane**. `index` is registered in `harness/lanes_reg
 pip install index-graph
 ```
 
-Python 3.11 or newer. No other runtime dependency.
+Python 3.11 or newer; the package runs on the standard library.
 
 **Map one unfamiliar repo and re-check it.**
 
@@ -122,7 +122,7 @@ curl -s localhost:PORT/api/index/summary -d '{"root":"path/to/workspace"}'
 | `index status` / `doctor` / `demo` | Operator envelopes, machine-readable with `--json`. |
 | `index mcp` | Serve the surfaces above as MCP tools. |
 
-**MCP tools** (from `src/index_graph/mcp.py` `_tool_defs()` at the pinned commit, the 23 the payload row lists): `index.map`, `index.context`, `index.context.envelope`, `index.select`, `index.invalidate`, `index.wiki`, `index.symbol-graph`, `index.symbol-definition`, `index.symbol-references`, `index.symbol-implementations`, `index.status`, `index.doctor`, `index_graph`, `index_focus`, `index_verify`, `index_router`, `index.route`, `index_internals`, `index.router.job.start`, `index.router.job.status`, `index.router.job.result`, `index.router.job.cancel`, `index.router.job.resume`. Four tools cache their result, keyed on the root, its workspace signature, the arguments and the tool version: `index.context`, `index_graph`, `index.context.envelope` (not with `bounded_output`) and `index_router`.
+**MCP tools** (from `src/index_graph/mcp.py` `_tool_defs()` at the pinned commit, the 23 the payload row lists): `index.map`, `index.context`, `index.context.envelope`, `index.select`, `index.invalidate`, `index.wiki`, `index.symbol-graph`, `index.symbol-definition`, `index.symbol-references`, `index.symbol-implementations`, `index.status`, `index.doctor`, `index_graph`, `index_focus`, `index_verify`, `index_router`, `index.route`, `index_internals`, `index.router.job.start`, `index.router.job.status`, `index.router.job.result`, `index.router.job.cancel`, `index.router.job.resume`. Four tools cache their result, keyed on the root, its workspace signature, the arguments and the tool version: `index.context`, `index_graph`, `index.context.envelope` (when `bounded_output` is unset) and `index_router`.
 
 **Flywheel bridge functions** (`harness/index_bridge.py`): `index_view(root, view)` runs one of three views (`map`, `graph`, `symbols`) and returns the engine JSON under `result` (schema `flywheel.index-view/v1`); `index_summary(root)` returns a compact card (`repo_count`, `dirty_count`, `class_total`, `root_sha256_prefix`; schema `flywheel.index-summary/v1`). Durable workspace-map jobs live in `harness/index_jobs.py` (schema `flywheel.index-workspace-map-job/v1`).
 
@@ -152,20 +152,20 @@ So the lane's organ is `structure` and its role is the catalog lane. It is a `pi
 - A budgeted `context.envelope` with hashed source references and typed omission codes that an execution lane loads as its context.
 - A sealed, commit-pinned wiki and a set of verdict artifacts (`index.invalidation/1`, freshness certificates) that a downstream check re-runs.
 
-**Worked example: index + gather + an execution lane.** A concrete flow that uses only real tool names:
+**Worked example: index + gather + an execution lane.** A concrete flow with real tool names:
 
 1. The `gather` lane (organ `perception`) runs an intake and writes a corpus with provenance receipts under a run root.
-2. `index context-envelope --root workspace --budget 8000 --focus target-repo --json > envelope.json` mints a budgeted packet. Retained repos carry hashed source references; anything dropped carries a code such as `budget_exceeded`, so a reader can ask for the dropped file. A missing file never passes as verified content.
+2. `index context-envelope --root workspace --budget 8000 --focus target-repo --json > envelope.json` mints a budgeted packet. Retained repos carry hashed source references; anything dropped carries a code such as `budget_exceeded`, so a reader can ask for the dropped file. A missing file shows as missing.
 3. An execution lane (the bundled `local-model` engine, or the `relay` agent) receives that envelope as its context, so its run starts from a bounded, receipt-backed view of the workspace.
-4. Before the run acts, `index context-envelope --verify envelope.json --root workspace` re-fingerprints the repos and exits non-zero if the map moved under the envelope. A non-zero exit stops the run before it acts on a stale map.
+4. Before the run acts, `index context-envelope --verify envelope.json --root workspace` re-fingerprints the repos and exits 1 if the map moved under the envelope, which stops the run before it acts on a stale map.
 
 The same seam works over MCP: a host calls `call_lane_tool("index", "index.context.envelope", {...})` (`harness/lane_caller.py`) and gets the identical envelope the CLI produces.
 
-**Wiring status against the chorus model.** The task's reference case, `chorus`, is wired as a bridge (`harness/chorus_bridge.py`), a gateway route (`/api/discourse`, `harness/gateway.py:1973`), and an expected-set test (`tests/test_chorus_bridge.py`), but it is not a lane. index carries that same bridge and route pattern and adds the two pieces that make it a full native lane:
+**Wiring status against the chorus model.** `chorus` is wired as a bridge (`harness/chorus_bridge.py`), a gateway route (`/api/discourse`, `harness/gateway.py:1973`), and an expected-set test (`tests/test_chorus_bridge.py`). index carries that same bridge and route pattern as a full native lane:
 
 - **lanes_registry entry.** Present (`harness/lanes_registry.py:68-71`).
 - **Expected-set test.** Present (`tests/test_lanes.py` pins the roster membership and the install-name-to-command asymmetry).
 - **Desktop card and route.** Present (`harness/index_bridge.py`, `harness/index_route.py`, `harness/index_jobs.py`, dispatched at `harness/gateway.py:1963`).
 - **Payload manifest and schemas.** Present: MCP tools declared in `src/index_graph/mcp.py`, artifact schemas in the index repo's `docs/PROTOCOL.md`, and the Flywheel wrapper schemas `flywheel.index-view/v1`, `flywheel.index-summary/v1`, `flywheel.index-workspace-map-job/v1`.
 
-No new lane wiring is required. The remaining items are corrections, not integration work, and are recorded in the integration-gap note: a dead `relation_count` field the project card reads but the summary never sets, and a desktop bridge that covers three of the CLI's surfaces while the rest reach Flywheel through the MCP lane and CLI.
+The lane wiring is complete. Two corrections remain, recorded in the integration-gap note: a `relation_count` field the project card reads and the summary leaves unset, and a desktop bridge that covers three of the CLI's surfaces while the rest reach Flywheel through the MCP lane and CLI.

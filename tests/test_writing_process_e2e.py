@@ -64,19 +64,19 @@ def test_installed_cli_and_stdio_mcp_author_pipeline(tmp_path):
     py = _venv_python(tmp_path / "venv")
     home = tmp_path / "home"
     brief = tmp_path / "brief.json"; sources = tmp_path / "sources.json"
-    brief.write_text(json.dumps({"schema": "flywheel.writing-project-brief/v1",
+    brief.write_text(json.dumps({"schema": "flywheel.writing-project-brief/v2",
         "project_ref": PROJECT, "mode": "nonfiction", "form": "essay",
         "working_title": "Release evidence", "audience": "operators",
         "reader_job": "decide whether to publish",
         "author_intent": "publish after receipts match",
         "voice_contract": {"style_ref": "voice_rules"},
         "source_packet_ref": "packet_main", "writing_profile": "nonfiction",
-        "does_not_prove": ["truth"]}), encoding="utf-8")
-    sources.write_text(json.dumps({"schema": "flywheel.writing-source-packet/v1",
+        "scope": ["truth"]}), encoding="utf-8")
+    sources.write_text(json.dumps({"schema": "flywheel.writing-source-packet/v2",
         "project_ref": PROJECT, "source_packet_ref": "packet_main",
         "sources": [{"source_id": "src_receipt", "title": "Receipt",
         "origin": "local", "allowed_use": "cite"}],
-        "does_not_prove": ["interpretation"]}), encoding="utf-8")
+        "scope": ["interpretation"]}), encoding="utf-8")
     proposal = _flywheel(tmp_path / "venv", py, home, [
         "init", "--brief", str(brief), "--source-packet", str(sources),
         "--client-request-id", "init", "--prepare", "--json"])
@@ -115,7 +115,7 @@ def test_installed_cli_and_stdio_mcp_author_pipeline(tmp_path):
     head = _approve_commit(tmp_path / "venv", py, home, diag)["event_head_sha256"]
     card = tmp_path / "card.json"
     start = len("Recommendation: "); end = start + len("hold")
-    card.write_text(json.dumps({"schema": "flywheel.writing-scoped-revision/v1",
+    card.write_text(json.dumps({"schema": "flywheel.writing-scoped-revision/v2",
         "project_ref": PROJECT, "card_ref": CARD,
         "diagnostic_ref": diagnostic_ref, "problem": "Reflect release evidence.",
         "goal": "replace only the recommendation",
@@ -126,7 +126,7 @@ def test_installed_cli_and_stdio_mcp_author_pipeline(tmp_path):
         "base_revision_ref": revision["revision_ref"],
         "base_body_sha256": revision["body_sha256"], "coordinate_type": "unicode_codepoint", "start": start, "end": end,
         "selected_span_sha256": sha256_bytes(b"hold")},
-        "does_not_prove": ["quality"]}), encoding="utf-8")
+        "scope": ["quality"]}), encoding="utf-8")
     head = _approve_commit(tmp_path / "venv", py, home, _flywheel(
         tmp_path / "venv", py, home, ["card", "record", "--journey-ref", journey,
         "--expected-event-head", head, "--client-request-id", "card",
@@ -157,7 +157,7 @@ def test_installed_cli_and_stdio_mcp_author_pipeline(tmp_path):
             "base_revision_ref": revision["revision_ref"],
             "base_body_sha256": revision["body_sha256"], "coordinate_type": "unicode_codepoint", "start": 0, "end": 22,
             "selected_span_sha256": revision["body_sha256"]},
-            "does_not_prove": ["quality"]}}, 6)
+            "scope": ["quality"]}}, 6)
         assert old_card["error"]["code"] == "ARTIFACT_SCHEMA_INVALID"
         env_status = _mcp_call(proc, "writing.status", {}, 2)
         assert env_status["projects"][0]["journey_ref"] == journey

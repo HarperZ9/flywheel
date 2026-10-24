@@ -34,6 +34,7 @@ import pytest
 from harness import lane_tool_policy as policy
 from harness.lanes_registry import LANES
 from harness.mcp_client import LaunchSpec
+from harness.scope import scope_list
 
 ROOT = Path(__file__).resolve().parents[1]
 ROWS = {json.loads(line)["lane"]: json.loads(line) for line in (
@@ -63,7 +64,7 @@ def test_the_relay_expectation_descriptor_and_submodule_agree():
     descriptor = json.loads((ROOT / "packaging" / "bundled-lanes" / "relay.json").read_text(
         encoding="utf-8"))
     assert (descriptor["version"], descriptor["source"]["commit"]) == PINS["relay"][::2]
-    text = " ".join(descriptor["does_not_prove"])
+    text = " ".join(scope_list(descriptor))
     assert "relay 0.3.0" not in text and "relay 0.4.0" not in text
     assert "relay 0.6.0" in text
     gitlink = (ROOT / ".gitmodules").read_text(encoding="utf-8")

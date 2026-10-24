@@ -37,15 +37,14 @@ DEFAULT_N_MIN = 1
 OBJECTIVE = ("measurement gate: the effect interval clears the registered "
              "minimum and the negative-control interval holds at zero")
 
-# does_not_prove: the scope a passing gate does NOT extend to. Both travel on
-# every dispositive verdict so the receipt can never read as more than checked.
-_EVIDENCE_NOT_PROOF = ("a passing interval is evidence the effect cleared the "
-                       "registered minimum on this sample, not proof of the "
-                       "effect")
-_CONTROL_SCOPE = ("the negative control bounds only the tested confound; an "
-                  "untested confound is not excluded")
-_NO_DENOMINATOR = ("a measurement without its denominator and interval is not a "
-                   "result, so nothing was disposed")
+# scope: how far a gate verdict reaches. Both lines travel on every dispositive
+# verdict so the receipt reads as exactly what was checked.
+_SAMPLE_EVIDENCE = ("the effect interval cleared the registered minimum on this "
+                    "sample; the interval is evidence for the effect")
+_CONTROL_SCOPE = ("the negative control bounds the tested confound, and that "
+                  "confound only")
+_NO_DENOMINATOR = ("the measurement arrived without its denominator and "
+                   "interval, so the gate disposed nothing")
 
 _REQUIRED = ("effect", "ci_low", "ci_high", "min_effect", "n")
 
@@ -221,11 +220,10 @@ class MeasurementOracle:
                 verdict_=Verdict.UNVERIFIABLE, execution=Execution.COMPLETED,
                 unverifiable_reason=(unverifiable_reason.value
                                      if unverifiable_reason else ""),
-                does_not_prove=[_NO_DENOMINATOR, _EVIDENCE_NOT_PROOF,
-                                _CONTROL_SCOPE],
+                scope=[_NO_DENOMINATOR, _SAMPLE_EVIDENCE, _CONTROL_SCOPE],
                 coverage=coverage, objective=OBJECTIVE)
         return OracleResult(
             cmd=CMD, output_hash=output_hash, stdout_excerpt=reason[:1200],
             rc=rc, verdict_=verdict,
-            does_not_prove=[_EVIDENCE_NOT_PROOF, _CONTROL_SCOPE],
+            scope=[_SAMPLE_EVIDENCE, _CONTROL_SCOPE],
             coverage=coverage, objective=OBJECTIVE)

@@ -3,24 +3,16 @@ from __future__ import annotations
 from copy import deepcopy
 import hashlib
 from pathlib import Path
-from .bundle import LIMITS as BUNDLE_LIMITS, SCHEMA as BUNDLE_SCHEMA
 from .bundle import safe_relative, verify_bundle
 from .checker_identity import validate_checker_source
 from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
+from .evidence_packet_vocab import SCHEMA, vocabulary_for
 from .pytest_result_validation import validate_pytest_result
 from .receipt import Receipt
-from .runtime_descriptor import PYTHON_LIMITS
+from .scope import LEGACY_SCOPE_KEY, SCOPE_KEY, scope_of
 from .verdict import Attribution, Execution, Verdict
-SCHEMA = "flywheel.evidence-packet/v1"
 CHECK_KEYS = frozenset(("command", "output_hash", "return_code", "execution",
                         "attribution", "verdict", "denominator"))
-DNP = (
-    "NOT_PROVES_CHECKER_CORRECTNESS: carried checker source can be inspected but its "
-    "presence does not prove that it implements the intended predicate.",
-    "NOT_PROVES_EVIDENCE_COMPLETENESS: carried artifacts prove what was packed, not "
-    "that no relevant evidence was omitted before packing.",
-    "NOT_PROVES_LIVE_PROVIDER_STATE: offline recheck makes no provider or network call.", "NOT_PROVES_ORIGIN_AUTHENTICITY: an unsigned packet has no authenticated author.",
-    "NOT_PROVES_REHASH_RESISTANCE: self-carried hashes need an external manifest anchor.") + PYTHON_LIMITS
 MAX_JSON, MAX_FILE, MAX_FILES, MAX_DEPTH = 1_048_576, 2_097_152, 1024, 32
 def digest(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
@@ -196,7 +188,8 @@ def verify_journey_packet(packet_dir: Path, *, expected_manifest_sha256: str | N
     if bundle.get("verdict") != "MATCH": return {"schema": SCHEMA, **bundle}
     try:
         criterion = deepcopy(parsed["criterion.json"]); claimed = criterion.pop("criterion_sha256", None)
-        if criterion.get("schema") != SCHEMA or claimed != canonical_sha256(criterion):
+        vocab = vocabulary_for(criterion.get("schema"))
+        if vocab is None or claimed != canonical_sha256(criterion):
             return _drift("packet criterion drift")
         criterion["criterion_sha256"] = claimed; journey = criterion["journey"]
         view, claims = project(journey)
@@ -204,10 +197,11 @@ def verify_journey_packet(packet_dir: Path, *, expected_manifest_sha256: str | N
                 or criterion.get("event_head_sha256") != journey["event_head_sha256"]):
             return _drift("journey body or head drift")
         if criterion.get("claim_ids") != view["claim_ids"]: return _drift("claim ids drift")
-        if (criterion.get("does_not_prove") != list(DNP)
-                or manifest.get("does_not_prove") != list(BUNDLE_LIMITS) + list(DNP)):
-            return _drift("does_not_prove drift")
-        if manifest.get("schema") != BUNDLE_SCHEMA: return _drift("manifest schema drift")
+        other = SCOPE_KEY if vocab.scope_key == LEGACY_SCOPE_KEY else LEGACY_SCOPE_KEY
+        if (criterion.get(vocab.scope_key) != list(vocab.scope) or other in criterion
+                or manifest.get(vocab.scope_key) != vocab.manifest_scope() or other in manifest):
+            return _drift("scope drift")
+        if manifest.get("schema") != vocab.bundle_schema: return _drift("manifest schema drift")
         expected_tree = {"schema": "flywheel.evidence-journey-head/v1",
             "size": len(journey["events"]), "root": "sha256:" + str(journey["event_head_sha256"])}
         if parsed["tree_head.json"] != expected_tree: return _drift("tree head drift")
@@ -226,8 +220,8 @@ def verify_journey_packet(packet_dir: Path, *, expected_manifest_sha256: str | N
                     or fact["ref"] not in claim.get("receipt_refs", [])):
                 return _drift("receipt claim binding drift")
             if receipt.verdict.value != claim["verdict"]: return _drift("receipt verdict drift")
-            if receipt.does_not_prove() != body.get("does_not_prove"):
-                return _drift("receipt limits drift")
+            if receipt.scope() != scope_of(body):
+                return _drift("receipt scope drift")
             for item in receipt.coverage.get("raw_artifacts", []):
                 actual = raw_actual.get(item.get("ref"))
                 if actual is None or item != {key: actual[key] for key in ("ref", "sha256", "bytes")}:
@@ -268,7 +262,7 @@ def verify_journey_packet(packet_dir: Path, *, expected_manifest_sha256: str | N
         expected_paths.update(item["packet_path"] for item in criterion["raw_artifacts"])
         expected_paths.update(item["packet_path"] for item in checkers)
         exact_count = len(seen) + len(raw_actual) + len(checkers) + 4
-        expected_pack = {"schema": BUNDLE_SCHEMA, "receipt_count": len(seen),
+        expected_pack = {"schema": vocab.bundle_schema, "receipt_count": len(seen),
             "raw_artifact_count": len(raw_actual), "checker_count": len(checkers),
             "file_count": exact_count}
         if (criterion.get("pack_manifest") != expected_pack or len(files) != exact_count
@@ -285,4 +279,4 @@ def verify_journey_packet(packet_dir: Path, *, expected_manifest_sha256: str | N
         "required_external_anchor": None if authenticated else "expected_manifest_sha256", "journey_id": journey["journey_id"],
         "event_head_sha256": journey["event_head_sha256"], "packet_sha256": packet_sha256,
         "files_checked": bundle["files_checked"], "receipts_checked": len(seen),
-        "does_not_prove": criterion["does_not_prove"]}
+        "scope": scope_of(criterion)}

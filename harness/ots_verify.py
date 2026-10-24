@@ -8,7 +8,7 @@ commitment operations from the digest we expected, and where the walk reaches a
 Bitcoin attestation it rechecks the header's proof of work against a real target.
 That recheck is internal consistency plus real work, not chain linkage: it
 refuses a zero-work forgery, but a bundle-carried header is only as trustworthy
-as its source (see `anchor.does_not_prove`).
+as its source (see `anchor.scope`).
 
 The proof format is OpenTimestamps' detached-timestamp serialization: a magic
 header, a version, the operation used to hash the file and that file's digest,

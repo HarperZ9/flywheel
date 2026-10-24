@@ -1,4 +1,4 @@
-"""receipt.py -- flywheel.observation-receipt/v1, written into the monitor's sealed chain.
+"""receipt.py -- flywheel.observation-receipt/v2, written into the monitor's sealed chain.
 
 The trace-observation layer and the pre-action monitor share one receipt path:
 an observation receipt is appended to the same records.jsonl a monitor home
@@ -11,6 +11,10 @@ raised it.
 Field order follows MODULE-DESIGN section 7. No floats: counts are digit
 strings, interval bounds are four-place decimal strings, booleans are
 "true"/"false". Reasoning text never enters a receipt, only its digest.
+
+A v2 receipt carries `scope`, a line saying what the component's result
+covers. v1 receipts, already sealed into existing chains, carry the same line
+under the older field name; the ledger still reads and verifies them.
 """
 from __future__ import annotations
 
@@ -18,12 +22,14 @@ from datetime import datetime, timezone
 
 from ..preaction.records import HoldStore, verify_seal
 
-SCHEMA = "flywheel.observation-receipt/v1"
+SCHEMA_V1 = "flywheel.observation-receipt/v1"
+SCHEMA = "flywheel.observation-receipt/v2"  # v2 names `scope`
+SCHEMAS = (SCHEMA, SCHEMA_V1)
 COMPONENT_VERSION = "0.1.0"
 
 
 class FloatInReceipt(ValueError):
-    """A float reached a receipt; the v1 contract allows strings and integers only."""
+    """A float reached a receipt; the contract allows strings and integers only."""
 
 
 def _no_floats(value, path="receipt") -> None:
@@ -42,11 +48,12 @@ def utc_now() -> str:
 
 
 def build_receipt(*, run_id: str, component: str, subject: dict, inputs: dict, result: dict,
-                  gaps: list, does_not_prove: str, controls: list | None = None,
+                  gaps: list, scope: str, controls: list | None = None,
                   readout_provenance: dict | None = None, flywheel_revision: str = "unrecorded",
                   probe_blob_sha: dict | None = None, started_utc: str = "",
                   finished_utc: str = "") -> dict:
-    """One observation receipt in fixed field order. Chain and seal come at append."""
+    """One observation receipt in fixed field order. Chain and seal come at append.
+    ``scope`` says what the component's result covers."""
     rec = {
         "schema": SCHEMA,
         "source": f"observation:{run_id}:{component}",
@@ -61,7 +68,7 @@ def build_receipt(*, run_id: str, component: str, subject: dict, inputs: dict, r
         "controls": list(controls or []),
         "result": dict(result),
         "gaps": [g.to_dict() if hasattr(g, "to_dict") else dict(g) for g in gaps],
-        "does_not_prove": does_not_prove,
+        "scope": scope,
         "started_utc": started_utc or utc_now(),
         "finished_utc": finished_utc or utc_now(),
     }
@@ -76,6 +83,7 @@ class ObservationLedger:
         self.store = HoldStore(home)
 
     def append(self, receipt: dict) -> str:
+        """Append a new receipt. Only the current version is written."""
         if receipt.get("schema") != SCHEMA:
             raise ValueError("ObservationLedger.append: not an observation receipt")
         _no_floats(receipt)
@@ -83,7 +91,7 @@ class ObservationLedger:
 
     def receipts(self, run_id: str | None = None) -> list:
         return [r for r in self.store.read_all(tolerant=True)
-                if r.get("schema") == SCHEMA and (run_id is None or r.get("run_id") == run_id)]
+                if r.get("schema") in SCHEMAS and (run_id is None or r.get("run_id") == run_id)]
 
     def verify(self, seal_hex: str) -> bool:
         for r in self.receipts():

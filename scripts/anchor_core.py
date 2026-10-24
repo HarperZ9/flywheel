@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from harness import anchor, ots_verify, receipt_signer  # noqa: E402
 from harness import anchor_zenodo, zenodo_deposit  # noqa: E402
+from harness.scope import scope_list  # noqa: E402
 
 _COMMENT = "flywheel-receipt-signing"
 
@@ -165,7 +166,7 @@ def zenodo_dry_run(anchor_rec: dict, *, title: str = None,
         "bound_digest": anchor_rec.get("anchor_digest"),
         "digest_hex": anchor_rec.get("digest_hex"),
         "metadata": metadata,
-        "does_not_prove": anchor_zenodo.does_not_prove(),
+        "scope": anchor_zenodo.scope(),
     }
 
 
@@ -204,9 +205,9 @@ def zenodo_report_lines(report: dict) -> list[str]:
         f"    creators    : {', '.join(c['name'] for c in md['creators'])}",
         f"    upload_type : {md['upload_type']}",
         f"    access      : {md['access_right']} ({md.get('license', 'n/a')})",
-        "  does not prove:",
+        "  scope:",
     ]
-    lines += [f"    - {r}" for r in report["does_not_prove"]]
+    lines += [f"    - {r}" for r in scope_list(report)]
     lines.append(
         "  a live deposit is a separate, gated step: it needs the Zenodo token "
         "and an explicit go, and publish is irreversible.")
@@ -232,8 +233,8 @@ def zenodo_live_report_lines(result: dict, *, sandbox: bool) -> list[str]:
     else:
         lines.append("  a draft was created; no DOI minted. Re-run with --publish "
                      "to mint the permanent DOI (irreversible).")
-    lines.append("  does not prove:")
-    lines += [f"    - {r}" for r in result.get("does_not_prove", [])]
+    lines.append("  scope:")
+    lines += [f"    - {r}" for r in scope_list(result)]
     return lines
 
 

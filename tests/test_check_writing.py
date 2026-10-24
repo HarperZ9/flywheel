@@ -104,9 +104,9 @@ def test_off_profile_reports_no_hard_violations():
     assert r["hard"] == []
 
 
-def test_output_string_carries_the_does_not_prove_line():
-    assert "form" in CW.DOES_NOT_PROVE.lower()
-    assert "not" in CW.DOES_NOT_PROVE.lower()
+def test_output_string_carries_the_scope_line():
+    assert "form" in CW.SCOPE.lower()
+    assert "substance" in CW.SCOPE.lower()
 
 
 def test_multi_word_and_phrasal_and_hedge_phrases_are_counted():
@@ -181,7 +181,7 @@ def test_json_output_carries_score_and_disclaimer(tmp_path):
     assert r.returncode == 0, r.stdout + r.stderr
     doc = json.loads(r.stdout)
     assert doc["files"][0]["per100w"] >= 0
-    assert "form" in doc["does_not_prove"].lower()
+    assert "form" in doc["scope"].lower()
 
 
 def test_profile_is_inferred_from_path_when_not_given(tmp_path):

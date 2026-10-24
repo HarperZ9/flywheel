@@ -77,7 +77,7 @@ def _created_with_claim(state, evidence, owner, log):
         "expected_event_head": ack["event_head_sha256"],
         "client_request_id": "claim-1", "command": {"type": "record_claim",
         "claim": {"claim_id": "claim-1", "statement": "Data is deterministic",
-        "depends_on": [], "does_not_prove": "claim correctness"}}}
+        "depends_on": [], "scope": "claim correctness"}}}
     return _mutate("append", claim, state, evidence, owner, log,
                    "record_claim", "record_claim_event")[0]
 

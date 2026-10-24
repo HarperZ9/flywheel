@@ -10,6 +10,9 @@ from .decision_contract import ID_PATTERN, validate_request
 from .evidence_json import canonical_sha256
 
 TRAINING_SCHEMA = "flywheel.classifier-training-manifest/v1"
+TRAINING_REPORT_SCHEMA = "flywheel.classifier-training-report/v2"
+# v1 reports name the scope list with the older key.
+TRAINING_REPORT_SCHEMA_V1 = "flywheel.classifier-training-report/v1"
 PROVENANCE_KINDS = {"synthetic", "human_reviewed", "verified_outcome", "teacher"}
 EXAMPLE_KEYS = {
     "task_family", "source_group", "request",
@@ -195,7 +198,7 @@ def train_classifier_baseline(
                     updates += _update(
                         family_weights, pos, neg, float(learning_rate))
     report = {
-        "schema": "flywheel.classifier-training-report/v1",
+        "schema": TRAINING_REPORT_SCHEMA,
         "training_manifest_sha256": manifest_sha,
         "seed": seed,
         "epochs": epochs,
@@ -210,10 +213,11 @@ def train_classifier_baseline(
         "excluded": excluded,
         "task_family_counts": dict(sorted(task_family_counts.items())),
         "label_provenance_counts": dict(sorted(provenance_counts.items())),
-        "does_not_prove": [
-            "training data label truth or independence",
-            "generalization beyond the supplied examples",
-            "calibration, automatic routing safety, or execution authorization",
+        "scope": [
+            "pairwise weight updates over the trainable examples counted here",
+            "labels and provenance kinds as the training manifest declares them",
+            "fit to these examples; an uncalibrated advisory scorer with no "
+            "routing or execution authority",
         ],
     }
     model = LinearClassifierModel(

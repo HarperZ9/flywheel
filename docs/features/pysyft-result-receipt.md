@@ -1,7 +1,7 @@
 # PySyft result receipt
 
 A signed receipt for one approved PySyft job, which a person outside the run can check
-with no access to the model or the data.
+from the receipt alone, while the model and the data stay private.
 
 PySyft keeps a private model and private data hidden while an approved job runs. Since
 PR #9536 (merged 2026-10-01), syft-job hashes a job when it arrives and when the data
@@ -29,7 +29,7 @@ signer's public key, `python -m harness.job_result_verify` checks:
 | `receipt_id` | A `receipt_id` that does not recompute from the body's nonce, job and result. A signer who rebuilds a result and leaves the old id, or forges a fresh one, is caught here. |
 | `replay_nonce`, `replay_seen` | An old receipt presented for a new request. The seen-list is keyed on the recomputed id. |
 | `superstack:*`, `superstack_scene` | The embedded superstack receipt's seal, or its binding to the approved hash, does not hold. |
-| `schema_or_limits` | A receipt that drops or rewords any of its fixed `does_not_prove` lines. |
+| `schema_or_scope` | A receipt that drops or rewords any of its fixed `scope` lines. |
 | `reveal` | Once the hidden answers are revealed, a row's `correct` flag does not rescore. |
 
 Verdicts are MATCH, DRIFT (naming every failed check), or UNVERIFIABLE when an input a
@@ -38,7 +38,7 @@ beside the verdict, with the reason.
 
 ## The receipt
 
-Schema `flywheel.pysyft-job-result/v1`, inside a `flywheel.signed-job-result/v1`
+Schema `flywheel.pysyft-job-result/v2`, inside a `flywheel.signed-job-result/v1`
 envelope. The body holds:
 
 - `job`: `approved_hash` and `received_hash` as PySyft recorded them, the hash rule
@@ -49,15 +49,15 @@ envelope. The body holds:
   (`correct` of `total`), `items_root` (an RFC 6962 style Merkle root over each row's
   canonical JSON), and `results_sha256`.
 - `commitments`: SHA-256 values the data owner supplies for the hidden dataset and
-  model. A stranger cannot open them.
+  model, opened later by the owner.
 - `attestation`: always `UNVERIFIABLE` in this version, with the gap named.
 - `superstack`: a `superstack.receipt/1` (superstack 0.2.0). Its scene is the approved
   job; its content is the released results bytes. Its two verdicts are identity (do the
   bytes match) and tolerance (does the claimed score recompute from the rows).
 - `nonce` and `receipt_id`: the requesting party's challenge, and the superstack
   canonical SHA-256 of `{nonce, job, result}`, for replay checks. The verifier
-  recomputes the id and never trusts the recorded one.
-- `does_not_prove`: the fixed list below.
+  recomputes the id and compares it with the recorded one.
+- `scope`: the fixed list below.
 
 The signature is Ed25519 over `claim_sha256`, the superstack canonical JSON SHA-256 of
 the body. The envelope's `schema` and the signature's `key_id` sit outside that body, so
@@ -132,41 +132,45 @@ Exit codes: 0 for MATCH, 1 for DRIFT, 2 for UNVERIFIABLE.
   verifier returned MATCH on 81 of the rest: 69 flips in the values of the envelope
   `schema` and `signature.key_id`, and 12 in those two key names, which drop the field. With the `key_id` and `envelope_schema` checks it returns MATCH on
   none. The gap was found by an independent in-browser re-derivation of this verifier.
-- **Not run.** No enclave and no attestation. No syft-enclave, syft-rds or multi-party
-  flow. No network sync between two machines; both roles shared one folder.
-- **Windows.** syft-job's arrival check did not pass on a Windows checkout in this test.
+- **Test scope.** One machine, both roles sharing one folder. Enclave attestation,
+  syft-enclave, syft-rds, multi-party flows and network sync between machines are
+  the next tests to run.
+- **Windows.** syft-job's arrival check failed on a Windows checkout in this test.
   The submitter declares a newline-normalized hash and the owner hashes raw bytes, so a
-  CRLF file never leaves the `received` state. The Flywheel verifier itself runs on
+  CRLF file stays in the `received` state. The Flywheel verifier itself runs on
   Windows.
-- **PyPI.** syft-job 0.1.40 on PyPI predates PR #9536 and has no approved hash, so
-  Flywheel declares no `pysyft` extra yet. Flywheel's core and the verifier never import
-  syft. `harness/pysyft_adapter.py` works on a `JobClient` the caller already built.
+- **PyPI.** syft-job 0.1.40 on PyPI predates PR #9536 and its approved hash, so the
+  `pysyft` extra waits for the next syft-job release. Flywheel's core and the verifier
+  stand apart from syft; `harness/pysyft_adapter.py` works on a `JobClient` the caller
+  already built.
 
-## does_not_prove
+## What the receipt covers
 
-These lines are fixed in `harness/job_result_receipt.py`. The verifier rejects a receipt
-whose list differs from them by a word.
+A passing check shows that the key holder issued this body, that the body binds the
+approved job, the approval record PySyft wrote, the score and the per-item rows, and
+that every digest recomputes. The score is consistent with the rows; the rows are
+rescored once the hidden answers are revealed. The identity of the hidden model and
+data rests on the enclave attestation link, and the choice of benchmark and scoring
+rule rests on its own review.
 
-- It does not prove the hidden model or the hidden data were what the parties said;
-  that needs the enclave attestation link, which this receipt does not carry.
-- It does not prove the job ran only once, or that a run with a worse score was not
-  discarded before this receipt was issued.
-- It does not prove the reviewer read the code or judged it well; it binds the approval
-  record PySyft wrote, and PySyft does not sign that record.
-- It does not prove the scoring rule or the benchmark measures what it claims to.
-- It does not prove the per-item rows are correct until the hidden answers are revealed
-  and rescored; before that, the score is only consistent with the rows.
-- It does not prove anything about enclave side channels, the hardware vendor, or any
-  attestation verifier.
-- A valid signature shows only that the key holder issued this body. It says nothing
-  about whether the key holder is honest.
+Every receipt carries the same seven-line `scope` list, fixed in
+`harness/job_result_receipt.py`, and the verifier rejects a receipt whose list
+differs by a word. Records of the older version (`flywheel.pysyft-job-result/v1`)
+name the list `does_not_prove` and carry the v1 wording (`SCOPE_V1`); the
+verifier checks each version against its own list, and the embedded
+`superstack.receipt/1` names its copy `does_not_prove` because that contract is
+vendored. Print the current list with:
 
-One test states the fifth line's consequence outright: a signer who lies consistently
+```bash
+python -c "import harness.job_result_receipt as m; print(*m.SCOPE, sep='\n')"
+```
+
+One test shows the rows' limit outright: a signer who lies consistently
 in the rows, and rebuilds every digest including `receipt_id`, passes every check until
 the answers are revealed. A lie that leaves `receipt_id` stale fails before the reveal.
 
 ## Licences
 
-PySyft is Apache-2.0. Nothing from it is vendored. `harness/pysyft_job_hash.py` restates
+PySyft is Apache-2.0, and Flywheel carries none of its code. `harness/pysyft_job_hash.py` restates
 the hash format and names its source file and commit. The superstack contract file is
 vendored under its own FSL-1.1-MIT notice.

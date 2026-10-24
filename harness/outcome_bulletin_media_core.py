@@ -11,14 +11,15 @@ from .evidence_json import canonical_bytes, canonical_sha256, strict_load_json
 from .evidence_public import TransportError, public_metadata, public_result
 from .gateway_operation import CREDENTIAL_REF_PATTERN, _relative_path, thaw_operation
 from .outcome_bulletin_media_metadata import _same_media, _media_mismatch_fields
-from .outcome_bulletin import _PUBLIC_PREFIXES, _check_no_private
+from .outcome_bulletin import PUBLICATION_SCHEMA, _PUBLIC_PREFIXES, _check_no_private
 from .private_artifact_fs import ArtifactIdentity, open_artifact_root, root_identity
 
 REQUEST_SCHEMA = "flywheel.outcome-bulletin-media-request/v1"
 PREVIEW_SCHEMA = "flywheel.outcome-bulletin-media-preview/v1"
 PRIVATE_PACKET_SCHEMA = "flywheel.outcome-bulletin-media-private-packet/v1"
-REVIEW_SCHEMA = "flywheel.bulletin-media-review/v1"
-PUBLICATION_SCHEMA = "flywheel.outcome-bulletin-publication/v1"
+# v2 reviews name the coverage list `scope`; v1 reviews carried the older limit list.
+REVIEW_SCHEMA_V1 = "flywheel.bulletin-media-review/v1"
+REVIEW_SCHEMA = "flywheel.bulletin-media-review/v2"
 TOOL = "board_publish_media_post"
 MAX_MEDIA_BYTES = 10 * 1024 * 1024
 INLINE_PREVIEW_MAX_BYTES = 1_048_576
@@ -247,9 +248,9 @@ def _preview(mode: str, base: str, post: dict, media: list[dict],
               "post_payload_sha256": canonical_sha256(post),
               "media_list_sha256": media_sha,
               "packet_sha256": packet_sha,
-              "does_not_prove": [
-                  "semantic truth of the post body",
-                  "license, authorship, malware safety, or hidden-data absence"]}
+              "scope": [
+                  "the post body, media list and packet digests shown here are "
+                  "the exact bytes the approved upload and post will send"]}
     preview = {"schema": PREVIEW_SCHEMA, "mode": mode,
                "preview_ref": packet_ref, "packet_ref": packet_ref,
                "destination": {"base_url": base,

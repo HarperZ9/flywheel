@@ -34,7 +34,7 @@ def test_catalog_route_lists_trusted_tools_without_starting_server(tmp_path, mon
         "/api/agent/mcp/catalog", owner_ref=OWNER, state_root=tmp_path / "state")
 
     assert status == 200
-    assert body["schema"] == "flywheel.agent-mcp-catalog/v1"
+    assert body["schema"] == "flywheel.agent-mcp-catalog/v2"
     assert started == []
     index = next(row for row in body["servers"] if row["catalog_ref"] == "index")
     assert index["server_id"] == "index"
@@ -111,7 +111,7 @@ def test_discovery_route_returns_selection_only_admission_and_freezes(tmp_path, 
     )
 
     assert status == 200
-    assert body["schema"] == "flywheel.agent-mcp-discovery-response/v1"
+    assert body["schema"] == "flywheel.agent-mcp-discovery-response/v2"
     admission = body["mcp_admission"]
     assert admission == {
         "schema": "flywheel.agent-run-mcp-admission-request/v1",

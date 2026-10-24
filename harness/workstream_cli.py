@@ -44,6 +44,7 @@ import json
 import sys
 from pathlib import Path
 
+from .scope import scope_list
 from .workstream import WorkstreamError, settle
 from .workstream_audit import audit_surface, recorded_audits
 from .workstream_instrument import load_references
@@ -95,8 +96,8 @@ def _render(receipt: dict) -> str:
         lines += [f"  {name}" for name in receipt["assumption_footprint"]]
     lines += ["", "environments under the goal:"]
     lines += [f"  {name}" for name in receipt["environment_footprint"]]
-    lines += ["", "does not prove:"]
-    lines += [f"  - {line}" for line in receipt["does_not_prove"]]
+    lines += ["", "scope:"]
+    lines += [f"  - {line}" for line in scope_list(receipt)]
     lines.append("")
     lines.append("A dot marks an obligation the goal does not rest on.")
     return "\n".join(lines)
@@ -141,8 +142,8 @@ def _render_audit(surface: dict) -> str:
         lines.append(f"     because: {'; '.join(row['reasons'])}")
         # The pin is what a reader records once they have read the statement.
         lines.append(f"     pin: {row['statement_digest']}")
-    lines += ["", "does not prove:"]
-    lines += [f"  - {line}" for line in surface["does_not_prove"]]
+    lines += ["", "scope:"]
+    lines += [f"  - {line}" for line in scope_list(surface)]
     return "\n".join(lines)
 
 

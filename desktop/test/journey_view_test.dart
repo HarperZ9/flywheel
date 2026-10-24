@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flywheel_desktop/models/journey_models.dart';
+import 'package:flywheel_desktop/models/scope_field.dart';
 import 'package:flywheel_desktop/services/journey_session_store.dart';
 import 'package:flywheel_desktop/theme/flywheel_theme.dart';
 import 'package:flywheel_desktop/views/journey_view.dart';
@@ -22,7 +23,8 @@ const _openCheck = <String, Object?>{
   'receipt_state': 'present_unchecked',
   'numerator': 0,
   'denominator': 1,
-  'does_not_prove': 'This check does not prove the claim.',
+  // An older check record, read under the older scope key.
+  kLegacyScopeKey: 'This check does not prove the claim.',
 };
 const _richChecks = <Map<String, Object?>>[
   {
@@ -33,7 +35,7 @@ const _richChecks = <Map<String, Object?>>[
     'receipt_state': 'MATCH',
     'numerator': 2,
     'denominator': 2,
-    'does_not_prove': 'This check does not prove completeness.',
+    'scope': 'This check covers both recorded receipts.',
   },
   _openCheck,
 ];
@@ -84,13 +86,12 @@ JourneyProjection viewProjection({
     'conclusion': empty
         ? null
         : emptyConclusion
-            ? const {'summary': '', 'does_not_prove': ''}
+            ? const {'summary': '', 'scope': ''}
             : partialConclusion
                 ? const {'summary': 'Evidence remains incomplete.'}
                 : const {
                     'summary': 'Evidence remains incomplete.',
-                    'does_not_prove':
-                        'This conclusion does not prove optimality.',
+                    'scope': 'This conclusion covers the receipts recorded so far.',
                   },
     'next_actions': empty || unchecked
         ? const []
@@ -237,7 +238,7 @@ void _diagnoseAndVerifyTests() {
     }
   });
 
-  testWidgets('Verify shows exact check custody and bounded limits',
+  testWidgets('Verify shows exact check custody and its scope',
       (tester) async {
     final harness = await readyViewHarness();
     await tester.pumpWidget(journeyApp(harness));
@@ -248,8 +249,8 @@ void _diagnoseAndVerifyTests() {
       '2 / 2',
       'MATCH',
       'receipt-match',
-      'This check does not prove completeness.',
-      'This conclusion does not prove optimality.',
+      'This check covers both recorded receipts.',
+      'This conclusion covers the receipts recorded so far.',
     ]) {
       expect(find.text(value), findsWidgets);
     }

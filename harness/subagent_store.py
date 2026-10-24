@@ -13,7 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .subagent_roles import SWARM_SCHEMA
+from .subagent_roles import SWARM_SCHEMA, SWARM_SCHEMAS
 
 LIVE_SCHEMA = "flywheel.subagent-live/v1"
 
@@ -44,7 +44,7 @@ def load_swarm_receipt(path: Path) -> "dict | None":
         return None
     receipt = json.loads(p.read_text(encoding="utf-8"))
     if not isinstance(receipt, dict) \
-            or receipt.get("schema") != SWARM_SCHEMA:
+            or receipt.get("schema") not in SWARM_SCHEMAS:
         _refuse("the persisted swarm receipt is not a swarm receipt")
     return receipt
 

@@ -26,6 +26,7 @@ from harness import job_result_receipt as jr
 from harness._vendor import superstack as ss
 from harness.job_result_verify import DRIFT, MATCH, UNVERIFIABLE, verify
 from harness.pysyft_job_hash import JobHashError, code_hash, digest_files, submission_hash
+from harness.scope import LEGACY_SCOPE_KEY
 from harness.signer.statement import key_id_for
 
 FIX = Path(__file__).resolve().parent / "fixtures" / "pysyft_receipt"
@@ -195,7 +196,7 @@ def _relabel_envelope_schema(c):
 
 
 def _drop_a_limit(c):
-    c["env"]["body"]["does_not_prove"].pop(0)
+    c["env"]["body"][LEGACY_SCOPE_KEY].pop(0)   # the kept fixture is a v1 receipt
     c["env"], c["kw"]["public_key_hex"] = _resign(c["env"]["body"])
 
 
@@ -213,7 +214,7 @@ MUTATIONS = [
     (_approval_of_other_job, "approval_covers_other_job"),
     (_replay_new_nonce, "replay_nonce"), (_replay_seen, "replay_seen"),
     (_wrong_signer, "wrong_signer"), (_drop_a_row, "results_bytes"),
-    (_lie_in_rows, "reveal"), (_drop_a_limit, "schema_or_limits"),
+    (_lie_in_rows, "reveal"), (_drop_a_limit, "schema_or_scope"),
     (_break_superstack_seal, "superstack:seal"),
     (_lie_with_stale_receipt_id, "receipt_id"), (_forge_receipt_id, "receipt_id"),
     (_relabel_key_id, "key_id"), (_resign_under_pinned_key_id, "key_id"),
@@ -231,11 +232,11 @@ def test_each_tamper_drifts_and_its_clean_pair_matches(case, mutate, expected):
 
 def test_without_the_reveal_a_consistent_lie_passes_and_that_is_stated(case):
     """The honest null: before the answers are revealed, the receipt shows only that
-    the score matches the released rows. The does_not_prove list says so."""
+    the score matches the released rows. The scope list says so."""
     _lie_in_rows(case)
     case["kw"]["revealed_answers"] = None
     assert verify(case["env"], **case["kw"])["verdict"] == MATCH
-    assert any("revealed and rescored" in s for s in jr.DOES_NOT_PROVE)
+    assert any("revealed and rescored" in s for s in jr.SCOPE)
 
 
 def test_missing_inputs_are_unverifiable_not_match(case):

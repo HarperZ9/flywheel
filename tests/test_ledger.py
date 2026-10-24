@@ -235,11 +235,12 @@ def test_an_empty_ledger_verifies_as_match_with_size_zero(tmp_path):
 
 # --- append-only, and the honest limit ----------------------------------------
 
-def test_the_ledger_states_that_inclusion_is_not_append_only_proof(tmp_path):
+def test_the_ledger_states_that_append_only_rests_on_a_kept_head(tmp_path):
     led = _led(tmp_path)
     led.append(unsigned(_r()))
-    assert "NOT_PROVES_APPEND_ONLY_WITHOUT_A_KEPT_HEAD" in led.does_not_prove()
-    assert "NOT_PROVES_PUBLICATION_COMPLETENESS" in led.does_not_prove()
+    assert "APPEND_ONLY_SINCE_A_KEPT_HEAD" in led.scope()
+    assert "HOLDS_WHAT_WAS_ADDED" in led.scope()
+    assert set(led.scope_detail()) <= set(led.scope())
 
 
 def test_reloading_sees_the_same_root_and_size(tmp_path):
