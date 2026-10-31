@@ -1,0 +1,650 @@
+{
+ "schema": "canonical-record.vectors/1",
+ "spec": "docs/spec/canonical-record.md",
+ "licence": "CC0-1.0",
+ "how_built": "Each case was parsed from its input text and serialised by the reference implementation (harness/canonical_record.py) and by every implementation listed in 'implementations'. 'agrees' means identical bytes; 'differs' records the other output as observed on 2026-10-31.",
+ "implementations": {
+  "flywheel_certificates": "flywheel harness/certificates/base.py canonical()",
+  "studyrun_hashing": "studyrun hashing.py canonical() as written 2026-10-29",
+  "kernels_receipt": "kernels kcore/receipt.py value_hash() body, json.dumps(sort_keys=True)",
+  "superframe_canon_v2": "superframe superframe/tools/canon.py canonical()",
+  "cmmns_capture": "cmmns src/core/capture.js captureCanonical()",
+  "field_ledger": "field src/ledger.js canonJSON()"
+ },
+ "cases": [
+  {
+   "id": "null",
+   "group": "core",
+   "input": "null",
+   "canonical": "null",
+   "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "true",
+   "group": "core",
+   "input": "true",
+   "canonical": "true",
+   "sha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "false",
+   "group": "core",
+   "input": "false",
+   "canonical": "false",
+   "sha256": "fcbcf165908dd18a9e49f7ff27810176db8e9f63b4352213741664245224f8aa",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "zero",
+   "group": "core",
+   "input": "0",
+   "canonical": "0",
+   "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "neg-int",
+   "group": "core",
+   "input": "-17",
+   "canonical": "-17",
+   "sha256": "d3471dcc109cd382f5e09a64253c2219958b5f8f07371fba48ac81fed97bb18a",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "max-safe",
+   "group": "core",
+   "input": "9007199254740991",
+   "canonical": "9007199254740991",
+   "sha256": "f40b423c2dd95ff2b2f027e22208f438cf7242862e5e746860e697308c9add26",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "min-safe",
+   "group": "core",
+   "input": "-9007199254740991",
+   "canonical": "-9007199254740991",
+   "sha256": "4c933a456bb8f2e9894b2d0b26480439cd72d52fb8a27cbf8fd7f323f22c7815",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "empty-string",
+   "group": "core",
+   "input": "\"\"",
+   "canonical": "\"\"",
+   "sha256": "12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "empty-array",
+   "group": "core",
+   "input": "[]",
+   "canonical": "[]",
+   "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "empty-object",
+   "group": "core",
+   "input": "{}",
+   "canonical": "{}",
+   "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "ascii-keys",
+   "group": "core",
+   "input": "{\"b\":1,\"a\":2,\"aa\":3,\"A\":4,\"_\":5,\"10\":6,\"9\":7}",
+   "canonical": "{\"10\":6,\"9\":7,\"A\":4,\"_\":5,\"a\":2,\"aa\":3,\"b\":1}",
+   "sha256": "2f399ae63cf00af3483f5fb57e04779327777196ce3d09754b383ac2ec001c28",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "differs: {\"10\": 6, \"9\": 7, \"A\": 4, \"_\": 5, \"a\": 2, \"aa\": 3, \"b\": 1}",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "nested",
+   "group": "core",
+   "input": "{\"z\":{\"y\":[3,{\"b\":null,\"a\":true}],\"x\":\"s\"},\"a\":[[],{}]}",
+   "canonical": "{\"a\":[[],{}],\"z\":{\"x\":\"s\",\"y\":[3,{\"a\":true,\"b\":null}]}}",
+   "sha256": "fde77568a7c291388163aea13b6773e9bee069a0e15b7e8aca2145dd4ae41cb6",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "differs: {\"a\": [[], {}], \"z\": {\"x\": \"s\", \"y\": [3, {\"a\": true, \"b\": null}]}}",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "short-escapes",
+   "group": "core",
+   "input": "\"q\\\"b\\\\s/\\b\\f\\n\\r\\t\"",
+   "canonical": "\"q\\\"b\\\\s/\\b\\f\\n\\r\\t\"",
+   "sha256": "5d68529a944c5ab92d60a707f61bc3137e2e87e29573911b99bdca0e5d7e8127",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "controls",
+   "group": "core",
+   "input": "\"\\u0000\\u0001\\u001f\\u007f\"",
+   "canonical": "\"\\u0000\\u0001\\u001f\u007f\"",
+   "sha256": "3a5f25746de9e33a0a1d8d04f3bb8e3cc03c04b69fbe67fdbc4091e2b3c48fa8",
+   "implementations": {
+    "flywheel_certificates": "differs: \"\\u0000\\u0001\\u001f\\u007f\"",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "differs: \"\\u0000\\u0001\\u001f\\u007f\"",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "receipt-like",
+   "group": "core",
+   "input": "{\"kind\":\"kernel-receipt\",\"inputs\":{\"x\":\"ab12\"},\"sealed\":false,\"n\":3}",
+   "canonical": "{\"inputs\":{\"x\":\"ab12\"},\"kind\":\"kernel-receipt\",\"n\":3,\"sealed\":false}",
+   "sha256": "61e7c1506163c644a044b3aaecdc8e12f81da1ba2f5f7f36e23b6f703db850da",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "differs: {\"inputs\": {\"x\": \"ab12\"}, \"kind\": \"kernel-receipt\", \"n\": 3, \"sealed\": false}",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "non-ascii",
+   "group": "unicode",
+   "input": "\"caf\\u00e9 \\u20ac \\u2028 \\ud83d\\ude00\"",
+   "canonical": "\"caf\u00e9 \u20ac \u2028 \ud83d\ude00\"",
+   "sha256": "4eca6d133b497c3460340a0f68300748167667ab16163b8ffeff804a4a46dbe4",
+   "implementations": {
+    "flywheel_certificates": "differs: \"caf\\u00e9 \\u20ac \\u2028 \\ud83d\\ude00\"",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "differs: \"caf\\u00e9 \\u20ac \\u2028 \\ud83d\\ude00\"",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "non-ascii-key",
+   "group": "unicode",
+   "input": "{\"\\u00e9\": 1, \"e\": 2}",
+   "canonical": "{\"e\":2,\"\u00e9\":1}",
+   "sha256": "ae0cc153856ae8fdab2420c8f8e36a9f9cd47c4b1a73531be4bd7dc8092fa69e",
+   "implementations": {
+    "flywheel_certificates": "differs: {\"e\":2,\"\\u00e9\":1}",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "differs: {\"e\": 2, \"\\u00e9\": 1}",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "astral-vs-bmp-keys",
+   "group": "unicode",
+   "input": "{\"\\ue000\": 1, \"\\ud83d\\ude00\": 2, \"a\": 3}",
+   "canonical": "{\"a\":3,\"\ud83d\ude00\":2,\"\ue000\":1}",
+   "sha256": "84495633024b0992798250783e7ccb01ab2875649ab22f353f14c0d6a8389fc2",
+   "implementations": {
+    "flywheel_certificates": "differs: {\"a\":3,\"\\ue000\":1,\"\\ud83d\\ude00\":2}",
+    "studyrun_hashing": "differs: {\"a\":3,\"\ue000\":1,\"\ud83d\ude00\":2}",
+    "kernels_receipt": "differs: {\"a\": 3, \"\\ue000\": 1, \"\\ud83d\\ude00\": 2}",
+    "superframe_canon_v2": "differs: {\"a\":3,\"\ue000\":1,\"\ud83d\ude00\":2}",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-integral",
+   "group": "float",
+   "input": "1.0",
+   "canonical": "1",
+   "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+   "implementations": {
+    "flywheel_certificates": "differs: 1.0",
+    "studyrun_hashing": "differs: 1.0",
+    "kernels_receipt": "differs: 1.0",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-100",
+   "group": "float",
+   "input": "100.0",
+   "canonical": "100",
+   "sha256": "ad57366865126e55649ecb23ae1d48887544976efea46a48eb5d85a6eeb4d306",
+   "implementations": {
+    "flywheel_certificates": "differs: 100.0",
+    "studyrun_hashing": "differs: 100.0",
+    "kernels_receipt": "differs: 100.0",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "neg-zero",
+   "group": "float",
+   "input": "-0.0",
+   "canonical": "0",
+   "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+   "implementations": {
+    "flywheel_certificates": "differs: -0.0",
+    "studyrun_hashing": "differs: -0.0",
+    "kernels_receipt": "differs: -0.0",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-half",
+   "group": "float",
+   "input": "1.5",
+   "canonical": "1.5",
+   "sha256": "9f29a130438b81170b92a42650f9a94291ecad60bd47af2a3886e75f7f728725",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-tenth",
+   "group": "float",
+   "input": "0.1",
+   "canonical": "0.1",
+   "sha256": "14be4b45f18e0d8c67b4f719b5144eee88497e413709d11d85b096d8e2346310",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-neg",
+   "group": "float",
+   "input": "-2.75",
+   "canonical": "-2.75",
+   "sha256": "cd766f59c7c5f63ca0c86c84fd2010819343b4f80d2cbf675667fcb388b715d9",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-1e-6",
+   "group": "float",
+   "input": "0.000001",
+   "canonical": "0.000001",
+   "sha256": "159fb29a827ad04b260aa6c8ab6d8637f8f2b38af5c4f3cb49d6a21205e040f8",
+   "implementations": {
+    "flywheel_certificates": "differs: 1e-06",
+    "studyrun_hashing": "differs: 1e-06",
+    "kernels_receipt": "differs: 1e-06",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-1e-7",
+   "group": "float",
+   "input": "1e-7",
+   "canonical": "1e-7",
+   "sha256": "5b33e02f2c5103a05d32f6ba9cb058294452bfbf393967f68bb30c1bdcbbab22",
+   "implementations": {
+    "flywheel_certificates": "differs: 1e-07",
+    "studyrun_hashing": "differs: 1e-07",
+    "kernels_receipt": "differs: 1e-07",
+    "superframe_canon_v2": "differs: 0.0000001",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-1e16",
+   "group": "float",
+   "input": "1e16",
+   "canonical": "10000000000000000",
+   "sha256": "139eb393675707818651f879828a526159209ca3ad3b2f94f9f8ec8c4fb5e610",
+   "implementations": {
+    "flywheel_certificates": "differs: 1e+16",
+    "studyrun_hashing": "differs: 1e+16",
+    "kernels_receipt": "differs: 1e+16",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-1e20",
+   "group": "float",
+   "input": "1.2345678901234568e20",
+   "canonical": "123456789012345680000",
+   "sha256": "725abf175290195635e55a971cf88e02a46d6d56e964ec2d8bc47614b9559062",
+   "implementations": {
+    "flywheel_certificates": "differs: 1.2345678901234568e+20",
+    "studyrun_hashing": "differs: 1.2345678901234568e+20",
+    "kernels_receipt": "differs: 1.2345678901234568e+20",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-1e21",
+   "group": "float",
+   "input": "1e21",
+   "canonical": "1e+21",
+   "sha256": "241c4643fa70b1dcde1205b71be4e3bebb17e9f880c8e1a33d0ead6c27271d3c",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "differs: 1000000000000000000000",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-big",
+   "group": "float",
+   "input": "1e300",
+   "canonical": "1e+300",
+   "sha256": "2b0de494c41db4c1bf0b41b0a3483db71f2b53a5e37caf5a61abee2d4169a935",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "differs: 1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-tiny",
+   "group": "float",
+   "input": "5e-324",
+   "canonical": "5e-324",
+   "sha256": "c46e7ca1be4c8734f373a56530787288fa2058d73d07855e9247e949f811a42a",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "differs: 0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-third",
+   "group": "float",
+   "input": "0.3333333333333333",
+   "canonical": "0.3333333333333333",
+   "sha256": "e965f1b975608cb0d1dad8c30d17e0fe1bdea42df938c0bdc29d75c97b45c44b",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "agrees",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  },
+  {
+   "id": "float-in-record",
+   "group": "float",
+   "input": "{\"p\":0.05,\"q95\":1.25,\"n\":400}",
+   "canonical": "{\"n\":400,\"p\":0.05,\"q95\":1.25}",
+   "sha256": "3ae5cdd7a8bc5232b16d82be125e19bc6debb7d0c6d2e7f34b6eefe188b95166",
+   "implementations": {
+    "flywheel_certificates": "agrees",
+    "studyrun_hashing": "agrees",
+    "kernels_receipt": "differs: {\"n\": 400, \"p\": 0.05, \"q95\": 1.25}",
+    "superframe_canon_v2": "agrees",
+    "cmmns_capture": "agrees",
+    "field_ledger": "agrees"
+   }
+  }
+ ],
+ "invalid": [
+  {
+   "id": "nan",
+   "input": "NaN",
+   "why": "non-finite",
+   "implementations": {
+    "flywheel_certificates": "refuses",
+    "studyrun_hashing": "refuses",
+    "kernels_receipt": "accepts: NaN",
+    "superframe_canon_v2": "refuses",
+    "cmmns_capture": "refuses",
+    "field_ledger": "refuses"
+   }
+  },
+  {
+   "id": "infinity",
+   "input": "Infinity",
+   "why": "non-finite",
+   "implementations": {
+    "flywheel_certificates": "refuses",
+    "studyrun_hashing": "refuses",
+    "kernels_receipt": "accepts: Infinity",
+    "superframe_canon_v2": "refuses",
+    "cmmns_capture": "refuses",
+    "field_ledger": "refuses"
+   }
+  },
+  {
+   "id": "unsafe-int",
+   "input": "9007199254740992",
+   "why": "integer outside +/-(2**53 - 1)",
+   "implementations": {
+    "flywheel_certificates": "accepts: 9007199254740992",
+    "studyrun_hashing": "accepts: 9007199254740992",
+    "kernels_receipt": "accepts: 9007199254740992",
+    "superframe_canon_v2": "refuses",
+    "cmmns_capture": "accepts: 9007199254740992",
+    "field_ledger": "accepts: 9007199254740992"
+   }
+  },
+  {
+   "id": "lone-surrogate",
+   "input": "\"\\ud800\"",
+   "why": "lone surrogate",
+   "implementations": {
+    "flywheel_certificates": "accepts: \"\\ud800\"",
+    "studyrun_hashing": "accepts: \"\ud800\"",
+    "kernels_receipt": "accepts: \"\\ud800\"",
+    "superframe_canon_v2": "refuses",
+    "cmmns_capture": "accepts: \"\\ud800\"",
+    "field_ledger": "accepts: \"\\ud800\""
+   }
+  }
+ ],
+ "arrays": [
+  {
+   "id": "f64-vector",
+   "dtype": "f64",
+   "shape": [
+    3
+   ],
+   "values": [
+    1.0,
+    -0.5,
+    3.25
+   ],
+   "header_hex": "6372312d617272617900663634003300",
+   "sha256": "c2cf90e7857327cc01dac9828cc0ea8fa7864ea058ecbae5d6c62bc683605f95",
+   "implementations": {
+    "kernels_receipt": "differs: fc7e14be1adabe3923b761f9d59d3ee220805a9ee11b404bbc3011d69edb09f6"
+   }
+  },
+  {
+   "id": "f32-matrix",
+   "dtype": "f32",
+   "shape": [
+    2,
+    2
+   ],
+   "values": [
+    [
+     1.0,
+     2.0
+    ],
+    [
+     3.0,
+     4.5
+    ]
+   ],
+   "header_hex": "6372312d61727261790066333200322c3200",
+   "sha256": "6e8d5f4de0115d2697ea013e9ec554b15eb7d142c727ce21db4f785176979ce3",
+   "implementations": {
+    "kernels_receipt": "differs: 7de1eda1c44965665245248d3139a90e1df5297cf632a88959fc7504670b45cd"
+   }
+  },
+  {
+   "id": "i32-vector",
+   "dtype": "i32",
+   "shape": [
+    3
+   ],
+   "values": [
+    1,
+    -2,
+    3
+   ],
+   "header_hex": "6372312d617272617900693332003300",
+   "sha256": "22ed14cd1ef14796480067339837941e3346e7a02815d8e6fae1499d6c416a17",
+   "implementations": {
+    "kernels_receipt": "differs: 1f87f5d6ca039d6fcf8975aac73a715b44f79f65a10cce0a3a2c4774dd931641"
+   }
+  },
+  {
+   "id": "u8-empty",
+   "dtype": "u8",
+   "shape": [
+    0
+   ],
+   "values": [],
+   "header_hex": "6372312d6172726179007538003000",
+   "sha256": "4e4a1940a2743c242c0599b4703b741871ab368367767293037b300073326ad5",
+   "implementations": {
+    "kernels_receipt": "differs: 44e48d5ce1b71796bede8ce7f8b5f5b443536aae65ad331fedef17c155dddd81"
+   }
+  },
+  {
+   "id": "f64-scalar",
+   "dtype": "f64",
+   "shape": [],
+   "values": [
+    2.5
+   ],
+   "header_hex": "6372312d6172726179006636340000",
+   "sha256": "ebb9d10d24a2b353e4bb2c101bea919bee501a8321d0048d4eabf5a870c7476c",
+   "implementations": {
+    "kernels_receipt": "differs: 6b1cc785b08a5650d909f4da63268fe90bef9c0d4b0b4b9cad5fedfd5202b14a"
+   }
+  }
+ ]
+}
