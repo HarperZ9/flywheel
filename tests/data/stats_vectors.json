@@ -1,0 +1,383 @@
+{
+ "schema": "stats-vectors/1",
+ "licence": "CC0-1.0",
+ "conventions": {
+  "binomial_upper_tail": "p_upper = P(X >= k) for X ~ Binomial(n, bound); 1 when k <= 0 or bound >= 1; 0 when bound is 0 and k > 0. Reference: scipy.stats.binom.sf(k - 1, n, bound).",
+  "holm": "step-down; sort by p (stable, ties keep input order); reject while p(r) <= alpha / (m - r), r counted from 0; equality rejects.",
+  "bonferroni": "reject when p * m <= alpha.",
+  "bh": "Benjamini-Hochberg step-up at q = alpha; reject the r smallest, r the largest rank with p(r) <= q r / m.",
+  "wilson": "Wilson score interval [max(0, c - h), min(1, c + h)] at z = 1.96."
+ },
+ "tolerance": {
+  "p_upper": "relative 1e-9",
+  "wilson": "absolute 1e-12"
+ },
+ "binomial_upper_tail": [
+  {
+   "k": 0,
+   "n": 10,
+   "bound": 0.3,
+   "p_upper": 1.0
+  },
+  {
+   "k": 1,
+   "n": 10,
+   "bound": 0.3,
+   "p_upper": 0.9717524751
+  },
+  {
+   "k": 3,
+   "n": 10,
+   "bound": 0.3,
+   "p_upper": 0.6172172136000003
+  },
+  {
+   "k": 10,
+   "n": 10,
+   "bound": 0.3,
+   "p_upper": 5.904899999999999e-06
+  },
+  {
+   "k": 61,
+   "n": 200,
+   "bound": 0.3,
+   "p_upper": 0.46519082383930194
+  },
+  {
+   "k": 70,
+   "n": 200,
+   "bound": 0.3,
+   "p_upper": 0.07278645724053465
+  },
+  {
+   "k": 130,
+   "n": 200,
+   "bound": 0.6,
+   "p_upper": 0.08439778204121158
+  },
+  {
+   "k": 40,
+   "n": 200,
+   "bound": 0.25,
+   "p_upper": 0.9594957905806611
+  },
+  {
+   "k": 190,
+   "n": 200,
+   "bound": 0.9,
+   "p_upper": 0.008071249955102746
+  },
+  {
+   "k": 80,
+   "n": 100,
+   "bound": 0.5,
+   "p_upper": 5.579544528625976e-10
+  },
+  {
+   "k": 50,
+   "n": 100,
+   "bound": 0.5,
+   "p_upper": 0.5397946186935891
+  },
+  {
+   "k": 10,
+   "n": 100,
+   "bound": 0.5,
+   "p_upper": 1.0
+  },
+  {
+   "k": 5,
+   "n": 1000,
+   "bound": 0.001,
+   "p_upper": 0.003636878029521793
+  },
+  {
+   "k": 0,
+   "n": 50,
+   "bound": 0.0,
+   "p_upper": 1.0
+  },
+  {
+   "k": 3,
+   "n": 50,
+   "bound": 0.0,
+   "p_upper": 0.0
+  },
+  {
+   "k": 7,
+   "n": 7,
+   "bound": 1.0,
+   "p_upper": 1.0
+  }
+ ],
+ "families": [
+  {
+   "id": "separated",
+   "p": [
+    0.001,
+    0.2,
+    0.04,
+    0.03
+   ],
+   "alpha": 0.05,
+   "holm": [
+    true,
+    false,
+    false,
+    false
+   ],
+   "bonferroni": [
+    true,
+    false,
+    false,
+    false
+   ],
+   "bh": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "id": "all-null",
+   "p": [
+    0.5,
+    0.7,
+    0.9
+   ],
+   "alpha": 0.05,
+   "holm": [
+    false,
+    false,
+    false
+   ],
+   "bonferroni": [
+    false,
+    false,
+    false
+   ],
+   "bh": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "id": "all-small",
+   "p": [
+    1e-06,
+    2e-06,
+    3e-06
+   ],
+   "alpha": 0.05,
+   "holm": [
+    true,
+    true,
+    true
+   ],
+   "bonferroni": [
+    true,
+    true,
+    true
+   ],
+   "bh": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "holm-tie",
+   "p": [
+    0.025,
+    0.5
+   ],
+   "alpha": 0.05,
+   "holm": [
+    true,
+    false
+   ],
+   "bonferroni": [
+    true,
+    false
+   ],
+   "bh": [
+    true,
+    false
+   ]
+  },
+  {
+   "id": "bh-step-up",
+   "p": [
+    0.01,
+    0.02,
+    0.03,
+    0.04,
+    0.05
+   ],
+   "alpha": 0.05,
+   "holm": [
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   "bonferroni": [
+    true,
+    false,
+    false,
+    false,
+    false
+   ],
+   "bh": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "id": "single",
+   "p": [
+    0.05
+   ],
+   "alpha": 0.05,
+   "holm": [
+    true
+   ],
+   "bonferroni": [
+    true
+   ],
+   "bh": [
+    true
+   ]
+  },
+  {
+   "id": "ties-in-p",
+   "p": [
+    0.01,
+    0.01,
+    0.2
+   ],
+   "alpha": 0.05,
+   "holm": [
+    true,
+    true,
+    false
+   ],
+   "bonferroni": [
+    true,
+    true,
+    false
+   ],
+   "bh": [
+    true,
+    true,
+    false
+   ]
+  },
+  {
+   "id": "empty",
+   "p": [],
+   "alpha": 0.05,
+   "holm": [],
+   "bonferroni": [],
+   "bh": []
+  }
+ ],
+ "wilson": [
+  {
+   "k": 0,
+   "n": 10,
+   "z": 1.96,
+   "interval": [
+    0.0,
+    0.2775401687666166
+   ]
+  },
+  {
+   "k": 1,
+   "n": 10,
+   "z": 1.96,
+   "interval": [
+    0.01787574951572113,
+    0.4041563854975721
+   ]
+  },
+  {
+   "k": 5,
+   "n": 10,
+   "z": 1.96,
+   "interval": [
+    0.23658959361548731,
+    0.7634104063845126
+   ]
+  },
+  {
+   "k": 10,
+   "n": 10,
+   "z": 1.96,
+   "interval": [
+    0.7224598312333834,
+    1.0
+   ]
+  },
+  {
+   "k": 45,
+   "n": 50,
+   "z": 1.96,
+   "interval": [
+    0.7863950966521162,
+    0.956524876008429
+   ]
+  },
+  {
+   "k": 8,
+   "n": 25,
+   "z": 1.96,
+   "interval": [
+    0.17204987516891143,
+    0.5159008626542329
+   ]
+  },
+  {
+   "k": 744,
+   "n": 1200,
+   "z": 1.96,
+   "interval": [
+    0.5921949229835336,
+    0.647039208815866
+   ]
+  },
+  {
+   "k": 1,
+   "n": 2,
+   "z": 1.96,
+   "interval": [
+    0.09452865480086614,
+    0.9054713451991339
+   ]
+  },
+  {
+   "k": 0,
+   "n": 1,
+   "z": 1.96,
+   "interval": [
+    0.0,
+    0.7934567085261071
+   ]
+  },
+  {
+   "k": 13,
+   "n": 40,
+   "z": 1.96,
+   "interval": [
+    0.20084316962661725,
+    0.4798254191110201
+   ]
+  }
+ ]
+}
