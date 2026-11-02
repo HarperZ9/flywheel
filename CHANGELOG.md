@@ -5,6 +5,11 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Canonical records and studyrun
+- `docs/spec/canonical-record.md` defines `canonical-record/1`, one byte form for hashed records. `harness/canonical_record.py` is the reference code. The golden vectors in `tests/data/canonical_vectors.json` are CC0, so other repos test against them without sharing code.
+- `harness.studyrun` runs one study end to end: preregistration first, every input and code file hashed, analysis and controls run, hashes checked again, verdicts scored, manifest written, one ledger entry appended. See `docs/STUDYRUN.md`. A spec names what the study covers under `ledger.scope`.
+- `tests/data/stats_vectors.json` holds CC0 vectors for Holm, Bonferroni, Benjamini-Hochberg, the binomial tail and Wilson. Trace observation's Holm and the studyrun bounds test against them.
+
 Scope field (migration from `does_not_prove`)
 - Every record names what its result covers in a `scope` field, in plain positive words. The field replaces `does_not_prove`, whose entries were limits phrased as negatives. Each value was rewritten from what the module checks; codes such as `NOT_PROVES_EXACTNESS` became codes for the covered property, emitted when it holds (`PREDICATE_EXACT`). Certificate results carry `BOUND_FROM_SUBMITTED_OBJECT`: the verified object's value bounds the optimum from one side.
 - Every schema whose records changed moved up one version: receipts to `flywheel.receipt/v5`, routed receipts to v2, QA cards to v3, and the gateway, bulletin, evidence, writing, trace and statistics records listed in `project-docs/SCOPE-MIGRATION.md`. Writers emit the new version. Readers accept both versions and read each with its own vocabulary, so v3 and v4 receipts, v1 records and every sealed or anchored artifact still verify with their original bytes.
