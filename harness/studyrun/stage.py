@@ -9,7 +9,7 @@ import json
 import time
 from pathlib import Path
 
-from . import MANIFEST_SCHEMA, ledger, prereg, units, verdict
+from . import MANIFEST_SCHEMA, autocheck, forecast, ledger, power, prereg, units, verdict
 from .hashing import FORM, hash_paths, sha256_file, sha256_json
 from .spec import load, unit_path
 
@@ -101,6 +101,23 @@ def _write(spec, result):
     return out / "manifest.json", manifest["manifest_sha256"]
 
 
+def _score(spec, pre, result):
+    """Verdicts, then the 2026-11-02 additions, each written only when the spec asks for it."""
+    lock_power = pre.get("power")
+    binding = power.binding_map(lock_power) if lock_power else None
+    result["verdicts"] = verdict.judge(result, spec["verdicts"], binding)
+    if binding is not None:
+        result["decision"] = {
+            "binding": [n for n, b in binding.items() if b["binding"]],
+            "binding_fail": [n for n, b in binding.items() if b["binding"] and result["verdicts"][n]["verdict"] != "PASS"],
+            "nonbinding": {n: b.get("why_nonbinding", "") for n, b in binding.items() if not b["binding"]}}
+    sc = forecast.score(spec.get("forecasts"), result)
+    if sc is not None:
+        result["forecast_scores"] = sc
+    if any(k in spec for k in autocheck.SECTIONS) or spec.get("schema") == "studyrun.spec/2":
+        result["autocheck"] = autocheck.run(spec, "run", result)
+
+
 def run(spec_path, append_ledger=True):
     spec = load(spec_path)
     stamp = dt.datetime.now(dt.timezone.utc)
@@ -114,7 +131,7 @@ def run(spec_path, append_ledger=True):
         result.update(status="blocked", problems=bad)
         _write(spec, result)
         raise Blocked("; ".join(bad))
-    result["verdicts"] = verdict.judge(result, spec["verdicts"])
+    _score(spec, pre, result)
     result["reproduce"] = _reproduce(spec, result)
     result["status"] = "scored"
     mpath, msha = _write(spec, result)

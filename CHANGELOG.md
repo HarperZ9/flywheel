@@ -7,6 +7,7 @@ lists the changes in each release with the pull request that made them.
 
 Canonical records and studyrun
 - `docs/spec/canonical-record.md` defines `canonical-record/1`, one byte form for hashed records. `harness/canonical_record.py` is the reference code. The golden vectors in `tests/data/canonical_vectors.json` are CC0, so other repos test against them without sharing code.
+- studyrun gains `studyrun.spec/2`, verdict paths for keys that hold a dot, a power gate, planted-truth fitting, autochecks for limits, constants and post hoc files (`audit`, exit 4), forecast scoring, and `ext_sha256` in new locks. Older specs and locks run and verify as before; a sweep of 570 existing specs gives identical check results, plan hashes and verdicts under the old and new code.
 - `harness.studyrun` runs one study end to end: preregistration first, every input and code file hashed, analysis and controls run, hashes checked again, verdicts scored, manifest written, one ledger entry appended. See `docs/STUDYRUN.md`. A spec names what the study covers under `ledger.scope`.
 - `tests/data/stats_vectors.json` holds CC0 vectors for Holm, Bonferroni, Benjamini-Hochberg, the binomial tail and Wilson. Trace observation's Holm and the studyrun bounds test against them.
 

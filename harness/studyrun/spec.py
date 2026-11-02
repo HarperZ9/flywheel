@@ -6,10 +6,13 @@ of them after the lock is written changes plan_sha256 and the stage refuses to s
 import json
 from pathlib import Path
 
-from . import SPEC_SCHEMA
+from . import SPEC_SCHEMA, SPEC_SCHEMA_V2, autocheck, forecast, planted, power
 from .hashing import FORM, sha256_json
 
 REQUIRED = ("schema", "id", "title", "prereg", "seed", "analysis", "controls", "verdicts", "ledger")
+# Upgrade fields frozen by the lock beside the plan (ext_sha256). Absent in every spec before 2026-11-02,
+# so old plans hash exactly as before. limits, constants and posthoc are integrity checks, not plan.
+EXT_KEYS = ("power", "planted", "forecasts")
 
 
 class SpecError(ValueError):
@@ -29,8 +32,8 @@ def _unit_problems(where, unit):
 
 def problems(spec):
     out = [f"missing field {k}" for k in REQUIRED if k not in spec]
-    if spec.get("schema") != SPEC_SCHEMA:
-        out.append(f"schema must be {SPEC_SCHEMA}")
+    if spec.get("schema") not in (SPEC_SCHEMA, SPEC_SCHEMA_V2):
+        out.append(f"schema must be {SPEC_SCHEMA} or {SPEC_SCHEMA_V2}")
     out += _unit_problems("analysis", spec.get("analysis"))
     names = set()
     for i, c in enumerate(spec.get("controls", [])):
@@ -45,6 +48,34 @@ def problems(spec):
     for name, rules in spec.get("verdicts", {}).items():
         if not isinstance(rules, list) or not rules:
             out.append(f"verdicts.{name}: needs a non-empty rule list")
+    names = set(spec.get("verdicts") or {})
+    if "power" in spec:
+        out += power.problems(spec["power"], names)
+    if "planted" in spec:
+        out += planted.problems(spec["planted"])
+    if "forecasts" in spec:
+        out += forecast.problems(spec["forecasts"], names)
+    out += autocheck.problems(spec)
+    return out
+
+
+def v2_problems(spec):
+    """What studyrun.spec/2 requires before a lock: every upgrade step declared, not only available."""
+    if spec.get("schema") != SPEC_SCHEMA_V2:
+        return []
+    out = []
+    fc = (spec.get("forecasts") or {}).get("verdicts") or {}
+    miss = [n for n in spec["verdicts"] if n not in fc]
+    if miss:
+        out.append("spec/2: forecasts.verdicts needs a probability for " + ", ".join(miss))
+    if "power" not in spec:
+        out.append("spec/2: power section required (verdicts without simulated power are non-binding)")
+    if "planted" not in spec:
+        out.append('spec/2: planted section required, or {"none": "why no world claims the measured structure"}')
+    if "limits" not in spec:
+        out.append("spec/2: limits list required (may be empty only if the PREREG states no limit)")
+    if not spec.get("constants"):
+        out.append("spec/2: at least one constant derived by an independent code path")
     return out
 
 
@@ -65,6 +96,8 @@ def load(path):
     spec["_ledger_path"] = str(_resolve(base, spec["ledger"]["path"]))
     spec["_reproduce_source"] = (str(_resolve(base, spec["reproduce"]["source"]))
                                  if spec.get("reproduce") else None)
+    if spec.get("power", {}).get("simulations"):
+        spec["_power_sims"] = str(_resolve(base, spec["power"]["simulations"]))
     return spec
 
 
@@ -76,3 +109,9 @@ def unit_path(spec, unit):
 def plan_sha256(spec, form=FORM):
     plan = {k: spec[k] for k in ("analysis", "controls", "verdicts", "seed")}
     return sha256_json(plan, form)
+
+
+def ext_sha256(spec, form=FORM):
+    """Hash of the upgrade fields present (power, planted, forecasts), or None when there are none."""
+    ext = {k: spec[k] for k in EXT_KEYS if k in spec}
+    return sha256_json(ext, form) if ext else None
