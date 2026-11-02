@@ -23,7 +23,7 @@ Run `build` again at any time: it reads only bytes appended since the last run. 
 
 ## Measured
 
-One build over 216 transcripts on a desktop CPU: 5.39 GB read in 150 seconds at 83 MB peak memory; 173,283 units staged, 128,100 live after 19,370 boilerplate and 25,813 near-duplicate units collapsed; 2,891 cards; 1,270 units skipped by the gates; index 355 MB. A rerun with nothing new took 0.1 seconds. Recall on a locked 48-question set is reported with the pull request that adds this package.
+One build over 216 transcripts on a desktop CPU: 5.39 GB read in 150 seconds at 83 MB peak memory; 173,283 units staged, 128,100 live after 19,370 boilerplate and 25,813 near-duplicate units collapsed; 2,891 cards; 1,270 units skipped by the gates; index 355 MB. A rerun with nothing new took 0.1 seconds. On 42 questions with known answers, written and hashed before the code existed, it found 19 at k = 5, where the best existing tool found 10 and a ripgrep baseline 4, at about 290 tokens per answer. On 6 questions with no answer it said "not found" 5 times; the existing tools never did.
 
 ## Limits
 
