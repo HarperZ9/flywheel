@@ -1,0 +1,151 @@
+{
+ "comment": "every file this change adds or edits, its source and sha256 (text hashed with LF line endings)",
+ "snapshot": "HarperZ9/workstation-tools@d82f57f",
+ "base": "1df41f559c6e1421045a58cba15e52e1e83f895e",
+ "sourcesHashedOn": "2026-11-02",
+ "files": [
+  {
+   "path": "CHANGELOG.md",
+   "sha256": "5e24c3ed8d5e35040f613f7366711dc0ce9eafa8db5e15a32a5f779a360781c5",
+   "source": "new in this change"
+  },
+  {
+   "path": "docs/STUDYRUN.md",
+   "sha256": "d27e4115725faa9ddcf17a238e66528bf1f45d72dab9a559f65a81b617082c26",
+   "source": "new in this change"
+  },
+  {
+   "path": "docs/spec/canonical-record.md",
+   "sha256": "6587a6dd3fced22609c53c0773444efbb6392c18be1e14368606a97463f50fc2",
+   "source": "new in this change"
+  },
+  {
+   "path": "harness/canonical_record.py",
+   "sha256": "1a3545582ab087bb184f85fb87757ab1c3da75adbec2c08cdc0666ebe1d14f3a",
+   "source": "new in this change"
+  },
+  {
+   "path": "harness/studyrun/__init__.py",
+   "sha256": "b6ea27f4f77efffff366f9ab8f57717820743fb501f908ac820e5fe2225010df",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/__init__.py",
+   "sourceSha256": "11b6bad1ad179c1b6ef6f8a5b2bc471da36cf9ba49709a4a748332337efaa950",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/__main__.py",
+   "sha256": "1befacec298a1251bb074281560f8be17590541023cf3965b72c390b6e4a5e90",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/__main__.py",
+   "sourceSha256": "60d028dbcc49fb495b4b434ba66cc292f9224bb73d9c375d97f06a5ddf832582",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/anchor.py",
+   "sha256": "7ee470b171ce1c84947a904fac956924f024d939f5e2d551827c2c21f8cec8db",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/anchor.py",
+   "sourceSha256": "7ee470b171ce1c84947a904fac956924f024d939f5e2d551827c2c21f8cec8db",
+   "identical": true
+  },
+  {
+   "path": "harness/studyrun/bounds.py",
+   "sha256": "b87c62d9917d91168f08d7297ccb40806539ba9c4b6af8e5748e4a26774b1439",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/bounds.py",
+   "sourceSha256": "b87c62d9917d91168f08d7297ccb40806539ba9c4b6af8e5748e4a26774b1439",
+   "identical": true
+  },
+  {
+   "path": "harness/studyrun/hashing.py",
+   "sha256": "254e0a31d9dabf374b5ad8a2357c0a012a743b14b517d07328c673adb12ccef0",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/hashing.py",
+   "sourceSha256": "446eaae31dcafc4114557a963beaeb369ab345fb792d47ca4fe9833d97cb3e5f",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/ledger.py",
+   "sha256": "cef0973a7053b6e4fb1e4c9a553ee21817b35e9b556f68538911fbb28f8f1477",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/ledger.py",
+   "sourceSha256": "7f4527947a4582b208a1243c34cc21b5ed2362dd925da23ef6703ef01b95d50a",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/prereg.py",
+   "sha256": "51d0fcc2dd11007f9ea544017ead52d0c421b7513c42ffb5933ffb1f73ce0156",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/prereg.py",
+   "sourceSha256": "af688d07cc58e97eece86dbf11eef0dcaa698889f356f5d4207a3986e650c3c3",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/spec.py",
+   "sha256": "f58718d3c4e3b24ef2c16cc1eeaef131b205cdefd4dd6fea105cc786391efaba",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/spec.py",
+   "sourceSha256": "7b0abff6f306a548079dffbce9c3073a7b3429df2c70e41bc47bb0781e23e8d7",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/stage.py",
+   "sha256": "2b0c32e53a88511f507580da5a7ca02adf3abbb96773d66874c34c14d053de2c",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/stage.py",
+   "sourceSha256": "2df751ead9eb6a602f99028b87f303397e07e62da17a9a9218e3a974755e0fda",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/units.py",
+   "sha256": "f61f81937e71d42d67067490e586897a802c107f5021e59879842a96ab82bd86",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/units.py",
+   "sourceSha256": "f61f81937e71d42d67067490e586897a802c107f5021e59879842a96ab82bd86",
+   "identical": true
+  },
+  {
+   "path": "harness/studyrun/verdict.py",
+   "sha256": "aa987ff374261ff38c1a9f7f35f7fa6d2cd403cae4be34180f7710725b34eb74",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/verdict.py",
+   "sourceSha256": "aa987ff374261ff38c1a9f7f35f7fa6d2cd403cae4be34180f7710725b34eb74",
+   "identical": true
+  },
+  {
+   "path": "tests/data/canonical_vectors.json",
+   "sha256": "5e7c3b8d66108ff06f353c21b72faa2429964b91a7d8d6710eaf23b0de31cc2e",
+   "source": "new in this change"
+  },
+  {
+   "path": "tests/data/stats_vectors.json",
+   "sha256": "2d1416cd7e0ca4894476cd7db3b820be3a340fae0b800044a4ae0ec8b30240d7",
+   "source": "new in this change"
+  },
+  {
+   "path": "tests/fixtures/studyrun/toy.py",
+   "sha256": "c22b3fc7ecd851e272c1b72dd684647f522a6652c61c6d532f28e2e683bfaa46",
+   "source": "new in this change"
+  },
+  {
+   "path": "tests/test_canonical_vectors.py",
+   "sha256": "ed920f6f2c03a533d634b3a3a3d7ca495518cdc86fb4222ca94226c2e190f008",
+   "source": "new in this change"
+  },
+  {
+   "path": "tests/test_stats_vectors_trace_observation.py",
+   "sha256": "0f772d7b20585856bb506e9c391b70db9a8a8b9bcecbd9616c3b851ab0d75420",
+   "source": "new in this change"
+  },
+  {
+   "path": "tests/test_studyrun.py",
+   "sha256": "e6e04431a125e5ad85cf94196a5d8a7630e467720f6c062dd1ecf2e9528c8071",
+   "source": "private workspace, 2026-10-29-pipelines/tests/test_studyrun.py",
+   "sourceSha256": "a31d1ac861ed213fb567d9f330a49f5247e0a95aad4b7b5db6f4a2ba1f47a7b3",
+   "identical": false
+  },
+  {
+   "path": "tests/test_studyrun_anchor.py",
+   "sha256": "f47ad58ac1b77d49219d5da7b24e74e667cd5959347e6009e6e1e451f1797dd7",
+   "source": "private workspace, 2026-10-29-pipelines/tests/test_anchor.py",
+   "sourceSha256": "ce0019f66f9bc2cdf38625f372a669f9d72da57d4efc6cc80362349b91a6ccaf",
+   "identical": false
+  },
+  {
+   "path": "tests/test_studyrun_bounds.py",
+   "sha256": "d614a9780411995f9c9351747587bc2cc37d9a858f3bd652faaa222f34e7f78d",
+   "source": "private workspace, 2026-10-29-pipelines/tests/test_bounds.py",
+   "sourceSha256": "8dfcf3fb6467c125367e9480d5bfa9eae586694d44d2a48dbb7813bcc07d8667",
+   "identical": false
+  }
+ ]
+}
