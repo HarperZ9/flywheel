@@ -132,6 +132,12 @@ jobs:
           tests/test_raw_ao_certificate.py
           tests/test_raw_ao_independent.py
           tests/test_raw_native_receipt.py
+          tests/test_hash_chain.py
+          tests/test_spine_vocab.py
+          tests/test_spine_verify.py
+          tests/test_spine_cause.py
+          tests/test_spine_compat.py
+          tests/test_spine_c2.py
           -q
 
   raw_lane:

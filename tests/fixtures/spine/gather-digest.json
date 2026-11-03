@@ -1,0 +1,27 @@
+{
+  "receipts": [
+    {
+      "derived_from": [],
+      "id": "w1",
+      "kind": "web",
+      "method": "fetch",
+      "ref": "https://example.org/notes",
+      "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "source": "https://example.org/notes",
+      "title": "Release notes"
+    },
+    {
+      "derived_from": [
+        "w1"
+      ],
+      "id": "p1",
+      "kind": "pdf",
+      "method": "extract",
+      "ref": "spec.pdf#page=3",
+      "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "source": "file:spec.pdf",
+      "title": "Spec, édition 2"
+    }
+  ],
+  "seal": "2d79d123b4ca7a5d800f3d22a99e4dd9b3da08aa2181a12e9f6f7ce755126c3c"
+}

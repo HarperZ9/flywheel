@@ -1,0 +1,38 @@
+{
+  "claims": 1,
+  "disposition": "publishable",
+  "drift": 1,
+  "match": 0,
+  "measurement_seal": "05b61d6f46aae325c659c0eb11d13731b8c4ef96746aa8b86d543953422a1a4e",
+  "measurements": [
+    {
+      "claim_id": "4ab35c3e9379af0e",
+      "claim_sha256": "4ab35c3e9379af0e1ae2dbe1413d4dd4bbdf3754892af6d9fe9c4a3b547c7deb",
+      "deviation": 0.09,
+      "evidence": [],
+      "measured_at": 1793620801.5,
+      "method": "load-test",
+      "tolerance": 0.05
+    }
+  ],
+  "seal": "eef7ff2dfc378ff9c6497af8e48b542131dc9a9fbdfc01ab65a054188f360973",
+  "started_at": 1793620803.0,
+  "stored": null,
+  "thesis_id": "bcbfabbb6e0e1351",
+  "thesis_seal": "bcbfabbb6e0e1351ee2fa027500c3ae9ef40d712ffcd16d6a76fb7ed580531c8",
+  "unverifiable": 0,
+  "verdict_seal": "875e8ce3ce85749dd2fc0d3decb5bba1bc4049d0d25bc1f87fa96e43695a3e70",
+  "verdicts": [
+    {
+      "claim_id": "4ab35c3e9379af0e",
+      "claim_sha256": "4ab35c3e9379af0e1ae2dbe1413d4dd4bbdf3754892af6d9fe9c4a3b547c7deb",
+      "deviation": 0.09,
+      "disposition": "publishable",
+      "grounds": "deviation 0.09 exceeds tolerance 0.05",
+      "margin": -0.7999999999999998,
+      "method": "load-test",
+      "status": "DRIFT",
+      "tolerance": 0.05
+    }
+  ]
+}
