@@ -74,6 +74,14 @@ VERIFIER_ENTRY_POINTS = [
     "certificates.raw_ao_receipt",
     "certificates.raw_native_receipt",
     "certificates.crossing_generator",
+    # The spine: one record, vocabulary and verifier for every tool's receipt
+    # (docs/spec/spine-record.md). It disposes spine receipts, so C2 holds it.
+    "spine",
+    "spine.vocab",
+    "spine.record",
+    "spine.cause",
+    "spine.natives",
+    "spine.verify",
 ]
 
 THIRD_PARTY = {

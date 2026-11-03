@@ -13,6 +13,13 @@ rather than a second copy.
 
 Sealing excludes the digest field from its own input. Including it would make
 the value depend on itself, and the only way to satisfy that is to not check.
+
+The byte form is a parameter too. The default is `evidence_json.canonical_sha256`,
+which every existing family was sealed under. The spine record
+(`harness/spine`, docs/spec/spine-record.md) passes `canonical_record.sha256`,
+the RFC 8785 form, because its effect and interval fields are floats and
+Python's own float text is not portable. One walk, two byte forms, each named
+by the family that uses it.
 """
 from __future__ import annotations
 
@@ -24,14 +31,14 @@ from .evidence_json import canonical_sha256
 PREV_KEY = "prev_sha256"
 
 
-def seal(record: dict, *, digest_key: str) -> dict:
+def seal(record: dict, *, digest_key: str, digest=canonical_sha256) -> dict:
     """Return the record with its digest field set over everything else."""
     body = {k: v for k, v in record.items() if k != digest_key}
-    return dict(record, **{digest_key: canonical_sha256(body)})
+    return dict(record, **{digest_key: digest(body)})
 
 
 def chain_intact(records, *, schema: str, digest_key: str,
-                 prev_key: str = PREV_KEY) -> bool:
+                 prev_key: str = PREV_KEY, digest=canonical_sha256) -> bool:
     """Walk a chain and check every citation. False on any tampering.
 
     A record of the wrong schema fails too. A file holding a mix of families
@@ -44,8 +51,8 @@ def chain_intact(records, *, schema: str, digest_key: str,
             return False
         if record.get(prev_key, "") != previous:
             return False
-        if record.get(digest_key) != seal(record, digest_key=digest_key)[
-                digest_key]:
+        if record.get(digest_key) != seal(record, digest_key=digest_key,
+                                          digest=digest)[digest_key]:
             return False
         previous = record[digest_key]
     return True
@@ -69,7 +76,7 @@ def head_digest(records, *, digest_key: str) -> str:
 
 
 def append_sealed(record: dict, *, path, schema: str, digest_key: str,
-                  prev_key: str = PREV_KEY) -> list:
+                  prev_key: str = PREV_KEY, digest=canonical_sha256) -> list:
     """Append and refuse to write a chain that does not verify.
 
     Checking after the append rather than before is deliberate. The thing
@@ -78,7 +85,7 @@ def append_sealed(record: dict, *, path, schema: str, digest_key: str,
     """
     records = load_chain(path) + [record]
     if not chain_intact(records, schema=schema, digest_key=digest_key,
-                        prev_key=prev_key):
+                        prev_key=prev_key, digest=digest):
         raise ValueError("appending this record would break the chain")
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

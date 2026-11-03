@@ -1,0 +1,42 @@
+{
+  "corpus_sha256": null,
+  "corpus_version": null,
+  "format": "emet-witness-receipt/v1",
+  "issued_at": "2026-11-02T12:00:00Z",
+  "notes": "EMET emits witness facts only. The receipt preserves the closed verdict lattice and carries no authority, permission, or release decision.",
+  "re_derivation_method": "hash",
+  "receipt_id": "9f6cef55f76555803cefc3291b73c3c6acf8330c61650f20ab4feb5b4d0d06c6",
+  "signature": null,
+  "signature_algorithm": "hmac-sha256-optional",
+  "subject": [
+    {
+      "path": "data/report.txt",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "path": "data/table.csv",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ],
+  "verdict_record": [
+    {
+      "command": "verify",
+      "got": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "subject_index": 0,
+      "verdict": "MATCH",
+      "want": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "command": "verify",
+      "got": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "subject_index": 1,
+      "verdict": "MATCH",
+      "want": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  ],
+  "witness": {
+    "implementation": "emet-python-reference",
+    "self_sha256": "66f1b43115cb4beeba84f320eb7e3a505b7af16d34b0ea4684648db0ae12e645",
+    "spec_version": "1.0.0"
+  }
+}
