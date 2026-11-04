@@ -8,11 +8,12 @@ import re
 from pathlib import Path
 
 from ..scope import LEGACY_SCOPE_KEY, scope_key, scope_of
+from .forecast import ledger_line
 from .hashing import short
 from .verdict import get
 
 HEAD = re.compile(r"^### ([A-Z]+)(\d+)\.", re.M)
-FIELD = re.compile(r"\{([A-Za-z0-9_.]+)(?::([^}]+))?\}")
+FIELD = re.compile(r"\{((?:[A-Za-z0-9_.]|\\.)+)(?::([^}]+))?\}")  # a backslash escapes a dot in a key
 
 
 def render(template, result):
@@ -44,7 +45,8 @@ def _scope_line(cfg):
 def entry(spec, result, number, manifest_rel, manifest_sha):
     cfg = spec["ledger"]
     pre = result["prereg"]
-    verdicts = ", ".join(f"{k} {v['verdict']}" for k, v in result["verdicts"].items())
+    verdicts = ", ".join(f"{k} {v['verdict']}" + ("" if v.get("binding", True) else " (non-binding)")
+                         for k, v in result["verdicts"].items())
     lines = [
         f"### {cfg.get('prefix', 'F')}{number}. {render(cfg.get('heading', spec['title']), result)}",
         f"- **Date:** {result['date']}. **Status:** {status_of(cfg, result['verdicts'])}, preregistered "
@@ -56,7 +58,27 @@ def entry(spec, result, number, manifest_rel, manifest_sha):
     ]
     if cfg.get("relates"):
         lines.insert(2, f"- **Relates to:** {cfg['relates']}")
+    lines[-1:-1] = _upgrade_lines(result)
     return "\n".join(lines) + "\n"
+
+
+def _upgrade_lines(result):
+    """Lines added by the 2026-11-02 upgrade; empty for a spec that uses none of it."""
+    out = []
+    d = result.get("decision")
+    if d is not None:
+        nb = "; ".join(f"{k}: {w}" for k, w in d["nonbinding"].items()) or "none"
+        out.append(f"- **Binding verdicts:** {', '.join(d['binding']) or 'none'}; failed: "
+                   f"{', '.join(d['binding_fail']) or 'none'}. Non-binding: {nb}.")
+    if result.get("forecast_scores"):
+        out.append(f"- **Forecast score:** {ledger_line(result['forecast_scores'])}")
+    ac = result.get("autocheck")
+    if ac is not None:
+        state = "all present checks pass" if ac["ok"] else "FAILED: " + "; ".join(ac["problems"])
+        miss = f"; not declared: {', '.join(ac['missing'])}" if ac["missing"] else ""
+        out.append(f"- **Autocheck:** {len(ac['limits'])} limits, {len(ac['constants'])} constants, "
+                   f"{len(ac['posthoc'])} post hoc files; {state}{miss}.")
+    return out
 
 
 def append(spec, result, manifest_rel, manifest_sha):
