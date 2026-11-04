@@ -1,0 +1,19 @@
+Spine fixtures: receipts emitted by each tool's own code, 2026-11-02.
+
+Each file was written by the tool's reference implementation, imported from a
+shallow clone of github.com/HarperZ9/<tool> at the commit below, with injected
+clocks so the bytes replay. Nothing here was edited by hand after emission.
+
+  emet      85e1c518  emet.witness_receipt.emit_receipt, from a verify envelope
+                      emet-receipt-match.json (two subjects, MATCH)
+                      emet-receipt-drift.json (one subject, DRIFT)
+  crucible  82aacb24  crucible.assess.assess, from make_claim and make_thesis
+                      crucible-assessment-warn.json (2 MATCH, 1 UNVERIFIABLE)
+                      crucible-assessment-drift.json (1 DRIFT)
+  gather    e7c55b97  gather.digest.digest_of_receipts, two receipts, one with
+                      derived_from and a non-ASCII title
+                      gather-digest.json
+
+Files are written as json.dumps(obj, indent=2, sort_keys=True,
+ensure_ascii=False) plus a newline, UTF-8. Every check in harness/spine works on
+the parsed object, so the indentation carries no meaning.

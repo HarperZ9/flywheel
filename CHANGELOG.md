@@ -8,8 +8,15 @@ lists the changes in each release with the pull request that made them.
 Datapipe
 - `harness.datapipe` takes one external data source from download to a shareable export with a receipt at each stage: a terms gate that needs a saved snapshot and a verbatim licence quote, `datapipe.record/1` rows with cell-level provenance, cleaning checks that flag and never delete, a revertible change log, and an export that blocks anything not cleared for redistribution. See `docs/DATAPIPE.md`.
 
+Shared contract (the spine)
+- `harness/spine` gives every tool one receipt shape. `docs/spec/spine-record.md` is the text of record. The verdict vocabulary is Flywheel's four (PASS, FAIL, UNDECIDED, UNVERIFIABLE); the MATCH/DRIFT set, the organ-bundle statuses and the gate decisions map onto it by one table, and each record keeps its source term beside the spine verdict.
+- A spine record is `flywheel.spine-record/1`, schema version 1, hash-chained by `harness/hash_chain.py` under canonical-record/1. `hash_chain` gained a `digest` parameter for that; its default is unchanged, so every existing chain seals byte for byte as before.
+- Optional cause-and-effect fields: intervention, run, twin digest, twin, effect, interval and placebo. The verifier refuses a twin that differs in a second field, an effect that is not run minus twin, a twin that does not match its digest and an interval that excludes its own effect. An effect claimed without a twin digest is UNVERIFIABLE. A placebo whose interval excludes zero marks the pairing CONFOUNDED.
+- `python -m harness.spine verify FILE.json` rechecks a record or a chain offline. It rechecks emet witness receipts, crucible assessments and gather digests by their own published recipes. The test fixtures were emitted by each tool's own code at a pinned commit. The spine is on the verifier entry-point list, so the C2 import-closure check holds it.
+
 Canonical records and studyrun
 - `docs/spec/canonical-record.md` defines `canonical-record/1`, one byte form for hashed records. `harness/canonical_record.py` is the reference code. The golden vectors in `tests/data/canonical_vectors.json` are CC0, so other repos test against them without sharing code.
+- studyrun gains `studyrun.spec/2`, verdict paths for keys that hold a dot, a power gate, planted-truth fitting, autochecks for limits, constants and post hoc files (`audit`, exit 4), forecast scoring, and `ext_sha256` in new locks. Older specs and locks run and verify as before; a sweep of 570 existing specs gives identical check results, plan hashes and verdicts under the old and new code.
 - `harness.studyrun` runs one study end to end: preregistration first, every input and code file hashed, analysis and controls run, hashes checked again, verdicts scored, manifest written, one ledger entry appended. See `docs/STUDYRUN.md`. A spec names what the study covers under `ledger.scope`.
 - `tests/data/stats_vectors.json` holds CC0 vectors for Holm, Bonferroni, Benjamini-Hochberg, the binomial tail and Wilson. Trace observation's Holm and the studyrun bounds test against them.
 

@@ -1,0 +1,71 @@
+{
+  "claims": 3,
+  "disposition": "publishable",
+  "drift": 0,
+  "match": 2,
+  "measurement_seal": "8952dcdf62174938b91e9e045ef042d52ee0e6c46ce816c7783e0b39c3eff47c",
+  "measurements": [
+    {
+      "claim_id": "4ab35c3e9379af0e",
+      "claim_sha256": "4ab35c3e9379af0e1ae2dbe1413d4dd4bbdf3754892af6d9fe9c4a3b547c7deb",
+      "deviation": 0.02,
+      "evidence": [
+        "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      ],
+      "measured_at": 1793620801.5,
+      "method": "load-test",
+      "tolerance": 0.05
+    },
+    {
+      "claim_id": "453f18340a5578b5",
+      "claim_sha256": "453f18340a5578b5f4a52c2dad6b2b448a3cc1359c849e47eafedce137282290",
+      "deviation": 0.004,
+      "evidence": [],
+      "measured_at": 1793620802.25,
+      "method": "log-count",
+      "tolerance": 0.01
+    }
+  ],
+  "seal": "ad3989e84abdcdbad6920053f243f44d75e49147f906b65522d77b779d040aff",
+  "started_at": 1793620803.0,
+  "stored": null,
+  "thesis_id": "6aa4cb65ac548fdf",
+  "thesis_seal": "6aa4cb65ac548fdfce717a4afcd2573879d80b36e7832cc49bb2d1ace4494fc1",
+  "unverifiable": 1,
+  "verdict_seal": "91839663ad77e8930d8124d799dbee063186f181dafd117c9e3a529f60da5e40",
+  "verdicts": [
+    {
+      "claim_id": "4ab35c3e9379af0e",
+      "claim_sha256": "4ab35c3e9379af0e1ae2dbe1413d4dd4bbdf3754892af6d9fe9c4a3b547c7deb",
+      "deviation": 0.02,
+      "disposition": "publishable",
+      "grounds": "deviation 0.02 within tolerance 0.05",
+      "margin": 0.6,
+      "method": "load-test",
+      "status": "MATCH",
+      "tolerance": 0.05
+    },
+    {
+      "claim_id": "453f18340a5578b5",
+      "claim_sha256": "453f18340a5578b5f4a52c2dad6b2b448a3cc1359c849e47eafedce137282290",
+      "deviation": 0.004,
+      "disposition": "publishable",
+      "grounds": "deviation 0.004 within tolerance 0.01",
+      "margin": 0.6,
+      "method": "log-count",
+      "status": "MATCH",
+      "tolerance": 0.01
+    },
+    {
+      "claim_id": "efbd11c883ce463a",
+      "claim_sha256": "efbd11c883ce463a8eeb41fbcb6eb67577be1577e68df933ae7f36a277c808b3",
+      "deviation": null,
+      "disposition": "publishable",
+      "grounds": "no measurement",
+      "margin": null,
+      "method": "none",
+      "status": "UNVERIFIABLE",
+      "tolerance": 0.0
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+ "comment": "every file this change adds or edits, its source and sha256 (text hashed with LF line endings)",
+ "snapshot": "HarperZ9/workstation-tools@d82f57f",
+ "base": "13ca2b2e4a170fed14426e3a055a05391f2462d5",
+ "sourcesHashedOn": "2026-11-02",
+ "files": [
+  {
+   "path": "CHANGELOG.md",
+   "sha256": "60bb93344b1005c2f38f624d6114395f7d6e01b6423d91c43fbd242f0062c6ec",
+   "source": "new in this change"
+  },
+  {
+   "path": "docs/STUDYRUN.md",
+   "sha256": "b7728a3bb89efb456b2d0d51c71f99b1aa25c7f9560d7f0ba348e38a1810d36b",
+   "source": "new in this change"
+  },
+  {
+   "path": "harness/studyrun/__init__.py",
+   "sha256": "910ab10391d5bb839351a02de03f1f1d52845abbf95eacfceb25ef220967d9b7",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/ (upgrade of 2026-11-02): __init__.py",
+   "sourceSha256": "7443d867d86e51d1e6a05a84ed8f9bd92857e738b1ffb23e98511c8e8e9c7105",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/__main__.py",
+   "sha256": "b6b2447dd199bfb5028688b72df479c19e93bbb5b43ae45100c79845d6bd4784",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/ (upgrade of 2026-11-02): __main__.py",
+   "sourceSha256": "bcba9b5ed91e4d04cce6f3cf34981b98db330f4b77fe24a69abd58aac37ff448",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/autocheck.py",
+   "sha256": "e90523cf105500b6e80de1b0a992a3b84e0600e66b167a5643fc45866c1a0d4a",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/ (upgrade of 2026-11-02): autocheck.py",
+   "sourceSha256": "e90523cf105500b6e80de1b0a992a3b84e0600e66b167a5643fc45866c1a0d4a",
+   "identical": true
+  },
+  {
+   "path": "harness/studyrun/forecast.py",
+   "sha256": "a36910dd236a7b7e8ac0757a4364204b9818e07cf5e7ab265fb67b2555c6ece6",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/ (upgrade of 2026-11-02): forecast.py",
+   "sourceSha256": "a36910dd236a7b7e8ac0757a4364204b9818e07cf5e7ab265fb67b2555c6ece6",
+   "identical": true
+  },
+  {
+   "path": "harness/studyrun/ledger.py",
+   "sha256": "83515de5493e4556b61103dbfcfb4bb050fad833ecc07ef1547a91b1d08f862e",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/ (upgrade of 2026-11-02): ledger.py",
+   "sourceSha256": "2a78aa448582ab67867a2136c5f0948e436a4c00ed20e37ab25ebfd33e245546",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/planted.py",
+   "sha256": "a0df477c808b6696e307bc32e6efc8f8ea4b288affffe7e329b4af132c12aa2e",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/ (upgrade of 2026-11-02): planted.py",
+   "sourceSha256": "a0df477c808b6696e307bc32e6efc8f8ea4b288affffe7e329b4af132c12aa2e",
+   "identical": true
+  },
+  {
+   "path": "harness/studyrun/power.py",
+   "sha256": "1bff71409ce9b6e8a50329cd768bf8eaddf945330a1a755acbdfc4070b16cbe5",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/ (upgrade of 2026-11-02): power.py",
+   "sourceSha256": "1bff71409ce9b6e8a50329cd768bf8eaddf945330a1a755acbdfc4070b16cbe5",
+   "identical": true
+  },
+  {
+   "path": "harness/studyrun/prereg.py",
+   "sha256": "33d458d9c797c88273ca2877a5aabf6b0fd41080f17c566a61509bac5587a2cc",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/ (upgrade of 2026-11-02): prereg.py",
+   "sourceSha256": "19395062a7b2824e68acb169b7ced651549a3f33f5f556d928cd3cd967960df2",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/spec.py",
+   "sha256": "fc75d874c6119d5b8edafff4eed61c227b6a860e5e935bdb2c52baa993c89ce5",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/ (upgrade of 2026-11-02): spec.py",
+   "sourceSha256": "190a13a7e7bcaaf09d7fbdc14b481c7e789c583551c82c873ae92247af0b0ea7",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/stage.py",
+   "sha256": "9097b8dea4256104f3d99acf71b540743426897a155024321a45fe64a707cab6",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/ (upgrade of 2026-11-02): stage.py",
+   "sourceSha256": "9e30ca91edbca5f8f9f3b57211c6491e301e2a2bce7b0430cf278a23d940d7f3",
+   "identical": false
+  },
+  {
+   "path": "harness/studyrun/verdict.py",
+   "sha256": "849aa73ea8f0c6e85697982529c4907fc7d12dbee35eadbd5b5ab268119efb13",
+   "source": "private workspace, 2026-10-29-pipelines/studyrun/ (upgrade of 2026-11-02): verdict.py",
+   "sourceSha256": "849aa73ea8f0c6e85697982529c4907fc7d12dbee35eadbd5b5ab268119efb13",
+   "identical": true
+  },
+  {
+   "path": "tests/test_studyrun_upgrade.py",
+   "sha256": "ed65c54e80fe7d91fbe9e72086286ed5afa4ef81ec626573df7fe6ad4a5fad5d",
+   "source": "private workspace, 2026-10-29-pipelines/tests/test_upgrade.py",
+   "sourceSha256": "c299c2538670a6618c79c9495e81c6e74baf7243078e63a473fa3d760d685e6e",
+   "identical": false
+  }
+ ]
+}

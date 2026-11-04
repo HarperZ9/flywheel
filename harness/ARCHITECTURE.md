@@ -116,6 +116,8 @@ import nothing outside the standard library.
 | `contest.py` | How a stranger disagrees on the record. |
 | `why.py` | Answering "why was this accepted?" from the record. |
 | `evidence_json.py` | Canonical JSON bytes and sha256, shared across receipts. |
+| `hash_chain.py` | The one append-only chain walk, shared by every record family. The byte form is a parameter. |
+| `spine/` | The shared contract: one verdict map, one chained record, cause-and-effect fields, and one verifier for every tool's receipt. Spec: `docs/spec/spine-record.md`. |
 | `certificates/` | The certificate checkers (base, zarankiewicz, independent, crossing, generators). They are the accept path for the construction families. |
 
 ## Benchmarks
