@@ -1,0 +1,86 @@
+{
+ "comment": "every file this change adds or edits, its source and sha256 (text hashed with LF line endings)",
+ "snapshot": "HarperZ9/workstation-tools@d82f57f",
+ "base": "13ca2b2e4a170fed14426e3a055a05391f2462d5",
+ "sourcesHashedOn": "2026-11-02",
+ "files": [
+  {
+   "path": "CHANGELOG.md",
+   "sha256": "a14506f716c71a6245a2bb50bc75b1148c27ccfc57916dc007ddc2b7fd27e9c6",
+   "source": "new in this change"
+  },
+  {
+   "path": "docs/DATAPIPE.md",
+   "sha256": "bacc4cca12e9c34e6a18095ffc80d3edbf5aedc31b553b05d1111ae68c1cf645",
+   "source": "new in this change"
+  },
+  {
+   "path": "harness/datapipe/__init__.py",
+   "sha256": "7727715047171fa5e753a0ca28a577f35a2fd4f6c793c80452a06427faa1ea66",
+   "source": "flywheel worktree on feat/datapipe-20261031, uncommitted: harness/datapipe/__init__.py",
+   "sourceSha256": "7727715047171fa5e753a0ca28a577f35a2fd4f6c793c80452a06427faa1ea66",
+   "identical": true
+  },
+  {
+   "path": "harness/datapipe/access.py",
+   "sha256": "8c783dd5636991ea41475f011f8bd42aabe9db0c7654452fb45bbf1eff881cba",
+   "source": "flywheel worktree on feat/datapipe-20261031, uncommitted: harness/datapipe/access.py",
+   "sourceSha256": "8c783dd5636991ea41475f011f8bd42aabe9db0c7654452fb45bbf1eff881cba",
+   "identical": true
+  },
+  {
+   "path": "harness/datapipe/clean.py",
+   "sha256": "2514b92f1b4494d39326893ab04ae7fd35671e40f507b265ae969557971b5fea",
+   "source": "flywheel worktree on feat/datapipe-20261031, uncommitted: harness/datapipe/clean.py",
+   "sourceSha256": "2514b92f1b4494d39326893ab04ae7fd35671e40f507b265ae969557971b5fea",
+   "identical": true
+  },
+  {
+   "path": "harness/datapipe/clean_core.py",
+   "sha256": "6d59e8a231b4bf3bf7a490c3f4a648f6aa9fff96b5866023f3fe4787d99f2a7e",
+   "source": "flywheel worktree on feat/datapipe-20261031, uncommitted: harness/datapipe/clean_core.py",
+   "sourceSha256": "6d59e8a231b4bf3bf7a490c3f4a648f6aa9fff96b5866023f3fe4787d99f2a7e",
+   "identical": true
+  },
+  {
+   "path": "harness/datapipe/clean_relations.py",
+   "sha256": "4efe03714a5ce8c2c37a0aeb264088eb3e51264f9413107b66e70d03e3472498",
+   "source": "flywheel worktree on feat/datapipe-20261031, uncommitted: harness/datapipe/clean_relations.py",
+   "sourceSha256": "4efe03714a5ce8c2c37a0aeb264088eb3e51264f9413107b66e70d03e3472498",
+   "identical": true
+  },
+  {
+   "path": "harness/datapipe/diffuse.py",
+   "sha256": "019c5eea16ee781fbff6831611694f678342f0ee6c9f4586641bc5dd99fae83a",
+   "source": "flywheel worktree on feat/datapipe-20261031, uncommitted: harness/datapipe/diffuse.py",
+   "sourceSha256": "019c5eea16ee781fbff6831611694f678342f0ee6c9f4586641bc5dd99fae83a",
+   "identical": true
+  },
+  {
+   "path": "harness/datapipe/filecheck.py",
+   "sha256": "3939ba1cc9293bfdd450b3b8048fa4c3f665eb43405391ae5fda25af1b2300ed",
+   "source": "flywheel worktree on feat/datapipe-20261031, uncommitted: harness/datapipe/filecheck.py",
+   "sourceSha256": "3939ba1cc9293bfdd450b3b8048fa4c3f665eb43405391ae5fda25af1b2300ed",
+   "identical": true
+  },
+  {
+   "path": "harness/datapipe/schema.py",
+   "sha256": "02ed3f2819cf6a99a0ea3d06cd8392063c26b4ec8b586fcb123d2ea778953c4a",
+   "source": "flywheel worktree on feat/datapipe-20261031, uncommitted: harness/datapipe/schema.py",
+   "sourceSha256": "02ed3f2819cf6a99a0ea3d06cd8392063c26b4ec8b586fcb123d2ea778953c4a",
+   "identical": true
+  },
+  {
+   "path": "tests/test_datapipe.py",
+   "sha256": "74045c86f9e0ac3077449b643b8be03d7adfb6ea483cde4af8b0232b9cadd64f",
+   "source": "flywheel worktree on feat/datapipe-20261031, uncommitted: tests/test_datapipe.py",
+   "sourceSha256": "74045c86f9e0ac3077449b643b8be03d7adfb6ea483cde4af8b0232b9cadd64f",
+   "identical": true
+  },
+  {
+   "path": "tests/test_datapipe_gates.py",
+   "sha256": "0eeb7d61e18743f290cbdfefd90d57af0288ad1b76228ea73900afc0840a03be",
+   "source": "new in this change"
+  }
+ ]
+}

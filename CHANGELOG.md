@@ -5,6 +5,9 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Datapipe
+- `harness.datapipe` takes one external data source from download to a shareable export with a receipt at each stage: a terms gate that needs a saved snapshot and a verbatim licence quote, `datapipe.record/1` rows with cell-level provenance, cleaning checks that flag and never delete, a revertible change log, and an export that blocks anything not cleared for redistribution. See `docs/DATAPIPE.md`.
+
 Shared contract (the spine)
 - `harness/spine` gives every tool one receipt shape. `docs/spec/spine-record.md` is the text of record. The verdict vocabulary is Flywheel's four (PASS, FAIL, UNDECIDED, UNVERIFIABLE); the MATCH/DRIFT set, the organ-bundle statuses and the gate decisions map onto it by one table, and each record keeps its source term beside the spine verdict.
 - A spine record is `flywheel.spine-record/1`, schema version 1, hash-chained by `harness/hash_chain.py` under canonical-record/1. `hash_chain` gained a `digest` parameter for that; its default is unchanged, so every existing chain seals byte for byte as before.
