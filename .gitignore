@@ -76,6 +76,8 @@ project-docs/private/
 
 # private denylist for the public-instruction gate (never ships)
 scripts/.private-denylist.txt
+# private patterns for the publish-metadata check (never ships)
+scripts/.publish-denylist.txt
 
 # direnv environment files (can hold exported secrets)
 .envrc
