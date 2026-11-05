@@ -5,6 +5,9 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Publish privacy
+- `scripts/publish_metadata_gate.py` blocks a publish that adds personal metadata. The 1,370 findings already in the tree are frozen as counts in `project-docs/records/2026-11-04-publish-metadata-baseline.json`; a file that grows its count, a new file with a finding, or any hit from the machine name, the git global email or the untracked deny list fails. The baseline only shrinks. `publish_public.py` runs it on the staging tree before any push and takes `--deny-list`; CI runs it on the checkout. The export no longer copies `scripts/.publish-denylist.txt`, which it would have shipped. See `docs/features/publish-metadata.md`.
+
 Datapipe
 - `harness.datapipe` takes one external data source from download to a shareable export with a receipt at each stage: a terms gate that needs a saved snapshot and a verbatim licence quote, `datapipe.record/1` rows with cell-level provenance, cleaning checks that flag and never delete, a revertible change log, and an export that blocks anything not cleared for redistribution. See `docs/DATAPIPE.md`.
 
