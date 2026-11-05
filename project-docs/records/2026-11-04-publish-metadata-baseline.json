@@ -1,0 +1,649 @@
+{
+ "schema": "flywheel.publish-metadata-baseline/1",
+ "patterns": "generic only (check_publish_metadata GENERIC)",
+ "total": 1370,
+ "files": {
+  "artifacts/agent_recovery_benchmark/20260708_230923/forum_benchmark_cases.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_230923/loop/cache/e7d325c9cd42556a.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_230923/report.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_231022/forum_benchmark_cases.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_231022/loop/cache/e7d325c9cd42556a.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_231022/report.json": {
+   "local-path": 5
+  },
+  "artifacts/agent_recovery_benchmark/20260708_231022/report.md": {
+   "local-path": 2
+  },
+  "artifacts/agent_recovery_benchmark/20260708_231654/forum_benchmark_cases.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_231654/loop/cache/e7d325c9cd42556a.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_231654/report.json": {
+   "local-path": 5
+  },
+  "artifacts/agent_recovery_benchmark/20260708_231654/report.md": {
+   "local-path": 2
+  },
+  "artifacts/agent_recovery_benchmark/20260708_232208/forum_benchmark_cases.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_232208/loop/cache/e7d325c9cd42556a.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_232208/report.json": {
+   "local-path": 5
+  },
+  "artifacts/agent_recovery_benchmark/20260708_232208/report.md": {
+   "local-path": 2
+  },
+  "artifacts/agent_recovery_benchmark/20260708_232512/forum_benchmark_cases.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_232512/loop/cache/e7d325c9cd42556a.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_232512/report.json": {
+   "local-path": 5
+  },
+  "artifacts/agent_recovery_benchmark/20260708_232512/report.md": {
+   "local-path": 2
+  },
+  "artifacts/agent_recovery_benchmark/20260708_232931/forum_benchmark_cases.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_232931/loop/cache/e7d325c9cd42556a.json": {
+   "local-path": 1
+  },
+  "artifacts/agent_recovery_benchmark/20260708_232931/report.json": {
+   "local-path": 5
+  },
+  "artifacts/agent_recovery_benchmark/20260708_232931/report.md": {
+   "local-path": 2
+  },
+  "artifacts/backend_recovery_matrix_latest/20260708_231804/backend_recovery_matrix.json": {
+   "local-path": 1
+  },
+  "artifacts/build_local_exe.stderr.log": {
+   "local-path": 68
+  },
+  "artifacts/build_local_exe.stdout.log": {
+   "local-path": 3
+  },
+  "artifacts/closeout/FW-2026-08-02-CLOSEOUT/task-2-governance-primitives/010-red-focused/stdout.txt": {
+   "local-path": 6
+  },
+  "artifacts/source_mined_backend_matrix/20260709_000252/source_mined_backend_matrix.json": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix/20260709_000252/source_mined_backend_matrix.md": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_dry_full/20260709_000900/source_mined_backend_matrix.json": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_dry_full/20260709_000900/source_mined_backend_matrix.md": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_execution/20260709_001150/source_mined_backend_matrix.json": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_execution/20260709_001150/source_mined_backend_matrix.md": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_execution/20260709_001747/source_mined_backend_matrix.json": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_execution/20260709_001747/source_mined_backend_matrix.md": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_local_full/20260709_000954/source_mined_backend_matrix.json": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_local_full/20260709_000954/source_mined_backend_matrix.md": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_user/20260709_004606/source_mined_backend_matrix.json": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_user/20260709_004606/source_mined_backend_matrix.md": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_user/latest_run/20260709_014106/source_mined_backend_matrix.json": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_user/latest_run/20260709_014106/source_mined_backend_matrix.md": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_user/latest_run/20260709_020905/source_mined_backend_matrix.json": {
+   "local-path": 1
+  },
+  "artifacts/source_mined_backend_matrix_user/latest_run/20260709_020905/source_mined_backend_matrix.md": {
+   "local-path": 1
+  },
+  "benchmarks/agentic-task-set-adapter-v1.json": {
+   "local-path": 1
+  },
+  "benchmarks/agentic-task-set-implementation-plan-v1.json": {
+   "local-path": 16
+  },
+  "benchmarks/dry-run-preflight-command-deck-v1.json": {
+   "local-path": 16
+  },
+  "benchmarks/forum-ledger-deep-verify-scaling-v1.json": {
+   "local-path": 2
+  },
+  "configs/qcr/amplitude-closure-manifest-v1.json": {
+   "local-path": 1
+  },
+  "dataset/adversarial_pressure_sources_2026-07-09.json": {
+   "local-path": 5
+  },
+  "dataset/buildlang_buildc_sources_2026-07-09.json": {
+   "local-path": 9
+  },
+  "dataset/tokenize_pack.py": {
+   "local-path": 1
+  },
+  "demos/scripts/telos-showcase.json": {
+   "local-path": 3
+  },
+  "demos/telos-showcase/player.html": {
+   "local-path": 1
+  },
+  "demos/telos-showcase/transcript.json": {
+   "local-path": 3
+  },
+  "desktop/android/app/src/main/res/mipmap-hdpi/ic_launcher.png": {
+   "image-metadata": 1
+  },
+  "desktop/android/app/src/main/res/mipmap-mdpi/ic_launcher.png": {
+   "image-metadata": 1
+  },
+  "desktop/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": {
+   "image-metadata": 1
+  },
+  "desktop/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
+   "image-metadata": 1
+  },
+  "desktop/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
+   "image-metadata": 1
+  },
+  "desktop/lib/views/agent_mode_pane.dart": {
+   "local-path": 1
+  },
+  "desktop/lib/views/workflows_view.dart": {
+   "local-path": 1
+  },
+  "desktop/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_1024.png": {
+   "image-metadata": 1
+  },
+  "desktop/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_128.png": {
+   "image-metadata": 1
+  },
+  "desktop/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_16.png": {
+   "image-metadata": 1
+  },
+  "desktop/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_256.png": {
+   "image-metadata": 1
+  },
+  "desktop/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png": {
+   "image-metadata": 1
+  },
+  "desktop/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_512.png": {
+   "image-metadata": 1
+  },
+  "desktop/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_64.png": {
+   "image-metadata": 1
+  },
+  "desktop/test/action_route_grants_test.dart": {
+   "local-path": 11
+  },
+  "desktop/test/agent_view_native_session_test.dart": {
+   "local-path": 1
+  },
+  "desktop/test/chat_navigation_model_test.dart": {
+   "local-path": 1
+  },
+  "docs/research/2026-07-14-domain-lean-invention.md": {
+   "local-path": 4
+  },
+  "docs/superpowers/plans/2026-07-21-qcr-falsifiable-lanes.md": {
+   "local-path": 2
+  },
+  "docs/superpowers/plans/2026-07-21-qcr-unblock-wave2.md": {
+   "local-path": 25
+  },
+  "docs/superpowers/plans/2026-09-18-native-lane-bundle-program.md": {
+   "local-path": 4
+  },
+  "docs/superpowers/specs/2026-07-21-qcr-unblock-wave2-design.md": {
+   "local-path": 3
+  },
+  "harness/preaction/openshell_launch.py": {
+   "local-path": 1
+  },
+  "harness/superproject.py": {
+   "local-path": 2
+  },
+  "project-docs/INFRASTRUCTURE.md": {
+   "local-path": 21
+  },
+  "project-docs/STATE.md": {
+   "local-path": 2
+  },
+  "project-docs/SUPERAPP.md": {
+   "local-path": 30
+  },
+  "project-docs/architecture/CLOSED-LOOP-UPLIFT-ENGINE-2026-07-08.md": {
+   "local-path": 14
+  },
+  "project-docs/enterprise/MNEME-RELAY-PLEXUS-READINESS-2026-07-08.md": {
+   "local-path": 10
+  },
+  "project-docs/flagship/DEMOS.md": {
+   "local-path": 1
+  },
+  "project-docs/plans/2026-07-25-cc1-phase1a-verification-core.md": {
+   "local-path": 4
+  },
+  "project-docs/records/2026-07-25-canonical-master-delta.md": {
+   "local-path": 1
+  },
+  "project-docs/records/2026-07-25-cc1-panel-synthesis.md": {
+   "local-path": 2
+  },
+  "project-docs/records/2026-07-25-epistemic-infra-research.md": {
+   "local-path": 7
+  },
+  "project-docs/records/2026-07-25-practitioner-patterns.md": {
+   "local-path": 1
+  },
+  "project-docs/records/2026-07-26-dev-assessment.md": {
+   "local-path": 4
+  },
+  "project-docs/records/2026-07-26-oracle-family-survey.md": {
+   "local-path": 2
+  },
+  "project-docs/records/2026-08-14-desktop-phase-1-journey-persistence.md": {
+   "local-path": 3
+  },
+  "project-docs/records/2026-08-25-local-installer-0.3.10.md": {
+   "local-path": 1
+  },
+  "project-docs/records/AGENTIC-BENCHMARK-TASK-SET-2026-07-09.md": {
+   "local-path": 1
+  },
+  "project-docs/records/AGENTIC-TASK-SET-ADAPTER-PLAN-2026-07-09.md": {
+   "local-path": 4
+  },
+  "project-docs/records/AGENTIC-TASK-SET-IMPLEMENTATION-RUNBOOK-2026-07-09.md": {
+   "local-path": 19
+  },
+  "project-docs/records/ARCHITECTURE-2026-07-09-historical-target.md": {
+   "local-path": 16
+  },
+  "project-docs/records/BENCHMARK-METHODOLOGY-2026-07-09.md": {
+   "local-path": 4
+  },
+  "project-docs/records/CAPABILITY-CATALOG-2026-07-09.md": {
+   "local-path": 258
+  },
+  "project-docs/records/CLOSED-LOOP-INTEGRATION-SCHEMATIC-2026-07-09.md": {
+   "local-path": 11
+  },
+  "project-docs/records/CODEX-FLYWHEEL-BENCHMARK-COMPARISON-2026-07-09.md": {
+   "local-path": 1
+  },
+  "project-docs/records/CROSS-HARNESS-ADAPTER-CONTRACT-2026-07-09.md": {
+   "local-path": 5
+  },
+  "project-docs/records/DRY-RUN-PREFLIGHT-COMMAND-DECK-2026-07-09.md": {
+   "local-path": 11
+  },
+  "project-docs/records/EXPERIMENTAL-OUTCOME-2026-07-09.md": {
+   "local-path": 2
+  },
+  "project-docs/records/FORUM-LEDGER-DEEP-VERIFY-BENCHMARK-PLAN-2026-07-09.md": {
+   "local-path": 5
+  },
+  "project-docs/records/HANDOFF-2026-07-04-phase2-superseded.md": {
+   "local-path": 8
+  },
+  "project-docs/records/HANDOFF-NEXT-SESSION-superseded.md": {
+   "local-path": 3
+  },
+  "project-docs/records/HARNESS-ARCHITECTURE-ENDPOINT-REPORT-2026-07-09.md": {
+   "local-path": 16
+  },
+  "project-docs/records/LOCAL-MODEL-BENCHMARK-SUMMARY-2026-07-09.md": {
+   "local-path": 4
+  },
+  "project-docs/records/MNEME-READINESS-REPORT-2026-07-09.md": {
+   "local-path": 3
+  },
+  "project-docs/records/MODEL-NAMING-PUBLISHING-PLAN-14B-32B-2026-07-09.md": {
+   "local-path": 2
+  },
+  "project-docs/records/MONITOR-OUTCOME-RECONCILIATION-2026-09-23.md": {
+   "local-path": 1
+  },
+  "project-docs/records/MONITOR-OUTCOME-SOURCE-CHECK-2026-09-23.md": {
+   "local-path": 3
+  },
+  "project-docs/records/OBJECTIVE-EVIDENCE-MATRIX-2026-07-09.json": {
+   "local-path": 70
+  },
+  "project-docs/records/OBJECTIVE-EVIDENCE-MATRIX-2026-07-09.md": {
+   "local-path": 11
+  },
+  "project-docs/records/PLEXUS-READINESS-REPORT-2026-07-09.md": {
+   "local-path": 3
+  },
+  "project-docs/records/RELAY-READINESS-REPORT-2026-07-09.md": {
+   "local-path": 3
+  },
+  "project-docs/records/ROADMAP-STATUS-2026-07-09.md": {
+   "local-path": 24
+  },
+  "project-docs/records/TOOL-INTEGRATION-REPORT-2026-07-09.md": {
+   "local-path": 37
+  },
+  "project-docs/records/WORKSPACE-CONTEXT-MAP-2026-07-08.md": {
+   "local-path": 20
+  },
+  "project-docs/records/WORKSPACE-CONTEXT-MAP-2026-07-09.md": {
+   "local-path": 17
+  },
+  "project-docs/release/MODEL-RELEASE-READINESS-14B-32B-2026-07-08.md": {
+   "local-path": 1
+  },
+  "project-docs/reports/ADVERSARIAL-BENCHMARK-HARDENING-2026-07-09.md": {
+   "local-path": 7
+  },
+  "project-docs/reports/BENCHMARK-GRANULARITY-AND-ALIGNMENT-LANE-2026-07-09.md": {
+   "local-path": 5
+  },
+  "project-docs/reports/BENCHMARK-METHODOLOGY-AND-STATUS-2026-07-08.md": {
+   "local-path": 29
+  },
+  "project-docs/reports/BENCHMARK-METHODOLOGY-OUTSIDE-OBSERVER-2026-07-09.md": {
+   "local-path": 1
+  },
+  "project-docs/reports/CLAUDE-OPENCODE-ENDPOINT-STATUS-2026-07-09.md": {
+   "local-path": 5
+  },
+  "project-docs/reports/CODEX-FLYWHEEL-EXPERIMENT-OUTCOME-2026-07-08.md": {
+   "local-path": 1
+  },
+  "project-docs/reports/CODEX-FLYWHEEL-EXPERIMENTAL-OUTCOME-2026-07-09.md": {
+   "local-path": 1
+  },
+  "project-docs/reports/DISCORD-GATHER-INTEGRATION-2026-07-09.md": {
+   "local-path": 11
+  },
+  "project-docs/reports/ENTERPRISE-PARITY-GAPS-2026-07-09.md": {
+   "local-path": 12
+  },
+  "project-docs/reports/ENTERPRISE-PARITY-GAPS-SPINE-2026-07-09.md": {
+   "local-path": 8
+  },
+  "project-docs/reports/EXPERIMENTAL-OUTCOME-CODEX-FLYWHEEL-LOCAL-ENGINE-2026-07-09.md": {
+   "local-path": 37
+  },
+  "project-docs/reports/PUBSCAN-ZERO-DEPENDENCY-INTEGRATION-2026-07-09.md": {
+   "local-path": 16
+  },
+  "project-docs/reports/RESEARCH-CURATION-2026-07-09.md": {
+   "local-path": 2
+  },
+  "project-docs/reports/UNISONAI-SOURCE-MINED-BENCHMARK-2026-07-09.md": {
+   "local-path": 9
+  },
+  "project-docs/research/MODEL-CARD-MINING-2026-07-08.md": {
+   "local-path": 2
+  },
+  "project-docs/research/NOLABELJUSTME-CONTEXT-SHAPE-2026-07-08.md": {
+   "local-path": 1
+  },
+  "project-docs/research/PUBLIC-THINKER-CONTEXT-SHAPES-2026-07-09.md": {
+   "local-path": 1
+  },
+  "project-docs/research/REDDIT-FORUM-CONTEXT-SHAPES-2026-07-08.md": {
+   "local-path": 5
+  },
+  "project-docs/schematics/architecture.graph.json": {
+   "local-path": 6
+  },
+  "pyproject.toml": {
+   "personal-email": 1
+  },
+  "scripts/_launch_confirmatory.py": {
+   "local-path": 2
+  },
+  "scripts/build_local_harness_exes.py": {
+   "local-path": 13
+  },
+  "scripts/chain_phase01.sh": {
+   "local-path": 1
+  },
+  "scripts/check_public_instructions.py": {
+   "local-path": 1
+  },
+  "scripts/install_torch_parallel.sh": {
+   "local-path": 1
+  },
+  "scripts/model_card_benchmark_shapes.py": {
+   "local-path": 1
+  },
+  "scripts/retest_consensus_typed.py": {
+   "local-path": 1
+  },
+  "scripts/run_agentic_task_set_manifest.py": {
+   "local-path": 2
+  },
+  "scripts/run_benchmark_execution_matrix.py": {
+   "local-path": 1
+  },
+  "scripts/run_benchmark_profile_manifest.py": {
+   "local-path": 1
+  },
+  "scripts/run_buildc_receipt_bridge.py": {
+   "local-path": 1
+  },
+  "scripts/run_closed_loop_benchmark_seed.py": {
+   "local-path": 23
+  },
+  "scripts/run_codex_mcp_launch_contract.py": {
+   "local-path": 15
+  },
+  "scripts/run_context_inventory.py": {
+   "local-path": 7
+  },
+  "scripts/run_embodied_realtime_multimodal_plan.py": {
+   "local-path": 1
+  },
+  "scripts/run_enterprise_readiness_report.py": {
+   "local-path": 1
+  },
+  "scripts/run_gather_readiness.py": {
+   "local-path": 2
+  },
+  "scripts/run_harness_architecture_report.py": {
+   "local-path": 5
+  },
+  "scripts/run_harness_cli.py": {
+   "local-path": 20
+  },
+  "scripts/run_index_receipt.py": {
+   "local-path": 1
+  },
+  "scripts/run_mcp_tool_health_receipts.py": {
+   "local-path": 11
+  },
+  "scripts/run_model_card_claim_table.py": {
+   "local-path": 1
+  },
+  "scripts/run_model_release_readiness.py": {
+   "local-path": 1
+  },
+  "scripts/run_model_repo_stage.py": {
+   "local-path": 2
+  },
+  "scripts/run_package_ship_doctor.py": {
+   "local-path": 2
+  },
+  "scripts/run_phase2.cmd": {
+   "local-path": 1
+  },
+  "scripts/run_phase2.sh": {
+   "local-path": 1
+  },
+  "scripts/run_pubscan_resource_profiles.py": {
+   "local-path": 2
+  },
+  "scripts/run_runtime_activation_contract.py": {
+   "local-path": 2
+  },
+  "scripts/run_tool_integration_contract.py": {
+   "local-path": 2
+  },
+  "scripts/run_tool_operator_guide.py": {
+   "local-path": 1
+  },
+  "scripts/run_tool_readiness_receipts.py": {
+   "local-path": 1
+  },
+  "scripts/smoke_boot_integration.py": {
+   "local-path": 3
+  },
+  "scripts/test_typed_battery.py": {
+   "local-path": 1
+  },
+  "tests/enterprise_envs/test_service_desk_review_route.py": {
+   "local-path": 1
+  },
+  "tests/test_agentic_task_set_manifest.py": {
+   "local-path": 1
+  },
+  "tests/test_benchmark_execution_matrix.py": {
+   "local-path": 1
+  },
+  "tests/test_closed_loop_benchmark_seed.py": {
+   "local-path": 27
+  },
+  "tests/test_codex_mcp_launch_contract.py": {
+   "local-path": 3
+  },
+  "tests/test_compose_claim.py": {
+   "local-path": 1
+  },
+  "tests/test_confirmatory_walk_guard.py": {
+   "local-path": 2
+  },
+  "tests/test_cross_harness_manifest.py": {
+   "local-path": 1
+  },
+  "tests/test_enterprise_readiness_report.py": {
+   "local-path": 3
+  },
+  "tests/test_export_site_pilot_record.py": {
+   "local-path": 1
+  },
+  "tests/test_harness_architecture_report.py": {
+   "local-path": 1
+  },
+  "tests/test_harness_cli.py": {
+   "local-path": 45
+  },
+  "tests/test_incident_case.py": {
+   "local-path": 1
+  },
+  "tests/test_lane_runtime.py": {
+   "local-path": 3
+  },
+  "tests/test_lane_runtime_public_status.py": {
+   "local-path": 4
+  },
+  "tests/test_local_model_launch_readiness.py": {
+   "local-path": 1
+  },
+  "tests/test_outcome_bulletin.py": {
+   "local-path": 2
+  },
+  "tests/test_outcome_bulletin_cli.py": {
+   "local-path": 1
+  },
+  "tests/test_preaction_openshell_launch.py": {
+   "local-path": 1
+  },
+  "tests/test_private_artifact_fs_review.py": {
+   "local-path": 1
+  },
+  "tests/test_public_instructions.py": {
+   "local-path": 8
+  },
+  "tests/test_publish_lint.py": {
+   "local-path": 4
+  },
+  "tests/test_python_lane_payload_build.py": {
+   "local-path": 1
+  },
+  "tests/test_qcr_amplitude_manifest.py": {
+   "local-path": 2
+  },
+  "tests/test_rowan_handoff_cut.py": {
+   "local-path": 1
+  },
+  "tests/test_rowan_handoff_redaction.py": {
+   "local-path": 5
+  },
+  "tests/test_run_index_receipt.py": {
+   "local-path": 6
+  },
+  "tests/test_run_paths.py": {
+   "local-path": 1
+  },
+  "tests/test_sandbox_policy.py": {
+   "local-path": 2
+  },
+  "tests/test_session_tools.py": {
+   "local-path": 1
+  },
+  "tests/test_studio_body_engine_resolution.py": {
+   "local-path": 1
+  },
+  "tests/test_studio_runtime_packaging.py": {
+   "local-path": 3
+  },
+  "tests/test_studio_runtime_source_pins.py": {
+   "local-path": 1
+  },
+  "tests/test_tool_hardening_plan.py": {
+   "local-path": 4
+  },
+  "tests/test_tool_integration_contract.py": {
+   "local-path": 1
+  },
+  "tests/test_tool_operator_guide.py": {
+   "local-path": 1
+  },
+  "workflows/memory_substrate.js": {
+   "local-path": 1
+  },
+  "workflows/slingshot.js": {
+   "local-path": 1
+  }
+ }
+}

@@ -9,6 +9,12 @@ Inconclusive on a spent budget
 - A certificate check that reports valid but stopped on `budget` or `timeout` is UNDECIDED with the new reason `BUDGET_EXHAUSTED`, never PASS. A declared `bound` still passes with the bound in coverage; a counterexample found before the budget ran out is still FAIL. No shipped family stops on a budget today, so no current verdict changes. `Coverage` moved to `harness/certificates/coverage.py` and is re-exported from `base`.
 - buildc byte-witness packets carry a `scope` block: the steps the bridge ran, and `inconclusive` when `buildc receipt verify` timed out. A timeout now has its own failure code, `buildc_verification_budget_exhausted`. See `docs/features/inconclusive-budget.md`.
 
+Prompt redaction
+- `python -m harness.prompt_redact` swaps the home folder, login name, machine name, email addresses, deny-list matches and credentials for stable placeholders (`~`, `USER`, `HOST`, `EMAIL-n`, `ID-n`, `[REDACTED:...]`) before text reaches a hosted model. `filter` mode works on stdin; `hook` mode is a Claude Code `UserPromptSubmit` hook that blocks a prompt naming local identifiers and shows the redacted copy to resubmit. Tool results are not covered yet. See `docs/features/prompt-redaction.md`.
+
+Publish privacy
+- `scripts/publish_metadata_gate.py` blocks a publish that adds personal metadata. The 1,370 findings already in the tree are frozen as counts in `project-docs/records/2026-11-04-publish-metadata-baseline.json`; a file that grows its count, a new file with a finding, or any hit from the machine name, the git global email or the untracked deny list fails. The baseline only shrinks. `publish_public.py` runs it on the staging tree before any push and takes `--deny-list`; CI runs it on the checkout. The export no longer copies `scripts/.publish-denylist.txt`, which it would have shipped. See `docs/features/publish-metadata.md`.
+
 Datapipe
 - `harness.datapipe` takes one external data source from download to a shareable export with a receipt at each stage: a terms gate that needs a saved snapshot and a verbatim licence quote, `datapipe.record/1` rows with cell-level provenance, cleaning checks that flag and never delete, a revertible change log, and an export that blocks anything not cleared for redistribution. See `docs/DATAPIPE.md`.
 
