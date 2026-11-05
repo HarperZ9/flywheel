@@ -19,19 +19,21 @@ Three things the base does so no subclass has to remember them:
   3. **Coverage, always.** Every result carries what the check covered, and
      mechanically derives its `scope` codes from it: a code appears only when
      the coverage earns it, so a reader sees exactly how far the verdict goes.
+  4. **A spent budget is inconclusive.** A check that reports valid but stopped
+     on `budget` or `timeout` found no counterexample in the part it covered
+     and never looked at the rest. The base records UNDECIDED with
+     BUDGET_EXHAUSTED, never PASS. A check that stopped at a declared `bound`
+     passes with that bound in its coverage; a counterexample found before the
+     budget ran out is still FAIL.
 """
 from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, asdict
 
 from ..oracle import OracleResult
-from ..verdict import Verdict, Execution, Attribution, UnverifiableReason
-
-
-class CertificateError(ValueError):
-    """A malformed coverage claim or checker contract."""
+from ..verdict import Verdict, Execution, Attribution, UndecidedReason, UnverifiableReason
+from .coverage import SPENT, CertificateError, Coverage  # noqa: F401  (re-exported)
 
 
 class OutOfScope(Exception):
@@ -41,25 +43,6 @@ class OutOfScope(Exception):
     The base turns it into UNVERIFIABLE with OUT_OF_SCOPE, never FAIL. A
     candidate is not wrong for handing us something we do not implement.
     """
-
-
-@dataclass(frozen=True)
-class Coverage:
-    """What the check actually covered, and where its guarantee stops."""
-    predicate_exact: bool
-    search_space_enumerated: bool
-    enumerated_fraction: str            # decimal or rational STRING, never float
-    stop_reason: str                    # complete | budget | timeout | bound
-    guarantee_weakens_above: str | None
-
-    def __post_init__(self) -> None:
-        if not isinstance(self.enumerated_fraction, str):
-            raise CertificateError(
-                "enumerated_fraction must be a string (a float in a hashed field "
-                "makes a stranger's replay disagree over formatting)")
-
-    def to_dict(self) -> dict:
-        return asdict(self)
 
 
 def canonical(obj) -> str:
@@ -199,7 +182,7 @@ class CertificateOracle:
     def _result(self, verdict: Verdict, cert_canon: str, excerpt: str, *,
                 coverage: Coverage | None = None, objective: str | None = None,
                 attribution: Attribution = Attribution.CANDIDATE,
-                unverifiable_reason: str = "",
+                unverifiable_reason: str = "", undecided_reason: str = "",
                 binding: dict | None = None) -> OracleResult:
         cov = coverage.to_dict() if coverage else {}
         scope = list(ALWAYS_SCOPE) + list(self.family_scope)
@@ -228,6 +211,7 @@ class CertificateOracle:
             raw_stdout_sha256=hashlib.sha256(excerpt.encode("utf-8", "surrogatepass")).hexdigest(),
             objective=objective,
             unverifiable_reason=unverifiable_reason,
+            undecided_reason=undecided_reason,
             coverage=dict(cov, instance_bound=binding is not None,
                           instance_binding=binding or {}),
             scope=scope)
@@ -294,6 +278,15 @@ class CertificateOracle:
             return self._result(Verdict.FAIL, canonical(cert),
                                 f"certificate rejected: {e}", binding=binding)
 
+        if valid and coverage is not None and coverage.stop_reason in SPENT:
+            return self._result(
+                Verdict.UNDECIDED, canonical(cert),
+                f"inconclusive: stopped on {coverage.stop_reason} after "
+                f"{coverage.enumerated_fraction} of the search space; {excerpt}",
+                coverage=coverage, objective=self.objective_of(cert),
+                attribution=Attribution.HARNESS,
+                undecided_reason=UndecidedReason.BUDGET_EXHAUSTED.value,
+                binding=binding)
         return self._result(
             Verdict.PASS if valid else Verdict.FAIL, canonical(cert), excerpt,
             coverage=coverage, objective=self.objective_of(cert),

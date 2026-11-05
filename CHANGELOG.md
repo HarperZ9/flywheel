@@ -5,6 +5,10 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Inconclusive on a spent budget
+- A certificate check that reports valid but stopped on `budget` or `timeout` is UNDECIDED with the new reason `BUDGET_EXHAUSTED`, never PASS. A declared `bound` still passes with the bound in coverage; a counterexample found before the budget ran out is still FAIL. No shipped family stops on a budget today, so no current verdict changes. `Coverage` moved to `harness/certificates/coverage.py` and is re-exported from `base`.
+- buildc byte-witness packets carry a `scope` block: the steps the bridge ran, and `inconclusive` when `buildc receipt verify` timed out. A timeout now has its own failure code, `buildc_verification_budget_exhausted`. See `docs/features/inconclusive-budget.md`.
+
 Datapipe
 - `harness.datapipe` takes one external data source from download to a shareable export with a receipt at each stage: a terms gate that needs a saved snapshot and a verbatim licence quote, `datapipe.record/1` rows with cell-level provenance, cleaning checks that flag and never delete, a revertible change log, and an export that blocks anything not cleared for redistribution. See `docs/DATAPIPE.md`.
 

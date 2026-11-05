@@ -157,11 +157,12 @@ def test_a_bounded_predicate_leaves_exactness_out_of_scope():
     class _Bounded(_SumOracle):
         def check(self, cert):
             cov = Coverage(predicate_exact=False, search_space_enumerated=False,
-                           enumerated_fraction="1/1000", stop_reason="budget",
+                           enumerated_fraction="1/1000", stop_reason="bound",
                            guarantee_weakens_above="n>4")
             return True, "sampled", cov
 
     r = _Bounded().verify(_cert(), None)
+    assert r.verdict_ is Verdict.PASS
     assert "PREDICATE_EXACT" not in r.scope
     assert "SEARCH_SPACE_ENUMERATED" not in r.scope
     assert r.coverage["guarantee_weakens_above"] == "n>4"
@@ -265,3 +266,33 @@ class _SurrogateExcerptOracle(CertificateOracle):
 def test_verify_does_not_raise_when_an_excerpt_holds_a_lone_surrogate():
     r = _SurrogateExcerptOracle().verify('{"x": 1}', None)
     assert r.verdict() == "UNVERIFIABLE"
+
+
+# --- a spent budget is inconclusive -------------------------------------------
+
+def _spent(valid, stop):
+    class _Spent(_SumOracle):
+        def check(self, cert):
+            cov = Coverage(predicate_exact=True, search_space_enumerated=False,
+                           enumerated_fraction="3/10", stop_reason=stop,
+                           guarantee_weakens_above=None)
+            return valid, "searched part", cov
+    return _Spent().verify(_cert(), None)
+
+
+@pytest.mark.parametrize("stop", ["budget", "timeout"])
+def test_a_valid_check_that_ran_out_is_undecided_never_pass(stop):
+    r = _spent(True, stop)
+    assert r.verdict_ is Verdict.UNDECIDED
+    assert r.undecided_reason == "BUDGET_EXHAUSTED"
+    assert r.coverage["stop_reason"] == stop
+    assert "inconclusive" in r.stdout_excerpt and "3/10" in r.stdout_excerpt
+    assert "SEARCH_SPACE_ENUMERATED" not in r.scope
+
+
+def test_a_counterexample_found_before_the_budget_ran_out_is_still_fail():
+    assert _spent(False, "budget").verdict_ is Verdict.FAIL
+
+
+def test_inconclusive_and_pass_hash_differently():
+    assert _spent(True, "budget").output_hash != _spent(True, "complete").output_hash

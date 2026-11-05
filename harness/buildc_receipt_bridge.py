@@ -10,7 +10,13 @@ The bridge is deliberately fail-closed:
 * a raw receipt becomes a content-addressed byte-witness packet;
 * a buildc verification command may be attached;
 * only a successful attached verification can promote the packet to MATCH;
-* missing verification stays UNVERIFIABLE, not "trusted".
+* missing verification stays UNVERIFIABLE, not "trusted";
+* a verification that ran out of time is inconclusive: the packet says
+  `budget_exhausted` and carries failure code
+  `buildc_verification_budget_exhausted`, never MATCH.
+
+Every packet carries a `scope` block that lists what the bridge itself
+checked, so a reader does not mistake a hashed file for a verified one.
 """
 
 from __future__ import annotations
@@ -24,6 +30,7 @@ import subprocess
 from typing import Any
 
 from . import safe_program
+from .buildc_receipt_scope import TIMEOUT_EXIT, scope_block
 
 
 SCHEMA = "buildlang-flywheel-byte-witness/v1"
@@ -191,6 +198,7 @@ def _verification_block(command_result: CommandResult | None) -> dict[str, Any]:
             "stderr_sha256": "",
             "stdout_chars": 0,
             "stderr_chars": 0,
+            "budget_exhausted": False,
         }
     return {
         "attempted": True,
@@ -201,6 +209,7 @@ def _verification_block(command_result: CommandResult | None) -> dict[str, Any]:
         "stderr_sha256": _sha256_text(command_result.stderr),
         "stdout_chars": len(command_result.stdout),
         "stderr_chars": len(command_result.stderr),
+        "budget_exhausted": command_result.exit_code == TIMEOUT_EXIT,
     }
 
 
@@ -209,6 +218,8 @@ def _verdict(receipt_fields: dict[str, Any], command_result: CommandResult | Non
         return UNVERIFIABLE, "buildc_verification_not_attached"
     if command_result.exit_code == 0:
         return MATCH, ""
+    if command_result.exit_code == TIMEOUT_EXIT:
+        return UNVERIFIABLE, "buildc_verification_budget_exhausted"
     status = str(receipt_fields.get("receipt_status") or "").upper()
     if status in {"FAIL_UNEXPECTED", "UNVERIFIABLE"}:
         return DRIFT, "buildc_receipt_records_failure"
@@ -256,6 +267,7 @@ def bridge_buildc_receipt(
         },
         "buildc": fields,
         "verification": verification,
+        "scope": scope_block(fields, command_result, bool(export_path)),
         "witness": {
             "byte_witness_id": witness_id,
             "receipt_complete": True,

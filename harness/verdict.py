@@ -42,6 +42,10 @@ class UndecidedReason(str, Enum):
     NON_CONJUNCTIVE_RULE = "NON_CONJUNCTIVE_RULE"
     CONSENSUS_NOT_PROOF = "CONSENSUS_NOT_PROOF"
     RECEIPT_COMMIT_FAILED = "RECEIPT_COMMIT_FAILED"
+    # The check ran out of its search budget or time before it covered what a
+    # pass needs. Inconclusive, never a pass: no counterexample was found in
+    # the part it covered, and the rest was not looked at.
+    BUDGET_EXHAUSTED = "BUDGET_EXHAUSTED"
 
 
 class UnverifiableReason(str, Enum):
