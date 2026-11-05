@@ -5,6 +5,9 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Reviewer independence
+- `harness.reviewer_independence` measures how much evidence a second reader shares with the first and says whether adding it buys a catch: `p * acc * (1 - overlap)` against a 0.05 floor, with Wilson bounds when `p` and `acc` come as counts. PASS adds the reader, FAIL says it is redundant, and an interval across the floor is UNVERIFIABLE. The rule and its reference numbers come from the society lane's measurements; tests reproduce them. See `docs/features/reviewer-independence.md`.
+
 Inconclusive on a spent budget
 - A certificate check that reports valid but stopped on `budget` or `timeout` is UNDECIDED with the new reason `BUDGET_EXHAUSTED`, never PASS. A declared `bound` still passes with the bound in coverage; a counterexample found before the budget ran out is still FAIL. No shipped family stops on a budget today, so no current verdict changes. `Coverage` moved to `harness/certificates/coverage.py` and is re-exported from `base`.
 - buildc byte-witness packets carry a `scope` block: the steps the bridge ran, and `inconclusive` when `buildc receipt verify` timed out. A timeout now has its own failure code, `buildc_verification_budget_exhausted`. See `docs/features/inconclusive-budget.md`.
