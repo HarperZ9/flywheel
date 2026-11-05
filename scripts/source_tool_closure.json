@@ -79,7 +79,7 @@
   "harness/tool_receipts.py": "d40ab3b1c1e952e8167242f7b8d78636dc6fecd3ce54fd9843d5c9f7eb7ccdeb",
   "harness/tool_sandbox_bridge.py": "f83e309cad5563743acc6641148cc2e76b0fee2031652ce67fa6976392fd1ef4",
   "harness/transparency_log.py": "ecbb88672ac116d10d03f7db5b0b390c63b00159f46724e0500d3646c3ffd3c8",
-  "harness/verdict.py": "8962ad77c2ebdfbe71b167e664b3b445a4fdfe554b4260f22b6c20003e998116",
+  "harness/verdict.py": "6f6069871c2a45ed8ebe3a7c6fa07108855e6fc89a0c2a7632a2fb4145666b2e",
   "harness/workdir_restore.py": "e045bea323f4860cb2cf9deec790bcd0612fdb9462b4cad05ff58652f4efa8c6",
   "harness/workflow_steps.py": "8ae7b2e9a969e811e7d592a757514228cbbb06d84dc13a01fb86d42136651e15",
   "harness/workflows.py": "3600931a34a2353db2bbb0420f0bc52871d4d6a26bc0d013a2efa4d7c4361306",
