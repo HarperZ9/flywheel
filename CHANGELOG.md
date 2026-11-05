@@ -5,6 +5,9 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Prompt redaction
+- `python -m harness.prompt_redact` swaps the home folder, login name, machine name, email addresses, deny-list matches and credentials for stable placeholders (`~`, `USER`, `HOST`, `EMAIL-n`, `ID-n`, `[REDACTED:...]`) before text reaches a hosted model. `filter` mode works on stdin; `hook` mode is a Claude Code `UserPromptSubmit` hook that blocks a prompt naming local identifiers and shows the redacted copy to resubmit. Tool results are not covered yet. See `docs/features/prompt-redaction.md`.
+
 Datapipe
 - `harness.datapipe` takes one external data source from download to a shareable export with a receipt at each stage: a terms gate that needs a saved snapshot and a verbatim licence quote, `datapipe.record/1` rows with cell-level provenance, cleaning checks that flag and never delete, a revertible change log, and an export that blocks anything not cleared for redistribution. See `docs/DATAPIPE.md`.
 
