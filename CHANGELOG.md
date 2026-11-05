@@ -5,6 +5,9 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Distance to criticality
+- `harness.measure.criticality` measures d2, the KL divergence rate in bits per step from a series' best-fit AR model to the nearest critical AR model of the same order (Sooter et al. 2026, PNAS, CC BY 4.0). d_beta uses an exact closed form derived here, checked against numerical minimisation of the paper's integral. Standard library only; a clean-room implementation (the authors' toolkit is CC BY-NC 4.0 and was only read). `sliding` detrends with the past only by default, because a two-sided smoother let a leap fake an early warning in a learning-curve study. The paper's Hawkes, Langevin, AR(1), white-noise and bursty benchmarks reproduce under a preregistered study. See `docs/features/criticality.md`.
+
 Reviewer independence
 - `harness.reviewer_independence` measures how much evidence a second reader shares with the first and says whether adding it buys a catch: `p * acc * (1 - overlap)` against a 0.05 floor, with Wilson bounds when `p` and `acc` come as counts. PASS adds the reader, FAIL says it is redundant, and an interval across the floor is UNVERIFIABLE. The rule and its reference numbers come from the society lane's measurements; tests reproduce them. See `docs/features/reviewer-independence.md`.
 

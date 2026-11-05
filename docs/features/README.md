@@ -14,6 +14,8 @@ Verification and evidence
   writes a certificate you can recheck from the files alone, by replay, or against
   another renderer.
 - [gather](gather.md): research intake with provenance receipts; the verified-data intake.
+- [criticality](criticality.md): distance to criticality (d2) for one time series, in bits
+  per step, with the paper's benchmarks reproduced and a past-only detrend for early-warning reads.
 - [shapley-placebo](shapley-placebo.md): a placebo test for exact Shapley attribution
   over sources; how often an empty, irrelevant or shuffled source gets credit, with
   Wilson intervals.
