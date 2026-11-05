@@ -9,7 +9,10 @@ The public repo is a CURATED SUBSET. This script enforces that boundary:
   1. EXPORT: copy only the publishable dirs/files to a staging directory.
   2. GATE: run harness/publish_lint.py --strict over the staging tree. Any
      LOCAL_PATHS or SECRETS error aborts the publish BEFORE anything reaches
-     the public remote. The verifier must be able to fail.
+     the public remote. The verifier must be able to fail. Then run
+     scripts/publish_metadata_gate.py over the same tree: a file that adds
+     personal metadata over the frozen baseline, or any hit from the machine
+     name, the git global email or the untracked deny list, aborts too.
   3. PUBLISH: commit the staging tree to the public repo and push.
 
 The public repo has its own history (its SHAs differ from local-model's), so
@@ -20,6 +23,7 @@ Usage:
   python scripts/publish_public.py --dry-run          # export + lint, no push
   python scripts/publish_public.py --staging /tmp/x   # specify staging dir
   python scripts/publish_public.py                    # export + lint + push
+  python scripts/publish_public.py --dry-run --deny-list ~/private-deny.txt
 
 The public remote must be configured: `git remote add public <url>`. If absent,
 the script prints the command to add it and exits.
@@ -64,6 +68,9 @@ EXCLUDE_FILES = {
     "run_huggingface_release_stage.py",
     "package_local_harness_release.py",  # private release bundler
     "build_local_harness_exes.py",
+    # the untracked deny list of private patterns for the metadata gate; it
+    # sits under scripts/ and is gitignored, but this copy walks the tree
+    ".publish-denylist.txt",
 }
 
 # The internal docs that live at local-model root and MUST NOT ship. They fail
@@ -133,6 +140,13 @@ def lint_gate(staging: Path) -> int:
     return r.returncode
 
 
+def metadata_gate(staging: Path, deny_list: str | None = None) -> int:
+    """Run publish_metadata_gate over the staging tree. Returns 0 if clean."""
+    sys.path.insert(0, str(REPO / "scripts"))
+    import publish_metadata_gate
+    return publish_metadata_gate.gate(staging, deny_list=deny_list, all_files=True)
+
+
 def check_public_remote() -> bool:
     """True if the 'public' remote is configured."""
     r = subprocess.run(["git", "remote"], capture_output=True, text=True, cwd=str(REPO))
@@ -174,6 +188,9 @@ def main(argv=None) -> int:
                     help="export + lint only; do not push")
     ap.add_argument("-m", "--message", default="Publish Flywheel: the one platform",
                     help="commit message for the public push")
+    ap.add_argument("--deny-list", default=None,
+                    help="untracked file of private regexes for the metadata gate "
+                         "(default: PUBLISH_DENYLIST, then scripts/.publish-denylist.txt)")
     a = ap.parse_args(argv)
 
     staging = Path(a.staging)
@@ -188,6 +205,13 @@ def main(argv=None) -> int:
         print("The staging dir is preserved for inspection:", staging, file=sys.stderr)
         return 1
     print("  gate passed: 0 errors, 0 warnings")
+
+    print("\nRunning the publish metadata gate ...")
+    if metadata_gate(staging, a.deny_list) != 0:
+        print("\nPUBLISH GATE FAILED: the staging tree adds personal metadata.",
+              file=sys.stderr)
+        print("The staging dir is preserved for inspection:", staging, file=sys.stderr)
+        return 1
 
     if a.dry_run:
         print("\n--dry-run: stopping before push. Staging tree at", staging)

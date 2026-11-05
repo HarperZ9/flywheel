@@ -337,6 +337,17 @@ jobs:
       - name: Records name what they cover in scope; the older field stays with old records
         run: python scripts/check_scope_migration.py
 
+  publish_metadata:
+    name: no new personal metadata in published files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.13"
+      - name: A file may not add a local path, address or metadata over the frozen baseline
+        run: python scripts/publish_metadata_gate.py
+
   file_gate:
     name: 300-line gate, burn-down only shrinks
     runs-on: ubuntu-latest
