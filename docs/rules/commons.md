@@ -89,6 +89,15 @@ Elinor Ostrom, *Governing the Commons* (1990), found that commons that last let
 the people affected make the rules, use monitors accountable to the members,
 apply graduated sanctions and keep conflict resolution cheap.
 
+Bounded note (2026-10-30, approved by the author): in our own toy institution,
+graduated sanctions entrenched DARVO among fear-driven agents once offenders
+responded to expected cost (DARVO rose from 0.70 to 0.96), and a path back without
+graduation brought it to 0.03; adding the path back to graduation left it at 0.68
+(a toy with a partly closed-form fear rule). Read Ostrom's principle with that
+boundary: where fear drives the conduct, the path back carries the work and
+graduation can work against it. This does not contradict the field evidence, which
+concerns real commons.
+
 ## 6. Reintegration and a path back
 
 Accountability comes with a path back. In a community where members monitor each
