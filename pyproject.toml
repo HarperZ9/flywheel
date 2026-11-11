@@ -98,6 +98,7 @@ harness = [
     "preaction/rules_v1.json",
     "monitor_gate/data/*.json",
     "monitor_gate/data/*.jsonl",
+    "agent_false_accept/data/*.json",
     "behavior_check/*.json",
     "skill_resources/flywheel-evidence-task/SKILL.md",
     "skill_resources/flywheel-evidence-task/references/*.md",
