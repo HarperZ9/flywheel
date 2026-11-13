@@ -16,6 +16,9 @@ from typing import Protocol
 import urllib.request
 import urllib.error
 
+from .local_agent import BackendError
+from .provider_fault_boundary import format_http_error
+
 
 @dataclass
 class ProposerOutput:
@@ -148,8 +151,13 @@ class EnterpriseProposer:
             headers["Authorization"] = f"Bearer {key}"
         req = urllib.request.Request(
             f"{self.base_url}/chat/completions", data=body, headers=headers)
-        with urllib.request.urlopen(req, timeout=300) as r:
-            obj = json.loads(r.read())
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                obj = json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            kind = self.model_ref.split(":", 1)[0] or "openai"
+            raise BackendError(
+                format_http_error(kind, e, dialect="openai", kind=kind)) from e
         from .extract import extract_code
         text = extract_code(obj["choices"][0]["message"]["content"])  # enterprise models fence too
         # the model the provider actually served: a receipt that trusts the
@@ -193,8 +201,12 @@ class AnthropicProposer:
             f"{self.base_url}/v1/messages", data=body,
             headers={"Content-Type": "application/json", "x-api-key": key,
                      "anthropic-version": self.version})
-        with urllib.request.urlopen(req, timeout=300) as r:
-            obj = json.loads(r.read())
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                obj = json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            raise BackendError(format_http_error(
+                "anthropic", e, dialect="anthropic", kind="anthropic")) from e
         from .extract import extract_code
         blocks = obj.get("content") or []
         text = "".join(b.get("text", "") for b in blocks

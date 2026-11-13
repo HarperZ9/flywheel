@@ -148,7 +148,17 @@ def scrub_value(value: Any, *, depth: int = 6, items: int = 32,
                 if index >= items:
                     bounded[0] = True
                     break
-                out[str(key)] = walk(sub, level + 1)
+                key_reading = scrub(str(key), limit=limit)
+                for kind in key_reading["kinds"]:
+                    if kind not in kinds:
+                        kinds.append(kind)
+                if key_reading["truncated"]:
+                    bounded[0] = True
+                safe_key = key_reading["text"]
+                if safe_key in out:
+                    bounded[0] = True
+                    continue
+                out[safe_key] = walk(sub, level + 1)
             return out
         if isinstance(node, (list, tuple)):
             if len(node) > items:
