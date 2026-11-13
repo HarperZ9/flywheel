@@ -123,7 +123,7 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
         print(lane_report(roster))
         return 0
     if command == "auth":
-        from harness.oauth_signin import cli as _auth_cli
+        from harness.auth_cli import main as _auth_cli
         return _auth_cli(argv)
     if command == "why":
         # Asking must be the cheapest action available: a path, optionally a
